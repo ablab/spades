@@ -10,6 +10,7 @@
 
 namespace scaffold_graph_utils {
     using path_extend::scaffold_graph::ScaffoldGraph;
+    using path_extend::scaffold_graph::ScaffoldVertex;
     class ScaffoldGraphConstructor {
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         size_t distance_;
@@ -47,16 +48,16 @@ namespace scaffold_graph_utils {
 
         ScaffoldGraph ConstructScaffoldGraphFromContractedGraph(const contracted_graph::ContractedGraph &contracted_graph) {
             ScaffoldGraph scaffold_graph(g_);
-            unordered_set<EdgeId> incoming_set;
-            unordered_set<EdgeId> outcoming_set;
-            unordered_set<EdgeId> union_set;
+            unordered_set<ScaffoldVertex> incoming_set;
+            unordered_set<ScaffoldVertex> outcoming_set;
+            unordered_set<ScaffoldVertex> union_set;
             unordered_set<VertexId> vertices;
 
             for (const auto &vertex: contracted_graph) {
                 DEBUG("Vertex: " << vertex.int_id());
                 vertices.insert(vertex);
-                vector<EdgeId> incoming_vector;
-                vector<EdgeId> outcoming_vector;
+                vector<ScaffoldVertex> incoming_vector;
+                vector<ScaffoldVertex> outcoming_vector;
                 for (auto it_in = contracted_graph.in_begin(vertex);
                      it_in != contracted_graph.in_end(vertex); ++it_in) {
                     for (const auto& edge: (*it_in).second) {
@@ -98,8 +99,9 @@ namespace scaffold_graph_utils {
             auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(graph, extractor,
                                                                                            count_threshold, tail_threshold);
             size_t num_threads = cfg::get().max_threads;
+            INFO("Constructing barcode score scaffold graph, score threshold: " << score_threshold);
             path_extend::scaffold_graph::ScoreFunctionScaffoldGraphConstructor
-                scaffold_graph_constructor(graph, scaffold_graph, score_function, score_threshold, num_threads);
+                scaffold_graph_constructor(graph, scaffold_graph, score_function, score_threshold, 16);
             return *(scaffold_graph_constructor.Construct());
         }
 
@@ -175,12 +177,14 @@ namespace scaffold_graph_utils {
     };
 
     class EdgeToDegree: public read_cloud_statistics::Statistic {
-        std::map<EdgeId, size_t> edge_to_degree_;
+        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+
+        std::map<ScaffoldVertex, size_t> edge_to_degree_;
 
      public:
         EdgeToDegree(): read_cloud_statistics::Statistic("edge_to_degree"), edge_to_degree_() {}
         EdgeToDegree(const EdgeToDegree& other) = default;
-        void Insert(const EdgeId& edge, size_t degree) {
+        void Insert(const ScaffoldVertex& edge, size_t degree) {
             edge_to_degree_[edge] = degree;
         }
 
@@ -227,10 +231,11 @@ namespace scaffold_graph_utils {
     };
 
     struct SignedScaffoldGraph {
+      typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
       ScaffoldGraph graph_;
-      std::unordered_map<EdgeId, bool> vertex_to_sign_;
+      std::unordered_map<ScaffoldVertex, bool> vertex_to_sign_;
 
-      SignedScaffoldGraph(const ScaffoldGraph& graph_, const unordered_map<EdgeId, bool>& vertex_to_sign_) : graph_(
+      SignedScaffoldGraph(const ScaffoldGraph& graph_, const unordered_map<ScaffoldVertex, bool>& vertex_to_sign_) : graph_(
           graph_), vertex_to_sign_(vertex_to_sign_) {}
     };
 
@@ -239,6 +244,7 @@ namespace scaffold_graph_utils {
         typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
         typedef vector<EdgeWithMapping> ContigPath;
         typedef path_extend::validation::NamedSimplePath NamedSimplePath;
+        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
      private:
         const Graph& g_;
         const vector<NamedSimplePath>& reference_paths_;
@@ -258,8 +264,8 @@ namespace scaffold_graph_utils {
                 if (not ContainsPathOrRC(result, name) and path.size() >= MIN_SIZE) {
                     auto path_edges = ExtractEdges(path);
                     ScaffoldGraph subgraph(g_);
-                    unordered_map<EdgeId, bool> vertex_to_sign;
-                    for (const EdgeId& vertex: graph.vertices()) {
+                    unordered_map<ScaffoldVertex, bool> vertex_to_sign;
+                    for (const auto& vertex: graph.vertices()) {
                         if (IsPlusVertex(path_edges, vertex)) {
                             vertex_to_sign.insert({vertex, true});
                         }
@@ -291,25 +297,26 @@ namespace scaffold_graph_utils {
                 name_to_graph.find(stripped_name) != name_to_graph.end();
         }
 
-        unordered_set<EdgeId> ExtractEdges(const ContigPath& simple_path) {
-            unordered_set<EdgeId> result;
+        unordered_set<ScaffoldVertex> ExtractEdges(const ContigPath& simple_path) {
+            unordered_set<ScaffoldVertex> result;
             for (const auto& ewm: simple_path) {
                 result.insert(ewm.edge_);
             }
             return result;
         }
 
-        bool IsPlusVertex(const std::unordered_set<EdgeId>& path_edges, const EdgeId& vertex) {
+        bool IsPlusVertex(const std::unordered_set<ScaffoldVertex>& path_edges, const ScaffoldVertex& vertex) {
             return path_edges.find(vertex) != path_edges.end();
         }
 
-        bool IsMinusVertex(const std::unordered_set<EdgeId>& path_edges, const EdgeId& vertex) {
-            return path_edges.find(g_.conjugate(vertex)) != path_edges.end();
+        bool IsMinusVertex(const std::unordered_set<ScaffoldVertex>& path_edges, const ScaffoldVertex& vertex) {
+            return path_edges.find(vertex.getConjugateFromGraph(g_)) != path_edges.end();
         }
     };
 
     class ScaffoldGraphPrinter {
      public:
+        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
         typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
         typedef vector<EdgeWithMapping> ContigPath;
      private:
@@ -338,22 +345,24 @@ namespace scaffold_graph_utils {
 
      private:
         void PrintGraphAsContigs(const ScaffoldGraph& graph, const string& filename,
-                                 const std::unordered_map<EdgeId, string>& vertex_to_name) {
+                                 const std::unordered_map<ScaffoldVertex, string>& vertex_to_name) {
             ofstream fout(filename + ".fasta");
 
-            for (const EdgeId& vertex: graph.vertices()) {
+            for (const ScaffoldVertex& vertex: graph.vertices()) {
                 fout << ">" << vertex_to_name.at(vertex) << endl;
-                io::WriteWrapped(g_.EdgeNucls(vertex).str(), fout);
+                path_extend::scaffold_graph::EdgeGetter getter;
+                EdgeId edge = getter.GetEdgeFromScaffoldVertex(vertex);
+                io::WriteWrapped(g_.EdgeNucls(edge).str(), fout);
             }
         }
 
 
         void PrintGraphAsGraph(const SignedScaffoldGraph& signed_graph, const string& filename,
-                               const std::unordered_map<EdgeId, string>& vertex_to_name) {
+                               const std::unordered_map<ScaffoldVertex, string>& vertex_to_name) {
             ofstream fout(filename + ".scg");
             for (const ScaffoldGraph::ScaffoldEdge& edge: signed_graph.graph_.edges()) {
-                EdgeId start = edge.getStart();
-                EdgeId end = edge.getEnd();
+                ScaffoldVertex start = edge.getStart();
+                ScaffoldVertex end = edge.getEnd();
                 string start_sign = signed_graph.vertex_to_sign_.at(start) ? "+" : "-";
                 string end_sign = signed_graph.vertex_to_sign_.at(end) ? "+" : "-";
                 fout << "(" << vertex_to_name.at(start) << "_" << start_sign << ") ";
@@ -362,11 +371,11 @@ namespace scaffold_graph_utils {
             }
         }
 
-        std::unordered_map<EdgeId, string> GetVertexToName(const ScaffoldGraph& graph) {
-            std::unordered_map<EdgeId, string> vertex_to_name;
+        std::unordered_map<ScaffoldVertex, string> GetVertexToName(const ScaffoldGraph& graph) {
+            std::unordered_map<ScaffoldVertex, string> vertex_to_name;
             size_t id = 0;
-            for (const EdgeId& vertex: graph.vertices()) {
-                string name = io::MakeContigId(id++, g_.length(vertex), g_.coverage(vertex));
+            for (const ScaffoldVertex& vertex: graph.vertices()) {
+                string name = io::MakeContigId(id++, vertex.getLengthFromGraph(g_), vertex.getCoverageFromGraph(g_));
                 vertex_to_name.insert({vertex, name});
             }
             return vertex_to_name;
@@ -384,7 +393,7 @@ namespace scaffold_graph_utils {
             ScaffoldGraphSplitter splitter(g_, reference_paths);
             auto name_to_signed_graph = splitter.SplitAndSignScaffoldGraph(graph);
             ScaffoldGraphPrinter printer(g_);
-            printer.PrintMultipleGraphs(name_to_signed_graph, output_path);
+//            printer.PrintMultipleGraphs(name_to_signed_graph, output_path);
         }
     };
 }

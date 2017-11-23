@@ -41,8 +41,15 @@ class ContigTransitionStorage {
     }
 
     bool CheckTransition(const ScaffoldVertex &first, const ScaffoldVertex &second) const {
-        Transition t(first, second);
-        return CheckTransition(t);
+        auto is_covered = [this](const EdgeId& edge) {
+          return IsEdgeCovered(edge);
+        };
+        boost::optional<EdgeId> first_covered = first.getLastEdgeWithPredicate(is_covered);
+        boost::optional<EdgeId> second_covered = second.getFirstEdgeWithPredicate(is_covered);
+        if (first_covered.is_initialized() and second_covered.is_initialized()) {
+            return CheckTransition(first_covered.get(), second_covered.get());
+        }
+        return false;
     }
 
     bool CheckTransition(const EdgeId& first, const EdgeId& second) const {
@@ -56,6 +63,14 @@ class ContigTransitionStorage {
 
     bool IsEdgeCovered(const EdgeId& edge) const {
         return covered_edges_.find(edge) != covered_edges_.end();
+    }
+
+    bool IsEdgeCovered(const ScaffoldVertex& vertex) const {
+        auto is_covered = [this](const EdgeId& edge) {
+          return IsEdgeCovered(edge);
+        };
+        boost::optional<EdgeId> first_covered = vertex.getFirstEdgeWithPredicate(is_covered);
+        return first_covered.is_initialized();
     }
 
     bool CheckPath(const vector<EdgeId>& path) const {

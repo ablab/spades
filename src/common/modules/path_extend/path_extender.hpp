@@ -940,7 +940,7 @@ class ScaffoldGraphExtender: public PathExtender {
         if (success) {
             DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
                                           << gap.gap << ", trash length: " << gap.trash_previous << "-" << gap.trash_current);
-            INFO("Added edge " << e.int_id());
+            DEBUG("Added edge " << e.int_id());
         }
         return success;
     }

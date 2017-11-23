@@ -87,16 +87,29 @@ public:
 //todo refactor connection conditions to avoid code duplication
 class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
     const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
+    const std::set<ScaffoldVertex> scaffold_vertices_;
     const size_t distance_;
 
  public:
-    UniqueScaffoldGraphConstructor(
-        const Graph& assembly_graph,
-        const ScaffoldingUniqueEdgeStorage& unique_storage_,
-        const size_t distance_);
+    UniqueScaffoldGraphConstructor(const Graph &assembly_graph,
+                                   const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                   const set<ScaffoldVertex> &scaffold_vertices_,
+                                   const size_t distance_);
 
- public:
     shared_ptr<ScaffoldGraph> Construct() override;
+
+ private:
+    bool CheckConnectedEdge(const ScaffoldVertex& from, const EdgeId& connected,
+                            const std::unordered_map<EdgeId, ScaffoldVertex>& first_unique_to_vertex) {
+        if (unique_storage_.IsUnique(connected) and first_unique_to_vertex.find(connected) != first_unique_to_vertex.end()) {
+            auto connected_scaff_vertex = first_unique_to_vertex.at(connected);
+            if (from != connected_scaff_vertex and
+                from != connected_scaff_vertex.getConjugateFromGraph(graph_->AssemblyGraph())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     DECL_LOGGER("UniqueScaffoldGraphConstructor");
 };
