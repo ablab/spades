@@ -149,9 +149,9 @@ PathClusterScoreFunctionBuilder::PathClusterScoreFunctionBuilder(
 double TrivialScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge) const {
     return 1.0;
 }
-shared_ptr<ScaffoldEdgeScoreFunction> TrivialScoreFunctionBuilder::GetScoreFunction(const GapCloserScoreFunctionBuilder::SimpleTransitionGraph &graph,
-                                                                                    const GapCloserScoreFunctionBuilder::ScaffoldVertex &source,
-                                                                                    const GapCloserScoreFunctionBuilder::ScaffoldVertex &sink) const {
+shared_ptr<ScaffoldEdgeScoreFunction> TrivialScoreFunctionBuilder::GetScoreFunction(const GapCloserScoreFunctionBuilder::SimpleTransitionGraph &/*graph*/,
+                                                                                    const GapCloserScoreFunctionBuilder::ScaffoldVertex &/*source*/,
+                                                                                    const GapCloserScoreFunctionBuilder::ScaffoldVertex &/*sink*/) const {
     return make_shared<TrivialScoreFunction>();
 }
 }

@@ -41,18 +41,19 @@ struct PathClusterScoreStats: read_cloud_statistics::Statistic {
   typedef path_extend::transitions::Transition Transition;
   typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
   typedef path_extend::transitions::ClusterTransitionStorage ClusterTransitionStorage;
+  typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
   const ClusterTransitionStorage transition_to_score_;
   const ContigTransitionStorage reference_transitions_;
-  const vector<EdgeId> starts_;
-  const vector<EdgeId> ends_;
+  const vector<ScaffoldVertex> starts_;
+  const vector<ScaffoldVertex> ends_;
   size_t false_pos_;
   size_t false_neg_;
 
   PathClusterScoreStats(
       const ClusterTransitionStorage& transition_to_score,
       const ContigTransitionStorage& reference_transitions_,
-      const vector<EdgeId> starts,
-      const vector<EdgeId> ends,
+      const vector<ScaffoldVertex> starts,
+      const vector<ScaffoldVertex> ends,
       size_t false_pos_,
       size_t false_neg_)
       : Statistic("path_cluster_score_stats"),
@@ -97,10 +98,11 @@ struct PathClusterScoreStats: read_cloud_statistics::Statistic {
 
 class GreedyOrderingExtractor {
     typedef path_extend::transitions::Transition Transition;
+    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
  public:
     std::vector<Transition> ExtractGreedyOrdering(const std::unordered_map<Transition, size_t>& transition_to_score,
-                                                  const unordered_set<EdgeId> random_ordering) {
+                                                  const unordered_set<ScaffoldVertex> random_ordering) {
         std::function<bool(const Transition&, const Transition&)> transition_comparator =
             [&transition_to_score](const Transition& first, const Transition& second) {
                 return transition_to_score.at(first) < transition_to_score.at(second);
@@ -111,10 +113,10 @@ class GreedyOrderingExtractor {
         for (const auto& entry: transition_to_score) {
             transition_queue.push(entry.first);
         }
-        vector<EdgeId> starts;
-        vector<EdgeId> ends;
-        std::unordered_set<EdgeId> inserted_starts;
-        std::unordered_set<EdgeId> inserted_ends;
+        vector<ScaffoldVertex> starts;
+        vector<ScaffoldVertex> ends;
+        std::unordered_set<ScaffoldVertex> inserted_starts;
+        std::unordered_set<ScaffoldVertex> inserted_ends;
         while (not transition_queue.empty()) {
             Transition max_transition = transition_queue.top();
             transition_queue.pop();
@@ -124,8 +126,8 @@ class GreedyOrderingExtractor {
                 inserted_ends.find(max_transition.second_) != inserted_ends.end()) {
                 continue;
             } else {
-                EdgeId new_start = max_transition.first_;
-                EdgeId new_end = max_transition.second_;
+                ScaffoldVertex new_start = max_transition.first_;
+                ScaffoldVertex new_end = max_transition.second_;
                 VERIFY(inserted_starts.find(new_start) == inserted_starts.end());
                 VERIFY(inserted_ends.find(new_end) == inserted_ends.end());
                 inserted_starts.insert(new_start);
@@ -174,6 +176,7 @@ class PathClusterScoreAnalyzer: public read_cloud_statistics::StatisticProcessor
     typedef cluster_storage::Cluster Cluster;
     typedef std::unordered_map<Transition, std::unordered_set<Cluster>> TransitionClusterStorage;
     typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
+    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
  private:
     const Graph& g_;
@@ -205,9 +208,12 @@ class PathClusterScoreAnalyzer: public read_cloud_statistics::StatisticProcessor
         auto covered_edges = reference_transitions.GetCoveredEdges();
         INFO(covered_edges.size() << " covered edges");
         GreedyOrderingExtractor greedy_extractor;
-        vector<Transition> greedy_ordering = greedy_extractor.ExtractGreedyOrdering(cluster_transition_storage_, covered_edges);
-        vector<EdgeId> starts;
-        vector<EdgeId> ends;
+        std::unordered_set<ScaffoldVertex> covered_scaffold_vertices;
+        std::copy(covered_edges.begin(), covered_edges.end(), std::inserter(covered_scaffold_vertices, covered_scaffold_vertices.end()));
+        vector<Transition> greedy_ordering = greedy_extractor.ExtractGreedyOrdering(cluster_transition_storage_,
+                                                                                    covered_scaffold_vertices);
+        vector<ScaffoldVertex> starts;
+        vector<ScaffoldVertex> ends;
         INFO("First transition: " << cluster_transition_storage_.at(greedy_ordering[0]));
         INFO(greedy_ordering[0].first_.int_id() << " -> " << greedy_ordering[0].second_.int_id());
         for (const auto& transition: greedy_ordering) {
@@ -237,8 +243,8 @@ class PathClusterScoreAnalyzer: public read_cloud_statistics::StatisticProcessor
 
         for (const auto& start: starts) {
             size_t max_score = 0;
-            EdgeId max_end;
-            EdgeId reference_end;
+            ScaffoldVertex max_end;
+            ScaffoldVertex reference_end;
             boost::optional<size_t> reference_score;
             for (const auto& end: ends) {
                 Transition t(start, end);
@@ -285,16 +291,16 @@ class PathClusterScoreAnalyzer: public read_cloud_statistics::StatisticProcessor
         return result;
     }
 
-    std::unordered_map<EdgeId, EdgeId> BuildTransitionMap(const ContigTransitionStorage& transitions) {
-        std::unordered_map<EdgeId, EdgeId> result;
+    std::unordered_map<ScaffoldVertex, ScaffoldVertex> BuildTransitionMap(const ContigTransitionStorage& transitions) {
+        std::unordered_map<ScaffoldVertex, ScaffoldVertex> result;
         for (const auto& transition: transitions) {
             result.insert({transition.first_, transition.second_});
         }
         return result;
     };
 
-    std::unordered_map<EdgeId, EdgeId> BuildReverseTransitionMap(const ContigTransitionStorage& transitions) {
-        std::unordered_map<EdgeId, EdgeId> result;
+    std::unordered_map<ScaffoldVertex, ScaffoldVertex> BuildReverseTransitionMap(const ContigTransitionStorage& transitions) {
+        std::unordered_map<ScaffoldVertex, ScaffoldVertex> result;
         for (const auto& transition: transitions) {
             result.insert({transition.second_, transition.first_});
         }
@@ -321,11 +327,11 @@ class PathClusterScoreAnalyzer: public read_cloud_statistics::StatisticProcessor
         return result;
     };
 
-    std::vector<EdgeId> GetPathNeighbourhood(const std::unordered_map<EdgeId, EdgeId>& forward_map,
-                                             const std::unordered_map<EdgeId, EdgeId>& reverse_map,
-                                             const EdgeId& edge, size_t distance) {
-        std::deque<EdgeId> result_deque;
-        EdgeId current_edge = edge;
+    std::vector<ScaffoldVertex> GetPathNeighbourhood(const std::unordered_map<ScaffoldVertex, ScaffoldVertex>& forward_map,
+                                             const std::unordered_map<ScaffoldVertex, ScaffoldVertex>& reverse_map,
+                                             const ScaffoldVertex& edge, size_t distance) {
+        std::deque<ScaffoldVertex> result_deque;
+        ScaffoldVertex current_edge = edge;
         result_deque.push_back(current_edge);
         for (size_t i = 0; i < distance; ++i) {
             current_edge = forward_map.at(current_edge);
@@ -336,7 +342,7 @@ class PathClusterScoreAnalyzer: public read_cloud_statistics::StatisticProcessor
             current_edge = reverse_map.at(current_edge);
             result_deque.push_front(current_edge);
         }
-        std::vector<EdgeId> result(result_deque.begin(), result_deque.end());
+        std::vector<ScaffoldVertex> result(result_deque.begin(), result_deque.end());
         return result;
     }
 
@@ -371,7 +377,7 @@ class PathClusterScoreAnalyzer: public read_cloud_statistics::StatisticProcessor
             DEBUG(neighbourhood_string);
             std::string rc_neighbourhood_string;
             for (const auto& edge: path_neighbourhood) {
-                rc_neighbourhood_string += (std::to_string(g_.conjugate(edge).int_id()) + ", ");
+                rc_neighbourhood_string += (std::to_string(edge.getConjugateFromGraph(g_).int_id()) + ", ");
             }
             DEBUG("Conjugate neighbourhood: ");
             DEBUG(rc_neighbourhood_string);
@@ -385,11 +391,13 @@ class PathClusterScoreAnalyzer: public read_cloud_statistics::StatisticProcessor
     void PrintOrderingsForTransition(const TransitionClusterStorage& storage, const Transition& transition) {
         unordered_set<Cluster> cluster_set = storage.at(transition);
         DEBUG(cluster_set.size() << " clusters");
-        std::map<vector<EdgeId>, size_t> orderings;
+        std::map<vector<ScaffoldVertex>, size_t> orderings;
         for (const auto& cluster: cluster_set) {
             auto ordering = graph_analyzer_.GetOrderingFromCluster(cluster);
-            VERIFY(ordering.size() > 0);
-            orderings[ordering] += 1;
+            vector<ScaffoldVertex> scaff_vertex_ordering;
+            std::copy(ordering.begin(), ordering.end(), std::back_inserter(scaff_vertex_ordering));
+            VERIFY(scaff_vertex_ordering.size() > 0);
+            orderings[scaff_vertex_ordering] += 1;
         }
         DEBUG(orderings.size() << " orderings");
         for (const auto& entry: orderings) {
@@ -408,10 +416,12 @@ class GapCloserPathClusterAnalyzer: public read_cloud_statistics::StatisticProce
     typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
+    typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
  private:
     const debruijn_graph::conj_graph_pack& gp_;
     const vector<vector<EdgeWithMapping>> reference_paths_;
+    shared_ptr<SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
  public:
     GapCloserPathClusterAnalyzer(const debruijn_graph::conj_graph_pack& gp_,
                                  const vector<vector<EdgeWithMapping>>& reference_paths_)
@@ -440,7 +450,7 @@ class GapCloserPathClusterAnalyzer: public read_cloud_statistics::StatisticProce
         auto path_cluster_score_builder =
             predicate_constructor.ConstructPathClusterScoreFunction(path_cluster_params);
         auto barcode_extractor = std::make_shared<FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-        path_extend::CloudScaffoldSubgraphExtractor subgraph_extractor(gp_.g, *barcode_extractor, subgraph_extractor_params);
+        path_extend::CloudScaffoldSubgraphExtractor subgraph_extractor(gp_.g, long_edge_extractor_, subgraph_extractor_params);
         set<ScaffoldEdge> closed_edges;
         path_extend::ScaffoldGraphExtractor scaffold_graph_extractor;
         auto transition_map = ConstructTranstitionMap(reference_paths);
@@ -461,8 +471,8 @@ class GapCloserPathClusterAnalyzer: public read_cloud_statistics::StatisticProce
             auto current_graph = subgraph;
             size_t builder_counter = 0;
             size_t initial_edges = current_graph.GetEdgesCount();
-            EdgeId source = edge.getStart();
-            EdgeId sink = edge.getEnd();
+            auto source = edge.getStart();
+            auto sink = edge.getEnd();
             DEBUG("Cleaning graph using pe predicate builder" );
             auto predicate_ptr = pe_predicate_builder->GetPredicate(current_graph, source, sink);
             current_graph = edge_checker.CleanGraphUsingPredicate(current_graph, predicate_ptr);
@@ -473,7 +483,7 @@ class GapCloserPathClusterAnalyzer: public read_cloud_statistics::StatisticProce
             auto path_cluster_predicate = path_cluster_score_builder->GetScoreFunction(current_graph, source, sink);
             if (AreConnectedByReferenceTransitions(source, sink, transition_map)) {
                 DEBUG("Printing reference subpath");
-                EdgeId current = source;
+                ScaffoldVertex current = source;
                 string reference_path_string;
                 while (current != sink) {
                     reference_path_string += std::to_string(current.int_id()) + " -> ";
@@ -490,20 +500,20 @@ class GapCloserPathClusterAnalyzer: public read_cloud_statistics::StatisticProce
         INFO("Sink and sounce not connected: " << not_connected);
     }
 
-    std::unordered_map<EdgeId, EdgeId> ConstructTranstitionMap(const vector<vector<EdgeWithMapping>>& reference_paths) {
+    std::unordered_map<ScaffoldVertex, ScaffoldVertex> ConstructTranstitionMap(const vector<vector<EdgeWithMapping>>& reference_paths) {
         path_extend::validation::GeneralTransitionStorageBuilder transition_storage_builder(gp_.g, 1, false, false);
         auto transition_storage = transition_storage_builder.GetTransitionStorage(reference_paths);
-        std::unordered_map<EdgeId, EdgeId> result;
+        std::unordered_map<ScaffoldVertex, ScaffoldVertex> result;
         for (const auto& transition: transition_storage) {
             result.insert({transition.first_, transition.second_});
         }
         return result;
     };
 
-    bool AreConnectedByReferenceTransitions(const EdgeId& first, const EdgeId& second,
-                                            const unordered_map<EdgeId, EdgeId>& transition_map) {
+    bool AreConnectedByReferenceTransitions(const ScaffoldVertex& first, const ScaffoldVertex& second,
+                                            const unordered_map<ScaffoldVertex, ScaffoldVertex>& transition_map) {
         const size_t max_distance = 20;
-        EdgeId current = first;
+        ScaffoldVertex current = first;
         size_t current_distance = 0;
         while (current != second and current_distance < max_distance) {
             if (transition_map.find(current) == transition_map.end()) {
@@ -521,10 +531,12 @@ class GapCloserPathClusterAnalyzer: public read_cloud_statistics::StatisticProce
 class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcessor {
  public:
     typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
+    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
  private:
     const Graph& g_;
     const vector<vector<EdgeWithMapping>> reference_paths_;
-    const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
+    shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
     const size_t count_threshold_;
     const size_t small_length_threshold_;
     const size_t large_length_threshold_;
@@ -532,14 +544,14 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
  public:
     GapCloserDijkstraAnalyzer(const Graph& g,
                               const vector<vector<EdgeWithMapping>>& reference_paths,
-                              const FrameBarcodeIndexInfoExtractor& barcode_extractor_,
+                              shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
                               const size_t count_threshold_,
                               const size_t small_length_threshold_,
                               const size_t large_length_threshold_) :
         StatisticProcessor("scaffold_gap_closer_analyzer"),
         g_(g),
         reference_paths_(reference_paths),
-        barcode_extractor_(barcode_extractor_),
+        barcode_extractor_(barcode_extractor),
         count_threshold_(count_threshold_),
         small_length_threshold_(small_length_threshold_),
         large_length_threshold_(large_length_threshold_) {}
@@ -594,13 +606,18 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
             }
             size_t last_pos = long_edge_positions.back();
             size_t first_pos = long_edge_positions[0];
-            EdgeId start = path[first_pos].edge_;
-            EdgeId end = path[last_pos].edge_;
+            ScaffoldVertex start = path[first_pos].edge_;
+            ScaffoldVertex end = path[last_pos].edge_;
             path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge scaffold_edge(start, end);
             path_extend::LongEdgePairGapCloserParams params(count_threshold_, large_length_threshold_, share_threshold,
                                                             small_length_threshold_, true);
+            auto shord_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_);
+            ScaffoldVertex start_vertex = scaffold_edge.getStart();
+            ScaffoldVertex end_vertex = scaffold_edge.getEnd();
             auto gap_closer_predicate =
-                make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, barcode_extractor_, params, scaffold_edge);
+                make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, shord_edge_extractor, params,
+                                                                         start_vertex, end_vertex,
+                                                                         long_edge_extractor_->GetIntersection(start_vertex, end_vertex));
             result += CountFailedEdgesWithPredicate(path, last_pos, path.size(), gap_closer_predicate);
             result += CountFailedEdgesWithPredicate(path, 0, first_pos, gap_closer_predicate);
         }
@@ -609,13 +626,19 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
 
     size_t CountFailedEdgesWithinSegment(const vector<EdgeWithMapping>& reference_path, size_t left, size_t right,
                                          double share_threshold) const {
-        EdgeId start = reference_path[left].edge_;
-        EdgeId end = reference_path[right].edge_;
+        ScaffoldVertex start = reference_path[left].edge_;
+        ScaffoldVertex end = reference_path[right].edge_;
         path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge scaffold_edge(start, end);
         path_extend::LongEdgePairGapCloserParams params(count_threshold_, large_length_threshold_, share_threshold,
                                                         small_length_threshold_, true);
+
+        auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_);
+        ScaffoldVertex start_edge = scaffold_edge.getStart();
+        ScaffoldVertex end_edge = scaffold_edge.getEnd();
         auto gap_closer_predicate =
-            make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, barcode_extractor_, params, scaffold_edge);
+            make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, short_edge_extractor, params,
+                                                                     start_edge, end_edge,
+                                                                     long_edge_extractor_->GetIntersection(start_edge, end_edge));
         return CountFailedEdgesWithPredicate(reference_path, left, right, gap_closer_predicate);
     }
 

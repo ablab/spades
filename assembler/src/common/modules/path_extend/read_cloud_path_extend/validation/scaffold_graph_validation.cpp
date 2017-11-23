@@ -102,18 +102,11 @@ size_t ScaffoldGraphValidator::CountFalsePositive(const ScaffoldGraphValidator::
                                                   const ReferencePathIndex& reference_index) {
     size_t result = 0;
     for (const ScaffoldGraph::ScaffoldEdge& edge: graph.edges()) {
-        EdgeId start = edge.getStart().getLastEdge();
-        EdgeId end = edge.getEnd().getFirstEdge();
+        auto start = edge.getStart();
+        auto end = edge.getEnd();
         bool start_covered = reference_transtions.IsEdgeCovered(start);
         bool end_covered = reference_transtions.IsEdgeCovered(end);
         if (not reference_transtions.CheckTransition(start, end) and start_covered and end_covered) {
-            auto start_info = reference_index.at(start);
-            auto end_info = reference_index.at(end);
-            DEBUG("(Path: " << start_info.path_ << ", pos: " << start_info.pos_ << ", rev: " << start_info.rev_pos_
-                            << ")" << " ->" << "(Path: " << end_info.path_ << ", pos: " << end_info.pos_
-                            << ", rev: " << end_info.rev_pos_ << "), " << "Score: " << edge.getWeight());
-            DEBUG("Start id: " << start.int_id() << ", coverage: " << g_.coverage(start));
-            DEBUG("End id: " << end.int_id() << ", coverage: " << g_.coverage(end));
             ++result;
         }
     }

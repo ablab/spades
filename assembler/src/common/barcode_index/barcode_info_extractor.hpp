@@ -446,6 +446,34 @@ namespace barcode_index {
             return intersection;
         }
 
+        vector<BarcodeId> GetBarcodesFromHead(const EdgeId& edge, size_t count_threshold, size_t right) const {
+            vector<BarcodeId> barcodes;
+            size_t bin_length = GetBinLength(edge);
+            for (auto it = barcode_iterator_begin(edge); it != barcode_iterator_end(edge); ++it) {
+                BarcodeId barcode = it->first;
+                size_t left_pos = it->second.GetLeftMost() *  bin_length;
+                size_t reads = it->second.GetCount();
+                if (left_pos <= right and reads >= count_threshold) {
+                    barcodes.push_back(barcode);
+                }
+            }
+            return barcodes;
+        }
+
+        vector<pair<BarcodeId, size_t>> GetBarcodesAndCountsFromHead(const EdgeId& edge, size_t count_threshold, size_t right) const {
+            vector<pair<BarcodeId, size_t>> barcodes;
+            size_t bin_length = GetBinLength(edge);
+            for (auto it = barcode_iterator_begin(edge); it != barcode_iterator_end(edge); ++it) {
+                BarcodeId barcode = it->first;
+                size_t left_pos = it->second.GetLeftMost() *  bin_length;
+                size_t reads = it->second.GetCount();
+                if (left_pos <= right and reads >= count_threshold) {
+                    barcodes.emplace_back(barcode, reads);
+                }
+            }
+            return barcodes;
+        };
+
         vector<BarcodeId> GetBarcodesFromRange(const EdgeId& edge, size_t count_threshold, size_t left, size_t right) const {
             vector<BarcodeId> barcodes;
             size_t bin_length = GetBinLength(edge);

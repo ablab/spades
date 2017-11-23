@@ -183,19 +183,22 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
     const path_extend::ScaffolderParams& scaff_params_;
     const vector<vector<EdgeWithMapping>> reference_paths_;
     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
+    shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
 
  public:
     ScaffolderStageAnalyzer(const Graph& g_,
                                   const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_,
                                   const path_extend::ScaffolderParams& scaff_params_,
                                   const vector<vector<EdgeWithMapping>>& reference_paths_,
-                                  const shared_ptr<FrameBarcodeIndexInfoExtractor>& barcode_extractor_ptr_)
+                                  const shared_ptr<FrameBarcodeIndexInfoExtractor>& barcode_extractor_ptr_,
+                                  shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor)
         : StatisticProcessor("scaffolder_statistics"),
           g_(g_),
           unique_storage_(unique_storage_),
           scaff_params_(scaff_params_),
           reference_paths_(reference_paths_),
-          barcode_extractor_ptr_(barcode_extractor_ptr_) {}
+          barcode_extractor_ptr_(barcode_extractor_ptr_),
+          long_edge_extractor_(long_edge_extractor) {}
 
     void FillStatistics() override {
         path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
@@ -245,7 +248,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         size_t tail_threshold = scaff_params_.tail_threshold_;
         INFO("Count threshold : " << count_threshold);
         INFO("Tail threshold: " << tail_threshold);
-        path_extend::NormalizedBarcodeScoreFunction normalized_score_function(g_, *barcode_extractor_ptr_, count_threshold, tail_threshold);
+        path_extend::NormalizedBarcodeScoreFunction normalized_score_function(g_, long_edge_extractor_, count_threshold, tail_threshold);
         auto transition_to_distance = GetDistanceMap(reference_paths);
 
         std::map<size_t, std::map<double, size_t>> dist_thr_failed;
@@ -304,8 +307,8 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         size_t tail_threshold = scaff_params_.tail_threshold_;
         INFO("Count threshold : " << count_threshold);
         INFO("Tail threshold: " << tail_threshold);
-        path_extend::NormalizedBarcodeScoreFunction normalized_score_function(g_, *barcode_extractor_ptr_, count_threshold, tail_threshold);
-        path_extend::TrivialBarcodeScoreFunction trivial_score_function(g_, *barcode_extractor_ptr_, count_threshold, tail_threshold);
+        path_extend::NormalizedBarcodeScoreFunction normalized_score_function(g_, long_edge_extractor_, count_threshold, tail_threshold);
+        path_extend::TrivialBarcodeScoreFunction trivial_score_function(g_, long_edge_extractor_, count_threshold, tail_threshold);
         const string trivial_name = "Simple score function";
         const string normalized_name = "Normalized score function";
         std::map<string, const path_extend::ScaffoldEdgeScoreFunction&> name_to_function;
@@ -377,7 +380,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
     ScoreStats GetScoreStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
         size_t count_threshold = scaff_params_.count_threshold_;
         size_t tail_threshold = scaff_params_.tail_threshold_;
-        path_extend::NormalizedBarcodeScoreFunction score_function(g_, *barcode_extractor_ptr_, count_threshold, tail_threshold);
+        path_extend::NormalizedBarcodeScoreFunction score_function(g_, long_edge_extractor_, count_threshold, tail_threshold);
         size_t overall = 0;
         size_t passed = 0;
         vector<double> scores;
@@ -595,10 +598,14 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
                                                                              false);
             path_extend::ReadCloudMiddleDijkstraParams
                 long_params(count_threshold, tail_threshold, scaff_params_.initial_distance_, vertex_predicate_params);
+
+            auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_ptr_);
+
             auto dij_predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(g_,
-                                                                                    unique_storage_,
-                                                                                    *barcode_extractor_ptr_,
-                                                                                    long_params);
+                                                                                            unique_storage_,
+                                                                                            long_edge_extractor_,
+                                                                                            long_edge_extractor_,
+                                                                                            long_params);
             DEBUG("Score threshold: " << score_threshold);
             if (AreConnectedByBarcodePath(reference_path, first_pos, second_pos,
                                           score_threshold, barcode_intersection, length_threshold, middle_count_threshold, tail_threshold)) {
@@ -645,10 +652,13 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         EdgeId start = reference_path[first_pos].edge_;
         EdgeId end = reference_path[second_pos].edge_;
         const bool normalize_using_cov = false;
+        auto short_edge_extractor = std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_ptr_);
+        SimpleVertexEntry simple_entry;
+        std::copy(barcode_intersection.begin(), barcode_intersection.end(), std::inserter(simple_entry, simple_entry.begin()));
         path_extend::LongEdgePairGapCloserParams params(count_threshold, tail_threshold, score_threshold,
                                                         length_threshold, normalize_using_cov);
-        path_extend::LongEdgePairGapCloserPredicate gap_closer_predicate(g_, *barcode_extractor_ptr_, params, start, end,
-                                                                         barcode_intersection);
+        path_extend::LongEdgePairGapCloserPredicate gap_closer_predicate(g_, short_edge_extractor, params, start, end,
+                                                                         simple_entry);
         for (size_t i = first_pos + 1; i < second_pos; ++i) {
             if (not gap_closer_predicate.Check(reference_path[i].edge_)) {
                 return false;

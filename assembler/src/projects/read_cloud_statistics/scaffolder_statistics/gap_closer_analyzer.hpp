@@ -8,7 +8,8 @@ class SubgraphExtractorAnalyzer {
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
     typedef path_extend::transitions::Transition Transition;
     typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
-    typedef cluster_storage::Cluster::InternalGraph SimpleGraph;
+    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef path_extend::SimpleGraph<ScaffoldVertex> SimpleGraph;
 
     const Graph& graph_;
     const vector<vector<path_extend::validation::EdgeWithMapping>> long_reference_paths_;
@@ -51,16 +52,16 @@ class SubgraphExtractorAnalyzer {
                 }
             }
             if (long_transition_storage.CheckTransition(edge.getStart(), edge.getEnd())) {
-                vector<EdgeId> correct_path_neighbourhood = ExtractCorrectPathNeighbourhood(short_transition_storage,
+                vector<ScaffoldVertex> correct_path_neighbourhood = ExtractCorrectPathNeighbourhood(short_transition_storage,
                                                                                             edge.getStart(),
                                                                                             edge.getEnd(), path_radius);
-                vector<EdgeId> correct_path = ExtractCorrectPath(short_transition_storage, edge.getStart(), edge.getEnd());
+                vector<ScaffoldVertex> correct_path = ExtractCorrectPath(short_transition_storage, edge.getStart(), edge.getEnd());
                 DEBUG("Correct path neighbourhood: ")
-                for (const EdgeId& e: correct_path_neighbourhood) {
+                for (const ScaffoldVertex& e: correct_path_neighbourhood) {
                     DEBUG(e.int_id());
                 }
                 DEBUG("Correct path");
-                for (const EdgeId& e: correct_path) {
+                for (const ScaffoldVertex& e: correct_path) {
                     DEBUG(e.int_id());
                 }
                 if (correct_path_neighbourhood.empty()) {
@@ -84,27 +85,27 @@ class SubgraphExtractorAnalyzer {
     }
 
  private:
-    vector<EdgeId> ExtractCorrectPathNeighbourhood(const ContigTransitionStorage& transition_storage,
-                                                   const EdgeId& first, const EdgeId& second, size_t distance) const {
+    vector<ScaffoldVertex> ExtractCorrectPathNeighbourhood(const ContigTransitionStorage& transition_storage,
+                                                   const ScaffoldVertex& first, const ScaffoldVertex& second, size_t distance) const {
         auto forward_transition_map = ExtractTransitionMap(transition_storage);
         auto backward_transition_map = ExtractReverseTransitionMap(transition_storage);
         VERIFY(forward_transition_map.find(first) != forward_transition_map.end());
         VERIFY(forward_transition_map.find(second) != forward_transition_map.end());
-        EdgeId current = first;
-        std::deque<EdgeId> path;
+        ScaffoldVertex current = first;
+        std::deque<ScaffoldVertex> path;
         size_t counter = 0;
         const size_t counter_threshold = forward_transition_map.size();
         for (size_t i = 0; i < distance; ++i) {
-            EdgeId next = backward_transition_map.at(current);
+            ScaffoldVertex next = backward_transition_map.at(current);
             path.push_front(next);
             TRACE("Pushing " << next.int_id());
             current = next;
         }
         current = first;
         while (current != second) {
-            EdgeId next = forward_transition_map.at(current);
+            ScaffoldVertex next = forward_transition_map.at(current);
             if (forward_transition_map.find(next) == forward_transition_map.end() or next == first or counter > counter_threshold) {
-                vector<EdgeId> empty;
+                vector<ScaffoldVertex> empty;
                 return empty;
             }
             path.push_back(current);
@@ -113,46 +114,46 @@ class SubgraphExtractorAnalyzer {
             current = next;
         }
         for (size_t i = 0; i < distance; ++i) {
-            EdgeId next = forward_transition_map.at(current);
+            ScaffoldVertex next = forward_transition_map.at(current);
             path.push_back(current);
             current = next;
         }
-        vector<EdgeId> result(path.begin(), path.end());
+        vector<ScaffoldVertex> result(path.begin(), path.end());
         result.push_back(current);
         return result;
     }
 
-    vector<EdgeId> ExtractCorrectPath(const ContigTransitionStorage& transition_storage,
-                                      const EdgeId& first, const EdgeId& second) const {
+    vector<ScaffoldVertex> ExtractCorrectPath(const ContigTransitionStorage& transition_storage,
+                                      const ScaffoldVertex& first, const ScaffoldVertex& second) const {
         return ExtractCorrectPathNeighbourhood(transition_storage, first, second, 0);
     }
 
-    std::unordered_map<EdgeId, EdgeId> ExtractTransitionMap (const ContigTransitionStorage& transitions) const {
-        std::unordered_map<EdgeId, EdgeId> transition_map;
+    std::unordered_map<ScaffoldVertex, ScaffoldVertex> ExtractTransitionMap (const ContigTransitionStorage& transitions) const {
+        std::unordered_map<ScaffoldVertex, ScaffoldVertex> transition_map;
         for (const auto& transition: transitions) {
             transition_map.insert({transition.first_, transition.second_});
         }
         return transition_map;
     };
 
-    std::unordered_map<EdgeId, EdgeId> ExtractReverseTransitionMap (const ContigTransitionStorage& transitions) const {
-        std::unordered_map<EdgeId, EdgeId> transition_map;
+    std::unordered_map<ScaffoldVertex, ScaffoldVertex> ExtractReverseTransitionMap (const ContigTransitionStorage& transitions) const {
+        std::unordered_map<ScaffoldVertex, ScaffoldVertex> transition_map;
         for (const auto& transition: transitions) {
             transition_map.insert({transition.second_, transition.first_});
         }
         return transition_map;
     };
 
-    bool CheckSubgraphForCorrectPath(const SimpleGraph& graph, const vector<EdgeId>& correct_subpath) const {
+    bool CheckSubgraphForCorrectPath(const SimpleGraph& graph, const vector<ScaffoldVertex>& correct_subpath) const {
         VERIFY(correct_subpath.size() > 1);
         auto it = correct_subpath.begin();
-        EdgeId current = *it;
-        EdgeId target = correct_subpath.back();
+        ScaffoldVertex current = *it;
+        ScaffoldVertex target = correct_subpath.back();
         TRACE("Path beginning: " << current.int_id());
         TRACE("Path end: " << target.int_id());
         while (current != target) {
             TRACE("Checking current: " << current.int_id());
-            EdgeId next = *(std::next(it));
+            ScaffoldVertex next = *(std::next(it));
             TRACE("Next: " << next.int_id());
             bool next_found = false;
             if (not graph.ContainsVertex(current) or not graph.ContainsVertex(next)) {

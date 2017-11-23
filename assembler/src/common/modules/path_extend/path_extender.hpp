@@ -881,7 +881,6 @@ private:
 
     void GrowAllPaths(PathContainer& paths, PathContainer& result) {
         for (size_t i = 0; i < paths.size(); ++i) {
-            INFO("Path " << i);
             VERBOSE_POWER_T2(i, 100, "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
                 INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
@@ -1723,7 +1722,7 @@ class ScaffoldGraphExtender: public PathExtender {
         if (success) {
             DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
                                           << gap.gap << ", trash length: " << gap.trash_previous << "-" << gap.trash_current);
-            INFO("Added edge " << e.int_id());
+            DEBUG("Added edge " << e.int_id());
         }
         return success;
     }
