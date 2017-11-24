@@ -644,7 +644,6 @@ shared_ptr<ExtensionChooser> ExtendersGenerator::MakeSimpleExtensionChooser(size
     return extension_chooser;
 }
 shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender() const {
-    const auto &pset = params_.pset;
     const auto &scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
     INFO(scaffold_graph.VertexCount() << "vertices and " << scaffold_graph.EdgeCount()
                                      << "edges in scaffold graph");

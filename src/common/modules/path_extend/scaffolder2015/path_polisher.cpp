@@ -378,4 +378,37 @@ Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
     }
 }
 
+//todo so slow
+shared_ptr<LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::ExtractPredicateFromPosition(
+        const BidirectionalPath &path,
+        const size_t position,
+        const LongEdgePairGapCloserParams &params) const {
+    DEBUG("Extracting intersection between prefix and suffix");
+    BidirectionalPath* prefix = new BidirectionalPath(path.SubPath(0, position));
+    BidirectionalPath* prefix_conj = new BidirectionalPath(prefix->Conjugate());
+    BidirectionalPath* suffix = new BidirectionalPath(path.SubPath(position));
+    barcode_index::SimpleScaffoldVertexEntryExtractor simple_extractor(g_, *main_extractor_, tail_threshold_,
+                                                                       count_threshold_, length_threshold_);
+    SimpleVertexEntry intersection;
+    auto prefix_entry = simple_extractor.ExtractEntry(prefix_conj);
+    auto suffix_entry = simple_extractor.ExtractEntry(suffix);
+    std::set_intersection(prefix_entry.begin(), prefix_entry.end(), suffix_entry.begin(), suffix_entry.end(),
+                          std::inserter(intersection, intersection.end()));
+    DEBUG("Prefix entry size: " << prefix_entry.size());
+    DEBUG("Suffix entry size: " << suffix_entry.size());
+    DEBUG("Prefix length: " << prefix->Length());
+    DEBUG("Suffix length: " << suffix->Length());
+    DEBUG("Intersection size: " << intersection.size());
+    auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, main_extractor_);
+    auto predicate = make_shared<LongEdgePairGapCloserPredicate>(g_, short_edge_extractor, params,
+                                                                 prefix, suffix, intersection);
+    return predicate;
+}
+shared_ptr<ExtensionChooser> ReadCloudGapExtensionChooserFactory::CreateChooser(const BidirectionalPath &original_path,
+                                                                                    size_t position) const {
+    auto predicate = ExtractPredicateFromPosition(original_path, position, params_);
+    EdgeId target_edge = original_path.At(position);
+    auto chooser = make_shared<ReadCloudGapExtensionChooser>(g_, unique_storage_, target_edge, predicate, scan_bound_);
+    return chooser;
+}
 }

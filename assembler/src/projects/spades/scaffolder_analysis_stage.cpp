@@ -21,8 +21,8 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
     INFO("Path exists: " << fs::check_existence(path_to_reference));
     path_extend::validation::ScaffoldGraphValidator scaffold_graph_validator(graph_pack.g);
 
-    const size_t large_length_threshold = 20000;
-    const size_t small_length_threshold = 5000;
+    const size_t large_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
+    const size_t small_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
     path_extend::validation::FilteredReferencePathHelper path_helper(graph_pack);
     auto long_edge_reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, large_length_threshold);
     auto short_edge_reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, small_length_threshold);
