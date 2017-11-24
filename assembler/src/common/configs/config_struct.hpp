@@ -487,8 +487,26 @@ struct debruijn_config {
 
         tenx_resolver tenx;
 
-        size_t very_long_edge_length;
-        size_t long_edge_length;
+        size_t long_edge_length_upper_bound;
+        size_t long_edge_length_lower_bound;
+
+        double gap_closer_connection_score_threshold;
+
+        struct scaffold_graph_construction {
+          size_t count_threshold;
+          double score_threshold;
+          double connection_score_threshold;
+          size_t connection_length_threshold;
+          size_t connection_count_threshold;
+          size_t initial_distance;
+          double split_procedure_strictness;
+          size_t transitive_distance_threshold;
+          size_t path_scaffolder_tail_threshold;
+          size_t path_scaffolder_count_threshold;
+          size_t min_edge_length_for_barcode_collection;
+        };
+
+        scaffold_graph_construction scaff_con;
 
         struct scaffold_polisher {
           size_t max_scaffold_dijkstra_distance;
@@ -508,6 +526,8 @@ struct debruijn_config {
         };
 
         stats statistics;
+
+        bool path_scaffolding_on;
 
     };
 

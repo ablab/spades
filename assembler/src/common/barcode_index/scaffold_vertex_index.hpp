@@ -3,6 +3,7 @@
 #include "modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
 #include "common/assembly_graph/core/graph.hpp"
 #include "adt/iterator_range.hpp"
+#include "barcode_info_extractor.hpp"
 
 namespace barcode_index {
 
@@ -88,6 +89,8 @@ namespace barcode_index {
         using ScaffoldVertexIndexInfoExtractor::ScaffoldVertex;
 
      public:
+        virtual SimpleVertexEntry GetIntersection(const VertexEntryT &first, const VertexEntryT &second) const = 0;
+
         virtual SimpleVertexEntry GetIntersection(const ScaffoldVertex &first, const ScaffoldVertex &second) const = 0;
         /**
          * @note second is supposed to be between first and third
@@ -116,6 +119,13 @@ namespace barcode_index {
                                    const ScaffoldVertex &second,
                                    const ScaffoldVertex &third) const override {
             return GetIntersectionSize(third, GetIntersection(first, second));
+        }
+
+        SimpleVertexEntry GetIntersection(const SimpleVertexEntry &first,
+                                          const SimpleVertexEntry &second) const override {
+            SimpleVertexEntry result;
+            std::set_intersection(first.begin(), first.end(), second.begin(), second.end(), std::inserter(result, result.end()));
+            return result;
         }
 
         SimpleVertexEntry GetIntersection(const ScaffoldVertex &first, const ScaffoldVertex &second) const override {
@@ -182,6 +192,13 @@ namespace barcode_index {
         }
         size_t GetTailSize(const ScaffoldVertex &vertex) const override {
             return (index_->GetTailEntry(vertex)).size();
+        }
+
+        SimpleVertexEntry GetIntersection(const SimpleVertexEntry &first,
+                                          const SimpleVertexEntry &second) const override {
+            SimpleVertexEntry result;
+            std::set_intersection(first.begin(), first.end(), second.begin(), second.end(), std::inserter(result, result.end()));
+            return result;
         }
     };
 

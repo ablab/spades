@@ -18,7 +18,7 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
 
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     const size_t tail_threshold = params.tail_threshold_;
-    const size_t length_threshold = 1000;
+    const size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
     const size_t count_threshold = params.count_threshold_;
     auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_, tail_threshold,
                                                                      count_threshold, length_threshold,
@@ -65,7 +65,7 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
 CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::ConstructScaffoldGraphFromMinLength(size_t min_length) const {
     INFO("Constructing scaffold graph with length threshold " << min_length);
     ScaffolderParamsConstructor params_constructor;
-    auto params = params_constructor.ConstructScaffolderParams(min_length);
+    auto params = params_constructor.ConstructScaffolderParamsFromCfg(min_length);
     //fixme make coverage threshold consistent over unique storage constructions where coverage is irrelevant
     const double max_relative_coverage = 50.0;
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, max_relative_coverage);
@@ -93,7 +93,7 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
         const PathContainer &paths, const ScaffoldingUniqueEdgeStorage& unique_storage, size_t min_length) const {
     INFO("Constructing scaffold graph with length threshold " << min_length);
     ScaffolderParamsConstructor params_constructor;
-    auto params = params_constructor.ConstructScaffolderParams(min_length);
+    auto params = params_constructor.ConstructScaffolderParamsFromCfg(min_length);
     set<ScaffoldVertex> path_set;
     for (const auto& path_pair: paths) {
         if (path_pair.first->Length() >= min_length) {
@@ -103,22 +103,22 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
             path_set.insert(second_vertex);
         }
     }
-    params.tail_threshold_ = 20000;
-    params.count_threshold_ = 2;
+    params.tail_threshold_ = cfg::get().ts_res.scaff_con.path_scaffolder_tail_threshold;
+    params.count_threshold_ = cfg::get().ts_res.scaff_con.path_scaffolder_count_threshold;
     return ConstructScaffoldGraphFromStorage(params, unique_storage, path_set, false, true);
 }
 
-ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParams(size_t min_length) {
+ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParamsFromCfg(size_t min_length) const {
     size_t length_threshold = min_length;
     size_t tail_threshold = min_length;
-    size_t count_threshold = 2;
-    double score_threshold = 3.0;
-    double connection_score_threshold = 0.15;
-    size_t connection_length_threshold = 50;
-    size_t connection_count_threshold = 1;
-    size_t initial_distance = 100000;
-    double split_procedure_strictness = 0.85;
-    size_t transitive_distance_threshold = 3;
+    size_t count_threshold = cfg::get().ts_res.scaff_con.count_threshold;
+    double score_threshold = cfg::get().ts_res.scaff_con.score_threshold;
+    double connection_score_threshold = cfg::get().ts_res.scaff_con.connection_score_threshold;
+    size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
+    size_t connection_count_threshold = cfg::get().ts_res.scaff_con.connection_count_threshold;
+    size_t initial_distance = cfg::get().ts_res.scaff_con.initial_distance;
+    double split_procedure_strictness = cfg::get().ts_res.scaff_con.split_procedure_strictness;
+    size_t transitive_distance_threshold = cfg::get().ts_res.scaff_con.transitive_distance_threshold;
     ScaffolderParams result(length_threshold, tail_threshold, count_threshold, score_threshold,
                             connection_score_threshold, connection_length_threshold, connection_count_threshold,
                             initial_distance, split_procedure_strictness, transitive_distance_threshold);
@@ -143,7 +143,6 @@ path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_, size_t
     transitive_distance_threshold_(transitive_distance_threshold_) {}
 
 ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorage() const {
-    //fixme move to configs
     const size_t num_threads = cfg::get().max_threads;
     auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     CloudScaffoldGraphConstuctor constructor(num_threads, gp_, extractor);
@@ -243,7 +242,7 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> CompositeConnectionConstruc
             break;
         }
     }
-    VERIFY_MSG(paired_lib_index.is_initialized(), "GemCode library was not found");
+    VERIFY_MSG(paired_lib_index.is_initialized(), "GemCode paired library was not found");
 
     //fixme replace with insert size
     const size_t prefix_length = 500;
@@ -278,4 +277,13 @@ CompositeConnectionConstructorCaller::CompositeConnectionConstructorCaller(const
                                                                            const size_t max_threads_)
     : gp_(gp_), main_extractor_(main_extractor), long_edge_extractor_(barcode_extractor_),
       unique_storage_(unique_storage_), max_threads_(max_threads_) {}
+LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParamsFromCfg(bool normalize_using_cov) const {
+
+    double connection_score_threshold = cfg::get().ts_res.scaff_con.connection_score_threshold;
+    size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
+    size_t connection_count_threshold = cfg::get().ts_res.scaff_con.connection_count_threshold;
+    size_t tail_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_tail_threshold;
+    return LongEdgePairGapCloserParams(connection_count_threshold, tail_threshold, connection_score_threshold,
+                                       connection_length_threshold, normalize_using_cov);
+}
 }

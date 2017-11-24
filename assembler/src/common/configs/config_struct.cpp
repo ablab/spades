@@ -486,6 +486,22 @@ void load(debruijn_config::read_cloud_resolver::scaffold_polisher& scaff_pol,
     load(scaff_pol.path_cluster_score_threshold, pt, "path_cluster_score_threshold");
 }
 
+void load(debruijn_config::read_cloud_resolver::scaffold_graph_construction& scaff_con,
+          boost::property_tree::ptree const &pt, bool /*complete*/) {
+    using config_common::load;
+    load(scaff_con.count_threshold, pt, "count_threshold");
+    load(scaff_con.score_threshold, pt, "score_threshold");
+    load(scaff_con.connection_score_threshold, pt, "connection_score_threshold");
+    load(scaff_con.connection_length_threshold, pt, "connection_length_threshold");
+    load(scaff_con.connection_count_threshold, pt, "connection_count_threshold");
+    load(scaff_con.initial_distance, pt, "initial_distance");
+    load(scaff_con.split_procedure_strictness, pt, "split_strictness");
+    load(scaff_con.transitive_distance_threshold, pt, "transitive_distance_threshold");
+    load(scaff_con.path_scaffolder_tail_threshold, pt, "path_scaffolder_tail_threshold");
+    load(scaff_con.path_scaffolder_count_threshold, pt, "path_scaffolder_count_threshold");
+    load(scaff_con.min_edge_length_for_barcode_collection, pt, "min_edge_length_for_barcode_collection");
+}
+
 void load(debruijn_config::read_cloud_resolver& ts_res,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
@@ -505,9 +521,12 @@ void load(debruijn_config::read_cloud_resolver& ts_res,
     load(ts_res.read_cloud_resolution_on, pt, "read_cloud_resolution_on");
     load(ts_res.tenx, pt, "tenx_resolver");
     load(ts_res.scaff_pol, pt, "scaffold_polisher");
-    load(ts_res.very_long_edge_length, pt, "very_long_edge_length");
-    load(ts_res.long_edge_length, pt, "long_edge_length");
+    load(ts_res.scaff_con, pt, "scaffold_graph_construction");
+    load(ts_res.long_edge_length_upper_bound, pt, "long_edge_length_upper_bound");
+    load(ts_res.long_edge_length_lower_bound, pt, "long_edge_length_lower_bound");
     load(ts_res.statistics, pt, "statistics");
+    load(ts_res.path_scaffolding_on, pt, "path_scaffolding_on");
+    load(ts_res.gap_closer_connection_score_threshold, pt, "gap_closer_connection_score_threshold");
 }
 
 void load(bwa_aligner& bwa,
