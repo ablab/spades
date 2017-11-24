@@ -253,7 +253,7 @@ namespace read_cloud_statistics {
             INFO("Reference path: " << reference_path);
             INFO("Cloud contig path: " << cloud_contigs_path);
 
-            const size_t min_length = 20000;
+            const size_t min_length = 5000;
             path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
             path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
             unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
@@ -266,7 +266,7 @@ namespace read_cloud_statistics {
             auto filtered_reference_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths);
 
             path_extend::ScaffolderParamsConstructor params_constructor;
-            auto params = params_constructor.ConstructScaffolderParams(min_length);
+            auto params = params_constructor.ConstructScaffolderParamsFromCfg(min_length);
             const string initial_name = "Initial scaffold graph";
             const string score_name = "Score scaffold graph";
             const string composite_connection_name = "Composite connection scaffold graph";
@@ -300,8 +300,8 @@ namespace read_cloud_statistics {
         }
 
         void AnalyzeScaffoldGapCloser(const string& stats_base_path) {
-            const size_t large_length_threshold = cfg::get().ts_res.very_long_edge_length;
-            const size_t small_length_threshold = cfg::get().ts_res.long_edge_length;
+            const size_t large_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
+            const size_t small_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
             const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
             path_extend::validation::FilteredReferencePathHelper helper(gp_);
             auto short_reference_paths = helper.GetFilteredReferencePathsFromLength(path_to_reference,
@@ -459,7 +459,7 @@ namespace read_cloud_statistics {
 
             INFO("Constructing scaffold graph");
             path_extend::ScaffolderParamsConstructor params_constructor;
-            auto scaffolding_params = params_constructor.ConstructScaffolderParams(min_length);
+            auto scaffolding_params = params_constructor.ConstructScaffolderParamsFromCfg(min_length);
             const size_t scaffolding_distance = scaffolding_params.initial_distance_;
             auto scaffold_helper = scaffold_graph_utils::ScaffoldGraphConstructor(large_unique_storage,
                                                                                   scaffolding_distance,
