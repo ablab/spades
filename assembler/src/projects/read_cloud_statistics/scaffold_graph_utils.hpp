@@ -115,7 +115,7 @@ namespace scaffold_graph_utils {
                                                                                         long_edge_extractor, params);
             size_t max_threads = cfg::get().max_threads;
             path_extend::scaffold_graph::PredicateScaffoldGraphConstructor constructor(graph, scaffold_graph,
-                                                                                       predicate, max_threads);
+                                                                                       predicate, 1);
             return *(constructor.Construct());
         }
 

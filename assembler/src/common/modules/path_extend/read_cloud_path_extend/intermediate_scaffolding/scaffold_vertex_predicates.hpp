@@ -39,11 +39,11 @@ class AndChecker: public ScaffoldVertexPredicate {
 };
 
 struct LongEdgePairGapCloserParams {
-  const size_t count_threshold_;
-  const size_t length_normalizer_;
-  const double raw_score_threshold_;
-  const size_t edge_length_threshold_;
-  const bool normalize_using_cov_;
+  size_t count_threshold_;
+  size_t length_normalizer_;
+  double raw_score_threshold_;
+  size_t edge_length_threshold_;
+  bool normalize_using_cov_;
 
   LongEdgePairGapCloserParams(size_t count_threshold_,
                               size_t length_normalizer_,

@@ -668,8 +668,8 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
     return new_small_scaffold_graph;
 }
 CloudSubgraphExtractorParams ScaffoldGraphGapCloserParamsConstructor::ConstructSubgraphExtractorParamsFromConfig() {
-    const size_t large_length_threshold = cfg::get().ts_res.very_long_edge_length;
-    const size_t small_length_threshold = cfg::get().ts_res.long_edge_length;
+    const size_t large_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
+    const size_t small_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
     const size_t distance_threshold = cfg::get().ts_res.scaff_pol.max_scaffold_dijkstra_distance;
     const double share_threshold = cfg::get().ts_res.scaff_pol.share_threshold;
     const size_t count_threshold = cfg::get().ts_res.scaff_pol.read_count_threshold;

@@ -174,7 +174,6 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
 
     for (const auto& vertex: scaffold_vertices_) {
         graph_->AddVertex(vertex);
-        INFO("Adding vertex " << vertex.int_id());
     }
     size_t counter = 0;
     const size_t block_size = unique_storage_.size() / 10;

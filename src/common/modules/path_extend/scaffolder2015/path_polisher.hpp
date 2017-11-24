@@ -13,6 +13,8 @@
 #include "assembly_graph/paths/path_processor.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
+#include "assembly_graph/core/basic_graph_stats.hpp"
+#include "barcode_index/scaffold_vertex_index_builder.hpp"
 #include "modules/path_extend/paired_library.hpp"
 #include "modules/path_extend/path_extender.hpp"
 
@@ -82,32 +84,43 @@ public:
 };
 
 class ReadCloudGapExtensionChooserFactory : public GapExtensionChooserFactory {
-    typedef shared_ptr <barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr;
+    const Graph& g_;
     const ScaffoldingUniqueEdgeStorage& unique_storage_;
-    barcode_extractor_ptr extractor_;
-public:
-    ReadCloudGapExtensionChooserFactory(const Graph& g, const ScaffoldingUniqueEdgeStorage& unique_storage,
-                                        barcode_extractor_ptr extractor) :
-            GapExtensionChooserFactory(g), unique_storage_(unique_storage), extractor_(extractor) {}
+    shared_ptr <barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor_;
+    typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
+    size_t tail_threshold_;
+    size_t count_threshold_;
+    size_t length_threshold_;
+    const LongEdgePairGapCloserParams params_;
+    size_t scan_bound_;
+ public:
+    ReadCloudGapExtensionChooserFactory(const Graph &g,
+                                        const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                        const shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor_,
+                                        size_t tail_threshold_,
+                                        size_t count_threshold_,
+                                        size_t length_threshold_,
+                                        const LongEdgePairGapCloserParams &params_,
+                                        size_t scan_bound_)
+        : GapExtensionChooserFactory(g),
+          g_(g),
+          unique_storage_(unique_storage_),
+          main_extractor_(main_extractor_),
+          tail_threshold_(tail_threshold_),
+          count_threshold_(count_threshold_),
+          length_threshold_(length_threshold_),
+          params_(params_),
+          scan_bound_(scan_bound_) {}
+
     virtual ~ReadCloudGapExtensionChooserFactory() {}
-    virtual shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& original_path, size_t position) const override {
+    shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& original_path, size_t position) const override;
 
-        const EdgeId target_edge = FindUniqueAfterPosition(original_path, position);
-//        const EdgeId next_edge = original_path.At(position);
-        auto extension_chooser_ptr = std::make_shared<ReadCloudGapExtensionChooser>(this->g(), extractor_, target_edge,
-                                                                                    unique_storage_);
-        return extension_chooser_ptr;
-    }
+ private:
 
-private:
-    EdgeId FindUniqueAfterPosition(const BidirectionalPath& path, const size_t position) const {
-        for (size_t i = position; i != path.Size(); ++i) {
-            if (unique_storage_.IsUnique(path.At(i))) {
-                return path.At(i);
-            }
-        }
-        return EdgeId(0);
-    }
+    shared_ptr<LongEdgePairGapCloserPredicate> ExtractPredicateFromPosition(const BidirectionalPath &path, const size_t position,
+                                                                            const LongEdgePairGapCloserParams &params) const;
+
+    DECL_LOGGER("ReadCloudGapExtensionChooserFactory");
 };
 
 class GapExtenderFactory {
