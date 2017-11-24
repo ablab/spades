@@ -3,8 +3,8 @@
 
 void debruijn_graph::ScaffoldGraphConstructionStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
     INFO("Scaffold graph construction started");
-    const size_t small_length_threshold = 5000;
-    const size_t large_length_threshold = 20000;
+    const size_t small_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
+    const size_t large_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
     path_extend::ScaffoldGraphStorageConstructor storage_constructor(small_length_threshold, large_length_threshold, graph_pack);
     INFO("Constructing storage");
     auto storage = storage_constructor.ConstructStorage();

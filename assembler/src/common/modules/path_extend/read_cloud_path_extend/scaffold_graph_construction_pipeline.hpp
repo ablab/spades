@@ -32,7 +32,9 @@ namespace path_extend {
 
     class ScaffolderParamsConstructor {
      public:
-        ScaffolderParams ConstructScaffolderParams(size_t length_threshold);
+        ScaffolderParams ConstructScaffolderParamsFromCfg(size_t length_threshold) const;
+
+        LongEdgePairGapCloserParams ConstructGapCloserParamsFromCfg(bool normalize_using_cov) const;
     };
 
     class IterativeScaffoldGraphConstructorCaller {

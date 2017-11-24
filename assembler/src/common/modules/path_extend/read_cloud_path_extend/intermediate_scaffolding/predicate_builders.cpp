@@ -146,7 +146,7 @@ PathClusterScoreFunctionBuilder::PathClusterScoreFunctionBuilder(
       barcode_extractor_ptr_(barcode_extractor_),
       initial_cluster_storage_(initial_cluster_storage_),
       linkage_distance_(linkage_distance_) {}
-double TrivialScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge) const {
+double TrivialScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &/*edge*/) const {
     return 1.0;
 }
 shared_ptr<ScaffoldEdgeScoreFunction> TrivialScoreFunctionBuilder::GetScoreFunction(const GapCloserScoreFunctionBuilder::SimpleTransitionGraph &/*graph*/,
