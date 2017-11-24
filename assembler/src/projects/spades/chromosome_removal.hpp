@@ -31,11 +31,15 @@ private:
     void PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bound,
                                             std::function<void(typename Graph::EdgeId)> removal_handler = 0);
     void CompressAll(Graph &g);
+
     double RemoveEdgesByList(conj_graph_pack &gp, std::string &s);
     void MetaChromosomeRemoval(conj_graph_pack &gp);
     void CoverageFilter(conj_graph_pack &gp, double coverage_cutoff, set<EdgeId> &white_list);
 
 
     DECL_LOGGER("ChromosomeRemoval");
+
+
+    void ReferenceBasedRemoveChromosomal(conj_graph_pack &gp);
 };
 }

@@ -11,7 +11,7 @@
 #include "chromosome_removal.hpp"
 #include "math/xmath.h"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
-
+#include "pipeline/config_struct.cpp"
 
 namespace debruijn_graph {
 using namespace std;
@@ -174,6 +174,26 @@ void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bo
     }
     gp.EnsureIndex();
 }
+void ChromosomeRemoval::ReferenceBasedRemoveChromosomal(conj_graph_pack &gp) {
+    EdgesPositionHandler<Graph> edge_pos(gp.g, 0, 0);
+    visualization::position_filler::PosFiller<Graph> pos_filler(gp.g, MapperInstance(gp), edge_pos);
+
+    for (const auto &chr: gp.genome.GetChromosomes()) {
+        pos_filler.Process(chr.sequence, "0_" + chr.name);
+        pos_filler.Process(ReverseComplement(chr.sequence), "1_" + chr.name);
+    }
+    size_t deleted = 0;
+    for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+
+        if (edge_pos.GetEdgePositions(*iter).size() == 0) {
+            deleted++;
+            gp.g.DeleteEdge(*iter);
+        }
+        DEBUG(*iter << " " << edge_pos.GetEdgePositions(*iter).size());
+    }
+    CompressAll(gp.g);
+    INFO("deleted with reference: " << deleted <<" edges");
+}
 
 void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
 //For circular plasmid detection
@@ -280,6 +300,18 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     std::string additional_list = cfg::get().pd->remove_list;
     bool use_chromosomal_list = (additional_list != "");
 
+
+    if (cfg::get().ds.reference_genome_filename != "") {
+        debruijn_graph::config::dataset tmp_dataset;
+        tmp_dataset.reference_genome_filename = cfg::get().ds.reference_genome_filename;
+        DEBUG("loading reference.. " <<  tmp_dataset.reference_genome_filename);
+        config::load_reference_genome(tmp_dataset, cfg::get().input_dir);
+        gp.genome = GenomeStorage(tmp_dataset.reference_genome);
+        INFO("Removing all edges with no genomic sequence");
+        ReferenceBasedRemoveChromosomal(gp);
+        return ;
+    }
+
     double chromosome_coverage;
     if (cfg::get().pd->meta_mode) {
         if (use_chromosomal_list)
@@ -291,6 +323,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     else
         chromosome_coverage = RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length,
                                                      cfg::get().pd->relative_coverage);
+
     PlasmidSimplify(gp, cfg::get().pd->long_edge_length);
 //TODO:: reconsider and move somewhere(not to config)
     size_t max_iteration_count = 30;
