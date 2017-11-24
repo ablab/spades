@@ -31,7 +31,6 @@ void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
 
     ScaffoldGraphExtractor extractor;
     auto univocal_edges = extractor.ExtractUnivocalEdges(path_scaffold_graph);
-    scaffold_graph::PathGetter path_getter;
     INFO("Found " << univocal_edges.size() << " univocal edges");
     MergeUnivocalEdges(univocal_edges);
 }
