@@ -375,16 +375,16 @@ public:
 
     OneReadMapping AddGapDescriptions(const vector<typename ClustersSet::iterator> &start_clusters,
                                       const vector<typename ClustersSet::iterator> &end_clusters,
-                                      const vector<vector<EdgeId>> &sortedEdges, const Sequence &s,
+                                      const vector<vector<EdgeId>> &sorted_edges, const Sequence &s,
                                       const vector<bool> &block_gap_closer) const {
         DEBUG("adding gaps between subreads");
         vector<GapDescription> illumina_gaps;
-        for (size_t i = 0; i + 1 < sortedEdges.size() ; i++) {
+        for (size_t i = 0; i + 1 < sorted_edges.size() ; i++) {
             if (block_gap_closer[i])
                 continue;
             size_t j = i + 1;
-            EdgeId before_gap = sortedEdges[i][sortedEdges[i].size() - 1];
-            EdgeId after_gap = sortedEdges[j][0];
+            EdgeId before_gap = sorted_edges[i][sorted_edges[i].size() - 1];
+            EdgeId after_gap = sorted_edges[j][0];
 //do not add "gap" for rc-jumping
             if (before_gap != after_gap && before_gap != g_.conjugate(after_gap)) {
                 if (TopologyGap(before_gap, after_gap, true)) {
@@ -409,13 +409,14 @@ public:
                 }
             }
         }
-        return OneReadMapping(sortedEdges, illumina_gaps, vector<size_t>(0));
+        return OneReadMapping(sorted_edges, illumina_gaps, vector<size_t>(0));
     }
 
-    void ProcessCluster(vector<typename ClustersSet::iterator> &cur_cluster,
+    void ProcessCluster(const Sequence &s,
+                        vector<typename ClustersSet::iterator> &cur_cluster,
                         vector<typename ClustersSet::iterator> &start_clusters,
                         vector<typename ClustersSet::iterator> &end_clusters,
-                        vector<vector<EdgeId>> &sortedEdges, const Sequence &s,
+                        vector<vector<EdgeId>> &sorted_edges,
                         vector<bool> &block_gap_closer) const {
         sort(cur_cluster.begin(), cur_cluster.end(),
              [](const typename ClustersSet::iterator& a, const typename ClustersSet::iterator& b) {
@@ -441,7 +442,7 @@ public:
                         }
                         start_clusters.push_back(*cur_cluster_start);
                         end_clusters.push_back(*iter);
-                        sortedEdges.push_back(cur_sorted);
+                        sorted_edges.push_back(cur_sorted);
                         //Blocking gap closing inside clusters;
                         block_gap_closer.push_back(true);
                     }
@@ -463,7 +464,7 @@ public:
         vector<int> colors = GetWeightedColors(mapping_descr);
         size_t len =  mapping_descr.size();
         vector<size_t> real_length;
-        vector<vector<EdgeId>> sortedEdges;
+        vector<vector<EdgeId>> sorted_edges;
         vector<bool> block_gap_closer;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
         vector<int> used(len);
@@ -485,10 +486,10 @@ public:
                         used[j] = 1;
                     }
                 }
-                ProcessCluster(cur_cluster, start_clusters, end_clusters, sortedEdges, s, block_gap_closer);
+                ProcessCluster(s, cur_cluster, start_clusters, end_clusters, sorted_edges, block_gap_closer);
             }
         }
-        return AddGapDescriptions(start_clusters, end_clusters, sortedEdges, s, block_gap_closer);
+        return AddGapDescriptions(start_clusters, end_clusters, sorted_edges, s, block_gap_closer);
     }
 
     std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a,
