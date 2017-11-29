@@ -23,7 +23,7 @@
 namespace pacbio {
 enum {
     UNDEF_COLOR = -1,
-    DELETED_COLOR = - 2
+    DELETED_COLOR = -2
 };
 
 struct OneReadMapping {
@@ -38,16 +38,38 @@ struct OneReadMapping {
 
 };
 
+inline int StringDistance(const string &a, const string &b) {
+    int a_len = (int) a.length();
+    int b_len = (int) b.length();
+    int d = min(a_len / 3, b_len / 3);
+    d = max(d, 10);
+    if (a_len == 0 || b_len == 0) {
+        if (d > 10) {
+            INFO ("zero length path , lengths " << a_len << " and " << b_len);
+            return STRING_DIST_INF;
+        } else {
+            return d;
+        }
+    }
+
+    DEBUG(a_len << " " << b_len << " " << d);
+    edlib::EdlibAlignResult result = edlib::edlibAlign(a.c_str(), a_len, b.c_str(), b_len
+            , edlib::edlibNewAlignConfig(2*d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
+                                         NULL, 0));
+    int score = STRING_DIST_INF;
+    if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
+        score = result.editDistance;
+    }
+    edlib::edlibFreeAlignResult(result);
+    return score;
+}
+
 template<class Graph>
 class PacBioMappingIndex {
 public:
-    typedef map<typename Graph::EdgeId, vector<MappingInstance> > MappingDescription;
-    typedef pair<typename Graph::EdgeId, vector<MappingInstance> > ClusterDescription;
     typedef set<KmerCluster<Graph> > ClustersSet;
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> Index;
-    typedef typename Index::KeyWithHash KeyWithHash;
 
 private:
     DECL_LOGGER("PacIndex")
@@ -55,13 +77,9 @@ private:
     const Graph &g_;
 
     static const int LONG_ALIGNMENT_OVERLAP = 300;
-//Debug stasts
-    int good_follow = 0;
-    int half_bad_follow = 0;
-    int bad_follow = 0;
 
-    mutable map<pair<VertexId, VertexId>, size_t> distance_cashed;
-    size_t read_count;
+    mutable map<pair<VertexId, VertexId>, size_t> distance_cashed_;
+    size_t read_count_;
     debruijn_graph::config::debruijn_config::pacbio_processor pb_config_;
 
     alignment::BWAReadMapper<Graph> bwa_mapper_;
@@ -76,11 +94,9 @@ public:
               //minimap_mapper(g, out_dir){
         DEBUG("PB Mapping Index construction started");
         DEBUG("Index constructed");
-        read_count = 0;
+        read_count_ = 0;
     }
-    ~PacBioMappingIndex(){
-        DEBUG("good/ugly/bad counts:" << good_follow << " "<<half_bad_follow << " " << bad_follow);
-    }
+    ~PacBioMappingIndex(){}
 
     bool similar_in_graph(const MappingInstance &a, const MappingInstance &b,
                  int shift = 0) const {
@@ -135,7 +151,7 @@ public:
             return res;
         }
         omnigraph::MappingPath<EdgeId> mapped_path = FilterSpuriousAlignments(bwa_mapper_.MapSequence(s), s.size());
-        TRACE(read_count << " read_count");
+        TRACE(read_count_ << " read_count_");
         TRACE("BWA ended")
         DEBUG(mapped_path.size() <<"  clusters");
         for (const auto &e_mr : mapped_path) {
@@ -164,11 +180,11 @@ public:
         pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
         size_t result = size_t (-1);
         bool not_found = true;
-        auto distance_it = distance_cashed.begin();
+        auto distance_it = distance_cashed_.begin();
 #pragma omp critical(pac_index)
         {
-            distance_it = distance_cashed.find(vertex_pair);
-            not_found = (distance_it == distance_cashed.end());
+            distance_it = distance_cashed_.find(vertex_pair);
+            not_found = (distance_it == distance_cashed_.end());
         }
         if (not_found) {
             omnigraph::DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
@@ -228,7 +244,7 @@ public:
                     e_add = tmp.substr(0, cur_first_index.edge_position);
                     pair<int, int> limits = GetPathLimits(**prev_iter, **iter, (int) s_add.length(), (int) e_add.length());
                     if (limits.first == -1) {
-                        DEBUG ("Failed to find Path limints");
+                        DEBUG ("Failed to find Path limits");
                         res.push_back(cur_sorted);
                         cur_sorted.clear();
                         prev_edge = EdgeId(0);
@@ -244,8 +260,8 @@ public:
                         prev_edge = EdgeId(0);
                         continue;
                     }
-                    for (auto j_iter = intermediate_path.begin(); j_iter != intermediate_path.end(); j_iter++) {
-                        cur_sorted.push_back(*j_iter);
+                    for (EdgeId edge: intermediate_path) {
+                        cur_sorted.push_back(edge);
                     }
                 }
             }
@@ -266,10 +282,10 @@ public:
         return res;
     }
 
-    vector<vector<int>> FillConnectionsTable (const ClustersSet &mapping_descr) const{
+    vector<vector<bool>> FillConnectionsTable (const ClustersSet &mapping_descr) const{
         size_t len =  mapping_descr.size();
         TRACE("getting colors, table size "<< len);
-        vector<vector<int> > cons_table(len);
+        vector<vector<bool>> cons_table(len);
         for (size_t i = 0; i < len; i++) {
             cons_table[i].resize(len);
             cons_table[i][i] = 0;
@@ -486,7 +502,7 @@ public:
         int path_min_len = max(int(floor((seq_len - int(g_.k())) * pb_config_.path_limit_pressing)), 0);
         int path_max_len = (int) ((double) (seq_len + g_.k() * 2) * pb_config_.path_limit_stretching);
         if (seq_len < 0) {
-            INFO("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
+            DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
             if (path_max_len < 0)
             return std::make_pair(-1, -1);
         }
@@ -495,20 +511,19 @@ public:
         return std::make_pair(path_min_len, path_max_len);
     }
 
-//0 - No, 1 - Yes
-    int IsConsistent(const KmerCluster<Graph> &a,
+
+    bool IsConsistent(const KmerCluster<Graph> &a,
                      const KmerCluster<Graph> &b) const {
         EdgeId a_edge = a.edgeId;
         EdgeId b_edge = b.edgeId;
         size_t a_id =  g_.int_id(a_edge);
         size_t b_id =  g_.int_id(b_edge);
         DEBUG("clusters on " << a_id << " and " << b_id );
-//TODO:
-//Is this check useful?
+//TODO: Is this check useful?
         if (a.sorted_positions[a.last_trustable_index].read_position + (int) pb_config_.max_path_in_dijkstra <
             b.sorted_positions[b.first_trustable_index].read_position) {
             DEBUG ("Clusters are too far in read");
-            return 0;
+            return false;
         }
         VertexId start_v = g_.EdgeEnd(a_edge);
         int addition = int(g_.length(a_edge));
@@ -517,11 +532,11 @@ public:
 
         size_t result = size_t(-1);
         bool not_found = true;
-        auto distance_it = distance_cashed.begin();
+        auto distance_it = distance_cashed_.begin();
 #pragma omp critical(pac_index)
         {
-            distance_it = distance_cashed.find(vertex_pair);
-            not_found = (distance_it == distance_cashed.end());
+            distance_it = distance_cashed_.find(vertex_pair);
+            not_found = (distance_it == distance_cashed_.end());
         }
         if (not_found) {
             omnigraph::DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
@@ -532,7 +547,7 @@ public:
             }
 #pragma omp critical(pac_index)
             {
-                distance_it = distance_cashed.insert({vertex_pair, result}).first;
+                distance_it = distance_cashed_.insert({vertex_pair, result}).first;
             }
         } else {
             TRACE("taking from cashed");
@@ -541,24 +556,23 @@ public:
         result = distance_it->second;
         DEBUG (result);
         if (result == size_t(-1)) {
-            return 0;
+            return false;
         }
-        //TODO: Serious optimization possible
         if (similar_in_graph(a.sorted_positions[1], b.sorted_positions[0], (int)result + addition)) {
             DEBUG(" similar! ")
             return 1;
         } else {
 //FIXME: reconsider this condition! i.e only one large range? That may allow to decrease the bwa length cutoff
-            if  (a.size > LONG_ALIGNMENT_OVERLAP && b.size > LONG_ALIGNMENT_OVERLAP && - a.sorted_positions[1].edge_position +
-                                                         (int)result + addition + b.sorted_positions[0].edge_position  <=
-                                                 b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * int(g_.k())) {
+            if  (a.size > LONG_ALIGNMENT_OVERLAP && b.size > LONG_ALIGNMENT_OVERLAP &&
+                 - a.sorted_positions[1].edge_position +  (int)result + addition + b.sorted_positions[0].edge_position  <=
+                        b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * int(g_.k())) {
                 DEBUG("overlapping range magic worked, " << - a.sorted_positions[1].edge_position +
-                                                           (int)result + addition + b.sorted_positions[0].edge_position  << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k());
+                                                           (int)result + addition + b.sorted_positions[0].edge_position
+                      << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k());
                 DEBUG("Ranges:" << a.str(g_) << " " << b.str(g_) <<" llength and dijkstra shift :" << addition << " " << result);
-                return 1;
-
+                return true;
             }
-            return 0;
+            return false;
         }
     }
 
@@ -588,7 +602,7 @@ public:
         TRACE("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
         int s_len = int(s.size());
         if (end_pos < start_pos) {
-            WARN ("modifying limits because of some bullshit magic, seq length 0")
+            DEBUG ("modifying limits because of some bullshit magic, seq length 0")
             end_pos = start_pos;
         }
         string seq_string = s.Subseq(start_pos, min(end_pos + 1, s_len)).str();
@@ -604,6 +618,7 @@ public:
             DEBUG("Gap is too large");
             return vector<EdgeId>(0);
         }
+        bool additional_debug = (paths.size() > 1 && paths.size() < 10);
         for (size_t i = 0; i < paths.size(); i++) {
             DEBUG("path len "<< paths[i].size());
             if (paths[i].size() == 0) {
@@ -611,8 +626,9 @@ public:
             }
             string cur_string = s_add + PathToString(paths[i]) + e_add;
             TRACE("cur_string: " << cur_string <<"\n seq_string " << seq_string);
+            int cur_score = StringDistance(cur_string, seq_string);
             //DEBUG only
-            if (paths.size() > 1 && paths.size() < 10) {
+            if (additional_debug) {
                 TRACE("candidate path number "<< i << " , len " << cur_string.length());
                 TRACE("graph candidate: " << cur_string);
                 TRACE("in pacbio read: " << seq_string);
@@ -620,9 +636,6 @@ public:
                         ++j_iter) {
                     DEBUG(g_.int_id(*j_iter));
                 }
-            }
-            int cur_score = StringDistance(cur_string, seq_string);
-            if (paths.size() > 1 && paths.size() < 10) {
                 DEBUG("score: "<< cur_score);
             }
             if (cur_score < best_score) {
@@ -640,7 +653,7 @@ public:
             DEBUG (paths.size() << " paths available");
             return vector<EdgeId>(0);
         }
-        if (paths.size() > 1 && paths.size() < 10) {
+        if (additional_debug) {
             TRACE("best score found! Path " <<best_path_ind <<" score "<< best_score);
         }
         return paths[best_path_ind];

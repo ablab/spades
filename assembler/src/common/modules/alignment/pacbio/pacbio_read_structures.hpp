@@ -19,14 +19,6 @@ namespace pacbio {
 static const int STRING_DIST_INF = 1e8;
 typedef omnigraph::GapDescription<debruijn_graph::Graph> GapDescription;
 
-template<class T>
-struct pair_iterator_less {
-    bool operator ()(pair<size_t, T> const& a, pair<size_t, T> const& b) const {
-        return (a.first < b.first);
-    }
-};
-
-
 struct MappingInstance {
     //both positions g_.k() based
     int edge_position;
@@ -77,16 +69,6 @@ struct KmerCluster {
     vector<MappingInstance> sorted_positions;
     int size;
 
-    KmerCluster(EdgeId e, const vector<MappingInstance>& v) {
-        last_trustable_index = 0;
-        first_trustable_index = 0;
-        average_read_position = 0;
-        edgeId = e;
-        size = (int) v.size();
-        sorted_positions = v;
-        FillTrustableIndeces();
-    }
-
     KmerCluster(EdgeId e, size_t edge_start_pos, size_t edge_end_pos, size_t read_start_pos, size_t read_end_pos) {
         last_trustable_index = 1;
         first_trustable_index = 0;
@@ -108,56 +90,13 @@ struct KmerCluster {
         return (b.sorted_positions[b.last_trustable_index].read_position < sorted_positions[first_trustable_index].read_position);
     }
 
-    void FillTrustableIndeces() {
-        //ignore non-unique kmers for distance determination
-        int first_unique_ind = 0;
-        while (first_unique_ind != size - 1 && !(sorted_positions[first_unique_ind].IsUnique())) {
-            first_unique_ind += 1;
-        }
-        int last_unique_ind = size - 1;
-        while (last_unique_ind != 0 && !(sorted_positions[last_unique_ind].IsUnique())) {
-            last_unique_ind -= 1;
-        }
-        last_trustable_index = last_unique_ind;
-        first_trustable_index = first_unique_ind;
-        double tmp_read_position = 0, tmp_edge_position = 0;;
-        vector<int> diffs;
-        for (auto mp : sorted_positions) {
-           tmp_read_position += mp.read_position;
-           tmp_edge_position += mp.edge_position;
-           diffs.push_back(mp.read_position - mp.edge_position);
-        }
-        sort(diffs.begin(), diffs.end());
-        int median_diff = diffs[size/2];
-
-        tmp_read_position /= size;
-        tmp_edge_position /= size;
-        average_read_position = (size_t)trunc(tmp_read_position);
-        average_edge_position = (size_t)trunc(tmp_edge_position);
-
-        if (size > 10) {
-            int max_debug_size = 10;
-            vector<int> distances(max_debug_size);
-            for (int df: diffs) {
-                int ind = abs(df - median_diff)/ 50;
-                if (ind > max_debug_size - 1) ind = max_debug_size - 1;
-                distances [ind] ++;
-            }
-            if (size > 100 || distances[0] * 5 < size * 4) {
-                stringstream s;
-
-                for (int d: distances) {
-                    s << d << " ";
-                }
-//                INFO(s.str());
-
-            }
-        }
-    }
-
     string str(const Graph &g) const{
         stringstream s;
-        s << "Edge: " << g.int_id(edgeId) << " on edge: " << sorted_positions[first_trustable_index].edge_position<< " - "  << sorted_positions[last_trustable_index].edge_position<< ";on read: " << sorted_positions[first_trustable_index].read_position<< " - "  << sorted_positions[last_trustable_index].read_position<< ";size "<< size;
+        s << "Edge: " << g.int_id(edgeId) << " on edge: " << sorted_positions[first_trustable_index].edge_position<<
+                " - "  << sorted_positions[last_trustable_index].edge_position<< ";on read: "
+        << sorted_positions[first_trustable_index].read_position<< " - "
+        << sorted_positions[last_trustable_index].read_position<< ";size "<< size;
+
         return s.str();
     }
 private:
@@ -165,7 +104,8 @@ private:
     ;
 };
 
-struct StatsCounter{
+class StatsCounter{
+public:
     map<size_t,size_t> path_len_in_edges;
     vector<size_t> subreads_length;
     size_t total_len ;
@@ -202,7 +142,7 @@ struct StatsCounter{
         }
     }
 
-    void report() const {
+    void Report() const {
         size_t total = 0;
         for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter){
             total += iter->second;
@@ -220,32 +160,5 @@ struct StatsCounter{
 private:
     DECL_LOGGER("StatsCounter");
 };
-
-inline int StringDistance(string &a, string &b) {
-    int a_len = (int) a.length();
-    int b_len = (int) b.length();
-    int d = min(a_len / 3, b_len / 3);
-    d = max(d, 10);
-    if (a_len == 0 || b_len == 0) {
-        if (d > 10) {
-            INFO ("zero length path , lengths " << a_len << " and " << b_len);
-            return STRING_DIST_INF;
-        } else {
-            return d;
-        }
-    }
-
-    DEBUG(a_len << " " << b_len << " " << d);
-    edlib::EdlibAlignResult result = edlib::edlibAlign(a.c_str(), a_len, b.c_str(), b_len
-                                                   , edlib::edlibNewAlignConfig(2*d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
-                                                                         NULL, 0));
-    int score = STRING_DIST_INF;
-    if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
-        score = result.editDistance;
-    }
-    edlib::edlibFreeAlignResult(result);
-    return score;
-}
-
 
 }

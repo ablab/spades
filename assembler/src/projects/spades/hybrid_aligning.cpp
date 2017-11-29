@@ -280,7 +280,7 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
     aligner(*stream, thread_cnt);
 
     INFO("For library of " << lib_for_info);
-    aligner.stats().report();
+    aligner.stats().Report();
     INFO("Aligning of " << lib_for_info <<" finished");
 }
 
