@@ -68,7 +68,7 @@ with open(align_file, "r") as fin:
     aligned_reads = set()
     ln = fin.readline()
     while ln != "":
-        [name, start, end, sz, path, path_len, subread] = ln.split("\t")
+        [name, start, end, sz, path, path_len, score, subread] = ln.split("\t")
         start = int(start)
         end = int(end)
         name = name.split(" ")[0]
