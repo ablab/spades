@@ -155,12 +155,24 @@ public:
     }
 
     shared_ptr<PathExtender> CreateExtender(const BidirectionalPath &original_path, size_t position) const override {
-        return make_shared<SimpleExtender>(gp_, cover_map_, unique_,
-                                           chooser_factory_->CreateChooser(original_path, position),
-                                           MAGIC_LOOP_CONSTANT,
-                                           false,
-                                           false);
+        DEBUG("Creating extender");
+        auto chooser = chooser_factory_->CreateChooser(original_path, position);
+        DEBUG("Created chooser");
+        auto extender = make_shared<SimpleExtender>(gp_, cover_map_, unique_,
+                                                    chooser_factory_->CreateChooser(original_path, position),
+                                                    MAGIC_LOOP_CONSTANT,
+                                                    false,
+                                                    false);
+        DEBUG("Returning extender");
+//        return make_shared<SimpleExtender>(gp_, cover_map_, unique_,
+//                                           chooser_factory_->CreateChooser(original_path, position),
+//                                           MAGIC_LOOP_CONSTANT,
+//                                           false,
+//                                           false);
+        return extender;
     }
+
+    DECL_LOGGER("SimpleExtenderFactory")
 };
 
 //Intermediate abstract class - majority of GapClosers needs only one next edge after gap, not entire original path.

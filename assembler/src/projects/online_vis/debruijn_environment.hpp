@@ -47,7 +47,7 @@ class DebruijnEnvironment : public Environment {
               folder_("pictures_" + name_),
               file_name_base_("picture"),
               max_vertices_(60),
-              edge_length_bound_(10000),
+              edge_length_bound_(2000),
               gp_(K, "./tmp", cfg::get().ds.reads.lib_count(), 
                   std::vector<std::string>(0),
                   cfg::get().flanking_range,

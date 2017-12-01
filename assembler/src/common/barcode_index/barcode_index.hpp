@@ -201,8 +201,10 @@ namespace barcode_index {
         }
 
         void ReadEntry (ifstream& fin, const EdgeId& edge) override {
+            DEBUG("Reading entry")
+            DEBUG("Edge: " << edge.int_id());
+            DEBUG("Length: " << g_.length(edge));
             edge_to_entry_[edge].Deserialize(fin);
-            DEBUG(edge.int_id());
         }
 
         void WriteEntry (ofstream& fout, const EdgeId& edge) override {
@@ -229,6 +231,8 @@ namespace barcode_index {
         size_t GetNumberOfBarcodes() {
             return number_of_barcodes_;
         }
+
+        DECL_LOGGER("BarcodeIndex");
     };
 
     class SimpleBarcodeInfo {
@@ -324,6 +328,10 @@ namespace barcode_index {
         }
 
         void Update(const FrameBarcodeInfo& other) {
+            TRACE(count_);
+            TRACE(other.count_);
+            TRACE(is_on_frame_.size());
+            TRACE(other.is_on_frame_.size());
             is_on_frame_ |= other.is_on_frame_;
             leftmost_index_ = std::min(leftmost_index_, other.leftmost_index_);
             rightmost_index_ = std::max(rightmost_index_, other.rightmost_index_);
@@ -381,6 +389,8 @@ namespace barcode_index {
 
         friend ostream& operator <<(ostream& os, const FrameBarcodeInfo& info);
         friend istream& operator >>(istream& is, FrameBarcodeInfo& info);
+
+        DECL_LOGGER("FrameBarcodeInfo");
     };
 
     inline ostream& operator <<(ostream& os, const FrameBarcodeInfo& info)
