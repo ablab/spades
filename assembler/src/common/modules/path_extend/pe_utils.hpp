@@ -92,7 +92,8 @@ public:
 
     explicit GraphCoverageMap(const Graph& g) : g_(g) {
         //FIXME heavy constructor
-        edge_coverage_.reserve(EdgeCount());
+        //todo discuss
+//        edge_coverage_.reserve(EdgeCount());
     }
 
     GraphCoverageMap(const Graph& g, const PathContainer& paths, bool subscribe = false) :

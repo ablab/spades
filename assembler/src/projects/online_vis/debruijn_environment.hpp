@@ -57,7 +57,9 @@ class DebruijnEnvironment : public Environment {
               path_finder_(gp_.g) {
             DEBUG("Environment constructor");
             gp_.kmer_mapper.Attach();
-            debruijn_graph::graphio::ScanGraphPack(path_, gp_);
+            debruijn_graph::graphio::ConjugateDataScanner<Graph> scanner(gp_.g);
+            debruijn_graph::graphio::ScanGraphPack(path_, scanner, gp_);
+            debruijn_graph::graphio::ScanBarcodeIndex(path_, scanner, gp_.g, gp_.barcode_mapper_ptr);
             DEBUG("Graph pack created");
             //fixme refactor barcode extractor to avoid that
             barcode_labeler_.UpdateExtractor(gp_.barcode_mapper_ptr, gp_.g);

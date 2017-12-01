@@ -163,6 +163,8 @@ public:
 
     ScaffoldGraph(const ScaffoldGraph& other) = default;
 
+    ScaffoldGraph(ScaffoldGraph&& other) = default;
+
     bool Exists(ScaffoldGraphVertex assembly_graph_edge) const;
 
     bool Exists(const ScaffoldEdge &e) const;

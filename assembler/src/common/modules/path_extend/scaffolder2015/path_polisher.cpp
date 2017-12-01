@@ -17,11 +17,16 @@ void PathPolisher::InfoAboutGaps(const PathContainer & result){
 
 PathContainer PathPolisher::PolishPaths(const PathContainer &paths) {
     PathContainer result;
+    size_t counter = 0;
     for (const auto& path_pair : paths) {
         BidirectionalPath path = Polish(*path_pair.first);
         BidirectionalPath *conjugate_path = new BidirectionalPath(Polish(path.Conjugate()));
         BidirectionalPath *re_path = new BidirectionalPath(conjugate_path->Conjugate());
         result.AddPair(re_path, conjugate_path);
+        ++counter;
+        DEBUG(counter << " paths processed");
+        VERBOSE_POWER_T2(counter, 100, "Processed " << counter << " paths from " << paths.size()
+                                                    << " (" << counter * 100 / paths.size() << "%)");
     }
     InfoAboutGaps(result);
     return result;
@@ -118,6 +123,7 @@ Gap DijkstraGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
 
 Gap PathExtenderGapCloser::CloseGap(const BidirectionalPath &original_path,
              size_t position, BidirectionalPath &path) const {
+    DEBUG("Creating extender");
     auto extender = extender_factory_->CreateExtender(original_path, position);
     size_t added = 0;
     DEBUG("Last edge: " << path.Back().int_id());
@@ -386,9 +392,12 @@ shared_ptr<LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::
 }
 shared_ptr<ExtensionChooser> ReadCloudGapExtensionChooserFactory::CreateChooser(const BidirectionalPath &original_path,
                                                                                     size_t position) const {
+    DEBUG("Creating predicate");
     auto predicate = ExtractPredicateFromPosition(original_path, position, params_);
+    DEBUG("Created predicate");
     EdgeId target_edge = original_path.At(position);
     auto chooser = make_shared<ReadCloudGapExtensionChooser>(g_, unique_storage_, target_edge, predicate, scan_bound_);
+    DEBUG("Created chooser");
     return chooser;
 }
 }

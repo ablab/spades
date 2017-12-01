@@ -55,7 +55,7 @@ double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGr
     double second_barcodes_size = static_cast<double>(second_size);
     double total_barcodes = static_cast<double>(total_barcodes_);
     if (first_barcodes_size == 0 or second_barcodes_size == 0) {
-        WARN("No barcodes on long edge");
+        DEBUG("No barcodes on long edge");
         return 0.0;
     }
     double score = static_cast<double>(shared_count) * total_barcodes / (first_barcodes_size * second_barcodes_size);

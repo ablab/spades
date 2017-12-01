@@ -194,10 +194,11 @@ namespace read_cloud_statistics {
             path_extend::ReadCloudMiddleDijkstraParams long_gap_params(params.count_threshold_, params.tail_threshold_,
                                                                        params.initial_distance_, vertex_predicate_params);
 
+            size_t max_threads = cfg::get().max_threads;
             INFO("Constructing scaffold graph");
             auto scaffold_helper = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage,
                                                                                   scaffolding_distance,
-                                                                                  gp_.g);
+                                                                                  gp_.g, max_threads);
             auto scaffold_graph = scaffold_helper.ConstructScaffoldGraphUsingDijkstra();
             INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
 
@@ -253,7 +254,7 @@ namespace read_cloud_statistics {
             INFO("Reference path: " << reference_path);
             INFO("Cloud contig path: " << cloud_contigs_path);
 
-            const size_t min_length = 5000;
+            const size_t min_length = 20000;
             path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
             path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
             unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
@@ -315,7 +316,7 @@ namespace read_cloud_statistics {
             analyzer.FillUniqueEdgeStorage(unique_storage);
             auto scaffold_helper = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage,
                                                                                   100000,
-                                                                                  gp_.g);
+                                                                                  gp_.g, cfg::get().max_threads);
             auto initial_scaffold_graph = scaffold_helper.ConstructScaffoldGraphUsingDijkstra();
 
             //Check path cluster methods
@@ -383,7 +384,9 @@ namespace read_cloud_statistics {
             tester.LaunchTests();
 
             auto contracted_graph = contracted_graph_builder.ConstructFromUniqueStorage(unique_storage_);
-            auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage_, distance, gp_.g);
+            auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage_,
+                                                                                             distance, gp_.g,
+                                                                                             cfg::get().max_threads);
             auto scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphUsingDijkstra();
             auto contracted_scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphFromContractedGraph(contracted_graph);
             INFO("Scaffold graph edges: " << scaffold_graph.EdgeCount());
@@ -463,7 +466,7 @@ namespace read_cloud_statistics {
             const size_t scaffolding_distance = scaffolding_params.initial_distance_;
             auto scaffold_helper = scaffold_graph_utils::ScaffoldGraphConstructor(large_unique_storage,
                                                                                   scaffolding_distance,
-                                                                                  gp_.g);
+                                                                                  gp_.g, cfg::get().max_threads);
             auto scaffold_graph = scaffold_helper.ConstructScaffoldGraphUsingDijkstra();
             INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
 
@@ -521,7 +524,9 @@ namespace read_cloud_statistics {
             contracted_graph::ContractedGraphFactoryHelper contracted_graph_builder(gp_.g);
             INFO("Building contracted graph");
             auto contracted_graph = contracted_graph_builder.ConstructFromUniqueStorage(unique_storage_);
-            auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage_, distance, gp_.g);
+            auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage_,
+                                                                                             distance, gp_.g,
+                                                                                             cfg::get().max_threads);
             auto scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphUsingDijkstra();
             auto contracted_scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphFromContractedGraph(contracted_graph);
             INFO("Scaffold graph edges: " << scaffold_graph.EdgeCount());

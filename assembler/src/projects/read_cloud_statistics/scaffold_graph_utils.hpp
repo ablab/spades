@@ -15,35 +15,44 @@ namespace scaffold_graph_utils {
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         size_t distance_;
         const Graph &g_;
+        size_t max_threads_;
 
      public:
         ScaffoldGraphConstructor(const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_, size_t distance_,
-                                 const Graph &g_) : unique_storage_(unique_storage_), distance_(distance_), g_(g_) {}
+                                 const Graph &g_, size_t max_threads) : unique_storage_(unique_storage_), distance_(distance_), g_(g_),
+                                                    max_threads_(max_threads) {}
 
         ScaffoldGraph ConstructScaffoldGraphUsingDijkstra() {
             ScaffoldGraph scaffold_graph(g_);
-            auto dij = omnigraph::CreateUniqueDijkstra(g_, distance_, unique_storage_);
     //        auto bounded_dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
 
-            for (const auto unique_edge: unique_storage_) {
-                scaffold_graph.AddVertex(unique_edge);
-            }
-            for (const auto unique_edge: unique_storage_) {
-                dij.Run(g_.EdgeEnd(unique_edge));
-                for (auto v: dij.ReachedVertices()) {
-                    size_t distance = dij.GetDistance(v);
-                    if (distance < distance_) {
-                        for (auto connected: g_.OutgoingEdges(v)) {
-                            if (unique_storage_.IsUnique(connected) and connected != unique_edge
-                                and connected != g_.conjugate(unique_edge)) {
-                                ScaffoldGraph::ScaffoldEdge scaffold_edge(unique_edge, connected, (size_t) -1, 0, distance);
-                                scaffold_graph.AddEdge(scaffold_edge);
-                            }
-                        }
-                    }
-                }
-            }
-            return scaffold_graph;
+            set<ScaffoldVertex> target_vertices;
+            std::copy(unique_storage_.begin(), unique_storage_.end(), std::inserter(target_vertices, target_vertices.end()));
+
+            path_extend::scaffold_graph::UniqueScaffoldGraphConstructor constructor(g_, unique_storage_,
+                                                                                    target_vertices,
+                                                                                    distance_, max_threads_);
+
+//            for (const auto unique_edge: unique_storage_) {
+//                scaffold_graph.AddVertex(unique_edge);
+//            }
+//            for (const auto unique_edge: unique_storage_) {
+//                auto dij = omnigraph::CreateUniqueDijkstra(g_, distance_, unique_storage_);
+//                dij.Run(g_.EdgeEnd(unique_edge));
+//                for (auto v: dij.ReachedVertices()) {
+//                    size_t distance = dij.GetDistance(v);
+//                    if (distance < distance_) {
+//                        for (auto connected: g_.OutgoingEdges(v)) {
+//                            if (unique_storage_.IsUnique(connected) and connected != unique_edge
+//                                and connected != g_.conjugate(unique_edge)) {
+//                                ScaffoldGraph::ScaffoldEdge scaffold_edge(unique_edge, connected, (size_t) -1, 0, distance);
+//                                scaffold_graph.AddEdge(scaffold_edge);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+            return *(constructor.Construct());
         }
 
         ScaffoldGraph ConstructScaffoldGraphFromContractedGraph(const contracted_graph::ContractedGraph &contracted_graph) {
