@@ -49,6 +49,13 @@ public:
       gp_(gp), output_file_(output_file), mapper_(mapper){}
 
 
+    bool IsCanonical(EdgeId e) const {
+        return e <= gp_.g.conjugate(e);
+    }
+
+    EdgeId Canonical(EdgeId e) const {
+        return IsCanonical(e) ? e : gp_.g.conjugate(e);
+    }
     
     void AlignRead(const io::SingleRead &read){
         Sequence seq(read.sequence());
@@ -60,6 +67,7 @@ public:
         if (current_mapping.size() > 0){
             std::string pathStr = "";
             std::string pathlenStr = "";
+            std::string edgelenStr = "";
             std::string str = "";
             EdgeId last_edge= EdgeId();
             omnigraph::MappingRange last_range;
@@ -70,9 +78,10 @@ public:
                 VertexId v2 = gp_.g.EdgeEnd(edgeid);
                 last_edge = edgeid;
                 last_range = range;
-                pathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(v1.int_id()) + "," + std::to_string(v2.int_id()) + ") ";
+                pathStr += std::to_string(Canonical(edgeid).int_id()) + " (" + std::to_string(v1.int_id()) + "," + std::to_string(v2.int_id()) + ") ";
                 //pathStr += std::to_string(edgeid.int_id()) + ",";
                 pathlenStr += std::to_string(range.mapped_range.end_pos - range.mapped_range.start_pos) + ",";
+                edgelenStr += std::to_string(gp_.g.length(edgeid)) + ",";
                 string tmp = gp_.g.EdgeNucls(edgeid).str();
                 string to_add = tmp.substr(range.mapped_range.start_pos, range.mapped_range.end_pos - range.mapped_range.start_pos);
                 str += to_add;
@@ -86,7 +95,7 @@ public:
         {
             ofstream myfile;
             myfile.open(output_file_ + ".tsv", std::ofstream::out | std::ofstream::app);
-            myfile << read.name() << "\t" << seq.size() << "\t" << current_mapping.size() << "\t" << pathStr << "\t" << pathlenStr << "\t" << str << "\n";
+            myfile << read.name() << "\t" << seq.size() << "\t" << current_mapping.size() << "\t" << pathStr << "\t" << pathlenStr << "\t" << edgelenStr << "\t" << str << "\n";
             myfile.close();
         }
         }  
