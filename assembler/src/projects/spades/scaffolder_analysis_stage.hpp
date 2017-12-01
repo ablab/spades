@@ -12,10 +12,22 @@ namespace debruijn_graph {
      public:
 
         ScaffolderAnalysisStage() :
-            AssemblyStage("Scaffolder analysis", "scaffolder_analysis") {
+            AssemblyStage("Scaffold graph polishing", "scaffolder_analysis") {
         }
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) override;
+
+     private:
+
+        void GetGraphStorageReferenceInfo(const path_extend::scaffold_graph::ScaffoldGraph &small_scaffold_graph,
+                                          const path_extend::scaffold_graph::ScaffoldGraph &large_scaffold_graph,
+                                          const debruijn_graph::conj_graph_pack& graph_pack) const;
+
+        void PrintScaffoldGraphReferenceInfo(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
+                                             const debruijn_graph::conj_graph_pack& graph_pack,
+                                             size_t length_threshold) const;
+
         DECL_LOGGER("ScaffolderAnalysisStage")
     };
+
 }

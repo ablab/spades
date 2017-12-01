@@ -54,13 +54,14 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
                                                                                          scaff_vertex_extractor_,
                                                                                          params, start, end,
                                                                                          scaff_vertex_extractor_->GetIntersection(start, end));
-    auto forward_dijkstra = omnigraph::CreateForwardBoundedScaffoldDijkstra(scaffold_graph, first, second,
+    omnigraph::ScaffoldDijkstraHelper helper;
+    auto forward_dijkstra = helper.CreateForwardBoundedScaffoldDijkstra(scaffold_graph, first, second,
                                                                             params_.distance_threshold_, gap_closer_predicate);
-    auto backward_dijkstra = omnigraph::CreateBackwardBoundedScaffoldDijkstra(scaffold_graph,
-                                                                              first,
-                                                                              second,
-                                                                              params_.distance_threshold_,
-                                                                              gap_closer_predicate);
+    auto backward_dijkstra = helper.CreateBackwardBoundedScaffoldDijkstra(scaffold_graph,
+                                                                          first,
+                                                                          second,
+                                                                          params_.distance_threshold_,
+                                                                          gap_closer_predicate);
     DEBUG("First: " << first.int_id());
     DEBUG("Second: " << second.int_id());
     forward_dijkstra.Run(first);
@@ -720,9 +721,9 @@ shared_ptr<GapCloserPredicateBuilder> PathExtractionPartsConstructor::ConstructP
     return paired_end_predicate_builder;
 }
 vector<shared_ptr<GapCloserPredicateBuilder>> PathExtractionPartsConstructor::ConstructPredicateBuilders() const {
-    auto paired_end_predicate_builder = ConstructPEPredicate();
     vector<shared_ptr<GapCloserPredicateBuilder>> predicate_builders;
-    predicate_builders.push_back(paired_end_predicate_builder);
+//    auto paired_end_predicate_builder = ConstructPEPredicate();
+//    predicate_builders.push_back(paired_end_predicate_builder);
     return predicate_builders;
 }
 PathExtractionPartsConstructor::PathExtractionPartsConstructor(const conj_graph_pack& gp_) : gp_(gp_) {}

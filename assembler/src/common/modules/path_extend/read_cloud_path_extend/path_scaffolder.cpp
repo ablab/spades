@@ -17,17 +17,18 @@ void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
                                            << " edges in path scaffold graph");
 
     //todo move validation somewhere else later
-    path_extend::validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
-    const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
-    INFO("Path to reference: " << path_to_reference);
-    INFO("Path exists: " << fs::check_existence(path_to_reference));
-    const size_t small_length_threshold = 5000;
+    if (cfg::get().ts_res.debug_mode) {
+        path_extend::validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
+        const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
+        INFO("Path to reference: " << path_to_reference);
+        INFO("Path exists: " << fs::check_existence(path_to_reference));
+        const size_t small_length_threshold = 5000;
+        path_extend::validation::FilteredReferencePathHelper path_helper(gp_);
+        auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, small_length_threshold);
 
-    path_extend::validation::FilteredReferencePathHelper path_helper(gp_);
-    auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, small_length_threshold);
-
-    auto stats = scaffold_graph_validator.GetScaffoldGraphStats(path_scaffold_graph, reference_paths);
-    stats.Serialize(std::cout);
+        auto stats = scaffold_graph_validator.GetScaffoldGraphStats(path_scaffold_graph, reference_paths);
+        stats.Serialize(std::cout);
+    }
 
     ScaffoldGraphExtractor extractor;
     auto univocal_edges = extractor.ExtractUnivocalEdges(path_scaffold_graph);
@@ -83,9 +84,15 @@ void PathScaffolder::MergeUnivocalEdges(const vector<PathScaffolder::ScaffoldEdg
         auto end = connection.second;
         auto start_conjugate = start.getConjugateFromGraph(gp_.g);
         auto end_conjugate = end.getConjugateFromGraph(gp_.g);
-        VERIFY(merge_connections.find(end_conjugate) != merge_connections.end());
-        VERIFY(merge_connections.at(end_conjugate) == start_conjugate);
+        if (merge_connections.find(end_conjugate) != merge_connections.end() and
+            merge_connections.at(end_conjugate) != start_conjugate) {
+            WARN("Conjugate connection does not correspond to direct connection")
+            merge_connections.at(end_conjugate) = start_conjugate;
+        } else {
+            merge_connections.insert({end_conjugate, start_conjugate});
+        }
     }
+
     std::unordered_set<ScaffoldVertex> starts;
     std::unordered_set<ScaffoldVertex> used;
     for (const auto &connection: merge_connections) {
@@ -117,9 +124,23 @@ void PathScaffolder::MergeUnivocalEdges(const vector<PathScaffolder::ScaffoldEdg
     std::unordered_map<ScaffoldVertex, size_t> start_to_distance;
     for (const auto& edge: scaffold_edges) {
         start_to_distance.insert({edge.getStart(), edge.getLength()});
+        start_to_distance.insert({edge.getEnd().getConjugateFromGraph(gp_.g), edge.getLength()});
+    }
+    for (const auto& connection: merge_connections) {
+        DEBUG(connection.first.int_id() << " -> " << connection.second.int_id());
     }
     scaffold_graph::PathGetter path_getter;
     INFO(starts.size() << " starts.");
+    for (const auto &start: starts) {
+        ScaffoldVertex current = start;
+        bool next_found = merge_connections.find(current) != merge_connections.end();
+        DEBUG("Start: " << current.int_id());
+        while(next_found) {
+            current = merge_connections.at(current);
+            next_found = merge_connections.find(current) != merge_connections.end();
+            DEBUG(current.int_id());
+        }
+    }
     for (const auto &start: starts) {
         if (not path_getter.GetPathFromScaffoldVertex(start)->Empty()) {
             ExtendPathAlongConnections(start, merge_connections, start_to_distance);

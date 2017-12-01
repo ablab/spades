@@ -9,6 +9,7 @@
 // Created by andrey on 04.12.15.
 //
 
+#include <read_cloud_path_extend/scaffold_graph_dijkstra.hpp>
 #include "read_cloud_path_extend/read_cloud_dijkstras.hpp"
 #include "scaffold_graph_constructor.hpp"
 
@@ -169,43 +170,62 @@ shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
 }
 shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
     INFO("Scaffolding distance: " << distance_);
-    auto dij = omnigraph::CreateUniqueDijkstra(graph_->AssemblyGraph(), distance_, unique_storage_);
     //        auto bounded_dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
 
     for (const auto& vertex: scaffold_vertices_) {
         graph_->AddVertex(vertex);
     }
-    size_t counter = 0;
-    const size_t block_size = unique_storage_.size() / 10;
+
+    //fixme use iterator splitters!!
+    vector<ScaffoldVertex> vertices_copy;
+    std::copy(scaffold_vertices_.begin(), scaffold_vertices_.end(), std::back_inserter(vertices_copy));
+
+    INFO(vertices_copy.size() << " vertices");
 
     auto is_unique = [this](const EdgeId& edge) {
       return unique_storage_.IsUnique(edge);
     };
 
     std::unordered_map<EdgeId, ScaffoldVertex> first_unique_to_vertex;
-    for (const auto& vertex: scaffold_vertices_) {
+    for (const auto& vertex: vertices_copy) {
         auto first_unique = vertex.getFirstEdgeWithPredicate(is_unique);
-        VERIFY(first_unique.is_initialized());
-        first_unique_to_vertex.insert({first_unique.get(), vertex});
+        if (first_unique.is_initialized()) {
+            first_unique_to_vertex.insert({first_unique.get(), vertex});
+        }
     }
 
-    for (const auto &vertex: scaffold_vertices_) {
+    size_t counter = 0;
+    const size_t block_size = vertices_copy.size() / 100;
+
+    //fixme forforfor
+#pragma omp parallel for num_threads(max_threads_)
+    for (size_t i = 0; i < vertices_copy.size(); ++i) {
+        auto dij = omnigraph::CreateUniqueDijkstra(graph_->AssemblyGraph(), distance_, unique_storage_);
+        const auto vertex = vertices_copy[i];
         EdgeId last_edge = vertex.getLastEdge();
         VertexId last_vertex = graph_->AssemblyGraph().EdgeEnd(last_edge);
         dij.Run(last_vertex);
+        vector<std::pair<ScaffoldVertex, size_t>> incident_vertices;
         for (auto v: dij.ReachedVertices()) {
             size_t distance = dij.GetDistance(v);
             if (distance < distance_) {
                 for (auto connected: graph_->AssemblyGraph().OutgoingEdges(v)) {
                     if (CheckConnectedEdge(vertex, connected, first_unique_to_vertex)) {
-                        auto connected_scaff_vertex = first_unique_to_vertex.at(connected);
-                        graph_->AddEdge(vertex, connected_scaff_vertex, (size_t) -1, 0, distance);
+                        const auto connected_scaff_vertex = first_unique_to_vertex.at(connected);
+                        incident_vertices.emplace_back(connected_scaff_vertex, distance);
                     }
                 }
             }
         }
-        ++counter;
-        if (counter % block_size == 0) {
+#pragma omp critical
+        {
+            for (const auto& vertex_with_dist: incident_vertices) {
+                graph_->AddEdge(vertex, vertex_with_dist.first, (size_t) - 1, 0, vertex_with_dist.second);
+            }
+            ++counter;
+            if (counter % block_size == 0) {
+                INFO("Processed " << counter << " vertices out of " << vertices_copy.size());
+            }
         }
     }
     return graph_;
@@ -213,7 +233,44 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
 UniqueScaffoldGraphConstructor::UniqueScaffoldGraphConstructor(const Graph &assembly_graph,
                                                                const ScaffoldingUniqueEdgeStorage &unique_storage_,
                                                                const set<ScaffoldVertex> &scaffold_vertices_,
-                                                               const size_t distance_) : BaseScaffoldGraphConstructor(
-    assembly_graph), unique_storage_(unique_storage_), scaffold_vertices_(scaffold_vertices_), distance_(distance_) {}
+                                                               const size_t distance_,
+                                                               const size_t max_threads_)
+    : BaseScaffoldGraphConstructor(assembly_graph),
+      unique_storage_(unique_storage_),
+      scaffold_vertices_(scaffold_vertices_),
+      distance_(distance_),
+      max_threads_(max_threads_) {}
+
+
+shared_ptr<ScaffoldGraph> ScaffoldSubgraphConstructor::Construct() {
+    for (const ScaffoldVertex& vertex: large_graph_.vertices()) {
+        if (vertex_condition_(vertex)) {
+            graph_->AddVertex(vertex);
+        }
+    }
+    INFO(graph_->VertexCount() << " vertices");
+
+    //todo add distance calculation
+    omnigraph::ScaffoldDijkstraHelper helper;
+    for (const ScaffoldVertex& vertex: graph_->vertices()) {
+        auto scaffold_dijkstra = helper.CreatePredicateBasedScaffoldDijkstra(large_graph_, vertex, vertex_condition_);
+        scaffold_dijkstra.Run(vertex);
+        for (auto reached: scaffold_dijkstra.ReachedVertices()) {
+            size_t distance = scaffold_dijkstra.GetDistance(reached);
+            if (distance < distance_threshold_ and vertex_condition_(reached) and vertex != reached) {
+                graph_->AddEdge(vertex, reached, (size_t) - 1, 0, distance);
+            }
+        }
+    }
+    return graph_;
+}
+ScaffoldSubgraphConstructor::ScaffoldSubgraphConstructor(const Graph &assembly_graph,
+                                                         const func::TypedPredicate<ScaffoldVertex> &vertex_condition_,
+                                                         const ScaffoldGraph &large_graph_,
+                                                         const size_t distance_threshold_)
+    : BaseScaffoldGraphConstructor(assembly_graph),
+      vertex_condition_(vertex_condition_),
+      large_graph_(large_graph_),
+      distance_threshold_(distance_threshold_) {}
 } //scaffold_graph
 } //path_extend

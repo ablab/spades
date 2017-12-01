@@ -1,8 +1,8 @@
 #include "scaffold_graph_storage.hpp"
 
 namespace path_extend {
-ScaffoldGraphStorage::ScaffoldGraphStorage(const ScaffoldGraphStorage::ScaffoldGraph& large_scaffold_graph,
-                                           const ScaffoldGraphStorage::ScaffoldGraph& small_scaffold_graph)
+ScaffoldGraphStorage::ScaffoldGraphStorage(ScaffoldGraphStorage::ScaffoldGraph&& large_scaffold_graph,
+                                           ScaffoldGraphStorage::ScaffoldGraph&& small_scaffold_graph)
     : large_scaffold_graph_(large_scaffold_graph), small_scaffold_graph_(small_scaffold_graph) {}
 
 const ScaffoldGraphStorage::ScaffoldGraph& ScaffoldGraphStorage::GetLargeScaffoldGraph() const {

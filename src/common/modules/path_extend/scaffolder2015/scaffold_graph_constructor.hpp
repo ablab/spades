@@ -84,17 +84,33 @@ public:
     std::shared_ptr<ScaffoldGraph> Construct() override;
 };
 
+class ScaffoldSubgraphConstructor: public BaseScaffoldGraphConstructor {
+    func::TypedPredicate<ScaffoldVertex> vertex_condition_;
+    const ScaffoldGraph& large_graph_;
+    const size_t distance_threshold_;
+
+ public:
+    ScaffoldSubgraphConstructor(const Graph &assembly_graph,
+                                const func::TypedPredicate<ScaffoldVertex> &vertex_condition_,
+                                const ScaffoldGraph &large_graph_,
+                                const size_t distance_threshold_);
+
+    shared_ptr<ScaffoldGraph> Construct() override;
+};
+
 //todo refactor connection conditions to avoid code duplication
 class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
     const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
     const std::set<ScaffoldVertex> scaffold_vertices_;
     const size_t distance_;
+    const size_t max_threads_;
 
  public:
     UniqueScaffoldGraphConstructor(const Graph &assembly_graph,
                                    const ScaffoldingUniqueEdgeStorage &unique_storage_,
                                    const set<ScaffoldVertex> &scaffold_vertices_,
-                                   const size_t distance_);
+                                   const size_t distance_,
+                                   const size_t max_threads_);
 
     shared_ptr<ScaffoldGraph> Construct() override;
 

@@ -353,7 +353,6 @@ namespace barcode_index {
             edge_it_helper helper(g_);
             for (auto it = helper.begin(); it != helper.end(); ++it) {
                 SimpleEdgeEntry entry(*it);
-
                 InsertEntry(*it, entry);
             }
         }

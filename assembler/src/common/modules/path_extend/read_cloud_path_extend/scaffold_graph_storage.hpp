@@ -15,7 +15,7 @@ namespace path_extend {
 
      public:
         explicit ScaffoldGraphStorage(const debruijn_graph::Graph& g);
-        ScaffoldGraphStorage(const ScaffoldGraph& large_scaffold_graph, const ScaffoldGraph& small_scaffold_graph);
+        ScaffoldGraphStorage(ScaffoldGraph&& large_scaffold_graph, ScaffoldGraph&& small_scaffold_graph);
 
         const ScaffoldGraph& GetLargeScaffoldGraph() const;
 

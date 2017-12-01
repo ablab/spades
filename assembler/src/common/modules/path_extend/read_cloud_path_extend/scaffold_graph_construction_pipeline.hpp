@@ -14,7 +14,7 @@ namespace path_extend {
       const double connection_score_threshold_;
       const size_t connection_length_threshold_;
       const size_t connection_count_threshold_;
-      const size_t initial_distance_;
+      size_t initial_distance_;
       const double split_procedure_strictness_;
       const size_t transitive_distance_threshold_;
 
@@ -127,6 +127,23 @@ namespace path_extend {
                                                                                         const ScaffoldGraph& scaffold_graph) const override;
     };
 
+    class CloudScaffoldGraphConstructionPipeline {
+        shared_ptr<scaffold_graph::ScaffoldGraphConstructor> initial_constructor_;
+        vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> construction_stages_;
+        vector<shared_ptr<scaffold_graph::ScaffoldGraph>> intermediate_results_;
+        const ScaffolderParams& params_;
+
+     public:
+        CloudScaffoldGraphConstructionPipeline(shared_ptr<scaffold_graph::ScaffoldGraphConstructor> initial_constructor_,
+                                               const ScaffolderParams &params);
+
+        void AddStage(shared_ptr<IterativeScaffoldGraphConstructorCaller> stage);
+
+        void Run();
+
+        shared_ptr<scaffold_graph::ScaffoldGraph> GetResult() const;
+    };
+
     class CloudScaffoldGraphConstuctor {
      public:
         typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
@@ -144,20 +161,32 @@ namespace path_extend {
                                      shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
         ScaffoldGraph ConstructScaffoldGraphFromMinLength(size_t min_length) const;
 
+        ScaffoldGraph ConstructScaffoldGraphFromMinLengthAndGraph(size_t min_length, const ScaffoldGraph& previous_graph) const;
+
         ScaffoldGraph ConstructScaffoldGraphFromPathContainer(const PathContainer& paths,
                                                               const ScaffoldingUniqueEdgeStorage& unique_storage,
                                                               size_t min_length) const;
 
+        //todo replace storage with predicate
         ScaffoldGraph ConstructScaffoldGraphFromStorage(const ScaffolderParams& params,
                                                         const ScaffoldingUniqueEdgeStorage& unique_storage,
                                                         const set<ScaffoldVertex>& scaffold_vertices,
                                                         bool launch_full_pipeline,
                                                         bool path_merge_pipeline = false) const;
 
-     private:
+        ScaffoldGraph ConstructScaffoldGraphFromStorageAndGraph(const ScaffolderParams& params,
+                                                                const ScaffoldGraph& previous_graph,
+                                                                const ScaffoldingUniqueEdgeStorage& unique_storage,
+                                                                const set<ScaffoldVertex>& scaffold_vertices,
+                                                                bool launch_full_pipeline,
+                                                                bool path_merge_pipeline = false) const;
 
-        vector<shared_ptr<ConnectionCondition>> GetGraphConnectionConditions(const ScaffolderParams& params,
-                                                                             const ScaffoldingUniqueEdgeStorage& unique_storage) const;
+     private:
+        vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(const ScaffolderParams& params,
+                                                                                    const ScaffoldingUniqueEdgeStorage& unique_storage,
+                                                                                    const set<ScaffoldVertex>& scaffold_vertices,
+                                                                                    bool launch_full_pipeline,
+                                                                                    bool path_merge_pipeline) const;
     };
 
 

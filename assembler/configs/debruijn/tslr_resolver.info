@@ -74,8 +74,10 @@ ts_res
 		cloud_contigs_path ""
 	}
 
-	very_long_edge_length 20000
-	long_edge_length 5000
+	long_edge_length_upper_bound 20000
+	long_edge_length_lower_bound 5000
+
+	gap_closer_connection_score_threshold 5.0
 
 	scaffold_polisher {
 		share_threshold 0.1
@@ -85,4 +87,21 @@ ts_res
 		path_cluster_min_reads 1
 		path_cluster_score_threshold 10.0
 	}
+
+	scaffold_graph_construction {
+		count_threshold 2
+		score_threshold 3.0
+		connection_score_threshold 1.5
+	    connection_length_threshold 50
+	    connection_count_threshold 1
+	    initial_distance 100000
+	    split_strictness 0.85
+	    transitive_distance_threshold 3
+	    path_scaffolder_tail_threshold 20000
+	    path_scaffolder_count_threshold 3
+	    min_edge_length_for_barcode_collection 1000
+	}
+
+	path_scaffolding_on true
+	debug_mode false
 }
