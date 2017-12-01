@@ -528,6 +528,7 @@ struct debruijn_config {
         stats statistics;
 
         bool path_scaffolding_on;
+        bool debug_mode;
 
     };
 

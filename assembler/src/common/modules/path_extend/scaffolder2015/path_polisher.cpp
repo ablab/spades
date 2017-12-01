@@ -26,6 +26,7 @@ void PathPolisher::InfoAboutGaps(const PathContainer & result){
 
 PathContainer PathPolisher::PolishPaths(const PathContainer &paths) {
     PathContainer result;
+    size_t counter = 0;
     for (const auto& path_pair : paths) {
         auto path = Polish(*path_pair.first);
         auto conjugate_path = Polish(path->Conjugate());
@@ -81,12 +82,12 @@ std::unique_ptr<BidirectionalPath> PathGapCloser::CloseGaps(const BidirectionalP
     };
 
     auto WithoutBadGaps = [&IsBadGap, &path] () {
-        for (size_t i = 1; i < path.Size(); ++i) 
+        for (size_t i = 1; i < path.Size(); ++i)
             if (IsBadGap(i))
                 return false;
         return true;
     };
-    
+
     if (WithoutBadGaps())
         return BidirectionalPath::clone(path);
 
@@ -103,7 +104,7 @@ std::unique_ptr<BidirectionalPath> PathGapCloser::CloseGaps(const BidirectionalP
             result->PushBack(path[i], new_gap);
         }
     }
-    
+
     return result;
 }
 
