@@ -519,7 +519,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             size_t count_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_count_threshold;
             size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
             //fixme move to configs
-            const size_t scan_bound = 1000;
+            const size_t scan_bound = 50;
             INFO("Tail threshold: " << tail_threshold);
             INFO("Count threshold: " << count_threshold);
             INFO("Length threshold: " << length_threshold);
@@ -730,8 +730,8 @@ void PathExtendLauncher::Launch() {
     DebugOutputPaths(polished_paths, "overlap_removed");
 
     //todo discuss
-    if (cfg::get().ts_res.path_scaffolding_on) {
-        const size_t path_length_threshold = 10000;
+    if (cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
+        const size_t path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
         PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_, path_length_threshold);
         path_scaffolder.MergePaths(polished_paths);
 
