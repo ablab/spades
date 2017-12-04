@@ -527,6 +527,7 @@ void load(debruijn_config::read_cloud_resolver& ts_res,
     load(ts_res.statistics, pt, "statistics");
     load(ts_res.path_scaffolding_on, pt, "path_scaffolding_on");
     load(ts_res.debug_mode, pt, "debug_mode");
+    load(ts_res.save_initial_scaffold_graph, pt, "save_initial_graph");
     load(ts_res.gap_closer_connection_score_threshold, pt, "gap_closer_connection_score_threshold");
 }
 
