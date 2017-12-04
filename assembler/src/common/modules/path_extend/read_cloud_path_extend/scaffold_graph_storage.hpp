@@ -27,15 +27,20 @@ namespace path_extend {
 
         void Save(const string& path) const;
 
-        void SaveScaffoldGraph(ofstream& fout, const ScaffoldGraph& graph) const;
-
         void Load(const string& path, const std::map<size_t, debruijn_graph::EdgeId>& edge_map);
-
-        void LoadScaffoldGraph(ifstream& fin, ScaffoldGraph& graph,
-                               const std::map<size_t, debruijn_graph::EdgeId>& edge_map) const;
 
      private:
         void ReplaceScaffoldGraph(const ScaffoldGraph &from, ScaffoldGraph &to);
+    };
 
-};
+    class ScaffoldGraphSerializer {
+     public:
+        typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+        typedef debruijn_graph::EdgeId EdgeId;
+
+        void SaveScaffoldGraph(ofstream& fout, const ScaffoldGraph& graph) const;
+
+        void LoadScaffoldGraph(ifstream& fin, ScaffoldGraph& graph,
+                               const std::map<size_t, debruijn_graph::EdgeId>& edge_map) const;
+    };
 }

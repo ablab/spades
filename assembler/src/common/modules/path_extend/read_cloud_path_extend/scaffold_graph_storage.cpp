@@ -30,9 +30,32 @@ void ScaffoldGraphStorage::ReplaceScaffoldGraph(const ScaffoldGraphStorage::Scaf
     INFO("Finished replacing");
 }
 
-void ScaffoldGraphStorage::LoadScaffoldGraph(ifstream& fin,
-                                             ScaffoldGraphStorage::ScaffoldGraph& graph,
-                                             const std::map<size_t, debruijn_graph::EdgeId>& edge_map) const {
+void ScaffoldGraphStorage::Load(const string& path, const std::map<size_t, debruijn_graph::EdgeId>& edge_map) {
+    ifstream fin(path);
+    ScaffoldGraphSerializer loader;
+    loader.LoadScaffoldGraph(fin, large_scaffold_graph_, edge_map);
+    loader.LoadScaffoldGraph(fin, small_scaffold_graph_, edge_map);
+}
+void ScaffoldGraphStorage::Save(const string& path) const {
+    ofstream fout(path);
+    ScaffoldGraphSerializer saver;
+    saver.SaveScaffoldGraph(fout, large_scaffold_graph_);
+    saver.SaveScaffoldGraph(fout, small_scaffold_graph_);
+}
+void ScaffoldGraphSerializer::SaveScaffoldGraph(ofstream &fout, const ScaffoldGraphSerializer::ScaffoldGraph &graph) const {
+    fout << graph.VertexCount() << std::endl;
+    for (const ScaffoldGraph::ScaffoldGraphVertex& vertex: graph.vertices()) {
+        fout << vertex.int_id() << std::endl;
+    }
+    fout << graph.EdgeCount() << std::endl;
+    for (const ScaffoldGraph::ScaffoldEdge& edge: graph.edges()) {
+        fout << edge.getStart().int_id() << " " << edge.getEnd().int_id() << " " << edge.getColor() << " "
+             << edge.getWeight() << " " << edge.getLength() << std::endl;
+    }
+}
+void ScaffoldGraphSerializer::LoadScaffoldGraph(ifstream &fin,
+                                           ScaffoldGraphSerializer::ScaffoldGraph &graph,
+                                           const std::map<size_t, debruijn_graph::EdgeId> &edge_map) const {
     size_t number_of_vertices = 0;
     fin >> number_of_vertices;
     for (size_t i = 0; i < number_of_vertices; ++i) {
@@ -53,26 +76,5 @@ void ScaffoldGraphStorage::LoadScaffoldGraph(ifstream& fin,
         ScaffoldGraph::ScaffoldEdge new_edge(edge_map.at(start_id), edge_map.at(end_id), lib, weight, length);
         graph.AddEdge(new_edge);
     }
-}
-void ScaffoldGraphStorage::Load(const string& path, const std::map<size_t, debruijn_graph::EdgeId>& edge_map) {
-    ifstream fin(path);
-    LoadScaffoldGraph(fin, large_scaffold_graph_, edge_map);
-    LoadScaffoldGraph(fin, small_scaffold_graph_, edge_map);
-}
-void ScaffoldGraphStorage::SaveScaffoldGraph(ofstream& fout, const ScaffoldGraphStorage::ScaffoldGraph& graph) const {
-    fout << graph.VertexCount() << std::endl;
-    for (const ScaffoldGraph::ScaffoldGraphVertex& vertex: graph.vertices()) {
-        fout << vertex.int_id() << std::endl;
-    }
-    fout << graph.EdgeCount() << std::endl;
-    for (const ScaffoldGraph::ScaffoldEdge& edge: graph.edges()) {
-        fout << edge.getStart().int_id() << " " << edge.getEnd().int_id() << " " << edge.getColor() << " "
-             << edge.getWeight() << " " << edge.getLength() << std::endl;
-    }
-}
-void ScaffoldGraphStorage::Save(const string& path) const {
-    ofstream fout(path);
-    SaveScaffoldGraph(fout, large_scaffold_graph_);
-    SaveScaffoldGraph(fout, small_scaffold_graph_);
 }
 }
