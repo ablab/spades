@@ -1110,12 +1110,12 @@ void ScanGraphPack(const string& file_name, graph_pack& gp) {
 template<class graph_pack>
 void ScanAll(const std::string& file_name, graph_pack& gp,
              bool force_exists = true) {
-    ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g); //TODO: remove this!!!
+    ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanGraphPack(file_name, scanner, gp);
-    ScanSingleLongReads(file_name,  gp.single_long_reads);
     ScanPairedIndices(file_name, scanner, gp.paired_indices, force_exists);
     ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);
     ScanScaffoldingIndices(file_name, scanner, gp.scaffolding_indices, force_exists);
+    ScanSingleLongReads(file_name,  gp.single_long_reads);
     ScanScaffoldGraphStorage(file_name, scanner, gp.scaffold_graph_storage, force_exists);
     ScanBarcodeIndex(file_name, scanner, gp.g, gp.barcode_mapper_ptr, force_exists);
     gp.ginfo.Load(file_name + ".ginfo");

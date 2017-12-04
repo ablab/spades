@@ -587,7 +587,7 @@ struct debruijn_config {
 
         bool path_scaffolding_on;
         bool debug_mode;
-
+        bool save_initial_scaffold_graph;
     };
 
     boost::optional<scaffold_correction> sc_cor;
