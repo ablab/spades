@@ -128,14 +128,18 @@ namespace path_extend {
     };
 
     class CloudScaffoldGraphConstructionPipeline {
+        typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+
         shared_ptr<scaffold_graph::ScaffoldGraphConstructor> initial_constructor_;
         vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> construction_stages_;
         vector<shared_ptr<scaffold_graph::ScaffoldGraph>> intermediate_results_;
+        const Graph &g_;
         const ScaffolderParams& params_;
+        const string name_;
 
      public:
         CloudScaffoldGraphConstructionPipeline(shared_ptr<scaffold_graph::ScaffoldGraphConstructor> initial_constructor_,
-                                               const ScaffolderParams &params);
+                                               const Graph& g, const ScaffolderParams &params, const string &name);
 
         void AddStage(shared_ptr<IterativeScaffoldGraphConstructorCaller> stage);
 
@@ -171,6 +175,7 @@ namespace path_extend {
         ScaffoldGraph ConstructScaffoldGraphFromStorage(const ScaffolderParams& params,
                                                         const ScaffoldingUniqueEdgeStorage& unique_storage,
                                                         const set<ScaffoldVertex>& scaffold_vertices,
+                                                        const string &initial_graph_name,
                                                         bool launch_full_pipeline,
                                                         bool path_merge_pipeline = false) const;
 
