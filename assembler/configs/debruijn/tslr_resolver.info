@@ -3,7 +3,7 @@ ts_res
 	;Dataset configs
 
 		;TSLR leftover
-		read_cloud_dataset  /Nancy/itolstoganov/tenx_metagenome/easy_test/data/dataset.info
+		read_cloud_dataset  ""
 
 		;remove this
 		library_type tenx
@@ -77,7 +77,7 @@ ts_res
 	long_edge_length_upper_bound 20000
 	long_edge_length_lower_bound 5000
 
-	gap_closer_connection_score_threshold 5.0
+	gap_closer_connection_score_threshold 2.0
 
 	scaffold_polisher {
 		share_threshold 0.1
@@ -94,7 +94,7 @@ ts_res
 		connection_score_threshold 1.5
 	    connection_length_threshold 50
 	    connection_count_threshold 1
-	    initial_distance 100000
+	    initial_distance 80000
 	    split_strictness 0.85
 	    transitive_distance_threshold 3
 	    path_scaffolder_tail_threshold 20000
@@ -104,4 +104,5 @@ ts_res
 
 	path_scaffolding_on true
 	debug_mode false
+	save_initial_graph true
 }

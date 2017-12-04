@@ -195,7 +195,7 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
     }
 
     size_t counter = 0;
-    const size_t block_size = vertices_copy.size() / 100;
+    const size_t block_size = vertices_copy.size() / 20;
 
     //fixme forforfor
 #pragma omp parallel for num_threads(max_threads_)

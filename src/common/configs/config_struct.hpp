@@ -533,7 +533,7 @@ struct debruijn_config {
 
         bool path_scaffolding_on;
         bool debug_mode;
-
+        bool save_initial_scaffold_graph;
     };
 
     read_cloud_resolver ts_res;
