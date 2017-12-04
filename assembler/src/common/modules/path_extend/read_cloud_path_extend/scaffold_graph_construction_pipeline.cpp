@@ -12,16 +12,17 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
         const ScaffolderParams& params,
         const ScaffoldingUniqueEdgeStorage& unique_storage,
         const set<ScaffoldVertex>& scaffold_vertices,
+        const string &initial_graph_name,
         bool launch_full_pipeline,
         bool path_merge_pipeline) const {
-    auto constructor = make_shared<scaffold_graph::UniqueScaffoldGraphConstructor>(gp_.g, unique_storage,
+    auto initial_constructor = make_shared<scaffold_graph::UniqueScaffoldGraphConstructor>(gp_.g, unique_storage,
                                                                                    scaffold_vertices,
                                                                                    params.initial_distance_,
                                                                                    max_threads_);
     auto iterative_constructor_callers = ConstructStages(params, unique_storage, scaffold_vertices,
                                                          launch_full_pipeline, path_merge_pipeline);
     INFO("Created constructors");
-    CloudScaffoldGraphConstructionPipeline pipeline(constructor, params);
+    CloudScaffoldGraphConstructionPipeline pipeline(initial_constructor, gp_.g, params, initial_graph_name);
     for (const auto stage: iterative_constructor_callers) {
         pipeline.AddStage(stage);
     }
@@ -44,7 +45,9 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
         ScaffoldVertex sc_vertex(edge);
         scaffold_vertices.insert(sc_vertex);
     }
-    return ConstructScaffoldGraphFromStorage(params, unique_storage, scaffold_vertices, launch_full_pipeline);
+    string initial_graph_name = std::to_string(params.length_threshold_);
+    return ConstructScaffoldGraphFromStorage(params, unique_storage, scaffold_vertices,
+                                             initial_graph_name, launch_full_pipeline);
 }
 
 CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::ConstructScaffoldGraphFromPathContainer(
@@ -64,7 +67,11 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
     params.tail_threshold_ = cfg::get().ts_res.scaff_con.path_scaffolder_tail_threshold;
     params.count_threshold_ = cfg::get().ts_res.scaff_con.path_scaffolder_count_threshold;
     params.initial_distance_ = 10000;
-    return ConstructScaffoldGraphFromStorage(params, unique_storage, path_set, false, true);
+    const bool launch_full_pipeline = false;
+    const bool path_merge_pipeline = true;
+    const string initial_graph_name = "path_" + std::to_string(min_length);
+    return ConstructScaffoldGraphFromStorage(params, unique_storage, path_set, initial_graph_name,
+                                             launch_full_pipeline, path_merge_pipeline);
 }
 vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphConstuctor::ConstructStages (
         const ScaffolderParams& params,
@@ -117,7 +124,7 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
     auto iterative_constructor_callers = ConstructStages(params, unique_storage, scaffold_vertices,
                                                          launch_full_pipeline, path_merge_pipeline);
     INFO("Created constructors");
-    CloudScaffoldGraphConstructionPipeline pipeline(constructor, params);
+    CloudScaffoldGraphConstructionPipeline pipeline(constructor, gp_.g, params, std::to_string(params.length_threshold_));
     for (const auto stage: iterative_constructor_callers) {
         pipeline.AddStage(stage);
     }
@@ -328,11 +335,36 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
                                        connection_length_threshold, normalize_using_cov);
 }
 CloudScaffoldGraphConstructionPipeline::CloudScaffoldGraphConstructionPipeline(
-        shared_ptr<scaffold_graph::ScaffoldGraphConstructor> initial_constructor_, const ScaffolderParams& params)
+        shared_ptr<scaffold_graph::ScaffoldGraphConstructor> initial_constructor_, const Graph &g,
+        const ScaffolderParams& params, const string &name)
     : initial_constructor_(initial_constructor_), construction_stages_(),
-      intermediate_results_(), params_(params) {}
+      intermediate_results_(), g_(g), params_(params), name_(name) {}
 void CloudScaffoldGraphConstructionPipeline::Run() {
-    auto initial_graph_ptr = initial_constructor_->Construct();
+    //fixme move saving to somewhere more appropriate?
+    const string initial_scaffold_graph_path = fs::append_path(cfg::get().load_from,
+                                                               "initial_scaffold_graph_" + name_ + ".scg");
+    auto initial_graph_ptr = std::make_shared<ScaffoldGraph>(g_);
+    INFO(initial_scaffold_graph_path);
+    bool found_save = false;
+    ScaffoldGraphSerializer serializer;
+    if (cfg::get().ts_res.save_initial_scaffold_graph and fs::check_existence(initial_scaffold_graph_path)) {
+        INFO("Loading initial scaffold graph from" << initial_scaffold_graph_path);
+        ifstream fin(initial_scaffold_graph_path);
+        std::map<size_t, debruijn_graph::EdgeId> edge_id_map;
+        omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper(g_);
+        for (auto it = edge_it_helper.begin(); it != edge_it_helper.end(); ++it) {
+            edge_id_map.insert({it->int_id(), *it});
+        };
+        serializer.LoadScaffoldGraph(fin, *initial_graph_ptr, edge_id_map);
+        found_save = true;
+    } else {
+        initial_graph_ptr = initial_constructor_->Construct();
+        if (cfg::get().ts_res.save_initial_scaffold_graph) {
+            ofstream fout(initial_scaffold_graph_path);
+            INFO("Saving initial scaffold graph to " << initial_scaffold_graph_path);
+            serializer.SaveScaffoldGraph(fout, *initial_graph_ptr);
+        }
+    }
     INFO("Constructed initial graph");
     INFO(initial_graph_ptr->VertexCount() << " vertices and " << initial_graph_ptr->EdgeCount() << " edges in initial graph");
     intermediate_results_.push_back(initial_graph_ptr);
