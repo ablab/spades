@@ -234,7 +234,7 @@ public:
                 line["LenE"] = std::to_string(mapping_end - mapping_start);
                 line["DirE"] = "?"; // TODO
 
-                line["CIGAR"] = edgecigar[i];
+                line["CIGAR"] = "";//edgecigar[i];
 
                 if (i > 0){
                     line["Prev"] = prev;
@@ -259,6 +259,14 @@ public:
         }        
     }
     
+    bool IsCanonical(EdgeId e) const {
+        return e <= gp_.g.conjugate(e);
+    }
+
+    EdgeId Canonical(EdgeId e) const {
+        return IsCanonical(e) ? e : gp_.g.conjugate(e);
+    }
+
     void AlignRead(const io::SingleRead &read){
         Sequence seq(read.sequence());
         INFO("Read " << read.name() <<". Current Read")
@@ -271,13 +279,13 @@ public:
         }
         
         if (aligned_mappings.size() > 0){
-            ToGPA(aligned_mappings, read);
+            //ToGPA(aligned_mappings, read);
             string pathStr = "";
             for (const auto &mappingpath : aligned_mappings){
                 for (const auto &edgeid: mappingpath.simple_path()) {
                     VertexId v1 = gp_.g.EdgeStart(edgeid);
                     VertexId v2 = gp_.g.EdgeEnd(edgeid);
-                    pathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(v1.int_id()) + "," + std::to_string(v2.int_id()) + ") ";
+                    pathStr += std::to_string(Canonical(edgeid).int_id()) + " (" + std::to_string(v1.int_id()) + "," + std::to_string(v2.int_id()) + ") ";
                 }
                 pathStr += "\n";
             }
@@ -307,7 +315,7 @@ public:
                     if (i < path.size() - 1) {
                         mapping_end = gp_.g.length(edgeid);
                     }
-                    cur_path += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
+                    cur_path += std::to_string(Canonical(edgeid).int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
                                + std::to_string(mapping.initial_range.start_pos) + "," + std::to_string(mapping.initial_range.end_pos) + "], ";
                     
                     string tmp = gp_.g.EdgeNucls(edgeid).str();
@@ -356,7 +364,7 @@ public:
 
 config::debruijn_config::pacbio_processor InitializePacBioProcessor() {
     config::debruijn_config::pacbio_processor pb;  
-    pb.bwa_length_cutoff = 500; //500
+    pb.bwa_length_cutoff = 0; //500
     pb.compression_cutoff = 0.6; // 0.6
     pb.path_limit_stretching = 1.3; //1.3
     pb.path_limit_pressing = 0.7;//0.7
