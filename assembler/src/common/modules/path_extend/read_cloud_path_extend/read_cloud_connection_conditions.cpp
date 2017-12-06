@@ -47,20 +47,21 @@ double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGr
     DEBUG("Second length: " << second_length);
     size_t first_size = barcode_extractor_->GetTailSize(first);
     size_t second_size = barcode_extractor_->GetHeadSize(second);
+    if (first_size == 0 or second_size == 0) {
+        DEBUG("No barcodes on one of the long edges");
+        return 0.0;
+    }
     size_t shared_count = barcode_extractor_->GetIntersectionSize(first, second);
     DEBUG("First size: " << first_size);
     DEBUG("Second size: " << second_size);
     DEBUG("Intersection: " << shared_count);
-    double first_barcodes_size = static_cast<double>(first_size);
-    double second_barcodes_size = static_cast<double>(second_size);
-    double total_barcodes = static_cast<double>(total_barcodes_);
-    if (first_barcodes_size == 0 or second_barcodes_size == 0) {
-        DEBUG("No barcodes on long edge");
-        return 0.0;
-    }
-    double score = static_cast<double>(shared_count) * total_barcodes / (first_barcodes_size * second_barcodes_size);
-    DEBUG("Score: " << score);
-    return score;
+    size_t min_size = std::min(first_size, second_size);
+    double containment_index = static_cast<double>(shared_count) / static_cast<double>(min_size);
+    DEBUG("Score: " << containment_index);
+    VERIFY(math::ge(1.0, containment_index));
+//    double first_coverage = first.getCoverageFromGraph(graph_);
+//    double second_coverage = second.getCoverageFromGraph(graph_);
+    return containment_index;
 }
 NormalizedBarcodeScoreFunction::NormalizedBarcodeScoreFunction(
     const Graph &graph_,
@@ -394,7 +395,7 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
         }
     }
     if (path_processing_iterations >= max_paths_to_process) {
-        WARN("Had to process too many paths, returning");
+        DEBUG("Had to process too many paths, returning");
         return true;
     }
 

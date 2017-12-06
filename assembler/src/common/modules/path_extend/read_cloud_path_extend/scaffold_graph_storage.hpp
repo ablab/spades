@@ -42,5 +42,7 @@ namespace path_extend {
 
         void LoadScaffoldGraph(ifstream& fin, ScaffoldGraph& graph,
                                const std::map<size_t, debruijn_graph::EdgeId>& edge_map) const;
+
+        DECL_LOGGER("ScaffoldGraphSerializer");
     };
 }

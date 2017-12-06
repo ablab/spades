@@ -27,7 +27,9 @@ void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
         auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, small_length_threshold);
 
         auto stats = scaffold_graph_validator.GetScaffoldGraphStats(path_scaffold_graph, reference_paths);
-        stats.Serialize(std::cout);
+        INFO("False positive: " << stats.false_positive_);
+        INFO("Single false transition: " << stats.single_false_transition_);
+        INFO("False univocal edges: " << stats.false_univocal_edges_);
     }
 
     ScaffoldGraphExtractor extractor;
@@ -35,6 +37,7 @@ void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
     INFO("Found " << univocal_edges.size() << " univocal edges");
     MergeUnivocalEdges(univocal_edges);
 }
+
 PathScaffolder::PathScaffolder(const conj_graph_pack &gp_,
                                const ScaffoldingUniqueEdgeStorage &unique_storage_,
                                size_t path_length_threshold_)
@@ -50,6 +53,9 @@ void PathScaffolder::ExtendPathAlongConnections(const PathScaffolder::ScaffoldVe
     while (next_found) {
         auto next = merge_connections.at(current);
         auto next_path = path_getter.GetPathFromScaffoldVertex(next);
+        if (start_path->GetId() == next_path->GetId()) {
+            break;
+        }
         DEBUG("First path: " << start_path->GetId() << ", length : " << start_path->Length());
         DEBUG("Second path: " << next_path->GetId() << ", length: " << next_path->Length());
         DEBUG("First conj: " << start_path->GetConjPath()->GetId() << ", length : "
@@ -135,7 +141,7 @@ void PathScaffolder::MergeUnivocalEdges(const vector<PathScaffolder::ScaffoldEdg
         ScaffoldVertex current = start;
         bool next_found = merge_connections.find(current) != merge_connections.end();
         DEBUG("Start: " << current.int_id());
-        while(next_found) {
+        while(next_found and merge_connections.at(current) != start) {
             current = merge_connections.at(current);
             next_found = merge_connections.find(current) != merge_connections.end();
             DEBUG(current.int_id());

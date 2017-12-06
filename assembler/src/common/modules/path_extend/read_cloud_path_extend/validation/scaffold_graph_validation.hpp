@@ -40,6 +40,25 @@ struct ScaffoldGraphStats {
   size_t to_close_in_both_strands_;
   size_t to_next_with_distance_;
   size_t edges_;
+  size_t no_outgoing_;
+  size_t single_false_transition_;
+  size_t univocal_edges_;
+  size_t false_univocal_edges_;
+
+  ScaffoldGraphStats() {
+      true_positive_ = 0;
+      false_positive_ = 0;
+      false_negative_ = 0;
+      to_prev_ = 0;
+      to_next_rc_ = 0;
+      to_close_in_both_strands_ = 0;
+      to_next_with_distance_ = 0;
+      edges_ = 0;
+      no_outgoing_ = 0;
+      single_false_transition_ = 0;
+      univocal_edges_ = 0;
+      false_univocal_edges_ = 0;
+  }
 
   void Serialize(ostream& fout) const {
       fout << "Overall edges: " << edges_ << endl;
@@ -51,6 +70,10 @@ struct ScaffoldGraphStats {
       fout << "To previous: " << to_prev_ << endl;
       fout << "To near conjugate: " << to_next_rc_ << endl;
       fout << "To close in both strands: " << to_close_in_both_strands_ << endl;
+      fout << "No outgoing: " << no_outgoing_ << endl;
+      fout << "Single false transition: " << single_false_transition_ << endl;
+      fout << "Univocal edges: " << univocal_edges_ << endl;
+      fout << "False univocal edges: " << false_univocal_edges_ << endl;
   }
 };
 

@@ -147,8 +147,6 @@ private:
 
     AdjacencyStorage incoming_edges_;
 
-    void AddEdgeSimple(const ScaffoldEdge &e);
-
     //Delete outgoing edge from adjancecy list without checks
     void DeleteOutgoing(const ScaffoldEdge &e);
 
@@ -177,6 +175,9 @@ public:
     bool Exists(const ScaffoldEdge &e) const;
 
     ScaffoldGraphVertex conjugate(ScaffoldGraphVertex scaffold_vertex) const;
+
+    //fixme move back to private
+    void AddEdgeSimple(const ScaffoldEdge &e);
 
     //Return structure thay is equal to conjugate of e (not exactrly the same structure as in graph)
     ScaffoldEdge conjugate(const ScaffoldEdge &e) const;

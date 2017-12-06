@@ -7,16 +7,16 @@
 
 namespace path_extend {
     struct ScaffolderParams {
-      const size_t length_threshold_;
+      size_t length_threshold_;
       size_t tail_threshold_;
       size_t count_threshold_;
-      const double score_threshold_;
-      const double connection_score_threshold_;
-      const size_t connection_length_threshold_;
-      const size_t connection_count_threshold_;
+      double score_threshold_;
+      double connection_score_threshold_;
+      size_t connection_length_threshold_;
+      size_t connection_count_threshold_;
       size_t initial_distance_;
-      const double split_procedure_strictness_;
-      const size_t transitive_distance_threshold_;
+      double split_procedure_strictness_;
+      size_t transitive_distance_threshold_;
 
       ScaffolderParams(size_t length_threshold_,
                        size_t tail_threshold_,

@@ -23,7 +23,7 @@ namespace spades {
                                            cfg::get().output_saves});
         statistics_extractor.add(new debruijn_graph::DistanceEstimation())
             .add(new debruijn_graph::ScaffoldGraphConstructionStage())
-            .add(new debruijn_graph::ScaffolderAnalysisStage())
+//            .add(new debruijn_graph::ScaffolderAnalysisStage())
             .add(new debruijn_graph::ReadCloudStatisticsStage());
         INFO("Output directory: " << cfg::get().output_dir);
         statistics_extractor.run(conj_gp, cfg::get().entry_point.c_str());

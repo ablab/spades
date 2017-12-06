@@ -220,7 +220,9 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
 #pragma omp critical
         {
             for (const auto& vertex_with_dist: incident_vertices) {
-                graph_->AddEdge(vertex, vertex_with_dist.first, (size_t) - 1, 0, vertex_with_dist.second);
+                ScaffoldGraph::ScaffoldEdge edge(vertex, vertex_with_dist.first, (size_t) - 1, 0, vertex_with_dist.second);
+                //fixme replace with checking method
+                graph_->AddEdgeSimple(edge);
             }
             ++counter;
             if (counter % block_size == 0) {

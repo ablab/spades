@@ -1,3 +1,4 @@
+#include "read_cloud_path_extend/scaffold_graph_extractor.hpp"
 #include "scaffold_graph_validation.hpp"
 #include "transition_extractor.hpp"
 
@@ -69,9 +70,29 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
     stats.edges_ = graph.EdgeCount();
 
     auto false_negative_transitions = GetFalseNegativeTransitions(graph, reference_transitions);
-    INFO(false_negative_transitions.size() << " false negative transitions:");
+    DEBUG(false_negative_transitions.size() << " false negative transitions:");
     for (const auto& transition: false_negative_transitions) {
-        INFO(transition.first_.int_id() << " -> " << transition.second_.int_id());
+        DEBUG(transition.first_.int_id() << " -> " << transition.second_.int_id());
+        size_t outdegree = graph.OutgoingEdgeCount(transition.first_);
+        if (outdegree == 1) {
+            ++stats.single_false_transition_;
+        }
+        if (outdegree == 0) {
+            ++stats.no_outgoing_;
+        }
+    }
+
+    path_extend::ScaffoldGraphExtractor extractor;
+    auto univocal_edges = extractor.ExtractUnivocalEdges(graph);
+    stats.univocal_edges_ = univocal_edges.size();
+    for (const auto& edge: univocal_edges) {
+        auto start = edge.getStart();
+        auto end = edge.getEnd();
+        bool start_covered = reference_transitions.IsEdgeCovered(start);
+        bool end_covered = reference_transitions.IsEdgeCovered(end);
+        if (not reference_transitions.CheckTransition(start, end) and start_covered and end_covered) {
+            ++stats.false_univocal_edges_;
+        }
     }
     return stats;
 }
