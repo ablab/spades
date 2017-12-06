@@ -275,8 +275,15 @@ namespace read_cloud_statistics {
             const string ordering_name = "Ordering scaffold graph";
             const string transitive_name = "Transitive graph";
 
+            barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
+            auto long_edge_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
+                                                                       params.tail_threshold_,
+                                                                       params.count_threshold_, 500,
+                                                                       cfg::get().max_threads, unique_storage_.unique_edges());
+            auto long_edge_extractor = make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(long_edge_index);
 //            scaffolder_statistics::ScaffolderStageAnalyzer stats_extractor(gp_.g, large_unique_storage, params,
-//                                                                           reference_paths, barcode_extractor_ptr_);
+//                                                                           reference_paths, barcode_extractor_ptr_,
+//                                                                           long_edge_extractor);
 //            stats_extractor.FillStatistics();
 //            stats_extractor.SerializeStatistics(stats_base_path);
 

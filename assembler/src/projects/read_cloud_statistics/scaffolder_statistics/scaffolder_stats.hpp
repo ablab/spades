@@ -215,7 +215,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
 
 //        auto score_stats = make_shared<ScoreStats>(GetScoreStats(filtered_paths));
 //        AddStatistic(score_stats);
-
+//
 //        auto score_distribution_info = make_shared<ScoreDistributionInfo>(GetScoreDistributionInfo(filtered_paths));
 //        AddStatistic(score_distribution_info);
 
@@ -404,8 +404,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
                 DEBUG("Second id: " << second_ewm.edge_.int_id());
                 DEBUG("First barcodes: " << first_barcodes.size());
                 DEBUG("Second barcodes: " << second_barcodes.size());
-                DEBUG("Shared barcodes: " << barcode_extractor_ptr_->GetSharedBarcodesWithFilter(first_edge, second_edge,
-                                                                                                 count_threshold, tail_threshold).size());
+                DEBUG("Shared barcodes: " << long_edge_extractor_->GetIntersectionSize(first_ewm.edge_, second_ewm.edge_));
                 DEBUG("Distance: " << second_ewm.mapping_.start_pos - first_ewm.mapping_.end_pos);
                 DEBUG("Score: " << score);
                 scores.push_back(score);
@@ -508,14 +507,14 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         vector <size_t> lengths;
         const size_t min_length = 50;
         const size_t max_length = 500;
-        const size_t step = 150;
+        const size_t step = 250;
         for (size_t i = min_length; i <= max_length; i += step) {
             lengths.push_back(i);
         }
         vector <double> score_thresholds;
-        const double min_threshold = 0.05;
-        const double max_threshold = 0.5;
-        const double thr_step = 0.1;
+        const double min_threshold = 0.001;
+        const double max_threshold = 0.011;
+        const double thr_step = 0.002;
 
         for (double i = min_threshold; i <= max_threshold; i += thr_step) {
             score_thresholds.push_back(i);
@@ -587,7 +586,6 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         Range second_mapping = reference_path[second_pos].mapping_;
         const size_t tail_threshold = scaff_params_.tail_threshold_;
         const size_t count_threshold = scaff_params_.count_threshold_;
-        auto barcode_intersection = GetIntersection(first, second, tail_threshold, count_threshold);
         const size_t middle_count_threshold = 1;
 
         for (double score_threshold: thresholds) {
@@ -603,12 +601,13 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
 
             auto dij_predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(g_,
                                                                                             unique_storage_,
-                                                                                            long_edge_extractor_,
+                                                                                            short_edge_extractor,
                                                                                             long_edge_extractor_,
                                                                                             long_params);
             DEBUG("Score threshold: " << score_threshold);
+            DEBUG("Checking edge " << first.int_id() << " -> " << second.int_id());
             if (AreConnectedByBarcodePath(reference_path, first_pos, second_pos,
-                                          score_threshold, barcode_intersection, length_threshold, middle_count_threshold, tail_threshold)) {
+                                          score_threshold, length_threshold, middle_count_threshold, tail_threshold)) {
                 thresholds_to_covered[score_threshold]++;
                 ScaffoldGraph::ScaffoldEdge
                     scaffold_edge(first, second, (size_t) - 1, 0, scaff_params_.initial_distance_);
@@ -629,36 +628,20 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         }
     }
 
-    vector <BarcodeId> GetIntersection(const EdgeId& first, const EdgeId& second,
-                                       size_t tail_threshold, size_t count_threshold) {
-        vector <BarcodeId> filtered_barcode_intersection;
-        auto barcode_intersection = barcode_extractor_ptr_->GetSharedBarcodes(first, second);
-        for (const auto& barcode: barcode_intersection) {
-            if (barcode_extractor_ptr_->GetMaxPos(first, barcode) + tail_threshold > g_.length(first) and
-                barcode_extractor_ptr_->GetMinPos(second, barcode) < tail_threshold and
-                barcode_extractor_ptr_->GetNumberOfReads(first, barcode) >= count_threshold and
-                barcode_extractor_ptr_->GetNumberOfReads(second, barcode) >= count_threshold) {
-                filtered_barcode_intersection.push_back(barcode);
-            }
-        }
-        return filtered_barcode_intersection;
-    }
-
     bool AreConnectedByBarcodePath(const vector <EdgeWithMapping>& reference_path, size_t first_pos, size_t second_pos,
-                                   double score_threshold, const vector <BarcodeId>& barcode_intersection,
-                                   size_t length_threshold, size_t count_threshold, size_t tail_threshold) {
+                                   double score_threshold, size_t length_threshold,
+                                   size_t count_threshold, size_t tail_threshold) {
         VERIFY(first_pos < second_pos);
         VERIFY(second_pos < reference_path.size());
         EdgeId start = reference_path[first_pos].edge_;
         EdgeId end = reference_path[second_pos].edge_;
         const bool normalize_using_cov = false;
         auto short_edge_extractor = std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_ptr_);
-        SimpleVertexEntry simple_entry;
-        std::copy(barcode_intersection.begin(), barcode_intersection.end(), std::inserter(simple_entry, simple_entry.begin()));
+        auto intersection = long_edge_extractor_->GetIntersection(start, end);
         path_extend::LongEdgePairGapCloserParams params(count_threshold, tail_threshold, score_threshold,
                                                         length_threshold, normalize_using_cov);
-        path_extend::LongEdgePairGapCloserPredicate gap_closer_predicate(g_, short_edge_extractor, params, start, end,
-                                                                         simple_entry);
+        path_extend::LongEdgePairGapCloserPredicate gap_closer_predicate(g_, short_edge_extractor, params,
+                                                                         start, end, intersection);
         for (size_t i = first_pos + 1; i < second_pos; ++i) {
             if (not gap_closer_predicate.Check(reference_path[i].edge_)) {
                 return false;
