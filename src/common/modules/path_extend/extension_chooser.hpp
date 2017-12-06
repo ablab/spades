@@ -2234,7 +2234,7 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
         }
 
         auto is_edge_supported_by_clouds = [this](const EdgeWithDistance& edge) {
-          return cloud_predicate_->Check(edge.e_);
+          return not unique_storage_.IsUnique(edge.e_) and cloud_predicate_->Check(edge.e_);
         };
         std::copy_if(edges.begin(), edges.end(), std::back_inserter(result), is_edge_supported_by_clouds);
         if (result.size() > 0) {
@@ -2246,7 +2246,7 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
         }
 
         auto are_supported_by_clouds_reachable = [this](const EdgeWithDistance& edge) {
-          return AreSupportedByCloudsReachable(edge.e_, scan_bound_);
+          return not unique_storage_.IsUnique(edge.e_) and AreSupportedByCloudsReachable(edge.e_, scan_bound_);
         };
         std::copy_if(edges.begin(), edges.end(), std::back_inserter(result), are_supported_by_clouds_reachable);
         if (result.size() > 0) {
