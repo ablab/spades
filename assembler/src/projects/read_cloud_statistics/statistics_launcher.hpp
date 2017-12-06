@@ -254,7 +254,7 @@ namespace read_cloud_statistics {
             INFO("Reference path: " << reference_path);
             INFO("Cloud contig path: " << cloud_contigs_path);
 
-            const size_t min_length = 20000;
+            const size_t min_length = cfg::get().ts_res.long_edge_length_lower_bound;
             path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
             path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
             unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
@@ -275,15 +275,26 @@ namespace read_cloud_statistics {
             const string ordering_name = "Ordering scaffold graph";
             const string transitive_name = "Transitive graph";
 
-//            scaffolder_statistics::ScaffolderStageAnalyzer stats_extractor(gp_.g, large_unique_storage, params,
-//                                                                           reference_paths, barcode_extractor_ptr_);
-//            stats_extractor.FillStatistics();
-//            stats_extractor.SerializeStatistics(stats_base_path);
-
+            barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
             //scaffold graph stages table
             auto scaffold_graph_storage = BuildScaffoldGraphStorage(gp_,large_unique_storage, params, initial_name,
                                                                     score_name, composite_connection_name, barcode_connection_name, ordering_name,
                                                                     transitive_name);
+
+            auto long_edge_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
+                                                                       params.tail_threshold_,
+                                                                       params.count_threshold_, 500,
+                                                                       cfg::get().max_threads, unique_storage_.unique_edges());
+            auto long_edge_extractor = make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(long_edge_index);
+            INFO(scaffold_graph_storage.at(score_name).graph.EdgeCount());
+            scaffolder_statistics::ScaffolderStageAnalyzer stats_extractor(gp_.g, large_unique_storage, params,
+                                                                           reference_paths, barcode_extractor_ptr_,
+                                                                           long_edge_extractor,
+                                                                           scaffold_graph_storage.at(score_name).graph,
+                                                                           scaffold_graph_storage.at(initial_name).graph);
+            stats_extractor.FillStatistics();
+            stats_extractor.SerializeStatistics(stats_base_path);
+
             scaffold_graph_utils::ScaffolderAnalyzer scaffolder_analyzer(filtered_reference_paths, scaffold_graph_storage, gp_.g);
             scaffolder_analyzer.FillStatistics();
             INFO("Printing stats")
@@ -308,14 +319,13 @@ namespace read_cloud_statistics {
             auto short_reference_paths = helper.GetFilteredReferencePathsFromLength(path_to_reference,
                                                                                        small_length_threshold);
 
-            const size_t count_threshold = 2;
             barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor(gp_.barcode_mapper_ptr, gp_.g);
 
             path_extend::ScaffoldingUniqueEdgeAnalyzer analyzer(gp_, small_length_threshold, 100);
             path_extend::ScaffoldingUniqueEdgeStorage unique_storage;
             analyzer.FillUniqueEdgeStorage(unique_storage);
             auto scaffold_helper = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage,
-                                                                                  100000,
+                                                                                  cfg::get().ts_res.scaff_con.initial_distance,
                                                                                   gp_.g, cfg::get().max_threads);
             auto initial_scaffold_graph = scaffold_helper.ConstructScaffoldGraphUsingDijkstra();
 
@@ -341,7 +351,7 @@ namespace read_cloud_statistics {
 //            transition_storage_builder.BuildFromClusters(path_clusters, path_cluster_extractor);
 //            path_extend::transitions::ClusterTransitionStorage transition_storage = *(transition_storage_builder.GetStorage());
 //            INFO("Transition storage size: " << transition_storage.size());
-
+//
 //            scaffolder_statistics::PathClusterScoreAnalyzer path_cluster_analyzer(gp_.g, short_reference_paths,
 //                                                                                          transition_storage, path_clusters,
 //                                                                                          cluster_graph_analyzer);
@@ -349,30 +359,39 @@ namespace read_cloud_statistics {
 //            path_cluster_analyzer.FillStatistics();
 //            path_cluster_analyzer.SerializeStatistics(stats_base_path);
 //
-//            const size_t distance_threshold = 3;
-//            const double share_threshold = 0.15;
 
-//            Validate subgraph extraction
-//            path_extend::CloudScaffoldSubgraphExtractor subgraph_extractor(gp_.g, *barcode_extractor_ptr, distance_threshold,
-//                                                                  share_threshold, count_threshold, small_length_threshold,
-//                                                                  large_length_threshold);
-//            auto large_scaffold_graph = gp_.scaffold_graph_storage.GetLargeScaffoldGraph();
-//            auto small_scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
-//            auto long_reference_paths = helper.GetFilteredReferencePathsFromLength(path_to_reference, large_length_threshold);
-//            SubgraphExtractorAnalyzer gap_closer_analyzer(gp_.g, long_reference_paths, short_reference_paths, subgraph_extractor);
-//            gap_closer_analyzer.AnalyzeGapCloser(large_scaffold_graph, small_scaffold_graph);
-//
-//
+            //Validate subgraph extraction
+            path_extend::ScaffoldGraphGapCloserParamsConstructor params_constructor;
+            auto subgraph_extractor_params = params_constructor.ConstructSubgraphExtractorParamsFromConfig();
+            barcode_index::SimpleScaffoldVertexIndexBuilderHelper index_builder_helper;
+            const size_t tail_threshold = subgraph_extractor_params.large_length_threshold_;
+            //fixme move to configs
+            const size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
+            const size_t count_threshold = subgraph_extractor_params.count_threshold_;
+
+            const auto &small_scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
+            const auto &large_scaffold_graph = gp_.scaffold_graph_storage.GetLargeScaffoldGraph();
+
+            auto scaffold_vertex_index = index_builder_helper.ConstructScaffoldVertexIndex(gp_.g, barcode_extractor, tail_threshold,
+                                                                             count_threshold, length_threshold, cfg::get().max_threads,
+                                                                             small_scaffold_graph.vertices());
+            auto scaffold_index_extractor = std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
+            path_extend::CloudScaffoldSubgraphExtractor subgraph_extractor(gp_.g, scaffold_index_extractor, subgraph_extractor_params);
+            auto long_reference_paths = helper.GetFilteredReferencePathsFromLength(path_to_reference, large_length_threshold);
+            SubgraphExtractorAnalyzer gap_closer_analyzer(gp_.g, long_reference_paths, short_reference_paths, subgraph_extractor);
+            gap_closer_analyzer.AnalyzeGapCloser(large_scaffold_graph, small_scaffold_graph);
+
+
             //Validate path extraction strategies
 //            scaffolder_statistics::GapCloserDijkstraAnalyzer path_extraction_analyzer(gp_.g, short_reference_paths, barcode_extractor,
 //                                                                                  count_threshold, small_length_threshold,
 //                                                                                  large_length_threshold);
 //            path_extraction_analyzer.FillStatistics();
 //            path_extraction_analyzer.SerializeStatistics(stats_base_path);
-
-            scaffolder_statistics::GapCloserPathClusterAnalyzer path_cluster_analyzer(gp_, short_reference_paths);
-            path_cluster_analyzer.FillStatistics();
-            path_cluster_analyzer.SerializeStatistics(stats_base_path);
+//
+//            scaffolder_statistics::GapCloserPathClusterAnalyzer path_cluster_analyzer(gp_, short_reference_paths);
+//            path_cluster_analyzer.FillStatistics();
+//            path_cluster_analyzer.SerializeStatistics(stats_base_path);
         }
 
         void AnalyzePathClusters(const string& stats_base_path, size_t distance) {
