@@ -269,7 +269,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
 
     shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
     if (opts.use_default_single_threshold) {
-        if (params_.uneven_depth) {
+        if (params_.uneven_depth || params_.mode == config::pipeline_type::moleculo) {
             iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length);
         } else {
             double lib_cov = support_.EstimateLibCoverage(lib_index);

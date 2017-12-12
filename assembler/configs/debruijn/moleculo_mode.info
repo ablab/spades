@@ -112,8 +112,8 @@ params {
     ; extension selection
     extension_options
     {
-        use_default_single_threshold false
-        single_threshold           0.001
+        use_default_single_threshold true
+        single_threshold           0.3
         weight_threshold           0.6
     }
 
