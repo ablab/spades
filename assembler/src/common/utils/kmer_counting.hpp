@@ -4,6 +4,7 @@
 #include "adt/hll.hpp"
 #include "adt/cqf.hpp"
 #include "ph_map/storing_traits.hpp"
+#include "common/utils/parallel/openmp_wrapper.h"
 
 namespace utils {
 
