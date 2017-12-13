@@ -16,9 +16,9 @@
 
 namespace io {
 
-typedef debruijn_graph::config::dataset dataset;
 typedef debruijn_graph::config::LibraryData LibraryData;
 typedef SequencingLibrary<LibraryData> SequencingLibraryT;
+typedef DataSet<LibraryData> dataset;
 
 class ReadConverter {
 
@@ -204,19 +204,19 @@ BinarySingleStreams single_binary_readers(SequencingLibraryT &lib,
     return single_streams;
 }
 
-inline
-BinarySingleStreams single_binary_readers_for_libs(dataset& dataset_info,
-                                                   const std::vector<size_t>& libs,
-                                                   bool followed_by_rc = true,
-                                                   bool including_paired_reads = true) {
+inline BinarySingleStreams
+single_binary_readers_for_libs(dataset& dataset_info,
+                               const std::vector<size_t>& libs,
+                               bool followed_by_rc = true,
+                               bool including_paired_reads = true) {
     VERIFY(!libs.empty())
-    size_t chunk_num = dataset_info.reads[libs.front()].data().binary_reads_info.chunk_num;
+    size_t chunk_num = dataset_info[libs.front()].data().binary_reads_info.chunk_num;
 
     std::vector<BinarySingleStreams> streams(chunk_num);
     for (size_t i = 0; i < libs.size(); ++i) {
-        VERIFY_MSG(chunk_num == dataset_info.reads[libs[i]].data().binary_reads_info.chunk_num,
+        VERIFY_MSG(chunk_num == dataset_info[libs[i]].data().binary_reads_info.chunk_num,
                    "Cannot create stream for multiple libraries with different chunk_num")
-        BinarySingleStreams lib_streams = single_binary_readers(dataset_info.reads[libs[i]],
+        BinarySingleStreams lib_streams = single_binary_readers(dataset_info[libs[i]],
                                                                 followed_by_rc, including_paired_reads);
 
         for (size_t j = 0; j < chunk_num; ++j) {

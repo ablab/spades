@@ -5,9 +5,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "io/reads/vector_reader.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/dataset_support/read_converter.hpp"
+#include "io/reads/coverage_filtering_read_wrapper.hpp"
+#include "io/reads/vector_reader.hpp"
 
 #include "modules/graph_construction.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
@@ -76,15 +77,16 @@ void Construction::init(debruijn_graph::conj_graph_pack &gp, const char *) {
     storage().contigs_stream = MultifileWrap(trusted_contigs);
 
     // FIXME: indices here are awful
-    auto& dataset = cfg::get_writable().ds.reads;
+    auto& dataset = cfg::get_writable().ds;
     std::vector<size_t> libs_for_construction;
-    for (size_t i = 0; i < dataset.lib_count(); ++i)
-        if (dataset[i].is_graph_contructable())
+    for (size_t i = 0; i < dataset.reads.lib_count(); ++i)
+        if (dataset.reads[i].is_graph_contructable())
             libs_for_construction.push_back(i);
 
     storage().params = cfg::get().con;
     storage().workdir = fs::tmp::make_temp_dir(gp.workdir, "construction");
-    storage().read_streams = io::single_binary_readers_for_libs(dataset, libs_for_construction, true, true);
+    storage().read_streams = io::single_binary_readers_for_libs(dataset.reads, libs_for_construction,
+                                                                true, true);
 
     //Updating dataset stats
     VERIFY(dataset.RL == 0 && dataset.aRL == 0.);
@@ -94,7 +96,7 @@ void Construction::init(debruijn_graph::conj_graph_pack &gp, const char *) {
     for (size_t lib_id : libs_for_construction) {
         auto lib_data = dataset.reads[lib_id].data();
         if (lib_data.unmerged_read_length == 0) {
-            FATAL_ERROR("Failed to determine read length for library #" << lib_id << ". "
+            FATAL_ERROR("Failed to determine read length for library #" << lib_data.lib_index << ". "
                     "Check that not only merged reads are present.");
         }
         dataset.no_merge_RL = std::max(dataset.no_merge_RL, lib_data.unmerged_read_length);
@@ -130,17 +132,47 @@ public:
         auto &read_streams = storage().read_streams;
         auto &contigs_stream = storage().contigs_stream;
         const auto &index = storage().ext_index;
+        size_t buffer_size = storage().params.read_buffer_size;
+        using storing_type = decltype(storage().ext_index)::storing_type;
 
         VERIFY_MSG(read_streams.size(), "No input streams specified");
 
         unsigned nthreads = (unsigned)read_streams.size();
-        utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
-                                        utils::StoringTypeFilter<decltype(storage().ext_index)::storing_type>>
-                splitter(storage().workdir, index.k() + 1, 0,
-                         read_streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
-                         storage().params.read_buffer_size);
-        storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
-        storage().counter->CountAll(nthreads, nthreads, /* merge */false);
+        // FIXME reduce code duplication
+        if (1) {
+            using KmerFilter = utils::StoringTypeFilter<storing_type>;
+
+            unsigned kplusone = index.k() + 1;
+            io::SeqHasher hasher(kplusone);
+
+            INFO("Estimating k-mers cardinality");
+            size_t kmers = EstimateCardinality(kplusone, read_streams, KmerFilter());
+
+            // Create main CQF using # of slots derived from estimated # of k-mers
+            qf::cqf<RtSeq> cqf(kmers);
+
+            INFO("Building k-mer coverage histogram");
+            unsigned kthr = 2;
+            unsigned rthr = 2;
+            FillCoverageHistogram(cqf, kplusone, read_streams, std::max(kthr, rthr), KmerFilter());
+
+            auto wstreams = io::CovFilteringWrap(read_streams, kplusone, cqf, rthr);
+            utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
+                                            utils::StoringTypeFilter<storing_type>>
+                    splitter(storage().workdir, index.k() + 1, 0,
+                             wstreams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
+                             buffer_size);
+            storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
+            storage().counter->CountAll(nthreads, nthreads, /* merge */false);
+        } else {
+            utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
+                                            utils::StoringTypeFilter<storing_type>>
+                    splitter(storage().workdir, index.k() + 1, 0,
+                             read_streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
+                             buffer_size);
+            storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
+            storage().counter->CountAll(nthreads, nthreads, /* merge */false);
+        }
     }
 
     void load(debruijn_graph::conj_graph_pack&,

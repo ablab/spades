@@ -7,7 +7,6 @@
 #pragma once
 
 #include "kmer_extension_index.hpp"
-#include "io/reads/coverage_filtering_read_wrapper.hpp"
 #include "utils/kmer_mph/kmer_splitters.hpp"
 #include "utils/kmer_counting.hpp"
 
@@ -63,44 +62,16 @@ public:
         unsigned nthreads = (unsigned) streams.size();
         using KmerFilter = StoringTypeFilter<typename Index::storing_type>;
 
-        std::vector<std::string> kmerfiles;
-        if (1) {
-            unsigned kplusone = index.k() + 1;
-            SeqHasher hasher(kplusone);
+        // First, build a k+1-mer index
+        DeBruijnReadKMerSplitter<typename Streams::ReadT, KmerFilter >
+                splitter(workdir, index.k() + 1, 0xDEADBEEF, streams,
+                         contigs_stream, read_buffer_size);
+        KMerDiskCounter<RtSeq> counter(workdir, splitter);
+        counter.CountAll(nthreads, nthreads, /* merge */ false);
 
-            INFO("Estimating k-mers cardinality");
-            size_t kmers = EstimateCardinality(kplusone, streams, KmerFilter());
+        BuildExtensionIndexFromKPOMers(workdir, index, counter,
+                                       nthreads, read_buffer_size);
 
-            // Create main CQF using # of slots derived from estimated # of k-mers
-            qf::cqf<RtSeq> cqf(kmers); //[&](const RtSeq &s) { return hasher.hash(s); }
-
-            INFO("Building k-mer coverage histogram");
-            unsigned kthr = 2;
-            unsigned rthr = 2;
-            FillCoverageHistogram(cqf, kplusone, streams, std::max(kthr, rthr), KmerFilter());
-
-            // First, build a k+1-mer index
-            auto wstreams = io::CovFilteringWrap(streams, kplusone, cqf, rthr);
-            DeBruijnReadKMerSplitter<typename Streams::ReadT, KmerFilter>
-                    splitter(workdir, kplusone, 0xDEADBEEF,
-                             wstreams,
-                             contigs_stream, read_buffer_size);
-            KMerDiskCounter<RtSeq> counter(workdir, splitter);
-            counter.CountAll(nthreads, nthreads, /* merge */ false);
-
-            BuildExtensionIndexFromKPOMers(workdir, index, counter,
-                                           nthreads, read_buffer_size);
-        } else {
-            // First, build a k+1-mer index
-            DeBruijnReadKMerSplitter<typename Streams::ReadT, KmerFilter >
-                    splitter(workdir, index.k() + 1, 0xDEADBEEF, streams,
-                             contigs_stream, read_buffer_size);
-            KMerDiskCounter<RtSeq> counter(workdir, splitter);
-            counter.CountAll(nthreads, nthreads, /* merge */ false);
-
-            BuildExtensionIndexFromKPOMers(workdir, index, counter,
-                                           nthreads, read_buffer_size);
-        }
     }
 
     template<class Index, class Counter>

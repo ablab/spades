@@ -19,8 +19,8 @@ inline
 PairedStreamPtr paired_easy_reader(const SequencingLibrary<debruijn_graph::config::LibraryData> &lib,
                                    bool followed_by_rc,
                                    size_t insert_size,
-                                   bool use_orientation/* = true*/,
-                                   OffsetType offset_type/* = PhredOffset*/) {
+                                   bool use_orientation = true,
+                                   OffsetType offset_type = PhredOffset) {
     ReadStreamList<PairedRead> streams;
     for (auto read_pair : lib.paired_reads()) {
         streams.push_back(PairedEasyStream(read_pair.first, read_pair.second, followed_by_rc, insert_size,

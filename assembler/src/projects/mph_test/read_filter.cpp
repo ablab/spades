@@ -107,13 +107,16 @@ int main(int argc, char* argv[]) {
         // Inform OpenMP runtime about this :)
         omp_set_num_threads((int) nthreads);
 
-        io::DataSet<debruijn_graph::config::DataSetData> dataset;
+        io::DataSet<debruijn_graph::config::LibraryData> dataset;
         dataset.load(dataset_desc);
 
         fs::make_dir(workdir + "/tmp/");
         debruijn_graph::config::init_libs(dataset, nthreads, buff_size, workdir + "/tmp/");
 
-        io::BinarySingleStreams single_readers = io::single_binary_readers(dataset, /*followed by rc*/false, /*including paired*/true);
+        std::vector<size_t> libs(dataset.lib_count());
+        std::iota(libs.begin(), libs.end(), 0);
+        io::BinarySingleStreams single_readers = io::single_binary_readers_for_libs(dataset, libs,
+                                                                                    /*followed by rc*/false, /*including paired*/true);
         INFO("Estimating kmer cardinality");
         size_t kmers_cnt_est = utils::EstimateCardinality(k, single_readers);
         CQFKmerFilter cqf(kmers_cnt_est);
@@ -134,7 +137,7 @@ int main(int argc, char* argv[]) {
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
             INFO("Filtering library " << i);
             if (dataset[i].has_paired()) {
-                auto filtered = io::FilteringWrap<io::PairedRead>(io::paired_easy_library_reader(dataset[i], 
+                auto filtered = io::FilteringWrap<io::PairedRead>(io::paired_easy_reader(dataset[i], 
                             /*followed by rc*/false, /*insert size*/0),
                                                                   paired_filter_f);
                 io::OPairedReadStream ostream(workdir + "/" + to_string(i + 1) + ".1.fastq",
@@ -143,7 +146,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (dataset[i].has_single()) {
-                auto filtered = io::FilteringWrap<io::SingleRead>(io::single_easy_library_reader(dataset[i],
+                auto filtered = io::FilteringWrap<io::SingleRead>(io::single_easy_reader(dataset[i],
                                                /*followed_by_rc*/ false,
                                                /*including_paired_reads*/ false), 
                                                                    single_filter_f);

@@ -586,6 +586,9 @@ struct debruijn_config {
     }
 };
 
+
+void init_libs(io::DataSet<LibraryData> &dataset, size_t max_threads,
+               size_t buffer_size, const std::string &temp_bin_reads_path);
 void load(debruijn_config& cfg, const std::vector<std::string> &filenames);
 void load(debruijn_config& cfg, const std::string &filename);
 void load_lib_data(const std::string& prefix);
