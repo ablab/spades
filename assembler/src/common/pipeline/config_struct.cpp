@@ -216,6 +216,9 @@ void load(debruijn_config::construction& con,
     load(con.con_mode, pt, "mode", complete);
     load(con.keep_perfect_loops, pt, "keep_perfect_loops", complete);
     load(con.read_buffer_size, pt, "read_buffer_size", complete);
+    load(con.kmer_cov_threshold, pt, "kmer_cov_threshold", complete);
+    load(con.read_cov_threshold, pt, "read_cov_threshold", complete);
+
     con.read_buffer_size *= 1024 * 1024;
     load(con.early_tc, pt, "early_tip_clipper", complete);
 }

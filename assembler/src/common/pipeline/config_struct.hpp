@@ -350,10 +350,14 @@ struct debruijn_config {
         construction_mode con_mode;
         early_tip_clipper early_tc;
         bool keep_perfect_loops;
+        unsigned kmer_cov_threshold;
+        unsigned read_cov_threshold;
         size_t read_buffer_size;
         construction() :
                 con_mode(construction_mode::extention),
                 keep_perfect_loops(true),
+                kmer_cov_threshold(0),
+                read_cov_threshold(0),
                 read_buffer_size(0) {}
     };
 

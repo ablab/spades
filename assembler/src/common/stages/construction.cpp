@@ -138,8 +138,10 @@ public:
         VERIFY_MSG(read_streams.size(), "No input streams specified");
 
         unsigned nthreads = (unsigned)read_streams.size();
+        unsigned kthr = storage().params.kmer_cov_threshold;
+        unsigned rthr = storage().params.read_cov_threshold;
         // FIXME reduce code duplication
-        if (1) {
+        if (kthr || rthr) {
             using KmerFilter = utils::StoringTypeFilter<storing_type>;
 
             unsigned kplusone = index.k() + 1;
@@ -152,8 +154,6 @@ public:
             qf::cqf<RtSeq> cqf(kmers);
 
             INFO("Building k-mer coverage histogram");
-            unsigned kthr = 2;
-            unsigned rthr = 2;
             FillCoverageHistogram(cqf, kplusone, read_streams, std::max(kthr, rthr), KmerFilter());
 
             auto wstreams = io::CovFilteringWrap(read_streams, kplusone, cqf, rthr);
