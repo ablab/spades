@@ -153,8 +153,10 @@ size_t EstimateCardinality(unsigned k, ReadStream &streams,
     }
 
     std::pair<double, bool> res = hlls[0].cardinality();
-    if (!res.second)
+    if (!res.second) {
+        INFO("Estimated " << size_t(res.first) << " distinct kmers (rough upper limit)");
         return 256ull * 1024 * 1024;
+    }
 
     INFO("Estimated " << size_t(res.first) << " distinct kmers");
     return size_t(res.first);
