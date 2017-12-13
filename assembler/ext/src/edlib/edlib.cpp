@@ -99,6 +99,12 @@ static int myersCalcEditDistanceSemiGlobal(const Word* Peq, int W, int maxNumBlo
                                            int k, EdlibAlignMode mode,
                                            int* bestScore_, int** positions_, int* numPositions_);
 
+static int myersCalcEditDistanceSemiGlobalFull(const Word* Peq, int W, int maxNumBlocks,
+                                           int queryLength,
+                                           const unsigned char* target, int targetLength,
+                                           int k, EdlibAlignMode mode,
+                                           int* bestScore_, int** const scores_, int** positions_, int* numPositions_);
+
 static int myersCalcEditDistanceNW(const Word* Peq, int W, int maxNumBlocks,
                                    int queryLength,
                                    const unsigned char* target, int targetLength,
@@ -184,11 +190,18 @@ extern "C" EdlibAlignResult edlibAlign(const char* const queryOriginal, const in
                                             queryLength, target, targetLength,
                                             k, config.mode, &(result.editDistance),
                                             &(result.endLocations), &(result.numLocations));
-        } else {  // mode == EDLIB_MODE_NW
-            myersCalcEditDistanceNW(Peq, W, maxNumBlocks,
-                                    queryLength, target, targetLength,
-                                    k, &(result.editDistance), &positionNW,
-                                    false, &alignData, -1);
+        } else {
+            if (config.mode == EDLIB_MODE_SHW_FULL) {
+                myersCalcEditDistanceSemiGlobalFull(Peq, W, maxNumBlocks,
+                                                queryLength, target, targetLength,
+                                                k, config.mode, &(result.editDistance),
+                                                &(result.endScores), &(result.endLocations), &(result.numLocations));
+            } else {  // mode == EDLIB_MODE_NW
+                myersCalcEditDistanceNW(Peq, W, maxNumBlocks,
+                                        queryLength, target, targetLength,
+                                        k, &(result.editDistance), &positionNW,
+                                        false, &alignData, -1);
+            }
         }
         k *= 2;
     } while(dynamicK && result.editDistance == -1);
@@ -664,6 +677,182 @@ static int myersCalcEditDistanceSemiGlobal(
         *positions_ = (int *) malloc(sizeof(int) * (int) positions.size());
         *numPositions_ = (int) positions.size();
         copy(positions.begin(), positions.end(), *positions_);
+    }
+
+    delete[] blocks;
+    return EDLIB_STATUS_OK;
+}
+
+/**
+ * Uses Myers' bit-vector algorithm to find edit distance for one of semi-global alignment methods.
+ * @param [in] Peq  Query profile.
+ * @param [in] W  Size of padding in last block.
+ *                TODO: Calculate this directly from query, instead of passing it.
+ * @param [in] maxNumBlocks  Number of blocks needed to cover the whole query.
+ *                           TODO: Calculate this directly from query, instead of passing it.
+ * @param [in] queryLength
+ * @param [in] target
+ * @param [in] targetLength
+ * @param [in] k
+ * @param [in] mode  EDLIB_MODE_HW or EDLIB_MODE_SHW
+ * @param [out] bestScore_  Edit distance.
+ * @param [out] positions_  Array of 0-indexed positions in target at which best score was found.
+                            Make sure to free this array with free().
+ * @param [out] numPositions_  Number of positions in the positions_ array.
+ * @return Status.
+ */
+static int myersCalcEditDistanceSemiGlobalFull(
+        const Word* const Peq, const int W, const int maxNumBlocks,
+        const int queryLength,
+        const unsigned char* const target, const int targetLength,
+        int k, const EdlibAlignMode mode,
+        int* const bestScore_, int** const scores_, int** const positions_, int* const numPositions_) {
+    *scores_ = NULL;
+    *positions_ = NULL;
+    *numPositions_ = 0;
+
+    // firstBlock is 0-based index of first block in Ukkonen band.
+    // lastBlock is 0-based index of last block in Ukkonen band.
+    int firstBlock = 0;
+    int lastBlock = min(ceilDiv(k + 1, WORD_SIZE), maxNumBlocks) - 1; // y in Myers
+    Block *bl; // Current block
+
+    Block* blocks = new Block[maxNumBlocks];
+
+    // For HW, solution will never be larger then queryLength.
+    if (mode == EDLIB_MODE_HW) {
+        k = min(queryLength, k);
+    }
+
+    // Each STRONG_REDUCE_NUM column is reduced in more expensive way.
+    // This gives speed up of about 2 times for small k.
+    const int STRONG_REDUCE_NUM = 2048;
+
+    // Initialize P, M and score
+    bl = blocks;
+    for (int b = 0; b <= lastBlock; b++) {
+        bl->score = (b + 1) * WORD_SIZE;
+        bl->P = (Word)-1; // All 1s
+        bl->M = (Word)0;
+        bl++;
+    }
+
+    int bestScore = -1;
+    vector<int> scores;
+    vector<int> positions; // TODO: Maybe put this on heap?
+    const int startHout = mode == EDLIB_MODE_HW ? 0 : 1; // If 0 then gap before query is not penalized;
+    const unsigned char* targetChar = target;
+    for (int c = 0; c < targetLength; c++) { // for each column
+        const Word* Peq_c = Peq + (*targetChar) * maxNumBlocks;
+
+        //----------------------- Calculate column -------------------------//
+        int hout = startHout;
+        bl = blocks + firstBlock;
+        Peq_c += firstBlock;
+        for (int b = firstBlock; b <= lastBlock; b++) {
+            hout = calculateBlock(bl->P, bl->M, *Peq_c, hout, bl->P, bl->M);
+            bl->score += hout;
+            bl++; Peq_c++;
+        }
+        bl--; Peq_c--;
+        //------------------------------------------------------------------//
+
+        //---------- Adjust number of blocks according to Ukkonen ----------//
+        if ((lastBlock < maxNumBlocks - 1) && (bl->score - hout <= k) // bl is pointing to last block
+            && ((*(Peq_c + 1) & WORD_1) || hout < 0)) { // Peq_c is pointing to last block
+            // If score of left block is not too big, calculate one more block
+            lastBlock++; bl++; Peq_c++;
+            bl->P = (Word)-1; // All 1s
+            bl->M = (Word)0;
+            bl->score = (bl - 1)->score - hout + WORD_SIZE + calculateBlock(bl->P, bl->M, *Peq_c, hout, bl->P, bl->M);
+        } else {
+            while (lastBlock >= firstBlock && bl->score >= k + WORD_SIZE) {
+                lastBlock--; bl--; Peq_c--;
+            }
+        }
+
+        // Every some columns, do some expensive but also more efficient block reducing.
+        // This is important!
+        //
+        // Reduce the band by decreasing last block if possible.
+        if (c % STRONG_REDUCE_NUM == 0) {
+            while (lastBlock >= 0 && lastBlock >= firstBlock && allBlockCellsLarger(*bl, k)) {
+                lastBlock--; bl--; Peq_c--;
+            }
+        }
+        // For HW, even if all cells are > k, there still may be solution in next
+        // column because starting conditions at upper boundary are 0.
+        // That means that first block is always candidate for solution,
+        // and we can never end calculation before last column.
+        if (mode == EDLIB_MODE_HW && lastBlock == -1) {
+            lastBlock++; bl++; Peq_c++;
+        }
+
+        // Reduce band by increasing first block if possible. Not applicable to HW.
+        if (mode != EDLIB_MODE_HW) {
+            while (firstBlock <= lastBlock && blocks[firstBlock].score >= k + WORD_SIZE) {
+                firstBlock++;
+            }
+            if (c % STRONG_REDUCE_NUM == 0) { // Do strong reduction every some blocks
+                while (firstBlock <= lastBlock && allBlockCellsLarger(blocks[firstBlock], k)) {
+                    firstBlock++;
+                }
+            }
+        }
+
+        // If band stops to exist finish
+        if (lastBlock < firstBlock) {
+            *bestScore_ = bestScore;
+            if (bestScore != -1) {
+                *positions_ = (int *) malloc(sizeof(int) * (int) positions.size());
+                *numPositions_ = (int) positions.size();
+                copy(positions.begin(), positions.end(), *positions_);
+                *scores_ = (int *) malloc(sizeof(int) * (int) scores.size());
+                copy(scores.begin(), scores.end(), *scores_);
+            }
+            delete[] blocks;
+            return EDLIB_STATUS_OK;
+        }
+        //------------------------------------------------------------------//
+
+        //------------------------- Update best score ----------------------//
+        if (lastBlock == maxNumBlocks - 1) {
+            int colScore = bl->score;
+            if (colScore <= k) { // Scores > k dont have correct values (so we cannot use them), but are certainly > k.
+                // NOTE: Score that I find in column c is actually score from column c-W
+                if (bestScore == -1 || colScore <= bestScore) {
+                    bestScore = k;
+                    positions.push_back(c - W);
+                    scores.push_back(colScore);
+                }
+            }
+        }
+        //------------------------------------------------------------------//
+
+        targetChar++;
+    }
+
+
+    // Obtain results for last W columns from last column.
+    if (lastBlock == maxNumBlocks - 1) {
+        vector<int> blockScores = getBlockCellValues(*bl);
+        for (int i = 0; i < W; i++) {
+            int colScore = blockScores[i + 1];
+            if (colScore <= k && (bestScore == -1 || colScore <= bestScore)) {
+                bestScore = k;
+                positions.push_back(targetLength - W + i);
+                scores.push_back(colScore);
+            }
+        }
+    }
+
+    *bestScore_ = bestScore;
+    if (bestScore != -1) {
+        *positions_ = (int *) malloc(sizeof(int) * (int) positions.size());
+        *numPositions_ = (int) positions.size();
+        copy(positions.begin(), positions.end(), *positions_);
+        *scores_ = (int *) malloc(sizeof(int) * (int) scores.size());
+        copy(scores.begin(), scores.end(), *scores_);
     }
 
     delete[] blocks;

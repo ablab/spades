@@ -35,6 +35,15 @@ namespace edlib
          */
         EDLIB_MODE_SHW,
         /**
+         * Prefix method. Similar to global method, but with a small twist - gap at query end is not penalized.
+         * What that means is that deleting elements from the end of second sequence is "free"!
+         * For example, if we had "AACT" and "AACTGGC", edit distance would be 0, because removing "GGC" from the end
+         * of second sequence is "free" and does not count into total edit distance. This method is appropriate
+         * when you want to find out how well first sequence fits at the beginning of second sequence. 
+         * Finds all convinient end position for < k. (USED in GA)
+         */
+        EDLIB_MODE_SHW_FULL,
+        /**
          * Infix method. Similar as prefix method, but with one more twist - gaps at query end and start are
          * not penalized. What that means is that deleting elements from the start and end of second sequence is "free"!
          * For example, if we had ACT and CGACTGAC, edit distance would be 0, because removing CG from the start
@@ -154,6 +163,14 @@ namespace edlib
          * -1 if k is non-negative and edit distance is larger than k.
          */
         int editDistance;
+
+        /**
+         * Score for every possible end of alignment.
+         * Only for EDLIB_MODE_SHW_FULL.
+         * Set to NULL if edit distance is larger than k.
+         * If you do not free whole result object using edlibFreeAlignResult(), do not forget to use free().
+         */
+        int* endScores;
 
         /**
          * Array of zero-based positions in target where optimal alignment paths end.
