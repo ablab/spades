@@ -23,8 +23,8 @@ bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVer
         return true;
     }
     size_t intersection_size = barcode_extractor_->GetIntersectionSize(vertex, barcodes_);
-    size_t max_size = std::max(barcodes_.size(), intersection_size);
-    double containment_index = static_cast<double>(intersection_size) / static_cast<double>(max_size);
+    size_t min_size = std::min(barcodes_.size(), barcode_extractor_->GetHeadSize(vertex));
+    double containment_index = static_cast<double>(intersection_size) / static_cast<double>(min_size);
     bool threshold_passed = math::ge(containment_index, params_.raw_score_threshold_);
     TRACE("Threshold passed: " << (threshold_passed ? "True" : "False"));
     DEBUG("Edge: " << vertex.int_id());

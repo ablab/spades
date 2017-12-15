@@ -526,7 +526,7 @@ class GraphClusterStorageBuilder {
         MergeClustersUsingTransitionGraph(cluster_storage, edge_cluster_storage, transition_graph);
         DEBUG("Cluster storage size: " << cluster_storage.Size());
         DEBUG("Edge cluster storage size: " << edge_cluster_storage.Size());
-        INFO("Finished building clusters")
+        DEBUG("Finished building clusters")
         return cluster_storage;
     }
 

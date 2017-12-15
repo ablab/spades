@@ -88,7 +88,8 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphCo
                                                                      max_threads_, scaffold_vertices);
     auto scaffold_index_extractor = std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
-    iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, scaffold_index_extractor, max_threads_));
+    iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, scaffold_index_extractor,
+                                                                                       max_threads_));
     iterative_constructor_callers.push_back(make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_,
                                                                                             scaffold_index_extractor,
                                                                                             unique_storage, max_threads_));
@@ -101,7 +102,7 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphCo
     }
     if (launch_full_pipeline) {
         iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g, *barcode_extractor_, max_threads_));
-        iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
+//        iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
     }
     INFO("Created constructors");
     return iterative_constructor_callers;
@@ -158,6 +159,14 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParamsFromCfg(s
     size_t tail_threshold = min_length;
     size_t count_threshold = cfg::get().ts_res.scaff_con.count_threshold;
     double score_threshold = cfg::get().ts_res.scaff_con.score_threshold;
+
+//    //fixme configs
+//    const size_t min_pipeline_length = 15000;
+//    if (min_length >= min_pipeline_length) {
+//        INFO("Changing score threshold");
+//        score_threshold = 0.05;
+//    }
+
     double connection_score_threshold = cfg::get().ts_res.scaff_con.connection_score_threshold;
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
     size_t connection_count_threshold = cfg::get().ts_res.scaff_con.connection_count_threshold;
@@ -340,23 +349,26 @@ CloudScaffoldGraphConstructionPipeline::CloudScaffoldGraphConstructionPipeline(
     : initial_constructor_(initial_constructor_), construction_stages_(),
       intermediate_results_(), g_(g), params_(params), name_(name) {}
 void CloudScaffoldGraphConstructionPipeline::Run() {
-    //fixme move saving to somewhere more appropriate?
+    //fixme move saving to somewhere more appropriate
     const string initial_scaffold_graph_path = fs::append_path(cfg::get().load_from,
                                                                "initial_scaffold_graph_" + name_ + ".scg");
     auto initial_graph_ptr = std::make_shared<ScaffoldGraph>(g_);
     INFO(initial_scaffold_graph_path);
-    bool found_save = false;
     ScaffoldGraphSerializer serializer;
     if (cfg::get().ts_res.save_initial_scaffold_graph and fs::check_existence(initial_scaffold_graph_path)) {
         INFO("Loading initial scaffold graph from" << initial_scaffold_graph_path);
         ifstream fin(initial_scaffold_graph_path);
         std::map<size_t, debruijn_graph::EdgeId> edge_id_map;
         omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper(g_);
+        INFO("Constructing edge map");
         for (auto it = edge_it_helper.begin(); it != edge_it_helper.end(); ++it) {
-            edge_id_map.insert({it->int_id(), *it});
+            if (g_.length(*it) >= params_.length_threshold_) {
+                edge_id_map.insert({it->int_id(), *it});
+            }
         };
+        INFO("Edge map construction finished");
+        INFO(edge_id_map.size() << " edges");
         serializer.LoadScaffoldGraph(fin, *initial_graph_ptr, edge_id_map);
-        found_save = true;
     } else {
         initial_graph_ptr = initial_constructor_->Construct();
         if (cfg::get().ts_res.save_initial_scaffold_graph) {

@@ -66,15 +66,33 @@ void ScaffoldGraphSerializer::LoadScaffoldGraph(ifstream &fin,
     }
     size_t number_of_edges = 0;
     fin >> number_of_edges;
+    DEBUG(number_of_edges << " edges");
+    size_t block_size = number_of_edges / 20;
+    vector<ScaffoldGraph::ScaffoldEdge> edges;
     for (size_t i = 0; i < number_of_edges; ++i) {
+        TRACE("Start")
         size_t start_id = 0;
         size_t end_id = 0;
         size_t lib = -1;
         double weight = 0;
         size_t length = 0;
         fin >> start_id >> end_id >> lib >> weight >> length;
-        ScaffoldGraph::ScaffoldEdge new_edge(edge_map.at(start_id), edge_map.at(end_id), lib, weight, length);
-        graph.AddEdge(new_edge);
+        if (i % block_size == 0) {
+            DEBUG("Loaded " << i << " edges out of " << number_of_edges);
+        }
+        TRACE("Read values")
+        edges.emplace_back(edge_map.at(start_id), edge_map.at(end_id), lib, weight, length);
+    }
+    INFO(edges.size() << " edges loaded");
+    INFO("Adding edges");
+    size_t current = 0;
+    block_size = edges.size() / 200;
+    for (const auto& edge: edges) {
+        graph.AddEdgeSimple(edge);
+        ++current;
+        if (current % block_size == 0) {
+            DEBUG("Added " << current << " edges out of " << edges.size());
+        }
     }
 }
 }

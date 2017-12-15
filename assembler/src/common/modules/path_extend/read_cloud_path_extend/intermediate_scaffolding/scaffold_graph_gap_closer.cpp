@@ -103,6 +103,12 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
     auto cleaned_graph = utils.RemoveDisconnectedVertices(result, first, second);
     DEBUG(cleaned_graph.size() << " vertices in cleaned subgraph");
     DEBUG(cleaned_graph.GetEdgesCount() << " edges in cleaned subgraph");
+    if (cleaned_graph.GetEdgesCount() + 1 > cleaned_graph.size()) {
+        DEBUG("Complex subgraph");
+    }
+    if (cleaned_graph.GetEdgesCount() + 1 < cleaned_graph.size()) {
+        DEBUG("Broken subgraph");
+    }
     return cleaned_graph;
 }
 CloudScaffoldSubgraphExtractor::CloudScaffoldSubgraphExtractor(const Graph& g_,
@@ -236,7 +242,7 @@ InsertedVerticesData ScaffoldGraphGapCloser::GetInsertedConnections(const vector
         auto gap_closing_path =
             subgraph_path_extractor.ExtractPathFromSubgraph(cleaned_subgraph, edge.getStart(), edge.getEnd());
         DEBUG("Closed gap with " << gap_closing_path.size() << " vertices");
-        if (gap_closing_path.size() != 0) {
+        if (not gap_closing_path.empty()) {
             internal_inserted += gap_closing_path.size();
             for (auto first = gap_closing_path.begin(), second = std::next(first); second != gap_closing_path.end();
                  ++first, ++second) {
@@ -639,7 +645,7 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     const size_t tail_threshold = subgraph_extractor_params.large_length_threshold_;
     //fixme move to configs
-    const size_t length_threshold = 500;
+    const size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
     const size_t count_threshold = subgraph_extractor_params.count_threshold_;
 
     auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(graph_pack.barcode_mapper_ptr, graph_pack.g);

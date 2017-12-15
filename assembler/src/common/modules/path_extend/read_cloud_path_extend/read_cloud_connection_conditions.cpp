@@ -55,14 +55,12 @@ double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGr
     DEBUG("First size: " << first_size);
     DEBUG("Second size: " << second_size);
     DEBUG("Intersection: " << shared_count);
-    size_t max_size = std::max(first_size, second_size);
-    double containment_index = static_cast<double>(shared_count) / static_cast<double>(max_size);
-//    double first_barcodes_size = static_cast<double>(first_size);
-//    double second_barcodes_size = static_cast<double>(second_size);
-//    double total_barcodes = static_cast<double>(total_barcodes_);
-//    double score = static_cast<double>(shared_count) * total_barcodes / (first_barcodes_size * second_barcodes_size);
+    size_t min_size = std::min(first_size, second_size);
+    double containment_index = static_cast<double>(shared_count) / static_cast<double>(min_size);
     DEBUG("Score: " << containment_index);
     VERIFY(math::ge(1.0, containment_index));
+//    double first_coverage = first.getCoverageFromGraph(graph_);
+//    double second_coverage = second.getCoverageFromGraph(graph_);
     return containment_index;
 }
 NormalizedBarcodeScoreFunction::NormalizedBarcodeScoreFunction(
@@ -397,7 +395,7 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
         }
     }
     if (path_processing_iterations >= max_paths_to_process) {
-        WARN("Had to process too many paths, returning");
+        DEBUG("Had to process too many paths, returning");
         return true;
     }
 

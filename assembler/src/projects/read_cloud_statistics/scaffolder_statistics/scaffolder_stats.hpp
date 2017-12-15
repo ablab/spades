@@ -15,12 +15,40 @@ struct ConnectivityParams {
 struct BarcodedPathConnectivityStats {
   std::map<double, size_t> threshold_to_covered_;
 
-  void Serialize(ofstream& fout, const string& sep) const {
+  void Serialize(ofstream& fout, const string& sep, size_t overall_connections) const {
       for (const auto& entry: threshold_to_covered_) {
-          fout << entry.second << sep;
+          VERIFY(overall_connections >= entry.second)
+          fout << overall_connections - entry.second << sep;
       }
       fout << std::endl;
   }
+};
+
+struct ThresholdResult {
+  double threshold_;
+  size_t false_positives_;
+  size_t false_negatives_;
+
+  ThresholdResult(double threshold_, size_t false_positives_, size_t false_negatives_)
+      : threshold_(threshold_), false_positives_(false_positives_), false_negatives_(false_negatives_) {}
+};
+
+struct CloudConnectionStats: public read_cloud_statistics::Statistic {
+ private:
+    std::vector<ThresholdResult> threshold_results_;
+
+ public:
+    CloudConnectionStats(const vector<ThresholdResult> &threshold_results_)
+        : Statistic("cloud_connection_stats"), threshold_results_(threshold_results_) {}
+
+    void Serialize(const string &path) override {
+        ofstream fout(path);
+        auto sep = "\t";
+        fout << "Threshold" << sep << "False negatives" << sep << "False positives" << std::endl;
+        for (const auto& result: threshold_results_) {
+            fout << result.threshold_ << sep << result.false_negatives_ << sep << result.false_positives_ << std::endl;
+        }
+    }
 };
 
 struct LengthConnectivityStats : public read_cloud_statistics::Statistic {
@@ -49,7 +77,7 @@ struct LengthConnectivityStats : public read_cloud_statistics::Statistic {
       fout << endl;
       for (const auto& entry: length_to_stats_) {
           fout << entry.first << sep;
-          entry.second.Serialize(fout, sep);
+          entry.second.Serialize(fout, sep, overall_connections_);
       }
   }
 };
@@ -163,6 +191,22 @@ struct DistanceThresholdFailedStats: read_cloud_statistics::Statistic {
   }
 };
 
+struct ScorePairStats: public read_cloud_statistics::Statistic {
+  typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+  std::map<std::pair<ScaffoldVertex, ScaffoldVertex>, double> pair_to_score_;
+
+  ScorePairStats(const map<pair<ScaffoldVertex, ScaffoldVertex>, double> &pair_to_score_)
+      : Statistic("score_pair_stats"), pair_to_score_(pair_to_score_) {}
+
+  void Serialize(const string& path) override {
+      ofstream fout(path);
+      const string sep = "\t";
+      for (const auto& entry: pair_to_score_) {
+          fout << entry.first.first.int_id() << sep << entry.first.second.int_id() << sep << entry.second << "\n";
+      }
+  }
+};
+
 struct LongEdgePos {
   size_t path_id_;
   size_t position_;
@@ -184,28 +228,40 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
     const vector<vector<EdgeWithMapping>> reference_paths_;
     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
     shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
-
+    ScaffoldGraph score_scaffold_graph_;
+    ScaffoldGraph initial_scaffold_graph_;
  public:
     ScaffolderStageAnalyzer(const Graph& g_,
-                                  const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_,
-                                  const path_extend::ScaffolderParams& scaff_params_,
-                                  const vector<vector<EdgeWithMapping>>& reference_paths_,
-                                  const shared_ptr<FrameBarcodeIndexInfoExtractor>& barcode_extractor_ptr_,
-                                  shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor)
+                            const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_,
+                            const path_extend::ScaffolderParams& scaff_params_,
+                            const vector<vector<EdgeWithMapping>>& reference_paths_,
+                            const shared_ptr<FrameBarcodeIndexInfoExtractor>& barcode_extractor_ptr_,
+                            shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor,
+                            const ScaffoldGraph& score_scaffold_graph,
+                            const ScaffoldGraph& initial_scaffold_graph)
         : StatisticProcessor("scaffolder_statistics"),
           g_(g_),
           unique_storage_(unique_storage_),
           scaff_params_(scaff_params_),
           reference_paths_(reference_paths_),
           barcode_extractor_ptr_(barcode_extractor_ptr_),
-          long_edge_extractor_(long_edge_extractor) {}
+          long_edge_extractor_(long_edge_extractor),
+          score_scaffold_graph_(score_scaffold_graph),
+          initial_scaffold_graph_(initial_scaffold_graph) {}
 
     void FillStatistics() override {
         path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
         auto filtered_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths_);
 
-        auto length_connectivity_stats = make_shared<LengthConnectivityStats>(GetLengthConnectivityStatistics(reference_paths_, filtered_paths));
-        AddStatistic(length_connectivity_stats);
+//        auto length_connectivity_stats = make_shared<LengthConnectivityStats>(GetPureLengthConnectivityStatistics(
+//            reference_paths_,
+//            filtered_paths));
+//        AddStatistic(length_connectivity_stats);
+
+        INFO(score_scaffold_graph_.VertexCount() << " vertices and " << score_scaffold_graph_.EdgeCount() << " edges in score graph");
+
+        auto cloud_connection_stats = make_shared<CloudConnectionStats>(GetCloudConnectionStats(filtered_paths, score_scaffold_graph_));
+        AddStatistic(cloud_connection_stats);
 
 //        auto split_intersection_stats = make_shared<NextSplitIntersectionStats>(GetNextSplitStats(filtered_paths));
 //        AddStatistic(split_intersection_stats);
@@ -216,15 +272,91 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
 //        auto score_stats = make_shared<ScoreStats>(GetScoreStats(filtered_paths));
 //        AddStatistic(score_stats);
 //
-//        auto score_distribution_info = make_shared<ScoreDistributionInfo>(GetScoreDistributionInfo(filtered_paths));
-//        AddStatistic(score_distribution_info);
+        auto score_distribution_info = make_shared<ScoreDistributionInfo>(GetScoreDistributionInfo(filtered_paths));
+        AddStatistic(score_distribution_info);
 
 //        auto distance_threshold_failed = make_shared<DistanceThresholdFailedStats>(GetDistanceThresholdStats(filtered_paths));
 //        AddStatistic(distance_threshold_failed);
 
+        auto score_pair_stats = make_shared<ScorePairStats>(GetScorePairStats(unique_storage_, initial_scaffold_graph_));
+        AddStatistic(score_pair_stats);
+
     }
 
  private:
+
+    CloudConnectionStats GetCloudConnectionStats(const vector<vector<EdgeWithMapping>>& reference_paths,
+                                                 const ScaffoldGraph& score_scaffold_graph) {
+        const double min_threshold = 0.0;
+        const double max_threshold = 0.001;
+        const double threshold_step = 0.0001;
+        vector<double> thresholds;
+        for (double t = min_threshold; math::le(t, max_threshold); t += threshold_step) {
+            thresholds.push_back(t);
+        }
+        vector<ThresholdResult> results;
+        path_extend::validation::ScaffoldGraphValidator validator(g_);
+        for (const auto& threshold: thresholds) {
+            auto new_params = scaff_params_;
+            new_params.connection_score_threshold_ = threshold;
+            path_extend::LongEdgePairGapCloserParams vertex_predicate_params(new_params.connection_count_threshold_,
+                                                                             new_params.tail_threshold_,
+                                                                             new_params.connection_score_threshold_,
+                                                                             new_params.connection_length_threshold_, false);
+            path_extend::ReadCloudMiddleDijkstraParams long_gap_params(new_params.count_threshold_, new_params.tail_threshold_,
+                                                                       new_params.initial_distance_, vertex_predicate_params);
+
+            auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_ptr_);
+            auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(g_, unique_storage_, short_edge_extractor,
+                                                                                        long_edge_extractor_, long_gap_params);
+            auto constructor =
+                make_shared<path_extend::scaffold_graph::PredicateScaffoldGraphConstructor>(g_, score_scaffold_graph,
+                                                                                            predicate, cfg::get().max_threads);
+            auto new_graph = constructor->Construct();
+            auto stats = validator.GetScaffoldGraphStats(*new_graph, reference_paths);
+            INFO(stats.false_negative_);
+            ThresholdResult thr_result(threshold, stats.false_positive_, stats.false_negative_);
+            results.push_back(thr_result);
+        }
+        CloudConnectionStats stats(results);
+        return stats;
+    }
+
+    ScorePairStats GetScorePairStats(const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
+                                     const ScaffoldGraph& initial_scaffold_graph) {
+        size_t count_threshold = scaff_params_.count_threshold_;
+        size_t tail_threshold = scaff_params_.tail_threshold_;
+        path_extend::NormalizedBarcodeScoreFunction score_function(g_, long_edge_extractor_, count_threshold, tail_threshold);
+        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+        std::map<std::pair<ScaffoldVertex, ScaffoldVertex>, double> result;
+        vector<path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge> scaffold_edges;
+//        for (const auto& first_edge: unique_storage) {
+//            for (const auto& second_edge: unique_storage) {
+//                if (first_edge != second_edge and g_.conjugate(first_edge) != second_edge) {
+//                    path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge edge(first_edge, second_edge);
+//                    scaffold_edges.push_back(edge);
+//                }
+//            }
+//        }
+        for (const ScaffoldGraph::ScaffoldEdge &edge: initial_scaffold_graph.edges()) {
+            scaffold_edges.push_back(edge);
+        }
+        size_t max_threads = cfg::get().max_threads;
+        size_t block_size = scaffold_edges.size() / 20;
+#pragma omp parallel for num_threads(max_threads)
+        for (size_t i = 0; i < scaffold_edges.size(); ++i) {
+            auto edge = scaffold_edges[i];
+            double score = score_function.GetScore(edge);
+#pragma omp critical
+            {
+                result.insert({{edge.getStart(), edge.getEnd()}, score});
+                if (i % block_size == 0) {
+                    INFO("Processed " << i  << " edges out of " << scaffold_edges.size());
+                }
+            }
+        }
+        return ScorePairStats(result);
+    }
 
     DistanceThresholdFailedStats GetDistanceThresholdStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
         path_extend::validation::GeneralTransitionStorageBuilder forward_transition_builder(g_, 1, false, false);
@@ -471,8 +603,8 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         return middle_stats;
     }
 
-    LengthConnectivityStats GetLengthConnectivityStatistics(const vector <vector<EdgeWithMapping>>& reference_paths,
-                                                            const vector <vector<EdgeWithMapping>>& filtered_reference_paths) {
+    LengthConnectivityStats GetPureLengthConnectivityStatistics(const vector<vector<EdgeWithMapping>> &reference_paths,
+                                                                const vector<vector<EdgeWithMapping>> &filtered_reference_paths) {
         std::map <size_t, BarcodedPathConnectivityStats> length_to_stats;
         vector <vector<EdgeWithMapping>> current_paths = reference_paths;
         path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
@@ -506,15 +638,15 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         }
         vector <size_t> lengths;
         const size_t min_length = 50;
-        const size_t max_length = 500;
+        const size_t max_length = 100;
         const size_t step = 250;
         for (size_t i = min_length; i <= max_length; i += step) {
             lengths.push_back(i);
         }
         vector <double> score_thresholds;
         const double min_threshold = 0.001;
-        const double max_threshold = 0.011;
-        const double thr_step = 0.002;
+        const double max_threshold = 0.02;
+        const double thr_step = 0.001;
 
         for (double i = min_threshold; i <= max_threshold; i += thr_step) {
             score_thresholds.push_back(i);
