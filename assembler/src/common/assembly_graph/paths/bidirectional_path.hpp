@@ -104,9 +104,16 @@ public:
 
     BidirectionalPath(const Graph& g, const std::vector<EdgeId>& path)
             : BidirectionalPath(g) {
-        //TODO cumulative_len takes O(N^2) to fill
+        cumulative_len_.resize(path.size(), 0);
+        data_.resize(path.size());
+        gap_len_.resize(path.size(), Gap());
+
         for (size_t i = 0; i < path.size(); ++i) {
-            PushBack(path[i]);
+            data_[i] = path[i];
+            cumulative_len_.front() += g_.length(path[i]);
+        }
+        for (size_t i = 1; i < path.size(); ++i) {
+            cumulative_len_[i] = cumulative_len_[i - 1] - g_.length(data_[i - 1]);
         }
     }
 
