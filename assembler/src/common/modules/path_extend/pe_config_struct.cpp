@@ -67,7 +67,6 @@ void load(pe_config::VisualizeParamsT& o, boost::property_tree::ptree const& pt,
 void load(pe_config::ParamSetT::ExtensionOptionsT& es,
           boost::property_tree::ptree const& pt, bool complete) {
     using config_common::load;
-    load(es.use_default_single_threshold, pt, "use_default_single_threshold", complete);
     load(es.priority_coeff, pt, "priority_coeff", complete);
     load(es.weight_threshold, pt, "weight_threshold", complete);
     load(es.single_threshold, pt, "single_threshold", complete);
@@ -168,7 +167,6 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.normalize_weight, pt,  "normalize_weight", complete);
     load(p.overlap_removal, pt, "overlap_removal", complete);
     load(p.multi_path_extend, pt, "multi_path_extend", complete);
-    load(p.split_edge_length, pt, "split_edge_length", complete);
     load(p.extension_options, pt, "extension_options", complete);
     load(p.mate_pair_options, pt, "mate_pair_options", complete);
     load(p.scaffolder_options, pt, "scaffolder", complete);

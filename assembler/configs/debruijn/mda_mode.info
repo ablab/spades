@@ -114,7 +114,6 @@ params {
     ; extension selection
     extension_options
     {
-        use_default_single_threshold true
         single_threshold           0.3
         weight_threshold           0.6
         max_repeat_length          8000

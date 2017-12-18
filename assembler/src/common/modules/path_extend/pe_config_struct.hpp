@@ -122,7 +122,6 @@ struct pe_config {
         } simple_coverage_resolver;
 
         struct ExtensionOptionsT {
-            bool use_default_single_threshold;
             double single_threshold;
             double weight_threshold;
             double priority_coeff;

@@ -13,7 +13,6 @@
 #include "modules/alignment/long_read_mapper.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "paired_info/pair_info_filler.hpp"
-#include "modules/path_extend/split_graph_pair_info.hpp"
 #include "modules/alignment/rna/ss_coverage_filler.hpp"
 
 
@@ -262,8 +261,6 @@ static void ProcessPairedReads(conj_graph_pack &gp,
     SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
     const auto &data = reads.data();
 
-    bool calculate_threshold = (reads.type() == io::LibraryType::PairedEnd &&
-        !cfg::get().pe_params.param_set.extension_options.use_default_single_threshold);
     unsigned round_thr = 0;
     // Do not round if filtering is disabled
     if (filter)
@@ -275,17 +272,6 @@ static void ProcessPairedReads(conj_graph_pack &gp,
          ", right insert size quantile " << data.insert_size_right_quantile <<
          ", filtering threshold " << filter_threshold <<
          ", rounding threshold " << round_thr);
-
-    path_extend::SplitGraphPairInfo
-            split_graph(gp, (size_t)data.median_insert_size,
-                        (size_t) data.insert_size_deviation,
-                        (size_t) data.insert_size_left_quantile,
-                        (size_t) data.insert_size_right_quantile,
-                        data.unmerged_read_length, gp.g.k(),
-                        cfg::get().pe_params.param_set.split_edge_length,
-                        data.insert_size_distribution);
-    if (calculate_threshold)
-        notifier.Subscribe(ilib, &split_graph);
 
     LatePairedIndexFiller::WeightF weight;
     if (filter) {
@@ -308,7 +294,6 @@ static void ProcessPairedReads(conj_graph_pack &gp,
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
                                                 /*include merged*/true);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable));
-    cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
 }
 
 void PairInfoCount::run(conj_graph_pack &gp, const char *) {

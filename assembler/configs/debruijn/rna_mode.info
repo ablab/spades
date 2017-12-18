@@ -121,7 +121,6 @@ params {
 
     extension_options
     {
-        use_default_single_threshold true
         single_threshold           0.05
     }
 

@@ -31,11 +31,6 @@ pe_config::ParamSetT::ExtensionOptionsT PELaunchSupport::GetExtensionOpts(shared
     return lib->IsMp() ? pset.mate_pair_options : pset.extension_options;
 }
 
-double PELaunchSupport::SingleThresholdForLib(const pe_config::ParamSetT &pset,
-                                               double threshold) const {
-    return pset.extension_options.use_default_single_threshold || math::le(threshold, 0.0) ?
-               pset.extension_options.single_threshold : threshold;
-}
 
 bool PELaunchSupport::IsForSingleReadExtender(const io::SequencingLibrary<config::LibraryData> &lib) const {
     return (lib.data().single_reads_mapped || lib.is_long_read_lib() || lib.is_contig_lib());

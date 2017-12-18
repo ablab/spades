@@ -25,13 +25,11 @@ params {
         cut_all false
     }
 
-    split_edge_length    99
     normalize_weight     true
     
     ; extension selection
     extension_options
     {
-        use_default_single_threshold true
         single_threshold           0.1
         weight_threshold           0.5
         priority_coeff             1.5
@@ -41,7 +39,6 @@ params {
 
     mate_pair_options
     {
-        use_default_single_threshold true
         single_threshold           30
         weight_threshold           0.5
         priority_coeff             1.5

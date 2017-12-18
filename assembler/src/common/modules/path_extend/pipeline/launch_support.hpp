@@ -110,8 +110,6 @@ public:
 
     pe_config::ParamSetT::ExtensionOptionsT GetExtensionOpts(shared_ptr<PairedInfoLibrary> lib, const pe_config::ParamSetT& pset) const;
 
-    double SingleThresholdForLib(const pe_config::ParamSetT &pset, double threshold) const;
-
     bool HasOnlyMPLibs() const;
 
     bool HasOnlySingleReads() const;
