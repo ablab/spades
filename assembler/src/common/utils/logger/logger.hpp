@@ -144,3 +144,7 @@ inline const char* __scope_source_name() {
 #define WARN(message)                       LOG_MSG(logging::L_WARN, message)
 #define ERROR(message)                      LOG_MSG(logging::L_ERROR, message)
 #define FATAL_ERROR(message)                {ERROR(message); exit(-1);}
+#define CHECK_FATAL_ERROR(expr, msg)                                    \
+    if (!(expr)) {                                                      \
+        FATAL_ERROR(msg)                                                \
+    }

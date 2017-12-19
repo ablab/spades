@@ -125,9 +125,9 @@ struct LibraryData {
     double pi_threshold;
 
     struct BinaryReadsInfo {
-        BinaryReadsInfo(): binary_coverted(false), chunk_num(0), buffer_size(0) {}
+        BinaryReadsInfo(): binary_converted(false), chunk_num(0), buffer_size(0) {}
 
-        bool binary_coverted;
+        bool binary_converted;
         std::string bin_reads_info_file;
         std::string paired_read_prefix;
         std::string merged_read_prefix;

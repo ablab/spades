@@ -69,7 +69,7 @@ class ReadConverter {
         info >> data.merged_read_length;
         info >> data.read_count;
         info >> data.total_nucls;
-        data.binary_reads_info.binary_coverted = true;
+        data.binary_reads_info.binary_converted = true;
 
         info.close();
         return true;
@@ -123,12 +123,12 @@ class ReadConverter {
             data.total_nucls << "\n";
 
         info.close();
-        data.binary_reads_info.binary_coverted = true;
+        data.binary_reads_info.binary_converted = true;
     }
 
 public:
     static void ConvertToBinaryIfNeeded(SequencingLibraryT& lib) {
-        if (lib.data().binary_reads_info.binary_coverted && CheckBinaryReadsExist(lib))
+        if (lib.data().binary_reads_info.binary_converted && CheckBinaryReadsExist(lib))
             return;
 
         if (LoadLibIfExists(lib)) {
@@ -146,7 +146,8 @@ BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
                                           bool include_merged) {
     ReadConverter::ConvertToBinaryIfNeeded(lib);
     const auto& data = lib.data();
-    VERIFY_MSG(data.binary_reads_info.binary_coverted, "Lib was not converted to binary, cannot produce binary stream");
+    CHECK_FATAL_ERROR(data.binary_reads_info.binary_converted, 
+            "Lib was not converted to binary, cannot produce binary stream");
 
     ReadStreamList<PairedReadSeq> paired_streams;
     const size_t n = data.binary_reads_info.chunk_num;
@@ -177,7 +178,7 @@ BinarySingleStreams single_binary_readers(SequencingLibraryT &lib,
                                           bool including_paired_and_merged) {
     const auto& data = lib.data();
     ReadConverter::ConvertToBinaryIfNeeded(lib);
-    VERIFY_MSG(data.binary_reads_info.binary_coverted,
+    CHECK_FATAL_ERROR(data.binary_reads_info.binary_converted,
                "Lib was not converted to binary, cannot produce binary stream");
 
     BinarySingleStreams single_streams;

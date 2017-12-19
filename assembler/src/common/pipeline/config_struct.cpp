@@ -49,7 +49,7 @@ template<> struct MappingTraits<debruijn_graph::config::LibraryData> {
         io.mapRequired("insert size mad"            , data.insert_size_mad);
         io.mapRequired("insert size distribution"   , data.insert_size_distribution);
         io.mapRequired("pi threshold"               , data.pi_threshold);
-        io.mapRequired("binary converted"           , data.binary_reads_info.binary_coverted);
+        io.mapRequired("binary converted"           , data.binary_reads_info.binary_converted);
         io.mapRequired("single reads mapped"        , data.single_reads_mapped);
         io.mapRequired("library index"              , data.lib_index);
         io.mapRequired("number of reads"            , data.read_count);
