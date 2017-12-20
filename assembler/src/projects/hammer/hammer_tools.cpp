@@ -74,25 +74,6 @@ string getFilename( const string & dirprefix, int iter_count, const string & suf
   return tmp.str();
 }
 
-struct CorrectionStats {
-  size_t changedReads;
-  size_t changedNucleotides;
-  size_t uncorrectedNucleotides;
-  size_t totalNucleotides;
-  CorrectionStats() : changedReads(0),
-                      changedNucleotides(0),
-                      uncorrectedNucleotides(0),
-                      totalNucleotides(0) {}
-
-  CorrectionStats& operator +=(const CorrectionStats &rhs) {
-    changedReads += rhs.changedReads;
-    changedNucleotides += rhs.changedNucleotides;
-    uncorrectedNucleotides += rhs.uncorrectedNucleotides;
-    totalNucleotides += rhs.totalNucleotides;
-    return *this;
-  }
-};
-
 CorrectionStats CorrectReadsBatch(std::vector<bool> &res,
                        std::vector<Read> &reads, size_t buf_size,
                        const KMerData &data) {
@@ -204,7 +185,8 @@ CorrectionStats CorrectPairedReadFiles(const KMerData &data,
     INFO("Written batch " << buffer_no);
     ++buffer_no;
   }
-  VERIFY_MSG(irsl.eof() && irsr.eof(), "Pair of read files " + fnamel + " and " + fnamer + " contain unequal amount of reads");
+  if (!irsl.eof() || !irsr.eof())
+      FATAL_ERROR("Pair of read files " + fnamel + " and " + fnamer + " contain unequal amount of reads");
   return stats;
 }
 

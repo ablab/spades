@@ -548,7 +548,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
         <li>mismatch correction is finished for contigs or scaffolds</li>
     </ul>
 For example, if specified K values are 21, 33 and 55 and SPAdes was stopped or crashed during assembly stage with K = 55, you can run SPAdes with the <code>--continue</code> option specifying the same output directory. SPAdes will continue the run starting from the assembly stage with K = 55. Error correction module and iterations for K equal to 21 and 33 will not be run again.
-Note that all options except <code>-o &lt;output_dir> </code> are ignored if <code>--continue</code> is set.
+If <code>--continue</code> is set, the only allowed option is <code>-o &lt;output_dir> </code>.
 </p>
 
 <p>
@@ -560,7 +560,7 @@ Note that all options except <code>-o &lt;output_dir> </code> are ignored if <co
         <li><code>k&lt;int></code> &ndash; restart from the iteration with specified k values, e.g. k55</li>
         <li><code>mc</code> &ndash; restart mismatch correction</li>
     </ul>
-In comparison to the <code>--continue</code> option, you can change some of the options when using <code>--restart-from</code>. You can change any option except: all basic options, all options for specifying input data (including <code>--dataset</code>), <code>--only-error-correction</code> option and <code>--only-assembler</code> option. For example, if you ran assembler with k values 21,33,55 without mismatch correction, you can add one more iteration with k=77 and run mismatch correction step by running SPAdes with following options:<br>
+In contrast to the <code>--continue</code> option, you can change some of the options when using <code>--restart-from</code>. You can change any option except: all basic options, all options for specifying input data (including <code>--dataset</code>), <code>--only-error-correction</code> option and <code>--only-assembler</code> option. For example, if you ran assembler with k values 21,33,55 without mismatch correction, you can add one more iteration with k=77 and run mismatch correction step by running SPAdes with following options:<br>
      <code>--restart-from k55 -k 21,33,55,77 --mismatch-correction -o &lt;previous_output_dir></code>. 
 <br>Since all files will be overwritten, do not forget to copy your assembly from the previous run if you need it.
 </p>

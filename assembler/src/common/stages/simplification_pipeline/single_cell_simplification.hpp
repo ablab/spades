@@ -133,7 +133,7 @@ bool RemoveHiddenEC(Graph& g,
         omnigraph::HiddenECRemover<Graph> remover(g, info.chunk_cnt(), flanking_cov, her_config.uniqueness_length,
                                her_config.unreliability_threshold, info.detected_coverage_bound(),
                                her_config.relative_threshold, removal_handler);
-        return LoopedRun(remover) > 0;
+        return AlgorithmRunningHelper<Graph>::LoopedRun(remover) > 0;
     }
     return false;
 }

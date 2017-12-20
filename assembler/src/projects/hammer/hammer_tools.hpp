@@ -25,19 +25,38 @@ namespace hammer {
 /// initialize subkmer positions and log about it
 void InitializeSubKMerPositions(int tau);
 
+struct CorrectionStats {
+  size_t changedReads;
+  size_t changedNucleotides;
+  size_t uncorrectedNucleotides;
+  size_t totalNucleotides;
+  CorrectionStats() : changedReads(0),
+                      changedNucleotides(0),
+                      uncorrectedNucleotides(0),
+                      totalNucleotides(0) {}
+
+  CorrectionStats& operator +=(const CorrectionStats &rhs) {
+    changedReads += rhs.changedReads;
+    changedNucleotides += rhs.changedNucleotides;
+    uncorrectedNucleotides += rhs.uncorrectedNucleotides;
+    totalNucleotides += rhs.totalNucleotides;
+    return *this;
+  }
+};
+
 /// parallel correction of batch of reads
-void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
+CorrectionStats CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
                        size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                        const KMerData &data);
 
 /// correct reads in a given file
-void CorrectReadFile(const KMerData &data,
-                     size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
-                     const std::string &fname,
-                     std::ofstream *outf_good, std::ofstream *outf_bad);
+CorrectionStats CorrectReadFile(const KMerData &data,
+                         size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
+                         const std::string &fname,
+                         std::ofstream *outf_good, std::ofstream *outf_bad);
 
 /// correct reads in a given pair of files
-void CorrectPairedReadFiles(const KMerData &data,
+CorrectionStats CorrectPairedReadFiles(const KMerData &data,
                             size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
                             const std::string &fnamel, const std::string &fnamer,
                             std::ofstream * ofbadl, std::ofstream * ofcorl, std::ofstream * ofbadr, std::ofstream * ofcorr, std::ofstream * ofunp);

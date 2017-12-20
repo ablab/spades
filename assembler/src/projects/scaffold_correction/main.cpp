@@ -11,7 +11,7 @@
 
 #include "utils/segfault_handler.hpp"
 #include "utils/stacktrace.hpp"
-#include "utils/perf/memory_limit.hpp"
+#include "utils/memory_limit.hpp"
 #include "utils/filesystem/copy_file.hpp"
 #include "utils/perf/perfcounter.hpp"
 #include "scaffold_correction.hpp"

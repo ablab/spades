@@ -16,7 +16,6 @@
 
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
-#include "func/func.hpp"
 #include "math/xmath.h"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/core/coverage.hpp"

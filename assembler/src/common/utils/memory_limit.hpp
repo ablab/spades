@@ -7,19 +7,14 @@
 
 #pragma once
 
-#include <functional>
+#include <cstdlib>
 
-namespace func {
+namespace utils {
 
-template<class T>
-std::function<void(T)> CombineCallbacks(const std::function<void(T)>& f1,
-                                        const std::function<void(T)>& f2) {
-    return [=] (T t) {
-        if (f1)
-            f1(t);
-        if (f2)
-            f2(t);
-    };
-}
+void limit_memory(size_t limit);
+size_t get_memory_limit();
+size_t get_max_rss();
+size_t get_used_memory();
+size_t get_free_memory();
 
 }

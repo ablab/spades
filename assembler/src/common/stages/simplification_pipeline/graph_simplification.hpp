@@ -47,12 +47,6 @@ namespace simplification {
 using namespace debruijn_graph;
 
 template<class Graph>
-using AlgoPtr = std::shared_ptr<omnigraph::PersistentAlgorithmBase<Graph>>;
-
-template<class Graph>
-using EdgeConditionT = func::TypedPredicate<typename Graph::EdgeId>;
-
-template<class Graph>
 class ConditionParser {
 private:
     typedef typename Graph::EdgeId EdgeId;
@@ -61,8 +55,8 @@ private:
     string next_token_;
     string input_;
     const SimplifInfoContainer settings_;
-    size_t curr_iteration_;
-    size_t iteration_cnt_;
+    /*(curr_iter + 1) / total_iter*/
+    double iter_run_progress_;
     std::queue<string> tokenized_input_;
 
     size_t max_length_bound_;
@@ -170,10 +164,9 @@ private:
             RelaxMin(min_coverage_bound, cov_bound);
             return CoverageUpperBound<Graph>(g_, cov_bound);
         } else if (next_token_ == "icb") {
-            VERIFY(iteration_cnt_ != -1ul && curr_iteration_ != -1ul);
             ReadNext();
             double cov_bound = GetCoverageBound();
-            cov_bound = cov_bound / (double) iteration_cnt_ * (double) (curr_iteration_ + 1);
+            cov_bound = cov_bound * iter_run_progress_;
             DEBUG("Creating iterative coverage upper bound " << cov_bound);
             RelaxMin(min_coverage_bound, cov_bound);
             return CoverageUpperBound<Graph>(g_, cov_bound);
@@ -212,12 +205,13 @@ private:
 public:
 
     ConditionParser(const Graph &g, string input, const SimplifInfoContainer &settings,
-                    size_t curr_iteration = -1ul, size_t iteration_cnt = -1ul)
+                    double iter_run_progress = 1.)
+                    //size_t curr_iteration = 0, size_t iteration_cnt = 1)
             : g_(g),
               input_(input),
               settings_(settings),
-              curr_iteration_(curr_iteration),
-              iteration_cnt_(iteration_cnt),
+              iter_run_progress_(iter_run_progress),
+              //iter_run_progress_((double) (curr_iteration + 1) / (double) iteration_cnt),
               max_length_bound_(0),
               max_coverage_bound_(0.) {
         DEBUG("Creating parser for string " << input);
@@ -293,11 +287,10 @@ EdgeRemovalHandlerF<typename gp_t::graph_t> WrapWithProjectionCallback(
     typedef typename gp_t::graph_t Graph;
     typedef typename Graph::EdgeId EdgeId;
     TipsProjector<gp_t> tip_projector(gp);
-
-    EdgeRemovalHandlerF<Graph> projecting_callback = std::bind(&TipsProjector<gp_t>::ProjectTip,
-                                             tip_projector, std::placeholders::_1);
-
-    return func::CombineCallbacks<EdgeId>(std::ref(removal_handler), projecting_callback);
+    return [=](EdgeId e) {
+        if (removal_handler) removal_handler(e);
+        tip_projector.ProjectTip(e);
+    };
 }
 
 template<class Graph>
@@ -316,10 +309,10 @@ class LowCoverageEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Gr
 
 protected:
 
-    void PrepareIteration(size_t it_cnt, size_t total_it_estimate) override {
-        TRACE("Preparing iteration " << it_cnt << " out of total estimate " << total_it_estimate);
+    void PrepareIteration(double iter_run_progress) override {
+        TRACE("Preparing iteration for iterative progress " << iter_run_progress);
         ConditionParser<Graph> parser(this->g(), condition_str_,
-                                      simplif_info_, it_cnt, total_it_estimate);
+                                      simplif_info_, iter_run_progress);
         remove_condition_ = omnigraph::AddAlternativesPresenceCondition(this->g(), parser());
         TRACE("Updated remove condition");
         proceed_condition_ = CoverageUpperBound<Graph>(this->g(), parser.max_coverage_bound());
@@ -347,21 +340,18 @@ public:
                                      const SimplifInfoContainer &simplif_info,
                                      std::function<void(EdgeId)> removal_handler = nullptr,
                                      bool canonical_only = true,
-                                     bool track_changes = true,
-                                     size_t total_iteration_estimate = -1ul)
+                                     bool track_changes = true)
             : base(g, nullptr,
                    canonical_only,
                    omnigraph::CoverageComparator<Graph>(g),
-                   track_changes,
-                   total_iteration_estimate),
+                   track_changes),
               simplif_info_(simplif_info),
               condition_str_(condition_str),
               edge_remover_(g, removal_handler),
               remove_condition_(func::AlwaysFalse<EdgeId>()),
               proceed_condition_(func::AlwaysTrue<EdgeId>()) {
 
-        ConditionParser<Graph> parser(g, condition_str, simplif_info,
-                                      total_iteration_estimate - 1, total_iteration_estimate);
+        ConditionParser<Graph> parser(g, condition_str, simplif_info);
         this->interest_el_finder_ =
                 std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(
                         AddAlternativesPresenceCondition(g, parser()),
@@ -532,14 +522,12 @@ template<class Graph>
 AlgoPtr<Graph> ECRemoverInstance(Graph &g,
                                  const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
                                  const SimplifInfoContainer &info,
-                                 EdgeRemovalHandlerF<Graph> removal_handler = nullptr,
-                                 size_t iteration_cnt = 1) {
+                                 EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
     if (ec_config.condition.empty())
         return nullptr;
 
     return std::make_shared<LowCoverageEdgeRemovingAlgorithm<Graph>>(
-            g, ec_config.condition, info, removal_handler,
-            /*canonical only*/ true, /*track changes*/ true, iteration_cnt);
+            g, ec_config.condition, info, removal_handler);
 }
 
 template<class Graph>

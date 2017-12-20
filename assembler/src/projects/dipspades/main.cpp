@@ -11,7 +11,7 @@
 #include "utils/logger/log_writers.hpp"
 
 #include "utils/segfault_handler.hpp"
-#include "utils/perf/memory_limit.hpp"
+#include "utils/memory_limit.hpp"
 #include "utils/filesystem/copy_file.hpp"
 
 #include "pipeline/graph_pack.hpp"

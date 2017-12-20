@@ -135,20 +135,161 @@ protected:
     const Graph& g() const { return g_; }
 public:
     virtual ~PersistentAlgorithmBase() {}
-    virtual size_t Run(bool force_primary_launch = false) = 0;
+
+    /**
+     * Launches graph processing
+     * @param force_primary_launch flag forcing the refilling of the set of elements of interest
+     * @param iter_run_progress progress coefficient for iterative algorithms passed here
+     * @return number of trigger events
+     */
+    virtual size_t Run(bool force_primary_launch = false,
+                       double iter_run_progress = 1.) = 0;
+
+protected:
+    DECL_LOGGER("Simplification");
 };
 
-template<class Algo>
-inline size_t LoopedRun(Algo& algo) {
-    size_t total_triggered = 0;
-    bool run = true;
-    while (run) {
-        size_t triggered = algo.Run();
-        total_triggered += triggered;
-        run = (triggered > 0);
+template<class Graph>
+using AlgoPtr = std::shared_ptr<omnigraph::PersistentAlgorithmBase<Graph>>;
+
+template<class Graph>
+using EdgeConditionT = func::TypedPredicate<typename Graph::EdgeId>;
+
+template<class Graph>
+class AlgorithmRunningHelper {
+    typedef PersistentAlgorithmBase<Graph> Algo;
+public:
+    static size_t RunAlgo(Algo &algo, const string &comment = "",
+                 bool force_primary_launch = false,
+                 double iter_run_progress = 1.) {
+        if (!comment.empty()) {INFO("Running " << comment);}
+        size_t triggered = algo.Run(force_primary_launch, iter_run_progress);
+        if (!comment.empty()) {INFO(comment << " triggered " << triggered << " times");}
+        return triggered;
     }
-    return total_triggered;
-}
+
+    static size_t IterativeThresholdsRun(Algo &algo,
+                                         const size_t iteration_cnt = 1,
+                                         bool all_primary = false,
+                                         bool first_primary = true) {
+        size_t total_triggered = 0;
+        for (size_t i = 0; i < iteration_cnt; ++i) {
+            DEBUG("Iteration " << i);
+            size_t algo_triggered = algo.Run(all_primary || (i == 0 && first_primary),
+                                double(i + 1) / double(iteration_cnt));
+            DEBUG("Triggered " << algo_triggered << " times on iteration " << (i + 1));
+            total_triggered += algo_triggered;
+        }
+        return total_triggered;
+    }
+
+    static size_t LoopedRun(Algo &algo, size_t min_it_cnt = 1,
+                            size_t max_it_cnt = size_t(-1),
+                            bool all_primary = false,
+                            bool first_primary = true,
+                            double iter_run_progress = 1.) {
+        size_t triggered = 0;
+
+        bool changed = true;
+        for (size_t i = 0; i < max_it_cnt && (changed || i < min_it_cnt); ++i) {
+            bool primary = all_primary || (first_primary && i == 0);
+            DEBUG("Iteration " << (i + 1));
+            size_t algo_triggered = algo.Run(primary, iter_run_progress);
+            DEBUG("Triggered " << algo_triggered << " times on iteration " << (i + 1));
+            changed = (algo_triggered > 0);
+            triggered += algo_triggered;
+        }
+        return triggered;
+    }
+
+private:
+    DECL_LOGGER("Simplification");
+};
+
+template<class Graph>
+class AdapterAlgorithm : public PersistentAlgorithmBase<Graph> {
+    std::function<size_t ()> func_;
+
+public:
+    template <class F>
+    AdapterAlgorithm(Graph& g, F f) :
+            PersistentAlgorithmBase<Graph>(g) {
+        func_ = [=] () {return (size_t) f();};
+    }
+
+    size_t Run(bool, double) override {
+        return func_();
+    }
+};
+
+template<class Graph>
+class CompositeAlgorithm : public PersistentAlgorithmBase<Graph> {
+    std::vector<std::pair<AlgoPtr<Graph>, std::string>> algos_;
+    //TODO consider moving up hierarchy or some other solution
+    std::function<void ()> launch_callback_;
+
+public:
+    CompositeAlgorithm(Graph& g,
+                       std::function<void ()> launch_callback = nullptr) :
+            PersistentAlgorithmBase<Graph>(g),
+            launch_callback_(launch_callback) {
+    }
+
+    template<typename Algo, typename... Args>
+    void AddAlgo(const std::string &desc, Args&&... args) {
+        AddAlgo(std::make_shared<Algo>(std::forward<Args>(args)...), desc);
+    };
+
+    void AddAlgo(AlgoPtr<Graph> algo, const std::string &desc = "") {
+        if (algo)
+            algos_.push_back(std::make_pair(algo, desc));
+    }
+
+    size_t Run(bool force_primary_launch = false,
+               double iter_run_progress = 1.) override {
+        if (launch_callback_)
+            launch_callback_();
+        size_t triggered = 0;
+
+        for (const auto &algo_info : algos_) {
+            triggered += AlgorithmRunningHelper<Graph>::RunAlgo(*algo_info.first,
+                                                                algo_info.second,
+                                                                force_primary_launch,
+                                                                iter_run_progress);
+        }
+        return triggered;
+    }
+
+};
+
+template<class Graph>
+class LoopedAlgorithm : public PersistentAlgorithmBase<Graph> {
+    AlgoPtr<Graph> algo_;
+    size_t min_iter_cnt_;
+    size_t max_iter_cnt_;
+    bool force_primary_for_all_;
+
+public:
+    LoopedAlgorithm(Graph& g, AlgoPtr<Graph> algo,
+                    size_t min_iter_cnt = 1,
+                    size_t max_iter_cnt = size_t(-1),
+                    bool force_primary_for_all = false) :
+            PersistentAlgorithmBase<Graph>(g),
+            algo_(algo),
+            min_iter_cnt_(min_iter_cnt),
+            max_iter_cnt_(max_iter_cnt),
+            force_primary_for_all_(force_primary_for_all) {
+        VERIFY(min_iter_cnt > 0);
+    }
+
+    size_t Run(bool force_primary_launch = false,
+               double iter_run_progress = 1.) override {
+        return AlgorithmRunningHelper<Graph>::LoopedRun(*algo_, min_iter_cnt_, max_iter_cnt_,
+                                                        force_primary_launch && force_primary_for_all_,
+                                                        force_primary_launch, iter_run_progress);
+    }
+
+};
 
 //FIXME only potentially relevant edges should be stored at any point
 template<class Graph, class ElementId,
@@ -161,8 +302,6 @@ protected:
 private:
     SmartSetIterator<Graph, ElementId, Comparator> it_;
     const bool tracking_;
-    const size_t total_iteration_estimate_;
-    size_t curr_iteration_;
 
 protected:
     void ReturnForConsideration(ElementId el) {
@@ -171,31 +310,30 @@ protected:
 
     virtual bool Process(ElementId el) = 0;
     virtual bool Proceed(ElementId /*el*/) const { return true; }
-
-    virtual void PrepareIteration(size_t /*it_cnt*/, size_t /*total_it_estimate*/) {}
+    virtual void PrepareIteration(double /*iter_run_progress*/ = 1.) {}
 
 public:
 
     PersistentProcessingAlgorithm(Graph& g,
-                                  const CandidateFinderPtr& interest_el_finder,
+                                  CandidateFinderPtr interest_el_finder,
                                   bool canonical_only = false,
                                   const Comparator& comp = Comparator(),
-                                  bool track_changes = true,
-                                  size_t total_iteration_estimate = -1ul) :
+                                  bool track_changes = true) :
             PersistentAlgorithmBase<Graph>(g),
             interest_el_finder_(interest_el_finder),
             it_(g, true, comp, canonical_only),
-            tracking_(track_changes),
-            total_iteration_estimate_(total_iteration_estimate),
-            curr_iteration_(0) {
+            tracking_(track_changes) {
         it_.Detach();
     }
 
-    size_t Run(bool force_primary_launch = false) override {
-        bool primary_launch = !tracking_ || (curr_iteration_ == 0) || force_primary_launch ;
+    size_t Run(bool force_primary_launch = false,
+               double iter_run_progress = 1.) override {
+        bool primary_launch = force_primary_launch ;
         if (!it_.IsAttached()) {
             it_.Attach();
+            primary_launch = true;
         }
+
         if (primary_launch) {
             it_.clear();
             TRACE("Primary launch.");
@@ -207,7 +345,8 @@ public:
             VERIFY(tracking_);
         }
 
-        PrepareIteration(std::min(curr_iteration_, total_iteration_estimate_ - 1), total_iteration_estimate_);
+        //PrepareIteration(std::min(curr_iteration_, total_iteration_estimate_ - 1), total_iteration_estimate_);
+        PrepareIteration(iter_run_progress);
 
         size_t triggered = 0;
         TRACE("Start processing");
@@ -226,7 +365,6 @@ public:
         if (!tracking_)
             it_.Detach();
 
-        curr_iteration_++;
         return triggered;
     }
 

@@ -16,7 +16,7 @@
 #include "adt/concurrent_dsu.hpp"
 
 #include "utils/segfault_handler.hpp"
-#include "utils/perf/memory_limit.hpp"
+#include "utils/memory_limit.hpp"
 
 #include "HSeq.hpp"
 #include "config_struct.hpp"

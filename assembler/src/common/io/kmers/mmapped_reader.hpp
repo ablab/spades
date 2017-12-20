@@ -12,9 +12,9 @@
 #include "common/adt/array_vector.hpp"
 
 #include "utils/verify.hpp"
+#include "utils/logger/logger.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
-#include "common/adt/pointer_iterator.hpp"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -53,8 +53,8 @@ class MMappedReader {
                                      StreamFile, InitialOffset + BlockOffset);
         else
             MappedRegion = NULL;
-        VERIFY_MSG((intptr_t) MappedRegion != -1L,
-                   "mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+        if (MappedRegion == MAP_FAILED)
+            FATAL_ERROR("mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
     }
 
     void read_internal(void *buf, size_t amount) {
@@ -76,8 +76,8 @@ private:
 
         if (Unlink) {
             int res = unlink(FileName.c_str());
-            VERIFY_MSG(res == 0,
-                       "unlink(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+            if (res != 0)
+                FATAL_ERROR("unlink(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
         }
     }
 
@@ -95,9 +95,9 @@ public:
         FileSize = (sz ? sz : (stat(FileName.c_str(), &buf) != 0 ? 0 : buf.st_size - InitialOffset));
 
         StreamFile = open(FileName.c_str(), O_RDONLY);
-        VERIFY_MSG(StreamFile != -1,
-                   "open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno << ". File: " <<
-                   FileName);
+        if (StreamFile == -1)
+            FATAL_ERROR("open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno << ". File: " <<
+                        FileName);
 
         if (BlockSize != -1ULL) {
             size_t PageSize = getpagesize();
@@ -109,8 +109,8 @@ public:
             MappedRegion =
                     (uint8_t *) mmap(NULL, BlockSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_PRIVATE,
                                      StreamFile, InitialOffset);
-            VERIFY_MSG((intptr_t) MappedRegion != -1L,
-                       "mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+            if (MappedRegion == MAP_FAILED)
+                FATAL_ERROR("mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
         } else
             MappedRegion = NULL;
 

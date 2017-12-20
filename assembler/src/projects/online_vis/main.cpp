@@ -17,7 +17,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "utils/perf/memory_limit.hpp"
+#include "utils/memory_limit.hpp"
 #include "io/dataset_support/read_converter.hpp"
 
 #include "debruijn_online_visualizer.hpp"

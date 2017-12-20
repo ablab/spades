@@ -13,7 +13,7 @@
 #include "io/reads/paired_read.hpp"
 #include "io/reads/read_stream_vector.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "common/utils/perf/memory_limit.hpp"
+#include "common/utils/memory_limit.hpp"
 
 #include <vector>
 #include <cstdlib>

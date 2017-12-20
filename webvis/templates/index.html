@@ -215,20 +215,14 @@ var controller = $("#console").console({
     }
 });
 
-    //Clicking on .dot files loads them as an svg
-    /*$(".console").on("click", "[href$='.dot']", function(event) {
+//Clicking on .dot files loads them as an svg (overrides jquery-console onClick)
+$(".console").on("click", "[href$='.dot']", function(event) {
     event.preventDefault();
     var url = $(this).attr("href");
-    startWheel("#graph");
-    $.ajax({
-    url: url,
-    success: function (response) {
-    stopWheel("#graph");
-    $("#graph").html($("<iframe>").attr("src", response));
-}
+    $("#graph").attr("src", url);
 });
-});*/
 
+//Clicking on directory url loads its content into the list
 $(".console").on("click", "[href$='/']", function(event) {
     event.preventDefault();
     var url = $(this).attr("href");
@@ -276,7 +270,7 @@ $(".console").on("click", "[href$='/']", function(event) {
                 </div>
             </td>
             <td>
-                <iframe class="bordered" name="graph" frameborder="0"></iframe>
+                <iframe class="bordered" id="graph" frameborder="0"></iframe>
             </td>
         </tr>
     </table>

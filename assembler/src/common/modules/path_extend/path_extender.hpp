@@ -241,10 +241,11 @@ public:
 
     void ResolveShortLoop(BidirectionalPath& path) const {
         EdgeId back_cycle_edge;
-        EdgeId loop_exit;
-        if (path.Size() >=1 && GetLoopAndExit(g_, path.Back(), back_cycle_edge, loop_exit)) {
+        EdgeId loop_outgoing;
+        EdgeId loop_incoming;
+        if (path.Size() >=1 && GetLoopAndExit(g_, path.Back(), back_cycle_edge, loop_outgoing, loop_incoming)) {
             DEBUG("Resolving short loop...");
-            MakeBestChoice(path, back_cycle_edge, loop_exit);
+            MakeBestChoice(path, back_cycle_edge, loop_outgoing, loop_incoming);
             DEBUG("Resolving short loop done");
         }
     }
@@ -254,42 +255,59 @@ private:
     const Graph& g_;
     shared_ptr<ShortLoopEstimator> loop_estimator_;
 
-    void UndoCycles(BidirectionalPath& p, EdgeId next_edge) const {
+    void UndoCycles(BidirectionalPath& p, EdgeId back_cycle_edge, EdgeId loop_incoming) const {
         if (p.Size() <= 2) {
             return;
         }
-        EdgeId first_edge = p.Back();
-        EdgeId second_edge = next_edge;
-        while (p.Size() > 2) {
-            if (p.At(p.Size() - 1) == first_edge && p.At(p.Size() - 2) == second_edge) {
-                p.PopBack(2);
+        EdgeId forward_cycle_edge = p.Back();
+        size_t loop_start_index = p.Size();
+        while (loop_start_index > 2) {
+            if (p.At(loop_start_index - 1) == forward_cycle_edge && p.At(loop_start_index - 2) == back_cycle_edge) {
+                loop_start_index -= 2;
             } else {
-                return;;
+                break;
             }
+        }
+
+        if (p.At(loop_start_index - 1) == forward_cycle_edge) {
+            p.PopBack(p.Size() - loop_start_index);
+        } else if (loop_start_index != p.Size()) {
+            //Means we jumped into the loop
+            DEBUG("Jumped inside the loop, back loop edge " << g_.int_id(back_cycle_edge) << ", forward loop edge " << g_.int_id(forward_cycle_edge) << ", loop starts @ " << loop_start_index);
+            p.PrintDEBUG();
+            Gap gap = p.GapAt(loop_start_index);
+            p.PopBack(p.Size() - loop_start_index);
+
+            if (p.Back() != loop_incoming) {
+                p.PushBack(loop_incoming, Gap(max(0, gap.gap - (int) g_.length(loop_incoming)  - (int) g_.length(forward_cycle_edge)), gap.trash_previous));
+            }
+            p.PushBack(forward_cycle_edge);
+            DEBUG("Restored the path");
+            p.PrintDEBUG();
         }
     }
 
     //edges -- first edge is loop's back edge, second is loop exit edge
-    void MakeBestChoice(BidirectionalPath& path, EdgeId back_cycle_edge, EdgeId loop_exit) const {
+    void MakeBestChoice(BidirectionalPath& path, EdgeId back_cycle_edge, EdgeId loop_outgoing, EdgeId loop_incoming) const {
         EdgeId forward_cycle_edge = path.Back();
-        UndoCycles(path, back_cycle_edge);
+        UndoCycles(path, back_cycle_edge, loop_incoming);
 
         //Expects 0 (for no loops), 1 (for a single loop) or 2 (for many loops, will insert back_cycle_edge and Ns)
-        size_t loop_count = loop_estimator_->EstimateSimpleCycleCount(path, back_cycle_edge, loop_exit);
+        size_t loop_count = loop_estimator_->EstimateSimpleCycleCount(path, back_cycle_edge, loop_outgoing);
         if (loop_count > 0) {
             path.PushBack(back_cycle_edge);
             if (loop_count == 1) {
                 DEBUG("Single loop");
                 path.PushBack(forward_cycle_edge);
-                path.PushBack(loop_exit);
+                path.PushBack(loop_outgoing);
             }
             else {
                 DEBUG("Multiple cycles");
-                path.PushBack(loop_exit, Gap(int(g_.k() + BASIC_N_CNT)));
+                path.PushBack(loop_outgoing, Gap(int(g_.k() + BASIC_N_CNT)));
             }
         }
         else {
-            path.PushBack(loop_exit);
+            path.PushBack(loop_outgoing);
         }
     }
 };

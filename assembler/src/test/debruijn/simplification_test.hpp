@@ -182,6 +182,19 @@ BOOST_AUTO_TEST_CASE( SimpleECTest ) {
     BOOST_CHECK_EQUAL(g.size(), 16u);
 }
 
+BOOST_AUTO_TEST_CASE( SimpleIterECTest ) {
+    Graph g(55);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
+
+    debruijn_config::simplification::erroneous_connections_remover ec_config;
+    ec_config.condition = "{ icb 7000 , ec_lb 20 }";
+
+    auto ec_remover_ptr = debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info());
+
+    AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(*ec_remover_ptr, 2);
+    BOOST_CHECK_EQUAL(g.size(), 16u);
+}
+
 BOOST_AUTO_TEST_CASE( IterECTest ) {
     Graph g(55);
     graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
@@ -189,12 +202,12 @@ BOOST_AUTO_TEST_CASE( IterECTest ) {
     debruijn_config::simplification::erroneous_connections_remover ec_config;
     ec_config.condition = "{ icb 7000 , ec_lb 20 }";
 
-    auto ec_remover_ptr = debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info(), (EdgeRemovalHandlerF<Graph>)nullptr, 2);
+    auto ec_remover_ptr = debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info());
 
-    ec_remover_ptr->Run();
+    ec_remover_ptr->Run(false, 0.5);
     BOOST_CHECK_EQUAL(g.size(), 20u);
 
-    ec_remover_ptr->Run();
+    ec_remover_ptr->Run(false, 1.0);
     BOOST_CHECK_EQUAL(g.size(), 16u);
 }
 
