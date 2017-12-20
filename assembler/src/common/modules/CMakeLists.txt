@@ -10,4 +10,3 @@ project(modules CXX)
 add_library(modules STATIC
             genome_consistance_checker.cpp alignment/bwa_index.cpp)
 target_link_libraries(modules bwa)
-

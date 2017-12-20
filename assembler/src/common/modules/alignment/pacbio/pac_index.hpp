@@ -18,6 +18,7 @@
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 
 #include <algorithm>
+#include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 
 namespace pacbio {
@@ -67,7 +68,7 @@ inline int StringDistance(const string &a, const string &b) {
 template<class Graph>
 class PacBioMappingIndex {
 public:
-    typedef set<KmerCluster<Graph> > ClustersSet;
+    typedef set<KmerCluster<Graph>> ClustersSet;
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
@@ -91,7 +92,6 @@ public:
             : g_(g),
               pb_config_(pb_config),
               bwa_mapper_(g, mode, pb_config.bwa_length_cutoff){
-              //minimap_mapper(g, out_dir){
         DEBUG("PB Mapping Index construction started");
         DEBUG("Index constructed");
         read_count_ = 0;
@@ -177,25 +177,7 @@ public:
 
     std::string DebugEmptyBestScoredPath(VertexId start_v, VertexId end_v, EdgeId prev_edge, EdgeId cur_edge,
             size_t prev_last_edge_position, size_t cur_first_edge_position, int seq_len) const{
-        pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
-        size_t result = size_t (-1);
-        bool not_found = true;
-        auto distance_it = distance_cashed_.begin();
-#pragma omp critical(pac_index)
-        {
-            distance_it = distance_cashed_.find(vertex_pair);
-            not_found = (distance_it == distance_cashed_.end());
-        }
-        if (not_found) {
-            omnigraph::DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
-                    omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, pb_config_.max_path_in_dijkstra, pb_config_.max_vertex_in_dijkstra));
-            dijkstra.Run(start_v);
-            if (dijkstra.DistanceCounted(end_v)) {
-                result = dijkstra.GetDistance(end_v);
-            }
-        } else {
-            result = distance_it->second;
-        }
+        size_t result = GetDistance(start_v, end_v, /*update cache*/false);
         std::ostringstream ss;
         ss << "Tangled region between edges " << g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) <<  " is not closed, additions from edges: "
             << int(g_.length(prev_edge)) - int(prev_last_edge_position) <<" " << int(cur_first_edge_position)
@@ -282,7 +264,7 @@ public:
         return res;
     }
 
-    vector<vector<bool>> FillConnectionsTable (const ClustersSet &mapping_descr) const{
+    vector<vector<bool>> FillConnectionsTable(const ClustersSet &mapping_descr) const {
         size_t len =  mapping_descr.size();
         TRACE("getting colors, table size "<< len);
         vector<vector<bool>> cons_table(len);
@@ -306,36 +288,27 @@ public:
 
     vector<int> GetWeightedColors(const ClustersSet &mapping_descr) const {
         size_t len = mapping_descr.size();
-        vector<int> colors(len);
+        vector<int> colors(len, UNDEF_COLOR);
         vector<int> cluster_size(len);
+        size_t ii = 0;
+        for (const auto &cl : mapping_descr) {
+            cluster_size[ii++] = cl.size;
+        }
+        const auto cons_table = FillConnectionsTable(mapping_descr);
+
         vector<int> max_size(len);
         vector<size_t> prev(len);
-        size_t i = 0;
-        for (i = 0; i < len; i++) {
-            prev[i] = -1;
-        }
-        for (i = 0; i < len; i++) {
-            colors[i] = UNDEF_COLOR;
-        }
-        i = 0;
-        for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
-                ++i_iter, ++i) {
-            cluster_size[i] = i_iter->size;
-        }
 
-        auto cons_table = FillConnectionsTable(mapping_descr);
         int cur_color = 0;
         while (true) {
-            for (i = 0; i < len; i++) {
+            for (size_t i = 0; i < len; ++i) {
                 max_size[i] = 0;
-                prev[i] = -1ul;
+                prev[i] = size_t(-1);
             }
-            i = 0;
-            for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
-                        ++i_iter, ++i) {
+            for (size_t i = 0; i < len; ++i) {
                 if (colors[i] != UNDEF_COLOR) continue;
                 max_size[i] = cluster_size[i];
-                for (size_t j = 0; j < i; j ++) {
+                for (size_t j = 0; j < i; j++) {
                     if (colors[j] != -1) continue;
                     if (cons_table[j][i] && max_size[i] < cluster_size[i] + max_size[j]) {
                         max_size[i] = max_size[j] + cluster_size[i];
@@ -367,7 +340,7 @@ public:
                 if (colors[real_maxi] == UNDEF_COLOR) {
                     colors[real_maxi] = DELETED_COLOR;
                 }
-                real_maxi --;
+                real_maxi--;
             }
         }
         return colors;
@@ -393,7 +366,7 @@ public:
                         const auto &b = *start_clusters[j];
                         size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + g_.k();
                         size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
-                        //FIXME check index: left_offsed should be potentially equal to edge_length
+                        //FIXME check index: left_offset should be potentially equal to edge_length
                         size_t left_offset = a.sorted_positions[a.last_trustable_index].edge_position;
                         size_t right_offset = b.sorted_positions[b.first_trustable_index].edge_position;
                         auto gap = GapDescription::CreateFixOverlap(g_, s, 
@@ -459,7 +432,7 @@ public:
     }
 
     //FIXME change to io::SingleRead
-    OneReadMapping GetReadAlignment(Sequence &s) const {
+    OneReadMapping GetReadAlignment(const Sequence &s) const {
         ClustersSet mapping_descr = GetBWAClusters(s); //GetOrderClusters(s);
         vector<int> colors = GetWeightedColors(mapping_descr);
         size_t len =  mapping_descr.size();
@@ -512,28 +485,13 @@ public:
         return std::make_pair(path_min_len, path_max_len);
     }
 
-
-    bool IsConsistent(const KmerCluster<Graph> &a,
-                     const KmerCluster<Graph> &b) const {
-        EdgeId a_edge = a.edgeId;
-        EdgeId b_edge = b.edgeId;
-        size_t a_id =  g_.int_id(a_edge);
-        size_t b_id =  g_.int_id(b_edge);
-        DEBUG("clusters on " << a_id << " and " << b_id );
-//TODO: Is this check useful?
-        if (a.sorted_positions[a.last_trustable_index].read_position + (int) pb_config_.max_path_in_dijkstra <
-            b.sorted_positions[b.first_trustable_index].read_position) {
-            DEBUG ("Clusters are too far in read");
-            return false;
-        }
-        VertexId start_v = g_.EdgeEnd(a_edge);
-        int addition = int(g_.length(a_edge));
-        VertexId end_v = g_.EdgeStart(b_edge);
-        pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
-
+    size_t GetDistance(VertexId start_v, VertexId end_v,
+                       bool update_cache = true) const {
         size_t result = size_t(-1);
-        bool not_found = true;
+        pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
+        bool not_found;
         auto distance_it = distance_cashed_.begin();
+        //FIXME should permit multiple readers
 #pragma omp critical(pac_index)
         {
             distance_it = distance_cashed_.find(vertex_pair);
@@ -541,51 +499,64 @@ public:
         }
         if (not_found) {
             omnigraph::DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
-                    omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, pb_config_.max_path_in_dijkstra, pb_config_.max_vertex_in_dijkstra));
+                    omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_,
+                                                                                            pb_config_.max_path_in_dijkstra,
+                                                                                            pb_config_.max_vertex_in_dijkstra));
             dijkstra.Run(start_v);
             if (dijkstra.DistanceCounted(end_v)) {
                 result = dijkstra.GetDistance(end_v);
             }
+            if (update_cache) {
 #pragma omp critical(pac_index)
-            {
-                distance_it = distance_cashed_.insert({vertex_pair, result}).first;
+                distance_cashed_.insert({vertex_pair, result});
             }
         } else {
             TRACE("taking from cashed");
+            result = distance_it->second;
         }
 
-        result = distance_it->second;
+        return result;
+    }
+
+    bool IsConsistent(const KmerCluster<Graph> &a,
+                     const KmerCluster<Graph> &b) const {
+        EdgeId a_edge = a.edgeId;
+        EdgeId b_edge = b.edgeId;
+        DEBUG("clusters on " << g_.int_id(a_edge) << " and " << g_.int_id(b_edge));
+        //FIXME: Is this check useful?
+        if (a.sorted_positions[a.last_trustable_index].read_position +
+                    (int) pb_config_.max_path_in_dijkstra <
+            b.sorted_positions[b.first_trustable_index].read_position) {
+            DEBUG("Clusters are too far in read");
+            return false;
+        }
+        size_t result = GetDistance(g_.EdgeEnd(a_edge), g_.EdgeStart(b_edge));
         DEBUG (result);
         if (result == size_t(-1)) {
             return false;
         }
-        if (similar_in_graph(a.sorted_positions[1], b.sorted_positions[0], (int)result + addition)) {
+        result += g_.length(a_edge);
+        if (similar_in_graph(a.sorted_positions[1], b.sorted_positions[0], (int)result)) {
             DEBUG(" similar! ")
-            return 1;
         } else {
 //FIXME: reconsider this condition! i.e only one large range? That may allow to decrease the bwa length cutoff
-            if  (a.size > LONG_ALIGNMENT_OVERLAP && b.size > LONG_ALIGNMENT_OVERLAP &&
-                 - a.sorted_positions[1].edge_position +  (int)result + addition + b.sorted_positions[0].edge_position  <=
+            if (a.size > LONG_ALIGNMENT_OVERLAP && b.size > LONG_ALIGNMENT_OVERLAP &&
+                 - a.sorted_positions[1].edge_position +  (int)result + b.sorted_positions[0].edge_position  <=
                         b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * int(g_.k())) {
                 DEBUG("overlapping range magic worked, " << - a.sorted_positions[1].edge_position +
-                                                           (int)result + addition + b.sorted_positions[0].edge_position
+                                                           (int)result + b.sorted_positions[0].edge_position
                       << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k());
-                DEBUG("Ranges:" << a.str(g_) << " " << b.str(g_) <<" llength and dijkstra shift :" << addition << " " << result);
-                return true;
+                DEBUG("Ranges:" << a.str(g_) << " " << b.str(g_)
+                                <<" llength and dijkstra shift :" << g_.length(a_edge) << " " << (result - g_.length(a_edge)));
+            } else {
+                return false;
             }
-            return false;
         }
+        return true;
     }
 
-    //FIXME use common function
     string PathToString(const vector<EdgeId>& path) const {
-        string res = "";
-        for (auto iter = path.begin(); iter != path.end(); iter++) {
-            size_t len = g_.length(*iter);
-            string tmp = g_.EdgeNucls(*iter).First(len).str();
-            res = res + tmp;
-        }
-        return res;
+        return debruijn_graph::MergeSequences(g_, path).str();
     }
 
     vector<EdgeId> BestScoredPath(const Sequence &s, VertexId start_v, VertexId end_v,

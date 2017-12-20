@@ -26,7 +26,7 @@ inline const std::string Complement(const std::string &s) {
     return res;
 }
 
-inline const Sequence MergeOverlappingSequences(std::vector<Sequence>& ss,
+inline const Sequence MergeOverlappingSequences(const std::vector<Sequence>& ss,
         size_t overlap, bool safe_merging = true) {
     if (ss.empty()) {
         return Sequence();
@@ -35,10 +35,11 @@ inline const Sequence MergeOverlappingSequences(std::vector<Sequence>& ss,
     Sequence prev_end = ss.front().Subseq(0, overlap);
     sb.append(prev_end);
     for (auto it = ss.begin(); it != ss.end(); ++it) {
-        if(safe_merging)
+        if (safe_merging) {
             VERIFY(prev_end == it->Subseq(0, overlap));
+            prev_end = it->Subseq(it->size() - overlap);
+        }
         sb.append(it->Subseq(overlap));
-        prev_end = it->Subseq(it->size() - overlap);
     }
     return sb.BuildSequence();
 }

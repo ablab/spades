@@ -49,7 +49,7 @@ namespace debruijn_graph {
             for (auto edge: g.IncomingEdges(cur_vertex)) {
                 if ((dijkstra.DistanceCounted(g.EdgeStart(edge))) && (
                         suffix_len + g.length(edge) + dijkstra.GetDistance(g.EdgeStart(edge)) <= dist)) {
-                    if (found == true) {
+                    if (found) {
                         std::reverse(res.begin(), res.end());
                         return res;
                     } else {
@@ -115,7 +115,7 @@ namespace debruijn_graph {
             VERIFY(g.EdgeEnd(continuous_path[i - 1]) == g.EdgeStart(continuous_path[i]));
             path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
         }
-        return MergeOverlappingSequences(path_sequences, g.k());
+        return MergeOverlappingSequences(path_sequences, g.k(), /*no need to check again*/false);
     }
 
     template<class Graph>
