@@ -265,13 +265,6 @@ void BWAIndex::Init() {
         free(aln.cigar);
 #endif
 
-//omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetShortMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
-//    omnigraph::MappingPath<debruijn_graph::EdgeId> res;
-//    VERIFY_MSG(false, "Not implemented yet");
-//
-//    return res;
-//}
-
 omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
@@ -333,7 +326,8 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetShortMappingPath(con
         // Reduce the range to kmer-based
         size_t initial_range_end = a.qb + 1;
         size_t mapping_range_end = pos + 1;
-
+        if (mapping_range_end > g_.length(ids_[a.rid]))
+            continue;
         if (!is_rev) {
             res.push_back(ids_[a.rid],
                           { { (size_t)a.qb, initial_range_end },
@@ -357,10 +351,10 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
     std::string seq = sequence.str();
     mem_alnreg_v ar = mem_align1(memopt_.get(), idx_->bwt, idx_->bns, idx_->pac,
                                  int(seq.length()), seq.data());
-    //if (seq.length() <= g_.k())
-        //res = GetShortMappingPath(ar, seq);
-    //else
-    res = GetMappingPath(ar, seq);
+    if (seq.length() <= g_.k())
+        res = GetShortMappingPath(ar, seq);
+    else
+        res = GetMappingPath(ar, seq);
 
     free(ar.a);
 
