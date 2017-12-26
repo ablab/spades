@@ -110,6 +110,8 @@ namespace debruijn_graph {
     Sequence MergeSequences(const Graph &g,
                             const vector<typename Graph::EdgeId> &continuous_path) {
         vector<Sequence> path_sequences;
+        if (continuous_path.size() == 0)
+            return Sequence();
         path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
         for (size_t i = 1; i < continuous_path.size(); ++i) {
             VERIFY(g.EdgeEnd(continuous_path[i - 1]) == g.EdgeStart(continuous_path[i]));
