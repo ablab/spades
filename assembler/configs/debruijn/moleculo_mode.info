@@ -85,8 +85,6 @@ simp
 
     init_clean
     {
-        early_it_only   true
-
         activation_cov  -1.
         ier
         {
