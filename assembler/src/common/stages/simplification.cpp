@@ -354,7 +354,9 @@ public:
         printer_(info_printer_pos::final_simplified);
     }
 
-    void SimplifyGraph(bool rna_mode = false) {
+    void SimplifyGraph() {
+        bool rna_mode = (info_container_.mode() == config::pipeline_type::rna);
+
         INFO("Graph simplification started");
         printer_(info_printer_pos::before_simplification);
 
@@ -364,27 +366,25 @@ public:
         };
 
         CompositeAlgorithm<Graph> algo(g_, message_callback);
-        //FIXME unify code!
-        if (rna_mode) {
-            auto algo_tc_br = std::make_shared<CompositeAlgorithm<Graph>>(g_);
-            algo_tc_br->AddAlgo(TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_),
-                                "Tip clipper");
-            algo_tc_br->AddAlgo(DeadEndInstance(g_, simplif_cfg_.dead_end, info_container_, removal_handler_),
-                                "Dead end clipper");
-            algo_tc_br->AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_),
-                                "Bulge remover");
+        auto algo_tc_br = std::make_shared<CompositeAlgorithm<Graph>>(g_);
+        algo_tc_br->AddAlgo(TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_),
+                            "Tip clipper");
+        algo_tc_br->AddAlgo(DeadEndInstance(g_, simplif_cfg_.dead_end, info_container_, removal_handler_),
+                            "Dead end clipper");
+        algo_tc_br->AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_),
+                            "Bulge remover");
 
-            algo.AddAlgo<LoopedAlgorithm<Graph>>("", g_, algo_tc_br);
-        } else {
-            algo.AddAlgo(TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_),
-                         "Tip clipper");
-            algo.AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_),
-                         "Bulge remover");
 //        algo.AddAlgo(
 //                RelativelyLowCoverageDisconnectorInstance(gp_.g, gp_.flanking_cov,
 //                                                          simplif_cfg_.relative_ed, info_container_),
 //                "Disconnecting edges with relatively low coverage");
+
+        if (rna_mode) {
+            algo.AddAlgo<LoopedAlgorithm<Graph>>("", g_, algo_tc_br);
+        } else {
+            algo.AddAlgo(algo_tc_br);
         }
+
         algo.AddAlgo(ECRemoverInstance(g_, simplif_cfg_.ec, info_container_,
                                        removal_handler_),
                      "Low coverage edge remover");
@@ -393,6 +393,7 @@ public:
         AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(algo,
                                                               simplif_cfg_.cycle_iter_count,
                                                               /*all_primary*/rna_mode);
+        //FIXME bound max iterations?
         AlgorithmRunningHelper<Graph>::LoopedRun(algo);
     }
 };
@@ -453,7 +454,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
                                nullptr/*removal_handler_f*/,
                                printer);
 
-    simplifier.SimplifyGraph(cfg::get().mode == pipeline_type::rna);
+    simplifier.SimplifyGraph();
 }
 
 void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
