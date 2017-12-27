@@ -69,12 +69,6 @@ simp
         enabled                     false
     }
 
-    ; hidden ec remover
-    her
-    {
-        enabled                     true
-    }
-
 }
 
 ; disable filtering in rna mode

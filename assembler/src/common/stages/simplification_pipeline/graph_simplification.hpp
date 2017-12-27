@@ -666,16 +666,13 @@ bool RemoveHiddenLoopEC(Graph &g,
                         double determined_coverage_threshold,
                         config::debruijn_config::simplification::hidden_ec_remover her_config,
                         EdgeRemovalHandlerF<Graph> removal_handler) {
-    if (her_config.enabled) {
-        INFO("Removing loops and rc loops with erroneous connections");
-        ECLoopRemover<Graph> hc(g, flanking_cov,
-                                determined_coverage_threshold,
-                                her_config.relative_threshold, removal_handler);
-        bool res = hc.Run();
-        hc.PrintLoopStats();
-        return res;
-    }
-    return false;
+    INFO("Removing loops and rc loops with erroneous connections");
+    ECLoopRemover<Graph> hc(g, flanking_cov,
+                            determined_coverage_threshold,
+                            her_config.relative_threshold, removal_handler);
+    bool res = hc.Run();
+    hc.PrintLoopStats();
+    return res;
 }
 
 }

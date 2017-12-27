@@ -91,10 +91,10 @@ simp
         max_relative_delta		0.1
     }
 
+    ; config used in special meta mode version (always enabled)
     ; hidden ec remover
     her
     {
-        enabled                     true
         uniqueness_length           1500
         unreliability_threshold     -1.
         relative_threshold          3.     

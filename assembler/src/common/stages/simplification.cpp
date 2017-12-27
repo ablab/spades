@@ -183,8 +183,7 @@ public:
 
         algo.Run();
 
-        //FIXME think about different versions of HER configuration
-        //FIXME does not have anything in common with HER
+        //FIXME do we need HER config here (in the new version read a single value)?
         if (info_container_.mode() == config::pipeline_type::rna) {
             RemoveHiddenLoopEC(g_, gp_.flanking_cov, info_container_.detected_coverage_bound(),
                                simplif_cfg_.her, removal_handler_);
@@ -322,12 +321,10 @@ public:
         AlgorithmRunningHelper<Graph>::LoopedRun(algo, primary_launch_cnt - 1, primary_launch_cnt - 1, true);
         AlgorithmRunningHelper<Graph>::LoopedRun(algo);
 
-        if (simplif_cfg_.topology_simplif_enabled) {
-            RemoveHiddenEC(gp_.g, gp_.flanking_cov, simplif_cfg_.her, info_container_, removal_handler_);
-        }
+        RemoveHiddenEC(gp_.g, gp_.flanking_cov, simplif_cfg_.her, info_container_, removal_handler_);
 
-        //FIXME
-        if (info_container_.mode() == config::pipeline_type::meta && simplif_cfg_.her.enabled) {
+        //FIXME better configuration
+        if (info_container_.mode() == config::pipeline_type::meta) {
             VERIFY(math::ls(simplif_cfg_.her.unreliability_threshold, 0.));
             MetaHiddenECRemover<Graph> algo(g_, info_container_.chunk_cnt(), gp_.flanking_cov,
                                                       simplif_cfg_.her.uniqueness_length,
@@ -340,7 +337,6 @@ public:
         INFO("Disrupting self-conjugate edges");
         SelfConjugateDisruptor<Graph>(gp_.g, cfg::get().max_repeat_length, removal_handler_).Run();
 
-        //FIXME moved from simplification cleanup
         AlgorithmRunningHelper<Graph>::RunAlgo(IsolatedEdgeRemoverInstance(gp_.g, cfg::get().simp.ier,
                                                                            info_container_,
                                                                            removal_handler_),

@@ -160,6 +160,15 @@ simp
         max_coverage                2
         max_length_any_cov          150 ; will be taken max with read_length if option above is set
     }
+
+    ; hidden ec remover
+    her
+    {
+        enabled                     false
+        uniqueness_length           1500
+        unreliability_threshold     4
+        relative_threshold          5
+    }
     
     ; ==== ADVANCED EC REMOVAL ALGO ==== 
     ; enable advanced ec removal algo
@@ -198,15 +207,6 @@ simp
         plausibility_length     200
     }
 
-    ; hidden ec remover FIXME configuration for special cases
-    her
-    {
-        enabled false
-        uniqueness_length           1500
-        unreliability_threshold     4
-        relative_threshold          5     
-    }
-    
     ; topology tip clipper:
     ttc
     {
