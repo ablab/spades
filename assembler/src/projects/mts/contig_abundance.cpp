@@ -196,7 +196,7 @@ KmerProfileIndex::KmerProfileIndex(unsigned k,
     //Prefetch mmapped data by force
     Mpl checksum = 0;
     for (const Mpl* ptr = profiles_->data(); ptr < profiles_->data() + data_size; ptr += 4096 / sizeof(Mpl))
-        checksum = (Mpl)(checksum + *ptr); //silence the warning
+        checksum = Mpl(checksum + *ptr);
     INFO("Kmer index loaded; checksum: " << checksum);
 }
 
