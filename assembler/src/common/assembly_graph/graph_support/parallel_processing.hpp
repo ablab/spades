@@ -168,6 +168,14 @@ public:
         return triggered;
     }
 
+    static size_t RunAlgo(AlgoPtr<Graph> algo_ptr, const string &comment = "",
+                          bool force_primary_launch = false,
+                          double iter_run_progress = 1.) {
+        if (algo_ptr)
+            return RunAlgo(*algo_ptr, comment, force_primary_launch, iter_run_progress);
+        return 0;
+    }
+
     static size_t IterativeThresholdsRun(Algo &algo,
                                          const size_t iteration_cnt = 1,
                                          bool all_primary = false,

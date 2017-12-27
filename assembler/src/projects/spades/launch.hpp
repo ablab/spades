@@ -57,20 +57,17 @@ void assemble_genome() {
 
     INFO("Starting from stage: " << cfg::get().entry_point);
 
-    bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
-    INFO("Two-step RR enabled: " << two_step_rr);
-
     StageManager SPAdes({cfg::get().developer_mode,
                          cfg::get().load_from,
                          cfg::get().output_saves});
 
-    size_t read_index_cnt = cfg::get().ds.reads.lib_count();
-    if (two_step_rr)
-        read_index_cnt++;
+    bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
+    INFO("Two-step RR enabled: " << two_step_rr);
 
     debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
                                             cfg::get().tmp_dir,
-                                            read_index_cnt,
+                                            two_step_rr ? cfg::get().ds.reads.lib_count() + 1
+                                                        : cfg::get().ds.reads.lib_count(),
                                             cfg::get().ds.reference_genome,
                                             cfg::get().flanking_range,
                                             cfg::get().pos.max_mapping_gap,
@@ -79,13 +76,37 @@ void assemble_genome() {
         INFO("Will need read mapping, kmer mapper will be attached");
         conj_gp.kmer_mapper.Attach();
     }
+
     // Build the pipeline
     SPAdes.add<debruijn_graph::Construction>()
           .add<debruijn_graph::GenomicInfoFiller>();
-    if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
+
+    VERIFY(!cfg::get().gc.before_raw_simplify || !cfg::get().gc.before_simplify);
+
+    if (cfg::get().gap_closer_enable &&
+        cfg::get().gc.before_raw_simplify)
         SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
 
-    SPAdes.add<debruijn_graph::Simplification>(two_step_rr);
+    SPAdes.add<debruijn_graph::RawSimplification>();
+
+    if (cfg::get().gap_closer_enable &&
+            cfg::get().gc.before_simplify)
+        SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
+
+    if (two_step_rr) {
+        SPAdes.add<debruijn_graph::Simplification>(true);
+        if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
+            SPAdes.add<debruijn_graph::GapClosing>("prelim_gapcloser");
+        if (cfg::get().use_intermediate_contigs) {
+            SPAdes.add<debruijn_graph::PairInfoCount>(true)
+                    .add<debruijn_graph::DistanceEstimation>(true)
+                    .add<debruijn_graph::RepeatResolution>(true)
+                    .add<debruijn_graph::ContigOutput>()
+                    .add<debruijn_graph::SecondPhaseSetup>();
+        }
+    }
+
+    SPAdes.add<debruijn_graph::Simplification>();
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
         SPAdes.add<debruijn_graph::GapClosing>("late_gapcloser");
@@ -94,18 +115,8 @@ void assemble_genome() {
     //currently cannot be used with two step rr
     if (cfg::get().correct_mismatches && !cfg::get().two_step_rr)
         SPAdes.add<debruijn_graph::MismatchCorrection>();
+
     if (cfg::get().rr_enable) {
-        if (two_step_rr) {
-            if (cfg::get().use_intermediate_contigs)
-                SPAdes.add<debruijn_graph::PairInfoCount>(true)
-                       .add<debruijn_graph::DistanceEstimation>(true)
-                       .add<debruijn_graph::RepeatResolution>(true)
-                       .add<debruijn_graph::ContigOutput>()
-                       .add<debruijn_graph::SecondPhaseSetup>();
-
-            SPAdes.add<debruijn_graph::Simplification>();
-        }
-
         if (!cfg::get().series_analysis.empty())
             SPAdes.add<debruijn_graph::SeriesAnalysis>();
 

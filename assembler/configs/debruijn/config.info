@@ -123,8 +123,10 @@ gap_closer_enable   true
 gap_closer
 {
     minimal_intersection	10
+
+    ;before_raw_simplify and before_simplify are mutually exclusive
+    before_raw_simplify    		false
     before_simplify		true
-    in_simplify    		false
     after_simplify 		true
     weight_threshold		2.0
 }

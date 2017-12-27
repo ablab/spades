@@ -11,6 +11,14 @@
 
 namespace debruijn_graph {
 
+class RawSimplification : public spades::AssemblyStage {
+public:
+    RawSimplification()
+            : AssemblyStage("Raw Simplification", "raw_simplification") { }
+
+    void run(conj_graph_pack &gp, const char *);
+};
+
 class Simplification : public spades::AssemblyStage {
     const bool preliminary_;
 public:

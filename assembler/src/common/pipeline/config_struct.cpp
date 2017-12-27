@@ -78,6 +78,7 @@ vector<string> CheckedNames(const vector<pair<string, mode_t>>& mapping, mode_t 
 vector<string> InfoPrinterPosNames() {
     return CheckedNames<info_printer_pos>({
                     {"default", info_printer_pos::default_pos},
+                    {"before_raw_simplification", info_printer_pos::before_raw_simplification},
                     {"before_first_gap_closer", info_printer_pos::before_first_gap_closer},
                     {"before_simplification", info_printer_pos::before_simplification},
                     {"before_post_simplification", info_printer_pos::before_post_simplification},
@@ -498,8 +499,8 @@ void load(debruijn_config::gap_closer& gc,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(gc.minimal_intersection, pt, "minimal_intersection");
+  load(gc.before_raw_simplify, pt, "before_raw_simplify");
   load(gc.before_simplify, pt, "before_simplify");
-  load(gc.in_simplify, pt, "in_simplify");
   load(gc.after_simplify, pt, "after_simplify");
   load(gc.weight_threshold, pt, "weight_threshold");
 }
@@ -578,7 +579,6 @@ void load(debruijn_config::simplification& simp,
 
   load(simp.cycle_iter_count, pt, "cycle_iter_count", complete);
 
-  load(simp.post_simplif_enabled, pt, "post_simplif_enabled", complete);
   load(simp.topology_simplif_enabled, pt, "topology_simplif_enabled", complete);
   load(simp.tc, pt, "tc", complete); // tip clipper:
 

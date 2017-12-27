@@ -19,6 +19,7 @@ namespace config {
 
 enum class info_printer_pos : char {
     default_pos = 0,
+    before_raw_simplification,
     before_first_gap_closer,
     before_simplification,
     before_post_simplification,
@@ -315,7 +316,6 @@ struct debruijn_config {
 
         size_t cycle_iter_count;
 
-        bool post_simplif_enabled;
         bool topology_simplif_enabled;
         tip_clipper tc;
         dead_end_clipper dead_end;
@@ -429,8 +429,8 @@ struct debruijn_config {
 
     struct gap_closer {
         int minimal_intersection;
+        bool before_raw_simplify;
         bool before_simplify;
-        bool in_simplify;
         bool after_simplify;
         double weight_threshold;
     };

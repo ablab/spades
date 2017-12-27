@@ -102,21 +102,6 @@ simp
 
     init_clean
     {
-       early_it_only   true
-       ier {
-           enabled true
-       }
-       tip_condition   "{ tc_lb 3.5, cb 2.0 }"
-       ec_condition    "{ ec_lb 10, cb 0.5 }"
-    }
-
-}
-
-;FIXME rename
-preliminary_simp
-{
-    init_clean
-    {
         self_conj_condition "{ ec_lb 100, cb 20.0 }"
         early_it_only   false
         ier
@@ -128,15 +113,11 @@ preliminary_simp
         disconnect_flank_cov    0.8
     }
 
-    ; relative edge disconnector:
-    relative_ed
-    {
-        enabled true
-        diff_mult  5.
-    }
+}
 
-    post_simplif_enabled false
-
+;FIXME rename
+preliminary_simp
+{
 	; bulge remover:
 	br
 	{
