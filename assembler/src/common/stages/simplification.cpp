@@ -285,7 +285,6 @@ public:
         }
 
         //FIXME need better configuration
-
         if (info_container_.mode() == config::pipeline_type::meta) {
             EdgePredicate<Graph> meta_thorn_condition
                     = And(LengthUpperBound<Graph>(g_, LengthThresholdFinder::MaxErroneousConnectionLength(
@@ -316,10 +315,7 @@ public:
                                                info_container_),
                 "Removing edges with low coverage");
 
-        const size_t primary_launch_cnt = 2;
-        //FIXME make more explicit
-        AlgorithmRunningHelper<Graph>::LoopedRun(algo, primary_launch_cnt - 1, primary_launch_cnt - 1, true);
-        AlgorithmRunningHelper<Graph>::LoopedRun(algo);
+        AlgorithmRunningHelper<Graph>::LoopedRunPrimaryOpening(algo, /*first primary iteration cnt*/2);
 
         RemoveHiddenEC(gp_.g, gp_.flanking_cov, simplif_cfg_.her, info_container_, removal_handler_);
 
