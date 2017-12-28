@@ -17,7 +17,7 @@ import sys
 
 
 
-hmm="/Nancy/mrayko/db/plasmid_specific_pfam/plasmid_hmms_53.hmm"
+hmm="/Nancy/mrayko/db/plasmid_specific_pfam/plasmid_hmms_top_24.hmm"
 hmmscan=" /Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmscan"
 prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
 
