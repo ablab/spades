@@ -194,7 +194,11 @@ public:
     virtual ~EarlyTipClipper() = default;
 
     void run(debruijn_graph::conj_graph_pack &gp, const char*) override {
-        EarlyClipTips(gp.g.k(), storage().params, cfg::get().ds.RL, storage().ext_index);
+        if (!storage().params.early_tc.length_bound) {
+            INFO("Early tip clipper length bound set as (RL - K)");
+            storage().params.early_tc.length_bound.reset(cfg::get().ds.RL - gp.g.k());
+        }
+        EarlyClipTips(storage().params, storage().ext_index);
     }
 
     void load(debruijn_graph::conj_graph_pack&,

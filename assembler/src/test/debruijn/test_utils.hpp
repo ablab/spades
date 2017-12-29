@@ -144,13 +144,8 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
     graph_pack<Graph>::index_t index(g, *workdir);
     index.Detach();
 
-    size_t max_rl = 0;
-    for (const auto &r : reads) {
-        max_rl = std::max(max_rl, r.size());
-    }
-
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads))));
-    ConstructGraph(config::debruijn_config::construction(), workdir, max_rl,
+    ConstructGraph(config::debruijn_config::construction(), workdir, 
                    streams, g, index);
 
     AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
@@ -217,14 +212,8 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl
 
     DEBUG("Graph pack created");
 
-    size_t max_rl = 0;
-    for (const auto &r : paired_reads) {
-        max_rl = std::max(max_rl, r.first.size());
-        max_rl = std::max(max_rl, r.second.size());
-    }
-
     io::ReadStreamList<io::SingleRead> single_stream_vector = io::SquashingWrap<io::PairedRead>(paired_streams);
-    ConstructGraphWithCoverage(config::debruijn_config::construction(), workdir, max_rl,
+    ConstructGraphWithCoverage(config::debruijn_config::construction(), workdir,
                                single_stream_vector, gp.g, gp.index, gp.flanking_cov);
 
     gp.InitRRIndices();
@@ -243,14 +232,14 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl
 }
 
 template<class graph_pack>
-void CheckIndex(vector<string> reads, size_t k, size_t read_length) {
+void CheckIndex(const vector<string> &reads, size_t k) {
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     graph_pack gp(k, "tmp", 0);
     auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");
     auto stream = io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads)));
     io::ReadStreamList<io::SingleRead> streams(stream);
     ConstructGraph(config::debruijn_config::construction(), workdir,
-                   read_length, streams, gp.g, gp.index);
+                   streams, gp.g, gp.index);
     stream->reset();
     io::SingleRead read;
     while(!(stream->eof())) {
