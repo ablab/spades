@@ -16,7 +16,7 @@ contig_output {
 
 simp
 {
-    ; enable advanced ec removal algo
+    ;all topology based erroneous connection removers are off
     topology_simplif_enabled false
 
     tc
@@ -28,13 +28,14 @@ simp
 
     dead_end
     {
-        condition  "{ tc_lb 3.5, cb 2 }"
         enabled true
+        condition  "{ tc_lb 3.5, cb 2 }"
     }
 
     ; bulge remover:
     br
     {
+        enabled true
         max_additive_length_coefficient 100
         max_coverage            1000000.0
         max_relative_coverage       100000.0 ; bulge_cov < this * not_bulge_cov
@@ -63,7 +64,6 @@ simp
         coverage_gap    20.
     }
 
-    ;all topology based erroneous connection removers are off
     ier
     {
         enabled                     false

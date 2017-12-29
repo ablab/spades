@@ -47,29 +47,6 @@ simp
         max_coverage_coeff  5.0
     }
     
-    tec
-    {
-        max_ec_length_coefficient   55  ; max_ec_length = k + max_ec_length_coefficient
-        uniqueness_length       1500
-        plausibility_length     200
-    }
-    
-    ; topology and reliability based erroneous connection remover
-    trec
-    {
-        max_ec_length_coefficient   100 ; max_ec_length = k + max_ec_length_coefficient
-        uniqueness_length       1500
-        unreliable_coverage     2.5
-    }
-    
-    ; topology tip clipper:
-    ttc
-    {
-        length_coeff    3.5
-        plausibility_length 250
-        uniqueness_length   1500
-    }
-
     ; complex bulge remover
     cbr
     {
