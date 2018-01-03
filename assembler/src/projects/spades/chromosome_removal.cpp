@@ -301,9 +301,9 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     bool use_chromosomal_list = (additional_list != "");
 
 
-    if (cfg::get().ds.reference_genome_filename != "") {
+    if (cfg::get().pd->reference_removal != "") {
         debruijn_graph::config::dataset tmp_dataset;
-        tmp_dataset.reference_genome_filename = cfg::get().ds.reference_genome_filename;
+        tmp_dataset.reference_genome_filename = cfg::get().pd->reference_removal;
         DEBUG("loading reference.. " <<  tmp_dataset.reference_genome_filename);
         config::load_reference_genome(tmp_dataset, cfg::get().input_dir);
         gp.genome = GenomeStorage(tmp_dataset.reference_genome);

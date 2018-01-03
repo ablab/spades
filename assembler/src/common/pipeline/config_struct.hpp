@@ -397,6 +397,7 @@ struct debruijn_config {
         size_t min_start_edge_length;
         double min_start_coverage;
         size_t max_loop;
+        std::string reference_removal;
     };
 
     struct position_handler {

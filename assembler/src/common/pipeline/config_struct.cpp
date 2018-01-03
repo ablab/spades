@@ -478,6 +478,12 @@ void load(debruijn_config::plasmid& pd,
     load(pd.min_start_edge_length, pt, "min_start_edge_length");
     load(pd.min_start_coverage, pt, "min_start_coverage");
     load(pd.max_loop, pt, "max_loop");
+    pd.reference_removal = "";
+    boost::optional<std::string> reference =
+            pt.get_optional<std::string>("reference_removal");
+    if (reference && *reference != "N/A") {
+        pd.reference_removal = *reference;
+    }
 }
 
 void load(debruijn_config::gap_closer& gc,
