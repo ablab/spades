@@ -183,10 +183,10 @@ public:
 
         algo.Run();
 
-        //FIXME do we need HER config here (in the new version read a single value)?
+        //FIXME should it be here or in post simplification?
         if (info_container_.mode() == config::pipeline_type::rna) {
             RemoveHiddenLoopEC(g_, gp_.flanking_cov, info_container_.detected_coverage_bound(),
-                               simplif_cfg_.her, removal_handler_);
+                               simplif_cfg_.her.relative_threshold, removal_handler_);
         }
     }
 
@@ -230,7 +230,10 @@ public:
         if (simplif_cfg_.topology_simplif_enabled && info_container_.main_iteration()) {
             algo.AddAlgo<AdapterAlgorithm<Graph>>("", gp_.g,
                                                   [&]() { return FinalRemoveErroneousEdges(); });
-
+            algo.AddAlgo(
+                    TopologyTipClipperInstance(g_, simplif_cfg_.ttc,
+                                               info_container_, removal_handler_),
+                    "Topology tip clipper");
         }
 
         algo.AddAlgo(
@@ -276,15 +279,7 @@ public:
                                    info_container_, removal_handler_),
                 "Final bulge remover");
 
-        //FIXME do we need checking last iteration here?
-        if (simplif_cfg_.topology_simplif_enabled) {
-            algo.AddAlgo(
-                    TopologyTipClipperInstance(g_, simplif_cfg_.ttc,
-                                                      info_container_, removal_handler_),
-                    "Topology tip clipper");
-        }
-
-        //FIXME need better configuration
+        //TODO need better configuration
         if (info_container_.mode() == config::pipeline_type::meta) {
             EdgePredicate<Graph> meta_thorn_condition
                     = And(LengthUpperBound<Graph>(g_, LengthThresholdFinder::MaxErroneousConnectionLength(
@@ -317,15 +312,16 @@ public:
 
         AlgorithmRunningHelper<Graph>::LoopedRunPrimaryOpening(algo, /*first primary iteration cnt*/2);
 
+        //FIXME make part of cycle?
         RemoveHiddenEC(gp_.g, gp_.flanking_cov, simplif_cfg_.her, info_container_, removal_handler_);
 
-        //FIXME better configuration
+        //TODO better configuration
         if (info_container_.mode() == config::pipeline_type::meta) {
             VERIFY(math::ls(simplif_cfg_.her.unreliability_threshold, 0.));
             MetaHiddenECRemover<Graph> algo(g_, info_container_.chunk_cnt(), gp_.flanking_cov,
-                                                      simplif_cfg_.her.uniqueness_length,
-                                                      simplif_cfg_.her.relative_threshold,
-                                                      removal_handler_);
+                                            simplif_cfg_.her.uniqueness_length,
+                                            simplif_cfg_.her.relative_threshold,
+                                            removal_handler_);
             INFO("Running Hidden EC remover (meta)");
             AlgorithmRunningHelper<Graph>::LoopedRun(algo);
         }
@@ -393,8 +389,8 @@ public:
         AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(algo,
                                                               simplif_cfg_.cycle_iter_count,
                                                               /*all_primary*/rna_mode);
-        //FIXME bound max iterations?
-        AlgorithmRunningHelper<Graph>::LoopedRun(algo);
+
+        AlgorithmRunningHelper<Graph>::LoopedRun(algo, /*min it count*/1, /*max it count*/10);
     }
 };
 
@@ -409,7 +405,7 @@ shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultGPColorer(
 void RawSimplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
 
-    //no other handlers here, FIXME change with DetachAll
+    //no other handlers here, todo change with DetachAll
     if (gp.index.IsAttached())
         gp.index.Detach();
     gp.index.clear();
@@ -427,7 +423,7 @@ void RawSimplification::run(conj_graph_pack &gp, const char*) {
 void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
 
-    //no other handlers here, FIXME change with DetachAll
+    //no other handlers here, todo change with DetachAll
     if (gp.index.IsAttached())
         gp.index.Detach();
     gp.index.clear();

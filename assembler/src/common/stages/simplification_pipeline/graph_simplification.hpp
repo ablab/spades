@@ -664,12 +664,12 @@ template<class Graph>
 bool RemoveHiddenLoopEC(Graph &g,
                         const FlankingCoverage<Graph> &flanking_cov,
                         double determined_coverage_threshold,
-                        config::debruijn_config::simplification::hidden_ec_remover her_config,
+                        double relative_threshold,
                         EdgeRemovalHandlerF<Graph> removal_handler) {
     INFO("Removing loops and rc loops with erroneous connections");
     ECLoopRemover<Graph> hc(g, flanking_cov,
                             determined_coverage_threshold,
-                            her_config.relative_threshold, removal_handler);
+                            relative_threshold, removal_handler);
     bool res = hc.Run();
     hc.PrintLoopStats();
     return res;
