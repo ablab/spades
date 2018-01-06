@@ -486,6 +486,9 @@ void load(debruijn_config::plasmid& pd,
         pd.reference_removal = *reference;
     }
     load (pd.HMM_filtration, pt, "HMM_filtration");
+    load(pd.iterative_coverage_elimination, pt, "iterative_coverage_elimination");
+    load(pd.iterative_step, pt, "iterative_step"); //5
+    load(pd.max_length, pt, "max_length"); //1000000
 }
 
 void load(debruijn_config::gap_closer& gc,

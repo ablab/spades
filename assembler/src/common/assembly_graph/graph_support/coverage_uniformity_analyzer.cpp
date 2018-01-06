@@ -57,6 +57,26 @@ size_t CoverageUniformityAnalyzer::TotalLongEdgeLength() const {
     return res;
 }
 
+double CoverageUniformityAnalyzer::DetectCoverageForDeletion(size_t length_limit) const {
+    vector<pair<double, size_t>> edges;
+    for (auto iter = g_.ConstEdgeBegin(); ! iter.IsEnd(); ++iter){
+        if (g_.length(*iter) > length_bound_) {
+            edges.push_back(make_pair(g_.coverage(*iter), g_.length(*iter)));
+        }
+    }
+//decreasing order
+    std::sort(edges.rbegin(), edges.rend());
+    size_t cur_len = 0;
+    for (auto p: edges){
+        cur_len += p.second;
+        if (cur_len > length_limit) {
+            INFO("Length " << length_limit << " achieved on coverage " << p.first );
+            return p.first;
+        }
+    }
+    return -1;
+}
+
 double CoverageUniformityAnalyzer::UniformityFraction(double allowed_variation, double median_coverage) const {
     std::pair<size_t, size_t> lengths = TotalLengthsNearMedian(allowed_variation, median_coverage);
     size_t total_len = lengths.first + lengths.second;

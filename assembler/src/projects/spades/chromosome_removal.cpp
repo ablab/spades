@@ -178,6 +178,7 @@ void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bo
     }
     gp.EnsureIndex();
 }
+
 void ChromosomeRemoval::ReferenceBasedRemoveChromosomal(conj_graph_pack &gp) {
     EdgesPositionHandler<Graph> edge_pos(gp.g, 0, 0);
     visualization::position_filler::PosFiller<Graph> pos_filler(gp.g, MapperInstance(gp), edge_pos);
@@ -197,6 +198,26 @@ void ChromosomeRemoval::ReferenceBasedRemoveChromosomal(conj_graph_pack &gp) {
     }
     CompressAll(gp.g);
     INFO("deleted with reference: " << deleted <<" edges");
+}
+
+void ChromosomeRemoval::RemoveNearlyEverythingByCoverage(conj_graph_pack &gp) {
+    double cur_limit = cfg::get().pd->iterative_step;
+    CoverageUniformityAnalyzer coverage_analyzer(gp.g, cfg::get().pd->long_edge_length);
+    double cov_limit  = coverage_analyzer.DetectCoverageForDeletion(cfg::get().pd->max_length);
+
+    while (math::ls(cur_limit, cov_limit)) {
+        size_t deleted = 0;
+        for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+
+            if (math::ls(gp.g.coverage(*iter), cur_limit)) {
+                gp.g.DeleteEdge(*iter);
+                deleted++;
+            }
+        }
+        CompressAll(gp.g);
+        INFO("With limit " <<cur_limit << "deleted  " << deleted <<" edges");
+        cur_limit += cfg::get().pd->iterative_step;
+    }
 }
 
 void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
@@ -345,7 +366,10 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
             chromosome_coverage = RemoveEdgesByList(gp, additional_list);
         else
             chromosome_coverage = -1;
-        MetaChromosomeRemoval(gp);
+        if (cfg::get().pd->iterative_coverage_elimination)
+            RemoveNearlyEverythingByCoverage(gp);
+        else
+            MetaChromosomeRemoval(gp);
     }
     else
         chromosome_coverage = RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length,

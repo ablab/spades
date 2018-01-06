@@ -399,6 +399,10 @@ struct debruijn_config {
         size_t max_loop;
         std::string reference_removal;
         std::string HMM_filtration; //"do","use" "none"
+//settings for iterative removal;
+        bool iterative_coverage_elimination;
+        double iterative_step; //5
+        size_t max_length; //1000000
     };
 
     struct position_handler {

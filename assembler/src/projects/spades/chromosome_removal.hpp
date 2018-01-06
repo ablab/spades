@@ -34,6 +34,7 @@ private:
 
     double RemoveEdgesByList(conj_graph_pack &gp, std::string &s);
     void MetaChromosomeRemoval(conj_graph_pack &gp);
+    void RemoveNearlyEverythingByCoverage(conj_graph_pack &gp);
     void CoverageFilter(conj_graph_pack &gp, double coverage_cutoff, set<EdgeId> &white_list);
 
 

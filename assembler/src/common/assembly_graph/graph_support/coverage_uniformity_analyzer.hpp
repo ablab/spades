@@ -19,5 +19,7 @@ public:
 //first - inside [median* (1 - allowed_variation), median* (1 + allowed_variation)], second-outside
     std::pair<size_t, size_t> TotalLengthsNearMedian(double allowed_variation, double median_coverage) const;
     size_t TotalLongEdgeLength() const;
-};
+    double DetectCoverageForDeletion(size_t length_limit) const;
+
+    };
 }
