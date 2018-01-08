@@ -282,7 +282,7 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
             }
             INFO("Edges with no paths " << paths_0 <<" with 1 " << paths_1 << "with many " << paths_many <<" too long " << too_long);
         }
-        CoverageFilter(gp, cfg::get().pd->absolute_coverage_cutoff,to_save);
+//        CoverageFilter(gp, cfg::get().pd->absolute_coverage_cutoff,to_save);
     }
     std::ofstream is(out_file);
     size_t count = 0;
@@ -314,6 +314,11 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
 
     double chromosome_coverage;
     if (cfg::get().pd->meta_mode) {
+        INFO("Prefiltering with cutoff " << cfg::get().pd->absolute_coverage_cutoff <<", before " << gp.g.size() << " vertices ");
+        set<EdgeId> to_save;
+        CoverageFilter(gp, cfg::get().pd->absolute_coverage_cutoff,to_save);
+        INFO("After prefiltering" << gp.g.size() << " vertices ");
+
         if (use_chromosomal_list)
             chromosome_coverage = RemoveEdgesByList(gp, additional_list);
         else
