@@ -13,6 +13,7 @@
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "pipeline/config_struct.cpp"
 #include "utils/filesystem/path_helper.hpp"
+#include <libgen.h>
 
 
 namespace debruijn_graph {
@@ -298,7 +299,11 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
 void RunHMMDetectionScript (conj_graph_pack &gp) {
     stringstream ss;
 //FIXME to config
-    ss <<"python " << fs::current_dir() << "/src/plasmid_utils/chromosomal_contig_removal.py";
+//FIXME I'll be murdered if _THIS_ will fall into  master
+
+    char result[600];
+    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+    ss <<"python " << fs::parent_path(fs::parent_path(result)) << "/src/plasmid_utils/chromosomal_contig_removal.py";
     ss << " " <<  cfg::get().output_dir + "chromosome_removal_only_prefilter.fasta";
     INFO ("Doing HMM based filtation! " + ss.str());
     system (ss.str().c_str());
