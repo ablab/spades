@@ -29,7 +29,7 @@ prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
 name = os.path.splitext(ntpath.basename(sys.argv[1]))[0]
 #print name
 
-os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa" )
+os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2> prodigal.log" )
 os.system (hmmscan + " -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ chrom_hmms + " "+name+"_proteins.fa")
 
 
