@@ -29,6 +29,7 @@ if len(table)>13:
 
 outfile=open (name+"_chromosomal_contigs_names.txt", "w")
 for i in chrom_list: 
-   outfile.write("%s\n" % i)
+   outfile.write(int(i.split('_')[1]))
+
 
 #os.system ("tail -n +4 "+name+"_tblout | head -n -10 | awk '$5<1e-06 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > "+name+"_chromosomal_contigs_names.txt")

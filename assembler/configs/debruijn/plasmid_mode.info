@@ -19,5 +19,6 @@ plasmid
     min_start_edge_length 2000
     min_start_coverage 20
     max_loop 150000
+;   reference_removal replace this with path to reference and uncomment for reference based filtration
     HMM_filtration do ;"do","use" "none"
 }

@@ -29,4 +29,14 @@ inline void OutputEdgeSequences(const Graph &g,
     }
 }
 
+inline void OutputEdgesByID(const Graph &g,
+                                const string &contigs_output_filename) {
+    INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
+    io::OutputSequenceStream oss(contigs_output_filename + ".fasta");
+    for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+        EdgeId e = *it;
+        string s = g.EdgeNucls(e).str();
+        oss << io::SingleRead(io::MakeContigId(g.int_id(e), s.size(), g.coverage(e), "EDGE"), s);
+    }
 }
+} // namespace debruijn_graph

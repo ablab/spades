@@ -328,7 +328,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
         INFO("Prefiltering with cutoff " << cfg::get().pd->absolute_coverage_cutoff <<", before " << gp.g.size() << " vertices ");
         set<EdgeId> to_save;
         CoverageFilter(gp, cfg::get().pd->absolute_coverage_cutoff,to_save);
-        OutputEdgeSequences(gp.g, cfg::get().output_dir + "chromosome_removal_only_prefilter");
+        OutputEdgesByID(gp.g, cfg::get().output_dir + "chromosome_removal_only_prefilter");
         INFO("After prefiltering" << gp.g.size() << " vertices ");
         if (cfg::get().pd->HMM_filtration == "do"){
             RunHMMDetectionScript(gp);
