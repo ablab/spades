@@ -472,7 +472,8 @@ void load(debruijn_config::plasmid& pd,
     load(pd.min_component_length, pt, "min_component_length");
     load(pd.min_isolated_length, pt, "min_isolated_length");
     load(pd.meta_mode, pt, "meta_mode");
-    load(pd.remove_list, pt, "remove_list");
+    std::string remove_list;
+    load(remove_list, pt, "remove_list");
     load(pd.absolute_coverage_cutoff, pt, "absolute_coverage_cutoff");
     load(pd.circular_removal, pt, "circular_removal");
     load(pd.min_start_edge_length, pt, "min_start_edge_length");
@@ -484,6 +485,7 @@ void load(debruijn_config::plasmid& pd,
     if (reference && *reference != "N/A") {
         pd.reference_removal = *reference;
     }
+    load (pd.HMM_filtration, pt, "HMM_filtration");
 }
 
 void load(debruijn_config::gap_closer& gc,

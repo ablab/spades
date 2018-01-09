@@ -398,6 +398,7 @@ struct debruijn_config {
         double min_start_coverage;
         size_t max_loop;
         std::string reference_removal;
+        std::string HMM_filtration; //"do","use" "none"
     };
 
     struct position_handler {

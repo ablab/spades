@@ -12,6 +12,8 @@
 #include "math/xmath.h"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "pipeline/config_struct.cpp"
+#include "utils/filesystem/path_helper.hpp"
+
 
 namespace debruijn_graph {
 using namespace std;
@@ -69,6 +71,7 @@ size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
     return ans;
 }
 double ChromosomeRemoval::RemoveEdgesByList( conj_graph_pack &gp , std::string &s) {
+    INFO("Remove list taken " << s );
     std::ifstream is(s);
     set<size_t> ids;
     size_t id;
@@ -292,6 +295,14 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
         count ++;
     }
 }
+void RunHMMDetectionScript (conj_graph_pack &gp) {
+    stringstream ss;
+//FIXME to config
+    ss <<"python " << fs::current_dir() << "/src/plasmid_utils/chromosomal_contig_removal.py";
+    ss << " " <<  cfg::get().output_dir + "chromosome_removal_only_prefilter.fasta";
+    INFO ("Doing HMM based filtation! " + ss.str());
+    system (ss.str().c_str());
+}
 
 void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     //FIXME Seriously?! cfg::get().ds like hundred times...
@@ -318,8 +329,12 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
         set<EdgeId> to_save;
         CoverageFilter(gp, cfg::get().pd->absolute_coverage_cutoff,to_save);
         OutputEdgeSequences(gp.g, cfg::get().output_dir + "chromosome_removal_only_prefilter");
-
         INFO("After prefiltering" << gp.g.size() << " vertices ");
+        if (cfg::get().pd->HMM_filtration == "do"){
+            RunHMMDetectionScript(gp);
+            additional_list = cfg::get().output_dir + "chromosome_removal_only_prefilter_chromosomal_contigs_names.txt";
+
+        }
 
         if (use_chromosomal_list)
             chromosome_coverage = RemoveEdgesByList(gp, additional_list);
