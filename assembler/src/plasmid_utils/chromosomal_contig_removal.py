@@ -23,13 +23,15 @@ with open(name+"_tblout") as f:
 
 chrom_list=[]
 if len(table)>13:
-    for i in table[4:7]:
+    for i in table[3:-10]:
        if float (i.split()[4]) < 1e-06:
-           chrom_list.append(i.split()[2].rsplit('_', 1)[0])
+           chrom_list.append(i.split()[2].split('_')[1])
+
+
 
 outfile=open (name+"_chromosomal_contigs_names.txt", "w")
-for i in chrom_list: 
-   outfile.write(int(i.split('_')[1]))
+for i in list(set(chrom_list)): 
+   outfile.write(i+"\n")
 
 
 #os.system ("tail -n +4 "+name+"_tblout | head -n -10 | awk '$5<1e-06 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > "+name+"_chromosomal_contigs_names.txt")
