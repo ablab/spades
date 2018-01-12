@@ -59,7 +59,7 @@ size_t CoverageUniformityAnalyzer::TotalLongEdgeLength() const {
 
 double CoverageUniformityAnalyzer::DetectCoverageForDeletion(size_t length_limit) const {
     vector<pair<double, size_t>> edges;
-    for (auto iter = g_.ConstEdgeBegin(); ! iter.IsEnd(); ++iter){
+    for (auto iter = g_.ConstEdgeBegin(true); ! iter.IsEnd(); ++iter){
         if (g_.length(*iter) > length_bound_) {
             edges.push_back(make_pair(g_.coverage(*iter), g_.length(*iter)));
         }
