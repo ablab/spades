@@ -148,23 +148,19 @@ double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t lon
     return median_long_edge_coverage;
 }
 
-void ChromosomeRemoval::CoverageFilter(conj_graph_pack &gp, double coverage_cutoff, set<EdgeId> &white_list) {
-    set<EdgeId> to_delete;
-    for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+void ChromosomeRemoval::CoverageFilter(conj_graph_pack &gp, double coverage_cutoff) {
+    size_t deleted = 0;
+    for (auto it = gp.g.SmartEdgeBegin(true); !it.IsEnd(); ++it) {
         if (gp.g.coverage(*it) < coverage_cutoff && gp.g.EdgeEnd(*it) != gp.g.EdgeStart(*it)) {
             DEBUG("Deleting edge " << gp.g.int_id(*it) << " because of low coverage");
-            to_delete.insert(std::min(*it, gp.g.conjugate(*it)));
+            gp.g.DeleteEdge(*it);
+            deleted ++;
         }
     }
-    for (auto e: to_delete){
-        if (white_list.find(std::min(e, gp.g.conjugate(e))) == white_list.end()) {
-            gp.g.DeleteEdge(e);
-        } else {
-            DEBUG("Edge "<<e.int_id()<<" saved from deletion because of cycle")
-        }
-    }
+    INFO("With limit " <<coverage_cutoff << "deleted  " << deleted <<" edges");
     CompressAll(gp.g);
 }
+
 void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bound,
                                         std::function<void (EdgeId)> removal_handler ) {
     if (!cfg::get().pd->circular_removal)
@@ -206,16 +202,7 @@ void ChromosomeRemoval::RemoveNearlyEverythingByCoverage(conj_graph_pack &gp) {
     double cov_limit  = coverage_analyzer.DetectCoverageForDeletion(cfg::get().pd->max_length);
 
     while (math::ls(cur_limit, cov_limit)) {
-        size_t deleted = 0;
-        for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-
-            if (math::ls(gp.g.coverage(*iter), cur_limit)) {
-                gp.g.DeleteEdge(*iter);
-                deleted++;
-            }
-        }
-        CompressAll(gp.g);
-        INFO("With limit " <<cur_limit << "deleted  " << deleted <<" edges");
+        CoverageFilter(gp, cur_limit);
         cur_limit += cfg::get().pd->iterative_step;
     }
 }
@@ -283,10 +270,9 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
                             std::stringstream ss;
                             for (EdgeId e: paths[0]) {
                                 ss << gp.g.EdgeNucls(e).Subseq(gp.g.k()).str();
-
+                                to_save.insert(std::min(e, gp.g.conjugate(e)));
                             }
                             res_strings.push_back(ss.str());
-                            to_save.insert(std::min(e, gp.g.conjugate(e)));
                             paths_1++;
                         } else if (res == 0) {
                             DEBUG("Edge " << e.int_id() << "is possible plasmid due to multiple cycles");
@@ -305,9 +291,14 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
                     paths_0++;
                 }
             }
+            for (auto e: to_delete) {
+                if (to_save.find(e) == to_save.end()) {
+                    gp.g.DeleteEdge(e);
+                }
+            }
+            CompressAll(gp.g);
             INFO("Edges with no paths " << paths_0 <<" with 1 " << paths_1 << "with many " << paths_many <<" too long " << too_long);
         }
-//        CoverageFilter(gp, cfg::get().pd->absolute_coverage_cutoff,to_save);
     }
     std::ofstream is(out_file);
     size_t count = 0;
@@ -317,12 +308,13 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
         count ++;
     }
 }
+
 void RunHMMDetectionScript (conj_graph_pack &gp) {
     stringstream ss;
 //FIXME to config
 //FIXME I'll be murdered if _THIS_ will fall into  master
 
-    char result[600];
+    char result[PATH_MAX];
     ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
     ss <<"python " << fs::parent_path(fs::parent_path(result)) << "/src/plasmid_utils/chromosomal_contig_removal.py";
     ss << " " <<  cfg::get().output_dir + "chromosome_removal_only_prefilter.fasta";
@@ -352,8 +344,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     double chromosome_coverage;
     if (cfg::get().pd->meta_mode) {
         INFO("Prefiltering with cutoff " << cfg::get().pd->absolute_coverage_cutoff <<", before " << gp.g.size() << " vertices ");
-        set<EdgeId> to_save;
-        CoverageFilter(gp, cfg::get().pd->absolute_coverage_cutoff,to_save);
+        CoverageFilter(gp, cfg::get().pd->absolute_coverage_cutoff);
         OutputEdgesByID(gp.g, cfg::get().output_dir + "chromosome_removal_only_prefilter");
         INFO("After prefiltering" << gp.g.size() << " vertices ");
         if (cfg::get().pd->HMM_filtration == "do"){
