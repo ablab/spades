@@ -22,7 +22,7 @@ plasmid
 ;   reference_removal replace this with path to reference and uncomment for reference based filtration
     HMM_filtration do ;"do","use" "none"
 ;iterative_coverage_elimination
-    iterative_coverage_elimination true
+    iterative_coverage_elimination false
     iterative_step 5
     max_length 1000000
 }
