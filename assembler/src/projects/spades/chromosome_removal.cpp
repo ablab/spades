@@ -220,7 +220,7 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
     for (size_t count = 0; count < 3; count++) {
         if (cfg::get().pd->circular_removal) {
             vector<std::pair<size_t, EdgeId>> long_edges;
-            for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
                 if ((gp.g.length(*it) >= min_len) && (math::gr(gp.g.coverage(*it), min_coverage))) {
                     long_edges.push_back(std::make_pair(gp.g.length(*it), *it));
                 }
@@ -327,7 +327,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     OutputEdgeSequences(gp.g, cfg::get().output_dir + "before_chromosome_removal");
     INFO("Before iteration " << 0 << ", " << gp.g.size() << " vertices in graph");
     std::string additional_list = cfg::get().pd->remove_list;
-    bool use_chromosomal_list = (additional_list != "");
+    bool use_chromosomal_list = (additional_list != "" && cfg::get().pd->HMM_filtration != "none");
 
 
     if (cfg::get().pd->reference_removal != "") {
@@ -351,6 +351,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
             RunHMMDetectionScript(gp);
             additional_list = cfg::get().output_dir + "chromosome_removal_only_prefilter_chromosomal_contigs_names.txt";
             use_chromosomal_list = true;
+            INFO("Additional list ")
         }
 
         if (use_chromosomal_list)
