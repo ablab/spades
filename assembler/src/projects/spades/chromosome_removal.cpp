@@ -350,7 +350,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
         if (cfg::get().pd->HMM_filtration == "do"){
             RunHMMDetectionScript(gp);
             additional_list = cfg::get().output_dir + "chromosome_removal_only_prefilter_chromosomal_contigs_names.txt";
-
+            use_chromosomal_list = true;
         }
 
         if (use_chromosomal_list)
