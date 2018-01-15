@@ -4,7 +4,7 @@ import ntpath
 
 n = int(sys.argv[1])
 
-with open("/Nancy/mrayko/plasmid_prediction_test/downsampling_20perc/chrom_10percen/pfam_count_total_fin_sorted10.txt") as f:
+with open("/Nancy/mrayko/plasmid_prediction_test/downsampling_20perc/chrom_10percen/2260_10fold.txt") as f:
     table = f.read().splitlines()
 
 hmm_list=open(str(n)+"_hmm_list.txt", "w")
