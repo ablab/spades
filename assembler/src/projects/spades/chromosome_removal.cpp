@@ -300,7 +300,7 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
             INFO("Edges with no paths " << paths_0 <<" with 1 " << paths_1 << "with many " << paths_many <<" too long " << too_long);
         }
     }
-    std::ofstream is(out_file);
+    std::ofstream is(cfg::get().output_dir + out_file);
     size_t count = 0;
     for (const auto &s: res_strings) {
         is << ">NODE_" << count << endl;
