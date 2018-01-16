@@ -1,385 +1,371 @@
 #include "assembly_graph/index/edge_multi_index.hpp"
 #include "modules/alignment/edge_index_refiller.hpp"
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
+#include "utils/perf/perfcounter.hpp"
 
 namespace pacbio {
 
-struct MetaVertex {
-        EdgeId e;
-        int j;
-        int i;
-        
-        MetaVertex()
-            : e(EdgeId()), j(-1), i(-1)
-        {}
-        
-        MetaVertex(const EdgeId &_e
-                   , const int &_j
-                   , const int &_i)
-            : e(_e), j(_j), i(_i)
-        {}
-        
-        MetaVertex(const MetaVertex &mv)
-            : e(mv.e), j(mv.j), i(mv.i)
-        {}
-        
-        bool operator == (const MetaVertex &mv) const {
-            return (this->e == mv.e  && this->i == mv.i && this->j == mv.j);
-        }
-        
-        bool operator != (const MetaVertex &mv) const {
-            return (this->e != mv.e || this->i != mv.i || this->j != mv.j);
-        }
-        
-        bool operator < (const MetaVertex &mv) const {
-            return (this->e < mv.e || ( this->e == mv.e && this->i < mv.i) || ( this->e == mv.e && this->i ==  mv.i && this->j < mv.j));
-        }
-    };
-    
 
-class Dijkstra {
-        typedef typename boost::bimap< size_t, MetaVertex >::value_type state;
+inline void SHWDistance(string &target, string &query, int max_score, vector<int> &positions, vector<int> &scores) {
+    if (query.size() == 0){
+        for (int i = 0; i < min(max_score, (int) target.size()); ++ i) {
+            positions.push_back(i);
+            scores.push_back(i + 1);
+        }
+	   return;
+    }
+    edlib::EdlibEqualityPair additionalEqualities[36] = {{'U', 'T'}
+                                        , {'R', 'A'}, {'R', 'G'}
+                                        , {'Y', 'C'}, {'Y', 'T'}, {'Y', 'U'}
+                                        , {'K', 'G'}, {'K', 'T'}, {'K', 'U'}
+                                        , {'M', 'A'}, {'M', 'C'}
+                                        , {'S', 'C'}, {'S', 'G'}
+                                        , {'W', 'A'}, {'W', 'T'}, {'W', 'U'}
+                                        , {'B', 'C'}, {'B', 'G'}, {'B', 'T'}, {'B', 'U'}
+                                        , {'D', 'A'}, {'D', 'G'}, {'D', 'T'}, {'D', 'U'}
+                                        , {'H', 'A'}, {'H', 'C'}, {'H', 'T'}, {'H', 'U'}
+                                        , {'V', 'A'}, {'V', 'C'}, {'V', 'G'}
+                                        , {'N', 'A'}, {'N', 'C'}, {'N', 'G'}, {'N', 'T'}, {'N', 'U'} };
+    edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), query.size(), target.c_str(), target.size()
+                                                   , edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_SHW_FULL, edlib::EDLIB_TASK_DISTANCE,
+                                                                         additionalEqualities, 36));
+    int score = -1;
+    if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
+        score = result.editDistance;
+        positions.reserve(result.numLocations);
+        scores.reserve(result.numLocations);
+        for (int i = 0; i < result.numLocations; ++ i) {
+            //INFO("Loc=" << result.endLocations[i] << " score=" << result.endScores[i]);
+            if (result.endLocations[i] >= 0) {
+                positions.push_back(result.endLocations[i]);
+                scores.push_back(result.endScores[i]);
+            }
+        }
+    }
+    edlib::edlibFreeAlignResult(result);
+}
+
+inline int NWDistance(const string &a, const string &b, int max_score) {
+    int a_len = (int) a.length();
+    int b_len = (int) b.length();
+    if (a_len == 0){
+       if (b_len > max_score){
+       	   return -1;
+       } else{
+           return b_len;
+       }
+    }
+    if (b_len == 0){
+       if (a_len > max_score){
+           return -1;
+       } else{
+           return a_len;
+       }
+    }
+    DEBUG(a_len << " " << b_len << " " << max_score);
+    edlib::EdlibEqualityPair additionalEqualities[36] = {{'U', 'T'}
+                                                , {'R', 'A'}, {'R', 'G'}
+                                                , {'Y', 'C'}, {'Y', 'T'}, {'Y', 'U'}
+                                                , {'K', 'G'}, {'K', 'T'}, {'K', 'U'}
+                                                , {'M', 'A'}, {'M', 'C'}
+                                                , {'S', 'C'}, {'S', 'G'}
+                                                , {'W', 'A'}, {'W', 'T'}, {'W', 'U'}
+                                                , {'B', 'C'}, {'B', 'G'}, {'B', 'T'}, {'B', 'U'}
+                                                , {'D', 'A'}, {'D', 'G'}, {'D', 'T'}, {'D', 'U'}
+                                                , {'H', 'A'}, {'H', 'C'}, {'H', 'T'}, {'H', 'U'}
+                                                , {'V', 'A'}, {'V', 'C'}, {'V', 'G'}
+                                                , {'N', 'A'}, {'N', 'C'}, {'N', 'G'}, {'N', 'T'}, {'N', 'U'} };
+
+    edlib::EdlibAlignResult result = edlib::edlibAlign(a.c_str(), a_len, b.c_str(), b_len
+                                                   , edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
+                                                                         additionalEqualities, 36));
+    int score = -1;
+    if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
+        score = result.editDistance;
+    }
+    edlib::edlibFreeAlignResult(result);
+    return score;
+}
+
+
+struct GraphState {
+    EdgeId e;
+    int start_pos;
+    int end_pos;
+
+    GraphState(EdgeId e_, int start_pos_, int end_pos_)
+                : e(e_), start_pos(start_pos_), end_pos(end_pos_)
+    {}
+
+    GraphState(const GraphState &state):
+                e(state.e), start_pos(state.start_pos), end_pos(state.end_pos)
+    {}
+
+    bool operator == (const GraphState &state) const {
+        return (this->e == state.e && this->start_pos == state.start_pos && this->end_pos == state.end_pos);
+    }
+
+    bool operator != (const GraphState &state) const {
+        return (this->e != state.e || this->start_pos != state.start_pos || this->end_pos != state.end_pos);
+    }
+
+    bool operator < (const GraphState &state) const {
+        return (this->e < state.e || (this->e == state.e && this->start_pos < state.start_pos) 
+                                  || (this->e == state.e && this->start_pos == state.start_pos && this->end_pos < state.end_pos));
+    }
+};
+
+
+struct QueueState {
+    GraphState gs;
+    int i;
+
+    QueueState()
+            : gs(EdgeId(), -1, -1), i(-1)
+    {}
+
+    QueueState(EdgeId &e_, int start_pos_, int end_pos_, int i_)
+                : gs(e_, start_pos_, end_pos_), i(i_)
+    {}
+
+    QueueState(GraphState gs_, int i_)
+                : gs(gs_), i(i_)
+    {}
+
+    QueueState(const QueueState &state):
+                gs(state.gs), i(state.i)
+    {}
+
+    bool operator == (const QueueState &state) const {
+        return (this->gs == state.gs && this->i == state.i);
+    }
+
+    bool operator != (const QueueState &state) const {
+        return (this->gs != state.gs || this->i != state.i);
+    }
+
+    bool operator < (const QueueState &state) const {
+        return (this->i < state.i || (this->i == state.i && this->gs < state.gs) );
+    }
+
+    bool isempty()
+    {
+        return *this == QueueState();
+    }
+};
+
+
+class AbstractGapFiller {
+
+        void Update(QueueState &state, QueueState &prevState, int score, int ed)
+        {
+            //if (g_.int_id(end_e_) == g_.int_id(state.gs.e) ) {
+            //    INFO("  Add edge to q " << g_.int_id(state.gs.e) << " ed=" << score << " pos=" << state.i)
+            //}
+            if (visited.count(state) > 0) {
+                if (dist[state] > ed && best_ed[state.i] + 10 > ed){
+                    q.erase(make_pair(visited[state], state));
+                    visited[state] = score;
+                    dist[state] = ed;
+                    best_ed[state.i] = ed;
+                    prevStates[state] = prevState;
+                    q.insert(make_pair(score, state));
+                }
+            } else{
+                visited.insert(make_pair(state, score));
+                best_ed[state.i] = ed;
+                dist.insert(make_pair(state, ed));
+                prevStates.insert(make_pair(state, prevState));
+                q.insert(make_pair(score, state));
+            }
+        }
+
+        void AddNewEdge(GraphState gs, QueueState prevState, int ed)
+        {
+            //INFO("Adding new state " << g_.int_id(gs.e) << " " << ed)
+            utils::perf_counter perf;
+            int end = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, (int) ss_.size() - (prevState.i + 1) );
+            string sstr = ss_.Subseq(prevState.i + 1, prevState.i + 1 + end).str();
+            string tmp = g_.EdgeNucls(gs.e).str();
+            string edgestr = tmp.substr(gs.start_pos, gs.end_pos - gs.start_pos);
+            //INFO("TIME.Substrs=" << perf.time());
+            vector<int> positions;
+            vector<int> scores;
+            if (path_max_length_ - ed >= 0){
+                perf.reset();
+                SHWDistance(sstr, edgestr, path_max_length_ - ed, positions, scores);
+                //INFO("TIME.SHWDistance=" << perf.time());
+                perf.reset();
+                if (path_max_length_ - ed >= edgestr.size()) {
+                    QueueState state(gs, prevState.i);
+                    int remaining = ss_.size() - prevState.i;
+                    Update(state, prevState,  ed + edgestr.size(), ed + edgestr.size());
+                }
+                for (int i = 0; i < positions.size(); ++ i) {
+                    if (positions[i] >= 0 && scores[i] >= 0) {
+                        QueueState state(gs, prevState.i + 1 + positions[i]);
+                        int remaining = ss_.size() - (prevState.i + 1 + positions[i]);
+                        Update(state, prevState, ed + scores[i], ed + scores[i]);
+                    }
+                }
+                //INFO("TIME.QueueUpdate=" << perf.time());
+            }
+        }
+
+        virtual bool IsEnd(EdgeId e, QueueState &state) = 0;
+
     public:
-        Dijkstra(const Graph &g, const Sequence &ss, EdgeId start_e, EdgeId end_e,
-                                  const int start_p, const int end_p, const int path_max_length, std::map<VertexId, size_t> &vertex_pathlen)
-        : score_(-1)
-        , g_(g)
-        , ss_(ss)
-        , start_e_(start_e)
-        , end_e_(end_e)
-        , start_p_(start_p)
-        , end_p_(end_p)
-        , path_max_length_(path_max_length)
-	, vertex_pathlen_(vertex_pathlen) {
-            num = 0;
-            MetaVertex mv(start_e_, start_p_ - 1, -1);
-            size_t newId = num ++;
-            bids.insert( state(newId, mv ) );
-            //INFO("Dijkstra initial e=" << start_e_.int_id() << " pos=" << start_p_-1)
-            q.insert(make_pair (0, newId));
-            dist[newId] = 0;
-            prev[newId] = newId; 
-
-            MetaVertex mv_b(end_e_, end_p_ + 1, (int) ss_.size());
-            newId = num ++;
-            bids.insert( state(newId, mv_b ) );
-            //INFO("Dijkstra initial e=" << start_e_.int_id() << " pos=" << start_p_-1)
-            q_b.insert(make_pair (0, newId));
-            dist_b[newId] = 0;
-            prev_b[newId] = newId; 
-
-        }
-        
-        void AddMetaVertex(size_t &fromId, const MetaVertex &to, int score){
-            auto it = bids.right.find(to);
-            if (it == bids.right.end() || dist[it->second] > dist[fromId] + score){
-                size_t toId = 0;
-                if (it != bids.right.end()){
-                    q.erase(make_pair(dist[it->second], it->second));
-                    toId = it->second;
-                }else{
-                    toId = num ++;
-                    bids.insert( state(toId, to ) );
-                }
-                dist[toId] = dist[fromId] + score;
-                prev[toId] = fromId;
-                q.insert(make_pair(dist[toId], toId));
-                //INFO("Dijkstra queue: dist=" << dist[toId] << " edge=" << to.e.int_id() << " pos=" << to.j << " pos_s=" << to.i << " cur_id="<< toId);
+        AbstractGapFiller(const Graph &g, const Sequence &ss, EdgeId start_e, EdgeId end_e,
+                                  const int start_p, const int end_p, const int path_max_length, 
+                                  const std::map<VertexId, size_t> &vs, const std::map<VertexId, size_t> &vs_b)
+                  :g_(g), ss_(ss)
+                   , start_e_(start_e), end_e_(end_e)
+                   , start_p_(start_p), end_p_(end_p)
+                   , path_max_length_(path_max_length) 
+                   , vs_(vs), vs_b_(vs_b){
+            best_ed.resize(ss_.size());
+            for (size_t i = 0; i < best_ed.size(); ++ i){
+                best_ed[i] = path_max_length_;
             }
+            AddNewEdge(GraphState(start_e_, start_p_, g_.length(start_e_)), QueueState(), 0);
+            min_score = -1;
         }
 
-        void AddMetaVertexBackward(size_t &fromId, const MetaVertex &to, int score){
-            auto it = bids.right.find(to);
-            if (it == bids.right.end() || dist_b[it->second] > dist_b[fromId] + score){
-                size_t toId = 0;
-                if (it != bids.right.end()){
-                    q_b.erase(make_pair(dist_b[it->second], it->second));
-                    toId = it->second;
-                }else{
-                    toId = num ++;
-                    bids.insert( state(toId, to ) );
-                }
-                dist_b[toId] = dist_b[fromId] + score;
-                prev_b[toId] = fromId;
-                q_b.insert(make_pair(dist_b[toId], toId));
-                //INFO("Dijkstra queue: dist=" << dist[toId] << " edge=" << to.e.int_id() << " pos=" << to.j << " pos_s=" << to.i << " cur_id="<< toId);
-            }
-        }
-        
-        void AddNextToForwardQueue(size_t mv_id, MetaVertex mv, int r_len) {
-            int mu = 1; //subst cost
-            int sigma = 1; // indel cost
-            int K = int(g_.k());
-            int s_len = int(ss_.size());
-            if (mv.j < r_len - K - 1){
-                MetaVertex to(mv.e, mv.j + 1, mv.i);
-                AddMetaVertex(mv_id, to, sigma);
-                if (mv.i < s_len - 1){
-                    to = MetaVertex(mv.e, mv.j, mv.i + 1);
-                    AddMetaVertex(mv_id, to, sigma);
-
-                    to = MetaVertex(mv.e, mv.j + 1, mv.i + 1);
-                    int score = 0;
-                    if (g_.EdgeNucls(mv.e)[mv.j + 1] != ss_[mv.i + 1]){
-                        score = mu;
-                    } 
-                    AddMetaVertex(mv_id, to, score);
-                }
-            } else{
-                if (mv.i < s_len - 1){
-                    MetaVertex to(mv.e, mv.j, mv.i + 1);
-                    AddMetaVertex(mv_id, to, sigma);
-                }
-                int pos = r_len - K - mv.j - 1;
-                VertexId endv = g_.EdgeEnd(mv.e);
-		if (vertex_pathlen_.count(endv) > 0 && vertex_pathlen_[endv] < path_max_length_ - dist[mv_id] + (s_len - mv.i) + 1) {
-                        vertices.insert(endv);
-                        for (const auto &e: g_.OutgoingEdges(endv)) {
-                                MetaVertex to(e, pos, mv.i);
-                                AddMetaVertex(mv_id, to, sigma);
-                                if (mv.i < s_len - 1){
-                                        to = MetaVertex(e, pos, mv.i + 1);
-                                        int score = 0;
-                                        if (g_.EdgeNucls(e)[pos] != ss_[mv.i + 1]){
-                                                score = mu;
-                                        }
-                                        AddMetaVertex(mv_id, to, score);
-                                }
-                        }
-                }
-            }
-        }
-
-        void AddNextToBackwardQueue(size_t mv_id, MetaVertex mv) {
-            int mu = 1; //subst cost
-            int sigma = 1; // indel cost
-            int K = int(g_.k());
-            if (mv.j > K){
-                MetaVertex to(mv.e, mv.j - 1, mv.i);
-                AddMetaVertexBackward(mv_id, to, sigma);
-                if (mv.i > 0){
-                    to = MetaVertex(mv.e, mv.j, mv.i - 1);
-                    AddMetaVertexBackward(mv_id, to, sigma);
-
-                    to = MetaVertex(mv.e, mv.j - 1, mv.i - 1);
-                    int score = 0;
-                    if (g_.EdgeNucls(mv.e)[mv.j - 1] != ss_[mv.i - 1]){
-                        score = mu;
-                    } 
-                    AddMetaVertexBackward(mv_id, to, score);
-                }
-            } else{
-                if (mv.i > 0){
-                    MetaVertex to(mv.e, mv.j, mv.i - 1);
-                    AddMetaVertexBackward(mv_id, to, sigma);
-                }
-                VertexId startv = g_.EdgeStart(mv.e);
-                vertices.insert(startv);
-                for (const auto &e: g_.IncomingEdges(startv)) {
-                    int pos = int(g_.EdgeNucls(e).size()) - K + mv.j - 1;
-                    //INFO("New edge " << g_.int_id(e) << " pos=" << pos  << " mv_i=" << mv.i ) 
-                    //INFO("Nucls edge " << g_.int_id(e) << " " << g_.EdgeNucls(e) << "\n" << " Seq nucls " << ss_.str())
-                    MetaVertex to(e, pos, mv.i);
-                    AddMetaVertexBackward(mv_id, to, sigma);
-                    if (mv.i > 0){
-                        to = MetaVertex(e, pos, mv.i - 1);
-                        int score = 0;
-                        if (g_.EdgeNucls(e)[pos] != ss_[mv.i - 1]){
-                            score = mu;
-                        } 
-                        AddMetaVertexBackward(mv_id, to, score);
+        void CloseGap() {
+            GraphState endgstate(end_e_, 0, end_p_);
+            QueueState endqstate(endgstate, ss_.size() - 1);
+            // GraphState startgstate(start_e_, start_p_, g_.length(start_e_));
+            // QueueState startqstate(startgstate, 0);
+            bool foundPath = false;
+            int i = 0;
+            while (q.size() > 0) {
+                QueueState curState = q.begin()->second;
+                int ed = dist[curState];
+                if (q.size() > 1000000) {
+                    INFO("queue size is too big")
+                    if (visited.count(endqstate) > 0){
+                        foundPath = true;
+                        min_score = dist[endqstate];
                     }
-                } 
-            }
-        }
-
-        std::vector<EdgeId> RestoreForwardPath(MetaVertex final_vertex) {
-            vector<EdgeId> ans;
-            int tid = omp_get_thread_num();
-            DEBUG("Dijkstra forwardrestore " << " mv_i=" << final_vertex.i  << " mv_j=" << final_vertex.j << " edgeId=" << g_.int_id(final_vertex.e))
-            if (final_vertex != MetaVertex()){
-                MetaVertex cur_mv = final_vertex;
-                std::string final_str = "";
-                size_t cur_id = bids.right.at(cur_mv);
-                DEBUG(" Dijkstra: Final score " << dist[cur_id] ) 
-                score_ = dist[cur_id];
-                DEBUG("Dijkstra forwardrestore2 " << " mv_i=" << final_vertex.i  << " mv_j=" << final_vertex.j << " edgeId=" << g_.int_id(final_vertex.e))
-                while (cur_id != prev[cur_id]) {
-                    cur_mv = bids.left.at(cur_id);
-                    MetaVertex prev_mv = bids.left.at(prev[cur_id]);
-                    if (cur_mv.e != prev_mv.e){
-                        ans.push_back(cur_mv.e);
-                    }
-                    cur_id = prev[cur_id];
-                }
-                cur_mv = bids.left.at(cur_id);
-                ans.push_back(cur_mv.e);
-                DEBUG("Dijkstra forwardrestore3 " << " mv_i=" << final_vertex.i  << " mv_j=" << final_vertex.j << " edgeId=" << g_.int_id(final_vertex.e))
-                std::reverse(ans.begin(), ans.end());
-                DEBUG("ThreadNum=" << tid << ". Ended Path construction size=" << ans.size());
-                return ans;
-            } else {
-                DEBUG(" Dijkstra: final vertex is empty");
-                return vector<EdgeId>(0);
-            }
-
-        }
-
-        std::vector<EdgeId> RestoreBackwardPath(MetaVertex final_vertex_b) {
-            vector<EdgeId> ans;
-            int tid = omp_get_thread_num();
-            DEBUG("Dijkstra  backwardrestore " << " mv_i=" << final_vertex_b.i  << " mv_j=" << final_vertex_b.j << " edgeId=" << g_.int_id(final_vertex_b.e))
-            if (final_vertex_b != MetaVertex()){
-                MetaVertex cur_mv = final_vertex_b;
-                std::string final_str = "";
-                size_t cur_id = bids.right.at(cur_mv);
-                DEBUG(" Dijkstra: Final score " << dist_b[cur_id] ) 
-                score_ = dist_b[cur_id];
-                DEBUG("Dijkstra  backwardrestore2 " << " mv_i=" << final_vertex_b.i  << " mv_j=" << final_vertex_b.j << " edgeId=" << g_.int_id(final_vertex_b.e)
-                                                    << " cur_id =" << cur_id << " prev_b="<< prev_b[cur_id])
-                while (cur_id != prev_b[cur_id]) {
-                    cur_mv = bids.left.at(cur_id);
-                    MetaVertex prev_mv = bids.left.at(prev_b[cur_id]);
-                    if (cur_mv.e != prev_mv.e){
-                        ans.push_back(cur_mv.e);
-                    }
-                    cur_id = prev_b[cur_id];
-                    //INFO("Dijkstra  backwardrestore-c " << " mv_i=" << cur_mv.i  << " mv_j=" << cur_mv.j << " edgeId=" << g_.int_id(cur_mv.e))
-                }
-                cur_mv = bids.left.at(cur_id);
-                ans.push_back(cur_mv.e);
-                DEBUG("Dijkstra  backwardrestore3 " << " mv_i=" << final_vertex_b.i  << " mv_j=" << final_vertex_b.j << " edgeId=" << g_.int_id(final_vertex_b.e))
-                //std::reverse(ans.begin(), ans.end());
-                DEBUG("backward ThreadNum=" << tid << ". Ended Path construction size=" << ans.size());
-                return ans;
-            } else {
-                DEBUG(" Dijkstra: final vertex is empty");
-                return vector<EdgeId>(0);
-            }
-        }
-        
-        std::vector<EdgeId> Run() {
-            MetaVertex final_vertex = MetaVertex();
-            int s_len = int(ss_.size());
-            int tid = omp_get_thread_num();
-            DEBUG("ThreadNum=" << tid << ". Run Dijkstra. Seq_len=" << s_len);
-            while (!q.empty()){
-                if (q.size() >= 1000) {
-                    DEBUG("ThreadNum=" << tid << ". Queue size: " << q.size() << " " << vertices.size()  );
-                    DEBUG("ThreadNum=" << tid << ". Stop!");
                     break;
                 }
-                size_t mv_id = q.begin()->second;
-                MetaVertex mv = bids.left.at(mv_id);
-                bids_best.insert(state(mv_id, mv));
-                //INFO("Dijsktra queue cur_id="<< mv_id << " dist=" << dist[mv_id] << " mv_i=" << mv.i  << " mv_j=" << mv.j << " edgeId=" << g_.int_id(mv.e) );
+                if (ed > path_max_length_) {
+                    INFO("No path found")
+                    break;
+                }
+                if (curState == endqstate && ed <= path_max_length_) {
+                    min_score = ed;
+                    INFO("+++++++++++++++++++++++++++++++++++++++++++++++=Final ed=" << ed);
+                    foundPath = true;
+                    break;
+                }
+                i ++;
                 q.erase(q.begin());
-                int r_len = int(g_.EdgeNucls(mv.e).size());
-                if (dist[mv_id] > path_max_length_ || (mv.e == end_e_ && mv.i == s_len - 1 && mv.j == end_p_)){
-                    if (mv.e == end_e_ && mv.i == s_len - 1 && mv.j == end_p_){
-                        final_vertex = mv;
-                    }
-                    break;
-                }
-
-                AddNextToForwardQueue(mv_id, mv, r_len);
-            }
-            MetaVertex final_vertex_b = MetaVertex();
-/*            if (final_vertex == MetaVertex()) {
-                while (!q_b.empty()){
-                    if (q_b.size() >= 2500 || vertices.size() > 20) {
-                        DEBUG("ThreadNum=" << tid << ". Queue size: " << q_b.size() << " " << vertices.size() );
-                        DEBUG("ThreadNum=" << tid << ". Stop!");
-                        break;
-                    }
-                    size_t mv_id = q_b.begin()->second;
-                    MetaVertex mv = bids.left.at(mv_id);
-                    if (bids_best.left.count(mv_id) > 0){
-                        bids_best_b.insert(state(mv_id, mv));
-                    }
-                    //INFO("Dijsktra queue cur_id="<< mv_id << " dist=" << dist_b[mv_id] << " mv_i=" << mv.i  << " mv_j=" << mv.j << " edgeId=" << g_.int_id(mv.e) );
-                    q_b.erase(q_b.begin());
-                    
-                    if (dist_b[mv_id] > path_max_length_ || (mv.e == start_e_ && mv.i == 0 && mv.j == start_p_)){
-                        if (mv.e == start_e_ && mv.i == 0 && mv.j == start_p_){
-                            final_vertex_b = mv;
+                for (const auto &e: g_.OutgoingEdges(g_.EdgeEnd(curState.gs.e))) {
+                    if (vs_.count(g_.EdgeEnd(curState.gs.e)) > 0) { //&& vs_.at(g_.EdgeEnd(curState.gs.e)) - (ss_.size() - curState.i) <= path_max_length_ - ed ) {
+                        if (vs_.count(g_.EdgeEnd(e)) > 0) {
+                            GraphState nextgs(e, 0, g_.length(e));
+                            AddNewEdge(nextgs, curState, ed);
                         }
-                        
-                        break;
-                    }
-
-                    AddNextToBackwardQueue(mv_id, mv);
-                }
-            }
-*/            MetaVertex final_vertex_fb = MetaVertex();
-            int best_score = path_max_length_;
-/*            if (final_vertex_b == MetaVertex() && final_vertex == MetaVertex()){
-                DEBUG("Dijkstra FB working ThreadNum = " << tid << " num=" << bids.size())
-                typename boost::bimap< size_t, MetaVertex >::const_iterator iter;
-                for (iter = bids.begin(); iter != bids.end(); ++iter ) {
-                    int i = (int) iter->left;
-                    if (dist.count(i) > 0 && dist_b.count(i) > 0){
-                        int cur_score = dist[i] + dist_b[i];
-                        if (cur_score < best_score){
-                            final_vertex_fb = iter->right;
-                            best_score = cur_score;
-                            DEBUG("Dijkstra FB working ThreadNum = " << tid << " score=" << cur_score << " i=" << i << " mv_i=" 
-                                                                << final_vertex_fb.i  << " mv_j=" << final_vertex_fb.j << " edgeId=" << g_.int_id(final_vertex_fb.e));
+                        if (IsEnd(e, curState) && path_max_length_ - ed >= 0){
+                            utils::perf_counter perf;
+                            string sstr = ss_.Subseq(curState.i + 1, ss_.size() ).str();
+                            string tmp = g_.EdgeNucls(e).str();
+                            string edgestr = tmp.substr(0, end_p_);
+                            //INFO("TIME.Substrs=" << perf.time());
+                            perf.reset();
+                            int score = NWDistance(sstr, edgestr, path_max_length_ - ed);
+                            //INFO("TIME.NWDistance=" << perf.time());
+                            perf.reset();
+                            if (score != -1) {
+                                if (ed +  score < path_max_length_) {
+                                    INFO("Update max_path_len=" << ed + score);
+                                }
+                                path_max_length_ = min(path_max_length_, ed + score);
+                                QueueState state(GraphState(e, 0, end_p_), ss_.size() - 1);
+                                Update(state, curState, ed + score, ed + score);
+                            }
+                            //INFO("TIME.QueueUpdate=" << perf.time());
                         }
                     }
                 }
             }
-*/            DEBUG("Dijkstra ThreadNum = " << tid << " num=" << bids.size())
-            if (final_vertex != MetaVertex()) {
-                DEBUG("For worked! ")
-                return RestoreForwardPath(final_vertex);
+
+            if (foundPath) {
+                QueueState state = endqstate;
+                while (!state.isempty()) {
+                    gapPath.push_back(state.gs.e);
+                    state = prevStates[state];
+                }
+                std::reverse(gapPath.begin(), gapPath.end());
             }
-            if (final_vertex_b != MetaVertex()) {
-                DEBUG("Back worked! ")
-                return RestoreBackwardPath(final_vertex_b);
-            }
-            if (final_vertex_fb != MetaVertex()) {
-                INFO("FB worked! " << best_score << " ThreadNum=" << tid << " s=" << g_.int_id(start_e_) << " e="<< g_.int_id(end_e_) << " mv_i=" 
-                                                            << final_vertex_fb.i  << " mv_j=" << final_vertex_fb.j << " edgeId=" << g_.int_id(final_vertex_fb.e) << " score=" <<best_score)
-                std::vector<EdgeId> fpath = RestoreForwardPath(final_vertex_fb);
-                std::vector<EdgeId> bpath = RestoreBackwardPath(final_vertex_fb);
-                std::vector<EdgeId> fbpath;
-                fbpath.reserve(fpath.size() + bpath.size() - 1);
-                fbpath.insert(fbpath.end(), fpath.begin(), fpath.end() - 1);
-                fbpath.insert(fbpath.end(), bpath.begin(), bpath.end());
-                INFO("FB worked! " << best_score << " ThreadNum=" << tid << " fb_sz = " << fbpath.size() <<  " fpath=" << fpath.size() << " bpath=" << bpath.size());
-                return fbpath;
-            } else {
-               DEBUG(" Dijkstra: final vertex is empty");
-               return vector<EdgeId>(0); 
-            }
-            DEBUG(" Dijkstra: final vertex is empty");
-            return vector<EdgeId>(0); 
+            return;
         }
 
-        int score_;
+        std::vector<EdgeId> GapPath() {
+            return gapPath;
+        }
 
-    private:
-        const Graph &g_;
+        int MinScore() {
+            return min_score;
+        }
+
+    protected:
+        std::set<std::pair<int, QueueState> > q;
+        std::map<QueueState, int> visited; 
+        std::map<QueueState, int> dist; 
+        std::map<QueueState, QueueState> prevStates;
+
+        std::vector<EdgeId> gapPath;
+
+        std::vector<int> best_ed;
+
+        const Graph &g_; 
         const Sequence &ss_;
         EdgeId start_e_;
         EdgeId end_e_;
-        int start_p_;
-        int end_p_;
+        const int start_p_;
+        const int end_p_;
         int path_max_length_;
-        std::map<VertexId, size_t> &vertex_pathlen_;
-        boost::bimap< size_t, MetaVertex > bids;
-        boost::bimap< size_t, MetaVertex > bids_best;
-        boost::bimap< size_t, MetaVertex > bids_best_b;
-        size_t num;
-        std::set< std::pair<int, size_t> > q;
-        std::map<size_t, int> dist;
-        std::map<size_t, size_t> prev;
-        set<VertexId> vertices;       
+        const std::map<VertexId, size_t> &vs_;
+        const std::map<VertexId, size_t> &vs_b_;
+        int min_score;
+};
 
-        std::map<size_t, int> dist_b;
-        std::map<size_t, size_t> prev_b;
-        std::set< std::pair<int, size_t> > q_b;
-        set<VertexId> vertices_b;
-    };
+class GapFiller: public AbstractGapFiller {
+    virtual bool IsEnd(EdgeId e, QueueState &state){
+        if (e == end_e_) {
+            return true;
+        }
+        return false;
+    }
+
+public:
+    GapFiller(const Graph &g, const Sequence &ss, EdgeId start_e, EdgeId end_e,
+                                  const int start_p, const int end_p, const int path_max_length, 
+                                  const std::map<VertexId, size_t> &vs, const std::map<VertexId, size_t> &vs_b)
+            :AbstractGapFiller(g, ss, start_e, end_e, start_p, end_p, path_max_length, vs, vs_b)
+        {}
+
+};
+
+class EndsConstructor: public AbstractGapFiller {
+    virtual bool IsEnd(EdgeId e, QueueState &state){
+        int remaining = ss_.size() - state.i;
+        if (g_.length(e) - remaining > 0){
+            return true;
+        }
+        return false;
+    }
+
+public:
+    EndsConstructor(const Graph &g, const Sequence &ss, EdgeId start_e, EdgeId end_e,
+                                  const int start_p, const int end_p, const int path_max_length, 
+                                  const std::map<VertexId, size_t> &vs, const std::map<VertexId, size_t> &vs_b)
+            :AbstractGapFiller(g, ss, start_e, end_e, start_p, end_p, path_max_length, vs, vs_b)
+        {}
+
+};
+
+
 }
