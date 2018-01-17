@@ -203,6 +203,7 @@ void ChromosomeRemoval::RemoveNearlyEverythingByCoverage(conj_graph_pack &gp) {
 
     while (math::ls(cur_limit, cov_limit)) {
         CoverageFilter(gp, cur_limit);
+        PlasmidSimplify(gp, cfg::get().pd->long_edge_length);
         cur_limit += cfg::get().pd->iterative_step;
     }
 }
