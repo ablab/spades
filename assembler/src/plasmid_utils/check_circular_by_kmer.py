@@ -18,8 +18,8 @@ if __name__ == "__main__":
     if exists(fullname):
         contigs = fastaparser.read_fasta(fullname)
         for contig in contigs:
-            for kval in range (129,50, -1):
+            for kval in range (57,54, -1):
                 start = contig[1][:kval]
                 end = contig[1][-kval:]
                 if start == end: 
-                    print contig[0] + " is circular"     
+                    print contig[0] + " is circular " + str(kval)     
