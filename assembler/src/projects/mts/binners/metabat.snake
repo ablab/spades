@@ -3,34 +3,46 @@ from scripts.common import contig_length
 from scripts.converters import ProfileFormatter, BinningParser
 
 class MetabatFormatter(ProfileFormatter):
+    def __init__(self, var=True):
+        self.var = var
+
     def header(self, first_line):
-        columns = ["contigName", "contigLen", "totalAvgDepth"]
-        for i in range(1, len(first_line) // 2 + 1):
-            sample = "sample" + str(i)
-            columns += [sample + ".cov", sample + ".var"]
+        if self.var:
+            columns = ["contigName", "contigLen", "totalAvgDepth"]
+            for i in range(1, len(first_line) // 2 + 1):
+                sample = "sample" + str(i)
+                columns += [sample + ".cov", sample + ".var"]
+        else:
+            columns = ["contigName"]
+            for i in range(1, len(first_line) + 1):
+                sample = "sample" + str(i)
+                columns += [sample + ".cov"]
         print(*columns, sep="\t", file=self.out)
 
     def format(self, contig, profile):
-        total_cov = "{:.2f}".format(sum(map(float, profile[0::2])))
-        print(contig, contig_length(contig), total_cov, *profile, sep="\t", file=self.out)
+        if self.var:
+            total_cov = "{:.2f}".format(sum(map(float, profile[0::2])))
+            print(contig, contig_length(contig), total_cov, *profile, sep="\t", file=self.out)
+        else:
+            print(contig, *profile, sep="\t", file=self.out)
 
 rule metabat_pre:
     input:   "binning/profiles.tsv"
     output:  "binning/metabat/profiles.in"
     message: "Preparing MetaBAT input"
     run:
-        MetabatFormatter().run(input[0], output[0])
+        MetabatFormatter(PROF_VAR).run(input[0], output[0])
 
 rule metabat:
     input:   contigs="assembly/{}/all.fasta".format(FRAGS), profiles="binning/metabat/profiles.in"
     output:  "binning/metabat/binning.out"
     threads: THREADS
-    params:  "binning/metabat/cluster"
+    params:  out="binning/metabat/cluster", flag="" if PROF_VAR else "--cvExt"
     log:     "binning/metabat.log"
     message: "Running MetaBAT clustering"
     shell:   "mkdir -p binning/bins\n"
              "{SOFT}/metabat/metabat -t {threads} -m {MIN_CONTIG_LENGTH} "
-             " --minContigByCorr {MIN_CONTIG_LENGTH} --saveCls"
+             " --minContigByCorr {MIN_CONTIG_LENGTH} --saveCls {params.flag}"
              " -i {input.contigs} -a {input.profiles} -o {output} >{log}"
 
 rule metabat_post:
