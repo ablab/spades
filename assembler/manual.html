@@ -58,7 +58,7 @@ SPAdes version 3.11.0 was released under GPLv2 on September 1, 2017 and can be d
 <p>
 SPAdes comes in several separate modules:
     <ul>
-        <li> <a href="http://bioinf.spbau.ru/en/spades/bayeshammer" target="_blank">BayesHammer</a> &ndash; read error correction tool for Illumina reads, which works well on both single-cell and standard data sets. </li>
+        <li> <a href="http://bioinf.spbau.ru/en/spades/bayeshammer" target="_blank">BayesHammer</a> &ndash; read error correction tool for Illumina reads using <code>k=21</code>, which works well on both single-cell and standard data sets. </li>
         <li> IonHammer &ndash; read error correction tool for IonTorrent data, which also works on both types of data. </li>
         <li> SPAdes &ndash; iterative short-read genome assembly module; values of K are selected automatically based on the read length and data set type. </li>
         <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses the <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>]; MismatchCorrector is turned off by default, but we recommend to turn it on (see <a href="#correctoropt">SPAdes options section</a>). </li>
@@ -285,7 +285,7 @@ SPAdes comes in several separate modules:
         <li><code>plasmidspades.py</code>  (main executable script for <a href="#plasmid">plasmidSPAdes</a>)</li>
         <li><code>rnaspades.py</code>  (main executable script for <a href="rnaspades_manual.html" target="_blank">rnaSPAdes</a>)</li>
         <li><code>truspades.py</code>  (main executable script for <a href="truspades_manual.html" target="_blank">truSPAdes</a>)</li>
-        <li><code>hammer</code>  (read error correcting module for Illumina reads)</li>
+        <li><code>hammer</code>  (read error correcting module for Illumina reads using <code>k=21</code>)</li>
         <li><code>ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
         <li><code>spades</code>  (assembly module)</li>
         <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
