@@ -61,7 +61,7 @@ SPAdes comes in several separate modules:
         <li> <a href="http://bioinf.spbau.ru/en/spades/bayeshammer" target="_blank">BayesHammer</a> &ndash; read error correction tool for Illumina reads using <code>k=21</code>, which works well on both single-cell and standard data sets. </li>
         <li> IonHammer &ndash; read error correction tool for IonTorrent data, which also works on both types of data. </li>
         <li> SPAdes &ndash; iterative short-read genome assembly module; values of K are selected automatically based on the read length and data set type. </li>
-        <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses the <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>]; MismatchCorrector is turned off by default, but we recommend to turn it on (see <a href="#correctoropt">SPAdes options section</a>). </li>
+        <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses the <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA 0.7.12-r1039</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>]; MismatchCorrector is turned off by default, but we recommend to turn it on (see <a href="#correctoropt">SPAdes options section</a>). </li>
     </ul>
 <p>
     We recommend to run SPAdes with BayesHammer/IonHammer to obtain high-quality assemblies. However, if you use your own read correction tool, it is possible to turn error correction module off. It is also possible to use only the read error correction stage, if you wish to use another assembler. See the <a href="#pipelineopt">SPAdes options section</a>.
@@ -179,8 +179,8 @@ SPAdes comes in several separate modules:
         <li><code>hammer</code>  (read error correcting module for Illumina reads)</li>
         <li><code>ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
         <li><code>spades</code>  (assembly module)</li>
-        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
-        <li><code>corrector</code>  (mismatch correction module)</li>
+        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA 0.7.12-r1039</a> bundled binary which is required for mismatch correction of final contigs)</li>
+        <li><code>corrector</code>  (the mismatch correction module itself)</li>
         <li><code>dipspades</code>  (assembly module for highly polymorphic diploid genomes)</li>
         <li><code>scaffold_correction</code>  (executable used in truSPAdes pipeline)</li>
     </ul>
@@ -214,8 +214,8 @@ SPAdes comes in several separate modules:
         <li><code>hammer</code>  (read error correcting module for Illumina reads)</li>
         <li><code>ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
         <li><code>spades</code>  (assembly module)</li>
-        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
-        <li><code>corrector</code>  (mismatch correction module)</li>
+        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA 0.7.12-r1039</a> bundled binary which is required for mismatch correction of final contigs)</li>
+        <li><code>corrector</code>  (the mismatch correction module itself)</li>
         <li><code>dipspades</code>  (assembly module for highly polymorphic diploid genomes)</li>
         <li><code>scaffold_correction</code>  (executable used in truSPAdes pipeline)</li>
     </ul>
@@ -288,8 +288,8 @@ SPAdes comes in several separate modules:
         <li><code>hammer</code>  (read error correcting module for Illumina reads using <code>k=21</code>)</li>
         <li><code>ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
         <li><code>spades</code>  (assembly module)</li>
-        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
-        <li><code>corrector</code>  (mismatch correction module)</li>
+        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA 0.7.12-r1039</a> bundled binary which is required for mismatch correction of final contigs)</li>
+        <li><code>corrector</code>  (the mismatch correction module itself)</li>
         <li><code>dipspades</code>  (assembly module for highly polymorphic diploid genomes)</li>
         <li><code>scaffold_correction</code>  (executable used in truSPAdes pipeline)</li>
     </ul>
