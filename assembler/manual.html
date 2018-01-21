@@ -382,13 +382,15 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
 
 <p> Notes:
     <ul>
-        <li>It is strongly suggested to provide multiple paired-end and mate-pair libraries according to their insert size (from smallest to longest).
+        <li>It is strongly suggested to provide multiple paired-end and mate-pair libraries <b>according to their insert size (from smallest to longest)</b>.
         <li>It is not recommended to run SPAdes on PacBio reads with low coverage (less than 5).</li>
         <li>We suggest not to run SPAdes on PacBio reads for large genomes.</li>
         <li>SPAdes accepts gzip-compressed files.</li>
     </ul>
 
 <h4>Read-pair libraries</h4>
+<p>
+    If you already have forward and reverse reads available in two separate files, use these as input. Otherwise spades will split the interleaved FASTQ file using its pythonic code into two files anyway, and complain if there are any singletons included.
 <p>
     By using command line interface, you can specify up to nine different paired-end libraries, up to nine mate-pair libraries and also up to nine high-quality mate-pair ones. If you wish to use more, you can use <a href="#yaml">YAML data set file</a>. We further refer to paired-end and mate-pair libraries simply as to read-pair libraries.
 
