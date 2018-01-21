@@ -34,7 +34,7 @@
 <a name="sec1"></a>
 <h2>1. About SPAdes</h2>
 <p>
-    SPAdes &ndash; St. Petersburg genome assembler &ndash; is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. 
+    SPAdes &ndash; St. Petersburg genome assembler &ndash; is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes.
 SPAdes version 3.11.0 was released under GPLv2 on September 1, 2017 and can be downloaded from  <a href="http://cab.spbu.ru/software/spades/" target="_blank">http://cab.spbu.ru/software/spades/</a>.
 
 <a name="sec1.1"></a>
@@ -467,7 +467,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 <a name="sc"></a>
 <p>
     <code>--sc </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required for MDA (single-cell) data.
+    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required for MDA (single-cell) data with uneven and supposedly low coverage. Enforces <code>-k 21,33,55</code>.
 </p>
 
 <a name="meta"></a>
@@ -548,10 +548,10 @@ Note that all options except <code>-o &lt;output_dir> </code> are ignored if <co
     <code>--restart-from &lt;check_point></code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;Restart SPAdes run from the specified output folder starting from the specified check-point. Check-points are:
     <ul>
-        <li><code>ec</code> &ndash; start from error correction</li>
-        <li><code>as</code> &ndash; restart assembly module from the first iteration</li>
+        <li><code>ec</code> &ndash; start from error correction (BayesHammer or IonHammer)</li>
+        <li><code>as</code> &ndash; restart assembly module from the first iteration (from the lowest k-mer size)</li>
         <li><code>k&lt;int></code> &ndash; restart from the iteration with specified k values, e.g. k55</li>
-        <li><code>mc</code> &ndash; restart mismatch correction</li>
+        <li><code>mc</code> &ndash; restart mismatch correction of assembled contigs (MismatchCorrector which uses BWA)</li>
     </ul>
 In comparison to the <code>--continue</code> option, you can change some of the options when using <code>--restart-from</code>. You can change any option except: all basic options, all options for specifying input data (including <code>--dataset</code>), <code>--only-error-correction</code> option and <code>--only-assembler</code> option. For example, if you ran assembler with k values 21,33,55 without mismatch correction, you can add one more iteration with k=77 and run mismatch correction step by running SPAdes with following options:<br>
      <code>--restart-from k55 -k 21,33,55,77 --mismatch-correction -o &lt;previous_output_dir></code>. 
@@ -706,13 +706,13 @@ In comparison to the <code>--continue</code> option, you can change some of the 
 
 <p>
     <code>--pacbio &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with PacBio CLR reads. For PacBio CCS reads use <code>-s</code> option. More information on PacBio reads is provided in <a href="#pacbio">section 3.1</a>. 
+    &nbsp;&nbsp;&nbsp;&nbsp;File with PacBio CLR reads for late scaffolding step. For PacBio CCS reads use <code>-s</code> option. More information on PacBio reads is provided in <a href="#pacbio">section 3.1</a>.
 </p>
 
 
 <p>
     <code>--nanopore &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with Oxford Nanopore reads. 
+    &nbsp;&nbsp;&nbsp;&nbsp;File with Oxford Nanopore reads for late scaffolding step.
 </p>
 
 
@@ -737,7 +737,7 @@ In comparison to the <code>--continue</code> option, you can change some of the 
 <p>
     An alternative way to specify an input data set for SPAdes is to create a <a href="http://www.yaml.org/" target="_blank">YAML</a> data set file.
 By using a YAML file you can provide an unlimited number of paired-end, mate-pair and unpaired libraries.
-Basically, YAML data set file is a text file, in which input libraries are provided as a comma-separated list in square brackets. 
+Basically, YAML data set file is a text file, in which input libraries are provided as a comma-separated list in square brackets.
 Each library is provided in braces as a comma-separated list of attributes. 
 The following attributes are available:
     <ul>
@@ -750,13 +750,13 @@ The following attributes are available:
     </ul>
 
 <p>
-    To properly specify a library you should provide its type and at least one file with reads. 
+    To properly specify a library you should provide its type and at least one file with reads.
 Orientation is an optional attribute. Its default value is "fr" (forward-reverse) for paired-end libraries and
 "rf" (reverse-forward) for mate-pair libraries.
 
 <p>
-    The value for each attribute is given after a colon. 
-Comma-separated lists of files should be given in square brackets. 
+    The value for each attribute is given after a colon.
+Comma-separated lists of files should be given in square brackets.
 For each file you should provide its full path in double quotes.
 Make sure that files with right reads are given in the same order as corresponding files with left reads.
 
@@ -848,12 +848,12 @@ and PacBio CCS and CLR reads:
 
 <p>
     <code>-t &lt;int></code> (or <code>--threads &lt;int></code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Number of threads. The default value is 16.
+    &nbsp;&nbsp;&nbsp;&nbsp;Number of threads. The default value is 16. This merely a maximum number of threads to be used. For example, with --threads 112 the initial the raw read error-correction step uses only 8 threads anyway.
 </p>
 
 <p>
     <code>-m &lt;int></code> (or <code>--memory &lt;int></code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Set memory limit in Gb. SPAdes terminates if it reaches this limit. The default value is 250 Gb. Actual amount of consumed RAM will be below this limit. Make sure this value is correct for the given machine. SPAdes uses the limit value to automatically determine the sizes of various buffers, etc.
+    &nbsp;&nbsp;&nbsp;&nbsp;Set maximum memory limit in Gb. SPAdes terminates if it reaches this limit. The default value is 250 Gb. Actual amount of consumed RAM will be below this limit. Make sure this value is correct for the given machine. SPAdes uses the limit value to automatically determine the sizes of various buffers, etc.
 </p>
 
 <p>
@@ -1111,10 +1111,10 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
     </ul>
 
 <p>
-   Contigs/scaffolds names in SPAdes output FASTA files have the following format: <br><code>>NODE_3_length_237403_cov_243.207_ID_45</code><br> Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is the sequence length in nucleotides and <code>243.207</code> is the k-mer coverage for the last (largest) k value used. Note that the k-mer coverage is always lower than the read (per-base) coverage. 
+   Contigs/scaffolds names in SPAdes output FASTA files have the following format: <br><code>>NODE_3_length_237403_cov_243.207_ID_45</code><br> Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is the sequence length in nucleotides and <code>243.207</code> is the k-mer coverage for the last (largest) k value used. Note that the k-mer coverage is always lower than the read (per-base) coverage.
 
 <p> 
-    In general, SPAdes uses two techniques for joining contigs into scaffolds. First one relies on read pairs and tries to estimate the size of the gap separating contigs. The second one relies on the assembly graph: e.g. if two contigs are separated by a complex tandem repeat, that cannot be resolved exactly, contigs are joined into scaffold with a fixed gap size of 100 bp. Contigs produced by SPAdes do not contain N symbols. 
+    In general, SPAdes uses two techniques for joining contigs into scaffolds. First one relies on read pairs and tries to estimate the size of the gap separating contigs. The second one relies on the assembly graph: e.g. if two contigs are separated by a complex tandem repeat, that cannot be resolved exactly, contigs are joined into scaffold with a fixed gap size of 100 bp. Contigs produced by SPAdes do not contain N symbols.
 
 <p>
    To view FASTG and GFA files we recommend to use <a href="http://rrwick.github.io/Bandage/" target="_blank">Bandage visualization tool</a>. Note that sequences stored in <code>assembly_graph.fastg</code> correspond to contigs before repeat resolution (edges of the assembly graph). Paths corresponding to contigs after repeat resolution (scaffolding) are stored in <code>contigs.paths</code> (<code>scaffolds.paths</code>) in the format accepted by Bandage (see <a href="https://github.com/rrwick/Bandage/wiki/Graph-paths" target="_blank">Bandage wiki</a> for details). The example is given below.
@@ -1173,7 +1173,7 @@ The full list of <code>&lt;output_dir></code> content is presented below:
 </pre>
 
 <p>
-    SPAdes will overwrite these files and directories if they exist in the specified <code>&lt;output_dir></code>. 
+    SPAdes will overwrite these files and directories if they exist in the specified <code>&lt;output_dir></code>.
 
 <a name="sec3.6">
 <h3>3.6 plasmidSPAdes output</h3>
