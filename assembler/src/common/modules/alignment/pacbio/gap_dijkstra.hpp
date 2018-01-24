@@ -14,6 +14,7 @@ inline void SHWDistance(string &target, string &query, int max_score, vector<int
         }
 	   return;
     }
+    VERIFY(target.size() > 0)
     edlib::EdlibEqualityPair additionalEqualities[36] = {{'U', 'T'}
                                         , {'R', 'A'}, {'R', 'G'}
                                         , {'Y', 'C'}, {'Y', 'T'}, {'Y', 'U'}
@@ -26,12 +27,10 @@ inline void SHWDistance(string &target, string &query, int max_score, vector<int
                                         , {'H', 'A'}, {'H', 'C'}, {'H', 'T'}, {'H', 'U'}
                                         , {'V', 'A'}, {'V', 'C'}, {'V', 'G'}
                                         , {'N', 'A'}, {'N', 'C'}, {'N', 'G'}, {'N', 'T'}, {'N', 'U'} };
-    edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), query.size(), target.c_str(), target.size()
+    edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), (int) query.size(), target.c_str(), (int) target.size()
                                                    , edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_SHW_FULL, edlib::EDLIB_TASK_DISTANCE,
                                                                          additionalEqualities, 36));
-    int score = -1;
     if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
-        score = result.editDistance;
         positions.reserve(result.numLocations);
         scores.reserve(result.numLocations);
         for (int i = 0; i < result.numLocations; ++ i) {
@@ -155,97 +154,105 @@ struct QueueState {
 };
 
 
-class AbstractGapFiller {
+class DijkstraGapFiller {
 
-        void Update(QueueState &state, QueueState &prevState, int score, int ed)
+        bool ShouldUpdateQueue(int seq_ind, int ed)
         {
-            //if (g_.int_id(end_e_) == g_.int_id(state.gs.e) ) {
-            //    INFO("  Add edge to q " << g_.int_id(state.gs.e) << " ed=" << score << " pos=" << state.i)
-            //}
-            if (visited.count(state) > 0) {
-                if (dist[state] > ed && best_ed[state.i] + 10 > ed){
-                    q.erase(make_pair(visited[state], state));
-                    visited[state] = score;
-                    dist[state] = ed;
-                    best_ed[state.i] = ed;
-                    prevStates[state] = prevState;
-                    q.insert(make_pair(score, state));
-                }
-            } else{
-                visited.insert(make_pair(state, score));
-                best_ed[state.i] = ed;
-                dist.insert(make_pair(state, ed));
-                prevStates.insert(make_pair(state, prevState));
-                q.insert(make_pair(score, state));
+            if (seq_ind == -1){
+                return true;
+            }
+            VERIFY(seq_ind < (int) ss_.size())
+            VERIFY(seq_ind >= 0)
+            if (best_ed_[seq_ind] + 20 > ed) {
+                best_ed_[seq_ind] = min(best_ed_[seq_ind], ed);  
+                return true; 
+            } else {
+                return false;
             }
         }
 
-        void AddNewEdge(GraphState gs, QueueState prevState, int ed)
+        void Update(QueueState &state, QueueState &prev_state, int score, int ed)
+        {
+            if (visited_.count(state) > 0) {
+                if (dist_[state] > ed){
+                    q_.erase(make_pair(visited_[state], state));
+                    visited_[state] = score;
+                    dist_[state] = ed;
+                    prev_states_[state] = prev_state;
+                    if (ShouldUpdateQueue(state.i, ed)){
+                        q_.insert(make_pair(score, state));
+                    }
+                }
+            } else{
+                if (ShouldUpdateQueue(state.i, ed)){
+                    visited_.insert(make_pair(state, score));
+                    dist_.insert(make_pair(state, ed));
+                    prev_states_.insert(make_pair(state, prev_state));
+                    q_.insert(make_pair(score, state));
+                }
+            }
+        }
+
+        void AddNewEdge(GraphState gs, QueueState prev_state, int ed)
         {
             //INFO("Adding new state " << g_.int_id(gs.e) << " " << ed)
             utils::perf_counter perf;
-            int end = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, (int) ss_.size() - (prevState.i + 1) );
-            string sstr = ss_.Subseq(prevState.i + 1, prevState.i + 1 + end).str();
+            int end = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, (int) ss_.size() - (prev_state.i + 1) );
+            string seq_str = ss_.Subseq(prev_state.i + 1, prev_state.i + 1 + end).str();
             string tmp = g_.EdgeNucls(gs.e).str();
-            string edgestr = tmp.substr(gs.start_pos, gs.end_pos - gs.start_pos);
+            string edge_str = tmp.substr(gs.start_pos, gs.end_pos - gs.start_pos);
             //INFO("TIME.Substrs=" << perf.time());
             vector<int> positions;
             vector<int> scores;
-            if (path_max_length_ - ed >= 0){
+            if (path_max_length_ - ed >= 0 && seq_str.size() > 0){
                 perf.reset();
-                SHWDistance(sstr, edgestr, path_max_length_ - ed, positions, scores);
+                SHWDistance(seq_str, edge_str, path_max_length_ - ed, positions, scores);
                 //INFO("TIME.SHWDistance=" << perf.time());
                 perf.reset();
-                if (path_max_length_ - ed >= edgestr.size()) {
-                    QueueState state(gs, prevState.i);
-                    int remaining = ss_.size() - prevState.i;
-                    Update(state, prevState,  ed + edgestr.size(), ed + edgestr.size());
+                if (path_max_length_ - ed >= (int) edge_str.size()) {
+                    QueueState state(gs, prev_state.i);
+                    Update(state, prev_state,  ed + (int) edge_str.size(), ed + (int) edge_str.size());
                 }
                 for (int i = 0; i < positions.size(); ++ i) {
                     if (positions[i] >= 0 && scores[i] >= 0) {
-                        QueueState state(gs, prevState.i + 1 + positions[i]);
-                        int remaining = ss_.size() - (prevState.i + 1 + positions[i]);
-                        Update(state, prevState, ed + scores[i], ed + scores[i]);
+                        QueueState state(gs, prev_state.i + 1 + positions[i]);
+                        Update(state, prev_state, ed + scores[i], ed + scores[i]);
                     }
                 }
                 //INFO("TIME.QueueUpdate=" << perf.time());
             }
         }
 
-        virtual bool IsEnd(EdgeId e, QueueState &state) = 0;
-
     public:
-        AbstractGapFiller(const Graph &g, const Sequence &ss, EdgeId start_e, EdgeId end_e,
+        DijkstraGapFiller(const Graph &g, const Sequence &ss, EdgeId start_e, EdgeId end_e,
                                   const int start_p, const int end_p, const int path_max_length, 
-                                  const std::map<VertexId, size_t> &vs, const std::map<VertexId, size_t> &vs_b)
+                                  const std::map<VertexId, size_t> &reachable_vertex)
                   :g_(g), ss_(ss)
                    , start_e_(start_e), end_e_(end_e)
                    , start_p_(start_p), end_p_(end_p)
                    , path_max_length_(path_max_length) 
-                   , vs_(vs), vs_b_(vs_b){
-            best_ed.resize(ss_.size());
-            for (size_t i = 0; i < best_ed.size(); ++ i){
-                best_ed[i] = path_max_length_;
+                   , reachable_vertex_(reachable_vertex){
+            best_ed_.resize(ss_.size());
+            for (size_t i = 0; i < best_ed_.size(); ++ i){
+                best_ed_[i] = path_max_length_;
             }
             AddNewEdge(GraphState(start_e_, start_p_, g_.length(start_e_)), QueueState(), 0);
-            min_score = -1;
+            min_score_ = -1;
         }
 
         void CloseGap() {
-            GraphState endgstate(end_e_, 0, end_p_);
-            QueueState endqstate(endgstate, ss_.size() - 1);
-            // GraphState startgstate(start_e_, start_p_, g_.length(start_e_));
-            // QueueState startqstate(startgstate, 0);
-            bool foundPath = false;
+            GraphState end_gstate(end_e_, 0, end_p_);
+            QueueState end_qstate(end_gstate, ss_.size() - 1);
+            bool found_path = false;
             int i = 0;
-            while (q.size() > 0) {
-                QueueState curState = q.begin()->second;
-                int ed = dist[curState];
-                if (q.size() > 1000000) {
+            while (q_.size() > 0) {
+                QueueState cur_state = q_.begin()->second;
+                int ed = dist_[cur_state];
+                if (q_.size() > 1000000 || i > 1000000) {
                     INFO("queue size is too big")
-                    if (visited.count(endqstate) > 0){
-                        foundPath = true;
-                        min_score = dist[endqstate];
+                    if (visited_.count(end_qstate) > 0){
+                        found_path = true;
+                        min_score_ = dist_[end_qstate];
                     }
                     break;
                 }
@@ -253,28 +260,28 @@ class AbstractGapFiller {
                     INFO("No path found")
                     break;
                 }
-                if (curState == endqstate && ed <= path_max_length_) {
-                    min_score = ed;
-                    INFO("+++++++++++++++++++++++++++++++++++++++++++++++=Final ed=" << ed);
-                    foundPath = true;
+                if (cur_state == end_qstate && ed <= path_max_length_) {
+                    min_score_ = ed;
+                    INFO("++=Final ed=" << ed);
+                    found_path = true;
                     break;
                 }
                 i ++;
-                q.erase(q.begin());
-                for (const auto &e: g_.OutgoingEdges(g_.EdgeEnd(curState.gs.e))) {
-                    if (vs_.count(g_.EdgeEnd(curState.gs.e)) > 0) { //&& vs_.at(g_.EdgeEnd(curState.gs.e)) - (ss_.size() - curState.i) <= path_max_length_ - ed ) {
-                        if (vs_.count(g_.EdgeEnd(e)) > 0) {
-                            GraphState nextgs(e, 0, g_.length(e));
-                            AddNewEdge(nextgs, curState, ed);
+                q_.erase(q_.begin());
+                for (const EdgeId &e: g_.OutgoingEdges(g_.EdgeEnd(cur_state.gs.e))) {
+                    if (reachable_vertex_.count(g_.EdgeEnd(cur_state.gs.e)) > 0) { 
+                        if (reachable_vertex_.count(g_.EdgeEnd(e)) > 0) {
+                            GraphState next_state(e, 0, g_.length(e));
+                            AddNewEdge(next_state, cur_state, ed);
                         }
-                        if (IsEnd(e, curState) && path_max_length_ - ed >= 0){
+                        if (e == end_e_ && path_max_length_ - ed >= 0){
                             utils::perf_counter perf;
-                            string sstr = ss_.Subseq(curState.i + 1, ss_.size() ).str();
+                            string seq_str = ss_.Subseq(cur_state.i + 1, ss_.size() ).str();
                             string tmp = g_.EdgeNucls(e).str();
-                            string edgestr = tmp.substr(0, end_p_);
+                            string edge_str = tmp.substr(0, end_p_);
                             //INFO("TIME.Substrs=" << perf.time());
                             perf.reset();
-                            int score = NWDistance(sstr, edgestr, path_max_length_ - ed);
+                            int score = NWDistance(seq_str, edge_str, path_max_length_ - ed);
                             //INFO("TIME.NWDistance=" << perf.time());
                             perf.reset();
                             if (score != -1) {
@@ -283,89 +290,77 @@ class AbstractGapFiller {
                                 }
                                 path_max_length_ = min(path_max_length_, ed + score);
                                 QueueState state(GraphState(e, 0, end_p_), ss_.size() - 1);
-                                Update(state, curState, ed + score, ed + score);
+                                Update(state, cur_state, ed + score, ed + score);
+				                if (ed + score == path_max_length_) {
+                    			     min_score_ = ed + score;
+                    			     INFO("++=Final ed=" << ed + score);
+                    			     found_path = true;
+                    			     break;
+                		        }
                             }
                             //INFO("TIME.QueueUpdate=" << perf.time());
                         }
                     }
                 }
+		        if (found_path) break;
             }
 
-            if (foundPath) {
-                QueueState state = endqstate;
+            if (found_path) {
+                QueueState state = end_qstate;
                 while (!state.isempty()) {
-                    gapPath.push_back(state.gs.e);
-                    state = prevStates[state];
+                    gap_path_.push_back(state.gs.e);
+                    state = prev_states_[state];
                 }
-                std::reverse(gapPath.begin(), gapPath.end());
+                std::reverse(gap_path_.begin(), gap_path_.end());
             }
             return;
         }
 
-        std::vector<EdgeId> GapPath() {
-            return gapPath;
+        std::vector<EdgeId> GetPath() {
+           return gap_path_;
         }
 
-        int MinScore() {
-            return min_score;
+        int GetEditDistance() {
+            return min_score_;
         }
 
     protected:
-        std::set<std::pair<int, QueueState> > q;
-        std::map<QueueState, int> visited; 
-        std::map<QueueState, int> dist; 
-        std::map<QueueState, QueueState> prevStates;
+        std::set<std::pair<int, QueueState> > q_;
+        std::map<QueueState, int> visited_;
+        std::map<QueueState, int> dist_;
+        std::map<QueueState, QueueState> prev_states_;
 
-        std::vector<EdgeId> gapPath;
+        std::vector<EdgeId> gap_path_;
 
-        std::vector<int> best_ed;
+        std::vector<int> best_ed_;
 
-        const Graph &g_; 
+        const Graph &g_;
         const Sequence &ss_;
         EdgeId start_e_;
         EdgeId end_e_;
         const int start_p_;
         const int end_p_;
         int path_max_length_;
-        const std::map<VertexId, size_t> &vs_;
-        const std::map<VertexId, size_t> &vs_b_;
-        int min_score;
+        const std::map<VertexId, size_t> &reachable_vertex_;
+        int min_score_;
 };
 
-class GapFiller: public AbstractGapFiller {
-    virtual bool IsEnd(EdgeId e, QueueState &state){
-        if (e == end_e_) {
-            return true;
-        }
-        return false;
-    }
 
-public:
-    GapFiller(const Graph &g, const Sequence &ss, EdgeId start_e, EdgeId end_e,
-                                  const int start_p, const int end_p, const int path_max_length, 
-                                  const std::map<VertexId, size_t> &vs, const std::map<VertexId, size_t> &vs_b)
-            :AbstractGapFiller(g, ss, start_e, end_e, start_p, end_p, path_max_length, vs, vs_b)
-        {}
-
-};
-
-class EndsConstructor: public AbstractGapFiller {
-    virtual bool IsEnd(EdgeId e, QueueState &state){
-        int remaining = ss_.size() - state.i;
-        if (g_.length(e) - remaining > 0){
-            return true;
-        }
-        return false;
-    }
-
-public:
-    EndsConstructor(const Graph &g, const Sequence &ss, EdgeId start_e, EdgeId end_e,
-                                  const int start_p, const int end_p, const int path_max_length, 
-                                  const std::map<VertexId, size_t> &vs, const std::map<VertexId, size_t> &vs_b)
-            :AbstractGapFiller(g, ss, start_e, end_e, start_p, end_p, path_max_length, vs, vs_b)
-        {}
-
-};
-
+//class EndsConstructor: public AbstractGapFiller {
+//   virtual bool IsEnd(EdgeId e, QueueState &state){
+//       int remaining = ss_.size() - state.i;
+//       if (g_.length(e) - remaining > 0){
+//           return true;
+//       }
+//       return false;
+//   }
+//public:
+//   EndsConstructor(const Graph &g, const Sequence &ss, EdgeId start_e, EdgeId end_e,
+//                                  const int start_p, const int end_p, const int path_max_length, 
+//                                 const std::map<VertexId, size_t> &vs, const std::map<VertexId, size_t> &vs_b)
+//           :AbstractGapFiller(g, ss, start_e, end_e, start_p, end_p, path_max_length, vs, vs_b)
+//       {}
+//
+//};
 
 }
