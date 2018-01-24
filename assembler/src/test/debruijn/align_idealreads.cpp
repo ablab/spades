@@ -61,34 +61,93 @@ public:
         Sequence seq(read.sequence());
         INFO("Read " << read.name() <<". Current Read")
         auto current_mapping = mapper_->MapRead(read);
+        ReadPathFinder<debruijn_graph::Graph> readmapper(gp_.g);
+        auto read_mapping = readmapper.FindReadPath(current_mapping);
         if (current_mapping.empty()){
             INFO("Read " << read.name() <<" wasn't aligned");
         }
-        if (current_mapping.size() > 0){
+        if (read_mapping.size() > 0){
             std::string pathStr = "";
+            std::string curpathStr = "";
+            std::string edgesStr1 = "";
+            std::string edgesStr2 = "";
             std::string pathlenStr = "";
             std::string edgelenStr = "";
             std::string str = "";
-            EdgeId last_edge= EdgeId();
-            omnigraph::MappingRange last_range;
+            // EdgeId last_edge= EdgeId();
+            // omnigraph::MappingRange last_range;
+            // for (const auto &edge_mapping: current_mapping) {
+            //     EdgeId edgeid = edge_mapping.first;
+            //     omnigraph::MappingRange range= edge_mapping.second;
+            //     last_edge = edgeid;
+            //     last_range = range;
+            //     pathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(range.mapped_range.start_pos) + "," + std::to_string(range.mapped_range.end_pos) + ") ["
+            //                    + std::to_string(range.initial_range.start_pos) + "," + std::to_string(range.initial_range.end_pos) + "], ";
+            //     //pathStr += std::to_string(edgeid.int_id()) + ",";
+            //     pathlenStr += std::to_string(range.mapped_range.end_pos - range.mapped_range.start_pos) + ",";
+            //     edgelenStr += std::to_string(gp_.g.length(edgeid)) + ",";
+            //     string tmp = gp_.g.EdgeNucls(edgeid).str();
+            //     string to_add = tmp.substr(range.mapped_range.start_pos, range.mapped_range.end_pos - range.mapped_range.start_pos);
+            //     str += to_add;
+            // }
+            // string tmp = gp_.g.EdgeNucls(last_edge).str();
+            // str += tmp.substr(last_range.mapped_range.end_pos, gp_.g.k());
             for (const auto &edge_mapping: current_mapping) {
                 EdgeId edgeid = edge_mapping.first;
                 omnigraph::MappingRange range= edge_mapping.second;
-                VertexId v1 = gp_.g.EdgeStart(edgeid);
-                VertexId v2 = gp_.g.EdgeEnd(edgeid);
-                last_edge = edgeid;
-                last_range = range;
-                pathStr += std::to_string(Canonical(edgeid).int_id()) + " (" + std::to_string(v1.int_id()) + "," + std::to_string(v2.int_id()) + ") ";
-                //pathStr += std::to_string(edgeid.int_id()) + ",";
-                pathlenStr += std::to_string(range.mapped_range.end_pos - range.mapped_range.start_pos) + ",";
+                curpathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(range.mapped_range.start_pos) + "," + std::to_string(range.mapped_range.end_pos) + ") ["
+                                + std::to_string(range.initial_range.start_pos) + "," + std::to_string(range.initial_range.end_pos) + "], ";
+                edgesStr1 += std::to_string(edgeid.int_id()) + ",";
+            }
+
+            for (const auto &edge_mapping: read_mapping) {
+                EdgeId edgeid = edge_mapping;
+                edgesStr2 += std::to_string(edgeid.int_id()) + ",";
+            }
+            int j = 0;
+            INFO(curpathStr);
+            INFO(edgesStr1);
+            INFO(edgesStr2);
+            for (int i = 0; i < read_mapping.size(); ++ i) {
+                EdgeId edgeid = read_mapping[i];
+                INFO("edgeid=" << edgeid.int_id() << " " << i << "; " << " cur_edge=" << gp_.g.int_id(current_mapping[j].first) << " " << j)
+                omnigraph::MappingRange range= current_mapping[j].second;
+                size_t mapping_start = range.mapped_range.start_pos;
+                size_t mapping_end = range.mapped_range.end_pos + gp_.g.k();
+                size_t initial_start = range.initial_range.start_pos;
+                size_t initial_end = range.initial_range.end_pos + gp_.g.k();
+                if (i > 0){
+                    mapping_start = 0;
+                    if (current_mapping[j].first != edgeid) {
+                        initial_start = current_mapping[j].second.initial_range.end_pos + 1;
+                    }
+                }
+                if (i < read_mapping.size() - 1) {
+                    mapping_end = gp_.g.length(edgeid);
+                    if (current_mapping[j].first != edgeid) {
+                        // INFO("read_mapping " << read_mapping.size() << " " << gp_.g.int_id(edgeid) << " " << gp_.g.int_id(current_mapping[j].first));
+                        // INFO("cur_map " << current_mapping.size() << " " << j + 1);
+                        initial_end = current_mapping[j].second.initial_range.start_pos - 1;
+                    } else {
+                        initial_end = range.initial_range.end_pos;
+                    }
+                } else{
+                    INFO("Readname=" << read.name() << " mapping_end" << mapping_end << " edge_len=" << gp_.g.length(edgeid));
+                }
+                pathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
+                                + std::to_string(initial_start) + "," + std::to_string(initial_end) + "], ";
+                pathlenStr += std::to_string(mapping_end - mapping_start) + ",";
                 edgelenStr += std::to_string(gp_.g.length(edgeid)) + ",";
                 string tmp = gp_.g.EdgeNucls(edgeid).str();
-                string to_add = tmp.substr(range.mapped_range.start_pos, range.mapped_range.end_pos - range.mapped_range.start_pos);
+                //INFO("Edgeid=" << edgeid.int_id() << " size=" << tmp.size() << " mapping_start=" << mapping_start << " mapping_end=" << mapping_end);
+                string to_add = tmp.substr(mapping_start, mapping_end - mapping_start);
                 str += to_add;
+                if (current_mapping[j].first == edgeid){
+                    j++;
+                }
             }
-            string tmp = gp_.g.EdgeNucls(last_edge).str();
-            str += tmp.substr(last_range.mapped_range.end_pos, gp_.g.k());
             INFO("Path: " << pathStr);
+            INFO("MappedPath: " << curpathStr);
             INFO("Read " << read.name() << " length=" << seq.size() << "; path_len=" << current_mapping.size()  << "; aligned: " << pathStr);
             //INFO("Seq subs: " << subStr);
 #pragma omp critical
@@ -126,7 +185,7 @@ void Launch(size_t K, const string &saves_path, const string &reads_fasta, const
     IdealAligner aligner(gp, output_file, mapper); 
     INFO("IdealAligner created");
 
-#pragma omp parallel num_threads(16)
+#pragma omp parallel num_threads(1)
 #pragma omp for
         for (size_t i =0 ; i < wrappedreads.size(); ++i) {
             aligner.AlignRead(wrappedreads[i]);
@@ -135,7 +194,7 @@ void Launch(size_t K, const string &saves_path, const string &reads_fasta, const
 }
 
 int main(int argc, char **argv) {
-    omp_set_num_threads(16);
+    omp_set_num_threads(1);
     if (argc < 5) {
         cout << "Usage: idealreads_aligner <K>"
              << " <saves path> <long reads file (fasta)> <ouput-prefix>" << endl;
