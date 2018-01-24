@@ -8,6 +8,13 @@ def load_names(filterfile):
             res.add(ln.strip())
     return res
 
+def rc(seq):
+	mapping = {"A": "T", "T": "A", "C": "G", "G": "C"}
+	res = []
+	for c in seq:
+		res.append(mapping[c])
+	return "".join(res[::-1])
+
 maffile = sys.argv[1]
 outprefix = sys.argv[2]
 names = set()
@@ -17,6 +24,7 @@ if len(sys.argv) > 3:
 
 res = ""
 idealfasta = ""
+idealrcfasta = ""
 with open(maffile, "r") as fin:
     s = fin.readline()
     while s != "":
@@ -33,6 +41,10 @@ with open(maffile, "r") as fin:
                 read = s2[6].replace("-", "")
                 res += "\t".join([name, start, l1, l2, strand, ref, read]) + "\n"
                 idealfasta += ">" + name + "\n" + ref + "\n"
+                if strand == "+":
+                    idealrcfasta += ">" + name + "\n" + ref + "\n"
+                else:
+                    idealrcfasta += ">" + name + "\n" + rc(ref) + "\n"
         s = fin.readline()
 
 with open(outprefix + ".tsv", "w") as fout:
@@ -40,3 +52,6 @@ with open(outprefix + ".tsv", "w") as fout:
 
 with open(outprefix + ".fasta", "w") as fout:
     fout.write(idealfasta)
+
+with open(outprefix + "_rc.fasta", "w") as fout:
+    fout.write(idealrcfasta)

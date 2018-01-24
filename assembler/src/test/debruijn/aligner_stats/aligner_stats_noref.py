@@ -69,6 +69,9 @@ with open(align_file, "r") as fin:
     ln = fin.readline()
     while ln != "":
         [name, start, end, sz, path, path_len, score, subread] = ln.split("\t")
+	if name not in reads_len:
+	    ln = fin.readline()
+            continue
         start = int(start)
         end = int(end)
         name = name.split(" ")[0]
