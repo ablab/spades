@@ -345,8 +345,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetShortMappingPath(con
 
 omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Sequence &sequence) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
-
-    if (!idx_) return res;
+    VERIFY(idx_);
 
     std::string seq = sequence.str();
     mem_alnreg_v ar = mem_align1(memopt_.get(), idx_->bwt, idx_->bns, idx_->pac,
