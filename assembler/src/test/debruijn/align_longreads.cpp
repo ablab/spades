@@ -378,7 +378,7 @@ config::debruijn_config::pacbio_processor InitializePacBioProcessor() {
     return pb;
 }
 
-void Launch(size_t K, const string &saves_path, const string &sequence_fasta, const string &mapper_type, const string &output_file) {
+void Launch(size_t K, const string &saves_path, const string &sequence_fasta, const string &mapper_type, const string &output_file, int threads) {
     conj_graph_pack gp(K, "tmp3", 0);
     graphio::ScanGraphPack(saves_path, gp);
     INFO("Loaded graph with " << gp.g.size() << " vertices");
@@ -413,7 +413,7 @@ void Launch(size_t K, const string &saves_path, const string &sequence_fasta, co
     myfile << "H\n";
     myfile.close();
 
-#pragma omp parallel num_threads(16)
+#pragma omp parallel num_threads(threads)
 #pragma omp for
         for (size_t i =0 ; i < wrappedreads.size(); ++i) {
             aligner.AlignRead(wrappedreads[i]);
@@ -422,12 +422,16 @@ void Launch(size_t K, const string &saves_path, const string &sequence_fasta, co
 }
 
 int main(int argc, char **argv) {
-    omp_set_num_threads(16);
     if (argc < 6) {
         cout << "Usage: longreads_aligner <K>"
-             << " <saves path> <sequences file (fasta/fastq)> <mapper type: {pacbio, nanopore, default} > <ouput-prefix>" << endl;
+             << " <saves path> <sequences file (fasta/fastq)> <mapper type: {pacbio, nanopore, default} > <ouput-prefix> {threads-num(16)}" << endl;
         exit(1);
     }
+    int threads = 16;
+    if (argc == 7) {
+        threads = std::stoi(argv[6]);
+    }
+    omp_set_num_threads(threads);
     create_console_logger();
     size_t K = std::stoll(argv[1]);
     string saves_path = argv[2];
@@ -437,6 +441,6 @@ int main(int argc, char **argv) {
     string mapper_type = argv[4];
     INFO("Mapper type " << mapper_type);
     string output_file = argv[5];
-    debruijn_graph::Launch(K, saves_path, sequence_file, mapper_type, output_file);
+    debruijn_graph::Launch(K, saves_path, sequence_file, mapper_type, output_file, threads);
     return 0;
 }
