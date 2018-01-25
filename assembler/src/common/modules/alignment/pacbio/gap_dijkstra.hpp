@@ -195,7 +195,6 @@ class DijkstraGapFiller {
 
         void AddNewEdge(GraphState gs, QueueState prev_state, int ed)
         {
-            //INFO("Adding new state " << g_.int_id(gs.e) << " " << ed)
             utils::perf_counter perf;
             int end = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, (int) ss_.size() - (prev_state.i + 1) );
             string seq_str = ss_.Subseq(prev_state.i + 1, prev_state.i + 1 + end).str();
@@ -204,7 +203,7 @@ class DijkstraGapFiller {
             //INFO("TIME.Substrs=" << perf.time());
             vector<int> positions;
             vector<int> scores;
-            if (path_max_length_ - ed >= 0 && seq_str.size() > 0){
+            if (path_max_length_ - ed >= 0 && ss_.size() - (prev_state.i + 1) > 0){
                 perf.reset();
                 SHWDistance(seq_str, edge_str, path_max_length_ - ed, positions, scores);
                 //INFO("TIME.SHWDistance=" << perf.time());

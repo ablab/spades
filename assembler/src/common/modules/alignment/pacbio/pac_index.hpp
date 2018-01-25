@@ -583,7 +583,7 @@ public:
 
         Sequence ss = s.Subseq(start_pos, min(end_pos + 1, int(s.size()) ));
         int s_len = int(ss.size());
-        path_max_length = max(s_len/3, 20);
+        path_max_length = min(score, max(s_len/3, 20));
         DEBUG(" Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_p=" << start_p << " end_p=" << end_p);
         if (s_len > 2000 && vertex_pathlen.size() > 100000){
             INFO("Dijkstra won't run: Too big gap or too many paths");
@@ -711,6 +711,7 @@ public:
         if (reachedVertices.count(end_v) > 0){
             DEBUG("Run search");
             if (dijkstra){
+               BestScoredPathBruteForce(s, start_v, end_v, path_min_length, path_max_length, start_pos, end_pos, s_add, e_add, score);
                std::vector<EdgeId> path = BestScoredPathDijkstra(s, start_v, end_v, start_e, end_e, start_p, end_p, start_pos, end_pos, path_max_length, score);
                if (path.size() > 1) {
                     std::vector<EdgeId> short_path(path.begin() + 1, path.end() - 1);
