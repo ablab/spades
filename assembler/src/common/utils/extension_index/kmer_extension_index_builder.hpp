@@ -15,7 +15,7 @@ namespace utils {
 class DeBruijnExtensionIndexBuilder {
 public:
     template<class ReadStream, class Index>
-    size_t FillExtensionsFromStream(ReadStream &stream, Index &index) const {
+    void FillExtensionsFromStream(ReadStream &stream, Index &index) const {
         unsigned k = index.k();
 
         while (!stream.eof()) {
