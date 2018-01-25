@@ -129,7 +129,7 @@ public:
     virtual ~KMerCounting() = default;
 
     void run(debruijn_graph::conj_graph_pack &, const char*) override {
-        auto &read_streams = storage().read_streams;
+        auto read_streams = storage().read_streams;
         auto &contigs_stream = storage().contigs_stream;
         const auto &index = storage().ext_index;
         size_t buffer_size = storage().params.read_buffer_size;
@@ -140,7 +140,6 @@ public:
         unsigned nthreads = (unsigned)read_streams.size();
         unsigned kthr = storage().params.kmer_cov_threshold;
         unsigned rthr = storage().params.read_cov_threshold;
-        // FIXME reduce code duplication
         if (kthr || rthr) {
             using KmerFilter = utils::StoringTypeFilter<storing_type>;
 
@@ -156,23 +155,16 @@ public:
             INFO("Building k-mer coverage histogram");
             FillCoverageHistogram(cqf, kplusone, read_streams, std::max(kthr, rthr), KmerFilter());
 
-            auto wstreams = io::CovFilteringWrap(read_streams, kplusone, cqf, rthr);
-            utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
-                                            utils::StoringTypeFilter<storing_type>>
-                    splitter(storage().workdir, index.k() + 1, 0,
-                             wstreams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
-                             buffer_size);
-            storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
-            storage().counter->CountAll(nthreads, nthreads, /* merge */false);
-        } else {
-            utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
-                                            utils::StoringTypeFilter<storing_type>>
-                    splitter(storage().workdir, index.k() + 1, 0,
-                             read_streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
-                             buffer_size);
-            storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
-            storage().counter->CountAll(nthreads, nthreads, /* merge */false);
+            read_streams = io::CovFilteringWrap(read_streams, kplusone, cqf, rthr);
         }
+
+        utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
+                                        utils::StoringTypeFilter<storing_type>>
+                splitter(storage().workdir, index.k() + 1, 0,
+                         read_streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
+                         buffer_size);
+        storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
+        storage().counter->CountAll(nthreads, nthreads, /* merge */false);
     }
 
     void load(debruijn_graph::conj_graph_pack&,
