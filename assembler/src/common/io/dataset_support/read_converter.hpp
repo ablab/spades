@@ -18,7 +18,6 @@ namespace io {
 
 typedef debruijn_graph::config::LibraryData LibraryData;
 typedef SequencingLibrary<LibraryData> SequencingLibraryT;
-typedef DataSet<LibraryData> dataset;
 
 class ReadConverter {
 
@@ -205,7 +204,7 @@ BinarySingleStreams single_binary_readers(SequencingLibraryT &lib,
 }
 
 inline BinarySingleStreams
-single_binary_readers_for_libs(dataset& dataset_info,
+single_binary_readers_for_libs(DataSet<LibraryData>& dataset_info,
                                const std::vector<size_t>& libs,
                                bool followed_by_rc = true,
                                bool including_paired_reads = true) {
