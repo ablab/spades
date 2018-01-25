@@ -15,7 +15,7 @@
 
 #define MEM_F_SOFTCLIP  0x200
 
-#define _set_pac(pac, l, c) ((pac)[(l)>>2] |= (c)<<((~(l)&3)<<1))
+#define _set_pac(pac, l, c) ((pac)[(l)>>2] |= uint8_t((c)<<((~(l)&3)<<1)))
 #define _get_pac(pac, l) ((pac)[(l)>>2]>>((~(l)&3)<<1)&3)
 extern "C" {
 int is_bwt(uint8_t *T, bwtint_t n);
