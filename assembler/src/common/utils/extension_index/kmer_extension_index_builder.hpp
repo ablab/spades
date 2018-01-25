@@ -13,26 +13,6 @@
 namespace utils {
 
 class DeBruijnExtensionIndexBuilder {
-private:
-    template<class BaseFilter>
-    class CQFKmerFilterWrapper {
-      public:
-        CQFKmerFilterWrapper(BaseFilter filter,
-                             const CQFKmerFilter &cqf, unsigned thr)
-                : filter_(filter), cqf_(cqf), thr_(thr) {}
-
-        bool filter(const RtSeq &kmer) const {
-            if (!filter_.filter(kmer))
-                return false;
-            return cqf_.lookup(kmer) >= thr_;
-        }
-
-      private:
-        BaseFilter filter_;
-        const CQFKmerFilter &cqf_;
-        unsigned thr_;
-    };
-
 public:
     template<class Index>
     void FillExtensionsFromIndex(const std::string &KPlusOneMersFilename,
