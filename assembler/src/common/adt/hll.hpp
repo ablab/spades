@@ -31,7 +31,6 @@ public:
     /// @tparam T The type of the element to insert.
     /// @param o An instance of type `T`.
     void add(const T &o) {
-      VERIFY(hasher_);
       digest d = hasher_(o);
       add(d);
     }

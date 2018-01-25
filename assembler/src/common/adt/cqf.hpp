@@ -50,12 +50,6 @@ class cqf {
 
     bool add(digest d, uint64_t count = 1,
              bool lock = true, bool spin = true) {
-        /* if (full()) {
-            std::lock_guard<std::mutex> lock(resize_mutex_);
-            if (full())
-                expand();
-                }*/ 
-
         return qf_insert(&qf_, d & range_mask_, 0, count, lock, spin);
     }
 
@@ -73,7 +67,6 @@ class cqf {
 
     bool add(const T &o, uint64_t count = 1,
              bool lock = true, bool spin = true) {
-        VERIFY(hasher_);
         digest d = hasher_(o);
         return add(d, count, lock, spin);
     }
