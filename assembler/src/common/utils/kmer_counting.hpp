@@ -8,7 +8,7 @@
 
 namespace utils {
 
-typedef qf::cqf<RtSeq> CQFKmerFilter;
+typedef qf::cqf CQFKmerFilter;
 //typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
 typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
 
@@ -45,10 +45,10 @@ public:
 };
 
 class HllProcessor {
-    hll::hll<RtSeq> &hll_;
+    hll::hll<> &hll_;
 public:
-    HllProcessor(hll::hll<RtSeq> &hll) : hll_(hll) {
-    }
+    HllProcessor(hll::hll<> &hll)
+            : hll_(hll) { }
 
     void ProcessKmer(const RtSeq &/*kmer*/, uint64_t hash) {
         hll_.add(hash);
@@ -125,11 +125,7 @@ size_t EstimateCardinality(unsigned k, ReadStream &streams,
                            const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
     unsigned nthreads = (unsigned) streams.size();
     SeqHasher hasher(k);
-
-    std::vector<hll::hll<RtSeq>> hlls(nthreads);
-    //hlls.reserve(nthreads);
-    //for (unsigned i = 0; i < nthreads; ++i)
-    //    hlls.emplace_back([&](const RtSeq &s) { return hasher.hash(s); });
+    std::vector<hll::hll<>> hlls(nthreads);
 
     streams.reset();
     size_t reads = 0, n = 15;
@@ -163,12 +159,12 @@ size_t EstimateCardinality(unsigned k, ReadStream &streams,
 }
 
 template<class ReadStream, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
-void FillCoverageHistogram(qf::cqf<RtSeq> &cqf, unsigned k, ReadStream &streams,
+void FillCoverageHistogram(qf::cqf &cqf, unsigned k, ReadStream &streams,
                            unsigned thr, const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
     unsigned nthreads = (unsigned) streams.size();
 
     // Create fallback per-thread CQF using same hash_size (important!) but different # of slots
-    std::vector<qf::cqf<RtSeq>> local_cqfs;
+    std::vector<qf::cqf> local_cqfs;
     local_cqfs.reserve(nthreads);
     for (unsigned i = 0; i < nthreads; ++i)
         local_cqfs.emplace_back(1 << 16, cqf.hash_bits());

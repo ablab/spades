@@ -6,7 +6,7 @@
 #include <cmath>
 namespace hll {
 
-template<class T, unsigned precision = 24>
+template<unsigned precision = 24>
 class hll {
     static constexpr uint64_t m_ = 1ull << precision;
     static constexpr uint64_t mask_ = (m_ - 1) << (64 - precision);
@@ -22,18 +22,8 @@ public:
     /// The hash digest type.
     typedef uint64_t digest;
 
-    /// The hash function type.
-    typedef std::function<digest(const T)> hasher;
-
-    hll(hasher h = nullptr)
-      : hasher_(std::move(h)), data_(1ull << precision, 0) { }
-
-    /// @tparam T The type of the element to insert.
-    /// @param o An instance of type `T`.
-    void add(const T &o) {
-      digest d = hasher_(o);
-      add(d);
-    }
+    hll()
+      : data_(1ull << precision, 0) { }
 
     void add(digest d) {
       // Split digest into parts
@@ -63,8 +53,30 @@ public:
     }
 
 private:
-    hasher hasher_;
     std::vector<uint8_t> data_;
+};
+
+template<class T, unsigned precision = 24>
+class hll_with_hasher : public hll<precision> {
+public:
+    using typename hll<precision>::digest;
+    using hll<precision>::add;
+
+    /// The hash function type.
+    typedef std::function<digest(const T)> hasher;
+
+    hll_with_hasher(hasher h = nullptr)
+            : hasher_(std::move(h)) { }
+
+    /// @tparam T The type of the element to insert.
+    /// @param o An instance of type `T`.
+    void add(const T &o) {
+      digest d = hasher_(o);
+      add(d);
+    }
+
+  private:
+    hasher hasher_;
 };
 
 } // hll

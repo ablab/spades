@@ -150,7 +150,7 @@ public:
             size_t kmers = EstimateCardinality(kplusone, read_streams, KmerFilter());
 
             // Create main CQF using # of slots derived from estimated # of k-mers
-            qf::cqf<RtSeq> cqf(kmers);
+            qf::cqf cqf(kmers);
 
             INFO("Building k-mer coverage histogram");
             FillCoverageHistogram(cqf, kplusone, read_streams, std::max(kthr, rthr), KmerFilter());

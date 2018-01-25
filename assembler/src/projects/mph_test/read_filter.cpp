@@ -45,13 +45,13 @@ void Transfer(IS &input, OS &output) {
     }
 }
 
-bool WellCovered(const io::SingleRead &r, unsigned k, unsigned thr, const qf::cqf<RtSeq> &cqf) {
+bool WellCovered(const io::SingleRead &r, unsigned k, unsigned thr, const qf::cqf &cqf) {
     typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
     return r.size() >= k && io::CountMedianMlt<SeqHasher>(r.sequence(), k, cqf) > thr;
 }
 
 int main(int argc, char* argv[]) {
-    typedef qf::cqf<RtSeq> CQFKmerFilter;
+    typedef qf::cqf CQFKmerFilter;
     //typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
     utils::perf_counter pc;
 

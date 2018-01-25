@@ -187,7 +187,7 @@ class KMerDataFiller {
 };
 
 class KMerMultiplicityCounter {
-  qf::cqf<KMer> cqf_;
+  qf::cqf_with_hasher<KMer> cqf_;
 
   public:
   KMerMultiplicityCounter(size_t size)
@@ -222,7 +222,7 @@ class KMerMultiplicityCounter {
 };
 
 class KMerCountEstimator {
-  std::vector<hll::hll<KMer>> hll_;
+  std::vector<hll::hll_with_hasher<KMer>> hll_;
 
   public:
   KMerCountEstimator(unsigned thread_num) {

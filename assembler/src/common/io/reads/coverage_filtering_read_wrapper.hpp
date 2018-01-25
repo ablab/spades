@@ -15,7 +15,7 @@
 
 namespace io {
 
-typedef qf::cqf<RtSeq> CQFKmerFilter;
+typedef qf::cqf CQFKmerFilter;
 //typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
 typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
 

@@ -8,7 +8,6 @@
 
 namespace qf {
 
-template<class T>
 class cqf {
     cqf(const cqf&) = delete;
     cqf& operator=(const cqf&) = delete;
@@ -17,13 +16,10 @@ class cqf {
     /// The hash digest type.
     typedef uint64_t digest;
 
-    /// The hash function type.
-    typedef std::function<digest(const T&)> hasher;
-
     ~cqf() { qf_destroy(&qf_); }
 
-    cqf(uint64_t maxn, hasher h = nullptr)
-            : hasher_(std::move(h)), insertions_(0) {
+    cqf(uint64_t maxn)
+            : insertions_(0) {
         unsigned qbits = unsigned(ceil(log2(maxn))) + 1;
         num_hash_bits_ = qbits + 8;
         num_slots_ = (1ULL << qbits);
@@ -32,9 +28,8 @@ class cqf {
         assert((range_mask_ & qf_.metadata->range) == 0);
         fprintf(stderr, "%llu %llu %u %llu\n", maxn, num_slots_, num_hash_bits_, qf_.metadata->range);
     }
-    cqf(uint64_t num_slots, unsigned hash_bits, hasher h = nullptr)
-            : hasher_(std::move(h)),
-              num_hash_bits_(hash_bits), num_slots_(num_slots), insertions_(0) {
+    cqf(uint64_t num_slots, unsigned hash_bits)
+            : num_hash_bits_(hash_bits), num_slots_(num_slots), insertions_(0) {
         qf_init(&qf_, num_slots_, num_hash_bits_, 0, 239);
         range_mask_ = qf_.metadata->range - 1;
         assert((range_mask_ & qf_.metadata->range) == 0);
@@ -42,11 +37,6 @@ class cqf {
     }
 
     cqf(cqf&&) noexcept = default;
-
-    void replace_hasher(hasher h) {
-        hasher_ = std::move(h);
-        clear();
-    }
 
     bool add(digest d, uint64_t count = 1,
              bool lock = true, bool spin = true) {
@@ -65,13 +55,7 @@ class cqf {
         num_slots_ = 2 * num_slots_;
     }
 
-    bool add(const T &o, uint64_t count = 1,
-             bool lock = true, bool spin = true) {
-        digest d = hasher_(o);
-        return add(d, count, lock, spin);
-    }
-
-    void merge(cqf<T> &other) {
+    void merge(cqf &other) {
         merge(&qf_, &other.qf_);
         other.clear();
     }
@@ -96,11 +80,6 @@ class cqf {
         return qf_count_key_value(&qf_, d & range_mask_, 0, lock);
     }
 
-    size_t lookup(const T &o, bool lock = false) const {
-        digest d = hasher_(o);
-        return lookup(d, lock);
-    }
-
 private:
     void merge(QF *qf, QF *other) {
         QFi other_cfi;
@@ -114,12 +93,47 @@ private:
         }
     }
 
-    hasher hasher_;
     QF qf_;
     unsigned num_hash_bits_;
     uint64_t num_slots_;
     size_t insertions_;
     uint64_t range_mask_;
+};
+
+template<class T>
+class cqf_with_hasher : public cqf {
+  public:
+    using cqf::digest;
+    using cqf::add;
+    using cqf::lookup;
+
+    /// The hash function type.
+    typedef std::function<digest(const T&)> hasher;
+
+    cqf_with_hasher(uint64_t maxn, hasher h = nullptr)
+            : cqf(maxn), hasher_(std::move(h)) {}
+
+    cqf_with_hasher(uint64_t num_slots, unsigned hash_bits, hasher h = nullptr)
+            : hasher_(std::move(h)), cqf(num_slots, hash_bits) {}
+
+    void replace_hasher(hasher h) {
+        hasher_ = std::move(h);
+        clear();
+    }
+
+    bool add(const T &o, uint64_t count = 1,
+             bool lock = true, bool spin = true) {
+        digest d = hasher_(o);
+        return add(d, count, lock, spin);
+    }
+
+    size_t lookup(const T &o, bool lock = false) const {
+        digest d = hasher_(o);
+        return lookup(d, lock);
+    }
+
+private:
+    hasher hasher_;
 };
 
 
