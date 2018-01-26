@@ -110,7 +110,7 @@ namespace scaffold_graph_utils {
             size_t num_threads = cfg::get().max_threads;
             INFO("Constructing barcode score scaffold graph, score threshold: " << score_threshold);
             path_extend::scaffold_graph::ScoreFunctionScaffoldGraphConstructor
-                scaffold_graph_constructor(graph, scaffold_graph, score_function, score_threshold, 16);
+                scaffold_graph_constructor(graph, scaffold_graph, score_function, score_threshold, num_threads);
             return *(scaffold_graph_constructor.Construct());
         }
 
@@ -132,8 +132,7 @@ namespace scaffold_graph_utils {
                                                                 shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor,
                                                                 shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor,
                                                                 const path_extend::ScaffolderParams& params,
-                                                                const debruijn_graph::conj_graph_pack& gp,
-                                                                const path_extend::ScaffoldingUniqueEdgeStorage& storage) {
+                                                                const debruijn_graph::conj_graph_pack& gp) {
             const size_t max_threads = cfg::get().max_threads;
             path_extend::CompositeConnectionConstructorCaller composite_constructor_caller(gp, main_extractor,
                                                                                            long_edge_extractor,

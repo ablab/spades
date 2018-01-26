@@ -91,7 +91,7 @@ bool ReadCloudMiddleDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph
         long_edge_extractor_->GetIntersection(scaffold_edge.getStart(), scaffold_edge.getEnd());
     DEBUG("Intersection size: " << barcode_intersection.size());
     auto long_gap_dijkstra = CreateLongGapCloserDijkstra(g, params_.distance_, unique_storage_,
-                                                         short_edge_extractor_, barcode_intersection,
+                                                         short_edge_extractor_, long_edge_extractor_,
                                                          scaffold_edge.getStart(), scaffold_edge.getEnd(),
                                                          params_.edge_pair_gap_closer_params_);
     DEBUG("Created dijkstra");
@@ -316,10 +316,12 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
     auto extension_chooser = ConstructSimpleExtensionChooser();
     auto start = scaffold_edge.getStart();
     auto end = scaffold_edge.getEnd();
+    auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
+        long_edge_extractor_->GetTailEntry(start), long_edge_extractor_->GetHeadEntry(end), short_edge_extractor_);
     auto long_gap_cloud_predicate = make_shared<path_extend::LongEdgePairGapCloserPredicate>(gp_.g, short_edge_extractor_,
                                                                                              predicate_params_,
                                                                                              start, end,
-                                                                                             barcode_extractor_->GetIntersection(start, end));
+                                                                                             pair_entry_extractor);
     size_t length_threshold = unique_storage_.min_length();
 
     auto length_predicate = make_shared<path_extend::LengthChecker>(length_threshold, gp_.g);
@@ -441,7 +443,7 @@ CompositeConnectionPredicate::CompositeConnectionPredicate(
         const LongEdgePairGapCloserParams &predicate_params_) :
     gp_(gp_),
     short_edge_extractor_(short_edge_extractor),
-    barcode_extractor_(barcode_extractor_),
+    long_edge_extractor_(barcode_extractor_),
     unique_storage_(unique_storage_),
     clustered_indices_(clustered_indices_),
     length_bound_(length_bound_),

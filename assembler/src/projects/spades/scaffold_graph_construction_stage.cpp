@@ -5,6 +5,8 @@ void debruijn_graph::ScaffoldGraphConstructionStage::run(debruijn_graph::conj_gr
     INFO("Scaffold graph construction started");
     const size_t small_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
     const size_t large_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
+    auto barcode_info_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(graph_pack.barcode_mapper_ptr, graph_pack.g);
+    INFO(barcode_info_extractor->GetTotalNumberOfBarcodes() << " barcodes");
     path_extend::ScaffoldGraphStorageConstructor storage_constructor(small_length_threshold, large_length_threshold, graph_pack);
     INFO("Constructing storage");
     auto storage = storage_constructor.ConstructStorage();
