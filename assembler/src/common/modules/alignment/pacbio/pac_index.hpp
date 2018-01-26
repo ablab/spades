@@ -669,6 +669,15 @@ public:
             DEBUG (paths.size() << " paths available");
             return std::vector<EdgeId>(0);
         }
+        // else {
+        //     string cur_string = s_add + PathToString(paths[best_path_ind]) + e_add;
+        //     INFO("cur_string: " << cur_string <<"\n seq_string " << seq_string);
+        //     string str = "";
+        //     for (const EdgeId &e: paths[best_path_ind]) {
+        //         str += std::to_string(e.int_id()) + ",";
+        //     }
+        //     INFO("edges: " << str);
+        // }
         if (additional_debug) {
             TRACE("best score found! Path " <<best_path_ind <<" score "<< best_score);
         }

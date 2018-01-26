@@ -201,21 +201,25 @@ class DijkstraGapFiller {
             string tmp = g_.EdgeNucls(gs.e).str();
             string edge_str = tmp.substr(gs.start_pos, gs.end_pos - gs.start_pos);
             //INFO("TIME.Substrs=" << perf.time());
+            // INFO("Add edge edge_id=" << gs.e.int_id() << " ed=" << ed << " seq_b=" << prev_state.i + 1 << " seq_e=" << prev_state.i + 1 + end 
+            //                                                 << " edge_b=" << gs.start_pos << " edge_e=" << gs.end_pos
+            //                                                 << " seq=" << seq_str << "\n edge=" << edge_str)
             vector<int> positions;
             vector<int> scores;
-            if (path_max_length_ - ed >= 0 && ss_.size() - (prev_state.i + 1) > 0){
+            if (path_max_length_ - ed >= 0) {
                 perf.reset();
-                SHWDistance(seq_str, edge_str, path_max_length_ - ed, positions, scores);
                 //INFO("TIME.SHWDistance=" << perf.time());
-                perf.reset();
                 if (path_max_length_ - ed >= (int) edge_str.size()) {
                     QueueState state(gs, prev_state.i);
                     Update(state, prev_state,  ed + (int) edge_str.size(), ed + (int) edge_str.size());
                 }
-                for (int i = 0; i < positions.size(); ++ i) {
-                    if (positions[i] >= 0 && scores[i] >= 0) {
-                        QueueState state(gs, prev_state.i + 1 + positions[i]);
-                        Update(state, prev_state, ed + scores[i], ed + scores[i]);
+                if (ss_.size() - (prev_state.i + 1) > 0) {
+                    SHWDistance(seq_str, edge_str, path_max_length_ - ed, positions, scores);
+                    for (int i = 0; i < positions.size(); ++ i) {
+                        if (positions[i] >= 0 && scores[i] >= 0) {
+                            QueueState state(gs, prev_state.i + 1 + positions[i]);
+                            Update(state, prev_state, ed + scores[i], ed + scores[i]);
+                        }
                     }
                 }
                 //INFO("TIME.QueueUpdate=" << perf.time());
@@ -247,6 +251,7 @@ class DijkstraGapFiller {
             while (q_.size() > 0) {
                 QueueState cur_state = q_.begin()->second;
                 int ed = dist_[cur_state];
+                //INFO("cur ed=" << ed << " edge=" << cur_state.gs.e.int_id())
                 if (q_.size() > 1000000 || i > 1000000) {
                     INFO("queue size is too big")
                     if (visited_.count(end_qstate) > 0){
@@ -278,6 +283,9 @@ class DijkstraGapFiller {
                             string seq_str = ss_.Subseq(cur_state.i + 1, ss_.size() ).str();
                             string tmp = g_.EdgeNucls(e).str();
                             string edge_str = tmp.substr(0, end_p_);
+                            // INFO("End edge_id=" << e.int_id() << " ed=" << ed << " seq_b=" << cur_state.i + 1 << " seq_e=" << ss_.size() 
+                            //                                 << " edge_b=" << 0 << " edge_e=" << end_p_
+                            //                                 << " seq=" << seq_str << "\n edge=" << edge_str)
                             //INFO("TIME.Substrs=" << perf.time());
                             perf.reset();
                             int score = NWDistance(seq_str, edge_str, path_max_length_ - ed);
