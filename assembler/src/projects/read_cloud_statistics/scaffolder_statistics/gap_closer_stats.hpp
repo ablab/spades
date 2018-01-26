@@ -469,8 +469,6 @@ class GapCloserPathClusterAnalyzer: public read_cloud_statistics::StatisticProce
             }
             path_extend::SubgraphEdgeChecker edge_checker;
             auto current_graph = subgraph;
-            size_t builder_counter = 0;
-            size_t initial_edges = current_graph.GetEdgesCount();
             auto source = edge.getStart();
             auto sink = edge.getEnd();
             DEBUG("Cleaning graph using pe predicate builder" );
@@ -611,13 +609,17 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
             path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge scaffold_edge(start, end);
             path_extend::LongEdgePairGapCloserParams params(count_threshold_, large_length_threshold_, share_threshold,
                                                             small_length_threshold_, true);
-            auto shord_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_);
+            auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_);
             ScaffoldVertex start_vertex = scaffold_edge.getStart();
             ScaffoldVertex end_vertex = scaffold_edge.getEnd();
+            auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
+                long_edge_extractor_->GetTailEntry(start_vertex),
+                long_edge_extractor_->GetHeadEntry(end_vertex),
+                short_edge_extractor);
             auto gap_closer_predicate =
-                make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, shord_edge_extractor, params,
+                make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, short_edge_extractor, params,
                                                                          start_vertex, end_vertex,
-                                                                         long_edge_extractor_->GetIntersection(start_vertex, end_vertex));
+                                                                         pair_entry_extractor);
             result += CountFailedEdgesWithPredicate(path, last_pos, path.size(), gap_closer_predicate);
             result += CountFailedEdgesWithPredicate(path, 0, first_pos, gap_closer_predicate);
         }
@@ -635,10 +637,12 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
         auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_);
         ScaffoldVertex start_edge = scaffold_edge.getStart();
         ScaffoldVertex end_edge = scaffold_edge.getEnd();
+        auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
+            long_edge_extractor_->GetTailEntry(start_edge), long_edge_extractor_->GetHeadEntry(end_edge), short_edge_extractor);
         auto gap_closer_predicate =
             make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, short_edge_extractor, params,
                                                                      start_edge, end_edge,
-                                                                     long_edge_extractor_->GetIntersection(start_edge, end_edge));
+                                                                     pair_entry_extractor);
         return CountFailedEdgesWithPredicate(reference_path, left, right, gap_closer_predicate);
     }
 

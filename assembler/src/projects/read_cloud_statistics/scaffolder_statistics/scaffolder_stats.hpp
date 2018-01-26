@@ -51,6 +51,116 @@ struct CloudConnectionStats: public read_cloud_statistics::Statistic {
     }
 };
 
+struct ShortEdgeEntry {
+  const size_t id_;
+  const size_t left_size_;
+  const size_t right_size_;
+  const size_t barcodes_;
+  const size_t left_intersection_;
+  const size_t right_intersection_;
+  const double left_coverage_;
+  const double right_coverage_;
+  const size_t length_;
+  const double coverage_;
+  bool correct_;
+
+  ShortEdgeEntry(size_t id_,
+                 size_t left_size_,
+                 size_t right_size_,
+                 size_t barcodes_,
+                 size_t left_intersection_,
+                 size_t right_intersection_,
+                 double left_coverage_,
+                 double right_coverage_,
+                 size_t length_,
+                 double coverage_,
+                 bool correct_)
+      : id_(id_),
+        left_size_(left_size_),
+        right_size_(right_size_),
+        barcodes_(barcodes_),
+        left_intersection_(left_intersection_),
+        right_intersection_(right_intersection_),
+        left_coverage_(left_coverage_),
+        right_coverage_(right_coverage_),
+        length_(length_),
+        coverage_(coverage_),
+        correct_(correct_) {}
+
+
+};
+
+struct ShortEdgeDataset: public read_cloud_statistics::Statistic {
+ private:
+    std::vector<ShortEdgeEntry> dataset_;
+
+ public:
+    explicit ShortEdgeDataset(const vector<ShortEdgeEntry> &dataset_)
+        : Statistic("short_edge_dataset"), dataset_(dataset_) {}
+
+    void Serialize(const string &path) override {
+        ofstream fout(path);
+        fout << "Id,LeftSize,RightSize,Barcodes,LeftInter,RightInter,LeftCov,RightCov,Length,Coverage,Correct" << std::endl;
+        for (const auto& entry: dataset_) {
+            fout << entry.id_ << "," << entry.left_size_ << "," << entry.right_size_ << ","
+                 << entry.barcodes_ << "," << entry.left_intersection_ << "," << entry.right_intersection_ << ","
+                 << entry.left_coverage_ << "," << entry.right_coverage_ << "," << entry.length_
+                 << "," << entry.coverage_ << "," << entry.correct_ << std::endl;
+        }
+    }
+};
+
+struct LongEdgeEntry {
+  size_t id_;
+  size_t length_;
+  double coverage_;
+  size_t barcodes_;
+
+  LongEdgeEntry(size_t id_, size_t length_, double coverage_, size_t barcodes_)
+      : id_(id_), length_(length_), coverage_(coverage_), barcodes_(barcodes_) {}
+};
+
+struct LongEdgePairEntry {
+  LongEdgeEntry first_entry_;
+  LongEdgeEntry second_entry_;
+  size_t intersection_;
+  size_t distance_;
+  size_t genome_;
+  bool correct_;
+
+  LongEdgePairEntry(const LongEdgeEntry &first_entry_,
+                    const LongEdgeEntry &second_entry_,
+                    size_t intersection_,
+                    size_t distance_,
+                    size_t genome_,
+                    bool correct_)
+      : first_entry_(first_entry_), second_entry_(second_entry_), intersection_(intersection_),
+        distance_(distance_), genome_(genome_), correct_(correct_) {}
+};
+
+struct LongEdgePairDataset: public read_cloud_statistics::Statistic {
+ private:
+    std::vector<LongEdgePairEntry> dataset_;
+
+ public:
+    explicit LongEdgePairDataset(const vector<LongEdgePairEntry> &dataset_)
+        : Statistic("long_edge_dataset"), dataset_(dataset_) {}
+
+    void Serialize(const string &path) override {
+        ofstream fout(path);
+        fout <<
+        "LeftId,LeftLength,LeftCov,LeftSize,RightId,RightLength,RightCov,RightSize,Intersection,Distance,Genome,Correct"
+        << std::endl;
+        for (const auto& entry: dataset_) {
+            fout << entry.first_entry_.id_ << "," << entry.first_entry_.length_ << "," << entry.first_entry_.coverage_
+                 << "," << entry.first_entry_.barcodes_ << "," << entry.second_entry_.id_
+                 << "," << entry.second_entry_.length_ << "," << entry.second_entry_.coverage_
+                 << "," << entry.second_entry_.barcodes_ << "," << entry.intersection_ << "," << entry.distance_
+                 << "," << entry.genome_ << "," << entry.correct_ << std::endl;
+        }
+    }
+};
+
 struct LengthConnectivityStats : public read_cloud_statistics::Statistic {
  private:
   std::map<size_t, BarcodedPathConnectivityStats> length_to_stats_;
@@ -253,15 +363,14 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
         auto filtered_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths_);
 
-//        auto length_connectivity_stats = make_shared<LengthConnectivityStats>(GetPureLengthConnectivityStatistics(
-//            reference_paths_,
-//            filtered_paths));
-//        AddStatistic(length_connectivity_stats);
+//        auto short_edge_dataset = make_shared<ShortEdgeDataset>(GetShortEdgeDataset(reference_paths_, filtered_paths));
+//        AddStatistic(short_edge_dataset);
 
-        INFO(score_scaffold_graph_.VertexCount() << " vertices and " << score_scaffold_graph_.EdgeCount() << " edges in score graph");
+        auto long_edge_dataset = make_shared<LongEdgePairDataset>(GetLongEdgeDataset(filtered_paths));
+        AddStatistic(long_edge_dataset);
 
-        auto cloud_connection_stats = make_shared<CloudConnectionStats>(GetCloudConnectionStats(filtered_paths, score_scaffold_graph_));
-        AddStatistic(cloud_connection_stats);
+//        auto cloud_connection_stats = make_shared<CloudConnectionStats>(GetCloudConnectionStats(filtered_paths, score_scaffold_graph_));
+//        AddStatistic(cloud_connection_stats);
 
 //        auto split_intersection_stats = make_shared<NextSplitIntersectionStats>(GetNextSplitStats(filtered_paths));
 //        AddStatistic(split_intersection_stats);
@@ -272,24 +381,23 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
 //        auto score_stats = make_shared<ScoreStats>(GetScoreStats(filtered_paths));
 //        AddStatistic(score_stats);
 //
-        auto score_distribution_info = make_shared<ScoreDistributionInfo>(GetScoreDistributionInfo(filtered_paths));
-        AddStatistic(score_distribution_info);
+//        auto score_distribution_info = make_shared<ScoreDistributionInfo>(GetScoreDistributionInfo(filtered_paths));
+//        AddStatistic(score_distribution_info);
 
 //        auto distance_threshold_failed = make_shared<DistanceThresholdFailedStats>(GetDistanceThresholdStats(filtered_paths));
 //        AddStatistic(distance_threshold_failed);
 
-        auto score_pair_stats = make_shared<ScorePairStats>(GetScorePairStats(unique_storage_, initial_scaffold_graph_));
-        AddStatistic(score_pair_stats);
+//        auto score_pair_stats = make_shared<ScorePairStats>(GetScorePairStats(initial_scaffold_graph_));
+//        AddStatistic(score_pair_stats);
 
     }
 
  private:
-
     CloudConnectionStats GetCloudConnectionStats(const vector<vector<EdgeWithMapping>>& reference_paths,
                                                  const ScaffoldGraph& score_scaffold_graph) {
         const double min_threshold = 0.0;
-        const double max_threshold = 0.001;
-        const double threshold_step = 0.0001;
+        const double max_threshold = 5.0;
+        const double threshold_step = 0.5;
         vector<double> thresholds;
         for (double t = min_threshold; math::le(t, max_threshold); t += threshold_step) {
             thresholds.push_back(t);
@@ -322,22 +430,13 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         return stats;
     }
 
-    ScorePairStats GetScorePairStats(const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
-                                     const ScaffoldGraph& initial_scaffold_graph) {
+    ScorePairStats GetScorePairStats(const ScaffoldGraph& initial_scaffold_graph) {
         size_t count_threshold = scaff_params_.count_threshold_;
         size_t tail_threshold = scaff_params_.tail_threshold_;
         path_extend::NormalizedBarcodeScoreFunction score_function(g_, long_edge_extractor_, count_threshold, tail_threshold);
         typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
         std::map<std::pair<ScaffoldVertex, ScaffoldVertex>, double> result;
         vector<path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge> scaffold_edges;
-//        for (const auto& first_edge: unique_storage) {
-//            for (const auto& second_edge: unique_storage) {
-//                if (first_edge != second_edge and g_.conjugate(first_edge) != second_edge) {
-//                    path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge edge(first_edge, second_edge);
-//                    scaffold_edges.push_back(edge);
-//                }
-//            }
-//        }
         for (const ScaffoldGraph::ScaffoldEdge &edge: initial_scaffold_graph.edges()) {
             scaffold_edges.push_back(edge);
         }
@@ -502,6 +601,82 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         return distribution_pair;
     }
 
+    LongEdgePairEntry GetLongEdgePairEntry (const EdgeId& first, const EdgeId& second, size_t distance, size_t path_id, bool correct) {
+        LongEdgeEntry first_entry(first.int_id(), g_.length(first), g_.coverage(first), long_edge_extractor_->GetTailSize(first));
+        LongEdgeEntry second_entry(second.int_id(), g_.length(second), g_.coverage(second), long_edge_extractor_->GetHeadSize(second));
+        size_t intersection = long_edge_extractor_->GetIntersectionSize(first, second);
+        LongEdgePairEntry result(first_entry, second_entry, intersection, distance, path_id, correct);
+        return result;
+    }
+
+    LongEdgePairDataset GetLongEdgeDataset(const vector<vector<EdgeWithMapping>>& reference_paths) {
+        INFO("Getting long edge dataset")
+        path_extend::validation::GeneralTransitionStorageBuilder forward_transition_builder(g_, 1, false, false);
+        auto reference_transition_storage = forward_transition_builder.GetTransitionStorage(reference_paths);
+        const size_t close_distance = 5;
+        path_extend::validation::GeneralTransitionStorageBuilder close_transition_builder(g_, close_distance, true, true);
+        auto close_transition_storage = close_transition_builder.GetTransitionStorage(reference_paths);
+        auto covered_edges_set = reference_transition_storage.GetCoveredEdges();
+
+        LongEdgePathIndex long_edge_path_index = BuildLongEdgePathIndex(covered_edges_set, reference_paths);
+        auto distance_map = GetDistanceMap(reference_paths);
+        vector<EdgeId> reference_edges(covered_edges_set.begin(), covered_edges_set.end());
+        INFO("Reference edges size: " << reference_edges.size());
+
+        vector<LongEdgePairEntry> dataset;
+        auto correct_entries = GetCorrectEntries(reference_transition_storage, long_edge_path_index, distance_map);
+        std::move(correct_entries.begin(), correct_entries.end(), std::back_inserter(dataset));
+
+        INFO(dataset.size() << " correct pairs");
+
+        const size_t sample_size = 2000;
+        std::random_device rd;
+        std::mt19937 generator(rd());
+        size_t range_size = reference_edges.size();
+        INFO("Covered edges: " << range_size);
+        VERIFY(range_size > 0);
+        std::uniform_int_distribution<size_t> distribution(0, range_size - 1);
+        size_t counter = 0;
+        size_t random_pairs = 0;
+        while (counter <= sample_size) {
+            size_t first_idx = distribution(generator);
+            size_t second_idx = distribution(generator);
+            EdgeId first_edge = reference_edges[first_idx];
+            EdgeId second_edge = reference_edges[second_idx];
+            if (AreNotClose(close_transition_storage, first_edge, second_edge)) {
+                dataset.push_back(GetLongEdgePairEntry(first_edge, second_edge, 1000000, 0, false));
+            }
+            ++counter;
+            if (counter % (sample_size / 10) == 0) {
+                INFO("Processed " << counter << " pairs out of " << sample_size);
+                INFO(random_pairs << " random pairs.");
+            }
+        }
+        LongEdgePairDataset result(dataset);
+        return result;
+    }
+
+    vector<LongEdgePairEntry> GetCorrectEntries(
+            const path_extend::validation::ContigTransitionStorage &reference_transition_storage,
+            const LongEdgePathIndex &long_edge_path_index,
+            const std::map<path_extend::transitions::Transition, size_t> &distance_map) {
+        vector<LongEdgePairEntry> correct_entries;
+        for (const auto& transition: reference_transition_storage) {
+            size_t first_path_id = long_edge_path_index.at(transition.first_).path_id_;
+            size_t second_path_id = long_edge_path_index.at(transition.second_).path_id_;
+            if (first_path_id != second_path_id) {
+                WARN("Correct transition from different paths!");
+            } else {
+                if (distance_map.find(transition) != distance_map.end()) {
+                    size_t distance = distance_map.at(transition);
+                    correct_entries.push_back(GetLongEdgePairEntry(transition.first_, transition.second_, distance,
+                                                                   (first_path_id / 2) + 1, true));
+                }
+            }
+        }
+        return correct_entries;
+    }
+
     bool AreNotClose(const path_extend::validation::ContigTransitionStorage& close_transition_storage,
                      const EdgeId& first, const EdgeId& second) const {
         bool are_close = first == second or g_.conjugate(first) == second or
@@ -603,12 +778,123 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         return middle_stats;
     }
 
+    ShortEdgeDataset GetShortEdgeDataset(const vector<vector<EdgeWithMapping>> &reference_paths,
+                                         const vector<vector<EdgeWithMapping>> &filtered_reference_paths) {
+        vector <vector<EdgeWithMapping>> current_paths = reference_paths;
+        path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
+        INFO("Getting short_edge_dataset");
+        unordered_set <EdgeId> long_edges;
+        for (const auto& path: filtered_reference_paths) {
+            for (const auto& ewm: path) {
+                long_edges.insert(ewm.edge_);
+            }
+        }
+        auto long_edge_path_index = BuildLongEdgePathIndex(long_edges, reference_paths);
+        path_extend::validation::StrictTransitionStorageBuilder transition_storage_builder;
+        auto transition_storage = transition_storage_builder.GetTransitionStorage(filtered_reference_paths);
+        auto entries = GetShortEdgeEntries(transition_storage, long_edge_path_index, reference_paths);
+        ShortEdgeDataset short_edge_dataset(entries);
+        return short_edge_dataset;
+    }
+
+    vector<ShortEdgeEntry> GetShortEdgeEntries(const path_extend::validation::ContigTransitionStorage &transition_storage,
+                                               const LongEdgePathIndex &long_edge_path_index,
+                                               const vector<vector<EdgeWithMapping>> &reference_paths) {
+        vector<ShortEdgeEntry> entries;
+        for (const auto& transition: transition_storage) {
+            EdgeId first = transition.first_;
+            EdgeId second = transition.second_;
+            VERIFY(long_edge_path_index.find(first) != long_edge_path_index.end());
+            VERIFY(long_edge_path_index.find(second) != long_edge_path_index.end());
+            size_t first_path_id = long_edge_path_index.at(first).path_id_;
+            size_t second_path_id = long_edge_path_index.at(second).path_id_;
+            if (first_path_id != second_path_id) {
+//                WARN("Reference transition edges" << first.int_id() << " and " << second.int_id()
+//                                                  << "belong to different references. Skipping.");
+                continue;
+            }
+            const vector <EdgeWithMapping>& reference_path = reference_paths[first_path_id];
+            size_t first_pos = long_edge_path_index.at(first).position_;
+            size_t second_pos = long_edge_path_index.at(second).position_;
+            auto first_entry = long_edge_extractor_->GetTailEntry(first);
+            auto second_entry = long_edge_extractor_->GetHeadEntry(second);
+            auto correct_edges = GetEdgesBetweenPair(first_pos, second_pos, reference_path);
+            INFO(correct_edges.size() << " correct edges.");
+            auto random_edges = GetReachableEdges(first);
+            INFO(random_edges.size() << " random edges.");
+            for (const auto& edge: correct_edges) {
+                auto short_edge_entry = GetShortEdgeEntry(edge, first_entry, second_entry,
+                                                          g_.coverage(first), g_.coverage(second), true);
+                entries.push_back(short_edge_entry);
+            }
+            for (const auto& edge: random_edges) {
+                if (correct_edges.find(edge) == correct_edges.end()) {
+                    auto short_edge_entry = GetShortEdgeEntry(edge, first_entry, second_entry,
+                                                              g_.coverage(first), g_.coverage(second), false);
+                    entries.push_back(short_edge_entry);
+                }
+            }
+        }
+        return entries;
+    }
+
+    unordered_set<EdgeId> GetEdgesBetweenPair(size_t first_pos, size_t second_pos,
+                                              const vector<EdgeWithMapping> &reference_path) {
+        unordered_set<EdgeId> correct_edges;
+        for (size_t i = first_pos + 1; i < second_pos; ++i) {
+            EdgeId middle = reference_path[i].edge_;
+            correct_edges.insert(middle);
+        }
+        return correct_edges;
+    }
+
+    unordered_set<EdgeId> GetReachableEdges(const EdgeId &long_edge) {
+        const size_t LENGTH_BOUND = 40000;
+        unordered_set<EdgeId> reached_edges;
+        auto unique_dijkstra = CreateUniqueDijkstra(g_, LENGTH_BOUND, unique_storage_);
+        unique_dijkstra.Run(g_.EdgeEnd(long_edge));
+        for (const auto& reached_vertex: unique_dijkstra.ReachedVertices()) {
+            const auto& outgoing_edges = g_.OutgoingEdges(reached_vertex);
+            for (const auto& edge: outgoing_edges) {
+                reached_edges.insert(edge);
+            }
+        }
+        return reached_edges;
+    }
+
+    ShortEdgeEntry GetShortEdgeEntry(EdgeId short_edge,
+                                     const barcode_index::SimpleVertexEntry &left_entry,
+                                     const barcode_index::SimpleVertexEntry &right_entry,
+                                     double left_coverage,
+                                     double right_coverage,
+                                     bool correct) {
+        auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_ptr_);
+        size_t length = g_.length(short_edge);
+        double coverage = g_.coverage(short_edge);
+        size_t left_intersection = short_edge_extractor->GetIntersectionSize(short_edge, left_entry);
+        size_t right_intersection = short_edge_extractor->GetIntersectionSize(short_edge, right_entry);
+        size_t barcodes = short_edge_extractor->GetHeadSize(short_edge);
+        size_t left_size = left_entry.size();
+        size_t right_size = right_entry.size();
+        ShortEdgeEntry entry(short_edge.int_id(), left_size, right_size, barcodes, left_intersection,
+                             right_intersection, left_coverage, right_coverage, length, coverage, correct);
+        return entry;
+    }
+
+    double GetContainmentIndex(const EdgeId &short_edge, const barcode_index::SimpleVertexEntry long_entry,
+                               shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor) {
+        size_t intersection_size = short_edge_extractor->GetIntersectionSize(short_edge, long_entry);
+        size_t min_size = std::min(long_entry.size(), short_edge_extractor->GetHeadSize(short_edge));
+        double containment_index = static_cast<double>(intersection_size) / static_cast<double>(min_size);
+        return containment_index;
+    }
+
     LengthConnectivityStats GetPureLengthConnectivityStatistics(const vector<vector<EdgeWithMapping>> &reference_paths,
                                                                 const vector<vector<EdgeWithMapping>> &filtered_reference_paths) {
         std::map <size_t, BarcodedPathConnectivityStats> length_to_stats;
         vector <vector<EdgeWithMapping>> current_paths = reference_paths;
         path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
-
+        INFO("Getting connectivity stats")
         unordered_set <EdgeId> long_edges;
         for (const auto& path: filtered_reference_paths) {
             for (const auto& ewm: path) {
@@ -638,14 +924,14 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         }
         vector <size_t> lengths;
         const size_t min_length = 50;
-        const size_t max_length = 100;
+        const size_t max_length = 50;
         const size_t step = 250;
         for (size_t i = min_length; i <= max_length; i += step) {
             lengths.push_back(i);
         }
         vector <double> score_thresholds;
         const double min_threshold = 0.001;
-        const double max_threshold = 0.02;
+        const double max_threshold = 0.001;
         const double thr_step = 0.001;
 
         for (double i = min_threshold; i <= max_threshold; i += thr_step) {
@@ -679,15 +965,21 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
             size_t first_path_id = long_edge_path_index.at(first).path_id_;
             size_t second_path_id = long_edge_path_index.at(second).path_id_;
             if (first_path_id != second_path_id) {
-                WARN("Reference transition edges" << first.int_id() << " and " << second.int_id()
-                                                  << "belong to different references. Skipping.");
+//                WARN("Reference transition edges" << first.int_id() << " and " << second.int_id()
+//                                                  << "belong to different references. Skipping.");
                 continue;
             }
             const vector <EdgeWithMapping>& raw_path = raw_paths[first_path_id];
             size_t first_pos = long_edge_path_index.at(first).position_;
             size_t second_pos = long_edge_path_index.at(second).position_;
-            VERIFY(first_pos < second_pos);
-            UpdateStatsForTwoEdges(raw_path, first_pos, second_pos, thresholds, thresholds_to_covered, length_threshold);
+            if (first_pos < second_pos) {
+                UpdateStatsForTwoEdges(raw_path,
+                                       first_pos,
+                                       second_pos,
+                                       thresholds,
+                                       thresholds_to_covered,
+                                       length_threshold);
+            }
         }
         result.threshold_to_covered_ = thresholds_to_covered;
         return result;
@@ -741,16 +1033,16 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
             if (AreConnectedByBarcodePath(reference_path, first_pos, second_pos,
                                           score_threshold, length_threshold, middle_count_threshold, tail_threshold)) {
                 thresholds_to_covered[score_threshold]++;
-                ScaffoldGraph::ScaffoldEdge
-                    scaffold_edge(first, second, (size_t) - 1, 0, scaff_params_.initial_distance_);
-                bool check_dij_predicate = dij_predicate->Check(scaffold_edge);
-                if (not check_dij_predicate) {
-                    DEBUG("Dijkstra check failed!");
-                    TRACE("Printing reference path: ");
-                    for (size_t i = first_pos; i <= second_pos; ++i) {
-                        TRACE(reference_path[i].edge_.int_id() << ", " << reference_path[i].mapping_);
-                    }
-                }
+//                ScaffoldGraph::ScaffoldEdge
+//                    scaffold_edge(first, second, (size_t) - 1, 0, scaff_params_.initial_distance_);
+//                bool check_dij_predicate = dij_predicate->Check(scaffold_edge);
+//                if (not check_dij_predicate) {
+//                    DEBUG("Dijkstra check failed!");
+//                    TRACE("Printing reference path: ");
+//                    for (size_t i = first_pos; i <= second_pos; ++i) {
+//                        TRACE(reference_path[i].edge_.int_id() << ", " << reference_path[i].mapping_);
+//                    }
+//                }
             } else {
                 DEBUG("First edge: " << first.int_id() << ", pos: " << first_pos << ", mapping: "
                                      << first_mapping);
@@ -769,11 +1061,12 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         EdgeId end = reference_path[second_pos].edge_;
         const bool normalize_using_cov = false;
         auto short_edge_extractor = std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_ptr_);
-        auto intersection = long_edge_extractor_->GetIntersection(start, end);
         path_extend::LongEdgePairGapCloserParams params(count_threshold, tail_threshold, score_threshold,
                                                         length_threshold, normalize_using_cov);
+        auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
+            long_edge_extractor_->GetTailEntry(start), long_edge_extractor_->GetHeadEntry(end), short_edge_extractor);
         path_extend::LongEdgePairGapCloserPredicate gap_closer_predicate(g_, short_edge_extractor, params,
-                                                                         start, end, intersection);
+                                                                         start, end, pair_entry_extractor);
         for (size_t i = first_pos + 1; i < second_pos; ++i) {
             if (not gap_closer_predicate.Check(reference_path[i].edge_)) {
                 return false;

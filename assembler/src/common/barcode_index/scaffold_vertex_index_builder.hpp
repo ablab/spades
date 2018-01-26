@@ -56,7 +56,7 @@ namespace barcode_index {
         SimpleVertexEntry ExtractEntryInner(shared_ptr<EdgeIdVertex> simple_edge_vertex) const {
             SimpleVertexEntry result;
             TRACE("Extracting entry from edge");
-            const auto& entry = barcode_extractor_.GetBarcodesFromHead(simple_edge_vertex->get(), count_threshold_, tail_threshold_);
+            auto entry = barcode_extractor_.GetBarcodesFromHead(simple_edge_vertex->get(), count_threshold_, tail_threshold_);
             std::copy(entry.begin(), entry.end(), std::inserter(result, result.end()));
             return result;
         }

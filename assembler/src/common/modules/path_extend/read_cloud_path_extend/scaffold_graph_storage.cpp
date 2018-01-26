@@ -83,8 +83,8 @@ void ScaffoldGraphSerializer::LoadScaffoldGraph(ifstream &fin,
         TRACE("Read values")
         edges.emplace_back(edge_map.at(start_id), edge_map.at(end_id), lib, weight, length);
     }
-    INFO(edges.size() << " edges loaded");
-    INFO("Adding edges");
+    DEBUG(edges.size() << " edges loaded");
+    DEBUG("Adding edges");
     size_t current = 0;
     block_size = edges.size() / 200;
     for (const auto& edge: edges) {

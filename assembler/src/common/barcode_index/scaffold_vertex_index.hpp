@@ -96,53 +96,75 @@ namespace barcode_index {
          * @note second is supposed to be between first and third
          */
         virtual size_t GetIntersectionSize(const ScaffoldVertex &middle, const VertexEntryT &entry) const = 0;
+
+        size_t GetIntersectionSize(const VertexEntryT &first, const VertexEntryT &second) {
+            return GetIntersection(first, second).size();
+        }
+
+        virtual SimpleVertexEntry GetHeadEntry(const ScaffoldVertex &vertex) = 0;
+
+        virtual SimpleVertexEntry GetTailEntry(const ScaffoldVertex &vertex) = 0;
     };
 
-    class BarcodeIndexInfoExtractorWrapper: public IntersectingScaffoldVertexIndexInfoExtractor<SimpleVertexEntry> {
-     private:
-        const Graph& g_;
-        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
-     public:
-        BarcodeIndexInfoExtractorWrapper(const Graph &g,shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_index_)
-            : g_(g), barcode_extractor_(barcode_index_) {}
+class BarcodeIndexInfoExtractorWrapper: public IntersectingScaffoldVertexIndexInfoExtractor<SimpleVertexEntry> {
+ private:
+    const Graph& g_;
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
+ public:
+    BarcodeIndexInfoExtractorWrapper(const Graph &g,shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_index_)
+        : g_(g), barcode_extractor_(barcode_index_) {}
 
-        size_t GetHeadSize(const ScaffoldVertex &vertex) const override {
-            return barcode_extractor_->GetNumberOfBarcodes(GetEdge(vertex));
-        }
-        size_t GetTailSize(const ScaffoldVertex &vertex) const override {
-            return barcode_extractor_->GetNumberOfBarcodes(g_.conjugate(GetEdge(vertex)));
-        }
-        size_t GetIntersectionSize(const ScaffoldVertex &first, const ScaffoldVertex &second) const override {
-            return barcode_extractor_->GetNumberOfSharedBarcodes(GetEdge(first), GetEdge(second));
-        }
-        size_t GetIntersectionSize(const ScaffoldVertex &first,
-                                   const ScaffoldVertex &second,
-                                   const ScaffoldVertex &third) const override {
-            return GetIntersectionSize(third, GetIntersection(first, second));
-        }
+    size_t GetHeadSize(const ScaffoldVertex &vertex) const override {
+        return barcode_extractor_->GetNumberOfBarcodes(GetEdge(vertex));
+    }
+    size_t GetTailSize(const ScaffoldVertex &vertex) const override {
+        return barcode_extractor_->GetNumberOfBarcodes(g_.conjugate(GetEdge(vertex)));
+    }
+    size_t GetIntersectionSize(const ScaffoldVertex &first, const ScaffoldVertex &second) const override {
+        return barcode_extractor_->GetNumberOfSharedBarcodes(GetEdge(first), GetEdge(second));
+    }
+    size_t GetIntersectionSize(const ScaffoldVertex &first,
+                               const ScaffoldVertex &second,
+                               const ScaffoldVertex &third) const override {
+        return GetIntersectionSize(third, GetIntersection(first, second));
+    }
 
-        SimpleVertexEntry GetIntersection(const SimpleVertexEntry &first,
-                                          const SimpleVertexEntry &second) const override {
-            SimpleVertexEntry result;
-            std::set_intersection(first.begin(), first.end(), second.begin(), second.end(), std::inserter(result, result.end()));
-            return result;
-        }
+    SimpleVertexEntry GetIntersection(const SimpleVertexEntry &first,
+                                      const SimpleVertexEntry &second) const override {
+        SimpleVertexEntry result;
+        std::set_intersection(first.begin(), first.end(), second.begin(), second.end(), std::inserter(result, result.end()));
+        return result;
+    }
 
-        SimpleVertexEntry GetIntersection(const ScaffoldVertex &first, const ScaffoldVertex &second) const override {
-            auto intersection = barcode_extractor_->GetSharedBarcodes(GetEdge(first), GetEdge(second));
-            std::set<BarcodeId> result;
-            std::copy(intersection.begin(), intersection.end(), std::inserter(result, result.begin()));
-            return result;
-        }
-        size_t GetIntersectionSize(const ScaffoldVertex &middle, const SimpleVertexEntry &entry) const override {
-            auto barcodes = barcode_extractor_->GetBarcodes(GetEdge(middle));
-            SimpleVertexEntry intersection;
-            std::set_intersection(barcodes.begin(), barcodes.end(), entry.begin(), entry.end(),
-                                  std::inserter(intersection, intersection.begin()));
-            return intersection.size();
-        }
+    SimpleVertexEntry GetIntersection(const ScaffoldVertex &first, const ScaffoldVertex &second) const override {
+        auto intersection = barcode_extractor_->GetSharedBarcodes(GetEdge(first), GetEdge(second));
+        std::set<BarcodeId> result;
+        std::copy(intersection.begin(), intersection.end(), std::inserter(result, result.begin()));
+        return result;
+    }
+    size_t GetIntersectionSize(const ScaffoldVertex &middle, const SimpleVertexEntry &entry) const override {
+        auto barcodes = barcode_extractor_->GetBarcodes(GetEdge(middle));
+        SimpleVertexEntry intersection;
+        std::set_intersection(barcodes.begin(), barcodes.end(), entry.begin(), entry.end(),
+                              std::inserter(intersection, intersection.begin()));
+        return intersection.size();
+    }
 
-     private:
+    //fixme Can not collect from part of the edge. Slow.
+    SimpleVertexEntry GetHeadEntry(const ScaffoldVertex &vertex) override {
+        VERIFY_MSG(false, "Head entry extractor from BarcodeIndexInfoExtractorWrapper is currently not supported");
+        SimpleVertexEntry result;
+        auto edge = GetEdge(vertex);
+        auto barcodes = barcode_extractor_->GetBarcodes(edge);
+        std::copy(barcodes.begin(), barcodes.end(), std::inserter(result, result.begin()));
+        return result;
+    }
+
+    SimpleVertexEntry GetTailEntry(const ScaffoldVertex &vertex) override {
+        return GetHeadEntry(vertex);
+    }
+
+ private:
         EdgeId GetEdge(const ScaffoldVertex& vertex) const {
             path_extend::scaffold_graph::EdgeGetter edge_getter;
             return edge_getter.GetEdgeFromScaffoldVertex(vertex);
@@ -199,6 +221,14 @@ namespace barcode_index {
             SimpleVertexEntry result;
             std::set_intersection(first.begin(), first.end(), second.begin(), second.end(), std::inserter(result, result.end()));
             return result;
+        }
+
+        SimpleVertexEntry GetHeadEntry(const ScaffoldVertex &vertex) override {
+            return index_->GetHeadEntry(vertex);
+        }
+
+        SimpleVertexEntry GetTailEntry(const ScaffoldVertex &vertex) override {
+            return index_->GetTailEntry(vertex);
         }
     };
 

@@ -92,12 +92,12 @@ class ScaffolderAnalyzer : public read_cloud_statistics::StatisticProcessor {
         path_extend::validation::GeneralTransitionStorageBuilder reference_transition_builder(g_, 1, false, false);
         auto reference_transitions = reference_transition_builder.GetTransitionStorage(reference_paths_);
         ScaffolderStats result(name_to_stats, reference_transitions.size());
-        for (const auto& path: reference_paths_) {
-            std::cout << path.size() << std::endl;
-            for (const auto& edge: path) {
-                std::cout << edge.edge_.int_id() << std::endl;
-            }
-        }
+//        for (const auto& path: reference_paths_) {
+//            std::cout << path.size() << std::endl;
+//            for (const auto& edge: path) {
+//                std::cout << edge.edge_.int_id() << std::endl;
+//            }
+//        }
         return result;
     };
 
