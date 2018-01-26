@@ -10,7 +10,7 @@ add_executable(read_cloud_statistics main.cpp
                 ../spades/scaffold_graph_construction_stage.hpp ../spades/scaffolder_analysis_stage.cpp
                 ../spades/scaffolder_analysis_stage.hpp scaffolder_statistics/gap_closer_stats.hpp
                 statistics_launcher.hpp
-                scaffolder_statistics/gap_closer_analyzer.hpp path_cluster_test.hpp)
+                scaffolder_statistics/gap_closer_analyzer.hpp path_cluster_test.hpp scaffolder_statistics/non_reference_stats.hpp)
 
 target_link_libraries(read_cloud_statistics ConsensusCore common_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
 

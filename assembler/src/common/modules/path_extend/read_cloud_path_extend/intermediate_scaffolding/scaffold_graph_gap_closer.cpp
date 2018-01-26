@@ -50,10 +50,12 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
                                                     params_.share_threshold_, params_.small_length_threshold_, true);
     auto start = edge.getStart();
     auto end = edge.getEnd();
+    auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
+        scaff_vertex_extractor_->GetTailEntry(start), scaff_vertex_extractor_->GetHeadEntry(end), scaff_vertex_extractor_);
     auto gap_closer_predicate = make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_,
                                                                                          scaff_vertex_extractor_,
                                                                                          params, start, end,
-                                                                                         scaff_vertex_extractor_->GetIntersection(start, end));
+                                                                                         pair_entry_extractor);
     omnigraph::ScaffoldDijkstraHelper helper;
     auto forward_dijkstra = helper.CreateForwardBoundedScaffoldDijkstra(scaffold_graph, first, second,
                                                                             params_.distance_threshold_, gap_closer_predicate);
@@ -93,10 +95,10 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
     bool target_reached = intersection.size() > 0;
     DEBUG("Target reached: " << (target_reached ? "True" : "False"));
     DEBUG(subgraph_vertices.size() << " vertices in subgraph");
-    for (const ScaffoldEdge& edge: scaffold_graph.edges()) {
-        if (CheckSubgraphEdge(edge, first, second, subgraph_vertices)) {
-            DEBUG("Adding edge: " << edge.getStart().int_id() << ", " << edge.getEnd().int_id());
-            result.AddEdge(edge.getStart(), edge.getEnd());
+    for (const ScaffoldEdge& scaffold_edge: scaffold_graph.edges()) {
+        if (CheckSubgraphEdge(scaffold_edge, first, second, subgraph_vertices)) {
+            DEBUG("Adding edge: " << scaffold_edge.getStart().int_id() << ", " << scaffold_edge.getEnd().int_id());
+            result.AddEdge(scaffold_edge.getStart(), scaffold_edge.getEnd());
         }
     }
     GapCloserUtils utils;
@@ -457,7 +459,7 @@ vector<SubgraphPathExtractor::ScaffoldVertex> SubgraphPathExtractor::ExtractPath
                 return result;
             }
         } else {
-            DEBUG("Max score is zero!");
+            INFO("Max score is zero!");
             result.clear();
             return result;
         }

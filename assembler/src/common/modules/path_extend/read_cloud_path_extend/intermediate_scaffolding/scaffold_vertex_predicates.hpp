@@ -6,7 +6,8 @@
 #include "common/assembly_graph/core/graph.hpp"
 namespace path_extend {
 
-class ScaffoldVertexPredicate: public func::AbstractPredicate<const path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex&> {
+class ScaffoldVertexPredicate
+    : public func::AbstractPredicate<const path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &> {
  public:
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
@@ -14,12 +15,12 @@ class ScaffoldVertexPredicate: public func::AbstractPredicate<const path_extend:
     virtual ~ScaffoldVertexPredicate() = default;
 };
 
-class LengthChecker: public ScaffoldVertexPredicate {
+class LengthChecker : public ScaffoldVertexPredicate {
     using ScaffoldVertexPredicate::ScaffoldGraph;
 
  private:
     const size_t length_threshold_;
-    const Graph& g_;
+    const Graph &g_;
 
  public:
     LengthChecker(const size_t length_threshold_, const Graph &g_);
@@ -27,7 +28,7 @@ class LengthChecker: public ScaffoldVertexPredicate {
     bool Check(const ScaffoldVertex &vertex) const override;
 };
 
-class AndChecker: public ScaffoldVertexPredicate {
+class AndChecker : public ScaffoldVertexPredicate {
  private:
     shared_ptr<ScaffoldVertexPredicate> first_;
     shared_ptr<ScaffoldVertexPredicate> second_;
@@ -35,7 +36,7 @@ class AndChecker: public ScaffoldVertexPredicate {
  public:
     AndChecker(const shared_ptr<ScaffoldVertexPredicate> &first_, const shared_ptr<ScaffoldVertexPredicate> &second_);
 
-    bool Check(const ScaffoldVertex& scaffold_vertex) const override ;
+    bool Check(const ScaffoldVertex &scaffold_vertex) const override;
 };
 
 struct LongEdgePairGapCloserParams {
@@ -52,27 +53,71 @@ struct LongEdgePairGapCloserParams {
                               bool normalize_using_cov_);
 };
 
-class LongEdgePairGapCloserPredicate: public ScaffoldVertexPredicate {
+class PairEntryProcessor {
+ public:
+    typedef ScaffoldVertexPredicate::ScaffoldGraph ScaffoldGraph;
+
+    virtual bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) const = 0;
+};
+
+class LongEdgePairGapCloserPredicate : public ScaffoldVertexPredicate {
  public:
     using ScaffoldVertexPredicate::ScaffoldGraph;
  private:
-    const debruijn_graph::Graph& g_;
+    const debruijn_graph::Graph &g_;
     shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_;
     const LongEdgePairGapCloserParams params_;
     const ScaffoldGraph::ScaffoldGraphVertex start_;
     const ScaffoldGraph::ScaffoldGraphVertex end_;
-    const barcode_index::SimpleVertexEntry barcodes_;
+    shared_ptr<PairEntryProcessor> pair_entry_processor_;
 
  public:
-    LongEdgePairGapCloserPredicate(const debruijn_graph::Graph& g_,
+    LongEdgePairGapCloserPredicate(const debruijn_graph::Graph &g_,
                                    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_,
-                                   const LongEdgePairGapCloserParams& params,
-                                   const ScaffoldGraph::ScaffoldGraphVertex& start_,
-                                   const ScaffoldGraph::ScaffoldGraphVertex& end_,
-                                   const barcode_index::SimpleVertexEntry &barcodes_);
+                                   const LongEdgePairGapCloserParams &params,
+                                   const ScaffoldGraph::ScaffoldGraphVertex &start_,
+                                   const ScaffoldGraph::ScaffoldGraphVertex &end_,
+                                   shared_ptr<PairEntryProcessor> pair_entry_processor);
 
-    bool Check(const path_extend::scaffold_graph::ScaffoldVertex& vertex) const override;
+    bool Check(const path_extend::scaffold_graph::ScaffoldVertex &vertex) const override;
     DECL_LOGGER("LongEdgePairGapCloserPredicate");
 };
 
+class IntersectionBasedPairEntryProcessor: public PairEntryProcessor {
+ private:
+    using PairEntryProcessor::ScaffoldGraph;
+
+    const barcode_index::SimpleVertexEntry intersection_;
+    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_;
+
+ public:
+    IntersectionBasedPairEntryProcessor(const barcode_index::SimpleVertexEntry &intersection_,
+                                        const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> &barcode_extractor_);
+
+    bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) const override;
+
+};
+
+class TwoSetsBasedPairEntryProcessor: public PairEntryProcessor {
+ private:
+    using PairEntryProcessor::ScaffoldGraph;
+    typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
+
+    const SimpleVertexEntry first_;
+    const SimpleVertexEntry second_;
+    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_;
+
+ public:
+    TwoSetsBasedPairEntryProcessor(const SimpleVertexEntry &first_,
+                                   const SimpleVertexEntry &second_,
+                                   const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> &barcode_extractor_);
+
+    bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) const override;
+
+ private:
+    bool CheckWithEntry(const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &vertex,
+                        const SimpleVertexEntry long_entry, double score_threshold) const;
+
+    DECL_LOGGER("TwoSetsBasedPairEntryProcessor")
+};
 }

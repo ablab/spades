@@ -393,16 +393,15 @@ shared_ptr<LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::
     SimpleVertexEntry intersection;
     auto prefix_entry = simple_extractor.ExtractEntry(prefix_conj);
     auto suffix_entry = simple_extractor.ExtractEntry(suffix);
-    std::set_intersection(prefix_entry.begin(), prefix_entry.end(), suffix_entry.begin(), suffix_entry.end(),
-                          std::inserter(intersection, intersection.end()));
     DEBUG("Prefix entry size: " << prefix_entry.size());
     DEBUG("Suffix entry size: " << suffix_entry.size());
     DEBUG("Prefix length: " << prefix->Length());
     DEBUG("Suffix length: " << suffix->Length());
-    DEBUG("Intersection size: " << intersection.size());
     auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, main_extractor_);
+    auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
+        prefix_entry, suffix_entry, short_edge_extractor);
     auto predicate = make_shared<LongEdgePairGapCloserPredicate>(g_, short_edge_extractor, params,
-                                                                 prefix, suffix, intersection);
+                                                                 prefix, suffix, pair_entry_extractor);
     return predicate;
 }
 shared_ptr<ExtensionChooser> ReadCloudGapExtensionChooserFactory::CreateChooser(const BidirectionalPath &original_path,

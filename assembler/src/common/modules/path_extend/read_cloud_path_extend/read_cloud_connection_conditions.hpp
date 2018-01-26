@@ -79,7 +79,7 @@ namespace path_extend {
 
         const conj_graph_pack& gp_;
         shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor_;
-        shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor_;
+        shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         const omnigraph::de::PairedInfoIndicesT<Graph>& clustered_indices_;
         const size_t length_bound_;

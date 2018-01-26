@@ -19,6 +19,7 @@
 #include "path_cluster_test.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/path_cluster_helper.hpp"
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
+#include "scaffolder_statistics/non_reference_stats.hpp"
 
 namespace read_cloud_statistics {
 
@@ -67,6 +68,7 @@ namespace read_cloud_statistics {
 
 //            AnalyzeScaffoldGapCloser(base_output_path);
             AnalyzeScaffoldGraph(base_output_path);
+//            AnalyzeNonReference(base_output_path);
 
 //            AnalyzeContractedGraph(base_output_path, distance);
 //            LaunchAnalyzerForMultipleDistances(base_output_path, contracted_graph_analyzer, distances, cfg::get().max_threads);
@@ -174,7 +176,6 @@ namespace read_cloud_statistics {
             size_t scaffolding_distance = params.initial_distance_;
             size_t tail_threshold = params.tail_threshold_;
             size_t count_threshold = params.count_threshold_;
-            const size_t max_edge_length_in_path = 500;
             double score_threshold = params.score_threshold_;
 
             INFO("Constructing long edge barcode index");
@@ -225,7 +226,7 @@ namespace read_cloud_statistics {
                 scaffold_helper.ConstructCompositeConnectionScaffoldGraph(barcode_connection_scaffold_graph,
                                                                           barcode_extractor_ptr_,
                                                                           long_edge_extractor,
-                                                                          params, gp_, unique_storage);
+                                                                          params, gp_);
 
             INFO(composite_connection_scaffold_graph.VertexCount() << " vertices and "
                                                                    << composite_connection_scaffold_graph.EdgeCount()
@@ -254,7 +255,7 @@ namespace read_cloud_statistics {
             INFO("Reference path: " << reference_path);
             INFO("Cloud contig path: " << cloud_contigs_path);
 
-            const size_t min_length = cfg::get().ts_res.long_edge_length_lower_bound;
+            const size_t min_length = cfg::get().ts_res.long_edge_length_upper_bound;
             path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
             path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
             unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
@@ -286,7 +287,7 @@ namespace read_cloud_statistics {
                                                                        params.count_threshold_, 500,
                                                                        cfg::get().max_threads, unique_storage_.unique_edges());
             auto long_edge_extractor = make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(long_edge_index);
-            INFO(scaffold_graph_storage.at(score_name).graph.EdgeCount());
+            INFO(scaffold_graph_storage.at(score_name).graph.EdgeCount() << " edges in score scaffold graph");
             scaffolder_statistics::ScaffolderStageAnalyzer stats_extractor(gp_.g, large_unique_storage, params,
                                                                            reference_paths, barcode_extractor_ptr_,
                                                                            long_edge_extractor,
@@ -392,6 +393,33 @@ namespace read_cloud_statistics {
 //            scaffolder_statistics::GapCloserPathClusterAnalyzer path_cluster_analyzer(gp_, short_reference_paths);
 //            path_cluster_analyzer.FillStatistics();
 //            path_cluster_analyzer.SerializeStatistics(stats_base_path);
+        }
+
+        void AnalyzeNonReference(const string& stats_base_path) {
+            const string reference_path = cfg::get().ts_res.statistics.genome_path;
+            const string cloud_contigs_path = cfg::get().ts_res.statistics.cloud_contigs_path;
+            INFO("Reference path: " << reference_path);
+            INFO("Cloud contig path: " << cloud_contigs_path);
+
+            const size_t min_length = cfg::get().ts_res.long_edge_length_lower_bound;
+            path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
+            path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
+            unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
+
+            path_extend::ScaffolderParamsConstructor params_constructor;
+            auto params = params_constructor.ConstructScaffolderParamsFromCfg(min_length);
+
+            barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
+
+            auto long_edge_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
+                                                                       params.tail_threshold_,
+                                                                       params.count_threshold_, 500,
+                                                                       cfg::get().max_threads, large_unique_storage.unique_edges());
+            auto long_edge_extractor = make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(long_edge_index);
+            scaffolder_statistics::NonReferenceAnalyzer non_reference_analyzer(gp_.g, large_unique_storage.unique_edges(), params,
+                                                                               barcode_extractor_ptr_, long_edge_extractor);
+            non_reference_analyzer.FillStatistics();
+            non_reference_analyzer.SerializeStatistics(stats_base_path);
         }
 
         void AnalyzePathClusters(const string& stats_base_path, size_t distance) {
