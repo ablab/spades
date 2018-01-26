@@ -290,20 +290,14 @@ public:
                 pathStr += "\n";
             }
             INFO("Paths: " << pathStr);
-            pathStr = "";
-            string subStr = "";
-            string max_str = "";
-            int max_len = 0;
             string sum_str = "";
+            string cur_path = "";
+            string cur_path_len = "";
+            int seq_start = -1;
+            int seq_end = 0;
             for (const auto &path : aligned_mappings){
-                int seq_start = -1;
-                int seq_end = 0;
                 size_t mapping_start = 0;
                 size_t mapping_end = 0;
-                string cur_path = "";
-                string cur_path_len = "";
-                string cur_substr = "";
-                string str = "";
                 for (size_t i = 0; i < path.size(); ++ i) {
                     EdgeId edgeid = path.edge_at(i);
                     omnigraph::MappingRange mapping = path.mapping_at(i);
@@ -315,47 +309,25 @@ public:
                     if (i < path.size() - 1) {
                         mapping_end = gp_.g.length(edgeid);
                     }
-                    cur_path += std::to_string(Canonical(edgeid).int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
+                    cur_path += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
                                + std::to_string(mapping.initial_range.start_pos) + "," + std::to_string(mapping.initial_range.end_pos) + "], ";
-                    
-                    string tmp = gp_.g.EdgeNucls(edgeid).str();
-                    //cur_path += std::to_string(mapping.edgeId.int_id()) + ",";
                     cur_path_len += std::to_string(mapping_end - mapping_start) + ",";
-                    cur_substr += std::to_string(mapping.initial_range.start_pos) + "-" + std::to_string(mapping.initial_range.end_pos) + ", ";
-                    string to_add = tmp.substr(mapping_start, mapping_end - mapping_start);
-                    str += to_add;
                     if (seq_start < 0){
                         seq_start = (int) mapping.initial_range.start_pos;
                     }
                     seq_end = (int) mapping.initial_range.end_pos;
                 }
-                pathStr += cur_path + "; ";
-                subStr += cur_substr + "\n";
-                int d = max((int) read.sequence().size(), 20);
-                edlib::EdlibAlignResult result = edlib::edlibAlign(read.sequence().str().c_str(), (int) read.sequence().size(), str.c_str(), (int) str.size()
-                                                   , edlib::edlibNewAlignConfig(d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
-                                                                         NULL, 0));
-                int score = pacbio::STRING_DIST_INF;
-                if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
-                    score = result.editDistance;
-                }
-                edlib::edlibFreeAlignResult(result);
-                if (seq_end - seq_start > max_len){
-                    max_len = seq_end - seq_start;
-                    max_str = read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t"  
-                                                    + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\t"+ std::to_string(score) + "\t" + str + "\n";
-                }
-                sum_str += read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t" 
-                                                 + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\t" + std::to_string(score) + "\t" + str + "\n";
             }
-            INFO("Read " << read.name() << " aligned and length=" << read.sequence().size() <<  " and max_len=" << max_len);
-            INFO("Read " << read.name() << ". Paths with ends: " << pathStr );
+            sum_str += read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t" 
+                                                 + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\n";
+            INFO("Read " << read.name() << " aligned and length=" << read.sequence().size());
+            INFO("Read " << read.name() << ". Paths with ends: " << cur_path );
             //INFO("Seq subs: " << subStr);
 #pragma omp critical
         {
             ofstream myfile;
             myfile.open(output_file_ + ".tsv", std::ofstream::out | std::ofstream::app);
-            myfile << max_str;
+            myfile << sum_str;
             myfile.close();
         }
         }  
