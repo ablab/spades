@@ -155,7 +155,6 @@ class SubgraphExtractorAnalyzer {
             TRACE("Checking current: " << current.int_id());
             ScaffoldVertex next = *(std::next(it));
             TRACE("Next: " << next.int_id());
-            bool next_found = false;
             if (not graph.ContainsVertex(current) or not graph.ContainsVertex(next)) {
                 TRACE("Graph does not contain current or next");
                 return false;

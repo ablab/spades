@@ -137,6 +137,7 @@ namespace path_extend {
         const ScaffolderParams& params_;
         const string name_;
 
+
      public:
         CloudScaffoldGraphConstructionPipeline(shared_ptr<scaffold_graph::ScaffoldGraphConstructor> initial_constructor_,
                                                const Graph& g, const ScaffolderParams &params, const string &name);
