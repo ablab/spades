@@ -188,12 +188,12 @@ class BarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t> {
 
  public:
     BarcodedPathPutChecker(const Graph& g, shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor,
-                           const barcode_index::SimpleVertexEntry& barcode_intersection,
+                           const shared_ptr<path_extend::PairEntryProcessor> pair_entry_processor,
                            const path_extend::scaffold_graph::ScaffoldVertex& start,
                            const path_extend::scaffold_graph::ScaffoldVertex& end,
                            const path_extend::LongEdgePairGapCloserParams& params) :
         VertexPutChecker<Graph, distance_t>(), g_(g),
-        gap_closer_predicate_(g, barcode_extractor, params, start, end, barcode_intersection) {}
+        gap_closer_predicate_(g, barcode_extractor, params, start, end, pair_entry_processor) {}
 
     bool Check(VertexId, EdgeId edge, distance_t ) const override {
         DEBUG("Checking edge " << edge.int_id());
@@ -205,12 +205,18 @@ class BarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t> {
 
 static CompositePutChecker<Graph>
 CreateLongGapCloserPutChecker(const Graph& g, const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
-                              shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor,
-                              const barcode_index::SimpleVertexEntry& barcode_intersection,
+                              shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
+                              shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> long_edge_extractor,
                               const path_extend::scaffold_graph::ScaffoldVertex& start,
                               const path_extend::scaffold_graph::ScaffoldVertex& end,
                               const path_extend::LongEdgePairGapCloserParams& params) {
-    auto barcode_put_checker = make_shared<BarcodedPathPutChecker<Graph>>(g, barcode_extractor, barcode_intersection,
+    auto pair_entry_processor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
+        long_edge_extractor->GetTailEntry(start),
+        long_edge_extractor->GetHeadEntry(end),
+        short_edge_extractor);
+//    auto pair_entry_processor = make_shared<path_extend::IntersectionBasedPairEntryProcessor>(barcode_intersection,
+//                                                                                              short_edge_extractor);
+    auto barcode_put_checker = make_shared<BarcodedPathPutChecker<Graph>>(g, short_edge_extractor, pair_entry_processor,
                                                                           start, end, params);
     auto unique_put_checker = make_shared<UniquePutChecker<Graph>>(g, unique_storage);
     vector<shared_ptr<VertexPutChecker<Graph>>> put_checkers({unique_put_checker, barcode_put_checker});
@@ -227,8 +233,8 @@ typedef Dijkstra<Graph, LongGapCloserDijkstraSettings> LongGapCloserDijkstra;
 
 static LongGapCloserDijkstra CreateLongGapCloserDijkstra(const Graph& graph, size_t length_bound,
                                                          const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
-                                                         shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor,
-                                                         const barcode_index::SimpleVertexEntry& barcode_intersection,
+                                                         shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
+                                                         shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> long_edge_extractor,
                                                          const path_extend::scaffold_graph::ScaffoldVertex& start,
                                                          const path_extend::scaffold_graph::ScaffoldVertex& end,
                                                          const path_extend::LongEdgePairGapCloserParams& vertex_predicate_params,
@@ -237,7 +243,7 @@ static LongGapCloserDijkstra CreateLongGapCloserDijkstra(const Graph& graph, siz
                           LongGapCloserDijkstraSettings(
                               LengthCalculator<Graph>(graph),
                               BoundProcessChecker<Graph>(length_bound),
-                              CreateLongGapCloserPutChecker(graph, unique_storage, barcode_extractor, barcode_intersection,
+                              CreateLongGapCloserPutChecker(graph, unique_storage, short_edge_extractor, long_edge_extractor,
                                                             start, end, vertex_predicate_params),
                               ForwardNeighbourIteratorFactory<Graph>(graph)),
                           max_vertex_number);

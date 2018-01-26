@@ -1,5 +1,6 @@
 #include "scaffold_graph_construction_pipeline.hpp"
 #include "barcode_index/scaffold_vertex_index_builder.hpp"
+#include "scaffold_graph_extractor.hpp"
 
 namespace path_extend {
 
@@ -102,7 +103,7 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphCo
     }
     if (launch_full_pipeline) {
         iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g, *barcode_extractor_, max_threads_));
-//        iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
+        iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
     }
     INFO("Created constructors");
     return iterative_constructor_callers;
@@ -370,6 +371,7 @@ void CloudScaffoldGraphConstructionPipeline::Run() {
         INFO(edge_id_map.size() << " edges");
         serializer.LoadScaffoldGraph(fin, *initial_graph_ptr, edge_id_map);
     } else {
+        INFO("Constructing initial scaffold graph");
         initial_graph_ptr = initial_constructor_->Construct();
         if (cfg::get().ts_res.save_initial_scaffold_graph) {
             ofstream fout(initial_scaffold_graph_path);
@@ -385,6 +387,9 @@ void CloudScaffoldGraphConstructionPipeline::Run() {
         auto next_graph = constructor->Construct();
         intermediate_results_.push_back(next_graph);
         INFO(next_graph->VertexCount() << " vertices and " << next_graph->EdgeCount() << " edges in current graph");
+        path_extend::ScaffoldGraphExtractor extractor;
+        auto univocal_edges = extractor.ExtractUnivocalEdges(*next_graph);
+        INFO(univocal_edges.size() << " univocal edges in current graph");
     }
 }
 shared_ptr<scaffold_graph::ScaffoldGraph> CloudScaffoldGraphConstructionPipeline::GetResult() const {
