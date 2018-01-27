@@ -85,8 +85,8 @@ void Construction::init(debruijn_graph::conj_graph_pack &gp, const char *) {
 
     storage().params = cfg::get().con;
     storage().workdir = fs::tmp::make_temp_dir(gp.workdir, "construction");
-    storage().read_streams = io::single_binary_readers_for_libs(dataset.reads, libs_for_construction,
-                                                                true, true);
+    //FIXME needs to be changed if we move to hash only filtering
+    storage().read_streams = io::single_binary_readers_for_libs(dataset.reads, libs_for_construction);
 
     //Updating dataset stats
     VERIFY(dataset.RL == 0 && dataset.aRL == 0.);
@@ -122,6 +122,7 @@ void Construction::fini(debruijn_graph::conj_graph_pack &) {
 Construction::~Construction() {}
 
 class KMerCounting : public Construction::Phase {
+    typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;
 public:
     KMerCounting()
             : Construction::Phase("k+1-mer counting", "kpomer_counting") { }
@@ -144,18 +145,18 @@ public:
             using KmerFilter = utils::StoringTypeFilter<storing_type>;
 
             unsigned kplusone = index.k() + 1;
-            io::SeqHasher hasher(kplusone);
+            SeqHasher hasher(kplusone);
 
             INFO("Estimating k-mers cardinality");
-            size_t kmers = EstimateCardinality(kplusone, read_streams, KmerFilter());
+            size_t kmers = EstimateCardinality(kplusone, read_streams, hasher, KmerFilter());
 
             // Create main CQF using # of slots derived from estimated # of k-mers
             qf::cqf cqf(kmers);
 
             INFO("Building k-mer coverage histogram");
-            FillCoverageHistogram(cqf, kplusone, read_streams, std::max(kthr, rthr), KmerFilter());
+            FillCoverageHistogram(cqf, kplusone, hasher, read_streams, std::max(kthr, rthr), KmerFilter());
 
-            read_streams = io::CovFilteringWrap(read_streams, kplusone, cqf, rthr);
+            read_streams = io::CovFilteringWrap(read_streams, kplusone, hasher, cqf, rthr);
         }
 
         utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,

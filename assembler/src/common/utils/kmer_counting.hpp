@@ -9,31 +9,28 @@
 namespace utils {
 
 typedef qf::cqf CQFKmerFilter;
-//typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
-typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
 
 template<class Hasher, class KmerFilter = StoringTypeFilter<SimpleStoring>>
 class KmerHashProcessor {
     typedef uint64_t HashT;
-    typedef typename Hasher::char_t CharT;
+    typedef typename rolling_hash::chartype CharT;
     typedef std::function<void (const RtSeq&, HashT)> ProcessF;
+    Hasher hasher_;
     ProcessF process_f_;
     const KmerFilter filter_;
 
 public:
-    KmerHashProcessor(const ProcessF &process_f,
+    KmerHashProcessor(const Hasher &hasher, const ProcessF &process_f,
                       const KmerFilter &filter = StoringTypeFilter<SimpleStoring>()) :
-            process_f_(process_f), filter_(filter) {
+            hasher_(hasher), process_f_(process_f), filter_(filter) {
     }
 
-    //todo use unsigned type for k
     void ProcessSequence(const Sequence &s, unsigned k) {
-        Hasher hasher(k);
         RtSeq kmer = s.start<RtSeq>(k) >> 'A';
-        auto hash = hasher.hash(kmer);
+        auto hash = hasher_.hash(kmer);
         for (size_t j = k - 1; j < s.size(); ++j) {
             CharT inchar = (CharT) s[j];
-            hash = hasher.hash_update(hash, (CharT) kmer[0], inchar);
+            hash = hasher_.hash_update(hash, (CharT) kmer[0], inchar);
             //TODO can be optimized, no need to shift the kmer
             kmer <<= inchar;
             if (!filter_.filter(kmer))
@@ -58,13 +55,14 @@ public:
 
 };
 
-//FIXME parameterize by hasher
-template<class ReadStream, class Processor, class KmerFilter>
-size_t FillFromStream(ReadStream &stream, Processor &processor, unsigned k,
+template<class ReadStream, class SeqHasher, class Processor, class KmerFilter>
+size_t FillFromStream(ReadStream &stream, const SeqHasher &hasher,
+                      Processor &processor, unsigned k,
+                      size_t max_read_cnt = std::numeric_limits<size_t>::max(),
                       const KmerFilter &filter = KmerFilter()) {
     size_t reads = 0;
 
-    KmerHashProcessor<SeqHasher, KmerFilter> kmer_hash_processor([&](const RtSeq &kmer, uint64_t hash) { processor.ProcessKmer(kmer, hash); },
+    KmerHashProcessor<SeqHasher, KmerFilter> kmer_hash_processor(hasher, [&](const RtSeq &kmer, uint64_t hash) { processor.ProcessKmer(kmer, hash); },
                                                                  filter);
     typename ReadStream::ReadT r;
     while (!stream.eof()) {
@@ -76,11 +74,9 @@ size_t FillFromStream(ReadStream &stream, Processor &processor, unsigned k,
             continue;
 
         kmer_hash_processor.ProcessSequence(seq, k);
-        if (reads >= 1000000)
+        if (reads >= max_read_cnt)
             break;
-
     }
-    //processor.Finalize();
 
     return reads;
 }
@@ -120,20 +116,19 @@ public:
 };
 
 //FIXME further reduce code duplication
-template<class ReadStream, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
-size_t EstimateCardinality(unsigned k, ReadStream &streams,
+template<class ReadStream, class Hasher, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
+size_t EstimateCardinality(unsigned k, ReadStream &streams, const Hasher &hasher,
                            const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
-    unsigned nthreads = (unsigned) streams.size();
-    SeqHasher hasher(k);
-    std::vector<hll::hll<>> hlls(nthreads);
+    unsigned stream_num = streams.size();
+    std::vector<hll::hll<>> hlls(stream_num);
 
     streams.reset();
     size_t reads = 0, n = 15;
     while (!streams.eof()) {
-#           pragma omp parallel for num_threads(nthreads) reduction(+:reads)
-        for (unsigned i = 0; i < nthreads; ++i) {
+#       pragma omp parallel for reduction(+:reads)
+        for (unsigned i = 0; i < stream_num; ++i) {
             HllProcessor processor(hlls[omp_get_thread_num()]);
-            reads += FillFromStream(streams[i], processor, k, filter);
+            reads += FillFromStream(streams[i], hasher, processor, k, 1000000, filter);
         }
 
         if (reads >> n) {
@@ -158,35 +153,35 @@ size_t EstimateCardinality(unsigned k, ReadStream &streams,
     return size_t(res.first);
 }
 
-template<class ReadStream, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
-void FillCoverageHistogram(qf::cqf &cqf, unsigned k, ReadStream &streams,
+template<class Hasher, class ReadStream, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
+void FillCoverageHistogram(qf::cqf &cqf, unsigned k, const Hasher &hasher, ReadStream &streams,
                            unsigned thr, const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
-    unsigned nthreads = (unsigned) streams.size();
-
     // Create fallback per-thread CQF using same hash_size (important!) but different # of slots
+    unsigned stream_num = streams.size();
+
     std::vector<qf::cqf> local_cqfs;
-    local_cqfs.reserve(nthreads);
-    for (unsigned i = 0; i < nthreads; ++i)
+    local_cqfs.reserve(stream_num);
+    for (unsigned i = 0; i < stream_num; ++i)
         local_cqfs.emplace_back(1 << 16, cqf.hash_bits());
 
     INFO("Counting threshold " << thr);
     streams.reset();
     size_t reads = 0, n = 15;
     while (!streams.eof()) {
-        #pragma omp parallel for num_threads(nthreads) reduction(+:reads)
-        for (unsigned i = 0; i < nthreads; ++i) {
+        #pragma omp parallel for reduction(+:reads)
+        for (unsigned i = 0; i < stream_num; ++i) {
             CQFProcessor processor(cqf, local_cqfs[i], thr);
-            reads += FillFromStream(streams[i], processor, k, filter);
+            reads += FillFromStream(streams[i], hasher, processor, k, 1000000, filter);
         }
 
         if (reads >> n) {
             INFO("Processed " << reads << " reads");
-            n++;
+            n += 1;
         }
     }
 
     INFO("Merging local CQF");
-    for (unsigned i = 0; i < nthreads; ++i) {
+    for (unsigned i = 0; i < stream_num; ++i) {
         cqf.merge(local_cqfs[i]);
     }
 

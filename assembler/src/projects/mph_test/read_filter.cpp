@@ -118,38 +118,33 @@ int main(int argc, char* argv[]) {
         io::BinarySingleStreams single_readers = io::single_binary_readers_for_libs(dataset, libs,
                                                                                     /*followed by rc*/false, /*including paired*/true);
         INFO("Estimating kmer cardinality");
-        size_t kmers_cnt_est = utils::EstimateCardinality(k, single_readers);
-        CQFKmerFilter cqf(kmers_cnt_est);
+        typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;
+        SeqHasher hasher(k);
 
+        size_t kmers_cnt_est = utils::EstimateCardinality(k, single_readers, hasher);
+
+        CQFKmerFilter cqf(kmers_cnt_est);
         INFO("Filling kmer coverage");
-        utils::FillCoverageHistogram(cqf, k, single_readers, thr + 1);
+        utils::FillCoverageHistogram(cqf, k, hasher, single_readers, thr + 1);
         INFO("Kmer coverage filled");
         
-        auto paired_filter_f = [&] (const io::PairedRead &p_r) { 
-            return WellCovered(p_r.first(), k, thr, cqf) ||
-                       WellCovered(p_r.second(), k, thr, cqf); 
-        };
-
-        auto single_filter_f = [&] (const io::SingleRead &s_r) { 
-            return WellCovered(s_r, k, thr, cqf); 
-        };
-
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
             INFO("Filtering library " << i);
             if (dataset[i].has_paired()) {
-                auto filtered = io::FilteringWrap<io::PairedRead>(io::paired_easy_reader(dataset[i], 
-                            /*followed by rc*/false, /*insert size*/0),
-                                                                  paired_filter_f);
+                auto filtered = io::CovFilteringWrap<io::PairedRead>(
+                        io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0),
+                        k, hasher, cqf, thr);
                 io::OPairedReadStream ostream(workdir + "/" + to_string(i + 1) + ".1.fastq",
                                               workdir + "/" + to_string(i + 1) + ".2.fastq");
                 Transfer(*filtered, ostream);
             }
 
             if (dataset[i].has_single()) {
-                auto filtered = io::FilteringWrap<io::SingleRead>(io::single_easy_reader(dataset[i],
-                                               /*followed_by_rc*/ false,
-                                               /*including_paired_reads*/ false), 
-                                                                   single_filter_f);
+                auto filtered = io::CovFilteringWrap<io::PairedRead>(
+                        io::single_easy_reader(dataset[i], /*followed_by_rc*/ false,
+                                               /*including_paired_reads*/ false),
+                        k, hasher, cqf, thr);
+
                 io::OSingleReadStream ostream(workdir + "/" + to_string(i + 1) + ".s.fastq");
                 Transfer(*filtered, ostream);
             }
