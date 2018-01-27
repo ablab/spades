@@ -5,81 +5,17 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/**
- * @file    nucl.hpp
- * @author  vyahhi
- * @version 1.0
- *
- * @section LICENSE
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * @section DESCRIPTION
- *
- * Simple operations and checks for nucleotide-letters
- *
- */
-
-
 #ifndef NUCL_HPP_
 #define NUCL_HPP_
 
 #include "utils/verify.hpp"
-#include <iostream>
-
-const char dignucl_map['T' + 1] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3};
-
-const bool isnucl_map[256] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
-
-const char nucl_map[4] = {'A', 'C', 'G', 'T'};
-
-const  char nucl_complement_map['T' + 1] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    'T', 0, 'G', 0, 0, 0, 'C', 0, 0, 0, 0, 0, 0, 'N', 0, 0, 0, 0, 0, 'A'};
-
-const char universal_complement_map[256] = {
-    [0] = 3, [1] = 2, [2] = 1, [3] = 0,
-    ['a'] = 't', ['c'] = 'g', ['g'] = 'c', ['t'] = 'a',
-    ['A'] = 'T', ['C'] = 'G', ['G'] = 'C', ['T'] = 'A'
-};
-
-const char universal_isnucl_map[256] = {
-    [0] = 1, [1] = 1, [2] = 1, [3] = 1,
-    ['a'] = 1, ['c'] = 1, ['g'] = 1, ['t'] = 1,
-    ['A'] = 1, ['C'] = 1, ['G'] = 1, ['T'] = 1
-};
-
-/**
- * ACGT -> true
- * @param char c
- * @return true if c is 'A', 'C', 'G' or 'T'.
- */
-inline bool is_nucl(char c) { // is ACGT
-    return isnucl_map[(unsigned)c];
-}
-
-inline bool universal_is_nucl(char c) { // is ACGT
-    return universal_isnucl_map[(unsigned)c];
-}
-
-inline char universal_complement(char c) {
-    VERIFY(universal_is_nucl(c));
-    return universal_complement_map[(unsigned)c];
-}
 
 /**
  * 0123 -> true
  * @param char c
  * @return true if c is 0, 1, 2 or 3.
  */
-inline bool is_dignucl(char c) { // is 0123
+inline bool is_dignucl(char c) {
     return (c < 4);
 }
 
@@ -90,56 +26,133 @@ inline bool is_dignucl(char c) { // is 0123
  */
 inline char complement(char c) {
     VERIFY_DEV(is_dignucl(c));
-    return c ^ 3;
+    return char(c ^ 3);
+}
+
+static const char INVALID_NUCL = char(-1);
+
+/**
+ * ACGTacgt0123 -> true
+ * @param char c
+ * @return true if c is 'A/a/0', 'C/c/1', 'G/g/2', 'T/t/3'.
+ */
+inline bool is_nucl(char c) {
+    switch (c) {
+        case 0:
+        case 'a':
+        case 'A':
+        case 1:
+        case 'c':
+        case 'C':
+        case 2:
+        case 'g':
+        case 'G':
+        case 3:
+        case 't':
+        case 'T':
+            return true;
+        default:
+            return false;
+    }
 }
 
 /**
  * ACGT -> TGCA
- * @param char c is 'A', 'C', 'G', 'T' or 'N'
- * @return complement symbol, i.e. 'A' => 'T', 'C' => 'G', 'G' => 'C', 'T' => 'A', 'N' => 'N'
+ * @param char c is 'A/a/0', 'C/c/1', 'G/g/2', 'T/t/3' or 'N'
+ * @return complement symbol, i.e. 'A/a/0' => 'T/t/3', 'C/c/1' => 'G/g/2', 'G/g/2' => 'C/c/1', 'T/t/3' => 'A/a/0', 'N' => 'N'
  */
-
-struct nucl_complement_functor { // still unused
-    inline char operator() (char c) const {
-        char cc = nucl_complement_map[(unsigned)c];
-        return cc ? cc : 'N';
+inline char nucl_complement(char c) {
+    switch (c) {
+        case 0:
+            return 1;
+        case 'a':
+            return 't';
+        case 'A':
+            return 'T';
+        case 1:
+            return 2;
+        case 'c':
+            return 'g';
+        case 'C':
+            return 'G';
+        case 2:
+            return 1;
+        case 'g':
+            return 'c';
+        case 'G':
+            return 'C';
+        case 3:
+            return 0;
+        case 't':
+            return 'a';
+        case 'T':
+            return 'A';
+        case 'N':
+            return 'N';
+        case 'n':
+            return 'n';
+        default:
+            VERIFY(false);
+            return INVALID_NUCL;
     }
-};
-
-inline char nucl_complement(char c){
-    // TODO: deal with 'N' case
-    VERIFY(is_nucl(c));
-    char cc = nucl_complement_map[(unsigned)c];
-    return cc ? cc : 'N';
 }
 
 /**
- * 0123 -> ACGT
- * @param char c is 0, 1, 2 or 3
- * @return 0 => 'A', 1 => 'C', 2 => 'G', 3 => 'T'
+ * 0123acgtACGT -> ACGT
+ * @param char c is 'A/a/0', 'C/c/1', 'G/g/2', 'T/t/3'
+ * @return 'A/a/0' => 'A', 'C/c/1' => 'C', 'G/g/2' => 'G', 'T/t/3' => 'T'
  */
 inline char nucl(char c) {
-    VERIFY(universal_is_nucl(c));
-    return is_dignucl(c) ? nucl_map[(unsigned)c] : c;
+    switch (c) {
+        case 0:
+        case 'a':
+        case 'A':
+            return 'A';
+        case 1:
+        case 'c':
+        case 'C':
+            return 'C';
+        case 2:
+        case 'g':
+        case 'G':
+            return 'G';
+        case 3:
+        case 't':
+        case 'T':
+            return 'T';
+        default:
+            VERIFY(false);
+            return INVALID_NUCL;
+    }
 }
 
 /**
  * ACGT -> 0123
- * @param char c is 'A', 'C', 'G' or 'T'
+ * @param char c is 'A/a/', 'C', 'G' or 'T'
  * @return A => 0, C => 1, G => 2, T => 3
  */
-
-/*
-struct dignucl : public unary_function<int,bool> {
-    bool operator()(signed char c) const {
-        return dignucl_map[c];
-    }
-};*/
-
 inline char dignucl(char c) {
-    VERIFY_DEV(is_nucl(c));
-    return dignucl_map[(unsigned)c];
+    switch (c) {
+        case 0:
+        case 'a':
+        case 'A':
+            return 0;
+        case 1:
+        case 'c':
+        case 'C':
+            return 1;
+        case 2:
+        case 'g':
+        case 'G':
+            return 2;
+        case 3:
+        case 't':
+        case 'T':
+            return 3;
+        default:
+            VERIFY(false);
+            return INVALID_NUCL;
+    }
 }
-
 
 #endif /* NUCL_HPP_ */
