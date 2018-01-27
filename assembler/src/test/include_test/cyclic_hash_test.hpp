@@ -8,7 +8,7 @@
 BOOST_AUTO_TEST_CASE( TestBasic ) {
     unsigned k = 4;
     typedef uint64_t digest;
-    SymmetricCyclicHash<> hasher(k);
+    rolling_hash::SymmetricCyclicHash<> hasher(k);
     auto h1 = hasher(std::string("ACCG"));
     auto h2 = hasher.hash(std::string("ACCG"));
     auto h3 = hasher.hash(std::string("CGGT"));
@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE( TestBasic ) {
 BOOST_AUTO_TEST_CASE( TestBasicRtSeq ) {
     unsigned k = 4;
     typedef uint64_t digest;
-    SymmetricCyclicHash<> hasher(k);
+    rolling_hash::SymmetricCyclicHash<> hasher(k);
     auto h1 = hasher(RtSeq(4, "ACCG"));
     auto h2 = hasher.hash(RtSeq(4, "ACCG"));
     auto h3 = hasher.hash(RtSeq(4, "CGGT"));
@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE( TestBasicRtSeq ) {
 BOOST_AUTO_TEST_CASE( TestRC ) {
     unsigned k = 4;
     typedef uint64_t digest;
-    SymmetricCyclicHash<> hasher(k);
+    rolling_hash::SymmetricCyclicHash<> hasher(k);
 
     Sequence s("AACCTTGGACGTCGTAACGACT");
     Sequence s2 = !s;
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE( TestRC ) {
 BOOST_AUTO_TEST_CASE( TestRoll ) { 
     unsigned k = 4;
     typedef uint64_t digest;
-    SymmetricCyclicHash<> hasher(k);
+    rolling_hash::SymmetricCyclicHash<> hasher(k);
 
     Sequence s("AACCTTGGACGTCGTAACGACT");
     size_t kmer_cnt = s.size() - k + 1;

@@ -46,7 +46,7 @@ private:
     Sequence GenerateRandomSequence(size_t length) {
         string result(length, 'A');
         for(size_t i = 0; i < length; i++) {
-            result[i] = nucl_map[rand() % 4];
+            result[i] = nucl(rand() % 4);
         }
         return Sequence(result);
     }
