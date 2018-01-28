@@ -156,9 +156,9 @@ size_t EstimateCardinality(unsigned k, ReadStream &streams, const Hasher &hasher
 template<class Hasher, class ReadStream, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
 void FillCoverageHistogram(qf::cqf &cqf, unsigned k, const Hasher &hasher, ReadStream &streams,
                            unsigned thr, const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
-    // Create fallback per-thread CQF using same hash_size (important!) but different # of slots
     unsigned stream_num = streams.size();
 
+    // Create fallback per-thread CQF using same hash_size (important!) but different # of slots
     std::vector<qf::cqf> local_cqfs;
     local_cqfs.reserve(stream_num);
     for (unsigned i = 0; i < stream_num; ++i)
