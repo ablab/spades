@@ -45,11 +45,6 @@ void Transfer(IS &input, OS &output) {
     }
 }
 
-bool WellCovered(const io::SingleRead &r, unsigned k, unsigned thr, const qf::cqf &cqf) {
-    typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
-    return r.size() >= k && io::CountMedianMlt<SeqHasher>(r.sequence(), k, cqf) > thr;
-}
-
 int main(int argc, char* argv[]) {
     typedef qf::cqf CQFKmerFilter;
     //typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
@@ -140,7 +135,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (dataset[i].has_single()) {
-                auto filtered = io::CovFilteringWrap<io::PairedRead>(
+                auto filtered = io::CovFilteringWrap<io::SingleRead>(
                         io::single_easy_reader(dataset[i], /*followed_by_rc*/ false,
                                                /*including_paired_reads*/ false),
                         k, hasher, cqf, thr);
