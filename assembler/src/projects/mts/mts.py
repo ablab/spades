@@ -34,6 +34,7 @@ parser.add_argument("--reuse-profiles", type=str, help="Directory with existing 
 parser.add_argument("--reuse-from", type=str, help="Directory with another assembly to reuse everything that is possible (overrides other --reuses)")
 parser.add_argument("--no-stats", "-S", action="store_true", help="Skip the stats section (overrides the config value)")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
+parser.add_argument("--dryrun", action="store_true", help="Show tasks, do not execute them")
 parser.add_argument("--alt", action="store_true", help=argparse.SUPPRESS)
 
 args = parser.parse_args()
@@ -45,6 +46,9 @@ base_params = ["snakemake", "--directory", os.path.realpath(args.dir), "--cores"
 
 if args.verbose:
     base_params.extend(["-p", "--verbose"])
+
+if args.dryrun:
+    base_params.extend(["--dryrun"])
 
 if not os.path.exists(args.dir):
     os.makedirs(args.dir)
