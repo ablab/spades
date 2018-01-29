@@ -2,6 +2,7 @@
 from __future__ import (print_function)
 
 import argparse
+from collections import OrderedDict
 import os.path
 from operator import add
 import shutil
@@ -12,6 +13,7 @@ from sklearn.cluster.bicluster import SpectralCoclustering
 import numpy as np
 import pandas
 from pandas import DataFrame
+import json
 
 def bicluster(*cotables):
     table = cotables[0]
@@ -41,11 +43,27 @@ gf_table.fillna(0, inplace=True)
 
 #Drop _broken scaffolds from MetaQUAST report
 gf_table.drop([col for col in gf_table.columns if col.endswith("_broken")], axis=1, inplace=True)
+
 # Drop bad bins and missing references
 EPS = 0.01
 presented_refs = gf_table.apply(lambda row: row.sum() > EPS, axis=1)
 lost_refs = gf_table.index[~presented_refs]
 gf_table = gf_table.loc[presented_refs, gf_table.apply(lambda col: col.sum() > EPS)]
+
+# Load misassemblies from combined reference
+with open(table_path("report.html", True)) as input:
+    read = False
+    for line in input:
+        if "<div id='total-report-json'>" in line:
+            read = True
+            continue
+        if read:
+            report = json.loads(line)
+            break
+    data = [sub[1][1][0]["values"] for sub in report["subreports"]]
+    mis_table = pandas.DataFrame(data)
+    mis_table.index = report["subreferences"]
+    mis_table.columns = report["assembliesNames"]
 
 # Load purity table
 total_lengths = pandas.to_numeric(pandas.read_table(table_path("report.tsv", True), index_col=0).loc["Total length"])
@@ -67,21 +85,22 @@ with open(args.name + "_best.tsv", "w") as out_file:
     best_ref.to_csv(out_file, sep="\t")
 
 # Prepare the summary table
-res_table = DataFrame(columns=["ref", "bin", "GF", "purity", "NGA50", "misassemblies"])
+res_dict = OrderedDict()
 for ref, bin in best_bin.iteritems():
     if type(bin) is float:
-        row = {"ref": ref, "bin": "unknown", "GF": "-", "purity": "-", "NGA50": "-", "misassemblies": "-"}
+        row = ["unknown", "-", "-", "-", "-"]
     else:
         all_stats = pandas.read_table(os.path.join(args.dir, "runs_per_reference", ref, "report.tsv"), index_col=0)
         col = all_stats.get(bin)
         if col is None:
             print("WRONG:", bin, ref)
-        #purity = 100 - float(col["Unaligned length"]) / float(col["Total length"]) * 100
         purity = purity_table.get_value(ref, bin)
-        row = {"ref": ref, "bin": bin, "GF": col["Genome fraction (%)"], "purity": "{0:.2f}".format(purity),
-               "NGA50": col["NGA50"], "misassemblies": col["# misassemblies"]}
-    res_table = res_table.append(row, ignore_index=True)
-res_table.to_csv(args.name + "_summary.tsv", index=False, sep="\t")
+        row = [bin, col["Genome fraction (%)"], purity, col["NGA50"], mis_table.loc[ref, bin]]
+    res_dict[ref] = row
+res_table = pandas.DataFrame.from_dict(res_dict, "index")
+res_table.columns = ["bin", "GF", "purity", "NGA50", "misassemblies"]
+res_table.index.name = "ref"
+res_table.to_csv(args.name + "_summary.tsv", index=True, sep="\t", float_format="%.2f")
 
 if args.plot:
     try:
@@ -156,7 +175,7 @@ if args.plot:
 
 # GF
 if args.gf:
-    shutil.copy(os.path.join(args.dir, "summary/TSV/Genome_fraction_(%).tsv"), args.name + "_gf.tsv")
+    gf_table.to_csv(args.name + "_gf.tsv", index=True, sep="\t", float_format="%.2f")
 
     # Draw GF heatmap
     if args.plot:

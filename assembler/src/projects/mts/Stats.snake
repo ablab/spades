@@ -10,15 +10,6 @@ import textwrap
 
 from scripts.common import gather_refs
 
-#Additional config parameters
-try:
-    QUAST_DIR = config["QUAST"]
-    QUAST = os.path.join(QUAST_DIR, "quast.py")
-    METAQUAST = os.path.join(QUAST_DIR, "metaquast.py")
-except KeyError:
-    QUAST = "quast"
-    METAQUAST = "metaquast"
-
 #Autodetect bins and stage
 if config["reassembly"]["enabled"]:
     LAST_STAGE = "reassembly"
@@ -36,7 +27,9 @@ BINS.sort()
 
 #Additional config parameters
 try:
-    QUAST_DIR = config["stats"]["quast"]
+    stats_config = config["stats"]
+    QUAST_DIR = stats_config["quast"]
+    QUAST_PARAMS = stats_config.get("params", "")
     QUAST = os.path.join(QUAST_DIR, "quast.py")
     METAQUAST = os.path.join(QUAST_DIR, "metaquast.py")
 except KeyError:
@@ -46,7 +39,7 @@ except KeyError:
 #Detect references
 REFS = dict(gather_refs(config["stats"].get("refs", [])))
 REFS_STR = ",".join(path for path in sorted(REFS.values()))
-METAQUAST_PARAMS = "--fragmented --fast"
+METAQUAST_PARAMS = "--scaffolds --no-plots --no-icarus --no-snps --no-gc --no-sv"
 
 def ref_path(wildcards):
     return REFS[wildcards.ref]
@@ -99,35 +92,13 @@ rule all_stats:
 #---- Statistics section -------------------------------------------------------
 #===============================================================================
 
-#---- NGA ----------------------------------------------------------------------
-rule glue_bins:
+#---- Binning of full contigs based on majority of their splits ----------------
+rule binning_full:
     input:   "assembly/{}/all.fasta".format(ASSEMBLER), "binning/binning.tsv"
     output:  expand("binning/full/{bin}.fasta", bin=BINS)
-    log:     "binning/glue.log"
+    log:     "binning/full.log"
     message: "Distributing full contigs between bins"
     shell:   "mkdir -p binning/full && {SCRIPTS}/split_bins.py {input} binning/full -g >{log}"
-
-rule binning_nga_quast:
-    input:   expand("binning/full/{bin}.fasta", bin=BINS)
-    output:  touch("stats/nga_binning.done")
-    params:  out="stats/nga_binning"
-    log:     "stats/nga_binning.log"
-    threads: THREADS
-    message: "Calculating NGA of binning"
-    shell:   "{METAQUAST} {METAQUAST_PARAMS} -t {threads} -R {REFS_STR} {input}"
-             " -o {params.out} >/dev/null 2>&1"
-
-rule binning_nga:
-    input:   "stats/nga_binning.done"
-    output:  "stats/summary/binning_nga.tsv"
-    message: "Gathering full binning NGA"
-    shell:   "{SCRIPTS}/gather_stats.py --nga --plot stats/nga_binning stats/summary/binning"
-
-rule reassembly_nga:
-    input:   "stats/q_reassembly.done"
-    output:  "stats/summary/reassembly_nga.tsv"
-    message: "Gathering reassembly NGA"
-    shell:   "{SCRIPTS}/gather_stats.py --nga --plot stats/q_reassembly stats/summary/reassembly"
 
 #---- F1 stats -----------------------------------------------------------------
 rule combine_bins:
@@ -190,19 +161,23 @@ rule ref_profiles:
              " -n {SAMPLE_COUNT} -m profile/mts/kmers -o {output} >{log} 2>&1"
 
 #---- Genome fraction etc. -----------------------------------------------------
+def quast_input(w):
+    frag = "full" if w.stage == "binning" else "bins"
+    return expand("{stage}/{frag}/{bin}.fasta", stage=w.stage, frag=frag, bin=BINS)
+
 rule quast_all:
-    input:   expand("{{stage}}/bins/{bin}.fasta", bin=BINS)
+    input:   quast_input
     output:  touch("stats/q_{stage}.done")
     params:  out="stats/q_{stage}"
     threads: THREADS
     message: "Aligning all of {wildcards.stage} on all references"
-    shell:   "{METAQUAST} {METAQUAST_PARAMS} -t {threads} -R {REFS_STR}"
+    shell:   "{METAQUAST} {QUAST_PARAMS} {METAQUAST_PARAMS} -t {threads} -R {REFS_STR}"
              " {input} -o {params.out} >/dev/null 2>&1"
 
 rule gather_stats:
     input:   "stats/q_{stage}.done"
-    output:  "stats/summary/{stage}_summary.tsv"
-    params:  "--gf", "--problematic", "--plot", "stats/q_{stage}", "stats/summary/{stage}"
+    output:  "stats/summary/{stage}_summary.tsv", "stats/summary/{stage}_nga.tsv"
+    params:  "--gf", "--problematic", "--nga", "--plot", "stats/q_{stage}", "stats/summary/{stage}"
     message: "Gathering {wildcards.stage} stats"
     shell:   "{SCRIPTS}/gather_stats.py {params}"
 
