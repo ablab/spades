@@ -15,6 +15,20 @@
 
 namespace io {
 
+class KmerMultiplicityFiller {
+    std::vector<unsigned> &mlts_;
+    const utils::CQFKmerFilter &kmer_mlt_index_;
+
+public:
+    KmerMultiplicityFiller(std::vector<unsigned> &mlts,
+                           const utils::CQFKmerFilter &kmer_mlt_index) :
+            mlts_(mlts), kmer_mlt_index_(kmer_mlt_index) {}
+
+    void ProcessKmer(const RtSeq &/*kmer*/, uint64_t hash) {
+        mlts_.push_back(unsigned(kmer_mlt_index_.lookup(hash)));
+    }
+};
+
 template<class Hasher>
 unsigned CountMedianMlt(const Sequence &s, unsigned k, const Hasher &hasher,
                         const utils::CQFKmerFilter &kmer_mlt_index) {
@@ -22,12 +36,8 @@ unsigned CountMedianMlt(const Sequence &s, unsigned k, const Hasher &hasher,
         return 0;
 
     std::vector<unsigned> mlts;
-
-    auto process_f = [&] (const RtSeq& /*kmer*/, uint64_t hash) {
-        mlts.push_back(unsigned(kmer_mlt_index.lookup(hash)));
-    };
-
-    utils::KmerHashProcessor<Hasher> processor(hasher, process_f);
+    KmerMultiplicityFiller mlt_filler(mlts, kmer_mlt_index);
+    utils::KmerSequenceProcessor<Hasher, KmerMultiplicityFiller> processor(hasher, mlt_filler);
     processor.ProcessSequence(s, k);
 
     size_t n = mlts.size() / 2;

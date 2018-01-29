@@ -10,19 +10,18 @@ namespace utils {
 
 typedef qf::cqf CQFKmerFilter;
 
-template<class Hasher, class KmerFilter = StoringTypeFilter<SimpleStoring>>
-class KmerHashProcessor {
+template<class Hasher, class KmerProcessor, class KmerFilter = StoringTypeFilter<SimpleStoring>>
+class KmerSequenceProcessor {
     typedef uint64_t HashT;
     typedef typename rolling_hash::chartype CharT;
-    typedef std::function<void (const RtSeq&, HashT)> ProcessF;
     Hasher hasher_;
-    ProcessF process_f_;
+    KmerProcessor &processor_;
     const KmerFilter filter_;
 
 public:
-    KmerHashProcessor(const Hasher &hasher, const ProcessF &process_f,
+    KmerSequenceProcessor(const Hasher &hasher, KmerProcessor &processor,
                       const KmerFilter &filter = StoringTypeFilter<SimpleStoring>()) :
-            hasher_(hasher), process_f_(process_f), filter_(filter) {
+            hasher_(hasher), processor_(processor), filter_(filter) {
     }
 
     void ProcessSequence(const Sequence &s, unsigned k) {
@@ -35,7 +34,7 @@ public:
             kmer <<= inchar;
             if (!filter_.filter(kmer))
                 return;
-            process_f_(kmer, (HashT) hash);
+            processor_.ProcessKmer(kmer, (HashT) hash);
         }
     }
 
@@ -51,8 +50,6 @@ public:
         hll_.add(hash);
     }
 
-    //void Finalize() {}
-
 };
 
 template<class ReadStream, class SeqHasher, class Processor, class KmerFilter>
@@ -62,8 +59,9 @@ size_t FillFromStream(ReadStream &stream, const SeqHasher &hasher,
                       const KmerFilter &filter = KmerFilter()) {
     size_t reads = 0;
 
-    KmerHashProcessor<SeqHasher, KmerFilter> kmer_hash_processor(hasher, [&](const RtSeq &kmer, uint64_t hash) { processor.ProcessKmer(kmer, hash); },
-                                                                 filter);
+    KmerSequenceProcessor<SeqHasher, Processor, KmerFilter>
+            kmer_hash_processor(hasher, processor, filter);
+
     typename ReadStream::ReadT r;
     while (!stream.eof()) {
         stream >> r;
