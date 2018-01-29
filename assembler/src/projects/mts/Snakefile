@@ -351,4 +351,4 @@ rule choose_samples:
     log:     "reassembly/choose_samples.log"
     message: "Choosing bins for reassembly and samples for them"
     shell:   "rm -f reassembly/*.info && rm -rf reassembly/excluded && "
-             "{SCRIPTS}/choose_samples.py {input.prof} {input.bins} reads reassembly >{log} 2>&1"
+             "{SCRIPTS}/choose_samples.py -f {input.bins} -r reads -o reassembly {input.prof} >{log} 2>&1"

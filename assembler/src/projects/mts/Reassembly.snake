@@ -2,8 +2,11 @@ include: "Common.snake"
 
 import yaml
 
+reassembly_config = config.get("reassembly", dict())
+COV_CUTOFF = reassembly_config.get("cov_cutoff", 0.3)
 READ_LENGTH = config.get("read_length", 100) #TODO: auto-detect default value
 
+#Autodetecting bins for reassembly based on the choose_samples result in the main pipeline
 BINS, = glob_wildcards("reassembly/{{bin,{}}}.info".format(NAME_TEMPLATE))
 if not BINS:
     raise WorkflowError("No bins detected!")
@@ -21,9 +24,9 @@ rule reassembly_config:
             conf = {"k": PROFILE_K, "sample_cnt": SAMPLE_COUNT,
                     "kmer_mult": "profile/mts/kmers",
                     "bin": wildcards.bin, "bin_prof": "binning/{}/bins.prof".format(BINNER),
-                    "edges_sqn": "reassembly/{}_edges.fasta".format(wildcards.bin),
-                    "edges_mpl": "reassembly/{}_edges.mpl".format(wildcards.bin),
-                    "edge_fragments_mpl": "reassembly/{}_edges_frag.mpl".format(wildcards.bin),
+                    "edges_sqn": "reassembly/{}/edges.fasta".format(wildcards.bin),
+                    "edges_mpl": "reassembly/{}/edges.mpl".format(wildcards.bin),
+                    "edge_fragments_mpl": "reassembly/{}/edges_frag.mpl".format(wildcards.bin),
                     "frag_size": SPLIT_LENGTH, "min_len": 100}
             yaml.dump(conf, outfile)
 
@@ -50,25 +53,27 @@ def bin_reads(dir, wildcards):
 #Returns the filepath with left/right reads for a sample or list of them for a group, used as Snakemake input
 left_bin_reads, right_bin_reads = reads_input(bin_reads)
 
+#TODO: gzip subsampled reads
+rule subsample:
+    input:   info="reassembly/{bin}.info"
+    output:  "reassembly/{bin}/left.fq", "reassembly/{bin}/right.fq", "reassembly/{bin}/total.cov"
+    params:  "reads/{bin}", "reassembly/{bin}"
+    log:     "reassembly/{bin}/subsample.log"
+    message: "Subsampling reads for {wildcards.bin}"
+    shell:   "{SCRIPTS}/subsample.py {input} {params} >{log}"
+
 rule reassemble:
-    input:   info="reassembly/{bin}.info", config="reassembly/{bin}.yaml"
+    input:   left="reassembly/{bin}/left.fq", right="reassembly/{bin}/right.fq",
+             config="reassembly/{bin}.yaml", cov="reassembly/{bin}/total.cov"
     output:  "reassembly/bins/{bin}.fasta"
-    params:  out="reassembly/{bin}",
-             left=lambda w: " ".join(expand("--pe1-1 {r}", r=left_bin_reads(w))),
-             right=lambda w: " ".join(expand("--pe1-2 {r}", r=right_bin_reads(w))),
+    params:  out="reassembly/{bin}"
     log:     "reassembly/{bin}.log"
     threads: THREADS
     message: "Reassembling reads for {wildcards.bin}"
     run:
-        COV_THRESHOLD = 0.3
-        subtotal = 0
-        with open(input.info) as samples_info:
-            for line in samples_info:
-                sample_data = line.split()
-                if sample_data[0][0] == "+":
-                    subtotal += float(sample_data[1])
-        bin_cov = COV_THRESHOLD * subtotal * (READ_LENGTH - ASSEMBLY_K) / (READ_LENGTH - PROFILE_K)
-        shell("{REASSEMBLER_DIR}/spades.py --only-assembler -t {threads}"
-             " {params.left} {params.right} --pe1-ff -o {params.out}"
+        subtotal = float(open(input.cov).readline())
+        bin_cov = COV_CUTOFF * subtotal * (READ_LENGTH - ASSEMBLY_K) / (READ_LENGTH - PROFILE_K)
+        shell("{REASSEMBLER_DIR}/spades.py --meta --only-assembler -t {threads}"
+             " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff -o {params.out}"
              " --hidden-cov-cutoff {bin_cov} --series-analysis {input.config}"
              " >{log} 2>&1 && cp {params.out}/scaffolds.fasta {output}")
