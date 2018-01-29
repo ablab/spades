@@ -64,12 +64,8 @@ public:
     }
 };
 
-template<class ReadType, class Hasher>
-class CoverageFilter;
-
-//FIXME reduce code duplication, improve dispatching
-template<class Hasher>
-class CoverageFilter<SingleRead, Hasher> : public CoverageFilterBase<Hasher> {
+template<class SingleReadType, class Hasher>
+class CoverageFilter : public CoverageFilterBase<Hasher> {
     typedef CoverageFilterBase<Hasher> base;
 public:
     CoverageFilter(unsigned k, const Hasher &hasher,
@@ -77,51 +73,25 @@ public:
                    unsigned thr) :
             base(k, hasher, kmer_mlt_index, thr) {}
 
-    bool operator()(const SingleRead& r) const {
+    bool operator()(const SingleReadType &r) const {
         this->CheckMedianMlt(r.sequence());
     }
 };
 
-template<class Hasher>
-class CoverageFilter<SingleReadSeq, Hasher> : public CoverageFilterBase<Hasher> {
+template<class SingleReadType, class Hasher>
+class CoverageFilter<UniversalPairedRead<SingleReadType>, Hasher> : public CoverageFilterBase<Hasher> {
     typedef CoverageFilterBase<Hasher> base;
+    typedef UniversalPairedRead<SingleReadType> PairedReadType;
 public:
     CoverageFilter(unsigned k, const Hasher &hasher,
                    const utils::CQFKmerFilter &kmer_mlt_index,
                    unsigned thr) :
             base(k, hasher, kmer_mlt_index, thr) {}
 
-    bool operator()(const SingleReadSeq& r) const {
-        this->CheckMedianMlt(r.sequence());
-    }
-};
-
-template<class Hasher>
-class CoverageFilter<PairedRead, Hasher> : public CoverageFilterBase<Hasher> {
-    typedef CoverageFilterBase<Hasher> base;
-public:
-    CoverageFilter(unsigned k, const Hasher &hasher,
-                   const utils::CQFKmerFilter &kmer_mlt_index,
-                   unsigned thr) :
-            base(k, hasher, kmer_mlt_index, thr) {}
-
-    bool operator()(const PairedRead& r) const {
+    bool operator()(const PairedReadType& r) const {
         this->CheckMedianMlt(r.first().sequence()) || this->CheckMedianMlt(r.second().sequence());
     }
-};
 
-template<class Hasher>
-class CoverageFilter<PairedReadSeq, Hasher> : public CoverageFilterBase<Hasher> {
-    typedef CoverageFilterBase<Hasher> base;
-public:
-    CoverageFilter(unsigned k, const Hasher &hasher,
-                   const utils::CQFKmerFilter &kmer_mlt_index,
-                   unsigned thr) :
-            base(k, hasher, kmer_mlt_index, thr) {}
-
-    bool operator()(const PairedReadSeq& r) const {
-        this->CheckMedianMlt(r.first().sequence()) || this->CheckMedianMlt(r.second().sequence());
-    }
 };
 
 template<class ReadType, class Hasher>
