@@ -64,7 +64,7 @@ rule subsample:
 
 rule reassemble:
     input:   left="reassembly/{bin}/left.fq", right="reassembly/{bin}/right.fq",
-             config="reassembly/{bin}.yaml", cov="reassembly/{bin}/total.cov"
+             cov="reassembly/{bin}/total.cov"#, config="reassembly/{bin}.yaml"
     output:  "reassembly/bins/{bin}.fasta"
     params:  out="reassembly/{bin}"
     log:     "reassembly/{bin}.log"
@@ -74,6 +74,6 @@ rule reassemble:
         subtotal = float(open(input.cov).readline())
         bin_cov = COV_CUTOFF * subtotal * (READ_LENGTH - ASSEMBLY_K) / (READ_LENGTH - PROFILE_K)
         shell("{REASSEMBLER_DIR}/spades.py --meta --only-assembler -t {threads}"
-             " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff -o {params.out}"
-             " --hidden-cov-cutoff {bin_cov} --series-analysis {input.config}"
+             " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff"
+             " --hidden-cov-cutoff {bin_cov} -o {params.out}"
              " >{log} 2>&1 && cp {params.out}/scaffolds.fasta {output}")
