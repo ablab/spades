@@ -494,7 +494,7 @@ struct debruijn_config {
 
         struct scaffold_graph_construction {
           size_t count_threshold;
-          double score_threshold;
+          double vertex_multiplier;
           double connection_score_threshold;
           size_t connection_length_threshold;
           size_t connection_count_threshold;
