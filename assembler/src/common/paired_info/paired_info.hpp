@@ -12,15 +12,14 @@
 #include <btree/safe_btree_map.h>
 
 #include "paired_info_buffer.hpp"
-
+#include "assembly_graph/core/action_handlers.hpp"
 #include <type_traits>
 
 namespace omnigraph {
 
 namespace de {
-
 template<typename G, typename Traits, template<typename, typename> class Container>
-class PairedIndex : public PairedBuffer<G, Traits, Container> {
+class PairedIndex : public PairedBuffer<G, Traits, Container>, public omnigraph::GraphActionHandler<G> {
     typedef PairedIndex<G, Traits, Container> self;
     typedef PairedBuffer<G, Traits, Container> base;
 
@@ -281,7 +280,7 @@ public:
     //---------------- Constructor ----------------
 
     PairedIndex(const Graph &graph)
-        : base(graph)
+        : base(graph) , GraphActionHandler<Graph>(graph, "PairedIndexHandler")
     {}
 
 private:
