@@ -7,6 +7,7 @@
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/read_cloud_connection_conditions.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/containment_index_threshold_finder.hpp"
 
 namespace scaffold_graph_utils {
     using path_extend::scaffold_graph::ScaffoldGraph;
@@ -104,13 +105,15 @@ namespace scaffold_graph_utils {
         ScaffoldGraph ConstructBarcodeScoreScaffoldGraph(const ScaffoldGraph& scaffold_graph,
                                                          shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> extractor,
                                                          const Graph& graph, size_t count_threshold,
-                                                         size_t tail_threshold, double score_threshold) {
+                                                         size_t tail_threshold, double vertex_multiplier) {
             auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(graph, extractor,
                                                                                            count_threshold, tail_threshold);
             size_t num_threads = cfg::get().max_threads;
-            INFO("Constructing barcode score scaffold graph, score threshold: " << score_threshold);
+            path_extend::ScoreDistributionBasedThresholdFinder threshold_finder(g_, scaffold_graph, score_function, vertex_multiplier);
+            double hist_score_threshold = threshold_finder.GetThreshold();
+            INFO("Setting containment index threshold to " << hist_score_threshold);
             path_extend::scaffold_graph::ScoreFunctionScaffoldGraphConstructor
-                scaffold_graph_constructor(graph, scaffold_graph, score_function, score_threshold, num_threads);
+                scaffold_graph_constructor(graph, scaffold_graph, score_function, hist_score_threshold, num_threads);
             return *(scaffold_graph_constructor.Construct());
         }
 
