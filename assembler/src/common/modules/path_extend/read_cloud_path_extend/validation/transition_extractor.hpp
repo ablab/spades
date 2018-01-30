@@ -157,7 +157,6 @@ class TransitionStorageBuilder {
 
  public:
     ContigTransitionStorage GetTransitionStorage(const vector<vector<EdgeWithMapping>>& contig_paths) const {
-        INFO(contig_paths.size() << " paths");
         return BuildStorage(contig_paths);
     }
 

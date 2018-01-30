@@ -176,7 +176,6 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
         graph_->AddVertex(vertex);
     }
 
-    //fixme use iterator splitters!!
     vector<ScaffoldVertex> vertices_copy;
     std::copy(scaffold_vertices_.begin(), scaffold_vertices_.end(), std::back_inserter(vertices_copy));
 
@@ -197,7 +196,6 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
     size_t counter = 0;
     const size_t block_size = vertices_copy.size() / 20;
 
-    //fixme forforfor
 #pragma omp parallel for num_threads(max_threads_)
     for (size_t i = 0; i < vertices_copy.size(); ++i) {
         auto dij = omnigraph::CreateUniqueDijkstra(graph_->AssemblyGraph(), distance_, unique_storage_);

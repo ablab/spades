@@ -176,14 +176,14 @@ namespace read_cloud_statistics {
             size_t scaffolding_distance = params.initial_distance_;
             size_t tail_threshold = params.tail_threshold_;
             size_t count_threshold = params.count_threshold_;
-            double score_threshold = params.score_threshold_;
+            double vertex_multiplier = params.vertex_multiplier_;
 
             INFO("Constructing long edge barcode index");
             barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
             auto long_edge_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
                                                                        params.tail_threshold_,
                                                                        params.count_threshold_, 500,
-                                                                       cfg::get().max_threads, unique_storage_.unique_edges());
+                                                                       cfg::get().max_threads, unique_storage.unique_edges());
             auto long_edge_extractor = make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(long_edge_index);
             auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, barcode_extractor_ptr_);
 
@@ -196,18 +196,45 @@ namespace read_cloud_statistics {
                                                                        params.initial_distance_, vertex_predicate_params);
 
             size_t max_threads = cfg::get().max_threads;
-            INFO("Constructing scaffold graph");
+
+            const string initial_scaffold_graph_path = fs::append_path(cfg::get().load_from,
+                                                                       "initial_scaffold_graph_" +
+                                                                           std::to_string(unique_storage.min_length()) + ".scg");
+
+            path_extend::scaffold_graph::ScaffoldGraph scaffold_graph(gp_.g);
+            path_extend::ScaffoldGraphSerializer serializer;
+
             auto scaffold_helper = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage,
                                                                                   scaffolding_distance,
                                                                                   gp_.g, max_threads);
-            auto scaffold_graph = scaffold_helper.ConstructScaffoldGraphUsingDijkstra();
+
+            INFO("Initial scaffold graph path: " + initial_scaffold_graph_path);
+
+            if (fs::check_existence(initial_scaffold_graph_path)) {
+                INFO("Loading initial scaffold graph from" << initial_scaffold_graph_path);
+                ifstream fin(initial_scaffold_graph_path);
+                std::map<size_t, debruijn_graph::EdgeId> edge_id_map;
+                omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper(gp_.g);
+                INFO("Constructing edge map");
+                for (auto it = edge_it_helper.begin(); it != edge_it_helper.end(); ++it) {
+                    if (gp_.g.length(*it) >= unique_storage.min_length()) {
+                        edge_id_map.insert({it->int_id(), *it});
+                    }
+                };
+                INFO("Edge map construction finished");
+                INFO(edge_id_map.size() << " edges");
+                serializer.LoadScaffoldGraph(fin, scaffold_graph, edge_id_map);
+            } else {
+                INFO("Constructing scaffold graph");
+                scaffold_graph = scaffold_helper.ConstructScaffoldGraphUsingDijkstra();
+            }
             INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
 
             INFO("Constructing score scaffold graph");
 
             auto score_scaffold_graph = scaffold_helper.ConstructBarcodeScoreScaffoldGraph(scaffold_graph, long_edge_extractor,
                                                                                            gp_.g, count_threshold, tail_threshold,
-                                                                                           score_threshold);
+                                                                                           vertex_multiplier);
             INFO(score_scaffold_graph.VertexCount() << " vertices and " << score_scaffold_graph.EdgeCount() << " edges in score scaffold graph");
 
             INFO("Constructing barcode connection scaffold graph");
@@ -255,7 +282,7 @@ namespace read_cloud_statistics {
             INFO("Reference path: " << reference_path);
             INFO("Cloud contig path: " << cloud_contigs_path);
 
-            const size_t min_length = cfg::get().ts_res.long_edge_length_upper_bound;
+            const size_t min_length = cfg::get().ts_res.long_edge_length_lower_bound;
             path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
             path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
             unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
@@ -401,7 +428,7 @@ namespace read_cloud_statistics {
             INFO("Reference path: " << reference_path);
             INFO("Cloud contig path: " << cloud_contigs_path);
 
-            const size_t min_length = cfg::get().ts_res.long_edge_length_lower_bound;
+            const size_t min_length = cfg::get().ts_res.long_edge_length_upper_bound;
             path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
             path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
             unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
