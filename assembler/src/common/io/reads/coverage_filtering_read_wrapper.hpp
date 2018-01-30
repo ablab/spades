@@ -74,7 +74,7 @@ public:
             base(k, hasher, kmer_mlt_index, thr) {}
 
     bool operator()(const SingleReadType &r) const {
-        this->CheckMedianMlt(r.sequence());
+        return this->CheckMedianMlt(r.sequence());
     }
 };
 
@@ -89,7 +89,7 @@ public:
             base(k, hasher, kmer_mlt_index, thr) {}
 
     bool operator()(const PairedReadType& r) const {
-        this->CheckMedianMlt(r.first().sequence()) || this->CheckMedianMlt(r.second().sequence());
+        return this->CheckMedianMlt(r.first().sequence()) || this->CheckMedianMlt(r.second().sequence());
     }
 
 };
