@@ -10,7 +10,7 @@ namespace path_extend {
       size_t length_threshold_;
       size_t tail_threshold_;
       size_t count_threshold_;
-      double score_threshold_;
+      double vertex_multiplier_;
       double connection_score_threshold_;
       size_t connection_length_threshold_;
       size_t connection_count_threshold_;
@@ -21,7 +21,7 @@ namespace path_extend {
       ScaffolderParams(size_t length_threshold_,
                        size_t tail_threshold_,
                        size_t count_threshold_,
-                       double score_threshold_,
+                       double vertex_multiplier_,
                        double connection_barcode_threshold_,
                        size_t connection_length_threshold_,
                        size_t connection_count_threshold_,
@@ -136,11 +136,13 @@ namespace path_extend {
         const Graph &g_;
         const ScaffolderParams& params_;
         const string name_;
+        bool save_initial_graph_;
 
 
      public:
         CloudScaffoldGraphConstructionPipeline(shared_ptr<scaffold_graph::ScaffoldGraphConstructor> initial_constructor_,
-                                               const Graph& g, const ScaffolderParams &params, const string &name);
+                                               const Graph& g, const ScaffolderParams &params,
+                                               const string &name, bool save_initial_graph);
 
         void AddStage(shared_ptr<IterativeScaffoldGraphConstructorCaller> stage);
 

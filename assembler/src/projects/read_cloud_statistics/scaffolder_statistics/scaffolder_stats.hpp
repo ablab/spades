@@ -222,19 +222,6 @@ struct BarcodesInTheMiddleStats: read_cloud_statistics::Statistic {
   }
 };
 
-struct ScoreStats: read_cloud_statistics::Statistic {
-  size_t overall_;
-  size_t passed_;
-
-  ScoreStats(size_t overall_, size_t passed_)
-      : Statistic("score_stats"), overall_(overall_), passed_(passed_) {}
-
-  void Serialize(const string& path) override {
-      ofstream fout(path);
-      fout << "Passed: " << passed_ << endl;
-      fout << "Overall: " << overall_ << endl;
-  }
-};
 
 struct ScoreDistributionPair {
   vector<double> close_scores_;
@@ -363,8 +350,8 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
         auto filtered_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths_);
 
-//        auto short_edge_dataset = make_shared<ShortEdgeDataset>(GetShortEdgeDataset(reference_paths_, filtered_paths));
-//        AddStatistic(short_edge_dataset);
+        auto short_edge_dataset = make_shared<ShortEdgeDataset>(GetShortEdgeDataset(reference_paths_, filtered_paths));
+        AddStatistic(short_edge_dataset);
 
         auto long_edge_dataset = make_shared<LongEdgePairDataset>(GetLongEdgeDataset(filtered_paths));
         AddStatistic(long_edge_dataset);
@@ -396,7 +383,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
     CloudConnectionStats GetCloudConnectionStats(const vector<vector<EdgeWithMapping>>& reference_paths,
                                                  const ScaffoldGraph& score_scaffold_graph) {
         const double min_threshold = 0.0;
-        const double max_threshold = 5.0;
+        const double max_threshold = 8.0;
         const double threshold_step = 0.5;
         vector<double> thresholds;
         for (double t = min_threshold; math::le(t, max_threshold); t += threshold_step) {
@@ -684,46 +671,6 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         return not are_close;
     }
 
-    ScoreStats GetScoreStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
-        size_t count_threshold = scaff_params_.count_threshold_;
-        size_t tail_threshold = scaff_params_.tail_threshold_;
-        path_extend::NormalizedBarcodeScoreFunction score_function(g_, long_edge_extractor_, count_threshold, tail_threshold);
-        size_t overall = 0;
-        size_t passed = 0;
-        vector<double> scores;
-        for (const auto& path: reference_paths) {
-            for (auto first = path.begin(), second = std::next(first); second != path.end(); ++first, ++second) {
-                EdgeWithMapping first_ewm = *first;
-                EdgeWithMapping second_ewm = *second;
-                EdgeId first_edge = first_ewm.edge_;
-                EdgeId second_edge = second_ewm.edge_;
-                auto first_barcodes = barcode_extractor_ptr_->GetBarcodesFromRange(first_edge, count_threshold,
-                                                                                   g_.length(first_edge) - tail_threshold,
-                                                                                   g_.length(first_edge));
-                auto second_barcodes = barcode_extractor_ptr_->GetBarcodesFromRange(second_edge, count_threshold,
-                                                                                    0, tail_threshold);
-                ScaffoldGraph::ScaffoldEdge scaffold_edge(first_ewm.edge_, second_ewm.edge_);
-                double score = score_function.GetScore(scaffold_edge);
-                if (score > scaff_params_.score_threshold_) {
-                    ++passed;
-                }
-                DEBUG("First id: " << first_ewm.edge_.int_id());
-                DEBUG("Second id: " << second_ewm.edge_.int_id());
-                DEBUG("First barcodes: " << first_barcodes.size());
-                DEBUG("Second barcodes: " << second_barcodes.size());
-                DEBUG("Shared barcodes: " << long_edge_extractor_->GetIntersectionSize(first_ewm.edge_, second_ewm.edge_));
-                DEBUG("Distance: " << second_ewm.mapping_.start_pos - first_ewm.mapping_.end_pos);
-                DEBUG("Score: " << score);
-                scores.push_back(score);
-                ++overall;
-            }
-        }
-        std::sort(scores.begin(), scores.end());
-        DEBUG(scores);
-        ScoreStats result(overall, passed);
-        return result;
-    }
-
     NextSplitIntersectionStats GetNextSplitStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
         path_extend::validation::GeneralTransitionStorageBuilder forward_storage_builder(g_, 1, false, false);
         auto forward_transitions = forward_storage_builder.GetTransitionStorage(reference_paths);
@@ -801,6 +748,8 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
                                                const LongEdgePathIndex &long_edge_path_index,
                                                const vector<vector<EdgeWithMapping>> &reference_paths) {
         vector<ShortEdgeEntry> entries;
+        INFO(transition_storage.size() << " correct long edge transitions");
+        const size_t MAX_RANDOM_EDGES = 5000;
         for (const auto& transition: transition_storage) {
             EdgeId first = transition.first_;
             EdgeId second = transition.second_;
@@ -819,19 +768,24 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
             auto first_entry = long_edge_extractor_->GetTailEntry(first);
             auto second_entry = long_edge_extractor_->GetHeadEntry(second);
             auto correct_edges = GetEdgesBetweenPair(first_pos, second_pos, reference_path);
-            INFO(correct_edges.size() << " correct edges.");
             auto random_edges = GetReachableEdges(first);
-            INFO(random_edges.size() << " random edges.");
+            DEBUG(correct_edges.size() << " correct edges.");
+            DEBUG(random_edges.size() << " random edges.");
             for (const auto& edge: correct_edges) {
                 auto short_edge_entry = GetShortEdgeEntry(edge, first_entry, second_entry,
                                                           g_.coverage(first), g_.coverage(second), true);
                 entries.push_back(short_edge_entry);
             }
+            size_t current_random_edges = 0;
             for (const auto& edge: random_edges) {
                 if (correct_edges.find(edge) == correct_edges.end()) {
                     auto short_edge_entry = GetShortEdgeEntry(edge, first_entry, second_entry,
                                                               g_.coverage(first), g_.coverage(second), false);
                     entries.push_back(short_edge_entry);
+                    ++current_random_edges;
+                }
+                if (current_random_edges > MAX_RANDOM_EDGES) {
+                    break;
                 }
             }
         }

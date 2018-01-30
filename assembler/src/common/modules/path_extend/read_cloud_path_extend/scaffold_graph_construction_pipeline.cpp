@@ -1,5 +1,6 @@
 #include "scaffold_graph_construction_pipeline.hpp"
 #include "barcode_index/scaffold_vertex_index_builder.hpp"
+#include "containment_index_threshold_finder.hpp"
 #include "scaffold_graph_extractor.hpp"
 
 namespace path_extend {
@@ -23,7 +24,8 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
     auto iterative_constructor_callers = ConstructStages(params, unique_storage, scaffold_vertices,
                                                          launch_full_pipeline, path_merge_pipeline);
     INFO("Created constructors");
-    CloudScaffoldGraphConstructionPipeline pipeline(initial_constructor, gp_.g, params, initial_graph_name);
+    bool save_initial_graph = not path_merge_pipeline;
+    CloudScaffoldGraphConstructionPipeline pipeline(initial_constructor, gp_.g, params, initial_graph_name, save_initial_graph);
     for (const auto stage: iterative_constructor_callers) {
         pipeline.AddStage(stage);
     }
@@ -125,8 +127,10 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
     //fixme remove code duplication
     auto iterative_constructor_callers = ConstructStages(params, unique_storage, scaffold_vertices,
                                                          launch_full_pipeline, path_merge_pipeline);
+    bool save_initial_graph = not path_merge_pipeline;
     INFO("Created constructors");
-    CloudScaffoldGraphConstructionPipeline pipeline(constructor, gp_.g, params, std::to_string(params.length_threshold_));
+    CloudScaffoldGraphConstructionPipeline pipeline(constructor, gp_.g, params,
+                                                    std::to_string(params.length_threshold_), save_initial_graph);
     for (const auto stage: iterative_constructor_callers) {
         pipeline.AddStage(stage);
     }
@@ -159,29 +163,26 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParamsFromCfg(s
     size_t length_threshold = min_length;
     size_t tail_threshold = min_length;
     size_t count_threshold = cfg::get().ts_res.scaff_con.count_threshold;
-    double score_threshold = cfg::get().ts_res.scaff_con.score_threshold;
 
-//    //fixme configs
-//    const size_t min_pipeline_length = 15000;
-//    if (min_length >= min_pipeline_length) {
-//        INFO("Changing score threshold");
-//        score_threshold = 0.05;
-//    }
-
+    size_t upper_bound = cfg::get().ts_res.long_edge_length_upper_bound;
+    const double LENGTH_NORMALIZER_EXPONENT = 0.66;
+    double length_normalizer = std::pow(static_cast<double>(upper_bound) / static_cast<double>(min_length),
+                                        LENGTH_NORMALIZER_EXPONENT);
+    double vertex_multiplier = cfg::get().ts_res.scaff_con.vertex_multiplier * length_normalizer;
     double connection_score_threshold = cfg::get().ts_res.scaff_con.connection_score_threshold;
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
     size_t connection_count_threshold = cfg::get().ts_res.scaff_con.connection_count_threshold;
     size_t initial_distance = cfg::get().ts_res.scaff_con.initial_distance;
     double split_procedure_strictness = cfg::get().ts_res.scaff_con.split_procedure_strictness;
     size_t transitive_distance_threshold = cfg::get().ts_res.scaff_con.transitive_distance_threshold;
-    ScaffolderParams result(length_threshold, tail_threshold, count_threshold, score_threshold,
+    ScaffolderParams result(length_threshold, tail_threshold, count_threshold, vertex_multiplier,
                             connection_score_threshold, connection_length_threshold, connection_count_threshold,
                             initial_distance, split_procedure_strictness, transitive_distance_threshold);
     return result;
 }
 
 path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_, size_t tail_threshold_,
-                                                size_t count_threshold_, double score_threshold_,
+                                                size_t count_threshold_, double vertex_multiplier_,
                                                 double connection_score_threshold, size_t connection_length_threshold_,
                                                 size_t connection_count_threshold,
                                                 size_t initial_distance_, double split_procedure_strictness_,
@@ -189,7 +190,7 @@ path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_, size_t
     length_threshold_(length_threshold_),
     tail_threshold_(tail_threshold_),
     count_threshold_(count_threshold_),
-    score_threshold_(score_threshold_),
+    vertex_multiplier_(vertex_multiplier_),
     connection_score_threshold_(connection_score_threshold),
     connection_length_threshold_(connection_length_threshold_),
     connection_count_threshold_(connection_count_threshold),
@@ -233,9 +234,12 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> BarcodeScoreConstructorCall
     auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(g_, barcode_extractor_,
                                                                                    params.count_threshold_,
                                                                                    params.tail_threshold_);
+    ScoreDistributionBasedThresholdFinder threshold_finder(g_, scaffold_graph, score_function, params.vertex_multiplier_);
+    double score_threshold = threshold_finder.GetThreshold();
+    INFO("Setting containment index threshold to " << score_threshold);
     auto constructor = make_shared<scaffold_graph::ScoreFunctionScaffoldGraphConstructor>(g_, scaffold_graph,
                                                                                           score_function,
-                                                                                          params.score_threshold_,
+                                                                                          score_threshold,
                                                                                           max_threads_);
     return constructor;
 }
@@ -346,9 +350,9 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
 }
 CloudScaffoldGraphConstructionPipeline::CloudScaffoldGraphConstructionPipeline(
         shared_ptr<scaffold_graph::ScaffoldGraphConstructor> initial_constructor_, const Graph &g,
-        const ScaffolderParams& params, const string &name)
+        const ScaffolderParams& params, const string &name, bool save_initial_graph)
     : initial_constructor_(initial_constructor_), construction_stages_(),
-      intermediate_results_(), g_(g), params_(params), name_(name) {}
+      intermediate_results_(), g_(g), params_(params), name_(name), save_initial_graph_(save_initial_graph) {}
 void CloudScaffoldGraphConstructionPipeline::Run() {
     //fixme move saving to somewhere more appropriate
     const string initial_scaffold_graph_path = fs::append_path(cfg::get().load_from,
@@ -356,7 +360,7 @@ void CloudScaffoldGraphConstructionPipeline::Run() {
     auto initial_graph_ptr = std::make_shared<ScaffoldGraph>(g_);
     INFO(initial_scaffold_graph_path);
     ScaffoldGraphSerializer serializer;
-    if (cfg::get().ts_res.save_initial_scaffold_graph and fs::check_existence(initial_scaffold_graph_path)) {
+    if (save_initial_graph_ and fs::check_existence(initial_scaffold_graph_path)) {
         INFO("Loading initial scaffold graph from" << initial_scaffold_graph_path);
         ifstream fin(initial_scaffold_graph_path);
         std::map<size_t, debruijn_graph::EdgeId> edge_id_map;
