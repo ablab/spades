@@ -546,7 +546,7 @@ class DijkstraEndsReconstructor {
                                 INFO("Update max_path_len=" << ed + score);
                             }
                             path_max_length_ = min(path_max_length_, ed + score);
-                            QueueState state(GraphState(e, 0, positions[0]), ss_.size() - 1);
+                            QueueState state(GraphState(e, 0, positions[0] + 1), ss_.size() - 1);
                             Update(state, cur_state, ed + score, ed + score, true);
                             if (ed + score == path_max_length_) {
                                  min_score_ = ed + score;
@@ -574,15 +574,6 @@ class DijkstraEndsReconstructor {
                     state = prev_states_[state];
                 }
                 std::reverse(gap_path_.begin(), gap_path_.end());
-                string tmp = "";
-                for (int i = 1; i < gap_path_.size() - 1; ++i) {
-                    size_t len = g_.length(gap_path_[i]);
-                    string t = g_.EdgeNucls(gap_path_[i]).First(len).str();
-                    tmp += t;
-                }
-                size_t len = g_.length(gap_path_[0]);
-                string t = g_.EdgeNucls(gap_path_[0]).First(len).Last(len - start_p_).str();
-                path_str_ += t + tmp + g_.EdgeNucls(gap_path_[gap_path_.size() - 1]).First(end_qstate_.gs.end_pos).str();
             }
             return;
         }
@@ -599,10 +590,6 @@ class DijkstraEndsReconstructor {
             INFO("End position edge=" << end_qstate_.gs.e.int_id() << " end_pos=" << end_qstate_.gs.end_pos << " seq_pos=" << end_qstate_.i << " s_len=" << ss_.size())
             return end_qstate_.gs.end_pos;
         }        
-
-        string GetPathStr() {
-            return path_str_;
-        }
 
     protected:
         std::set<std::pair<int, QueueState> > q_;
@@ -621,7 +608,6 @@ class DijkstraEndsReconstructor {
         int path_max_length_;
         int min_score_;
         QueueState end_qstate_;
-        string path_str_;
 };
 
 //class EndsConstructor: public AbstractGapFiller {

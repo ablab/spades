@@ -193,15 +193,21 @@ public:
             for (const EdgeId &e: ans){
                 s_ans += std::to_string(e.int_id()) + ",";
             }        
-            string ans_str = PathToString(ans);
-            string tmp = ans_str.substr(mapping.mapped_range.end_pos, 
-                                        ans_str.size() - (g_.length(ans[ans.size() - 1]) - algo.GetPathEndPosition() ) );
-            string algo_str = algo.GetPathStr();
-            INFO("tmp=" << tmp << "\n ss=" << ss.str() << "\n algo_str=" << algo_str)
+            string ans_str = "";
+            string tmp = "";
+            for (int i = 1; i < ans.size() - 1; ++i) {
+                size_t len = g_.length(ans[i]);
+                string t = g_.EdgeNucls(ans[i]).First(len).str();
+                tmp += t;
+            }
+            size_t len = g_.length(ans[0]);
+            string t = g_.EdgeNucls(ans[0]).First(len).Last(len - start_pos).str();
+            ans_str = t + tmp + g_.EdgeNucls(ans[ans.size() - 1]).First(algo.GetPathEndPosition()).str();
+            INFO("ss=" << ss.str() << "\n ans_str=" << ans_str)
+            INFO("s_len=" << ss.size() << "\n s_size=" << ans_str.size())
 
-            int cur_score = StringDistance(tmp, ss.str());
-            int cur_score2 = StringDistance(algo_str, ss.str());
-            INFO("Forward EdgeDijkstra edge=" << start_e.int_id() <<  " End path: " << s_ans << " score=" << score << " cur_score=" << cur_score << " cur_score2=" << cur_score2)
+            int cur_score = StringDistance(ans_str, ss.str());
+            INFO("Forward EdgeDijkstra edge=" << start_e.int_id() <<  " End path: " << s_ans << " score=" << score << " cur_score=" << cur_score)
         }
         // EdgeId c_start_e = g_.conjugate(path.edge_at(0));
         // omnigraph::MappingRange c_mapping = path.mapping_at(0);
