@@ -131,7 +131,7 @@ rule annotate:
 SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(ASSEMBLY_K)
 
 rule prop_binning:
-    input:   contigs="assembly/spades/{group}.fasta", splits="assembly/splits/{group}.fasta",
+    input:   contigs="assembly/spades/{group}.fasta", splits="assembly/{}/{{group}}.fasta".format(FRAGS),
              ann="binning/annotation/{group}.ann",    left=left_reads, right=right_reads,
              bins="binning/filtered_bins.tsv"
     output:  ann="propagation/annotation/{group}.ann", edges="propagation/edges/{group}.fasta"
