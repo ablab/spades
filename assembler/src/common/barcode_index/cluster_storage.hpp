@@ -344,7 +344,6 @@ class InitialClusterStorageBuilder {
     InitialClusterStorage ConstructInitialClusterStorage() {
         ClusterStorage cluster_storage;
         InternalEdgeClusterStorage edge_cluster_storage;
-        INFO("Constructing initial cluster storage");
         ConstructClusterStorageFromUnique(cluster_storage, edge_cluster_storage);
         INFO("Cluster storage construction finished");
         InitialClusterStorage result(std::move(cluster_storage), std::move(edge_cluster_storage));

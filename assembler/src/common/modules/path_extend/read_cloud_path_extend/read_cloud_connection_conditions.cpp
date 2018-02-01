@@ -17,7 +17,8 @@ map<EdgeId, double> AssemblyGraphUniqueConnectionCondition::ConnectedWith(EdgeId
         }
     }
 
-    auto dij = omnigraph::CreateUniqueDijkstra(g_, max_connection_length_, unique_storage_);
+    ReadCloudDijkstraHelper helper;
+    auto dij = helper.CreateUniqueDijkstra(g_, max_connection_length_, unique_storage_);
     dij.Run(g_.EdgeEnd(e));
     for (auto v: dij.ReachedVertices()) {
         for (auto connected: g_.OutgoingEdges(v)) {
@@ -90,10 +91,11 @@ bool ReadCloudMiddleDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph
     auto barcode_intersection =
         long_edge_extractor_->GetIntersection(scaffold_edge.getStart(), scaffold_edge.getEnd());
     DEBUG("Intersection size: " << barcode_intersection.size());
-    auto long_gap_dijkstra = CreateLongGapCloserDijkstra(g, params_.distance_, unique_storage_,
-                                                         short_edge_extractor_, long_edge_extractor_,
-                                                         scaffold_edge.getStart(), scaffold_edge.getEnd(),
-                                                         params_.edge_pair_gap_closer_params_);
+    ReadCloudDijkstraHelper helper;
+    auto long_gap_dijkstra = helper.CreateLongGapCloserDijkstra(g, params_.distance_, unique_storage_,
+                                                                short_edge_extractor_, long_edge_extractor_,
+                                                                scaffold_edge.getStart(), scaffold_edge.getEnd(),
+                                                                params_.edge_pair_gap_closer_params_);
     DEBUG("Created dijkstra");
     long_gap_dijkstra.Run(scaffold_edge.getStart().getEndGraphVertex(g));
     DEBUG("Dijkstra finished");

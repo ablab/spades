@@ -421,6 +421,7 @@ vector<SubgraphPathExtractor::ScaffoldVertex> SubgraphPathExtractor::ExtractPath
     if (not utils.IsSimplePath(graph, source, sink)) {
         DEBUG("Trying to extract simple path from cleaned graph");
         auto score_function = score_function_builder_->GetScoreFunction(cleaned_graph, source, sink);
+        DEBUG("Got score function");
         auto score_path = ExtractPathUsingScoreFunction(cleaned_graph, source, sink, score_function);
         DEBUG("Score path size: " << score_path.size());
         if (score_path.size() != 0) {
@@ -487,7 +488,7 @@ std::pair<SubgraphPathExtractor::ScaffoldVertex, double> SubgraphPathExtractor::
         double current_score = score_function->GetScore(scaff_edge);
         TRACE("Current edge: " << (*it).int_id());
         TRACE("Current score: " << current_score);
-        if (math::gr(current_score, max_score)) {
+        if (math::ge(current_score, max_score)) {
             TRACE("New max score");
             next = *it;
             max_score = current_score;

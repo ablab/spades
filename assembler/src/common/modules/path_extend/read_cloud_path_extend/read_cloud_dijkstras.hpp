@@ -133,46 +133,6 @@ class UniquePutChecker : public VertexPutChecker<Graph, distance_t> {
     DECL_LOGGER("UniquePutChecker")
 };
 
-//    typedef ComposedDijkstraSettings<Graph,
-//            LengthCalculator<Graph>,
-//            BoundProcessChecker<Graph>,
-//            UniquePutChecker<Graph>,
-//            PairedConnectionNeighbourIteratorFactory<Graph> > PairedDijkstraSettings;
-//
-//    typedef Dijkstra<Graph, PairedDijkstraSettings> PairedDijkstra;
-//
-//    static PairedDijkstra CreatePairedDijkstra(const Graph &graph, size_t length_bound,
-//                                               const path_extend::ScaffoldingUniqueEdgeStorage unique_storage,
-//                                               const path_extend::PairedLibConnectionCondition& paired_connection_condition,
-//                                               size_t max_vertex_number = -1ul) {
-//        return PairedDijkstra(graph,
-//                PairedDijkstraSettings(
-//                    LengthCalculator<Graph>(graph),
-//                    BoundProcessChecker<Graph>(length_bound),
-//                    UniquePutChecker<Graph>(graph, unique_storage),
-//                    PairedConnectionNeighbourIteratorFactory<Graph>(graph, paired_connection_condition)),
-//                max_vertex_number);
-//    }
-
-typedef ComposedDijkstraSettings<Graph,
-                                 LengthCalculator<Graph>,
-                                 BoundProcessChecker<Graph>,
-                                 UniquePutChecker<Graph>,
-                                 ForwardNeighbourIteratorFactory<Graph> > UniqueDijkstraSettings;
-
-typedef Dijkstra<Graph, UniqueDijkstraSettings> UniqueDijkstra;
-
-static UniqueDijkstra CreateUniqueDijkstra(const Graph& graph, size_t length_bound,
-                                           const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
-                                           size_t max_vertex_number = -1ul) {
-    return UniqueDijkstra(graph,
-                          UniqueDijkstraSettings(
-                              LengthCalculator<Graph>(graph),
-                              BoundProcessChecker<Graph>(length_bound),
-                              UniquePutChecker<Graph>(graph, unique_storage),
-                              ForwardNeighbourIteratorFactory<Graph>(graph)),
-                          max_vertex_number);
-}
 
 //------------------------------
 // barcode based dijkstra
@@ -203,50 +163,73 @@ class BarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t> {
     DECL_LOGGER("BarcodePutChecker")
 };
 
-static CompositePutChecker<Graph>
-CreateLongGapCloserPutChecker(const Graph& g, const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
-                              shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
-                              shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> long_edge_extractor,
-                              const path_extend::scaffold_graph::ScaffoldVertex& start,
-                              const path_extend::scaffold_graph::ScaffoldVertex& end,
-                              const path_extend::LongEdgePairGapCloserParams& params) {
-    auto pair_entry_processor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
-        long_edge_extractor->GetTailEntry(start),
-        long_edge_extractor->GetHeadEntry(end),
-        short_edge_extractor);
+class ReadCloudDijkstraHelper {
+
+ public:
+    typedef ComposedDijkstraSettings<Graph,
+                                     LengthCalculator<Graph>,
+                                     BoundProcessChecker<Graph>,
+                                     UniquePutChecker<Graph>,
+                                     ForwardNeighbourIteratorFactory<Graph> > UniqueDijkstraSettings;
+
+    typedef Dijkstra<Graph, UniqueDijkstraSettings> UniqueDijkstra;
+
+    static UniqueDijkstra CreateUniqueDijkstra(const Graph& graph, size_t length_bound,
+                                               const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
+                                               size_t max_vertex_number = -1ul) {
+        return UniqueDijkstra(graph,
+                              UniqueDijkstraSettings(
+                                  LengthCalculator<Graph>(graph),
+                                  BoundProcessChecker<Graph>(length_bound),
+                                  UniquePutChecker<Graph>(graph, unique_storage),
+                                  ForwardNeighbourIteratorFactory<Graph>(graph)),
+                              max_vertex_number);
+    }
+
+    static CompositePutChecker<Graph>
+    CreateLongGapCloserPutChecker(const Graph& g, const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
+                                  shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
+                                  shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> long_edge_extractor,
+                                  const path_extend::scaffold_graph::ScaffoldVertex& start,
+                                  const path_extend::scaffold_graph::ScaffoldVertex& end,
+                                  const path_extend::LongEdgePairGapCloserParams& params) {
+        auto pair_entry_processor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
+            long_edge_extractor->GetTailEntry(start),
+            long_edge_extractor->GetHeadEntry(end),
+            short_edge_extractor);
 //    auto pair_entry_processor = make_shared<path_extend::IntersectionBasedPairEntryProcessor>(barcode_intersection,
 //                                                                                              short_edge_extractor);
-    auto barcode_put_checker = make_shared<BarcodedPathPutChecker<Graph>>(g, short_edge_extractor, pair_entry_processor,
-                                                                          start, end, params);
-    auto unique_put_checker = make_shared<UniquePutChecker<Graph>>(g, unique_storage);
-    vector<shared_ptr<VertexPutChecker<Graph>>> put_checkers({unique_put_checker, barcode_put_checker});
-    return CompositePutChecker<Graph>(put_checkers);
-}
+        auto barcode_put_checker = make_shared<BarcodedPathPutChecker<Graph>>(g, short_edge_extractor, pair_entry_processor,
+                                                                              start, end, params);
+        auto unique_put_checker = make_shared<UniquePutChecker<Graph>>(g, unique_storage);
+        vector<shared_ptr<VertexPutChecker<Graph>>> put_checkers({unique_put_checker, barcode_put_checker});
+        return CompositePutChecker<Graph>(put_checkers);
+    }
 
-typedef ComposedDijkstraSettings<Graph,
-                                 LengthCalculator<Graph>,
-                                 BoundProcessChecker<Graph>,
-                                 CompositePutChecker<Graph>,
-                                 ForwardNeighbourIteratorFactory<Graph> > LongGapCloserDijkstraSettings;
+    typedef ComposedDijkstraSettings<Graph,
+                                     LengthCalculator<Graph>,
+                                     BoundProcessChecker<Graph>,
+                                     CompositePutChecker<Graph>,
+                                     ForwardNeighbourIteratorFactory<Graph> > LongGapCloserDijkstraSettings;
 
-typedef Dijkstra<Graph, LongGapCloserDijkstraSettings> LongGapCloserDijkstra;
+    typedef Dijkstra<Graph, LongGapCloserDijkstraSettings> LongGapCloserDijkstra;
 
-static LongGapCloserDijkstra CreateLongGapCloserDijkstra(const Graph& graph, size_t length_bound,
-                                                         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
-                                                         shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
-                                                         shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> long_edge_extractor,
-                                                         const path_extend::scaffold_graph::ScaffoldVertex& start,
-                                                         const path_extend::scaffold_graph::ScaffoldVertex& end,
-                                                         const path_extend::LongEdgePairGapCloserParams& vertex_predicate_params,
-                                                         size_t max_vertex_number = -1ul) {
-    return LongGapCloserDijkstra(graph,
-                          LongGapCloserDijkstraSettings(
-                              LengthCalculator<Graph>(graph),
-                              BoundProcessChecker<Graph>(length_bound),
-                              CreateLongGapCloserPutChecker(graph, unique_storage, short_edge_extractor, long_edge_extractor,
-                                                            start, end, vertex_predicate_params),
-                              ForwardNeighbourIteratorFactory<Graph>(graph)),
-                          max_vertex_number);
-}
-
+    static LongGapCloserDijkstra CreateLongGapCloserDijkstra(const Graph& graph, size_t length_bound,
+                                                             const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
+                                                             shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
+                                                             shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> long_edge_extractor,
+                                                             const path_extend::scaffold_graph::ScaffoldVertex& start,
+                                                             const path_extend::scaffold_graph::ScaffoldVertex& end,
+                                                             const path_extend::LongEdgePairGapCloserParams& vertex_predicate_params,
+                                                             size_t max_vertex_number = -1ul) {
+        return LongGapCloserDijkstra(graph,
+                                     LongGapCloserDijkstraSettings(
+                                         LengthCalculator<Graph>(graph),
+                                         BoundProcessChecker<Graph>(length_bound),
+                                         CreateLongGapCloserPutChecker(graph, unique_storage, short_edge_extractor, long_edge_extractor,
+                                                                       start, end, vertex_predicate_params),
+                                         ForwardNeighbourIteratorFactory<Graph>(graph)),
+                                     max_vertex_number);
+    }
+};
 }

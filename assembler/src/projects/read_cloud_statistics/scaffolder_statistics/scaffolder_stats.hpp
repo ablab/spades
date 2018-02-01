@@ -806,7 +806,8 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
     unordered_set<EdgeId> GetReachableEdges(const EdgeId &long_edge) {
         const size_t LENGTH_BOUND = 40000;
         unordered_set<EdgeId> reached_edges;
-        auto unique_dijkstra = CreateUniqueDijkstra(g_, LENGTH_BOUND, unique_storage_);
+        ReadCloudDijkstraHelper helper;
+        auto unique_dijkstra = helper.CreateUniqueDijkstra(g_, LENGTH_BOUND, unique_storage_);
         unique_dijkstra.Run(g_.EdgeEnd(long_edge));
         for (const auto& reached_vertex: unique_dijkstra.ReachedVertices()) {
             const auto& outgoing_edges = g_.OutgoingEdges(reached_vertex);

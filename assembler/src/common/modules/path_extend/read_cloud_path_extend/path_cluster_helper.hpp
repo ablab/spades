@@ -10,5 +10,7 @@ namespace path_extend {
         PathClusterTransitionStorageHelper(const cluster_storage::ClusterStorage& cluster_storage_, const Graph& graph_);
 
         transitions::ClusterTransitionStorage GetPathClusterTransitionStorage();
+
+        DECL_LOGGER("PathClusterTransitionStorageHelper");
     };
 }
