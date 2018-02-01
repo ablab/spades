@@ -494,6 +494,7 @@ void load(debruijn_config::read_cloud_resolver::scaffold_graph_construction& sca
     load(scaff_con.count_threshold, pt, "count_threshold");
     load(scaff_con.vertex_multiplier, pt, "vertex_multiplier");
     load(scaff_con.connection_score_threshold, pt, "connection_score_threshold");
+    load(scaff_con.relative_coverage_threshold, pt, "relative_coverage_threshold");
     load(scaff_con.connection_length_threshold, pt, "connection_length_threshold");
     load(scaff_con.connection_count_threshold, pt, "connection_count_threshold");
     load(scaff_con.initial_distance, pt, "initial_distance");
@@ -531,6 +532,8 @@ void load(debruijn_config::read_cloud_resolver& ts_res,
     load(ts_res.debug_mode, pt, "debug_mode");
     load(ts_res.save_initial_scaffold_graph, pt, "save_initial_graph");
     load(ts_res.gap_closer_connection_score_threshold, pt, "gap_closer_connection_score_threshold");
+    load(ts_res.gap_closer_relative_coverage_threshold, pt, "gap_closer_relative_coverage_threshold");
+    load(ts_res.gap_closer_connection_length_threshold, pt, "gap_closer_connection_length_threshold");
 }
 
 void load(bwa_aligner& bwa,

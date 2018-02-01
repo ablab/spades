@@ -77,10 +77,12 @@ ts_res
 	long_edge_length_upper_bound 20000
 	long_edge_length_lower_bound 5000
 
-	gap_closer_connection_score_threshold 2.0
+	gap_closer_connection_score_threshold 1.5
+	gap_closer_relative_coverage_threshold 50.0
+	gap_closer_connection_length_threshold 50
 
 	scaffold_polisher {
-		share_threshold 0.1
+		share_threshold 2.0
 		read_count_threshold 2
 		max_scaffold_distance 4
 		path_cluster_linkage_distance 2500
@@ -89,20 +91,21 @@ ts_res
 	}
 
 	scaffold_graph_construction {
-		count_threshold 2
-		score_threshold 3.0
+		count_threshold 1
+		vertex_multiplier 5.0
 		connection_score_threshold 1.5
+		relative_coverage_threshold 4.0
 	    connection_length_threshold 50
 	    connection_count_threshold 1
-	    initial_distance 80000
+	    initial_distance 100000
 	    split_strictness 0.85
 	    transitive_distance_threshold 3
 	    path_scaffolder_tail_threshold 20000
-	    path_scaffolder_count_threshold 3
-	    min_edge_length_for_barcode_collection 1000
+	    path_scaffolder_count_threshold 1
+	    min_edge_length_for_barcode_collection 500
 	}
 
 	path_scaffolding_on true
 	debug_mode false
-	save_initial_graph true
+	save_initial_graph false
 }
