@@ -17,7 +17,8 @@ map<EdgeId, double> AssemblyGraphUniqueConnectionCondition::ConnectedWith(EdgeId
         }
     }
 
-    auto dij = omnigraph::CreateUniqueDijkstra(g_, max_connection_length_, unique_storage_);
+    ReadCloudDijkstraHelper helper;
+    auto dij = helper.CreateUniqueDijkstra(g_, max_connection_length_, unique_storage_);
     dij.Run(g_.EdgeEnd(e));
     for (auto v: dij.ReachedVertices()) {
         for (auto connected: g_.OutgoingEdges(v)) {
@@ -90,10 +91,11 @@ bool ReadCloudMiddleDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph
     auto barcode_intersection =
         long_edge_extractor_->GetIntersection(scaffold_edge.getStart(), scaffold_edge.getEnd());
     DEBUG("Intersection size: " << barcode_intersection.size());
-    auto long_gap_dijkstra = CreateLongGapCloserDijkstra(g, params_.distance_, unique_storage_,
-                                                         short_edge_extractor_, long_edge_extractor_,
-                                                         scaffold_edge.getStart(), scaffold_edge.getEnd(),
-                                                         params_.edge_pair_gap_closer_params_);
+    ReadCloudDijkstraHelper helper;
+    auto long_gap_dijkstra = helper.CreateLongGapCloserDijkstra(g, params_.distance_, unique_storage_,
+                                                                short_edge_extractor_, long_edge_extractor_,
+                                                                scaffold_edge.getStart(), scaffold_edge.getEnd(),
+                                                                params_.edge_pair_gap_closer_params_);
     DEBUG("Created dijkstra");
     long_gap_dijkstra.Run(scaffold_edge.getStart().getEndGraphVertex(g));
     DEBUG("Dijkstra finished");
@@ -302,17 +304,6 @@ double TrivialBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph
     return static_cast<double>(shared_count);
 }
 bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &scaffold_edge) const {
-//    std::set<std::pair<size_t, size_t>> interesting_edges;
-//    interesting_edges.emplace(419428075, 419445323);
-//    interesting_edges.emplace(419430151, 419393178);
-//    interesting_edges.emplace(419442929, 419440649);
-//    interesting_edges.emplace(419442959, 419374051);
-//
-//    auto current_edge_pair = std::make_pair<size_t, size_t>(start_edge.int_id(), end_edge.int_id());
-//    if (interesting_edges.find(current_edge_pair) == interesting_edges.end()) {
-//        return false;
-//    }
-
     auto extension_chooser = ConstructSimpleExtensionChooser();
     auto start = scaffold_edge.getStart();
     auto end = scaffold_edge.getEnd();

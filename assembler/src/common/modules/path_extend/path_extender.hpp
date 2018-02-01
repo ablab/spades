@@ -835,7 +835,8 @@ protected:
         ExtensionChooser::EdgeContainer candidates;
         vector<EdgeId> initial_candidates;
         DEBUG("Creating dijkstra");
-        auto dij = omnigraph::CreateUniqueDijkstra(g_, distance_bound_, unique_storage_);
+        ReadCloudDijkstraHelper helper;
+        auto dij = helper.CreateUniqueDijkstra(g_, distance_bound_, unique_storage_);
         DEBUG("dijkstra started");
         dij.Run(g_.EdgeEnd(last_edge));
         DEBUG("Dijkstra finished");

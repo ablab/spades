@@ -513,16 +513,18 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             path_extend::ScaffolderParamsConstructor params_constructor;
             auto read_cloud_gap_closer_params = params_constructor.ConstructGapCloserParamsFromCfg(true);
             read_cloud_gap_closer_params.raw_score_threshold_ = cfg::get().ts_res.gap_closer_connection_score_threshold;
-            read_cloud_gap_closer_params.edge_length_threshold_ = 1;
+            read_cloud_gap_closer_params.relative_coverage_threshold_ = cfg::get().ts_res.gap_closer_relative_coverage_threshold;
+            read_cloud_gap_closer_params.edge_length_threshold_ = cfg::get().ts_res.gap_closer_connection_length_threshold;
             size_t tail_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_tail_threshold;
             size_t count_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_count_threshold;
             size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
             //fixme move to configs
-            const size_t scan_bound = 50;
+            const size_t scan_bound = 150;
             INFO("Tail threshold: " << tail_threshold);
             INFO("Count threshold: " << count_threshold);
             INFO("Length threshold: " << length_threshold);
             INFO("Connection score threshold: " << read_cloud_gap_closer_params.raw_score_threshold_);
+            INFO("Connection relative coverage threshold: " << read_cloud_gap_closer_params.relative_coverage_threshold_);
             INFO("Connection length threshold: " << read_cloud_gap_closer_params.edge_length_threshold_);
             auto cloud_chooser_factory =
                 std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g,

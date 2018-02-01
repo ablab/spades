@@ -289,8 +289,11 @@ public:
     EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
         EdgeContainer answer;
         auto first_result = first_->Filter(path, edges);
-        if (first_result.size() != 1) {
+        if (first_result.size() == 0) {
             auto second_result = second_->Filter(path, edges);
+            return second_result;
+        } else if (first_result.size() > 1) {
+            auto second_result = second_->Filter(path, first_result);
             return second_result;
         }
         return first_result;
@@ -2210,12 +2213,12 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
     ReadCloudGapExtensionChooser(const Graph &g,
                                      const ScaffoldingUniqueEdgeStorage &unique_storage_,
                                      const EdgeId &end_,
-                                     const shared_ptr<LongEdgePairGapCloserPredicate> cloud_predicate_,
+                                     shared_ptr<LongEdgePairGapCloserPredicate> cloud_predicate,
                                      const size_t scan_bound_) : ExtensionChooser(g),
                                                                  g_(g),
                                                                  unique_storage_(unique_storage_),
                                                                  end_(end_),
-                                                                 cloud_predicate_(cloud_predicate_),
+                                                                 cloud_predicate_(cloud_predicate),
                                                                  scan_bound_(scan_bound_) {}
 
     virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
@@ -2233,13 +2236,13 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
         }
 
         auto is_edge_supported_by_clouds = [this](const EdgeWithDistance& edge) {
-          return not unique_storage_.IsUnique(edge.e_) and cloud_predicate_->Check(edge.e_);
+          return IsSupportedByClouds(edge.e_);
         };
         std::copy_if(edges.begin(), edges.end(), std::back_inserter(result), is_edge_supported_by_clouds);
         if (result.size() > 0) {
-            DEBUG("Found supported edges");
+            DEBUG("Found " << result.size() << " supported edges");
             for (const auto& edge: result) {
-                DEBUG(edge.e_.int_id());
+                TRACE(edge.e_.int_id());
             }
             return result;
         }
@@ -2257,24 +2260,51 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
         for (const auto& edge: result) {
             DEBUG(edge.e_.int_id());
         }
+        auto is_target_unreachable = [this](const EdgeWithDistance& edge) {
+          return not IsTargetReachable(edge.e_, end_, scan_bound_);
+        };
+        std::remove_if(result.begin(), result.end(), is_target_unreachable);
+        DEBUG("Final result size: " << result.size());
         DEBUG("Filter finished")
         return result;
     }
  private:
+    bool IsTargetReachable(const EdgeId& edge, const EdgeId& target, const size_t scan_bound) const {
+        DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
+            DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, scan_bound));
+        dijkstra.Run(g_.EdgeEnd(edge));
+        TRACE("Running dij from candidate " << edge.int_id());
+        bool found_target = false;
+        for (auto v: dijkstra.ReachedVertices()) {
+            if (dijkstra.GetDistance(v) < scan_bound) {
+                for (auto connected: g_.OutgoingEdges(v)) {
+                    TRACE("Checking edge " << connected.int_id());
+                    if (connected == target) {
+                        found_target = true;
+                        TRACE("supported");
+                        break;
+                    }
+                }
+            }
+            if (found_target) break;
+        }
+        return found_target;
+    }
+
     bool AreSupportedByCloudsReachable(const EdgeId &edge, const size_t scan_bound) const {
         DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
             DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, scan_bound));
         dijkstra.Run(g_.EdgeEnd(edge));
-        DEBUG("Running dij from candidate " << edge.int_id());
+        TRACE("Running dij from candidate " << edge.int_id());
         bool found_supported = false;
         //todo use custom dijkstra that stops on supported edges to improve performance
         for (auto v: dijkstra.ReachedVertices()) {
             if (dijkstra.GetDistance(v) < scan_bound) {
                 for (auto connected: g_.OutgoingEdges(v)) {
-                    DEBUG("Checking edge " << connected.int_id());
-                    if (cloud_predicate_->Check(connected)) {
+                    TRACE("Checking edge " << connected.int_id());
+                    if (IsSupportedByClouds(connected)) {
                         found_supported = true;
-                        DEBUG("supported");
+                        TRACE("supported");
                         break;
                     }
                 }
@@ -2282,6 +2312,11 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
             if (found_supported) break;
         }
         return found_supported;
+    }
+
+    bool IsSupportedByClouds(const EdgeId& edge) const {
+        size_t min_edge_length = cloud_predicate_->GetParams().edge_length_threshold_;
+        return not unique_storage_.IsUnique(edge) and g_.length(edge) > min_edge_length and cloud_predicate_->Check(edge);
     }
 
     EdgeId FindLastUniqueInPath(const BidirectionalPath& path) const {
