@@ -36,7 +36,8 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     read_cloud_path_extend/intermediate_scaffolding/predicate_builders.cpp
                     read_cloud_path_extend/path_extend_dijkstras.hpp
                     read_cloud_path_extend/path_scaffolder.cpp
-                    read_cloud_path_extend/containment_index_threshold_finder.cpp)
+                    read_cloud_path_extend/containment_index_threshold_finder.cpp
+                    read_cloud_path_extend/tip_connection_predicate.cpp read_cloud_path_extend/read_cloud_polisher_support.cpp read_cloud_path_extend/read_cloud_polisher_support.hpp)
 
 target_link_libraries(path_extend assembly_graph ssw)
 

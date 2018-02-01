@@ -538,6 +538,7 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
     const size_t count_threshold_;
     const size_t small_length_threshold_;
     const size_t large_length_threshold_;
+    const double relative_coverage_threshold_;
 
  public:
     GapCloserDijkstraAnalyzer(const Graph& g,
@@ -545,14 +546,16 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
                               shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
                               const size_t count_threshold_,
                               const size_t small_length_threshold_,
-                              const size_t large_length_threshold_) :
+                              const size_t large_length_threshold_,
+                              const double relative_coverage_threshold_) :
         StatisticProcessor("scaffold_gap_closer_analyzer"),
         g_(g),
         reference_paths_(reference_paths),
         barcode_extractor_(barcode_extractor),
         count_threshold_(count_threshold_),
         small_length_threshold_(small_length_threshold_),
-        large_length_threshold_(large_length_threshold_) {}
+        large_length_threshold_(large_length_threshold_),
+        relative_coverage_threshold_(relative_coverage_threshold_) {}
 
     void FillStatistics() override {
         auto gap_closer_stats = make_shared<InitialGapCloserStatistics>(GetGapCloserStatistics());
@@ -608,7 +611,7 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
             ScaffoldVertex end = path[last_pos].edge_;
             path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge scaffold_edge(start, end);
             path_extend::LongEdgePairGapCloserParams params(count_threshold_, large_length_threshold_, share_threshold,
-                                                            small_length_threshold_, true);
+                                                            relative_coverage_threshold_, small_length_threshold_, true);
             auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_);
             ScaffoldVertex start_vertex = scaffold_edge.getStart();
             ScaffoldVertex end_vertex = scaffold_edge.getEnd();
@@ -632,7 +635,7 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
         ScaffoldVertex end = reference_path[right].edge_;
         path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge scaffold_edge(start, end);
         path_extend::LongEdgePairGapCloserParams params(count_threshold_, large_length_threshold_, share_threshold,
-                                                        small_length_threshold_, true);
+                                                        relative_coverage_threshold_, small_length_threshold_, true);
 
         auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_);
         ScaffoldVertex start_edge = scaffold_edge.getStart();

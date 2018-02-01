@@ -19,11 +19,11 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStats(const path_exte
     auto near_in_both_strands_transitions = general_transition_builder.GetTransitionStorage(reference_paths);
     auto forward_neighbouring_transitions =
         forward_neighbourhood_transition_builder.GetTransitionStorage(reference_paths);
-    auto reference_path_index = BuildReferenceIndex(reference_paths);
+//    auto reference_path_index = BuildReferenceIndex(reference_paths);
     auto stats = GetScaffoldGraphStatsFromTransitions(scaffold_graph, reference_transitions,
                                                       reverse_transitions, conjugate_transitions,
                                                       near_in_both_strands_transitions,
-                                                      forward_neighbouring_transitions, reference_path_index);
+                                                      forward_neighbouring_transitions);
     return stats;
 }
 
@@ -49,8 +49,7 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
                                                                                 const ContigTransitionStorage& reverse_transitions,
                                                                                 const ContigTransitionStorage& conjugate_transitions,
                                                                                 const ContigTransitionStorage& near_in_both_strands_transitions,
-                                                                                const ContigTransitionStorage& forward_neighbouring_transitions,
-                                                                                const ReferencePathIndex& reference_index) {
+                                                                                const ContigTransitionStorage& forward_neighbouring_transitions) {
     ScaffoldGraphStats stats;
     DEBUG("True positive");
     stats.true_positive_ = CountStatsUsingTransitions(graph, reference_transitions);
@@ -63,7 +62,7 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
     DEBUG("False negative");
     stats.false_negative_ = reference_transitions.size() - stats.true_positive_;
     DEBUG("False positive");
-    stats.false_positive_ = CountFalsePositive(graph, reference_transitions, reference_index);
+    stats.false_positive_ = CountFalsePositive(graph, reference_transitions);
     DEBUG("Next with distance");
     stats.to_next_with_distance_ = CountStatsUsingTransitions(graph, forward_neighbouring_transitions);
     DEBUG("Edges");
@@ -119,8 +118,7 @@ size_t ScaffoldGraphValidator::CountStatsUsingTransitions(const ScaffoldGraphVal
 }
 
 size_t ScaffoldGraphValidator::CountFalsePositive(const ScaffoldGraphValidator::ScaffoldGraph& graph,
-                                                  const ContigTransitionStorage& reference_transtions,
-                                                  const ReferencePathIndex& reference_index) {
+                                                  const ContigTransitionStorage& reference_transtions) {
     size_t result = 0;
     for (const ScaffoldGraph::ScaffoldEdge& edge: graph.edges()) {
         auto start = edge.getStart();

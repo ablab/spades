@@ -47,7 +47,8 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
     unordered_set<ScaffoldVertex> subgraph_vertices;
     ScaffoldGraph::ScaffoldEdge edge(first, second);
     path_extend::LongEdgePairGapCloserParams params(params_.count_threshold_, params_.large_length_threshold_,
-                                                    params_.share_threshold_, params_.small_length_threshold_, true);
+                                                    params_.share_threshold_, params.relative_coverage_threshold_,
+                                                    params_.small_length_threshold_, true);
     auto start = edge.getStart();
     auto end = edge.getEnd();
     auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(

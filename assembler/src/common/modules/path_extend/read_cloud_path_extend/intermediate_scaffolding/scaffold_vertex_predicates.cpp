@@ -9,8 +9,7 @@ bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVer
     double start_coverage = start_.getCoverageFromGraph(g_);
     double end_coverage = end_.getCoverageFromGraph(g_);
     double average_coverage = (start_coverage + end_coverage) / 2;
-    //fixme move to configs
-    const double relative_coverage_threshold = 4.0;
+    const double relative_coverage_threshold = params_.relative_coverage_threshold_;
     if (math::ge(vertex_coverage, relative_coverage_threshold * average_coverage)) {
         DEBUG("Edge is too high-covered");
         return true;
@@ -64,20 +63,25 @@ LongEdgePairGapCloserPredicate::LongEdgePairGapCloserPredicate(const debruijn_gr
                                                                shared_ptr<PairEntryProcessor> pair_entry_processor) :
     g_(g_), barcode_extractor_(extractor), params_(params), start_(start_),
     end_(end_), pair_entry_processor_(pair_entry_processor) {}
+LongEdgePairGapCloserParams LongEdgePairGapCloserPredicate::GetParams() const {
+    return params_;
+}
 
 AndChecker::AndChecker(const shared_ptr<ScaffoldVertexPredicate> &first_,
                        const shared_ptr<ScaffoldVertexPredicate> &second_) : first_(first_), second_(second_) {}
 bool AndChecker::Check(const ScaffoldVertexPredicate::ScaffoldVertex &scaffold_vertex) const {
     return first_->Check(scaffold_vertex) and second_->Check(scaffold_vertex);
 }
-path_extend::LongEdgePairGapCloserParams::LongEdgePairGapCloserParams(const size_t count_threshold_,
-                                                                      const size_t length_normalizer_,
-                                                                      const double raw_score_threshold_,
-                                                                      const size_t edge_length_threshold_,
-                                                                      const bool normalize_using_cov_)
+path_extend::LongEdgePairGapCloserParams::LongEdgePairGapCloserParams(size_t count_threshold_,
+                                                                      size_t length_normalizer_,
+                                                                      double raw_score_threshold_,
+                                                                      double relative_coverage_threshold_,
+                                                                      size_t edge_length_threshold_,
+                                                                      bool normalize_using_cov_)
     : count_threshold_(count_threshold_),
       length_normalizer_(length_normalizer_),
       raw_score_threshold_(raw_score_threshold_),
+      relative_coverage_threshold_(relative_coverage_threshold_),
       edge_length_threshold_(edge_length_threshold_),
       normalize_using_cov_(normalize_using_cov_) {}
 LengthChecker::LengthChecker(const size_t length_threshold_, const Graph &g_)

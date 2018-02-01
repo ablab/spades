@@ -302,17 +302,6 @@ double TrivialBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph
     return static_cast<double>(shared_count);
 }
 bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &scaffold_edge) const {
-//    std::set<std::pair<size_t, size_t>> interesting_edges;
-//    interesting_edges.emplace(419428075, 419445323);
-//    interesting_edges.emplace(419430151, 419393178);
-//    interesting_edges.emplace(419442929, 419440649);
-//    interesting_edges.emplace(419442959, 419374051);
-//
-//    auto current_edge_pair = std::make_pair<size_t, size_t>(start_edge.int_id(), end_edge.int_id());
-//    if (interesting_edges.find(current_edge_pair) == interesting_edges.end()) {
-//        return false;
-//    }
-
     auto extension_chooser = ConstructSimpleExtensionChooser();
     auto start = scaffold_edge.getStart();
     auto end = scaffold_edge.getEnd();

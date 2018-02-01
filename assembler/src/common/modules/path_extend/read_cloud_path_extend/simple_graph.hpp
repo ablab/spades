@@ -1,3 +1,5 @@
+#pragma once
+
 namespace path_extend {
 template <class Vertex>
 class SimpleGraph {

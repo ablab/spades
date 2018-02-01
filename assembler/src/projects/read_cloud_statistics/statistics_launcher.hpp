@@ -190,6 +190,7 @@ namespace read_cloud_statistics {
             path_extend::LongEdgePairGapCloserParams vertex_predicate_params(params.connection_count_threshold_,
                                                                              params.tail_threshold_,
                                                                              params.connection_score_threshold_,
+                                                                             params.relative_coverage_threshold_,
                                                                              params.connection_length_threshold_, false);
 
             path_extend::ReadCloudMiddleDijkstraParams long_gap_params(params.count_threshold_, params.tail_threshold_,
@@ -320,8 +321,8 @@ namespace read_cloud_statistics {
                                                                            long_edge_extractor,
                                                                            scaffold_graph_storage.at(score_name).graph,
                                                                            scaffold_graph_storage.at(initial_name).graph);
-            stats_extractor.FillStatistics();
-            stats_extractor.SerializeStatistics(stats_base_path);
+            //stats_extractor.FillStatistics();
+            //stats_extractor.SerializeStatistics(stats_base_path);
 
             scaffold_graph_utils::ScaffolderAnalyzer scaffolder_analyzer(filtered_reference_paths, scaffold_graph_storage, gp_.g);
             scaffolder_analyzer.FillStatistics();
@@ -569,16 +570,6 @@ namespace read_cloud_statistics {
             typedef barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor_t;
             auto barcode_extractor_ptr = make_shared<barcode_extractor_t>(gp_.barcode_mapper_ptr, gp_.g);
             path_extend::InitialTenXFilter initial_tenx_filter(gp_.g, barcode_extractor_ptr, tenx_resolver_configs);
-
-//            INFO("Constructing initial filter analyzer");
-//            transitions::InitialFilterStatisticsExtractor initial_filter_extractor(scaffold_graph,
-//                                                                                   reference_paths,
-//                                                                                   barcode_extractor_ptr,
-//                                                                                   initial_tenx_filter,
-//                                                                                   gp_.g, large_unique_storage);
-//            INFO("Analyzing initial filter");
-//            initial_filter_extractor.FillStatistics();
-//            initial_filter_extractor.SerializeStatistics(stats_base_path);
         }
 
         void PrintContigPaths(const vector<vector<path_extend::validation::EdgeWithMapping>>& contig_paths, ostream& stream) {
@@ -641,6 +632,17 @@ namespace read_cloud_statistics {
             contracted_analyzer.SerializeStatistics(stats_base_path);
         }
 
+        void AnalyzeCoverageBreaks(const string &stats_base_path) {
+            const string reference_path = cfg::get().ts_res.statistics.genome_path;
+            INFO("Reference path: " << reference_path);
+
+            ContigPathBuilder contig_path_builder(gp_);
+            auto named_reference_paths = contig_path_builder.GetContigPaths(reference_path);
+            auto reference_paths = contig_path_builder.StripNames(named_reference_paths);
+            INFO(reference_paths.size() << " reference paths");
+        }
+
+
         void LaunchAnalyzerForMultipleDistances(const string& stats_base_path,
                                                 const std::function<void(const string&, size_t)> analyzer_function,
                                                 const vector<size_t>& distances, size_t threads) {
@@ -653,6 +655,7 @@ namespace read_cloud_statistics {
                 analyzer_function(stat_path, distance);
             }
         }
+
         DECL_LOGGER("StatisticsLauncher");
     };
 }
