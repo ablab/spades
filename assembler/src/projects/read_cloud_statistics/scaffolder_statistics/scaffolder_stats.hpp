@@ -397,6 +397,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
             path_extend::LongEdgePairGapCloserParams vertex_predicate_params(new_params.connection_count_threshold_,
                                                                              new_params.tail_threshold_,
                                                                              new_params.connection_score_threshold_,
+                                                                             new_params.relative_coverage_threshold_,
                                                                              new_params.connection_length_threshold_, false);
             path_extend::ReadCloudMiddleDijkstraParams long_gap_params(new_params.count_threshold_, new_params.tail_threshold_,
                                                                        new_params.initial_distance_, vertex_predicate_params);
@@ -805,7 +806,8 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
     unordered_set<EdgeId> GetReachableEdges(const EdgeId &long_edge) {
         const size_t LENGTH_BOUND = 40000;
         unordered_set<EdgeId> reached_edges;
-        auto unique_dijkstra = CreateUniqueDijkstra(g_, LENGTH_BOUND, unique_storage_);
+        ReadCloudDijkstraHelper helper;
+        auto unique_dijkstra = helper.CreateUniqueDijkstra(g_, LENGTH_BOUND, unique_storage_);
         unique_dijkstra.Run(g_.EdgeEnd(long_edge));
         for (const auto& reached_vertex: unique_dijkstra.ReachedVertices()) {
             const auto& outgoing_edges = g_.OutgoingEdges(reached_vertex);
@@ -970,6 +972,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
             path_extend::LongEdgePairGapCloserParams vertex_predicate_params(scaff_params_.connection_count_threshold_,
                                                                              tail_threshold,
                                                                              scaff_params_.connection_score_threshold_,
+                                                                             scaff_params_.relative_coverage_threshold_,
                                                                              scaff_params_.connection_length_threshold_,
                                                                              false);
             path_extend::ReadCloudMiddleDijkstraParams
@@ -984,8 +987,10 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
                                                                                             long_params);
             DEBUG("Score threshold: " << score_threshold);
             DEBUG("Checking edge " << first.int_id() << " -> " << second.int_id());
+            double relative_coverage_threshold = scaff_params_.relative_coverage_threshold_;
             if (AreConnectedByBarcodePath(reference_path, first_pos, second_pos,
-                                          score_threshold, length_threshold, middle_count_threshold, tail_threshold)) {
+                                          score_threshold, relative_coverage_threshold,
+                                          length_threshold, middle_count_threshold, tail_threshold)) {
                 thresholds_to_covered[score_threshold]++;
 //                ScaffoldGraph::ScaffoldEdge
 //                    scaffold_edge(first, second, (size_t) - 1, 0, scaff_params_.initial_distance_);
@@ -1007,8 +1012,8 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
     }
 
     bool AreConnectedByBarcodePath(const vector <EdgeWithMapping>& reference_path, size_t first_pos, size_t second_pos,
-                                   double score_threshold, size_t length_threshold,
-                                   size_t count_threshold, size_t tail_threshold) {
+                                   double score_threshold, double relative_coverage_threshold,
+                                   size_t length_threshold, size_t count_threshold, size_t tail_threshold) {
         VERIFY(first_pos < second_pos);
         VERIFY(second_pos < reference_path.size());
         EdgeId start = reference_path[first_pos].edge_;
@@ -1016,7 +1021,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         const bool normalize_using_cov = false;
         auto short_edge_extractor = std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor_ptr_);
         path_extend::LongEdgePairGapCloserParams params(count_threshold, tail_threshold, score_threshold,
-                                                        length_threshold, normalize_using_cov);
+                                                        relative_coverage_threshold, length_threshold, normalize_using_cov);
         auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
             long_edge_extractor_->GetTailEntry(start), long_edge_extractor_->GetHeadEntry(end), short_edge_extractor);
         path_extend::LongEdgePairGapCloserPredicate gap_closer_predicate(g_, short_edge_extractor, params,

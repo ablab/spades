@@ -43,12 +43,14 @@ struct LongEdgePairGapCloserParams {
   size_t count_threshold_;
   size_t length_normalizer_;
   double raw_score_threshold_;
+  double relative_coverage_threshold_;
   size_t edge_length_threshold_;
   bool normalize_using_cov_;
 
   LongEdgePairGapCloserParams(size_t count_threshold_,
                               size_t length_normalizer_,
                               double raw_score_threshold_,
+                              double relative_coverage_threshold_,
                               size_t edge_length_threshold_,
                               bool normalize_using_cov_);
 };
@@ -78,6 +80,8 @@ class LongEdgePairGapCloserPredicate : public ScaffoldVertexPredicate {
                                    const ScaffoldGraph::ScaffoldGraphVertex &start_,
                                    const ScaffoldGraph::ScaffoldGraphVertex &end_,
                                    shared_ptr<PairEntryProcessor> pair_entry_processor);
+
+    LongEdgePairGapCloserParams GetParams() const;
 
     bool Check(const path_extend::scaffold_graph::ScaffoldVertex &vertex) const override;
     DECL_LOGGER("LongEdgePairGapCloserPredicate");

@@ -12,6 +12,7 @@ namespace path_extend {
       size_t count_threshold_;
       double vertex_multiplier_;
       double connection_score_threshold_;
+      double relative_coverage_threshold_;
       size_t connection_length_threshold_;
       size_t connection_count_threshold_;
       size_t initial_distance_;
@@ -23,6 +24,7 @@ namespace path_extend {
                        size_t count_threshold_,
                        double vertex_multiplier_,
                        double connection_barcode_threshold_,
+                       double relative_coverage_threshold_,
                        size_t connection_length_threshold_,
                        size_t connection_count_threshold_,
                        size_t initial_distance_,
@@ -182,7 +184,7 @@ namespace path_extend {
                                                         bool launch_full_pipeline,
                                                         bool path_merge_pipeline = false) const;
 
-        ScaffoldGraph ConstructScaffoldGraphFromStorageAndGraph(const ScaffolderParams& params,
+        ScaffoldGraph ConstructScaffoldGraphFromStorageAndGraph(ScaffolderParams params,
                                                                 const ScaffoldGraph& previous_graph,
                                                                 const ScaffoldingUniqueEdgeStorage& unique_storage,
                                                                 const set<ScaffoldVertex>& scaffold_vertices,
@@ -190,7 +192,7 @@ namespace path_extend {
                                                                 bool path_merge_pipeline = false) const;
 
      private:
-        vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(const ScaffolderParams& params,
+        vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(ScaffolderParams params,
                                                                                     const ScaffoldingUniqueEdgeStorage& unique_storage,
                                                                                     const set<ScaffoldVertex>& scaffold_vertices,
                                                                                     bool launch_full_pipeline,

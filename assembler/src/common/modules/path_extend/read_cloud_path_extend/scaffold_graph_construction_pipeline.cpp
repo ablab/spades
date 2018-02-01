@@ -58,6 +58,8 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
     INFO("Constructing scaffold graph with length threshold " << min_length);
     ScaffolderParamsConstructor params_constructor;
     auto params = params_constructor.ConstructScaffolderParamsFromCfg(min_length);
+    params.vertex_multiplier_ = cfg::get().ts_res.scaff_con.vertex_multiplier / 2;
+
     set<ScaffoldVertex> path_set;
     for (const auto& path_pair: paths) {
         if (path_pair.first->Length() >= min_length) {
@@ -77,7 +79,7 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
                                              launch_full_pipeline, path_merge_pipeline);
 }
 vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphConstuctor::ConstructStages (
-        const ScaffolderParams& params,
+        ScaffolderParams params,
         const ScaffoldingUniqueEdgeStorage& unique_storage,
         const set<ScaffoldVertex>& scaffold_vertices,
         bool launch_full_pipeline,
@@ -91,6 +93,7 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphCo
                                                                      max_threads_, scaffold_vertices);
     auto scaffold_index_extractor = std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
+
     iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, scaffold_index_extractor,
                                                                                        max_threads_));
     iterative_constructor_callers.push_back(make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_,
@@ -107,11 +110,10 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphCo
         iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g, *barcode_extractor_, max_threads_));
         iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
     }
-    INFO("Created constructors");
     return iterative_constructor_callers;
 }
 CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::ConstructScaffoldGraphFromStorageAndGraph(
-        const ScaffolderParams &params,
+        ScaffolderParams params,
         const CloudScaffoldGraphConstuctor::ScaffoldGraph &previous_graph,
         const ScaffoldingUniqueEdgeStorage &unique_storage,
         const set<CloudScaffoldGraphConstuctor::ScaffoldVertex> &scaffold_vertices,
@@ -124,10 +126,15 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
     };
     auto constructor = make_shared<scaffold_graph::ScaffoldSubgraphConstructor>(gp_.g, unique_predicate,
                                                                                 previous_graph, params.initial_distance_);
-    //fixme remove code duplication
     auto iterative_constructor_callers = ConstructStages(params, unique_storage, scaffold_vertices,
                                                          launch_full_pipeline, path_merge_pipeline);
     bool save_initial_graph = not path_merge_pipeline;
+
+    //fixme move this logic elsewhere
+    if (path_merge_pipeline) {
+        params.vertex_multiplier_ = cfg::get().ts_res.scaff_con.vertex_multiplier;
+    }
+
     INFO("Created constructors");
     CloudScaffoldGraphConstructionPipeline pipeline(constructor, gp_.g, params,
                                                     std::to_string(params.length_threshold_), save_initial_graph);
@@ -170,20 +177,24 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParamsFromCfg(s
                                         LENGTH_NORMALIZER_EXPONENT);
     double vertex_multiplier = cfg::get().ts_res.scaff_con.vertex_multiplier * length_normalizer;
     double connection_score_threshold = cfg::get().ts_res.scaff_con.connection_score_threshold;
+    double relative_coverage_threshold = cfg::get().ts_res.scaff_con.relative_coverage_threshold;
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
     size_t connection_count_threshold = cfg::get().ts_res.scaff_con.connection_count_threshold;
     size_t initial_distance = cfg::get().ts_res.scaff_con.initial_distance;
     double split_procedure_strictness = cfg::get().ts_res.scaff_con.split_procedure_strictness;
     size_t transitive_distance_threshold = cfg::get().ts_res.scaff_con.transitive_distance_threshold;
     ScaffolderParams result(length_threshold, tail_threshold, count_threshold, vertex_multiplier,
-                            connection_score_threshold, connection_length_threshold, connection_count_threshold,
+                            connection_score_threshold, relative_coverage_threshold,
+                            connection_length_threshold, connection_count_threshold,
                             initial_distance, split_procedure_strictness, transitive_distance_threshold);
     return result;
 }
 
 path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_, size_t tail_threshold_,
                                                 size_t count_threshold_, double vertex_multiplier_,
-                                                double connection_score_threshold, size_t connection_length_threshold_,
+                                                double connection_score_threshold,
+                                                double relative_coverage_threshold_,
+                                                size_t connection_length_threshold_,
                                                 size_t connection_count_threshold,
                                                 size_t initial_distance_, double split_procedure_strictness_,
                                                 size_t transitive_distance_threshold_) :
@@ -192,6 +203,7 @@ path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_, size_t
     count_threshold_(count_threshold_),
     vertex_multiplier_(vertex_multiplier_),
     connection_score_threshold_(connection_score_threshold),
+    relative_coverage_threshold_(relative_coverage_threshold_),
     connection_length_threshold_(connection_length_threshold_),
     connection_count_threshold_(connection_count_threshold),
     initial_distance_(initial_distance_),
@@ -249,6 +261,7 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> BarcodeConnectionConstructo
     path_extend::LongEdgePairGapCloserParams vertex_predicate_params(params.connection_count_threshold_,
                                                                      params.tail_threshold_,
                                                                      params.connection_score_threshold_,
+                                                                     params.relative_coverage_threshold_,
                                                                      params.connection_length_threshold_, false);
     path_extend::ReadCloudMiddleDijkstraParams long_gap_params(params.count_threshold_, params.tail_threshold_,
                                                                params.initial_distance_, vertex_predicate_params);
@@ -313,6 +326,7 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> CompositeConnectionConstruc
     LongEdgePairGapCloserParams predicate_params(params.connection_count_threshold_,
                                                  params.tail_threshold_,
                                                  params.connection_score_threshold_,
+                                                 params.relative_coverage_threshold_,
                                                  params.connection_length_threshold_,
                                                  false);
     INFO("Long edge pair gap closer params:");
@@ -342,11 +356,12 @@ CompositeConnectionConstructorCaller::CompositeConnectionConstructorCaller(const
 LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParamsFromCfg(bool normalize_using_cov) const {
 
     double connection_score_threshold = cfg::get().ts_res.scaff_con.connection_score_threshold;
+    double relative_coverage_threshold = cfg::get().ts_res.scaff_con.relative_coverage_threshold;
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
     size_t connection_count_threshold = cfg::get().ts_res.scaff_con.connection_count_threshold;
     size_t tail_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_tail_threshold;
     return LongEdgePairGapCloserParams(connection_count_threshold, tail_threshold, connection_score_threshold,
-                                       connection_length_threshold, normalize_using_cov);
+                                       relative_coverage_threshold, connection_length_threshold, normalize_using_cov);
 }
 CloudScaffoldGraphConstructionPipeline::CloudScaffoldGraphConstructionPipeline(
         shared_ptr<scaffold_graph::ScaffoldGraphConstructor> initial_constructor_, const Graph &g,

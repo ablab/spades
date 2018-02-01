@@ -97,15 +97,13 @@ class ScaffoldGraphValidator {
                                                             const ContigTransitionStorage& reverse_transitions,
                                                             const ContigTransitionStorage& conjugate_transitions,
                                                             const ContigTransitionStorage& near_in_both_strands_transitions,
-                                                            const ContigTransitionStorage& forward_neighbouring_transitions,
-                                                            const ReferencePathIndex& reference_index);
+                                                            const ContigTransitionStorage& forward_neighbouring_transitions);
 
     ReferencePathIndex BuildReferenceIndex(const vector <vector<EdgeWithMapping>>& reference_paths);
 
     size_t CountStatsUsingTransitions(const ScaffoldGraph& graph, const ContigTransitionStorage& transitions);
 
-    size_t CountFalsePositive(const ScaffoldGraph& graph, const ContigTransitionStorage& reference_transtions,
-                              const ReferencePathIndex& reference_index);
+    size_t CountFalsePositive(const ScaffoldGraph& graph, const ContigTransitionStorage& reference_transtions);
 
     set <transitions::Transition> GetFalseNegativeTransitions(const ScaffoldGraphValidator::ScaffoldGraph &graph,
                                                               const ContigTransitionStorage &transitions) const;

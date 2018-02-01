@@ -47,7 +47,8 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
     unordered_set<ScaffoldVertex> subgraph_vertices;
     ScaffoldGraph::ScaffoldEdge edge(first, second);
     path_extend::LongEdgePairGapCloserParams params(params_.count_threshold_, params_.large_length_threshold_,
-                                                    params_.share_threshold_, params_.small_length_threshold_, true);
+                                                    params_.share_threshold_, params.relative_coverage_threshold_,
+                                                    params_.small_length_threshold_, true);
     auto start = edge.getStart();
     auto end = edge.getEnd();
     auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
@@ -420,6 +421,7 @@ vector<SubgraphPathExtractor::ScaffoldVertex> SubgraphPathExtractor::ExtractPath
     if (not utils.IsSimplePath(graph, source, sink)) {
         DEBUG("Trying to extract simple path from cleaned graph");
         auto score_function = score_function_builder_->GetScoreFunction(cleaned_graph, source, sink);
+        DEBUG("Got score function");
         auto score_path = ExtractPathUsingScoreFunction(cleaned_graph, source, sink, score_function);
         DEBUG("Score path size: " << score_path.size());
         if (score_path.size() != 0) {
@@ -486,7 +488,7 @@ std::pair<SubgraphPathExtractor::ScaffoldVertex, double> SubgraphPathExtractor::
         double current_score = score_function->GetScore(scaff_edge);
         TRACE("Current edge: " << (*it).int_id());
         TRACE("Current score: " << current_score);
-        if (math::gr(current_score, max_score)) {
+        if (math::ge(current_score, max_score)) {
             TRACE("New max score");
             next = *it;
             max_score = current_score;
