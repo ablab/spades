@@ -25,7 +25,7 @@ void ClusterTransitionStorageBuilder::BuildFromClusters(const vector<cluster_sto
         for (const auto& transition: transitions) {
             (*storage_)[transition]++;
         }
-        if (counter % block_size == 0) {
+        if (block_size != 0 and counter % block_size == 0) {
             TRACE("Processed " << counter << " clusters out of " << clusters.size());
         }
     }

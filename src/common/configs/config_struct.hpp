@@ -495,11 +495,14 @@ struct debruijn_config {
         size_t long_edge_length_lower_bound;
 
         double gap_closer_connection_score_threshold;
+        double gap_closer_relative_coverage_threshold;
+        size_t gap_closer_connection_length_threshold;
 
         struct scaffold_graph_construction {
           size_t count_threshold;
           double vertex_multiplier;
           double connection_score_threshold;
+          double relative_coverage_threshold;
           size_t connection_length_threshold;
           size_t connection_count_threshold;
           size_t initial_distance;

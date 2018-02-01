@@ -198,7 +198,8 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
 
 #pragma omp parallel for num_threads(max_threads_)
     for (size_t i = 0; i < vertices_copy.size(); ++i) {
-        auto dij = omnigraph::CreateUniqueDijkstra(graph_->AssemblyGraph(), distance_, unique_storage_);
+        ReadCloudDijkstraHelper helper;
+        auto dij = helper.CreateUniqueDijkstra(graph_->AssemblyGraph(), distance_, unique_storage_);
         const auto vertex = vertices_copy[i];
         EdgeId last_edge = vertex.getLastEdge();
         VertexId last_vertex = graph_->AssemblyGraph().EdgeEnd(last_edge);

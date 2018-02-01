@@ -137,33 +137,33 @@ class ExtensionChooserBasedPutChecker: public PathBacktrackingPutChecker<Graph, 
 };
 
 
-typedef ComposedDijkstraSettings<Graph,
-                                 LengthCalculator<Graph>,
-                                 BoundProcessChecker<Graph>,
-                                 CompositePutChecker<Graph>,
-                                 ForwardNeighbourIteratorFactory<Graph> > PairedEndDijkstraSettings;
-
-typedef Dijkstra<Graph, PairedEndDijkstraSettings> PairedEndDijkstra;
-
-static PairedEndDijkstra CreatePairedEndDijkstra(const Graph& graph,
-                                                 const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
-                                                 size_t length_bound,
-                                                 const shared_ptr<path_extend::ExtensionChooser> extension_chooser,
-                                                 const size_t prefix_length, const VertexId& init_vertex,
-                                                 const EdgeId& init_edge, size_t max_vertex_number = -1ul) {
-    auto pe_put_checker = make_shared<ExtensionChooserBasedPutChecker<Graph>>(graph, extension_chooser, prefix_length,
-                                                                              init_vertex, init_edge);
-    auto unique_put_checker = make_shared<UniquePutChecker<Graph>>(graph, unique_storage);
-    vector<shared_ptr<VertexPutChecker<Graph>>> put_checkers({unique_put_checker, pe_put_checker});
-    CompositePutChecker<Graph> put_checker(put_checkers);
-    PairedEndDijkstra dijkstra(graph,
-                               PairedEndDijkstraSettings(LengthCalculator<Graph>(graph),
-                                                         BoundProcessChecker<Graph>(length_bound),
-                                                         put_checker,
-                                                         ForwardNeighbourIteratorFactory<Graph>(graph)),
-                               max_vertex_number);
-    pe_put_checker->AddPrevVertexMap(dijkstra.GetPrevMap());
-    return dijkstra;
-}
+//typedef ComposedDijkstraSettings<Graph,
+//                                 LengthCalculator<Graph>,
+//                                 BoundProcessChecker<Graph>,
+//                                 CompositePutChecker<Graph>,
+//                                 ForwardNeighbourIteratorFactory<Graph> > PairedEndDijkstraSettings;
+//
+//typedef Dijkstra<Graph, PairedEndDijkstraSettings> PairedEndDijkstra;
+//
+//static PairedEndDijkstra CreatePairedEndDijkstra(const Graph& graph,
+//                                                 const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
+//                                                 size_t length_bound,
+//                                                 const shared_ptr<path_extend::ExtensionChooser> extension_chooser,
+//                                                 const size_t prefix_length, const VertexId& init_vertex,
+//                                                 const EdgeId& init_edge, size_t max_vertex_number = -1ul) {
+//    auto pe_put_checker = make_shared<ExtensionChooserBasedPutChecker<Graph>>(graph, extension_chooser, prefix_length,
+//                                                                              init_vertex, init_edge);
+//    auto unique_put_checker = make_shared<UniquePutChecker<Graph>>(graph, unique_storage);
+//    vector<shared_ptr<VertexPutChecker<Graph>>> put_checkers({unique_put_checker, pe_put_checker});
+//    CompositePutChecker<Graph> put_checker(put_checkers);
+//    PairedEndDijkstra dijkstra(graph,
+//                               PairedEndDijkstraSettings(LengthCalculator<Graph>(graph),
+//                                                         BoundProcessChecker<Graph>(length_bound),
+//                                                         put_checker,
+//                                                         ForwardNeighbourIteratorFactory<Graph>(graph)),
+//                               max_vertex_number);
+//    pe_put_checker->AddPrevVertexMap(dijkstra.GetPrevMap());
+//    return dijkstra;
+//}
 
 }

@@ -10,7 +10,7 @@ ScoreHistogram ScoreHistogramConstructor::ConstructScoreHistogram(
     size_t processed_edges = 0;
     vector<scaffold_graph::ScaffoldVertex> scaffold_vertices;
     std::copy(initial_scaffold_graph.vbegin(), initial_scaffold_graph.vend(), std::back_inserter(scaffold_vertices));
-    size_t block_size = scaffold_vertices.size() / 20;
+    size_t block_size = scaffold_vertices.size() / 10;
     size_t threads = cfg::get().max_threads;
     INFO(scaffold_vertices.size() << " unique edges.");
 #pragma omp parallel for num_threads(threads)
@@ -32,7 +32,6 @@ ScoreHistogram ScoreHistogramConstructor::ConstructScoreHistogram(
             }
         };
     }
-    INFO(scores.size());
     vector<double> ticks;
     for (double t = min_score_; math::le(t, max_score_); t += step_) {
         ticks.push_back(t);
@@ -53,7 +52,6 @@ ScoreHistogram ScoreHistogramConstructor::ConstructScoreHistogram(
     for (const auto &entry: score_to_number) {
         sum += entry.second;
     }
-    INFO(sum);
     ScoreHistogram result(score_to_number);
     return result;
 }

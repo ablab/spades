@@ -8,6 +8,7 @@
 #include "path_polisher.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
+#include "read_cloud_path_extend/read_cloud_polisher_support.hpp"
 
 namespace path_extend {
 
@@ -379,7 +380,6 @@ Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
     }
 }
 
-//todo so slow
 shared_ptr<LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::ExtractPredicateFromPosition(
         const BidirectionalPath &path,
         const size_t position,
@@ -390,7 +390,6 @@ shared_ptr<LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::
     BidirectionalPath* suffix = new BidirectionalPath(path.SubPath(position));
     barcode_index::SimpleScaffoldVertexEntryExtractor simple_extractor(g_, *main_extractor_, tail_threshold_,
                                                                        count_threshold_, length_threshold_);
-    SimpleVertexEntry intersection;
     auto prefix_entry = simple_extractor.ExtractEntry(prefix_conj);
     auto suffix_entry = simple_extractor.ExtractEntry(suffix);
     DEBUG("Prefix entry size: " << prefix_entry.size());
@@ -399,7 +398,7 @@ shared_ptr<LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::
     DEBUG("Suffix length: " << suffix->Length());
     auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, main_extractor_);
     auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
-        prefix_entry, suffix_entry, short_edge_extractor);
+    prefix_entry, suffix_entry, short_edge_extractor);
     auto predicate = make_shared<LongEdgePairGapCloserPredicate>(g_, short_edge_extractor, params,
                                                                  prefix, suffix, pair_entry_extractor);
     return predicate;
@@ -407,7 +406,12 @@ shared_ptr<LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::
 shared_ptr<ExtensionChooser> ReadCloudGapExtensionChooserFactory::CreateChooser(const BidirectionalPath &original_path,
                                                                                     size_t position) const {
     auto predicate = ExtractPredicateFromPosition(original_path, position, params_);
+    DEBUG("Created predicate");
+    VERIFY_MSG(position > 0, "Incorrect gap");
     EdgeId target_edge = original_path.At(position);
+//    EdgeId start_edge = original_path.At(position - 1);
+//    SupportedEdgesGraphExtractor supported_edges_extractor(g_, predicate);
+//    auto supported_edges = supported_edges_extractor.ExtractSupportedEdges(start_edge, target_edge);
     auto chooser = make_shared<ReadCloudGapExtensionChooser>(g_, unique_storage_, target_edge, predicate, scan_bound_);
     return chooser;
 }
