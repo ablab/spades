@@ -285,6 +285,7 @@ class DijkstraGapFiller {
         }
 
         void CloseGap() {
+            utils::perf_counter perf;
             GraphState end_gstate(end_e_, 0, end_p_);
             QueueState end_qstate(end_gstate, ss_.size() - 1);
             bool found_path = false;
@@ -294,7 +295,7 @@ class DijkstraGapFiller {
                 int ed = dist_[cur_state];
                 //INFO("cur ed=" << ed << " edge=" << cur_state.gs.e.int_id())
                 if (q_.size() > 1000000 || i > 1000000) {
-                    INFO("queue size is too big")
+                    INFO("queue size is too big " << " q_.size=" << q_.size() << " i=" << i << " s_len=" << ss_.size() << " time=" << perf.time() )
                     if (visited_.count(end_qstate) > 0){
                         found_path = true;
                         min_score_ = dist_[end_qstate];
@@ -302,12 +303,12 @@ class DijkstraGapFiller {
                     break;
                 }
                 if (ed > path_max_length_) {
-                    INFO("No path found")
+                    INFO("No path found" << " q_.size=" << q_.size() << " i=" << i << " s_len=" << ss_.size() << " time=" << perf.time() )
                     break;
                 }
                 if (cur_state == end_qstate && ed <= path_max_length_) {
                     min_score_ = ed;
-                    INFO("++=Final ed=" << ed);
+                    INFO("++=Final ed=" << ed<< " q_.size=" << q_.size() << " i=" << i << " s_len=" << ss_.size() << " time=" << perf.time() )
                     found_path = true;
                     break;
                 }
@@ -320,18 +321,10 @@ class DijkstraGapFiller {
                             AddNewEdge(next_state, cur_state, ed);
                         }
                         if (e == end_e_ && path_max_length_ - ed >= 0){
-                            utils::perf_counter perf;
                             string seq_str = ss_.Subseq(cur_state.i + 1, ss_.size() ).str();
                             string tmp = g_.EdgeNucls(e).str();
                             string edge_str = tmp.substr(0, end_p_);
-                            // INFO("End edge_id=" << e.int_id() << " ed=" << ed << " seq_b=" << cur_state.i + 1 << " seq_e=" << ss_.size() 
-                            //                                 << " edge_b=" << 0 << " edge_e=" << end_p_
-                            //                                 << " seq=" << seq_str << "\n edge=" << edge_str)
-                            //INFO("TIME.Substrs=" << perf.time());
-                            perf.reset();
                             int score = NWDistance(seq_str, edge_str, path_max_length_ - ed);
-                            //INFO("TIME.NWDistance=" << perf.time());
-                            perf.reset();
                             if (score != -1) {
                                 if (ed +  score < path_max_length_) {
                                     INFO("Update max_path_len=" << ed + score);
@@ -341,7 +334,7 @@ class DijkstraGapFiller {
                                 Update(state, cur_state, ed + score, ed + score);
 				                if (ed + score == path_max_length_) {
                     			     min_score_ = ed + score;
-                    			     INFO("++=Final ed=" << ed + score);
+                    			     INFO("++=Final ed=" << ed + score<< " q_.size=" << q_.size() << " i=" << i << " s_len=" << ss_.size() << " time=" << perf.time() )
                     			     found_path = true;
                     			     break;
                 		        }
@@ -352,7 +345,7 @@ class DijkstraGapFiller {
                 }
 		        if (found_path) break;
             }
-
+            INFO("++=ZERO q_.size=" << q_.size() << " i=" << i << " s_len=" << ss_.size() << " time=" << perf.time() )
             if (found_path) {
                 QueueState state = end_qstate;
                 end_qstate_ = end_qstate;
