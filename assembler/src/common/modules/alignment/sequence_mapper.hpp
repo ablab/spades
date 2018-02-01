@@ -231,10 +231,11 @@ private:
     const Graph& g_;
     typedef MappingPathFixer<Graph> GraphMappingPathFixer;
     const GraphMappingPathFixer path_fixer_;
+    const bool skip_unfixed_;
 public:
-    ReadPathFinder (const Graph& g) :
-        g_(g), path_fixer_(g)
-    {   }
+    ReadPathFinder(const Graph& g, bool skip_unfixed = true) :
+        g_(g), path_fixer_(g), skip_unfixed_(skip_unfixed)
+    {}
 
     vector<EdgeId> FindReadPath(const MappingPath<EdgeId>& mapping_path) const {
           if (!IsMappingPathValid(mapping_path)) {
@@ -255,13 +256,16 @@ public:
                   debug_stream << g_.int_id(fixed_path[i]) << " ";
               }
               TRACE(debug_stream.str());
-              return vector<EdgeId>();
+              if (skip_unfixed_) {
+                  return vector<EdgeId>();
+              } else {
+                  WARN("Could not fix the path!")
+              }
           } else {
               DEBUG("Path fix works");
           }
           return fixed_path;
       }
-
 
 private:
 
