@@ -169,22 +169,22 @@ public:
             omnigraph::MappingRange mapping = path.mapping_at(path.size() - 1);
             int start_pos = mapping.mapped_range.end_pos;
             Sequence ss = s.Subseq(mapping.initial_range.end_pos, (int) s.size() );
-            INFO("Start Forward EdgeDijkstra edge=" << start_e.int_id() << " s_start=" << mapping.initial_range.end_pos << " seq_len=" << ss.size())
+            //INFO("Start Forward EdgeDijkstra edge=" << start_e.int_id() << " s_start=" << mapping.initial_range.end_pos << " seq_len=" << ss.size())
             int s_len = int(ss.size());
             int score = max(20, s_len/4);
             if (s_len > 2000) {
-                INFO("EdgeDijkstra: sequence is too long " << s_len)
+                INFO("Forward EdgeDijkstra: sequence is too long " << s_len)
                 return;
             }
             if (s_len < g_.length(start_e) + g_.k() - start_pos) {
-                INFO("EdgeDijkstra: sequence is too small " << s_len)
+                INFO("Forward EdgeDijkstra: sequence is too small " << s_len)
                 return;
             }
             DijkstraEndsReconstructor algo = DijkstraEndsReconstructor(g_, ss, start_e, start_pos, score);
             algo.CloseGap();
             score = algo.GetEditDistance();
             if (score == -1){
-                INFO("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << mapping.initial_range.end_pos << " seq_len=" << ss.size())
+                INFO("Forward EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << mapping.initial_range.end_pos << " seq_len=" << ss.size())
                 score = STRING_DIST_INF;
                 return;
             }
@@ -203,35 +203,74 @@ public:
             size_t len = g_.length(ans[0]);
             string t = g_.EdgeNucls(ans[0]).First(len).Last(len - start_pos).str();
             ans_str = t + tmp + g_.EdgeNucls(ans[ans.size() - 1]).First(algo.GetPathEndPosition()).str();
-            INFO("ss=" << ss.str() << "\n ans_str=" << ans_str)
+            //INFO("ss=" << ss.str() << "\n ans_str=" << ans_str)
             INFO("s_len=" << ss.size() << "\n s_size=" << ans_str.size())
 
             int cur_score = StringDistance(ans_str, ss.str());
             INFO("Forward EdgeDijkstra edge=" << start_e.int_id() <<  " End path: " << s_ans << " score=" << score << " cur_score=" << cur_score)
+
+            for (int i = 1; i < ans.size() - 1; ++i) {
+                path.push_back(ans[i], omnigraph::MappingRange(Range(0, 0), Range(0, g_.length(ans[i])) ));
+            }
+            path.push_back(ans[ans.size() - 1], omnigraph::MappingRange(Range(0, s.size() -  g_.k()), Range(0, algo.GetPathEndPosition() -  g_.k()) ));
+        } else {
+            EdgeId c_start_e = g_.conjugate(path.edge_at(0));
+            omnigraph::MappingRange c_mapping = path.mapping_at(0);
+            int c_start_pos = min(g_.length(c_start_e), g_.length(c_start_e) + g_.k() - c_mapping.mapped_range.end_pos);
+            int c_end_pos = g_.length(c_start_e) + g_.k() - c_mapping.mapped_range.start_pos;
+            INFO("Backward EdgeDijkstra start_pos=" << c_start_pos << " e=" << c_start_e.int_id() << " size=" << g_.length(c_start_e))
+            Sequence c_ss = !s.Subseq(0, c_mapping.initial_range.end_pos);
+            int c_s_len = int(c_ss.size());
+            int c_score = max(20, c_s_len/4);
+            if (c_s_len - (c_end_pos - c_start_pos) > 2000) {
+                INFO("Backward EdgeDijkstra: sequence is too long " << c_s_len)
+                return;
+            }
+            if (c_s_len < g_.length(c_start_e) + g_.k() - c_start_pos) {
+                INFO("Backward EdgeDijkstra: sequence is too small " << c_s_len)
+                return;
+            }
+            DijkstraEndsReconstructor c_algo = DijkstraEndsReconstructor(g_, c_ss, c_start_e, c_start_pos, c_score);
+            c_algo.CloseGap();
+            c_score = c_algo.GetEditDistance();
+            if (c_score == -1){
+                INFO("Backward EdgeDijkstra didn't find anything")
+                c_score = STRING_DIST_INF;
+                return;
+            }
+            std::vector<EdgeId> ans = c_algo.GetPath();
+            string s_ans = "";
+            for (const EdgeId &e: ans){
+                s_ans += std::to_string(e.int_id()) + ",";
+            }        
+            string ans_str = "";
+            string tmp = "";
+            for (int i = 1; i < ans.size() - 1; ++i) {
+                size_t len = g_.length(ans[i]);
+                string t = g_.EdgeNucls(ans[i]).First(len).str();
+                tmp += t;
+            }
+            size_t len = g_.length(ans[0]);
+            INFO("Backward len_0=" << len << " c_start_pos" << c_start_pos)
+            string t = g_.EdgeNucls(ans[0]).First(len).Last(len - c_start_pos).str();
+            ans_str = t + tmp + g_.EdgeNucls(ans[ans.size() - 1]).First(c_algo.GetPathEndPosition()).str();
+            //INFO("c_ss=" << c_ss.str() << "\n ans_str=" << ans_str)
+            INFO("c_s_len=" << c_ss.size() << "\n s_size=" << ans_str.size())
+
+            int cur_score = StringDistance(ans_str, c_ss.str());
+            INFO("Backward EdgeDijkstra edge=" << c_start_e.int_id() <<  " End path: " << s_ans << " score=" << c_score << " cur_score=" << cur_score)
+            omnigraph::MappingPath<debruijn_graph::EdgeId> cur_sorted;
+            int start = min(g_.length(ans[ans.size() - 1]), g_.length(ans[ans.size() - 1]) + g_.k() - c_algo.GetPathEndPosition() );
+            INFO("Backward start=" << start << " len=" << g_.length(ans[ans.size() - 1]))
+            cur_sorted.push_back(g_.conjugate(ans[ans.size() - 1]), omnigraph::MappingRange(Range(0, 0), Range(start, g_.length(ans[ans.size() - 1])) ));
+            for (int i = ans.size() - 2; i > 0; --i) {
+                cur_sorted.push_back(g_.conjugate(ans[i]), omnigraph::MappingRange(Range(0, 0), Range(0, g_.length(ans[i])) ));
+            }
+            for (int i = 0; i < path.size(); ++i) {
+                cur_sorted.push_back(path[i].first, path[i].second);
+            }
+            path = cur_sorted;
         }
-        // EdgeId c_start_e = g_.conjugate(path.edge_at(0));
-        // omnigraph::MappingRange c_mapping = path.mapping_at(0);
-        // int c_start_pos = g_.length(c_start_e) + g_.k() - c_mapping.initial_range.start_pos;
-        // int graph_c_start_pos = ;
-        // Sequence c_ss = !s.Subseq(0, c_start_pos);
-        // int c_s_len = int(c_ss.size());
-        // int c_score = max(20, c_s_len/4);
-
-        // DijkstraEndsReconstructor c_algo = DijkstraEndsReconstructor(g_, c_ss, c_start_e, c_start_pos, c_score);
-        // c_algo.CloseGap();
-        // c_score = c_algo.GetEditDistance();
-        // if (c_score == -1){
-        //     INFO("EdgeDijkstra didn't find anything")
-        //     c_score = STRING_DIST_INF;
-        //     return;
-        // }
-        // std::vector<EdgeId> c_ans = c_algo.GetPath();
-
-        // s_ans = "";
-        // for (const EdgeId &e: c_ans){
-        //     s_ans += std::to_string(g_.conjugate(e).int_id()) + ",";
-        // }        
-        // INFO("Start path: " << s_ans)
     }
 
     vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > FillGapsInCluster(const vector<typename ClustersSet::iterator> &cur_cluster,
@@ -323,7 +362,7 @@ public:
         }
         if (res.size() > 0){
             bool forward = true;
-            //GrowEnds(res[0], s, !forward);
+            GrowEnds(res[0], s, !forward);
             GrowEnds(res[res.size() - 1], s, forward);
         }
         return res;
