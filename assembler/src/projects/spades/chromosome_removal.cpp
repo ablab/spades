@@ -8,13 +8,13 @@
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "modules/simplification/ec_threshold_finder.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
+#include "assembly_graph/handlers/edge_fate_position_handler.hpp"
 #include "chromosome_removal.hpp"
 #include "math/xmath.h"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "pipeline/config_struct.cpp"
 #include "utils/filesystem/path_helper.hpp"
 #include <libgen.h>
-
 
 namespace debruijn_graph {
 using namespace std;
@@ -325,6 +325,7 @@ void RunHMMDetectionScript (conj_graph_pack &gp) {
 
 void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     //FIXME Seriously?! cfg::get().ds like hundred times...
+    EdgeFatePositionTracker<Graph> tr(gp.g);
     OutputEdgeSequences(gp.g, cfg::get().output_dir + "before_chromosome_removal");
     INFO("Before iteration " << 0 << ", " << gp.g.size() << " vertices in graph");
     std::string additional_list = cfg::get().pd->remove_list;

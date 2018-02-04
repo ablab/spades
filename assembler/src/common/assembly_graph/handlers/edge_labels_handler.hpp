@@ -4,7 +4,7 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
-
+//TODO:: seems that it is not in use and totally deprecated...
 /*
  *
  * Saves labeling of new_graph via different graph transformation by edges of unresolved graph - old_graph
@@ -12,7 +12,10 @@
  *
  *  Created on: Aug 5, 2011
  *      Author: undead
+ *
+ *
  */
+
 
 #ifndef EDGE_LABELS_HANDLER_HPP_
 #define EDGE_LABELS_HANDLER_HPP_

@@ -10,9 +10,9 @@
 #include "adt/iterator_range.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 #include <btree/safe_btree_map.h>
+#include "assembly_graph/core/action_handlers.hpp"
 
 #include "paired_info_buffer.hpp"
-#include "assembly_graph/core/action_handlers.hpp"
 #include <type_traits>
 
 namespace omnigraph {
@@ -280,7 +280,7 @@ public:
     //---------------- Constructor ----------------
 
     PairedIndex(const Graph &graph)
-        : base(graph) , GraphActionHandler<Graph>(graph, "PairedIndexHandler")
+        : base(graph),  GraphActionHandler<Graph>(graph, "PairedIndexHandler")
     {}
 
 private:
@@ -423,6 +423,7 @@ public:
     /**
      * @brief Removes all neighbourhood of an edge (all edges referring to it, and their histograms)
      * @warning To keep the symmetricity, it also deletes all conjugates, so the actual complexity is O(size).
+     * NB: size - not all index but size of conjugates!!!
      * @return The number of deleted entries
      */
     size_t Remove(EdgeId edge) {
@@ -525,6 +526,28 @@ public:
             this->Add(*it, *it, Point());
     }
 
+    //Handlers for edges deletion support
+    virtual void HandleDelete(EdgeId e) {
+        Remove(e);
+    }
+
+    virtual void HandleMerge(const vector<EdgeId> &old_edges, EdgeId new_edge) override {
+        size_t shift = 0;
+        /* if (!(new_edge < this->graph_.conjugate(new_edge))) {
+            DEBUG("skipping conjugate pair");
+        } */
+        for(auto e: old_edges) {
+            EdgeProxy old_e = Get(e);
+            for (auto it: old_e) {
+                EdgeId next = it.first;
+                for (auto point: it.second) {
+                    point.d += shift;
+                    this->Add(new_edge, next, point);
+                }
+            }
+            shift += this->graph_.length(e);
+        }
+    }
 private:
     InnerMap empty_map_; //null object
 };
