@@ -14,8 +14,8 @@ namespace debruijn_graph {
 
 class ChromosomeRemoval : public spades::AssemblyStage {
 public:
-    ChromosomeRemoval()
-            : AssemblyStage("Chromosome Removal", "chromosome_removal"), long_component_(), long_vertex_component_(),deadends_count_() { }
+    ChromosomeRemoval(size_t ext_limit = 0)
+            : AssemblyStage("Chromosome Removal", "chromosome_removal"), long_component_(), long_vertex_component_(),deadends_count_(), ext_limit_(ext_limit) { }
 
     void run(conj_graph_pack &gp, const char *);
 
@@ -23,7 +23,7 @@ private:
     std::unordered_map <EdgeId, size_t> long_component_;
     std::unordered_map <VertexId, size_t> long_vertex_component_;
     std::unordered_map <EdgeId, size_t> deadends_count_;
-
+    size_t ext_limit_;
     size_t CalculateComponentSize(debruijn_graph::EdgeId e, Graph &g_);
 
     double RemoveLongGenomicEdges(conj_graph_pack &gp, size_t long_edge_bound, double coverage_limits,
@@ -35,6 +35,8 @@ private:
     double RemoveEdgesByList(conj_graph_pack &gp, std::string &s);
     void MetaChromosomeRemoval(conj_graph_pack &gp);
     void RemoveNearlyEverythingByCoverage(conj_graph_pack &gp);
+    void RemoveNearlyEverythingByCoverage(conj_graph_pack &gp, size_t limit);
+
     void CoverageFilter(conj_graph_pack &gp, double coverage_cutoff);
 
 

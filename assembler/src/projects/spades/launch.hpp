@@ -123,8 +123,23 @@ void assemble_genome() {
         if (!cfg::get().series_analysis.empty())
             SPAdes.add<debruijn_graph::SeriesAnalysis>();
 
-        if (cfg::get().pd)
-            SPAdes.add<debruijn_graph::ChromosomeRemoval>();
+        if (cfg::get().pd) {
+            size_t iter = 5;
+            size_t maxx = 300;
+            SPAdes.add(new debruijn_graph::ChromosomeRemoval(iter));
+            SPAdes.add(new debruijn_graph::ContigOutput(false, "intermediate_contigs"))
+                    .add(new debruijn_graph::PairInfoCount())
+                    .add(new debruijn_graph::DistanceEstimation());
+
+            SPAdes.add(new debruijn_graph::ContigOutput(true, cfg::get().co.contigs_name + std::to_string(iter)));
+
+            while (iter < maxx) {
+                SPAdes.add(new debruijn_graph::ChromosomeRemoval(iter));
+                SPAdes.add(new debruijn_graph::RepeatResolution());
+                SPAdes.add(new debruijn_graph::ContigOutput(true, cfg::get().co.contigs_name + std::to_string(iter)));
+                iter += 5;
+            }
+        }
 
         if (HybridLibrariesPresent())
             SPAdes.add<debruijn_graph::HybridLibrariesAligning>();

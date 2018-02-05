@@ -182,6 +182,10 @@ void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
                 INFO("Clearing raw paired index");
                 gp.paired_indices[i].clear();
             }
+            if (cfg::get().pd) {
+                gp.clustered_indices[i].Attach();
+                gp.scaffolding_indices[i].Attach();
+            }
         }
 }
 

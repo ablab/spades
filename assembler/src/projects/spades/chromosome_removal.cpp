@@ -208,6 +208,12 @@ void ChromosomeRemoval::RemoveNearlyEverythingByCoverage(conj_graph_pack &gp) {
     }
 }
 
+
+void ChromosomeRemoval::RemoveNearlyEverythingByCoverage(conj_graph_pack &gp, size_t cur_limit) {
+    CoverageFilter(gp, cur_limit);
+    PlasmidSimplify(gp, cfg::get().pd->long_edge_length);
+}
+
 void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
 //For circular plasmid detection
     size_t min_len = cfg::get().pd->min_start_edge_length;
@@ -361,7 +367,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
         else
             chromosome_coverage = -1;
         if (cfg::get().pd->iterative_coverage_elimination)
-            RemoveNearlyEverythingByCoverage(gp);
+            RemoveNearlyEverythingByCoverage(gp, ext_limit_);
         else
             MetaChromosomeRemoval(gp);
     }
