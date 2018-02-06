@@ -448,7 +448,7 @@ class GapCloserPathClusterAnalyzer: public read_cloud_statistics::StatisticProce
         path_extend::PathExtractionPartsConstructor predicate_constructor(gp_);
         auto pe_predicate_builder = predicate_constructor.ConstructPEPredicate();
         auto path_cluster_score_builder =
-            predicate_constructor.ConstructPathClusterScoreFunction(path_cluster_params);
+            predicate_constructor.ConstructPathClusterScoreFunction(path_cluster_params, small_scaffold_graph, false);
         auto barcode_extractor = std::make_shared<FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
         path_extend::CloudScaffoldSubgraphExtractor subgraph_extractor(gp_.g, long_edge_extractor_, subgraph_extractor_params);
         set<ScaffoldEdge> closed_edges;
@@ -456,8 +456,7 @@ class GapCloserPathClusterAnalyzer: public read_cloud_statistics::StatisticProce
         auto transition_map = ConstructTranstitionMap(reference_paths);
         auto univocal_edges = scaffold_graph_extractor.ExtractUnivocalEdges(large_scaffold_graph);
         vector<shared_ptr<path_extend::GapCloserPredicateBuilder>> predicate_builders;
-        auto path_cluster_score_function_builder = predicate_constructor.ConstructPathClusterScoreFunction(path_cluster_params);
-        path_extend::SubgraphPathExtractor path_extractor(predicate_builders, path_cluster_score_function_builder);
+        path_extend::SubgraphPathExtractor path_extractor(predicate_builders, path_cluster_score_builder);
         size_t nontrivial_graphs = 0;
         size_t not_connected = 0;
         path_extend::GapCloserUtils gap_closer_utils;

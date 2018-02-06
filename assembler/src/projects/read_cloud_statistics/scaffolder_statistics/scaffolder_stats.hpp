@@ -4,6 +4,7 @@
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp"
 #include "common/barcode_index/cluster_storage_extractor.hpp"
 #include <random>
+#include <common/barcode_index/scaffold_vertex_index_builder.hpp>
 
 namespace scaffolder_statistics {
 struct ConnectivityParams {
@@ -406,7 +407,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
             auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(g_, unique_storage_, short_edge_extractor,
                                                                                         long_edge_extractor_, long_gap_params);
             auto constructor =
-                make_shared<path_extend::scaffold_graph::PredicateScaffoldGraphConstructor>(g_, score_scaffold_graph,
+                make_shared<path_extend::scaffold_graph::PredicateScaffoldGraphFilter>(g_, score_scaffold_graph,
                                                                                             predicate, cfg::get().max_threads);
             auto new_graph = constructor->Construct();
             auto stats = validator.GetScaffoldGraphStats(*new_graph, reference_paths);
@@ -421,7 +422,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
     ScorePairStats GetScorePairStats(const ScaffoldGraph& initial_scaffold_graph) {
         size_t count_threshold = scaff_params_.count_threshold_;
         size_t tail_threshold = scaff_params_.tail_threshold_;
-        path_extend::NormalizedBarcodeScoreFunction score_function(g_, long_edge_extractor_, count_threshold, tail_threshold);
+        path_extend::NormalizedBarcodeScoreFunction score_function(g_, long_edge_extractor_);
         typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
         std::map<std::pair<ScaffoldVertex, ScaffoldVertex>, double> result;
         vector<path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge> scaffold_edges;
@@ -467,7 +468,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         size_t tail_threshold = scaff_params_.tail_threshold_;
         INFO("Count threshold : " << count_threshold);
         INFO("Tail threshold: " << tail_threshold);
-        path_extend::NormalizedBarcodeScoreFunction normalized_score_function(g_, long_edge_extractor_, count_threshold, tail_threshold);
+        path_extend::NormalizedBarcodeScoreFunction normalized_score_function(g_, long_edge_extractor_);
         auto transition_to_distance = GetDistanceMap(reference_paths);
 
         std::map<size_t, std::map<double, size_t>> dist_thr_failed;
@@ -526,7 +527,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         size_t tail_threshold = scaff_params_.tail_threshold_;
         INFO("Count threshold : " << count_threshold);
         INFO("Tail threshold: " << tail_threshold);
-        path_extend::NormalizedBarcodeScoreFunction normalized_score_function(g_, long_edge_extractor_, count_threshold, tail_threshold);
+        path_extend::NormalizedBarcodeScoreFunction normalized_score_function(g_, long_edge_extractor_);
         path_extend::TrivialBarcodeScoreFunction trivial_score_function(g_, long_edge_extractor_, count_threshold, tail_threshold);
         const string trivial_name = "Simple score function";
         const string normalized_name = "Normalized score function";
@@ -679,8 +680,17 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         const double strictness = scaff_params_.split_procedure_strictness_;
         size_t split_check_passed = 0;
         size_t overall = 0;
+        const double EDGE_LENGTH_FRACTION = 0.5;
+        barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
+        auto fraction_tail_threshold_getter = std::make_shared<barcode_index::FractionTailThresholdGetter>(g_, EDGE_LENGTH_FRACTION);
+        auto split_scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(g_, *barcode_extractor_ptr_,
+                                                                               fraction_tail_threshold_getter,
+                                                                               scaff_params_.count_threshold_, 500,
+                                                                               cfg::get().max_threads, unique_storage_.unique_edges());
+        auto split_scaffold_index_extractor =
+            std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(split_scaffold_vertex_index);
         for (const auto& transition: forward_transitions) {
-            path_extend::EdgeSplitPredicate edge_split_predicate(g_, *barcode_extractor_ptr_, count_threshold, strictness);
+            path_extend::EdgeSplitPredicate edge_split_predicate(g_, split_scaffold_index_extractor, count_threshold, strictness);
             ScaffoldGraph::ScaffoldEdge scaffold_edge(transition.first_, transition.second_);
             if (edge_split_predicate.Check(scaffold_edge)) {
                 ++split_check_passed;

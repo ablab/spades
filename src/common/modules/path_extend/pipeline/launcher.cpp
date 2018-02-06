@@ -733,8 +733,11 @@ void PathExtendLauncher::Launch() {
 
     //todo discuss
     if (cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
-        const size_t path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
-        PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_, path_length_threshold);
+        const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
+        const size_t large_path_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
+        PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_,
+                                       small_path_length_threshold,
+                                       large_path_length_threshold);
         path_scaffolder.MergePaths(polished_paths);
 
         PolishPaths(polished_paths, contig_paths, polished_map);

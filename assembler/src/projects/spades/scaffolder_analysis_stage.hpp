@@ -1,7 +1,3 @@
-//
-// Created by itolstoganov on 13.09.17.
-//
-
 #pragma once
 
 #include "pipeline/stage.hpp"

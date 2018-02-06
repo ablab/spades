@@ -637,8 +637,9 @@ CloudSubgraphExtractorParams::CloudSubgraphExtractorParams(
                                             small_length_threshold_(small_length_threshold_),
                                             large_length_threshold_(large_length_threshold_) {}
 
-ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_graph_pack& graph_pack) {
-    auto scaffold_graph_storage = graph_pack.scaffold_graph_storage;
+ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_graph_pack &graph_pack,
+                                                                    const ScaffoldGraphStorage &scaffold_graph_storage,
+                                                                    bool path_scaffolding) {
     const auto& large_scaffold_graph = scaffold_graph_storage.GetLargeScaffoldGraph();
     const auto& small_scaffold_graph = scaffold_graph_storage.GetSmallScaffoldGraph();
 
@@ -648,12 +649,13 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
 
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     const size_t tail_threshold = subgraph_extractor_params.large_length_threshold_;
-    //fixme move to configs
+
     const size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
     const size_t count_threshold = subgraph_extractor_params.count_threshold_;
 
     auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(graph_pack.barcode_mapper_ptr, graph_pack.g);
-    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(graph_pack.g, *barcode_extractor, tail_threshold,
+    auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
+    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(graph_pack.g, *barcode_extractor, tail_threshold_getter,
                                                                      count_threshold, length_threshold, cfg::get().max_threads,
                                                                      small_scaffold_graph.vertices());
     auto scaffold_index_extractor = std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
@@ -661,7 +663,7 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
     vector<shared_ptr<GapCloserPredicateBuilder>> predicate_builders = predicate_constructor.ConstructPredicateBuilders();
 
     shared_ptr<GapCloserScoreFunctionBuilder> path_cluster_score_builder =
-        predicate_constructor.ConstructPathClusterScoreFunction(path_extractor_params);
+        predicate_constructor.ConstructPathClusterScoreFunction(path_extractor_params, small_scaffold_graph, path_scaffolding);
 //    auto trivial_score_builder = make_shared<TrivialScoreFunctionBuilder>();
     PathExtractorParts path_extractor_parts(predicate_builders, path_cluster_score_builder);
     path_extend::ScaffoldGraphGapCloser gap_closer(graph_pack.g, scaffold_index_extractor,
@@ -696,28 +698,36 @@ PathClusterPredicateParams ScaffoldGraphGapCloserParamsConstructor::ConstructPat
     return predicate_params;
 }
 shared_ptr<GapCloserScoreFunctionBuilder> PathExtractionPartsConstructor::ConstructPathClusterScoreFunction(
-        const PathClusterPredicateParams& path_cluster_predicate_params) const {
+        const PathClusterPredicateParams& path_cluster_predicate_params,
+        const ScaffoldGraph& scaffold_graph,
+        bool path_scaffolding) const {
 
     const size_t linkage_distance = path_cluster_predicate_params.linkage_distance_;
     const size_t min_read_threshold = path_cluster_predicate_params.min_read_threshold_;
-    const auto& scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
     std::set<path_extend::scaffold_graph::ScaffoldVertex> target_edges;
     std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(target_edges, target_edges.begin()));
     INFO(target_edges.size() << " target edges.");
     auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     size_t cluster_storage_builder_threads = cfg::get().max_threads;
-    cluster_storage::InitialClusterStorageBuilder cluster_storage_builder(gp_.g, barcode_extractor_ptr,
-                                                                          target_edges, linkage_distance,
-                                                                          min_read_threshold,
-                                                                          cluster_storage_builder_threads);
-    INFO("Constructing initial cluster storage");
-    auto initial_cluster_storage = make_shared<cluster_storage::InitialClusterStorage>(cluster_storage_builder.ConstructInitialClusterStorage());
-    INFO("Initial cluster storage size: " << initial_cluster_storage->get_cluster_storage().Size());
-    auto cluster_score_builder = make_shared<path_extend::PathClusterScoreFunctionBuilder>(gp_.g,
-                                                                                           barcode_extractor_ptr,
-                                                                                           initial_cluster_storage,
-                                                                                           linkage_distance);
-    return cluster_score_builder;
+    if (not path_scaffolding) {
+        auto cluster_storage_builder =
+            std::make_shared<cluster_storage::EdgeInitialClusterStorageBuilder>(gp_.g, barcode_extractor_ptr,
+                                                                                target_edges, linkage_distance,
+                                                                                min_read_threshold,
+                                                                                cluster_storage_builder_threads);
+        return ConstructScoreFunctionFromBuilder(cluster_storage_builder, linkage_distance);
+    }
+
+    //fixme move into lower level config
+    size_t edge_length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
+    auto cluster_storage_builder =
+        std::make_shared<cluster_storage::PathInitialClusterStorageBuilder>(gp_.g, barcode_extractor_ptr,
+                                                                            target_edges, linkage_distance,
+                                                                            min_read_threshold,
+                                                                            cluster_storage_builder_threads,
+                                                                            edge_length_threshold);
+
+    return ConstructScoreFunctionFromBuilder(cluster_storage_builder, linkage_distance);
 }
 
 shared_ptr<GapCloserPredicateBuilder> PathExtractionPartsConstructor::ConstructPEPredicate() const {
@@ -737,6 +747,18 @@ vector<shared_ptr<GapCloserPredicateBuilder>> PathExtractionPartsConstructor::Co
     return predicate_builders;
 }
 PathExtractionPartsConstructor::PathExtractionPartsConstructor(const conj_graph_pack& gp_) : gp_(gp_) {}
+shared_ptr<GapCloserScoreFunctionBuilder> PathExtractionPartsConstructor::ConstructScoreFunctionFromBuilder(
+        shared_ptr<InitialClusterStorageBuilder> cluster_storage_builder, size_t linkage_distance) const {
+    INFO("Constructing initial cluster storage");
+    auto initial_cluster_storage = make_shared<cluster_storage::InitialClusterStorage>(cluster_storage_builder->ConstructInitialClusterStorage());
+    INFO("Initial cluster storage size: " << initial_cluster_storage->get_cluster_storage().Size());
+    auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+    auto cluster_score_builder = make_shared<path_extend::PathClusterScoreFunctionBuilder>(gp_.g,
+                                                                                           barcode_extractor_ptr,
+                                                                                           initial_cluster_storage,
+                                                                                           linkage_distance);
+    return cluster_score_builder;
+}
 PathClusterPredicateParams::PathClusterPredicateParams(const size_t linkage_distance_,
                                                        const double path_cluster_threshold_,
                                                        const size_t min_read_threshold_) : linkage_distance_(

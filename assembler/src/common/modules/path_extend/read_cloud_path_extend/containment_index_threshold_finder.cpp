@@ -4,12 +4,10 @@ namespace path_extend {
 ScoreHistogram::ScoreHistogram(const map<double, size_t> &score_to_number_) : score_to_number_(score_to_number_) {}
 ScoreHistogram ScoreHistogramConstructor::ConstructScoreHistogram(
         shared_ptr<path_extend::ScaffoldEdgeScoreFunction> score_function,
-        const path_extend::scaffold_graph::ScaffoldGraph &initial_scaffold_graph) const {
+        const vector<ScaffoldVertex>& scaffold_vertices) const {
     INFO("Getting score histogram");
     std::multiset<double> scores;
     size_t processed_edges = 0;
-    vector<scaffold_graph::ScaffoldVertex> scaffold_vertices;
-    std::copy(initial_scaffold_graph.vbegin(), initial_scaffold_graph.vend(), std::back_inserter(scaffold_vertices));
     size_t block_size = scaffold_vertices.size() / 10;
     size_t threads = cfg::get().max_threads;
     INFO(scaffold_vertices.size() << " unique edges.");
@@ -60,15 +58,15 @@ double ScoreDistributionBasedThresholdFinder::GetThreshold() const {
     const double MIN = 0.0;
     const double MAX = 1.0;
     ScoreHistogramConstructor hist_constructor(STEP, MIN, MAX, g_);
-    ScoreHistogram histogram = hist_constructor.ConstructScoreHistogram(score_function_, initial_scaffold_graph_);
-    return FindPercentile(histogram, initial_scaffold_graph_);
+    ScoreHistogram histogram = hist_constructor.ConstructScoreHistogram(score_function_, scaffold_vertices_);
+    return FindPercentile(histogram, scaffold_vertices_);
 }
 ScoreDistributionBasedThresholdFinder::ScoreDistributionBasedThresholdFinder(
         const Graph &g_,
-        const scaffold_graph::ScaffoldGraph &initial_scaffold_graph_,
+        const vector<ScaffoldVertex> &scaffold_vertices_,
         const shared_ptr<ScaffoldEdgeScoreFunction> &score_function_,
         double vertex_multiplier)
-    : g_(g_), initial_scaffold_graph_(initial_scaffold_graph_),
+    : g_(g_), scaffold_vertices_(scaffold_vertices_),
       score_function_(score_function_), vertex_multiplier_(vertex_multiplier) {}
 double ScoreDistributionBasedThresholdFinder::FindFirstLocalMin(const ScoreHistogram &histogram) const {
 
@@ -82,14 +80,15 @@ double ScoreDistributionBasedThresholdFinder::FindFirstLocalMin(const ScoreHisto
     return 0.0;
 }
 double ScoreDistributionBasedThresholdFinder::FindPercentile(const ScoreHistogram &histogram,
-                                                             const scaffold_graph::ScaffoldGraph &initial_scaffold_graph) const {
-    size_t number_of_vertices = initial_scaffold_graph.VertexCount();
+                                                             const vector<ScaffoldVertex> &scaffold_vertices) const {
+    size_t number_of_vertices = scaffold_vertices.size();
     size_t optimal_number_of_edges = static_cast<size_t>(static_cast<double>(number_of_vertices) * vertex_multiplier_);
     size_t current_sum = 0;
     INFO("Vertex multiplier: " << vertex_multiplier_);
     INFO(optimal_number_of_edges << " optimal");
     for (auto it = histogram.rbegin(); it != histogram.rend(); ++it) {
         current_sum += it->second;
+        DEBUG("Current sum: " << current_sum);
         if (current_sum > optimal_number_of_edges) {
             return it->first;
         }

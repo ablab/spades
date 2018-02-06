@@ -5,9 +5,9 @@ namespace validation {
 
 vector<NamedSimplePath> ContigPathBuilder::GetContigPaths(const string& path_to_contigs) const {
     auto raw_contig_paths = GetRawPaths(path_to_contigs);
-    INFO(raw_contig_paths.size() << " raw paths");
+    DEBUG(raw_contig_paths.size() << " raw paths");
     vector<NamedSimplePath> fixed_paths = FixMappingPaths(raw_contig_paths);
-    INFO(fixed_paths.size() << " fixed paths");
+    DEBUG(fixed_paths.size() << " fixed paths");
     return fixed_paths;
 }
 vector<vector<EdgeWithMapping>> ContigPathBuilder::StripNames(const vector<NamedSimplePath>& named_paths) const {
@@ -282,7 +282,7 @@ vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::Extra
     return result;
 }
 vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::ExtractTransitionsFromOrdering(
-        const vector<EdgeId>& ordering) {
+        const vector<ScaffoldVertex>& ordering) {
     VERIFY(ordering.size() != 0);
     vector<Transition> result;
     for (auto first = ordering.begin(), second = std::next(ordering.begin()); second != ordering.end(); ++first, ++second) {
@@ -300,7 +300,7 @@ vector<vector<EdgeWithMapping>> FilteredReferencePathHelper::GetFilteredReferenc
 
     auto named_reference_paths = contig_path_builder.GetContigPaths(path_to_reference);
     auto reference_paths = contig_path_builder.StripNames(named_reference_paths);
-    INFO(reference_paths.size() << " reference paths");
+    DEBUG(reference_paths.size() << " reference paths");
     path_extend::validation::ContigPathFilter contig_path_filter(unique_storage);
     return contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths);
 }

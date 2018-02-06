@@ -579,6 +579,7 @@ private:
 
 };
 
+//fixme code duplication(MultiExtender)
 //todo add custom path predicate instead of length bound
 class SearchingMultiExtender: public SimpleExtender {
  protected:
@@ -606,24 +607,15 @@ class SearchingMultiExtender: public SimpleExtender {
     }
 
  protected:
-    bool AddCandidates(BidirectionalPath& path, PathContainer* /*paths_storage*/, ExtensionChooser::EdgeContainer& candidates) override {
-
-
+    bool SearchingAddCandidates(BidirectionalPath& path, ExtensionChooser::EdgeContainer& candidates,
+                                QueueContainer& path_container, std::unordered_set<VertexId>& visited_vertices,
+                                size_t length_bound) {
         if (candidates.size() == 0)
             return false;
 
         VERIFY(path.Size() >= 1);
-        if (path.Size() > 1 and path.LengthAt(1) > length_bound_) {
+        if (path.Size() > 1 and path.LengthAt(1) > length_bound) {
             DEBUG("Path is too long");
-            return false;
-        }
-
-        LoopDetector loop_detector(&path, cov_map_);
-        DEBUG("loop detector");
-        if (!investigate_short_loops_ &&
-            (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
-            && extensionChooser_->WeightCounterBased()) {
-            DEBUG("loop detected");
             return false;
         }
 
@@ -631,7 +623,7 @@ class SearchingMultiExtender: public SimpleExtender {
             DEBUG("push");
             EdgeId eid = candidates.back().e_;
             path.PushBack(eid, Gap(candidates.back().d_));
-            visited_vertices_.insert(g_.EdgeEnd(eid));
+            visited_vertices.insert(g_.EdgeEnd(eid));
             DEBUG("push done");
             return true;
         }
@@ -642,16 +634,16 @@ class SearchingMultiExtender: public SimpleExtender {
             DEBUG("push other candidate " << candidate.e_.int_id());
             BidirectionalPath* p = new BidirectionalPath(path);
             p->PushBack(candidate.e_, Gap(candidate.d_));
-            path_container_.push(p);
+            path_container.push(p);
             DEBUG("Inserting vertex " << g_.EdgeEnd(candidate.e_));
-            visited_vertices_.insert(g_.EdgeEnd(candidate.e_));
+            visited_vertices.insert(g_.EdgeEnd(candidate.e_));
         }
 
         DEBUG("push");
         path.PushBack(candidates.front().e_, Gap(candidates.front().d_));
         DEBUG("push done");
         DEBUG("Inserting vertex " << g_.EdgeEnd(candidates.front().e_));
-        visited_vertices_.insert(g_.EdgeEnd(candidates.front().e_));
+        visited_vertices.insert(g_.EdgeEnd(candidates.front().e_));
 
         if (candidates.size() > 1) {
             DEBUG("Found " << candidates.size() << " candidates");
@@ -660,9 +652,30 @@ class SearchingMultiExtender: public SimpleExtender {
         return true;
     }
 
- protected:
-    DECL_LOGGER("SearchingMultiExtender")
+    bool AddCandidates(BidirectionalPath& path, PathContainer* /*paths_storage*/,
+                       ExtensionChooser::EdgeContainer& candidates) override {
+        ExtensionChooser::EdgeContainer loop_checked_candidates;
+        auto loop_check = [&path, this](const EdgeWithDistance ewd) {
+          return LoopCheck(path, ewd.e_);
+        };
+        std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(loop_checked_candidates), loop_check);
+        return SearchingAddCandidates(path, loop_checked_candidates, path_container_, visited_vertices_, length_bound_);
+    }
 
+ private:
+    bool LoopCheck(BidirectionalPath& path, const EdgeId& edge) const {
+        LoopDetector loop_detector(&path, cov_map_);
+        DEBUG("loop detector");
+        if (!investigate_short_loops_ &&
+            (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(edge))
+            && extensionChooser_->WeightCounterBased()) {
+            DEBUG("loop detected");
+            return false;
+        }
+        return true;
+    }
+
+    DECL_LOGGER("SearchingMultiExtender")
 };
 
 

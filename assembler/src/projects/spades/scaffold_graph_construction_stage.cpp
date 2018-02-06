@@ -9,7 +9,7 @@ void debruijn_graph::ScaffoldGraphConstructionStage::run(debruijn_graph::conj_gr
     INFO(barcode_info_extractor->GetTotalNumberOfBarcodes() << " barcodes");
     path_extend::ScaffoldGraphStorageConstructor storage_constructor(small_length_threshold, large_length_threshold, graph_pack);
     INFO("Constructing storage");
-    auto storage = storage_constructor.ConstructStorage();
+    auto storage = storage_constructor.ConstructStorageFromGraph();
     graph_pack.scaffold_graph_storage.SetSmallScaffoldGraph(storage.GetSmallScaffoldGraph());
     graph_pack.scaffold_graph_storage.SetLargeScaffoldGraph(storage.GetLargeScaffoldGraph());
 }

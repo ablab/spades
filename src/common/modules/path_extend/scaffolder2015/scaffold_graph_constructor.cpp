@@ -82,14 +82,14 @@ std::shared_ptr<ScaffoldGraph> DefaultScaffoldGraphConstructor::Construct() {
     return graph_;
 }
 
-PredicateScaffoldGraphConstructor::PredicateScaffoldGraphConstructor(const Graph& assembly_graph,
+PredicateScaffoldGraphFilter::PredicateScaffoldGraphFilter(const Graph& assembly_graph,
                                                                      const ScaffoldGraph& old_graph_,
                                                                      shared_ptr<EdgePairPredicate> predicate_,
                                                                      size_t max_threads)
     : BaseScaffoldGraphConstructor(assembly_graph), old_graph_(old_graph_),
       predicate_(predicate_), max_threads_(max_threads) {}
 
-void PredicateScaffoldGraphConstructor::ConstructFromGraphAndPredicate(const ScaffoldGraph& old_graph,
+void PredicateScaffoldGraphFilter::ConstructFromGraphAndPredicate(const ScaffoldGraph& old_graph,
                                                                        shared_ptr<EdgePairPredicate> predicate) {
     for (const auto& vertex: old_graph.vertices()) {
         graph_->AddVertex(vertex);
@@ -104,32 +104,34 @@ void PredicateScaffoldGraphConstructor::ConstructFromGraphAndPredicate(const Sca
 #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < scaffold_edges.size(); ++i) {
         auto edge = scaffold_edges[i];
+        DEBUG("Checking");
         bool check_predicate = (*predicate)(edge);
+        DEBUG("Check result: " << check_predicate);
 #pragma omp critical
         {
             if (check_predicate) {
                 graph_->AddEdge(edge);
             }
             ++counter;
-            if (counter % block_size == 0) {
+            if (block_size != 0 and counter % block_size == 0) {
                 INFO("Processed " << counter << " edges out of " << scaffold_edges.size());
             }
         }
     }
 }
 
-shared_ptr<ScaffoldGraph> PredicateScaffoldGraphConstructor::Construct() {
+shared_ptr<ScaffoldGraph> PredicateScaffoldGraphFilter::Construct() {
     ConstructFromGraphAndPredicate(old_graph_, predicate_);
     return graph_;
 }
-ScoreFunctionScaffoldGraphConstructor::ScoreFunctionScaffoldGraphConstructor(const Graph& assembly_graph,
+ScoreFunctionScaffoldGraphFilter::ScoreFunctionScaffoldGraphFilter(const Graph& assembly_graph,
                                                                              const ScaffoldGraph& old_graph_,
                                                                              shared_ptr<EdgePairScoreFunction> score_function_,
                                                                              const double score_threshold, size_t num_threads)
     : BaseScaffoldGraphConstructor(assembly_graph), old_graph_(old_graph_),
       score_function_(score_function_), score_threshold_(score_threshold), num_threads_(num_threads) {}
 
-void ScoreFunctionScaffoldGraphConstructor::ConstructFromGraphAndScore(const ScaffoldGraph& graph,
+void ScoreFunctionScaffoldGraphFilter::ConstructFromGraphAndScore(const ScaffoldGraph& graph,
                                                                        shared_ptr<EdgePairScoreFunction> score_function,
                                                                        double score_threshold, size_t threads) {
     //fixme score overwrites previous weight!
@@ -164,7 +166,7 @@ void ScoreFunctionScaffoldGraphConstructor::ConstructFromGraphAndScore(const Sca
         }
     }
 }
-shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
+shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphFilter::Construct() {
     ConstructFromGraphAndScore(old_graph_, score_function_, score_threshold_, num_threads_);
     return graph_;
 }
@@ -194,7 +196,7 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
     }
 
     size_t counter = 0;
-    const size_t block_size = vertices_copy.size() / 20;
+    const size_t block_size = vertices_copy.size() / 10;
 
 #pragma omp parallel for num_threads(max_threads_)
     for (size_t i = 0; i < vertices_copy.size(); ++i) {
@@ -273,5 +275,74 @@ ScaffoldSubgraphConstructor::ScaffoldSubgraphConstructor(const Graph &assembly_g
       vertex_condition_(vertex_condition_),
       large_graph_(large_graph_),
       distance_threshold_(distance_threshold_) {}
+CompleteScaffoldGraphConstructor::CompleteScaffoldGraphConstructor(const Graph &assembly_graph,
+                                                                 const set<ScaffoldVertex> &scaffold_vertices_)
+    : BaseScaffoldGraphConstructor(assembly_graph), scaffold_vertices_(scaffold_vertices_) {}
+shared_ptr<ScaffoldGraph> CompleteScaffoldGraphConstructor::Construct() {
+    for (const auto& vertex: scaffold_vertices_) {
+        graph_->AddVertex(vertex);
+    }
+
+    for (const auto& from: scaffold_vertices_) {
+        for (const auto& to: scaffold_vertices_) {
+            if (from != to and from != to.getConjugateFromGraph(graph_->AssemblyGraph())) {
+                ScaffoldGraph::ScaffoldEdge edge(to, from, (size_t) - 1, 0, 0);
+                graph_->AddEdge(edge);
+            }
+        }
+    }
+    return graph_;
+}
+ScoreFunctionScaffoldGraphConstructor::ScoreFunctionScaffoldGraphConstructor(
+        const Graph &assembly_graph,
+        const std::set<ScaffoldVertex> &scaffold_vertices_,
+        const shared_ptr<ScoreFunctionScaffoldGraphConstructor::EdgePairScoreFunction> &score_function_,
+        const double score_threshold_,
+        const size_t num_threads_)
+    : BaseScaffoldGraphConstructor(assembly_graph),
+      scaffold_vertices_(scaffold_vertices_),
+      score_function_(score_function_),
+      score_threshold_(score_threshold_),
+      num_threads_(num_threads_) {}
+
+shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
+    for (const auto& vertex: scaffold_vertices_) {
+        graph_->AddVertex(vertex);
+    }
+    //fixme switch to tbb or use chunk splitter
+    vector<ScaffoldGraph::ScaffoldGraphVertex> scaffold_vertex_vec;
+    for (const auto& vertex: scaffold_vertices_) {
+        scaffold_vertex_vec.push_back(vertex);
+    }
+    size_t counter = 0;
+    size_t edges_size = scaffold_vertices_.size() * scaffold_vertices_.size();
+    const size_t block_size = edges_size / 10;
+#pragma omp parallel for num_threads(num_threads_)
+    for (size_t i = 0; i < scaffold_vertex_vec.size(); ++i) {
+        for (size_t j = 0; j < scaffold_vertex_vec.size(); ++j) {
+            const ScaffoldVertex& from = scaffold_vertex_vec[i];
+            const ScaffoldVertex& to = scaffold_vertex_vec[j];
+            ScaffoldGraph::ScaffoldEdge edge(from, to);
+            double score = score_function_->GetScore(edge);
+#pragma omp critical
+            {
+                TRACE("Checking edge " << edge.getStart().int_id() << " -> " << edge.getEnd().int_id());
+                TRACE("Score: " << score);
+                TRACE("Score threshold: " << score_threshold_);
+                bool are_conjugate = from == to.getConjugateFromGraph(graph_->AssemblyGraph());
+                if (math::ge(score, score_threshold_) and from != to and not are_conjugate) {
+                    TRACE("Success");
+                    graph_->AddEdge(edge.getStart(), edge.getEnd(), edge.getColor(), score, edge.getLength());
+                }
+                TRACE("Edge added");
+                ++counter;
+                if (counter % block_size == 0) {
+                    INFO("Processed " << counter << " edges out of " << edges_size);
+                }
+            }
+        }
+    }
+    return graph_;
+}
 } //scaffold_graph
 } //path_extend
