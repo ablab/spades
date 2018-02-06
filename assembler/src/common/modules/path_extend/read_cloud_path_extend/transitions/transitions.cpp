@@ -3,7 +3,7 @@ namespace path_extend {
 namespace transitions {
 vector<Transition> PathClusterTransitionExtractor::ExtractTransitions(const cluster_storage::Cluster& cluster) const {
     vector<Transition> result;
-    vector<EdgeId> ordering = cluster_analyzer_.GetOrderingFromCluster(cluster);
+    vector<ScaffoldVertex> ordering = cluster_analyzer_.GetOrderingFromCluster(cluster);
     TRACE("Ordering size: " << ordering.size());
     if (ordering.size() > 1) {
         for (auto first = ordering.begin(), second = std::next(first); second != ordering.end(); ++first, ++second) {

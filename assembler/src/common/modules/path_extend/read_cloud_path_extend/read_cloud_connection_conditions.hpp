@@ -1,4 +1,5 @@
 #pragma once
+#include "common/modules/path_extend/path_extender.hpp"
 #include "common/modules/path_extend/pipeline/launch_support.hpp"
 #include "common/modules/path_extend/extension_chooser.hpp"
 #include "common/modules/path_extend/scaffolder2015/connection_condition2015.hpp"
@@ -76,6 +77,7 @@ namespace path_extend {
 
     class CompositeConnectionPredicate: public ScaffoldEdgePredicate {
         using ScaffoldEdgePredicate::ScaffoldEdge;
+        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
         const conj_graph_pack& gp_;
         shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor_;
@@ -85,6 +87,7 @@ namespace path_extend {
         const size_t length_bound_;
         const CompositeConnectionParams params_;
         const LongEdgePairGapCloserParams predicate_params_;
+        bool scaffolding_mode_;
 
      public:
 
@@ -95,12 +98,23 @@ namespace path_extend {
                                      const de::PairedInfoIndicesT<debruijn_graph::DeBruijnGraph> &clustered_indices_,
                                      size_t length_bound_,
                                      const CompositeConnectionParams &params_,
-                                     const LongEdgePairGapCloserParams &predicate_params_);
+                                     const LongEdgePairGapCloserParams &predicate_params_,
+                                     bool scaffolding_mode_);
 
         bool Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const override;
 
      private:
+        //fixme huge code duplication with path extend
         shared_ptr<path_extend::ExtensionChooser> ConstructSimpleExtensionChooser() const;
+        shared_ptr<path_extend::ExtensionChooser> ConstructScaffoldingExtensionChooser() const;
+
+        shared_ptr<ScaffoldVertexPredicate> ConstructScaffoldVertexPredicate(
+            const ScaffoldVertex& start, const ScaffoldVertex& end) const;
+
+        shared_ptr<path_extend::SearchingMultiExtender> ConstructBasicSearchingExtender(
+            path_extend::QueueContainer& paths_container,
+            GraphCoverageMap& cover_map,
+            shared_ptr<ExtensionChooser> extension_chooser) const;
 
         DECL_LOGGER("CompositeConnectionPredicate");
     };
@@ -110,23 +124,26 @@ namespace path_extend {
         typedef barcode_index::BarcodeId BarcodeId;
 
         const Graph& g_;
-        const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_;
+        shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor_;
         const size_t count_threshold_;
         const double strictness_;
      public:
         EdgeSplitPredicate(const Graph& g_,
-                           const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                           shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor,
                            size_t count_threshold_,
                            double strictness);
 
         bool Check(const ScaffoldEdge& scaffold_edge) const override;
 
      private:
-        bool CheckOrderingForThreeSegments(const vector<BarcodeId>& first, const vector<BarcodeId>& second,
-                                           const vector<BarcodeId>& third, double strictness) const;
+        bool CheckOrderingForThreeSegments(const barcode_index::SimpleVertexEntry& first,
+                                           const barcode_index::SimpleVertexEntry& second,
+                                           const barcode_index::SimpleVertexEntry& third, double strictness) const;
 
-        bool CheckOrderingForFourSegments(const vector<BarcodeId>& first, const vector<BarcodeId>& second,
-                                          const vector<BarcodeId>& third, const vector<BarcodeId>& fourth) const;
+        bool CheckOrderingForFourSegments(const barcode_index::SimpleVertexEntry &first,
+                                          const barcode_index::SimpleVertexEntry &second,
+                                          const barcode_index::SimpleVertexEntry &third,
+                                          const barcode_index::SimpleVertexEntry &fourth) const;
 
         DECL_LOGGER("EdgeSplitPredicate");
     };
@@ -219,16 +236,10 @@ namespace path_extend {
     class NormalizedBarcodeScoreFunction: public AbstractBarcodeScoreFunction {
         using AbstractBarcodeScoreFunction::barcode_extractor_;
         using AbstractBarcodeScoreFunction::graph_;
-        const size_t read_count_threshold_;
-        const size_t tail_threshold_;
-        const size_t total_barcodes_;
 
      public:
-        NormalizedBarcodeScoreFunction(
-            const Graph& graph_,
-            shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
-            size_t read_count_threshold_,
-            size_t tail_threshold_);
+        NormalizedBarcodeScoreFunction(const Graph& graph_,
+                                       shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_);
 
         double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
 
