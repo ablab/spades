@@ -10,7 +10,7 @@ namespace barcode_index {
         virtual EdgeEntryT ExtractEntry(const path_extend::scaffold_graph::ScaffoldVertex &vertex) const = 0;
     };
 
-    class SimpleScaffoldVertexEntryExtractor: public AbstractScaffoldVertexEntryExtractor<SimpleVertexEntry> {
+    class ScaffoldVertexSimpleEntryExtractor: public AbstractScaffoldVertexEntryExtractor<SimpleVertexEntry> {
      public:
         typedef typename path_extend::scaffold_graph::EdgeIdVertex EdgeIdVertex;
         typedef typename path_extend::scaffold_graph::PathVertex PathVertex;
@@ -22,7 +22,7 @@ namespace barcode_index {
         const size_t length_threshold_;
 
      public:
-        SimpleScaffoldVertexEntryExtractor(const Graph &g_,
+        ScaffoldVertexSimpleEntryExtractor(const Graph &g_,
                                            const FrameBarcodeIndexInfoExtractor &barcode_extractor_,
                                            const size_t tail_threshold_,
                                            const size_t count_threshold_,
@@ -151,7 +151,7 @@ namespace barcode_index {
             INFO("Tail threshold: " << tail_threshold);
             INFO("Count threshold: " << count_threshold);
             INFO("Length threshold: " << length_threshold);
-            auto entry_extractor = make_shared<SimpleScaffoldVertexEntryExtractor>(g_, extractor, tail_threshold,
+            auto entry_extractor = make_shared<ScaffoldVertexSimpleEntryExtractor>(g_, extractor, tail_threshold,
                                                                                        count_threshold, length_threshold);
             ScaffoldVertexIndexBuilder<SimpleVertexEntry> builder(g_, entry_extractor, max_threads);
             return builder.GetConstructedIndex(vertex_container);

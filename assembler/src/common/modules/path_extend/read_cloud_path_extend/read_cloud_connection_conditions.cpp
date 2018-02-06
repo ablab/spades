@@ -317,12 +317,12 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
 
     auto length_predicate = make_shared<path_extend::LengthChecker>(length_threshold, gp_.g);
     auto scaffold_vertex_predicate =
-        make_shared<path_extend::AndChecker>(length_predicate, long_gap_cloud_predicate);
+        make_shared<path_extend::AndPredicate>(length_predicate, long_gap_cloud_predicate);
 
     DEBUG("Checking edge " << start.int_id() << " -> " << end.int_id());
 
     auto multi_chooser =
-        make_shared<path_extend::MultiExtensionChooser>(gp_.g, scaffold_vertex_predicate, extension_chooser);
+        make_shared<path_extend::PredicateExtensionChooser>(gp_.g, scaffold_vertex_predicate, extension_chooser);
     const auto &lib = params_.dataset_info.reads[params_.paired_lib_index_];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[params_.paired_lib_index_]);
     GraphCoverageMap cover_map(gp_.g);
@@ -341,6 +341,7 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
     const size_t max_path_growing_iterations = 1000;
     const size_t max_paths_to_process = 200;
     const size_t max_edge_visits = 10;
+
     size_t path_processing_iterations = 0;
 
     VertexId start_vertex = start.getEndGraphVertex(gp_.g);

@@ -706,7 +706,7 @@ shared_ptr<GapCloserScoreFunctionBuilder> PathExtractionPartsConstructor::Constr
     INFO(target_edges.size() << " target edges.");
     auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     size_t cluster_storage_builder_threads = cfg::get().max_threads;
-    cluster_storage::InitialClusterStorageBuilder cluster_storage_builder(gp_.g, barcode_extractor_ptr,
+    cluster_storage::EdgeInitialClusterStorageBuilder cluster_storage_builder(gp_.g, barcode_extractor_ptr,
                                                                           target_edges, linkage_distance,
                                                                           min_read_threshold,
                                                                           cluster_storage_builder_threads);

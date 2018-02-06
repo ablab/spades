@@ -28,13 +28,13 @@ class LengthChecker : public ScaffoldVertexPredicate {
     bool Check(const ScaffoldVertex &vertex) const override;
 };
 
-class AndChecker : public ScaffoldVertexPredicate {
+class AndPredicate : public ScaffoldVertexPredicate {
  private:
     shared_ptr<ScaffoldVertexPredicate> first_;
     shared_ptr<ScaffoldVertexPredicate> second_;
 
  public:
-    AndChecker(const shared_ptr<ScaffoldVertexPredicate> &first_, const shared_ptr<ScaffoldVertexPredicate> &second_);
+    AndPredicate(const shared_ptr<ScaffoldVertexPredicate> &first_, const shared_ptr<ScaffoldVertexPredicate> &second_);
 
     bool Check(const ScaffoldVertex &scaffold_vertex) const override;
 };

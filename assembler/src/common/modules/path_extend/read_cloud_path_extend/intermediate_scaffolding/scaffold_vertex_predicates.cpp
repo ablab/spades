@@ -16,7 +16,7 @@ bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVer
     }
 
     //fixme wow such magic
-    double score_normalizer = vertex_coverage * average_coverage * vertex_length / 2000000;
+    double score_normalizer = vertex_coverage * average_coverage * static_cast<double>(vertex_length) / 2000000;
 
     DEBUG("Length: " << vertex_length);
     DEBUG("Coverage: " << vertex_coverage);
@@ -67,9 +67,9 @@ LongEdgePairGapCloserParams LongEdgePairGapCloserPredicate::GetParams() const {
     return params_;
 }
 
-AndChecker::AndChecker(const shared_ptr<ScaffoldVertexPredicate> &first_,
+AndPredicate::AndPredicate(const shared_ptr<ScaffoldVertexPredicate> &first_,
                        const shared_ptr<ScaffoldVertexPredicate> &second_) : first_(first_), second_(second_) {}
-bool AndChecker::Check(const ScaffoldVertexPredicate::ScaffoldVertex &scaffold_vertex) const {
+bool AndPredicate::Check(const ScaffoldVertexPredicate::ScaffoldVertex &scaffold_vertex) const {
     return first_->Check(scaffold_vertex) and second_->Check(scaffold_vertex);
 }
 path_extend::LongEdgePairGapCloserParams::LongEdgePairGapCloserParams(size_t count_threshold_,
@@ -110,7 +110,7 @@ bool TwoSetsBasedPairEntryProcessor::CheckWithEntry(const scaffold_graph::Scaffo
     size_t intersection_size = barcode_extractor_->GetIntersectionSize(middle_vertex, long_entry);
 //    size_t min_size = std::min(long_entry.size(), barcode_extractor_->GetHeadSize(middle_vertex));
 //    double containment_index = static_cast<double>(intersection_size) / static_cast<double>(min_size);
-    bool threshold_passed = math::ge(intersection_size, score_threshold);
+    bool threshold_passed = math::ge(static_cast<double>(intersection_size), score_threshold);
     DEBUG("Score: " << intersection_size);
 //    DEBUG("Intersection: " << intersection_size);
     return threshold_passed;
