@@ -123,7 +123,17 @@ class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
     DECL_LOGGER("UniqueScaffoldGraphConstructor");
 };
 
-class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
+//todo remove this later
+class CompleteScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
+    const std::set<ScaffoldVertex> scaffold_vertices_;
+
+ public:
+    CompleteScaffoldGraphConstructor(const Graph &assembly_graph, const set<ScaffoldVertex> &scaffold_vertices_);
+
+    shared_ptr<ScaffoldGraph> Construct() override;
+};
+
+class PredicateScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
  public:
     typedef path_extend::ScaffoldEdgePredicate EdgePairPredicate;
  protected:
@@ -132,10 +142,10 @@ class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
     const size_t max_threads_;
 
  public:
-    PredicateScaffoldGraphConstructor(const Graph& assembly_graph,
-                                      const ScaffoldGraph& old_graph_,
-                                      shared_ptr<EdgePairPredicate> predicate_,
-                                      size_t max_threads);
+    PredicateScaffoldGraphFilter(const Graph& assembly_graph,
+                                 const ScaffoldGraph& old_graph_,
+                                 shared_ptr<EdgePairPredicate> predicate_,
+                                 size_t max_threads);
 
     shared_ptr<ScaffoldGraph> Construct() override;
  protected:
@@ -143,7 +153,7 @@ class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
 
 };
 
-class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
+class ScoreFunctionScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
     typedef path_extend::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
  protected:
     const ScaffoldGraph& old_graph_;
@@ -151,10 +161,10 @@ class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor
     const double score_threshold_;
     const size_t num_threads_;
  public:
-    ScoreFunctionScaffoldGraphConstructor(const Graph& assembly_graph,
-                                          const ScaffoldGraph& old_graph_,
-                                          shared_ptr<EdgePairScoreFunction> score_function_,
-                                          const double score_threshold, size_t num_threads);
+    ScoreFunctionScaffoldGraphFilter(const Graph& assembly_graph,
+                                     const ScaffoldGraph& old_graph_,
+                                     shared_ptr<EdgePairScoreFunction> score_function_,
+                                     const double score_threshold, size_t num_threads);
 
     shared_ptr<ScaffoldGraph> Construct() override;
  protected:
@@ -163,6 +173,24 @@ class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor
     DECL_LOGGER("ScoreFunctionScaffoldGraphConstructor")
 };
 
+class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
+    typedef path_extend::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
+
+ protected:
+    const std::set<ScaffoldVertex> scaffold_vertices_;
+    const shared_ptr<EdgePairScoreFunction> score_function_;
+    const double score_threshold_;
+    const size_t num_threads_;
+
+ public:
+    ScoreFunctionScaffoldGraphConstructor(const Graph &assembly_graph,
+                                          const std::set<ScaffoldVertex> &scaffold_vertices_,
+                                          const shared_ptr<EdgePairScoreFunction> &score_function_,
+                                          const double score_threshold_,
+                                          const size_t num_threads_);
+
+    shared_ptr<ScaffoldGraph> Construct() override;
+};
 
 } //scaffold_graph
 } //path_extend

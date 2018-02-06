@@ -387,7 +387,8 @@ shared_ptr<LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::
     BidirectionalPath* prefix = new BidirectionalPath(path.SubPath(0, position));
     BidirectionalPath* prefix_conj = new BidirectionalPath(prefix->Conjugate());
     BidirectionalPath* suffix = new BidirectionalPath(path.SubPath(position));
-    barcode_index::SimpleScaffoldVertexEntryExtractor simple_extractor(g_, *main_extractor_, tail_threshold_,
+    auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold_);
+    barcode_index::ScaffoldVertexSimpleEntryExtractor simple_extractor(g_, *main_extractor_, tail_threshold_getter,
                                                                        count_threshold_, length_threshold_);
     auto prefix_entry = simple_extractor.ExtractEntry(prefix_conj);
     auto suffix_entry = simple_extractor.ExtractEntry(suffix);

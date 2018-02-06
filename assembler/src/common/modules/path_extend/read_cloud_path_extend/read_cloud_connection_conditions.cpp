@@ -66,13 +66,8 @@ double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGr
 }
 NormalizedBarcodeScoreFunction::NormalizedBarcodeScoreFunction(
     const Graph &graph_,
-    shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
-    const size_t read_count_threshold_,
-    const size_t tail_threshold_) : AbstractBarcodeScoreFunction(graph_, barcode_extractor_),
-                                    read_count_threshold_(read_count_threshold_),
-                                    tail_threshold_(tail_threshold_),
-    //fixme use total barcodes from index
-                                    total_barcodes_(1000000) {}
+    shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_) :
+    AbstractBarcodeScoreFunction(graph_, barcode_extractor_) {}
 
 ReadCloudMiddleDijkstraPredicate::ReadCloudMiddleDijkstraPredicate(
         const Graph &g,
@@ -109,16 +104,16 @@ bool ReadCloudMiddleDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph
 }
 
 EdgeSplitPredicate::EdgeSplitPredicate(const Graph &g_,
-                                       const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                                       shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor,
                                        const size_t count_threshold_,
                                        double strictness)
     : g_(g_),
-      barcode_extractor_(barcode_extractor_),
+      barcode_extractor_(barcode_extractor),
       count_threshold_(count_threshold_),
       strictness_(strictness) {}
-bool EdgeSplitPredicate::CheckOrderingForThreeSegments(const vector<EdgeSplitPredicate::BarcodeId> &first,
-                                                       const vector<EdgeSplitPredicate::BarcodeId> &second,
-                                                       const vector<EdgeSplitPredicate::BarcodeId> &third,
+bool EdgeSplitPredicate::CheckOrderingForThreeSegments(const barcode_index::SimpleVertexEntry &first,
+                                                       const barcode_index::SimpleVertexEntry &second,
+                                                       const barcode_index::SimpleVertexEntry &third,
                                                        double strictness) const {
     vector<BarcodeId> first_second_intersection;
     std::set_intersection(first.begin(), first.end(), second.begin(), second.end(),
@@ -139,10 +134,10 @@ bool EdgeSplitPredicate::CheckOrderingForThreeSegments(const vector<EdgeSplitPre
     return result;
 }
 
-bool EdgeSplitPredicate::CheckOrderingForFourSegments(const vector<EdgeSplitPredicate::BarcodeId> &first,
-                                                      const vector<EdgeSplitPredicate::BarcodeId> &second,
-                                                      const vector<EdgeSplitPredicate::BarcodeId> &third,
-                                                      const vector<EdgeSplitPredicate::BarcodeId> &fourth) const {
+bool EdgeSplitPredicate::CheckOrderingForFourSegments(const barcode_index::SimpleVertexEntry &first,
+                                                      const barcode_index::SimpleVertexEntry &second,
+                                                      const barcode_index::SimpleVertexEntry &third,
+                                                      const barcode_index::SimpleVertexEntry &fourth) const {
     vector<BarcodeId> first_fourth_intersection;
     std::set_intersection(first.begin(), first.end(), fourth.begin(), fourth.end(),
                           std::back_inserter(first_fourth_intersection));
@@ -156,22 +151,16 @@ bool EdgeSplitPredicate::CheckOrderingForFourSegments(const vector<EdgeSplitPred
     return second_third_intersection.size() > first_fourth_intersection.size();
 }
 bool EdgeSplitPredicate::Check(const ScaffoldEdge &scaffold_edge) const {
-    path_extend::scaffold_graph::EdgeGetter getter;
-
-    EdgeId start = getter.GetEdgeFromScaffoldVertex(scaffold_edge.getStart());
-    EdgeId end = getter.GetEdgeFromScaffoldVertex(scaffold_edge.getEnd());
-    size_t start_length = g_.length(start);
-    size_t end_length = g_.length(end);
-    vector<BarcodeId> first_half_of_start = barcode_extractor_.GetBarcodesFromRange(start, count_threshold_,
-                                                                                    0, start_length / 2);
-    vector<BarcodeId> second_half_of_start = barcode_extractor_.GetBarcodesFromRange(start, count_threshold_,
-                                                                                     start_length - start_length / 2,
-                                                                                     start_length);
-    vector<BarcodeId>
-        first_half_of_end = barcode_extractor_.GetBarcodesFromRange(end, count_threshold_, 0, end_length / 2);
-    vector<BarcodeId> second_half_of_end = barcode_extractor_.GetBarcodesFromRange(end, count_threshold_,
-                                                                                   end_length - end_length / 2,
-                                                                                   end_length);
+    auto start = scaffold_edge.getStart();
+    auto end = scaffold_edge.getEnd();
+    auto first_half_of_start = barcode_extractor_->GetHeadEntry(start);
+    auto second_half_of_start = barcode_extractor_->GetTailEntry(start);
+    auto first_half_of_end = barcode_extractor_->GetHeadEntry(end);
+    auto second_half_of_end = barcode_extractor_->GetTailEntry(end);
+    DEBUG("First half of start: " << first_half_of_start.size());
+    DEBUG("Second half of start: " << second_half_of_start.size());
+    DEBUG("First half of end: " << first_half_of_end.size());
+    DEBUG("Second half of end: " << second_half_of_end.size());
     bool next_conjugate_check = CheckOrderingForThreeSegments(second_half_of_start, first_half_of_end,
                                                               second_half_of_end, strictness_);
     if (not next_conjugate_check) {
@@ -304,39 +293,36 @@ double TrivialBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph
     return static_cast<double>(shared_count);
 }
 bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &scaffold_edge) const {
-    auto extension_chooser = ConstructSimpleExtensionChooser();
+    DEBUG("Start composite check");
+    shared_ptr<ExtensionChooser> extension_chooser;
+    if (not scaffolding_mode_) {
+        extension_chooser = ConstructSimpleExtensionChooser();
+    } else {
+        extension_chooser = ConstructScaffoldingExtensionChooser();
+    }
     auto start = scaffold_edge.getStart();
     auto end = scaffold_edge.getEnd();
-    auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
-        long_edge_extractor_->GetTailEntry(start), long_edge_extractor_->GetHeadEntry(end), short_edge_extractor_);
-    auto long_gap_cloud_predicate = make_shared<path_extend::LongEdgePairGapCloserPredicate>(gp_.g, short_edge_extractor_,
-                                                                                             predicate_params_,
-                                                                                             start, end,
-                                                                                             pair_entry_extractor);
-    size_t length_threshold = unique_storage_.min_length();
-
-    auto length_predicate = make_shared<path_extend::LengthChecker>(length_threshold, gp_.g);
-    auto scaffold_vertex_predicate =
-        make_shared<path_extend::AndChecker>(length_predicate, long_gap_cloud_predicate);
 
     DEBUG("Checking edge " << start.int_id() << " -> " << end.int_id());
 
+    auto scaffold_vertex_predicate = ConstructScaffoldVertexPredicate(start, end);
     auto multi_chooser =
-        make_shared<path_extend::MultiExtensionChooser>(gp_.g, scaffold_vertex_predicate, extension_chooser);
-    const auto &lib = params_.dataset_info.reads[params_.paired_lib_index_];
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[params_.paired_lib_index_]);
-    GraphCoverageMap cover_map(gp_.g);
-    UsedUniqueStorage used_unique_storage(unique_storage_);
-    const bool investigate_loops = true;
-    const bool short_loop_resolver = false;
-    auto opts = params_.pe_params_.pset.extension_options;
+        make_shared<path_extend::PredicateExtensionChooser>(gp_.g, scaffold_vertex_predicate, extension_chooser);
 
     path_extend::QueueContainer paths_container;
     BidirectionalPath* initial_path = start.toPath(gp_.g);
-    paths_container.push(initial_path);
-    path_extend::SearchingMultiExtender multi_extender(gp_, cover_map, used_unique_storage, multi_chooser,
-                                                       paired_lib->GetISMax(), investigate_loops, short_loop_resolver,
-                                                       opts.weight_threshold, length_bound_, paths_container);
+    DEBUG("Initial path id: " << initial_path->GetId());
+    DEBUG("Initial path size: " << initial_path->Size());
+    BidirectionalPath* initial_path_copy = new BidirectionalPath(*initial_path);
+    paths_container.push(initial_path_copy);
+
+    DEBUG("Constructed path container");
+
+    GraphCoverageMap cover_map(gp_.g);
+
+    auto multi_extender = ConstructBasicSearchingExtender(paths_container, cover_map, multi_chooser);
+
+    DEBUG("Constructed basic extender");
 
     const size_t max_path_growing_iterations = 1000;
     const size_t max_paths_to_process = 200;
@@ -353,7 +339,6 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
     }
 
     std::unordered_map<EdgeId, size_t> edge_to_number_of_visits;
-
     vector<BidirectionalPath*> tmp_path_storage;
 
     while (not paths_container.empty() and path_processing_iterations < max_paths_to_process) {
@@ -372,8 +357,9 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
             continue;
         }
         PathContainer *empty_storage = nullptr;
-        while (multi_extender.MakeGrowStep(*current_path, empty_storage)
+        while (multi_extender->MakeGrowStep(*current_path, empty_storage)
             and current_iterations < max_path_growing_iterations) {
+            DEBUG("Made grow step, iteration " << current_iterations);
             ++current_iterations;
         }
         ++path_processing_iterations;
@@ -381,7 +367,7 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
             WARN("Stopped path growing because of too many steps");
             continue;
         }
-        const auto &reached_vertices = multi_extender.GetReachedVertices();
+        const auto &reached_vertices = multi_extender->GetReachedVertices();
         if (reached_vertices.find(target_vertex) != reached_vertices.end()) {
             DEBUG("Found target");
             return true;
@@ -391,7 +377,9 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
         DEBUG("Had to process too many paths, returning");
         return true;
     }
-
+    delete initial_path_copy;
+    DEBUG("Initial path id: " << initial_path->GetId());
+    DEBUG("Initial path size: " << initial_path->Size());
     DEBUG("Could not find supported path");
     return false;
 }
@@ -423,6 +411,7 @@ shared_ptr<path_extend::ExtensionChooser> CompositeConnectionPredicate::Construc
     auto extension_chooser = make_shared<SimpleExtensionChooser>(gp_.g, wc, opts.weight_threshold, opts.priority_coeff);
     return extension_chooser;
 }
+
 CompositeConnectionPredicate::CompositeConnectionPredicate(
         const conj_graph_pack &gp_,
         shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
@@ -431,7 +420,7 @@ CompositeConnectionPredicate::CompositeConnectionPredicate(
         const de::PairedInfoIndicesT<debruijn_graph::DeBruijnGraph> &clustered_indices_,
         const size_t length_bound_,
         const CompositeConnectionParams &params_,
-        const LongEdgePairGapCloserParams &predicate_params_) :
+        const LongEdgePairGapCloserParams &predicate_params_, bool scaffolding_mode) :
     gp_(gp_),
     short_edge_extractor_(short_edge_extractor),
     long_edge_extractor_(barcode_extractor_),
@@ -439,7 +428,52 @@ CompositeConnectionPredicate::CompositeConnectionPredicate(
     clustered_indices_(clustered_indices_),
     length_bound_(length_bound_),
     params_(params_),
-    predicate_params_(predicate_params_) {}
+    predicate_params_(predicate_params_),
+    scaffolding_mode_(scaffolding_mode) {}
+shared_ptr<path_extend::ExtensionChooser> CompositeConnectionPredicate::ConstructScaffoldingExtensionChooser() const {
+    const size_t lib_index = params_.paired_lib_index_;
+    const auto &lib = params_.dataset_info.reads[lib_index];
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, clustered_indices_[lib_index]);
+    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib);
+
+    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp_.g, counter,
+                                                                       params_.pe_params_.pset.scaffolder_options.cl_threshold,
+                                                                       params_.pe_params_.pset.scaffolder_options.var_coeff);
+    return scaff_chooser;
+}
+shared_ptr<ScaffoldVertexPredicate> CompositeConnectionPredicate::ConstructScaffoldVertexPredicate(
+        const ScaffoldVertex& start, const ScaffoldVertex& end) const {
+    auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
+        long_edge_extractor_->GetTailEntry(start), long_edge_extractor_->GetHeadEntry(end), short_edge_extractor_);
+    auto long_gap_cloud_predicate = make_shared<path_extend::LongEdgePairGapCloserPredicate>(gp_.g, short_edge_extractor_,
+                                                                                             predicate_params_,
+                                                                                             start, end,
+                                                                                             pair_entry_extractor);
+    size_t length_threshold = unique_storage_.min_length();
+
+    auto length_predicate = make_shared<path_extend::LengthChecker>(length_threshold, gp_.g);
+    auto scaffold_vertex_predicate =
+        make_shared<path_extend::AndPredicate>(length_predicate, long_gap_cloud_predicate);
+    return scaffold_vertex_predicate;
+}
+shared_ptr<path_extend::SearchingMultiExtender> CompositeConnectionPredicate::ConstructBasicSearchingExtender(
+        path_extend::QueueContainer& paths_container,
+        GraphCoverageMap& cover_map,
+        shared_ptr<ExtensionChooser> extension_chooser) const {
+    const auto &lib = params_.dataset_info.reads[params_.paired_lib_index_];
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[params_.paired_lib_index_]);
+    UsedUniqueStorage used_unique_storage(unique_storage_);
+    const bool investigate_loops = true;
+    const bool short_loop_resolver = false;
+    auto opts = params_.pe_params_.pset.extension_options;
+
+    auto multi_extender = make_shared<path_extend::SearchingMultiExtender>(gp_, cover_map, used_unique_storage,
+                                                                           extension_chooser, paired_lib->GetISMax(),
+                                                                           investigate_loops, short_loop_resolver,
+                                                                           opts.weight_threshold, length_bound_,
+                                                                           paths_container);
+    return multi_extender;
+}
 
 CompositeConnectionParams::CompositeConnectionParams(const size_t paired_lib_index_,
                                                      const size_t prefix_length_,

@@ -7,22 +7,23 @@
 namespace path_extend {
 
 void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
-    const size_t max_threads = cfg::get().max_threads;
     auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-    CloudScaffoldGraphConstuctor scaffold_graph_constructor(max_threads, gp_, barcode_extractor);
-    auto path_scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphFromPathContainer(old_paths,
-                                                                                                  unique_storage_,
-                                                                                                  path_length_threshold_);
+    ScaffoldGraphStorageConstructor storage_constructor(small_path_length_threshold_, large_path_length_threshold_, gp_);
+    bool scaffolding_mode = false;
+    const ScaffoldGraphStorage storage = storage_constructor.ConstructStorageFromPaths(old_paths, scaffolding_mode);
+    ScaffoldGraphPolisher polisher(gp_);
+    bool path_polishing_mode = true;
+    auto path_scaffold_graph = polisher.GetScaffoldGraphFromStorage(storage, path_polishing_mode);
     INFO(path_scaffold_graph.VertexCount() << " vertices and " << path_scaffold_graph.EdgeCount()
                                            << " edges in path scaffold graph");
 
-    //todo move validation somewhere else later
+    //todo move validation somewhere else
     if (cfg::get().ts_res.debug_mode) {
         path_extend::validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
         const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
         INFO("Path to reference: " << path_to_reference);
         INFO("Path exists: " << fs::check_existence(path_to_reference));
-        const size_t small_length_threshold = 5000;
+        const size_t small_length_threshold = small_path_length_threshold_;
         path_extend::validation::FilteredReferencePathHelper path_helper(gp_);
         auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, small_length_threshold);
 
@@ -40,8 +41,10 @@ void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
 
 PathScaffolder::PathScaffolder(const conj_graph_pack &gp_,
                                const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                               size_t path_length_threshold_)
-    : gp_(gp_), unique_storage_(unique_storage_), path_length_threshold_(path_length_threshold_) {}
+                               size_t small_path_length_threshold_, size_t large_path_length_threshold)
+    : gp_(gp_), unique_storage_(unique_storage_),
+      small_path_length_threshold_(small_path_length_threshold_),
+      large_path_length_threshold_(large_path_length_threshold) {}
 void PathScaffolder::ExtendPathAlongConnections(const PathScaffolder::ScaffoldVertex& start,
                                                 const unordered_map<PathScaffolder::ScaffoldVertex,
                                                                     PathScaffolder::ScaffoldVertex> &merge_connections,
