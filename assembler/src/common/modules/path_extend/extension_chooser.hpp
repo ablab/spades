@@ -2153,17 +2153,17 @@ class TenXExtensionChooser : public ReadCloudExtensionChooser {
 
 
 //fixme replace predicate with other extension chooser
-class MultiExtensionChooser: public ExtensionChooser {
-    shared_ptr<ScaffoldVertexPredicate> intermediate_predicate_;
-    shared_ptr<ExtensionChooser> pe_extension_chooser_;
+class PredicateExtensionChooser: public ExtensionChooser {
+    shared_ptr<ScaffoldVertexPredicate> predicate_;
+    shared_ptr<ExtensionChooser> chooser_;
 
  public:
-    MultiExtensionChooser(const Graph& g,
+    PredicateExtensionChooser(const Graph& g,
                           shared_ptr<ScaffoldVertexPredicate> intermediate_predicate,
                           const shared_ptr<ExtensionChooser> &pe_extension_chooser_) :
         ExtensionChooser(g),
-        intermediate_predicate_(intermediate_predicate),
-        pe_extension_chooser_(pe_extension_chooser_) {}
+        predicate_(intermediate_predicate),
+        chooser_(pe_extension_chooser_) {}
 
  public:
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
@@ -2175,7 +2175,7 @@ class MultiExtensionChooser: public ExtensionChooser {
         }
         EdgeContainer intermediate_edges;
         for (const auto& edge: edges) {
-            if ((*intermediate_predicate_)(edge.e_)) {
+            if ((*predicate_)(edge.e_)) {
                 intermediate_edges.push_back(edge);
             }
         }
@@ -2183,13 +2183,13 @@ class MultiExtensionChooser: public ExtensionChooser {
         for (const auto& edge: intermediate_edges) {
             DEBUG(edge.e_.int_id());
         }
-        EdgeContainer result = pe_extension_chooser_->Filter(path, intermediate_edges);
+        EdgeContainer result = chooser_->Filter(path, intermediate_edges);
         if (result.size() == 0) {
             DEBUG("Filtered all edges");
             return intermediate_edges;
         }
         if (result.size() < intermediate_edges.size()) {
-//            INFO("PE chooser helped");
+            DEBUG("PE chooser helped");
         }
         DEBUG(result.size() << "final edges");
         for (const auto& edge: result) {
@@ -2198,7 +2198,7 @@ class MultiExtensionChooser: public ExtensionChooser {
         return result;
     }
 
-    DECL_LOGGER("MultiExtensionChooser");
+    DECL_LOGGER("PredicateExtensionChooser");
 };
 
 class ReadCloudGapExtensionChooser : public ExtensionChooser {

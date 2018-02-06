@@ -262,12 +262,19 @@ namespace path_extend {
 
     class PathExtractionPartsConstructor {
         typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+        typedef cluster_storage::InitialClusterStorageBuilder InitialClusterStorageBuilder;
         const conj_graph_pack& gp_;
      public:
         explicit PathExtractionPartsConstructor(const conj_graph_pack& gp_);
         vector<shared_ptr<GapCloserPredicateBuilder>> ConstructPredicateBuilders() const;
-        shared_ptr<GapCloserScoreFunctionBuilder> ConstructPathClusterScoreFunction(const PathClusterPredicateParams& params) const;
+        shared_ptr<GapCloserScoreFunctionBuilder> ConstructPathClusterScoreFunction(const PathClusterPredicateParams& params,
+                                                                                    const ScaffoldGraph& scaffold_graph,
+                                                                                    bool path_scaffolding) const;
         shared_ptr<GapCloserPredicateBuilder> ConstructPEPredicate() const;
+
+     private:
+        shared_ptr<GapCloserScoreFunctionBuilder> ConstructScoreFunctionFromBuilder(shared_ptr<InitialClusterStorageBuilder> builder,
+                                                                                    size_t linkage_distance) const;
     };
 
     class ScaffoldGraphGapCloser {
@@ -313,6 +320,7 @@ namespace path_extend {
         typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
 
      public:
-        ScaffoldGraph GetFinalScaffoldGraph(const conj_graph_pack& graph_pack);
+        ScaffoldGraph GetFinalScaffoldGraph(const conj_graph_pack &graph_pack,
+                                            const ScaffoldGraphStorage &scaffold_graph_storage, bool path_scaffolding);
     };
 }

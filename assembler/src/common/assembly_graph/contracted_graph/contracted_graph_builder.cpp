@@ -14,9 +14,9 @@ void PartsBasedContractedFactory::ConstructFromParts(PartsBasedContractedFactory
     }
     for (const auto& edge: long_edges) {
         DEBUG("Processing edge " << edge.int_id());
-        DEBUG(g_.EdgeStart(edge) << " -> " << g_.EdgeEnd(edge));
-        VertexId start_root = vertex_to_root.at(g_.EdgeStart(edge));
-        VertexId end_root = vertex_to_root.at(g_.EdgeEnd(edge));
+        DEBUG(edge.getStartGraphVertex(g_) << " -> " << edge.getEndGraphVertex(g_));
+        VertexId start_root = vertex_to_root.at(edge.getStartGraphVertex(g_));
+        VertexId end_root = vertex_to_root.at(edge.getEndGraphVertex(g_));
         DEBUG("Inserting vertices and edges");
         this->graph_ptr_->InsertEdge(start_root, end_root, edge);
         this->graph_ptr_->InsertCapacity(start_root, vertex_to_capacity.at(start_root));
@@ -48,9 +48,9 @@ PartsBasedContractedFactory::ContractedGraphParts SimpleContractedGraphFactory::
     size_t counter = 0;
 
     for (auto it = internal_graph_.begin(); it != internal_graph_.end(); ++it) {
-        EdgeId edge = *it;
-        VertexId start = g_.EdgeStart(edge);
-        VertexId end = g_.EdgeEnd(edge);
+        SimpleContractedGraphFactory::ScaffoldVertex edge = *it;
+        VertexId start = edge.getStartGraphVertex(g_);
+        VertexId end = edge.getEndGraphVertex(g_);
         vertices.insert(start);
         vertices.insert(end);
         vertex_to_capacity[start] = 0;
@@ -79,8 +79,8 @@ PartsBasedContractedFactory::ContractedGraphParts SimpleContractedGraphFactory::
     for (const auto& start: internal_graph_) {
         for (auto it = internal_graph_.outcoming_begin(start); it != internal_graph_.outcoming_end(start); ++it) {
             auto end = *it;
-            VertexId start_vertex = g_.EdgeEnd(start);
-            VertexId end_vertex = g_.EdgeStart(end);
+            VertexId start_vertex = start.getEndGraphVertex(g_);
+            VertexId end_vertex = end.getStartGraphVertex(g_);
             TRACE("Merging vertices " << start_vertex.int_id() << " and " << end_vertex.int_id());
             size_t start_id = vertex_to_id.at(start_vertex);
             size_t end_id = vertex_to_id.at(end_vertex);

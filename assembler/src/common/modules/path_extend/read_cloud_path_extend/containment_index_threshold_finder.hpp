@@ -37,6 +37,8 @@ namespace path_extend {
     };
 
     class ScoreHistogramConstructor {
+        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+
      private:
         const double step_;
         const double min_score_;
@@ -53,19 +55,21 @@ namespace path_extend {
 
      public:
         ScoreHistogram ConstructScoreHistogram(shared_ptr<path_extend::ScaffoldEdgeScoreFunction> score_function,
-                                               const path_extend::scaffold_graph::ScaffoldGraph &initial_scaffold_graph) const;
+                                               const vector<ScaffoldVertex>& scaffold_vertices) const;
 
     };
 
     class ScoreDistributionBasedThresholdFinder: public ContainmentIndexThresholdFinder {
+        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+
         const Graph& g_;
-        const path_extend::scaffold_graph::ScaffoldGraph& initial_scaffold_graph_;
+        const vector<ScaffoldVertex> scaffold_vertices_;
         shared_ptr<path_extend::ScaffoldEdgeScoreFunction> score_function_;
         const double vertex_multiplier_;
 
      public:
         ScoreDistributionBasedThresholdFinder(const Graph &g_,
-                                              const scaffold_graph::ScaffoldGraph &initial_scaffold_graph_,
+                                              const vector<ScaffoldVertex> &scaffold_vertices,
                                               const shared_ptr<ScaffoldEdgeScoreFunction> &score_function_,
                                               double vertex_multiplier);
 
@@ -74,6 +78,6 @@ namespace path_extend {
      private:
         double FindFirstLocalMin(const ScoreHistogram& histogram) const;
 
-        double FindPercentile(const ScoreHistogram &histogram, const scaffold_graph::ScaffoldGraph &initial_scaffold_graph) const;
+        double FindPercentile(const ScoreHistogram &histogram, const vector<ScaffoldVertex>& scaffold_vertices) const;
     };
 }

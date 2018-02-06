@@ -106,13 +106,14 @@ namespace scaffold_graph_utils {
                                                          shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> extractor,
                                                          const Graph& graph, size_t count_threshold,
                                                          size_t tail_threshold, double vertex_multiplier) {
-            auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(graph, extractor,
-                                                                                           count_threshold, tail_threshold);
+            auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(graph, extractor);
             size_t num_threads = cfg::get().max_threads;
-            path_extend::ScoreDistributionBasedThresholdFinder threshold_finder(g_, scaffold_graph, score_function, vertex_multiplier);
+            vector<ScaffoldGraph::ScaffoldGraphVertex> scaffold_vertices;
+            std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::back_inserter(scaffold_vertices));
+            path_extend::ScoreDistributionBasedThresholdFinder threshold_finder(g_, scaffold_vertices, score_function, vertex_multiplier);
             double hist_score_threshold = threshold_finder.GetThreshold();
             INFO("Setting containment index threshold to " << hist_score_threshold);
-            path_extend::scaffold_graph::ScoreFunctionScaffoldGraphConstructor
+            path_extend::scaffold_graph::ScoreFunctionScaffoldGraphFilter
                 scaffold_graph_constructor(graph, scaffold_graph, score_function, hist_score_threshold, num_threads);
             return *(scaffold_graph_constructor.Construct());
         }
@@ -126,7 +127,7 @@ namespace scaffold_graph_utils {
                                                                                         short_edge_extractor,
                                                                                         long_edge_extractor, params);
             size_t max_threads = cfg::get().max_threads;
-            path_extend::scaffold_graph::PredicateScaffoldGraphConstructor constructor(graph, scaffold_graph,
+            path_extend::scaffold_graph::PredicateScaffoldGraphFilter constructor(graph, scaffold_graph,
                                                                                        predicate, max_threads);
             return *(constructor.Construct());
         }
@@ -137,21 +138,23 @@ namespace scaffold_graph_utils {
                                                                 const path_extend::ScaffolderParams& params,
                                                                 const debruijn_graph::conj_graph_pack& gp) {
             const size_t max_threads = cfg::get().max_threads;
+            const bool scaffolding_mode = true;
             path_extend::CompositeConnectionConstructorCaller composite_constructor_caller(gp, main_extractor,
                                                                                            long_edge_extractor,
-                                                                                           unique_storage_, max_threads);
+                                                                                           unique_storage_, max_threads,
+                                                                                           scaffolding_mode);
             auto scaffold_graph_constructor = composite_constructor_caller.GetScaffoldGraphConstuctor(params, scaffold_graph);
             return *(scaffold_graph_constructor->Construct());
         }
 
 
         ScaffoldGraph ConstructOrderingScaffoldGraph(const ScaffoldGraph& scaffold_graph,
-                                                     const barcode_index::FrameBarcodeIndexInfoExtractor& extractor,
+                                                     shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor,
                                                      const Graph& graph,
                                                      size_t count_threshold, double strictness) {
-            auto predicate = make_shared<path_extend::EdgeSplitPredicate>(graph, extractor, count_threshold, strictness);
+            auto predicate = make_shared<path_extend::EdgeSplitPredicate>(graph, long_edge_extractor, count_threshold, strictness);
             size_t max_threads = cfg::get().max_threads;
-            path_extend::scaffold_graph::PredicateScaffoldGraphConstructor constructor(graph, scaffold_graph,
+            path_extend::scaffold_graph::PredicateScaffoldGraphFilter constructor(graph, scaffold_graph,
                                                                                        predicate, max_threads);
             return *(constructor.Construct());
         }
@@ -161,7 +164,7 @@ namespace scaffold_graph_utils {
             size_t distance_threshold = 3;
             size_t max_threads = 1;
             auto predicate = make_shared<path_extend::TransitiveEdgesPredicate>(scaffold_graph, graph, distance_threshold);
-            path_extend::scaffold_graph::PredicateScaffoldGraphConstructor constructor(graph, scaffold_graph,
+            path_extend::scaffold_graph::PredicateScaffoldGraphFilter constructor(graph, scaffold_graph,
                                                                                        predicate, max_threads);
             return *(constructor.Construct());
         }

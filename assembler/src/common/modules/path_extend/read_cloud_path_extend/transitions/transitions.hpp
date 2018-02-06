@@ -53,6 +53,7 @@ class ClusterTransitionExtractor {
 class PathClusterTransitionExtractor: public ClusterTransitionExtractor {
 
     const cluster_storage::ClusterGraphAnalyzer& cluster_analyzer_;
+    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
  public:
     explicit PathClusterTransitionExtractor(const cluster_storage::ClusterGraphAnalyzer& cluster_analyzer_)
