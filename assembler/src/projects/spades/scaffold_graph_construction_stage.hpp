@@ -4,9 +4,7 @@
 
 namespace debruijn_graph {
 class ScaffoldGraphConstructionStage : public spades::AssemblyStage {
-
  public:
-
     ScaffoldGraphConstructionStage() :
         AssemblyStage("Scaffold graph construction", "scaffold_graph_construction") {
     }

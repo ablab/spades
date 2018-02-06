@@ -89,13 +89,14 @@ namespace path_extend {
         shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
         const ScaffoldingUniqueEdgeStorage& unique_storage_;
         const size_t max_threads_;
+        const bool scaffolding_mode_;
 
      public:
         CompositeConnectionConstructorCaller(const conj_graph_pack &gp_,
                                              shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor,
                                              shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                              const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                                             const size_t max_threads_);
+                                             const size_t max_threads_, bool scaffolding_mode);
 
         shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const ScaffolderParams& params,
                                                                                         const ScaffoldGraph& scaffold_graph) const override;
@@ -104,12 +105,12 @@ namespace path_extend {
     class EdgeSplitConstructorCaller: public IterativeScaffoldGraphConstructorCaller {
         using IterativeScaffoldGraphConstructorCaller::ScaffoldGraph;
         const Graph& g_;
-        const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
+        shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor_;
         size_t max_threads_;
 
      public:
         EdgeSplitConstructorCaller(const Graph& g_,
-                                   const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
+                                   shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                    size_t max_threads_);
 
         shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const ScaffolderParams& params,
@@ -153,7 +154,7 @@ namespace path_extend {
         shared_ptr<scaffold_graph::ScaffoldGraph> GetResult() const;
     };
 
-    class CloudScaffoldGraphConstuctor {
+    class CloudScaffoldGraphConstructor {
      public:
         typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
         typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
@@ -165,16 +166,15 @@ namespace path_extend {
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
 
      public:
-        CloudScaffoldGraphConstuctor(size_t max_threads_,
+        CloudScaffoldGraphConstructor(size_t max_threads_,
                                      const conj_graph_pack& gp,
                                      shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
         ScaffoldGraph ConstructScaffoldGraphFromMinLength(size_t min_length) const;
 
-        ScaffoldGraph ConstructScaffoldGraphFromMinLengthAndGraph(size_t min_length, const ScaffoldGraph& previous_graph) const;
+//        ScaffoldGraph ConstructScaffoldGraphFromMinLengthAndGraph(size_t min_length, const ScaffoldGraph& previous_graph) const;
 
         ScaffoldGraph ConstructScaffoldGraphFromPathContainer(const PathContainer& paths,
-                                                              const ScaffoldingUniqueEdgeStorage& unique_storage,
-                                                              size_t min_length) const;
+                                                              size_t min_length, bool scaffolding_mode) const;
 
         //todo replace storage with predicate
         ScaffoldGraph ConstructScaffoldGraphFromStorage(const ScaffolderParams& params,
@@ -184,19 +184,27 @@ namespace path_extend {
                                                         bool launch_full_pipeline,
                                                         bool path_merge_pipeline = false) const;
 
-        ScaffoldGraph ConstructScaffoldGraphFromStorageAndGraph(ScaffolderParams params,
-                                                                const ScaffoldGraph& previous_graph,
-                                                                const ScaffoldingUniqueEdgeStorage& unique_storage,
-                                                                const set<ScaffoldVertex>& scaffold_vertices,
-                                                                bool launch_full_pipeline,
-                                                                bool path_merge_pipeline = false) const;
+        ScaffoldGraph ConstructScaffoldGraphInGapMode(const ScaffolderParams& params,
+                                                      const set<ScaffoldVertex>& scaffold_vertices,
+                                                      const string &initial_graph_name,
+                                                      bool launch_full_pipeline) const;
+
+//        ScaffoldGraph ConstructScaffoldGraphFromStorageAndGraph(ScaffolderParams params,
+//                                                                const ScaffoldGraph& previous_graph,
+//                                                                const ScaffoldingUniqueEdgeStorage& unique_storage,
+//                                                                const set<ScaffoldVertex>& scaffold_vertices,
+//                                                                bool launch_full_pipeline,
+//                                                                bool path_merge_pipeline = false) const;
 
      private:
-        vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(ScaffolderParams params,
-                                                                                    const ScaffoldingUniqueEdgeStorage& unique_storage,
-                                                                                    const set<ScaffoldVertex>& scaffold_vertices,
-                                                                                    bool launch_full_pipeline,
-                                                                                    bool path_merge_pipeline) const;
+        vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructBasicStages(ScaffolderParams params,
+                                                                                         const ScaffoldingUniqueEdgeStorage &unique_storage,
+                                                                                         const set<ScaffoldVertex> &scaffold_vertices,
+                                                                                         bool launch_full_pipeline,
+                                                                                         bool path_merge_pipeline) const;
+
+    vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructScaffoldStages(
+            ScaffolderParams params, const set<ScaffoldVertex> &scaffold_vertices, bool launch_full_pipeline) const;
     };
 
 
@@ -208,12 +216,35 @@ namespace path_extend {
         const size_t large_length_threshold_;
         const conj_graph_pack& gp_;
 
+
      public:
         ScaffoldGraphStorageConstructor(size_t small_length_threshold_,
                                         size_t large_length_threshold_,
                                         const conj_graph_pack& gp_);
 
-        ScaffoldGraphStorage ConstructStorage() const;
+        ScaffoldGraphStorage ConstructStorageFromGraph() const;
+
+        ScaffoldGraphStorage ConstructStorageFromPaths(const PathContainer &paths, bool scaffolding_mode) const;
+    };
+
+    class ScaffoldGraphPolisher {
+     public:
+        typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+     private:
+        const conj_graph_pack& gp_;
+     public:
+        ScaffoldGraphPolisher(const conj_graph_pack &gp_);
+
+        ScaffoldGraph GetScaffoldGraphFromStorage(const ScaffoldGraphStorage& storage, bool path_scaffolding) const;
+
+     private:
+        void GetGraphStorageReferenceInfo(const path_extend::scaffold_graph::ScaffoldGraph &small_scaffold_graph,
+                                          const path_extend::scaffold_graph::ScaffoldGraph &large_scaffold_graph,
+                                          const debruijn_graph::conj_graph_pack& graph_pack) const;
+
+        void PrintScaffoldGraphReferenceInfo(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
+                                             const debruijn_graph::conj_graph_pack& graph_pack,
+                                             size_t length_threshold) const;
     };
 
 }
