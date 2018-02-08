@@ -629,7 +629,9 @@ class SelfConjugateDisruptor: public EdgeProcessingAlgorithm<Graph> {
     typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
+    size_t max_len_;
     EdgeRemover<Graph> edge_remover_;
+
 protected:
 
     bool ProcessEdge(EdgeId e) override {
@@ -637,19 +639,23 @@ protected:
             TRACE("Disrupting self-conjugate edge " << this->g().str(e));
             EdgeId to_del = e;
             size_t len = this->g().length(e);
-            if (len > 1) {
-                to_del = this->g().SplitEdge(e, len / 2).second;
+            if (len > max_len_ || this->g().OutgoingEdgeCount(this->g().EdgeEnd(e)) == 1) {
+                if (len > 1) {
+                    to_del = this->g().SplitEdge(e, len / 2).second;
+                    edge_remover_.DeleteEdge(to_del);
+                } else {
+                    edge_remover_.DeleteEdge(to_del);
+                }
+                return true;
             }
-            edge_remover_.DeleteEdge(to_del);
-            return true;
         }
         return false;
     }
 
 public:
-    SelfConjugateDisruptor(Graph& g,
+    SelfConjugateDisruptor(Graph& g, size_t max_len,
                            std::function<void(EdgeId)> removal_handler = 0)
-            : base(g, true), edge_remover_(g, removal_handler) {
+            : base(g, true), max_len_(max_len), edge_remover_(g, removal_handler) {
     }
 
 private:

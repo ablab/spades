@@ -311,7 +311,7 @@ class GraphSimplifier {
         }
 
         INFO("Disrupting self-conjugate edges");
-        SelfConjugateDisruptor<Graph>(gp_.g, removal_handler_).Run();
+        SelfConjugateDisruptor<Graph>(gp_.g, cfg::get().max_repeat_length, removal_handler_).Run();
     }
 
 public:
