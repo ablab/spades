@@ -56,6 +56,15 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode, size_t le
                 memopt_->min_seed_len = 14;
             }
             break;
+        case AlignmentMode::Rna16S:
+            memopt_->o_del = 1; memopt_->e_del = 1;
+            memopt_->o_ins = 1; memopt_->e_ins = 1;
+            memopt_->b = 1;
+            memopt_->split_factor = 10.;
+            memopt_->pen_clip5 = 1; memopt_->pen_clip3 = 1;
+            memopt_->min_chain_weight = 20;
+            memopt_->min_seed_len = 10;
+            break;
     };
 
     Init();

@@ -291,6 +291,8 @@ public:
             }
             INFO("Paths: " << pathStr);
             string sum_str = "";
+            string max_str = "";
+            int max_len = 0;
             string cur_path = "";
             string cur_path_len = "";
             int seq_start = -1;
@@ -298,6 +300,7 @@ public:
             for (const auto &path : aligned_mappings){
                 size_t mapping_start = 0;
                 size_t mapping_end = 0;
+                string cur_str = "";
                 for (size_t i = 0; i < path.size(); ++ i) {
                     EdgeId edgeid = path.edge_at(i);
                     omnigraph::MappingRange mapping = path.mapping_at(i);
@@ -316,6 +319,15 @@ public:
                         seq_start = (int) mapping.initial_range.start_pos;
                     }
                     seq_end = (int) mapping.initial_range.end_pos;
+
+                    string tmp = gp_.g.EdgeNucls(edgeid).str();
+                    string to_add = tmp.substr(mapping_start, mapping_end - mapping_start);
+                    cur_str += to_add;
+                }
+                if (seq_end - seq_start > max_len) {
+                    max_len = seq_end - seq_start;
+                    max_str = read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t" 
+                                                     + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\t" + cur_str + "\n";
                 }
             }
             sum_str += read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t" 
@@ -327,7 +339,7 @@ public:
         {
             ofstream myfile;
             myfile.open(output_file_ + ".tsv", std::ofstream::out | std::ofstream::app);
-            myfile << sum_str;
+            myfile << max_str;
             myfile.close();
         }
         }  
@@ -372,6 +384,8 @@ void Launch(size_t K, const string &saves_path, const string &sequence_fasta, co
         mode = alignment::BWAIndex::AlignmentMode::PacBio;
     } else if (mapper_type == "nanopore"){
         mode = alignment::BWAIndex::AlignmentMode::Ont2D;
+    } else if (mapper_type == "16S"){
+        mode = alignment::BWAIndex::AlignmentMode::Rna16S;
     } else {
         mode = alignment::BWAIndex::AlignmentMode::Default;
     }
