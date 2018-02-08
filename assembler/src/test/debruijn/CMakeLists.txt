@@ -22,6 +22,9 @@ target_link_libraries(idealreads_aligner common_modules cityhash minimap bwa edl
 add_executable(longreads_aligner align_longreads.cpp)
 target_link_libraries(longreads_aligner common_modules cityhash minimap bwa edlib ${COMMON_LIBRARIES})
 
+add_executable(rna16S_aligner align_16S.cpp)
+target_link_libraries(rna16S_aligner common_modules cityhash minimap bwa edlib ${COMMON_LIBRARIES})
+
 add_executable(reference_fixer reference_fixer.cpp)
 target_link_libraries(reference_fixer common_modules cityhash ${COMMON_LIBRARIES})
 
