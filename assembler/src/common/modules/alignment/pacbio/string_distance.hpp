@@ -1,4 +1,7 @@
+#include "edlib/edlib.h"
+
 namespace pacbio {
+static const int STRING_DIST_INF = 1e8;
 
 inline int StringDistance(const string &a, const string &b) {
     int a_len = (int) a.length();
