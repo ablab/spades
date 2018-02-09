@@ -153,7 +153,7 @@ extern "C" EdlibAlignResult edlibAlign(const char* const queryOriginal, const in
     EdlibAlignResult result;
     result.status = EDLIB_STATUS_OK;
     result.editDistance = -1;
-    result.endLocations = result.startLocations = NULL;
+    result.endLocations = result.startLocations = result.endScores = NULL;
     result.numLocations = 0;
     result.alignment = NULL;
     result.alignmentLength = 0;
@@ -1634,6 +1634,7 @@ extern "C" EdlibAlignConfig edlibDefaultAlignConfig(void) {
 extern "C" void edlibFreeAlignResult(EdlibAlignResult result) {
     if (result.endLocations) free(result.endLocations);
     if (result.startLocations) free(result.startLocations);
+    if (result.endScores) free(result.endScores);
     if (result.alignment) free(result.alignment);
 }
 
