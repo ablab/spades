@@ -19,7 +19,7 @@
 #include "io/reads/io_helper.hpp"
 #include "common/assembly_graph/core/coverage.hpp"
 
-#include "modules/alignment/pacbio/pac_index.hpp"
+//#include "modules/alignment/pacbio/gap_dijkstra.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
 #include "modules/alignment/short_read_mapper.hpp"
 #include "io/reads/wrapper_collection.hpp"
@@ -62,28 +62,34 @@ struct ReadMapping {
         INFO("Name=" << name << " start_pos_=" << start_pos_ << " end_pos_=" << end_pos_);
     }
 
-    ReadMapping(const io::SingleRead &read, std::vector<int> &v, std::vector<EdgeId> &e, std::vector<MappingRange> &range) 
+    ReadMapping(const io::SingleRead &read, int &v, EdgeId &e, MappingRange &range) 
         : read_(read), v_(v), e_(e), range_(range) {
         ExtractPositions();
     }
 
+    bool operator < (const ReadMapping &mapping) const {
+        return (this->start_pos_ < mapping.start_pos_ || (this->start_pos_ == mapping.start_pos_ && this->end_pos_ < mapping.start_pos_) );
+    }
+
     io::SingleRead read_;
-    std::vector<int> v_;
-    std::vector<EdgeId> e_;
-    std::vector<MappingRange> range_;
+    int v_;
+    EdgeId e_;
+    MappingRange range_;
     int start_pos_;
     int end_pos_;
 };
 
 
-class PacBioAligner {
+class SequenceAligner {
 private:    
     const conj_graph_pack &gp_;
     const pacbio::PacBioMappingIndex<Graph> pac_index_;
     const string &output_file_;
 
+    std::vector<ReadMapping> primers_;
+
 public:
-    PacBioAligner(const conj_graph_pack &gp, 
+    SequenceAligner(const conj_graph_pack &gp, 
                  const alignment::BWAIndex::AlignmentMode mode,
                  const config::debruijn_config::pacbio_processor &pb,
                  const string &output_file):
@@ -128,12 +134,10 @@ public:
         return score;
     }
 
-    void AlignPrimer(const io::SingleRead &read, std::vector<int> &v, std::vector<EdgeId> &e, std::vector<MappingRange> &range) {
-        for (int i = 0; i < v.size(); ++ i) {
-            v[i] = -1;
-            e[i] = EdgeId();
-            range.push_back(MappingRange(-1, -1, -1, -1));
-        }
+    void AlignPrimer(const io::SingleRead &read, int &v, EdgeId &e, MappingRange &range) {
+        v = -1;
+        e = EdgeId();
+        range = MappingRange(-1, -1, -1, -1);
         for (auto it = gp_.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
             EdgeId eid = *it;
             std::string edge_str = gp_.g.EdgeNucls(eid).str();
@@ -141,34 +145,175 @@ public:
             int end_pos = -1;
             int dist = EditDistance(read.sequence().str(), edge_str, start_pos, end_pos);
             if (dist == -1) continue;
-            int mx_ind = 0;
-            for (int i = 0; i < v.size(); ++ i) {
-                if (v[i] > v[mx_ind] || v[i] == -1) {
-                    mx_ind = i;
-                    if (v[i] == -1) break;
+            if (v == -1 || v > dist) {
+                v = dist;
+                e = eid;
+                range = MappingRange(Range(0, read.size()), Range(start_pos, end_pos + 1));
+            }
+        }
+        std::string ans = " best: edge_id=" + std::to_string(e.int_id()) + " dist=" +  std::to_string(v);
+        INFO("Primer name=" << read.name() << " " << ans);
+    }
+
+    void PreparePrimers(std::vector<io::SingleRead> &wrappedprimers) {
+        // #pragma omp parallel num_threads(threads)
+        // #pragma omp for
+        for (size_t i =0 ; i < wrappedprimers.size(); ++i) {
+            int v;
+            EdgeId e;
+            MappingRange range;
+            AlignPrimer(wrappedprimers[i], v, e, range);
+            primers_.push_back(ReadMapping(wrappedprimers[i], v, e, range));
+        }   
+        std::sort(primers_.begin(), primers_.end());
+    }
+
+    void PrepareInitialState(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, const Sequence &s, bool forward, Sequence &ss, EdgeId &start_e, int &start_pos) const {
+        if (forward){
+            start_e = path.edge_at(path.size() - 1);
+            omnigraph::MappingRange mapping = path.mapping_at(path.size() - 1);
+            start_pos = mapping.mapped_range.end_pos;
+            ss = s.Subseq(mapping.initial_range.end_pos, (int) s.size() );
+        } else {
+            start_e = gp_.g.conjugate(path.edge_at(0));
+            omnigraph::MappingRange mapping = path.mapping_at(0);
+            start_pos = min(gp_.g.length(start_e), gp_.g.length(start_e) + gp_.g.k() - mapping.mapped_range.start_pos);
+            ss = !s.Subseq(0, mapping.initial_range.start_pos);
+        }
+    }
+
+    void UpdatePath(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, std::vector<EdgeId> &ans, int end_pos, bool forward) const {
+        if (forward) {
+            for (int i = 1; i < ans.size() - 1; ++i) {
+                path.push_back(ans[i], omnigraph::MappingRange(Range(0, 0), Range(0, gp_.g.length(ans[i])) ));
+            }
+            path.push_back(ans[ans.size() - 1], omnigraph::MappingRange(Range(0, 0), Range(0, end_pos -  gp_.g.k()) ));
+        } else {
+            omnigraph::MappingPath<debruijn_graph::EdgeId> cur_sorted;
+            int start = gp_.g.length(ans[ans.size() - 1]) + gp_.g.k() - end_pos;
+            int cur_ind = ans.size() - 1;
+            while (cur_ind >= 0 && start - (int) gp_.g.length(ans[cur_ind]) > 0){
+                start -= gp_.g.length(ans[cur_ind]);
+                cur_ind --;
+            }
+            if (cur_ind > 0){
+                cur_sorted.push_back(gp_.g.conjugate(ans[cur_ind]), omnigraph::MappingRange(Range(0, 0), Range(start, gp_.g.length(ans[cur_ind])) ));
+            }
+            for (int i = cur_ind - 1; i > 0; --i) {
+                cur_sorted.push_back(gp_.g.conjugate(ans[i]), omnigraph::MappingRange(Range(0, 0), Range(0, gp_.g.length(ans[i])) ));
+            }
+            for (int i = 0; i < path.size(); ++i) {
+                cur_sorted.push_back(path[i].first, path[i].second);
+            }
+            path = cur_sorted;
+        }
+    }
+
+    void GrowEnds(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, const Sequence &s, bool forward) const {
+        VERIFY(path.size() > 0);
+        Sequence ss; 
+        int start_pos = -1;
+        EdgeId start_e = EdgeId();
+        PrepareInitialState(path, s, forward, ss, start_e, start_pos);
+
+        int s_len = int(ss.size());
+        int score = max(20, s_len/4);
+        if (s_len > 2000) {
+            INFO("EdgeDijkstra: sequence is too long " << s_len)
+            return;
+        }
+        if (s_len < gp_.g.length(start_e) + gp_.g.k() - start_pos) {
+            INFO("EdgeDijkstra: sequence is too small " << s_len)
+            return;
+        }
+        pacbio::DijkstraEndsReconstructor algo = pacbio::DijkstraEndsReconstructor(gp_.g, ss, start_e, start_pos, score);
+        algo.CloseGap();
+        score = algo.GetEditDistance();
+        if (score == -1){
+            INFO("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
+            return;
+        }
+
+        std::vector<EdgeId> ans = algo.GetPath();
+        int end_pos = algo.GetPathEndPosition();
+        UpdatePath(path, ans, end_pos, forward);
+    }
+
+    std::vector<EdgeId> FillGap(MappingRange &a_range, EdgeId &a_e, MappingRange &b_range, EdgeId &b_e, const Sequence &s) {
+        auto path_searcher_b = omnigraph::DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(g_, path_max_length);
+        path_searcher_b.Run(end_v);
+        auto path_searcher = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, path_max_length);
+        path_searcher.Run(start_v);
+        auto reached_vertices_b = path_searcher_b.ProcessedVertices();
+        auto reached_vertices = path_searcher.ProcessedVertices();
+
+        std::map<VertexId, size_t> vertex_pathlen;
+        for (auto j_iter = reached_vertices_b.begin(); j_iter != reached_vertices_b.end(); ++j_iter) {
+                if (reached_vertices.count(*j_iter) > 0){
+                        vertex_pathlen[*j_iter] = path_searcher_b.GetDistance(*j_iter);
+                }
+        }
+        if (end_pos < start_pos) {
+            WARN ("modifying limits because of some bullshit magic, seq length 0")
+            end_pos = start_pos;
+        }
+
+        Sequence ss = s.Subseq(start_pos, min(end_pos + 1, int(s.size()) ));
+        int s_len = int(ss.size());
+        path_max_length = min(score, max(s_len/3, 20));
+        DEBUG(" Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_p=" << start_p << " end_p=" << end_p);
+        if (s_len > 2000 && vertex_pathlen.size() > 100000){
+            INFO("Dijkstra won't run: Too big gap or too many paths");
+            return vector<EdgeId>(0);
+        }
+        DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, ss, start_e, end_e, start_p, end_p, path_max_length, vertex_pathlen);
+        gap_filler.CloseGap();
+        score = gap_filler.GetEditDistance();
+        if (score == -1){
+            INFO("Dijkstra didn't find anything")
+            score = STRING_DIST_INF;
+            return vector<EdgeId>(0);
+        }
+        std::vector<EdgeId> ans = gap_filler.GetPath();        
+
+        return ans;
+    }
+
+    omnigraph::MappingPath<debruijn_graph::EdgeId> FillGapsBetweenPrimers(const omnigraph::MappingPath<debruijn_graph::EdgeId> &mappings, const io::SingleRead &read) {
+        omnigraph::MappingPath<debruijn_graph::EdgeId> res;
+        res.push_back(mappings.edge_at(0), mappings.mapping_at(0));
+        GrowEnds(res, read.sequence(), false);
+        for (size_t i = 0; i < mappings.size(); ++ i){
+            if (i + 1 < mappings.size()) {
+                if (Consistent(mappings[i], mappings[i + 1])) {
+                    if (Adjacent(mappings[i], mappings[i + 1])) {
+                        res.push_back(mappings.edge_at(i + 1), mappings.mapping_at(i + 1));
+                    } else {
+                        std::vector<EdgeId> path = FillGap(mappings[i], mappings[i + 1], read.sequence());   
+                    }
                 }
             }
-            if (v[mx_ind] == -1 || v[mx_ind] > dist) {
-                v[mx_ind] = dist;
-                e[mx_ind] = eid;
-                range[mx_ind] = MappingRange(Range(0, read.size()), Range(start_pos, end_pos + 1));
+        }
+
+    }
+
+    void AlignRead(const io::SingleRead &read) {
+        omnigraph::MappingPath<debruijn_graph::EdgeId> mappings;
+        int threshold = 20;
+        for (const auto primer: primers_) {
+            int start_pos = -1;
+            int end_pos = -1;
+            int dist = EditDistance(primer.read_.sequence().str(), read.sequence().str(), start_pos, end_pos);
+            if (dist != -1 && abs(start_pos - primer.start_pos_) < threshold && abs(end_pos - primer.end_pos_) < threshold){
+                mappings.push_back(primer.e_, MappingRange(Range(start_pos, end_pos), 
+                                                          Range(primer.range_.mapped_range.start_pos, primer.range_.mapped_range.start_pos)));
             }
         }
-        std::string ans = "";
-        int mn_ind = 0;
-        int mx_ind = 0;
-        for (int i = 0; i < v.size(); ++ i) {
-            //ans += " edge_id=" + std::to_string(e[i].int_id()) + " dist=" +  std::to_string(v[i]) + ";";
-            if (v[i] > v[mx_ind]) {
-                mx_ind = i;
-            }
-            if (v[i] < v[mn_ind]) {
-                mn_ind = i;
-            }
+        if (mappings.size() > 0) {
+            omnigraph::MappingPath<debruijn_graph::EdgeId> res = FillGapsBetweenPrimers(mappings, read);
+        } else {
+            omnigraph::MappingPath<debruijn_graph::EdgeId>();
         }
-        ans = " max: edge_id=" + std::to_string(e[mx_ind].int_id()) + " dist=" +  std::to_string(v[mx_ind]) + ";"
-                + " min: edge_id=" + std::to_string(e[mn_ind].int_id()) + " dist=" +  std::to_string(v[mn_ind]);
-        INFO("Primer name=" << read.name() << " " << ans);
     }
 };
 
@@ -223,30 +368,21 @@ void Launch(size_t K, const string &saves_path, const string &primer_fasta, cons
     }
 
     config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
-    PacBioAligner aligner(gp, mode, pb, output_file); 
-    INFO("PacBioAligner created");
+    SequenceAligner aligner(gp, mode, pb, output_file); 
+    INFO("SequenceAligner created");
 
     ofstream myfile;
     myfile.open(output_file + ".gpa", std::ofstream::out | std::ofstream::app);
     myfile << "H\n";
     myfile.close();
 
-    std::vector<ReadMapping> reads;
-// #pragma omp parallel num_threads(threads)
-// #pragma omp for
-    for (size_t i =0 ; i < wrappedprimers.size(); ++i) {
-        std::vector<int> v(50);
-        std::vector<EdgeId> e(50);
-        std::vector<MappingRange> range;
-        aligner.AlignPrimer(wrappedprimers[i], v, e, range);
-        reads.push_back(ReadMapping(wrappedprimers[i], v, e, range));
-    }   
+    aligner.PreparePrimers(wrappedprimers);
 
-// #pragma omp parallel num_threads(threads)
-// #pragma omp for
-//         for (size_t i =0 ; i < wrappedreads.size(); ++i) {
-//             aligner.AlignRead(wrappedreads[i]);
-//         }
+#pragma omp parallel num_threads(threads)
+#pragma omp for
+    for (size_t i =0 ; i < wrappedreads.size(); ++i) {
+        aligner.AlignRead(wrappedreads[i]);
+    }
 }
 }
 
