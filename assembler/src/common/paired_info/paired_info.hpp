@@ -427,6 +427,8 @@ public:
      * @return The number of deleted entries
      */
     size_t Remove(EdgeId edge) {
+        if (this->storage_.find(edge) == this->storage_.end())
+            return 0;
         InnerMap &inner_map = this->storage_[edge];
         std::vector<EdgeId> to_remove;
         to_remove.reserve(inner_map.size());
