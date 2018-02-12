@@ -384,6 +384,8 @@ template<class Graph>
 AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const string &condition_str,
                 const SimplifInfoContainer &info,
                 EdgeRemovalHandlerF<Graph> removal_handler = 0) {
+    if (condition_str.empty())
+        return nullptr;
     ConditionParser<Graph> parser(g, condition_str, info);
     auto condition = func::And(SelfConjugateCondition<Graph>(g), parser());
 
