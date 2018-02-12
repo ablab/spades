@@ -661,9 +661,12 @@ public:
 
         Sequence ss = s.Subseq(start_pos, min(end_pos + 1, int(s.size()) ));
         int s_len = int(ss.size());
-        path_max_length = min(score, max(s_len/3, 20));
-        DEBUG(" Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_p=" << start_p << " end_p=" << end_p);
-        if (s_len > 2000 && vertex_pathlen.size() > 100000){
+        path_max_length = score;
+        if (score == STRING_DIST_INF){
+            path_max_length = max(s_len/3, 20);
+        }
+        INFO(" Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_p=" << start_p << " end_p=" << end_p);
+        if ( ((size_t) s_len)*vertex_pathlen.size() > 200000000){
             INFO("Dijkstra won't run: Too big gap or too many paths");
             return vector<EdgeId>(0);
         }
