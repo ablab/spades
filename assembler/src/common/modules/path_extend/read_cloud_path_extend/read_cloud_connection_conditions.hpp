@@ -104,7 +104,12 @@ namespace path_extend {
         bool Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const override;
 
      private:
-        //fixme huge code duplication with path extend
+        bool SearchTargetUsingExtenders(QueueContainer& paths_container,
+                                        GraphCoverageMap& cover_map,
+                                        vector<shared_ptr<SearchingMultiExtender>> extenders,
+                                        const VertexId& target_vertex) const;
+
+        //fixme huge code duplication with ExtendersGenerator
         shared_ptr<path_extend::ExtensionChooser> ConstructSimpleExtensionChooser() const;
         shared_ptr<path_extend::ExtensionChooser> ConstructScaffoldingExtensionChooser() const;
 
@@ -115,6 +120,13 @@ namespace path_extend {
             path_extend::QueueContainer& paths_container,
             GraphCoverageMap& cover_map,
             shared_ptr<ExtensionChooser> extension_chooser) const;
+
+        shared_ptr<path_extend::SearchingMultiExtender> ConstructScaffoldingSearchingExtender(
+            path_extend::QueueContainer& paths_container,
+            GraphCoverageMap& cover_map,
+            shared_ptr<ExtensionChooser> extension_chooser) const;
+
+        shared_ptr<GapAnalyzer> MakeGapAnalyzer(double is_variation) const;
 
         DECL_LOGGER("CompositeConnectionPredicate");
     };

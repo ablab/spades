@@ -200,12 +200,11 @@ namespace path_extend {
         vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructBasicStages(ScaffolderParams params,
                                                                                          const ScaffoldingUniqueEdgeStorage &unique_storage,
                                                                                          const set<ScaffoldVertex> &scaffold_vertices,
-                                                                                         bool launch_full_pipeline,
-                                                                                         bool path_merge_pipeline) const;
+                                                                                         bool launch_full_pipeline) const;
 
-    vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructScaffoldStages(
-            ScaffolderParams params, const set<ScaffoldVertex> &scaffold_vertices, bool launch_full_pipeline) const;
-    };
+        vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructScaffoldStages(
+                ScaffolderParams params, const set<ScaffoldVertex> &scaffold_vertices, bool launch_full_pipeline) const;
+        };
 
 
     class ScaffoldGraphStorageConstructor {

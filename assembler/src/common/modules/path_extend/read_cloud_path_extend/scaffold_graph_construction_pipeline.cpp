@@ -24,7 +24,7 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
                                                                                    params.initial_distance_,
                                                                                    max_threads_);
     auto iterative_constructor_callers = ConstructBasicStages(params, unique_storage, scaffold_vertices,
-                                                              launch_full_pipeline, path_merge_pipeline);
+                                                              launch_full_pipeline);
     INFO("Created constructors");
     bool save_initial_graph = not path_merge_pipeline;
     CloudScaffoldGraphConstructionPipeline pipeline(initial_constructor, gp_.g, params, initial_graph_name, save_initial_graph);
@@ -104,8 +104,7 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphCo
     ScaffolderParams params,
     const ScaffoldingUniqueEdgeStorage &unique_storage,
     const set<ScaffoldVertex> &scaffold_vertices,
-    bool launch_full_pipeline,
-    bool path_merge_pipeline) const {
+    bool launch_full_pipeline) const {
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     const size_t tail_threshold = params.tail_threshold_;
     const size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
@@ -123,15 +122,13 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphCo
     iterative_constructor_callers.push_back(make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_,
                                                                                             scaffold_index_extractor,
                                                                                             unique_storage, max_threads_));
-//    if (not path_merge_pipeline) {
-        bool scaffolding_mode = false;
-        iterative_constructor_callers.push_back(make_shared<CompositeConnectionConstructorCaller>(gp_,
-                                                                                                  barcode_extractor_,
-                                                                                                  scaffold_index_extractor,
-                                                                                                  unique_storage,
-                                                                                                  max_threads_,
-                                                                                                  scaffolding_mode));
-//    }
+    bool scaffolding_mode = false;
+    iterative_constructor_callers.push_back(make_shared<CompositeConnectionConstructorCaller>(gp_,
+                                                                                              barcode_extractor_,
+                                                                                              scaffold_index_extractor,
+                                                                                              unique_storage,
+                                                                                              max_threads_,
+                                                                                              scaffolding_mode));
     if (launch_full_pipeline) {
         const double EDGE_LENGTH_FRACTION = 0.5;
         auto fraction_tail_threshold_getter = std::make_shared<barcode_index::FractionTailThresholdGetter>(gp_.g, EDGE_LENGTH_FRACTION);

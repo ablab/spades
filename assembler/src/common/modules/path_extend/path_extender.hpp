@@ -1374,6 +1374,13 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
                    {uint32_t(gap.left_trim()), uint32_t(gap.right_trim())}, false);
     }
 
+    struct EdgeWithGap {
+      EdgeId edge_;
+      Gap gap_;
+
+      EdgeWithGap(const EdgeId &edge_, const Gap &gap_) : edge_(edge_), gap_(gap_) {}
+    };
+
 protected:
     virtual bool CheckGap(const Gap &/*gap*/) const {
         return true;
@@ -1399,24 +1406,23 @@ protected:
         return true;
     }
 
-    boost::optional<Gap> GetGap(const BidirectionalPath& path, const ExtensionChooser::EdgeContainer& candidates,
+    boost::optional<Gap> GetGap(const BidirectionalPath& path, const EdgeWithDistance& candidate,
                                 bool must_overlap, const EdgeId& e) {
         boost::optional<Gap> result;
         Gap gap;
         //TODO is it ok that we either force joining or ignore its possibility
         if (check_sink_) {
             gap = ConvertGapDescription(gap_analyzer_->FixGap(GapDescription(path.Back(), e,
-                                                                             candidates.back().d_ -
-                                                                                 int(g_.k()))));
+                                                                             candidate.d_ - int(g_.k()))));
 
             if (gap == Gap::INVALID()) {
                 DEBUG("Looks like wrong scaffolding. PathId: "
                           << path.GetId() << " path length: " << path.Length()
-                          << ", estimated gap length: " << candidates.back().d_);
+                          << ", estimated gap length: " << candidate.d_);
                 return result;
             }
 
-            DEBUG("Gap after fixing " << gap.gap << " (was " << candidates.back().d_ << ")");
+            DEBUG("Gap after fixing " << gap.gap << " (was " << candidate.d_ << ")");
 
             if (must_overlap && !CheckGap(gap)) {
                 DEBUG("Overlap is not large enough")
@@ -1424,20 +1430,23 @@ protected:
             }
         } else {
             DEBUG("Gap joiners off");
-            VERIFY(candidates.back().d_ > int(g_.k()));
-            gap = Gap(candidates.back().d_, false);
+            VERIFY(candidate.d_ > int(g_.k()));
+            gap = Gap(candidate.d_, false);
             result = gap;
             return result;
         }
         return result;
     }
 
-    //TODO fix awful design with virtual CheckGap and must_overlap flag!
-    bool MakeSimpleGrowStepForChooser(BidirectionalPath& path, std::shared_ptr<ExtensionChooser> ec,
+    //todo Slower version, discuss this
+    vector<EdgeWithGap> GetCandidates(BidirectionalPath& path, std::shared_ptr<ExtensionChooser> ec,
                                       bool must_overlap = false) {
+        INFO("Start");
+        vector<EdgeWithGap> result;
         if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back()))) {
-            return false;
+            return result;
         }
+        INFO("sink");
 
         DEBUG("Simple grow step, growing path");
         path.PrintDEBUG();
@@ -1445,22 +1454,38 @@ protected:
         DEBUG("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
 
         DEBUG("Candidate size = " << candidates.size())
+        for (const auto& candidate: candidates) {
+            EdgeId e = candidate.e_;
+            if (not CheckEdge(path, e)) {
+                continue;
+            }
+
+            boost::optional<Gap> gap = GetGap(path, candidate, must_overlap, e);
+            if (not gap.is_initialized()) {
+                continue;
+            }
+            EdgeWithGap ewg(e, NormalizeGap(gap.get()));
+            result.push_back(ewg);
+        }
+
+        return result;
+    }
+
+    //TODO fix awful design with virtual CheckGap and must_overlap flag!
+    bool MakeSimpleGrowStepForChooser(BidirectionalPath& path, std::shared_ptr<ExtensionChooser> ec,
+                                      bool must_overlap = false) {
+        auto candidates = GetCandidates(path, ec, must_overlap);
+
+        DEBUG("Candidate size = " << candidates.size())
         if (candidates.size() != 1) {
             DEBUG("scaffolding end");
             return false;
         }
 
-        EdgeId e = candidates.back().e_;
-        if (not CheckEdge(path, e)) {
-            return false;
-        }
+        EdgeId e = candidates.back().edge_;
+        Gap gap = candidates.back().gap_;
 
-        boost::optional<Gap> gap = GetGap(path, candidates, must_overlap, e);
-        if (not gap.is_initialized()) {
-            return false;
-        }
-
-        return TryUseEdge(path, e, NormalizeGap(gap.get()));
+        return TryUseEdge(path, e, gap);
     }
 
     Gap NormalizeGap(Gap gap) const {
@@ -1533,6 +1558,56 @@ public:
             MakeSimpleGrowStepForChooser(path, strict_extension_chooser_);
     }
 
+};
+
+//todo discuss this
+class ScaffoldingSearchingMultiExtender: public SearchingMultiExtender, public ScaffoldingPathExtender {
+    shared_ptr<ExtensionChooser> chooser_;
+    using SearchingMultiExtender::path_container_;
+    using SearchingMultiExtender::visited_vertices_;
+    using SearchingMultiExtender::length_bound_;
+
+ public:
+    ScaffoldingSearchingMultiExtender(const conj_graph_pack &gp,
+                                      const GraphCoverageMap &cov_map,
+                                      UsedUniqueStorage &unique,
+                                      shared_ptr<ExtensionChooser> ec,
+                                      size_t is,
+                                      double weight_threshold,
+                                      const shared_ptr<GapAnalyzer> &gap_analyzer,
+                                      QueueContainer &path_container,
+                                      size_t length_bound,
+                                      bool avoid_rc_connections,
+                                      bool check_sink,
+                                      bool investigate_short_loops,
+                                      bool use_short_loop_cov_resolver) :
+                                                         SearchingMultiExtender(gp, cov_map, unique, ec, is,
+                                                                                investigate_short_loops,
+                                                                                use_short_loop_cov_resolver,
+                                                                                weight_threshold,
+                                                                                length_bound, path_container),
+                                                         ScaffoldingPathExtender(gp, cov_map, unique, ec,
+                                                                                 gap_analyzer, is,
+                                                                                 investigate_short_loops,
+                                                                                 avoid_rc_connections,
+                                                                                 check_sink),
+                                                         chooser_(ec) {}
+
+    bool MakeSimpleGrowStep(BidirectionalPath &path, PathContainer* /*paths_storage*/) override {
+        DEBUG("Getting candidates");
+        auto gap_candidates = GetCandidates(path, chooser_);
+        DEBUG("Found " << gap_candidates.size() << " candidates");
+        ExtensionChooser::EdgeContainer candidates;
+        for (const auto& candidate: gap_candidates) {
+            EdgeId e = candidate.edge_;
+            size_t distance = static_cast<size_t>(max(0, candidate.gap_.gap));
+            EdgeWithDistance ewd(e, distance);
+            candidates.push_back(ewd);
+        }
+        return SearchingAddCandidates(path, candidates, path_container_, visited_vertices_, length_bound_);
+    }
+ private:
+    DECL_LOGGER("ScaffoldingSearchingMultiExtender");
 };
 
 class ReadCloudExtender : public LoopDetectingPathExtender { //Traverse forward to find long edges
