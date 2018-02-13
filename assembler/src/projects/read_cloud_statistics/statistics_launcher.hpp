@@ -253,7 +253,7 @@ namespace read_cloud_statistics {
             INFO("Constructing paired end connection scaffold graph");
 
             auto composite_connection_scaffold_graph =
-                scaffold_helper.ConstructCompositeConnectionScaffoldGraph(barcode_connection_scaffold_graph,
+                scaffold_helper.ConstructCompositeConnectionScaffoldGraph(score_scaffold_graph,
                                                                           barcode_extractor_ptr_,
                                                                           long_edge_extractor,
                                                                           params, gp_);
