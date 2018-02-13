@@ -293,24 +293,33 @@ public:
             string sum_str = "";
             string max_str = "";
             int max_len = 0;
-            string cur_path = "";
-            string cur_path_len = "";
-            int seq_start = -1;
-            int seq_end = 0;
+
+            string cur_path_sum = "";
+            string cur_path_len_sum = "";
+            int seq_start_sum = -1;
+            int seq_end_sum = 0;
+
             for (const auto &path : aligned_mappings){
                 size_t mapping_start = 0;
                 size_t mapping_end = 0;
                 string cur_str = "";
+                string cur_path = "";
+                string cur_path_len = "";
+                int seq_start = -1;
+                int seq_end = 0;
                 for (size_t i = 0; i < path.size(); ++ i) {
                     EdgeId edgeid = path.edge_at(i);
                     omnigraph::MappingRange mapping = path.mapping_at(i);
                     mapping_start = mapping.mapped_range.start_pos;
                     mapping_end = mapping.mapped_range.end_pos + gp_.g.k();
+                    //initial_start = mapping.initial_range.start_pos;
+                    ///initial_end = mapping.initial_range.end_pos + gp_.g.k();
                     if (i > 0){
                         mapping_start = 0;
                     }
                     if (i < path.size() - 1) {
                         mapping_end = gp_.g.length(edgeid);
+                        //initial_end = mapping.initial_range.end_pos;
                     }
                     cur_path += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
                                + std::to_string(mapping.initial_range.start_pos) + "," + std::to_string(mapping.initial_range.end_pos) + "], ";
@@ -319,6 +328,14 @@ public:
                         seq_start = (int) mapping.initial_range.start_pos;
                     }
                     seq_end = (int) mapping.initial_range.end_pos;
+
+                    cur_path_sum += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
+                               + std::to_string(mapping.initial_range.start_pos) + "," + std::to_string(mapping.initial_range.end_pos) + "], ";
+                    cur_path_len_sum += std::to_string(mapping_end - mapping_start) + ",";
+                    if (seq_start_sum < 0){
+                        seq_start_sum = (int) mapping.initial_range.start_pos;
+                    }
+                    seq_end_sum = (int) mapping.initial_range.end_pos;
 
                     string tmp = gp_.g.EdgeNucls(edgeid).str();
                     string to_add = tmp.substr(mapping_start, mapping_end - mapping_start);
@@ -330,16 +347,16 @@ public:
                                                      + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\t" + cur_str + "\n";
                 }
             }
-            sum_str += read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t" 
-                                                 + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\n";
+            sum_str = read.name() + "\t" + std::to_string(seq_start_sum) + "\t" + std::to_string(seq_end_sum) + "\t" 
+                                                 + std::to_string(read.sequence().size())+  "\t" + cur_path_sum + "\t" + cur_path_len_sum + "\n";
             INFO("Read " << read.name() << " aligned and length=" << read.sequence().size());
-            INFO("Read " << read.name() << ". Paths with ends: " << cur_path );
+            INFO("Read " << read.name() << ". Paths with ends: " << cur_path_sum );
             //INFO("Seq subs: " << subStr);
 #pragma omp critical
         {
             ofstream myfile;
             myfile.open(output_file_ + ".tsv", std::ofstream::out | std::ofstream::app);
-            myfile << max_str;
+            myfile << sum_str;
             myfile.close();
         }
         }  
