@@ -1960,7 +1960,7 @@ class PredicateExtensionChooser: public ExtensionChooser {
             return intermediate_edges;
         }
         if (result.size() < intermediate_edges.size()) {
-//            INFO("PE chooser helped");
+            DEBUG("PE chooser helped");
         }
         DEBUG(result.size() << "final edges");
         for (const auto& edge: result) {
@@ -1969,7 +1969,7 @@ class PredicateExtensionChooser: public ExtensionChooser {
         return result;
     }
 
-    DECL_LOGGER("MultiExtensionChooser");
+    DECL_LOGGER("PredicateExtensionChooser");
 };
 
 class ReadCloudGapExtensionChooser : public ExtensionChooser {

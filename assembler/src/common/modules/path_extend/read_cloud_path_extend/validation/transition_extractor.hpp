@@ -220,6 +220,7 @@ class ApproximateTransitionStorageBuilder : public TransitionStorageBuilder {
 class ClusterTransitionExtractor {
  public:
     typedef path_extend::transitions::Transition Transition;
+    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
  private:
     const cluster_storage::ClusterGraphAnalyzer& ordering_analyzer_;
 
@@ -231,7 +232,7 @@ class ClusterTransitionExtractor {
 
     vector<Transition> ExtractGoodTransitionsFromNonPathCluster(const cluster_storage::Cluster& cluster);
 
-    vector<Transition> ExtractTransitionsFromOrdering(const vector<EdgeId>& ordering);
+    vector<Transition> ExtractTransitionsFromOrdering(const vector<ScaffoldVertex>& ordering);
 
     vector<Transition> ExtractTransitionsFromPathCluster(const cluster_storage::Cluster& cluster) {
         auto ordering = ordering_analyzer_.GetOrderingFromCluster(cluster);

@@ -176,13 +176,15 @@ namespace read_cloud_statistics {
             size_t scaffolding_distance = params.initial_distance_;
             size_t tail_threshold = params.tail_threshold_;
             size_t count_threshold = params.count_threshold_;
+            size_t edge_length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
             double vertex_multiplier = params.vertex_multiplier_;
 
             INFO("Constructing long edge barcode index");
             barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
+            auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(params.tail_threshold_);
             auto long_edge_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
-                                                                       params.tail_threshold_,
-                                                                       params.count_threshold_, 500,
+                                                                       tail_threshold_getter,
+                                                                       params.count_threshold_, edge_length_threshold,
                                                                        cfg::get().max_threads, unique_storage.unique_edges());
             auto long_edge_extractor = make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(long_edge_index);
             auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, barcode_extractor_ptr_);
@@ -261,8 +263,20 @@ namespace read_cloud_statistics {
                                                                    << " edges in paired end scaffold graph");
 
 
+
+            const double EDGE_LENGTH_FRACTION = 0.5;
+            auto fraction_tail_threshold_getter = std::make_shared<barcode_index::FractionTailThresholdGetter>(gp_.g, EDGE_LENGTH_FRACTION);
+            auto split_scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
+                                                                                   fraction_tail_threshold_getter,
+                                                                                   params.count_threshold_,
+                                                                                   edge_length_threshold,
+                                                                                   cfg::get().max_threads,
+                                                                                   unique_storage.unique_edges());
+            auto split_scaffold_index_extractor =
+                std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(split_scaffold_vertex_index);
             auto ordering_scaffold_graph = scaffold_helper.ConstructOrderingScaffoldGraph(composite_connection_scaffold_graph,
-                                                                                          *barcode_extractor_ptr_, gp_.g,
+                                                                                          split_scaffold_index_extractor,
+                                                                                          gp_.g,
                                                                                           long_gap_params.count_threshold_,
                                                                                           params.split_procedure_strictness_);
             auto transitive_scaffold_graph = scaffold_helper.ConstructNonTransitiveGraph(ordering_scaffold_graph, gp_.g);
@@ -310,8 +324,9 @@ namespace read_cloud_statistics {
                                                                     score_name, composite_connection_name, barcode_connection_name, ordering_name,
                                                                     transitive_name);
 
+            auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(params.tail_threshold_);
             auto long_edge_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
-                                                                       params.tail_threshold_,
+                                                                       tail_threshold_getter,
                                                                        params.count_threshold_, 500,
                                                                        cfg::get().max_threads, unique_storage_.unique_edges());
             auto long_edge_extractor = make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(long_edge_index);
@@ -401,7 +416,8 @@ namespace read_cloud_statistics {
             const auto &small_scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
             const auto &large_scaffold_graph = gp_.scaffold_graph_storage.GetLargeScaffoldGraph();
 
-            auto scaffold_vertex_index = index_builder_helper.ConstructScaffoldVertexIndex(gp_.g, barcode_extractor, tail_threshold,
+            auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
+            auto scaffold_vertex_index = index_builder_helper.ConstructScaffoldVertexIndex(gp_.g, barcode_extractor, tail_threshold_getter,
                                                                              count_threshold, length_threshold, cfg::get().max_threads,
                                                                              small_scaffold_graph.vertices());
             auto scaffold_index_extractor = std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
@@ -439,8 +455,9 @@ namespace read_cloud_statistics {
 
             barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
 
+            auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(params.tail_threshold_);
             auto long_edge_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
-                                                                       params.tail_threshold_,
+                                                                       tail_threshold_getter,
                                                                        params.count_threshold_, 500,
                                                                        cfg::get().max_threads, large_unique_storage.unique_edges());
             auto long_edge_extractor = make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(long_edge_index);

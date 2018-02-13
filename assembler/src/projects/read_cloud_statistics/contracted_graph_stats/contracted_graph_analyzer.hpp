@@ -91,14 +91,15 @@ namespace contracted_graph {
 
     struct TransitionVertexData {
       typedef path_extend::transitions::Transition Transition;
+      typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
       std::set<Transition> transitions_;
-      std::set<EdgeId> incoming_set_;
-      std::set<EdgeId> outcoming_set_;
-      std::map<EdgeId, size_t> incoming_edge_to_pos_;
-      std::map<EdgeId, size_t> outcoming_edge_to_pos_;
+      std::set<ScaffoldVertex> incoming_set_;
+      std::set<ScaffoldVertex> outcoming_set_;
+      std::map<ScaffoldVertex, size_t> incoming_edge_to_pos_;
+      std::map<ScaffoldVertex, size_t> outcoming_edge_to_pos_;
       string name_;
 
-      TransitionVertexData(const set<EdgeId> &incoming_set_, const set<EdgeId> &outcoming_set_, const string& name) :
+      TransitionVertexData(const set<ScaffoldVertex> &incoming_set_, const set<ScaffoldVertex> &outcoming_set_, const string& name) :
           transitions_(), incoming_set_(incoming_set_), outcoming_set_(outcoming_set_),
           incoming_edge_to_pos_(), outcoming_edge_to_pos_(), name_(name) {
           size_t counter = 1;
@@ -115,7 +116,7 @@ namespace contracted_graph {
 
       TransitionVertexData(const TransitionVertexData& other) = default;
 
-      void InsertTransition(const EdgeId& incoming, const EdgeId& outcoming) {
+      void InsertTransition(const ScaffoldVertex& incoming, const ScaffoldVertex& outcoming) {
           transitions_.insert(Transition(incoming, outcoming));
       }
 
@@ -146,11 +147,12 @@ namespace contracted_graph {
     };
 
     struct DetailedVertexData {
+      typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
         vector<size_t> lengths_;
         vector<double> coverages_;
         vector<size_t> barcode_coverages_;
-        vector<EdgeId> incoming_;
-        vector<EdgeId> outcoming_;
+        vector<ScaffoldVertex> incoming_;
+        vector<ScaffoldVertex> outcoming_;
         size_t capacity_;
         vector<TransitionVertexData> vertex_to_transition_data_;
         vector<VertexClusterData> vertex_to_cluster_data_;
@@ -160,6 +162,7 @@ namespace contracted_graph {
     class TransitionStatistics: public read_cloud_statistics::Statistic {
      public:
         typedef path_extend::transitions::Transition Transition;
+        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
      private:
         std::map<VertexId, DetailedVertexData> data_;
 
@@ -209,8 +212,8 @@ namespace contracted_graph {
 
         struct GreedyOrderData {
           vector<path_extend::transitions::Transition> transition_order_;
-          vector<EdgeId> incoming_order_;
-          vector<EdgeId> outcoming_order_;
+          vector<ScaffoldVertex> incoming_order_;
+          vector<ScaffoldVertex> outcoming_order_;
         };
 
         void SerializeLargeVertices(ofstream& fout, size_t lower_bound, size_t upper_bound, const string& sep) {
@@ -290,8 +293,8 @@ namespace contracted_graph {
 
         GreedyOrderData GetGreedySequence(std::map<Transition, size_t>& transition_to_clusters) {
             vector<std::pair<Transition, size_t>> sorted_entries;
-            std::set<EdgeId> incoming;
-            std::set<EdgeId> outcoming;
+            std::set<ScaffoldVertex> incoming;
+            std::set<ScaffoldVertex> outcoming;
             for (const auto& entry: transition_to_clusters) {
                 incoming.insert(entry.first.first_);
                 outcoming.insert(entry.first.second_);
@@ -301,13 +304,13 @@ namespace contracted_graph {
                       [](const std::pair<Transition, size_t>& first, const std::pair<Transition, size_t>& second) {
                         return first.second > second.second;
                       });
-            vector<EdgeId> incoming_order;
-            vector<EdgeId> outcoming_order;
-            unordered_set<EdgeId> inserted_incoming;
-            unordered_set<EdgeId> inserted_outcoming;
+            vector<ScaffoldVertex> incoming_order;
+            vector<ScaffoldVertex> outcoming_order;
+            unordered_set<ScaffoldVertex> inserted_incoming;
+            unordered_set<ScaffoldVertex> inserted_outcoming;
             for (const auto& entry: sorted_entries) {
-                EdgeId first = entry.first.first_;
-                EdgeId second = entry.first.second_;
+                ScaffoldVertex first = entry.first.first_;
+                ScaffoldVertex second = entry.first.second_;
                 if (inserted_incoming.find(first) == inserted_incoming.end() and
                     inserted_outcoming.find(second) == inserted_outcoming.end()) {
                     inserted_incoming.insert(first);
@@ -455,6 +458,7 @@ namespace contracted_graph {
      public:
         typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
         typedef path_extend::transitions::Transition Transition;
+        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
      private:
         const Graph& graph_;
         const cluster_storage::ClusterGraphAnalyzer ordering_analyzer_;
@@ -484,10 +488,11 @@ namespace contracted_graph {
             min_read_threshold_(min_read_threshold) {}
 
         void FillStatistics() override {
-            auto transition_statistics_ptr = make_shared<TransitionStatistics>(GetTransitionStatistics(min_read_threshold_));
-            auto vertex_statistics_ptr = make_shared<VertexDataStats>(GetVertexDataStats());
-            AddStatistic(transition_statistics_ptr);
-            AddStatistic(vertex_statistics_ptr);
+            //fixme broken because of EdgeId -> ScaffoldVertex substitution
+//            auto transition_statistics_ptr = make_shared<TransitionStatistics>(GetTransitionStatistics(min_read_threshold_));
+//            auto vertex_statistics_ptr = make_shared<VertexDataStats>(GetVertexDataStats());
+//            AddStatistic(transition_statistics_ptr);
+//            AddStatistic(vertex_statistics_ptr);
         }
 
         DECL_LOGGER("ContractedGraphAnalyzer");
@@ -512,8 +517,8 @@ namespace contracted_graph {
             for (const auto& vertex: contracted_graph_) {
                 DEBUG("Vertex: " << vertex.int_id());
                 DetailedVertexData vertex_data;
-                vector<EdgeId> incoming = contracted_graph_.getIncomingEdges(vertex);
-                vector<EdgeId> outcoming = contracted_graph_.getOutcomingEdges(vertex);
+                vector<ScaffoldVertex> incoming = contracted_graph_.getIncomingEdges(vertex);
+                vector<ScaffoldVertex> outcoming = contracted_graph_.getOutcomingEdges(vertex);
                 vertex_data.incoming_ = incoming;
                 vertex_data.outcoming_ = outcoming;
                 vertex_data.capacity_ = contracted_graph_.capacity(vertex);
@@ -524,8 +529,8 @@ namespace contracted_graph {
 
                 VertexClusterData nonpath_cluster_storage("Non-path clusters assigned to the vertex", false);
 
-                std::set<EdgeId> incoming_set(incoming.begin(), incoming.end());
-                std::set<EdgeId> outcoming_set(outcoming.begin(), outcoming.end());
+                std::set<ScaffoldVertex> incoming_set(incoming.begin(), incoming.end());
+                std::set<ScaffoldVertex> outcoming_set(outcoming.begin(), outcoming.end());
 
                 vector<TransitionVertexData> vertex_to_transition_storages;
                 for (const auto& storage_entry: name_to_transition_storage_) {
@@ -536,13 +541,13 @@ namespace contracted_graph {
                 //fixme why?
                 const size_t coverage_read_threshold = 3;
                 for (const auto& edge: incoming_set) {
-                    vertex_data.lengths_.push_back(graph_.length(edge));
-                    vertex_data.coverages_.push_back(graph_.coverage(edge));
+                    vertex_data.lengths_.push_back(edge.getLengthFromGraph(graph_));
+                    vertex_data.coverages_.push_back(edge.getCoverageFromGraph(graph_));
                     vertex_data.barcode_coverages_.push_back(GetBarcodeCoverage(edge, coverage_read_threshold));
                 }
                 for (const auto& edge: outcoming_set) {
-                    vertex_data.lengths_.push_back(graph_.length(edge));
-                    vertex_data.coverages_.push_back(graph_.coverage(edge));
+                    vertex_data.lengths_.push_back(edge.getLengthFromGraph(graph_));
+                    vertex_data.coverages_.push_back(edge.getCoverageFromGraph(graph_));
                     vertex_data.barcode_coverages_.push_back(GetBarcodeCoverage(edge, coverage_read_threshold));
                 }
                 vector<Transition> transitions;
@@ -570,7 +575,9 @@ namespace contracted_graph {
             return stats;
         }
 
-        size_t GetBarcodeCoverage(const EdgeId& edge, const size_t read_threshold) {
+        size_t GetBarcodeCoverage(const ScaffoldVertex& vertex, const size_t read_threshold) {
+            path_extend::scaffold_graph::EdgeGetter edge_getter;
+            EdgeId edge = edge_getter.GetEdgeFromScaffoldVertex(vertex);
             vector<BarcodeId> barcodes = barcode_extractor_.GetBarcodes(edge);
             size_t barcode_coverage = (size_t) std::count_if(barcodes.begin(), barcodes.end(),
                                                              [read_threshold, &edge, this](const BarcodeId& barcode) {
@@ -580,7 +587,7 @@ namespace contracted_graph {
         }
 
         void UpdateTransitionStorages(vector<TransitionVertexData>& transition_storages,
-                                      const EdgeId& in_edge, const EdgeId& out_edge) {
+                                      const ScaffoldVertex& in_edge, const ScaffoldVertex& out_edge) {
             DEBUG("Transition to storages")
             for (auto& storage: transition_storages) {
                 string name = storage.GetName();

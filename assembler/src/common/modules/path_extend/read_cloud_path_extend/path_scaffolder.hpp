@@ -14,12 +14,14 @@ class PathScaffolder {
 
     const debruijn_graph::conj_graph_pack& gp_;
     const ScaffoldingUniqueEdgeStorage& unique_storage_;
-    size_t path_length_threshold_;
+    size_t small_path_length_threshold_;
+    size_t large_path_length_threshold_;
 
  public:
     PathScaffolder(const conj_graph_pack &gp_,
                    const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                   size_t path_length_threshold_);
+                   size_t small_path_length_threshold_,
+                   size_t large_path_length_threshold_);
 
     void MergePaths(const PathContainer &paths) const;
 

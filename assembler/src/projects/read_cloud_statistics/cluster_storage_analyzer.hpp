@@ -200,8 +200,9 @@ class EdgesToPathsDistribution : public read_cloud_statistics::Statistic {
 };
 
 struct SimplePath {
-  vector<EdgeId> data_;
-  SimplePath(const vector<EdgeId> &data_) : data_(data_) {}
+  typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+  vector<ScaffoldVertex> data_;
+  SimplePath(const vector<ScaffoldVertex> &data_) : data_(data_) {}
   bool operator==(const SimplePath &other) const {
       return data_ == other.data_;
   }
@@ -215,7 +216,7 @@ struct hash<cluster_statistics::SimplePath> {
   size_t operator()(const cluster_statistics::SimplePath& edges) const {
       using std::hash;
       size_t sum = 0;
-      std::for_each(edges.data_.begin(), edges.data_.end(), [&sum](const EdgeId& edge){
+      std::for_each(edges.data_.begin(), edges.data_.end(), [&sum](const cluster_statistics::SimplePath::ScaffoldVertex& edge){
         sum += std::hash<size_t>()(edge.int_id());
       });
       return sum;
@@ -276,7 +277,8 @@ class KeyClusterStorage {
 
 typedef KeyClusterStorage<SimplePath> PathClusterStorage;
 typedef KeyClusterStorage<path_extend::transitions::Transition> TransitionClusterStorage;
-typedef KeyClusterStorage<EdgeId> EdgeClusterStorage;
+typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+typedef KeyClusterStorage<ScaffoldVertex> EdgeClusterStorage;
 
 class PathClusterStorageBuilder {
  public:
@@ -357,6 +359,8 @@ class PathClusterStorageBuilder {
     };
 
     class EdgeClusterStorageBuilder {
+        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+
      public:
         EdgeClusterStorage BuildEdgeClusterStorage(const cluster_storage::ClusterStorage& cluster_storage,
                                                    const Predicate<Cluster>& cluster_predicate) {
@@ -364,7 +368,7 @@ class PathClusterStorageBuilder {
             for (const auto& entry: cluster_storage) {
                 if (cluster_predicate(entry.second)) {
                     for (auto it = entry.second.begin(); it != entry.second.end(); ++it) {
-                        const EdgeId edge = (*it).first;
+                        const ScaffoldVertex edge = (*it).first;
                         result.InsertKeyWithCluster(edge, entry.second);
                     }
                 }
@@ -447,9 +451,9 @@ class PathClusterStorageBuilder {
                 bool is_path = true;
                 bool is_correct = false;
                 SimplePath path = entry.first;
-                if (reference_tranisition_storage_.CheckPath(path.data_)) {
-                    is_correct = true;
-                }
+//                if (reference_tranisition_storage_.CheckPath(path.data_)) {
+//                    is_correct = true;
+//                }
                 distribution.Insert(path.data_.size(), is_path, is_correct);
             }
             return distribution;
@@ -474,7 +478,7 @@ class PathClusterStorageBuilder {
             }
             size_t incorrect_transitions = 0;
             for (const auto& cluster: clusters) {
-                vector<EdgeId> ordering = ordering_analyzer_.GetOrderingFromCluster(cluster);
+                vector<ScaffoldVertex> ordering = ordering_analyzer_.GetOrderingFromCluster(cluster);
                 if (ordering.size() >= 2) {
                     for (auto first = ordering.begin(), second = std::next(ordering.begin()); second != ordering.end();
                          ++first, ++second) {
@@ -531,7 +535,7 @@ class PathClusterStorageBuilder {
             ClusterTransitionExtractor transition_extractor(ordering_analyzer_);
             INFO("Initial false: " << nonpath_cluster_preliminary_stats.false_transitions_);
             for (const auto& cluster: clusters) {
-                vector<EdgeId> ordering = ordering_analyzer_.GetOrderingFromCluster(cluster);
+                vector<ScaffoldVertex> ordering = ordering_analyzer_.GetOrderingFromCluster(cluster);
                 if (ordering.size() != 0) {
                     auto transitions = transition_extractor.ExtractTransitionsFromOrdering(ordering);
                     path_cluster_preliminary_stats.Update(transition_storage, transitions);
@@ -614,8 +618,8 @@ class PathClusterStorageBuilder {
             if (ordering.size() != 0) {
                 for (auto it1 = ordering.begin(), it2 = std::next(ordering.begin());
                      it2 != ordering.end(); ++it1, ++it2) {
-                    EdgeId first = *it1;
-                    EdgeId second = *it2;
+                    ScaffoldVertex first = *it1;
+                    ScaffoldVertex second = *it2;
                     if (not reference_tranisition_storage_.CheckTransition(first, second)) {
                         return false;
                     }

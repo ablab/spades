@@ -24,9 +24,10 @@ class PartsBasedContractedFactory : public ContractedGraphFactory{
  protected:
     const Graph& g_;
     using ContractedGraphFactory::graph_ptr_;
+    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
     struct ContractedGraphParts {
-      vector <EdgeId> long_edges_;
+      vector <ScaffoldVertex> long_edges_;
       unordered_set <VertexId> long_edge_ends_;
       unordered_map <VertexId, size_t> vertex_to_capacity_;
       unordered_map <VertexId, VertexId> vertex_to_root_;
@@ -96,6 +97,7 @@ class SimpleContractedGraphFactory: public PartsBasedContractedFactory {
     using PartsBasedContractedFactory::ContractedGraphParts;
     typedef dsu::ConcurrentDSU contracted_dsu_t;
     typedef cluster_storage::Cluster::InternalGraph InternalGraph;
+    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
     const InternalGraph& internal_graph_;
 
  public:

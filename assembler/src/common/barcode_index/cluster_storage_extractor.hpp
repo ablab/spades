@@ -8,6 +8,7 @@ namespace cluster_storage {
 class CondensationAnalyzer {
  public:
     typedef contracted_graph::ContractedGraph ContractedGraph;
+    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
  private:
     const contracted_graph::ContractedGraphFactoryHelper& contracted_builder_;
  public:
@@ -51,7 +52,7 @@ class CondensationAnalyzer {
                 VertexId prev_root = vertex_to_root.at(vertex);
                 VertexId next_root = vertex_to_root.at(next);
                 if (prev_root != next_root) {
-                    EdgeId edge = it->second.back();
+                    ScaffoldVertex edge = it->second.back();
                     condensation.InsertEdge(prev_root, next_root, edge);
                 }
             }
@@ -147,6 +148,7 @@ class ClusterGraphAnalyzer {
 
  public:
     typedef contracted_graph::ContractedGraph ContractedGraph;
+    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
  public:
 
@@ -170,7 +172,7 @@ class ClusterGraphAnalyzer {
         return IsEulerianPath(contracted_graph);
     }
 
-    bool CheckOrdering(const vector<EdgeId>& ordering, const Cluster::InternalGraph& graph) const {
+    bool CheckOrdering(const vector<ScaffoldVertex>& ordering, const Cluster::InternalGraph& graph) const {
         if (ordering.size() != graph.NumberOfVertices()) {
             WARN("Ordering size is not equal to number of vertices!");
             return false;
@@ -185,7 +187,7 @@ class ClusterGraphAnalyzer {
         return true;
     }
 
-    vector<EdgeId> GetOrderingFromCluster(const Cluster &cluster) const {
+    vector<ScaffoldVertex> GetOrderingFromCluster(const Cluster &cluster) const {
         Cluster::InternalGraph cluster_graph = cluster.GetInternalGraph();
         auto ordering = GetOrdering(cluster_graph);
         if (ordering.size() != 0) {
@@ -195,9 +197,9 @@ class ClusterGraphAnalyzer {
     }
 
  private:
-    vector<EdgeId> GetOrdering(const Cluster::InternalGraph &graph) const {
+    vector<ScaffoldVertex> GetOrdering(const Cluster::InternalGraph &graph) const {
         auto contracted_graph = contracted_builder_.ConstructFromInternalGraph(graph);
-        vector<EdgeId> result;
+        vector<ScaffoldVertex> result;
         if (not IsEulerianPath(contracted_graph)) {
             TRACE("Contracted graph does not contain eulerian path")
             return result;
@@ -238,7 +240,7 @@ class ClusterGraphAnalyzer {
     }
 
     /**
-     * @note Graph must be an eulerian path
+     * @note Graph must contain single eulerian path
      */
     VertexId FindStartVertex(const ContractedGraph& graph) const {
         VertexId result;
@@ -252,8 +254,9 @@ class ClusterGraphAnalyzer {
     }
 
     class EulerianPathTraverser {
-        vector<EdgeId> ordering_;
-        std::unordered_map<EdgeId, bool> edge_to_visited_;
+        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+        vector<ScaffoldVertex> ordering_;
+        std::unordered_map<ScaffoldVertex, bool> edge_to_visited_;
         const ContractedGraph& graph_;
         const ConnectedComponentIndex& connected_component_index_;
 
@@ -271,12 +274,12 @@ class ClusterGraphAnalyzer {
 
         void Run(const VertexId& vertex) {
             TRACE("Traversing from vertex " << vertex.int_id());
-            std::deque<std::pair<VertexId, EdgeId>> next_pairs;
+            std::deque<std::pair<VertexId, ScaffoldVertex>> next_pairs;
             for (auto it = graph_.out_begin(vertex); it != graph_.out_end(vertex); ++it) {
                 VertexId next = it->first;
                 TRACE("Next : " << next.int_id());
                 VERIFY((it->second).size() == 1);
-                EdgeId edge = (it->second).back();
+                ScaffoldVertex edge = (it->second).back();
                 if (not edge_to_visited_.at(edge)) {
                     TRACE("Not visited")
                     if (connected_component_index_.GetIndex(next) == connected_component_index_.GetIndex(vertex)) {
@@ -287,7 +290,7 @@ class ClusterGraphAnalyzer {
                 }
             }
             if (next_pairs.size() > 0) {
-                EdgeId next_edge = next_pairs[0].second;
+                ScaffoldVertex next_edge = next_pairs[0].second;
                 VertexId next_vertex = next_pairs[0].first;
                 edge_to_visited_.at(next_edge) = true;
                 ordering_.push_back(next_edge);
@@ -295,13 +298,13 @@ class ClusterGraphAnalyzer {
             }
         }
 
-        vector<EdgeId> GetOrdering() const {
+        vector<ScaffoldVertex> GetOrdering() const {
             return ordering_;
         }
         DECL_LOGGER("EulerianPathTraverser")
     };
 
-    vector<EdgeId> GetOrderingFromPathGraph(const ContractedGraph& graph,
+    vector<ScaffoldVertex> GetOrderingFromPathGraph(const ContractedGraph& graph,
                                             const ConnectedComponentIndex& connected_component_index) const {
         VertexId current_vertex = FindStartVertex(graph);
         EulerianPathTraverser path_traverser(graph, connected_component_index);

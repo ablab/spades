@@ -2,7 +2,7 @@
 
 namespace contracted_graph {
 
-void AdjacencyMap::InsertPair(const AdjacencyMap::VertexId& vertex, const AdjacencyMap::EdgeId& edge) {
+void AdjacencyMap::InsertPair(const AdjacencyMap::VertexId& vertex, const AdjacencyMap::ScaffoldVertex& edge) {
     data_[vertex].push_back(edge);
 }
 AdjacencyMap::const_iterator AdjacencyMap::begin() const {
@@ -20,7 +20,7 @@ void ContractedGraph::InsertVertex(const ContractedGraph::VertexId& vertex) {
     }
 }
 void ContractedGraph::InsertEdge(const ContractedGraph::VertexId& head, const ContractedGraph::VertexId& tail,
-                                 const ContractedGraph::EdgeId& edge) {
+                                 const ContractedGraph::ScaffoldVertex& edge) {
     VERIFY(vertices_.find(head) != vertices_.end());
     VERIFY(vertices_.find(tail) != vertices_.end());
     outcoming_[head].InsertPair(tail, edge);
@@ -58,8 +58,8 @@ size_t ContractedGraph::getInDegree(const ContractedGraph::VertexId& vertex) con
     }
     return result;
 }
-vector<ContractedGraph::EdgeId> ContractedGraph::getIncomingEdges(const ContractedGraph::VertexId& vertex) const {
-    vector<EdgeId> incoming;
+vector<ContractedGraph::ScaffoldVertex> ContractedGraph::getIncomingEdges(const ContractedGraph::VertexId& vertex) const {
+    vector<ScaffoldVertex> incoming;
     for (auto in_it = in_begin(vertex); in_it != in_end(vertex); ++in_it) {
         for (auto edge_it = (*in_it).second.begin(); edge_it != (*in_it).second.end(); ++edge_it) {
             incoming.push_back(*edge_it);
@@ -67,8 +67,8 @@ vector<ContractedGraph::EdgeId> ContractedGraph::getIncomingEdges(const Contract
     }
     return incoming;
 }
-vector<ContractedGraph::EdgeId> ContractedGraph::getOutcomingEdges(const ContractedGraph::VertexId& vertex) const {
-    vector<EdgeId> outcoming;
+vector<ContractedGraph::ScaffoldVertex> ContractedGraph::getOutcomingEdges(const ContractedGraph::VertexId& vertex) const {
+    vector<ScaffoldVertex> outcoming;
     for (auto out_it = out_begin(vertex); out_it != out_end(vertex); ++out_it) {
         for (auto edge_it = (*out_it).second.begin(); edge_it != (*out_it).second.end(); ++edge_it) {
             outcoming.push_back(*edge_it);
