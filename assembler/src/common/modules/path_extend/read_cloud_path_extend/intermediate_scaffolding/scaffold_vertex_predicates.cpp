@@ -34,7 +34,7 @@ bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVer
 
     double middle_barcodes = static_cast<double>(barcode_extractor_->GetHeadSize(vertex));
     if (math::eq(middle_barcodes, 0.0)) {
-        WARN("No barcodes on edge");
+        DEBUG("No barcodes on edge " << vertex.int_id() << ", " << middle_barcodes);
         return true;
     }
     double raw_score_threshold = params_.raw_score_threshold_;

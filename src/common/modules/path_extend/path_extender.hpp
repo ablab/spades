@@ -703,6 +703,13 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
                    {uint32_t(gap.left_trim()), uint32_t(gap.right_trim())}, false);
     }
 
+    struct EdgeWithGap {
+      EdgeId edge_;
+      Gap gap_;
+
+      EdgeWithGap(const EdgeId &edge_, const Gap &gap_) : edge_(edge_), gap_(gap_) {}
+    };
+
 protected:
     virtual bool CheckGap(const Gap &/*gap*/) const { return true; }
     bool ResolveShortLoopByCov(BidirectionalPath&) override { return false; }
@@ -779,6 +786,56 @@ private:
     DECL_LOGGER("RNAScaffoldingPathExtender");
 };
 
+
+//todo discuss this
+class ScaffoldingSearchingMultiExtender: public SearchingMultiExtender, public ScaffoldingPathExtender {
+    shared_ptr<ExtensionChooser> chooser_;
+    using SearchingMultiExtender::path_container_;
+    using SearchingMultiExtender::visited_vertices_;
+    using SearchingMultiExtender::length_bound_;
+
+ public:
+    ScaffoldingSearchingMultiExtender(const conj_graph_pack &gp,
+                                      const GraphCoverageMap &cov_map,
+                                      UsedUniqueStorage &unique,
+                                      shared_ptr<ExtensionChooser> ec,
+                                      size_t is,
+                                      double weight_threshold,
+                                      const shared_ptr<GapAnalyzer> &gap_analyzer,
+                                      QueueContainer &path_container,
+                                      size_t length_bound,
+                                      bool avoid_rc_connections,
+                                      bool check_sink,
+                                      bool investigate_short_loops,
+                                      bool use_short_loop_cov_resolver) :
+                                                         SearchingMultiExtender(gp, cov_map, unique, ec, is,
+                                                                                investigate_short_loops,
+                                                                                use_short_loop_cov_resolver,
+                                                                                weight_threshold,
+                                                                                length_bound, path_container),
+                                                         ScaffoldingPathExtender(gp, cov_map, unique, ec,
+                                                                                 gap_analyzer, is,
+                                                                                 investigate_short_loops,
+                                                                                 avoid_rc_connections,
+                                                                                 check_sink),
+                                                         chooser_(ec) {}
+
+    bool MakeSimpleGrowStep(BidirectionalPath &path, PathContainer* /*paths_storage*/) override {
+        DEBUG("Getting candidates");
+        auto gap_candidates = GetCandidates(path, chooser_);
+        DEBUG("Found " << gap_candidates.size() << " candidates");
+        ExtensionChooser::EdgeContainer candidates;
+        for (const auto& candidate: gap_candidates) {
+            EdgeId e = candidate.edge_;
+            size_t distance = static_cast<size_t>(max(0, candidate.gap_.gap));
+            EdgeWithDistance ewd(e, distance);
+            candidates.push_back(ewd);
+        }
+        return SearchingAddCandidates(path, candidates, path_container_, visited_vertices_, length_bound_);
+    }
+ private:
+    DECL_LOGGER("ScaffoldingSearchingMultiExtender");
+};
 
 class ReadCloudExtender : public LoopDetectingPathExtender { //Traverse forward to find long edges
 
