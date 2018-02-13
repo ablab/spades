@@ -635,13 +635,14 @@ class SelfConjugateDisruptor: public EdgeProcessingAlgorithm<Graph> {
 protected:
 
     bool ProcessEdge(EdgeId e) override {
-        if (e == this->g().conjugate(e)) {
-            TRACE("Disrupting self-conjugate edge " << this->g().str(e));
+        Graph& g = this->g();
+        if (e == g.conjugate(e)) {
+            TRACE("Disrupting self-conjugate edge " << g.str(e));
             EdgeId to_del = e;
-            size_t len = this->g().length(e);
-            if (len > max_len_ || this->g().OutgoingEdgeCount(this->g().EdgeEnd(e)) == 1) {
+            size_t len = g.length(e);
+            if (len > max_len_ || g.OutgoingEdgeCount(g.EdgeEnd(e)) == 1) {
                 if (len > 1) {
-                    to_del = this->g().SplitEdge(e, len / 2).second;
+                    to_del = g.SplitEdge(e, len / 2).second;
                     edge_remover_.DeleteEdge(to_del);
                 } else {
                     edge_remover_.DeleteEdge(to_del);
