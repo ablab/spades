@@ -294,20 +294,11 @@ double TrivialBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph
 }
 bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &scaffold_edge) const {
     DEBUG("Start composite check");
-    shared_ptr<ExtensionChooser> extension_chooser;
-    if (not scaffolding_mode_) {
-        extension_chooser = ConstructSimpleExtensionChooser();
-    } else {
-        extension_chooser = ConstructScaffoldingExtensionChooser();
-    }
     auto start = scaffold_edge.getStart();
     auto end = scaffold_edge.getEnd();
-
     DEBUG("Checking edge " << start.int_id() << " -> " << end.int_id());
 
     auto scaffold_vertex_predicate = ConstructScaffoldVertexPredicate(start, end);
-    auto multi_chooser =
-        make_shared<path_extend::PredicateExtensionChooser>(gp_.g, scaffold_vertex_predicate, extension_chooser);
 
     path_extend::QueueContainer paths_container;
     BidirectionalPath* initial_path = start.toPath(gp_.g);
@@ -315,19 +306,25 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
     DEBUG("Initial path size: " << initial_path->Size());
     BidirectionalPath* initial_path_copy = new BidirectionalPath(*initial_path);
     paths_container.push(initial_path_copy);
-
     DEBUG("Constructed path container");
-
     GraphCoverageMap cover_map(gp_.g);
 
-    auto multi_extender = ConstructBasicSearchingExtender(paths_container, cover_map, multi_chooser);
-
+    vector<shared_ptr<path_extend::SearchingMultiExtender>> searching_extenders;
+    auto extension_chooser = ConstructSimpleExtensionChooser();
+    auto multi_chooser =
+        make_shared<path_extend::PredicateExtensionChooser>(gp_.g, scaffold_vertex_predicate, extension_chooser);
+    auto basic_extender = ConstructBasicSearchingExtender(paths_container, cover_map, multi_chooser);
     DEBUG("Constructed basic extender");
-
-    const size_t max_path_growing_iterations = 1000;
-    const size_t max_paths_to_process = 200;
-    const size_t max_edge_visits = 10;
-    size_t path_processing_iterations = 0;
+    searching_extenders.push_back(basic_extender);
+    if (scaffolding_mode_) {
+        auto scaffolding_chooser = ConstructScaffoldingExtensionChooser();
+        auto scaffolding_multi_chooser =
+            make_shared<path_extend::PredicateExtensionChooser>(gp_.g, scaffold_vertex_predicate, scaffolding_chooser);
+        auto scaffolding_extender = ConstructScaffoldingSearchingExtender(paths_container, cover_map,
+                                                                          scaffolding_multi_chooser);
+        DEBUG("Constructed scaffolding extender");
+        searching_extenders.push_back(scaffolding_extender);
+    }
 
     VertexId start_vertex = start.getEndGraphVertex(gp_.g);
     VertexId target_vertex = end.getStartGraphVertex(gp_.g);
@@ -338,50 +335,12 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
         return true;
     }
 
-    std::unordered_map<EdgeId, size_t> edge_to_number_of_visits;
-    vector<BidirectionalPath*> tmp_path_storage;
-
-    while (not paths_container.empty() and path_processing_iterations < max_paths_to_process) {
-        DEBUG("Path container size: " << paths_container.size());
-        DEBUG("Coverage map size: " << cover_map.size());
-        auto current_path = paths_container.front();
-        BidirectionalPath* path_copy = current_path;
-        tmp_path_storage.push_back(path_copy);
-        SubscribeCoverageMap(current_path, cover_map);
-        paths_container.pop();
-        EdgeId last_edge = current_path->Back();
-        edge_to_number_of_visits[last_edge]++;
-        size_t current_iterations = 0;
-        if (edge_to_number_of_visits[last_edge] > max_edge_visits) {
-            DEBUG("Edge was visited too often");
-            continue;
-        }
-        PathContainer *empty_storage = nullptr;
-        while (multi_extender->MakeGrowStep(*current_path, empty_storage)
-            and current_iterations < max_path_growing_iterations) {
-            DEBUG("Made grow step, iteration " << current_iterations);
-            ++current_iterations;
-        }
-        ++path_processing_iterations;
-        if (current_iterations >= max_path_growing_iterations) {
-            WARN("Stopped path growing because of too many steps");
-            continue;
-        }
-        const auto &reached_vertices = multi_extender->GetReachedVertices();
-        if (reached_vertices.find(target_vertex) != reached_vertices.end()) {
-            DEBUG("Found target");
-            return true;
-        }
-    }
-    if (path_processing_iterations >= max_paths_to_process) {
-        DEBUG("Had to process too many paths, returning");
-        return true;
-    }
+    bool result = SearchTargetUsingExtenders(paths_container, cover_map, searching_extenders, target_vertex);
     delete initial_path_copy;
     DEBUG("Initial path id: " << initial_path->GetId());
     DEBUG("Initial path size: " << initial_path->Size());
     DEBUG("Could not find supported path");
-    return false;
+    return result;
 }
 
 shared_ptr<path_extend::ExtensionChooser> CompositeConnectionPredicate::ConstructSimpleExtensionChooser() const {
@@ -433,7 +392,7 @@ CompositeConnectionPredicate::CompositeConnectionPredicate(
 shared_ptr<path_extend::ExtensionChooser> CompositeConnectionPredicate::ConstructScaffoldingExtensionChooser() const {
     const size_t lib_index = params_.paired_lib_index_;
     const auto &lib = params_.dataset_info.reads[lib_index];
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, clustered_indices_[lib_index]);
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.scaffolding_indices[lib_index]);
     shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib);
 
     auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp_.g, counter,
@@ -473,6 +432,110 @@ shared_ptr<path_extend::SearchingMultiExtender> CompositeConnectionPredicate::Co
                                                                            opts.weight_threshold, length_bound_,
                                                                            paths_container);
     return multi_extender;
+}
+
+//fixme code duplication with ExtenderGenerator
+shared_ptr<path_extend::SearchingMultiExtender> CompositeConnectionPredicate::ConstructScaffoldingSearchingExtender(
+    path_extend::QueueContainer &paths_container,
+    GraphCoverageMap &cover_map,
+    shared_ptr<ExtensionChooser> extension_chooser) const {
+    const auto &lib = params_.dataset_info.reads[params_.paired_lib_index_];
+    UsedUniqueStorage used_unique_storage(unique_storage_);
+    auto opts = params_.pe_params_.pset.extension_options;
+
+    const auto &pset = params_.pe_params_.pset;
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.scaffolding_indices[params_.paired_lib_index_]);
+
+    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib);
+
+    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp_.g, counter,
+                                                                       pset.scaffolder_options.cl_threshold,
+                                                                       pset.scaffolder_options.var_coeff);
+
+    auto gap_analyzer = MakeGapAnalyzer(paired_lib->GetIsVar());
+    const bool check_sink = true;
+    const bool investigate_short_loops = false;
+    const bool short_loop_resolver = false;
+
+    auto scaffolding_extender = make_shared<path_extend::ScaffoldingSearchingMultiExtender>(
+        gp_, cover_map, used_unique_storage, extension_chooser, paired_lib->GetISMax(), opts.weight_threshold,
+        gap_analyzer, paths_container, length_bound_, params_.pe_params_.avoid_rc_connections, check_sink,
+        investigate_short_loops, short_loop_resolver);
+
+    return scaffolding_extender;
+}
+shared_ptr<GapAnalyzer> CompositeConnectionPredicate::MakeGapAnalyzer(double is_variation) const {
+    const auto &pset = params_.pe_params_.pset;
+
+    vector<shared_ptr<GapAnalyzer>> joiners;
+    if (pset.scaffolder_options.use_la_gap_joiner)
+        joiners.push_back(std::make_shared<LAGapAnalyzer>(gp_.g, pset.scaffolder_options.min_overlap_length,
+                                                          pset.scaffolder_options.flank_multiplication_coefficient,
+                                                          pset.scaffolder_options.flank_addition_coefficient));
+
+
+    joiners.push_back(std::make_shared<HammingGapAnalyzer>(gp_.g,
+                                                           pset.scaffolder_options.min_gap_score,
+                                                           pset.scaffolder_options.short_overlap,
+                                                           (int) pset.scaffolder_options.basic_overlap_coeff
+                                                               * params_.dataset_info.RL()));
+
+    //todo introduce explicit must_overlap_coeff and rename max_can_overlap -> can_overlap_coeff
+    return std::make_shared<CompositeGapAnalyzer>(gp_.g,
+                                                  joiners,
+                                                  size_t(math::round(pset.scaffolder_options.max_can_overlap
+                                                                         * is_variation)), /* may overlap threshold */
+                                                  int(math::round(-pset.scaffolder_options.var_coeff * is_variation)), /* must overlap threshold */
+                                                  pset.scaffolder_options.artificial_gap);
+}
+bool CompositeConnectionPredicate::SearchTargetUsingExtenders(QueueContainer& paths_container,
+                                                              GraphCoverageMap& cover_map,
+                                                              vector<shared_ptr<SearchingMultiExtender>> extenders,
+                                                              const VertexId& target_vertex) const {
+    const size_t max_path_growing_iterations = 1000;
+    const size_t max_paths_to_process = 200;
+    const size_t max_edge_visits = 10;
+    size_t path_processing_iterations = 0;
+
+    std::unordered_map<EdgeId, size_t> edge_to_number_of_visits;
+
+    while (not paths_container.empty() and path_processing_iterations < max_paths_to_process) {
+        DEBUG("Path container size: " << paths_container.size());
+        DEBUG("Coverage map size: " << cover_map.size());
+        auto current_path = paths_container.front();
+        SubscribeCoverageMap(current_path, cover_map);
+        paths_container.pop();
+        EdgeId last_edge = current_path->Back();
+        edge_to_number_of_visits[last_edge]++;
+        size_t current_iterations = 0;
+        if (edge_to_number_of_visits[last_edge] > max_edge_visits) {
+            DEBUG("Edge was visited too often");
+            continue;
+        }
+        PathContainer *empty_storage = nullptr;
+        for (auto extender: extenders) {
+            while (extender->MakeGrowStep(*current_path, empty_storage)
+                and current_iterations < max_path_growing_iterations) {
+                DEBUG("Made grow step, iteration " << current_iterations);
+                ++current_iterations;
+            }
+            ++path_processing_iterations;
+            if (current_iterations >= max_path_growing_iterations) {
+                WARN("Stopped path growing because of too many steps");
+                continue;
+            }
+            const auto &reached_vertices = extender->GetReachedVertices();
+            if (reached_vertices.find(target_vertex) != reached_vertices.end()) {
+                DEBUG("Found target");
+                return true;
+            }
+        }
+    }
+    if (path_processing_iterations >= max_paths_to_process) {
+        DEBUG("Had to process too many paths, returning");
+        return true;
+    }
+    return false;
 }
 
 CompositeConnectionParams::CompositeConnectionParams(const size_t paired_lib_index_,

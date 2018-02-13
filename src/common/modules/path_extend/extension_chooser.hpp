@@ -2152,8 +2152,6 @@ class TenXExtensionChooser : public ReadCloudExtensionChooser {
     DECL_LOGGER("10XExtensionChooser")
 };
 
-
-//fixme replace predicate with other extension chooser
 class PredicateExtensionChooser: public ExtensionChooser {
     shared_ptr<ScaffoldVertexPredicate> predicate_;
     shared_ptr<ExtensionChooser> chooser_;
@@ -2161,7 +2159,7 @@ class PredicateExtensionChooser: public ExtensionChooser {
  public:
     PredicateExtensionChooser(const Graph& g,
                           shared_ptr<ScaffoldVertexPredicate> intermediate_predicate,
-                          const shared_ptr<ExtensionChooser> &pe_extension_chooser_) :
+                          shared_ptr<ExtensionChooser> pe_extension_chooser_) :
         ExtensionChooser(g),
         predicate_(intermediate_predicate),
         chooser_(pe_extension_chooser_) {}
@@ -2172,7 +2170,7 @@ class PredicateExtensionChooser: public ExtensionChooser {
 
         DEBUG(edges.size() << " input edges:");
         for (const auto& edge: edges) {
-            DEBUG(edge.e_.int_id());
+            TRACE(edge.e_.int_id());
         }
         EdgeContainer intermediate_edges;
         for (const auto& edge: edges) {
@@ -2182,7 +2180,7 @@ class PredicateExtensionChooser: public ExtensionChooser {
         }
         DEBUG(intermediate_edges.size() << " intermediate edges:");
         for (const auto& edge: intermediate_edges) {
-            DEBUG(edge.e_.int_id());
+            TRACE(edge.e_.int_id());
         }
         EdgeContainer result = chooser_->Filter(path, intermediate_edges);
         if (result.size() == 0) {
@@ -2194,7 +2192,7 @@ class PredicateExtensionChooser: public ExtensionChooser {
         }
         DEBUG(result.size() << "final edges");
         for (const auto& edge: result) {
-            DEBUG(edge.e_.int_id());
+            TRACE(edge.e_.int_id());
         }
         return result;
     }
