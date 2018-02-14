@@ -283,9 +283,9 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         elif opt == "--continue":
             options_storage.continue_mode = True
         elif opt == "--restart-from":
-            if arg not in ['ec', 'as', 'mc', 'scc', 'tpp'] and not arg.startswith('k'):
+            if arg not in ['ec', 'as', 'mc', 'scc', 'tpp', 'last'] and not arg.startswith('k'):
                 support.error("wrong value for --restart-from option: " + arg +
-                              " (should be 'ec', 'as', 'k<int>', or 'mc'", log)
+                              " (should be 'ec', 'as', 'k<int>', 'mc', or 'last'", log)
             options_storage.continue_mode = True
             options_storage.restart_from = arg
         elif opt == "--stop-after":
@@ -385,8 +385,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     elif options_storage.continue_mode:  # it is just --continue, NOT --restart-from
         if len(options) != 2:  # one for output_dir (required) and another one for --continue itself
            support.error("you cannot specify any option except -o with --continue option! "
-                         "Please use --restart-from option if you need to change some "
-                         "of the options from the initial run.", log)
+                         "Please use '--restart-from last' if you need to change some "
+                         "of the options from the initial run and continue from the last available checkpoint.", log)
     if options_storage.meta:
         if options_storage.careful or options_storage.mismatch_corrector or options_storage.cov_cutoff != "off":
             support.error("you cannot specify --careful, --mismatch-correction or --cov-cutoff in metagenomic mode!", log)
