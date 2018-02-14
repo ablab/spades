@@ -1441,12 +1441,10 @@ protected:
     //todo Slower version, discuss this
     vector<EdgeWithGap> GetCandidates(BidirectionalPath& path, std::shared_ptr<ExtensionChooser> ec,
                                       bool must_overlap = false) {
-        INFO("Start");
         vector<EdgeWithGap> result;
         if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back()))) {
             return result;
         }
-        INFO("sink");
 
         DEBUG("Simple grow step, growing path");
         path.PrintDEBUG();

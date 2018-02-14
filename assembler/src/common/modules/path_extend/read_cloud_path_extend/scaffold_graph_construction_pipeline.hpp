@@ -185,6 +185,7 @@ namespace path_extend {
                                                         bool path_merge_pipeline = false) const;
 
         ScaffoldGraph ConstructScaffoldGraphInGapMode(const ScaffolderParams& params,
+                                                      const ScaffoldingUniqueEdgeStorage &unique_storage,
                                                       const set<ScaffoldVertex>& scaffold_vertices,
                                                       const string &initial_graph_name,
                                                       bool launch_full_pipeline) const;
@@ -203,7 +204,8 @@ namespace path_extend {
                                                                                          bool launch_full_pipeline) const;
 
         vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructScaffoldStages(
-                ScaffolderParams params, const set<ScaffoldVertex> &scaffold_vertices, bool launch_full_pipeline) const;
+                ScaffolderParams params, const ScaffoldingUniqueEdgeStorage &unique_storage,
+                const set<ScaffoldVertex> &scaffold_vertices, bool launch_full_pipeline) const;
         };
 
 

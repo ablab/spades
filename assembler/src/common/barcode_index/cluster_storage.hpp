@@ -656,11 +656,11 @@ class PathInitialClusterStorageBuilder: public InitialClusterStorageBuilder {
       EdgePosEntry GetPosEntry(const EdgeId& edge, size_t left_pos, size_t right_pos) const {
           const auto& positions = edge_to_pos_.at(edge);
           EdgePosEntry entry(left_pos, right_pos);
-          return *(std::lower_bound(positions.begin(), positions.end(), entry,
-                                    [](const EdgePosEntry &first, const EdgePosEntry &second) {
-                                      return first.second < second.second;
-                                    })
-          );
+          auto it = std::lower_bound(positions.begin(), positions.end(), entry,
+                                     [](const EdgePosEntry &first, const EdgePosEntry &second) {
+                                       return first.second < second.second; });
+          VERIFY(it != positions.end());
+          return *it;
       }
 
       std::vector<EdgePosEntry> GetPositions(const EdgeId& edge) const {
@@ -708,7 +708,6 @@ class PathInitialClusterStorageBuilder: public InitialClusterStorageBuilder {
             //fixme move to configs: depends on mean fragment length
             const size_t PREFIX_LENGTH_THRESHOLD = 20000;
             auto barcode_to_clusters = std::move(ExtractBarcodeToClusters(path, PREFIX_LENGTH_THRESHOLD));
-            //fixme works twice longer
             auto barcode_to_clusters_conj = std::move(ExtractBarcodeToClusters(conj_path, PREFIX_LENGTH_THRESHOLD));
 
             auto edge_pos_index = ConstructEdgePosIndex(path, edge_length_threshold_);
@@ -862,8 +861,10 @@ class PathInitialClusterStorageBuilder: public InitialClusterStorageBuilder {
         size_t left_pos = 0;
         size_t right_pos = 0;
         size_t reads = 0;
+        auto mapping = first_cluster.GetMappings()[0];
         boost::optional<Cluster> result;
         path_extend::scaffold_graph::EdgeGetter edge_getter;
+        EdgeId prev_edge = edge_getter.GetEdgeFromScaffoldVertex(mapping.GetEdge());
         bool left_pos_set = false;
         TRACE("Barcode: " << barcode);
         TRACE(clusters.size() << " clusters");
@@ -899,6 +900,14 @@ class PathInitialClusterStorageBuilder: public InitialClusterStorageBuilder {
             TRACE("Left pos: " << left_pos);
             VERIFY(edge_right_pos >= current_mapping.GetRight());
             VERIFY(current_right_pos >= current_left_pos);
+
+            //if met the same edge in path twice
+            if (current_edge == prev_edge and current_right_pos <= right_pos and left_pos_set) {
+                auto next_edge_pos = edge_pos_index.GetPosEntry(current_edge, left_pos, edge_right_pos + 1);
+                current_right_pos = next_edge_pos.first + current_mapping.GetRight();
+                current_left_pos = next_edge_pos.first + current_mapping.GetLeft();
+            }
+
             VERIFY(current_left_pos >= right_pos);
             if (right_pos + distance_threshold > current_left_pos and current_right_pos <= prefix_length_threshold) {
                 right_pos = current_right_pos;
@@ -907,6 +916,7 @@ class PathInitialClusterStorageBuilder: public InitialClusterStorageBuilder {
                     left_pos_set = true;
                 }
                 reads += current_mapping.GetReads();
+                prev_edge = current_edge;
             } else {
                 break;
             }
