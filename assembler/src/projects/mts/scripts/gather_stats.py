@@ -27,6 +27,7 @@ parser.add_argument("name", type=str, help="Output base name")
 parser.add_argument("--gf", action="store_true", help="Genome fraction")
 parser.add_argument("--nga", action="store_true", help="NGA50 plots for references")
 parser.add_argument("--problematic", action="store_true", help="Problematic references report")
+parser.add_argument("--summary", action="store_true", help="Produce summary table")
 parser.add_argument("--plot", action="store_true", help="Draw plots for metrics")
 
 args = parser.parse_args()
@@ -39,6 +40,7 @@ def table_path(name, combined=False):
 
 gf_table = pandas.read_table(table_path("Genome_fraction_(%).tsv"), index_col=0, na_values="-")
 gf_table.index = gf_table.index.map(str)
+gf_table.index.name = "ref"
 gf_table.fillna(0, inplace=True)
 
 #Drop _broken scaffolds from MetaQUAST report
@@ -84,23 +86,24 @@ best_bin = gf_table.apply(lambda row: row.idxmax(), axis=1)
 with open(args.name + "_best.tsv", "w") as out_file:
     best_ref.to_csv(out_file, sep="\t")
 
-# Prepare the summary table
-res_dict = OrderedDict()
-for ref, bin in best_bin.iteritems():
-    if type(bin) is float:
-        row = ["unknown", "-", "-", "-", "-"]
-    else:
-        all_stats = pandas.read_table(os.path.join(args.dir, "runs_per_reference", ref, "report.tsv"), index_col=0)
-        col = all_stats.get(bin)
-        if col is None:
-            print("WRONG:", bin, ref)
-        purity = purity_table.get_value(ref, bin)
-        row = [bin, col["Genome fraction (%)"], purity, col["NGA50"], mis_table.loc[ref, bin]]
-    res_dict[ref] = row
-res_table = pandas.DataFrame.from_dict(res_dict, "index")
-res_table.columns = ["bin", "GF", "purity", "NGA50", "misassemblies"]
-res_table.index.name = "ref"
-res_table.to_csv(args.name + "_summary.tsv", index=True, sep="\t", float_format="%.2f")
+if args.summary:
+    # Prepare the summary table
+    res_dict = OrderedDict()
+    for ref, bin in best_bin.iteritems():
+        if type(bin) is float:
+            row = ["unknown", "-", "-", "-", "-"]
+        else:
+            all_stats = pandas.read_table(os.path.join(args.dir, "runs_per_reference", ref, "report.tsv"), index_col=0)
+            col = all_stats.get(bin)
+            if col is None:
+                print("WRONG:", bin, ref)
+            purity = purity_table.get_value(ref, bin)
+            row = [bin, col["Genome fraction (%)"], purity, col["NGA50"], mis_table.loc[ref, bin]]
+        res_dict[ref] = row
+    res_table = pandas.DataFrame.from_dict(res_dict, "index")
+    res_table.columns = ["bin", "GF", "purity", "NGA50", "misassemblies"]
+    res_table.index.name = "ref"
+    res_table.to_csv(args.name + "_summary.tsv", index=True, sep="\t", float_format="%.2f")
 
 if args.plot:
     try:

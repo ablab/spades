@@ -58,17 +58,19 @@ stats_targets = {"checkm": "{}_checkm.tsv",
                  "report": "{}_report.html"}
 
 if config["stats"].get("refs"):
-    #stats_targets["gf"]      = "{}_gf.tsv"
-    stats_targets["f1"]       = "{}_f1.txt"
-    stats_targets["summary"]  = "{}_summary.tsv"
-    stats_targets["nga"]      = "{}_nga.tsv"
-    stats_targets["lost"]     = "{}_lost.tsv"
+    ref_stats = {"f1": "txt", "summary": "tsv", "nga": "tsv", "lost": "tsv", "group": "tsv"}
+    for stat, ext in ref_stats.items():
+        stats_targets[stat] = "{{}}_{}.{}".format(stat, ext)
 
 def unsupported_target(stage, stat):
-    return stat == "lost" and stage != "binning"
+    if stat == "lost":
+        return stage != "binning"
+    elif stage == "reassembly":
+        return stat == "group"
+    else:
+        return stat == "nga" and len(GROUPS) > 1
 
 STAGES = ["binning", "propagation", "reassembly"]
-print(config["stats"])
 for stage in STAGES:
     if not config.get(stage, {}).get("enabled", True):
         continue
@@ -76,7 +78,12 @@ for stage in STAGES:
     if stage_stats == "all":
         stats = [target for target in stats_targets if not unsupported_target(stage, target)]
     else:
-        stats = stage_stats + config["stats"].get("all", [])
+        stats = [target for target in config["stats"].get("all", []) if not unsupported_target(stage, target)]
+        for stat in stage_stats:
+            if unsupported_target(stage, stat):
+                print(stat, "is not supported for", stage, "and disabled")
+            else:
+                stats.append(stat)
     if stage == LAST_STAGE:
         stats.extend(config["stats"].get("last", []))
     enabled_stats.extend(os.path.join("stats/summary", stats_targets[st].format(stage)) for st in stats)
@@ -162,12 +169,12 @@ rule ref_profiles:
 
 #---- Genome fraction etc. -----------------------------------------------------
 def quast_input(w):
-    frag = "full" if w.stage == "binning" else "bins"
+    frag = "full" if stage == "binning" else "bins"
     return expand("{stage}/{frag}/{bin}.fasta", stage=w.stage, frag=frag, bin=BINS)
 
 rule quast_all:
     input:   quast_input
-    output:  touch("stats/q_{stage}.done")
+    output:  touch("stats/q_{stage,\w+}.done")
     params:  out="stats/q_{stage}"
     threads: THREADS
     message: "Aligning all of {wildcards.stage} on all references"
@@ -177,9 +184,51 @@ rule quast_all:
 rule gather_stats:
     input:   "stats/q_{stage}.done"
     output:  "stats/summary/{stage}_summary.tsv", "stats/summary/{stage}_nga.tsv"
-    params:  "--gf", "--problematic", "--nga", "--plot", "stats/q_{stage}", "stats/summary/{stage}"
+    params:  "--gf", "--summary", "--problematic", "--nga", "--plot", "stats/q_{stage}", "stats/summary/{stage}"
     message: "Gathering {wildcards.stage} stats"
     shell:   "{SCRIPTS}/gather_stats.py {params}"
+
+#---- Per-assembly stats -------------------------------------------------------
+def group_input(w):
+    dirs = {"binning": "assembly/splits", "propagation": "propagation/edges"}
+    return expand("{dir}/{group}.fasta", dir=dirs[w.stage], group=w.group)
+
+rule bin_group:
+    input:   contigs=group_input, ann="{stage}/annotation/{group}.ann"
+    output:  touch("{stage}/{group,\w+\d+}/group.done")
+    params:  "{stage}/{group}"
+    message: "Distributing {wildcards.stage} contigs from {wildcards.group} between bins"
+    shell:   "{SCRIPTS}/split_bins.py {input.contigs} {input.ann} {params}"
+
+rule group_all:
+    input:   expand("{{stage}}/{group}/group.done", group=GROUPS)
+    output:  touch("{stage,\w+}/group.done")
+    message: "Redistributed all {wildcards.stage} contigs"
+
+rule grouped_quast:
+    input:   "{stage}/group.done"
+    output:  touch("stats/q_{stage,\w+}/q_{bin,\w+\d+}.done")
+    params:  input="{stage}/sample*/{bin}.fasta", output="stats/q_{stage}/q_{bin}"
+    threads: THREADS
+    message: "Aligning {wildcards.stage} grouped contigs from {wildcards.bin} on all references"
+    shell:   "{METAQUAST} {QUAST_PARAMS} {METAQUAST_PARAMS} -t {threads} -R {REFS_STR}"
+             " {params.input} -o {params.output} >/dev/null 2>&1"
+
+rule grouped_stat:
+    input:   expand("stats/q_{{stage}}/q_{bin}.done", bin=BINS)
+    output:  "stats/summary/{stage}_group.tsv"
+    params:  gf=lambda w: expand("'stats/q_{stage}/q_{bin}/summary/TSV/Genome_fraction_(%).tsv'", stage=w.stage, bin=BINS)
+    message: "Gathering grouped {wildcards.stage} stats"
+    run:
+        bins = set(BINS)
+        for bin in BINS:
+            dir = "stats/q_{}/q_{}".format(wildcards.stage, bin)
+            if not os.path.isdir(os.path.join(dir, "summary")):
+                bins.remove(bin)
+            else:
+                shell("{SCRIPTS}/gather_stats.py --gf {dir} {dir}/res")
+        all = expand("'stats/q_{stage}/q_{bin}/res_gf.tsv'", stage=wildcards.stage, bin=sorted(list(bins)))
+        shell("cat {all} >{output}")
 
 #---- Propagator statistics ----------------------------------------------------
 rule prop_annotation:
