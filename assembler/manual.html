@@ -559,6 +559,7 @@ If <code>--continue</code> is set, the only allowed option is <code>-o &lt;outpu
         <li><code>as</code> &ndash; restart assembly module from the first iteration</li>
         <li><code>k&lt;int></code> &ndash; restart from the iteration with specified k values, e.g. k55</li>
         <li><code>mc</code> &ndash; restart mismatch correction</li>
+        <li><code>last</code> &ndash; restart from the last available check-point (similar to <code>--continue</code>)</li>
     </ul>
 In contrast to the <code>--continue</code> option, you can change some of the options when using <code>--restart-from</code>. You can change any option except: all basic options, all options for specifying input data (including <code>--dataset</code>), <code>--only-error-correction</code> option and <code>--only-assembler</code> option. For example, if you ran assembler with k values 21,33,55 without mismatch correction, you can add one more iteration with k=77 and run mismatch correction step by running SPAdes with following options:<br>
      <code>--restart-from k55 -k 21,33,55,77 --mismatch-correction -o &lt;previous_output_dir></code>. 
