@@ -12,6 +12,8 @@ from pandas import DataFrame, Series
 import matplotlib
 # Force matplotlib to not use any Xwindows backend.
 matplotlib.use('Agg')
+matplotlib.rcParams["axes.labelsize"] = "small"
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -21,15 +23,23 @@ parser.add_argument("--assemblers", type=str, nargs="+", default=["main", "group
 parser.add_argument("--binners", type=str, nargs="+", default=["concoct"])
 parser.add_argument("--plot", action="store_true", help="Draw comparative plots")
 parser.add_argument("-r", "--rename", action="store_true")
-parser.add_argument("--strain", type=str, default=None)
-parser.add_argument("dir", type=str, help="Multirun output directory")
+parser.add_argument("--strain", type=str, default=None, help="Keep a single strain only")
+parser.add_argument("--dir", type=str, default=".", help="Multirun output directory")
 
 args = parser.parse_args()
+args.output = "summary"
+
+if not os.path.isdir(args.output):
+    os.mkdir(args.output)
+
+def fullname(name):
+    return os.path.join(args.output, name)
 
 series = list()
 if not args.runs:
     args.runs = ["{}_{}".format(assembler, binner) for assembler in args.assemblers for binner in args.binners]
-    #args.runs = [run for run in sorted(os.listdir(args.dir)) if run.count("_") == 1]
+    if not args.runs:
+        args.runs = [run for run in sorted(os.listdir(args.dir)) if run.count("_") == 1]
 
 def rename_ref(name):
     name = name.replace("-", "_")
@@ -77,30 +87,38 @@ big_table = pandas.concat(tables, axis=1, keys=table_names)
 big_table.index.names = ["ref", "metrics"]
 big_table = big_table.reindex(order, level=1)
 big_table.index.drop_duplicates()
-big_table.to_csv("summary/summary.tsv", sep="\t")
+big_table.to_csv(fullname("summary.tsv"), sep="\t")
 
 stat_labels = {"GF": "GF (%)", "purity": "purity (%)", "NGA50": "NGA50 (bp)", "misassemblies": "misasm"}
+stat_pos = {"GF": (0, 0), "purity": (0, 1), "NGA50": (1, 0), "misassemblies": (1, 1)}
+
+fig, combo = plt.subplots(2, 2, sharex=True)
 
 for table_name in stat_labels:
     table = big_table.xs(table_name, level=1)
     table = table.apply(pandas.to_numeric, errors="coerce")
 
-    #table.sort_values(by=table.columns[0], inplace=True)
+    i, j = stat_pos[table_name]
 
-    fig, ax = plt.subplots()
+    sfig, single = plt.subplots()
     # for conf, marker in zip(tables.keys(), ".ovx+*D"):
     #     table[conf].plot(kind="line", logy=True, rot=45, marker=marker, ax=ax)
     # ax.legend()
 
     logy = table_name == "NGA50"
 
-    table.plot(kind="bar", logy=logy, rot=90, ax=ax)
-    plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="upper left", mode="expand", ncol=len(args.runs))
-    #plt.ylabel(stat_labels[table_name])
-    plt.xlabel("")
+    for ax in combo[i, j], single:
+        table.plot(ax=ax, kind="bar", logy=logy, rot=90)
+        ax.legend_.remove()
+        ax.set(xlabel="")
 
-    fig.savefig("summary/" + table_name + ".png", bbox_inches="tight")
-    plt.gcf().clear()
+    #plt.ylabel(stat_labels[table_name])
+
+    sfig.savefig(fullname(table_name + ".png"), bbox_inches="tight")
+
+handles, labels = combo[0, 0].get_legend_handles_labels()
+fig.legend(handles, labels , loc="upper center", ncol=len(args.runs))
+fig.savefig(fullname("combo.png"), bbox_inches="tight", dpi=300)
 
 def color(v1, v2):
     return matplotlib.colors.hsv_to_rgb((v1 / 200. + 0.16, v2 / 100., 1))
@@ -136,4 +154,4 @@ def packed_heatmap(t1, t2, filename, best=None):
 
 gf_table = big_table.xs("GF", level=1).apply(pandas.to_numeric)
 purity_table = big_table.xs("purity", level=1).apply(pandas.to_numeric)
-packed_heatmap(gf_table, purity_table, "summary/GF_purity.png")
+packed_heatmap(gf_table, purity_table, fullname("GF_purity.png"))
