@@ -264,13 +264,22 @@ void BWAIndex::Init() {
         fprintf(stderr, "\t%d\n", aln.NM); // print edit distance
         free(aln.cigar);
 #endif
+inline bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
+//  k-rb > re - k
+    if (rb < k && 2 * k  > re + rb)
+        return true;
+//  re - edge_len > edge_len - rb
+    if (re > edge_len && re + rb > 2 * edge_len)
+        return true;
+    return false;
+}
 
 omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
     // Turn read length into k-mers
-    //size_t read_length = seq.length();
-    if (seq.length() <= g_.k()) {
+    size_t seq_len = seq.length();
+    if (seq_len <= g_.k()) {
         return res;
     }
 
@@ -281,14 +290,16 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
         if (a.secondary >= 0) continue; // skip secondary alignments
         if (size_t(a.qe - a.qb) <= g_.k()) continue; // skip short alignments
         if (size_t(a.re - a.rb) <= g_.k()) continue;
-
+//        if (MostlyInVertex(a.rb, a.re, g_.length(ids_[a.rid]), g_.k()))
+//            continue;
         int is_rev = 0;
         size_t pos = bns_depos(idx_->bns, a.rb < idx_->bns->l_pac? a.rb : a.re - 1, &is_rev) - idx_->bns->anns[a.rid].offset;
 
         // Reduce the range to kmer-based
         size_t initial_range_end = a.qe - g_.k();
         size_t mapping_range_end = pos + a.re - a.rb - g_.k();
-
+        if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
+            continue;
         if (!is_rev) {
             res.push_back(ids_[a.rid],
                           { { (size_t)a.qb, initial_range_end },
@@ -327,6 +338,8 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetShortMappingPath(con
         size_t initial_range_end = a.qb + 1;
         size_t mapping_range_end = pos + 1;
         if (mapping_range_end > g_.length(ids_[a.rid]))
+            continue;
+        if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
             continue;
         if (!is_rev) {
             res.push_back(ids_[a.rid],
