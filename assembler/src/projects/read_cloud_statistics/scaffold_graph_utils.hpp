@@ -152,6 +152,7 @@ namespace scaffold_graph_utils {
                                                      shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor,
                                                      const Graph& graph,
                                                      size_t count_threshold, double strictness) {
+            INFO("Strictness: " << strictness);
             auto predicate = make_shared<path_extend::EdgeSplitPredicate>(graph, long_edge_extractor, count_threshold, strictness);
             size_t max_threads = cfg::get().max_threads;
             path_extend::scaffold_graph::PredicateScaffoldGraphFilter constructor(graph, scaffold_graph,

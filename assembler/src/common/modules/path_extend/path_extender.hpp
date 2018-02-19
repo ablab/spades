@@ -1602,6 +1602,9 @@ class ScaffoldingSearchingMultiExtender: public SearchingMultiExtender, public S
             EdgeWithDistance ewd(e, distance);
             candidates.push_back(ewd);
         }
+        if (gap_candidates.size() > 0) {
+            DEBUG("Scaffold extender helped");
+        }
         return SearchingAddCandidates(path, candidates, path_container_, visited_vertices_, length_bound_);
     }
  private:

@@ -10,10 +10,19 @@ void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
     auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     ScaffoldGraphStorageConstructor storage_constructor(small_path_length_threshold_, large_path_length_threshold_, gp_);
     bool scaffolding_mode = true;
-    const ScaffoldGraphStorage storage = storage_constructor.ConstructStorageFromPaths(old_paths, scaffolding_mode);
-    ScaffoldGraphPolisher polisher(gp_);
-    bool path_polishing_mode = true;
-    auto path_scaffold_graph = polisher.GetScaffoldGraphFromStorage(storage, path_polishing_mode);
+
+    size_t num_threads = cfg::get().max_threads;
+    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+    CloudScaffoldGraphConstructor constructor(num_threads, gp_, extractor);
+    auto path_scaffold_graph = constructor.ConstructScaffoldGraphFromPathContainer(old_paths, small_path_length_threshold_, true);
+//    ScaffoldGraphStorage storage(constructor.ConstructScaffoldGraphFromPathContainer(paths, large_length_threshold_,
+//                                                                                     scaffolding_mode),
+//
+//    const ScaffoldGraphStorage storage = storage_constructor.ConstructStorageFromPaths(old_paths, scaffolding_mode);
+//    ScaffoldGraphPolisher polisher(gp_);
+//    bool path_polishing_mode = true;
+//    auto path_scaffold_graph = polisher.GetScaffoldGraphFromStorage(storage, path_polishing_mode);
+
     INFO(path_scaffold_graph.VertexCount() << " vertices and " << path_scaffold_graph.EdgeCount()
                                            << " edges in path scaffold graph");
 
@@ -33,8 +42,9 @@ void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
         INFO("False univocal edges: " << stats.false_univocal_edges_);
     }
 
-    ScaffoldGraphExtractor extractor;
-    auto univocal_edges = extractor.ExtractUnivocalEdges(path_scaffold_graph);
+    ScaffoldGraphExtractor graph_extractor;
+    auto univocal_edges = graph_extractor.ExtractUnivocalEdges(path_scaffold_graph);
+//    auto univocal_edges = graph_extractor.ExtractMaxScoreEdges(path_scaffold_graph);
     INFO("Found " << univocal_edges.size() << " univocal edges");
     MergeUnivocalEdges(univocal_edges);
 }
@@ -84,6 +94,8 @@ void PathScaffolder::MergeUnivocalEdges(const vector<PathScaffolder::ScaffoldEdg
     for (const auto &edge: scaffold_edges) {
         ScaffoldVertex start = edge.getStart();
         ScaffoldVertex end = edge.getEnd();
+        INFO(start.int_id() << " -> " << end.int_id());
+        INFO("Weight: " << edge.getWeight());
         VERIFY(merge_connections.find(start) == merge_connections.end());
         merge_connections.insert({start, end});
     }

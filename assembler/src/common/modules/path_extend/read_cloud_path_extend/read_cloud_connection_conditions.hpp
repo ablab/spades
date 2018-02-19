@@ -114,7 +114,8 @@ namespace path_extend {
         shared_ptr<path_extend::ExtensionChooser> ConstructScaffoldingExtensionChooser() const;
 
         shared_ptr<ScaffoldVertexPredicate> ConstructScaffoldVertexPredicate(
-            const ScaffoldVertex& start, const ScaffoldVertex& end) const;
+            const ScaffoldVertex& start, const ScaffoldVertex& end,
+            shared_ptr<path_extend::PairEntryProcessor> entry_processor) const;
 
         shared_ptr<path_extend::SearchingMultiExtender> ConstructBasicSearchingExtender(
             path_extend::QueueContainer& paths_container,

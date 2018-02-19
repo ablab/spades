@@ -45,7 +45,7 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, max_relative_coverage);
     ScaffoldingUniqueEdgeStorage unique_storage;
     unique_edge_analyzer.FillUniqueEdgeStorage(unique_storage);
-    const size_t min_pipeline_length = 15000;
+    const size_t min_pipeline_length = cfg::get().ts_res.scaff_con.full_pipeline_length;
     bool launch_full_pipeline = min_length >= min_pipeline_length;
     std::set<ScaffoldVertex> scaffold_vertices;
     for (const auto& edge: unique_storage.unique_edges()) {
@@ -89,7 +89,7 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     params.count_threshold_ = cfg::get().ts_res.scaff_con.path_scaffolder_count_threshold;
     //fixme move to configs!
     params.initial_distance_ = 15000;
-    const size_t full_pipeline_length = 2 * cfg::get().ts_res.long_edge_length_lower_bound;
+    const size_t full_pipeline_length = cfg::get().ts_res.scaff_con.full_pipeline_length;
     const bool launch_full_pipeline = min_length >= full_pipeline_length;
     const bool path_merge_pipeline = true;
     const string initial_graph_name = "path_" + std::to_string(min_length);
@@ -141,7 +141,7 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphCo
         iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g,
                                                                                         split_scaffold_index_extractor,
                                                                                         max_threads_));
-        iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
+//        iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
     }
     return iterative_constructor_callers;
 }
@@ -202,12 +202,6 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphCo
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
 
     bool scaffolding_mode = true;
-    iterative_constructor_callers.push_back(make_shared<CompositeConnectionConstructorCaller>(gp_,
-                                                                                              barcode_extractor_,
-                                                                                              scaffold_index_extractor,
-                                                                                              unique_storage,
-                                                                                              max_threads_,
-                                                                                              scaffolding_mode));
     if (launch_full_pipeline) {
         const double EDGE_LENGTH_FRACTION = 0.5;
         auto fraction_tail_threshold_getter = std::make_shared<barcode_index::FractionTailThresholdGetter>(gp_.g, EDGE_LENGTH_FRACTION);
@@ -222,6 +216,12 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> CloudScaffoldGraphCo
                                                                                         max_threads_));
         iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
     }
+    iterative_constructor_callers.push_back(make_shared<CompositeConnectionConstructorCaller>(gp_,
+                                                                                              barcode_extractor_,
+                                                                                              scaffold_index_extractor,
+                                                                                              unique_storage,
+                                                                                              max_threads_,
+                                                                                              scaffolding_mode));
     return iterative_constructor_callers;
 }
 //CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::ConstructScaffoldGraphFromStorageAndGraph(
@@ -284,16 +284,20 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParamsFromCfg(s
     size_t count_threshold = cfg::get().ts_res.scaff_con.count_threshold;
 
     size_t upper_bound = cfg::get().ts_res.long_edge_length_upper_bound;
+
+    //fixme change to linear
     const double LENGTH_NORMALIZER_EXPONENT = 0.66;
     double length_normalizer = std::pow(static_cast<double>(upper_bound) / static_cast<double>(min_length),
                                         LENGTH_NORMALIZER_EXPONENT);
     double vertex_multiplier = cfg::get().ts_res.scaff_con.vertex_multiplier * length_normalizer;
+
     double connection_score_threshold = cfg::get().ts_res.scaff_con.connection_score_threshold;
     double relative_coverage_threshold = cfg::get().ts_res.scaff_con.relative_coverage_threshold;
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
     size_t connection_count_threshold = cfg::get().ts_res.scaff_con.connection_count_threshold;
     size_t initial_distance = cfg::get().ts_res.scaff_con.initial_distance;
     double split_procedure_strictness = cfg::get().ts_res.scaff_con.split_procedure_strictness;
+
     size_t transitive_distance_threshold = cfg::get().ts_res.scaff_con.transitive_distance_threshold;
     ScaffolderParams result(length_threshold, tail_threshold, count_threshold, vertex_multiplier,
                             connection_score_threshold, relative_coverage_threshold,
