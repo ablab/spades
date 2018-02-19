@@ -1,7 +1,7 @@
 #include <stack>
-#include "read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_gap_closer.hpp"
+#include "read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 #include "read_cloud_path_extend/scaffold_graph_dijkstra.hpp"
-#include "scaffold_graph_gap_closer.hpp"
+#include "scaffold_graph_polisher.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/path_extend_dijkstras.hpp"
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
 

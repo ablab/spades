@@ -12,7 +12,7 @@
 #include "contig_path_analyzer.hpp"
 #include "contracted_graph_stats/contracted_graph_local_statistics.hpp"
 #include "scaffolder_statistics/scaffolder_stats.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline/scaffold_graph_construction_pipeline.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 #include "scaffolder_statistics/gap_closer_stats.hpp"
 #include "scaffolder_statistics/gap_closer_analyzer.hpp"
@@ -240,54 +240,51 @@ namespace read_cloud_statistics {
                                                                                            vertex_multiplier);
             INFO(score_scaffold_graph.VertexCount() << " vertices and " << score_scaffold_graph.EdgeCount() << " edges in score scaffold graph");
 
-            INFO("Constructing barcode connection scaffold graph");
-
-            auto barcode_connection_scaffold_graph =
-                scaffold_helper.ConstructLongGapScaffoldGraph(score_scaffold_graph, unique_storage,
-                                                              short_edge_extractor, long_edge_extractor,
-                                                              gp_.g, long_gap_params);
-            INFO(barcode_connection_scaffold_graph.VertexCount() << " vertices and "
-                                                         << barcode_connection_scaffold_graph.EdgeCount()
-                                                         << " edges in connection scaffold graph");
-
-            INFO("Constructing paired end connection scaffold graph");
-
-            auto composite_connection_scaffold_graph =
-                scaffold_helper.ConstructCompositeConnectionScaffoldGraph(score_scaffold_graph,
-                                                                          barcode_extractor_ptr_,
-                                                                          long_edge_extractor,
-                                                                          params, gp_);
-
-            INFO(composite_connection_scaffold_graph.VertexCount() << " vertices and "
-                                                                   << composite_connection_scaffold_graph.EdgeCount()
-                                                                   << " edges in paired end scaffold graph");
-
-
-
-            const double EDGE_LENGTH_FRACTION = 0.5;
-            auto fraction_tail_threshold_getter = std::make_shared<barcode_index::FractionTailThresholdGetter>(gp_.g, EDGE_LENGTH_FRACTION);
-            auto split_scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
-                                                                                   fraction_tail_threshold_getter,
-                                                                                   params.count_threshold_,
-                                                                                   edge_length_threshold,
-                                                                                   cfg::get().max_threads,
-                                                                                   unique_storage.unique_edges());
-            auto split_scaffold_index_extractor =
-                std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(split_scaffold_vertex_index);
-            auto ordering_scaffold_graph = scaffold_helper.ConstructOrderingScaffoldGraph(composite_connection_scaffold_graph,
-                                                                                          split_scaffold_index_extractor,
-                                                                                          gp_.g,
-                                                                                          long_gap_params.count_threshold_,
-                                                                                          params.split_procedure_strictness_);
-            auto transitive_scaffold_graph = scaffold_helper.ConstructNonTransitiveGraph(ordering_scaffold_graph, gp_.g);
+//            INFO("Constructing barcode connection scaffold graph");
+//
+//            auto barcode_connection_scaffold_graph =
+//                scaffold_helper.ConstructLongGapScaffoldGraph(score_scaffold_graph, unique_storage,
+//                                                              short_edge_extractor, long_edge_extractor,
+//                                                              gp_.g, long_gap_params);
+//            INFO(barcode_connection_scaffold_graph.VertexCount() << " vertices and "
+//                                                         << barcode_connection_scaffold_graph.EdgeCount()
+//                                                         << " edges in connection scaffold graph");
+//
+//            INFO("Constructing paired end connection scaffold graph");
+//
+//            auto composite_connection_scaffold_graph =
+//                scaffold_helper.ConstructCompositeConnectionScaffoldGraph(barcode_connection_scaffold_graph,
+//                                                                          barcode_extractor_ptr_,
+//                                                                          long_edge_extractor,
+//                                                                          params, gp_);
+//
+//            INFO(composite_connection_scaffold_graph.VertexCount() << " vertices and "
+//                                                                   << composite_connection_scaffold_graph.EdgeCount()
+//                                                                   << " edges in paired end scaffold graph");
+//            const double EDGE_LENGTH_FRACTION = 0.5;
+//            auto fraction_tail_threshold_getter = std::make_shared<barcode_index::FractionTailThresholdGetter>(gp_.g, EDGE_LENGTH_FRACTION);
+//            auto split_scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
+//                                                                                   fraction_tail_threshold_getter,
+//                                                                                   params.count_threshold_,
+//                                                                                   edge_length_threshold,
+//                                                                                   cfg::get().max_threads,
+//                                                                                   unique_storage.unique_edges());
+//            auto split_scaffold_index_extractor =
+//                std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(split_scaffold_vertex_index);
+//            auto ordering_scaffold_graph = scaffold_helper.ConstructOrderingScaffoldGraph(composite_connection_scaffold_graph,
+//                                                                                          split_scaffold_index_extractor,
+//                                                                                          gp_.g,
+//                                                                                          long_gap_params.count_threshold_,
+//                                                                                          params.split_procedure_strictness_);
+//            auto transitive_scaffold_graph = scaffold_helper.ConstructNonTransitiveGraph(ordering_scaffold_graph, gp_.g);
 
 
             storage.insert(initial_name, scaffold_graph);
             storage.insert(score_name, score_scaffold_graph);
-            storage.insert(barcode_connection_name, barcode_connection_scaffold_graph);
-            storage.insert(composite_connection_name, composite_connection_scaffold_graph);
-            storage.insert(ordering_name, ordering_scaffold_graph);
-            storage.insert(transitive_name, transitive_scaffold_graph);
+//            storage.insert(barcode_connection_name, barcode_connection_scaffold_graph);
+//            storage.insert(composite_connection_name, composite_connection_scaffold_graph);
+//            storage.insert(ordering_name, ordering_scaffold_graph);
+//            storage.insert(transitive_name, transitive_scaffold_graph);
             return storage;
         }
 
@@ -323,26 +320,27 @@ namespace read_cloud_statistics {
             auto scaffold_graph_storage = BuildScaffoldGraphStorage(gp_,large_unique_storage, params, initial_name,
                                                                     score_name, composite_connection_name, barcode_connection_name, ordering_name,
                                                                     transitive_name);
+            INFO(scaffold_graph_storage.at(score_name).graph.EdgeCount() << " edges in score scaffold graph");
 
             auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(params.tail_threshold_);
             auto long_edge_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
                                                                        tail_threshold_getter,
                                                                        params.count_threshold_, 500,
-                                                                       cfg::get().max_threads, unique_storage_.unique_edges());
+                                                                       cfg::get().max_threads, large_unique_storage.unique_edges());
             auto long_edge_extractor = make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(long_edge_index);
-            INFO(scaffold_graph_storage.at(score_name).graph.EdgeCount() << " edges in score scaffold graph");
+            path_extend::scaffold_graph::ScaffoldGraph empty_graph(gp_.g);
             scaffolder_statistics::ScaffolderStageAnalyzer stats_extractor(gp_.g, large_unique_storage, params,
                                                                            reference_paths, barcode_extractor_ptr_,
                                                                            long_edge_extractor,
-                                                                           scaffold_graph_storage.at(score_name).graph,
-                                                                           scaffold_graph_storage.at(initial_name).graph);
-            //stats_extractor.FillStatistics();
-            //stats_extractor.SerializeStatistics(stats_base_path);
+                                                                           scaffold_graph_storage.at(initial_name).graph,
+                                                                           scaffold_graph_storage.at(score_name).graph);
+            stats_extractor.FillStatistics();
+            stats_extractor.SerializeStatistics(stats_base_path);
 
-            scaffold_graph_utils::ScaffolderAnalyzer scaffolder_analyzer(filtered_reference_paths, scaffold_graph_storage, gp_.g);
-            scaffolder_analyzer.FillStatistics();
-            INFO("Printing stats")
-            scaffolder_analyzer.SerializeStatistics(stats_base_path);
+//            scaffold_graph_utils::ScaffolderAnalyzer scaffolder_analyzer(filtered_reference_paths, scaffold_graph_storage, gp_.g);
+//            scaffolder_analyzer.FillStatistics();
+//            INFO("Printing stats")
+//            scaffolder_analyzer.SerializeStatistics(stats_base_path);
 
             //scaffold graph printing
 //            INFO("Getting graph");

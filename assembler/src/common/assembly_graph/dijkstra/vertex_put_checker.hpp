@@ -80,6 +80,21 @@ public:
 };
 
 template<class Graph, typename distance_t = size_t>
+class LengthPutChecker : public VertexPutChecker<Graph, distance_t> {
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+
+    const Graph& g_;
+    const distance_t length_threshold_;
+ public:
+    LengthPutChecker(const Graph& g, distance_t length_threshold) : VertexPutChecker<Graph, distance_t>(),
+                                        g_(g), length_threshold_(length_threshold) { }
+    bool Check(VertexId, EdgeId edge, distance_t ) const {
+        return g_.length(edge) < length_threshold_;
+    }
+};
+
+template<class Graph, typename distance_t = size_t>
 class CompositePutChecker : public VertexPutChecker<Graph, distance_t> {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;

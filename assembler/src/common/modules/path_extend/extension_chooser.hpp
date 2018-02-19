@@ -1559,47 +1559,27 @@ private:
     DECL_LOGGER("CoordCoverageExtensionChooser");
 };
 
-class UniqueEdgesGetter {
- protected:
-    const ScaffoldingUniqueEdgeStorage& unique_storage_;
+class EdgesGetter {
  public:
-    UniqueEdgesGetter(const ScaffoldingUniqueEdgeStorage &unique_storage_) : unique_storage_(unique_storage_) {}
-    virtual ~UniqueEdgesGetter() {
-
-    }
+    virtual ~EdgesGetter() {}
 
     virtual vector<EdgeId> GetUniqueEdges(const BidirectionalPath& path) const = 0;
 };
 
-class SimpleUniqueEdgesGetter final : public UniqueEdgesGetter {
-    using UniqueEdgesGetter::unique_storage_;
- public:
-    SimpleUniqueEdgesGetter(const ScaffoldingUniqueEdgeStorage &unique_storage_) : UniqueEdgesGetter(unique_storage_) {}
 
-    virtual vector<EdgeId> GetUniqueEdges(const BidirectionalPath& path) const override {
-        vector<EdgeId> result;
-        for (int i =  (int)path.Size() - 1; i >= 0; --i) {
-            if (unique_storage_.IsUnique(path.At(i))) {
-                result.push_back(path.At(i));
-                return result;
-            }
-        }
-        return result;
-    }
-};
-
-class DistanceBasedUniqueEdgesGetter: public UniqueEdgesGetter {
-    using UniqueEdgesGetter::unique_storage_;
+class LengthBasedUniqueEdgesGetter: public EdgesGetter {
+    const Graph& g_;
     const size_t distance_;
+    const size_t length_threshold_;
  public:
-    DistanceBasedUniqueEdgesGetter(const ScaffoldingUniqueEdgeStorage &unique_storage_, size_t distance_)
-        : UniqueEdgesGetter(unique_storage_), distance_(distance_) {}
+    LengthBasedUniqueEdgesGetter(const Graph &g, size_t distance, size_t length_threshold)
+        : g_(g), distance_(distance), length_threshold_(length_threshold) {}
 
     virtual vector<EdgeId> GetUniqueEdges(const BidirectionalPath& path) const override {
         DEBUG("Getting unique edges");
         vector<EdgeId> result;
         for (int i =  (int)path.Size() - 1; i >= 0; --i) {
-            if (unique_storage_.IsUnique(path.At(i))) {
+            if (g_.length(path.At(i)) >= length_threshold_) {
                 result.push_back(path.At(i));
             }
             if (path.LengthAt(i) > distance_) {
@@ -1612,543 +1592,110 @@ class DistanceBasedUniqueEdgesGetter: public UniqueEdgesGetter {
     }
 };
 
-class ReadCloudExtensionChooser : public ExtensionChooser {
-protected:
-    typedef shared_ptr<barcode_index::AbstractBarcodeIndexInfoExtractor> barcode_extractor_ptr_t;
-    barcode_extractor_ptr_t barcode_extractor_ptr_;
-    const ScaffoldingUniqueEdgeStorage& unique_storage_;
-    shared_ptr <UniqueEdgesGetter> unique_edges_getter_;
-
-public:
-    ReadCloudExtensionChooser(const conj_graph_pack &gp,
-                              barcode_extractor_ptr_t extractor,
-                              const ScaffoldingUniqueEdgeStorage &unique_storage,
-                              shared_ptr<UniqueEdgesGetter> unique_edges_getter_ptr) :
-            ExtensionChooser(gp.g),
-            barcode_extractor_ptr_(extractor),
-            unique_storage_(unique_storage),
-            unique_edges_getter_(unique_edges_getter_ptr) {}
-
-    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer& candidates) const override {
-        EdgeContainer result;
-        DEBUG("Starting unique edges getter");
-        vector<EdgeId> last_unique_edges = unique_edges_getter_->GetUniqueEdges(path);
-        DEBUG("Searching for next unique edge.")
-        result = FindNextUniqueEdge(candidates, last_unique_edges);
-        DEBUG("Searching finished.")
-
-        DEBUG("next unique edges found, there are " << result.size() << " of them");
-        return result;
-    }
-
-    EdgeContainer FindNextUniqueEdge(const EdgeContainer& initial_candidates, const vector<EdgeId>& last_unique_edges) const {
-
-        DEBUG("Searching for best")
-        EdgeContainer best_candidates = GetBestCandidates(initial_candidates, last_unique_edges);
-        DEBUG("Finished searching")
-        DEBUG("Best candidates: " << best_candidates.size());
-        for (const auto& candidate: best_candidates) {
-            DEBUG(candidate.e_.int_id());
-            DEBUG("Conj: " << g_.conjugate(candidate.e_).int_id());
-        }
-        if (best_candidates.size() == 1) {
-            DEBUG("Edge: " << best_candidates[0].e_);
-            DEBUG("Distance: " << best_candidates[0].d_);
-        }
-        return best_candidates;
-    }
-
-protected:
-    virtual EdgeContainer GetBestCandidates(const EdgeContainer& edges, const vector<EdgeId>& last_unique_edges) const = 0;
-
-private:
-    DECL_LOGGER("ReadCloudExtensionChooser")
-};
-
-class TSLRExtensionChooser : public ReadCloudExtensionChooser {
-    using ReadCloudExtensionChooser::barcode_extractor_ptr_t;
-    using ReadCloudExtensionChooser::barcode_extractor_ptr_;
-    using ReadCloudExtensionChooser::unique_storage_;
-    double absolute_barcode_threshold_;
-    size_t fragment_len_;
-
-public:
-    TSLRExtensionChooser(const conj_graph_pack& gp,
-                         barcode_extractor_ptr_t extractor,
-                         const ScaffoldingUniqueEdgeStorage& unique_storage,
-                         shared_ptr<UniqueEdgesGetter> unique_edges_getter,
-                         double absolute_barcode_threshold,
-                         size_t fragment_len) :
-            ReadCloudExtensionChooser(gp, extractor, unique_storage, unique_edges_getter),
-            absolute_barcode_threshold_(absolute_barcode_threshold),
-            fragment_len_(fragment_len) {}
-
-private:
-    double GetGapCoefficient(int gap) const {
-        VERIFY(gap <= (int)fragment_len_)
-        return static_cast<double>(fragment_len_ - gap) /
-               static_cast<double>(fragment_len_);
-    }
-
-    EdgeContainer GetBestCandidates(const EdgeContainer& initial_candidates, const vector<EdgeId>& last_unique_edges) const {
-        EdgeContainer best_candidates;
-        if (last_unique_edges.size() == 0) {
-            return best_candidates;
-        }
-        EdgeId decisive_edge = last_unique_edges.back();
-        //Find edges with barcode score greater than some threshold
-        std::copy_if(initial_candidates.begin(), initial_candidates.end(), std::back_inserter(best_candidates),
-                     [this, &decisive_edge](const EdgeWithDistance& edge) {
-                         return edge.e_ != decisive_edge and
-                                this->barcode_extractor_ptr_->GetIntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
-                                absolute_barcode_threshold_ * GetGapCoefficient(edge.d_);
-                     });
-        return best_candidates;
-    }
-    DECL_LOGGER("TSLRExtensionChooser")
-};
-
-
-class InternalTenXFilter {
+class BarcodeEntryCollector {
  public:
-    typedef ExtensionChooser::EdgeContainer EdgeContainer;
- protected:
-    typedef barcode_index::FrameBarcodeIndexInfoExtractor frame_extractor_t;
-    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver::tenx_resolver tenx_configs_t;
+    virtual ~BarcodeEntryCollector() {}
+    virtual barcode_index::SimpleVertexEntry CollectEntry(const BidirectionalPath &path) const = 0;
+};
+
+class SimpleBarcodeEntryCollector: public BarcodeEntryCollector {
     const Graph& g_;
-    shared_ptr<frame_extractor_t> barcode_extractor_ptr_;
-    tenx_configs_t tenx_configs_;
- public:
-    InternalTenXFilter(const Graph &g,
-                       const shared_ptr<frame_extractor_t> barcode_extractor_ptr,
-                       const tenx_configs_t &tenx_configs) :
-        g_(g), barcode_extractor_ptr_(barcode_extractor_ptr), tenx_configs_(tenx_configs) {}
-    virtual EdgeContainer FilterCandidates(const EdgeContainer &initial_candidates, const vector<EdgeId> &unique_edges) const = 0;
-};
-
-class InitialTenXFilter: public InternalTenXFilter {
-    using InternalTenXFilter::g_;
-    using InternalTenXFilter::barcode_extractor_ptr_;
-    using InternalTenXFilter::tenx_configs_;
-    using InternalTenXFilter::EdgeContainer;
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index_;
+    size_t edge_length_threshold_;
+    size_t distance_;
 
  public:
-    InitialTenXFilter(const Graph& g,
-                      const shared_ptr<frame_extractor_t> &barcode_extractor_ptr,
-                      const tenx_configs_t &tenx_configs) : InternalTenXFilter(g,
-                                                                               barcode_extractor_ptr,
-                                                                               tenx_configs) {}
-    virtual EdgeContainer FilterCandidates(const EdgeContainer &candidates, const vector<EdgeId> &last_unique_edges) const override {
-        DEBUG("Last unique edges: " << last_unique_edges.size());
-        DEBUG("Input candidates: " << candidates.size());
+    SimpleBarcodeEntryCollector(const Graph &g_,
+                                shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index_,
+                                size_t edge_length_threshold_,
+                                size_t distance_)
+        : g_(g_),
+          barcode_index_(barcode_index_),
+          edge_length_threshold_(edge_length_threshold_),
+          distance_(distance_) {}
 
-        if (candidates.size() == 0) {
-            DEBUG("10XStats: No input candidates");
-            return candidates;
-        } else if (candidates.size() == 1) {
-            DEBUG("10XStats: Single input candidate");
-            return candidates;
+    barcode_index::SimpleVertexEntry CollectEntry(const BidirectionalPath &path) const override {
+        LengthBasedUniqueEdgesGetter edges_getter(g_, distance_, edge_length_threshold_);
+        auto edges = edges_getter.GetUniqueEdges(path);
+        barcode_index::SimpleVertexEntry result;
+        for (const auto& edge: edges) {
+            auto barcode_it_begin = barcode_index_->barcode_iterator_begin(edge);
+            auto barcode_it_end = barcode_index_->barcode_iterator_end(edge);
+            for (auto it = barcode_it_begin; it != barcode_it_end; ++it) {
+                result.insert((*it).first);
+            }
         }
-        const size_t input_edges_threshold = 2000;
-        if (candidates.size() > input_edges_threshold) {
-            DEBUG("10XStats: Too many input candidates");
-            return candidates;
-        }
-        size_t barcodes = 0;
-        for (const auto& edge: last_unique_edges) {
-            barcodes += barcode_extractor_ptr_->GetNumberOfBarcodes(edge);
-        }
-        if (barcodes == 0) {
-            DEBUG("10XStats: No barcodes on last edges");
-            return candidates;
-        }
-        const size_t candidate_segment_len = cfg::get().ts_res.edge_length_threshold;
-        //Find edges with barcode score greater than some threshold
-        EdgeContainer initial_candidates = InitialSharedBarcodesFilter(candidates, last_unique_edges,
-                                                                       tenx_configs_.absolute_barcode_threshold,
-                                                                       tenx_configs_.initial_coverage_threshold,
-                                                                       tenx_configs_.tail_threshold,
-                                                                       candidate_segment_len);
-        DEBUG(initial_candidates.size() << " initial candidates: ");
-        for(const auto& candidate: initial_candidates) {
-            TRACE(candidate.e_.int_id());
-        }
-        if (initial_candidates.size() == 0 ) {
-            DEBUG("10XStats: No candidates after initial");
-        }
-        if (initial_candidates.size() == 1) {
-            DEBUG("10XStats: Initial filter helped");
-        }
-        if (initial_candidates.size() > tenx_configs_.max_initial_candidates) {
-            DEBUG("10XStats: Too many initial candidates");
-        }
-        return initial_candidates;
-    }
-
-    EdgeContainer InitialSharedBarcodesFilter(const EdgeContainer &candidates, const vector<EdgeId>& edges,
-                                              size_t score_threshold, size_t coverage_threshold,
-                                              size_t path_segment_len, size_t candidate_segment_len) const {
-        EdgeContainer result;
-        auto barcodes_from_path = ExtractBarcodesFromMultipleEdges(edges, coverage_threshold, path_segment_len);
-        double max_score = 0;
-        DEBUG("Path end Id: " << edges.back().int_id());
-        //fixme optimize with iteration
-        std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(result),
-                     [this, &barcodes_from_path, score_threshold,
-                         coverage_threshold, path_segment_len, &max_score, candidate_segment_len](const EdgeWithDistance& edge) {
-                       double coverage_second = g_.coverage(edge.e_);
-                       vector<barcode_index::BarcodeId> shared_barcodes;
-                       std::set<barcode_index::BarcodeId> barcodes_from_candidate =
-                           ExtractBarcodesFromCandidate(edge.e_, coverage_threshold, candidate_segment_len);
-                       std::set_intersection(barcodes_from_candidate.begin(), barcodes_from_candidate.end(),
-                                             barcodes_from_path.begin(), barcodes_from_path.end(),
-                                             std::back_inserter(shared_barcodes));
-                       double score = static_cast<double> (shared_barcodes.size()) / coverage_second;
-
-                       TRACE("Candidate Id: " << edge.e_.int_id());
-                       TRACE("Suffix barcodes: " << barcodes_from_path.size());
-                       TRACE("Candidate barcodes: " << barcodes_from_candidate.size());
-                       TRACE("Shared barcodes: " << shared_barcodes.size());
-                       TRACE("Coverage of the candidate: " << coverage_second);
-                       TRACE("Length of the candidate: " << g_.length(edge.e_));
-                       TRACE("Score: " << score);
-                       if (score > max_score) {
-                           max_score = score;
-                       }
-
-                       return math::ge(score, static_cast<double>(score_threshold));
-                     });
-        TRACE("Max score: " << max_score);
         return result;
     }
+};
 
-    std::set<barcode_index::BarcodeId> ExtractBarcodesFromMultipleEdges(const vector<EdgeId>& edges,
-                                                                        size_t coverage_threshold,
-                                                                        size_t tail_threshold) const {
-        size_t suffix_length = 0;
-        std::set<barcode_index::BarcodeId> barcodes;
-        for (auto it = edges.rbegin(); it != edges.rend(); ++it) {
-            EdgeId edge = *it;
-            suffix_length += g_.length(*it);
-            for (const auto& barcode: barcode_extractor_ptr_->GetBarcodes(edge)) {
-                bool enough_coverage = barcode_extractor_ptr_->GetNumberOfReads(edge, barcode) >= coverage_threshold;
-                bool close_barcode = suffix_length <= tail_threshold or barcode_extractor_ptr_ ->
-                    GetMaxPos(edge, barcode) + tail_threshold > suffix_length;
-                if (enough_coverage and close_barcode) {
-                    barcodes.insert(barcode);
+class ReadCloudExtensionChooser: public ExtensionChooser {
+    shared_ptr<BarcodeEntryCollector> entry_collector_;
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index_;
+    const double score_threshold_;
+ public:
+    ReadCloudExtensionChooser(const Graph &g,
+                              shared_ptr<WeightCounter> wc,
+                              double weight_threshold,
+                              shared_ptr<BarcodeEntryCollector> entry_collector_,
+                              shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index_,
+                              const double score_threshold_) : ExtensionChooser(g, wc, weight_threshold),
+                                                               entry_collector_(entry_collector_),
+                                                               barcode_index_(barcode_index_),
+                                                               score_threshold_(score_threshold_) {}
+
+    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
+        auto path_barcodes = entry_collector_->CollectEntry(path);
+        std::unordered_set<barcode_index::BarcodeId> candidate_barcodes;
+        std::unordered_set<barcode_index::BarcodeId> repetitive_candidate_barcodes;
+        for (const auto& candidate: edges) {
+            EdgeId edge = candidate.e_;
+            auto barcode_begin = barcode_index_->barcode_iterator_begin(edge);
+            auto barcode_end = barcode_index_->barcode_iterator_end(edge);
+            for (auto it = barcode_begin; it != barcode_end; ++it) {
+                bool is_inserted = (candidate_barcodes.insert(it->first)).second;
+                if (not is_inserted) {
+                    repetitive_candidate_barcodes.insert(it->first);
                 }
             }
         }
-        return barcodes;
-    }
-
-    std::set<barcode_index::BarcodeId> ExtractBarcodesFromCandidate(const EdgeId& edge, size_t coverage_threshold, size_t tail_threshold) const {
-        std::set<barcode_index::BarcodeId> barcodes;
-        for (const auto& barcode: barcode_extractor_ptr_->GetBarcodes(edge)) {
-            if (barcode_extractor_ptr_->GetNumberOfReads(edge, barcode) >= coverage_threshold and
-                barcode_extractor_ptr_->GetMinPos(edge, barcode) <= tail_threshold) {
-                barcodes.insert(barcode);
+        std::set<barcode_index::BarcodeId> single_path_barcodes;
+        for (const auto& barcode: path_barcodes) {
+            if (repetitive_candidate_barcodes.find(barcode) == repetitive_candidate_barcodes.end()) {
+                single_path_barcodes.insert(barcode);
             }
         }
-        return barcodes;
-    }
+//        std::unordered_map<EdgeWithDistance, double> candidate_to_score;
+        vector<EdgeWithDistance> result;
+        for (const auto& candidate: edges) {
+//            auto barcode_begin = barcode_index_->barcode_iterator_begin(candidate.e_);
+//            auto barcode_end = barcode_index_->barcode_iterator_end(candidate.e_);
 
-    DECL_LOGGER("10XInitialFilter");
-};
-
-class TenXClosestTopologyFilter: public InternalTenXFilter {
-    using InternalTenXFilter::g_;
-    using InternalTenXFilter::barcode_extractor_ptr_;
-    using InternalTenXFilter::tenx_configs_;
-    using InternalTenXFilter::EdgeContainer;
-    const size_t distance_bound_;
-    const ScaffoldingUniqueEdgeStorage& unique_storage_;
-
- public:
-    TenXClosestTopologyFilter(const Graph& g,
-                              const shared_ptr<frame_extractor_t> &barcode_extractor_ptr,
-                              const tenx_configs_t &tenx_configs, size_t distance_bound,
-                              const ScaffoldingUniqueEdgeStorage& unique_storage) :
-        InternalTenXFilter(g, barcode_extractor_ptr, tenx_configs),
-        distance_bound_(distance_bound), unique_storage_(unique_storage){}
-
-    virtual EdgeContainer FilterCandidates(const EdgeContainer &candidates, const vector<EdgeId> &) const override {
-        EdgeContainer result = TopologyClosestFilter(candidates, distance_bound_);
-        DEBUG("After topology check: " << result.size());
-        DEBUG(candidates.size() << "Topology candidates: ");
-        for(const auto& candidate: result) {
-            TRACE(candidate.e_.int_id());
+            const auto barcodes = barcode_index_->GetBarcodes(candidate.e_);
+            std::set<barcode_index::BarcodeId> intersection;
+            std::set_intersection(barcodes.begin(), barcodes.end(), single_path_barcodes.begin(), single_path_barcodes.end(),
+                                  std::inserter(intersection, intersection.begin()));
+            double score = static_cast<double>(intersection.size()) /
+                static_cast<double>(barcode_index_->GetNumberOfBarcodes(candidate.e_));
+            if (math::ge(score, score_threshold_)) {
+                result.push_back(candidate);
+            }
         }
         if (result.size() == 0) {
-            DEBUG("10XStats: No candidates after topology filter");
+            DEBUG("No candidates passed threshold");
             return result;
         }
         if (result.size() == 1) {
-            DEBUG("10XStats: Single candidate after topology filter");
-            DEBUG("Canditate: " << result.back().e_.int_id());
+            DEBUG("Single candidate passed threshold");
             return result;
         }
-        DEBUG("10XStats: Multiple candidates after topology filter");
-        return result;
-    }
-
-    EdgeContainer TopologyClosestFilter(const EdgeContainer& candidates, const size_t distance_bound) const {
-        EdgeContainer result;
-        std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(result),
-                     [this, &candidates, distance_bound](const EdgeWithDistance& edge) {
-                       return TopologyCheck(edge.e_, candidates, distance_bound);
-                     });
-        return result;
-    }
-
-    bool TopologyCheck(const EdgeId& candidate, const EdgeContainer& candidates, const size_t distance_bound) const {
-        std::unordered_set<EdgeId> reached_unique_edges = GetReachedUniqueEdges(candidate, distance_bound);
-        bool are_all_candidates_reached = AreCandidatesReached(candidate, candidates, reached_unique_edges);
-        return are_all_candidates_reached;
-    }
-
-    unordered_set <EdgeId> GetReachedUniqueEdges(const EdgeId& edge, const size_t distance_bound) const {
-        DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
-            DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, distance_bound));
-        dijkstra.Run(g_.EdgeEnd(edge));
-        unordered_set <EdgeId> reached_unique_edges;
-        for (auto v: dijkstra.ReachedVertices()) {
-            for (auto connected: g_.OutgoingEdges(v)) {
-                if (unique_storage_.IsUnique(connected) and
-                    dijkstra.GetDistance(v) < distance_bound) {
-                    reached_unique_edges.insert(connected);
-                }
-            }
-        }
-        return reached_unique_edges;
-    }
-
-    bool AreCandidatesReached(const EdgeId& candidate, const EdgeContainer& candidates, const unordered_set<EdgeId>& reached) const {
-        for (const auto& ewd: candidates) {
-            if (reached.find(ewd.e_) == reached.end() and reached.find(g_.conjugate(ewd.e_)) == reached.end()
-                and ewd.e_ != candidate and ewd.e_ != g_.conjugate(candidate)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    DECL_LOGGER("10XClosestTopologyFilter");
-};
-
-class TenXClosestReadCloudFilter: public InternalTenXFilter {
-    using InternalTenXFilter::g_;
-    using InternalTenXFilter::barcode_extractor_ptr_;
-    using InternalTenXFilter::tenx_configs_;
-    using InternalTenXFilter::EdgeContainer;
-
- public:
-    TenXClosestReadCloudFilter(const Graph& g,
-                               const shared_ptr<frame_extractor_t> &barcode_extractor_ptr,
-                               const tenx_configs_t &tenx_configs) : InternalTenXFilter(g, barcode_extractor_ptr, tenx_configs) {}
-
-    virtual EdgeContainer FilterCandidates(const EdgeContainer &candidates, const vector<EdgeId> &last_unique_edges) const override {
-        if (last_unique_edges.size() == 0) {
-            return candidates;
-        }
-        EdgeId last_unique_edge = last_unique_edges.back();
-        auto result = ReadCloudClosestFilter(candidates, last_unique_edge, tenx_configs_.internal_gap_threshold,
-                                             tenx_configs_.middle_coverage_threshold);
-        DEBUG("After cloud closest check: " << result.size());
-        DEBUG(candidates.size() << "Cloud closest candidates: ");
-        for(const auto& candidate: result) {
-            TRACE(candidate.e_.int_id());
-        }
-        if (result.size() == 0) {
-            DEBUG("10XStats: No candidates after cloud closest");
+        if (result.size() > 1) {
+            DEBUG("Multiple candidates");
             return result;
         }
-        if (result.size() == 1) {
-            DEBUG("10XStats: Cloud closest helped");
-            DEBUG("Canditate: " << result.back().e_.int_id());
-            return result;
-        }
-        DEBUG("10XStats: Multiple after cloud closest");
-        return result;
     }
 
- private:
-    EdgeContainer ReadCloudClosestFilter(const EdgeContainer &candidates, const EdgeId &decisive_edge,
-                                         size_t gap_threshold, size_t coverage_threshold) const {
-        EdgeContainer result;
-        std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(result),
-                     [this, &decisive_edge, &candidates, gap_threshold, coverage_threshold](const EdgeWithDistance& edge) {
-                       return ReadCloudClosestCheck(decisive_edge, edge.e_, candidates, gap_threshold,
-                                                    coverage_threshold);
-                     });
-        return result;
-    }
-
-    bool ReadCloudClosestCheck(const EdgeId &decisive_edge, const EdgeId &candidate,
-                               const EdgeContainer &other_candidates, size_t gap_threshold, size_t coverage_threshold) const {
-        DEBUG("Middle check for: " << candidate.int_id());
-        for (const auto& other : other_candidates) {
-            EdgeId other_edge = other.e_;
-            if (other_edge != candidate and !IsBetween(candidate, decisive_edge, other_edge,
-                                                       gap_threshold, coverage_threshold)) {
-                return false;
-                break;
-            }
-        }
-        return true;
-    }
-
-    bool IsBetween(const EdgeId& middle, const EdgeId& left, const EdgeId& right,
-                   size_t mean_gap_threshold, size_t coverage_threshold) const {
-        DEBUG("Checking against: " << right.int_id())
-        auto side_barcodes = barcode_extractor_ptr_->GetSharedBarcodes(left, right);
-        size_t middle_length = g_.length(middle);
-        size_t current_length = 0;
-        DEBUG("Side barcodes before filter: " << side_barcodes.size());
-        size_t side_barcodes_after_filter = 0;
-        for (const auto& barcode: side_barcodes) {
-            //todo optimize after custom filter implementation
-            size_t left_count = barcode_extractor_ptr_->GetNumberOfReads(left, barcode);
-            size_t right_count = barcode_extractor_ptr_->GetNumberOfReads(right, barcode);
-            if (!(barcode_extractor_ptr_->HasBarcode(middle, barcode))
-                and left_count >= coverage_threshold
-                and right_count >= coverage_threshold) {
-                ++side_barcodes_after_filter;
-                size_t right_length = barcode_extractor_ptr_->GetMinPos(right, barcode);
-                size_t left_length = g_.length(left) - barcode_extractor_ptr_->GetMaxPos(left, barcode);
-                current_length += (left_length + right_length + middle_length);
-            }
-        }
-        DEBUG("Side barcodes after filter: " << side_barcodes_after_filter);
-        size_t sum_length_threshold = mean_gap_threshold * side_barcodes_after_filter;
-        DEBUG("Current length: " << current_length);
-        return current_length <= sum_length_threshold;
-    }
-
-    DECL_LOGGER("10XClosestCloudFilter");
-};
-
-class TenXConjugateFilter: public InternalTenXFilter {
-    using InternalTenXFilter::g_;
-    using InternalTenXFilter::barcode_extractor_ptr_;
-    using InternalTenXFilter::tenx_configs_;
-    using InternalTenXFilter::EdgeContainer;
-
- public:
-    TenXConjugateFilter(const Graph& g,
-                        const shared_ptr<frame_extractor_t> &barcode_extractor_ptr,
-                        const tenx_configs_t &tenx_configs) : InternalTenXFilter(g,
-                                                                                 barcode_extractor_ptr,
-                                                                                 tenx_configs) {}
-
-    virtual EdgeContainer FilterCandidates(const EdgeContainer &candidates, const vector<EdgeId> &last_unique_edges) const override {
-        if (last_unique_edges.size() == 0) {
-            return candidates;
-        }
-        EdgeId last_unique_edge = last_unique_edges.back();
-        if (candidates.size() == 2) {
-            EdgeId edge = candidates[0].e_;
-            EdgeId other = candidates[1].e_;
-            if (edge == g_.conjugate(other)) {
-                DEBUG("10XStats: Pair of conjugates left");
-                //fixme magic constants
-                const size_t gap_threshold_left = 1000;
-                const size_t gap_threshold_right = 2000;
-                const double fraction_threshold = 0.2;
-                auto result = ConjugateFilter(last_unique_edge, candidates[0], candidates[1],
-                                              gap_threshold_left, gap_threshold_right, fraction_threshold);
-                if (result.size() == 1) {
-                    DEBUG("10XStats: pair of conjugates resolved")
-                    return result;
-                }
-            }
-        }
-        return candidates;
-    }
-
- private:
-    EdgeContainer ConjugateFilter(const EdgeId& decisive_edge, const EdgeWithDistance& edge_with_d,
-                                  const EdgeWithDistance& conj_edge_with_d, size_t gap_threshold_left,
-                                  size_t gap_threshold_right, double fraction_threshold) const  {
-        const EdgeId edge = edge_with_d.e_;
-        const EdgeId conjugate = conj_edge_with_d.e_;
-        VERIFY(g_.conjugate(edge) == conjugate);
-        EdgeContainer result;
-        size_t edge_voters = 0;
-        size_t conj_voters = 0;
-        auto common_barcodes = barcode_extractor_ptr_->GetSharedBarcodes(decisive_edge, edge);
-        for (const auto& barcode: common_barcodes) {
-            size_t gap = barcode_extractor_ptr_->GetMinPos(edge, barcode);
-            size_t conj_gap = barcode_extractor_ptr_->GetMinPos(conjugate, barcode);
-            if (gap < gap_threshold_left and conj_gap > gap_threshold_right) {
-                edge_voters++;
-            }
-            if (gap > gap_threshold_right and conj_gap < gap_threshold_left) {
-                conj_voters++;
-            }
-        }
-        size_t common_size = common_barcodes.size();
-        double edge_fraction = static_cast<double>(edge_voters) / static_cast<double>(common_size);
-        double conj_fraction = static_cast<double>(conj_voters) / static_cast<double>(common_size);
-        if (edge_fraction - conj_fraction > fraction_threshold) {
-            result.push_back(edge_with_d);
-        }
-        if (conj_fraction - edge_fraction > fraction_threshold) {
-            result.push_back(conj_edge_with_d);
-        }
-        return result;
-    }
-
-    DECL_LOGGER("10XConjugateFilter");
-};
-
-class TenXExtensionChooser : public ReadCloudExtensionChooser {
- protected:
-    typedef ReadCloudExtensionChooser::barcode_extractor_ptr_t abstract_barcode_extractor_ptr_t;
-    typedef barcode_index::FrameBarcodeIndexInfoExtractor frame_extractor_t;
-    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver::tenx_resolver tenx_configs_t;
-    using ReadCloudExtensionChooser::unique_storage_;
-    shared_ptr<frame_extractor_t> barcode_extractor_ptr_;
-    tenx_configs_t tenx_configs_;
-    size_t distance_bound_;
-
-
- public:
-    TenXExtensionChooser(const conj_graph_pack &gp, abstract_barcode_extractor_ptr_t extractor,
-                         const ScaffoldingUniqueEdgeStorage &unique_storage,
-                         shared_ptr<UniqueEdgesGetter> unique_edges_getter,
-                         const tenx_configs_t& tenx_configs, size_t distance_bound) :
-        ReadCloudExtensionChooser(gp, extractor, unique_storage, unique_edges_getter),
-        barcode_extractor_ptr_(std::dynamic_pointer_cast<frame_extractor_t>(extractor)),
-        tenx_configs_(tenx_configs), distance_bound_(distance_bound) {}
-
- protected:
-    virtual EdgeContainer GetBestCandidates(const EdgeContainer& initial_candidates, const vector<EdgeId>& last_unique_edges) const override {
-        vector<shared_ptr<InternalTenXFilter>> filters;
-        auto initial_filter = make_shared<InitialTenXFilter>(g_, barcode_extractor_ptr_, tenx_configs_);
-
-        auto topology_filter = make_shared<TenXClosestTopologyFilter>(g_,
-                                                                      barcode_extractor_ptr_,
-                                                                      tenx_configs_,
-                                                                      distance_bound_,
-                                                                      unique_storage_);
-        auto read_cloud_closest_filter =
-            make_shared<TenXClosestReadCloudFilter>(g_, barcode_extractor_ptr_, tenx_configs_);
-        auto conjugate_filter = make_shared<TenXConjugateFilter>(g_, barcode_extractor_ptr_, tenx_configs_);
-        filters.push_back(initial_filter);
-        if (tenx_configs_.topology_filter_on) {
-            filters.push_back(topology_filter);
-        }
-//        filters.push_back(read_cloud_closest_filter);
-//        filters.push_back(conjugate_filter);
-        auto current_candidates = initial_candidates;
-        for (const auto& filter_ptr: filters) {
-            current_candidates = filter_ptr->FilterCandidates(current_candidates, last_unique_edges);
-        }
-        return current_candidates;
-    }
-
-    DECL_LOGGER("10XExtensionChooser")
+    DECL_LOGGER("ReadCloudExtensionChooser");
 };
 
 class PredicateExtensionChooser: public ExtensionChooser {
@@ -2166,7 +1713,6 @@ class PredicateExtensionChooser: public ExtensionChooser {
  public:
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
         DEBUG("Last edge of the path: " << path.Back().int_id());
-
         DEBUG(edges.size() << " input edges:");
         for (const auto& edge: edges) {
             TRACE(edge.e_.int_id());

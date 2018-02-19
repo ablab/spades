@@ -121,7 +121,7 @@ namespace online_visualization {
         }
     };
 
-    class PrintBarcodes : public LocalCommand<DebruijnEnvironment> {
+    class PrintBarcodesCommand : public LocalCommand<DebruijnEnvironment> {
     private:
 
 
@@ -144,7 +144,7 @@ namespace online_visualization {
             return answer;
         }
 
-        PrintBarcodes() : LocalCommand<DebruijnEnvironment>("print_barcodes")
+        PrintBarcodesCommand() : LocalCommand<DebruijnEnvironment>("print_barcodes")
         {
         }
 

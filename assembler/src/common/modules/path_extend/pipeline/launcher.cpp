@@ -20,6 +20,7 @@
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
+#include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
 
 #include <unordered_set>
 namespace path_extend {

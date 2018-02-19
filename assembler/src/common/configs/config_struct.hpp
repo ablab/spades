@@ -507,6 +507,7 @@ struct debruijn_config {
           size_t path_scaffolder_tail_threshold;
           size_t path_scaffolder_count_threshold;
           size_t min_edge_length_for_barcode_collection;
+          size_t full_pipeline_length;
         };
 
         scaffold_graph_construction scaff_con;

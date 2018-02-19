@@ -501,6 +501,7 @@ void load(debruijn_config::read_cloud_resolver::scaffold_graph_construction& sca
     load(scaff_con.path_scaffolder_tail_threshold, pt, "path_scaffolder_tail_threshold");
     load(scaff_con.path_scaffolder_count_threshold, pt, "path_scaffolder_count_threshold");
     load(scaff_con.min_edge_length_for_barcode_collection, pt, "min_edge_length_for_barcode_collection");
+    load(scaff_con.full_pipeline_length, pt, "full_pipeline_length");
 }
 
 void load(debruijn_config::read_cloud_resolver& ts_res,

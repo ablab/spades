@@ -3,8 +3,8 @@
 //
 
 #pragma once
-#include "common/modules/path_extend/read_cloud_path_extend/read_cloud_connection_conditions.hpp"
 #include "scaffold_graph.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 
 namespace path_extend {
 
@@ -121,16 +121,6 @@ class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
     }
 
     DECL_LOGGER("UniqueScaffoldGraphConstructor");
-};
-
-//todo remove this later
-class CompleteScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
-    const std::set<ScaffoldVertex> scaffold_vertices_;
-
- public:
-    CompleteScaffoldGraphConstructor(const Graph &assembly_graph, const set<ScaffoldVertex> &scaffold_vertices_);
-
-    shared_ptr<ScaffoldGraph> Construct() override;
 };
 
 class PredicateScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
