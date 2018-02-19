@@ -629,7 +629,7 @@ class SelfConjugateDisruptor: public EdgeProcessingAlgorithm<Graph> {
     typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    size_t max_len_;
+    size_t max_repeat_len_;
     EdgeRemover<Graph> edge_remover_;
 
 protected:
@@ -638,15 +638,16 @@ protected:
         Graph& g = this->g();
         if (e == g.conjugate(e)) {
             TRACE("Disrupting self-conjugate edge " << g.str(e));
-            EdgeId to_del = e;
-            size_t len = g.length(e);
-            if (len > max_len_ || g.OutgoingEdgeCount(g.EdgeEnd(e)) == 1) {
-                if (len > 1) {
-                    to_del = g.SplitEdge(e, len / 2).second;
-                    edge_remover_.DeleteEdge(to_del);
-                } else {
-                    edge_remover_.DeleteEdge(to_del);
+            UniquePathFinder<Graph> unique_path_finder(g);
+            size_t e_len = g.length(e);
+            size_t induced_repeat_len =
+                    CumulativeLength(g, unique_path_finder.UniquePathBackward(e)) + (e_len / 2);
+            if (induced_repeat_len > max_repeat_len_) {
+                EdgeId to_del = e;
+                if (e_len > 1) {
+                    to_del = g.SplitEdge(e, e_len / 2).second;
                 }
+                edge_remover_.DeleteEdge(to_del);
                 return true;
             }
         }
@@ -654,9 +655,11 @@ protected:
     }
 
 public:
-    SelfConjugateDisruptor(Graph& g, size_t max_len,
+    SelfConjugateDisruptor(Graph& g, size_t max_repeat_len,
                            std::function<void(EdgeId)> removal_handler = 0)
-            : base(g, true), max_len_(max_len), edge_remover_(g, removal_handler) {
+            : base(g, true),
+              max_repeat_len_(max_repeat_len),
+              edge_remover_(g, removal_handler) {
     }
 
 private:

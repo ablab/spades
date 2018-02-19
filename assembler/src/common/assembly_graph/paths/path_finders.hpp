@@ -10,9 +10,7 @@ class UniquePathFinder {
 
     const Graph& graph_;
 public:
-    //todo use length bound if needed
-    UniquePathFinder(const Graph& graph, size_t /*length_bound*/ =
-    std::numeric_limits<size_t>::max())
+    UniquePathFinder(const Graph& graph)
             : graph_(graph) {}
 
     std::vector<EdgeId> operator()(EdgeId e,
@@ -36,8 +34,9 @@ public:
     }
 
     std::vector<EdgeId> UniquePathBackward(EdgeId e) const {
-        auto tmp = this->operator()(e, BackwardDirection<Graph>(graph_));
-        return std::vector<EdgeId>(tmp.rbegin(), tmp.rend());
+        auto answer = this->operator()(e, BackwardDirection<Graph>(graph_));
+        std::reverse(answer.begin(), answer.end());
+        return answer;
     }
 
 };
