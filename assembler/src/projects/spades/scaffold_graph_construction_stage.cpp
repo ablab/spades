@@ -1,5 +1,5 @@
 #include "scaffold_graph_construction_stage.hpp"
-#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp"
 
 void debruijn_graph::ScaffoldGraphConstructionStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
     INFO("Scaffold graph construction started");

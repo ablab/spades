@@ -427,52 +427,6 @@ Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdge
     return ExtractExtenders(result);
 }
 
-shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_index, const ScaffoldingUniqueEdgeStorage &storage) const {
-    const auto &lib = dataset_info_.reads[lib_index];
-    auto tslr_resolver_params = cfg::get().ts_res;
-    size_t distance_bound = tslr_resolver_params.distance_bound;
-    const size_t fragment_length = tslr_resolver_params.fragment_len;
-    barcode_index::BarcodeLibraryType barcode_lib = barcode_index::GetLibType(tslr_resolver_params.library_type);
-    shared_ptr<ExtensionChooser> extension_chooser;
-    VERIFY(fragment_length > distance_bound);
-    VERIFY_MSG(barcode_lib == barcode_index::BarcodeLibraryType::TenX, "Unknown library type.");
-
-    INFO(storage.size() << " unique edges.");
-    typedef barcode_index::AbstractBarcodeIndexInfoExtractor abstract_extractor_t;
-
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-    auto condition = PairedLibConnectionCondition(gp_.g, paired_lib, lib_index, 0);
-
-    INFO("Read cloud library type: 10X")
-    auto tenx_resolver_configs = cfg::get().ts_res.tenx;
-    typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
-
-    auto tenx_extractor_ptr = make_shared<tenx_extractor_t>(gp_.barcode_mapper_ptr, gp_.g);
-    shared_ptr<abstract_extractor_t> abstract_extractor_ptr =
-            std::static_pointer_cast<abstract_extractor_t>(tenx_extractor_ptr);
-
-    //fixme magic constants
-    const size_t last_edges_distance = 25000;
-    const size_t topology_filter_distance = 5000;
-
-    auto unique_edges_getter = make_shared<DistanceBasedUniqueEdgesGetter>(storage, last_edges_distance);
-
-    extension_chooser = make_shared<TenXExtensionChooser>(gp_, abstract_extractor_ptr, storage,
-                                                          unique_edges_getter, tenx_resolver_configs,
-                                                          topology_filter_distance);
-
-
-    shared_ptr<ReadCloudExtender> extender = make_shared<ReadCloudExtender>(gp_, cover_map_,
-                                                                            used_unique_storage_,
-                                                                            extension_chooser,
-                                                                            2500 /*insert size*/,
-                                                                            false, /*investigate short loops*/
-                                                                            false /*use short loop coverage resolver*/,
-                                                                            storage,
-                                                                            distance_bound);
-    return extender;
-}
-
 Extenders ExtendersGenerator::MakePBScaffoldingExtenders() const {
     const auto &pset = params_.pset;
     ExtenderTriplets result;

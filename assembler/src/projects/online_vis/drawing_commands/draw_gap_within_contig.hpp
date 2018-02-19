@@ -13,7 +13,7 @@
 #include "io/reads/wrapper_collection.hpp"
 
 namespace online_visualization {
-    class DrawGapWithinContig : public DrawingCommand {
+    class DrawGapWithinContigCommand : public DrawingCommand {
 
     protected:
         size_t MinArgNumber() const {
@@ -38,7 +38,7 @@ namespace online_visualization {
             return answer;
         }
 
-        DrawGapWithinContig() : DrawingCommand("draw_gap_within_contig")
+        DrawGapWithinContigCommand() : DrawingCommand("draw_gap_within_contig")
         {
         }
 

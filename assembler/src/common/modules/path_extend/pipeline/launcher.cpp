@@ -15,6 +15,7 @@
 #include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
 #include "modules/path_extend/read_cloud_path_extend/extension_chooser_checker.hpp"
 #include "modules/path_extend/read_cloud_path_extend/path_scaffolder.hpp"
+#include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
 
 #include "alignment/long_read_storage.hpp"
 #include "alignment/rna/ss_coverage.hpp"

@@ -1,6 +1,6 @@
 #include "read_cloud_connection_conditions.hpp"
-#include "read_cloud_dijkstras.hpp"
-#include "path_extend_dijkstras.hpp"
+#include "read_cloud_path_extend/read_cloud_dijkstras.hpp"
+#include "read_cloud_path_extend/path_extend_dijkstras.hpp"
 #include "path_extender.hpp"
 namespace path_extend {
 
@@ -83,9 +83,6 @@ ReadCloudMiddleDijkstraPredicate::ReadCloudMiddleDijkstraPredicate(
 
 bool ReadCloudMiddleDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &scaffold_edge) const {
     DEBUG("Checking edge " << scaffold_edge.getStart().int_id() << " -> " << scaffold_edge.getEnd().int_id());
-    auto barcode_intersection =
-        long_edge_extractor_->GetIntersection(scaffold_edge.getStart(), scaffold_edge.getEnd());
-    DEBUG("Intersection size: " << barcode_intersection.size());
     ReadCloudDijkstraHelper helper;
     auto long_gap_dijkstra = helper.CreateLongGapCloserDijkstra(g, params_.distance_, unique_storage_,
                                                                 short_edge_extractor_, long_edge_extractor_,
@@ -298,7 +295,14 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
     auto end = scaffold_edge.getEnd();
     DEBUG("Checking edge " << start.int_id() << " -> " << end.int_id());
 
-    auto scaffold_vertex_predicate = ConstructScaffoldVertexPredicate(start, end);
+    const auto& start_entry = long_edge_extractor_->GetTailEntry(start);
+    const auto& end_entry = long_edge_extractor_->GetHeadEntry(end);
+    auto pair_entry_processor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(start_entry, end_entry, short_edge_extractor_);
+    auto scaffold_vertex_predicate = ConstructScaffoldVertexPredicate(start, end, pair_entry_processor);
+
+//    auto recording_pair_entry_processor = make_shared<path_extend::RecordingPairEntryProcessor>(start_entry, end_entry,
+//                                                                                                pair_entry_processor);
+//    auto recording_scaffold_vertex_predicate = ConstructScaffoldVertexPredicate(start, end, recording_pair_entry_processor);
 
     path_extend::QueueContainer paths_container;
     BidirectionalPath* initial_path = start.toPath(gp_.g);
@@ -318,10 +322,10 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
     searching_extenders.push_back(basic_extender);
     if (scaffolding_mode_) {
         auto scaffolding_chooser = ConstructScaffoldingExtensionChooser();
-        auto scaffolding_multi_chooser =
-            make_shared<path_extend::PredicateExtensionChooser>(gp_.g, scaffold_vertex_predicate, scaffolding_chooser);
+//        auto scaffolding_multi_chooser =
+//            make_shared<path_extend::PredicateExtensionChooser>(gp_.g, recording_scaffold_vertex_predicate, scaffolding_chooser);
         auto scaffolding_extender = ConstructScaffoldingSearchingExtender(paths_container, cover_map,
-                                                                          scaffolding_multi_chooser);
+                                                                          scaffolding_chooser);
         DEBUG("Constructed scaffolding extender");
         searching_extenders.push_back(scaffolding_extender);
     }
@@ -401,13 +405,12 @@ shared_ptr<path_extend::ExtensionChooser> CompositeConnectionPredicate::Construc
     return scaff_chooser;
 }
 shared_ptr<ScaffoldVertexPredicate> CompositeConnectionPredicate::ConstructScaffoldVertexPredicate(
-        const ScaffoldVertex& start, const ScaffoldVertex& end) const {
-    auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
-        long_edge_extractor_->GetTailEntry(start), long_edge_extractor_->GetHeadEntry(end), short_edge_extractor_);
+        const ScaffoldVertex& start, const ScaffoldVertex& end,
+        shared_ptr<path_extend::PairEntryProcessor> entry_processor) const {
     auto long_gap_cloud_predicate = make_shared<path_extend::LongEdgePairGapCloserPredicate>(gp_.g, short_edge_extractor_,
                                                                                              predicate_params_,
                                                                                              start, end,
-                                                                                             pair_entry_extractor);
+                                                                                             entry_processor);
     size_t length_threshold = unique_storage_.min_length();
 
     auto length_predicate = make_shared<path_extend::LengthChecker>(length_threshold, gp_.g);
@@ -415,6 +418,7 @@ shared_ptr<ScaffoldVertexPredicate> CompositeConnectionPredicate::ConstructScaff
         make_shared<path_extend::AndPredicate>(length_predicate, long_gap_cloud_predicate);
     return scaffold_vertex_predicate;
 }
+
 shared_ptr<path_extend::SearchingMultiExtender> CompositeConnectionPredicate::ConstructBasicSearchingExtender(
         path_extend::QueueContainer& paths_container,
         GraphCoverageMap& cover_map,
@@ -442,15 +446,7 @@ shared_ptr<path_extend::SearchingMultiExtender> CompositeConnectionPredicate::Co
     const auto &lib = params_.dataset_info.reads[params_.paired_lib_index_];
     UsedUniqueStorage used_unique_storage(unique_storage_);
     auto opts = params_.pe_params_.pset.extension_options;
-
-    const auto &pset = params_.pe_params_.pset;
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.scaffolding_indices[params_.paired_lib_index_]);
-
-    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib);
-
-    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp_.g, counter,
-                                                                       pset.scaffolder_options.cl_threshold,
-                                                                       pset.scaffolder_options.var_coeff);
 
     auto gap_analyzer = MakeGapAnalyzer(paired_lib->GetIsVar());
     const bool check_sink = true;
@@ -509,7 +505,7 @@ bool CompositeConnectionPredicate::SearchTargetUsingExtenders(QueueContainer& pa
         edge_to_number_of_visits[last_edge]++;
         size_t current_iterations = 0;
         if (edge_to_number_of_visits[last_edge] > max_edge_visits) {
-            DEBUG("Edge was visited too often");
+//            WARN("Edge was visited too often");
             continue;
         }
         PathContainer *empty_storage = nullptr;
@@ -532,7 +528,7 @@ bool CompositeConnectionPredicate::SearchTargetUsingExtenders(QueueContainer& pa
         }
     }
     if (path_processing_iterations >= max_paths_to_process) {
-        DEBUG("Had to process too many paths, returning");
+        WARN("Had to process too many paths, returning");
         return true;
     }
     return false;

@@ -39,7 +39,11 @@ add_library(path_extend STATIC
             read_cloud_path_extend/path_scaffolder.cpp
             read_cloud_path_extend/containment_index_threshold_finder.cpp
             read_cloud_path_extend/tip_connection_predicate.cpp
-            read_cloud_path_extend/read_cloud_polisher_support.cpp)
+            read_cloud_path_extend/read_cloud_polisher_support.cpp
+            read_cloud_path_extend/scaffold_graph_construction/containment_index_threshold_finder.cpp
+            read_cloud_path_extend/read_cloud_polisher_support.cpp
+            read_cloud_path_extend/scaffold_graph_construction/construction_callers.cpp
+            read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_constructor.cpp)
 
 target_link_libraries(path_extend assembly_graph ssw configs)
 
