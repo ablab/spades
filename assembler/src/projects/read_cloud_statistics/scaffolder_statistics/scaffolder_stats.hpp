@@ -1,7 +1,7 @@
 #include "../statistics_processor.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/conjugate_score_extractor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline/scaffold_graph_construction_pipeline.hpp"
 #include "common/barcode_index/cluster_storage_extractor.hpp"
 #include <random>
 #include <common/barcode_index/scaffold_vertex_index_builder.hpp>
@@ -351,8 +351,8 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
         auto filtered_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths_);
 
-        auto short_edge_dataset = make_shared<ShortEdgeDataset>(GetShortEdgeDataset(reference_paths_, filtered_paths));
-        AddStatistic(short_edge_dataset);
+//        auto short_edge_dataset = make_shared<ShortEdgeDataset>(GetShortEdgeDataset(reference_paths_, filtered_paths));
+//        AddStatistic(short_edge_dataset);
 
         auto long_edge_dataset = make_shared<LongEdgePairDataset>(GetLongEdgeDataset(filtered_paths));
         AddStatistic(long_edge_dataset);
@@ -610,7 +610,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         LongEdgePathIndex long_edge_path_index = BuildLongEdgePathIndex(covered_edges_set, reference_paths);
         auto distance_map = GetDistanceMap(reference_paths);
         vector<EdgeId> reference_edges(covered_edges_set.begin(), covered_edges_set.end());
-        INFO("Reference edges size: " << reference_edges.size());
+        INFO(reference_edges.size() << " reference edges.");
 
         vector<LongEdgePairEntry> dataset;
         auto correct_entries = GetCorrectEntries(reference_transition_storage, long_edge_path_index, distance_map);
@@ -618,7 +618,7 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
 
         INFO(dataset.size() << " correct pairs");
 
-        const size_t sample_size = 2000;
+        const size_t sample_size = 100000;
         std::random_device rd;
         std::mt19937 generator(rd());
         size_t range_size = reference_edges.size();
@@ -651,8 +651,14 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
             const std::map<path_extend::transitions::Transition, size_t> &distance_map) {
         vector<LongEdgePairEntry> correct_entries;
         for (const auto& transition: reference_transition_storage) {
+            DEBUG("Getting path ids");
+            VERIFY(reference_transition_storage.IsEdgeCovered(transition.first_));
+            VERIFY(reference_transition_storage.IsEdgeCovered(transition.second_));
+            VERIFY((long_edge_path_index.find(transition.first_) != long_edge_path_index.end()));
+            VERIFY((long_edge_path_index.find(transition.second_) != long_edge_path_index.end()));
             size_t first_path_id = long_edge_path_index.at(transition.first_).path_id_;
             size_t second_path_id = long_edge_path_index.at(transition.second_).path_id_;
+            DEBUG(first_path_id << ", " << second_path_id);
             if (first_path_id != second_path_id) {
                 WARN("Correct transition from different paths!");
             } else {
@@ -951,8 +957,8 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         return result;
     }
 
-    LongEdgePathIndex BuildLongEdgePathIndex(const unordered_set <EdgeId> long_edges,
-                                             const vector <vector<EdgeWithMapping>>& raw_paths) {
+    LongEdgePathIndex BuildLongEdgePathIndex(const unordered_set<EdgeId> &long_edges,
+                                             const vector<vector<EdgeWithMapping>> &raw_paths) {
         LongEdgePathIndex index;
         size_t path_id = 0;
         for (const auto& path: raw_paths) {

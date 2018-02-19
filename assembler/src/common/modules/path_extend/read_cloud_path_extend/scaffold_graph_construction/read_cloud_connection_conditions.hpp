@@ -2,7 +2,6 @@
 #include "common/modules/path_extend/path_extender.hpp"
 #include "common/modules/path_extend/pipeline/launch_support.hpp"
 #include "common/modules/path_extend/extension_chooser.hpp"
-#include "common/modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
@@ -114,7 +113,8 @@ namespace path_extend {
         shared_ptr<path_extend::ExtensionChooser> ConstructScaffoldingExtensionChooser() const;
 
         shared_ptr<ScaffoldVertexPredicate> ConstructScaffoldVertexPredicate(
-            const ScaffoldVertex& start, const ScaffoldVertex& end) const;
+            const ScaffoldVertex& start, const ScaffoldVertex& end,
+            shared_ptr<path_extend::PairEntryProcessor> entry_processor) const;
 
         shared_ptr<path_extend::SearchingMultiExtender> ConstructBasicSearchingExtender(
             path_extend::QueueContainer& paths_container,

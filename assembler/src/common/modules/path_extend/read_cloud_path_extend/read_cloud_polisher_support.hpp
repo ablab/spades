@@ -1,6 +1,6 @@
 #pragma once
 
-#include "read_cloud_connection_conditions.hpp"
+#include "read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 #include "simple_graph.hpp"
 
 namespace path_extend {

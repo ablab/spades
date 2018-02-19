@@ -1,13 +1,13 @@
 #pragma once
 
 #include <common/io/reads/osequencestream.hpp>
-#include <common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp>
+#include <common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline/scaffold_graph_construction_pipeline.hpp>
 #include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
 #include "statistics_processor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
-#include "modules/path_extend/read_cloud_path_extend/read_cloud_connection_conditions.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/containment_index_threshold_finder.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/containment_index_threshold_finder.hpp"
 
 namespace scaffold_graph_utils {
     using path_extend::scaffold_graph::ScaffoldGraph;
@@ -109,12 +109,14 @@ namespace scaffold_graph_utils {
             auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(graph, extractor);
             size_t num_threads = cfg::get().max_threads;
             vector<ScaffoldGraph::ScaffoldGraphVertex> scaffold_vertices;
-            std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::back_inserter(scaffold_vertices));
-            path_extend::ScoreDistributionBasedThresholdFinder threshold_finder(g_, scaffold_vertices, score_function, vertex_multiplier);
-            double hist_score_threshold = threshold_finder.GetThreshold();
-            INFO("Setting containment index threshold to " << hist_score_threshold);
+//            std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::back_inserter(scaffold_vertices));
+//            path_extend::ScoreDistributionBasedThresholdFinder threshold_finder(g_, scaffold_vertices, score_function, vertex_multiplier);
+//            double hist_score_threshold = threshold_finder.GetThreshold();
+//            INFO("Setting containment index threshold to " << hist_score_threshold);
+
+            double score_threshold = 0.02;
             path_extend::scaffold_graph::ScoreFunctionScaffoldGraphFilter
-                scaffold_graph_constructor(graph, scaffold_graph, score_function, hist_score_threshold, num_threads);
+                scaffold_graph_constructor(graph, scaffold_graph, score_function, score_threshold, num_threads);
             return *(scaffold_graph_constructor.Construct());
         }
 
@@ -152,6 +154,7 @@ namespace scaffold_graph_utils {
                                                      shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor,
                                                      const Graph& graph,
                                                      size_t count_threshold, double strictness) {
+            INFO("Strictness: " << strictness);
             auto predicate = make_shared<path_extend::EdgeSplitPredicate>(graph, long_edge_extractor, count_threshold, strictness);
             size_t max_threads = cfg::get().max_threads;
             path_extend::scaffold_graph::PredicateScaffoldGraphFilter constructor(graph, scaffold_graph,

@@ -1,12 +1,9 @@
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp"
 #include "scaffolder_analysis_stage.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_gap_closer.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/read_cloud_connection_conditions.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/pe_extraction.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/predicate_builders.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 
 void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
     path_extend::ScaffoldGraphPolisher scaffold_graph_polisher(graph_pack);

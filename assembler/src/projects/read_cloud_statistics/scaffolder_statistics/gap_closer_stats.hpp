@@ -1,5 +1,5 @@
 #pragma once
-#include <common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_gap_closer.hpp>
+#include <common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp>
 #include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"

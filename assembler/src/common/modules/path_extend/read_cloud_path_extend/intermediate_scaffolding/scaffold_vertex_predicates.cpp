@@ -90,7 +90,7 @@ bool LengthChecker::Check(const ScaffoldVertexPredicate::ScaffoldVertex &vertex)
     return vertex.getLengthFromGraph(g_) < length_threshold_;
 }
 bool IntersectionBasedPairEntryProcessor::CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex,
-                                                           double score_threshold) const {
+                                                           double score_threshold) {
     size_t intersection_size = barcode_extractor_->GetIntersectionSize(vertex, intersection_);
     size_t min_size = std::min(intersection_.size(), barcode_extractor_->GetHeadSize(vertex));
     double containment_index = static_cast<double>(intersection_size) / static_cast<double>(min_size);
@@ -116,13 +116,31 @@ bool TwoSetsBasedPairEntryProcessor::CheckWithEntry(const scaffold_graph::Scaffo
     return threshold_passed;
 }
 bool TwoSetsBasedPairEntryProcessor::CheckMiddleEdge(const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &vertex,
-                                                     double score_threshold) const {
+                                                     double score_threshold) {
     bool first_passed = CheckWithEntry(vertex, first_, score_threshold);
     bool second_passed = CheckWithEntry(vertex, second_, score_threshold);
     return first_passed and second_passed;
 }
-TwoSetsBasedPairEntryProcessor::TwoSetsBasedPairEntryProcessor(const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &first_,
-                                                               const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &second_,
-                                                               const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> &barcode_extractor_)
-    : first_(first_), second_(second_), barcode_extractor_(barcode_extractor_) {}
+TwoSetsBasedPairEntryProcessor::TwoSetsBasedPairEntryProcessor(
+        const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &first_,
+        const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &second_,
+        const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> &barcode_extractor_)
+            : first_(first_), second_(second_), barcode_extractor_(barcode_extractor_) {}
+
+RecordingPairEntryProcessor::RecordingPairEntryProcessor(
+        const RecordingPairEntryProcessor::SimpleVertexEntry &first_,
+        const RecordingPairEntryProcessor::SimpleVertexEntry &second_,
+        shared_ptr<PairEntryProcessor> internal_processor_)
+            : first_(first_), second_(second_), internal_processor_(internal_processor_), vertex_to_result_() {}
+
+bool RecordingPairEntryProcessor::CheckMiddleEdge(const ScaffoldVertex &vertex, double score_threshold) {
+    auto result_it = vertex_to_result_.find(vertex);
+    bool found_result = result_it != vertex_to_result_.end();
+    if (not found_result) {
+        bool result = internal_processor_->CheckMiddleEdge(vertex, score_threshold);
+        vertex_to_result_.insert({vertex, result});
+        return result;
+    }
+    return (*result_it).second;
+}
 }

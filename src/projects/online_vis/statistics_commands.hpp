@@ -13,3 +13,4 @@
 #include "statistics_commands/junction_sequence_command.hpp"
 #include "statistics_commands/print_edge_command.hpp"
 #include "statistics_commands/print_barcodes_command.hpp"
+#include "statistics_commands/print_long_edges_command.hpp"

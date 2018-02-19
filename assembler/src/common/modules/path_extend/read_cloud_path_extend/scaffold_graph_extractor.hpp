@@ -8,5 +8,7 @@ class ScaffoldGraphExtractor {
  public:
 
     vector<ScaffoldEdge> ExtractUnivocalEdges(const ScaffoldGraph& scaffold_graph);
+
+    vector<ScaffoldEdge> ExtractMaxScoreEdges(const ScaffoldGraph& scaffold_graph);
 };
 }

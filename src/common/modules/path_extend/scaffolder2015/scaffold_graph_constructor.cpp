@@ -275,24 +275,6 @@ ScaffoldSubgraphConstructor::ScaffoldSubgraphConstructor(const Graph &assembly_g
       vertex_condition_(vertex_condition_),
       large_graph_(large_graph_),
       distance_threshold_(distance_threshold_) {}
-CompleteScaffoldGraphConstructor::CompleteScaffoldGraphConstructor(const Graph &assembly_graph,
-                                                                 const set<ScaffoldVertex> &scaffold_vertices_)
-    : BaseScaffoldGraphConstructor(assembly_graph), scaffold_vertices_(scaffold_vertices_) {}
-shared_ptr<ScaffoldGraph> CompleteScaffoldGraphConstructor::Construct() {
-    for (const auto& vertex: scaffold_vertices_) {
-        graph_->AddVertex(vertex);
-    }
-
-    for (const auto& from: scaffold_vertices_) {
-        for (const auto& to: scaffold_vertices_) {
-            if (from != to and from != to.getConjugateFromGraph(graph_->AssemblyGraph())) {
-                ScaffoldGraph::ScaffoldEdge edge(to, from, (size_t) - 1, 0, 0);
-                graph_->AddEdge(edge);
-            }
-        }
-    }
-    return graph_;
-}
 ScoreFunctionScaffoldGraphConstructor::ScoreFunctionScaffoldGraphConstructor(
         const Graph &assembly_graph,
         const std::set<ScaffoldVertex> &scaffold_vertices_,

@@ -103,6 +103,7 @@ ts_res
 	    path_scaffolder_tail_threshold 20000
 	    path_scaffolder_count_threshold 1
 	    min_edge_length_for_barcode_collection 500
+	    full_pipeline_length 5000
 	}
 
 	path_scaffolding_on true

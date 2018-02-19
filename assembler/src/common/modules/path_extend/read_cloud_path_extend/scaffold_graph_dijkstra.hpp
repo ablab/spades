@@ -2,7 +2,7 @@
 #include "common/assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/barcode_index/barcode_info_extractor.hpp"
-#include "read_cloud_connection_conditions.hpp"
+#include "read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 
 namespace omnigraph {
 using path_extend::scaffold_graph::ScaffoldGraph;
