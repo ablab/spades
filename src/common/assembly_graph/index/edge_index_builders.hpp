@@ -301,6 +301,7 @@ public:
         INFO("Update edge information.");
         EdgeInfoUpdater<Graph>().Update(g, index, edges);
     }
+};
 
 };
 

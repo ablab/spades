@@ -88,6 +88,29 @@ public:
                                    max_vertex_number);
     }
 
+    typedef ComposedDijkstraSettings<Graph,
+                                     LengthCalculator<Graph>,
+                                     BoundProcessChecker<Graph>,
+                                     CompositePutChecker<Graph>,
+                                     ForwardNeighbourIteratorFactory<Graph> > LengthBoundedDijkstraSettings;
+
+    typedef Dijkstra<Graph, LengthBoundedDijkstraSettings> LengthBoundedDijkstra;
+
+    static LengthBoundedDijkstra CreateLengthBoundedDijkstra(const Graph& graph, size_t length_threshold,
+                                                             size_t distance_bound, size_t max_vertex_number = -1ul) {
+        auto length_put_checker = std::make_shared<LengthPutChecker<Graph>>(graph, length_threshold);
+        auto bound_put_checker = std::make_shared<BoundPutChecker<Graph>>(distance_bound);
+        vector<shared_ptr<VertexPutChecker<Graph>>> put_checkers;
+        put_checkers.push_back(length_put_checker);
+        put_checkers.push_back(bound_put_checker);
+        return LengthBoundedDijkstra(graph, LengthBoundedDijkstraSettings(
+            LengthCalculator<Graph>(graph),
+            BoundProcessChecker<Graph>(length_threshold),
+            CompositePutChecker<Graph>(put_checkers),
+            ForwardNeighbourIteratorFactory<Graph>(graph)),
+                                     max_vertex_number);
+    }
+
     //------------------------------
     // bounded backward dijkstra
     //------------------------------

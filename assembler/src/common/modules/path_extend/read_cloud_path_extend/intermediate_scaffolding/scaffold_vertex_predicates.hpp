@@ -59,7 +59,7 @@ class PairEntryProcessor {
  public:
     typedef ScaffoldVertexPredicate::ScaffoldGraph ScaffoldGraph;
 
-    virtual bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) const = 0;
+    virtual bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) = 0;
 };
 
 class LongEdgePairGapCloserPredicate : public ScaffoldVertexPredicate {
@@ -98,7 +98,7 @@ class IntersectionBasedPairEntryProcessor: public PairEntryProcessor {
     IntersectionBasedPairEntryProcessor(const barcode_index::SimpleVertexEntry &intersection_,
                                         const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> &barcode_extractor_);
 
-    bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) const override;
+    bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) override;
 
 };
 
@@ -116,12 +116,31 @@ class TwoSetsBasedPairEntryProcessor: public PairEntryProcessor {
                                    const SimpleVertexEntry &second_,
                                    const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> &barcode_extractor_);
 
-    bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) const override;
+    bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) override;
 
  private:
     bool CheckWithEntry(const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &vertex,
                         const SimpleVertexEntry long_entry, double score_threshold) const;
 
     DECL_LOGGER("TwoSetsBasedPairEntryProcessor")
+};
+
+class RecordingPairEntryProcessor: public PairEntryProcessor {
+ private:
+    using PairEntryProcessor::ScaffoldGraph;
+    typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+    typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
+
+    const SimpleVertexEntry first_;
+    const SimpleVertexEntry second_;
+    shared_ptr<PairEntryProcessor> internal_processor_;
+    unordered_map<ScaffoldVertex, bool> vertex_to_result_;
+
+ public:
+    RecordingPairEntryProcessor(const SimpleVertexEntry &first_,
+                                const SimpleVertexEntry &second_,
+                                shared_ptr<PairEntryProcessor> internal_processor_);
+
+    bool CheckMiddleEdge(const ScaffoldVertex &vertex, double score_threshold) override;
 };
 }
