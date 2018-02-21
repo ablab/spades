@@ -335,6 +335,7 @@ int main(int argc, char* argv[]) {
         if (hmm->acc)  { if (fprintf(stderr, "Accession:   %s\n", hmm->acc)  < 0) FATAL_ERROR("write failed"); }
         if (hmm->desc) { if (fprintf(stderr, "Description: %s\n", hmm->desc) < 0) FATAL_ERROR("write failed"); }
 
+        esl_stopwatch_Start(w);
         for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             EdgeId edge = *it;
             // FIXME: this conversion is pointless
@@ -345,6 +346,7 @@ int main(int argc, char* argv[]) {
         }
 
         matcher.summarize();
+        esl_stopwatch_Stop(w);
 
         p7_tophits_Targets(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
         p7_tophits_Domains(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
