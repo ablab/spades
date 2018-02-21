@@ -641,7 +641,7 @@ protected:
             UniquePathFinder<Graph> unique_path_finder(g);
             size_t e_len = g.length(e);
             size_t induced_repeat_len =
-                    CumulativeLength(g, unique_path_finder.UniquePathBackward(e)) + (e_len / 2);
+                    CumulativeLength(g, unique_path_finder.UniquePathBackward(e)) - (e_len / 2);
             if (induced_repeat_len > max_repeat_len_) {
                 EdgeId to_del = e;
                 if (e_len > 1) {
