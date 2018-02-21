@@ -9,9 +9,10 @@ project(graph-hmm CXX)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(graph-hmm
+               hmmfile.cpp
                main.cpp)
 
-target_link_libraries(graph-hmm input utils pipeline ${COMMON_LIBRARIES})
+target_link_libraries(graph-hmm easel hmmer input utils pipeline ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(graph-hmm PROPERTIES LINK_SEARCH_END_STATIC 1)
