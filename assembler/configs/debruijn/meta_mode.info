@@ -91,6 +91,12 @@ simp
         max_relative_delta		0.1
     }
 
+    ; complex bulge remover
+    cbr
+    {
+        enabled true
+    }
+
     ; hidden ec remover
     her
     {
