@@ -160,4 +160,16 @@ public:
     }
 };
 
+template<class Graph>
+typename DijkstraHelper<Graph>::BoundedDijkstra CreateBoundedDijkstra(const Graph &graph, size_t length_bound,
+                                                                      size_t max_vertex_number = -1ul) {
+    return DijkstraHelper<Graph>::CreateBoundedDijkstra(graph, length_bound, max_vertex_number);
+}
+
+template<class Graph>
+typename DijkstraHelper<Graph>::BackwardBoundedDijkstra CreateBackwardBoundedDijkstra(const Graph &graph, size_t length_bound,
+                                                                                      size_t max_vertex_number = -1ul) {
+    return DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(graph, length_bound, max_vertex_number);
+}
+
 }
