@@ -220,7 +220,7 @@ public:
             INFO("EdgeDijkstra: sequence is too small " << s_len)
             return;
         }
-        DijkstraEndsReconstructor algo = DijkstraEndsReconstructor(g_, ss, start_e, start_pos, score);
+        DijkstraEndsReconstructor algo = DijkstraEndsReconstructor(g_, ss.str(), start_e, start_pos, score);
         algo.CloseGap();
         score = algo.GetEditDistance();
         if (score == -1){
@@ -670,7 +670,7 @@ public:
             INFO("Dijkstra won't run: Too big gap or too many paths");
             return vector<EdgeId>(0);
         }
-        DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, ss, start_e, end_e, start_p, end_p, path_max_length, vertex_pathlen);
+        DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, ss.str(), start_e, end_e, start_p, end_p, path_max_length, vertex_pathlen);
         gap_filler.CloseGap();
         score = gap_filler.GetEditDistance();
         if (score == -1){
