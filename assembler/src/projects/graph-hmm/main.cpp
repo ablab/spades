@@ -5,6 +5,10 @@
 //***************************************************************************
 
 #include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
+#include "assembly_graph/components/graph_component.hpp"
+
+#include "visualization/visualization.hpp"
 #include "pipeline/graphio.hpp"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
@@ -323,9 +327,20 @@ int main(int argc, char* argv[]) {
     graphio::ScanBasicGraph(cfg.load_from, graph);
     INFO("Graph loaded. Total vertices: " << graph.size());
 
+    // Collect all the edges
+    std::vector<EdgeId> edges;
+    for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+        EdgeId edge = *it;
+        edges.push_back(edge);
+    }
+
+    auto fdijkstra = omnigraph::CreateBoundedDijkstra(graph, 1000);
+    auto bdijkstra = omnigraph::CreateBackwardBoundedDijkstra(graph, 1000);
+
     auto hmmw = hmmfile.read();
     ESL_STOPWATCH *w = esl_stopwatch_Create();
-    /* Outer loop: over each query HMM in <hmmfile>. */
+
+    // Outer loop: over each query HMM in <hmmfile>.
     while (hmmw) {
         P7_HMM *hmm = hmmw->get();
 
@@ -336,11 +351,10 @@ int main(int argc, char* argv[]) {
         if (hmm->desc) { if (fprintf(stderr, "Description: %s\n", hmm->desc) < 0) FATAL_ERROR("write failed"); }
 
         esl_stopwatch_Start(w);
-        for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            EdgeId edge = *it;
+        for (size_t i = 0; i < edges.size(); ++i) {
             // FIXME: this conversion is pointless
-            std::string ref = std::to_string(graph.int_id(edge));
-            std::string seq = graph.EdgeNucls(edge).str();
+            std::string ref = std::to_string(i);
+            std::string seq = graph.EdgeNucls(edges[i]).str();
             //  INFO("EdgeId: " << edge << ", length: " << graph.length(edge) << ", seq: " << graph.EdgeNucls(edge));
             matcher.match(ref.c_str(), seq.c_str());
         }
@@ -348,12 +362,66 @@ int main(int argc, char* argv[]) {
         matcher.summarize();
         esl_stopwatch_Stop(w);
 
-        p7_tophits_Targets(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-        p7_tophits_Domains(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-        p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
+        auto th = matcher.hits();
+        std::vector<EdgeId> match_edges;
+        for (size_t h = 0; h < th->N; h++) {
+            if (!(th->hit[h]->flags & p7_IS_REPORTED))
+                continue;
+            if (!(th->hit[h]->flags & p7_IS_INCLUDED))
+                continue;
+
+            match_edges.push_back(edges[std::stoull(th->hit[h]->name)]);
+        }
+        INFO("Total matched edges: " << match_edges.size());
+
+        // Collect the neighbourhood of the matched edges
+        for (EdgeId e : match_edges) {
+            fdijkstra.Run(graph.EdgeEnd(e));
+            bdijkstra.Run(graph.EdgeStart(e));
+            std::vector<VertexId> vertices = fdijkstra.ReachedVertices();
+            std::vector<VertexId> bvertices = bdijkstra.ReachedVertices();
+
+            vertices.insert(vertices.end(), bvertices.begin(), bvertices.end());
+            bvertices.clear();
+
+            auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromVertices(graph,
+                                                                                             vertices.begin(), vertices.end(),
+                                                                                             true);
+            INFO("Neighbourhood vertices: " << component.v_size() << ", edges: " << component.e_size());
+
+            {
+                using namespace visualization;
+                using namespace visualization::visualization_utils;
+
+                // FIXME: This madness needs to be refactored
+                graph_labeler::StrGraphLabeler<ConjugateDeBruijnGraph> tmp_labeler1(graph);
+                graph_labeler::CoverageGraphLabeler<ConjugateDeBruijnGraph> tmp_labeler2(graph);
+                graph_labeler::CompositeLabeler<ConjugateDeBruijnGraph> labeler{tmp_labeler1, tmp_labeler2};
+
+                auto colorer = graph_colorer::DefaultColorer(graph);
+                auto edge_colorer = std::make_shared<graph_colorer::CompositeEdgeColorer<ConjugateDeBruijnGraph>>("black");
+                edge_colorer->AddColorer(colorer);
+                edge_colorer->AddColorer(std::make_shared<graph_colorer::SetColorer<ConjugateDeBruijnGraph>>(graph, match_edges, "green"));
+                std::shared_ptr<graph_colorer::GraphColorer<ConjugateDeBruijnGraph>>
+                        resulting_colorer = std::make_shared<graph_colorer::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
+
+                INFO("Writing component for edge " << e);
+
+                WriteComponent(component,
+                               std::to_string(graph.int_id(e)) + ".dot",
+                               resulting_colorer,
+                               labeler);
+            }
+        }
+
+        if (0) {
+            p7_tophits_Targets(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+            p7_tophits_Domains(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+            p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
+        }
 
         hmmw = hmmfile.read();
-    } /* end outer loop over query HMMs */
+    } // end outer loop over query HMMs
 
     esl_stopwatch_Destroy(w);
 
