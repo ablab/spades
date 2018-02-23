@@ -284,6 +284,11 @@ class MappingPath {
         range_mappings_.push_back(range);
     }
 
+    void reverse() {
+        std::reverse(edges_.begin(), edges_.end());
+        std::reverse(range_mappings_.begin(), range_mappings_.end());
+    }
+
     void clear() {
         edges_.clear();
         range_mappings_.clear();
