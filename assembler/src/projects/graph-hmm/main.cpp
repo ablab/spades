@@ -274,24 +274,24 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       cfg.acc     << option("--acc")          % "prefer accessions over names in output",
       cfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
       // Control of reporting thresholds
-      cfg.E       << option("-E")             % "report sequences <= this E-value threshold in output",
-      cfg.T       << option("-T")             % "report sequences >= this score threshold in output",
-      cfg.domE    << option("--domE")         % "report domains <= this E-value threshold in output",
-      cfg.domT    << option("--domT")         % "report domains >= this score cutoff in output",
+      (option("-E") & number("value", cfg.E))        % "report sequences <= this E-value threshold in output",
+      (option("-T") & number("value", cfg.E))        % "report sequences >= this score threshold in output",
+      (option("--domE") & number("value", cfg.domE)) % "report domains <= this E-value threshold in output",
+      (option("--domT") & number("value", cfg.domT)) % "report domains >= this score cutoff in output",
       // Control of inclusion (significance) thresholds
-      cfg.incE    << option("-incE")          % "consider sequences <= this E-value threshold as significant",
-      cfg.incT    << option("-incT")          % "consider sequences >= this score threshold as significant",
-      cfg.incdomE << option("--incdomE")      % "consider domains <= this E-value threshold as significant",
-      cfg.incdomT <<  option("--incdomT")     % "consider domains >= this score threshold as significant",
+      (option("-incE") & number("value", cfg.incE))       % "consider sequences <= this E-value threshold as significant",
+      (option("-incT") & number("value", cfg.incT))       % "consider sequences >= this score threshold as significant",
+      (option("-incdomE") & number("value", cfg.incdomE)) % "consider domains <= this E-value threshold as significant",
+      (option("-incdomT") & number("value", cfg.incdomT)) % "consider domains >= this score threshold as significant",
       // Model-specific thresholding for both reporting and inclusion
       cfg.cut_ga  << option("--cut_ga")       % "use profile's GA gathering cutoffs to set all thresholding",
       cfg.cut_nc  << option("--cut_nc")       % "use profile's NC noise cutoffs to set all thresholding",
       cfg.cut_tc  << option("--cut_tc")       % "use profile's TC trusted cutoffs to set all thresholding",
       // Control of acceleration pipeline
-      cfg.max     << option("--max")          % "Turn all heuristic filters off (less speed, more power)",
-      cfg.F1      << option("--F1")           % "Stage 1 (MSV) threshold: promote hits w/ P <= F1",
-      cfg.F2      << option("--F2")           % "Stage 2 (Vit) threshold: promote hits w/ P <= F2",
-      cfg.F3      << option("--F3")           % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3"
+      cfg.max     << option("--max")             % "Turn all heuristic filters off (less speed, more power)",
+      (option("--F1") & number("value", cfg.F1)) % "Stage 1 (MSV) threshold: promote hits w/ P <= F1",
+      (option("--F2") & number("value", cfg.F2)) % "Stage 2 (Vit) threshold: promote hits w/ P <= F2",
+      (option("--F3") & number("value", cfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3"
   );
 
   if (!parse(argc, argv, cli)) {
