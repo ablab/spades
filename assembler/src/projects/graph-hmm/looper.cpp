@@ -21,7 +21,6 @@ extern "C" {
 
 #include <iostream>
 #include <cstdio>
-#include <zlib.h>
 
 #include "demo.hpp"
 #include "utils/logger/log_writers.hpp"
