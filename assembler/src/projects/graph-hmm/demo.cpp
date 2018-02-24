@@ -407,7 +407,7 @@ std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees,
     transfer(I, M, fees.t[0][p7H_MI], fees.ins[0], "i");
     i_loop_processing(I, 0); // Do we really need I at the beginning???
     for (size_t m = 1; m <= fees.M; ++m) {
-        TRACE("Step #: " << m);
+        INFO("Step #: " << m);
 
         dm_new(D, M, I, m);
         I.clear();

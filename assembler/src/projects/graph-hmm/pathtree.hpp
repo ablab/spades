@@ -169,9 +169,9 @@ class PathLink {
 
     for (size_t i = 0; i < k && !q.empty(); ++i) {
       result.push_back(extract_path());
-      INFO(i + 1 << " top paths extracted");
-      INFO(Node::object_count_current() << " current # of best path tree nodes");
-      INFO(Node::object_count_max() << " max # of best path tree nodes");
+      TRACE(i + 1 << " top paths extracted");
+      TRACE(Node::object_count_current() << " current # of best path tree nodes");
+      TRACE(Node::object_count_max() << " max # of best path tree nodes");
     }
 
     return result;
