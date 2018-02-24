@@ -145,8 +145,8 @@ public:
 inline std::shared_ptr<ContigNameGenerator> MakeContigNameGenerator(config::pipeline_type mode,
                                                                     const conj_graph_pack &gp) {
     std::shared_ptr<path_extend::ContigNameGenerator> name_generator;
-    if (mode == config::pipeline_type::plasmid)
-        name_generator = make_shared<PlasmidContigNameGenerator>(gp.components);
+    if (mode == config::pipeline_type::plasmid && !cfg::get().pd->meta_mode)
+        name_generator = std::make_shared<PlasmidContigNameGenerator>(gp.components);
     else if (mode == config::pipeline_type::rna)
         name_generator = make_shared<TranscriptNameGenerator>(gp.g);
     else

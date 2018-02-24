@@ -57,7 +57,6 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
                                  PlasmidNamingF<Graph>(io::BasicNamingF<Graph>(), gp.components) :
                                  io::BasicNamingF<Graph>());
     fastg_writer.WriteSegmentsAndLinks();
-
     if (output_paths_ && gp.contig_paths.size() != 0) {
         auto name_generator = MakeContigNameGenerator(cfg::get().mode, gp);
         ContigWriter writer(gp.g, name_generator);
@@ -95,7 +94,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
         auto writers = CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name, fastg_writer);
         writers.push_back([&](const ScaffoldStorage &storage) {
-            gfa_writer.WritePaths(storage);
+//            gfa_writer.WritePaths(storage);
         });
         writer.OutputPaths(gp.contig_paths, writers);
     } else {

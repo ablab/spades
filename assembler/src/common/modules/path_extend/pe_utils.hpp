@@ -24,7 +24,10 @@ using namespace debruijn_graph;
 //Checks whether we are in a cycle of length 2, used only for seed selection.
 inline bool InTwoEdgeCycle(EdgeId e, const Graph &g) {
     auto v = g.EdgeEnd(e);
-    if (g.OutgoingEdgeCount(v) >= 1) {
+    //allow to start from long edge with potential coverage one.
+    if (g.OutgoingEdgeCount(v) >= 1 && (g.length(e) < 1000 || g.OutgoingEdgeCount(v) > 1)) {
+
+//    if (g.OutgoingEdgeCount(v) >= 1) {
         auto edges = g.OutgoingEdges(v);
         for (auto it = edges.begin(); it != edges.end(); ++it) {
             if (g.EdgeStart(e) == g.EdgeEnd(*it)) {

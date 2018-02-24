@@ -414,12 +414,12 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
         const auto &lib = dataset_info_.reads[lib_index];
 
         //TODO: scaff2015 does not need any single read libs?
-        if (support_.IsForSingleReadExtender(lib)) {
+/*        if (support_.IsForSingleReadExtender(lib)) {
             basic_extenders.emplace_back(lib.type(), lib_index,
                                          MakeLongReadsExtender(lib_index,
                                                                unique_data_.long_reads_cov_map_[lib_index]));
             ++single_read_libs;
-        }
+        } */
         if (support_.IsForPEExtender(lib)) {
             ++pe_libs;
             if (IsOldPEEnabled(pset.sm)) {
@@ -450,7 +450,7 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
             if (params_.mode == config::pipeline_type::rna) {
                 scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeRNAScaffoldingExtender(lib_index));
             } else {
-                scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeScaffoldingExtender(lib_index));
+//                scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeScaffoldingExtender(lib_index));
                 if (pset.sm == sm_combined) {
                     scaffolding_extenders.emplace_back(lib.type(), lib_index,
                                                        MakeMatePairScaffoldingExtender(lib_index,

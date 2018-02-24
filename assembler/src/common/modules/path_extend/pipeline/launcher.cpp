@@ -390,14 +390,15 @@ Extenders PathExtendLauncher::ConstructPBExtenders(const ExtendersGenerator &gen
 Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_map,
                                                  UsedUniqueStorage &used_unique_storage) {
     INFO("Creating main extenders, unique edge length = " << unique_data_.min_unique_length_);
-    if (support_.SingleReadsMapped() || support_.HasLongReads())
+/*    if (support_.SingleReadsMapped() || support_.HasLongReads())
         FillLongReadsCoverageMaps();
-
+*/
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map,
                                  unique_data_, used_unique_storage, support_);
     Extenders extenders = generator.MakeBasicExtenders();
 
     //long reads scaffolding extenders.
+/*
     if (support_.HasLongReads()) {
         if (params_.pset.sm == sm_old) {
             INFO("Will not use new long read scaffolding algorithm in this mode");
@@ -405,7 +406,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             utils::push_back_all(extenders, ConstructPBExtenders(generator));
         }
     }
-
+*/
     if (support_.HasMPReads()) {
         if (params_.pset.sm == sm_old) {
             INFO("Will not use mate-pairs is this mode");
@@ -478,12 +479,12 @@ void PathExtendLauncher::Launch() {
     make_dir(params_.output_dir);
     make_dir(params_.etc_dir);
 
-    if (support_.NeedsUniqueEdgeStorage()) {
+/*    if (support_.NeedsUniqueEdgeStorage()) {
         //Fill the storage to enable unique edge check
         EstimateUniqueEdgesParams();
         FillUniqueEdgeStorage();
     }
-
+    */
     MakeAndOutputScaffoldGraph();
 
     PathExtendResolver resolver(gp_.g);

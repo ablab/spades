@@ -11,6 +11,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <btree/safe_btree_map.h>
 #include "assembly_graph/core/action_handlers.hpp"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include "paired_info_buffer.hpp"
 #include <type_traits>
@@ -280,8 +281,8 @@ public:
     //---------------- Constructor ----------------
 
     PairedIndex(const Graph &graph)
-        : base(graph),  GraphActionHandler<Graph>(graph, "PairedIndexHandler")
-    {}
+        : base(graph),  GraphActionHandler<Graph>(graph, "PairedIndexHandler")        
+    {INFO("creating index");}
 
 private:
     bool GreaterPair(EdgeId e1, EdgeId e2) const {
@@ -427,9 +428,10 @@ public:
      * @return The number of deleted entries
      */
     size_t Remove(EdgeId edge) {
-        if (this->storage_.find(edge) == this->storage_.end())
+        auto i = this->storage_.find(edge);
+        if (i == this->storage_.end())
             return 0;
-        InnerMap &inner_map = this->storage_[edge];
+        InnerMap &inner_map = i->second;
         std::vector<EdgeId> to_remove;
         to_remove.reserve(inner_map.size());
         size_t old_size = this->size();
@@ -528,25 +530,98 @@ public:
 
     //Handlers for edges deletion support
     virtual void HandleDelete(EdgeId e) {
+//        VerifyIndex();
+    
+//        INFO("Handling deletion " << e.int_id() <<" "<< Remove(e));
+        if (e == this->graph().conjugate(e)) 
+            INFO("removing self-conj");
+        DEBUG("Deleted:" << e << " " << omp_get_thread_num());
         Remove(e);
     }
 
     virtual void HandleMerge(const vector<EdgeId> &old_edges, EdgeId new_edge) override {
+//        VerifyIndex();
+//        return;
         size_t shift = 0;
         /* if (!(new_edge < this->graph_.conjugate(new_edge))) {
             DEBUG("skipping conjugate pair");
         } */
+        DEBUG("created: " << new_edge);
+        if (new_edge == this->graph().conjugate(new_edge)) 
+            INFO("merging self-conj");
+        set<EdgeId> forbidden;
+        map<EdgeId, size_t> shifts;
+        for (auto e: old_edges)  {
+            shifts[e] = shift;
+            shift += this->graph_.length(e);
+            forbidden.insert(this->graph_.conjugate(e));
+        }
+            
+        for(auto e: old_edges) 
+            DEBUG(e << " " << this->graph_.length(e));
         for(auto e: old_edges) {
+            DEBUG("trying " << e);
             EdgeProxy old_e = Get(e);
+            size_t rs = 0;
+            for (auto it: old_e)
+                rs++;
+            DEBUG(rs <<"  next edges");
+            vector  <pair<EdgeId, Point>> to_add;
             for (auto it: old_e) {
                 EdgeId next = it.first;
-                for (auto point: it.second) {
-                    point.d += shift;
-                    this->Add(new_edge, next, point);
+                if (forbidden.find(next) != forbidden.end()) {
+                    INFO("skpping self-conjugate merge");
+                    continue;
                 }
+                size_t neg_shift = 0;
+                if (shifts.find(next) != shifts.end()) {
+                    DEBUG("old edge was: " << next );
+                    neg_shift = shifts[next];
+                    next = new_edge;
+                }
+                DEBUG(e <<" " << next << " "<< it.second.size());
+                for (auto pp: it.second) {
+                    Point point (pp);
+                    point.d += shifts[e];
+                    point.d = point.d - neg_shift;
+                    DEBUG("from "  <<new_edge << " to " << next  <<" old " << e << " old_dist " << pp.d << "new_dist " << point.d << " "  << point.weight);
+                    if (this->graph_.length(new_edge) > point.d && new_edge != next) {
+                        DEBUG("not adding, assert failed");
+                    } else {
+                        to_add.push_back(make_pair(next, point));
+//                        DEBUG("should add something but skpd");
+                        DEBUG("added");
+                    }
+                }
+                DEBUG("over");
             }
-            shift += this->graph_.length(e);
+            for (auto p: to_add)  {
+                this->Add(new_edge, p.first, p.second);
+            }
+
+            DEBUG("over2");
+//            shift += this->graph_.length(e);
         }
+        DEBUG("over3");
+    }
+    void VerifyIndex() {
+        set<EdgeId> edges_in_graph;
+        set<EdgeId> edges_in_index;
+        for (auto iter = this->graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+            edges_in_graph.insert(*iter);
+        }
+        size_t sz = 0;
+        for( auto iter = data_begin(); iter != data_end(); iter ++ ) {
+            VERIFY_MSG(iter->second.size() > 0, " empty map! ");
+            VERIFY_MSG(edges_in_graph.find(iter->first) != edges_in_graph.end(), " left edge wrong  " << iter->first);
+            for (const auto &e_iter: iter->second) {
+                VERIFY_MSG(edges_in_graph.find(e_iter.first) != edges_in_graph.end(), " right edge wrong  " << e_iter.first);
+                sz += e_iter.second->size();
+
+            }
+        }
+        DEBUG(sz << " " << this->size_);
+        VERIFY_MSG(sz == this ->size_, "Different sizes");
     }
 private:
     InnerMap empty_map_; //null object

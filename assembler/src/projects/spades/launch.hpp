@@ -140,16 +140,18 @@ void assemble_genome() {
                 iter += 5;
             }
         }
-
-        if (HybridLibrariesPresent())
-            SPAdes.add<debruijn_graph::HybridLibrariesAligning>();
+        else {
+        if (HybridLibrariesPresent()) {
+            SPAdes.add(new debruijn_graph::HybridLibrariesAligning());
+        }
 
         //No graph modification allowed after HybridLibrariesAligning stage!
 
-        SPAdes.add<debruijn_graph::ContigOutput>(false, "intermediate_contigs")
-               .add<debruijn_graph::PairInfoCount>()
-               .add<debruijn_graph::DistanceEstimation>()
-               .add<debruijn_graph::RepeatResolution>();
+        SPAdes.add(new debruijn_graph::ContigOutput(false, "intermediate_contigs"))
+              .add(new debruijn_graph::PairInfoCount())
+              .add(new debruijn_graph::DistanceEstimation())
+              .add(new debruijn_graph::RepeatResolution());
+        }
     } else {
         SPAdes.add<debruijn_graph::ContigOutput>(false);
     }
