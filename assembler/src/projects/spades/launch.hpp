@@ -125,6 +125,7 @@ void assemble_genome() {
 
         if (cfg::get().pd) {
             size_t iter = 5;
+            double mult = 1.3;
             size_t maxx = 300;
             SPAdes.add(new debruijn_graph::ChromosomeRemoval(iter));
             SPAdes.add(new debruijn_graph::ContigOutput(false, "intermediate_contigs"))
@@ -137,7 +138,7 @@ void assemble_genome() {
                 SPAdes.add(new debruijn_graph::ChromosomeRemoval(iter));
                 SPAdes.add(new debruijn_graph::RepeatResolution());
                 SPAdes.add(new debruijn_graph::ContigOutput(true, cfg::get().co.contigs_name + std::to_string(iter)));
-                iter += 5;
+                iter = std::max(iter + 5, size_t(iter*1.3));
             }
         }
         else {
