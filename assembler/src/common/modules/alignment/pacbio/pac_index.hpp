@@ -556,7 +556,13 @@ public:
     }
 
     string PathToString(const vector<EdgeId>& path) const {
-        return debruijn_graph::MergeSequences(g_, path).str();
+        string res = "";
+        for (auto iter = path.begin(); iter != path.end(); iter++) {
+            size_t len = g_.length(*iter);
+            string tmp = g_.EdgeNucls(*iter).First(len).str();
+            res = res + tmp;
+        }
+        return res;
     }
 
     vector<EdgeId> BestScoredPath(const Sequence &s, VertexId start_v, VertexId end_v,
