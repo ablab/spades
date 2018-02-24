@@ -21,6 +21,13 @@ add_executable(looper
 target_link_libraries(graph-hmm easel hmmer input utils pipeline ${COMMON_LIBRARIES})
 target_link_libraries(looper easel hmmer input utils pipeline ${COMMON_LIBRARIES})
 
+add_subdirectory(googletest)
+add_library(gtest_main_segfault_handler gtest_main.cpp)
+target_link_libraries(gtest_main_segfault_handler gtest input utils ${COMMON_LIBRARIES})
+
+add_executable(looper-test1 graph.cpp demo.cpp hmmfile.cpp demo.cpp test.cpp)
+target_link_libraries(looper-test1 gtest_main_segfault_handler easel hmmer input utils pipeline ${COMMON_LIBRARIES})
+
 if (SPADES_STATIC_BUILD)
   set_target_properties(graph-hmm PROPERTIES LINK_SEARCH_END_STATIC 1)
   set_target_properties(looper PROPERTIES LINK_SEARCH_END_STATIC 1)
