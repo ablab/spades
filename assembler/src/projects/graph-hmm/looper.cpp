@@ -16,11 +16,11 @@ extern "C" {
 #include "hmmer.h"
 }
 
-#include "hmmfile.hpp"
 #include <clipp/clipp.h>
+#include "hmmfile.hpp"
 
-#include <iostream>
 #include <cstdio>
+#include <iostream>
 
 #include "demo.hpp"
 #include "utils/logger/log_writers.hpp"
@@ -30,11 +30,11 @@ extern "C" {
 #include <fstream>
 
 void create_console_logger() {
-    using namespace logging;
+  using namespace logging;
 
-    logger *lg = create_logger("");
-    lg->add_writer(std::make_shared<console_writer>());
-    attach_logger(lg);
+  logger *lg = create_logger("");
+  lg->add_writer(std::make_shared<console_writer>());
+  attach_logger(lg);
 }
 
 struct cfg {
@@ -48,30 +48,54 @@ struct cfg {
   size_t k;
   bool acc;
   bool show_alignments = false;
-  double E; double T;
-  double domE; double domT;
-  double incE; double incT;
-  double incdomE; double incdomT;
-  bool cut_ga; bool cut_nc; bool cut_tc;
-  bool max; double F1; double F2; double F3; bool nobias;
+  double E;
+  double T;
+  double domE;
+  double domT;
+  double incE;
+  double incT;
+  double incdomE;
+  double incdomT;
+  bool cut_ga;
+  bool cut_nc;
+  bool cut_tc;
+  bool max;
+  double F1;
+  double F2;
+  double F3;
+  bool nobias;
 
   cfg()
-      : dbfile(""), hmmfile(""),
+      : dbfile(""),
+        hmmfile(""),
         acc(false),
-        E(10.0), T(0), domE(10.0), domT(0),
-        incE(0.01), incT(0.0), incdomE(0.01), incdomT(0),
-        cut_ga(false), cut_nc(false), cut_tc(false),
-        max(false), F1(0.02), F2(1e-3), F3(1e-5), nobias(false)
-  {}
+        E(10.0),
+        T(0),
+        domE(10.0),
+        domT(0),
+        incE(0.01),
+        incT(0.0),
+        incdomE(0.01),
+        incdomT(0),
+        cut_ga(false),
+        cut_nc(false),
+        cut_tc(false),
+        max(false),
+        F1(0.02),
+        F2(1e-3),
+        F3(1e-5),
+        nobias(false) {}
 };
 
 static int serial_master(const cfg &cfg);
 
-static int
-output_header(FILE *ofp, const std::string &hmmfile, const std::string &seqfile) {
-  if (fprintf(ofp, "# query HMM file:                  %s\n", hmmfile.c_str()) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
-  if (fprintf(ofp, "# target sequence database:        %s\n", seqfile.c_str()) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
-  if (fprintf(ofp, "# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n") < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+static int output_header(FILE *ofp, const std::string &hmmfile, const std::string &seqfile) {
+  if (fprintf(ofp, "# query HMM file:                  %s\n", hmmfile.c_str()) < 0)
+    ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+  if (fprintf(ofp, "# target sequence database:        %s\n", seqfile.c_str()) < 0)
+    ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+  if (fprintf(ofp, "# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n") < 0)
+    ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
   return eslOK;
 }
 
@@ -117,22 +141,18 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
   }
 }
 
-
 static bool is_dir(const std::string &path) {
   struct stat sb;
   return (stat(path.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode));
 }
 
-
-
-int
-main(int argc, char **argv) {
+int main(int argc, char **argv) {
   utils::segfault_handler sh;
   struct cfg cfg;
-  int              status   = eslOK;
+  int status = eslOK;
 
-  impl_Init();          /* processor specific initialization */
-  p7_FLogsumInit();		/* we're going to use table-driven Logsum() approximations at times */
+  impl_Init();      /* processor specific initialization */
+  p7_FLogsumInit(); /* we're going to use table-driven Logsum() approximations at times */
 
   process_cmdline(argc, argv, cfg);
   if (is_dir(cfg.output_dir)) {
@@ -157,141 +177,140 @@ main(int argc, char **argv) {
   return status;
 }
 
+P7_PIPELINE *pipeline_Create(const cfg &cfg, int M_hint, int L_hint, int long_targets, enum p7_pipemodes_e mode) {
+  P7_PIPELINE *pli = NULL;
+  int seed = 42;
 
-P7_PIPELINE *
-pipeline_Create(const cfg &cfg, int M_hint, int L_hint, int long_targets, enum p7_pipemodes_e mode) {
-  P7_PIPELINE *pli  = NULL;
-  int          seed = 42;
-
-  pli = (P7_PIPELINE*)malloc(sizeof(P7_PIPELINE));
+  pli = (P7_PIPELINE *)malloc(sizeof(P7_PIPELINE));
 
   pli->do_alignment_score_calc = 0;
   pli->long_targets = long_targets;
 
   if ((pli->fwd = p7_omx_Create(M_hint, L_hint, L_hint)) == NULL) goto ERROR_LABEL;
   if ((pli->bck = p7_omx_Create(M_hint, L_hint, L_hint)) == NULL) goto ERROR_LABEL;
-  if ((pli->oxf = p7_omx_Create(M_hint, 0,      L_hint)) == NULL) goto ERROR_LABEL;
-  if ((pli->oxb = p7_omx_Create(M_hint, 0,      L_hint)) == NULL) goto ERROR_LABEL;
+  if ((pli->oxf = p7_omx_Create(M_hint, 0, L_hint)) == NULL) goto ERROR_LABEL;
+  if ((pli->oxb = p7_omx_Create(M_hint, 0, L_hint)) == NULL) goto ERROR_LABEL;
 
-  pli->r                  = esl_randomness_CreateFast(seed);
-  pli->do_reseeding       = FALSE;
-  pli->ddef               = p7_domaindef_Create(pli->r);
+  pli->r = esl_randomness_CreateFast(seed);
+  pli->do_reseeding = FALSE;
+  pli->ddef = p7_domaindef_Create(pli->r);
   pli->ddef->do_reseeding = pli->do_reseeding;
 
   /* Configure reporting thresholds */
-  pli->by_E            = TRUE;
-  pli->E               = cfg.E;
-  pli->T               = 0.0;
-  pli->dom_by_E        = TRUE;
-  pli->domE            = cfg.domE;
-  pli->domT            = 0.0;
+  pli->by_E = TRUE;
+  pli->E = cfg.E;
+  pli->T = 0.0;
+  pli->dom_by_E = TRUE;
+  pli->domE = cfg.domE;
+  pli->domT = 0.0;
   pli->use_bit_cutoffs = FALSE;
   if (cfg.T > 0.0) {
-    pli->T    = cfg.T;
+    pli->T = cfg.T;
     pli->by_E = FALSE;
   }
   if (cfg.domT > 0.0) {
-    pli->domT     = cfg.domT;
+    pli->domT = cfg.domT;
     pli->dom_by_E = FALSE;
   }
 
   /* Configure inclusion thresholds */
-  pli->inc_by_E           = TRUE;
-  pli->incE               = cfg.incE;
-  pli->incT               = 0.0;
-  pli->incdom_by_E        = TRUE;
-  pli->incdomE            = cfg.incdomE;
-  pli->incdomT            = 0.0;
+  pli->inc_by_E = TRUE;
+  pli->incE = cfg.incE;
+  pli->incT = 0.0;
+  pli->incdom_by_E = TRUE;
+  pli->incdomE = cfg.incdomE;
+  pli->incdomT = 0.0;
   if (cfg.incT > 0.0) {
-    pli->incT    = cfg.incT;
+    pli->incT = cfg.incT;
     pli->inc_by_E = FALSE;
   }
   if (cfg.incdomT > 0.0) {
-    pli->incdomT     = cfg.incdomT;
+    pli->incdomT = cfg.incdomT;
     pli->incdom_by_E = FALSE;
   }
 
   /* Configure for one of the model-specific thresholding options */
   if (cfg.cut_ga) {
-    pli->T        = pli->domT        = 0.0;
-    pli->by_E     = pli->dom_by_E    = FALSE;
-    pli->incT     = pli->incdomT     = 0.0;
+    pli->T = pli->domT = 0.0;
+    pli->by_E = pli->dom_by_E = FALSE;
+    pli->incT = pli->incdomT = 0.0;
     pli->inc_by_E = pli->incdom_by_E = FALSE;
     pli->use_bit_cutoffs = p7H_GA;
   }
   if (cfg.cut_nc) {
-    pli->T        = pli->domT        = 0.0;
-    pli->by_E     = pli->dom_by_E    = FALSE;
-    pli->incT     = pli->incdomT     = 0.0;
+    pli->T = pli->domT = 0.0;
+    pli->by_E = pli->dom_by_E = FALSE;
+    pli->incT = pli->incdomT = 0.0;
     pli->inc_by_E = pli->incdom_by_E = FALSE;
     pli->use_bit_cutoffs = p7H_NC;
   }
   if (cfg.cut_tc) {
-    pli->T        = pli->domT        = 0.0;
-    pli->by_E     = pli->dom_by_E    = FALSE;
-    pli->incT     = pli->incdomT     = 0.0;
+    pli->T = pli->domT = 0.0;
+    pli->by_E = pli->dom_by_E = FALSE;
+    pli->incT = pli->incdomT = 0.0;
     pli->inc_by_E = pli->incdom_by_E = FALSE;
     pli->use_bit_cutoffs = p7H_TC;
   }
 
   /* Configure search space sizes for E value calculations  */
-  pli->Z       = pli->domZ       = 0.0;
+  pli->Z = pli->domZ = 0.0;
   pli->Z_setby = pli->domZ_setby = p7_ZSETBY_NTARGETS;
 
   /* Configure acceleration pipeline thresholds */
-  pli->do_max        = FALSE;
+  pli->do_max = FALSE;
   pli->do_biasfilter = TRUE;
-  pli->do_null2      = TRUE;
-  pli->F1     = std::min(1.0, cfg.F1);
-  pli->F2     = std::min(1.0, cfg.F2);
-  pli->F3     = std::min(1.0, cfg.F2);
+  pli->do_null2 = TRUE;
+  pli->F1 = std::min(1.0, cfg.F1);
+  pli->F2 = std::min(1.0, cfg.F2);
+  pli->F3 = std::min(1.0, cfg.F2);
 
   if (long_targets) {
-    pli->B1     = 100;
-    pli->B2     = 240;
-    pli->B3     = 1000;
+    pli->B1 = 100;
+    pli->B2 = 240;
+    pli->B3 = 1000;
   } else {
     pli->B1 = pli->B2 = pli->B3 = -1;
   }
 
   if (cfg.max) {
-    pli->do_max        = TRUE;
+    pli->do_max = TRUE;
     pli->do_biasfilter = FALSE;
 
     pli->F2 = pli->F3 = 1.0;
-    pli->F1 = (pli->long_targets ? 0.3 : 1.0); // need to set some threshold for F1 even on long targets. Should this be tighter?
+    pli->F1 =
+        (pli->long_targets ? 0.3
+                           : 1.0);  // need to set some threshold for F1 even on long targets. Should this be tighter?
   }
 
   /* Accounting as we collect results */
-  pli->nmodels         = 0;
-  pli->nseqs           = 0;
-  pli->nres            = 0;
-  pli->nnodes          = 0;
-  pli->n_past_msv      = 0;
-  pli->n_past_bias     = 0;
-  pli->n_past_vit      = 0;
-  pli->n_past_fwd      = 0;
-  pli->pos_past_msv    = 0;
-  pli->pos_past_bias   = 0;
-  pli->pos_past_vit    = 0;
-  pli->pos_past_fwd    = 0;
-  pli->mode            = mode;
+  pli->nmodels = 0;
+  pli->nseqs = 0;
+  pli->nres = 0;
+  pli->nnodes = 0;
+  pli->n_past_msv = 0;
+  pli->n_past_bias = 0;
+  pli->n_past_vit = 0;
+  pli->n_past_fwd = 0;
+  pli->pos_past_msv = 0;
+  pli->pos_past_bias = 0;
+  pli->pos_past_vit = 0;
+  pli->pos_past_fwd = 0;
+  pli->mode = mode;
   pli->show_accessions = cfg.acc;
   pli->show_alignments = cfg.show_alignments;
-  pli->hfp             = NULL;
-  pli->errbuf[0]       = '\0';
+  pli->hfp = NULL;
+  pli->errbuf[0] = '\0';
 
   return pli;
 
- ERROR_LABEL:
+ERROR_LABEL:
   p7_pipeline_Destroy(pli);
   return NULL;
 }
 
 class HMMMatcher {
  public:
-  HMMMatcher(const hmmer::HMM &hmmw,
-             const cfg &cfg)
+  HMMMatcher(const hmmer::HMM &hmmw, const cfg &cfg)
       : gm_(NULL, p7_profile_Destroy),
         om_(NULL, p7_oprofile_Destroy),
         bg_(NULL, p7_bg_Destroy),
@@ -299,7 +318,7 @@ class HMMMatcher {
         th_(NULL, p7_tophits_Destroy) {
     P7_HMM *hmm = hmmw.get();
 
-    P7_PROFILE *gm = p7_profile_Create (hmm->M, hmm->abc);
+    P7_PROFILE *gm = p7_profile_Create(hmm->M, hmm->abc);
     gm_.reset(gm);
 
     P7_OPROFILE *om = p7_oprofile_Create(hmm->M, hmm->abc);
@@ -311,7 +330,8 @@ class HMMMatcher {
     p7_ProfileConfig(hmm, bg, gm, 100, p7_LOCAL); /* 100 is a dummy length for now; and MSVFilter requires local mode */
     p7_oprofile_Convert(gm, om);                  /* <om> is now p7_LOCAL, multihit */
 
-    P7_PIPELINE *pli = pipeline_Create(cfg, om->M, 100, FALSE, p7_SEARCH_SEQS); /* L_hint = 100 is just a dummy for now */
+    P7_PIPELINE *pli =
+        pipeline_Create(cfg, om->M, 100, FALSE, p7_SEARCH_SEQS); /* L_hint = 100 is just a dummy for now */
     pli_.reset(pli);
 
     p7_pli_NewModel(pli, om, bg);
@@ -338,33 +358,27 @@ class HMMMatcher {
     p7_tophits_Threshold(th_.get(), pli_.get());
   }
 
-  P7_TOPHITS *hits() const {
-    return th_.get();
-  }
-  P7_PIPELINE *pipeline() const {
-    return pli_.get();
-  }
+  P7_TOPHITS *hits() const { return th_.get(); }
+  P7_PIPELINE *pipeline() const { return pli_.get(); }
 
  private:
-  std::unique_ptr<P7_PROFILE, void(*)(P7_PROFILE*)>  gm_;
-  std::unique_ptr<P7_OPROFILE, void(*)(P7_OPROFILE*)> om_;  /* optimized query profile */
-  std::unique_ptr<P7_BG, void(*)(P7_BG*)> bg_; /* null model */
-  std::unique_ptr<P7_PIPELINE, void(*)(P7_PIPELINE*)> pli_; /* work pipeline */
-  std::unique_ptr<P7_TOPHITS, void(*)(P7_TOPHITS*)> th_;
+  std::unique_ptr<P7_PROFILE, void (*)(P7_PROFILE *)> gm_;
+  std::unique_ptr<P7_OPROFILE, void (*)(P7_OPROFILE *)> om_;  /* optimized query profile */
+  std::unique_ptr<P7_BG, void (*)(P7_BG *)> bg_;              /* null model */
+  std::unique_ptr<P7_PIPELINE, void (*)(P7_PIPELINE *)> pli_; /* work pipeline */
+  std::unique_ptr<P7_TOPHITS, void (*)(P7_TOPHITS *)> th_;
 };
 
-static int
-serial_master(const cfg &cfg) {
-  FILE            *ofp      = stdout;
-  ESL_STOPWATCH   *w;
-  int              textw    = 120;
+static int serial_master(const cfg &cfg) {
+  FILE *ofp = stdout;
+  ESL_STOPWATCH *w;
+  int textw = 120;
 
   w = esl_stopwatch_Create();
 
   /* Open the query profile HMM file */
   hmmer::HMMFile hmmfile(cfg.hmmfile);
-  if (!hmmfile.valid())
-    p7_Fail("Error reading HMM file %s\n", cfg.hmmfile.c_str());
+  if (!hmmfile.valid()) p7_Fail("Error reading HMM file %s\n", cfg.hmmfile.c_str());
 
   auto hmmw = hmmfile.read();
   if (hmmw) {
@@ -412,9 +426,13 @@ serial_master(const cfg &cfg) {
     esl_stopwatch_Start(w);
     HMMMatcher matcher(hmmw.get(), cfg);
 
-    if (fprintf(ofp, "Query:       %s  [M=%d]\n", hmm->name, hmm->M)  < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
-    if (hmm->acc)  { if (fprintf(ofp, "Accession:   %s\n", hmm->acc)  < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed"); }
-    if (hmm->desc) { if (fprintf(ofp, "Description: %s\n", hmm->desc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed"); }
+    if (fprintf(ofp, "Query:       %s  [M=%d]\n", hmm->name, hmm->M) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+    if (hmm->acc) {
+      if (fprintf(ofp, "Accession:   %s\n", hmm->acc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+    }
+    if (hmm->desc) {
+      if (fprintf(ofp, "Description: %s\n", hmm->desc) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+    }
 
     for (size_t i = 0; i < edges.size(); ++i) {
       matcher.match((std::to_string(i)).c_str(), edges[i].c_str(), "comment");
@@ -426,9 +444,10 @@ serial_master(const cfg &cfg) {
 
     esl_stopwatch_Stop(w);
 
-    // p7_tophits_Targets(ofp, matcher.hits(), matcher.pipeline(), textw); if (fprintf(ofp, "\n\n") < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
-    // p7_tophits_Domains(ofp, matcher.hits(), matcher.pipeline(), textw); if (fprintf(ofp, "\n\n") < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
-    // p7_pli_Statistics(ofp, matcher.pipeline(), w); if (fprintf(ofp, "//\n") < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+    // p7_tophits_Targets(ofp, matcher.hits(), matcher.pipeline(), textw); if (fprintf(ofp, "\n\n") < 0)
+    // ESL_EXCEPTION_SYS(eslEWRITE, "write failed"); p7_tophits_Domains(ofp, matcher.hits(), matcher.pipeline(), textw);
+    // if (fprintf(ofp, "\n\n") < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed"); p7_pli_Statistics(ofp,
+    // matcher.pipeline(), w); if (fprintf(ofp, "//\n") < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
 
     auto hits = matcher.hits();
     std::vector<size_t> good_edges;
@@ -454,16 +473,17 @@ serial_master(const cfg &cfg) {
 
     auto general_subgraph = subgraph.general_graph();
     INFO("Before compression");
-    INFO("Edges: " << general_subgraph.n_edges() << ", vertices (k-mers): " << general_subgraph.n_vertices() << ", bases: " << general_subgraph.n_bases());
+    INFO("Edges: " << general_subgraph.n_edges() << ", vertices (k-mers): " << general_subgraph.n_vertices()
+                   << ", bases: " << general_subgraph.n_bases());
     general_subgraph.check_symmetry();
     general_subgraph.collapse();
     INFO("After compression");
-    INFO("Edges: " << general_subgraph.n_edges() << ", vertices (k-mers): " << general_subgraph.n_vertices() << ", bases: " << general_subgraph.n_bases());
+    INFO("Edges: " << general_subgraph.n_edges() << ", vertices (k-mers): " << general_subgraph.n_vertices()
+                   << ", bases: " << general_subgraph.n_bases());
     general_subgraph.check_symmetry();
     auto initial = general_subgraph.all();
     auto result = find_best_path(fees, initial);
     INFO(result);
-
 
     std::ofstream ofs(cfg.output_dir + "/" + hmm->name + ".fa", std::ios::out);
     ofs.precision(13);

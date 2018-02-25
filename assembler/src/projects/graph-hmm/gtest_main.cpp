@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <gtest/gtest.h>
+#include <stdio.h>
 #include "utils/segfault_handler.hpp"
 
 GTEST_API_ int main(int argc, char **argv) {
