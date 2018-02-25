@@ -7,13 +7,12 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 
-
 namespace pathtree {
-
 
 template <typename T>
 class Node : public ObjectCounter<Node<T>> {
   using This = Node<T>;
+
  public:
   std::vector<T> collect() const {
     std::vector<T> result;
@@ -32,9 +31,7 @@ class Node : public ObjectCounter<Node<T>> {
     return std::make_shared<This>(payload, parent);
   }
 
-  const auto &payload() const {
-    return payload_;
-  }
+  const auto &payload() const { return payload_; }
 
  private:
   T payload_;
@@ -45,8 +42,6 @@ template <typename T>
 std::shared_ptr<Node<T>> make_child(const T &payload, const std::shared_ptr<Node<T>> &parent = nullptr) {
   return Node<T>::child(payload, parent);
 }
-
-
 
 template <typename GraphPointer>
 class PathLink {
@@ -115,11 +110,12 @@ class PathLink {
   };
 
   std::vector<std::pair<std::vector<GraphPointer>, double>> top_k(size_t k) {
-    using Node = Node<std::tuple<GraphPointer, double, This*>>;
+    using Node = Node<std::tuple<GraphPointer, double, This *>>;
     using SPT = std::shared_ptr<Node>;
     std::priority_queue<SPT, std::vector<SPT>, Comp> q;
     auto extract_path = [&q]() {
-      SPT tail = q.top(); q.pop();
+      SPT tail = q.top();
+      q.pop();
       GraphPointer gp;
       This *p;
       double cost;
@@ -160,7 +156,7 @@ class PathLink {
     auto best = best_ancestor();
     if (best == scores_.end()) {
       return result;
-        // TODO Support empty Link as a comon case and remove this workaround
+      // TODO Support empty Link as a comon case and remove this workaround
     }
 
     double best_score = best->second.first;
