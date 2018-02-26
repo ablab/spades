@@ -38,6 +38,8 @@ struct ConstructionStorage {
             : ext_index(k) {}
 
     utils::DeBruijnExtensionIndex<> ext_index;
+
+    std::unique_ptr<qf::cqf> cqf;
     std::unique_ptr<utils::KMerDiskCounter<RtSeq>> counter;
     std::unique_ptr<CoverageMap> coverage_map;
     config::debruijn_config::construction params;
@@ -121,6 +123,55 @@ void Construction::fini(debruijn_graph::conj_graph_pack &) {
 
 Construction::~Construction() {}
 
+class CoverageFilter: public Construction::Phase {
+  public:
+    CoverageFilter()
+            : Construction::Phase("k-mer multiplicity estimation", "cqf_filter") { }
+    virtual ~CoverageFilter() = default;
+
+    void run(debruijn_graph::conj_graph_pack &, const char*) override {
+        auto read_streams = storage().read_streams;
+        const auto &index = storage().ext_index;
+        using storing_type = decltype(storage().ext_index)::storing_type;
+
+        VERIFY_MSG(read_streams.size(), "No input streams specified");
+
+        unsigned kthr = storage().params.kmer_cov_threshold;
+        unsigned rthr = storage().params.read_cov_threshold;
+
+        using KmerFilter = utils::StoringTypeFilter<storing_type>;
+
+        unsigned kplusone = index.k() + 1;
+        rolling_hash::SymmetricCyclicHash<rolling_hash::NDNASeqHash> hasher(kplusone);
+
+        INFO("Estimating k-mers cardinality");
+        size_t kmers = EstimateCardinality(kplusone, read_streams, hasher, KmerFilter());
+
+        // Create main CQF using # of slots derived from estimated # of k-mers
+        storage().cqf.reset(new qf::cqf(kmers));
+
+        INFO("Building k-mer coverage histogram");
+        FillCoverageHistogram(*storage().cqf, kplusone, hasher, read_streams, std::max(kthr, rthr), KmerFilter());
+
+        // Replace input streams with wrapper ones
+        storage().read_streams = io::CovFilteringWrap(read_streams, kplusone, hasher, *storage().cqf, rthr);
+    }
+
+    void load(debruijn_graph::conj_graph_pack&,
+              const std::string &,
+              const char*) override {
+        VERIFY_MSG(false, "implement me");
+    }
+
+    void save(const debruijn_graph::conj_graph_pack&,
+              const std::string &,
+              const char*) const override {
+        // VERIFY_MSG(false, "implement me");
+    }
+
+};
+
+
 class KMerCounting : public Construction::Phase {
     typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;
 public:
@@ -139,26 +190,6 @@ public:
         VERIFY_MSG(read_streams.size(), "No input streams specified");
 
         unsigned nthreads = (unsigned)read_streams.size();
-        unsigned kthr = storage().params.kmer_cov_threshold;
-        unsigned rthr = storage().params.read_cov_threshold;
-        if (kthr || rthr) {
-            using KmerFilter = utils::StoringTypeFilter<storing_type>;
-
-            unsigned kplusone = index.k() + 1;
-            SeqHasher hasher(kplusone);
-
-            INFO("Estimating k-mers cardinality");
-            size_t kmers = EstimateCardinality(kplusone, read_streams, hasher, KmerFilter());
-
-            // Create main CQF using # of slots derived from estimated # of k-mers
-            qf::cqf cqf(kmers);
-
-            INFO("Building k-mer coverage histogram");
-            FillCoverageHistogram(cqf, kplusone, hasher, read_streams, std::max(kthr, rthr), KmerFilter());
-
-            read_streams = io::CovFilteringWrap(read_streams, kplusone, hasher, cqf, rthr);
-        }
-
         utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
                                         utils::StoringTypeFilter<storing_type>>
                 splitter(storage().workdir, index.k() + 1, 0,
@@ -513,6 +544,12 @@ public:
 
 Construction::Construction()
         : spades::CompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {
+    unsigned kthr = storage().params.kmer_cov_threshold;
+    unsigned rthr = storage().params.read_cov_threshold;
+
+    if (kthr || rthr)
+        add<CoverageFilter>();
+
     add<KMerCounting>();
 
     add<ExtensionIndexBuilder>();
