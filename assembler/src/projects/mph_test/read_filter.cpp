@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
         io::DataSet<debruijn_graph::config::LibraryData> dataset;
         dataset.load(dataset_desc);
 
-        fs::make_dir(workdir + "/tmp/");
+        fs::make_dirs(workdir + "/tmp/");
         debruijn_graph::config::init_libs(dataset, nthreads, buff_size, workdir + "/tmp/");
 
         std::vector<size_t> libs(dataset.lib_count());
