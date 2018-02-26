@@ -53,7 +53,7 @@ public:
             : inner_hash_(seed) {}
 
     digest operator()(chartype val) const {
-        return inner_hash_(nucl(val));
+        return inner_hash_(dignucl(val));
     }
 };
 
@@ -61,7 +61,7 @@ public:
 //FIXME bring to standard hash interface
 //FIXME extract commented code to separate class
 //FIXME does it make sense to have a different precision?
-template<unsigned precision = 64, typename hasher = DNASeqHash>
+template<unsigned precision = 64, typename hasher = NDNASeqHash>
 class CyclicHash {
     constexpr digest mask(unsigned bits) const {
         return (digest(1) << (bits - 1)) ^
@@ -172,7 +172,7 @@ private:
     const digest maskn_;
 };
 
-template<typename hasher = DNASeqHash>
+template<typename hasher = NDNASeqHash>
 class SymmetricCyclicHash {
 public:
     struct CyclicDigest {
