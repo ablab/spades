@@ -37,13 +37,19 @@ class FilteringReaderWrapper : public DelegatingWrapper<ReadType> {
     //allows read to be modified
 public:
     typedef std::function<bool (ReadType&)> FilterF;
+//    static constexpr FilterF VALIDITY_FILTER = [] (ReadType& r) -> bool { return r.IsValid(); };
+
+    static bool VALIDITY_FILTER(ReadType& r) {
+        return r.IsValid();
+    };
+
   /*
    * Default constructor.
    *
    * @param reader Reference to any other reader (child of IReader).
    */
     explicit FilteringReaderWrapper(typename base::ReadStreamPtrT reader_ptr,
-                                    FilterF filter = [] (ReadType& r) { return r.IsValid(); }) :
+                                    FilterF filter = VALIDITY_FILTER) :
             base(reader_ptr), filter_f_(filter), eof_(false) {
         StepForward();
     }
@@ -110,17 +116,17 @@ private:
 
 };
 
-//FIXME Rename and move!
 template<class ReadType>
 std::shared_ptr<ReadStream<ReadType>> FilteringWrap(std::shared_ptr<ReadStream<ReadType>> reader_ptr,
-                                                    typename FilteringReaderWrapper<ReadType>::FilterF filter) {
+                                                    typename FilteringReaderWrapper<ReadType>::FilterF filter =
+                                                            FilteringReaderWrapper<ReadType>::VALIDITY_FILTER) {
     return std::make_shared<FilteringReaderWrapper<ReadType>>(reader_ptr, filter);
 }
 
-//FIXME Rename and move!
 template<class ReadType>
 ReadStreamList<ReadType> FilteringWrap(const ReadStreamList<ReadType>& readers,
-                                       typename FilteringReaderWrapper<ReadType>::FilterF filter) {
+                                       typename FilteringReaderWrapper<ReadType>::FilterF filter =
+                                            FilteringReaderWrapper<ReadType>::VALIDITY_FILTER) {
     ReadStreamList<ReadType> answer;
     for (size_t i = 0; i < readers.size(); ++i) {
         answer.push_back(FilteringWrap<ReadType>(readers.ptr_at(i), filter));

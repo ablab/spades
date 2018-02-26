@@ -4,8 +4,9 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
+//FIXME Rename file
+
 #pragma once
-//todo rename file
 #include "filtering_reader_wrapper.hpp"
 #include "pipeline/library.hpp"
 
@@ -67,79 +68,45 @@ inline PairedRead LongestValid(const PairedRead& r) {
 }
 
 
-//todo rewrite without eof
 template<typename ReadType>
-class CarefulFilteringWrapper : public DelegatingWrapper<ReadType> {
+class LongestValidRetainingWrapper : public DelegatingWrapper<ReadType> {
     typedef DelegatingWrapper<ReadType> base;
 public:
-  /*
-   * Default constructor.
-   *
-   * @param reader Reference to any other reader (child of IReader).
-   */
-    CarefulFilteringWrapper(typename base::ReadStreamPtrT reader_ptr) :
-                base(reader_ptr),
-                eof_(false) {
-            StepForward();
-        }
-
-    bool eof() override {
-        return eof_;
+    /*
+    * Default constructor.
+    *
+    * @param reader Reference to any other reader (child of IReader).
+    */
+    LongestValidRetainingWrapper(typename base::ReadStreamPtrT reader_ptr) :
+                base(reader_ptr) {
     }
 
-  /*
-   * Read SingleRead from stream.
-   *
-   * @param read The SingleRead that will store read * data.
-   *
-   * @return Reference to this stream.
-   */
-    CarefulFilteringWrapper& operator>>(ReadType& read) override {
-        read = next_read_;
-        StepForward();
+    /*
+    * Read SingleRead from stream.
+    *
+    * @param read The SingleRead that will store read * data.
+    *
+    * @return Reference to this stream.
+    */
+    LongestValidRetainingWrapper& operator>>(ReadType& read) override {
+        this->reader() >> read;
+        read = LongestValid(read);
         return *this;
-    }
-
-    void reset() override {
-        base::reset();
-        eof_ = false;
-        StepForward();
-    }
-
-private:
-    bool eof_;
-    ReadType next_read_;
-
-  /*
-   * Read next valid read in the stream.
-   */
-    void StepForward() {
-        while (!base::eof()) {
-            base::operator >>(next_read_);
-            next_read_ = LongestValid(next_read_);
-            if (next_read_.IsValid()) {
-                return;
-            }
-        }
-        eof_ = true;
     }
 };
 
-//FIXME Rename and move!
 template<class ReadType>
-std::shared_ptr<ReadStream<ReadType>> CarefulFilteringWrap(std::shared_ptr<ReadStream<ReadType>> reader_ptr) {
-    //return reader_ptr = make_shared<CarefulFilteringWrapper<ReadType>>(reader_ptr, false, LibraryOrientation::Undefined);
-    return std::make_shared<CarefulFilteringWrapper<ReadType>>(reader_ptr);
+std::shared_ptr<ReadStream<ReadType>> LongestValidWrap(std::shared_ptr<ReadStream<ReadType>> reader_ptr) {
+    return FilteringWrap<ReadType>(std::make_shared<LongestValidRetainingWrapper<ReadType>>(reader_ptr));
 }
 
-//FIXME Rename and move!
 template<class ReadType>
-ReadStreamList<ReadType> CarefulFilteringWrap(const ReadStreamList<ReadType>& readers) {
+ReadStreamList<ReadType> LongestValidWrap(const ReadStreamList<ReadType> &readers) {
     ReadStreamList<ReadType> answer;
     for (size_t i = 0; i < readers.size(); ++i) {
-        answer.push_back(CarefulFilteringWrap<ReadType>(readers.ptr_at(i)));
+        answer.push_back(LongestValidWrap<ReadType>(readers.ptr_at(i)));
     }
-    return answer;
+    return FilteringWrap<ReadType>(answer);
 }
 
 }
