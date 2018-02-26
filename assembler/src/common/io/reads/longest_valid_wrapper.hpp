@@ -4,8 +4,6 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
-//FIXME Rename file
-
 #pragma once
 #include "filtering_reader_wrapper.hpp"
 #include "pipeline/library.hpp"
@@ -72,22 +70,10 @@ template<typename ReadType>
 class LongestValidRetainingWrapper : public DelegatingWrapper<ReadType> {
     typedef DelegatingWrapper<ReadType> base;
 public:
-    /*
-    * Default constructor.
-    *
-    * @param reader Reference to any other reader (child of IReader).
-    */
     LongestValidRetainingWrapper(typename base::ReadStreamPtrT reader_ptr) :
                 base(reader_ptr) {
     }
 
-    /*
-    * Read SingleRead from stream.
-    *
-    * @param read The SingleRead that will store read * data.
-    *
-    * @return Reference to this stream.
-    */
     LongestValidRetainingWrapper& operator>>(ReadType& read) override {
         this->reader() >> read;
         read = LongestValid(read);

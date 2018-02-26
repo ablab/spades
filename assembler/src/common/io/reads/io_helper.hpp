@@ -15,7 +15,7 @@
 #include "binary_streams.hpp"
 #include "multifile_reader.hpp"
 #include "converting_reader_wrapper.hpp"
-#include "careful_filtering_reader_wrapper.hpp"
+#include "longest_valid_wrapper.hpp"
 #include "rc_reader_wrapper.hpp"
 
 namespace io {
