@@ -61,7 +61,7 @@ public:
 //FIXME bring to standard hash interface
 //FIXME extract commented code to separate class
 //FIXME does it make sense to have a different precision?
-template<unsigned precision = 64, typename hasher = NDNASeqHash>
+template<typename hasher = NDNASeqHash, unsigned precision = 64>
 class CyclicHash {
     constexpr digest mask(unsigned bits) const {
         return (digest(1) << (bits - 1)) ^
