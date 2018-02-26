@@ -68,7 +68,7 @@ inline bool is_dignucl(char c) { // is 0123
  * @return c ^ 3
  */
 inline char complement(char c) {
-    // VERIFY(is_dignucl(c));
+    VERIFY_DEV(is_dignucl(c));
     return c ^ 3;
 }
 
@@ -115,7 +115,7 @@ struct dignucl : public unary_function<int,bool> {
 };*/
 
 inline char dignucl(char c) {
-    // VERIFY(is_nucl(c));
+    VERIFY_DEV(is_nucl(c));
     return dignucl_map[(unsigned)c];
 }
 

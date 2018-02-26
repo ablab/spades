@@ -77,7 +77,7 @@ public:
     const static size_t TotalBytes = sizeof(T) * DataSize;
 
     static size_t GetDataSize(size_t size) {
-        VERIFY(size == size_);
+        VERIFY_DEV(size == size_);
         return (size_ + TNucl - 1) >> TNuclBits;
     }
 
@@ -333,7 +333,7 @@ public:
         if (is_nucl(c)) {
             c = dignucl(c);
         }
-        VERIFY(is_dignucl(c));
+        VERIFY_DEV(is_dignucl(c));
         Seq<size_, T> res(*this);
         T rm = c;
         for (size_t i = 0; i < DataSize; ++i) {
@@ -434,13 +434,13 @@ public:
      */
     template<size_t size2_, typename T2 = T>
     Seq<size2_, T2> start() const {
-        VERIFY(size2_ <= size_);
+        VERIFY_DEV(size2_ <= size_);
         return Seq<size2_, T2>(*this);
     }
 
     template<size_t size2_/* = size_ - 1*/, typename T2 = T>
     Seq<size2_, T2> end() const {
-        VERIFY(size2_ <= size_);
+        VERIFY_DEV(size2_ <= size_);
         return Seq<size2_, T2>(*this, size_ - size2_);
     }
 
