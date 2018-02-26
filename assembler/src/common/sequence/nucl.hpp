@@ -92,7 +92,7 @@ inline char nucl_complement(char c) {
         case 'n':
             return 'n';
         default:
-            VERIFY(false);
+            VERIFY_DEV(false);
             return INVALID_NUCL;
     }
 }
@@ -121,7 +121,7 @@ inline char nucl(char c) {
         case 'T':
             return 'T';
         default:
-            VERIFY(false);
+            VERIFY_DEV(false);
             return INVALID_NUCL;
     }
 }
@@ -150,7 +150,7 @@ inline char dignucl(char c) {
         case 'T':
             return 3;
         default:
-            VERIFY(false);
+            VERIFY_DEV(false);
             return INVALID_NUCL;
     }
 }

@@ -35,7 +35,8 @@ public:
                 hval = dT;
                 break;
             default:
-                VERIFY(false);
+                VERIFY_DEV(false);
+                break;
         }
 
         return hval ^ ((hval * seed_) >> 23);
