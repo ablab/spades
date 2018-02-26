@@ -219,20 +219,20 @@ public:
      */
 
     explicit RuntimeSeq(size_t k) : size_(k) {
-        VERIFY(k <= max_size_);
+        VERIFY_DEV(k <= max_size_);
         //VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
         std::fill(data_.begin(), data_.end(), 0);
     }
 
     RuntimeSeq(size_t k, const char *s) : size_(k) {
-        VERIFY(k <= max_size_);
+        VERIFY_DEV(k <= max_size_);
         //VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
         init(s);
     }
 
 
     explicit RuntimeSeq(size_t k, const T *data_array) : size_(k) {
-        VERIFY(k <= max_size_);
+        VERIFY_DEV(k <= max_size_);
         std::fill(data_.begin(), data_.end(), 0);
 
         size_t data_size = GetDataSize(size_);
@@ -244,7 +244,7 @@ public:
     }
 
     explicit RuntimeSeq(size_t k, T *data_array) : size_(k) {
-        VERIFY(k <= max_size_);
+        VERIFY_DEV(k <= max_size_);
         std::fill(data_.begin(), data_.end(), 0);
 
         size_t data_size = GetDataSize(size_);
@@ -260,15 +260,15 @@ public:
 
     template<size_t size2_, typename T2 = T>
     explicit RuntimeSeq(const Seq<size2_, T2> &seq, bool) : size_(size2_) {
-        VERIFY(size_ <= max_size_);
+        VERIFY_DEV(size_ <= max_size_);
         std::fill(data_.begin(), data_.end(), 0);
         seq.copy_data(data_.data());
     }
 
     template<size_t size2_, typename T2 = T>
     explicit RuntimeSeq(const SimpleSeq<size2_, T2> &seq, size_t k) : size_(k) {
-        VERIFY(size_ <= max_size_);
-        VERIFY(size2_ <= max_size_);
+        VERIFY_DEV(size_ <= max_size_);
+        VERIFY_DEV(size2_ <= max_size_);
         std::fill(data_.begin(), data_.end(), 0);
         seq.copy_data(data_.data());
     }
@@ -372,7 +372,7 @@ public:
      * @return 0123-char on position i
      */
     char operator[](const size_t i) const {
-        VERIFY(i < size_);
+        VERIFY_DEV(i < size_);
         return (data_[i >> TNuclBits] >> ((i & (TNucl - 1)) << 1)) & 3;
     }
 
@@ -558,7 +558,7 @@ public:
         if (is_nucl(c)) {
             c = dignucl(c);
         }
-        VERIFY(is_dignucl(c));
+        VERIFY_DEV(is_dignucl(c));
 
         RuntimeSeq<max_size_, T> res(*this);
         size_t data_size = GetDataSize(size_);
@@ -580,7 +580,7 @@ public:
         if (is_nucl(c)) {
             c = dignucl(c);
         }
-        VERIFY(is_dignucl(c));
+        VERIFY_DEV(is_dignucl(c));
 
         size_t data_size = GetDataSize(size_);
 
@@ -595,7 +595,7 @@ public:
     }
 
     bool operator==(const RuntimeSeq<max_size_, T> &s) const {
-        VERIFY(size_ == s.size_);
+        VERIFY_DEV(size_ == s.size_);
 
         size_t data_size = GetDataSize(size_);
         for (size_t i = 0; i < data_size; ++i)
@@ -715,7 +715,7 @@ public:
 
     struct less3 {
         bool operator()(const RuntimeSeq<max_size_, T> &l, const RuntimeSeq<max_size_, T> &r) const {
-            VERIFY(l.size() == r.size());
+            VERIFY_DEV(l.size() == r.size());
             const T* l_data = l.data();
             const T* r_data = r.data();
             for (size_t i = 0; i < l.data_size(); ++i)

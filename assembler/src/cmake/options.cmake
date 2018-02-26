@@ -12,6 +12,8 @@ endif()
 # Define option for turning on/off debug logging
 option(SPADES_DEBUG_LOGGING "Turn on debug / trace logging" ON)
 
+option(SPADES_ENABLE_EXPENSIVE_CHECKS "Turn on expensive checks in hot places" OFF)
+
 # Define option to enable / disable ASAN
 option(SPADES_ENABLE_ASAN "Turn on / off address sanitizer" OFF)
 if (SPADES_ENABLE_ASAN)

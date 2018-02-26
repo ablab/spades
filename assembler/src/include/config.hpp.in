@@ -4,5 +4,6 @@
 #cmakedefine SPADES_USE_JEMALLOC
 #cmakedefine SPADES_USE_TCMALLOC
 #cmakedefine SPADES_DEBUG_LOGGING
+#cmakedefine SPADES_ENABLE_EXPENSIVE_CHECKS
 
 #endif // __SPADES_CONFIG_HPP__

@@ -181,8 +181,7 @@ public:
     }
 
     char operator[](const size_t index) const {
-        //todo can be put back after switching to distributing release without asserts
-        //VERIFY(index < size_);
+        VERIFY_DEV(index < size_);
         const ST *bytes = data_->data();
         if (rtl_) {
             size_t i = from_ + size_ - 1 - index;
@@ -285,7 +284,7 @@ public:
 
     template<class Seq>
     bool contains(const Seq& s, size_t offset = 0) const {
-        VERIFY(offset + s.size() <= size());
+        VERIFY_DEV(offset + s.size() <= size());
 
         for (size_t i = 0, e = s.size(); i != e; ++i)
             if (operator[](offset + i) != s[i])
@@ -376,7 +375,6 @@ bool Sequence::intersects(const Sequence &t) const {
 //including from, excluding to
 //safe if not #DEFINE NDEBUG
 Sequence Sequence::Subseq(size_t from, size_t to) const {
-    //    cerr << endl<<"subseq:" <<   from <<" " << to << " " <<  this->str() << endl;
     VERIFY(to >= from);
     VERIFY(to <= size_);
     //VERIFY(to - from <= size_);
@@ -560,7 +558,7 @@ public:
     }
 
     char operator[](const size_t index) const {
-        VERIFY(index < buf_.size());
+        VERIFY_DEV(index < buf_.size());
         return buf_[index];
     }
 
