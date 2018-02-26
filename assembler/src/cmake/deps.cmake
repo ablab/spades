@@ -1,7 +1,7 @@
 # -*- cmake -*-
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-  # Require at least gcc 4.7
+  # Require at least gcc 5.3
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.3)
     message(FATAL_ERROR "SPAdes requires gcc version 5.3 or later")
   endif()
