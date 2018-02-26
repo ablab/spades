@@ -25,7 +25,7 @@
 #ifdef SPADES_ENABLE_EXPENSIVE_CHECKS
 # define VERIFY_DEV(expr) VERIFY(expr)
 #else
-# define VERIFY_DEV(expr)
+# define VERIFY_DEV(expr) (void)(true ? (void)0 : ((void)(expr)));
 #endif
 
 #define VERIFY_MSG(expr, msg)                                           \
