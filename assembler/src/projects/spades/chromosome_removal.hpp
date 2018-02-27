@@ -15,7 +15,7 @@ namespace debruijn_graph {
 class ChromosomeRemoval : public spades::AssemblyStage {
 public:
     ChromosomeRemoval(size_t ext_limit = 0)
-            : AssemblyStage("Chromosome Removal", "chromosome_removal"), long_component_(), long_vertex_component_(),deadends_count_(), ext_limit_(ext_limit) { }
+            : AssemblyStage("Chromosome Removal", (std::string("chromosome_removal") + (ext_limit == 0?std::string(""):std::to_string(ext_limit))).c_str()), long_component_(), long_vertex_component_(),deadends_count_(), ext_limit_(ext_limit) { }
 
     void run(conj_graph_pack &gp, const char *);
 
