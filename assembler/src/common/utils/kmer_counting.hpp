@@ -92,7 +92,7 @@ public:
 
     void ProcessKmer(const RtSeq &/*kmer*/, uint64_t hash) {
         // First try and insert in the main QF. If lock can't be
-        // accuired in the first attempt then insert the item in the
+        // acquired in the first attempt then insert the item in the
         // local QF.
         if (cqf_.lookup(hash, /* lock */ true) >= thr_)
             return;
@@ -106,14 +106,8 @@ public:
         }
     }
 
-//    void Finalize() {
-//        INFO("Merging local CQF");
-//        cqf_.merge(local_cqf_);
-//    }
-
 };
 
-//FIXME further reduce code duplication
 template<class ReadStream, class Hasher, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
 size_t EstimateCardinality(unsigned k, ReadStream &streams, const Hasher &hasher,
                            const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
