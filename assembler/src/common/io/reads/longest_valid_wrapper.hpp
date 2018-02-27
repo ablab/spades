@@ -47,18 +47,8 @@ inline SingleRead LongestValid(const SingleRead& r) {
 }
 
 inline PairedRead LongestValid(const PairedRead& r) {
-    std::pair<size_t, size_t> c1 = LongestValidCoords(r.first());
-    std::pair<size_t, size_t> c2 = LongestValidCoords(r.second());
-    size_t len1 = c1.second - c1.first;
-    size_t len2 = c2.second - c2.first;
-    //FIXME is it the desired logic?
-    if (len1 == 0 || len2 == 0) {
-        return PairedRead();
-    }
-
-    if (len1 == r.first().size() && len2 == r.second().size()) {
-        return r;
-    }
+    auto c1 = LongestValidCoords(r.first());
+    auto c2 = LongestValidCoords(r.second());
 
     return PairedRead(r.first().Substr(c1.first, c1.second),
                       r.second().Substr(c2.first, c2.second),
