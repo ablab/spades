@@ -35,7 +35,6 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
-//FIXME find utility method?
 template<class IS, class OS>
 void Transfer(IS &input, OS &output) {
     typename OS::ReadT read;
@@ -129,7 +128,7 @@ int main(int argc, char* argv[]) {
                 auto filtered = io::CovFilteringWrap<io::PairedRead>(
                         io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0),
                         k, hasher, cqf, thr);
-                io::OPairedReadStream ostream(workdir + "/" + to_string(i + 1) + ".1.fastq",
+                io::OFastqPairedStream ostream(workdir + "/" + to_string(i + 1) + ".1.fastq",
                                               workdir + "/" + to_string(i + 1) + ".2.fastq");
                 Transfer(*filtered, ostream);
             }
@@ -140,7 +139,7 @@ int main(int argc, char* argv[]) {
                                                /*including_paired_reads*/ false),
                         k, hasher, cqf, thr);
 
-                io::OSingleReadStream ostream(workdir + "/" + to_string(i + 1) + ".s.fastq");
+                io::OFastqReadStream ostream(workdir + "/" + to_string(i + 1) + ".s.fastq");
                 Transfer(*filtered, ostream);
             }
         }

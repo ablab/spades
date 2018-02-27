@@ -111,54 +111,33 @@ public:
 
 };
 
-class OutputSequenceStream {
+class OFastaReadStream {
     std::ofstream ofstream_;
 public:
     typedef SingleRead ReadT;
 
-    OutputSequenceStream(const std::string& filename):
+    OFastaReadStream(const std::string& filename):
             ofstream_(filename) {
     }
 
-    OutputSequenceStream& operator<<(const SingleRead& read) {
+    OFastaReadStream& operator<<(const SingleRead& read) {
         ofstream_ << ">" << read.name() << "\n";
         WriteWrapped(read.GetSequenceString(), ofstream_);
         return *this;
     }
 };
 
-class PairedOutputSequenceStream {
-    OutputSequenceStream os_l_;
-    OutputSequenceStream os_r_;
-
-public:
-    typedef PairedRead ReadT;
-
-    PairedOutputSequenceStream(const std::string& filename1,
-                               const std::string &filename2) :
-            os_l_(filename1),
-            os_r_(filename2) {
-    }
-
-    PairedOutputSequenceStream& operator<<(const PairedRead& read) {
-        os_l_ << read.first();
-        os_r_ << read.second();
-        return *this;
-    }
-};
-
-//FIXME reduce code duplication
-class OSingleReadStream {
+class OFastqReadStream {
     std::ofstream os_;
 
 public:
     typedef SingleRead ReadT;
 
-    OSingleReadStream(const std::string& fn) :
+    OFastqReadStream(const std::string& fn) :
             os_(fn) {
     }
 
-    OSingleReadStream& operator<<(const SingleRead& read) {
+    OFastqReadStream& operator<<(const SingleRead& read) {
         os_ << "@" << read.name() << std::endl;
         os_ << read.GetSequenceString() << std::endl;
         os_ << "+" << std::endl;
@@ -171,14 +150,16 @@ public:
     }
 };
 
+template<class SingleReadStream>
 class OPairedReadStream {
-    OSingleReadStream l_os_;
-    OSingleReadStream r_os_;
+    SingleReadStream l_os_;
+    SingleReadStream r_os_;
 
 public:
     typedef PairedRead ReadT;
 
-    OPairedReadStream(const std::string& l_fn, const std::string& r_fn) :
+    OPairedReadStream(const std::string& l_fn,
+                            const std::string& r_fn) :
             l_os_(l_fn), r_os_(r_fn) {
     }
 
@@ -193,5 +174,8 @@ public:
         r_os_.close();
     }
 };
+
+using OFastaPairedStream = OPairedReadStream<OFastaReadStream>;
+using OFastqPairedStream = OPairedReadStream<OFastqReadStream>;
 
 }

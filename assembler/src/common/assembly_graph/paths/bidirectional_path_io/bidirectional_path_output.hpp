@@ -113,7 +113,7 @@ public:
     }
 
     void WriteSegmentsAndLinks(const string &fn) {
-        io::OutputSequenceStream os(fn);
+        io::OFastaReadStream os(fn);
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             set<string> next;
@@ -242,7 +242,7 @@ class ContigWriter {
 public:
 
     static void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const string &fn) {
-        io::OutputSequenceStream oss(fn);
+        io::OFastaReadStream oss(fn);
         std::ofstream os_fastg;
 
         for (const auto& scaffold_info : scaffold_storage) {
