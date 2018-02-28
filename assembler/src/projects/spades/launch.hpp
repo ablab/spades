@@ -126,7 +126,7 @@ void assemble_genome() {
         if (cfg::get().pd) {
             size_t iter = 5;
             double mult = 1.3;
-            size_t maxx = 300;
+            size_t maxx = 600;
             SPAdes.add(new debruijn_graph::ChromosomeRemoval(iter));
             SPAdes.add(new debruijn_graph::ContigOutput(false, "intermediate_contigs"))
                     .add(new debruijn_graph::PairInfoCount())
