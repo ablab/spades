@@ -80,7 +80,7 @@ void ConstructGraphUsingExtentionIndex(const config::debruijn_config::constructi
                                        fs::TmpDir workdir,
                                        io::ReadStreamList<Read>& streams, Graph& g,
                                        Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-    unsigned k = g.k();
+    unsigned k = unsigned(g.k());
     INFO("Constructing DeBruijn graph for k=" << k);
 
     TRACE("Filling indices");
