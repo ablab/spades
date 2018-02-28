@@ -136,7 +136,6 @@ class CoverageFilter: public Construction::Phase {
 
         VERIFY_MSG(read_streams.size(), "No input streams specified");
 
-        unsigned kthr = storage().params.kmer_cov_threshold;
         unsigned rthr = storage().params.read_cov_threshold;
 
         using KmerFilter = utils::StoringTypeFilter<storing_type>;
@@ -151,7 +150,7 @@ class CoverageFilter: public Construction::Phase {
         storage().cqf.reset(new qf::cqf(kmers));
 
         INFO("Building k-mer coverage histogram");
-        FillCoverageHistogram(*storage().cqf, kplusone, hasher, read_streams, std::max(kthr, rthr), KmerFilter());
+        FillCoverageHistogram(*storage().cqf, kplusone, hasher, read_streams, rthr, KmerFilter());
 
         // Replace input streams with wrapper ones
         storage().read_streams = io::CovFilteringWrap(read_streams, kplusone, hasher, *storage().cqf, rthr);
@@ -544,10 +543,7 @@ public:
 
 Construction::Construction()
         : spades::CompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {
-    unsigned kthr = storage().params.kmer_cov_threshold;
-    unsigned rthr = storage().params.read_cov_threshold;
-
-    if (kthr || rthr)
+    if (storage().params.read_cov_threshold)
         add<CoverageFilter>();
 
     add<KMerCounting>();
