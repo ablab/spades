@@ -281,8 +281,7 @@ public:
     //---------------- Constructor ----------------
 
     PairedIndex(const Graph &graph)
-        : base(graph),  GraphActionHandler<Graph>(graph, "PairedIndexHandler")        
-    {INFO("creating index");}
+        : base(graph),  GraphActionHandler<Graph>(graph, "PairedIndexHandler") {}
 
 private:
     bool GreaterPair(EdgeId e1, EdgeId e2) const {
