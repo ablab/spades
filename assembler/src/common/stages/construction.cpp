@@ -543,7 +543,7 @@ public:
 
 Construction::Construction()
         : spades::CompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {
-    if (storage().params.read_cov_threshold)
+    if (cfg::get().con.read_cov_threshold)
         add<CoverageFilter>();
 
     add<KMerCounting>();
