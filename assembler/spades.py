@@ -323,6 +323,12 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             else:
                 support.error('wrong value for --hidden-cov-cutoff option: ' + arg +
                               ' (should be a positive float number)', log)
+        elif opt == "--read-cov-threshold":
+            if support.is_int(arg) and int(arg) >= 0:
+                options_storage.read_cov_threshold = int(arg)
+            else:
+                support.error('wrong value for ----read-cov-threshold option: ' + arg +
+                              ' (should be a non-negative integer number)', log)
         elif opt == '-i' or opt == "--iterations":
             options_storage.iterations = int(arg)
 
