@@ -17,7 +17,7 @@ public:
     ChromosomeRemoval(size_t ext_limit = 0)
             : AssemblyStage("Chromosome Removal", "THIS SHOULD BE REWRITTEN AFTER STAGES REVISITED"), long_component_(), long_vertex_component_(),
               deadends_count_(), ext_limit_(ext_limit), full_name_(std::string("chromosome_removal") + (ext_limit == 0?std::string(""):std::to_string(ext_limit))) {
-        strcpy(const_cast<char*> (this->id()), full_name_.c_str());
+        this->SetId(full_name_);
     }
 
     void run(conj_graph_pack &gp, const char *);
