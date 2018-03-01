@@ -124,21 +124,21 @@ void assemble_genome() {
             SPAdes.add<debruijn_graph::SeriesAnalysis>();
 
         if (cfg::get().pd) {
-            size_t iter = 5;
-            double mult = 1.3;
-            size_t maxx = 600;
-            SPAdes.add(new debruijn_graph::ChromosomeRemoval(iter));
+            size_t cov = 5;
+            double multiplier = 1.3;
+            size_t max_cov = 600;
+            SPAdes.add(new debruijn_graph::ChromosomeRemoval(cov));
             SPAdes.add(new debruijn_graph::ContigOutput(false, "intermediate_contigs"))
                     .add(new debruijn_graph::PairInfoCount())
                     .add(new debruijn_graph::DistanceEstimation());
 
-            SPAdes.add(new debruijn_graph::ContigOutput(true, cfg::get().co.contigs_name + std::to_string(iter)));
+            SPAdes.add(new debruijn_graph::ContigOutput(true, cfg::get().co.contigs_name + std::to_string(cov)));
 
-            while (iter < maxx) {
-                SPAdes.add(new debruijn_graph::ChromosomeRemoval(iter));
+            while (cov < max_cov) {
+                SPAdes.add(new debruijn_graph::ChromosomeRemoval(cov));
                 SPAdes.add(new debruijn_graph::RepeatResolution());
-                SPAdes.add(new debruijn_graph::ContigOutput(true, cfg::get().co.contigs_name + std::to_string(iter)));
-                iter = std::max(iter + 5, size_t(iter*1.3));
+                SPAdes.add(new debruijn_graph::ContigOutput(true, cfg::get().co.contigs_name + std::to_string(cov)));
+                cov = std::max(cov + 5, size_t(cov*multiplier));
             }
         }
         else {
