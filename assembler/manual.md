@@ -996,5 +996,5 @@ In addition, we would like to list your publications that use our software on ou
 
 Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes. If you have any troubles running SPAdes, please send us `params.txt` and `spades.log` from the directory `<output_dir>`.
 
-You leave you comments and bug repoers at [our GitHub repository tracker](https://github.com/ablab/spades/issues) or sent it via e-mail: <spades.support@cab.spbu.ru>.
+You can leave your comments and bug reports at [our GitHub repository tracker](https://github.com/ablab/spades/issues) or sent it via e-mail: <spades.support@cab.spbu.ru>.
 
