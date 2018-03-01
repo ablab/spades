@@ -34,7 +34,7 @@ public:
                       const char *prefix = nullptr) const;
     virtual void run(debruijn_graph::conj_graph_pack &, const char *started_from = nullptr) = 0;
 
-    void SetId (std::string real_name);
+    void set_id(std::string& real_name);
 
 private:
     const char *name_;
