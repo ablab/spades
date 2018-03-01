@@ -1,4 +1,25 @@
-<span style="font-size:26;">__SPAdes 3.12.0 Manual__</span>
+<font size=20>__SPAdes 3.12.0 Manual__</font>
+
+
+1. [About SPAdes](#sec1) </br>
+    1.1. [Supported data types](#sec1.1)</br>
+    1.2. [SPAdes pipeline](#sec1.2)</br>
+    1.3. [SPAdes performance](#sec1.3)</br>
+2. [Installation](#sec2)</br>
+    2.1. [Downloading SPAdes Linux binaries](#sec2.1)</br>
+    2.2. [Downloading SPAdes binaries for Mac](#sec2.2)</br>
+    2.3. [Downloading and compiling SPAdes source code](#sec2.3)</br>
+    2.4. [Verifying your installation](#sec2.4)</br>
+3. [Running SPAdes](#sec3)</br>
+    3.1. [SPAdes input](#sec3.1)</br>
+    3.2. [SPAdes command line options](#sec3.2)</br>
+    3.3. [Assembling IonTorrent reads](#sec3.3)</br>
+    3.4. [Assembling long Illumina paired reads (2x150 and 2x250)](#sec3.4)</br>
+    3.5. [SPAdes output](#sec3.5)</br>
+    3.6. [plasmidSPAdes output](#sec3.6)</br>
+    3.7. [Assembly evaluation](#sec3.7)</br>
+4. [Citation](#sec4)</br>
+5. [Feedback and bug reports](#sec5)</br>
 
 <a name="sec1"></a>
 # About SPAdes
@@ -392,7 +413,7 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 
 <a name="meta"></a>
 `--meta `   (same as `metaspades.py`)
-    This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see [paper](https://arxiv.org/abs/1604.03071) for more details). Currently metaSPAdes supports only a *__single*__ library which has to be *__paired-end*__ (we hope to remove this restriction soon). It does not support [careful mode](#correctoropt) (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
+    This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see [paper](https://arxiv.org/abs/1604.03071) for more details). Currently metaSPAdes supports only a **_single_** library which has to be **_paired-end_** (we hope to remove this restriction soon). It does not support [careful mode](#correctoropt) (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
 
 []()
 
@@ -484,13 +505,13 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 
 #### Specifying multiple libraries 
 
-*__Single-read libraries*__
+**_Single-read libraries_**
 
 `--s<#> <file_name> `
     File for single-read library number `<#>` (`<#>` = 1,2,..,9). For example, for the first paired-end library the option is: `--s1 <file_name> `
     Do not use `-s` options for single-read libraries, since it specifies unpaired reads for the first paired-end library.
 
-*__Paired-end libraries*__
+**_Paired-end libraries_**
 
 `--pe<#>-12 <file_name> `
     File with interlaced reads for paired-end library number `<#>` (`<#>` = 1,2,..,9). For example, for the first single-read library the option is: `--pe1-12 <file_name> `
@@ -513,7 +534,7 @@ Since all files will be overwritten, do not forget to copy your assembly from th
     Orientation of reads for paired-end library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
     The default orientation for paired-end libraries is forward-reverse. For example, to specify reverse-forward orientation for the second paired-end library, you should use the flag: `--pe2-rf `
 
-*__Mate-pair libraries*__
+**_Mate-pair libraries_**
 
 `--mp<#>-12 <file_name> `
     File with interlaced reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9).
@@ -529,7 +550,7 @@ Since all files will be overwritten, do not forget to copy your assembly from th
     The default orientation for mate-pair libraries is reverse-forward. For example, to specify forward-forward orientation for the first mate-pair library, you should use the flag: `--mp1-ff `
 
 <a name="hqmp"></a>
-*__High-quality mate-pair libraries*__ (can be used for mate-pair only assembly)
+**_High-quality mate-pair libraries_** (can be used for mate-pair only assembly)
 
 `--hqmp<#>-12 <file_name> `
     File with interlaced reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9).
@@ -548,7 +569,7 @@ Since all files will be overwritten, do not forget to copy your assembly from th
     The default orientation for high-quality mate-pair libraries is forward-reverse. For example, to specify reverse-forward orientation for the first high-quality mate-pair library, you should use the flag: `--hqmp1-rf `
 
 <a name="lxmp"></a>
-*__Lucigen NxSeq® Long Mate Pair libraries*__ (see [section 3.1](#sec3.1) for details)
+**_Lucigen NxSeq® Long Mate Pair libraries_** (see [section 3.1](#sec3.1) for details)
 
 `--nxmate<#>-1 <file_name> `
     File with left reads for Lucigen NxSeq® Long Mate Pair library number `<#>` (`<#>` = 1,2,..,9).
