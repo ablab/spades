@@ -14,7 +14,7 @@ void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
     size_t num_threads = cfg::get().max_threads;
     auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     CloudScaffoldGraphConstructor constructor(num_threads, gp_, extractor);
-    auto path_scaffold_graph = constructor.ConstructScaffoldGraphFromPathContainer(old_paths, small_path_length_threshold_, true);
+    auto path_scaffold_graph = constructor.ConstructScaffoldGraphFromPathContainer(old_paths, small_path_length_threshold_, scaffolding_mode);
 //    ScaffoldGraphStorage storage(constructor.ConstructScaffoldGraphFromPathContainer(paths, large_length_threshold_,
 //                                                                                     scaffolding_mode),
 //

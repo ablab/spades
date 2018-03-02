@@ -112,51 +112,6 @@ namespace barcode_index {
             }
         }
 
-        void FillMapUsingSubIndex(const Index &index, const KmerSubs &kmer_mapper) {
-            //fixme move to command line
-            std::string tslr_dataset = cfg::get().ts_res.read_cloud_dataset;
-
-            auto lib_vec = GetLibrary(tslr_dataset);
-            auto mapper = std::make_shared < debruijn_graph::BasicSequenceMapper < Graph, Index> >
-            (g_, index, kmer_mapper);
-            size_t global_counter = 0;
-            size_t counter = 0;
-
-            //Process every barcode from truspades dataset
-            for (size_t i = 0; i < lib_vec.size(); ++i) {
-                std::string barcode_string = lib_vec[i].barcode_;
-                uint64_t barcode_int = barcode_codes_.GetCode(barcode_string);
-                BarcodeId barcode(barcode_int);
-
-                Index barcode_subindex(g_, cfg::get().tmp_dir);
-                InnerIndex subindex = InnerIndex(g_, cfg::get().tmp_dir);
-
-                io::ReadStreamList <io::SingleRead> streams;
-                streams.push_back(io::EasyStream(lib_vec[i].left_, false /*followed_by_rc*/));
-                streams.push_back(io::EasyStream(lib_vec[i].right_, false /*followed_by_rc*/));
-                IndexBuilder().BuildIndexFromStream(subindex, streams, 0);
-
-                INFO("Extracting kmer multiset using subindex")
-
-                for (auto it = subindex.kmer_begin(); it.good(); ++it) {
-                    Kmer kmer = Kmer(g_.k() + 1, *it);
-                    KeyWithHash kh = subindex.ConstructKWH(kmer);
-                    const auto &edge_and_offset = index.get(kmer);
-                    EdgeId edge = edge_and_offset.first;
-                    size_t offset = edge_and_offset.second;
-                    size_t count = 0;
-                    if (subindex.valid(kh)) {
-                        count = subindex.get_value(kh).count;
-                    }
-                    if (edge.int_id() != 0 and count > 0) {
-                        InsertBarcodeWithRange(barcode, edge, Range(offset, offset + 1), count);
-                        ++counter;
-                    }
-                    ++global_counter;
-                }
-            }
-        }
-
         void FillMapFrom10XReads(const lib_vector_t& libs_10x, const Index &index, const KmerSubs &kmer_mapper) {
             INFO("Starting barcode index construction from 10X reads")
 //            auto mapper = std::make_shared < alignment::BWAReadMapper < Graph > > (g_);
