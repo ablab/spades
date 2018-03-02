@@ -85,9 +85,9 @@ struct Mapping {
 
     Mapping(const EdgeId &e, const MappingRange &range): last_edge_(e), last_mapping_(range), score_(-1){}
 
-    Mapping(const EdgeId &e, const MappingRange &range, int &score): last_edge_(e), last_mapping_(range), score_(score){}
+    Mapping(const EdgeId &e, const MappingRange &range, int score): last_edge_(e), last_mapping_(range), score_(score){}
 
-    Mapping(const EdgeId &e, const MappingRange &range, const omnigraph::MappingPath<debruijn_graph::EdgeId> &path, int &score)
+    Mapping(const EdgeId &e, const MappingRange &range, const omnigraph::MappingPath<debruijn_graph::EdgeId> &path, int score)
             : last_edge_(e), last_mapping_(range), path_(path), score_(score){}
 
     Mapping(): score_(-1){}
@@ -170,9 +170,8 @@ public:
             int start_pos = 0;
             int end_pos = 1;
             int dist = EditDistance(read.GetSequenceString(), edge_str, start_pos, end_pos);
-            
             if (dist == -1) continue;
-            if (v >= dist && start_pos < gp_.g.length(eid)) {
+            if (v >= dist) {
                 e.push_back(eid);
                 range.push_back(MappingRange(Range(0, read.size()), Range(start_pos, end_pos + 1)) );
             }
@@ -181,6 +180,10 @@ public:
         std::string ans = " dist=" +  std::to_string(v) + " num=" +  std::to_string(e.size());
         // for (EdgeId eid: e) {
         //     ans += " " + std::to_string(eid.int_id()) + ",";
+        // }
+        // ans += "\n";
+        // for (MappingRange r: range) {
+        //     ans += " " + std::to_string(r.mapped_range.start_pos) + "-" + std::to_string(r.mapped_range.end_pos) + ",";
         // }
         INFO("Primer name=" << read.name() <<" seq=" << read.GetSequenceString() << " " << ans);
     }
@@ -213,7 +216,7 @@ public:
             start_pos = mapping.mapped_range.start_pos;
             ss = s.substr(mapping.initial_range.start_pos, (int) s.size() - mapping.initial_range.start_pos );
             seq_start_pos = mapping.initial_range.start_pos;
-            INFO("sz=" << path.size() << " start_pos=" << start_pos << " s_sz=" << ss.size());
+            DEBUG("sz=" << path.size() << " start_pos=" << start_pos << " s_sz=" << ss.size());
         } else {
             start_e = gp_.g.conjugate(path.edge_at(0));
             omnigraph::MappingRange mapping = path.mapping_at(0);
@@ -228,17 +231,29 @@ public:
                 num ++;
             }
             
-            INFO("c_ss=" << c_ss.size() << " ss=" << ss.size() << " num=" << num);
+            DEBUG("c_ss=" << c_ss.size() << " ss=" << ss.size() << " num=" << num);
         }
     }
 
-    void UpdatePath(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, std::vector<EdgeId> &ans, int end_pos, int seq_start_pos, int seq_end_pos, bool forward) const {
+    void UpdatePath(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, std::vector<EdgeId> &ans, int start_pos, int end_pos, int seq_start_pos, int seq_end_pos, bool forward) const {
         if (forward) {
-            for (int i = 1; i < ans.size() - 1; ++i) {
-                path.push_back(ans[i], omnigraph::MappingRange(Range(0, 0), Range(0, gp_.g.length(ans[i])) ));
+            omnigraph::MappingPath<debruijn_graph::EdgeId> cur_sorted;
+            for (int i = 0; i < path.size() - 1; ++i) {
+                cur_sorted.push_back(path[i].first, path[i].second);
             }
-            INFO("forward " << seq_end_pos << " endps=" << end_pos)
-            path.push_back(ans[ans.size() - 1], omnigraph::MappingRange(Range(0, seq_start_pos + seq_end_pos -  gp_.g.k()), Range(0, end_pos ) ));
+            if (ans.size() ==  1) {
+                cur_sorted.push_back(ans[0], omnigraph::MappingRange(Range(seq_start_pos, seq_start_pos + seq_end_pos), 
+                                                                     Range(start_pos, end_pos) ));
+            } else {
+                cur_sorted.push_back(ans[0], omnigraph::MappingRange(Range(seq_start_pos, seq_start_pos + gp_.g.length(ans[0]) ), 
+                                                                     Range(0, gp_.g.length(ans[0])) ));
+                for (int i = 1; i < ans.size() - 1; ++i) {
+                    cur_sorted.push_back(ans[i], omnigraph::MappingRange(Range(0, gp_.g.length(ans[i])), Range(0, gp_.g.length(ans[i]) ) ));
+                }
+                DEBUG("forward " << seq_end_pos << " endps=" << end_pos << " anssz=" << ans.size() )
+                cur_sorted.push_back(ans[ans.size() - 1], omnigraph::MappingRange(Range(0, seq_start_pos + seq_end_pos), Range(0, end_pos ) )); //0, seq_start_pos + seq_end_pos -  gp_.g.k()
+            }
+            path = cur_sorted;
         } else {
             omnigraph::MappingPath<debruijn_graph::EdgeId> cur_sorted;
             int start = gp_.g.length(ans[ans.size() - 1]) + gp_.g.k() - end_pos;
@@ -248,21 +263,24 @@ public:
                 start -= gp_.g.length(ans[cur_ind]);
                 cur_ind --;
             }
-            if (cur_ind > 0){
-                INFO("backward " << seq_start)
-                cur_sorted.push_back(gp_.g.conjugate(ans[cur_ind]), omnigraph::MappingRange(Range(seq_start, seq_start + 1), Range(start, gp_.g.length(ans[cur_ind])) ));
-            }
-            for (int i = cur_ind - 1; i > 0; --i) {
-                cur_sorted.push_back(gp_.g.conjugate(ans[i]), omnigraph::MappingRange(Range(0, 0), Range(0, gp_.g.length(ans[i])) ));
-            }
-            for (int i = 0; i < path.size(); ++i) {
+            if (cur_ind == 0) {
+                cur_sorted.push_back(gp_.g.conjugate(ans[cur_ind]), omnigraph::MappingRange(Range(seq_start, path[0].second.initial_range.end_pos), Range(start, start + seq_end_pos ) ));
+            } else {
+                cur_sorted.push_back(gp_.g.conjugate(ans[cur_ind]), omnigraph::MappingRange(Range(seq_start, seq_start + gp_.g.length(ans[cur_ind])), Range(start, gp_.g.length(ans[cur_ind]) ) ));
+                for (int i = cur_ind - 1; i > 0; --i) {
+                    cur_sorted.push_back(gp_.g.conjugate(ans[i]), omnigraph::MappingRange(Range(0, gp_.g.length(ans[0])), Range(0, gp_.g.length(ans[i])) ));
+                }
+                cur_sorted.push_back(gp_.g.conjugate(ans[0]), omnigraph::MappingRange(Range(0 , path[0].second.initial_range.end_pos), Range(0, path[0].second.mapped_range.end_pos) ));
+            }  
+            for (int i = 1; i < path.size(); ++i) {
                 cur_sorted.push_back(path[i].first, path[i].second);
-            }
+            } 
+            
             path = cur_sorted;
         }
     }
 
-    void GrowEnds(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, const string &s, bool forward) const {
+    int GrowEnds(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, const string &s, bool forward) const {
         VERIFY(path.size() > 0);
         string ss; 
         int start_pos = -1;
@@ -273,29 +291,30 @@ public:
         int s_len = int(ss.size());
         int score = max(20, s_len/3);
         if (s_len > 2000) {
-            INFO("EdgeDijkstra: sequence is too long " << s_len)
-            return;
+            DEBUG("EdgeDijkstra: sequence is too long " << s_len)
+            return 0;
         }
         if (s_len < gp_.g.k()) {
-            INFO("EdgeDijkstra: sequence is too small " << s_len)
-            return;
+            DEBUG("EdgeDijkstra: sequence is too small " << s_len)
+            return 0;
         }
-        INFO(" EdgeDijkstra: String length " << s_len << " max-len " << score << " start_pos=" << start_pos << " start_e=" << start_e.int_id());
+        DEBUG(" EdgeDijkstra: String length " << s_len << " max-len " << score << " start_pos=" << start_pos << " start_e=" << start_e.int_id() << " e_len=" << gp_.g.length(start_e) + gp_.g.k() );
         pacbio::DijkstraEndsReconstructor algo = pacbio::DijkstraEndsReconstructor(gp_.g, ss, start_e, start_pos, score);
         algo.CloseGap();
         score = algo.GetEditDistance();
         if (score == -1){
-            INFO("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
-            return;
+            DEBUG("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
+            return 0;
         } else {
-            INFO("EdgeDijkstra found path edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size() << " score=" << score)
+            DEBUG("EdgeDijkstra found path edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size() << " score=" << score )
         }
 
         std::vector<EdgeId> ans = algo.GetPath();
         int end_pos = algo.GetPathEndPosition();
         int seq_end_pos = algo.GetSeqEndPosition();
-        INFO("graph_end=" << end_pos << " seq_end_pos=" << seq_end_pos);
-        UpdatePath(path, ans, end_pos, seq_start_pos, seq_end_pos, forward);
+        DEBUG("graph_end=" << end_pos << " seq_end_pos=" << seq_end_pos << " anssz=" << ans.size());
+        UpdatePath(path, ans, start_pos, end_pos, seq_start_pos, seq_end_pos, forward);
+        return score;
     }
 
     bool Consistent(const EdgeId &a_e, const MappingRange &a_range, const EdgeId &b_e, const MappingRange &b_range, std::map<VertexId, size_t> &vertex_pathlen) {
@@ -395,24 +414,29 @@ public:
             vector<Mapping> resulting_paths;
             vector<Mapping> working_paths;
             for (size_t i = 0; i < mappings[0].e_.size(); ++ i){
-                working_paths.push_back(Mapping(mappings[0].e_.at(i), mappings[0].range_.at(i)));
+                working_paths.push_back(Mapping(mappings[0].e_.at(i), mappings[0].range_.at(i), 0));
             }
             for (size_t i = 1; i < mappings.size(); ++ i){
-                //INFO("Iter=" << i << " " << mappings[i].e_.size());
+                INFO("Iter=" << i << " " << mappings[i].e_.size());
                 vector<Mapping> new_working_paths;
                 vector<bool> used_working_paths(working_paths.size());
                 for (size_t j = 0; j < mappings[i].e_.size(); ++ j) {
                     Mapping best_path;
                     int best_used = -1;
+                    int bad = -1;
+                    int good = -1;
                     for (size_t k = 0; k < working_paths.size(); ++ k) {
                         const MappingRange &a_range = working_paths[k].last_mapping_;
                         const MappingRange &b_range = mappings[i].range_.at(j);
                         const EdgeId &a_e = working_paths[k].last_edge_;
                         const EdgeId &b_e = mappings[i].e_.at(j);
                         Mapping intermediate_path = FillGap(a_e, a_range, b_e, b_range, read.GetSequenceString());
-                        // if (intermediate_path.score_ != -1 && (b_e.int_id() == 16977125 || a_e.int_id() == 16977125)) {
-                        //     INFO(i << " Cur_e=" << a_e.int_id() << " new_e=" << b_e.int_id() << " score=" << intermediate_path.score_ << " start_pos=" << a_range.initial_range.start_pos << " end_pos=" << b_range.initial_range.start_pos);
-                        // } 
+                        // if (a_e.int_id() == 19159356 || b_e.int_id() == 19159356) {
+                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << intermediate_path.score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
+                        // }
+                        // if (a_e.int_id() == 19229536 || b_e.int_id() == 19229536) {
+                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << intermediate_path.score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
+                        // }
                         if (intermediate_path.score_ != -1 && (best_path.score_ == -1 || best_path.score_ > intermediate_path.score_ + working_paths[k].score_)) {
                             best_path.path_ = working_paths[k].path_;
                             for (size_t z = 0; z < intermediate_path.path_.size(); ++ z) {
@@ -425,10 +449,16 @@ public:
                             //INFO("  Here sz=" << best_path.path_.size() << " score=" << best_path.score_)
                         }
                     }
+                    // if (good >=0 && bad >= 0) {
+                    //     INFO(good << " " << bad << " " << best_used)
+                    // }
                     if (best_path.score_ == -1) {
-                        new_working_paths.push_back(Mapping(mappings[i].e_.at(j), mappings[i].range_.at(j)));
+                        //new_working_paths.push_back(Mapping(mappings[i].e_.at(j), mappings[i].range_.at(j)));
                     } else {
-                        //INFO( "New working path=" << best_path.path_.size()<< " score=" << best_path.score_)
+                        //INFO( i << " New working path=" << best_path.path_.size()<< " score=" << best_path.score_ << " edge=" << best_path.last_edge_.int_id() )
+                        // if (best_path.path_.size() > 0) {
+                        //     INFO( " edge2=" << best_path.path_.edge_at(best_path.path_.size() - 1).int_id() )
+                        // }
                         used_working_paths[best_used] = true;
                         new_working_paths.push_back(best_path);
                     }
@@ -453,44 +483,56 @@ public:
             int best_ind = -1; 
             for (size_t i = 0; i < resulting_paths.size(); ++ i) {
                 Mapping &path = resulting_paths[i];
-                //INFO("path_sz=" << path.path_.size() << " last_e=" <<path.last_edge_.int_id() << " last_range s=" << path.last_mapping_.initial_range.start_pos << " " << path.last_mapping_.initial_range.end_pos)
-                if (path.path_.size() > 0) {
-                    if (path.last_mapping_.initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos > len_max) {
-                        len_max = path.last_mapping_.initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos;
-                        ed = path.score_;
-                        best_ind = i;
-                        //INFO("Paths " << ans << " " << ed << " " << len_max);
+                path.path_.push_back(path.last_edge_, path.last_mapping_);
+                int before = path.score_;
+                if (before < 100) {
+                    INFO("Grow Ends front")
+                    path.score_ += GrowEnds(path.path_, read.GetSequenceString(), false);
+                    INFO("Grow Ends back")
+                    path.score_ += GrowEnds(path.path_, read.GetSequenceString(), true);
+                    int len_cur = path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos;
+                    if (path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos > 1200) {
+                        ans = "";
+                        for (size_t k = 0; k < path.path_.size(); ++ k) {
+                            ans += std::to_string(path.path_.edge_at(k).int_id())  + ",";
+                        }
+                        INFO("Good path " << path.score_ << " " << before << " " << ans)
                     }
-                } else {
-                    if (path.last_mapping_.initial_range.end_pos - path.last_mapping_.initial_range.start_pos > len_max) {
-                        len_max = path.last_mapping_.initial_range.end_pos - path.last_mapping_.initial_range.start_pos;
+                    //INFO("path_sz=" << path.path_.size() << " last_e=" <<path.last_edge_.int_id() << " last_range s=" << path.last_mapping_.initial_range.start_pos << " " << path.last_mapping_.initial_range.end_pos)
+                    if (path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos > 1200 && ed > path.score_) {
+                        len_max = path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos;
                         ed = path.score_;
                         best_ind = i;
-                        //INFO("Paths " << ans << " " << ed << " " << len_max);
                     }
                 }
             }
             if (best_ind >= 0) {
                     Mapping &best_path = resulting_paths[best_ind];
-                    best_path.path_.push_back(best_path.last_edge_, best_path.last_mapping_);
-                    INFO("Grow Ends front")
-                    GrowEnds(best_path.path_, read.GetSequenceString(), false);
-                    INFO("Grow Ends back")
-                    GrowEnds(best_path.path_, read.GetSequenceString(), true);
 
                     ans = "";
                     seq_start = best_path.path_.mapping_at(0).initial_range.start_pos;
                     seq_end = best_path.path_.mapping_at(best_path.path_.size() - 1).initial_range.end_pos;
                     cur_path = "";
                     cur_path_len = "";
-                    for (size_t k = 0; k < best_path.path_.size(); ++ k) {
-                        ans += std::to_string(best_path.path_.edge_at(k).int_id())  + ",";
-                        cur_path += std::to_string(best_path.path_.edge_at(k).int_id()) + " (" + std::to_string(best_path.path_.mapping_at(k).mapped_range.start_pos) + "," + std::to_string(best_path.path_.mapping_at(k).mapped_range.end_pos) + ") ["
-                                                                            + std::to_string(best_path.path_.mapping_at(k).initial_range.start_pos) + "," + std::to_string(best_path.path_.mapping_at(k).initial_range.end_pos) + "], ";
-                        cur_path_len += std::to_string(best_path.path_.mapping_at(k).mapped_range.end_pos - best_path.path_.mapping_at(k).mapped_range.start_pos) + ",";
+                    int end_ind = best_path.path_.size();
+                    int sum = 56;
+                    while (sum - (int) (best_path.path_.mapping_at(end_ind - 1).mapped_range.end_pos - best_path.path_.mapping_at(end_ind - 1).mapped_range.start_pos) >= 0) {
+                        sum -= (int) (best_path.path_.mapping_at(end_ind - 1).mapped_range.end_pos - best_path.path_.mapping_at(end_ind - 1).mapped_range.start_pos);
+                        end_ind --;
+                    }   
+                    sum = 56;
+                    for (size_t k = 0; k < end_ind; ++ k) {
+                        if (sum - (int) (best_path.path_.mapping_at(k).mapped_range.end_pos - best_path.path_.mapping_at(k).mapped_range.start_pos) < 0) {
+                            ans += std::to_string(best_path.path_.edge_at(k).int_id())  + ",";
+                            cur_path += std::to_string(best_path.path_.edge_at(k).int_id()) + " (" + std::to_string(best_path.path_.mapping_at(k).mapped_range.start_pos) + "," + std::to_string(best_path.path_.mapping_at(k).mapped_range.end_pos) + ") ["
+                                                                                + std::to_string(best_path.path_.mapping_at(k).initial_range.start_pos) + "," + std::to_string(best_path.path_.mapping_at(k).initial_range.end_pos) + "], ";
+                            cur_path_len += std::to_string(best_path.path_.mapping_at(k).mapped_range.end_pos - best_path.path_.mapping_at(k).mapped_range.start_pos) + ",";
+                        } 
+                        sum -= (int) (best_path.path_.mapping_at(k).mapped_range.end_pos - best_path.path_.mapping_at(k).mapped_range.start_pos);
+                        
                     }
                     len_max = best_path.path_.mapping_at(best_path.path_.size() - 1).initial_range.end_pos - best_path.path_.mapping_at(0).initial_range.start_pos;
-                    INFO("Read="<< read.name() << " Primer num=" << mappings.size() << ". paths_num=" << resulting_paths.size() << " maxlen=" << len_max << ". ans=" << ans)
+                    INFO("Read="<< read.name() << " Primer num=" << mappings.size() << ". paths_num=" << resulting_paths.size() << " maxlen=" << len_max << ". ans=" << ans << ". ed=" << ed)
                     std::string sum_str = read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t" 
                                                          + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\n";
                     #pragma omp critical
@@ -507,21 +549,26 @@ public:
     void AlignRead(const io::SingleRead &read) {
         std::vector<ReadMapping> mappings;
         int num = 0;
-        int threshold = 50;
+        int threshold = 200;
+        int ind = 0;
         for (auto primer: primers_) {
             int start_pos = -1;
             int end_pos = -1;
             int dist = EditDistance(primer.read_seq_, read.GetSequenceString(), start_pos, end_pos);
-            if (dist == 0 && abs(start_pos - primer.start_pos_) < threshold && abs(end_pos - primer.end_pos_) < threshold){
+            //INFO("dist=" << dist << " start_pos=" << start_pos << " end_pos=" << end_pos << " primer_s=" << primer.start_pos_ << " primer_e="<< primer.end_pos_)
+            if (dist <= 1 && abs(start_pos - primer.start_pos_) < threshold && abs(end_pos - primer.end_pos_) < threshold){
                 num += 1;
-                INFO("dist=" << dist << " start_pos=" << start_pos << " end_pos=" << end_pos << " primer_s=" << primer.start_pos_ << " primer_e="<< primer.end_pos_)
+                //INFO("dist=" << dist << " start_pos=" << start_pos << " end_pos=" << end_pos << " primer_s=" << primer.start_pos_ << " primer_e="<< primer.end_pos_)
                 for (size_t i = 0; i < primer.range_.size(); ++ i){
-                    //INFO(" e=" << primer.e_[i].int_id())
+                    // if (ind == 4 or ind == 3) {
+                    //     INFO(ind << " e=" << primer.e_[i].int_id() << " " << primer.range_[i].mapped_range.start_pos << " " << primer.range_[i].mapped_range.end_pos)
+                    // }
                     primer.range_[i] = MappingRange(Range(start_pos, end_pos), Range(primer.range_[i].mapped_range.start_pos, primer.range_[i].mapped_range.end_pos));
                 }
                 mappings.push_back(primer);//.e_, MappingRange(Range(start_pos, end_pos), 
                                            //               Range(primer.range_.mapped_range.start_pos, primer.range_.mapped_range.start_pos)));
             }
+            ind ++;
         }
         INFO("Read="<< read.name() << " Primer num=" << num)
         if (mappings.size() > 0) {
@@ -594,8 +641,8 @@ void Launch(size_t K, const string &saves_path, const string &primer_fasta, cons
 
     aligner.PreparePrimers(wrappedprimers, threads);
 
-// #pragma omp parallel num_threads(threads)
-// #pragma omp for
+#pragma omp parallel num_threads(threads)
+#pragma omp for
     for (size_t i =0 ; i < wrappedreads.size(); ++i) {
         aligner.AlignRead(wrappedreads[i]);
     }

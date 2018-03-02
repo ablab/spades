@@ -121,5 +121,40 @@ inline int NWDistance(const string &a, const string &b, int max_score) {
     return score;
 }
 
+int SHWDistance2(const string &a, const string &b, int path_max_length_, int &end_pos) {
+        //INFO("Before ed")
+        int a_len = (int) a.length();
+        int b_len = (int) b.length();
+        VERIFY(a_len > 0);
+        VERIFY(b_len > 0);
+        edlib::EdlibEqualityPair additionalEqualities[36] = {{'U', 'T'}
+                                                , {'R', 'A'}, {'R', 'G'}
+                                                , {'Y', 'C'}, {'Y', 'T'}, {'Y', 'U'}
+                                                , {'K', 'G'}, {'K', 'T'}, {'K', 'U'}
+                                                , {'M', 'A'}, {'M', 'C'}
+                                                , {'S', 'C'}, {'S', 'G'}
+                                                , {'W', 'A'}, {'W', 'T'}, {'W', 'U'}
+                                                , {'B', 'C'}, {'B', 'G'}, {'B', 'T'}, {'B', 'U'}
+                                                , {'D', 'A'}, {'D', 'G'}, {'D', 'T'}, {'D', 'U'}
+                                                , {'H', 'A'}, {'H', 'C'}, {'H', 'T'}, {'H', 'U'}
+                                                , {'V', 'A'}, {'V', 'C'}, {'V', 'G'}
+                                                , {'N', 'A'}, {'N', 'C'}, {'N', 'G'}, {'N', 'T'}, {'N', 'U'} };
+        edlib::EdlibAlignResult result = edlib::edlibAlign(a.c_str(), a_len, b.c_str(), b_len
+                                                       , edlib::edlibNewAlignConfig(path_max_length_, edlib::EDLIB_MODE_SHW, edlib::EDLIB_TASK_DISTANCE,
+                                                                             additionalEqualities, 36));
+        int score = -1;
+        if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
+            if (result.numLocations > 0) {
+                score = result.editDistance;
+                end_pos = result.endLocations[0];
+            } else {
+                INFO("edlib: Strange")
+            }
+        }
+        edlib::edlibFreeAlignResult(result);
+        //INFO("After ed")
+        //delete additionalEqualities;
+        return score;
+    }
 
 }
