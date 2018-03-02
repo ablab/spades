@@ -109,12 +109,14 @@ namespace scaffold_graph_utils {
             auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(graph, extractor);
             size_t num_threads = cfg::get().max_threads;
             vector<ScaffoldGraph::ScaffoldGraphVertex> scaffold_vertices;
-            std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::back_inserter(scaffold_vertices));
-            path_extend::ScoreDistributionBasedThresholdFinder threshold_finder(g_, scaffold_vertices, score_function, vertex_multiplier);
-            double hist_score_threshold = threshold_finder.GetThreshold();
-            INFO("Setting containment index threshold to " << hist_score_threshold);
+//            std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::back_inserter(scaffold_vertices));
+//            path_extend::ScoreDistributionBasedThresholdFinder threshold_finder(g_, scaffold_vertices, score_function, vertex_multiplier);
+//            double hist_score_threshold = threshold_finder.GetThreshold();
+//            INFO("Setting containment index threshold to " << hist_score_threshold);
+
+            double score_threshold = 0.02;
             path_extend::scaffold_graph::ScoreFunctionScaffoldGraphFilter
-                scaffold_graph_constructor(graph, scaffold_graph, score_function, hist_score_threshold, num_threads);
+                scaffold_graph_constructor(graph, scaffold_graph, score_function, score_threshold, num_threads);
             return *(scaffold_graph_constructor.Construct());
         }
 

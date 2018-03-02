@@ -9,7 +9,7 @@ namespace path_extend {
 void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
     auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     ScaffoldGraphStorageConstructor storage_constructor(small_path_length_threshold_, large_path_length_threshold_, gp_);
-    bool scaffolding_mode = true;
+    bool scaffolding_mode = false;
 
     size_t num_threads = cfg::get().max_threads;
     auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);

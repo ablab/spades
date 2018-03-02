@@ -55,11 +55,23 @@ class PrintLongEdgesCommand : public LocalCommand<DebruijnEnvironment> {
             // if the name contains a given string <contig_name> as a substring.
             if((starts_with && read.name().find(contig_name) != string::npos) || contig_name == read.name()) {
                 auto mapping_path = curr_env.mapper().MapRead(read).simple_path();
-                std::remove_if(mapping_path.begin(), mapping_path.end(), [&curr_env, length_threshold](const EdgeId& edge) {
-                  return curr_env.graph().length(edge) < length_threshold;
-                });
-                cout << mapping_path.size() << " long edges: ";
-                for (const auto& edge: mapping_path) {
+                set<EdgeId> long_edges;
+                std::copy_if(mapping_path.begin(), mapping_path.end(), std::inserter(long_edges, long_edges.begin()),
+                             [&curr_env, length_threshold](const EdgeId& edge) {
+                               return curr_env.graph().length(edge) >= length_threshold;
+                             });
+                cout << long_edges.size() << " long edges" << endl;
+                auto add_edge_length = [&curr_env](size_t current_sum, const EdgeId &edge) {
+                  return current_sum + curr_env.graph().length(edge);
+                };
+
+                size_t long_edge_length = std::accumulate(long_edges.begin(), long_edges.end(), 0, add_edge_length);
+
+                size_t total_length = std::accumulate(mapping_path.begin(), mapping_path.end(), 0, add_edge_length);
+                cout << "Total length: " << total_length << endl;
+                cout << "Long edge total length: " << long_edge_length << endl;
+
+                for (const auto& edge: long_edges) {
                     cout << edge.int_id() << std::endl;
                 }
             }
