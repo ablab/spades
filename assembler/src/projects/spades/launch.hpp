@@ -121,11 +121,11 @@ void assemble_genome() {
         //No graph modification allowed after HybridLibrariesAligning stage!
 
         SPAdes.add<debruijn_graph::ContigOutput>(false, "intermediate_contigs")
-            .add(new debruijn_graph::BarcodeMapConstructionStage())
+            .add<debruijn_graph::BarcodeMapConstructionStage>()
                .add<debruijn_graph::PairInfoCount>()
                .add<debruijn_graph::DistanceEstimation>()
-               .add(new debruijn_graph::ScaffoldGraphConstructionStage())
-               .add(new debruijn_graph::ScaffolderAnalysisStage())
+               .add<debruijn_graph::ScaffoldGraphConstructionStage>()
+               .add<debruijn_graph::ScaffolderAnalysisStage>()
                .add<debruijn_graph::RepeatResolution>();
     } else {
         SPAdes.add<debruijn_graph::ContigOutput>(false);

@@ -205,6 +205,15 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
 //        }
 //#endif
     }
+
+    template<class Streams>
+    void BuildIndexFromStream(IndexT &index,
+                                Streams &streams,
+                                io::SingleStream* contigs_stream = 0) const {
+        utils::BuildIndexFromStream(index, streams, contigs_stream);
+
+        return ParallelFillCoverage(index, streams, false);
+    }
 };
 
 template<class Index>
