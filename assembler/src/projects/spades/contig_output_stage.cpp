@@ -17,6 +17,7 @@ vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
     vector<PathsWriterT> writers;
 
     writers.push_back(ContigWriter::BasicFastaWriter(fn_base + ".fasta"));
+    writers.push_back(ContigWriter::CircularFastaWriter(fn_base + ".circular.fasta"));
     INFO("Outputting FastG paths to " << fn_base << ".paths");
     writers.push_back([=](const ScaffoldStorage& scaffold_storage) {
         fastg_writer.WritePaths(scaffold_storage, fn_base + ".paths");

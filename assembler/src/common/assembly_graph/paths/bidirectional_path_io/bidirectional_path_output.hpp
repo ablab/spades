@@ -125,9 +125,28 @@ public:
         }
     }
 
+    static void WriteCircularScaffolds(const ScaffoldStorage &scaffold_storage, const string &fn) {
+        io::OutputSequenceStream oss(fn);
+        std::ofstream os_fastg;
+
+        for (const auto& scaffold_info : scaffold_storage) {
+            if (scaffold_info.path->g().EdgeStart(scaffold_info.path->Front()) == scaffold_info.path->g().EdgeEnd(scaffold_info.path->Back())) {
+//TODO:: duplicates from previous coverage stages should be filtered somewhere
+                TRACE("Scaffold " << scaffold_info.name << " originates from path " << scaffold_info.path->str());
+                oss << io::SingleRead(scaffold_info.name, scaffold_info.sequence);
+            }
+        }
+    }
+
     static PathsWriterT BasicFastaWriter(const std::string &fn) {
         return [=](const ScaffoldStorage& scaffold_storage) {
             WriteScaffolds(scaffold_storage, fn);
+        };
+    }
+
+    static PathsWriterT CircularFastaWriter(const string &fn) {
+        return [=](const ScaffoldStorage& scaffold_storage) {
+            WriteCircularScaffolds(scaffold_storage, fn);
         };
     }
 
