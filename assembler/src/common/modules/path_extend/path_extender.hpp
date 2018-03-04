@@ -303,11 +303,22 @@ private:
                 path.PushBack(loop_outgoing);
             }
             else {
-                DEBUG("Multiple cycles");
-                //If the forward edge is shorter than K, avoid overlapping bases between backward edge and outgoing edge
-                //Make sure that the N-stretch will be exactly 100 bp
-                uint32_t overlapping_bases = (uint32_t) max(int(g_.k()) - int(g_.length(forward_cycle_edge)), 0);
-                path.PushBack(loop_outgoing, Gap(int(g_.k() + BASIC_N_CNT - overlapping_bases), {0, overlapping_bases}));
+//TODO:: what should be here?
+                if (cfg::get().pd && loop_count * (g_.length(forward_cycle_edge) + g_.length(loop_exit)) < 1000) {
+                    INFO(" Plasmid mode: full loop resolving. Loop multiplicity: " << loop_count);
+                    INFO(" Loop edges " << forward_cycle_edge << " " << loop_exit);
+                    for(size_t i = 0; i < loop_count; i++) {
+                        path.PushBack(forward_cycle_edge);
+                        path.PushBack(loop_exit);
+                    }
+                } else {
+                    DEBUG("Multiple cycles");
+                    //If the forward edge is shorter than K, avoid overlapping bases between backward edge and outgoing edge
+                    //Make sure that the N-stretch will be exactly 100 bp
+                    uint32_t overlapping_bases = (uint32_t) std::max(int(g_.k()) - int(g_.length(forward_cycle_edge)), 0);
+                    path.PushBack(loop_outgoing, Gap(int(g_.k() + BASIC_N_CNT - overlapping_bases), {0, overlapping_bases}));
+
+                }
             }
         }
         else {
