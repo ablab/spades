@@ -508,13 +508,13 @@ void PathExtendLauncher::Launch() {
 
     //TODO does path polishing correctly work with coverage map
     PolishPaths(paths, gp_.contig_paths, cover_map);
-    DebugOutputPaths(gp_.contig_paths, "polished_paths");
-
-    TraverseLoops(paths, cover_map);
-    DebugOutputPaths(paths, "loop_traveresed");
-
     //TODO use move assignment to original map here
     GraphCoverageMap polished_map(gp_.g, gp_.contig_paths, true);
+    DebugOutputPaths(gp_.contig_paths, "polished_paths");
+
+    TraverseLoops(gp_.contig_paths, polished_map);
+    DebugOutputPaths(gp_.contig_paths, "loop_traveresed");
+
     RemoveOverlapsAndArtifacts(gp_.contig_paths, polished_map, resolver);
     DebugOutputPaths(gp_.contig_paths, "overlap_removed");
 
