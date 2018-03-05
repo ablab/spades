@@ -81,6 +81,14 @@ def prepare_config_rnaspades(filename, log):
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
+def prepare_config_construction(filename, log):
+    if options_storage.read_cov_threshold is None:
+        return
+    subst_dict = dict()
+    subst_dict["read_cov_threshold"] = options_storage.read_cov_threshold
+    process_cfg.substitute_params(filename, subst_dict, log)
+
+
 def get_read_length(output_dir, K, ext_python_modules_home, log):
     est_params_filename = os.path.join(output_dir, "K%d" % K, "final.lib_data")
     max_read_length = 0
@@ -200,6 +208,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
         process_cfg.substitute_params(os.path.join(dst_configs, "pe_params.info"), {"scaffolding_mode": cfg.scaffolding_mode}, log)
 
     prepare_config_rnaspades(os.path.join(dst_configs, "rna_mode.info"), log)
+    prepare_config_construction(os.path.join(dst_configs, "construction.info"), log)
     cfg_fn = os.path.join(dst_configs, "config.info")
     prepare_config_spades(cfg_fn, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home)
 

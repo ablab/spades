@@ -472,7 +472,7 @@ public:
         }
         //VERIFY(is_dignucl(c));
         RuntimeSeq<max_size_, T> s(size_ + 1);
-        copy(this->data_.begin(), this->data_.end(), s.data_.begin());
+        std::copy(this->data_.begin(), this->data_.end(), s.data_.begin());
 
         size_t data_size = GetDataSize(size_ + 1);
 

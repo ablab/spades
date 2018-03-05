@@ -23,43 +23,38 @@
  * reads. 
  */
 
-#ifndef COMMON_IO_FILTERINGREADERWRAPPER_HPP_
-#define COMMON_IO_FILTERINGREADERWRAPPER_HPP_
+#pragma once
 
-#include "io/ireader.hpp"
+#include <boost/optional.hpp>
+#include "delegating_reader_wrapper.hpp"
+#include "read_stream_vector.hpp"
 
 namespace io {
 
 template<typename ReadType>
-class FilteringReaderWrapper: public IReader<ReadType> {
+class FilteringReaderWrapper : public DelegatingWrapper<ReadType> {
+    typedef DelegatingWrapper<ReadType> base;
+    //allows read to be modified
 public:
+    typedef std::function<bool (ReadType&)> FilterF;
+//    static constexpr FilterF VALIDITY_FILTER = [] (ReadType& r) -> bool { return r.IsValid(); };
+
+    static bool VALIDITY_FILTER(ReadType& r) {
+        return r.IsValid();
+    };
+
   /*
    * Default constructor.
    *
    * @param reader Reference to any other reader (child of IReader).
    */
-    explicit FilteringReaderWrapper(IReader<ReadType>& reader) :
-            reader_(reader), eof_(false) {
+    explicit FilteringReaderWrapper(typename base::ReadStreamPtrT reader_ptr,
+                                    FilterF filter = VALIDITY_FILTER) :
+            base(reader_ptr), filter_f_(filter), eof_(false) {
         StepForward();
     }
 
-  /* 
-   * Default destructor.
-   */
-    /* virtual */ ~FilteringReaderWrapper() {
-        close();
-    }
-
-  /* 
-   * Check whether the stream is opened.
-   *
-   * @return true of the stream is opened and false otherwise.
-   */
-    bool is_open() override {
-        return reader_.is_open();
-    }
-
-  /* 
+  /*
    * Check whether we've reached the end of stream.
    *
    * @return true if the end of stream is reached and false
@@ -84,26 +79,18 @@ public:
     }
 
     /*
-     * Close the stream.
-     */
-    void close() override {
-        reader_.close();
-    }
-
-    /*
      * Close the stream and open it again.
      */
     void reset() override {
-        reader_.reset();
+        base::reset();
         eof_ = false;
         StepForward();
     }
 
 private:
-  /*
-   * @variable Internal stream readers.
-   */
-    IReader<ReadType>& reader_;
+
+    FilterF filter_f_;
+
   /*
    * @variable Flag that shows whether the end of stream reached.
    */
@@ -113,30 +100,38 @@ private:
    */
     ReadType next_read_;
 
-  /*
-   * Read next valid read in the stream.
-   */
+    /*
+    * Read next valid read in the stream.
+    */
     void StepForward() {
-        while (!reader_.eof()) {
-            reader_ >> next_read_;
-            if (next_read_.IsValid()) {
+        while (!base::eof()) {
+            base::operator>>(next_read_);
+
+            if (filter_f_(next_read_)) {
                 return;
             }
         }
         eof_ = true;
     }
 
-    /*
-     * Hidden copy constructor.
-     */
-    explicit FilteringReaderWrapper(
-            const FilteringReaderWrapper<ReadType>& reader);
-    /*
-     * Hidden assign operator.
-     */
-    void operator=(const FilteringReaderWrapper<ReadType>& reader);
 };
 
+template<class ReadType>
+std::shared_ptr<ReadStream<ReadType>> FilteringWrap(std::shared_ptr<ReadStream<ReadType>> reader_ptr,
+                                                    typename FilteringReaderWrapper<ReadType>::FilterF filter =
+                                                            FilteringReaderWrapper<ReadType>::VALIDITY_FILTER) {
+    return std::make_shared<FilteringReaderWrapper<ReadType>>(reader_ptr, filter);
 }
 
-#endif /* COMMON_IO_FILTERINGREADERWRAPPER_HPP_ */
+template<class ReadType>
+ReadStreamList<ReadType> FilteringWrap(const ReadStreamList<ReadType>& readers,
+                                       typename FilteringReaderWrapper<ReadType>::FilterF filter =
+                                            FilteringReaderWrapper<ReadType>::VALIDITY_FILTER) {
+    ReadStreamList<ReadType> answer;
+    for (size_t i = 0; i < readers.size(); ++i) {
+        answer.push_back(FilteringWrap<ReadType>(readers.ptr_at(i), filter));
+    }
+    return answer;
+}
+
+}

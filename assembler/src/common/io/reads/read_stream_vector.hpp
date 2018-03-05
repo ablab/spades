@@ -71,7 +71,7 @@ public:
         return *readers_.at(i);
     }
 
-    ReaderPtrT &ptr_at(size_t i) {
+    ReaderPtrT ptr_at(size_t i) const {
         return readers_.at(i);
     }
 

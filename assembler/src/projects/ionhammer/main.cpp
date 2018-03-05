@@ -344,7 +344,7 @@ int main(int argc, char** argv) {
         std::string outcorr = fs::append_path(
             cfg::get().output_dir, fs::basename(I->second) + usuffix);
 
-        io::PairedOutputSequenceStream ors(outcorl, outcorr);
+        io::OFastaPairedStream ors(outcorl, outcorr);
 
         io::SeparatePairedReadStream irs(I->first, I->second, 0);
         PairedReadsCorrector read_corrector(kmerData, calcerFactory, debug_pred,
@@ -369,7 +369,7 @@ int main(int argc, char** argv) {
 
         std::string outcor = fs::append_path(cfg::get().output_dir,
                                                fs::basename(*I) + usuffix);
-        io::OutputSequenceStream ors(outcor);
+        io::OFastaReadStream ors(outcor);
 
         io::FileReadStream irs(*I, io::PhredOffset);
         SingleReadsCorrector read_corrector(kmerData, calcerFactory, debug_pred,
@@ -394,7 +394,7 @@ int main(int argc, char** argv) {
 
         std::string outcor = fs::append_path(cfg::get().output_dir,
                                                fs::basename(*I) + usuffix);
-        io::OutputSequenceStream ors(outcor);
+        io::OFastaReadStream ors(outcor);
 
         BamTools::BamReader bam_reader;
         bam_reader.Open(*I);

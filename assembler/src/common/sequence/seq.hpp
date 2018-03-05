@@ -283,7 +283,7 @@ public:
         }
         //VERIFY(is_dignucl(c));
         Seq<size_ + 1, T> s;
-        copy(this->data_.begin(), this->data_.end(), s.data_.begin());
+        std::copy(this->data_.begin(), this->data_.end(), s.data_.begin());
         s.data_[s.DataSize - 1] = s.data_[s.DataSize - 1] | ((T) c << ((size_ & (TNucl - 1)) << 1));
 
         return s; //was: Seq<size_ + 1, T>(str() + nucl(c));

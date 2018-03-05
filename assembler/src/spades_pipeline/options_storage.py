@@ -97,7 +97,8 @@ iterations = None
 bh_heap_check = None
 spades_heap_check = None
 read_buffer_size = None
-lcer_cutoff = None 
+lcer_cutoff = None
+read_cov_threshold = None
 ### END OF OPTIONS
 
 # for restarting SPAdes
@@ -143,7 +144,8 @@ long_options = "12= merged= threads= memory= tmp-dir= iterations= phred-offset= 
                "help version test debug debug:false reference= series-analysis= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false save-gp save-gp:false "\
-               "continue restart-from= diploid truseq cov-cutoff= hidden-cov-cutoff= configs-dir= stop-after=".split()
+               "continue restart-from= diploid truseq cov-cutoff= hidden-cov-cutoff= read-cov-threshold= " \
+               "configs-dir= stop-after=".split()
 short_options = "o:1:2:s:k:t:m:i:hv"
 
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
@@ -345,6 +347,7 @@ def usage(spades_version, show_hidden=False, mode=None):
         sys.stderr.write("--save-gp\tEnables saving graph pack before repeat resolution (even without --debug) \n")
         sys.stderr.write("--hidden-cov-cutoff\t<float>\t\tcoverage cutoff value deeply integrated in simplification"\
                             " (a positive float number). Base coverage! Will be adjusted depending on K and RL! \n")
+        sys.stderr.write("--read-cov-threshold\t<int>\t\tread median coverage threshold (non-negative integer)\n")
         sys.stderr.write("--help-hidden\tprints this usage message with all hidden options" + "\n")
 
     if show_hidden and mode == "dip":

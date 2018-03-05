@@ -16,7 +16,7 @@
 #include "utils/logger/logger.hpp"
 
 #include "io/kmers/kmer_iterator.hpp"
-#include "adt/bf.hpp"
+#include "adt/cqf.hpp"
 #include "adt/hll.hpp"
 
 using namespace hammer;
@@ -187,12 +187,11 @@ class KMerDataFiller {
 };
 
 class KMerMultiplicityCounter {
-  bf::bitcounting_bloom_filter<KMer, 2> bf_;
+  qf::cqf_with_hasher<KMer> cqf_;
 
   public:
   KMerMultiplicityCounter(size_t size)
-      : bf_([](const KMer &k, uint64_t seed) { return k.GetHash((uint32_t)seed); },
-            4 * size) {}
+      : cqf_(size, [](const KMer &k) { return k.GetHash(); }) {}
 
   ~KMerMultiplicityCounter() {}
 
@@ -210,20 +209,20 @@ class KMerMultiplicityCounter {
       for (; gen.HasMore(); gen.Next()) {
           KMer kmer = gen.kmer();
 
-          bf_.add(kmer);
-          bf_.add(!kmer);
+          cqf_.add(kmer);
+          cqf_.add(!kmer);
       }
 
       return false;
   }
 
   size_t count(const KMer &k) const {
-      return bf_.lookup(k);
+      return cqf_.lookup(k);
   }
 };
 
 class KMerCountEstimator {
-  std::vector<hll::hll<KMer>> hll_;
+  std::vector<hll::hll_with_hasher<KMer>> hll_;
 
   public:
   KMerCountEstimator(unsigned thread_num) {
@@ -305,7 +304,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
               if (buffer_size == 0) buffer_size = 512ull * 1024 * 1024;
           } else {
               INFO("Estimated " << size_t(res.first) << " distinct kmers");
-              buffer_size = 3 * size_t(res.first);
+              buffer_size = size_t(res.first);
           }
       }
 

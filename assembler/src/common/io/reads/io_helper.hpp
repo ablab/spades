@@ -15,7 +15,7 @@
 #include "binary_streams.hpp"
 #include "multifile_reader.hpp"
 #include "converting_reader_wrapper.hpp"
-#include "careful_filtering_reader_wrapper.hpp"
+#include "longest_valid_wrapper.hpp"
 #include "rc_reader_wrapper.hpp"
 
 namespace io {
@@ -39,7 +39,7 @@ namespace io {
                                       bool handle_Ns = true, OffsetType offset_type = PhredOffset) {
         SingleStreamPtr reader = make_shared<FileReadStream>(filename, offset_type);
         if (handle_Ns) {
-            reader = CarefulFilteringWrap<SingleRead>(reader);
+            reader = LongestValidWrap<SingleRead>(reader);
         }
         if (followed_by_rc) {
             reader = RCWrap<SingleRead>(reader);
@@ -51,7 +51,7 @@ namespace io {
                                                 bool followed_by_rc,
                                                 LibraryOrientation orientation) {
         reader = make_shared<OrientationChangingWrapper<PairedRead>>(reader, orientation);
-        reader = CarefulFilteringWrap<PairedRead>(reader);
+        reader = LongestValidWrap<PairedRead>(reader);
         if (followed_by_rc) {
             reader = RCWrap<PairedRead>(reader);
         }

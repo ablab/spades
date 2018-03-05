@@ -163,7 +163,7 @@ public:
     using KeyBase::index_ptr_;
     typedef typename KeyBase::KMerIndexT KMerIndexT;
     typedef typename StoringTraits<K, KMerIndexT, StoringType>::KeyWithHash KeyWithHash;
-    typedef qf::cqf<KeyWithHash> ValueStorage;
+    typedef qf::cqf ValueStorage;
 
     KeyWithHash ConstructKWH(const KeyType &key) const {
         return KeyWithHash(key, *index_ptr_);

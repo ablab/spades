@@ -277,7 +277,7 @@ private:
 
             for (auto edge : start_edges) {
                 Sequence s = ConstructSequenceWithEdge(edge, builder);
-                if (s < !s)
+                if ((!s) < s)
                     continue;
 
                 sequences.push_back(s);

@@ -72,6 +72,7 @@ struct InvertableStoring {
 
 typedef InvertableStoring DefaultStoring;
 
+//FIXME make functor
 template<class StoringType>
 struct StoringTypeFilter {
 };

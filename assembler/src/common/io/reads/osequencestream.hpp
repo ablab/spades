@@ -111,37 +111,71 @@ public:
 
 };
 
-class OutputSequenceStream {
+class OFastaReadStream {
     std::ofstream ofstream_;
 public:
+    typedef SingleRead ReadT;
 
-    OutputSequenceStream(const std::string& filename):
+    OFastaReadStream(const std::string& filename):
             ofstream_(filename) {
     }
 
-    OutputSequenceStream& operator<<(const SingleRead& read) {
+    OFastaReadStream& operator<<(const SingleRead& read) {
         ofstream_ << ">" << read.name() << "\n";
         WriteWrapped(read.GetSequenceString(), ofstream_);
         return *this;
     }
 };
 
-class PairedOutputSequenceStream {
-    OutputSequenceStream os_l_;
-    OutputSequenceStream os_r_;
+class OFastqReadStream {
+    std::ofstream os_;
 
 public:
-    PairedOutputSequenceStream(const std::string& filename1,
-                               const std::string &filename2) :
-            os_l_(filename1),
-            os_r_(filename2) {
+    typedef SingleRead ReadT;
+
+    OFastqReadStream(const std::string& fn) :
+            os_(fn) {
     }
 
-    PairedOutputSequenceStream& operator<<(const PairedRead& read) {
-        os_l_ << read.first();
-        os_r_ << read.second();
+    OFastqReadStream& operator<<(const SingleRead& read) {
+        os_ << "@" << read.name() << std::endl;
+        os_ << read.GetSequenceString() << std::endl;
+        os_ << "+" << std::endl;
+        os_ << read.GetPhredQualityString() << std::endl;
         return *this;
     }
+
+    void close() {
+        os_.close();
+    }
 };
+
+template<class SingleReadStream>
+class OPairedReadStream {
+    SingleReadStream l_os_;
+    SingleReadStream r_os_;
+
+public:
+    typedef PairedRead ReadT;
+
+    OPairedReadStream(const std::string& l_fn,
+                            const std::string& r_fn) :
+            l_os_(l_fn), r_os_(r_fn) {
+    }
+
+    OPairedReadStream& operator<<(const PairedRead& read) {
+        l_os_ << read.first();
+        r_os_ << read.second();
+        return *this;
+    }
+
+    void close() {
+        l_os_.close();
+        r_os_.close();
+    }
+};
+
+using OFastaPairedStream = OPairedReadStream<OFastaReadStream>;
+using OFastqPairedStream = OPairedReadStream<OFastqReadStream>;
 
 }

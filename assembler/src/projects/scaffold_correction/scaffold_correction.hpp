@@ -254,7 +254,7 @@ namespace spades {
         }
 
         void OutputResults(const vector<io::SingleRead> &results) {
-            io::OutputSequenceStream oss(output_file_);
+            io::OFastaReadStream oss(output_file_);
             for (size_t i = 0; i < results.size(); i++) {
                 string sequence = results[i].GetSequenceString();
                 if (sequence != "") {

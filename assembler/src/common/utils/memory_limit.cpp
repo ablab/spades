@@ -89,7 +89,7 @@ size_t get_used_memory() {
     je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
     return *cmem;
 #else
-    get_max_rss();
+    return get_max_rss();
 #endif
 }
 

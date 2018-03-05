@@ -23,7 +23,7 @@ namespace debruijn_graph {
 
 typedef io::SequencingLibrary<config::LibraryData> SequencingLib;
 using PairedInfoFilter = bf::counting_bloom_filter<std::pair<EdgeId, EdgeId>, 2>;
-using EdgePairCounter = hll::hll<std::pair<EdgeId, EdgeId>>;
+using EdgePairCounter = hll::hll_with_hasher<std::pair<EdgeId, EdgeId>>;
 
 class DEFilter : public SequenceMapperListener {
   public:

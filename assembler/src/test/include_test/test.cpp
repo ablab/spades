@@ -6,7 +6,7 @@
 //***************************************************************************
 
 //#define BOOST_TEST_MODULE include_test
-#include "utils/standard_base.hpp"
+//#include "utils/standard_base.hpp"
 
 #include "utils/logger/log_writers.hpp"
 
@@ -15,6 +15,7 @@
 #include "sequence_test.hpp"
 #include "quality_test.hpp"
 #include "nucl_test.hpp"
+#include "cyclic_hash_test.hpp"
 
 #define BOOST_TEST_SOURCE
 #include <boost/test/impl/unit_test_main.ipp>

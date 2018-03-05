@@ -19,6 +19,11 @@ public:
 
     explicit DelegatingWrapper(ReadStreamPtrT reader) : reader_(reader) {}
 
+    explicit DelegatingWrapper(
+            const DelegatingWrapper& reader) = delete;
+
+    void operator=(const DelegatingWrapper& reader) = delete;
+
     bool is_open() override {
         return reader_->is_open();
     }
@@ -50,7 +55,6 @@ protected:
 
 private:
     ReadStreamPtrT reader_;
-
 };
 
 }

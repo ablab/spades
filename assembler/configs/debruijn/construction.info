@@ -10,7 +10,10 @@ construction
 
 	; size of buffer for each thread in MB, 0 for autodetection
 	read_buffer_size 0
-	
+
+        ; read median coverage threshold
+        read_cov_threshold 0
+
 	early_tip_clipper
 	{
 		; tip clipper can be enabled only in extension mode

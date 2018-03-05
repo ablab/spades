@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "utils/logger/logger.hpp"
+#include "utils/perf/memory.hpp"
 
 #include "config.hpp"
 

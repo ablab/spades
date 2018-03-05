@@ -5,9 +5,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "io/reads/vector_reader.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/dataset_support/read_converter.hpp"
+#include "io/reads/coverage_filtering_read_wrapper.hpp"
+#include "io/reads/vector_reader.hpp"
 
 #include "modules/graph_construction.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
@@ -37,6 +38,8 @@ struct ConstructionStorage {
             : ext_index(k) {}
 
     utils::DeBruijnExtensionIndex<> ext_index;
+
+    std::unique_ptr<qf::cqf> cqf;
     std::unique_ptr<utils::KMerDiskCounter<RtSeq>> counter;
     std::unique_ptr<CoverageMap> coverage_map;
     config::debruijn_config::construction params;
@@ -84,7 +87,8 @@ void Construction::init(debruijn_graph::conj_graph_pack &gp, const char *) {
 
     storage().params = cfg::get().con;
     storage().workdir = fs::tmp::make_temp_dir(gp.workdir, "construction");
-    storage().read_streams = io::single_binary_readers_for_libs(dataset, libs_for_construction, true, true);
+    //FIXME needs to be changed if we move to hash only filtering
+    storage().read_streams = io::single_binary_readers_for_libs(dataset.reads, libs_for_construction);
 
     //Updating dataset stats
     VERIFY(dataset.RL == 0 && dataset.aRL == 0.);
@@ -94,7 +98,7 @@ void Construction::init(debruijn_graph::conj_graph_pack &gp, const char *) {
     for (size_t lib_id : libs_for_construction) {
         auto lib_data = dataset.reads[lib_id].data();
         if (lib_data.unmerged_read_length == 0) {
-            FATAL_ERROR("Failed to determine read length for library #" << lib_id << ". "
+            FATAL_ERROR("Failed to determine read length for library #" << lib_data.lib_index << ". "
                     "Check that not only merged reads are present.");
         }
         dataset.no_merge_RL = std::max(dataset.no_merge_RL, lib_data.unmerged_read_length);
@@ -119,7 +123,56 @@ void Construction::fini(debruijn_graph::conj_graph_pack &) {
 
 Construction::~Construction() {}
 
+class CoverageFilter: public Construction::Phase {
+  public:
+    CoverageFilter()
+            : Construction::Phase("k-mer multiplicity estimation", "cqf_filter") { }
+    virtual ~CoverageFilter() = default;
+
+    void run(debruijn_graph::conj_graph_pack &, const char*) override {
+        auto read_streams = storage().read_streams;
+        const auto &index = storage().ext_index;
+        using storing_type = decltype(storage().ext_index)::storing_type;
+
+        VERIFY_MSG(read_streams.size(), "No input streams specified");
+
+        unsigned rthr = storage().params.read_cov_threshold;
+
+        using KmerFilter = utils::StoringTypeFilter<storing_type>;
+
+        unsigned kplusone = index.k() + 1;
+        rolling_hash::SymmetricCyclicHash<rolling_hash::NDNASeqHash> hasher(kplusone);
+
+        INFO("Estimating k-mers cardinality");
+        size_t kmers = EstimateCardinality(kplusone, read_streams, hasher, KmerFilter());
+
+        // Create main CQF using # of slots derived from estimated # of k-mers
+        storage().cqf.reset(new qf::cqf(kmers));
+
+        INFO("Building k-mer coverage histogram");
+        FillCoverageHistogram(*storage().cqf, kplusone, hasher, read_streams, rthr, KmerFilter());
+
+        // Replace input streams with wrapper ones
+        storage().read_streams = io::CovFilteringWrap(read_streams, kplusone, hasher, *storage().cqf, rthr);
+    }
+
+    void load(debruijn_graph::conj_graph_pack&,
+              const std::string &,
+              const char*) override {
+        VERIFY_MSG(false, "implement me");
+    }
+
+    void save(const debruijn_graph::conj_graph_pack&,
+              const std::string &,
+              const char*) const override {
+        // VERIFY_MSG(false, "implement me");
+    }
+
+};
+
+
 class KMerCounting : public Construction::Phase {
+    typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;
 public:
     KMerCounting()
             : Construction::Phase("k+1-mer counting", "kpomer_counting") { }
@@ -127,18 +180,20 @@ public:
     virtual ~KMerCounting() = default;
 
     void run(debruijn_graph::conj_graph_pack &, const char*) override {
-        auto &read_streams = storage().read_streams;
+        auto read_streams = storage().read_streams;
         auto &contigs_stream = storage().contigs_stream;
         const auto &index = storage().ext_index;
+        size_t buffer_size = storage().params.read_buffer_size;
+        using storing_type = decltype(storage().ext_index)::storing_type;
 
         VERIFY_MSG(read_streams.size(), "No input streams specified");
 
         unsigned nthreads = (unsigned)read_streams.size();
         utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
-                                        utils::StoringTypeFilter<decltype(storage().ext_index)::storing_type>>
+                                        utils::StoringTypeFilter<storing_type>>
                 splitter(storage().workdir, index.k() + 1, 0,
                          read_streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
-                         storage().params.read_buffer_size);
+                         buffer_size);
         storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
         storage().counter->CountAll(nthreads, nthreads, /* merge */false);
     }
@@ -488,6 +543,9 @@ public:
 
 Construction::Construction()
         : spades::CompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {
+    if (cfg::get().con.read_cov_threshold)
+        add<CoverageFilter>();
+
     add<KMerCounting>();
 
     add<ExtensionIndexBuilder>();

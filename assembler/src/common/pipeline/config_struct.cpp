@@ -216,6 +216,8 @@ void load(debruijn_config::construction& con,
     load(con.con_mode, pt, "mode", complete);
     load(con.keep_perfect_loops, pt, "keep_perfect_loops", complete);
     load(con.read_buffer_size, pt, "read_buffer_size", complete);
+    load(con.read_cov_threshold, pt, "read_cov_threshold", complete);
+
     con.read_buffer_size *= 1024 * 1024;
     load(con.early_tc, pt, "early_tip_clipper", complete);
 }
@@ -819,6 +821,21 @@ void load(debruijn_config &cfg, const std::string &cfg_fns) {
     load(cfg, std::vector<std::string>({ cfg_fns }));
 }
 
+void init_libs(io::DataSet<LibraryData> &dataset, size_t max_threads,
+               size_t buffer_size, const std::string &temp_bin_reads_path) {
+    for (size_t i = 0; i < dataset.lib_count(); ++i) {
+        auto& lib = dataset[i];
+        lib.data().lib_index = i;
+        auto& bin_info = lib.data().binary_reads_info;
+        bin_info.chunk_num = max_threads;
+        bin_info.buffer_size = buffer_size;
+        bin_info.bin_reads_info_file = temp_bin_reads_path + "INFO_" + std::to_string(i);
+        bin_info.paired_read_prefix = temp_bin_reads_path + "paired_" + std::to_string(i);
+        bin_info.merged_read_prefix = temp_bin_reads_path + "merged_" + std::to_string(i);
+        bin_info.single_read_prefix = temp_bin_reads_path + "single_" + std::to_string(i);
+    }
+}
+
 void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
     VERIFY_MSG(cfg_fns.size() > 0, "Should provide at least one config file");
     boost::property_tree::ptree base_pt;
@@ -865,16 +882,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
              + cfg.temp_bin_reads_dir);
     //cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
 
-    for (size_t i = 0; i < cfg.ds.reads.lib_count(); ++i) {
-        auto& lib = cfg.ds.reads[i];
-        lib.data().lib_index = i;
-        lib.data().binary_reads_info.chunk_num = cfg.max_threads;
-        lib.data().binary_reads_info.bin_reads_info_file = cfg.temp_bin_reads_path + "INFO_" + std::to_string(i);
-        lib.data().binary_reads_info.buffer_size = cfg.buffer_size;
-        lib.data().binary_reads_info.paired_read_prefix = cfg.temp_bin_reads_path + "paired_" + std::to_string(i);
-        lib.data().binary_reads_info.merged_read_prefix = cfg.temp_bin_reads_path + "merged_" + std::to_string(i);
-        lib.data().binary_reads_info.single_read_prefix = cfg.temp_bin_reads_path + "single_" + std::to_string(i);
-    }
+    init_libs(cfg.ds.reads, cfg.max_threads, cfg.buffer_size, cfg.temp_bin_reads_path);
 }
 
 }

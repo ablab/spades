@@ -30,7 +30,7 @@ namespace utils {
 //
 // On failure, returns 0, 0
 
-void process_mem_usage(unsigned long &vm_usage, long &resident_set) {
+inline void process_mem_usage(unsigned long &vm_usage, long &resident_set) {
    using std::ios_base;
    using std::ifstream;
    using std::string;

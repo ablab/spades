@@ -260,7 +260,7 @@ void SeriesAnalysis::run(conj_graph_pack &gp, const char *) {
     DEBUG("Abundance counter ready");
 
     if (!config.edges_sqn.empty()) {
-        io::OutputSequenceStream oss(config.edges_sqn);
+        io::OFastaReadStream oss(config.edges_sqn);
         for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             string s = gp.g.EdgeNucls(e).str();

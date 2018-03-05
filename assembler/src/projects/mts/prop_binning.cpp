@@ -24,7 +24,7 @@ std::string add_suffix(const std::string& path, const std::string& suffix) {
 //TODO: refactor to process the graph only once
 void DumpEdges(const Graph& g, const string& out_edges) {
     INFO("Dumping edges to " << out_edges);
-    io::OutputSequenceStream oss(out_edges);
+    io::OFastaReadStream oss(out_edges);
     for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
         EdgeId e = *it;
         oss << io::SingleRead("NODE_" + std::to_string(g.int_id(e)), g.EdgeNucls(e).str());
