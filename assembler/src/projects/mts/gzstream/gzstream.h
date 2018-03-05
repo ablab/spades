@@ -104,7 +104,9 @@ class ogzstream : public gzstreambase, public std::ostream {
 public:
     ogzstream() : std::ostream( &buf) {}
     ogzstream( const char* name, int mode = std::ios::out)
-        : gzstreambase( name, mode), std::ostream( &buf) {}  
+        : gzstreambase( name, mode), std::ostream( &buf) {}
+    ogzstream( const std::string &name, int mode = std::ios::out)
+        : ogzstream(name.c_str(), mode) {}
     gzstreambuf* rdbuf() { return gzstreambase::rdbuf(); }
     void open( const char* name, int open_mode = std::ios::out) {
         gzstreambase::open( name, open_mode);
