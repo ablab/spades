@@ -492,7 +492,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         elif options_storage.rna:
             k_value = options_storage.K_MERS_RNA[0]
             if not options_storage.iontorrent:
-                k_value = int(support.get_reads_length(dataset_data, log) / 2) - 1
+                k_value = int(support.get_reads_length(dataset_data, log, ['merged reads']) / 2) - 1
                 if k_value % 2 == 0:
                     k_value -= 1
                 if k_value < options_storage.MIN_K:
