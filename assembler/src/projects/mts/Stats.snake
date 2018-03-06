@@ -318,12 +318,8 @@ rule checkm:
     log:     "stats/checkm_{stage}.log"
     message: "Running CheckM for results of {wildcards.stage}"
     run:
-        # for file in os.listdir(params.dir):
-        #     ext = os.path.splitext(file)
-        #     if ext in FASTA_EXTS:
-        #         break
         ext = ".fasta"
-        shell("set +u; source activate py27; set -u \n"
+        shell("set +u; source activate mts27; set -u \n"
              "checkm tree -t {THREADS} --pplacer_threads {THREADS} -x {ext} {params.dir} {params.out} >{log} 2>&1\n"
              "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.out} >>{log} 2>&1\n"
              "checkm lineage_set {params.out} {params.out}/lineage.ms >>{log} 2>&1\n"
@@ -357,9 +353,8 @@ rule reassembly_mock_binning:
 rule split_groups:
     input:   "binning/bins/{bin}.fasta"
     output:  touch("binning/groups/{bin}.done")
-    params:  "binning/groups/{bin}/"
     message: "Splitting {wildcards.bin} into groups"
-    shell:   "mkdir -p {params} && {SCRIPTS}/split_groups.py {input} {params}"
+    shell:   "{SCRIPTS}/split_groups.py {input} $(dirname {output})"
 
 rule checkm_bin:
     input:   "binning/groups/{bin}.done"
@@ -371,7 +366,7 @@ rule checkm_bin:
     message: "Running CheckM for groups from {wildcards.bin}"
     run:
         ext = ".fasta"
-        shell("set +u; source activate py27; set -u \n"
+        shell("set +u; source activate mts27; set -u \n"
              "checkm tree -t {THREADS} --pplacer_threads {THREADS} -x {ext} {params.dir} {params.out} >{log} 2>&1\n"
              "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.out} >>{log} 2>&1\n"
              "checkm lineage_set {params.out} {params.out}/lineage.ms >>{log} 2>&1\n"

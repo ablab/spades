@@ -153,8 +153,11 @@ class PairedInfoPropagator : public EdgeAnnotationPropagator {
 public:
     PairedInfoPropagator(const conj_graph_pack& gp,
                          size_t length_threshold,
-                         omnigraph::de::DEWeight threshold):
-        EdgeAnnotationPropagator(gp, "PairedInfo", length_threshold), weight_threshold_(threshold) {}
+                         size_t upper_threshold,
+                         omnigraph::de::DEWeight weight_threshold):
+        EdgeAnnotationPropagator(gp, "PairedInfo", length_threshold, upper_threshold),
+        weight_threshold_(weight_threshold)
+    {}
 private:
     DECL_LOGGER("PairedInfoPropagator");
 };
@@ -269,9 +272,9 @@ void AnnotationPropagator::Run(io::SingleStream& /*contigs*/,
                      EdgeAnnotation& edge_annotation
                      /*const string& annotation_out_fn*/) {
     std::vector<std::shared_ptr<EdgeAnnotationPropagator>> propagator_pipeline {
-        make_propagator<ConnectingPathPropagator>(8000, 10),
+        MakePropagator<ConnectingPathPropagator>(8000, 10),
 //        make_propagator<TipPropagator>(),
-        make_propagator<PairedInfoPropagator>(10.)};//,
+        MakePropagator<PairedInfoPropagator>(100500, 10.)};//,
 //        std::make_shared<ContigPropagator>(gp_, contigs)};//,
 //        std::make_shared<ConnectingPathPropagator>(gp_, 8000, 10, edge_annotation),
 //        std::make_shared<ContigPropagator>(gp_, contigs),

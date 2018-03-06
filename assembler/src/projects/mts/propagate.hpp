@@ -22,7 +22,7 @@ public:
     }
 
     template<typename Result, typename... Args>
-    std::shared_ptr<Result> make_propagator(Args... args) {
+    std::shared_ptr<Result> MakePropagator(Args... args) {
         return std::make_shared<Result>(gp_, length_threshold_, args...);
     }
 

@@ -15,19 +15,10 @@ typedef typename std::vector<Mpl> MplVector;
 //Contig abundancies types: arbitrary values
 typedef float Abundance;
 typedef float Var;
+
 struct AbVar {
     Abundance ab; Var var;
-    AbVar& operator += (AbVar other) {
-        ab += other.ab;
-        var = std::max(var, other.var);
-        return *this;
-    }
-    AbVar& operator /= (float d) {
-        ab /= d;
-        return *this;
-    }
 };
-
 
 template<typename T> using Profile = std::vector<T>;
 

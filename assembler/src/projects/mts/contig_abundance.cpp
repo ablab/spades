@@ -12,22 +12,24 @@ MplVector SampleMpls(const KmerProfiles& kmer_mpls, size_t sample) {
     return answer;
 }
 
+//------------------------------------------------------------------------------
+
 template<typename T>
-T SampleMedian(MplVector& sample_mpls);
+T SampleMedian(MplVector &&sample_mpls);
 
 template<>
-Abundance SampleMedian(MplVector& sample_mpls) {
+Abundance SampleMedian(MplVector &&sample_mpls) {
     std::nth_element(sample_mpls.begin(), sample_mpls.begin() + sample_mpls.size() / 2, sample_mpls.end());
     return (Abundance)sample_mpls[sample_mpls.size() / 2];
 }
 
 template<>
-AbVar SampleMedian(MplVector& sample_mpls) {
-    auto median = SampleMedian<Abundance>(sample_mpls);
+AbVar SampleMedian(MplVector &&sample_mpls) {
+    auto median = SampleMedian<Abundance>(MplVector(sample_mpls));
 
     //Median absolute deviation
     for (auto& i: sample_mpls)
-        i = std::abs(int(i) - int(median));
+        i = (Mpl)std::abs(int(i) - int(median));
 
     std::nth_element(sample_mpls.begin(), sample_mpls.begin() + sample_mpls.size() / 2, sample_mpls.end());
     Var mad = (Var) sample_mpls[sample_mpls.size() / 2]; // * 1.4826; //constant scale factor for normal distibution
@@ -35,25 +37,15 @@ AbVar SampleMedian(MplVector& sample_mpls) {
     return {median, mad};
 }
 
-template<typename T>
-std::vector<T> MedianVector(const KmerProfiles& kmer_mpls) {
-    VERIFY(kmer_mpls.size() != 0);
-    std::vector<T> res;
-    res.reserve(KmerProfileIndex::SampleCount());
-    for (size_t i = 0; i < KmerProfileIndex::SampleCount(); ++i) {
-        std::vector<Mpl> sample_mpls = SampleMpls(kmer_mpls, i);
-        res.push_back(SampleMedian<T>(sample_mpls));
-    }
-    return res;
-}
+//------------------------------------------------------------------------------
 
 template<typename T>
 T WinsoredMean(std::vector<Mpl>& v);
 
 template<>
 Abundance WinsoredMean(std::vector<Mpl>& v) {
-    const float frac = 0.05;
-    size_t offset = std::ceil(v.size() * frac);
+    const float frac = 0.05f;
+    size_t offset = (size_t)std::ceil(float(v.size()) * frac);
     //std::sort(v.begin(), v.end());
     std::nth_element(v.begin(), v.end() - offset, v.end());
     for (size_t i = 0; i < offset; ++i) {
@@ -85,14 +77,18 @@ std::ostream& operator<<(std::ostream& str, AbVar ab_var) {
     return str;
 }
 
+//------------------------------------------------------------------------------
+
+template<typename T> using PointEstimator = std::function<T(MplVector &&)>;
+
 template<typename T>
-std::vector<T> WinsoredMeanVector(const KmerProfiles& kmer_mpls) {
+Profile<T> CountProfile(const KmerProfiles& kmer_mpls, PointEstimator<T> point_estimator) {
     VERIFY(kmer_mpls.size() != 0);
     std::vector<T> res;
     res.reserve(KmerProfileIndex::SampleCount());
     for (size_t i = 0; i < KmerProfileIndex::SampleCount(); ++i) {
-        std::vector<Mpl> sample_mpls = SampleMpls(kmer_mpls, i);
-        res.push_back(WinsoredMean<T>(sample_mpls));
+        auto sample_mpls = SampleMpls(kmer_mpls, i);
+        res.push_back(point_estimator(std::move(sample_mpls)));
         TRACE(sample_mpls << ": " << res.back());
     }
     return res;
@@ -100,8 +96,7 @@ std::vector<T> WinsoredMeanVector(const KmerProfiles& kmer_mpls) {
 
 template<typename T>
 typename ClusterAnalyzer<T>::Result TrivialClusterAnalyzer<T>::operator()(const KmerProfiles& kmer_mpls) const {
-    return typename ClusterAnalyzer<T>::Result(MedianVector<T>(kmer_mpls));
-    //return typename ClusterAnalyzer<T>::Result(WinsoredMeanVector<T>(kmer_mpls));
+    return typename ClusterAnalyzer<T>::Result(CountProfile(kmer_mpls, PointEstimator<T>(SampleMedian<T>)));
 }
 
 /*

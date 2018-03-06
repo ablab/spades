@@ -52,21 +52,6 @@ presented_refs = gf_table.apply(lambda row: row.sum() > EPS, axis=1)
 lost_refs = gf_table.index[~presented_refs]
 gf_table = gf_table.loc[presented_refs, gf_table.apply(lambda col: col.sum() > EPS)]
 
-# Load misassemblies from combined reference
-with open(table_path("report.html", True)) as input:
-    read = False
-    for line in input:
-        if "<div id='total-report-json'>" in line:
-            read = True
-            continue
-        if read:
-            report = json.loads(line)
-            break
-    data = [sub[1][1][0]["values"] for sub in report["subreports"]]
-    mis_table = pandas.DataFrame(data)
-    mis_table.index = report["subreferences"]
-    mis_table.columns = report["assembliesNames"]
-
 # Load purity table
 total_lengths = pandas.to_numeric(pandas.read_table(table_path("report.tsv", True), index_col=0).loc["Total length"])
 
@@ -87,6 +72,21 @@ with open(args.name + "_best.tsv", "w") as out_file:
     best_ref.to_csv(out_file, sep="\t")
 
 if args.summary:
+    # Load misassemblies from combined reference
+    with open(table_path("report.html", True)) as input:
+        read = False
+        for line in input:
+            if "<div id='total-report-json'>" in line:
+                read = True
+                continue
+            if read:
+                report = json.loads(line)
+                break
+        data = [sub[1][1][0]["values"] for sub in report["subreports"]]
+        mis_table = pandas.DataFrame(data)
+        mis_table.index = report["subreferences"]
+        mis_table.columns = report["assembliesNames"]
+
     # Prepare the summary table
     res_dict = OrderedDict()
     for ref, bin in best_bin.iteritems():
