@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Cut up fasta file in non-overlapping or overlapping parts of equal length.
 """
+from __future__ import print_function
 import argparse
 import sys
 from Bio import SeqIO
@@ -13,11 +14,11 @@ def cut_up_fasta(fastfiles, chunk_size, overlap, min_length, merge_last):
                 for split_seq in chunks(record.seq, chunk_size, overlap, merge_last):
                     start = i*chunk_size
                     end = start + len(split_seq)
-                    print ">%s_(%i_%i)\n%s" % (record.id, start, end, split_seq)
+                    print(">{}_({}_{})\n{}".format(record.id, start, end, split_seq))
                     i = i + 1
             elif len(record.seq) >= min_length:
                 suffix = "" if "length" in record.id else "_length_" + str(len(record))
-                print ">%s%s\n%s" % (record.id, suffix, record.seq)
+                print(">{}{}\n{}".format(record.id, suffix, record.seq))
 
 
 def chunks(l, n, o, merge_last):
