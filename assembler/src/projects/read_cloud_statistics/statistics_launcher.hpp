@@ -12,7 +12,7 @@
 #include "contig_path_analyzer.hpp"
 #include "contracted_graph_stats/contracted_graph_local_statistics.hpp"
 #include "scaffolder_statistics/scaffolder_stats.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline/scaffold_graph_construction_pipeline.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 #include "scaffolder_statistics/gap_closer_stats.hpp"
 #include "scaffolder_statistics/gap_closer_analyzer.hpp"

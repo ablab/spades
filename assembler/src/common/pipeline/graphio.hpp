@@ -28,7 +28,7 @@
 #include <fstream>
 #include <cstdio>
 #include "common/barcode_index/barcode_index_builder.hpp"
-#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_storage.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage.hpp"
 
 namespace debruijn_graph {
 

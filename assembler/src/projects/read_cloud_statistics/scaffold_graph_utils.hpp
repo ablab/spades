@@ -1,13 +1,13 @@
 #pragma once
 
 #include <common/io/reads/osequencestream.hpp>
-#include <common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp>
+#include <common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline/scaffold_graph_construction_pipeline.hpp>
 #include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
 #include "statistics_processor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
-#include "modules/path_extend/read_cloud_path_extend/read_cloud_connection_conditions.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/containment_index_threshold_finder.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/containment_index_threshold_finder.hpp"
 
 namespace scaffold_graph_utils {
     using path_extend::scaffold_graph::ScaffoldGraph;

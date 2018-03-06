@@ -3,8 +3,8 @@
 //
 
 #include "launcher.hpp"
-
 #include "modules/path_extend/path_visualizer.hpp"
+
 #include "modules/path_extend/loop_traverser.hpp"
 #include "modules/path_extend/path_extender.hpp"
 #include "modules/alignment/long_read_storage.hpp"
@@ -15,6 +15,7 @@
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
 #include "modules/path_extend/read_cloud_path_extend/path_scaffolder.hpp"
+#include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
 namespace path_extend {
 
 using namespace debruijn_graph;

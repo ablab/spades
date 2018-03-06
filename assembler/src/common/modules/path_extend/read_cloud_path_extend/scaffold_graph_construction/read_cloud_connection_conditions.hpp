@@ -2,7 +2,6 @@
 #include "common/modules/path_extend/path_extender.hpp"
 #include "common/modules/path_extend/pipeline/launch_support.hpp"
 #include "common/modules/path_extend/extension_chooser.hpp"
-#include "common/modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"

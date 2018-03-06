@@ -1,7 +1,7 @@
-#include <common/pipeline/config_struct.hpp>
+#include "common/pipeline/config_struct.hpp"
 #include "read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 #include "path_scaffolder.hpp"
-#include "scaffold_graph_construction_pipeline.hpp"
+#include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_constructor.hpp"
 #include "scaffold_graph_extractor.hpp"
 
 namespace path_extend {

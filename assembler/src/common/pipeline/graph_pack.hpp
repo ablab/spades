@@ -27,7 +27,7 @@
 #include "visualization/position_filler.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "common/modules/alignment/rna/ss_coverage.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_storage.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage.hpp"
 
 namespace debruijn_graph {
 
