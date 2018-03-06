@@ -3,7 +3,7 @@ include: "Common.snake"
 import yaml
 
 reassembly_config = config.get("reassembly", dict())
-COV_CUTOFF = reassembly_config.get("cov_cutoff", 0.3)
+CUTOFF_COEFF = reassembly_config.get("cutoff_coeff", 0.3)
 READ_LENGTH = config.get("read_length", 100) #TODO: auto-detect default value
 
 #Autodetecting bins for reassembly based on the choose_samples result in the main pipeline
@@ -30,50 +30,27 @@ rule reassembly_config:
                     "frag_size": SPLIT_LENGTH, "min_len": 100}
             yaml.dump(conf, outfile)
 
-#For bin reassembly, we choose only matching reads from samples which were marked with +
-#in the corresponding {bin}.info file
-BIN_READS = dict()
-for bin in BINS:
-    with open("reassembly/{}.info".format(bin)) as samples_info:
-        samples = []
-        for line in samples_info:
-            sample_data = line.split()
-            if sample_data[0][0] == "+":
-                sample = sample_data[0][1:]
-                if not os.path.exists("reads/{}/{}_1.fastq.gz".format(bin, sample)):
-                    print("\033[33mWarning: {} contains no reads for {}\033[0m".format(sample, bin))
-                    continue
-                samples.append(sample)
-        BIN_READS[bin] = (["reads/{}/{}_1.fastq.gz".format(bin, sample) for sample in samples],
-                          ["reads/{}/{}_2.fastq.gz".format(bin, sample) for sample in samples])
-
-def bin_reads(dir, wildcards):
-    return BIN_READS[wildcards["bin"]][dir]
-
-#Returns the filepath with left/right reads for a sample or list of them for a group, used as Snakemake input
-left_bin_reads, right_bin_reads = reads_input(bin_reads)
-
-#TODO: gzip subsampled reads
 rule subsample:
-    input:   info="reassembly/{bin}.info"
-    output:  "reassembly/{bin}/left.fq", "reassembly/{bin}/right.fq", "reassembly/{bin}/total.cov"
+    input:   "reassembly/{bin}.info"
+    output:  "reassembly/{bin}/reads.info"
     params:  "reads/{bin}", "reassembly/{bin}"
     log:     "reassembly/{bin}/subsample.log"
     message: "Subsampling reads for {wildcards.bin}"
     shell:   "{SCRIPTS}/subsample.py {input} {params} >{log}"
 
 rule reassemble:
-    input:   left="reassembly/{bin}/left.fq", right="reassembly/{bin}/right.fq",
-             cov="reassembly/{bin}/total.cov"#, config="reassembly/{bin}.yaml"
+    input:   info="reassembly/{bin}/reads.info"#, config="reassembly/{bin}.yaml"
     output:  "reassembly/bins/{bin}.fasta"
     params:  out="reassembly/{bin}"
     log:     "reassembly/{bin}.log"
     threads: THREADS
     message: "Reassembling reads for {wildcards.bin}"
     run:
-        subtotal = float(open(input.cov).readline())
-        bin_cov = COV_CUTOFF * subtotal * (READ_LENGTH - ASSEMBLY_K) / (READ_LENGTH - PROFILE_K)
+        with open(input.info) as reads_info:
+            sampled_cov = float(reads_info.readline())
+            files = [line.split() for line in reads_info]
+        cov_cutoff = CUTOFF_COEFF * sampled_cov * (READ_LENGTH - ASSEMBLY_K) / (READ_LENGTH - PROFILE_K)
+        reads_param = " ".join(["--pe1-1 {} --pe1-2 {}".format(left, right) for left, right in files])
         shell("{REASSEMBLER_DIR}/spades.py --meta --only-assembler -t {threads}"
-             " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff"
-             " --hidden-cov-cutoff {bin_cov} -o {params.out}"
+             " {reads_param} --pe1-ff --hidden-cov-cutoff {cov_cutoff} -o {params.out}"
              " >{log} 2>&1 && cp {params.out}/scaffolds.fasta {output}")
