@@ -194,8 +194,7 @@ void BWAIndex::Init() {
     ids_.clear();
 
     for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it)
-//TODO:: is it correct logic in general?
-        if (mode_ == AlignmentMode::Default || g_.length(*it) > length_cutoff_){
+        if (g_.length(*it) > length_cutoff_){
             ids_.push_back(*it);
         }
 
