@@ -45,12 +45,12 @@ void remove_duplicates(std::vector<T> &v) {
   v.resize(std::distance(v.begin(), it));
 }
 
-bool any_in(const auto &v, const auto &set) {
-  for (const auto &e : v) {
-    if (set.count(e)) {
+template<class El, class Container>
+bool any_in(const El &v, const Container &set) {
+  for (const auto &e : v)
+    if (set.count(e))
       return true;
-    }
-  }
+
   return false;
 }
 
