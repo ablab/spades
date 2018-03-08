@@ -26,10 +26,10 @@ BOOST_AUTO_TEST_CASE( TestNucl ) {
     BOOST_CHECK(is_nucl('C'));
     BOOST_CHECK(is_nucl('G'));
     BOOST_CHECK(is_nucl('T'));
-    BOOST_CHECK(!is_nucl(0));
-    BOOST_CHECK(!is_nucl(1));
-    BOOST_CHECK(!is_nucl(2));
-    BOOST_CHECK(!is_nucl(3));
+    BOOST_CHECK(is_nucl(0));
+    BOOST_CHECK(is_nucl(1));
+    BOOST_CHECK(is_nucl(2));
+    BOOST_CHECK(is_nucl(3));
     BOOST_CHECK(!is_nucl('0'));
     BOOST_CHECK(!is_nucl('1'));
 }
