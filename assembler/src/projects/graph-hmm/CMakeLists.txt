@@ -17,7 +17,6 @@ add_executable(graph-hmm
 
 add_executable(looper
                looper.cpp
-               hmmfile.cpp
                demo.cpp
                graph.cpp)
 
