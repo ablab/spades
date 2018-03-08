@@ -66,7 +66,7 @@ class cqf {
     }
 
     bool full() const {
-        return occupied_slots() >= uint64_t(0.95 * slots());
+        return occupied_slots() >= uint64_t(0.95 * double(slots()));
     }
 
     size_t insertions() const { return insertions_; }
