@@ -216,8 +216,8 @@ public:
      * Reimplementation of ntHash
      * Adapted from https://bioinformatics.stackexchange.com/questions/19/are-there-any-rolling-hash-functions-that-can-hash-a-dna-sequence-and-its-revers
      */
-    SymmetricCyclicHash(unsigned n) : n_(n) {
-    }
+    SymmetricCyclicHash(unsigned n)
+            : n_(n) {}
 
     template<class Seq>
     CyclicDigest operator()(const Seq &s) const {
@@ -225,8 +225,10 @@ public:
         CyclicDigest answer;
         for (size_t i = 0; i < n_; ++i)
             answer.fwd = rol(answer.fwd) ^ hasher_(s[i]);
+
         for (size_t i = 0; i < n_; ++i)
             answer.rvs = rol(answer.rvs) ^ hasher_(nucl_complement(s[n_ - 1 - i]));
+
         return answer;
     }
 
@@ -245,4 +247,3 @@ public:
 
 };
 }
-
