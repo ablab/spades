@@ -147,10 +147,7 @@ int main(int argc, char **argv) {
 
 static int serial_master(const cfg &cfg) {
   FILE *ofp = stdout;
-  ESL_STOPWATCH *w;
-  int textw = 120;
-
-  w = esl_stopwatch_Create();
+  ESL_STOPWATCH *w = esl_stopwatch_Create();
 
   /* Open the query profile HMM file */
   hmmer::HMMFile hmmfile(cfg.hmmfile);
@@ -220,21 +217,21 @@ static int serial_master(const cfg &cfg) {
 
     esl_stopwatch_Stop(w);
 
-    // p7_tophits_Targets(ofp, matcher.hits(), matcher.pipeline(), textw); if (fprintf(ofp, "\n\n") < 0)
-    // ESL_EXCEPTION_SYS(eslEWRITE, "write failed"); p7_tophits_Domains(ofp, matcher.hits(), matcher.pipeline(), textw);
-    // if (fprintf(ofp, "\n\n") < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed"); p7_pli_Statistics(ofp,
-    // matcher.pipeline(), w); if (fprintf(ofp, "//\n") < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
-
     auto hits = matcher.hits();
     std::vector<size_t> good_edges;
     size_t N = hits->N;
-    if (cfg.top_hmmer_matches) {
+    if (cfg.top_hmmer_matches)
       N = std::min(cfg.top_hmmer_matches, N);
-    }
     for (size_t i = 0; i < N; ++i) {
+      if (!(hits->hit[i]->flags & p7_IS_REPORTED))
+        continue;
+      if (!(hits->hit[i]->flags & p7_IS_INCLUDED))
+        continue;
+
       size_t id = std::stoll(hits->hit[i]->name);
       good_edges.push_back(id);
     }
+    INFO("Total matched edges: " << good_edges.size());
 
     auto subgraph = graph.subgraph(good_edges, good_edges, hmm->M * 2);
 
