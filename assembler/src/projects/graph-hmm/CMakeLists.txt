@@ -9,7 +9,7 @@ project(graph-hmm CXX)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(graph-hmm
-               hmmfile.cpp
+               hmmfile.cpp hmmmatcher.cpp
                main.cpp)
 
 add_executable(looper
