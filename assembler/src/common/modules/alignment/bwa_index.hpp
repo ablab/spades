@@ -57,6 +57,8 @@ class BWAIndex {
     AlignmentMode mode_;
 
     size_t length_cutoff_;
+  private:
+    DECL_LOGGER("BWAIndex");
 };
 
 }

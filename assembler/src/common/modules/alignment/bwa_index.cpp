@@ -48,15 +48,10 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode, size_t le
             memopt_->b = 1;
             memopt_->split_factor = 10.;
             memopt_->pen_clip5 = 0; memopt_->pen_clip3 = 0;
-            // memopt_->drop_ratio = 20;
-            // memopt_->mask_level = 20;
-            if (mode == AlignmentMode::Ont2D) {
-                memopt_->min_chain_weight = 20;
-                memopt_->min_seed_len = 14;
-            } else {
-                memopt_->min_chain_weight = 40;
-                memopt_->min_seed_len = 14;
-            }
+            memopt_->min_seed_len = 14;
+            memopt_->mask_level = 20;
+            memopt_->drop_ratio = 20;
+            memopt_->min_chain_weight = 10;
             break;
         case AlignmentMode::Rna16S:
             memopt_->o_del = 1; memopt_->e_del = 1;
@@ -239,7 +234,9 @@ void BWAIndex::Init() {
     ids_.clear();
 
     for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it)
-        if (g_.length(*it) > length_cutoff_){
+//TODO:: experimental
+//        if (g_.length(*it) > length_cutoff_)
+        {
             ids_.push_back(*it);
         }
 
@@ -311,12 +308,18 @@ void BWAIndex::Init() {
 
 static bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
 //  k-rb > re - k
+
     if (rb < k && 2 * k  > re + rb)
         return true;
 //  re - edge_len > edge_len - rb
     if (re > edge_len && re + rb > 2 * edge_len)
         return true;
     return false;
+}
+inline std::ostream& operator<<(std::ostream& os, const mem_alnreg_s& a) {
+    os << a.qb << " - " << a.qe << " ---> " << a.rb << " - " << a.re << "query->ref\n";
+    os << a.seedcov << " - seedcov; " << a.score << " - score\n";
+    return os;
 }
 
 omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
@@ -331,7 +334,9 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
 
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
-        if (a.secondary >= 0) continue; // skip secondary alignments
+
+        if (mode_ != AlignmentMode::Ont2D && mode_ != AlignmentMode::PacBio && a.secondary >= 0) continue; // skip secondary alignments
+
         if (is_short) {
 // skipping alignments shorter than half of read length
             if (size_t(a.qe - a.qb) * 2 <= seq_len ) continue;
@@ -355,7 +360,10 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
             initial_range_end = a.qe - g_.k();
             mapping_range_end = pos + a.re - a.rb - g_.k();
         }
-        if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
+        DEBUG(a);
+
+//length_cutoff meaning changed!
+        if (g_.length(ids_[a.rid]) > length_cutoff_ && MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
             continue;
         if (!is_rev) {
             res.push_back(ids_[a.rid],
