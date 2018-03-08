@@ -64,7 +64,7 @@ inline bool is_nucl(char c) {
 inline char nucl_complement(char c) {
     switch (c) {
         case 0:
-            return 1;
+            return 3;
         case 'a':
             return 't';
         case 'A':
