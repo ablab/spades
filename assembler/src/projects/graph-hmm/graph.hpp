@@ -191,11 +191,11 @@ class Graph {
   void collapse_empty_edge_(size_t id) {
     // After calling this method even once
     // Graph is not an actual graph anymore (it does not have proper vertices)
-    auto remove_element = [](std::vector<auto> &v, const auto &value) {
+    auto remove_element = [](std::vector<size_t> &v, const auto &value) {
       return v.erase(std::remove(v.begin(), v.end(), value), v.end());
     };
 
-    auto append = [](std::vector<auto> &v, const auto &w) { return v.insert(v.end(), ALL(w)); };
+    auto append = [](std::vector<size_t> &v, const auto &w) { return v.insert(v.end(), ALL(w)); };
 
     assert(edges_[id] == "");
     for (size_t i : ingoing_[id]) {

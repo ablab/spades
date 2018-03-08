@@ -318,8 +318,8 @@ std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, con
     }
   };
   auto transfer_upd = [&code, &initial](StateSet &to, const StateSet &from, double transfer_fee,
-                                        const std::vector<double> &emission_fees, const std::string &info = "",
-                                        const auto &keys) {
+                                        const std::vector<double> &emission_fees, const std::string &info,
+                                        const std::unordered_set<GraphPointer> &keys) {
     assert(&to != &from);
     std::unordered_set<GraphPointer> updated;
     for (const auto &cur : keys) {
