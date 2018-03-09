@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "graph.hpp"
 #include "demo.hpp"
 
 double levenshtein_substring_score(const std::string &s, const std::string &query) {
