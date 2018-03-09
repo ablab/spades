@@ -38,24 +38,72 @@ extern "C" {
 KSEQ_INIT(gzFile, gzread)
 
 #include "demo.hpp"
+#include "cursor.hpp"
 
 #include "pathtree.hpp"
 
-// ASL example
-// #include "kseq.h"
-// KSEQ_INIT(FILE*, fread)
-// {
-// std::unique_ptr<FILE, void(*)(FILE*)> fp(fopen(""), fclose);
-// std::unique_ptr<kseq_t, void(*)(kseq_t*)> seq(kseq_init(fp.get()), kseq_destroy);
-// int l;
-// size_t reads = 0;
-// while ((l = kseq_read(seq.get())) >= 0) {
-//   if (++reads % 1000000 == 0)
-//     fprintf(stderr, "Processed %zu reads so far\n", reads);
-//   std::string header(seq->name.s);
-//   std::string sequence(seq->seq.s);
-// }
-// }
+DigitalCodind::DigitalCodind(const ESL_ALPHABET *abc)
+: inmap_(abc->inmap, abc->inmap + 128) {}
+
+DigitalCodind::DigitalCodind(const std::string &s)
+    : inmap_(s.c_str(), s.c_str() + s.length()) {}
+
+DigitalCodind::DigitalCodind()
+    : inmap_(128) {
+  std::string alphabet = "ACGT";
+  for (size_t i = 0; i < alphabet.length(); ++i) {
+    inmap_[alphabet[i]] = i;
+  }
+}
+
+bool Fees::check_i_loop(size_t i) const {
+  return t[i][p7H_II] + *min_element(ins[i].cbegin(), ins[i].cend()) > 0;
+}
+
+bool Fees::check_i_negative_loops() const {
+  for (size_t i = 0; i <= M; ++i) {
+    if (!check_i_loop(i)) {
+      std::cout << t[i][p7H_II] << " " << i << " "
+                << *min_element(ins[i].cbegin(), ins[i].cend()) << std::endl;
+      std::cout << t[i][p7H_II] << " " << ins[i][0] << " " << ins[i][1] << " "
+                << ins[i][2] << " " << ins[i][3] << std::endl;
+      return false;
+    }
+  }
+  return true;
+}
+
+/* Some notes:
+ *   0. The model might be either in counts or probability form.
+ *   1. t[0] is special: t[0][TMM,TMI,TMD] are the begin->M_1,I_0,D_1 entry probabilities,
+ *      t[0][TIM,TII] are the I_0 transitions, and delete state 0 doesn't
+ *      exist. Therefore D[0] transitions and mat[0] emissions are unused.
+ *      To simplify some normalization code, we adopt a convention that these are set
+ *      to valid probability distributions: 1.0 for t[0][TDM] and mat[0][0],
+ *      and 0 for the rest.
+ *   2. t[M] is also special: TMD and TDD are 0 because there is no next delete state;
+ *      TDM is therefore 1.0 by definition. TMM and TDM are interpreted as the
+ *      M->E and D->E end transitions. t[M][TDM] must be 1.0, therefore.
+ */
+void Fees::reverse() {
+  std::reverse(ins.begin(), ins.end());
+  std::reverse(mat.begin() + 1, mat.end());
+  for (size_t i = 0, j = M; i < j; ++i, --j) {
+    std::swap(t[i][p7H_II], t[j][p7H_II]);
+    std::swap(t[i][p7H_MM], t[j][p7H_MM]);
+    std::swap(t[i][p7H_DD], t[j][p7H_DD]);
+  }
+  for (size_t i = 0; i <= M; ++i) {
+    std::swap(t[i][p7H_MD], t[M - i][p7H_DM]);
+    std::swap(t[i][p7H_IM], t[M - i][p7H_MI]);
+  }
+
+  // TODO Does it reaaly needed???
+  t[0][p7H_DM] = 0;
+  t[0][p7H_DD] = std::numeric_limits<double>::infinity();
+  t[M][p7H_MD] = std::numeric_limits<double>::infinity();
+  t[M][p7H_DD] = std::numeric_limits<double>::infinity();
+}
 
 std::string rev_comp(const std::string &s) {
   std::string result;
@@ -219,11 +267,11 @@ struct FakeTrajectory {
 
 using pathtree::PathLink;
 
-template <typename GraphPointer>
-class StateSet : public std::unordered_map<GraphPointer, std::shared_ptr<PathLink<GraphPointer>>> {
+template <typename GraphCursor>
+class StateSet : public std::unordered_map<GraphCursor, std::shared_ptr<PathLink<GraphCursor>>> {
  public:
-  const std::shared_ptr<PathLink<GraphPointer>> &get_or_create(const GraphPointer &key) {
-    return this->insert({key, std::make_shared<PathLink<GraphPointer>>()}).first->second;
+  const std::shared_ptr<PathLink<GraphCursor>> &get_or_create(const GraphCursor &key) {
+    return this->insert({key, std::make_shared<PathLink<GraphCursor>>()}).first->second;
   }
 
   StateSet clone() const {
@@ -235,9 +283,9 @@ class StateSet : public std::unordered_map<GraphPointer, std::shared_ptr<PathLin
     return copy;
   }
 
-  bool update(const GraphPointer &key, double score, GraphPointer from,
-              const std::shared_ptr<PathLink<GraphPointer>> &traj) {
-    auto it_fl = this->insert({key, std::make_shared<PathLink<GraphPointer>>()});
+  bool update(const GraphCursor &key, double score, GraphCursor from,
+              const std::shared_ptr<PathLink<GraphCursor>> &traj) {
+    auto it_fl = this->insert({key, std::make_shared<PathLink<GraphCursor>>()});
     double prev = it_fl.second ? std::numeric_limits<double>::infinity() : it_fl.first->second->score();
     // double prev = it_fl.first->second->score();
     it_fl.first->second->update(from, score, traj);
@@ -247,9 +295,9 @@ class StateSet : public std::unordered_map<GraphPointer, std::shared_ptr<PathLin
   // TODO implement method detecting upd of any kind
 };
 
-template <typename GraphPointer>
-StateSet<GraphPointer> top_filter(const StateSet<GraphPointer> &S, size_t top, double threshold) {
-  using StateSet = StateSet<GraphPointer>;
+template <typename GraphCursor>
+StateSet<GraphCursor> top_filter(const StateSet<GraphCursor> &S, size_t top, double threshold) {
+  using StateSet = StateSet<GraphCursor>;
   top = std::min(top, S.size());
   std::vector<std::pair<typename StateSet::key_type, typename StateSet::mapped_type>> v(S.cbegin(), S.cend());
 
@@ -269,9 +317,9 @@ StateSet<GraphPointer> top_filter(const StateSet<GraphPointer> &S, size_t top, d
   return result;
 }
 
-template <typename GraphPointer>
-std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, const std::vector<GraphPointer> &initial) {
-  using StateSet = StateSet<GraphPointer>;
+template <typename GraphCursor>
+std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, const std::vector<GraphCursor> &initial) {
+  using StateSet = StateSet<GraphCursor>;
   const auto &code = fees.code;
 
   INFO("pHMM size: " << fees.M);
@@ -319,9 +367,9 @@ std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, con
   };
   auto transfer_upd = [&code, &initial](StateSet &to, const StateSet &from, double transfer_fee,
                                         const std::vector<double> &emission_fees, const std::string &info,
-                                        const std::unordered_set<GraphPointer> &keys) {
+                                        const std::unordered_set<GraphCursor> &keys) {
     assert(&to != &from);
-    std::unordered_set<GraphPointer> updated;
+    std::unordered_set<GraphCursor> updated;
     for (const auto &cur : keys) {
       auto it = from.find(cur);
       assert(it != from.cend());
@@ -343,7 +391,7 @@ std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, con
   auto i_loop_processing = [&transfer_upd, &fees](StateSet &I, size_t m) {
     const size_t max_insertions = 30;
 
-    std::unordered_set<GraphPointer> updated;
+    std::unordered_set<GraphCursor> updated;
     for (const auto &kv : I) {
       updated.insert(kv.first);
     }
@@ -383,8 +431,8 @@ std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, con
   INFO("Initial set size: " << initial.size());
 
   StateSet I, M, D;
-  const auto empty = GraphPointer();
-  auto base = PathLink<GraphPointer>::master_source();
+  const auto empty = GraphCursor();
+  auto base = PathLink<GraphCursor>::master_source();
   M[empty] = base;  // TODO Implement and use empty Trajectory() instead of Trajectory(0)
 
   INFO("The number of links (M): " << fees.M);
@@ -415,7 +463,7 @@ std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, con
     D = top_filter(D, top, 10);
   }
 
-  PathLink<GraphPointer> terminal;
+  PathLink<GraphCursor> terminal;
   auto upd_terminal = [&](const StateSet &S, double fee) {
     for (const auto &kv : S) {
       terminal.update(kv.first, kv.second->score() + fee, kv.second);
@@ -437,21 +485,21 @@ std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, con
 }  // namespace impl
 
 std::vector<std::pair<std::string, double>> find_best_path_rev(
-    const Fees &fees, const std::vector<ReversalGraphPointer<Graph::GraphPointer>> &initial) {
+    const Fees &fees, const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
 std::vector<std::pair<std::string, double>> find_best_path_rev(
-    const Fees &fees, const std::vector<ReversalGraphPointer<DBGraph::GraphPointer>> &initial) {
+    const Fees &fees, const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
 std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees,
-                                                           const std::vector<DBGraph::GraphPointer> &initial) {
+                                                           const std::vector<DBGraph::GraphCursor> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
 std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees,
-                                                           const std::vector<Graph::GraphPointer> &initial) {
+                                                           const std::vector<Graph::GraphCursor> &initial) {
   return impl::find_best_path(fees, initial);
 }

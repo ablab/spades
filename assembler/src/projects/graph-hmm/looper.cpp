@@ -25,6 +25,9 @@ extern "C" {
 #include <iostream>
 
 #include "demo.hpp"
+#include "cursor.hpp"
+#include "graph.hpp"
+
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 
@@ -180,7 +183,7 @@ static int serial_master(const cfg &cfg) {
               [](const auto &e1, const auto &e2) { return e1.turns.length() < e2.turns.length(); });
     INFO(paths);
 
-    std::unordered_set<DBGraph::GraphPointer> begins, ends;
+    std::unordered_set<DBGraph::GraphCursor> begins, ends;
     for (const auto &path : paths) {
       begins.insert(path.begin);
       ends.insert(path.end);
@@ -272,7 +275,7 @@ static int serial_master(const cfg &cfg) {
         TRACE(path);
       }
 
-      std::vector<ReversalGraphPointer<Graph::GraphPointer>> rev_initial(CONST_ALL(initial));
+      std::vector<ReversalGraphCursor<Graph::GraphCursor>> rev_initial(CONST_ALL(initial));
       auto reversed_result = find_best_path_rev(fees.reversed(), rev_initial);
       INFO(reversed_result);
 

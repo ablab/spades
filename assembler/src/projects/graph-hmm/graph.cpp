@@ -1,7 +1,7 @@
 #include "graph.hpp"
 
-std::vector<DBGraph::GraphPointer> DBGraph::all() const {
-  std::unordered_set<GraphPointer> result;
+std::vector<DBGraph::GraphCursor> DBGraph::all() const {
+  std::unordered_set<GraphCursor> result;
 
   for (size_t id = 0; id < edges_.size(); ++id) {
     const auto &edge = edges_[id];
@@ -10,5 +10,5 @@ std::vector<DBGraph::GraphPointer> DBGraph::all() const {
     }
   }
 
-  return std::vector<GraphPointer>(result.cbegin(), result.cend());
+  return std::vector<GraphCursor>(result.cbegin(), result.cend());
 }

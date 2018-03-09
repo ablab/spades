@@ -3,6 +3,11 @@
 #define CONST_ALL(x) std::cbegin(x), std::cend(x)
 #define ALL(x) std::begin(x), std::end(x)
 
+#include "utils.hpp"
+#include "cursor.hpp"
+
+#include "utils/logger/log_writers.hpp"
+
 #include <algorithm>
 #include <queue>
 #include <string>
@@ -15,82 +20,29 @@
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
-#include "utils.hpp"
-#include "utils/logger/log_writers.hpp"
-
-class EmptyClass {};
-
-template <typename T, typename U>
-constexpr bool is_same_v = std::is_same<T, U>::value;
-
-template <class GraphPointer, class Base = EmptyClass>
-class AbstractGraphPointer : public Base {
- public:
-  AbstractGraphPointer() = default;
-  AbstractGraphPointer(const Base &gp) : Base{gp} {}
-  AbstractGraphPointer(Base &&gp) : Base{gp} {}
-  bool is_divergent() const { return crtp_this()->next().size() > 1; }
-
-  bool is_convergent() const { return crtp_this()->prev().size() > 1; }
-
-  std::vector<std::pair<GraphPointer, char>> next_pairs() const {
-    std::vector<std::pair<GraphPointer, char>> result;
-    for (const auto cur : crtp_this()->next()) {
-      result.emplace_back(cur, cur.letter());
-    }
-    return result;
-  }
-
-  std::vector<std::pair<GraphPointer, char>> prev_pairs() const {
-    std::vector<std::pair<GraphPointer, char>> result;
-    for (const auto cur : crtp_this()->prev()) {
-      result.emplace_back(cur, cur.letter());
-    }
-    return result;
-  }
-
- private:
-  GraphPointer *crtp_this() { return static_cast<GraphPointer *>(this); }
-  const GraphPointer *crtp_this() const { return static_cast<const GraphPointer *>(this); }
-};
-
-template <class GraphPointer>
-class ReversalGraphPointer : public AbstractGraphPointer<ReversalGraphPointer<GraphPointer>, GraphPointer> {
- public:
-  using AbstractGraphPointer<ReversalGraphPointer<GraphPointer>, GraphPointer>::AbstractGraphPointer;
-  std::vector<ReversalGraphPointer> next() const {
-    auto result = GraphPointer::prev();
-    return std::vector<ReversalGraphPointer>(CONST_ALL(result));
-  }
-
-  std::vector<ReversalGraphPointer> prev() const {
-    auto result = GraphPointer::next();
-    return std::vector<ReversalGraphPointer>(CONST_ALL(result));
-  }
-};
 
 class Graph {
  public:
-  class GraphPointer : public AbstractGraphPointer<Graph::GraphPointer> {
+  class GraphCursor : public AbstractGraphCursor<Graph::GraphCursor> {
    public:
-    GraphPointer() : edge_id_(-1), position_(-1), pgraph_{nullptr} {
+    GraphCursor() : edge_id_(-1), pgraph_{nullptr}, position_(-1) {
       // INFO("Empty GP constructed");
       // empty pointer
     }
 
-    // GraphPointer() = default;
+    // GraphCursor() = default;
     bool is_empty() const { return edge_id_ == size_t(-1); }
 
-    GraphPointer(const Graph *pgraph, size_t edge_id, size_t position)
+    GraphCursor(const Graph *pgraph, size_t edge_id, size_t position)
         : pgraph_{pgraph}, edge_id_{edge_id}, position_{position} {
       assert(edge_id_ < pgraph_->edges_.size());
       assert(position_ < pgraph_->edges_[edge_id_].size());
     }
-    GraphPointer(const GraphPointer &) = default;
-    GraphPointer(GraphPointer &&) = default;
-    GraphPointer &operator=(const GraphPointer &) = default;
-    GraphPointer &operator=(GraphPointer &&) = default;
-    ~GraphPointer() noexcept = default;
+    GraphCursor(const GraphCursor &) = default;
+    GraphCursor(GraphCursor &&) = default;
+    GraphCursor &operator=(const GraphCursor &) = default;
+    GraphCursor &operator=(GraphCursor &&) = default;
+    ~GraphCursor() noexcept = default;
 
     std::vector<size_t> edges() const {
       if (is_empty()) {
@@ -100,7 +52,7 @@ class Graph {
       }
     }
 
-    bool operator==(const GraphPointer &other) const {
+    bool operator==(const GraphCursor &other) const {
       return (edge_id_ == other.edge_id_) && (position_ == other.position_);
     }
 
@@ -116,22 +68,22 @@ class Graph {
 
     bool is_convergent() const { return (position_ == 0) && (pgraph_->ingoing_[edge_id_].size() > 1); }
 
-    std::vector<GraphPointer> prev() const {
+    std::vector<GraphCursor> prev() const {
       if (position_ == 0) {
-        std::vector<GraphPointer> result;
+        std::vector<GraphCursor> result;
         for (size_t i : pgraph_->ingoing_[edge_id_]) {
           result.emplace_back(pgraph_, i, pgraph_->edges_[i].size() - 1);
         }
 
         return result;
       } else {
-        return {GraphPointer(pgraph_, edge_id_, position_ - 1)};
+        return {GraphCursor(pgraph_, edge_id_, position_ - 1)};
       }
     }
 
-    std::vector<GraphPointer> next() const {
+    std::vector<GraphCursor> next() const {
       if (position_ + 1 == pgraph_->edges_[edge_id_].size()) {
-        std::vector<GraphPointer> result;
+        std::vector<GraphCursor> result;
         for (size_t i : pgraph_->outgoing_[edge_id_]) {
           assert(pgraph_->edges_[i].size() > 0);  // We do not allow ""-edges
           result.emplace_back(pgraph_, i, 0);
@@ -139,25 +91,25 @@ class Graph {
 
         return result;
       } else {
-        return {GraphPointer(pgraph_, edge_id_, position_ + 1)};
+        return {GraphCursor(pgraph_, edge_id_, position_ + 1)};
       }
     }
 
    private:
-    friend struct std::hash<Graph::GraphPointer>;
-    friend std::ostream &operator<<(std::ostream &os, const Graph::GraphPointer &p);
+    friend struct std::hash<Graph::GraphCursor>;
+    friend std::ostream &operator<<(std::ostream &os, const Graph::GraphCursor &p);
     const Graph *pgraph_;
     size_t edge_id_;
     size_t position_;
   };
 
-  GraphPointer get_pointer(size_t edge_id, size_t position) const { return GraphPointer(this, edge_id, position); }
+  GraphCursor get_pointer(size_t edge_id, size_t position) const { return GraphCursor(this, edge_id, position); }
 
   explicit Graph(const std::vector<std::string> &edges)
       : edges_{edges}, ingoing_(edges.size()), outgoing_(edges.size()) {}
 
-  std::vector<GraphPointer> begins() const {
-    std::vector<GraphPointer> result;
+  std::vector<GraphCursor> begins() const {
+    std::vector<GraphCursor> result;
     for (size_t i = 0; i < edges_.size(); ++i) {
       result.push_back(get_pointer(i, 0));
     }
@@ -368,8 +320,8 @@ class Graph {
     return L;
   }
 
-  std::vector<GraphPointer> all() const {
-    std::vector<GraphPointer> result;
+  std::vector<GraphCursor> all() const {
+    std::vector<GraphCursor> result;
     for (size_t i = 0; i < edges_.size(); ++i) {
       for (size_t pos = 0; pos < edges_[i].size(); ++pos) {
         result.push_back(get_pointer(i, pos));
@@ -394,19 +346,19 @@ class Graph {
   std::vector<std::string> edges_;
   std::vector<std::vector<size_t>> ingoing_;
   std::vector<std::vector<size_t>> outgoing_;
-  friend struct std::hash<Graph::GraphPointer>;
+  friend struct std::hash<Graph::GraphCursor>;
 };
 
 class DBGraph {
  public:
-  class GraphPointer : public AbstractGraphPointer<DBGraph::GraphPointer> {
+  class GraphCursor : public AbstractGraphCursor<DBGraph::GraphCursor> {
    public:
-    GraphPointer() : edge_id_(-1), position_(-1), pgraph_{nullptr} {
+    GraphCursor() : edge_id_(-1), pgraph_{nullptr}, position_(-1) {
       // INFO("Empty GP constructed");
       // empty pointer
     }
 
-    // GraphPointer() = default;
+    // GraphCursor() = default;
     bool is_empty() const { return edge_id_ == size_t(-1); }
 
     void normalize_prefix_to_suffix_() {
@@ -438,17 +390,17 @@ class DBGraph {
       // }
     }
 
-    GraphPointer(const DBGraph *pgraph, size_t edge_id, size_t position)
+    GraphCursor(const DBGraph *pgraph, size_t edge_id, size_t position)
         : pgraph_{pgraph}, edge_id_{edge_id}, position_{position} {
       normalize_prefix_to_suffix_();
       // normalize_suffix_();  // Wwe should use only ONE kind of normalization
     }
 
-    GraphPointer(const GraphPointer &) = default;
-    GraphPointer(GraphPointer &&) = default;
-    GraphPointer &operator=(const GraphPointer &) = default;
-    GraphPointer &operator=(GraphPointer &&) = default;
-    ~GraphPointer() noexcept = default;
+    GraphCursor(const GraphCursor &) = default;
+    GraphCursor(GraphCursor &&) = default;
+    GraphCursor &operator=(const GraphCursor &) = default;
+    GraphCursor &operator=(GraphCursor &&) = default;
+    ~GraphCursor() noexcept = default;
 
     std::vector<size_t> edges() const {
       if (is_empty()) {
@@ -481,7 +433,7 @@ class DBGraph {
       return result;
     }
 
-    bool operator==(const GraphPointer &other) const {
+    bool operator==(const GraphCursor &other) const {
       return (edge_id_ == other.edge_id_) && (position_ == other.position_);
     }
 
@@ -497,16 +449,16 @@ class DBGraph {
       // return true;
     }
 
-    std::vector<GraphPointer> prev() const {
+    std::vector<GraphCursor> prev() const {
       if (position_ == 0) {
         assert(pgraph_->ingoing_[edge_id_].size() == 0);
         return {};
       } else if (position_ != pgraph_->k_ || pgraph_->ingoing_[edge_id_].size() == 0) {
-        return {GraphPointer(pgraph_, edge_id_, position_ - 1)};
+        return {GraphCursor(pgraph_, edge_id_, position_ - 1)};
       } else {
         assert(position_ == pgraph_->k_);
         assert(pgraph_->ingoing_[edge_id_].size() > 0);
-        std::vector<GraphPointer> result;
+        std::vector<GraphCursor> result;
         for (size_t i : pgraph_->ingoing_[edge_id_]) {
           result.emplace_back(pgraph_, i, pgraph_->edges_[i].size() - pgraph_->k_ - 1);
         }
@@ -528,13 +480,13 @@ class DBGraph {
       }
     }
 
-    std::vector<GraphPointer> next() const {
+    std::vector<GraphCursor> next() const {
       if (position_ + 1 < pgraph_->edges_[edge_id_].size()) {
         // assert(position_ != pgraph_->k_ - 1 || pgraph_->prefix_brothers_[edge_id_].size() == 1);
-        return {GraphPointer(pgraph_, edge_id_, position_ + 1)};
+        return {GraphCursor(pgraph_, edge_id_, position_ + 1)};
       } else {
         // assert(position_ + 1 == pgraph_->edges_[edge_id_].size());
-        std::vector<GraphPointer> result;
+        std::vector<GraphCursor> result;
         for (size_t i : pgraph_->outgoing_[edge_id_]) {
           result.emplace_back(pgraph_, i, pgraph_->k_);  // Vertices are k-mers
         }
@@ -557,8 +509,8 @@ class DBGraph {
     }
 
    private:
-    friend struct std::hash<DBGraph::GraphPointer>;
-    friend std::ostream &operator<<(std::ostream &os, const DBGraph::GraphPointer &p);
+    friend struct std::hash<DBGraph::GraphCursor>;
+    friend std::ostream &operator<<(std::ostream &os, const DBGraph::GraphCursor &p);
     const DBGraph *pgraph_;
     size_t edge_id_;
     size_t position_;
@@ -567,9 +519,9 @@ class DBGraph {
   Graph general_graph() const { return Graph(k_, edges_); }
 
   struct Path {
-    GraphPointer begin;
+    GraphCursor begin;
     std::string turns;
-    GraphPointer end;
+    GraphCursor end;
   };
 
   Path trace_exact_sequence(const std::string &s) const {
@@ -586,7 +538,7 @@ class DBGraph {
     auto begin = find_kp1mer(kp1mer);
     if (begin.is_empty()) {
       INFO("Initial k+1-mer not found!" << begin);
-      return {GraphPointer(), "?", GraphPointer()};
+      return {GraphCursor(), "?", GraphCursor()};
     }
 
     auto cur = begin;
@@ -611,16 +563,16 @@ class DBGraph {
         ERROR(next_pairs);
         ERROR("Required letter: " << s[i]);
         ERROR(i << " " << s);
-        return {begin, turns + "?", GraphPointer()};
+        return {begin, turns + "?", GraphCursor()};
       }
     }
 
     return {begin, turns, cur};
   }
 
-  GraphPointer get_pointer(size_t edge_id, size_t position) const { return GraphPointer(this, edge_id, position); }
+  GraphCursor get_pointer(size_t edge_id, size_t position) const { return GraphCursor(this, edge_id, position); }
 
-  GraphPointer find_kp1mer(const std::string &kp1mer) const {
+  GraphCursor find_kp1mer(const std::string &kp1mer) const {
     for (size_t i = 0; i < edges_.size(); ++i) {
       const auto &edge = edges_[i];
       size_t pos = edge.find(kp1mer);
@@ -628,7 +580,7 @@ class DBGraph {
         return get_pointer(i, pos);
       }
     }
-    return GraphPointer();  // empty pointer
+    return GraphCursor();  // empty pointer
   }
 
   explicit DBGraph(size_t k, const std::vector<std::string> &edges) : k_{k}, edges_{edges} {
@@ -681,7 +633,7 @@ class DBGraph {
     // }
   }
 
-  std::vector<GraphPointer> all() const;
+  std::vector<GraphCursor> all() const;
 
   std::vector<size_t> walk(const std::vector<size_t> &edges, const size_t pathlen_, const bool forward) const {
     // for each edge we have pathlen to go (just a hastable map<edge, int>)
@@ -820,10 +772,10 @@ class DBGraph {
   std::vector<std::vector<size_t>> outgoing_;
   std::vector<std::vector<size_t>> suffix_brothers_;
   std::vector<std::vector<size_t>> prefix_brothers_;
-  // std::unordered_map<std::string, GraphPointer> kp1mer_index_;
+  // std::unordered_map<std::string, GraphCursor> kp1mer_index_;
 };
 
-inline std::ostream &operator<<(std::ostream &os, const DBGraph::GraphPointer &p) {
+inline std::ostream &operator<<(std::ostream &os, const DBGraph::GraphCursor &p) {
   if (p.is_empty()) {
     return os << "(@)";
   } else {
@@ -831,7 +783,7 @@ inline std::ostream &operator<<(std::ostream &os, const DBGraph::GraphPointer &p
   }
 }
 
-inline std::ostream &operator<<(std::ostream &os, const Graph::GraphPointer &p) {
+inline std::ostream &operator<<(std::ostream &os, const Graph::GraphCursor &p) {
   if (p.is_empty()) {
     return os << "(@)";
   } else {
@@ -850,25 +802,25 @@ inline size_t hash_size_t_pair(size_t s0, size_t s1) {
 
 namespace std {
 template <>
-struct hash<DBGraph::GraphPointer> {
-  std::size_t operator()(const DBGraph::GraphPointer &p) const {
+struct hash<DBGraph::GraphCursor> {
+  std::size_t operator()(const DBGraph::GraphCursor &p) const {
     return std::hash<size_t>()(hash_size_t_pair(p.edge_id_, p.position_));
   }
 };
 
-template <typename GraphPointer>
-struct hash<ReversalGraphPointer<GraphPointer>> : public hash<GraphPointer> {};
+template <typename GraphCursor>
+struct hash<ReversalGraphCursor<GraphCursor>> : public hash<GraphCursor> {};
 
 template <>
-struct hash<Graph::GraphPointer> {
-  std::size_t operator()(const Graph::GraphPointer &p) const {
+struct hash<Graph::GraphCursor> {
+  std::size_t operator()(const Graph::GraphCursor &p) const {
     return std::hash<size_t>()(hash_size_t_pair(p.edge_id_, p.position_));
   }
 };
 }  // namespace std
 
-template <typename GraphPointer>
-std::string restore_path(const GraphPointer &begin, const GraphPointer &end, const std::vector<char> &turns) {
+template <typename GraphCursor>
+std::string restore_path(const GraphCursor &begin, const GraphCursor &end, const std::vector<char> &turns) {
   if (begin.is_empty() || end.is_empty()) {
     return "";
   }
@@ -898,8 +850,8 @@ std::string restore_path(const GraphPointer &begin, const GraphPointer &end, con
   return path;
 }
 
-template <typename GraphPointer>
-std::string restore_path(const GraphPointer &begin, const GraphPointer &end, const std::string &turns) {
+template <typename GraphCursor>
+std::string restore_path(const GraphCursor &begin, const GraphCursor &end, const std::string &turns) {
   if (begin.is_empty() || end.is_empty()) {
     return "";
   }
@@ -956,3 +908,12 @@ inline std::string restore_path(const DBGraph::Path &path) { return restore_path
 //         break;
 //     }
 // }
+
+struct Fees;
+
+std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, const std::vector<DBGraph::GraphCursor> &initial);
+std::vector<std::pair<std::string, double>> find_best_path_rev(const Fees &fees,
+                                                               const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial);
+std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, const std::vector<Graph::GraphCursor> &initial);
+std::vector<std::pair<std::string, double>> find_best_path_rev(const Fees &fees,
+                                                               const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial);

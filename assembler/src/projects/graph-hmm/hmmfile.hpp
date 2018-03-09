@@ -4,11 +4,7 @@
 #include <string>
 #include <system_error>
 
-extern "C" {
-    typedef struct esl_alphabet_s ESL_ALPHABET;
-    typedef struct p7_hmmfile_s   P7_HMMFILE;
-    typedef struct p7_hmm_s       P7_HMM;
-}
+#include "hmmer_fwd.h"
 
 namespace hmmer {
 
