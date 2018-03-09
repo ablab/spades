@@ -39,71 +39,8 @@ KSEQ_INIT(gzFile, gzread)
 
 #include "demo.hpp"
 #include "cursor.hpp"
-
+#include "fees.hpp"
 #include "pathtree.hpp"
-
-DigitalCodind::DigitalCodind(const ESL_ALPHABET *abc)
-: inmap_(abc->inmap, abc->inmap + 128) {}
-
-DigitalCodind::DigitalCodind(const std::string &s)
-    : inmap_(s.c_str(), s.c_str() + s.length()) {}
-
-DigitalCodind::DigitalCodind()
-    : inmap_(128) {
-  std::string alphabet = "ACGT";
-  for (size_t i = 0; i < alphabet.length(); ++i) {
-    inmap_[alphabet[i]] = i;
-  }
-}
-
-bool Fees::check_i_loop(size_t i) const {
-  return t[i][p7H_II] + *min_element(ins[i].cbegin(), ins[i].cend()) > 0;
-}
-
-bool Fees::check_i_negative_loops() const {
-  for (size_t i = 0; i <= M; ++i) {
-    if (!check_i_loop(i)) {
-      std::cout << t[i][p7H_II] << " " << i << " "
-                << *min_element(ins[i].cbegin(), ins[i].cend()) << std::endl;
-      std::cout << t[i][p7H_II] << " " << ins[i][0] << " " << ins[i][1] << " "
-                << ins[i][2] << " " << ins[i][3] << std::endl;
-      return false;
-    }
-  }
-  return true;
-}
-
-/* Some notes:
- *   0. The model might be either in counts or probability form.
- *   1. t[0] is special: t[0][TMM,TMI,TMD] are the begin->M_1,I_0,D_1 entry probabilities,
- *      t[0][TIM,TII] are the I_0 transitions, and delete state 0 doesn't
- *      exist. Therefore D[0] transitions and mat[0] emissions are unused.
- *      To simplify some normalization code, we adopt a convention that these are set
- *      to valid probability distributions: 1.0 for t[0][TDM] and mat[0][0],
- *      and 0 for the rest.
- *   2. t[M] is also special: TMD and TDD are 0 because there is no next delete state;
- *      TDM is therefore 1.0 by definition. TMM and TDM are interpreted as the
- *      M->E and D->E end transitions. t[M][TDM] must be 1.0, therefore.
- */
-void Fees::reverse() {
-  std::reverse(ins.begin(), ins.end());
-  std::reverse(mat.begin() + 1, mat.end());
-  for (size_t i = 0, j = M; i < j; ++i, --j) {
-    std::swap(t[i][p7H_II], t[j][p7H_II]);
-    std::swap(t[i][p7H_MM], t[j][p7H_MM]);
-    std::swap(t[i][p7H_DD], t[j][p7H_DD]);
-  }
-  for (size_t i = 0; i <= M; ++i) {
-    std::swap(t[i][p7H_MD], t[M - i][p7H_DM]);
-    std::swap(t[i][p7H_IM], t[M - i][p7H_MI]);
-  }
-
-  // TODO Does it reaaly needed???
-  t[0][p7H_DM] = 0;
-  t[0][p7H_DD] = std::numeric_limits<double>::infinity();
-  t[M][p7H_MD] = std::numeric_limits<double>::infinity();
-  t[M][p7H_DD] = std::numeric_limits<double>::infinity();
-}
 
 std::string rev_comp(const std::string &s) {
   std::string result;
@@ -112,84 +49,6 @@ std::string rev_comp(const std::string &s) {
     result += rc[*it];
   }
   return result;
-}
-
-Fees levenshtein_fees(const std::string &s, double mismatch, double gap_open, double gap_ext) {
-  size_t M = s.size();
-  Fees fees;
-  fees.M = M;
-  DigitalCodind encode;
-  fees.code = encode;
-
-  fees.t.resize(M + 1);
-  fees.mat.resize(M + 1);
-  fees.ins.resize(M + 1);
-  for (size_t i = 0; i <= M; ++i) {
-    fees.mat[i].resize(4, mismatch);
-    fees.ins[i].resize(4, 0);
-    fees.t[i].resize(p7H_NTRANSITIONS);
-  }
-
-  const double inf = std::numeric_limits<double>::infinity();
-  fees.mat[0] = {inf, inf, inf, inf};
-  for (size_t i = 1; i <= M; ++i) {
-    fees.mat[i][encode(s[i - 1])] = 0;
-  }
-
-  // Insertions
-  for (size_t i = 0; i <= M; ++i) {
-    fees.t[i][p7H_IM] = 0;
-    fees.t[i][p7H_II] = gap_ext;
-    fees.t[i][p7H_MI] = gap_open;
-  }
-
-  // Deletions
-  fees.t[0][p7H_MD] = gap_open;
-  fees.t[0][p7H_DD] = inf;
-  fees.t[0][p7H_DM] = inf;
-  for (size_t i = 1; i < M; ++i) {
-    fees.t[i][p7H_MD] = gap_open;
-    fees.t[i][p7H_DD] = gap_ext;
-    fees.t[i][p7H_DM] = 0;
-  }
-  fees.t[M][p7H_MD] = inf;
-  fees.t[M][p7H_DD] = inf;
-  fees.t[M][p7H_DM] = 0;
-
-  // Matches
-  for (size_t i = 0; i <= M; ++i) {
-    fees.t[i][p7H_MM] = 0;
-  }
-
-  return fees;
-}
-
-Fees hmm_fees(const P7_HMM *hmm, const double lambda = 0) {
-  size_t M = hmm->M;
-  Fees fees;
-  fees.M = M;
-
-  fees.t.resize(M + 1);
-  fees.mat.resize(M + 1);
-  fees.ins.resize(M + 1);
-  for (size_t i = 0; i <= M; ++i) {
-    fees.mat[i].resize(4);
-    fees.ins[i].resize(4);
-    fees.t[i].resize(p7H_NTRANSITIONS);
-  }
-
-  for (size_t i = 0; i <= M; ++i) {
-    for (size_t j = 0; j < p7H_NTRANSITIONS; ++j) {
-      fees.t[i][j] = -log(hmm->t[i][j]);
-    }
-
-    for (size_t j = 0; j < 4; ++j) {
-      fees.mat[i][j] = -log(hmm->mat[i][j]) + log(0.25) + lambda;
-      fees.ins[i][j] = -log(hmm->ins[i][j]) + log(0.25) + lambda;
-    }
-  }
-
-  return fees;
 }
 
 std::vector<std::string> read_fasta_edges(const std::string &filename, bool add_rc) {
@@ -225,20 +84,6 @@ std::vector<std::string> read_fasta_edges(const std::string &filename, bool add_
   gzclose(fp);
 
   return edges;
-}
-
-Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc) {
-  auto code = DigitalCodind(abc);
-  auto fees = hmm_fees(hmm);
-  fees.code = code;
-
-  return fees;
-}
-
-Fees read_hmm_file(const std::string &filename) {
-  hmmer::HMMFile hmm_file(filename);
-  auto hmm = hmm_file.read();
-  return fees_from_hmm(hmm->get(), hmm->abc());
 }
 
 namespace impl {
@@ -318,7 +163,7 @@ StateSet<GraphCursor> top_filter(const StateSet<GraphCursor> &S, size_t top, dou
 }
 
 template <typename GraphCursor>
-std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, const std::vector<GraphCursor> &initial) {
+std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees, const std::vector<GraphCursor> &initial) {
   using StateSet = StateSet<GraphCursor>;
   const auto &code = fees.code;
 
@@ -484,22 +329,22 @@ std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, con
 
 }  // namespace impl
 
-std::vector<std::pair<std::string, double>> find_best_path_rev(
-    const Fees &fees, const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial) {
+std::vector<std::pair<std::string, double>> find_best_path_rev(const hmm::Fees &fees,
+                                                               const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
-std::vector<std::pair<std::string, double>> find_best_path_rev(
-    const Fees &fees, const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial) {
+std::vector<std::pair<std::string, double>> find_best_path_rev(const hmm::Fees &fees,
+                                                               const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
-std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees,
+std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees,
                                                            const std::vector<DBGraph::GraphCursor> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
-std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees,
+std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees,
                                                            const std::vector<Graph::GraphCursor> &initial) {
   return impl::find_best_path(fees, initial);
 }

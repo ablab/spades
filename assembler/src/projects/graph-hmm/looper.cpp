@@ -27,6 +27,7 @@ extern "C" {
 #include "demo.hpp"
 #include "cursor.hpp"
 #include "graph.hpp"
+#include "fees.hpp"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
@@ -245,7 +246,7 @@ static int serial_master(const cfg &cfg) {
       INFO("Subgraph has NO loops");
     }
 
-    auto fees = fees_from_hmm(hmm, hmmw->abc());
+    auto fees = hmm::fees_from_hmm(hmm, hmmw->abc());
 
     auto general_subgraph = subgraph.general_graph();
     INFO("Before compression");

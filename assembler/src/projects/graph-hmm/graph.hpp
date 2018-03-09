@@ -909,11 +909,13 @@ inline std::string restore_path(const DBGraph::Path &path) { return restore_path
 //     }
 // }
 
+namespace hmm {
 struct Fees;
+};
 
-std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, const std::vector<DBGraph::GraphCursor> &initial);
-std::vector<std::pair<std::string, double>> find_best_path_rev(const Fees &fees,
+std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees, const std::vector<DBGraph::GraphCursor> &initial);
+std::vector<std::pair<std::string, double>> find_best_path_rev(const hmm::Fees &fees,
                                                                const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial);
-std::vector<std::pair<std::string, double>> find_best_path(const Fees &fees, const std::vector<Graph::GraphCursor> &initial);
-std::vector<std::pair<std::string, double>> find_best_path_rev(const Fees &fees,
+std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees, const std::vector<Graph::GraphCursor> &initial);
+std::vector<std::pair<std::string, double>> find_best_path_rev(const hmm::Fees &fees,
                                                                const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial);
