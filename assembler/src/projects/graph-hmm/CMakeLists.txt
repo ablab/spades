@@ -17,7 +17,7 @@ add_executable(graph-hmm
 
 add_executable(looper
                looper.cpp
-               demo.cpp
+               demo.cpp fees.cpp
                graph.cpp)
 
 target_link_libraries(graph-hmm hmmercpp input utils pipeline ${COMMON_LIBRARIES})
@@ -27,7 +27,7 @@ add_subdirectory(googletest)
 add_library(gtest_main_segfault_handler gtest_main.cpp)
 target_link_libraries(gtest_main_segfault_handler gtest input utils ${COMMON_LIBRARIES})
 
-add_executable(looper-test1 graph.cpp demo.cpp demo.cpp test.cpp)
+add_executable(looper-test1 graph.cpp demo.cpp demo.cpp fees.cpp test.cpp)
 target_link_libraries(looper-test1 gtest_main_segfault_handler hmmercpp input utils pipeline ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)

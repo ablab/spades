@@ -2,9 +2,10 @@
 
 #include "graph.hpp"
 #include "demo.hpp"
+#include "fees.hpp"
 
 double levenshtein_substring_score(const std::string &s, const std::string &query) {
-  auto fees = levenshtein_fees(query);
+  auto fees = hmm::levenshtein_fees(query);
   auto graph = Graph({s});
   auto result = find_best_path(fees, graph.all());
   return result[0].second;
