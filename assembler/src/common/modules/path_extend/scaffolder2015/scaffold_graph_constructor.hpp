@@ -122,16 +122,6 @@ class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
     DECL_LOGGER("UniqueScaffoldGraphConstructor");
 };
 
-//todo remove this later
-class CompleteScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
-    const std::set<ScaffoldVertex> scaffold_vertices_;
-
- public:
-    CompleteScaffoldGraphConstructor(const Graph &assembly_graph, const set<ScaffoldVertex> &scaffold_vertices_);
-
-    shared_ptr<ScaffoldGraph> Construct() override;
-};
-
 class PredicateScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
  public:
     typedef path_extend::ScaffoldEdgePredicate EdgePairPredicate;

@@ -1,6 +1,6 @@
-#include "scaffold_graph_constructor.hpp"
+#include "scaffold_graph_storage_constructor.hpp"
 #include "read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
-#include "read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_gap_closer.hpp"
+#include "read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 
 namespace path_extend {
 

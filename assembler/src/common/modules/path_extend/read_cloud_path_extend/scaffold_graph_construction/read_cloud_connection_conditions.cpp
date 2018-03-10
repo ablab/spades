@@ -83,9 +83,6 @@ ReadCloudMiddleDijkstraPredicate::ReadCloudMiddleDijkstraPredicate(
 
 bool ReadCloudMiddleDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &scaffold_edge) const {
     DEBUG("Checking edge " << scaffold_edge.getStart().int_id() << " -> " << scaffold_edge.getEnd().int_id());
-    auto barcode_intersection =
-        long_edge_extractor_->GetIntersection(scaffold_edge.getStart(), scaffold_edge.getEnd());
-    DEBUG("Intersection size: " << barcode_intersection.size());
     ReadCloudDijkstraHelper helper;
     auto long_gap_dijkstra = helper.CreateLongGapCloserDijkstra(g, params_.distance_, unique_storage_,
                                                                 short_edge_extractor_, long_edge_extractor_,
