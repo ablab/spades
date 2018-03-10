@@ -17,10 +17,7 @@ extern "C" {
 
 #include "easel.h"
 #include "esl_alphabet.h"
-#include "esl_getopts.h"
 #include "esl_sq.h"
-#include "esl_sqio.h"
-#include "esl_stopwatch.h"
 
 #include "hmmer.h"
 }
@@ -87,28 +84,6 @@ std::vector<std::string> read_fasta_edges(const std::string &filename, bool add_
 }
 
 namespace impl {
-
-struct OldTrajectory {
-  OldTrajectory() = default;
-  explicit OldTrajectory(size_t i) : id{i} {}
-  size_t id;
-  std::vector<char> turns;
-  std::string info;
-
-  OldTrajectory next(char turn = char(-1)) const {
-    OldTrajectory traj = *this;
-    if (turn != char(-1)) {
-      traj.turns.push_back(turn);
-    }
-    return traj;
-  };
-};
-
-struct FakeTrajectory {
-  template <typename... Args>
-  FakeTrajectory(Args...) {}
-  auto next(char turn = char(-1)) const { return *this; }
-};
 
 using pathtree::PathLink;
 
@@ -186,7 +161,7 @@ std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees
   }
 
   auto transfer = [&code, &initial](StateSet &to, const StateSet &from, double transfer_fee,
-                                    const std::vector<double> &emission_fees, const std::string &info = "") {
+                                    const std::vector<double> &emission_fees, const std::string & = "") {
     assert(&to != &from);
     for (const auto &kv : from) {
       const auto &cur = kv.first;
@@ -211,7 +186,7 @@ std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees
     }
   };
   auto transfer_upd = [&code, &initial](StateSet &to, const StateSet &from, double transfer_fee,
-                                        const std::vector<double> &emission_fees, const std::string &info,
+                                        const std::vector<double> &emission_fees, const std::string &,
                                         const std::unordered_set<GraphCursor> &keys) {
     assert(&to != &from);
     std::unordered_set<GraphCursor> updated;

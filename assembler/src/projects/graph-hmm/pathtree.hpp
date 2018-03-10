@@ -3,11 +3,34 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include "utils.hpp"
-#include "utils/logger/log_writers.hpp"
-#include "utils/segfault_handler.hpp"
 
 namespace pathtree {
+
+template <class T>
+class ObjectCounter {
+ public:
+  static size_t object_count_max() { return count_max_; }
+
+  static size_t object_count_current() { return count_current_; }
+
+  template <typename... Args>
+  ObjectCounter(Args &&...) noexcept {
+    ++count_current_;
+    count_max_ = std::max(count_max_, count_current_);
+  }
+
+  ~ObjectCounter() { --count_current_; }
+
+ private:
+  static size_t count_max_;
+  static size_t count_current_;
+};
+
+template <class T>
+size_t ObjectCounter<T>::count_max_ = 0;
+
+template <class T>
+size_t ObjectCounter<T>::count_current_ = 0;
 
 template <typename T>
 class Node : public ObjectCounter<Node<T>> {

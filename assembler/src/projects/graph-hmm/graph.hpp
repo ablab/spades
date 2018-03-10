@@ -25,7 +25,7 @@ class Graph {
  public:
   class GraphCursor : public AbstractGraphCursor<Graph::GraphCursor> {
    public:
-    GraphCursor() : edge_id_(-1), pgraph_{nullptr}, position_(-1) {
+    GraphCursor() : pgraph_{nullptr}, edge_id_(-1), position_(-1) {
       // INFO("Empty GP constructed");
       // empty pointer
     }
@@ -353,7 +353,7 @@ class DBGraph {
  public:
   class GraphCursor : public AbstractGraphCursor<DBGraph::GraphCursor> {
    public:
-    GraphCursor() : edge_id_(-1), pgraph_{nullptr}, position_(-1) {
+    GraphCursor() : pgraph_{nullptr}, edge_id_(-1), position_(-1) {
       // INFO("Empty GP constructed");
       // empty pointer
     }
@@ -363,8 +363,8 @@ class DBGraph {
 
     void normalize_prefix_to_suffix_() {
       while (position_ < pgraph_->k_ && pgraph_->ingoing_[edge_id_].size()) {
-        size_t old_id = edge_id_;
-        size_t old_pos = position_;
+        // size_t old_id = edge_id_;
+        // size_t old_pos = position_;
 
         edge_id_ = pgraph_->ingoing_[edge_id_][0];
         position_ = pgraph_->edges_[edge_id_].size() - pgraph_->k_ + position_;
@@ -374,8 +374,8 @@ class DBGraph {
     }
 
     void normalize_suffix_() {
-      size_t old_id = edge_id_;
-      size_t old_pos = position_;
+      // size_t old_id = edge_id_;
+      // size_t old_pos = position_;
 
       if (position_ >= pgraph_->edges_[edge_id_].size() - pgraph_->k_) {
         size_t new_edge_id = pgraph_->suffix_brothers_[edge_id_][0];
