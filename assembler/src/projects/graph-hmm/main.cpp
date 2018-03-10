@@ -18,6 +18,8 @@
 
 #include "hmmfile.hpp"
 #include "hmmmatcher.hpp"
+#include "fees.hpp"
+#include "omnigraph_wrapper.hpp"
 
 #include <clipp/clipp.h>
 
@@ -212,6 +214,12 @@ int main(int argc, char* argv[]) {
                 INFO("Writing component around edge " << e);
                 DrawComponent(component, graph, e, match_edges);
             }
+
+            auto fees = hmm::fees_from_hmm(hmm, hmmw->abc());
+
+            auto initial = all(component);
+            auto result = find_best_path(fees, initial);
+            INFO(result);
         }
 
         if (0) {
