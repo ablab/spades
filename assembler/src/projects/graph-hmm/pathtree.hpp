@@ -1,8 +1,11 @@
 #pragma once
 
+#include "utils/logger/logger.hpp"
+
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <queue>
 
 namespace pathtree {
 
@@ -188,7 +191,7 @@ class PathLink {
 
     for (size_t i = 0; i < k && !q.empty(); ++i) {
       result.push_back(extract_path());
-      TRACE(i + 1 << " top paths extracted");
+      TRACE((i + 1) << " top paths extracted");
       TRACE(Node::object_count_current() << " current # of best path tree nodes");
       TRACE(Node::object_count_max() << " max # of best path tree nodes");
     }
