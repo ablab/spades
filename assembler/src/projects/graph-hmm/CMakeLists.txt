@@ -13,6 +13,7 @@ add_library(hmmercpp STATIC
 target_link_libraries(hmmercpp easel hmmer)
 
 add_executable(graph-hmm
+               omnigraph_wrapper.cpp fees.cpp
                main.cpp)
 
 add_executable(looper
