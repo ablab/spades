@@ -52,9 +52,7 @@ extern "C" {
 
 #include "easel.h"
 #include "esl_alphabet.h"
-#include "esl_getopts.h"
 #include "esl_sq.h"
-#include "esl_sqio.h"
 #include "esl_stopwatch.h"
 
 #include "hmmer.h"
@@ -97,6 +95,33 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
   }
 }
 
+void DrawComponent(const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &component,
+                   const debruijn_graph::ConjugateDeBruijnGraph &graph,
+                   debruijn_graph::EdgeId e,
+                   const std::vector<debruijn_graph::EdgeId> &match_edges) {
+    using namespace visualization;
+    using namespace visualization::visualization_utils;
+    using namespace debruijn_graph;
+
+    // FIXME: This madness needs to be refactored
+    graph_labeler::StrGraphLabeler<ConjugateDeBruijnGraph> tmp_labeler1(graph);
+    graph_labeler::CoverageGraphLabeler<ConjugateDeBruijnGraph> tmp_labeler2(graph);
+    graph_labeler::CompositeLabeler<ConjugateDeBruijnGraph> labeler{tmp_labeler1, tmp_labeler2};
+
+    auto colorer = graph_colorer::DefaultColorer(graph);
+    auto edge_colorer = std::make_shared<graph_colorer::CompositeEdgeColorer<ConjugateDeBruijnGraph>>("black");
+    edge_colorer->AddColorer(colorer);
+    edge_colorer->AddColorer(std::make_shared<graph_colorer::SetColorer<ConjugateDeBruijnGraph>>(graph, match_edges, "green"));
+    std::shared_ptr<graph_colorer::GraphColorer<ConjugateDeBruijnGraph>>
+            resulting_colorer = std::make_shared<graph_colorer::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
+
+    WriteComponent(component,
+                   std::to_string(graph.int_id(e)) + ".dot",
+                   resulting_colorer,
+                   labeler);
+}
+
+
 int main(int argc, char* argv[]) {
     utils::perf_counter pc;
     int textw = 120;
@@ -126,9 +151,6 @@ int main(int argc, char* argv[]) {
         EdgeId edge = *it;
         edges.push_back(edge);
     }
-
-    auto fdijkstra = omnigraph::CreateBoundedDijkstra(graph, 1000);
-    auto bdijkstra = omnigraph::CreateBackwardBoundedDijkstra(graph, 1000);
 
     auto hmmw = hmmfile.read();
     ESL_STOPWATCH *w = esl_stopwatch_Create();
@@ -168,7 +190,11 @@ int main(int argc, char* argv[]) {
         INFO("Total matched edges: " << match_edges.size());
 
         // Collect the neighbourhood of the matched edges
+        auto fdijkstra = omnigraph::CreateBoundedDijkstra(graph, 2 * hmm->M);
+        auto bdijkstra = omnigraph::CreateBackwardBoundedDijkstra(graph, 2 * hmm->M);
+
         for (EdgeId e : match_edges) {
+            INFO("Extracting neighbourhood of edge " << e);
             fdijkstra.Run(graph.EdgeEnd(e));
             bdijkstra.Run(graph.EdgeStart(e));
             std::vector<VertexId> vertices = fdijkstra.ReachedVertices();
@@ -182,28 +208,9 @@ int main(int argc, char* argv[]) {
                                                                                              true);
             INFO("Neighbourhood vertices: " << component.v_size() << ", edges: " << component.e_size());
 
-            {
-                using namespace visualization;
-                using namespace visualization::visualization_utils;
-
-                // FIXME: This madness needs to be refactored
-                graph_labeler::StrGraphLabeler<ConjugateDeBruijnGraph> tmp_labeler1(graph);
-                graph_labeler::CoverageGraphLabeler<ConjugateDeBruijnGraph> tmp_labeler2(graph);
-                graph_labeler::CompositeLabeler<ConjugateDeBruijnGraph> labeler{tmp_labeler1, tmp_labeler2};
-
-                auto colorer = graph_colorer::DefaultColorer(graph);
-                auto edge_colorer = std::make_shared<graph_colorer::CompositeEdgeColorer<ConjugateDeBruijnGraph>>("black");
-                edge_colorer->AddColorer(colorer);
-                edge_colorer->AddColorer(std::make_shared<graph_colorer::SetColorer<ConjugateDeBruijnGraph>>(graph, match_edges, "green"));
-                std::shared_ptr<graph_colorer::GraphColorer<ConjugateDeBruijnGraph>>
-                        resulting_colorer = std::make_shared<graph_colorer::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
-
-                INFO("Writing component for edge " << e);
-
-                WriteComponent(component,
-                               std::to_string(graph.int_id(e)) + ".dot",
-                               resulting_colorer,
-                               labeler);
+            if (1) {
+                INFO("Writing component around edge " << e);
+                DrawComponent(component, graph, e, match_edges);
             }
         }
 

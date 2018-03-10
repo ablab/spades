@@ -44,38 +44,3 @@ void remove_duplicates(std::vector<T> &v) {
   auto it = std::unique_copy(v.cbegin(), v.cend(), v.begin());
   v.resize(std::distance(v.begin(), it));
 }
-
-template<class El, class Container>
-bool any_in(const El &v, const Container &set) {
-  for (const auto &e : v)
-    if (set.count(e))
-      return true;
-
-  return false;
-}
-
-template <class T>
-class ObjectCounter {
- public:
-  static size_t object_count_max() { return count_max_; }
-
-  static size_t object_count_current() { return count_current_; }
-
-  template <typename... Args>
-  ObjectCounter(Args &&...) noexcept {
-    ++count_current_;
-    count_max_ = std::max(count_max_, count_current_);
-  }
-
-  ~ObjectCounter() { --count_current_; }
-
- private:
-  static size_t count_max_;
-  static size_t count_current_;
-};
-
-template <class T>
-size_t ObjectCounter<T>::count_max_ = 0;
-
-template <class T>
-size_t ObjectCounter<T>::count_current_ = 0;
