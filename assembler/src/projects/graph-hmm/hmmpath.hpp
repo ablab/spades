@@ -72,7 +72,7 @@ StateSet<GraphCursor> top_filter(const StateSet<GraphCursor> &S, size_t top, dou
   v.resize(size);
 
   StateSet result;
-  result.insert(CONST_ALL(v));
+  result.insert(v.cbegin(), v.cend());
   return result;
 }
 

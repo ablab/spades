@@ -795,11 +795,6 @@ inline std::ostream &operator<<(std::ostream &os, const DBGraph::Path &path) {
   return os << "<" << path.begin << "-" << path.turns << "-" << path.end << ">";
 }
 
-inline size_t hash_size_t_pair(size_t s0, size_t s1) {
-  s1 ^= s1 << 23;  // a
-  return (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26)) + s0;
-}
-
 namespace std {
 template <>
 struct hash<DBGraph::GraphCursor> {
@@ -807,9 +802,6 @@ struct hash<DBGraph::GraphCursor> {
     return std::hash<size_t>()(hash_size_t_pair(p.edge_id_, p.position_));
   }
 };
-
-template <typename GraphCursor>
-struct hash<ReversalGraphCursor<GraphCursor>> : public hash<GraphCursor> {};
 
 template <>
 struct hash<Graph::GraphCursor> {

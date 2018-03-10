@@ -50,3 +50,8 @@ class ReversalGraphCursor : public AbstractGraphCursor<ReversalGraphCursor<Graph
     return std::vector<ReversalGraphCursor>(std::cbegin(result), std::cend(result));
   }
 };
+
+namespace std {
+template <typename GraphCursor>
+struct hash<ReversalGraphCursor<GraphCursor>> : public hash<GraphCursor> {};
+}  // namespace std
