@@ -198,8 +198,12 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0], "i");
   i_loop_processing(I, 0);  // Do we really need I at the beginning???
+  size_t n = 1;
   for (size_t m = 1; m <= fees.M; ++m) {
-    INFO("Step #: " << m);
+    if (m >= n) {
+      INFO("Step #: " << m);
+      n <<= 1;
+    }
 
     dm_new(D, M, I, m);
     I.clear();
