@@ -40,10 +40,13 @@ struct cfg {
     std::string hmmfile;
     size_t k;
     uint64_t int_id;
+    bool debug;
+    bool draw;
 
     hmmer::hmmer_cfg hcfg;
     cfg()
-            : load_from(""), hmmfile(""), k(0), int_id(0)
+            : load_from(""), hmmfile(""), k(0),
+              int_id(0), debug(false), draw(true)
     {}
 };
 
@@ -90,7 +93,9 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       cfg.hcfg.max     << option("--max")             % "Turn all heuristic filters off (less speed, more power)",
       (option("--F1") & number("value", cfg.hcfg.F1)) % "Stage 1 (MSV) threshold: promote hits w/ P <= F1",
       (option("--F2") & number("value", cfg.hcfg.F2)) % "Stage 2 (Vit) threshold: promote hits w/ P <= F2",
-      (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3"
+      (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3",
+      cfg.debug << option("--debug") % "enable extensive debug output",
+      cfg.draw  << option("--draw")  % "draw pictures around the interesting edges" 
   );
 
   if (!parse(argc, argv, cli)) {
@@ -195,7 +200,6 @@ int main(int argc, char* argv[]) {
             // FIXME: this conversion is pointless
             std::string ref = std::to_string(i);
             std::string seq = graph.EdgeNucls(edges[i]).str();
-            //  INFO("EdgeId: " << edge << ", length: " << graph.length(edge) << ", seq: " << graph.EdgeNucls(edge));
             matcher.match(ref.c_str(), seq.c_str());
         }
 
@@ -211,12 +215,13 @@ int main(int argc, char* argv[]) {
                 continue;
 
             EdgeId e = edges[std::stoull(th->hit[h]->name)];
-            // INFO("" <<  th->hit[h]->name << ":" << e);
+            if (cfg.debug)
+                INFO("HMMER seq id:" <<  th->hit[h]->name << ", edge id:" << e);
             match_edges.push_back(e);
         }
         INFO("Total matched edges: " << match_edges.size());
 
-        if (0) {
+        if (cfg.debug) {
             p7_tophits_Targets(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
             p7_tophits_Domains(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
             p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
@@ -262,7 +267,7 @@ int main(int argc, char* argv[]) {
                                                                                              true);
             INFO("Neighbourhood vertices: " << component.v_size() << ", edges: " << component.e_size());
 
-            if (1) {
+            if (cfg.draw) {
                 INFO("Writing component around edge " << e);
                 DrawComponent(component, graph, std::to_string(graph.int_id(e)), match_edges);
             }
@@ -284,7 +289,10 @@ int main(int argc, char* argv[]) {
                 INFO("Path length : " << path.size() << " edges");
                 for (EdgeId e : path)
                     INFO("" << e.int_id());
-                DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
+                if (cfg.draw) {
+                    INFO("Writing component around path");
+                    DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
+                }
                 idx += 1;
             }
         }
