@@ -39,10 +39,11 @@ struct cfg {
     std::string load_from;
     std::string hmmfile;
     size_t k;
+    uint64_t int_id;
 
     hmmer::hmmer_cfg hcfg;
     cfg()
-            : load_from(""), hmmfile(""), k(0)
+            : load_from(""), hmmfile(""), k(0), int_id(0)
     {}
 };
 
@@ -67,6 +68,7 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       cfg.hmmfile    << value("hmm file"),
       cfg.load_from  << value("load from"),
       cfg.k          << value("k-mer size"),
+      (option("--edge_id") & number("value", cfg.int_id)) % "match around edge",
       // Control of output
       cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
       cfg.hcfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
@@ -170,6 +172,8 @@ int main(int argc, char* argv[]) {
     std::vector<EdgeId> edges;
     for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         EdgeId edge = *it;
+        if (cfg.int_id == 0 ||
+            edge.int_id() == cfg.int_id)
         edges.push_back(edge);
     }
 
