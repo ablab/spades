@@ -99,7 +99,7 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
 
 void DrawComponent(const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &component,
                    const debruijn_graph::ConjugateDeBruijnGraph &graph,
-                   debruijn_graph::EdgeId e,
+                   const std::string &prefix,
                    const std::vector<debruijn_graph::EdgeId> &match_edges) {
     using namespace visualization;
     using namespace visualization::visualization_utils;
@@ -118,9 +118,28 @@ void DrawComponent(const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBr
             resulting_colorer = std::make_shared<graph_colorer::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
 
     WriteComponent(component,
-                   std::to_string(graph.int_id(e)) + ".dot",
+                   prefix + ".dot",
                    resulting_colorer,
                    labeler);
+}
+
+template<class GraphCursor>
+std::vector<debruijn_graph::EdgeId> to_path(const std::vector<GraphCursor> &cpath) {
+    std::vector<debruijn_graph::EdgeId> path;
+
+    auto it = cpath.begin();
+    while (it->is_empty())
+        ++it;
+
+    for (; it != cpath.end(); ++it) {
+        if (it->is_empty())
+            continue;
+
+        if (path.size() == 0 || it->edge() != path.back())
+            path.push_back(it->edge());
+    }
+
+    return path;
 }
 
 
@@ -212,7 +231,7 @@ int main(int argc, char* argv[]) {
 
             if (1) {
                 INFO("Writing component around edge " << e);
-                DrawComponent(component, graph, e, match_edges);
+                DrawComponent(component, graph, std::to_string(graph.int_id(e)), match_edges);
             }
 
             auto fees = hmm::fees_from_hmm(hmm, hmmw->abc());
@@ -224,9 +243,16 @@ int main(int argc, char* argv[]) {
             INFO("Best of the best");
             INFO(result.best_path_string());
             INFO("Extracting top paths");
-            auto top_paths = result.top_k(100);
+            auto top_paths = result.top_k(5);
+            size_t idx = 0;
             for (const auto& kv : top_paths) {
-                INFO("" << kv.second << ":" << top_paths.str(kv.first));
+                // INFO("" << kv.second << ":" << top_paths.str(kv.first));
+                auto path = to_path(kv.first);
+                INFO("Path length : " << path.size() << " edges");
+                for (EdgeId e : path)
+                    INFO("" << e.int_id());
+                DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
+                idx += 1;
             }
         }
 

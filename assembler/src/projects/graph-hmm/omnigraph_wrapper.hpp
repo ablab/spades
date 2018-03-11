@@ -30,6 +30,9 @@ class DebruijnGraphCursor : public AbstractGraphCursor<DebruijnGraphCursor> {
         return (e_ == other.e_) && (position_ == other.position_);
     }
 
+    debruijn_graph::EdgeId edge() const { return e_; }
+    size_t position() const { return position_; }
+
     bool is_empty() const { return e_.get() == nullptr; }
 
     char letter() const { return nucl(g_->EdgeNucls(e_)[position_]); }
@@ -85,6 +88,9 @@ class DebruijnComponentCursor : public AbstractGraphCursor<DebruijnComponentCurs
         return (e_ == other.e_) && (position_ == other.position_);
     }
 
+    debruijn_graph::EdgeId edge() const { return e_; }
+    size_t position() const { return position_; }
+
     bool is_empty() const { return e_.get() == nullptr; }
 
     char letter() const { return nucl(c_->g().EdgeNucls(e_)[position_]); }
@@ -117,7 +123,7 @@ class DebruijnComponentCursor : public AbstractGraphCursor<DebruijnComponentCurs
     }
 
     friend struct std::hash<DebruijnComponentCursor>;
-    
+
     const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> *c_;
     debruijn_graph::EdgeId e_;
     size_t position_;
