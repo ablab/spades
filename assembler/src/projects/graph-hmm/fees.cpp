@@ -2,6 +2,8 @@
 
 #include "hmmfile.hpp"
 
+#include <algorithm>
+
 extern "C" {
 #include "p7_config.h"
 
