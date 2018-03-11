@@ -260,29 +260,34 @@ static int serial_master(const cfg &cfg) {
     general_subgraph.check_symmetry();
     auto initial = general_subgraph.all();
     auto result = find_best_path(fees, initial);
-    INFO(result);
+
+    INFO("Best score: " << result.best_score());
+    INFO("Best of the best");
+    INFO(result.best_path_string());
+    INFO("Extracting top paths");
+    auto top_paths = result.top_k(100);
 
     std::ofstream ofs(cfg.output_dir + "/" + hmm->name + ".fa", std::ios::out);
     ofs.precision(13);
-    for (const auto &kv : result) {
+    for (const auto &kv : top_paths) {
       ofs << ">Score=" << kv.second << "\n";
       ofs << kv.first << "\n";
     }
 
     if (cfg.debug) {
       INFO("Checking path presence in the initial graph");
-      for (const auto gene_score : result) {
-        auto path = graph.trace_exact_sequence(gene_score.first);
+      for (const auto gene_score : top_paths) {
+        auto path = graph.trace_exact_sequence(top_paths.str(gene_score.first));
         TRACE(path);
       }
 
       std::vector<ReversalGraphCursor<Graph::GraphCursor>> rev_initial(CONST_ALL(initial));
       auto reversed_result = find_best_path_rev(fees.reversed(), rev_initial);
-      INFO(reversed_result);
+      auto top_reversed_paths = reversed_result.top_k(100);
 
-      for (const auto &kv : reversed_result) {
+      for (const auto &kv : top_reversed_paths) {
         ofs << ">Score=" << kv.second << "\n";
-        std::string seq = kv.first;
+        std::string seq = top_reversed_paths.str(kv.first);
         std::reverse(ALL(seq));
         ofs << seq << "\n";
       }
@@ -296,7 +301,7 @@ static int serial_master(const cfg &cfg) {
 
       std::ofstream gene_ofs(cfg.output_dir + "/" + hmm->name + "_genes.fa", std::ios::out);
       gene_ofs.precision(13);
-      for (const auto &kv : result) {
+      for (const auto &kv : top_paths) {
         gene_ofs << ">Score=" << kv.second << "\n";
         gene_ofs << kv.first << "\n";
       }

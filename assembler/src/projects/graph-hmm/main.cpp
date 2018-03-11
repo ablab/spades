@@ -219,7 +219,15 @@ int main(int argc, char* argv[]) {
 
             auto initial = all(component);
             auto result = find_best_path(fees, initial);
-            INFO(result);
+
+            INFO("Best score: " << result.best_score());
+            INFO("Best of the best");
+            INFO(result.best_path_string());
+            INFO("Extracting top paths");
+            auto top_paths = result.top_k(100);
+            for (const auto& kv : top_paths) {
+                INFO("" << kv.second << ":" << top_paths.str(kv.first));
+            }
         }
 
         if (0) {

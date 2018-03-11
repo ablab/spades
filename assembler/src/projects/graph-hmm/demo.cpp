@@ -81,22 +81,22 @@ std::vector<std::string> read_fasta_edges(const std::string &filename, bool add_
   return edges;
 }
 
-std::vector<std::pair<std::string, double>> find_best_path_rev(const hmm::Fees &fees,
-                                                               const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial) {
+PathSet<ReversalGraphCursor<Graph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
+                                                                    const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
-std::vector<std::pair<std::string, double>> find_best_path_rev(const hmm::Fees &fees,
-                                                               const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial) {
+PathSet<ReversalGraphCursor<DBGraph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
+                                                                      const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
-std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees,
-                                                           const std::vector<DBGraph::GraphCursor> &initial) {
+PathSet<DBGraph::GraphCursor> find_best_path(const hmm::Fees &fees,
+                                             const std::vector<DBGraph::GraphCursor> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
-std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees,
-                                                           const std::vector<Graph::GraphCursor> &initial) {
+PathSet<Graph::GraphCursor> find_best_path(const hmm::Fees &fees,
+                                           const std::vector<Graph::GraphCursor> &initial) {
   return impl::find_best_path(fees, initial);
 }
