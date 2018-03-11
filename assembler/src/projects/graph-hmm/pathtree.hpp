@@ -69,9 +69,9 @@ std::shared_ptr<Node<T>> make_child(const T &payload, const std::shared_ptr<Node
   return Node<T>::child(payload, parent);
 }
 
-template <typename GraphPointer>
+template <typename GraphCursor>
 class PathLink {
-  using This = PathLink<GraphPointer>;
+  using This = PathLink<GraphCursor>;
 
  public:
   double score() const {
@@ -87,7 +87,7 @@ class PathLink {
                             [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
   }
 
-  bool update(GraphPointer gp, double score, const std::shared_ptr<This> &pl) {
+  bool update(GraphCursor gp, double score, const std::shared_ptr<This> &pl) {
     auto val = std::make_pair(score, pl);
     auto it_fl = scores_.insert({gp, val});
     bool inserted = it_fl.second;
@@ -116,7 +116,7 @@ class PathLink {
     return result;
   }
 
-  std::shared_ptr<This> merge(GraphPointer gp, double score, const std::shared_ptr<This> &pl) const {
+  std::shared_ptr<This> merge(GraphCursor gp, double score, const std::shared_ptr<This> &pl) const {
     auto result = std::make_shared<This>(*this);
     result.update(gp, score, pl);
     return result;
@@ -124,7 +124,7 @@ class PathLink {
 
   static std::shared_ptr<This> master_source() {
     auto result = std::make_shared<This>();
-    result->scores_[GraphPointer()] = std::make_pair(0, nullptr);  // master_sourse score should be 0
+    result->scores_[GraphCursor()] = std::make_pair(0, nullptr);  // master_sourse score should be 0
     return result;
   }
 
@@ -135,22 +135,22 @@ class PathLink {
     }
   };
 
-  std::vector<std::pair<std::vector<GraphPointer>, double>> top_k(size_t k) {
-    using Node = Node<std::tuple<GraphPointer, double, This *>>;
+  std::vector<std::pair<std::vector<GraphCursor>, double>> top_k(size_t k) {
+    using Node = Node<std::tuple<GraphCursor, double, This *>>;
     using SPT = std::shared_ptr<Node>;
     std::priority_queue<SPT, std::vector<SPT>, Comp> q;
     auto extract_path = [&q]() {
       SPT tail = q.top();
       q.pop();
-      GraphPointer gp;
+      GraphCursor gp;
       This *p;
       double cost;
       std::tie(gp, cost, p) = tail->payload();
 
-      std::vector<GraphPointer> path;
+      std::vector<GraphCursor> path;
 
       for (const auto &tpl : tail->collect()) {
-        path.push_back(std::get<GraphPointer>(tpl));
+        path.push_back(std::get<GraphCursor>(tpl));
       }
 
       std::reverse(path.begin(), path.end());
@@ -178,7 +178,7 @@ class PathLink {
       return std::make_pair(path, cost);
     };
 
-    std::vector<std::pair<std::vector<GraphPointer>, double>> result;
+    std::vector<std::pair<std::vector<GraphCursor>, double>> result;
     auto best = best_ancestor();
     if (best == scores_.end()) {
       return result;
@@ -186,7 +186,7 @@ class PathLink {
     }
 
     double best_score = best->second.first;
-    auto initial = make_child(std::make_tuple(GraphPointer(), best_score, this));
+    auto initial = make_child(std::make_tuple(GraphCursor(), best_score, this));
     q.push(initial);
 
     for (size_t i = 0; i < k && !q.empty(); ++i) {
@@ -210,13 +210,13 @@ class PathLink {
     // If terminal ref is present:
     // 1) Remove all other refs worse than it
     // 2) In case of some non-terminal refs still present, remove terminal ref as well
-    auto it_terminal = scores_.find(GraphPointer());
+    auto it_terminal = scores_.find(GraphCursor());
     if (it_terminal == scores_.end()) {
       return 0;
     }
 
     double terminal_score = it_terminal->second.first;
-    std::vector<GraphPointer> to_remove;
+    std::vector<GraphCursor> to_remove;
     for (const auto &kv : scores_) {
       if (kv.first.is_empty()) {
         continue;
@@ -225,7 +225,7 @@ class PathLink {
       if (score >= terminal_score) {  // We prefer short paths
         to_remove.push_back(kv.first);
       } else {
-        to_remove.push_back(GraphPointer());
+        to_remove.push_back(GraphCursor());
       }
     }
 
@@ -267,14 +267,14 @@ class PathLink {
     return result;
   }
 
-  std::vector<GraphPointer> best_path() const {
-    std::vector<GraphPointer> path;
+  std::vector<GraphCursor> best_path() const {
+    std::vector<GraphCursor> path;
 
     const This *p = this;
     while (p) {
       auto best = p->best_ancestor();
       if (best == scores_.end()) {
-        return {GraphPointer(), GraphPointer()};
+        return {GraphCursor(), GraphCursor()};
         // TODO Support empty Link as a comon case and remove this workaround
       }
       path.push_back(best->first);
@@ -298,7 +298,52 @@ class PathLink {
   std::shared_ptr<This> clone() const { return std::make_shared<This>(*this); }
 
  private:
-  std::unordered_map<GraphPointer, std::pair<double, std::shared_ptr<This>>> scores_;
+  std::unordered_map<GraphCursor, std::pair<double, std::shared_ptr<This>>> scores_;
 };
 
 }  // namespace pathtree
+
+template<class GraphCursor>
+class PathSet {
+ public:
+  class path_container {
+   public:
+    path_container(pathtree::PathLink<GraphCursor> &paths,
+                   size_t k)
+        : paths_(paths.top_k(k)) {}
+
+    auto begin()  const { return paths_.begin(); }
+    auto end()    const { return paths_.end();   }
+    size_t size() const { return paths_.size();  }
+    auto operator[](size_t n) const { return paths_[n]; }
+
+    std::string str(const std::vector<GraphCursor> &path) const {
+      std::string s;
+      for (size_t i = 0; i < path.size(); ++i) {
+        if (path[i].is_empty())
+          continue;
+
+        s += path[i].letter();
+      }
+      return s;
+    }
+    std::string str(size_t n) const { return str(paths_[n].first); }
+
+ private:
+    std::vector<std::pair<std::vector<GraphCursor>, double>> paths_;
+  };
+
+  pathtree::PathLink<GraphCursor> &pathlink() { return pathlink_; }
+  const pathtree::PathLink<GraphCursor> &pathlink() const { return pathlink_; }
+
+  double best_score() const { return pathlink_.score(); }
+  std::vector<GraphCursor> best_path() const { return pathlink_.best_path(); }
+  std::string best_path_string() const { return pathlink_.best_path_string(); }
+
+  path_container top_k(size_t k) {
+    return path_container(pathlink_, k);
+  }
+
+ private:
+  pathtree::PathLink<GraphCursor> pathlink_;
+};

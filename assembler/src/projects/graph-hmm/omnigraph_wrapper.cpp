@@ -99,24 +99,6 @@ inline std::vector<DebruijnComponentCursor> DebruijnComponentCursor::next() cons
 }
 
 
-namespace std {
-template <>
-struct hash<DebruijnGraphCursor> {
-    std::size_t operator()(const DebruijnGraphCursor &p) const {
-        return std::hash<size_t>()(hash_size_t_pair(p.e_.hash(), p.position_));
-    }
-};
-}
-
-namespace std {
-template <>
-struct hash<DebruijnComponentCursor> {
-    std::size_t operator()(const DebruijnComponentCursor &p) const {
-        return std::hash<size_t>()(hash_size_t_pair(p.e_.hash(), p.position_));
-    }
-};
-}
-
 std::vector<DebruijnGraphCursor> all(const ConjugateDeBruijnGraph &g) {
     std::vector<DebruijnGraphCursor> result;
     for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
@@ -137,22 +119,26 @@ std::vector<DebruijnComponentCursor> all(const omnigraph::GraphComponent<Conjuga
     return result;
 }
 
-std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees,
-                                                           const std::vector<DebruijnGraphCursor> &initial) {
+PathSet<DebruijnGraphCursor>
+find_best_path(const hmm::Fees &fees,
+               const std::vector<DebruijnGraphCursor> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
-std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees,
-                                                           const std::vector<DebruijnComponentCursor> &initial) {
+PathSet<DebruijnComponentCursor>
+find_best_path(const hmm::Fees &fees,
+               const std::vector<DebruijnComponentCursor> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
-std::vector<std::pair<std::string, double>> find_best_path_rev(const hmm::Fees &fees,
-                                                               const std::vector<ReversalGraphCursor<DebruijnGraphCursor>> &initial) {
+PathSet<ReversalGraphCursor<DebruijnGraphCursor>>
+find_best_path_rev(const hmm::Fees &fees,
+                   const std::vector<ReversalGraphCursor<DebruijnGraphCursor>> &initial) {
   return impl::find_best_path(fees, initial);
 }
 
-std::vector<std::pair<std::string, double>> find_best_path_rev(const hmm::Fees &fees,
-                                                               const std::vector<ReversalGraphCursor<DebruijnComponentCursor>> &initial) {
+PathSet<ReversalGraphCursor<DebruijnComponentCursor>>
+find_best_path_rev(const hmm::Fees &fees,
+                   const std::vector<ReversalGraphCursor<DebruijnComponentCursor>> &initial) {
   return impl::find_best_path(fees, initial);
 }

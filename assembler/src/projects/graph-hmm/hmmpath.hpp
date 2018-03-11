@@ -77,7 +77,7 @@ StateSet<GraphCursor> top_filter(const StateSet<GraphCursor> &S, size_t top, dou
 }
 
 template <typename GraphCursor>
-std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees, const std::vector<GraphCursor> &initial) {
+PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<GraphCursor> &initial) {
   using StateSet = StateSet<GraphCursor>;
   const auto &code = fees.code;
 
@@ -222,7 +222,8 @@ std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees
     D = top_filter(D, top, 10);
   }
 
-  PathLink<GraphCursor> terminal;
+  PathSet<GraphCursor> result;
+  auto &terminal = result.pathlink();
   auto upd_terminal = [&](const StateSet &S, double fee) {
     for (const auto &kv : S) {
       terminal.update(kv.first, kv.second->score() + fee, kv.second);
@@ -233,11 +234,6 @@ std::vector<std::pair<std::string, double>> find_best_path(const hmm::Fees &fees
   upd_terminal(I, fees.t[fees.M][p7H_DM]);  // Do we really need I at the end?
   upd_terminal(M, fees.t[fees.M][p7H_MM]);
 
-  INFO("Best score: " << terminal.score());
-  INFO("Best of the best");
-  INFO(terminal.best_path_string());
-
-  auto result = terminal.top_k_string(10000);
   return result;
 }
 
