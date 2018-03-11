@@ -1,7 +1,6 @@
 #include "read_cloud_connection_conditions.hpp"
 #include "read_cloud_path_extend/read_cloud_dijkstras.hpp"
 #include "read_cloud_path_extend/path_extend_dijkstras.hpp"
-#include "path_extender.hpp"
 namespace path_extend {
 
 map<EdgeId, double> AssemblyGraphUniqueConnectionCondition::ConnectedWith(EdgeId e) const {
