@@ -210,26 +210,55 @@ int main(int argc, char* argv[]) {
             if (!(th->hit[h]->flags & p7_IS_INCLUDED))
                 continue;
 
-            match_edges.push_back(edges[std::stoull(th->hit[h]->name)]);
+            EdgeId e = edges[std::stoull(th->hit[h]->name)];
+            // INFO("" <<  th->hit[h]->name << ":" << e);
+            match_edges.push_back(e);
         }
         INFO("Total matched edges: " << match_edges.size());
+
+        if (0) {
+            p7_tophits_Targets(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+            p7_tophits_Domains(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+            p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
+        }
 
         // Collect the neighbourhood of the matched edges
         auto fdijkstra = omnigraph::CreateBoundedDijkstra(graph, 2 * hmm->M);
         auto bdijkstra = omnigraph::CreateBackwardBoundedDijkstra(graph, 2 * hmm->M);
 
+        std::unordered_map<EdgeId, std::unordered_set<VertexId>> neighbourhoods;
         for (EdgeId e : match_edges) {
             INFO("Extracting neighbourhood of edge " << e);
             fdijkstra.Run(graph.EdgeEnd(e));
             bdijkstra.Run(graph.EdgeStart(e));
-            std::vector<VertexId> vertices = fdijkstra.ReachedVertices();
+            std::vector<VertexId> fvertices = fdijkstra.ReachedVertices();
             std::vector<VertexId> bvertices = bdijkstra.ReachedVertices();
+            std::unordered_set<VertexId> vertices;
 
-            vertices.insert(vertices.end(), bvertices.begin(), bvertices.end());
-            bvertices.clear();
+            neighbourhoods[e].insert(fvertices.begin(), fvertices.end());
+            neighbourhoods[e].insert(bvertices.begin(), bvertices.end());
+        }
 
+        // See, whether we could join some components
+        INFO("Joining components")
+        for (auto it = neighbourhoods.begin(); it != neighbourhoods.end(); ++it) {
+            for (auto to_check = std::next(it); to_check != neighbourhoods.end(); ) {
+                VertexId vstart = graph.EdgeStart(to_check->first), vend = graph.EdgeEnd(to_check->first);
+                if (it->second.count(vstart) || it->second.count(vend)) {
+                    it->second.insert(to_check->second.begin(), to_check->second.end());
+                    to_check = neighbourhoods.erase(to_check);
+                } else
+                    ++to_check;
+            }
+        }
+        INFO("Total unique neighbourhoods extracted " << neighbourhoods.size());
+
+        for (const auto &kv : neighbourhoods) {
+            EdgeId e = kv.first;
+
+            INFO("Looking HMM path around " <<e);
             auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromVertices(graph,
-                                                                                             vertices.begin(), vertices.end(),
+                                                                                             kv.second.begin(), kv.second.end(),
                                                                                              true);
             INFO("Neighbourhood vertices: " << component.v_size() << ", edges: " << component.e_size());
 
@@ -258,12 +287,6 @@ int main(int argc, char* argv[]) {
                 DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
                 idx += 1;
             }
-        }
-
-        if (0) {
-            p7_tophits_Targets(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-            p7_tophits_Domains(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-            p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
         }
 
         hmmw = hmmfile.read();
