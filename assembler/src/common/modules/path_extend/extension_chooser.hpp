@@ -468,6 +468,7 @@ class ExcludingExtensionChooser: public ExtensionChooser {
         VERIFY(!weights.empty());
         auto max_weight = (--weights.end())->first;
         EdgeContainer top = FindPossibleEdges(weights, max_weight);
+        DEBUG("Top-scored edges " << top.size());
         EdgeContainer result;
         if (CheckThreshold(max_weight)) {
             result = top;
@@ -500,6 +501,7 @@ public:
         path.PrintDEBUG();
         EdgeContainer result = edges;
         ExcludeEdges(path, result, to_exclude);
+        DEBUG("Excluded " << to_exclude.size() << " edges")
         result = FindFilteredEdges(path, result, to_exclude);
         if (result.size() == 1) {
             DEBUG("Paired-end extension chooser helped");
@@ -533,6 +535,7 @@ protected:
                 if (!HasIdealInfo(path_edge,
                            edges.at(i).e_,
                            path.LengthAt(index))) {
+                    DEBUG("Excluding edge because of no ideal info #" << index)
                     to_exclude.insert((size_t) index);
                 }
             }
@@ -550,6 +553,7 @@ protected:
 
         for (auto e_w_ec : edge_2_extension_cnt) {
             if (e_w_ec.second == edges.size()) {
+                DEBUG("Excluding edge because of ambiguous paired info #" << e_w_ec.first)
                 to_exclude.insert(e_w_ec.first);
             }
         }
