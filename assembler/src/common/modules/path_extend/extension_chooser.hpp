@@ -1417,6 +1417,7 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
 
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
         auto path_barcodes = entry_collector_->CollectEntry(path);
+        DEBUG(path_barcodes.size() << " barcodes on path");
         std::unordered_set<barcode_index::BarcodeId> candidate_barcodes;
         std::unordered_set<barcode_index::BarcodeId> repetitive_candidate_barcodes;
         for (const auto& candidate: edges) {
@@ -1430,21 +1431,19 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
                 }
             }
         }
-        std::set<barcode_index::BarcodeId> single_path_barcodes;
+        std::set<barcode_index::BarcodeId> unique_path_barcodes;
         for (const auto& barcode: path_barcodes) {
             if (repetitive_candidate_barcodes.find(barcode) == repetitive_candidate_barcodes.end()) {
-                single_path_barcodes.insert(barcode);
+                unique_path_barcodes.insert(barcode);
             }
         }
+        DEBUG(unique_path_barcodes.size() << " unique barcodes on path");
 //        std::unordered_map<EdgeWithDistance, double> candidate_to_score;
         vector<EdgeWithDistance> result;
         for (const auto& candidate: edges) {
-//            auto barcode_begin = barcode_index_->barcode_iterator_begin(candidate.e_);
-//            auto barcode_end = barcode_index_->barcode_iterator_end(candidate.e_);
-
             const auto barcodes = barcode_index_->GetBarcodes(candidate.e_);
             std::set<barcode_index::BarcodeId> intersection;
-            std::set_intersection(barcodes.begin(), barcodes.end(), single_path_barcodes.begin(), single_path_barcodes.end(),
+            std::set_intersection(barcodes.begin(), barcodes.end(), unique_path_barcodes.begin(), unique_path_barcodes.end(),
                                   std::inserter(intersection, intersection.begin()));
             double score = static_cast<double>(intersection.size()) /
                 static_cast<double>(barcode_index_->GetNumberOfBarcodes(candidate.e_));
@@ -1460,10 +1459,8 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
             DEBUG("Single candidate passed threshold");
             return result;
         }
-        if (result.size() > 1) {
-            DEBUG("Multiple candidates");
-            return result;
-        }
+        DEBUG("Multiple candidates");
+        return result;
     }
 
     DECL_LOGGER("ReadCloudExtensionChooser");

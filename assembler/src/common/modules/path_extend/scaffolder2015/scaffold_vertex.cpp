@@ -59,6 +59,12 @@ optional<EdgeId> EdgeIdVertex::getFirstEdgeWithPredicate(const func::TypedPredic
     }
     return result;
 }
+BidirectionalPath EdgeIdVertex::getPath(const debruijn_graph::Graph &g) const {
+    BidirectionalPath result(g);
+    Gap gap(0);
+    result.PushBack(edge_, gap);
+    return result;
+}
 
 size_t PathVertex::getId() const {
     return path_->GetId();
@@ -123,6 +129,10 @@ optional<EdgeId> PathVertex::getFirstEdgeWithPredicate(const func::TypedPredicat
             return result;
         }
     }
+    return result;
+}
+BidirectionalPath PathVertex::getPath(const debruijn_graph::Graph &g) const {
+    BidirectionalPath result(*path_);
     return result;
 }
 
@@ -191,6 +201,9 @@ boost::optional<debruijn_graph::EdgeId> ScaffoldVertex::getLastEdgeWithPredicate
 }
 boost::optional<debruijn_graph::EdgeId> ScaffoldVertex::getFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
     return vertex_ptr_->getFirstEdgeWithPredicate(pred);
+}
+BidirectionalPath ScaffoldVertex::getPath(const debruijn_graph::Graph &g) const {
+    return vertex_ptr_->getPath(g);
 }
 
 }

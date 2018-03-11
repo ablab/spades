@@ -27,6 +27,7 @@ class InnerScaffoldVertex {
     virtual EdgeId getFirstEdge() const = 0;
 
     virtual BidirectionalPath* toPath(const debruijn_graph::Graph &g) const = 0;
+    virtual BidirectionalPath getPath(const debruijn_graph::Graph &g) const = 0;
     virtual string str(const debruijn_graph::Graph& g) const = 0;
 };
 
@@ -52,6 +53,7 @@ class EdgeIdVertex : public InnerScaffoldVertex {
 
     string str(const debruijn_graph::Graph &g) const override;
     BidirectionalPath* toPath(const debruijn_graph::Graph &g) const override;
+    BidirectionalPath getPath(const debruijn_graph::Graph &g) const override;
 
     EdgeId get() const;
 };
@@ -78,6 +80,7 @@ class PathVertex : public InnerScaffoldVertex {
 
     string str(const debruijn_graph::Graph &g) const override;
     BidirectionalPath* toPath(const debruijn_graph::Graph &g) const override;
+    BidirectionalPath getPath(const debruijn_graph::Graph &g) const override;
 
     BidirectionalPath *get() const;
 };
@@ -113,6 +116,7 @@ class ScaffoldVertex {
 
     string str(const debruijn_graph::Graph &g) const;
     BidirectionalPath* toPath(const debruijn_graph::Graph &g) const;
+    BidirectionalPath getPath(const debruijn_graph::Graph &g) const;
 
     shared_ptr<InnerScaffoldVertex> getInnerVertex() const;
 

@@ -277,7 +277,7 @@ namespace path_extend {
                                                                                     size_t linkage_distance) const;
     };
 
-    class ScaffoldGraphGapCloser {
+    class ScaffoldGraphPolisher {
      public:
         typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
         typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
@@ -292,7 +292,7 @@ namespace path_extend {
         const PathExtractorParts& path_extractor_params_;
 
      public:
-        ScaffoldGraphGapCloser(const Graph& g_,
+        ScaffoldGraphPolisher(const Graph& g_,
                                shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> scaff_vertex_extractor,
                                const CloudSubgraphExtractorParams& subgraph_extractor_params,
                                const PathExtractorParts& path_extractor_params);
