@@ -1,7 +1,8 @@
 #include "scaffold_graph_extractor.hpp"
 
 namespace path_extend {
-vector<ScaffoldGraphExtractor::ScaffoldEdge> ScaffoldGraphExtractor::ExtractUnivocalEdges(const ScaffoldGraph& scaffold_graph) {
+vector<ScaffoldGraphExtractor::ScaffoldEdge> ScaffoldGraphExtractor::ExtractUnivocalEdges(
+        const ScaffoldGraph& scaffold_graph) const {
     vector<ScaffoldEdge> result;
     for (const ScaffoldGraph::ScaffoldEdge& edge: scaffold_graph.edges()) {
         if (scaffold_graph.HasUniqueOutgoing(edge.getStart()) and scaffold_graph.HasUniqueIncoming(edge.getEnd())) {
@@ -10,7 +11,8 @@ vector<ScaffoldGraphExtractor::ScaffoldEdge> ScaffoldGraphExtractor::ExtractUniv
     }
     return result;
 }
-vector<ScaffoldGraphExtractor::ScaffoldEdge> ScaffoldGraphExtractor::ExtractMaxScoreEdges(const ScaffoldGraphExtractor::ScaffoldGraph &scaffold_graph) {
+vector<ScaffoldGraphExtractor::ScaffoldEdge> ScaffoldGraphExtractor::ExtractMaxScoreEdges(
+        const ScaffoldGraphExtractor::ScaffoldGraph &scaffold_graph) const {
     vector<ScaffoldEdge> result;
     std::unordered_map<scaffold_graph::ScaffoldVertex, ScaffoldEdge> start_to_edge;
     std::unordered_map<scaffold_graph::ScaffoldVertex, ScaffoldEdge> end_to_edge;
@@ -48,6 +50,18 @@ vector<ScaffoldGraphExtractor::ScaffoldEdge> ScaffoldGraphExtractor::ExtractMaxS
         ++edge_counter;
         if (edge_counter % edge_block == 0) {
             INFO("Processed " << edge_counter << " edges out of " << scaffold_graph.EdgeCount());
+        }
+    }
+    return result;
+}
+unordered_map<EdgeId,
+              ScaffoldGraphExtractor::VertexSet> ScaffoldGraphExtractor::GetFirstEdgeMap(
+        const ScaffoldGraphExtractor::ScaffoldGraph &scaffold_graph, const func::TypedPredicate<EdgeId>& pred) const {
+    unordered_map<EdgeId, VertexSet> result;
+    for (const ScaffoldVertex& vertex: scaffold_graph.vertices()) {
+        auto first_edge = vertex.getFirstEdgeWithPredicate(pred);
+        if (first_edge.is_initialized()) {
+            result[first_edge.get()].insert(vertex);
         }
     }
     return result;

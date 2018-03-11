@@ -8,7 +8,7 @@
 namespace path_extend {
 
 path_extend::GapCloserUtils::SimpleTransitionGraph path_extend::GapCloserUtils::RemoveDisconnectedVertices(
-        const path_extend::ScaffoldGraphGapCloser::SimpleTransitionGraph& graph, const ScaffoldVertex& source,
+        const path_extend::ScaffoldGraphPolisher::SimpleTransitionGraph& graph, const ScaffoldVertex& source,
         const ScaffoldVertex& sink) const {
     SimpleTransitionGraph result;
     DEBUG("Removing disconnected vertices");
@@ -134,8 +134,8 @@ bool CloudScaffoldSubgraphExtractor::CheckSubGraphVertex(const CloudScaffoldSubg
                                                          const CloudScaffoldSubgraphExtractor::ScaffoldVertex& second) const {
     return vertex != first.getConjugateFromGraph(g_) and vertex != second.getConjugateFromGraph(g_);
 }
-ScaffoldGraph ScaffoldGraphGapCloser::CleanSmallGraphUsingLargeGraph(const ScaffoldGraphGapCloser::ScaffoldGraph &large_scaffold_graph,
-                                                                     const ScaffoldGraphGapCloser::ScaffoldGraph &small_scaffold_graph) const {
+ScaffoldGraph ScaffoldGraphPolisher::CleanSmallGraphUsingLargeGraph(const ScaffoldGraphPolisher::ScaffoldGraph &large_scaffold_graph,
+                                                                     const ScaffoldGraphPolisher::ScaffoldGraph &small_scaffold_graph) const {
     ScaffoldGraphExtractor extractor;
     auto univocal_edges = extractor.ExtractUnivocalEdges(large_scaffold_graph);
     const size_t MAX_ITERATIONS = 10;
@@ -164,9 +164,9 @@ ScaffoldGraph ScaffoldGraphGapCloser::CleanSmallGraphUsingLargeGraph(const Scaff
     return graphs.back();
 }
 
-IterationResult ScaffoldGraphGapCloser::LaunchGapClosingIteration(
+IterationResult ScaffoldGraphPolisher::LaunchGapClosingIteration(
         const ScaffoldGraph& input_graph,
-        const vector<ScaffoldGraphGapCloser::ScaffoldEdge>& univocal_edges) const {
+        const vector<ScaffoldGraphPolisher::ScaffoldEdge>& univocal_edges) const {
     DEBUG("Cleaning graph using cut vertices");
     DEBUG(input_graph.VertexCount() << " vertices and " << input_graph.EdgeCount() << " edges in cut vertex graph");
 //    auto current_graph = CleanGraphUsingCutVertices(input_graph, univocal_edges);
@@ -216,7 +216,7 @@ IterationResult ScaffoldGraphGapCloser::LaunchGapClosingIteration(
     return result;
 }
 
-    ScaffoldGraphGapCloser::ScaffoldGraphGapCloser(const ScaffoldGraphGapCloser::Graph& g_,
+    ScaffoldGraphPolisher::ScaffoldGraphPolisher(const ScaffoldGraphPolisher::Graph& g_,
                                                    shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> scaff_vertex_extractor,
                                                    const CloudSubgraphExtractorParams& subgraph_extractor_params,
                                                    const PathExtractorParts& path_extractor_params)
@@ -225,7 +225,7 @@ IterationResult ScaffoldGraphGapCloser::LaunchGapClosingIteration(
           subgraph_extractor_params_(subgraph_extractor_params),
           path_extractor_params_(path_extractor_params) {}
 
-InsertedVerticesData ScaffoldGraphGapCloser::GetInsertedConnections(const vector<ScaffoldEdge>& univocal_edges,
+InsertedVerticesData ScaffoldGraphPolisher::GetInsertedConnections(const vector<ScaffoldEdge>& univocal_edges,
                                                                     const ScaffoldGraph& current_graph) const {
     unordered_map<ScaffoldVertex, ScaffoldVertex> inserted_vertices_map;
     size_t internal_inserted = 0;
@@ -666,7 +666,7 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
         predicate_constructor.ConstructPathClusterScoreFunction(path_extractor_params, small_scaffold_graph, path_scaffolding);
 //    auto trivial_score_builder = make_shared<TrivialScoreFunctionBuilder>();
     PathExtractorParts path_extractor_parts(predicate_builders, path_cluster_score_builder);
-    path_extend::ScaffoldGraphGapCloser gap_closer(graph_pack.g, scaffold_index_extractor,
+    path_extend::ScaffoldGraphPolisher gap_closer(graph_pack.g, scaffold_index_extractor,
                                                    subgraph_extractor_params, path_extractor_parts);
 
     INFO(large_scaffold_graph.VertexCount() << " vertices and "
