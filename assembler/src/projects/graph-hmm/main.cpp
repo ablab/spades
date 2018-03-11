@@ -40,13 +40,14 @@ struct cfg {
     std::string hmmfile;
     size_t k;
     uint64_t int_id;
+    unsigned min_size;
     bool debug;
     bool draw;
 
     hmmer::hmmer_cfg hcfg;
     cfg()
             : load_from(""), hmmfile(""), k(0),
-              int_id(0), debug(false), draw(true)
+              int_id(0), min_size(2), debug(false), draw(true)
     {}
 };
 
@@ -71,7 +72,8 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       cfg.hmmfile    << value("hmm file"),
       cfg.load_from  << value("load from"),
       cfg.k          << value("k-mer size"),
-      (option("--edge_id") & number("value", cfg.int_id)) % "match around edge",
+      (option("--edge_id") & integer("value", cfg.int_id)) % "match around edge",
+      (option("--min_size") & integer("value", cfg.min_size)) % "minimal component size to consider (default: 2)",
       // Control of output
       cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
       cfg.hcfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
@@ -95,7 +97,7 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       (option("--F2") & number("value", cfg.hcfg.F2)) % "Stage 2 (Vit) threshold: promote hits w/ P <= F2",
       (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3",
       cfg.debug << option("--debug") % "enable extensive debug output",
-      cfg.draw  << option("--draw")  % "draw pictures around the interesting edges" 
+      cfg.draw  << option("--draw")  % "draw pictures around the interesting edges"
   );
 
   if (!parse(argc, argv, cli)) {
@@ -267,10 +269,17 @@ int main(int argc, char* argv[]) {
                                                                                              true);
             INFO("Neighbourhood vertices: " << component.v_size() << ", edges: " << component.e_size());
 
+            if (component.e_size()/2 < cfg.min_size) {
+                INFO("Component is too small (" << component.e_size() / 2 << " vs " << cfg.min_size << "), skipping");
+                continue;
+            }
+
             if (cfg.draw) {
                 INFO("Writing component around edge " << e);
                 DrawComponent(component, graph, std::to_string(graph.int_id(e)), match_edges);
             }
+
+
 
             auto fees = hmm::fees_from_hmm(hmm, hmmw->abc());
 
