@@ -211,8 +211,8 @@ int main(int argc, char* argv[]) {
         INFO("Total matched edges: " << match_edges.size());
 
         // Collect the neighbourhood of the matched edges
-        auto fdijkstra = omnigraph::CreateBoundedDijkstra(graph, hmm->M);
-        auto bdijkstra = omnigraph::CreateBackwardBoundedDijkstra(graph, hmm->M);
+        auto fdijkstra = omnigraph::CreateBoundedDijkstra(graph, 2 * hmm->M);
+        auto bdijkstra = omnigraph::CreateBackwardBoundedDijkstra(graph, 2 * hmm->M);
 
         for (EdgeId e : match_edges) {
             INFO("Extracting neighbourhood of edge " << e);
