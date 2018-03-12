@@ -4,12 +4,19 @@
 namespace path_extend {
 shared_ptr<ScaffoldGraphGapCloser> ReadCloudScaffoldGraphGapCloserConstructor::ConstructGapCloser(
         const ReadCloudScaffoldGraphGapCloserConstructor::ScaffoldGraph &graph, size_t edge_length_threshold) const {
-    auto path_extender = ConstructExtender(edge_length_threshold);
-    auto tip_searcher = make_shared<PathExtenderTipSearcher>(gp_.g, graph, path_extender, edge_length_threshold);
+    auto path_extender = ConstructExtender();
+    auto length_predicate = [this, edge_length_threshold](const EdgeId& edge) {
+      return this->gp_.g.length(edge) >= edge_length_threshold;
+    };
+    ScaffoldGraphExtractor extractor;
+    DEBUG("Getting edge map");
+    auto long_edge_to_vertex = extractor.GetFirstEdgeMap(graph, length_predicate);
+    DEBUG("Got edge map");
+    auto tip_searcher = make_shared<PathExtenderTipSearcher>(gp_.g, graph, path_extender, long_edge_to_vertex, edge_length_threshold);
     auto gap_closer = make_shared<TipFinderGapCloser>(tip_searcher);
     return gap_closer;
 }
-shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructExtender(size_t edge_length_threshold) const {
+shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructExtender() const {
     path_extend::PathExtendParamsContainer params(cfg::get().ds,
                                                   cfg::get().pe_params,
                                                   cfg::get().ss,
@@ -23,8 +30,8 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
     GraphCoverageMap cover_map(gp_.g);
 
     ScaffoldingUniqueEdgeStorage unique_storage;
-    ScaffoldingUniqueEdgeAnalyzer analyzer(gp_, edge_length_threshold, 50.0);
-    analyzer.FillUniqueEdgeStorage(unique_storage);
+//    ScaffoldingUniqueEdgeAnalyzer analyzer(gp_, edge_length_threshold, 50.0);
+//    analyzer.FillUniqueEdgeStorage(unique_storage);
     UsedUniqueStorage used_unique_storage(unique_storage);
     UniqueData unique_data;
     ExtendersGenerator generator(dataset_info, params, gp_, cover_map,
@@ -50,7 +57,7 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
     const size_t reliable_edge_length = 200;
     const size_t tail_threshold = 3000;
     const size_t distance_bound = 8000;
-    const double score_threshold = 0.1;
+    const double score_threshold = 0.05;
 
     auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     auto entry_collector = make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor, reliable_edge_length, tail_threshold);
@@ -62,9 +69,10 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
     bool investigate_short_loops = false;
     bool use_short_loops_cov_resolver = false;
 
+    INFO("Unique check enabled: " << used_unique_storage.UniqueCheckEnabled());
     auto read_cloud_extender = make_shared<ReadCloudExtender>(gp_, cover_map, used_unique_storage, composite_chooser,
                                                               insert_size, investigate_short_loops, use_short_loops_cov_resolver,
-                                                              weight_threshold, edge_length_threshold, distance_bound);
+                                                              weight_threshold, reliable_edge_length, distance_bound);
     return read_cloud_extender;
 }
 ReadCloudScaffoldGraphGapCloserConstructor::ReadCloudScaffoldGraphGapCloserConstructor(conj_graph_pack &gp_)
