@@ -35,21 +35,6 @@ enum class LibraryType {
     TSLReads,
     PathExtendContigs,
     UntrustedContigs
-
-};
-
-static std::vector<LibraryType> LibraryPriotity = {
-    LibraryType::SingleReads,
-    LibraryType::SangerReads,
-    LibraryType::PacBioReads,
-    LibraryType::NanoporeReads,
-    LibraryType::PairedEnd,
-    LibraryType::HQMatePairs,
-    LibraryType::MatePairs,
-    LibraryType::TrustedContigs,
-    LibraryType::TSLReads,
-    LibraryType::PathExtendContigs,
-    LibraryType::UntrustedContigs
 };
 
 enum class LibraryOrientation {
