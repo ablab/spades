@@ -13,6 +13,6 @@ class ReadCloudScaffoldGraphGapCloserConstructor {
     shared_ptr<ScaffoldGraphGapCloser> ConstructGapCloser(const ScaffoldGraph &graph, size_t edge_length_threshold) const;
 
  private:
-    shared_ptr<PathExtender> ConstructExtender() const;
+    shared_ptr<PathExtender> ConstructExtender(size_t seed_edge_length) const;
 };
 }

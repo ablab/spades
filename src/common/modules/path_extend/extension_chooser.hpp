@@ -1568,21 +1568,23 @@ class EdgesGetter {
 };
 
 
-class LengthBasedUniqueEdgesGetter: public EdgesGetter {
+class PredicateBasedUniqueEdgesGetter: public EdgesGetter {
     const Graph& g_;
+    const func::TypedPredicate<EdgeId> predicate_;
     const size_t distance_;
-    const size_t length_threshold_;
  public:
-    LengthBasedUniqueEdgesGetter(const Graph &g, size_t distance, size_t length_threshold)
-        : g_(g), distance_(distance), length_threshold_(length_threshold) {}
+    PredicateBasedUniqueEdgesGetter(const Graph &g, const func::TypedPredicate<EdgeId>& predicate, size_t distance)
+        : g_(g), predicate_(predicate), distance_(distance) {}
 
     virtual vector<EdgeId> GetUniqueEdges(const BidirectionalPath& path) const override {
         DEBUG("Getting unique edges");
         vector<EdgeId> result;
         for (int i =  (int)path.Size() - 1; i >= 0; --i) {
-            if (g_.length(path.At(i)) >= length_threshold_) {
+            DEBUG("Applying predicate");
+            if (predicate_(path.At(i))) {
                 result.push_back(path.At(i));
             }
+            DEBUG("Pushed back");
             if (path.LengthAt(i) > distance_) {
                 return result;
             }
@@ -1591,6 +1593,8 @@ class LengthBasedUniqueEdgesGetter: public EdgesGetter {
         DEBUG("Finished getting unique edges");
         return result;
     }
+
+    DECL_LOGGER("PredicateBasedUniqueEdgesGetter");
 };
 
 class BarcodeEntryCollector {
@@ -1603,21 +1607,41 @@ class SimpleBarcodeEntryCollector: public BarcodeEntryCollector {
     const Graph& g_;
     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index_;
     size_t edge_length_threshold_;
+    size_t seed_length_;
     size_t distance_;
+    double relative_coverage_threshold_;
 
  public:
     SimpleBarcodeEntryCollector(const Graph &g_,
                                 shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index_,
-                                size_t edge_length_threshold_,
-                                size_t distance_)
+                                size_t edge_length_threshold,
+                                size_t seed_length,
+                                size_t distance_,
+                                double relative_coverage_threshold)
         : g_(g_),
           barcode_index_(barcode_index_),
-          edge_length_threshold_(edge_length_threshold_),
-          distance_(distance_) {}
+          edge_length_threshold_(edge_length_threshold),
+          seed_length_(seed_length),
+          distance_(distance_),
+          relative_coverage_threshold_(relative_coverage_threshold) {}
 
     barcode_index::SimpleVertexEntry CollectEntry(const BidirectionalPath &path) const override {
-        LengthBasedUniqueEdgesGetter edges_getter(g_, distance_, edge_length_threshold_);
+        DEBUG("Seed length: " << seed_length_);
+        DEBUG("Getting initial coverage");
+        double initial_coverage = GetInitialCoverage(path);
+        DEBUG("Initial coverage: " << initial_coverage);
+        double coverage_threshold = initial_coverage * relative_coverage_threshold_;
+        auto coverage_predicate = [this, coverage_threshold](const EdgeId& edge) {
+          return math::le(this->g_.coverage(edge), coverage_threshold);
+        };
+        auto length_predicate = [this](const EdgeId& edge) {
+          return this->g_.length(edge) >= this->edge_length_threshold_;
+        };
+        auto edge_predicate = func::AndOperator<EdgeId>(coverage_predicate, length_predicate);
+        DEBUG("Got predicate")
+        PredicateBasedUniqueEdgesGetter edges_getter(g_, edge_predicate, distance_);
         auto edges = edges_getter.GetUniqueEdges(path);
+        DEBUG("Got unique edges");
         barcode_index::SimpleVertexEntry result;
         for (const auto& edge: edges) {
             auto barcode_it_begin = barcode_index_->barcode_iterator_begin(edge);
@@ -1628,59 +1652,76 @@ class SimpleBarcodeEntryCollector: public BarcodeEntryCollector {
         }
         return result;
     }
+
+ private:
+    double GetInitialCoverage(const BidirectionalPath &path) const {
+        for (size_t i = 0; i < path.Size(); ++i) {
+            EdgeId edge = path.At(i);
+            if (g_.length(edge) >= seed_length_) {
+                return g_.coverage(edge);
+            }
+        }
+        VERIFY_MSG(false, "Path does not have seed edge");
+        return 0;
+    }
+
+    DECL_LOGGER("SimpleBarcodeEntryCollector");
 };
 
 class ReadCloudExtensionChooser: public ExtensionChooser {
-    shared_ptr<BarcodeEntryCollector> entry_collector_;
     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index_;
+    shared_ptr<BarcodeEntryCollector> barcode_entry_collector_;
     const double score_threshold_;
  public:
     ReadCloudExtensionChooser(const Graph &g,
                               shared_ptr<WeightCounter> wc,
                               double weight_threshold,
-                              shared_ptr<BarcodeEntryCollector> entry_collector_,
-                              shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index_,
-                              const double score_threshold_) : ExtensionChooser(g, wc, weight_threshold),
-                                                               entry_collector_(entry_collector_),
-                                                               barcode_index_(barcode_index_),
-                                                               score_threshold_(score_threshold_) {}
+                              shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index,
+                              shared_ptr<BarcodeEntryCollector> barcode_entry_collector,
+                              double score_threshold_) : ExtensionChooser(g, wc, weight_threshold),
+                                                         barcode_index_(barcode_index),
+                                                         barcode_entry_collector_(barcode_entry_collector),
+                                                         score_threshold_(score_threshold_) {}
 
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
-        DEBUG("Collecting entry");
-        auto path_barcodes = entry_collector_->CollectEntry(path);
-        DEBUG(path_barcodes.size() << " barcodes on path");
-        std::unordered_set<barcode_index::BarcodeId> candidate_barcodes;
-        std::unordered_set<barcode_index::BarcodeId> repetitive_candidate_barcodes;
-        for (const auto& candidate: edges) {
-            EdgeId edge = candidate.e_;
-            auto barcode_begin = barcode_index_->barcode_iterator_begin(edge);
-            auto barcode_end = barcode_index_->barcode_iterator_end(edge);
-            for (auto it = barcode_begin; it != barcode_end; ++it) {
-                bool is_inserted = (candidate_barcodes.insert(it->first)).second;
-                if (not is_inserted) {
-                    repetitive_candidate_barcodes.insert(it->first);
-                }
-            }
-        }
-        DEBUG("Selecting unique barcodes");
-        std::set<barcode_index::BarcodeId> unique_path_barcodes;
-        for (const auto& barcode: path_barcodes) {
-            if (repetitive_candidate_barcodes.find(barcode) == repetitive_candidate_barcodes.end()) {
-                unique_path_barcodes.insert(barcode);
-            }
-        }
-        DEBUG(unique_path_barcodes.size() << " unique barcodes on path");
-//        std::unordered_map<EdgeWithDistance, double> candidate_to_score;
         vector<EdgeWithDistance> result;
+        DEBUG("Collecting entry");
+        auto path_barcodes = barcode_entry_collector_->CollectEntry(path);
+        DEBUG(path_barcodes.size() << " barcodes on path");
+        if (path_barcodes.size() == 0) {
+            WARN("No barcodes on path!");
+            return result;
+        }
+//        std::unordered_set<barcode_index::BarcodeId> candidate_barcodes;
+//        std::unordered_set<barcode_index::BarcodeId> repetitive_candidate_barcodes;
+//        for (const auto& candidate: edges) {
+//            EdgeId edge = candidate.e_;
+//            auto barcode_begin = barcode_index_->barcode_iterator_begin(edge);
+//            auto barcode_end = barcode_index_->barcode_iterator_end(edge);
+//            for (auto it = barcode_begin; it != barcode_end; ++it) {
+//                bool is_inserted = (candidate_barcodes.insert(it->first)).second;
+//                if (not is_inserted) {
+//                    repetitive_candidate_barcodes.insert(it->first);
+//                }
+//            }
+//        }
+//        DEBUG("Selecting unique barcodes");
+//        std::set<barcode_index::BarcodeId> unique_path_barcodes;
+//        for (const auto& barcode: path_barcodes) {
+//            if (repetitive_candidate_barcodes.find(barcode) == repetitive_candidate_barcodes.end()) {
+//                unique_path_barcodes.insert(barcode);
+//            }
+//        }
+//        DEBUG(unique_path_barcodes.size() << " unique barcodes on path");
+//        std::unordered_map<EdgeWithDistance, double> candidate_to_score;
         double max_score = 0;
         DEBUG(edges.size() << " initial candidates");
         for (const auto& candidate: edges) {
             const auto barcodes = barcode_index_->GetBarcodes(candidate.e_);
             std::set<barcode_index::BarcodeId> intersection;
-            std::set_intersection(barcodes.begin(), barcodes.end(), unique_path_barcodes.begin(), unique_path_barcodes.end(),
+            std::set_intersection(barcodes.begin(), barcodes.end(), path_barcodes.begin(), path_barcodes.end(),
                                   std::inserter(intersection, intersection.begin()));
-            double score = static_cast<double>(intersection.size()) /
-                static_cast<double>(barcode_index_->GetNumberOfBarcodes(candidate.e_));
+            double score = static_cast<double>(intersection.size()) / static_cast<double>(path_barcodes.size());
             TRACE("Candidate: " << candidate.e_.int_id());
             TRACE("Score: " << score);
             if (math::ge(score, max_score)) {

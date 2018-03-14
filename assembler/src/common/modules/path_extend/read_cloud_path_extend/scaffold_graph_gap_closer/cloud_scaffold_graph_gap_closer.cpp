@@ -4,7 +4,7 @@
 namespace path_extend {
 shared_ptr<ScaffoldGraphGapCloser> ReadCloudScaffoldGraphGapCloserConstructor::ConstructGapCloser(
         const ReadCloudScaffoldGraphGapCloserConstructor::ScaffoldGraph &graph, size_t edge_length_threshold) const {
-    auto path_extender = ConstructExtender();
+    auto path_extender = ConstructExtender(edge_length_threshold);
     auto length_predicate = [this, edge_length_threshold](const EdgeId& edge) {
       return this->gp_.g.length(edge) >= edge_length_threshold;
     };
@@ -16,7 +16,7 @@ shared_ptr<ScaffoldGraphGapCloser> ReadCloudScaffoldGraphGapCloserConstructor::C
     auto gap_closer = make_shared<TipFinderGapCloser>(tip_searcher);
     return gap_closer;
 }
-shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructExtender() const {
+shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructExtender(size_t seed_edge_length) const {
     path_extend::PathExtendParamsContainer params(cfg::get().ds,
                                                   cfg::get().pe_params,
                                                   cfg::get().ss,
@@ -27,15 +27,17 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
                                                   cfg::get().use_scaffolder);
     auto dataset_info = cfg::get().ds;
     PELaunchSupport support(dataset_info, params);
-    GraphCoverageMap cover_map(gp_.g);
 
-    ScaffoldingUniqueEdgeStorage unique_storage;
 //    ScaffoldingUniqueEdgeAnalyzer analyzer(gp_, edge_length_threshold, 50.0);
 //    analyzer.FillUniqueEdgeStorage(unique_storage);
-    UsedUniqueStorage used_unique_storage(unique_storage);
+    //fixme temporary fix to deal with reference fields in LoopDetectingExtender
+    ScaffoldingUniqueEdgeStorage* unique_storage = new ScaffoldingUniqueEdgeStorage;
+    const GraphCoverageMap* cover_map = new GraphCoverageMap(gp_.g);
+    UsedUniqueStorage* used_unique_storage = new UsedUniqueStorage(*unique_storage);
+
     UniqueData unique_data;
-    ExtendersGenerator generator(dataset_info, params, gp_, cover_map,
-                                 unique_data, used_unique_storage, support);
+    ExtendersGenerator generator(dataset_info, params, gp_, *cover_map,
+                                 unique_data, *used_unique_storage, support);
 //    auto basic_extenders = generator.MakeBasicExtenders();
     optional<std::size_t> paired_lib_index;
     for (std::size_t lib_index = 0; lib_index < dataset_info.reads.lib_count(); ++lib_index) {
@@ -58,19 +60,22 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
     const size_t tail_threshold = 3000;
     const size_t distance_bound = 8000;
     const double score_threshold = 0.05;
+    const double relative_coverage_threshold = 2.0;
 
     auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-    auto entry_collector = make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor, reliable_edge_length, tail_threshold);
+    auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor, reliable_edge_length,
+                                                                         seed_edge_length, tail_threshold,
+                                                                         relative_coverage_threshold);
     auto read_cloud_extension_chooser = make_shared<ReadCloudExtensionChooser>(gp_.g, weight_counter, weight_threshold,
-                                                                               entry_collector, barcode_extractor, score_threshold);
+                                                                               barcode_extractor, entry_collector, score_threshold);
     auto composite_chooser = make_shared<CompositeExtensionChooser>(gp_.g, pe_extension_chooser, read_cloud_extension_chooser);
 
     size_t insert_size = paired_lib->GetISMax();
     bool investigate_short_loops = false;
     bool use_short_loops_cov_resolver = false;
 
-    INFO("Unique check enabled: " << used_unique_storage.UniqueCheckEnabled());
-    auto read_cloud_extender = make_shared<ReadCloudExtender>(gp_, cover_map, used_unique_storage, composite_chooser,
+    INFO("Unique check enabled: " << used_unique_storage->UniqueCheckEnabled());
+    auto read_cloud_extender = make_shared<ReadCloudExtender>(gp_, *cover_map, *used_unique_storage, composite_chooser,
                                                               insert_size, investigate_short_loops, use_short_loops_cov_resolver,
                                                               weight_threshold, reliable_edge_length, distance_bound);
     return read_cloud_extender;
