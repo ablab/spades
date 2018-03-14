@@ -131,7 +131,7 @@ protected:
             }
             int end = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, (int) ss_.size() - (prev_state.i + 1) );
             string seq_str = ss_.substr(prev_state.i + 1, end);
-            //INFO("Add edge: eid=" << gs.e.int_id() << " " << gs.start_pos << " " << gs.end_pos << " " << seq_str.size() << " " << q_.size())
+            //INFO("Add edge2: eid=" << gs.e.int_id() << " " << gs.start_pos << " " << gs.end_pos << " " << seq_str.size() << " " << q_.size())
             vector<int> positions;
             vector<int> scores;
             if (path_max_length_ - ed >= 0) {
@@ -187,7 +187,8 @@ public:
                     }
                     break;
                 }
-                //INFO("Queue edge=" << cur_state.gs.e.int_id()  <<  " " << cur_state.gs.end_pos << " " << cur_state.i  << " ed=" << ed << " " << IsEndPosition(cur_state) << " " << end_qstate_.gs.e.int_id() << " " << end_qstate_.gs.end_pos << " " << end_qstate_.i );
+                // int tid = omp_get_thread_num();
+                // INFO("TID=" << tid << " Queue edge=" << cur_state.gs.e.int_id() <<  " " << cur_state.gs.start_pos <<  " " << cur_state.gs.end_pos << " " << cur_state.i  << " ed=" << ed << " " << IsEndPosition(cur_state) << " " << end_qstate_.gs.e.int_id() << " " << end_qstate_.gs.end_pos << " " << end_qstate_.i );
                 if (IsEndPosition(cur_state)) {
                     found_path = true;
                     break;   
@@ -209,11 +210,12 @@ public:
                 QueueState state = end_qstate_;
                 while (!state.isempty()) {
                     gap_path_.push_back(state.gs.e);
-                    // if ((int) max(0, (int) prev_states_[state].i) > state.i){
-                    //     INFO("Reconstruct11 " << (int) max(0, prev_states_[state].i) << " " << state.i);
+                    int tid = omp_get_thread_num();
+                    // if ((int) max(0, (int) prev_states_[state].i) > max(0, (int) state.i) ){
+                    //     INFO("TID=" << tid << " Reconstruct11 " << (int) max(0, prev_states_[state].i) << " " << state.i);
                     // }
                     // if (state.gs.start_pos > state.gs.end_pos) {
-                    //     INFO("Reconstruct12 " << state.gs.start_pos << " " << state.gs.end_pos);
+                    //     INFO("TID=" << tid <<" Reconstruct12 " << state.gs.start_pos << " " << state.gs.end_pos);
                     // }
                     mapping_path_.push_back(state.gs.e, omnigraph::MappingRange(Range((int) max(0, (int) prev_states_[state].i), (int) max(0, (int) state.i)), 
                                                                                 Range(state.gs.start_pos, state.gs.end_pos) ));
@@ -295,7 +297,7 @@ private:
                                 DEBUG("Update max_path_len=" << ed + score);
                             }
                             path_max_length_ = min(path_max_length_, ed + score);
-                            QueueState state(GraphState(e, 0, end_p_), ss_.size() - 1);
+                            QueueState state(GraphState(e, max(cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e), 0), end_p_), ss_.size() - 1);
                             Update(state, cur_state, ed + score, ed + score);
                             if (ed + score == path_max_length_) {
                                  min_score_ = ed + score;
@@ -362,7 +364,7 @@ private:
         virtual bool AddState(QueueState &cur_state, const EdgeId &e, int ed, int ind, utils::perf_counter &perf) {
             bool found_path = false;
             //DEBUG("end_pos=" << cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e))
-            GraphState next_state(e, max(cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e), 0), g_.length(e));
+            GraphState next_state(e, max(cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e), 0), max(cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e), (int) g_.length(e)) );
             AddNewEdge(next_state, cur_state, ed);
             int remaining = ss_.size() - cur_state.i;
             if (g_.length(e) + g_.k() + path_max_length_ - ed > remaining && path_max_length_ - ed >= 0 && cur_state.i + 1 < ss_.size()){

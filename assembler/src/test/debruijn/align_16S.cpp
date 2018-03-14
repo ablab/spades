@@ -223,7 +223,13 @@ public:
             start_pos = min(gp_.g.length(start_e), gp_.g.length(start_e) + gp_.g.k() - mapping.mapped_range.start_pos);
             string c_ss = s.substr(0, mapping.initial_range.start_pos);
             seq_start_pos = mapping.initial_range.start_pos;
-            map<char, char> nucs = {{'A', 'T'}, {'T', 'A'}, {'C', 'G'}, {'G', 'C'}};
+            map<char, char> nucs = {{'A', 'T'}, {'T', 'A'}, {'C', 'G'}, {'G', 'C'}, {'U', 'A'}
+                                    , {'R', 'Y'}, {'Y', 'R'}
+                                    , {'K', 'M'}, {'M', 'K'} 
+                                    , {'S', 'W'}, {'W', 'S'}
+                                    , {'B', 'V'}, {'V', 'B'}
+                                    , {'D', 'H'}, {'H', 'D'}
+                                    , {'N', 'N'} };
             ss = "";
             int num = 0;
             for (int i = c_ss.size() - 1; i >= 0; -- i) {
@@ -289,12 +295,12 @@ public:
         PrepareInitialState(path, s, forward, ss, start_e, start_pos, seq_start_pos);
 
         int s_len = int(ss.size());
-        int score = max(20, s_len/3);
+        int score = 40;
         if (s_len > 2000) {
             DEBUG("EdgeDijkstra: sequence is too long " << s_len)
             return 0;
         }
-        if (s_len < gp_.g.k()) {
+        if (s_len < (int) gp_.g.k()) {
             DEBUG("EdgeDijkstra: sequence is too small " << s_len)
             return 0;
         }
@@ -326,7 +332,7 @@ public:
         VertexId start_v = gp_.g.EdgeEnd(a_e);
         VertexId end_v = gp_.g.EdgeStart(b_e);
         if (end_pos < start_pos) {
-            INFO("modifying limits because of some bullshit magic, seq length 0")
+            INFO("modifying limits because of some bullshit magic, seq length 0 " << start_pos << " " << end_pos)
             end_pos = start_pos;
             return false;
         }
@@ -375,10 +381,10 @@ public:
 
         int start_pos = a_range.initial_range.start_pos;
         int end_pos = b_range.initial_range.start_pos;
-        string ss = s.substr(start_pos, min(end_pos + 1, int(s.size()) ) - start_pos);
+        string ss = s.substr(start_pos, min(end_pos, int(s.size()) ) - start_pos);
         int s_len = int(ss.size());
-        int path_max_length = max(s_len/3, (int) gp_.g.k());
-        DEBUG(" Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_pos=" <<a_range.initial_range.start_pos << " end_pos=" << b_range.initial_range.start_pos);
+        int path_max_length = 40;
+        //INFO(" Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_pos=" <<a_range.initial_range.start_pos << " end_pos=" << b_range.initial_range.start_pos << " start_pos_g=" <<a_range.mapped_range.start_pos << " end_pos_g=" << b_range.mapped_range.start_pos);
         if (s_len > 2000 && vertex_pathlen.size() > 100000){
             DEBUG("Dijkstra on't run: Too big gap or too many paths");
             return Mapping();
@@ -395,8 +401,8 @@ public:
         }
         omnigraph::MappingPath<debruijn_graph::EdgeId> ans = gap_filler.GetMappingPath();
         if (ans.size() == 1){
-            return Mapping(b_e, MappingRange(Range(a_range.initial_range.start_pos, b_range.initial_range.end_pos), 
-                                             Range(a_range.mapped_range.start_pos, b_range.mapped_range.end_pos) ), score);
+            return Mapping(b_e, MappingRange(Range(b_range.initial_range.start_pos, b_range.initial_range.end_pos), 
+                                             Range(b_range.mapped_range.start_pos, b_range.mapped_range.end_pos) ), score);
         } else {
             omnigraph::MappingPath<debruijn_graph::EdgeId> path;
             path.push_back(ans.edge_at(0), MappingRange(Range(start_pos + ans.mapping_at(0).initial_range.start_pos, start_pos + ans.mapping_at(0).initial_range.end_pos), 
@@ -417,7 +423,7 @@ public:
                 working_paths.push_back(Mapping(mappings[0].e_.at(i), mappings[0].range_.at(i), 0));
             }
             for (size_t i = 1; i < mappings.size(); ++ i){
-                INFO("Iter=" << i << " " << mappings[i].e_.size());
+                //INFO("Iter=" << i << " " << mappings[i].e_.size());
                 vector<Mapping> new_working_paths;
                 vector<bool> used_working_paths(working_paths.size());
                 for (size_t j = 0; j < mappings[i].e_.size(); ++ j) {
@@ -431,12 +437,21 @@ public:
                         const EdgeId &a_e = working_paths[k].last_edge_;
                         const EdgeId &b_e = mappings[i].e_.at(j);
                         Mapping intermediate_path = FillGap(a_e, a_range, b_e, b_range, read.GetSequenceString());
-                        // if (a_e.int_id() == 19159356 || b_e.int_id() == 19159356) {
-                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << intermediate_path.score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
+                        // if (a_e.int_id() == 19108181|| b_e.int_id() == 2669802) {
+                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << best_path.score_ << " " << intermediate_path.score_  << " " << working_paths[k].score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
                         // }
-                        // if (a_e.int_id() == 19229536 || b_e.int_id() == 19229536) {
-                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << intermediate_path.score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
+                        // if (a_e.int_id() == 2669802 || b_e.int_id() == 19108181) {
+                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << best_path.score_ << " " << intermediate_path.score_  << " " << working_paths[k].score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
                         // }
+
+                        // if (a_e.int_id() == 19226365 || b_e.int_id() == 19226365) {
+                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << best_path.score_ << " " << intermediate_path.score_  << " " << working_paths[k].score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
+                        // }
+
+                        // if (a_e.int_id() == 3001321 || b_e.int_id() == 3001321) {
+                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << best_path.score_ << " " << intermediate_path.score_  << " " << working_paths[k].score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
+                        // }
+
                         if (intermediate_path.score_ != -1 && (best_path.score_ == -1 || best_path.score_ > intermediate_path.score_ + working_paths[k].score_)) {
                             best_path.path_ = working_paths[k].path_;
                             for (size_t z = 0; z < intermediate_path.path_.size(); ++ z) {
@@ -459,15 +474,18 @@ public:
                         // if (best_path.path_.size() > 0) {
                         //     INFO( " edge2=" << best_path.path_.edge_at(best_path.path_.size() - 1).int_id() )
                         // }
-                        used_working_paths[best_used] = true;
-                        new_working_paths.push_back(best_path);
+                        //INFO(" " << best_path.score_)
+                        if (best_path.score_ < 40) {
+                            used_working_paths[best_used] = true;
+                            new_working_paths.push_back(best_path);
+                        }
                     }
                 }
-                for (size_t k = 0; k < working_paths.size(); ++ k) {
-                    if (!used_working_paths[k]){
-                        resulting_paths.push_back(working_paths[k]);
-                    } 
-                }
+                // for (size_t k = 0; k < working_paths.size(); ++ k) {
+                //     if (!used_working_paths[k]){
+                //         resulting_paths.push_back(working_paths[k]);
+                //     } 
+                // }
                 working_paths = new_working_paths;
             }
             for (size_t k = 0; k < working_paths.size(); ++ k) {
@@ -484,21 +502,21 @@ public:
             for (size_t i = 0; i < resulting_paths.size(); ++ i) {
                 Mapping &path = resulting_paths[i];
                 path.path_.push_back(path.last_edge_, path.last_mapping_);
-                int before = path.score_;
-                if (before < 100) {
-                    INFO("Grow Ends front")
+                if (path.score_ < 40) {
+                    DEBUG("Grow Ends front")
+                    int before = path.score_;
                     path.score_ += GrowEnds(path.path_, read.GetSequenceString(), false);
-                    INFO("Grow Ends back")
+                    DEBUG("Grow Ends back")
                     path.score_ += GrowEnds(path.path_, read.GetSequenceString(), true);
                     int len_cur = path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos;
-                    if (path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos > 1200) {
-                        ans = "";
-                        for (size_t k = 0; k < path.path_.size(); ++ k) {
-                            ans += std::to_string(path.path_.edge_at(k).int_id())  + ",";
-                        }
-                        INFO("Good path " << path.score_ << " " << before << " " << ans)
-                    }
-                    //INFO("path_sz=" << path.path_.size() << " last_e=" <<path.last_edge_.int_id() << " last_range s=" << path.last_mapping_.initial_range.start_pos << " " << path.last_mapping_.initial_range.end_pos)
+                    // if (path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos > 1200) {
+                    //     ans = "";
+                    //     for (size_t k = 0; k < path.path_.size(); ++ k) {
+                    //         ans += std::to_string(path.path_.edge_at(k).int_id())  + ",";
+                    //     }
+                    //     INFO("Good path " << path.score_ << " " << before << " " << ans)
+                    // }
+                    // INFO("path_sz=" << path.path_.size() << " last_e=" <<path.last_edge_.int_id() << " last_range s=" << path.last_mapping_.initial_range.start_pos << " " << path.last_mapping_.initial_range.end_pos)
                     if (path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos > 1200 && ed > path.score_) {
                         len_max = path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos;
                         ed = path.score_;
@@ -516,8 +534,8 @@ public:
                     cur_path_len = "";
                     int end_ind = best_path.path_.size();
                     int sum = 56;
-                    while (sum - (int) (best_path.path_.mapping_at(end_ind - 1).mapped_range.end_pos - best_path.path_.mapping_at(end_ind - 1).mapped_range.start_pos) >= 0) {
-                        sum -= (int) (best_path.path_.mapping_at(end_ind - 1).mapped_range.end_pos - best_path.path_.mapping_at(end_ind - 1).mapped_range.start_pos);
+                    while (sum - (int) (best_path.path_.mapping_at(end_ind - 1).mapped_range.end_pos - 0) >= 0) {
+                        sum -= (int) (best_path.path_.mapping_at(end_ind - 1).mapped_range.end_pos - 0);
                         end_ind --;
                     }   
                     sum = 56;
@@ -533,20 +551,24 @@ public:
                     }
                     len_max = best_path.path_.mapping_at(best_path.path_.size() - 1).initial_range.end_pos - best_path.path_.mapping_at(0).initial_range.start_pos;
                     INFO("Read="<< read.name() << " Primer num=" << mappings.size() << ". paths_num=" << resulting_paths.size() << " maxlen=" << len_max << ". ans=" << ans << ". ed=" << ed)
-                    std::string sum_str = read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t" 
-                                                         + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\n";
-                    #pragma omp critical
-                {
-                    ofstream myfile;
-                    myfile.open(output_file_ + ".tsv", std::ofstream::out | std::ofstream::app);
-                    myfile << sum_str;
-                    myfile.close();
-                }
+                    if (ed < 100) {
+                        
+                        std::string sum_str = read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t" 
+                                                             + std::to_string(read.size())+  "\t" + cur_path + "\t" + cur_path_len + "\t" + std::to_string(ed) + "\n";
+                        #pragma omp critical
+                        {
+                            ofstream myfile;
+                            myfile.open(output_file_ + ".tsv", std::ofstream::out | std::ofstream::app);
+                            myfile << sum_str;
+                            myfile.close();
+                        }
+                    }
             }
         return resulting_paths;
     }
 
     void AlignRead(const io::SingleRead &read) {
+        utils::perf_counter perf;
         std::vector<ReadMapping> mappings;
         int num = 0;
         int threshold = 200;
@@ -558,11 +580,9 @@ public:
             //INFO("dist=" << dist << " start_pos=" << start_pos << " end_pos=" << end_pos << " primer_s=" << primer.start_pos_ << " primer_e="<< primer.end_pos_)
             if (dist <= 1 && abs(start_pos - primer.start_pos_) < threshold && abs(end_pos - primer.end_pos_) < threshold){
                 num += 1;
-                //INFO("dist=" << dist << " start_pos=" << start_pos << " end_pos=" << end_pos << " primer_s=" << primer.start_pos_ << " primer_e="<< primer.end_pos_)
+                INFO("dist=" << dist << " start_pos=" << start_pos << " end_pos=" << end_pos << " primer_s=" << primer.start_pos_ << " primer_e="<< primer.end_pos_)
                 for (size_t i = 0; i < primer.range_.size(); ++ i){
-                    // if (ind == 4 or ind == 3) {
-                    //     INFO(ind << " e=" << primer.e_[i].int_id() << " " << primer.range_[i].mapped_range.start_pos << " " << primer.range_[i].mapped_range.end_pos)
-                    // }
+                    //INFO(ind << " e=" << primer.e_[i].int_id() << " " << primer.range_[i].mapped_range.start_pos << " " << primer.range_[i].mapped_range.end_pos)
                     primer.range_[i] = MappingRange(Range(start_pos, end_pos), Range(primer.range_[i].mapped_range.start_pos, primer.range_[i].mapped_range.end_pos));
                 }
                 mappings.push_back(primer);//.e_, MappingRange(Range(start_pos, end_pos), 
@@ -570,12 +590,14 @@ public:
             }
             ind ++;
         }
-        INFO("Read="<< read.name() << " Primer num=" << num)
+        int tid = omp_get_thread_num();
+        INFO("TID=" << tid << " Read="<< read.name() << " Primer num=" << num)
         if (mappings.size() > 0) {
             vector<Mapping> res = FillGapsBetweenPrimers(mappings, read);
         } else {
             vector<Mapping>();
         }
+        INFO("Read2="<< read.name() << " time=" << perf.time())
     }
 };
 
