@@ -13,12 +13,6 @@
 #include <vector>
 
 extern "C" {
-#include "p7_config.h"
-
-#include "easel.h"
-#include "esl_alphabet.h"
-#include "esl_sq.h"
-
 #include "hmmer.h"
 }
 
