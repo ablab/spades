@@ -44,5 +44,4 @@ Fees levenshtein_fees(const std::string &s, double mismatch = 1, double gap_open
 Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc);
 Fees fees_from_file(const std::string &filename);
 
-};
-
+}  // namespace hmm
