@@ -13,13 +13,13 @@ namespace hmm {
 class DigitalCodind {
  public:
   DigitalCodind(const ESL_ALPHABET *abc);
-  DigitalCodind(const std::string &s);
   DigitalCodind();
 
   size_t operator()(char ch) const { return inmap_[ch]; }
 
  private:
   std::vector<size_t> inmap_;
+  size_t k_;
 };
 
 struct Fees {
@@ -41,7 +41,7 @@ struct Fees {
 };
 
 Fees levenshtein_fees(const std::string &s, double mismatch = 1, double gap_open = 1, double gap_ext = 1);
-Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc);
+Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc, double lambda = 0);
 Fees fees_from_file(const std::string &filename);
 
 }  // namespace hmm

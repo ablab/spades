@@ -18,14 +18,15 @@ extern "C" {
 
 namespace hmm {
 
-DigitalCodind::DigitalCodind(const ESL_ALPHABET *abc)
-: inmap_(abc->inmap, abc->inmap + 128) {}
-
-DigitalCodind::DigitalCodind(const std::string &s)
-    : inmap_(s.c_str(), s.c_str() + s.length()) {}
+DigitalCodind::DigitalCodind(const ESL_ALPHABET *abc) : inmap_(abc->inmap, abc->inmap + 128), k_{abc->K} {
+  if (k_ == 20) {
+    // Fix map to be consistent with aa.hpp
+    inmap_['*'] = 20;
+  }
+}
 
 DigitalCodind::DigitalCodind()
-    : inmap_(128) {
+    : inmap_(128), k_{4} {
   std::string alphabet = "ACGT";
   for (size_t i = 0; i < alphabet.length(); ++i) {
     inmap_[alphabet[i]] = i;
@@ -131,17 +132,21 @@ Fees levenshtein_fees(const std::string &s, double mismatch, double gap_open, do
   return fees;
 }
 
-Fees hmm_fees(const P7_HMM *hmm, const double lambda = 0) {
+Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc, double lambda) {
   size_t M = hmm->M;
   Fees fees;
+  fees.code = DigitalCodind(abc);
   fees.M = M;
+
+  size_t k = abc->K;
+  size_t all_k = (k == 4) ? 4 : 21;
 
   fees.t.resize(M + 1);
   fees.mat.resize(M + 1);
   fees.ins.resize(M + 1);
   for (size_t i = 0; i <= M; ++i) {
-    fees.mat[i].resize(4);
-    fees.ins[i].resize(4);
+    fees.mat[i].resize(all_k);
+    fees.ins[i].resize(all_k);
     fees.t[i].resize(p7H_NTRANSITIONS);
   }
 
@@ -150,19 +155,16 @@ Fees hmm_fees(const P7_HMM *hmm, const double lambda = 0) {
       fees.t[i][j] = -log(hmm->t[i][j]);
     }
 
-    for (size_t j = 0; j < 4; ++j) {
-      fees.mat[i][j] = -log(hmm->mat[i][j]) + log(0.25) + lambda;
-      fees.ins[i][j] = -log(hmm->ins[i][j]) + log(0.25) + lambda;
+    for (size_t j = 0; j < all_k; ++j) {
+      fees.mat[i][j] = -log(hmm->mat[i][j]) + log(1. / k) + lambda;
+      fees.ins[i][j] = -log(hmm->ins[i][j]) + log(1. / k) + lambda;
+    }
+
+    if (all_k == 21) {
+      fees.mat[i][20] = std::numeric_limits<double>::infinity();
+      fees.ins[i][20] = std::numeric_limits<double>::infinity();
     }
   }
-
-  return fees;
-}
-
-Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc) {
-  auto code = DigitalCodind(abc);
-  auto fees = hmm_fees(hmm);
-  fees.code = code;
 
   return fees;
 }
