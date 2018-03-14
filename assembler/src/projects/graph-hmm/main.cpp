@@ -151,10 +151,50 @@ std::vector<debruijn_graph::EdgeId> to_path(const std::vector<GraphCursor> &cpat
     return path;
 }
 
+using debruijn_graph::EdgeId;
+std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
+                                  const auto &graph,
+                                  const auto &hmmw, const auto &cfg,
+                                  auto &w) {
+    hmmer::HMMMatcher matcher(hmmw.get(), cfg.hcfg);
+
+    for (size_t i = 0; i < edges.size(); ++i) {
+        // FIXME: this conversion is pointless
+        std::string ref = std::to_string(i);
+        std::string seq = graph.EdgeNucls(edges[i]).str();
+        matcher.match(ref.c_str(), seq.c_str());
+    }
+
+    matcher.summarize();
+    esl_stopwatch_Stop(w);
+
+    auto th = matcher.hits();
+    std::vector<EdgeId> match_edges;
+    for (size_t h = 0; h < th->N; h++) {
+        if (!(th->hit[h]->flags & p7_IS_REPORTED))
+            continue;
+        if (!(th->hit[h]->flags & p7_IS_INCLUDED))
+            continue;
+
+        EdgeId e = edges[std::stoull(th->hit[h]->name)];
+        if (cfg.debug)
+            INFO("HMMER seq id:" <<  th->hit[h]->name << ", edge id:" << e);
+        match_edges.push_back(e);
+    }
+    INFO("Total matched edges: " << match_edges.size());
+
+    int textw = 120;
+    if (cfg.debug) {
+        p7_tophits_Targets(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+        p7_tophits_Domains(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+        p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
+    }
+
+    return match_edges;
+}
 
 int main(int argc, char* argv[]) {
     utils::perf_counter pc;
-    int textw = 120;
 
     srand(42);
     srandom(42);
@@ -191,43 +231,12 @@ int main(int argc, char* argv[]) {
     while (hmmw) {
         P7_HMM *hmm = hmmw->get();
 
-        hmmer::HMMMatcher matcher(hmmw.get(), cfg.hcfg);
-
         if (fprintf(stderr, "Query:       %s  [M=%d]\n", hmm->name, hmm->M) < 0) FATAL_ERROR("write failed");
         if (hmm->acc)  { if (fprintf(stderr, "Accession:   %s\n", hmm->acc)  < 0) FATAL_ERROR("write failed"); }
         if (hmm->desc) { if (fprintf(stderr, "Description: %s\n", hmm->desc) < 0) FATAL_ERROR("write failed"); }
 
         esl_stopwatch_Start(w);
-        for (size_t i = 0; i < edges.size(); ++i) {
-            // FIXME: this conversion is pointless
-            std::string ref = std::to_string(i);
-            std::string seq = graph.EdgeNucls(edges[i]).str();
-            matcher.match(ref.c_str(), seq.c_str());
-        }
-
-        matcher.summarize();
-        esl_stopwatch_Stop(w);
-
-        auto th = matcher.hits();
-        std::vector<EdgeId> match_edges;
-        for (size_t h = 0; h < th->N; h++) {
-            if (!(th->hit[h]->flags & p7_IS_REPORTED))
-                continue;
-            if (!(th->hit[h]->flags & p7_IS_INCLUDED))
-                continue;
-
-            EdgeId e = edges[std::stoull(th->hit[h]->name)];
-            if (cfg.debug)
-                INFO("HMMER seq id:" <<  th->hit[h]->name << ", edge id:" << e);
-            match_edges.push_back(e);
-        }
-        INFO("Total matched edges: " << match_edges.size());
-
-        if (cfg.debug) {
-            p7_tophits_Targets(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-            p7_tophits_Domains(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-            p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
-        }
+        auto match_edges = matched_edges(edges, graph, hmmw, cfg, w);
 
         // Collect the neighbourhood of the matched edges
         auto fdijkstra = omnigraph::CreateBoundedDijkstra(graph, 2 * hmm->M);
