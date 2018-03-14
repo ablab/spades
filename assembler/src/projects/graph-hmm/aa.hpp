@@ -27,8 +27,8 @@ enum class AminoAcid : uint8_t {
   STOP
 };
 
-constexpr uint8_t dignucl(uint8_t c) {
-  switch (c) {
+constexpr uint8_t dignucl(char ch) {
+  switch (ch) {
     default:
     case 'A':
       return 0;
