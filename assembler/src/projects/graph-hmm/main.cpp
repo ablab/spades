@@ -27,6 +27,8 @@
 #include <sys/stat.h>
 #include <string>
 
+#include "aa.hpp"
+
 void create_console_logger() {
     using namespace logging;
 
@@ -156,20 +158,36 @@ std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
                                   const auto &graph,
                                   const auto &hmmw, const auto &cfg,
                                   auto &w) {
+    bool hmm_in_aas = hmmw->abc()->K == 20;
     hmmer::HMMMatcher matcher(hmmw.get(), cfg.hcfg);
 
-    for (size_t i = 0; i < edges.size(); ++i) {
-        // FIXME: this conversion is pointless
-        std::string ref = std::to_string(i);
-        std::string seq = graph.EdgeNucls(edges[i]).str();
-        matcher.match(ref.c_str(), seq.c_str());
+    if (!hmm_in_aas) {
+        INFO("HMM in nucleotides");
+        for (size_t i = 0; i < edges.size(); ++i) {
+            // FIXME: this conversion is pointless
+            std::string ref = std::to_string(i);
+            std::string seq = graph.EdgeNucls(edges[i]).str();
+            matcher.match(ref.c_str(), seq.c_str());
+        }
+    } else {
+        INFO("HMM in amino acids");
+        for (size_t i = 0; i < edges.size(); ++i) {
+            // FIXME: this conversion is pointless
+            std::string ref = std::to_string(i);
+            std::string seq = graph.EdgeNucls(edges[i]).str();
+            for (size_t shift = 0; shift < 3; ++shift) {
+                std::string ref_shift = ref + "_" + std::to_string(shift);
+                std::string seq_aas = translate(seq.c_str() + shift);
+                matcher.match(ref_shift.c_str(), seq_aas.c_str());
+            }
+        }
     }
 
     matcher.summarize();
     esl_stopwatch_Stop(w);
 
     auto th = matcher.hits();
-    std::vector<EdgeId> match_edges;
+    std::unordered_set<EdgeId> match_edges;
     for (size_t h = 0; h < th->N; h++) {
         if (!(th->hit[h]->flags & p7_IS_REPORTED))
             continue;
@@ -179,7 +197,7 @@ std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
         EdgeId e = edges[std::stoull(th->hit[h]->name)];
         if (cfg.debug)
             INFO("HMMER seq id:" <<  th->hit[h]->name << ", edge id:" << e);
-        match_edges.push_back(e);
+        match_edges.insert(e);
     }
     INFO("Total matched edges: " << match_edges.size());
 
@@ -190,7 +208,7 @@ std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
         p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
     }
 
-    return match_edges;
+    return std::vector<EdgeId>(match_edges.cbegin(), match_edges.cend());
 }
 
 int main(int argc, char* argv[]) {
