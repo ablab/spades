@@ -109,8 +109,6 @@ simp
 
     init_clean
     {
-        ; TODO modify
-        self_conj_condition "{ ec_lb 100, cb 20.0 }"
         early_it_only   false
         ier
         {
