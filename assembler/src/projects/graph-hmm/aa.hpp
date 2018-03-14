@@ -80,3 +80,19 @@ constexpr AminoAcid to_aa(char codon0, char codon1, char codon2) {
   size_t idx = codon_to_idx(codon0, codon1, codon2);
   return AminoAcid(aa_table[idx]);
 }
+
+inline std::string translate(const char *nts) {
+  size_t len_nts = strlen(nts);
+  size_t len_aas = len_nts / 3;  // floor
+
+  std::string aas;
+  for (size_t i = 0; i < len_aas; ++i) {
+    aas += to_one_letter(to_aa(nts + 3*i));
+  }
+
+  return aas;
+}
+
+inline std::string translate(const std::string &nts) {
+  return translate(nts.c_str());
+}
