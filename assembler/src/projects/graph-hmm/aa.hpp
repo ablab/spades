@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <cstdlib>
 
+namespace aa {
+
 enum class AminoAcid : uint8_t {
   ALANINE = 0,     // A
   CYSTEINE,        // C
@@ -96,3 +98,9 @@ inline std::string translate(const char *nts) {
 inline std::string translate(const std::string &nts) {
   return translate(nts.c_str());
 }
+
+}  // namespace aa
+
+using aa::to_aa;
+using aa::translate;
+using aa::to_one_letter;
