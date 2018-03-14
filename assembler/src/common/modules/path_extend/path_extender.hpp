@@ -879,7 +879,7 @@ protected:
             }
             if (distance < distance_bound_) {
                 for (auto connected: g_.OutgoingEdges(v)) {
-                    if (IsNotInPath(path, connected)) {
+                    if (IsNotInPath(path, connected) and g_.length(connected) >= edge_length_threshold_) {
                         EdgeWithDistance candidate(connected, distance);
                         result->push_back(candidate);
                     }
@@ -887,6 +887,7 @@ protected:
 
             }
         }
+        INFO(result->size() << " reached edges");
     }
  protected:
     bool IsNotInPath(const BidirectionalPath &path, const EdgeId &edge) const {
