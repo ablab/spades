@@ -27,6 +27,18 @@ enum class AminoAcid : uint8_t {
   STOP
 };
 
+// From https://stackoverflow.com/questions/8357240/how-to-automatically-convert-strongly-typed-enum-into-int
+template <typename E>
+constexpr typename std::underlying_type<E>::type to_underlying(E e) noexcept {
+  return static_cast<typename std::underlying_type<E>::type>(e);
+}
+
+constexpr char one_letter_codes[] = "ACDEFGHIKLMNPQRSTVWY*";
+
+constexpr char to_one_letter(AminoAcid aa) {
+  return one_letter_codes[to_underlying(aa)];
+}
+
 constexpr uint8_t dignucl(char ch) {
   switch (ch) {
     default:
@@ -52,7 +64,7 @@ constexpr size_t codon_to_idx(const char codon[3]) {
   return codon_to_idx(codon[0], codon[1], codon[2]);
 }
 
-static uint8_t aa_table[64] = {
+constexpr uint8_t aa_table[64] = {
   0x08, 0x0B, 0x08, 0x0B, 0x10, 0x10, 0x10, 0x10, 0x0E, 0x0F, 0x0E, 0x0F, 0x07, 0x07, 0x0A, 0x07,
   0x0D, 0x06, 0x0D, 0x06, 0x0C, 0x0C, 0x0C, 0x0C, 0x0E, 0x0E, 0x0E, 0x0E, 0x09, 0x09, 0x09, 0x09,
   0x03, 0x02, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x05, 0x05, 0x05, 0x05, 0x11, 0x11, 0x11, 0x11,
