@@ -3,6 +3,7 @@
 #include "cursor.hpp"
 #include "pathtree.hpp"
 #include "utils.hpp"
+#include "aa_cursor.hpp"
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/components/graph_component.hpp"
@@ -162,3 +163,5 @@ PathSet<ReversalGraphCursor<DebruijnGraphCursor>> find_best_path_rev(const hmm::
                                                                      const std::vector<ReversalGraphCursor<DebruijnGraphCursor>> &initial);
 PathSet<ReversalGraphCursor<DebruijnComponentCursor>> find_best_path_rev(const hmm::Fees &fees,
                                                                          const std::vector<ReversalGraphCursor<DebruijnComponentCursor>> &initial);
+PathSet<AAGraphCursor<DebruijnComponentCursor>> find_best_path(const hmm::Fees &fees,
+                                                               const std::vector<AAGraphCursor<DebruijnComponentCursor>> &initial);

@@ -24,6 +24,7 @@ class DigitalCodind {
 
 struct Fees {
   size_t M;
+  size_t k;
   std::vector<std::vector<double>> t;
   std::vector<std::vector<double>> mat;
   std::vector<std::vector<double>> ins;
