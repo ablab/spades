@@ -142,6 +142,7 @@ Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc, double lambda) {
 
   size_t k = abc->K;
   fees.k = k;
+  assert(k == 4 || k == 20);
   size_t all_k = (k == 4) ? 4 : 21;
 
   fees.t.resize(M + 1);
