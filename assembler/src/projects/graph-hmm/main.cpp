@@ -43,13 +43,14 @@ struct cfg {
     size_t k;
     uint64_t int_id;
     unsigned min_size;
+    unsigned max_size;
     bool debug;
     bool draw;
 
     hmmer::hmmer_cfg hcfg;
     cfg()
             : load_from(""), hmmfile(""), k(0),
-              int_id(0), min_size(2), debug(false), draw(true)
+              int_id(0), min_size(2), max_size(1000), debug(false), draw(true)
     {}
 };
 
@@ -76,6 +77,7 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       cfg.k          << value("k-mer size"),
       (option("--edge_id") & integer("value", cfg.int_id)) % "match around edge",
       (option("--min_size") & integer("value", cfg.min_size)) % "minimal component size to consider (default: 2)",
+      (option("--max_size") & integer("value", cfg.max_size)) % "maximal component size to consider (default: 1000)",
       // Control of output
       cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
       cfg.hcfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
@@ -307,6 +309,11 @@ int main(int argc, char* argv[]) {
 
             if (component.e_size()/2 < cfg.min_size) {
                 INFO("Component is too small (" << component.e_size() / 2 << " vs " << cfg.min_size << "), skipping");
+                continue;
+            }
+
+            if (component.e_size()/2 > cfg.max_size) {
+                WARN("Component is too large (" << component.e_size() / 2 << " vs " << cfg.max_size << "), skipping");
                 continue;
             }
 
