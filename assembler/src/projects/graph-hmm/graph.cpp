@@ -1,4 +1,5 @@
 #include "graph.hpp"
+#include "hmmpath.hpp"
 
 std::vector<DBGraph::GraphCursor> DBGraph::all() const {
   std::unordered_set<GraphCursor> result;
@@ -11,4 +12,24 @@ std::vector<DBGraph::GraphCursor> DBGraph::all() const {
   }
 
   return std::vector<GraphCursor>(result.cbegin(), result.cend());
+}
+
+PathSet<ReversalGraphCursor<Graph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
+                                                                    const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial) {
+  return impl::find_best_path(fees, initial);
+}
+
+PathSet<ReversalGraphCursor<DBGraph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
+                                                                      const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial) {
+  return impl::find_best_path(fees, initial);
+}
+
+PathSet<DBGraph::GraphCursor> find_best_path(const hmm::Fees &fees,
+                                             const std::vector<DBGraph::GraphCursor> &initial) {
+  return impl::find_best_path(fees, initial);
+}
+
+PathSet<Graph::GraphCursor> find_best_path(const hmm::Fees &fees,
+                                           const std::vector<Graph::GraphCursor> &initial) {
+  return impl::find_best_path(fees, initial);
 }
