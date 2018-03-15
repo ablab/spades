@@ -19,6 +19,11 @@ std::vector<std::vector<T>> expand(const std::vector<std::vector<T>> &vv) {
   return result;
 }
 
+template <class GraphCursor>
+class AAGraphCursor;
+
+template <class GraphCursor>
+auto make_aa_cursors(const std::vector<GraphCursor> &cursors);
 
 template <class GraphCursor>
 class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
@@ -51,6 +56,15 @@ class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
 
   std::vector<This> prev() const;  // TODO implement it
 
+  std::vector<This> next() const {
+    return from_bases(c2_.next());
+  }
+
+ private:
+  GraphCursor c0_, c1_, c2_;
+  friend struct std::hash<This>;
+  friend auto make_aa_cursors<GraphCursor>(const std::vector<GraphCursor> &cursors);
+
   static std::vector<This> from_bases(const std::vector<GraphCursor> &cursors) {
     std::vector<std::vector<GraphCursor>> nexts;
     for (const auto &cursor : cursors) {
@@ -69,14 +83,6 @@ class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
 
     return result;
   }
-
-  std::vector<This> next() const {
-    return from_bases(c2_.next());
-  }
-
- private:
-  GraphCursor c0_, c1_, c2_;
-  friend struct std::hash<AAGraphCursor<GraphCursor>>;
 };
 
 template <class GraphCursor>
