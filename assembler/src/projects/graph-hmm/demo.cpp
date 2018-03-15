@@ -1,44 +1,18 @@
 #undef NDEBUG
 #include <algorithm>
 #include <cassert>
-#include <deque>
-#include <fstream>
-#include <iostream>
-#include <queue>
 #include <string>
-#include "graph.hpp"
-
-extern "C" {
-#include "p7_config.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "easel.h"
-#include "esl_alphabet.h"
-#include "esl_sq.h"
-
-#include "hmmer.h"
-}
-
-#include <limits>
+#include <vector>
+#include <unordered_map>
 
 // to compile: gcc this_prog.c -lz
 #include <stdio.h>
 #include <zlib.h>
 
-#include "utils.hpp"
-
 #include <kseq/kseq.h>
 KSEQ_INIT(gzFile, gzread)
 
 #include "demo.hpp"
-#include "hmmer_fwd.h"
-#include <iostream>
-#include <vector>
-#include <limits>
-#include <cstdlib>
 
 std::string rev_comp(const std::string &s) {
   std::string result;
