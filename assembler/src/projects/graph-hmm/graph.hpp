@@ -53,6 +53,11 @@ class Graph {
       }
     }
 
+    using EdgeId = size_t;
+    EdgeId edge() const {
+      return edge_id_;
+    }
+
     bool operator==(const GraphCursor &other) const {
       return (edge_id_ == other.edge_id_) && (position_ == other.position_);
     }

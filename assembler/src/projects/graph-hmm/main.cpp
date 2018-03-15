@@ -137,8 +137,8 @@ void DrawComponent(const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBr
 }
 
 template<class GraphCursor>
-std::vector<debruijn_graph::EdgeId> to_path(const std::vector<GraphCursor> &cpath) {
-    std::vector<debruijn_graph::EdgeId> path;
+std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<GraphCursor> &cpath) {
+    std::vector<typename GraphCursor::EdgeId> path;
 
     auto it = cpath.begin();
     while (it->is_empty())
