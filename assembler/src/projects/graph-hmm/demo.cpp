@@ -34,6 +34,11 @@ extern "C" {
 KSEQ_INIT(gzFile, gzread)
 
 #include "demo.hpp"
+#include "hmmer_fwd.h"
+#include <iostream>
+#include <vector>
+#include <limits>
+#include <cstdlib>
 
 std::string rev_comp(const std::string &s) {
   std::string result;
