@@ -153,14 +153,21 @@ Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc, double lambda) {
     fees.t[i].resize(p7H_NTRANSITIONS);
   }
 
+  std::vector<float> prior_frequences(k);
+  if (k == 4) {
+    std::fill(prior_frequences.begin(), prior_frequences.end(), 1. / k);
+  } else {
+    p7_AminoFrequencies(prior_frequences.data());
+  }
+
   for (size_t i = 0; i <= M; ++i) {
     for (size_t j = 0; j < p7H_NTRANSITIONS; ++j) {
       fees.t[i][j] = -log(hmm->t[i][j]);
     }
 
-    for (size_t j = 0; j < all_k; ++j) {
-      fees.mat[i][j] = -log(hmm->mat[i][j]) + log(1. / k) + lambda;
-      fees.ins[i][j] = -log(hmm->ins[i][j]) + log(1. / k) + lambda;
+    for (size_t j = 0; j < k; ++j) {
+      fees.mat[i][j] = -log(hmm->mat[i][j]) + log(prior_frequences[j]) + lambda;
+      fees.ins[i][j] = -log(hmm->ins[i][j]) + log(prior_frequences[j]) + lambda;
     }
 
     if (all_k == 21) {
