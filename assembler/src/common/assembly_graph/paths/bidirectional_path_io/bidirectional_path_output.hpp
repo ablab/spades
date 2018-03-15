@@ -144,12 +144,6 @@ public:
         };
     }
 
-    static PathsWriterT CircularFastaWriter(const string &fn) {
-        return [=](const ScaffoldStorage& scaffold_storage) {
-            WriteCircularScaffolds(scaffold_storage, fn);
-        };
-    }
-
     ContigWriter(const Graph& g,
                  shared_ptr<ContigNameGenerator> name_generator) :
             g_(g),

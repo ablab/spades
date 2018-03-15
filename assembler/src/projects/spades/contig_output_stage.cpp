@@ -5,11 +5,44 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "assembly_graph/paths/bidirectional_path.hpp"
 #include "modules/path_extend/pe_resolver.hpp"
 #include "contig_output_stage.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
+
 namespace debruijn_graph {
+bool CheckCircularPath(const path_extend::BidirectionalPath* path) {
+    return (path->Size() > 0 && path->g().EdgeStart(path->Front()) == path->g().EdgeEnd(path->Back()));
+}
+
+bool CheckUsedPath(const path_extend::BidirectionalPath* path, set<EdgeId> &used_edges) {
+    const Graph& g = path->g();
+    size_t used_len = 0;
+    size_t total_len = 0;
+    size_t path_len = path->Length();
+    for (size_t i = 0; i < path_len; i++) {
+        size_t cur_len = g.length(path->At(i));
+        total_len += cur_len;
+        if (used_edges.find(path->At(i)) != used_edges.end()) {
+            used_len += cur_len;
+        } else {
+            used_edges.insert(path->At(i));
+        }
+    }
+    if (used_len > total_len * 0.8) return true;
+    else return false;
+}
+
+path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage, set<EdgeId> &used_paths) {
+    path_extend::PathContainer res;
+    for (auto it = sc_storage.begin(); it != sc_storage.end(); it++) {
+        if (CheckCircularPath(it->first) && CheckUsedPath(it->first, used_paths)) {
+            res.AddPair(it->first, it->second);
+        }
+    }
+    return res;
+}
 
 vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
                                                      path_extend::FastgPathWriter &fastg_writer) {
@@ -17,7 +50,6 @@ vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
     vector<PathsWriterT> writers;
 
     writers.push_back(ContigWriter::BasicFastaWriter(fn_base + ".fasta"));
-    writers.push_back(ContigWriter::CircularFastaWriter(fn_base + ".circular.fasta"));
     INFO("Outputting FastG paths to " << fn_base << ".paths");
     writers.push_back([=](const ScaffoldStorage& scaffold_storage) {
         fastg_writer.WritePaths(scaffold_storage, fn_base + ".paths");
@@ -91,13 +123,18 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
             writer.OutputPaths(broken_scaffolds,
                                CreatePathsWriters(output_dir + contigs_name_,
                                                   fastg_writer));
+            PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.used_edges);
+            writer.OutputPaths(circulars,
+                               CreatePathsWriters(output_dir + contigs_name_+".circular",
+                                                  fastg_writer));
         }
 
         auto writers = CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name, fastg_writer);
-        writers.push_back([&](const ScaffoldStorage &storage) {
+//        writers.push_back([&](const ScaffoldStorage &storage) {
 //            gfa_writer.WritePaths(storage);
-        });
+//        });
         writer.OutputPaths(gp.contig_paths, writers);
+
     } else {
         //FIXME weird logic
         OutputEdgeSequences(gp.g, output_dir + "simplified_contigs");
