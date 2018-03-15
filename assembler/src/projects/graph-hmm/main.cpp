@@ -311,25 +311,34 @@ int main(int argc, char* argv[]) {
             auto fees = hmm::fees_from_hmm(hmm, hmmw->abc());
 
             auto initial = all(component);
-            auto result = find_best_path(fees, initial);
 
-            INFO("Best score: " << result.best_score());
-            INFO("Best of the best");
-            INFO(result.best_path_string());
-            INFO("Extracting top paths");
-            auto top_paths = result.top_k(5);
-            size_t idx = 0;
-            for (const auto& kv : top_paths) {
-                // INFO("" << kv.second << ":" << top_paths.str(kv.first));
-                auto path = to_path(kv.first);
-                INFO("Path length : " << path.size() << " edges");
-                for (EdgeId e : path)
-                    INFO("" << e.int_id());
-                if (cfg.draw) {
-                    INFO("Writing component around path");
-                    DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
+            auto run_search = [&](const auto &initial) {
+                auto result = find_best_path(fees, initial);
+
+                INFO("Best score: " << result.best_score());
+                INFO("Best of the best");
+                INFO(result.best_path_string());
+                INFO("Extracting top paths");
+                auto top_paths = result.top_k(5);
+                size_t idx = 0;
+                for (const auto& kv : top_paths) {
+                    // INFO("" << kv.second << ":" << top_paths.str(kv.first));
+                    auto path = to_path(kv.first);
+                    INFO("Path length : " << path.size() << " edges");
+                    for (EdgeId e : path)
+                        INFO("" << e.int_id());
+                    if (cfg.draw) {
+                        INFO("Writing component around path");
+                        DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
+                    }
+                    idx += 1;
                 }
-                idx += 1;
+            };
+
+            if (fees.k == 4) {
+              run_search(initial);
+            } else {
+              run_search(make_aa_cursors(initial));
             }
         }
 
