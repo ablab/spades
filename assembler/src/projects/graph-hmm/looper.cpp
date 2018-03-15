@@ -24,7 +24,7 @@ extern "C" {
 #include <cstdio>
 #include <iostream>
 
-#include "demo.hpp"
+#include "fasta_reader.hpp"
 #include "cursor.hpp"
 #include "graph.hpp"
 #include "fees.hpp"
