@@ -18,7 +18,7 @@ extern "C" {
 
 namespace hmm {
 
-DigitalCodind::DigitalCodind(const ESL_ALPHABET *abc) : inmap_(abc->inmap, abc->inmap + 128), k_{abc->K} {
+DigitalCodind::DigitalCodind(const ESL_ALPHABET *abc) : inmap_(abc->inmap, abc->inmap + 128), k_(abc->K) {
   if (k_ == 20) {
     // Fix map to be consistent with aa.hpp
     inmap_['*'] = 20;
