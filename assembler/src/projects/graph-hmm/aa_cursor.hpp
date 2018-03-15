@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <cursor.hpp>
 #include "aa.hpp"
 
@@ -28,26 +27,21 @@ auto make_aa_cursors(const std::vector<GraphCursor> &cursors);
 template <class GraphCursor>
 class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
   using This = AAGraphCursor<GraphCursor>;
+
  public:
-  char letter() const {
-    return to_one_letter(to_aa(c0_.letter(), c1_.letter(), c2_.letter()));
-  }
+  char letter() const { return to_one_letter(to_aa(c0_.letter(), c1_.letter(), c2_.letter())); }
 
   AAGraphCursor() = default;
   AAGraphCursor(const GraphCursor &c0, const GraphCursor &c1, const GraphCursor &c2) : c0_{c0}, c1_{c1}, c2_{c2} {}
   ~AAGraphCursor() noexcept = default;
-  AAGraphCursor(const This&) = default;
-  AAGraphCursor(This&&) = default;
-  This & operator=(This&&) = default;
-  This & operator=(const This&) = default;
+  AAGraphCursor(const This &) = default;
+  AAGraphCursor(This &&) = default;
+  This &operator=(This &&) = default;
+  This &operator=(const This &) = default;
 
-  bool operator==(const AAGraphCursor &other) const {
-    return c0_ == other.c0_ && c1_ == other.c1_ && c2_ == other.c2_;
-  }
+  bool operator==(const AAGraphCursor &other) const { return c0_ == other.c0_ && c1_ == other.c1_ && c2_ == other.c2_; }
 
-  bool is_empty() const {
-    return c0_.is_empty() || c1_.is_empty() || c2_.is_empty();
-  }
+  bool is_empty() const { return c0_.is_empty() || c1_.is_empty() || c2_.is_empty(); }
 
   using EdgeId = decltype(GraphCursor().edge());
   EdgeId edge() const {
@@ -56,9 +50,7 @@ class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
 
   std::vector<This> prev() const;  // TODO implement it
 
-  std::vector<This> next() const {
-    return from_bases(c2_.next());
-  }
+  std::vector<This> next() const { return from_bases(c2_.next()); }
 
  private:
   GraphCursor c0_, c1_, c2_;
@@ -99,10 +91,9 @@ namespace std {
 template <class GraphCursor>
 struct hash<AAGraphCursor<GraphCursor>> {
   std::size_t operator()(const AAGraphCursor<GraphCursor> &p) const {
-    auto h = [](const GraphCursor &c) {
-      return std::hash<GraphCursor>()(c);
-    };
-    return std::hash<size_t>()(hash_size_t_pair(h(p.c0_), hash_size_t_pair(h(p.c1_), h(p.c2_))));  // TODO implement a proper hash for tuples
+    auto h = [](const GraphCursor &c) { return std::hash<GraphCursor>()(c); };
+    return std::hash<size_t>()(
+        hash_size_t_pair(h(p.c0_), hash_size_t_pair(h(p.c1_), h(p.c2_))));  // TODO implement a proper hash for tuples
   }
 };
 }  // namespace std
