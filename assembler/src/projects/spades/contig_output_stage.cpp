@@ -20,15 +20,16 @@ bool CheckUsedPath(const path_extend::BidirectionalPath* path, set<EdgeId> &used
     const Graph& g = path->g();
     size_t used_len = 0;
     size_t total_len = 0;
-    size_t path_len = path->Length();
+    size_t path_len = path->Size();
     for (size_t i = 0; i < path_len; i++) {
         size_t cur_len = g.length(path->At(i));
         total_len += cur_len;
         if (used_edges.find(path->At(i)) != used_edges.end()) {
             used_len += cur_len;
-        } else {
-            used_edges.insert(path->At(i));
-        }
+        } 
+    }
+    for (size_t i = 0; i < path_len; i++) {
+        used_edges.insert(path->At(i));
     }
     if (used_len > total_len * 0.8) return true;
     else return false;
@@ -37,10 +38,13 @@ bool CheckUsedPath(const path_extend::BidirectionalPath* path, set<EdgeId> &used
 path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage, set<EdgeId> &used_paths) {
     path_extend::PathContainer res;
     for (auto it = sc_storage.begin(); it != sc_storage.end(); it++) {
-        if (CheckCircularPath(it->first) && CheckUsedPath(it->first, used_paths)) {
-            res.AddPair(it->first, it->second);
+        if (CheckCircularPath(it->first) && !CheckUsedPath(it->first, used_paths)) {
+            path_extend::BidirectionalPath *p = new path_extend::BidirectionalPath(*it->first);
+            path_extend::BidirectionalPath *cp = new path_extend::BidirectionalPath(p->Conjugate());
+            res.AddPair(p, cp);
         }
     }
+    INFO("got circular scaffs");
     return res;
 }
 
@@ -129,11 +133,11 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
                                                   fastg_writer));
         }
 
-        auto writers = CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name, fastg_writer);
+//        auto writers = CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name, fastg_writer);
 //        writers.push_back([&](const ScaffoldStorage &storage) {
 //            gfa_writer.WritePaths(storage);
 //        });
-        writer.OutputPaths(gp.contig_paths, writers);
+//        writer.OutputPaths(gp.contig_paths, writers);
 
     } else {
         //FIXME weird logic
