@@ -154,12 +154,13 @@ std::vector<debruijn_graph::EdgeId> to_path(const std::vector<GraphCursor> &cpat
 }
 
 using debruijn_graph::EdgeId;
+using debruijn_graph::ConjugateDeBruijnGraph;
 std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
-                                  const auto &graph,
-                                  const auto &hmmw, const auto &cfg,
-                                  auto &w) {
-    bool hmm_in_aas = hmmw->abc()->K == 20;
-    hmmer::HMMMatcher matcher(hmmw.get(), cfg.hcfg);
+                                  const ConjugateDeBruijnGraph &graph,
+                                  const hmmer::HMM &hmm, const cfg &cfg,
+                                  ESL_STOPWATCH *w) {
+    bool hmm_in_aas = hmm.abc()->K == 20;
+    hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
 
     if (!hmm_in_aas) {
         INFO("HMM in nucleotides");
@@ -226,7 +227,7 @@ int main(int argc, char* argv[]) {
     /* Open the query profile HMM file */
     hmmer::HMMFile hmmfile(cfg.hmmfile);
     if (!hmmfile.valid())
-        FATAL_ERROR("Error reading HMM file "<< cfg.hmmfile);
+        FATAL_ERROR("Error opening HMM file "<< cfg.hmmfile);
 
     using namespace debruijn_graph;
     ConjugateDeBruijnGraph graph(cfg.k);
@@ -243,22 +244,30 @@ int main(int argc, char* argv[]) {
     }
 
     auto hmmw = hmmfile.read();
+    if (!hmmw) {
+        FATAL_ERROR("Error reading HMM file "<< cfg.hmmfile);
+    }
+
     ESL_STOPWATCH *w = esl_stopwatch_Create();
 
     // Outer loop: over each query HMM in <hmmfile>.
     while (hmmw) {
-        P7_HMM *hmm = hmmw->get();
+        const hmmer::HMM &hmm = hmmw.get();
+        P7_HMM *p7hmm = hmmw->get();
 
-        if (fprintf(stderr, "Query:       %s  [M=%d]\n", hmm->name, hmm->M) < 0) FATAL_ERROR("write failed");
-        if (hmm->acc)  { if (fprintf(stderr, "Accession:   %s\n", hmm->acc)  < 0) FATAL_ERROR("write failed"); }
-        if (hmm->desc) { if (fprintf(stderr, "Description: %s\n", hmm->desc) < 0) FATAL_ERROR("write failed"); }
+        if (fprintf(stderr, "Query:       %s  [M=%d]\n", p7hmm->name, p7hmm->M) < 0) FATAL_ERROR("write failed");
+        if (p7hmm->acc)  { if (fprintf(stderr, "Accession:   %s\n", p7hmm->acc)  < 0) FATAL_ERROR("write failed"); }
+        if (p7hmm->desc) { if (fprintf(stderr, "Description: %s\n", p7hmm->desc) < 0) FATAL_ERROR("write failed"); }
 
         esl_stopwatch_Start(w);
-        auto match_edges = matched_edges(edges, graph, hmmw, cfg, w);
+        auto match_edges = matched_edges(edges, graph, hmm, cfg, w);
 
         // Collect the neighbourhood of the matched edges
-        auto fdijkstra = omnigraph::CreateBoundedDijkstra(graph, 2 * hmm->M);
-        auto bdijkstra = omnigraph::CreateBackwardBoundedDijkstra(graph, 2 * hmm->M);
+        bool hmm_in_aas = hmm.abc()->K == 20;
+        size_t bound = (hmm_in_aas ? 6 : 2) * p7hmm->M;
+        INFO("Dijkstra bound set to " << bound);
+        auto fdijkstra = omnigraph::CreateBoundedDijkstra(graph, bound);
+        auto bdijkstra = omnigraph::CreateBackwardBoundedDijkstra(graph, bound);
 
         std::unordered_map<EdgeId, std::unordered_set<VertexId>> neighbourhoods;
         for (EdgeId e : match_edges) {
@@ -307,11 +316,9 @@ int main(int argc, char* argv[]) {
             }
 
 
-
-            auto fees = hmm::fees_from_hmm(hmm, hmmw->abc());
+            auto fees = hmm::fees_from_hmm(p7hmm, hmmw->abc());
 
             auto initial = all(component);
-
             auto run_search = [&](const auto &initial) {
                 auto result = find_best_path(fees, initial);
 
@@ -335,6 +342,7 @@ int main(int argc, char* argv[]) {
                 }
             };
 
+            INFO("Running path search");
             if (fees.k == 4) {
               run_search(initial);
             } else {
