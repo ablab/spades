@@ -43,8 +43,11 @@ bool Fees::check_i_negative_loops() const {
     if (!check_i_loop(i)) {
       std::cout << t[i][p7H_II] << " " << i << " "
                 << *min_element(ins[i].cbegin(), ins[i].cend()) << std::endl;
-      std::cout << t[i][p7H_II] << " " << ins[i][0] << " " << ins[i][1] << " "
-                << ins[i][2] << " " << ins[i][3] << std::endl;
+      std::cout << t[i][p7H_II];
+      for (size_t j = 0; j < k; ++j) {
+        std::cout << " " << ins[i][j];
+      }
+      std::cout << std::endl;
       return false;
     }
   }
