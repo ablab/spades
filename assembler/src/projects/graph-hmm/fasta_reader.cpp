@@ -12,7 +12,7 @@
 #include <kseq/kseq.h>
 KSEQ_INIT(gzFile, gzread)
 
-#include "demo.hpp"
+#include "fasta_reader.hpp"
 
 std::string rev_comp(const std::string &s) {
   std::string result;
