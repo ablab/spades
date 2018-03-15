@@ -561,7 +561,7 @@ class DBGraph {
         }
       }
       if (!flag) {
-        ERROR(next_pairs);
+          //ERROR(next_pairs);
         ERROR("Required letter: " << s[i]);
         ERROR(i << " " << s);
         return {begin, turns + "?", GraphCursor()};
@@ -877,7 +877,7 @@ std::string restore_path(const GraphCursor &begin, const GraphCursor &end, const
       if (!flag) {
         ERROR(path);
         ERROR("LETTER " << turns[i] << " not found");
-        ERROR(next_pairs);
+        // ERROR(next_pairs);
       }
       assert(flag);
     } else {
