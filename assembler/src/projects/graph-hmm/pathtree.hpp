@@ -2,6 +2,8 @@
 
 #include "utils/logger/logger.hpp"
 
+#include "llvm/ADT/IntrusiveRefCntPtr.h"
+
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -36,8 +38,10 @@ template <class T>
 size_t ObjectCounter<T>::count_current_ = 0;
 
 template <typename T>
-class Node : public ObjectCounter<Node<T>> {
+class Node : public ObjectCounter<Node<T>>,
+             public llvm::RefCountedBase<Node<T>> {
   using This = Node<T>;
+  using ThisRef = llvm::IntrusiveRefCntPtr<This>;
 
  public:
   std::vector<T> collect() const {
@@ -51,27 +55,32 @@ class Node : public ObjectCounter<Node<T>> {
     return result;
   }
 
-  Node(const T &payload, const std::shared_ptr<This> &parent = nullptr) : payload_{payload}, parent_{parent} {}
+  Node(const T &payload, const ThisRef &parent = nullptr)
+      : payload_{payload}, parent_{parent} {}
 
-  static std::shared_ptr<This> child(const T &payload, const std::shared_ptr<This> &parent = nullptr) {
-    return std::make_shared<This>(payload, parent);
+  static ThisRef child(const T &payload, const ThisRef &parent = nullptr) {
+    return new This(payload, parent);
   }
 
   const auto &payload() const { return payload_; }
 
  private:
   T payload_;
-  std::shared_ptr<This> parent_;
+  ThisRef parent_;
 };
 
+template<class T>
+using NodeRef = llvm::IntrusiveRefCntPtr<Node<T>>;
+
 template <typename T>
-std::shared_ptr<Node<T>> make_child(const T &payload, const std::shared_ptr<Node<T>> &parent = nullptr) {
+NodeRef<T> make_child(const T &payload, const NodeRef<T> &parent = nullptr) {
   return Node<T>::child(payload, parent);
 }
 
 template <typename GraphCursor>
-class PathLink {
+class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
   using This = PathLink<GraphCursor>;
+  using ThisRef = llvm::IntrusiveRefCntPtr<This>;
 
  public:
   double score() const {
@@ -87,7 +96,7 @@ class PathLink {
                             [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
   }
 
-  bool update(GraphCursor gp, double score, const std::shared_ptr<This> &pl) {
+  bool update(GraphCursor gp, double score, const ThisRef &pl) {
     auto val = std::make_pair(score, pl);
     auto it_fl = scores_.insert({gp, val});
     bool inserted = it_fl.second;
@@ -110,20 +119,20 @@ class PathLink {
     }
   }
 
-  std::shared_ptr<This> merge(const This *other, double add_fee = 0) const {
-    auto result = std::make_shared<This>(*this);
-    result.merge_update(other, add_fee);
+  ThisRef merge(const This *other, double add_fee = 0) const {
+    ThisRef result(*this);
+    result->merge_update(other, add_fee);
     return result;
   }
 
-  std::shared_ptr<This> merge(GraphCursor gp, double score, const std::shared_ptr<This> &pl) const {
-    auto result = std::make_shared<This>(*this);
-    result.update(gp, score, pl);
+  ThisRef merge(GraphCursor gp, double score, const ThisRef &pl) const {
+    ThisRef result(*this);
+    result->update(gp, score, pl);
     return result;
   }
 
-  static std::shared_ptr<This> master_source() {
-    auto result = std::make_shared<This>();
+  static ThisRef master_source() {
+    auto result(new This());
     result->scores_[GraphCursor()] = std::make_pair(0, nullptr);  // master_sourse score should be 0
     return result;
   }
@@ -136,8 +145,9 @@ class PathLink {
   };
 
   std::vector<std::pair<std::vector<GraphCursor>, double>> top_k(size_t k) {
-    using Node = Node<std::tuple<GraphCursor, double, This *>>;
-    using SPT = std::shared_ptr<Node>;
+    using Payload = std::tuple<GraphCursor, double, This *>;
+    using Node = Node<Payload>;
+    using SPT = NodeRef<Payload>;
     std::priority_queue<SPT, std::vector<SPT>, Comp> q;
     auto extract_path = [&q]() {
       SPT tail = q.top();
@@ -295,12 +305,14 @@ class PathLink {
     return s;
   }
 
-  std::shared_ptr<This> clone() const { return std::make_shared<This>(*this); }
+  ThisRef clone() const { return new This(*this); }
 
  private:
-  std::unordered_map<GraphCursor, std::pair<double, std::shared_ptr<This>>> scores_;
+  std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
 };
 
+template<class GraphCursor>
+using PathLinkRef = llvm::IntrusiveRefCntPtr<PathLink<GraphCursor>>;
 }  // namespace pathtree
 
 template<class GraphCursor>

@@ -19,12 +19,13 @@ extern "C" {
 namespace impl {
 
 using pathtree::PathLink;
+using pathtree::PathLinkRef;
 
 template <typename GraphCursor>
-class StateSet : public std::unordered_map<GraphCursor, std::shared_ptr<PathLink<GraphCursor>>> {
+class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>> {
  public:
-  const std::shared_ptr<PathLink<GraphCursor>> &get_or_create(const GraphCursor &key) {
-    return this->insert({key, std::make_shared<PathLink<GraphCursor>>()}).first->second;
+  const PathLinkRef<GraphCursor> &get_or_create(const GraphCursor &key) {
+    return this->insert({key, new PathLink<GraphCursor>()}).first->second;
   }
 
   StateSet clone() const {
@@ -37,8 +38,8 @@ class StateSet : public std::unordered_map<GraphCursor, std::shared_ptr<PathLink
   }
 
   bool update(const GraphCursor &key, double score, GraphCursor from,
-              const std::shared_ptr<PathLink<GraphCursor>> &traj) {
-    auto it_fl = this->insert({key, std::make_shared<PathLink<GraphCursor>>()});
+              const PathLinkRef<GraphCursor> &traj) {
+    auto it_fl = this->insert({key, new PathLink<GraphCursor>()});
     double prev = it_fl.second ? std::numeric_limits<double>::infinity() : it_fl.first->second->score();
     // double prev = it_fl.first->second->score();
     it_fl.first->second->update(from, score, traj);
