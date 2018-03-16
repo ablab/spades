@@ -50,6 +50,26 @@ public:
                 max_vertex_number);
     }
 
+    typedef ComposedDijkstraSettings<Graph,
+            LengthCalculator<Graph>,
+            BoundProcessChecker<Graph>,
+            VertexPutChecker<Graph>,
+            ForwardNeighbourIteratorFactory<Graph> > EdgeBoundedDijkstraSettings;
+
+    typedef Dijkstra<Graph, EdgeBoundedDijkstraSettings> EdgeBoundedDijkstra;
+
+    static EdgeBoundedDijkstra
+    CreateEdgeBoundedDijkstra(const Graph &graph, size_t length_bound,
+                              size_t max_vertex_number = -1ul){
+        return EdgeBoundedDijkstra(graph,
+                                   EdgeBoundedDijkstraSettings(
+                                       LengthCalculator<Graph>(graph),
+                                       BoundProcessChecker<Graph>(length_bound),
+                                       VertexPutChecker<Graph>(),
+                                       ForwardNeighbourIteratorFactory<Graph>(graph)),
+                                   max_vertex_number);
+    }
+
     //------------------------------
     // bounded backward dijkstra
     //------------------------------
@@ -69,6 +89,26 @@ public:
                 BoundProcessChecker<Graph>(bound),
                 BoundPutChecker<Graph>(bound),
                 BackwardNeighbourIteratorFactory<Graph>(graph)), max_vertex_number);
+    }
+
+    typedef ComposedDijkstraSettings<Graph,
+                                     LengthCalculator<Graph>,
+                                     BoundProcessChecker<Graph>,
+                                     VertexPutChecker<Graph>,
+                                     BackwardNeighbourIteratorFactory<Graph> > BackwardEdgeBoundedDijkstraSettings;
+
+    typedef Dijkstra<Graph, BackwardEdgeBoundedDijkstraSettings> BackwardEdgeBoundedDijkstra;
+
+    static BackwardEdgeBoundedDijkstra
+    CreateBackwardEdgeBoundedDijkstra(const Graph &graph,
+                                      size_t bound, size_t max_vertex_number = size_t(-1)){
+        return BackwardEdgeBoundedDijkstra(graph,
+                                           BackwardEdgeBoundedDijkstraSettings(
+                                               LengthCalculator<Graph>(graph),
+                                               BoundProcessChecker<Graph>(bound),
+                                               VertexPutChecker<Graph>(),
+                                               BackwardNeighbourIteratorFactory<Graph>(graph)),
+                                           max_vertex_number);
     }
 
     //------------------------------
@@ -170,6 +210,18 @@ template<class Graph>
 typename DijkstraHelper<Graph>::BackwardBoundedDijkstra CreateBackwardBoundedDijkstra(const Graph &graph, size_t length_bound,
                                                                                       size_t max_vertex_number = -1ul) {
     return DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(graph, length_bound, max_vertex_number);
+}
+
+template<class Graph>
+typename DijkstraHelper<Graph>::EdgeBoundedDijkstra CreateEdgeBoundedDijkstra(const Graph &graph, size_t length_bound,
+                                                                              size_t max_vertex_number = -1ul) {
+    return DijkstraHelper<Graph>::CreateEdgeBoundedDijkstra(graph, length_bound, max_vertex_number);
+}
+
+template<class Graph>
+typename DijkstraHelper<Graph>::BackwardEdgeBoundedDijkstra CreateBackwardEdgeBoundedDijkstra(const Graph &graph, size_t length_bound,
+                                                                                              size_t max_vertex_number = -1ul) {
+    return DijkstraHelper<Graph>::CreateBackwardEdgeBoundedDijkstra(graph, length_bound, max_vertex_number);
 }
 
 }
