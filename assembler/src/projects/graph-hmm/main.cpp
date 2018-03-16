@@ -268,8 +268,8 @@ int main(int argc, char* argv[]) {
         bool hmm_in_aas = hmm.abc()->K == 20;
         size_t bound = (hmm_in_aas ? 6 : 2) * p7hmm->M;
         INFO("Dijkstra bound set to " << bound);
-        auto fdijkstra = omnigraph::CreateBoundedDijkstra(graph, bound);
-        auto bdijkstra = omnigraph::CreateBackwardBoundedDijkstra(graph, bound);
+        auto fdijkstra = omnigraph::CreateEdgeBoundedDijkstra(graph, bound);
+        auto bdijkstra = omnigraph::CreateBackwardEdgeBoundedDijkstra(graph, bound);
 
         std::unordered_map<EdgeId, std::unordered_set<VertexId>> neighbourhoods;
         for (EdgeId e : match_edges) {
