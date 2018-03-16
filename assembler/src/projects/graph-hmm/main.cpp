@@ -205,7 +205,7 @@ std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
     INFO("Total matched edges: " << match_edges.size());
 
     int textw = 120;
-    if (cfg.debug) {
+    if (match_edges.size() && cfg.debug) {
         p7_tophits_Targets(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
         p7_tophits_Domains(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
         p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
