@@ -270,7 +270,6 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
     }
     //initializing index
     pacbio::PacBioMappingIndex<Graph> pac_index(gp.g,
-                                                cfg::get().output_dir,
                                                 cfg::get().pb,
                                                 mode);
 

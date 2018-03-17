@@ -87,7 +87,7 @@ private:
 
 public:
 
-    PacBioMappingIndex(const Graph &g, string out_dir,
+    PacBioMappingIndex(const Graph &g,
                         debruijn_graph::config::debruijn_config::pacbio_processor pb_config, alignment::BWAIndex::AlignmentMode mode)
             : g_(g),
               pb_config_(pb_config),
