@@ -277,67 +277,38 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
     // Turn read length into k-mers
+    bool is_short = false;
     size_t seq_len = seq.length();
     if (seq_len <= g_.k()) {
-        return res;
+        is_short = true;
     }
-
-    //read_length = read_length - g_.k();
 
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
         if (a.secondary >= 0) continue; // skip secondary alignments
-        if (size_t(a.qe - a.qb) <= g_.k()) continue; // skip short alignments
-        if (size_t(a.re - a.rb) <= g_.k()) continue;
-//        if (MostlyInVertex(a.rb, a.re, g_.length(ids_[a.rid]), g_.k()))
-//            continue;
-        int is_rev = 0;
-        size_t pos = bns_depos(idx_->bns, a.rb < idx_->bns->l_pac? a.rb : a.re - 1, &is_rev) - idx_->bns->anns[a.rid].offset;
-
-        // Reduce the range to kmer-based
-        size_t initial_range_end = a.qe - g_.k();
-        size_t mapping_range_end = pos + a.re - a.rb - g_.k();
-        if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
-            continue;
-        if (!is_rev) {
-            res.push_back(ids_[a.rid],
-                          { { (size_t)a.qb, initial_range_end },
-                            { pos, mapping_range_end}});
-        } else {
-            res.push_back(g_.conjugate(ids_[a.rid]),
-                          { { (size_t)a.qb, initial_range_end }, //.Invert(read_length),
-                            Range(pos,  mapping_range_end).Invert(g_.length(ids_[a.rid])) });
-
-        }
-    }
-
-    return res;
-}
-
-omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetShortMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
-    omnigraph::MappingPath<debruijn_graph::EdgeId> res;
-
-    // Turn read length into k-mers
-    //size_t read_length = seq.length();
-
-    size_t seq_len = seq.length();
-    //read_length = read_length - g_.k();
-
-    for (size_t i = 0; i < ar.n; ++i) {
-        const mem_alnreg_t &a = ar.a[i];
-        if (a.secondary >= 0) continue; // skip secondary alignments
+        if (is_short) {
 // skipping alignments shorter than half of read length
-        if (size_t(a.qe - a.qb) * 2 <= seq_len ) continue; // skip short alignments
-        if (size_t(a.re - a.rb) * 2 <= seq_len) continue;
-
+            if (size_t(a.qe - a.qb) * 2 <= seq_len ) continue;
+            if (size_t(a.re - a.rb) * 2 <= seq_len) continue;
+        } else {
+            if (size_t(a.qe - a.qb) <= g_.k()) continue; // skip short alignments
+            if (size_t(a.re - a.rb) <= g_.k()) continue;
+        }
         int is_rev = 0;
         size_t pos = bns_depos(idx_->bns, a.rb < idx_->bns->l_pac? a.rb : a.re - 1, &is_rev) - idx_->bns->anns[a.rid].offset;
+        size_t initial_range_end;
+        size_t mapping_range_end;
 
         // Reduce the range to kmer-based
-        size_t initial_range_end = a.qb + 1;
-        size_t mapping_range_end = pos + 1;
-        if (mapping_range_end > g_.length(ids_[a.rid]))
-            continue;
+        if (is_short) {
+            initial_range_end = a.qb + 1;
+            mapping_range_end = pos + 1;
+            if (mapping_range_end > g_.length(ids_[a.rid]))
+                continue;
+        } else {
+            initial_range_end = a.qe - g_.k();
+            mapping_range_end = pos + a.re - a.rb - g_.k();
+        }
         if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
             continue;
         if (!is_rev) {
@@ -354,6 +325,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetShortMappingPath(con
 
     return res;
 }
+
 
 omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Sequence &sequence) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
@@ -362,10 +334,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
     std::string seq = sequence.str();
     mem_alnreg_v ar = mem_align1(memopt_.get(), idx_->bwt, idx_->bns, idx_->pac,
                                  int(seq.length()), seq.data());
-    if (seq.length() <= g_.k())
-        res = GetShortMappingPath(ar, seq);
-    else
-        res = GetMappingPath(ar, seq);
+    res = GetMappingPath(ar, seq);
 
     free(ar.a);
 
