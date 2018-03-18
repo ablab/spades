@@ -16,7 +16,7 @@ for line in open(sys.argv[1], 'r'):
     if len(arr) >= 2:
         if arr[0] == "K":
             K = "K" + arr[1]
-        if arr[0] == "output_base"
+        if arr[0] == "output_base":
             dir = arr[1]
 dir = dir + "/" + K
 res = dir + "/final_contigs_cat.fasta"
@@ -25,10 +25,10 @@ for file in os.listdir(dir):
     farr = file.split('.')
     if farr[-1] != "fasta":
         continue
-    if farr[-2] != "circular"
+    if farr[-2] != "circular":
         continue
     cov = farr[-3].split("_")[-1]
-    for line in open(file, "r")
+    for line in open(os.path.join(dir,file), "r"):
         line = line.strip()
         if len(line) > 0 and line[0] == ">":
             line += "_cutoff_" + cov
