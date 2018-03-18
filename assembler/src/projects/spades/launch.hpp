@@ -47,6 +47,14 @@ inline bool HybridLibrariesPresent() {
     return false;
 }
 
+inline string GetContigName(string contig_id, size_t cov) {
+    string res = std::to_string(cov);
+    while (res.length() < 4) {
+        res = "_" + res;
+    }
+    return contig_id + res;
+}
+
 void assemble_genome() {
     INFO("SPAdes started");
     if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta && !MetaCompatibleLibraries()) {
@@ -137,7 +145,7 @@ void assemble_genome() {
             while (cov < max_cov) {
                 SPAdes.add(new debruijn_graph::ChromosomeRemoval(cov));
                 SPAdes.add(new debruijn_graph::RepeatResolution());
-                SPAdes.add(new debruijn_graph::ContigOutput(true, cfg::get().co.contigs_name + std::to_string(cov)));
+                SPAdes.add(new debruijn_graph::ContigOutput(true, GetContigName(cfg::get().co.contigs_name, cov)));
                 cov = std::max(cov + 5, size_t(cov*multiplier));
             }
         }
