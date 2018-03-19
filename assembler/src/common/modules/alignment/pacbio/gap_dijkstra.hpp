@@ -129,8 +129,8 @@ protected:
                 Update(state, prev_state,  ed, ed);
                 return;
             }
-            int end = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, (int) ss_.size() - (prev_state.i + 1) );
-            string seq_str = ss_.substr(prev_state.i + 1, end);
+            int len = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, (int) ss_.size() - (prev_state.i + 1) );
+            string seq_str = ss_.substr(prev_state.i + 1, len);
             //INFO("Add edge2: eid=" << gs.e.int_id() << " " << gs.start_pos << " " << gs.end_pos << " " << seq_str.size() << " " << q_.size())
             vector<int> positions;
             vector<int> scores;
@@ -158,7 +158,7 @@ protected:
         virtual bool IsEndPosition(QueueState &cur_state) = 0;
 
 public:
-        DijkstraGraphSequenceVirtual(const Graph &g, const string &ss, EdgeId start_e, const int start_p, const int path_max_length)
+        DijkstraGraphSequenceVirtual(const Graph &g, const string ss, EdgeId start_e, const int start_p, const int path_max_length)
                   :g_(g), ss_(ss)
                    , start_e_(start_e)
                    , start_p_(start_p)
@@ -167,7 +167,8 @@ public:
             for (size_t i = 0; i < best_ed_.size(); ++ i){
                 best_ed_[i] = path_max_length_;
             }
-            AddNewEdge(GraphState(start_e_, start_p_, max((int) g_.length(start_e_), start_p_)), QueueState(), 0);
+            int end_edge = max((int) g_.length(start_e_), start_p_);
+            AddNewEdge(GraphState(start_e_, start_p_, end_edge), QueueState(), 0);
             min_score_ = -1;
         }
 
@@ -217,7 +218,9 @@ public:
                     // if (state.gs.start_pos > state.gs.end_pos) {
                     //     INFO("TID=" << tid <<" Reconstruct12 " << state.gs.start_pos << " " << state.gs.end_pos);
                     // }
-                    mapping_path_.push_back(state.gs.e, omnigraph::MappingRange(Range((int) max(0, (int) prev_states_[state].i), (int) max(0, (int) state.i)), 
+                    int start_edge = (int) max(0, (int) prev_states_[state].i);
+                    int end_edge = max(0, (int) state.i);
+                    mapping_path_.push_back(state.gs.e, omnigraph::MappingRange(Range(start_edge, end_edge), 
                                                                                 Range(state.gs.start_pos, state.gs.end_pos) ));
                     state = prev_states_[state];
                 }
@@ -262,7 +265,7 @@ protected:
         std::vector<int> best_ed_;
 
         const Graph &g_;
-        const string &ss_;
+        const string ss_;
         EdgeId start_e_;
         const int start_p_;
         int path_max_length_;
@@ -290,7 +293,7 @@ private:
                     string tmp = g_.EdgeNucls(e).str();
                     //VERIFY(max(cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e), 0) < end_p_)
                     if (max(cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e), 0) < end_p_) {
-                        string edge_str = tmp.substr(max(cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e), 0) , end_p_);
+                        string edge_str = tmp.substr(max(cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e), 0) , end_p_ - max(cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e), 0));
                         int score = NWDistance(seq_str, edge_str, path_max_length_ - ed);
                         if (score != -1) {
                             if (ed +  score < path_max_length_) {
@@ -320,7 +323,7 @@ private:
         }
 
 public:
-        DijkstraGapFiller(const Graph &g, const string &ss, EdgeId start_e, EdgeId end_e,
+        DijkstraGapFiller(const Graph &g, const string ss, EdgeId start_e, EdgeId end_e,
                                   const int start_p, const int end_p, const int path_max_length, 
                                   const std::map<VertexId, size_t> &reachable_vertex)
                   : DijkstraGraphSequenceVirtual(g, ss, start_e, start_p, path_max_length)
@@ -373,7 +376,7 @@ private:
                                                       << " " << cur_state.i  << " " << g_.int_id(cur_state.gs.e) << " " << cur_state.gs.end_pos 
                                                       << " ed=" << ed << " min_ed=" << min_score_ << " pml=" << path_max_length_)
                 }
-                string seq_str = ss_.substr(cur_state.i + 1, ss_.size() - cur_state.i - 1 );
+                string seq_str = ss_.substr(cur_state.i + 1, ss_.size() - (cur_state.i + 1) );
                 string tmp = g_.EdgeNucls(e).str();
                 int position = -1;
                 int score = SHWDistance2(seq_str, tmp, path_max_length_ - ed, position);
@@ -403,7 +406,7 @@ private:
             return false;
         }
 public:
-        DijkstraEndsReconstructor(const Graph &g, const string &ss, EdgeId start_e, const int start_p, const int path_max_length)
+        DijkstraEndsReconstructor(const Graph &g, const string ss, EdgeId start_e, const int start_p, const int path_max_length)
                   :DijkstraGraphSequenceVirtual(g, ss, start_e, start_p, path_max_length) {
             end_qstate_ = QueueState();
             if (g_.length(start_e_) + g_.k() - start_p_ + path_max_length_ > ss_.size()){

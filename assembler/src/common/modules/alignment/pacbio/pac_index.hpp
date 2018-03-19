@@ -122,9 +122,10 @@ public:
         return res;
     }
 
-    ClustersSet GetBWAClusters(const Sequence &s) const {
+    ClustersSet GetBWAClusters(const io::SingleRead &read) const {
         DEBUG("BWA started")
         ClustersSet res;
+        Sequence s = read.sequence()
         if (s.size() < g_.k())
             return res;
 
@@ -135,7 +136,8 @@ public:
         for (const auto &e_mr : mapped_path) {
             EdgeId e = e_mr.first;
             omnigraph::MappingRange mr = e_mr.second;
-            DEBUG("BWA loading edge=" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" << mr.mapped_range.end_pos 
+            INFO("ReadName=" << read.name() << " BWA loading edge=" << g_.int_id(e) << " edge_length=" << g_.length(e) 
+                                                                    << " e_start=" << mr.mapped_range.start_pos << " e_end=" << mr.mapped_range.end_pos 
                                                                     << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos );
             size_t cut = 0;
             size_t edge_start_pos = mr.mapped_range.start_pos;
@@ -505,8 +507,8 @@ public:
 
     OneReadMapping GetReadAlignment(const io::SingleRead &read) const {
         Sequence s = read.sequence();
-        ClustersSet mapping_descr = GetBWAClusters(s); //GetOrderClusters(s);
-        auto colors = GetWeightedColors(mapping_descr);
+        ClustersSet mapping_descr = GetBWAClusters(read); //GetOrderClusters(s);
+        vector<int> colors = GetWeightedColors(mapping_descr);
         size_t len =  mapping_descr.size();
         vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> sorted_edges;
         vector<bool> block_gap_closer;
