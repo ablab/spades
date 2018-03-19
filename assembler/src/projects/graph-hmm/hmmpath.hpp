@@ -206,19 +206,20 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     i_loop_processing(I, m);
 
     size_t top = std::max({D.size(), I.size(), M.size()});
+    TRACE("Top " << m << " => " << top);
     if (m > 10) {
       top = std::min<size_t>(1000000, top);
     }
     if (m > 50) {
-      top = std::min<size_t>(10000, top);
+      top = std::min<size_t>(20000, top);
     }
     if (m > 500) {
       top = std::min<size_t>(10000, top);
     }
 
-    I = top_filter(I, top, 10);
-    M = top_filter(M, top, 10);
-    D = top_filter(D, top, 10);
+    I = top_filter(I, top, 100);
+    M = top_filter(M, top, 100);
+    D = top_filter(D, top, 100);
   }
 
   PathSet<GraphCursor> result;
