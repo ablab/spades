@@ -27,7 +27,11 @@ for file in os.listdir(dir):
         continue
     if farr[-2] != "circular":
         continue
-    cov = farr[-3].split("_")[-1]
+    arr = farr[-3].split("_")
+    if len(arr) < 2:
+        continue
+    cov = arr[-1]
+
     for line in open(os.path.join(dir,file), "r"):
         line = line.strip()
         if len(line) > 0 and line[0] == ">":
