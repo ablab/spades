@@ -887,7 +887,7 @@ protected:
 
             }
         }
-        INFO(result->size() << " reached edges");
+        DEBUG(result->size() << " reached edges");
     }
  protected:
     bool IsNotInPath(const BidirectionalPath &path, const EdgeId &edge) const {
