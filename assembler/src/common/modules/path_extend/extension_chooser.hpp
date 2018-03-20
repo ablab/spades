@@ -1684,37 +1684,16 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
 
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
         vector<EdgeWithDistance> result;
-        DEBUG("Collecting entry");
         auto path_barcodes = barcode_entry_collector_->CollectEntry(path);
         DEBUG(path_barcodes.size() << " barcodes on path");
         if (path_barcodes.size() == 0) {
             WARN("No barcodes on path!");
             return result;
         }
-//        std::unordered_set<barcode_index::BarcodeId> candidate_barcodes;
-//        std::unordered_set<barcode_index::BarcodeId> repetitive_candidate_barcodes;
-//        for (const auto& candidate: edges) {
-//            EdgeId edge = candidate.e_;
-//            auto barcode_begin = barcode_index_->barcode_iterator_begin(edge);
-//            auto barcode_end = barcode_index_->barcode_iterator_end(edge);
-//            for (auto it = barcode_begin; it != barcode_end; ++it) {
-//                bool is_inserted = (candidate_barcodes.insert(it->first)).second;
-//                if (not is_inserted) {
-//                    repetitive_candidate_barcodes.insert(it->first);
-//                }
-//            }
-//        }
-//        DEBUG("Selecting unique barcodes");
-//        std::set<barcode_index::BarcodeId> unique_path_barcodes;
-//        for (const auto& barcode: path_barcodes) {
-//            if (repetitive_candidate_barcodes.find(barcode) == repetitive_candidate_barcodes.end()) {
-//                unique_path_barcodes.insert(barcode);
-//            }
-//        }
-//        DEBUG(unique_path_barcodes.size() << " unique barcodes on path");
-//        std::unordered_map<EdgeWithDistance, double> candidate_to_score;
         double max_score = 0;
         DEBUG(edges.size() << " initial candidates");
+        typedef pair<EdgeWithDistance, double> EdgeScore;
+        vector<EdgeScore> candidate_to_score;
         for (const auto& candidate: edges) {
             const auto barcodes = barcode_index_->GetBarcodes(candidate.e_);
             std::set<barcode_index::BarcodeId> intersection;
@@ -1728,12 +1707,20 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
             }
             if (math::ge(score, score_threshold_)) {
                 result.push_back(candidate);
+                candidate_to_score.emplace_back(candidate, score);
             }
         }
         DEBUG("Max score: " << max_score);
         DEBUG(result.size() << " final candidates");
+        for (const auto& candidate: candidate_to_score) {
+            TRACE(candidate.first.e_.int_id());
+            TRACE("Score: " << candidate.second);
+        }
         if (result.size() == 0) {
             DEBUG("No candidates passed threshold");
+            if (edges.size() != 0) {
+                DEBUG("All candidates were filtered");
+            }
             return result;
         }
         if (result.size() == 1) {
@@ -1741,6 +1728,16 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
             return result;
         }
         DEBUG("Multiple candidates");
+        std::sort(candidate_to_score.begin(), candidate_to_score.end(), [](const EdgeScore &first, const EdgeScore &second) {
+          return math::gr(first.second, second.second) or
+              (math::eq(first.second, second.second) and math::gr(first.first.e_.int_id(), second.first.e_.int_id()));
+        });
+        const double relative_threshold = 2.0;
+        if (math::gr(candidate_to_score[0].second, candidate_to_score[1].second * relative_threshold)) {
+            DEBUG("Selected best candidate");
+            vector <EdgeWithDistance> best_candidate{candidate_to_score[0].first};
+            return best_candidate;
+        }
         return result;
     }
 
