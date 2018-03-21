@@ -257,7 +257,7 @@ void SeriesAnalysis::run(conj_graph_pack &gp, const char *) {
 
     DEBUG("Initiating abundance counter");
     ContigAbundanceCounter abundance_counter =
-        make_trivial<Abundance>(config.k, config.kmer_mult);
+        MakeTrivial<Abundance>(config.k, config.kmer_mult);
 
     DEBUG("Abundance counter ready");
 

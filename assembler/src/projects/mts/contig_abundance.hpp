@@ -20,6 +20,8 @@ struct AbVar {
     Abundance ab; Var var;
 };
 
+std::ostream& operator<<(std::ostream& str, AbVar ab_var);
+
 template<typename T> using Profile = std::vector<T>;
 
 class KmerProfileIndex {
@@ -180,7 +182,7 @@ private:
 };
 
 template<typename T>
-ProfileCounter<T> make_trivial(unsigned k, const std::string& index_prefix) {
+ProfileCounter<T> MakeTrivial(unsigned k, const std::string& index_prefix) {
     return ProfileCounter<T>(
         k,
         std::unique_ptr<ClusterAnalyzer<T>>(new TrivialClusterAnalyzer<T>()),

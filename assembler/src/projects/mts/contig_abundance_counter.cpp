@@ -12,11 +12,6 @@
 
 using namespace debruijn_graph;
 
-std::ostream& operator<<(std::ostream& str, AbVar ab_var) {
-    str << ab_var.ab << "\t" << ab_var.var;
-    return str;
-}
-
 //Helper class to have scoped DEBUG()
 class Runner {
 public:
@@ -39,9 +34,9 @@ public:
 
             if (profile) {
                 DEBUG("Successfully estimated abundance of " << id);
-                out << id;
-                for (auto mpl : *profile)
-                     out << "\t" << mpl;
+                out << id << "\t";
+                copy(profile->begin(), profile->end(),
+                     ostream_iterator<T>(out, "\t"));
                 out << std::endl;
             } else {
                 DEBUG("Failed to estimate abundance of " << id);
@@ -86,8 +81,8 @@ int main(int argc, char** argv) {
     std::ofstream out(contigs_abundance_fn);
 
     if (var) {
-        Runner::Run(make_trivial<AbVar>(k, kmer_mult_fn), min_length_bound, contigs_stream, out);
+        Runner::Run(MakeTrivial<AbVar>(k, kmer_mult_fn), min_length_bound, contigs_stream, out);
     } else {
-        Runner::Run(make_trivial<Abundance>(k, kmer_mult_fn), min_length_bound, contigs_stream, out);
+        Runner::Run(MakeTrivial<Abundance>(k, kmer_mult_fn), min_length_bound, contigs_stream, out);
     }
 }
