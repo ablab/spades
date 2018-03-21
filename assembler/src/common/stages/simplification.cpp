@@ -310,7 +310,8 @@ public:
                                                info_container_),
                 "Removing edges with low coverage");
 
-        AlgorithmRunningHelper<Graph>::LoopedRunPrimaryOpening(algo, /*first primary iteration cnt*/2);
+        AlgorithmRunningHelper<Graph>::LoopedRunPrimaryOpening(algo,
+                /*first primary iteration cnt*/2, /*max it count*/10);
 
         //FIXME make part of cycle?
         RemoveHiddenEC(gp_.g, gp_.flanking_cov, simplif_cfg_.her, info_container_, removal_handler_);
