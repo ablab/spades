@@ -105,6 +105,11 @@ private:
     //const pacbio::PacBioMappingIndex<Graph> pac_index_;
     const string &output_file_;
     const config::debruijn_config::pacbio_processor &pb_config_;
+    int ed_threshold_;
+    int res_ed_threshold_;
+    int min_length_;
+    int primer_threshold_;
+    int graph_threshold_;
 
     std::vector<ReadMapping> primers_;
 
@@ -112,8 +117,12 @@ public:
     SequenceAligner(const conj_graph_pack &gp, 
                  const alignment::BWAIndex::AlignmentMode mode,
                  const config::debruijn_config::pacbio_processor &pb,
-                 const string &output_file):
-      gp_(gp), output_file_(output_file), pb_config_(pb){}
+                 const string &output_file,
+                 int ed_threshold, int res_ed_threshold, int min_length, int primer_threshold, int graph_threshold):
+      gp_(gp), output_file_(output_file), pb_config_(pb)
+      , ed_threshold_(ed_threshold), res_ed_threshold_(res_ed_threshold)
+      , min_length_(min_length), primer_threshold_(primer_threshold)
+      , graph_threshold_(graph_threshold) {}
 
     
     bool IsCanonical(EdgeId e) const {
@@ -152,17 +161,15 @@ public:
                 start_pos = result.startLocations[0];
                 end_pos = result.endLocations[0];
             } else {
-                INFO("edlib: Strange")
+                WARN("EditDistance: something wrong with edlib result");
             }
         }
         edlib::edlibFreeAlignResult(result);
-        //INFO("After ed")
-        //delete additionalEqualities;
         return score;
     }
 
     void AlignPrimer(const io::SingleRead &read, int &v, std::vector<EdgeId> &e, std::vector<MappingRange> &range) {
-        v = 2;
+        v = graph_threshold_;
         int k = 10;
         for (auto it = gp_.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             EdgeId eid = *it;
@@ -295,7 +302,7 @@ public:
         PrepareInitialState(path, s, forward, ss, start_e, start_pos, seq_start_pos);
 
         int s_len = int(ss.size());
-        int score = 40;
+        int score = ed_threshold_;
         if (s_len > 2000) {
             DEBUG("EdgeDijkstra: sequence is too long " << s_len)
             return 0;
@@ -383,7 +390,7 @@ public:
         int end_pos = b_range.initial_range.start_pos;
         string ss = s.substr(start_pos, min(end_pos, int(s.size()) ) - start_pos);
         int s_len = int(ss.size());
-        int path_max_length = 40;
+        int path_max_length = ed_threshold_;
         //INFO(" Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_pos=" <<a_range.initial_range.start_pos << " end_pos=" << b_range.initial_range.start_pos << " start_pos_g=" <<a_range.mapped_range.start_pos << " end_pos_g=" << b_range.mapped_range.start_pos);
         if (s_len > 2000 && vertex_pathlen.size() > 100000){
             DEBUG("Dijkstra on't run: Too big gap or too many paths");
@@ -464,28 +471,12 @@ public:
                             //INFO("  Here sz=" << best_path.path_.size() << " score=" << best_path.score_)
                         }
                     }
-                    // if (good >=0 && bad >= 0) {
-                    //     INFO(good << " " << bad << " " << best_used)
-                    // }
-                    if (best_path.score_ == -1) {
-                        //new_working_paths.push_back(Mapping(mappings[i].e_.at(j), mappings[i].range_.at(j)));
-                    } else {
-                        //INFO( i << " New working path=" << best_path.path_.size()<< " score=" << best_path.score_ << " edge=" << best_path.last_edge_.int_id() )
-                        // if (best_path.path_.size() > 0) {
-                        //     INFO( " edge2=" << best_path.path_.edge_at(best_path.path_.size() - 1).int_id() )
-                        // }
-                        //INFO(" " << best_path.score_)
-                        if (best_path.score_ < 40) {
-                            used_working_paths[best_used] = true;
-                            new_working_paths.push_back(best_path);
-                        }
+    
+                    if (best_path.score_ != -1 && best_path.score_ < ed_threshold_) {
+                        used_working_paths[best_used] = true;
+                        new_working_paths.push_back(best_path);
                     }
                 }
-                // for (size_t k = 0; k < working_paths.size(); ++ k) {
-                //     if (!used_working_paths[k]){
-                //         resulting_paths.push_back(working_paths[k]);
-                //     } 
-                // }
                 working_paths = new_working_paths;
             }
             for (size_t k = 0; k < working_paths.size(); ++ k) {
@@ -502,7 +493,7 @@ public:
             for (size_t i = 0; i < resulting_paths.size(); ++ i) {
                 Mapping &path = resulting_paths[i];
                 path.path_.push_back(path.last_edge_, path.last_mapping_);
-                if (path.score_ < 40) {
+                if (path.score_ < ed_threshold_) {
                     DEBUG("Grow Ends front")
                     int before = path.score_;
                     path.score_ += GrowEnds(path.path_, read.GetSequenceString(), false);
@@ -517,7 +508,7 @@ public:
                     //     INFO("Good path " << path.score_ << " " << before << " " << ans)
                     // }
                     // INFO("path_sz=" << path.path_.size() << " last_e=" <<path.last_edge_.int_id() << " last_range s=" << path.last_mapping_.initial_range.start_pos << " " << path.last_mapping_.initial_range.end_pos)
-                    if (path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos > 1200 && ed > path.score_) {
+                    if (path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos > min_length_ && ed > path.score_) {
                         len_max = path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos;
                         ed = path.score_;
                         best_ind = i;
@@ -551,7 +542,7 @@ public:
                     }
                     len_max = best_path.path_.mapping_at(best_path.path_.size() - 1).initial_range.end_pos - best_path.path_.mapping_at(0).initial_range.start_pos;
                     INFO("Read="<< read.name() << " Primer num=" << mappings.size() << ". paths_num=" << resulting_paths.size() << " maxlen=" << len_max << ". ans=" << ans << ". ed=" << ed)
-                    if (ed < 100) {
+                    if (ed < res_ed_threshold_) {
                         
                         std::string sum_str = read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t" 
                                                              + std::to_string(read.size())+  "\t" + cur_path + "\t" + cur_path_len + "\t" + std::to_string(ed) + "\n";
@@ -578,15 +569,14 @@ public:
             int end_pos = -1;
             int dist = EditDistance(primer.read_seq_, read.GetSequenceString(), start_pos, end_pos);
             //INFO("dist=" << dist << " start_pos=" << start_pos << " end_pos=" << end_pos << " primer_s=" << primer.start_pos_ << " primer_e="<< primer.end_pos_)
-            if (dist <= 1 && abs(start_pos - primer.start_pos_) < threshold && abs(end_pos - primer.end_pos_) < threshold){
+            if (dist <= primer_threshold_ && abs(start_pos - primer.start_pos_) < threshold && abs(end_pos - primer.end_pos_) < threshold){
                 num += 1;
                 INFO("dist=" << dist << " start_pos=" << start_pos << " end_pos=" << end_pos << " primer_s=" << primer.start_pos_ << " primer_e="<< primer.end_pos_)
                 for (size_t i = 0; i < primer.range_.size(); ++ i){
                     //INFO(ind << " e=" << primer.e_[i].int_id() << " " << primer.range_[i].mapped_range.start_pos << " " << primer.range_[i].mapped_range.end_pos)
                     primer.range_[i] = MappingRange(Range(start_pos, end_pos), Range(primer.range_[i].mapped_range.start_pos, primer.range_[i].mapped_range.end_pos));
                 }
-                mappings.push_back(primer);//.e_, MappingRange(Range(start_pos, end_pos), 
-                                           //               Range(primer.range_.mapped_range.start_pos, primer.range_.mapped_range.start_pos)));
+                mappings.push_back(primer);
             }
             ind ++;
         }
@@ -653,7 +643,12 @@ void Launch(size_t K, const string &saves_path, const string &primer_fasta, cons
     }
 
     config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
-    SequenceAligner aligner(gp, mode, pb, output_file); 
+    int ed_threshold = 20;
+    int res_ed_threshold = 100;
+    int min_length = 1400;
+    int primer_threshold = 1;
+    int graph_threshold = 3;
+    SequenceAligner aligner(gp, mode, pb, output_file, ed_threshold, res_ed_threshold, min_length, primer_threshold, graph_threshold); 
     INFO("SequenceAligner created");
 
     ofstream myfile;
