@@ -178,7 +178,7 @@ public:
             int end_pos = 1;
             int dist = EditDistance(read.GetSequenceString(), edge_str, start_pos, end_pos);
             if (dist == -1) continue;
-            if (v >= dist) {
+            if (v >= dist && start_pos < gp_.g.length(eid)) {
                 e.push_back(eid);
                 range.push_back(MappingRange(Range(0, read.size()), Range(start_pos, end_pos + 1)) );
             }
@@ -227,9 +227,15 @@ public:
         } else {
             start_e = gp_.g.conjugate(path.edge_at(0));
             omnigraph::MappingRange mapping = path.mapping_at(0);
-            start_pos = min(gp_.g.length(start_e), gp_.g.length(start_e) + gp_.g.k() - mapping.mapped_range.start_pos);
-            string c_ss = s.substr(0, mapping.initial_range.start_pos);
-            seq_start_pos = mapping.initial_range.start_pos;
+            if (gp_.g.length(start_e) + gp_.g.k() - mapping.mapped_range.start_pos < gp_.g.length(start_e)) {
+                start_pos = gp_.g.length(start_e) + gp_.g.k() - mapping.mapped_range.start_pos;
+                seq_start_pos = mapping.initial_range.start_pos;
+            } else {
+                start_pos = gp_.g.length(start_e) - 1;
+                seq_start_pos = mapping.initial_range.start_pos + (gp_.g.k() - mapping.mapped_range.start_pos + 1);
+            }
+            string c_ss = s.substr(0, seq_start_pos);
+            
             map<char, char> nucs = {{'A', 'T'}, {'T', 'A'}, {'C', 'G'}, {'G', 'C'}, {'U', 'A'}
                                     , {'R', 'Y'}, {'Y', 'R'}
                                     , {'K', 'M'}, {'M', 'K'} 
@@ -277,7 +283,7 @@ public:
                 cur_ind --;
             }
             if (cur_ind == 0) {
-                cur_sorted.push_back(gp_.g.conjugate(ans[cur_ind]), omnigraph::MappingRange(Range(seq_start, path[0].second.initial_range.end_pos), Range(start, start + seq_end_pos ) ));
+                cur_sorted.push_back(gp_.g.conjugate(ans[cur_ind]), omnigraph::MappingRange(Range(seq_start, seq_start + path[0].second.initial_range.end_pos), Range(start, start + seq_end_pos ) ));
             } else {
                 cur_sorted.push_back(gp_.g.conjugate(ans[cur_ind]), omnigraph::MappingRange(Range(seq_start, seq_start + gp_.g.length(ans[cur_ind])), Range(start, gp_.g.length(ans[cur_ind]) ) ));
                 for (int i = cur_ind - 1; i > 0; --i) {
@@ -643,9 +649,9 @@ void Launch(size_t K, const string &saves_path, const string &primer_fasta, cons
     }
 
     config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
-    int ed_threshold = 20;
-    int res_ed_threshold = 100;
-    int min_length = 1400;
+    int ed_threshold = 40;
+    int res_ed_threshold = 200;
+    int min_length = 1200;
     int primer_threshold = 1;
     int graph_threshold = 3;
     SequenceAligner aligner(gp, mode, pb, output_file, ed_threshold, res_ed_threshold, min_length, primer_threshold, graph_threshold); 
