@@ -33,6 +33,7 @@ simp
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
         condition               "{ tc_lb 3.5, cb 1000000, rctc 2.0 } { tc_lb 6., cb 2.5, rctc 1.0 }"
+        ; condition               "{ tc_lb 3.5, cb 1000000, rctc 2.0 } { tc_lb 6., rctc 0.3 } { tc_lb 6., cb 2.5, rctc 1.0 }"
     }
 
     ; relative coverage erroneous component remover:
@@ -78,6 +79,7 @@ simp
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
         condition               "{ lb 500, cb 3., rctc 0.7 } { lb 1500, cb 20., rctc 0.2 }"
+        ; condition               "{ lb 500, cb 3., rctc 0.7 } { lb 1500, cb 10., rctc 0.2 }"
     }
 
     ; final bulge remover:
@@ -104,6 +106,7 @@ simp
 
     init_clean
     {
+        ; TODO modify
         self_conj_condition "{ ec_lb 100, cb 20.0 }"
         early_it_only   false
         ier
@@ -117,7 +120,7 @@ simp
 
 }
 
-;FIXME rename
+;TODO rename
 preliminary_simp
 {
 	; bulge remover:
