@@ -63,14 +63,20 @@ if config["stats"].get("refs"):
         stats_targets[stat] = "{{}}_{}.{}".format(stat, ext)
 
 def unsupported_target(stage, stat):
-    if stat == "lost":
+    if stage == "assembly":
+        return stat != "summary"
+    elif stat == "lost":
         return stage != "binning"
     elif stage == "reassembly":
         return stat == "group"
     else:
         return stat == "nga" and len(GROUPS) > 1
 
-STAGES = ["binning", "propagation", "reassembly"]
+def stat_path(template, stage):
+    return os.path.join("stats/summary", template.format(stage))
+
+STAT_DIR = "stats/summary"
+STAGES = ["assembly", "binning", "propagation", "reassembly"]
 for stage in STAGES:
     if not config.get(stage, {}).get("enabled", True):
         continue
@@ -86,10 +92,10 @@ for stage in STAGES:
                 stats.append(stat)
     if stage == LAST_STAGE:
         stats.extend(config["stats"].get("last", []))
-    enabled_stats.extend(os.path.join("stats/summary", stats_targets[st].format(stage)) for st in stats)
+    enabled_stats.extend(os.path.join(STAT_DIR, stats_targets[st].format(stage)) for st in stats)
 
 misc_targets = {"ref_profiles": "ref_profiles.tsv"}
-enabled_stats.extend(os.path.join("stats/summary", misc_targets[st].format(stage)) for st in config["stats"].get("misc", []))
+enabled_stats.extend(os.path.join(STAT_DIR, misc_targets[st]) for st in config["stats"].get("misc", []))
 
 rule all_stats:
     input:   enabled_stats
@@ -169,7 +175,9 @@ rule ref_profiles:
 
 #---- Genome fraction etc. -----------------------------------------------------
 def quast_input(w):
-    frag = "full" if stage == "binning" else "bins"
+    if w.stage == "assembly":
+        return expand("assembly/{assembler}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS)
+    frag = "full" if w.stage == "binning" else "bins"
     return expand("{stage}/{frag}/{bin}.fasta", stage=w.stage, frag=frag, bin=BINS)
 
 rule quast_all:
@@ -292,22 +300,42 @@ rule lost_gf:
 #---- Minimus for pre-reassembly stages ----------------------------------------
 rule to_amos:
     input:   "{stage}/bins/{bin}.fasta"
-    output:  "{stage}/merged/{bin}.afg"
-    log:     "{stage}/merged/to_amos_{bin}.log"
+    output:  "{stage}/minimus/{bin}.afg"
+    log:     "{stage}/minimus/to_amos_{bin}.log"
     message: "Converting {wildcards.bin} contigs from {wildcards.stage} into AMOS format"
     shell:   "toAmos -s {input} -o {output} >{log} 2>&1"
 
 rule minimus:
-    input:   "{stage}/merged/{bin}.afg"
-    output:  "{stage}/merged/{bin}.fasta"
-    params:  "{stage}/merged/{bin}"
-    log:     "{stage}/merged/{bin}.log"
+    input:   "{stage}/minimus/{bin}.afg"
+    output:  "{stage}/minimus/{bin}.fasta"
+    params:  "{stage}/minimus/{bin}"
+    log:     "{stage}/minimus/{bin}.log"
     message: "Merging {wildcards.bin} from {wildcards.stage} with minimus2"
     shell:   "minimus2 {params} >{log} 2>&1 && cat {params}.singletons.seq >> {output}"
 
+#---- Deduplicate multi-bins via Prodigal and CD-HIT ---------------------------
+rule checkm_tree:
+    input:   expand("binning/full/{bin}.fasta", bin=BINS)
+    output:  touch("stats/checkm_merge.done")
+    threads: THREADS
+    log:     "stats/checkm_merge.log"
+    message: "Running Prodigal on multi-bins"
+    shell:   "set +u; source activate mts27; set -u \n"
+             "checkm tree -t {threads} --pplacer_threads {threads} -x .fasta --nt"
+             " binning/full stats/checkm_merge &>{log}"
+
+rule cdhit:
+    input:   "stats/checkm_merge.done"
+    output:  "binning/cdhit/{bin}.fasta"
+    params:  "stats/checkm_merge/bins/{bin}/genes.fna"
+    threads: THREADS
+    log:     "binning/cdhit/{bin}.log"
+    message: "Clustering {wildcards.bin} with CD-HIT"
+    shell:   "{SOFT}/cd-hit/cd-hit-est -s 0.5 -A 0.95 -i {params} -o {output} -T {threads} &>{log}"
+
 #---- CheckM stats -------------------------------------------------------------
 def checkm_input_dir(w):
-    return w.stage + ("/bins" if (w.stage == "reassembly" or len(GROUPS) == 1) else "/merged")
+    return w.stage + ("/bins" if (w.stage == "reassembly" or len(GROUPS) == 1) else "/cdhit")
 
 rule checkm:
     input:   lambda w: expand("{dir}/{bin}.fasta", dir=checkm_input_dir(w), bin=BINS)

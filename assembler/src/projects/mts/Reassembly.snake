@@ -39,7 +39,7 @@ rule subsample:
     shell:   "{SCRIPTS}/subsample.py {input} {params} >{log}"
 
 rule reassemble:
-    input:   info="reassembly/{bin}/reads.info"#, config="reassembly/{bin}.yaml"
+    input:   info="reassembly/{bin}/reads.info", config="reassembly/{bin}.yaml"
     output:  "reassembly/bins/{bin}.fasta"
     params:  out="reassembly/{bin}"
     log:     "reassembly/{bin}.log"
@@ -51,6 +51,7 @@ rule reassemble:
             files = [line.split() for line in reads_info]
         cov_cutoff = CUTOFF_COEFF * sampled_cov * (READ_LENGTH - ASSEMBLY_K) / (READ_LENGTH - PROFILE_K)
         reads_param = " ".join(["--pe1-1 {} --pe1-2 {}".format(left, right) for left, right in files])
-        shell("{REASSEMBLER_DIR}/spades.py --meta --only-assembler -t {threads}"
+        series_analysis = "--series-analysis " + input.config if PROFILER == "mts" else ""
+        shell("{REASSEMBLER_DIR}/spades.py --meta --only-assembler -t {threads} {series_analysis}"
              " {reads_param} --pe1-ff --hidden-cov-cutoff {cov_cutoff} -o {params.out}"
              " >{log} 2>&1 && cp {params.out}/scaffolds.fasta {output}")
