@@ -12,7 +12,7 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
     const size_t tail_threshold = 3000;
     const size_t distance_bound = 8000;
     const double extender_score_threshold = 0.05;
-    const double tip_score_threshold = 0.07;
+    const double tip_score_threshold = 0.05;
     const double relative_coverage_threshold = 2.0;
 
     path_extend::ScaffoldGraphGapCloserParams params(reliable_edge_length, tail_threshold, distance_bound,

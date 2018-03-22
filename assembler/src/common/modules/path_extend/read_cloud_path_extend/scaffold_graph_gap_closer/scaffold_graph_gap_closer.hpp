@@ -72,6 +72,16 @@ class TipFinderGapCloser : public ScaffoldGraphGapCloser {
     DECL_LOGGER("TipFinderGapCloser");
 };
 
+struct TipPair {
+  typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
+
+  ScaffoldVertex first_;
+  ScaffoldVertex second_;
+  const double score_;
+
+  TipPair(const ScaffoldVertex &first_, const ScaffoldVertex &second_, const double score_);
+};
+
 class ScoreFunctionGapCloser : public ScaffoldGraphGapCloser {
  protected:
     using ScaffoldGraphGapCloser::ScaffoldGraph;

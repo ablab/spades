@@ -122,10 +122,10 @@ void ScoreFunctionGapCloser::CloseGaps(ScaffoldGraphGapCloser::ScaffoldGraph &gr
         TRACE("Backward entry size: " << backward_entry.size());
         vertex_to_in_entry.insert({tip, std::move(backward_entry)});
     }
-    std::vector<pair<ScaffoldVertex, ScaffoldVertex>> tip_connections;
+    std::vector<TipPair> tip_connections;
     std::unordered_map<ScaffoldVertex, size_t> tip_to_out_degree;
     std::unordered_map<ScaffoldVertex, size_t> tip_to_in_degree;
-    size_t no_barcodes;
+    size_t no_barcodes_in_connection;
 #pragma omp parallel for num_threads(max_threads)
     for (size_t i = 0; i < out_tips.size(); ++i) {
         const auto& out_tip = out_tips[i];
@@ -137,8 +137,7 @@ void ScoreFunctionGapCloser::CloseGaps(ScaffoldGraphGapCloser::ScaffoldGraph &gr
                 size_t out_size = out_entry.size();
                 size_t min_size = std::min(in_size, out_size);
                 if (min_size == 0) {
-//                    WARN("No barcodes in min entry");
-                    ++no_barcodes;
+                    ++no_barcodes_in_connection;
                     continue;
                 }
                 std::vector<barcode_index::BarcodeId> intersection;
@@ -149,7 +148,7 @@ void ScoreFunctionGapCloser::CloseGaps(ScaffoldGraphGapCloser::ScaffoldGraph &gr
 #pragma omp critical
                 {
                     if (math::ge(score, score_threshold_)) {
-                        tip_connections.emplace_back(out_tip, in_tip);
+                        tip_connections.emplace_back(out_tip, in_tip, score);
                         tip_to_out_degree[out_tip]++;
                         tip_to_in_degree[in_tip]++;
                     }
@@ -159,18 +158,38 @@ void ScoreFunctionGapCloser::CloseGaps(ScaffoldGraphGapCloser::ScaffoldGraph &gr
 #pragma omp critical
         {
             if (block_size != 0 and i % block_size == 0) {
-                INFO(no_barcodes);
                 INFO("Processed " << i << " tips out of " << out_tips.size());
             }
         }
     }
-    INFO(no_barcodes << " no b");
+    INFO("No barcodes in connection: " << no_barcodes_in_connection);
     INFO(tip_connections.size() << " tip connections");
+
+    const string path = fs::append_path(cfg::get().output_dir, "tip_graph");
+    ofstream tip_fout(path);
+    INFO("Path: " << path);
+    tip_fout << out_tips.size() << endl;
+    for (const auto& tip: out_tips) {
+        const auto& out_entry = vertex_to_out_entry.at(tip);
+        tip_fout << tip.int_id() << " " << out_entry.size() << endl;
+    }
+    tip_fout << in_tips.size() << endl;
+    for (const auto& tip: in_tips) {
+        const auto& in_entry = vertex_to_in_entry.at(tip);
+        tip_fout << tip.int_id() << " " << in_entry.size() << endl;
+    }
+    tip_fout << tip_connections.size();
+    for (const auto& connection: tip_connections) {
+        tip_fout << connection.first_.int_id() << " " << connection.second_.int_id() << " " << connection.score_ << endl;
+    }
+
+    INFO("Printed tip graph");
+
     size_t gaps_closed = 0;
     for (const auto& connection: tip_connections) {
-        auto out_tip = connection.first;
-        auto in_tip = connection.second;
-        if (tip_to_out_degree.at(out_tip) == 1 and tip_to_in_degree[in_tip] == 1) {
+        auto out_tip = connection.first_;
+        auto in_tip = connection.second_;
+        if (tip_to_out_degree.at(out_tip) == 1 and tip_to_in_degree.at(in_tip) == 1) {
             ++gaps_closed;
             graph.AddEdge(out_tip, in_tip, (size_t) -1, 0.0, 0);
         }
@@ -182,4 +201,6 @@ ScoreFunctionGapCloser::ScoreFunctionGapCloser(const Graph &g_,
                                                shared_ptr<BarcodeEntryCollector> entry_collector_,
                                                double score_threshold_)
     : g_(g_), tip_extender_(tip_extender_), entry_collector_(entry_collector_), score_threshold_(score_threshold_) {}
+TipPair::TipPair(const TipPair::ScaffoldVertex &first_, const TipPair::ScaffoldVertex &second_, const double score_)
+    : first_(first_), second_(second_), score_(score_) {}
 }
