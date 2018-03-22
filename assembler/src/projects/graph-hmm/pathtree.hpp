@@ -315,25 +315,22 @@ template<class GraphCursor>
 using PathLinkRef = llvm::IntrusiveRefCntPtr<PathLink<GraphCursor>>;
 }  // namespace pathtree
 
-template<class GraphCursor>
+template <class GraphCursor>
 class PathSet {
  public:
   class path_container {
    public:
-    path_container(pathtree::PathLink<GraphCursor> &paths,
-                   size_t k)
-        : paths_(paths.top_k(k)) {}
+    path_container(pathtree::PathLink<GraphCursor> &paths, size_t k) : paths_(paths.top_k(k)) {}
 
-    auto begin()  const { return paths_.begin(); }
-    auto end()    const { return paths_.end();   }
-    size_t size() const { return paths_.size();  }
+    auto begin() const { return paths_.begin(); }
+    auto end() const { return paths_.end(); }
+    size_t size() const { return paths_.size(); }
     auto operator[](size_t n) const { return paths_[n]; }
 
     std::string str(const std::vector<GraphCursor> &path) const {
       std::string s;
       for (size_t i = 0; i < path.size(); ++i) {
-        if (path[i].is_empty())
-          continue;
+        if (path[i].is_empty()) continue;
 
         s += path[i].letter();
       }
@@ -341,7 +338,7 @@ class PathSet {
     }
     std::string str(size_t n) const { return str(paths_[n].first); }
 
- private:
+   private:
     std::vector<std::pair<std::vector<GraphCursor>, double>> paths_;
   };
 
@@ -352,9 +349,7 @@ class PathSet {
   std::vector<GraphCursor> best_path() const { return pathlink_.best_path(); }
   std::string best_path_string() const { return pathlink_.best_path_string(); }
 
-  path_container top_k(size_t k) {
-    return path_container(pathlink_, k);
-  }
+  path_container top_k(size_t k) { return path_container(pathlink_, k); }
 
  private:
   pathtree::PathLink<GraphCursor> pathlink_;
