@@ -192,7 +192,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     auto best = best_ancestor();
     if (best == scores_.end()) {
       return result;
-      // TODO Support empty Link as a comon case and remove this workaround
+      // TODO Support empty Link as a common case and remove this workaround
     }
 
     double best_score = best->second.first;
