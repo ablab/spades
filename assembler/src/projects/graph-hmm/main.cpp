@@ -157,10 +157,11 @@ std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<GraphCursor>
 
 using debruijn_graph::EdgeId;
 using debruijn_graph::ConjugateDeBruijnGraph;
-std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
-                                  const ConjugateDeBruijnGraph &graph,
-                                  const hmmer::HMM &hmm, const cfg &cfg,
-                                  ESL_STOPWATCH *w) {
+using EdgeAlnInfo = std::unordered_map<EdgeId,   std::pair<unsigned, unsigned>>;
+EdgeAlnInfo matched_edges(const std::vector<EdgeId> &edges,
+                          const ConjugateDeBruijnGraph &graph,
+                          const hmmer::HMM &hmm, const cfg &cfg,
+                          ESL_STOPWATCH *w) {
     bool hmm_in_aas = hmm.abc()->K == 20;
     hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
 
@@ -189,7 +190,7 @@ std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
     matcher.summarize();
     esl_stopwatch_Stop(w);
 
-    std::unordered_set<EdgeId> match_edges;
+    EdgeAlnInfo match_edges;
     for (const auto &hit : matcher.hits()) {
         if (!hit.reported() || !hit.included())
             continue;
@@ -197,7 +198,23 @@ std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
         EdgeId e = edges[std::stoull(hit.name())];
         if (cfg.debug)
             INFO("HMMER seq id:" <<  hit.name() << ", edge id:" << e);
-        match_edges.insert(e);
+
+        for (const auto &domain : hit.domains()) {
+            // Calculate HMM overhang
+            std::pair<int, int> seqpos = domain.seqpos();
+            std::pair<int, int> hmmpos = domain.hmmpos();
+
+            long roverhang = std::max((domain.M() - hmmpos.second) - (domain.L() - seqpos.second), 0L);
+            long loverhang = std::max(hmmpos.first - seqpos.first, 0);
+
+            auto &entry = match_edges[e];
+            if (entry.first < loverhang)
+                entry.first = unsigned(loverhang);
+            if (entry.second < roverhang)
+                entry.second = unsigned(roverhang);
+
+            INFO("" << e << ":" << entry);
+        }
     }
     INFO("Total matched edges: " << match_edges.size());
 
@@ -208,7 +225,7 @@ std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
         p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
     }
 
-    return std::vector<EdgeId>(match_edges.cbegin(), match_edges.cend());
+    return match_edges;
 }
 
 int main(int argc, char* argv[]) {
@@ -259,26 +276,41 @@ int main(int argc, char* argv[]) {
         if (p7hmm->desc) { if (fprintf(stderr, "Description: %s\n", p7hmm->desc) < 0) FATAL_ERROR("write failed"); }
 
         esl_stopwatch_Start(w);
-        auto match_edges = matched_edges(edges, graph, hmm, cfg, w);
 
         // Collect the neighbourhood of the matched edges
         bool hmm_in_aas = hmm.abc()->K == 20;
-        size_t bound = (hmm_in_aas ? 6 : 2) * p7hmm->M;
-        INFO("Dijkstra bound set to " << bound);
-        auto fdijkstra = omnigraph::CreateEdgeBoundedDijkstra(graph, bound);
-        auto bdijkstra = omnigraph::CreateBackwardEdgeBoundedDijkstra(graph, bound);
-
+        size_t mult =  (hmm_in_aas ? 6 : 2);
+        std::vector<EdgeId> match_edges;
         std::unordered_map<EdgeId, std::unordered_set<VertexId>> neighbourhoods;
-        for (EdgeId e : match_edges) {
+        for (const auto &entry : matched_edges(edges, graph, hmm, cfg, w)) {
+            EdgeId e = entry.first;
+            match_edges.push_back(e);
             INFO("Extracting neighbourhood of edge " << e);
-            fdijkstra.Run(graph.EdgeEnd(e));
-            bdijkstra.Run(graph.EdgeStart(e));
-            std::vector<VertexId> fvertices = fdijkstra.ReachedVertices();
-            std::vector<VertexId> bvertices = bdijkstra.ReachedVertices();
-            std::unordered_set<VertexId> vertices;
+
+            std::pair<unsigned, unsigned> overhangs = entry.second;
+            overhangs.first *= mult; overhangs.second *= mult;
+            INFO("Dijkstra bounds set to " << overhangs);
+
+            std::vector<VertexId> fvertices, bvertices;
+            // If hmm overhangs from the edge, then run edge-bounded dijkstra to
+            // extract the graph neighbourhood.
+            if (overhangs.second > 0) {
+                auto fdijkstra = omnigraph::CreateEdgeBoundedDijkstra(graph, overhangs.second);
+                fdijkstra.Run(graph.EdgeEnd(e));
+                fvertices = fdijkstra.ReachedVertices();
+            }
+            if (overhangs.first > 0) {
+                auto bdijkstra = omnigraph::CreateBackwardEdgeBoundedDijkstra(graph, overhangs.first);
+                bdijkstra.Run(graph.EdgeStart(e));
+                bvertices = bdijkstra.ReachedVertices();
+            }
+
+            INFO("Total " << std::make_pair(bvertices.size(), fvertices.size()) << " extracted");
 
             neighbourhoods[e].insert(fvertices.begin(), fvertices.end());
             neighbourhoods[e].insert(bvertices.begin(), bvertices.end());
+            neighbourhoods[e].insert(graph.EdgeEnd(e));
+            neighbourhoods[e].insert(graph.EdgeStart(e));
         }
 
         // See, whether we could join some components

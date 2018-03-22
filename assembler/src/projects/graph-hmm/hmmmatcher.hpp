@@ -48,6 +48,8 @@ class HMMMatcher {
         std::pair<int, int> env() const;
         std::pair<int, int> seqpos() const;
         std::pair<int, int> hmmpos() const;
+        long L() const;
+        long M() const;
 
         const P7_DOMAIN *domain() const { return d_; }
 
