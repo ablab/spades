@@ -65,7 +65,7 @@ void HMMMatcher::summarize() {
     p7_tophits_Threshold(th_.get(), pli_.get());
 }
 
-P7_TOPHITS *HMMMatcher::hits() const {
+P7_TOPHITS *HMMMatcher::top_hits() const {
     return th_.get();
 }
 P7_PIPELINE *HMMMatcher::pipeline() const {
@@ -200,4 +200,44 @@ HMMMatcher::pipeline_create(const hmmer_cfg &cfg, int M_hint, int L_hint, int lo
 ERROR:
     p7_pipeline_Destroy(pli);
     return NULL;
+}
+
+const char *HMMMatcher::Hit::name() const { return h_->name; }
+const char *HMMMatcher::Hit::acc() const { return h_->acc; }
+const char *HMMMatcher::Hit::desc() const { return h_->desc; }
+float HMMMatcher::Hit::score() const { return h_->score; }
+double HMMMatcher::Hit::lnP() const { return h_->lnP; }
+size_t HMMMatcher::Hit::ndom() const { return h_->ndom; }
+uint32_t HMMMatcher::Hit::flags() const { return h_->flags; }
+bool HMMMatcher::Hit::reported() const { return flags() & p7_IS_REPORTED; }
+bool HMMMatcher::Hit::included() const { return flags() & p7_IS_INCLUDED; }
+
+const HMMMatcher::HitIterator HMMMatcher::hit_begin() const {
+    return { th_->hit };
+}
+const HMMMatcher::HitIterator HMMMatcher::hit_end() const {
+    return { th_->hit + th_->N };
+}
+
+HMMMatcher::Hit::DomainIterator &HMMMatcher::Hit::DomainIterator::operator++() {
+    ++d_;
+    return *this;
+}
+
+bool HMMMatcher::Domain::reported() const { return d_->is_reported; }
+bool HMMMatcher::Domain::included() const { return d_->is_included; }
+
+std::pair<int, int> HMMMatcher::Domain::env() const { return { d_->ienv, d_->jenv }; }
+std::pair<int, int> HMMMatcher::Domain::seqpos() const { return { d_->ad->sqfrom, d_->ad->sqto }; }
+std::pair<int, int> HMMMatcher::Domain::hmmpos() const { return { d_->ad->hmmfrom, d_->ad->hmmto }; }
+
+float HMMMatcher::Domain::bitscore() const { return d_->bitscore; }
+double HMMMatcher::Domain::lnP() const { return d_->lnP; }
+float HMMMatcher::Domain::oasc() const { return d_->oasc; }
+
+const HMMMatcher::Hit::DomainIterator HMMMatcher::Hit::domain_begin() const {
+    return { h_->dcl };
+}
+const HMMMatcher::Hit::DomainIterator HMMMatcher::Hit::domain_end() const {
+    return { h_->dcl + h_->ndom };
 }

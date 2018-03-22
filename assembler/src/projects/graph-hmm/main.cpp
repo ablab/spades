@@ -189,7 +189,7 @@ std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
     matcher.summarize();
     esl_stopwatch_Stop(w);
 
-    auto th = matcher.hits();
+    auto th = matcher.top_hits();
     std::unordered_set<EdgeId> match_edges;
     for (size_t h = 0; h < th->N; h++) {
         if (!(th->hit[h]->flags & p7_IS_REPORTED))
@@ -206,8 +206,8 @@ std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
 
     int textw = 120;
     if (match_edges.size() && cfg.debug) {
-        p7_tophits_Targets(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-        p7_tophits_Domains(stderr, matcher.hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+        p7_tophits_Targets(stderr, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+        p7_tophits_Domains(stderr, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
         p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
     }
 

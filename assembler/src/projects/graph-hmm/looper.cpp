@@ -221,7 +221,7 @@ static int serial_master(const cfg &cfg) {
 
     esl_stopwatch_Stop(w);
 
-    auto hits = matcher.hits();
+    auto hits = matcher.top_hits();
     std::vector<size_t> good_edges;
     size_t N = hits->N;
     if (cfg.top_hmmer_matches)
