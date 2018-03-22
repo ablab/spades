@@ -189,17 +189,14 @@ std::vector<EdgeId> matched_edges(const std::vector<EdgeId> &edges,
     matcher.summarize();
     esl_stopwatch_Stop(w);
 
-    auto th = matcher.top_hits();
     std::unordered_set<EdgeId> match_edges;
-    for (size_t h = 0; h < th->N; h++) {
-        if (!(th->hit[h]->flags & p7_IS_REPORTED))
-            continue;
-        if (!(th->hit[h]->flags & p7_IS_INCLUDED))
+    for (const auto &hit : matcher.hits()) {
+        if (!hit.reported() || !hit.included())
             continue;
 
-        EdgeId e = edges[std::stoull(th->hit[h]->name)];
+        EdgeId e = edges[std::stoull(hit.name())];
         if (cfg.debug)
-            INFO("HMMER seq id:" <<  th->hit[h]->name << ", edge id:" << e);
+            INFO("HMMER seq id:" <<  hit.name() << ", edge id:" << e);
         match_edges.insert(e);
     }
     INFO("Total matched edges: " << match_edges.size());
