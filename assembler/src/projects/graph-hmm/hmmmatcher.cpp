@@ -230,6 +230,8 @@ bool HMMMatcher::Domain::included() const { return d_->is_included; }
 std::pair<int, int> HMMMatcher::Domain::env() const { return { d_->ienv, d_->jenv }; }
 std::pair<int, int> HMMMatcher::Domain::seqpos() const { return { d_->ad->sqfrom, d_->ad->sqto }; }
 std::pair<int, int> HMMMatcher::Domain::hmmpos() const { return { d_->ad->hmmfrom, d_->ad->hmmto }; }
+long HMMMatcher::Domain::L() const { return d_->ad->L; }
+long HMMMatcher::Domain::M() const { return d_->ad->M; }
 
 float HMMMatcher::Domain::bitscore() const { return d_->bitscore; }
 double HMMMatcher::Domain::lnP() const { return d_->lnP; }
