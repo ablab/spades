@@ -88,9 +88,9 @@ inline std::string translate(const char *nts) {
   size_t len_nts = strlen(nts);
   size_t len_aas = len_nts / 3;  // floor
 
-  std::string aas;
+  std::string aas(len_aas, ' ');
   for (size_t i = 0; i < len_aas; ++i) {
-    aas += to_one_letter(to_aa(nts + 3*i));
+    aas[i] = to_one_letter(to_aa(nts + 3*i));
   }
 
   return aas;
