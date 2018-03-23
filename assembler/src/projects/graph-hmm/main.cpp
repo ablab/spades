@@ -455,7 +455,7 @@ int main(int argc, char* argv[]) {
                 } else {
                     io::WriteWrapped(result.seq, o);
                 }
-                if (cfg.rescore)
+                if (cfg.rescore && result.path.size() > 0)
                     to_rescore.insert(result.path);
             }
         }
