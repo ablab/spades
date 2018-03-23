@@ -224,6 +224,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   PathSet<GraphCursor> result;
   auto &terminal = result.pathlink();
+  terminal.update(empty, std::numeric_limits<double>::infinity(), base);
   auto upd_terminal = [&](const StateSet &S, double fee) {
     for (const auto &kv : S) {
       terminal.update(kv.first, kv.second->score() + fee, kv.second);
