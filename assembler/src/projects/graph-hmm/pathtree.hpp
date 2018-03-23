@@ -513,34 +513,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     return count;
   }
 
-  std::vector<GraphCursor> best_path() const {
-    std::vector<GraphCursor> path;
-
-    const This *p = this;
-    while (p) {
-      auto best = p->best_ancestor();
-      if (best == scores_.end()) {
-        return {GraphCursor(), GraphCursor()};
-        // TODO Support empty Link as a comon case and remove this workaround
-      }
-      path.push_back(best->first);
-      p = best->second.second.get();
-    }
-
-    std::reverse(path.begin(), path.end());
-
-    return path;
-  }
-
-  std::string best_path_string() const {
-    auto path = best_path();
-    std::string s;
-    for (size_t i = 2; i < path.size(); ++i) {
-      s += path[i].letter();
-    }
-    return s;
-  }
-
   ThisRef clone() const { return new This(*this); }
 
  private:
