@@ -208,7 +208,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     return result;
   }
 
-  bool all_ok() const {
+  bool check_all_states_have_children() const {
     std::unordered_set<const This *> checked;
 
     std::queue<const This *> q;
@@ -238,7 +238,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
   }
 
   void clean_non_aggressive() {
-    assert(all_ok());
+    assert(check_all_states_have_children());
 
     auto bs_fwd = best_scores();
     auto bs = bs_fwd.first;
@@ -323,7 +323,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       }
     }
     assert(q.empty());
-    assert(all_ok());
+    assert(check_all_states_have_children());
     assert(!collapsed.count(this));
 
     INFO(collapsed.size() << " states collapsed");
