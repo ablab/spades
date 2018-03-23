@@ -118,9 +118,9 @@ def print_used_values(cfg, log):
         print_value(cfg, "error_correction", "qvoffset", "PHRED offset")
 
         if cfg["error_correction"].gzip_output:
-            log.info("  Corrected reads will be compressed (with gzip)")
+            log.info("  Corrected reads will be compressed")
         else:
-            log.info("  Corrected reads will NOT be compressed (with gzip)")
+            log.info("  Corrected reads will NOT be compressed")
 
     # assembly
     if "assembly" in cfg:
