@@ -93,6 +93,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
   }
 
   auto best_ancestor() const {
+    assert(scores_.size());
     return std::min_element(scores_.cbegin(), scores_.cend(),
                             [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
   }
@@ -153,6 +154,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     };
 
     std::unordered_map<const This *, TopScore> result;
+    std::unordered_map<const This *, std::unordered_set<This*>> forward;
 
     struct Comp {
       bool operator()(const Payload &e1, const Payload &e2) const {
@@ -162,7 +164,9 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
 
     std::priority_queue<Payload, std::vector<Payload>, Comp> q;
     for (const auto &kv : scores_) {
-      q.push({kv.second.second.get(), kv.second.first, this});
+      This *p = kv.second.second.get();
+      q.push({p, kv.second.first, this});
+      forward[p].insert(const_cast<This*>(this));
     }
 
     while (!q.empty()) {
@@ -181,13 +185,15 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       auto best = state->best_ancestor();
       for (auto it = state->scores_.cbegin(); it != state->scores_.cend(); ++it) {
         score_t delta = it->second.first - best->second.first;
-        if (it->second.second.get()) { // is not master source TODO make a method
-          q.push({it->second.second.get(), score + delta, state});
+        This *p = it->second.second.get();
+        if (p) { // is not master source TODO make a method
+          q.push({p, score + delta, state});
+          forward[p].insert(const_cast<This *>(state));
         }
       }
     }
 
-    return result;
+    return make_pair(result, forward);
   }
 
   auto exit_scores() const {
@@ -199,11 +205,45 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     return result;
   }
 
+  bool all_ok() const {
+    std::unordered_set<const This *> checked;
+
+    std::queue<const This *> q;
+    q.push(this);
+    while (!q.empty()) {
+      const This *current = q.front();
+      q.pop();
+      if (!current || checked.count(current)) {
+        continue;
+      }
+
+      if (current->scores_.size() == 0) {
+        return false;
+      }
+
+      checked.insert(current);
+
+      for (const auto &kv : current->scores_) {
+        const This *p = kv.second.second.get();
+        if (p) {
+          q.push(p);
+        }
+      }
+    }
+
+    return true;
+  }
+
   void clean_non_aggressive() {
-    auto bs = best_scores();
+    assert(all_ok());
+
+    auto bs_fwd = best_scores();
+    auto bs = bs_fwd.first;
+    auto forward = bs_fwd.second;
 
     std::queue<This *> q;
     std::unordered_set<This *> processed;
+    std::unordered_set<This *> collapsed;
     q.push(this);
 
     while (!q.empty()) {
@@ -213,25 +253,30 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       if (processed.count(current)) {
         continue;
       }
+      processed.insert(current);
 
       // The order of the elements that are not erased is preserved (this makes it possible to erase individual elements
       // while iterating through the container)
       for (auto it = current->scores_.begin(); it != current->scores_.end();) {
-        This *p = it->second.second.get();
+        const This *p = it->second.second.get();
         assert(p);
         assert(bs.count(p));
 
         if ((current == this && bs[p].ancestor != this) || (current != this && bs[p].ancestor == this)) {
-          INFO("Erasing... ");
           it = current->scores_.erase(it);
-          INFO("State erased");
+          INFO("Link erased");
         } else {
           ++it;
         }
       }
 
+      if (current->scores_.size() == 0) {
+        INFO("We collapse current state");
+        collapsed.insert(current);
+        continue;
+      }
+
       current->clean_left_link_non_aggressive();
-      INFO("Left clean");
 
       for (auto it = current->scores_.begin(); it != current->scores_.end(); ++it) {
         This *p = it->second.second.get();
@@ -240,13 +285,46 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
           q.push(p);
         }
       }
-
-      processed.insert(current);
     }
+
+
+    assert(q.empty());
+    // Remove collapsed states recursively
+    for (This *p : collapsed) {
+      for (This * pp : forward[p]) {
+        q.push(pp);
+      }
+    }
+
+    while (!q.empty()) {
+      This *current = q.front();
+      q.pop();
+
+      for (auto it = current->scores_.begin(); it != current->scores_.end();) {
+        This *p = it->second.second.get();
+        assert(p);
+
+        if (collapsed.count(p)) {
+          it = current->scores_.erase(it);
+          INFO("Link erased");
+        } else {
+          ++it;
+        }
+      }
+
+      if (current->scores_.size() == 0) {
+        INFO("We collapse current state");
+        collapsed.insert(current);
+        for (This * pp : forward[current]) {
+          q.push(pp);
+        }
+      }
+    }
+    assert(all_ok());
   }
 
-  std::vector<std::pair<std::vector<GraphCursor>, double>> top_k(size_t k) {
-    using Payload = std::tuple<GraphCursor, double, This *>;
+  std::vector<std::pair<std::vector<GraphCursor>, double>> top_k(size_t k) const {
+    using Payload = std::tuple<GraphCursor, double, const This *>;
     using Node = Node<Payload>;
     using SPT = NodeRef<Payload>;
     struct Comp {
@@ -256,12 +334,15 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     };
     std::priority_queue<SPT, std::vector<SPT>, Comp> q;
     auto extract_path = [&q]() {
+      assert(!q.empty());
       SPT tail = q.top();
       q.pop();
       GraphCursor gp;
-      This *p;
+      const This *p;
       double cost;
       std::tie(gp, cost, p) = tail->payload();
+
+      INFO("Extracting path with cost " << cost);
 
       std::vector<GraphCursor> path;
 
@@ -270,23 +351,36 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       }
 
       std::reverse(path.begin(), path.end());
+      INFO("tail collected");
 
       while (p) {
         auto new_tail = tail;
         // p->clean_left_link_();
         auto best = p->best_ancestor();
+        INFO("Best anc accessed");
         for (auto it = p->scores_.cbegin(); it != p->scores_.cend(); ++it) {
           double delta = it->second.first - best->second.first;
-          auto spt = make_child(std::make_tuple(it->first, cost + delta, it->second.second.get()), tail);
+          INFO("delta: " << delta);
+          auto spt = make_child(std::make_tuple(it->first, cost + delta, const_cast<const This*>(it->second.second.get())), tail);
+          INFO("spt created");
           if (it != best) {
             q.push(spt);
           } else {
             new_tail = spt;
           }
         }
+        INFO(best->first.is_empty())
+        INFO(best->second.first);
+        INFO("Insert");
         path.push_back(best->first);
+        INFO("Inserted");
         p = best->second.second.get();
         tail = new_tail;
+
+        if (p->best_ancestor()->second.second == nullptr) {  // TODO Add method to check master_source
+          INFO("Stop going down. Reporting the path");
+          break;
+        }
       }
 
       std::reverse(path.begin(), path.end());
@@ -302,6 +396,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     }
 
     double best_score = best->second.first;
+    INFO("Best score: " << best_score);
     auto initial = make_child(std::make_tuple(GraphCursor(), best_score, this));
     q.push(initial);
 
@@ -431,22 +526,22 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
   //    непересекающиеся окна, а не все.
   //    Надо думать...
 
-  std::vector<std::pair<std::string, double>> top_k_string(size_t k) {
-    auto path2string = [](const auto &path) {
-      std::string s;
-      for (size_t i = 2; i < path.size() - 1; ++i) {
-        s += path[i].letter();
-      }
-      return s;
-    };
-
-    std::vector<std::pair<std::string, double>> result;
-    for (const auto &path_score : top_k(k)) {
-      result.push_back({path2string(path_score.first), path_score.second});
-    }
-
-    return result;
-  }
+  // std::vector<std::pair<std::string, double>> top_k_string(size_t k) {
+  //   auto path2string = [](const auto &path) {
+  //     std::string s;
+  //     for (size_t i = 2; i < path.size() - 1; ++i) {
+  //       s += path[i].letter();
+  //     }
+  //     return s;
+  //   };
+  //
+  //   std::vector<std::pair<std::string, double>> result;
+  //   for (const auto &path_score : top_k(k)) {
+  //     result.push_back({path2string(path_score.first), path_score.second});
+  //   }
+  //
+  //   return result;
+  // }
 
   std::vector<GraphCursor> best_path() const {
     std::vector<GraphCursor> path;
