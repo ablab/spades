@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <queue>
 
@@ -133,8 +134,115 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
 
   static ThisRef master_source() {
     auto result(new This());
-    result->scores_[GraphCursor()] = std::make_pair(0, nullptr);  // master_sourse score should be 0
+    result->scores_[GraphCursor()] = std::make_pair(0, nullptr);  // master_source score should be 0
     return result;
+  }
+
+  using score_t = double;
+
+  auto best_scores() const {
+    struct Payload {
+      const This *state;
+      score_t score;
+      const This *ancestor;
+    };
+
+    struct TopScore {
+      score_t score;
+      const This *ancestor;
+    };
+
+    std::unordered_map<const This *, TopScore> result;
+
+    struct Comp {
+      bool operator()(const Payload &e1, const Payload &e2) const {
+        return e1.score > e2.score;
+      }
+    };
+
+    std::priority_queue<Payload, std::vector<Payload>, Comp> q;
+    for (const auto &kv : scores_) {
+      q.push({kv.second.second.get(), kv.second.first, this});
+    }
+
+    while (!q.empty()) {
+      auto payload = q.top();
+      q.pop();
+      const This *state;
+      score_t score;
+      const This *ancestor;
+      std::tie(state, score, ancestor) = {payload.state, payload.score, payload.ancestor};
+
+      if (result.count(state)) {
+        continue;
+      }
+      result[state] = {score, ancestor};
+
+      auto best = state->best_ancestor();
+      for (auto it = state->scores_.cbegin(); it != state->scores_.cend(); ++it) {
+        score_t delta = it->second.first - best->second.first;
+        if (it->second.second.get()) { // is not master source TODO make a method
+          q.push({it->second.second.get(), score + delta, state});
+        }
+      }
+    }
+
+    return result;
+  }
+
+  auto exit_scores() const {
+    std::unordered_map<const This*, score_t> result;
+    for (const auto &kv : scores_) {
+      result[kv.first] = kv.second.fisrt;
+    }
+
+    return result;
+  }
+
+  void clean_non_aggressive() {
+    auto bs = best_scores();
+
+    std::queue<This *> q;
+    std::unordered_set<This *> processed;
+    q.push(this);
+
+    while (!q.empty()) {
+      This *current = q.front();
+      q.pop();
+
+      if (processed.count(current)) {
+        continue;
+      }
+
+      // The order of the elements that are not erased is preserved (this makes it possible to erase individual elements
+      // while iterating through the container)
+      for (auto it = current->scores_.begin(); it != current->scores_.end();) {
+        This *p = it->second.second.get();
+        assert(p);
+        assert(bs.count(p));
+
+        if ((current == this && bs[p].ancestor != this) || (current != this && bs[p].ancestor == this)) {
+          INFO("Erasing... ");
+          it = current->scores_.erase(it);
+          INFO("State erased");
+        } else {
+          ++it;
+        }
+      }
+
+      current->clean_left_link_non_aggressive();
+      INFO("Left clean");
+
+      for (auto it = current->scores_.begin(); it != current->scores_.end(); ++it) {
+        This *p = it->second.second.get();
+        // We cannot do this in the previous loop since some references could be invalidated
+        if (!it->first.is_empty()) {
+          q.push(p);
+        }
+      }
+
+      processed.insert(current);
+    }
   }
 
   std::vector<std::pair<std::vector<GraphCursor>, double>> top_k(size_t k) {
@@ -165,7 +273,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
 
       while (p) {
         auto new_tail = tail;
-        p->clean_left_link_();
+        // p->clean_left_link_();
         auto best = p->best_ancestor();
         for (auto it = p->scores_.cbegin(); it != p->scores_.cend(); ++it) {
           double delta = it->second.first - best->second.first;
@@ -205,6 +313,31 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     }
 
     return result;
+  }
+
+  void clean_left_link_non_aggressive() {
+    auto it_terminal = scores_.find(GraphCursor());
+    if (it_terminal == scores_.end()) {
+      return;
+    }
+
+    auto best = best_ancestor();
+    if (best == scores_.end()) {
+      return;
+      // TODO Support empty Link as a common case and remove this workaround
+    }
+
+    if (best == it_terminal) {
+      for (auto it = scores_.begin(); it != scores_.end(); ) {
+        if (!it->first.is_empty()) {
+          it = scores_.erase(it);
+        } else {
+          ++it;
+        }
+      }
+    } else {
+      scores_.erase(it_terminal);
+    }
   }
 
   size_t clean_left_link_old_() {
