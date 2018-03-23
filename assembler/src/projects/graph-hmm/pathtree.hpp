@@ -197,7 +197,8 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     return result;
   }
 
-  bool check_all_states_have_children() const {
+  template <typename Function>
+  auto apply(const Function &function) {
     std::unordered_set<const This *> checked;
 
     std::queue<const This *> q;
@@ -209,8 +210,34 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
         continue;
       }
 
+      function(*current);
+
+      checked.insert(current);
+
+      for (const auto &kv : current->scores_) {
+        const This *p = kv.second.second.get();
+        if (p) {
+          q.push(p);
+        }
+      }
+    }
+  }
+
+  auto states_without_children() const {
+    std::unordered_set<const This *> checked;
+    std::unordered_set<const This *> result;
+
+    std::queue<const This *> q;
+    q.push(this);
+    while (!q.empty()) {
+      const This *current = q.front();
+      q.pop();
+      if (!current || checked.count(current)) {
+        continue;
+      }
+
       if (current->scores_.size() == 0) {
-        return false;
+        result.insert(current);
       }
 
       checked.insert(current);
@@ -223,10 +250,29 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       }
     }
 
-    return true;
+    return result;
+  }
+
+  bool check_all_states_have_children() const {
+    return states_without_children().size() == 0;
   }
 
   void clean_non_aggressive() {
+    if (!check_all_states_have_children()) {
+      auto bad_states = states_without_children();
+      auto fnc = [&](const auto &state) {
+        for (const auto &kv : state.scores_) {
+          const This *p = kv.second.second.get();
+          if (bad_states.count(p)) {
+            ERROR(kv.first.is_empty());
+            ERROR(kv.second.first);
+            ERROR(kv.first.letter());
+          }
+        }
+      };
+
+      apply(fnc);
+    }
     assert(check_all_states_have_children());
 
     auto bs_fwd = best_scores();
