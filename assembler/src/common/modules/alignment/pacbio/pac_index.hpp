@@ -592,7 +592,7 @@ public:
                       const KmerCluster<Graph> &b) const {
         EdgeId a_edge = a.edgeId;
         EdgeId b_edge = b.edgeId;
-        DEBUG("clusters on " << g_.int_id(a_edge) << " and " << g_.int_id(b_edge));
+        DEBUG("Checking consistency: " << g_.int_id(a_edge) << " and " << g_.int_id(b_edge));
         //FIXME: Is this check useful?
         if (a.sorted_positions[a.last_trustable_index].read_position +
                     (int) pb_config_.max_path_in_dijkstra <
@@ -601,13 +601,14 @@ public:
             return false;
         }
         size_t result = GetDistance(g_.EdgeEnd(a_edge), g_.EdgeStart(b_edge));
-        DEBUG (result);
+        DEBUG ("Distance: " << result);
         if (result == size_t(-1)) {
             return false;
         }
         result += g_.length(a_edge);
         if (similar_in_graph(a.sorted_positions[1], b.sorted_positions[0], (int)result)) {
             DEBUG(" similar! ")
+            return true;
         } else {
 //FIXME: reconsider this condition! i.e only one large range? That may allow to decrease the bwa length cutoff
             if (a.size > LONG_ALIGNMENT_OVERLAP && b.size > LONG_ALIGNMENT_OVERLAP &&
@@ -618,11 +619,12 @@ public:
                       << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k());
                 DEBUG("Ranges:" << a.str(g_) << " " << b.str(g_)
                                 <<" llength and dijkstra shift :" << g_.length(a_edge) << " " << (result - g_.length(a_edge)));
+                return true;
             } else {
+                DEBUG("Not similar")
                 return false;
             }
         }
-        return true;
     }
 
     std::string PathToString(const std::vector<EdgeId> &path) const {
