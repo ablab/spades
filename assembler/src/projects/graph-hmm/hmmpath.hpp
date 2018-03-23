@@ -234,6 +234,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
   upd_terminal(I, fees.t[fees.M][p7H_DM]);  // Do we really need I at the end?
   upd_terminal(M, fees.t[fees.M][p7H_MM]);
 
+  terminal.clean_non_aggressive();
+
   return result;
 }
 
