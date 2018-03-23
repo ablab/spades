@@ -556,14 +556,14 @@ class PathSet {
  public:
   class path_container {
    public:
-    path_container(pathtree::PathLink<GraphCursor> &paths, size_t k) : paths_(paths.top_k(k)) {}
+    path_container(const pathtree::PathLink<GraphCursor> &paths, size_t k) : paths_(paths.top_k(k)) {}
 
     auto begin() const { return paths_.begin(); }
     auto end() const { return paths_.end(); }
     size_t size() const { return paths_.size(); }
     auto operator[](size_t n) const { return paths_[n]; }
 
-    std::string str(const std::vector<GraphCursor> &path) const {
+    static std::string str(const std::vector<GraphCursor> &path) {
       std::string s;
       for (size_t i = 0; i < path.size(); ++i) {
         if (path[i].is_empty()) continue;
@@ -582,10 +582,10 @@ class PathSet {
   const pathtree::PathLink<GraphCursor> &pathlink() const { return pathlink_; }
 
   double best_score() const { return pathlink_.score(); }
-  std::vector<GraphCursor> best_path() const { return pathlink_.best_path(); }
-  std::string best_path_string() const { return pathlink_.best_path_string(); }
+  std::vector<GraphCursor> best_path() const { return top_k(1)[0].first; }
+  std::string best_path_string() const { return path_container::str(best_path()); }
 
-  path_container top_k(size_t k) { return path_container(pathlink_, k); }
+  path_container top_k(size_t k) const { return path_container(pathlink_, k); }
 
  private:
   pathtree::PathLink<GraphCursor> pathlink_;
