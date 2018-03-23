@@ -259,6 +259,7 @@ Sequence MergeSequences(const Graph &g,
 }
 
 int main(int argc, char* argv[]) {
+    utils::segfault_handler sh;
     utils::perf_counter pc;
 
     srand(42);
