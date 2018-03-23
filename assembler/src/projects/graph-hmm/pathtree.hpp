@@ -106,11 +106,14 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       const auto &it = it_fl.first;
       if (it->second.first > score) {
         it->second = std::move(val);
+        assert(scores_.size());
         return true;
       } else {
+        assert(scores_.size());
         return false;
       }
     } else {
+      assert(scores_.size());
       return true;
     }
   }
