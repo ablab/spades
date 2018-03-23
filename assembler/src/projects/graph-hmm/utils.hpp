@@ -42,3 +42,15 @@ inline size_t hash_size_t_pair(size_t s0, size_t s1) {
   s1 ^= s1 << 23;  // a
   return (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26)) + s0;
 }
+
+namespace std {
+template <typename T>
+struct hash<std::vector<T>> {
+    std::size_t operator()(const std::vector<T> &v) const {
+        size_t result = 0xDEADBEEF;
+        for (const auto &entry :v)
+            result = hash_size_t_pair(result, std::hash<T>()(entry));
+        return result;
+    }
+};
+}
