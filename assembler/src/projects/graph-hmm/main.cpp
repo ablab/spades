@@ -41,16 +41,21 @@ struct cfg {
     std::string load_from;
     std::string hmmfile;
     size_t k;
+    size_t top;
     uint64_t int_id;
     unsigned min_size;
     unsigned max_size;
     bool debug;
     bool draw;
+    bool save;
+    bool rescore;
 
     hmmer::hmmer_cfg hcfg;
     cfg()
-            : load_from(""), hmmfile(""), k(0),
-              int_id(0), min_size(2), max_size(1000), debug(false), draw(true)
+            : load_from(""), hmmfile(""), k(0), top(10),
+              int_id(0), min_size(2), max_size(1000),
+              debug(false), draw(true),
+              save(true), rescore(true)
     {}
 };
 
@@ -74,7 +79,8 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
   auto cli = (
       cfg.hmmfile    << value("hmm file"),
       cfg.load_from  << value("load from"),
-      cfg.k          << value("k-mer size"),
+      cfg.k          << integer("k-mer size"),
+      (option("--top") & integer("x", cfg.top)) % "extract top x paths",
       (option("--edge_id") & integer("value", cfg.int_id)) % "match around edge",
       (option("--min_size") & integer("value", cfg.min_size)) % "minimal component size to consider (default: 2)",
       (option("--max_size") & integer("value", cfg.max_size)) % "maximal component size to consider (default: 1000)",
@@ -101,7 +107,10 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       (option("--F2") & number("value", cfg.hcfg.F2)) % "Stage 2 (Vit) threshold: promote hits w/ P <= F2",
       (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3",
       cfg.debug << option("--debug") % "enable extensive debug output",
-      cfg.draw  << option("--draw")  % "draw pictures around the interesting edges"
+      cfg.draw  << option("--draw")  % "draw pictures around the interesting edges",
+      cfg.save << option("--save") % "save found sequences",
+      cfg.rescore  << option("--rescore")  % "rescore paths via HMMer"
+
   );
 
   if (!parse(argc, argv, cli)) {
@@ -355,6 +364,7 @@ int main(int argc, char* argv[]) {
             auto fees = hmm::fees_from_hmm(p7hmm, hmmw->abc());
 
             auto initial = all(component);
+            std::unordered_set<std::vector<EdgeId> > paths;
             auto run_search = [&](const auto &initial) {
                 auto result = find_best_path(fees, initial);
 
@@ -362,19 +372,9 @@ int main(int argc, char* argv[]) {
                 INFO("Best of the best");
                 INFO(result.best_path_string());
                 INFO("Extracting top paths");
-                auto top_paths = result.top_k(5);
-                size_t idx = 0;
-                for (const auto& kv : top_paths) {
+                for (const auto& kv : result.top_k(cfg.top)) {
                     // INFO("" << kv.second << ":" << top_paths.str(kv.first));
-                    auto path = to_path(kv.first);
-                    INFO("Path length : " << path.size() << " edges");
-                    for (EdgeId e : path)
-                        INFO("" << e.int_id());
-                    if (cfg.draw) {
-                        INFO("Writing component around path");
-                        DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
-                    }
-                    idx += 1;
+                    paths.insert(to_path(kv.first));
                 }
             };
 
@@ -383,6 +383,19 @@ int main(int argc, char* argv[]) {
               run_search(initial);
             } else {
               run_search(make_aa_cursors(initial));
+            }
+
+            INFO("Total " << paths.size() << " unique edge paths extracted");
+            size_t idx = 0;
+            for (const auto &path : paths) {
+                INFO("Path length : " << path.size() << " edges");
+                for (EdgeId e : path)
+                    INFO("" << e.int_id());
+                if (cfg.draw) {
+                    INFO("Writing component around path");
+                    DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
+                }
+                idx += 1;
             }
         }
 
