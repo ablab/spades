@@ -122,18 +122,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     for (const auto &kv : other->scores_) {
       update(kv.first, kv.second.first + add_fee, kv.second.second);
     }
-  }
-
-  ThisRef merge(const This *other, double add_fee = 0) const {
-    ThisRef result(*this);
-    result->merge_update(other, add_fee);
-    return result;
-  }
-
-  ThisRef merge(GraphCursor gp, double score, const ThisRef &pl) const {
-    ThisRef result(*this);
-    result->update(gp, score, pl);
-    return result;
+    assert(scores_.size());
   }
 
   static ThisRef master_source() {
