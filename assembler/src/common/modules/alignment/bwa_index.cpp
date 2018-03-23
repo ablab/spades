@@ -318,7 +318,7 @@ static bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
 }
 inline std::ostream& operator<<(std::ostream& os, const mem_alnreg_s& a) {
     os << a.qb << " - " << a.qe << " ---> " << a.rb << " - " << a.re << "query->ref\n";
-    os << a.seedcov << " - seedcov; " << a.score << " - score\n";
+    os << a.seedcov << " - seedcov; " << a.score << " - score";
     return os;
 }
 
@@ -362,7 +362,8 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
         }
         DEBUG(a);
 //FIXME: what about other scoring systems?
-        double qual = a.score/(a.qe - a.qb);
+        double qual = double(a.score)/double(a.qe - a.qb);
+        DEBUG("quality from score: " << qual);
 //length_cutoff meaning changed!
         if (g_.length(ids_[a.rid]) > length_cutoff_ && MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
             continue;
