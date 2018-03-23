@@ -47,6 +47,6 @@ if len(sys.argv) < 4:
 tslrs = sys.argv[1]
 sam_file = sys.argv[2]
 with open(sys.argv[3], 'w') as out:
-    out.write ("Name\tcov\tkmercov(check constants!)\tlength")
+    out.write ("Name\tcov\tkmercov(check constants!)\tlength\n")
     for cov, name in sorted(estimate(tslrs, sam_file, 500), reverse=True):
         out.write("%s\t%f\t%f\t%d\n" % (name[0], cov, cov * (read_len-k)/ read_len, name[1]))
