@@ -239,7 +239,7 @@ EdgeAlnInfo matched_edges(const std::vector<EdgeId> &edges,
 }
 
 std::string PathToString(const std::vector<EdgeId>& path,
-                         const ConjugateDeBruijnGraph &graph) const {
+                         const ConjugateDeBruijnGraph &graph) {
     std::string res = "";
     for (auto e : path)
         res = res + graph.EdgeNucls(e).First(graph.length(e)).str();
