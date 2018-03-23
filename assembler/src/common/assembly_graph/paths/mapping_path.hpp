@@ -52,16 +52,18 @@ struct MappingRange {
     Range initial_range;
 //on edge
     Range mapped_range;
+//ideal - 1.0
+    double quality;
 
     MappingRange() {
     }
 
-    MappingRange(Range initial_range, Range mapped_range)
-            : initial_range(initial_range), mapped_range(mapped_range) {}
+    MappingRange(Range initial_range, Range mapped_range, double quality = 1.0)
+            : initial_range(initial_range), mapped_range(mapped_range), quality(quality) {}
 
-    MappingRange(size_t i_start, size_t i_end, size_t m_start, size_t m_end)
-            : initial_range(i_start, i_end), mapped_range(m_start, m_end) {}
-
+    MappingRange(size_t i_start, size_t i_end, size_t m_start, size_t m_end, double quality = 1.0)
+            : initial_range(i_start, i_end), mapped_range(m_start, m_end), quality(quality) {}
+//TODO: should we support quality?
     MappingRange Merge(const MappingRange &other) const {
         return MappingRange(initial_range.Merge(other.initial_range), mapped_range.Merge(other.mapped_range));
     }
@@ -119,6 +121,7 @@ struct MappingRange {
     MappingRange operator = (const MappingRange & other) {
         initial_range = other.initial_range;
         mapped_range = other.mapped_range;
+        quality = other.quality;
         return *this;
     }
 

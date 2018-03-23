@@ -145,9 +145,8 @@ public:
         for (const auto &e_mr : mapped_path) {
             EdgeId e = e_mr.first;
             omnigraph::MappingRange mr = e_mr.second;
-            DEBUG("ReadName=" << read.name() << " BWA loading edge=" << g_.int_id(e) << " edge_length=" << g_.length(e) 
-                                                                    << " e_start=" << mr.mapped_range.start_pos << " e_end=" << mr.mapped_range.end_pos 
-                                                                    << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos );
+            DEBUG("ReadName=" << read.name() << " BWA loading edge=" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" << mr.mapped_range.end_pos 
+                                                                    << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos << " qual " << mr.quality);
             size_t cut = 0;
             size_t edge_start_pos = mr.mapped_range.start_pos;
             size_t edge_end_pos = mr.mapped_range.end_pos;
@@ -157,7 +156,7 @@ public:
                 DEBUG ("skipping extra-short alignment");
                 continue;
             }
-            res.insert(KmerCluster<Graph>(e, edge_start_pos, edge_end_pos, read_start_pos, read_end_pos));
+            res.insert(KmerCluster<Graph>(e, edge_start_pos, edge_end_pos, read_start_pos, read_end_pos, mr.quality));
         }
         DEBUG("Ended loading bwa")
         return res;
@@ -361,14 +360,14 @@ public:
     std::vector<int> GetWeightedColors(const ClustersSet &mapping_descr) const {
         size_t len = mapping_descr.size();
         std::vector<int> colors(len, UNDEF_COLOR);
-        std::vector<int> cluster_size(len);
+        std::vector<double> cluster_size(len);
         size_t ii = 0;
         for (const auto &cl : mapping_descr) {
-            cluster_size[ii++] = cl.size;
+            cluster_size[ii++] = cl.size * cl.quality;
         }
         const auto cons_table = FillConnectionsTable(mapping_descr);
 
-        std::vector<int> max_size(len);
+        std::vector<double> max_size(len);
         std::vector<size_t> prev(len);
 
         int cur_color = 0;
@@ -382,16 +381,16 @@ public:
                 max_size[i] = cluster_size[i];
                 for (size_t j = 0; j < i; j++) {
                     if (colors[j] != -1) continue;
-                    if (cons_table[j][i] && max_size[i] < cluster_size[i] + max_size[j]) {
+                    if (cons_table[j][i] && math::ls(max_size[i], cluster_size[i] + max_size[j])) {
                         max_size[i] = max_size[j] + cluster_size[i];
                         prev[i] = j;
                     }
                 }
             }
-            int maxx = 0;
+            double maxx = 0;
             int maxi = -1;
             for (size_t j = 0; j < len; j++) {
-                if (max_size[j] > maxx) {
+                if (math::gr(max_size[j], maxx)) {
                     maxx = max_size[j];
                     maxi = int(j);
                 }

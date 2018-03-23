@@ -66,8 +66,9 @@ struct KmerCluster {
     EdgeId edgeId;
     std::vector<MappingInstance> sorted_positions;
     int size;
+    double quality;
 
-    KmerCluster(EdgeId e, size_t edge_start_pos, size_t edge_end_pos, size_t read_start_pos, size_t read_end_pos) {
+    KmerCluster(EdgeId e, size_t edge_start_pos, size_t edge_end_pos, size_t read_start_pos, size_t read_end_pos, double quality):quality(quality) {
         last_trustable_index = 1;
         first_trustable_index = 0;
         sorted_positions.push_back(MappingInstance((int)edge_start_pos, (int)read_start_pos, 1));

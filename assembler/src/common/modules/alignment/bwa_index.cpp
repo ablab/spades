@@ -361,18 +361,19 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
             mapping_range_end = pos + a.re - a.rb - g_.k();
         }
         DEBUG(a);
-
+//FIXME: what about other scoring systems?
+        double qual = a.score/(a.qe - a.qb);
 //length_cutoff meaning changed!
         if (g_.length(ids_[a.rid]) > length_cutoff_ && MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
             continue;
         if (!is_rev) {
             res.push_back(ids_[a.rid],
                           { { (size_t)a.qb, initial_range_end },
-                            { pos, mapping_range_end}});
+                            { pos, mapping_range_end}, qual});
         } else {
             res.push_back(g_.conjugate(ids_[a.rid]),
                           { { (size_t)a.qb, initial_range_end }, //.Invert(read_length),
-                            Range(pos,  mapping_range_end).Invert(g_.length(ids_[a.rid])) });
+                            Range(pos,  mapping_range_end).Invert(g_.length(ids_[a.rid])) , qual});
 
         }
     }
