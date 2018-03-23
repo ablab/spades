@@ -181,7 +181,7 @@ public:
             EdgeId e = e_mr.first;
             omnigraph::MappingRange mr = e_mr.second;
             DEBUG("ReadName=" << read.name() << " BWA loading edge=" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" << mr.mapped_range.end_pos 
-                                                                    << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos << " qual " << mr.quality);
+                                                                    << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos << " qual " << mr.quality <<" len "<< g_.length(e) );
             size_t cut = 0;
             size_t edge_start_pos = mr.mapped_range.start_pos;
             size_t edge_end_pos = mr.mapped_range.end_pos;
