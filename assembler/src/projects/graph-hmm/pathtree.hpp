@@ -559,6 +559,8 @@ class PathSet {
 
   path_container top_k(size_t k) const { return path_container(pathlink_, k); }
 
+  auto clip_tails_non_agressive() { return pathlink_.clean_non_aggressive(); }
+
  private:
   pathtree::PathLink<GraphCursor> pathlink_;
 };
