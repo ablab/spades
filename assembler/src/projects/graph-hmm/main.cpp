@@ -13,6 +13,7 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 #include "io/reads/io_helper.hpp"
+#include "io/reads/osequencestream.hpp"
 
 #include "version.hpp"
 
@@ -54,7 +55,7 @@ struct cfg {
     cfg()
             : load_from(""), hmmfile(""), k(0), top(10),
               int_id(0), min_size(2), max_size(1000),
-              debug(false), draw(true),
+              debug(false), draw(false),
               save(true), rescore(true)
     {}
 };
@@ -237,6 +238,26 @@ EdgeAlnInfo matched_edges(const std::vector<EdgeId> &edges,
     return match_edges;
 }
 
+std::string PathToString(const std::vector<EdgeId>& path,
+                         const ConjugateDeBruijnGraph &graph) const {
+    std::string res = "";
+    for (auto e : path)
+        res = res + graph.EdgeNucls(e).First(graph.length(e)).str();
+    return res;
+}
+
+template<class Graph>
+Sequence MergeSequences(const Graph &g,
+                        const std::vector<typename Graph::EdgeId> &continuous_path) {
+    std::vector<Sequence> path_sequences;
+    path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
+    for (size_t i = 1; i < continuous_path.size(); ++i) {
+        VERIFY(g.EdgeEnd(continuous_path[i - 1]) == g.EdgeStart(continuous_path[i]));
+        path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
+    }
+    return MergeOverlappingSequences(path_sequences, g.k());
+}
+
 int main(int argc, char* argv[]) {
     utils::perf_counter pc;
 
@@ -336,6 +357,34 @@ int main(int argc, char* argv[]) {
         }
         INFO("Total unique neighbourhoods extracted " << neighbourhoods.size());
 
+        struct PathInfo {
+            EdgeId leader;
+            unsigned priority;
+            std::string seq;
+            std::vector<EdgeId> path;
+
+            PathInfo(EdgeId e, unsigned prio, std::string s, std::vector<EdgeId> p)
+                    : leader(e), priority(prio), seq(std::move(s)), path(std::move(p)) {}
+        };
+
+        std::vector<PathInfo> results;
+        auto fees = hmm::fees_from_hmm(p7hmm, hmmw->abc());
+
+        auto run_search = [&](const auto &initial, EdgeId e, size_t top,
+                              std::vector<PathInfo> &local_results) {
+            auto result = find_best_path(fees, initial);
+
+            INFO("Best score: " << result.best_score());
+            INFO("Best of the best");
+            INFO(result.best_path_string());
+            INFO("Extracting top paths");
+            auto top_paths = result.top_k(top);
+            size_t idx = 0;
+            for (const auto& kv : top_paths) {
+                local_results.emplace_back(e, idx++, top_paths.str(kv.first), to_path(kv.first));
+            }
+        };
+
         for (const auto &kv : neighbourhoods) {
             EdgeId e = kv.first;
 
@@ -347,6 +396,8 @@ int main(int argc, char* argv[]) {
 
             if (component.e_size()/2 < cfg.min_size) {
                 INFO("Component is too small (" << component.e_size() / 2 << " vs " << cfg.min_size << "), skipping");
+                // Special case: if the component has only a single edge, add it to results
+                results.emplace_back(e, 0, std::string(), std::vector<EdgeId>(1, e));
                 continue;
             }
 
@@ -360,30 +411,20 @@ int main(int argc, char* argv[]) {
                 DrawComponent(component, graph, std::to_string(graph.int_id(e)), match_edges);
             }
 
-
-            auto fees = hmm::fees_from_hmm(p7hmm, hmmw->abc());
-
             auto initial = all(component);
-            std::unordered_set<std::vector<EdgeId> > paths;
-            auto run_search = [&](const auto &initial) {
-                auto result = find_best_path(fees, initial);
-
-                INFO("Best score: " << result.best_score());
-                INFO("Best of the best");
-                INFO(result.best_path_string());
-                INFO("Extracting top paths");
-                for (const auto& kv : result.top_k(cfg.top)) {
-                    // INFO("" << kv.second << ":" << top_paths.str(kv.first));
-                    paths.insert(to_path(kv.first));
-                }
-            };
 
             INFO("Running path search");
-            if (fees.k == 4) {
-              run_search(initial);
+            std::vector<PathInfo> local_results;
+            if (hmm_in_aas) {
+                run_search(make_aa_cursors(initial), e, cfg.top, local_results);
             } else {
-              run_search(make_aa_cursors(initial));
+                run_search(initial, e, cfg.top, local_results);
             }
+
+            std::unordered_set<std::vector<EdgeId>> paths;
+            for (const auto& entry : local_results)
+                paths.insert(entry.path);
+            results.insert(results.end(), local_results.begin(), local_results.end());
 
             INFO("Total " << paths.size() << " unique edge paths extracted");
             size_t idx = 0;
@@ -396,6 +437,41 @@ int main(int argc, char* argv[]) {
                     DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
                 }
                 idx += 1;
+            }
+        }
+        INFO("Total " << results.size() << " results extracted");
+
+        std::unordered_set<std::vector<EdgeId>> to_rescore;
+        if (cfg.save) {
+            std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".fa", std::ios::out);
+            for (const auto &result : results) {
+                o << ">" << result.leader << "_" << result.priority;
+                if (result.seq.size() == 0)
+                    o << " (whole edge)";
+                o << '\n';
+                if (result.seq.size() == 0) {
+                    io::WriteWrapped(graph.EdgeNucls(result.leader).str(), o);
+                } else {
+                    io::WriteWrapped(result.seq, o);
+                }
+                if (cfg.rescore)
+                    to_rescore.insert(result.path);
+            }
+        }
+
+        INFO("Total " << to_rescore.size() << " paths to rescore");
+        if (cfg.rescore) {
+            std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".edges.fa", std::ios::out);
+
+            for (const auto &entry : to_rescore) {
+                o << ">";
+                for (size_t i = 0; i < entry.size(); ++i) {
+                    o << entry[i];
+                    if (i != entry.size() - 1)
+                        o << "_";
+                }
+                o << '\n';
+                io::WriteWrapped(MergeSequences(graph, entry).str(), o);
             }
         }
 
