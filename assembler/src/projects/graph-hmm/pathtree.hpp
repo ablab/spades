@@ -260,6 +260,8 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
   void clean_non_aggressive() {
     if (!check_all_states_have_children()) {
       auto bad_states = states_without_children();
+      INFO(this);
+      INFO(bad_states);
       auto fnc = [&](const auto &state) {
         for (const auto &kv : state.scores_) {
           const This *p = kv.second.second.get();
