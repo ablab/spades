@@ -287,7 +287,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       }
     }
 
-
     assert(q.empty());
     // Remove collapsed states recursively
     for (This *p : collapsed) {
@@ -320,7 +319,11 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
         }
       }
     }
+    assert(q.empty());
     assert(all_ok());
+    assert(!collapsed.count(this));
+
+    INFO(collapsed.size() << " states collapsed");
   }
 
   std::vector<std::pair<std::vector<GraphCursor>, double>> top_k(size_t k) const {
