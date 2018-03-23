@@ -137,17 +137,15 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     return result;
   }
 
-  struct Comp {
-    template <typename T>
-    bool operator()(const T &e1, const T &e2) const {
-      return std::get<double>(e1->payload()) > std::get<double>(e2->payload());
-    }
-  };
-
   std::vector<std::pair<std::vector<GraphCursor>, double>> top_k(size_t k) {
     using Payload = std::tuple<GraphCursor, double, This *>;
     using Node = Node<Payload>;
     using SPT = NodeRef<Payload>;
+    struct Comp {
+      bool operator()(const SPT &e1, const SPT &e2) const {
+        return std::get<1>(e1->payload()) > std::get<1>(e2->payload());
+      }
+    };
     std::priority_queue<SPT, std::vector<SPT>, Comp> q;
     auto extract_path = [&q]() {
       SPT tail = q.top();
@@ -209,7 +207,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     return result;
   }
 
-  size_t clean_left_link_() {
+  size_t clean_left_link_old_() {
     // the idea is in the following:
     // if a path is a prefix or suffix of another one,
     // we do not consider them as DIFFERENT paths. We leave only one (the best) of them
@@ -235,6 +233,46 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       if (score >= terminal_score) {  // We prefer short paths
         to_remove.push_back(kv.first);
       } else {
+        to_remove.push_back(GraphCursor());
+      }
+    }
+
+    size_t count = 0;
+    for (const auto &key : to_remove) {
+      count += scores_.erase(key);
+    }
+
+    return count;
+  }
+
+  size_t clean_left_link_() {
+    // the idea is in the following:
+    // if a path is a prefix or suffix of another one,
+    // we do not consider them as DIFFERENT paths. We leave only one (the best) of them
+    // In order to implement this we do not allow to link to be "left-terminal" (contain backref to "empty cursor") and
+    // "transit" (contain backrefs to other nontrivial links).
+    // Here we just remove ref to empty cursor or refs to nontrivial links dependent on what is better
+
+    // If terminal ref is present:
+    // 1) Remove all other refs worse than it
+    // 2) In case of some non-terminal refs still present, remove terminal ref as well
+    // We add some tolerance. If two paths have almost equal scores we keep them both
+    const double eps = 1e-7;
+    auto it_terminal = scores_.find(GraphCursor());
+    if (it_terminal == scores_.end()) {
+      return 0;
+    }
+
+    double terminal_score = it_terminal->second.first;
+    std::vector<GraphCursor> to_remove;
+    for (const auto &kv : scores_) {
+      if (kv.first.is_empty()) {
+        continue;
+      }
+      double score = kv.second.first;
+      if (score > terminal_score + eps) {
+        to_remove.push_back(kv.first);
+      } else if (score < terminal_score - eps) {
         to_remove.push_back(GraphCursor());
       }
     }
