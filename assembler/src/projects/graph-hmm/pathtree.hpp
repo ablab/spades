@@ -264,14 +264,14 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
 
         if ((current == this && bs[p].ancestor != this) || (current != this && bs[p].ancestor == this)) {
           it = current->scores_.erase(it);
-          INFO("Link erased");
+          TRACE("Link erased");
         } else {
           ++it;
         }
       }
 
       if (current->scores_.size() == 0) {
-        INFO("We collapse current state");
+        TRACE("We collapse current state");
         collapsed.insert(current);
         continue;
       }
@@ -305,14 +305,14 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
 
         if (collapsed.count(p)) {
           it = current->scores_.erase(it);
-          INFO("Link erased");
+          TRACE("Link erased");
         } else {
           ++it;
         }
       }
 
       if (current->scores_.size() == 0) {
-        INFO("We collapse current state");
+        TRACE("We collapse current state");
         collapsed.insert(current);
         for (This * pp : forward[current]) {
           q.push(pp);
@@ -345,7 +345,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       double cost;
       std::tie(gp, cost, p) = tail->payload();
 
-      INFO("Extracting path with cost " << cost);
+      TRACE("Extracting path with cost " << cost);
 
       std::vector<GraphCursor> path;
 
@@ -354,34 +354,25 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       }
 
       std::reverse(path.begin(), path.end());
-      INFO("tail collected");
 
       while (p) {
         auto new_tail = tail;
         // p->clean_left_link_();
         auto best = p->best_ancestor();
-        INFO("Best anc accessed");
         for (auto it = p->scores_.cbegin(); it != p->scores_.cend(); ++it) {
           double delta = it->second.first - best->second.first;
-          INFO("delta: " << delta);
           auto spt = make_child(std::make_tuple(it->first, cost + delta, const_cast<const This*>(it->second.second.get())), tail);
-          INFO("spt created");
           if (it != best) {
             q.push(spt);
           } else {
             new_tail = spt;
           }
         }
-        INFO(best->first.is_empty())
-        INFO(best->second.first);
-        INFO("Insert");
         path.push_back(best->first);
-        INFO("Inserted");
         p = best->second.second.get();
         tail = new_tail;
 
         if (p->best_ancestor()->second.second == nullptr) {  // TODO Add method to check master_source
-          INFO("Stop going down. Reporting the path");
           break;
         }
       }
@@ -399,7 +390,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     }
 
     double best_score = best->second.first;
-    INFO("Best score: " << best_score);
     auto initial = make_child(std::make_tuple(GraphCursor(), best_score, this));
     q.push(initial);
 
