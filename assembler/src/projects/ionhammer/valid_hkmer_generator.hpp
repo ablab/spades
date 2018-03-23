@@ -193,7 +193,7 @@ void ValidHKMerGenerator<kK>::Next() {
     // If we went past the end, then there are no new kmers anymore.
     // The current one might be incomplete but we yield it anyway
     // because one hk-mer can't have much influence on the consensus.
-    if (pos_ >= end_) {
+    if (pos_ + nlen_ >= end_) {
       last_ = true;
       if (toadd > 0) {
         has_more_ = false;
