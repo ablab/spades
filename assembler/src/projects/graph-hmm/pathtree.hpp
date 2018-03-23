@@ -513,36 +513,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     return count;
   }
 
-  // clean_right_link
-  // 1) У нас есть набор вершин, которые могут быть концами (правыми) путей.
-  // 2) Изначально в этом наборе есть одна вершина --- с наименьшим штрафом (т.е. правый конец наилучшего пути)
-  // 3) Вершины, которые принадлежат уже построеным оптимальным путям не могут быть началами путей,
-  //    потому что для каждого пути, начинающегося из них, есть путь, который не хуже
-  //    ТАК, тут нужен более мягкий критерий, выкидывать не вершины, а линки выравниваний.
-  //    Если линк выравнивания пройден ранее, то не надо пытаться с него начать путь.
-  // 4) Вершины, с которых начинаются пути, не могу лежать ни на каких другх путях
-  //    Это тоже жестковато, представим себе скользящее окно даже на прямой.
-  //    При таком агрессивном подходе мы найдем только
-  //    непересекающиеся окна, а не все.
-  //    Надо думать...
-
-  // std::vector<std::pair<std::string, double>> top_k_string(size_t k) {
-  //   auto path2string = [](const auto &path) {
-  //     std::string s;
-  //     for (size_t i = 2; i < path.size() - 1; ++i) {
-  //       s += path[i].letter();
-  //     }
-  //     return s;
-  //   };
-  //
-  //   std::vector<std::pair<std::string, double>> result;
-  //   for (const auto &path_score : top_k(k)) {
-  //     result.push_back({path2string(path_score.first), path_score.second});
-  //   }
-  //
-  //   return result;
-  // }
-
   std::vector<GraphCursor> best_path() const {
     std::vector<GraphCursor> path;
 
