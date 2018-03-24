@@ -79,6 +79,7 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
 
 template <typename GraphCursor>
 PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<GraphCursor> &initial) {
+  const double absolute_threshold = 100.0;
   using StateSet = StateSet<GraphCursor>;
   const auto &code = fees.code;
 
@@ -167,8 +168,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     I = std::move(Inew);  // It is necessary to copy minorly updated states
   };
 
-  auto i_loop_processing_non_negative = [&fees, &code](StateSet &I, size_t m) {
-    const double absolute_threshold = 100;
+  auto i_loop_processing_non_negative = [&fees, &code, &absolute_threshold](StateSet &I, size_t m) {
     const auto &emission_fees = fees.ins[m];
     const auto &transfer_fee = fees.t[m][p7H_II];
 
@@ -296,21 +296,22 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m], "i");
     i_loop_processing(I, m);
 
-    size_t top = std::max({D.size(), I.size(), M.size()});
-    TRACE("Top " << m << " => " << top);
+    size_t n_of_states = D.size() + I.size() + M.size();
+    TRACE("# states " << m << " => " << n_of_states);
+    size_t top = n_of_states;
     if (m > 10) {
-      top = std::min<size_t>(1000000, top);
+      top = 1000000;
     }
     if (m > 50) {
-      top = std::min<size_t>(20000, top);
+      top = 20000;
     }
     if (m > 500) {
-      top = std::min<size_t>(10000, top);
+      top = 10000;
     }
 
-    I.filter(top, 100);
-    M.filter(top, 100);
-    D.filter(top, 100);
+    I.filter(top, absolute_threshold);
+    M.filter(top, absolute_threshold);
+    D.filter(top, absolute_threshold);
   }
 
   PathSet<GraphCursor> result;
