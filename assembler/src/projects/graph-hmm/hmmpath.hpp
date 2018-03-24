@@ -47,6 +47,34 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
   }
 
   // TODO implement method detecting upd of any kind
+
+  void filter(size_t count, double score) {
+    count = std::min(count, this->size());
+    if (count == 0) {
+      this->clear();
+      return;
+    }
+
+    {
+      std::vector<double> scores;
+      scores.reserve(this->size());
+      for (auto it = this->begin(); it != this->end(); ++it) {
+        scores.push_back(it->second->score());
+      }
+
+      std::nth_element(scores.begin(), scores.begin() + count - 1, scores.end());
+      score = std::min(score, scores[count - 1]);
+    }
+
+    for (auto it = this->begin(); it != this->end();) {
+      if (it->second->score() > score) {
+        it = this->erase(it);
+      } else {
+        ++it;
+      }
+    }
+  }
+
 };
 
 template <typename GraphCursor>
@@ -214,9 +242,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
       top = std::min<size_t>(10000, top);
     }
 
-    I = top_filter(I, top, 100);
-    M = top_filter(M, top, 100);
-    D = top_filter(D, top, 100);
+    I.filter(top, 100);
+    M.filter(top, 100);
+    D.filter(top, 100);
   }
 
   PathSet<GraphCursor> result;
