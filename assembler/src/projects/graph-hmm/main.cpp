@@ -369,6 +369,7 @@ int main(int argc, char* argv[]) {
         };
 
         std::vector<PathInfo> results;
+        std::vector<std::pair<double, std::string>> resultant_paths;
         auto fees = hmm::fees_from_hmm(p7hmm, hmmw->abc());
 
         auto run_search = [&](const auto &initial, EdgeId e, size_t top,
@@ -382,7 +383,9 @@ int main(int argc, char* argv[]) {
             auto top_paths = result.top_k(top);
             size_t idx = 0;
             for (const auto& kv : top_paths) {
-                local_results.emplace_back(e, idx++, top_paths.str(kv.first), to_path(kv.first));
+                auto seq = top_paths.str(kv.first);
+                local_results.emplace_back(e, idx++, seq, to_path(kv.first));
+                resultant_paths.push_back({kv.second, seq});
             }
         };
 
@@ -441,9 +444,16 @@ int main(int argc, char* argv[]) {
             }
         }
         INFO("Total " << results.size() << " results extracted");
+        INFO("Total " << resultant_paths.size() << " resultant paths extracted");
+        std::sort(resultant_paths.begin(), resultant_paths.end());
 
         std::unordered_set<std::vector<EdgeId>> to_rescore;
         if (cfg.save) {
+            std::ofstream oo(std::string("graph-hmm-") + p7hmm->name + ".paths.fa", std::ios::out);
+            for (const auto &result : resultant_paths) {
+                oo << ">Score_" << result.first << "\n" << result.second << "\n";
+            }
+
             std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".fa", std::ios::out);
             for (const auto &result : results) {
                 o << ">" << result.leader << "_" << result.priority;
