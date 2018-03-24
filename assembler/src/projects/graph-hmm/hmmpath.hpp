@@ -52,22 +52,19 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
 template <typename GraphCursor>
 StateSet<GraphCursor> top_filter(const StateSet<GraphCursor> &S, size_t top, double threshold) {
   using StateSet = StateSet<GraphCursor>;
-  top = std::min(top, S.size());
-  std::vector<std::pair<typename StateSet::key_type, typename StateSet::mapped_type>> v(S.cbegin(), S.cend());
+  std::vector<std::pair<typename StateSet::key_type, typename StateSet::mapped_type>> v;
 
-  // TODO Use std::nth_element
-  std::sort(v.begin(), v.end(), [](const auto &e1, const auto &e2) { return e1.second->score() < e2.second->score(); });
-  if (v.size() < top) {
-    top = v.size();
+  for (const auto& e : S) {
+    if (e.second->score() < threshold) {
+      v.push_back(e);
+    }
   }
-  size_t size = 0;
-  while (size < top && v[size].second->score() < threshold) {
-    ++size;
-  }
-  v.resize(size);
+
+  top = std::min(top, v.size());
+  std::nth_element(v.begin(), v.begin() + top, v.end(), [](const auto &e1, const auto &e2) { return e1.second->score() < e2.second->score(); });
 
   StateSet result;
-  result.insert(v.cbegin(), v.cend());
+  result.insert(std::make_move_iterator(v.begin()), std::make_move_iterator(v.begin()) + top);
   return result;
 }
 
