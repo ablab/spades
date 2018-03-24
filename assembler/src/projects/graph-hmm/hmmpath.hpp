@@ -174,17 +174,27 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     }
   };
 
+  auto merge_state_set_best = [](StateSet &target, const StateSet &source, double transfer_fee = 0) {
+    for (const auto &kv : source) {
+      const auto &cur = kv.first;
+      const auto &id = kv.second;
+      target.get_or_create(cur)->merge_update_best(id.get(), transfer_fee);
+    }
+  };
+
   auto dm_new = [&](StateSet &D, StateSet &M, const StateSet &I, size_t m) {
     StateSet Dnew;
     merge_state_set(Dnew, M, fees.t[m - 1][p7H_MD]);
     merge_state_set(Dnew, D, fees.t[m - 1][p7H_DD]);
 
-    StateSet Mnew;
-    transfer(Mnew, M, fees.t[m - 1][p7H_MM], fees.mat[m], "m");
-    transfer(Mnew, D, fees.t[m - 1][p7H_DM], fees.mat[m], "m");
-    transfer(Mnew, I, fees.t[m - 1][p7H_IM], fees.mat[m], "m");
+    StateSet preM;
+    // It's enough to merge only best scores here
+    merge_state_set_best(preM, M, fees.t[m - 1][p7H_MM]);
+    merge_state_set_best(preM, D, fees.t[m - 1][p7H_DM]);
+    merge_state_set_best(preM, I, fees.t[m - 1][p7H_IM]);
+    M.clear();
+    transfer(M, preM, 0, fees.mat[m], "m");
 
-    M = std::move(Mnew);
     D = std::move(Dnew);
   };
 
