@@ -125,6 +125,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
       }
     }
   };
+
   auto transfer_upd = [&code, &initial](StateSet &to, const StateSet &from, double transfer_fee,
                                         const std::vector<double> &emission_fees, const std::string &,
                                         const std::unordered_set<GraphCursor> &keys) {
@@ -148,7 +149,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     return updated;
   };
 
-  auto i_loop_processing = [&transfer_upd, &fees](StateSet &I, size_t m) {
+  auto i_loop_processing_negative = [&transfer_upd, &fees](StateSet &I, size_t m) {
     const size_t max_insertions = 30;
 
     std::unordered_set<GraphCursor> updated;
@@ -164,6 +165,80 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
       }
     }
     I = std::move(Inew);  // It is necessary to copy minorly updated states
+  };
+
+  auto i_loop_processing_non_negative = [&fees, &code](StateSet &I, size_t m) {
+    const double absolute_threshold = 100;
+    const auto &emission_fees = fees.ins[m];
+    const auto &transfer_fee = fees.t[m][p7H_II];
+
+    TRACE(I.size() << " I states initially present in I-loop m = " << m);
+    std::unordered_set<GraphCursor> updated;
+
+    struct QueueElement {
+      GraphCursor current_cursor;
+      double score;
+      GraphCursor source_cursor;
+      PathLinkRef<GraphCursor> source_state;
+
+      bool operator<(const QueueElement &other) const {
+        return this->score > other.score;
+      }
+    };
+
+    std::priority_queue<QueueElement> q;
+
+    for (const auto &kv : I) {
+      const auto &current_cursor = kv.first;
+      auto best = kv.second->best_ancestor();
+      const auto &score = best->second.first;
+      if (score > absolute_threshold) {
+        continue;
+      }
+      q.push({current_cursor, score, best->first, best->second.second});
+    }
+    TRACE(q.size() << " I values in queue m = " << m);
+
+    std::unordered_set<GraphCursor> processed;
+    size_t taken_values = 0;
+    while(!q.empty()) {
+      QueueElement elt = q.top();
+      q.pop();
+      ++taken_values;
+
+      if (elt.score > absolute_threshold) {
+        break;
+      }
+
+      if (processed.count(elt.current_cursor)) {
+        continue;
+      }
+
+      // add processed.size() limit
+
+      processed.insert(elt.current_cursor);
+
+      I.update(elt.current_cursor, elt.score, elt.source_cursor, elt.source_state);  // TODO return iterator to inserted/updated elt
+      const auto &id = I[elt.current_cursor];
+      auto next_pairs = elt.current_cursor.next_pairs();
+      for (size_t i = 0; i < next_pairs.size(); ++i) {
+        const auto &next = next_pairs[i].first;
+        if (processed.count(next)) {
+          continue;
+        }
+        char letter = next_pairs[i].second;
+        double cost = elt.score + transfer_fee + emission_fees[code(letter)];
+        q.push({next, cost, elt.current_cursor, id});
+      }
+    }
+
+    TRACE(processed.size() << " states processed in I-loop m = " << m);
+    TRACE(taken_values << " values extracted from queue m = " << m);
+    // TODO update secondary references.
+  };
+
+  auto i_loop_processing = [&](StateSet &I, size_t m) {
+    return fees.is_i_loop_non_negative(m) ? i_loop_processing_non_negative(I, m) : i_loop_processing_negative(I, m);
   };
 
   auto merge_state_set = [](StateSet &target, const StateSet &source, double transfer_fee = 0) {

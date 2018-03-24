@@ -31,6 +31,7 @@ struct Fees {
   DigitalCodind code;
 
   bool check_i_loop(size_t i) const;
+  bool is_i_loop_non_negative(size_t i) const { return check_i_loop(i); }
   bool check_i_negative_loops() const;
 
   void reverse();
