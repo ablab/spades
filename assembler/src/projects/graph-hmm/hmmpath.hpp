@@ -78,25 +78,6 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
 };
 
 template <typename GraphCursor>
-StateSet<GraphCursor> top_filter(const StateSet<GraphCursor> &S, size_t top, double threshold) {
-  using StateSet = StateSet<GraphCursor>;
-  std::vector<std::pair<typename StateSet::key_type, typename StateSet::mapped_type>> v;
-
-  for (const auto& e : S) {
-    if (e.second->score() < threshold) {
-      v.push_back(e);
-    }
-  }
-
-  top = std::min(top, v.size());
-  std::nth_element(v.begin(), v.begin() + top, v.end(), [](const auto &e1, const auto &e2) { return e1.second->score() < e2.second->score(); });
-
-  StateSet result;
-  result.insert(std::make_move_iterator(v.begin()), std::make_move_iterator(v.begin()) + top);
-  return result;
-}
-
-template <typename GraphCursor>
 PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<GraphCursor> &initial) {
   using StateSet = StateSet<GraphCursor>;
   const auto &code = fees.code;
