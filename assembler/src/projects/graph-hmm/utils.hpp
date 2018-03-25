@@ -4,21 +4,23 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include "utils/stl_utils.hpp"
+using namespace utils;
 
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const std::vector<T> &v);
+// template <typename T>
+// std::ostream &operator<<(std::ostream &os, const std::vector<T> &v);
 template <typename T>
 std::ostream &operator<<(std::ostream &os, const std::unordered_set<T> &v);
 
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
-  os << "[ ";
-  for (const auto &e : v) {
-    os << e << " ";
-  }
-  os << "]";
-  return os;
-}
+// template <typename T>
+// std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
+//   os << "[ ";
+//   for (const auto &e : v) {
+//     os << e << " ";
+//   }
+//   os << "]";
+//   return os;
+// }
 
 template <typename T>
 std::ostream &operator<<(std::ostream &os, const std::unordered_set<T> &v) {
