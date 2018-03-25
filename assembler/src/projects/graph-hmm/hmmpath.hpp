@@ -334,6 +334,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     D = std::move(Dnew);
   };
 
+  Depth<GraphCursor> depth;
+
   INFO("Initial set size: " << initial.size());
 
   StateSet I, M, D;
@@ -378,6 +380,17 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     I.filter(top, absolute_threshold);
     M.filter(top, absolute_threshold);
     D.filter(top, absolute_threshold);
+
+    auto depth_filter = [&](const auto &kv) {
+      const GraphCursor &cursor = kv.first;
+      size_t positions_left = fees.M - m;
+      return 1.5 * depth.depth(cursor) + 10 < positions_left;
+    };
+    size_t filtered = 0;
+    filtered += I.filter(depth_filter);
+    filtered += M.filter(depth_filter);
+    filtered += D.filter(depth_filter);
+    INFO("filtered " << filtered << " states m = " << m);
   }
 
   PathSet<GraphCursor> result;
