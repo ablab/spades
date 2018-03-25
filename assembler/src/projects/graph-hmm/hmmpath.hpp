@@ -145,13 +145,10 @@ class Depth {
 };
 
 template <typename GraphCursor>
-PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<GraphCursor> &initial) {
+PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<GraphCursor> &initial_original) {
   const double absolute_threshold = 100.0;
   using StateSet = StateSet<GraphCursor>;
   const auto &code = fees.code;
-
-
-
 
   INFO("pHMM size: " << fees.M);
   if (!fees.check_i_loop(0)) {
@@ -170,6 +167,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
   if (!fees.check_i_negative_loops()) {
     WARN("MODEL CONTAINS NEGATIVE I-LOOPS");
   }
+
+  std::vector<GraphCursor> initial;
 
   auto transfer = [&code, &initial](StateSet &to, const StateSet &from, double transfer_fee,
                                     const std::vector<double> &emission_fees, const std::string & = "") {
@@ -349,6 +348,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   Depth<GraphCursor> depth;
 
+  INFO("Original (before filtering) initial set size: " << initial_original.size());
+  std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
+               [&](const GraphCursor &cursor) { return 1.5 * depth.depth(cursor) + 10 > fees.M / 2; });  // FIXME Correct this condition for local-local matching
   INFO("Initial set size: " << initial.size());
 
   StateSet I, M, D;
