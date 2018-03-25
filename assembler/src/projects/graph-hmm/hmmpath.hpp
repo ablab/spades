@@ -410,7 +410,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
       INFO("I = " << I.size() << " M = " << M.size() << " D = " << D.size());
       auto scores = M.scores();
       std::sort(scores.begin(), scores.end());
-      scores.resize(100);
+      if (scores.size() > 100) { scores.resize(100); }
       INFO("Top scores: " << scores);
       n <<= 1;
     }
