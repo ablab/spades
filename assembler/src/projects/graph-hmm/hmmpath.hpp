@@ -395,7 +395,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
     if (m >= n) {
       INFO("Step #: " << m);
-      INFO("# states " << m << " => " << n_of_states << "I = " << I.size() << " M = " << M.size() << " D = " << D.size());
+      INFO("# states " << m << " => " << n_of_states << ": I = " << I.size() << " M = " << M.size() << " D = " << D.size());
     }
     I.filter(top, absolute_threshold);
     M.filter(top, absolute_threshold);
