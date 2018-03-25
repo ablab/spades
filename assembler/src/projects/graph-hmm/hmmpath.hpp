@@ -115,7 +115,11 @@ class Depth {
       return depth_[cursor];
     }
 
-    if (cursor.is_empty() || cursor.letter() == '*') {
+    if (cursor.is_empty()) {
+      return depth_[cursor] = std::numeric_limits<double>::infinity();
+    }
+
+    if (cursor.letter() == '*') {
       // INFO("Empty depth " << cursor);
       return depth_[cursor] = 0;
     }
