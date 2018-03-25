@@ -230,7 +230,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     I = std::move(Inew);  // It is necessary to copy minorly updated states
   };
 
-  auto i_loop_processing_non_negative = [&fees, &code, &absolute_threshold](StateSet &I, size_t m) {
+  auto i_loop_processing_non_negative = [&fees, &code, &absolute_threshold](StateSet &I, size_t m, const auto &filter) {
     const auto &emission_fees = fees.ins[m];
     const auto &transfer_fee = fees.t[m][p7H_II];
 
@@ -257,7 +257,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
       if (score > absolute_threshold) {
         continue;
       }
-      q.push({current_cursor, score, best->first, best->second.second});
+      if (!filter(current_cursor)) {
+        q.push({current_cursor, score, best->first, best->second.second});
+      }
     }
     TRACE(q.size() << " I values in queue m = " << m);
 
@@ -290,7 +292,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
         }
         char letter = next_pairs[i].second;
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
-        q.push({next, cost, elt.current_cursor, id});
+        if (!filter(next)) {
+          q.push({next, cost, elt.current_cursor, id});
+        }
       }
     }
 
@@ -299,8 +303,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     // TODO update secondary references.
   };
 
-  auto i_loop_processing = [&](StateSet &I, size_t m) {
-    return fees.is_i_loop_non_negative(m) ? i_loop_processing_non_negative(I, m) : i_loop_processing_negative(I, m);
+  auto i_loop_processing = [&](StateSet &I, size_t m, const auto &filter) {
+    return fees.is_i_loop_non_negative(m) ? i_loop_processing_non_negative(I, m, filter) : i_loop_processing_negative(I, m);
   };
 
   auto merge_state_set = [](StateSet &target, const StateSet &source, double transfer_fee = 0) {
@@ -346,14 +350,26 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   INFO("The number of links (M): " << fees.M);
 
+  size_t positions_left = fees.M;
+  auto depth_filter_cursor = [&](const GraphCursor &cursor) -> bool {
+    return 1.5 * depth.depth(cursor) + 10 < positions_left;
+  };
+
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0], "i");
-  i_loop_processing(I, 0);  // Do we really need I at the beginning???
+  i_loop_processing(I, 0, depth_filter_cursor);  // Do we really need I at the beginning???
   size_t n = 1;
   for (size_t m = 1; m <= fees.M; ++m) {
+    positions_left = fees.M - m;
+
+    auto depth_filter_pair = [&](const auto &kv) -> bool {
+      const GraphCursor &cursor = kv.first;
+      return depth_filter_cursor(cursor);
+    };
+
     dm_new(D, M, I, m);
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m], "i");
-    i_loop_processing(I, m);
+    i_loop_processing(I, m, depth_filter_cursor);
 
     size_t n_of_states = D.size() + I.size() + M.size();
 
@@ -373,15 +389,10 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     M.filter(top, absolute_threshold);
     D.filter(top, absolute_threshold);
 
-    size_t positions_left = fees.M - m;
-    auto depth_filter = [&](const auto &kv) {
-      const GraphCursor &cursor = kv.first;
-      return 1.5 * depth.depth(cursor) + 10 < positions_left;
-    };
     size_t filtered = 0;
-    filtered += I.filter(depth_filter);
-    filtered += M.filter(depth_filter);
-    filtered += D.filter(depth_filter);
+    filtered += I.filter(depth_filter_pair);
+    filtered += M.filter(depth_filter_pair);
+    filtered += D.filter(depth_filter_pair);
     if (m >= n) {
       INFO("Step #: " << m);
       INFO("# states " << m << " => " << n_of_states);
