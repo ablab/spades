@@ -116,7 +116,7 @@ class Depth {
     }
 
     if (cursor.is_empty() || cursor.letter() == '*') {
-      INFO("Empty depth " << cursor);
+      // INFO("Empty depth " << cursor);
       return depth_[cursor] = 0;
     }
 
@@ -356,15 +356,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     i_loop_processing(I, m);
 
     size_t n_of_states = D.size() + I.size() + M.size();
-    if (m >= n) {
-      INFO("Step #: " << m);
-      INFO("# states " << m << " => " << n_of_states);
-      auto scores = M.scores();
-      std::sort(scores.begin(), scores.end());
-      scores.resize(100);
-      INFO("Top scores: " << scores);
-      n <<= 1;
-    }
 
     TRACE("# states " << m << " => " << n_of_states);
     size_t top = n_of_states;
@@ -391,7 +382,16 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     filtered += I.filter(depth_filter);
     filtered += M.filter(depth_filter);
     filtered += D.filter(depth_filter);
-    INFO("filtered " << filtered << ", positions left = " << positions_left << " states m = " << m);
+    if (m >= n) {
+      INFO("Step #: " << m);
+      INFO("# states " << m << " => " << n_of_states);
+      INFO("depth-filtered " << filtered << ", positions left = " << positions_left << " states m = " << m);
+      auto scores = M.scores();
+      std::sort(scores.begin(), scores.end());
+      scores.resize(100);
+      INFO("Top scores: " << scores);
+      n <<= 1;
+    }
   }
 
   PathSet<GraphCursor> result;
