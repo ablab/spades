@@ -59,26 +59,39 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
     return scores;
   }
 
-  void filter(size_t count, double score) {
-    count = std::min(count, this->size());
-    if (count == 0) {
-      this->clear();
-      return;
-    }
-
-    {
-      auto scores = this->scores();
-      std::nth_element(scores.begin(), scores.begin() + count - 1, scores.end());
-      score = std::min(score, scores[count - 1]);
-    }
-
+  template <typename Predicate>
+  size_t filter(const Predicate &predicate) {
+    size_t count = 0;
     for (auto it = this->begin(); it != this->end();) {
-      if (it->second->score() > score) {
+      if (predicate(*it)) {
         it = this->erase(it);
+        ++count;
       } else {
         ++it;
       }
     }
+
+    return count;
+  }
+
+  size_t filter(size_t n, double score) {
+    n = std::min(n, this->size());
+    if (n == 0) {
+      this->clear();
+      return 0;
+    }
+
+    {
+      auto scores = this->scores();
+      std::nth_element(scores.begin(), scores.begin() + n - 1, scores.end());
+      score = std::min(score, scores[n - 1]);
+    }
+
+    auto pred = [score](const auto &kv) {
+      return kv.second->score() > score;
+    };
+
+    return this->filter(pred);
   }
 
 };
