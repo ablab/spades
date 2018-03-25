@@ -63,6 +63,7 @@ class DebruijnGraphCursor : public AbstractGraphCursor<DebruijnGraphCursor> {
     }
 
     friend struct std::hash<DebruijnGraphCursor>;
+    friend std::ostream &operator<<(std::ostream &os, const DebruijnGraphCursor &p);
 
     const debruijn_graph::ConjugateDeBruijnGraph *g_;
     debruijn_graph::EdgeId e_;
@@ -126,6 +127,7 @@ class DebruijnComponentCursor : public AbstractGraphCursor<DebruijnComponentCurs
     }
 
     friend struct std::hash<DebruijnComponentCursor>;
+    friend std::ostream &operator<<(std::ostream &os, const DebruijnComponentCursor &p);
 
     const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> *c_;
     debruijn_graph::EdgeId e_;
@@ -148,6 +150,22 @@ struct hash<DebruijnComponentCursor> {
         return std::hash<size_t>()(hash_size_t_pair(p.e_.hash(), p.position_));
     }
 };
+}
+
+inline std::ostream &operator<<(std::ostream &os, const DebruijnGraphCursor &p) {
+  if (p.is_empty()) {
+    return os << "(@)";
+  } else {
+    return os << "(" << p.e_ << ", " << p.position_ << ")";
+  }
+}
+
+inline std::ostream &operator<<(std::ostream &os, const DebruijnComponentCursor &p) {
+  if (p.is_empty()) {
+    return os << "(@)";
+  } else {
+    return os << "(" << p.e_ << ", " << p.position_ << ")";
+  }
 }
 
 std::vector<DebruijnGraphCursor> all(const debruijn_graph::ConjugateDeBruijnGraph &g);
