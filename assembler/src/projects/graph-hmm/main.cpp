@@ -151,8 +151,7 @@ std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<GraphCursor>
     std::vector<typename GraphCursor::EdgeId> path;
 
     auto it = cpath.begin();
-    while (it->is_empty())
-        ++it;
+    for (; it != cpath.end() && it->is_empty(); ++it) {}
 
     for (; it != cpath.end(); ++it) {
         if (it->is_empty())
