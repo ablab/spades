@@ -106,9 +106,12 @@ class Depth {
     return result;
   }
 
+ size_t max_stack_size() const { return max_stack_size_; }
+
  private:
   std::unordered_map<GraphCursor, double> depth_;
   std::unordered_set<GraphCursor> stack_;
+  size_t max_stack_size_ = 0;
 
   double get_depth_(const GraphCursor &cursor) {
     if (depth_.count(cursor)) {
@@ -130,6 +133,7 @@ class Depth {
 
     auto nexts = cursor.next();
     stack_.insert(cursor);
+    max_stack_size_ = std::max(max_stack_size_, stack_.size());
     double max_child = 0;
     for (const GraphCursor &n : nexts) {
       max_child = std::max(max_child, get_depth_(n));
@@ -408,6 +412,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
       n <<= 1;
     }
   }
+
+  INFO("Max stack size in Depth: " << depth.max_stack_size());
 
   PathSet<GraphCursor> result;
   auto &terminal = result.pathlink();
