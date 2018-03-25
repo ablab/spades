@@ -25,6 +25,9 @@ template <class GraphCursor>
 auto make_aa_cursors(const std::vector<GraphCursor> &cursors);
 
 template <class GraphCursor>
+inline std::ostream &operator<<(std::ostream &os, const AAGraphCursor<GraphCursor> &cursor);
+
+template <class GraphCursor>
 class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
   using This = AAGraphCursor<GraphCursor>;
 
@@ -56,6 +59,7 @@ class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
   GraphCursor c0_, c1_, c2_;
   friend struct std::hash<This>;
   friend auto make_aa_cursors<GraphCursor>(const std::vector<GraphCursor> &cursors);
+  friend std::ostream &operator<<<GraphCursor>(std::ostream &os, const AAGraphCursor<GraphCursor> &cursor);
 
   static std::vector<This> from_bases(const std::vector<GraphCursor> &cursors) {
     std::vector<std::vector<GraphCursor>> nexts;
@@ -76,6 +80,15 @@ class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
     return result;
   }
 };
+
+template <class GraphCursor>
+inline std::ostream &operator<<(std::ostream &os, const AAGraphCursor<GraphCursor> &cursor) {
+  if (cursor.is_empty()) {
+    return os << "(@)";
+  } else {
+    return os << "(" << cursor.c0_ << ", " << cursor.c1_ << ", " << cursor.c2_ << ")";
+  }
+}
 
 template <class GraphCursor>
 auto make_aa_cursors(const std::vector<GraphCursor> &cursors) {
