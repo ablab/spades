@@ -100,15 +100,15 @@ template <typename GraphCursor>
 class Depth {
  public:
   double depth(const GraphCursor &cursor) {
-    assert(stack.size() == 0);
+    assert(stack_.size() == 0);
     auto result = get_depth_(cursor);
-    assert(stack.size() == 0);
+    assert(stack_.size() == 0);
     return result;
   }
 
  private:
   std::unordered_map<GraphCursor, double> depth_;
-  std::unordered_set<GraphCursor> stack;
+  std::unordered_set<GraphCursor> stack_;
 
   double get_depth_(const GraphCursor &cursor) {
     if (depth_.count(cursor)) {
@@ -120,17 +120,17 @@ class Depth {
       return depth_[cursor] = 0;
     }
 
-    if (stack.count(cursor)) {
+    if (stack_.count(cursor)) {
       return depth_[cursor] = std::numeric_limits<double>::infinity();
     }
 
     auto nexts = cursor.next();
-    stack.insert(cursor);
+    stack_.insert(cursor);
     double max_child = 0;
     for (const GraphCursor &n : nexts) {
       max_child = std::max(max_child, get_depth_(n));
     }
-    stack.erase(cursor);
+    stack_.erase(cursor);
 
     return depth_[cursor] = 1 + max_child;
   }
