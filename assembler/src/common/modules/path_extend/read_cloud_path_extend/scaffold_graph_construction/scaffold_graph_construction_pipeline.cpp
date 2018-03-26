@@ -159,9 +159,10 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GapScaffoldGraphPipelineCon
     auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(gp_.g, scaffold_index_extractor);
     vector<ScaffoldVertex> scaff_vertex_vector;
     std::copy(scaffold_vertices.begin(), scaffold_vertices.end(), back_inserter(scaff_vertex_vector));
-    ScoreDistributionBasedThresholdFinder
-        threshold_finder(gp_.g, scaff_vertex_vector, score_function, params.vertex_multiplier_);
-    double score_threshold = threshold_finder.GetThreshold();
+//    ScoreDistributionBasedThresholdFinder
+//        threshold_finder(gp_.g, scaff_vertex_vector, score_function, params.vertex_multiplier_);
+    //fixme move somewhere
+    const double score_threshold = 0.15;
     INFO("Setting containment index threshold to " << score_threshold);
 
     auto initial_constructor =

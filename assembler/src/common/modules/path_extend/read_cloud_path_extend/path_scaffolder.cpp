@@ -94,8 +94,8 @@ void PathScaffolder::MergeUnivocalEdges(const vector<PathScaffolder::ScaffoldEdg
     for (const auto &edge: scaffold_edges) {
         ScaffoldVertex start = edge.getStart();
         ScaffoldVertex end = edge.getEnd();
-        INFO(start.int_id() << " -> " << end.int_id());
-        INFO("Weight: " << edge.getWeight());
+        DEBUG(start.int_id() << " -> " << end.int_id());
+        DEBUG("Weight: " << edge.getWeight());
         VERIFY(merge_connections.find(start) == merge_connections.end());
         merge_connections.insert({start, end});
     }
