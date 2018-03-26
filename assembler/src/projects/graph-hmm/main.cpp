@@ -448,7 +448,7 @@ int main(int argc, char* argv[]) {
 
         std::unordered_set<std::vector<EdgeId>> to_rescore;
         if (cfg.save) {
-            {
+            if (resultant_paths.size()) {
                 std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".paths.fa", std::ios::out);
                 for (const auto &result : resultant_paths) {
                     o << ">Score_" << result.first << '\n';
@@ -456,7 +456,7 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            {
+            if (results.size()) {
                 std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".fa", std::ios::out);
                 for (const auto &result : results) {
                     o << ">" << result.leader << "_" << result.priority;
@@ -475,7 +475,7 @@ int main(int argc, char* argv[]) {
         }
 
         INFO("Total " << to_rescore.size() << " paths to rescore");
-        if (cfg.rescore) {
+        if (cfg.rescore && to_rescore.size()) {
             std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".edges.fa", std::ios::out);
 
             for (const auto &entry : to_rescore) {
