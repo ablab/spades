@@ -1,4 +1,4 @@
-
+from math import log
 
 #Laplasian Smoothing
 def lap_smooth(table):
@@ -41,16 +41,16 @@ def naive_bayes(input_list):
     table=lap_smooth(table)
 
     for i in table:
-        i.append (int(i[1])/(chrom_genes+len(table)))	
-        i.append (int(i[2])/(plasm_genes+len(table)))
+        i.append (float(i[1])/(chrom_genes+len(table)))	
+        i.append (float(i[2])/(plasm_genes+len(table)))
 
-    plasm=1
-    chrom=1
+    plasm=0
+    chrom=0
     for i in input_list:
         for j in table:
             if i==j[0]: 
-                chrom=chrom*j[3]
-                plasm=plasm*j[4]
+                chrom=chrom + log(j[3])
+                plasm=plasm + log(j[4])
     res = plasm/chrom
     if res > 1: return "NBC_Plasmid"  #["Plasmid", plasm, chrom]
     else: return "NBC_Chromosome" # ["Chromosome", plasm, chrom]
@@ -72,10 +72,11 @@ def naive_bayes(input_list):
 
 
 def main():
+    return
 #lap_smooth(table)
 #	print (table[:3])
-	input_list=("MCM_OB", "Phage_integrase", "Phage_integrase")
-	print (naive_bayes(input_list))
+#	input_list=("MCM_OB", "Phage_integrase", "Phage_integrase")
+#	print (naive_bayes(input_list))
 
 
 #	return
@@ -83,7 +84,6 @@ def main():
 if __name__ == "__main__":
     # execute only if run as a script
     main()
-#Сколько всего генов в пламзидах и хромосомах?
 #print (434/0.000144770685574)
 #print (110/0.000104607027865)
 #print (int(1)/2990937)
