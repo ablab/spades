@@ -196,7 +196,6 @@ public:
                 int tid = omp_get_thread_num();
                 //INFO("TID=" << tid << " Queue edge=" << cur_state.gs.e.int_id() <<  " " << cur_state.gs.start_pos <<  " " << cur_state.gs.end_pos << " " << cur_state.i  << " ed=" << ed << " pml=" << path_max_length_ );
                 if (IsEndPosition(cur_state)) {
-                    INFO("End pos")
                     found_path = true;
                     break;   
                 }
@@ -255,7 +254,7 @@ public:
         }  
 
         int GetSeqEndPosition() {
-            INFO("End position edge=" << end_qstate_.gs.e.int_id() << " end_pos=" << end_qstate_.gs.end_pos << " seq_pos=" << end_qstate_.i << " s_len=" << ss_.size())
+            DEBUG("End position edge=" << end_qstate_.gs.e.int_id() << " end_pos=" << end_qstate_.gs.end_pos << " seq_pos=" << end_qstate_.i << " s_len=" << ss_.size())
             return end_qstate_.i;
         }    
 
