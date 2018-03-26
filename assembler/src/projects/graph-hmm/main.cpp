@@ -448,24 +448,29 @@ int main(int argc, char* argv[]) {
 
         std::unordered_set<std::vector<EdgeId>> to_rescore;
         if (cfg.save) {
-            std::ofstream oo(std::string("graph-hmm-") + p7hmm->name + ".paths.fa", std::ios::out);
-            for (const auto &result : resultant_paths) {
-                oo << ">Score_" << result.first << "\n" << result.second << "\n";
+            {
+                std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".paths.fa", std::ios::out);
+                for (const auto &result : resultant_paths) {
+                    o << ">Score_" << result.first << '\n';
+                    io::WriteWrapped(result.second, o);
+                }
             }
 
-            std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".fa", std::ios::out);
-            for (const auto &result : results) {
-                o << ">" << result.leader << "_" << result.priority;
-                if (result.seq.size() == 0)
-                    o << " (whole edge)";
-                o << '\n';
-                if (result.seq.size() == 0) {
-                    io::WriteWrapped(graph.EdgeNucls(result.leader).str(), o);
-                } else {
-                    io::WriteWrapped(result.seq, o);
+            {
+                std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".fa", std::ios::out);
+                for (const auto &result : results) {
+                    o << ">" << result.leader << "_" << result.priority;
+                    if (result.seq.size() == 0)
+                        o << " (whole edge)";
+                    o << '\n';
+                    if (result.seq.size() == 0) {
+                        io::WriteWrapped(graph.EdgeNucls(result.leader).str(), o);
+                    } else {
+                        io::WriteWrapped(result.seq, o);
+                    }
+                    if (cfg.rescore && result.path.size() > 0)
+                        to_rescore.insert(result.path);
                 }
-                if (cfg.rescore && result.path.size() > 0)
-                    to_rescore.insert(result.path);
             }
         }
 
