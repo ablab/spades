@@ -79,6 +79,7 @@ public:
 
     Extenders MakePEExtenders() const;
 
+    //fixme MakePEExtenders duplication
     shared_ptr<ExtensionChooser> MakeSimpleExtensionChooser(size_t lib_index) const;
 private:
 

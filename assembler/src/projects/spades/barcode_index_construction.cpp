@@ -22,7 +22,7 @@ namespace debruijn_graph {
             INFO("Read cloud libraries have not been found. Skipping barcode index construction.")
             return;
         }
-        vector<io::SequencingLibrary<debruijn_graph::config::DataSetData>> libs_10x;
+        vector<io::SequencingLibrary<debruijn_graph::config::LibraryData>> libs_10x;
         for (const auto& lib: dataset_info.reads) {
             if (lib.type() == io::LibraryType::Clouds10x) {
                 libs_10x.push_back(lib);

@@ -353,23 +353,19 @@ shared_ptr<path_extend::ExtensionChooser> CompositeConnectionPredicate::Construc
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, clustered_indices_[lib_index]);
     shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
     path_extend::PELaunchSupport support(params_.dataset_info, params_.pe_params_);
-    if (opts.use_default_single_threshold) {
-        if (params_.pe_params_.uneven_depth) {
-            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, params_.dataset_info.RL());
-        } else {
-            double lib_cov = support.EstimateLibCoverage(lib_index);
-            INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
-            iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g,
-                                                                    paired_lib,
-                                                                    params_.dataset_info.RL(),
-                                                                    lib_cov);
-        }
+
+    if (params_.pe_params_.uneven_depth || params_.pe_params_.mode == config::pipeline_type::moleculo) {
+        iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length);
+    } else {
+        double lib_cov = support.EstimateLibCoverage(lib_index);
+        INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
+        iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length, lib_cov);
     }
 
     auto wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pe_params_.pset.normalize_weight,
-                                                  support.SingleThresholdForLib(params_.pe_params_.pset,
-                                                                                lib.data().pi_threshold),
+                                                  params_.pe_params_.pset.extension_options.single_threshold,
                                                   iip);
+
     auto extension_chooser = make_shared<SimpleExtensionChooser>(gp_.g, wc, opts.weight_threshold, opts.priority_coeff);
     return extension_chooser;
 }
@@ -473,7 +469,7 @@ shared_ptr<GapAnalyzer> CompositeConnectionPredicate::MakeGapAnalyzer(double is_
                                                            pset.scaffolder_options.min_gap_score,
                                                            pset.scaffolder_options.short_overlap,
                                                            (int) pset.scaffolder_options.basic_overlap_coeff
-                                                               * params_.dataset_info.RL()));
+                                                               * params_.dataset_info.RL));
 
     //todo introduce explicit must_overlap_coeff and rename max_can_overlap -> can_overlap_coeff
     return std::make_shared<CompositeGapAnalyzer>(gp_.g,
