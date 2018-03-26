@@ -22,7 +22,7 @@ namespace barcode_index {
         shared_ptr <barcode_index::BarcodeIndex<barcode_entry_t>> index_ptr_;
         size_t tail_threshold_;
         BarcodeEncoder barcode_codes_;
-        typedef vector<io::SequencingLibrary<debruijn_graph::config::DataSetData>> lib_vector_t;
+        typedef vector<io::SequencingLibrary<debruijn_graph::config::LibraryData>> lib_vector_t;
 
     public:
         BarcodeIndexBuilder(const Graph &g, size_t tail_threshold) :
