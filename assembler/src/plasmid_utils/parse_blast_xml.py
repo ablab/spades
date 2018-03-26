@@ -48,12 +48,12 @@ def parser(f, out_dir):
     records= NCBIXML.parse(xml_file)
     viral = open(name[:-4]+"_viruses.names", "w")
     for item in records:
-        print item.query
+        print (item.query)
 	### We are taking query length from contig name provided by SPAdes. Weird, huh?
         pl_len = (int) ((item.query).split('_')[3])
 	###### No alignment - put in non-significant
         if len(item.alignments) == 0:
-            print "No Significant"
+            print ("No Significant")
             nosig.write(item.query + '\n')
             continue
 
@@ -125,14 +125,19 @@ def parser(f, out_dir):
     return
 
 
-parsed_args = parse_args(sys.argv[1:])
-files = glob(str(parsed_args.i)+"/*.xml")
-print (files)
+def main ():
+    parsed_args = parse_args(sys.argv[1:])
+    files = glob(str(parsed_args.i)+"/*.xml")
+    print (files)
 
-Parallel(n_jobs=30)(delayed(parser) (infile, parsed_args.o) for infile in files)
+    Parallel(n_jobs=30)(delayed(parser) (infile, parsed_args.o) for infile in files)
 #Parallel(n_jobs=30)(delayed(parser) (args) for args in files)
 
 #                print('score:', hsp.score)
 #                print('gaps:', hsp.gaps)
 #                print('e value:', hsp.expect)
+
+
+if __name__ == '__main__':
+     main()
 
