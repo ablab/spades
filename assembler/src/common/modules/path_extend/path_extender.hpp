@@ -871,6 +871,7 @@ private:
         size_t current = 0;
         while (current < extenders_.size()) {
             DEBUG("step " << current << " of total " << extenders_.size());
+            DEBUG("Path size: " << path.Size());
             if (extenders_[current]->MakeGrowStep(path, paths_storage)) {
                 return true;
             }
@@ -1035,6 +1036,7 @@ public:
             DEBUG("Conjugate: " << g_.conjugate(path.Back()).int_id());
             result = MakeSimpleGrowStep(path, paths_storage);
             DEBUG("Made step");
+            DEBUG("Path size: " << path.Size());
             if (DetectCycle(path)) {
                 result = false;
             } else if (path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back())) {
@@ -1615,6 +1617,7 @@ class ReadCloudExtender : public SimpleExtender { //Traverse forward to find lon
 using SimpleExtender::g_;
 protected:
     const size_t edge_length_threshold_;
+    const size_t min_length_;
     const size_t distance_bound_;
  public:
     ReadCloudExtender(const conj_graph_pack &gp,
@@ -1626,14 +1629,21 @@ protected:
                       bool use_short_loop_cov_resolver,
                       double weight_threshold,
                       const size_t edge_length_threshold_,
+                      const size_t min_length,
                       const size_t distance_bound_) :
         SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops,
                        use_short_loop_cov_resolver, weight_threshold),
         edge_length_threshold_(edge_length_threshold_),
+        min_length_(min_length),
         distance_bound_(distance_bound_) {}
  protected:
     void FindFollowingEdges(BidirectionalPath &path, ExtensionChooser::EdgeContainer *result) override {
         ExtensionChooser::EdgeContainer candidates;
+        result->clear();
+//        INFO("Launching read cloud extender")
+        if (path.Length() < min_length_) {
+            return;
+        }
         vector<EdgeId> initial_candidates;
         DEBUG("Creating dijkstra");
         DijkstraHelper<Graph> helper;

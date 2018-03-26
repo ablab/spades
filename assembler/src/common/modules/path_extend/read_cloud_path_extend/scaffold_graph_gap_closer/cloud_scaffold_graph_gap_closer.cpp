@@ -92,10 +92,11 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
                                                               use_short_loops_cov_resolver,
                                                               weight_threshold,
                                                               reliable_edge_length,
+                                                              tail_threshold,
                                                               distance_bound);
     return read_cloud_extender;
 }
-ReadCloudScaffoldGraphGapCloserConstructor::ReadCloudScaffoldGraphGapCloserConstructor(conj_graph_pack &gp_,
+ReadCloudScaffoldGraphGapCloserConstructor::ReadCloudScaffoldGraphGapCloserConstructor(const conj_graph_pack &gp_,
                                                                                        const ScaffoldGraphGapCloserParams &params)
     : gp_(gp_), params_(params) {}
 shared_ptr<ScaffoldGraphGapCloser> ReadCloudScaffoldGraphGapCloserConstructor::ConstructCloudBasedGapCloser(

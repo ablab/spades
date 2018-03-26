@@ -23,12 +23,12 @@ struct ScaffoldGraphGapCloserParams {
 class ReadCloudScaffoldGraphGapCloserConstructor {
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
 
-    conj_graph_pack &gp_;
+    const conj_graph_pack &gp_;
     ScaffoldGraphGapCloserParams params_;
 
 
  public:
-    ReadCloudScaffoldGraphGapCloserConstructor(conj_graph_pack &gp_, const ScaffoldGraphGapCloserParams& params);
+    ReadCloudScaffoldGraphGapCloserConstructor(const conj_graph_pack &gp_, const ScaffoldGraphGapCloserParams& params);
 
     shared_ptr<ScaffoldGraphGapCloser> ConstructGraphBasedGapCloser(const ScaffoldGraph &graph,
                                                                     size_t edge_length_threshold) const;
@@ -36,7 +36,6 @@ class ReadCloudScaffoldGraphGapCloserConstructor {
     shared_ptr<ScaffoldGraphGapCloser> ConstructCloudBasedGapCloser(const ScaffoldGraph &graph,
                                                                     size_t edge_length_threshold) const;
 
- private:
     shared_ptr<PathExtender> ConstructExtender(size_t seed_edge_length) const;
 };
 }

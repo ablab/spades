@@ -110,7 +110,7 @@ private:
 
     shared_ptr<PathExtender> MakeScaffoldGraphExtender() const;
 
-    shared_ptr<PathExtender> MakeReadCloudExtender(size_t lib_index, const ScaffoldingUniqueEdgeStorage& storage) const;
+    shared_ptr<PathExtender> MakeReadCloudExtender(size_t lib_index) const;
 
     void PrintExtenders(const vector<shared_ptr<PathExtender>> &extenders) const;
 
