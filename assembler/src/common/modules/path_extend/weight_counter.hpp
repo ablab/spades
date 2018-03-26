@@ -58,10 +58,10 @@ struct EdgeWithDistance {
     EdgeWithDistance(EdgeId e, int d, GapSeqType && gep_sequence = nullptr)
         : e_(e)
         , d_(d)
-        , gap_sequence_(std::move(gep_sequence)) 
+        , gap_sequence_(std::move(gep_sequence))
     {}
 
-    EdgeWithDistance(const EdgeWithDistance& other) 
+    EdgeWithDistance(const EdgeWithDistance& other)
         : EdgeWithDistance(other.e_, other.d_, other.CopyGapSeq())
     {}
 

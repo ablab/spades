@@ -4,7 +4,7 @@
 
 #include "extenders_logic.hpp"
 #include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
-
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.hpp"
 
 namespace path_extend {
 
@@ -418,7 +418,7 @@ Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdge
         const auto &lib = dataset_info_.reads[lib_index];
 
         if (lib.type() == io::LibraryType::Clouds10x) {
-//            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index, storage));
+            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index));
             result.emplace_back(lib.type(), lib_index, MakeScaffoldGraphExtender());
         }
     }
@@ -568,20 +568,18 @@ shared_ptr<ExtensionChooser> ExtendersGenerator::MakeSimpleExtensionChooser(size
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
     VERIFY_MSG(!paired_lib->IsMp(), "Tried to create PE extender for MP library");
     auto opts = params_.pset.extension_options;
-//    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
     shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
-    if (opts.use_default_single_threshold) {
-        if (params_.uneven_depth) {
-            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL());
-        } else {
-            double lib_cov = support_.EstimateLibCoverage(lib_index);
-            INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
-            iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
-        }
+    if (params_.uneven_depth || params_.mode == config::pipeline_type::moleculo) {
+        iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length);
+    } else {
+        double lib_cov = support_.EstimateLibCoverage(lib_index);
+        INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
+        iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length, lib_cov);
     }
+
     auto wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight,
-                                                  support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold),
+                                                  params_.pset.extension_options.single_threshold,
                                                   iip);
 
     auto extension_chooser = make_shared<SimpleExtensionChooser>(gp_.g, wc,
@@ -597,6 +595,53 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender() const {
 
     shared_ptr<ScaffoldGraphExtender> extender = make_shared<ScaffoldGraphExtender>(gp_.g, scaffold_graph, used_unique_storage_);
     return extender;
+}
+shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_index) const {
+    const auto &lib = dataset_info_.reads[lib_index];
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+    shared_ptr<WeightCounter> weight_counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib);
+    auto opts = params_.pset.extension_options;
+    double weight_threshold = opts.weight_threshold;
+
+    auto pe_extension_chooser = MakeSimpleExtensionChooser(lib_index);
+
+    //fixme move to configs
+    const size_t reliable_edge_length = 200;
+    const size_t tail_threshold = 3000;
+    const size_t distance_bound = 8000;
+    const size_t seed_edge_length = cfg::get().ts_res.long_edge_length_lower_bound;
+    const double extender_score_threshold = 0.05;
+    const double relative_coverage_threshold = 2.0;
+
+    auto barcode_extractor =
+        std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+    auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor, reliable_edge_length,
+                                                                         seed_edge_length, tail_threshold,
+                                                                         relative_coverage_threshold);
+    auto read_cloud_extension_chooser = make_shared<ReadCloudExtensionChooser>(gp_.g,
+                                                                               weight_counter,
+                                                                               weight_threshold,
+                                                                               barcode_extractor,
+                                                                               entry_collector,
+                                                                               extender_score_threshold);
+    auto composite_chooser =
+        make_shared<CompositeExtensionChooser>(gp_.g, pe_extension_chooser, read_cloud_extension_chooser);
+
+    size_t insert_size = paired_lib->GetISMax();
+    bool investigate_short_loops = false;
+    bool use_short_loops_cov_resolver = true;
+    auto read_cloud_extender = make_shared<ReadCloudExtender>(gp_,
+                                                              cover_map_,
+                                                              used_unique_storage_,
+                                                              composite_chooser,
+                                                              insert_size,
+                                                              investigate_short_loops,
+                                                              use_short_loops_cov_resolver,
+                                                              weight_threshold,
+                                                              reliable_edge_length,
+                                                              tail_threshold,
+                                                              distance_bound);
+    return read_cloud_extender;
 }
 
 }

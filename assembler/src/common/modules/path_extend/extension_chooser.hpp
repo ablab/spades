@@ -1645,13 +1645,12 @@ class SimpleBarcodeEntryCollector: public BarcodeEntryCollector {
 
  private:
     double GetInitialCoverage(const BidirectionalPath &path) const {
-        for (size_t i = 0; i < path.Size(); ++i) {
+        for (int i = static_cast<int>(path.Size()) - 1; i >= 0; --i) {
             EdgeId edge = path.At(i);
             if (g_.length(edge) >= seed_length_) {
                 return g_.coverage(edge);
             }
         }
-        VERIFY_MSG(false, "Path does not have seed edge");
         return 0;
     }
 
@@ -1678,7 +1677,7 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
         auto path_barcodes = barcode_entry_collector_->CollectEntry(path);
         DEBUG(path_barcodes.size() << " barcodes on path");
         if (path_barcodes.size() == 0) {
-            WARN("No barcodes on path!");
+//            WARN("No barcodes on path!");
             return result;
         }
         double max_score = 0;
