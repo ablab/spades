@@ -37,32 +37,6 @@ struct OneReadMapping {
 
 };
 
-inline int StringDistance(const string &a, const string &b) {
-    int a_len = (int) a.length();
-    int b_len = (int) b.length();
-    int d = min(a_len / 3, b_len / 3);
-    d = max(d, 10);
-    if (a_len == 0 || b_len == 0) {
-        if (d > 10) {
-            INFO ("zero length path , lengths " << a_len << " and " << b_len);
-            return STRING_DIST_INF;
-        } else {
-            return d;
-        }
-    }
-
-    DEBUG(a_len << " " << b_len << " " << d);
-    edlib::EdlibAlignResult result = edlib::edlibAlign(a.c_str(), a_len, b.c_str(), b_len
-            , edlib::edlibNewAlignConfig(2*d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
-                                         NULL, 0));
-    int score = STRING_DIST_INF;
-    if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
-        score = result.editDistance;
-    }
-    edlib::edlibFreeAlignResult(result);
-    return score;
-}
-
 template<class Graph>
 class PacBioMappingIndex {
 public:
@@ -582,7 +556,7 @@ public:
         }
         string seq_string = s.Subseq(start_pos, min(end_pos + 1, s_len)).str();
         size_t best_path_ind = paths.size();
-        int best_score = STRING_DIST_INF;
+        int best_score = std::numeric_limits<int>::max();
         if (paths.size() == 0) {
             DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
             DEBUG ("no paths");
@@ -619,8 +593,8 @@ public:
             }
         }
         TRACE(best_score);
-        if (best_score == STRING_DIST_INF) {
-            if (paths.size() < 10) {            
+        if (best_score == std::numeric_limits<int>::max()) {
+            if (paths.size() < 10) {
                 for (size_t i = 0; i < paths.size(); i++) {
                     DEBUG ("failed with strings " << seq_string << " " << s_add + PathToString(paths[i]) + e_add);
                 }

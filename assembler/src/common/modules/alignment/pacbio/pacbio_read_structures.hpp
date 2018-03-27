@@ -10,13 +10,11 @@
 #include "utils/ph_map/perfect_hash_map.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "assembly_graph/core/graph.hpp"
-#include "edlib/edlib.h"
 #include <algorithm>
 #include <map>
 #include <set>
 
 namespace pacbio {
-static const int STRING_DIST_INF = 1e8;
 typedef omnigraph::GapDescription<debruijn_graph::Graph> GapDescription;
 
 struct MappingInstance {

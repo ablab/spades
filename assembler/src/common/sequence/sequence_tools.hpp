@@ -15,6 +15,7 @@
 #include "nucl.hpp"
 #include "sequence.hpp"
 #include "levenshtein.hpp"
+#include "edlib/edlib.h"
 
 inline const std::string Reverse(const std::string &s) {
     return std::string(s.rbegin(), s.rend());
@@ -24,6 +25,32 @@ inline const std::string Complement(const std::string &s) {
     std::string res(s.size(), 0);
     std::transform(s.begin(), s.end(), res.begin(), nucl_complement);
     return res;
+}
+//returns std::numeric_limits<int>::max() for too distant string
+inline int StringDistance(const string &a, const string &b) {
+    int a_len = (int) a.length();
+    int b_len = (int) b.length();
+    int d = min(a_len / 3, b_len / 3);
+    d = max(d, 10);
+    if (a_len == 0 || b_len == 0) {
+        if (d > 10) {
+            INFO ("zero length path , lengths " << a_len << " and " << b_len);
+            return std::numeric_limits<int>::max();
+        } else {
+            return d;
+        }
+    }
+
+    DEBUG(a_len << " " << b_len << " " << d);
+    edlib::EdlibAlignResult result = edlib::edlibAlign(a.c_str(), a_len, b.c_str(), b_len
+            , edlib::edlibNewAlignConfig(2*d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
+                                         NULL, 0));
+    int score = std::numeric_limits<int>::max();
+    if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
+        score = result.editDistance;
+    }
+    edlib::edlibFreeAlignResult(result);
+    return score;
 }
 
 inline const Sequence MergeOverlappingSequences(const std::vector<Sequence>& ss,
