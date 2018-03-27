@@ -23,7 +23,7 @@ simp
     {
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
-        condition  "{ mmm 3 tc_lb 3.5, cb 100000, rctc 0.1 } { tc_lb 3.5, cb 4, rctc 10000 } { tc_lb 0.1, cb 20, rctc 10000 }"
+        condition  "{ mmm 3 tc_lb 4, cb 100000, rctc 0.5 } { tc_lb 2, cb 1, rctc 10000 }"
     }
 
     dead_end
@@ -126,9 +126,9 @@ params {
 
     scaffolder {
         cutoff        1
-        hard_cutoff   10
+        hard_cutoff   5
         cluster_info false
-        min_overlap_for_rna_scaffolding 10
+        min_overlap_for_rna_scaffolding 8
     }
 
     path_cleaning_presets "default soft hard"
