@@ -8,6 +8,7 @@
 project(common_modules CXX)
 
 add_subdirectory(pipeline)
+add_subdirectory(sequence)
 add_subdirectory(assembly_graph)
 add_subdirectory(modules/path_extend)
 add_subdirectory(modules)
@@ -20,4 +21,4 @@ add_subdirectory(modules/coverage_model)
 
 add_library(common_modules STATIC empty.cpp)
 
-target_link_libraries(common_modules assembly_graph input pipeline coverage_model paired_info path_extend stages utils mph_index modules)
+target_link_libraries(common_modules assembly_graph input pipeline sequence coverage_model paired_info path_extend stages utils mph_index modules)

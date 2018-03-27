@@ -20,7 +20,7 @@
 #include <algorithm>
 #include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
-
+#include "sequence/sequence_tools.hpp"
 namespace pacbio {
 enum {
     UNDEF_COLOR = -1,
