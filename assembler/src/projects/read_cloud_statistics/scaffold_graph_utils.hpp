@@ -1,7 +1,7 @@
 #pragma once
 
 #include <common/io/reads/osequencestream.hpp>
-#include <common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline/scaffold_graph_construction_pipeline.hpp>
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
 #include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
 #include "statistics_processor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"

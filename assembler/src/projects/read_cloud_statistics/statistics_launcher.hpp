@@ -12,7 +12,7 @@
 #include "contig_path_analyzer.hpp"
 #include "contracted_graph_stats/contracted_graph_local_statistics.hpp"
 #include "scaffolder_statistics/scaffolder_stats.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline/scaffold_graph_construction_pipeline.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 #include "scaffolder_statistics/gap_closer_stats.hpp"
 #include "scaffolder_statistics/gap_closer_analyzer.hpp"
@@ -578,13 +578,6 @@ namespace read_cloud_statistics {
 //                                                                      filtered_contig_paths, gp_.g);
 //            path_stats_extractor.FillStatistics();
 //            path_stats_extractor.SerializeStatistics(stats_base_path);
-
-
-            INFO("Constructing initial tenx filter");
-            auto tenx_resolver_configs = cfg::get().ts_res.tenx;
-            typedef barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor_t;
-            auto barcode_extractor_ptr = make_shared<barcode_extractor_t>(gp_.barcode_mapper_ptr, gp_.g);
-            path_extend::InitialTenXFilter initial_tenx_filter(gp_.g, barcode_extractor_ptr, tenx_resolver_configs);
         }
 
         void PrintContigPaths(const vector<vector<path_extend::validation::EdgeWithMapping>>& contig_paths, ostream& stream) {
