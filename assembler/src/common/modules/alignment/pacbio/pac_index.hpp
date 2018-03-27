@@ -30,11 +30,9 @@ enum {
 struct OneReadMapping {
     vector<vector<debruijn_graph::EdgeId>> main_storage;
     vector<GapDescription> gaps;
-    vector<size_t> real_length;
     OneReadMapping(const vector<vector<debruijn_graph::EdgeId>>& main_storage_,
-                   const vector<GapDescription>& gaps_,
-                   const vector<size_t>& real_length_) :
-            main_storage(main_storage_), gaps(gaps_), real_length(real_length_) {
+                   const vector<GapDescription>& gaps_) :
+            main_storage(main_storage_), gaps(gaps_){
     }
 
 };
@@ -78,7 +76,7 @@ private:
     const Graph &g_;
 
     static const int LONG_ALIGNMENT_OVERLAP = 300;
-
+    static const size_t SHORT_SPURIOUS_LENGTH = 500;
     mutable map<pair<VertexId, VertexId>, size_t> distance_cashed_;
     size_t read_count_;
     debruijn_graph::config::debruijn_config::pacbio_processor pb_config_;
@@ -124,7 +122,7 @@ public:
 
 //FIXME more reasonable condition
 //g_.k() to compare sequence lengths, not kmers
-            if (rlen < 500 && (rlen + g_.k()) * 2 < expected_additional_left + expected_additional_right) {
+            if (rlen < SHORT_SPURIOUS_LENGTH && (rlen + g_.k()) * 2 < expected_additional_left + expected_additional_right) {
                 DEBUG ("Skipping spurious alignment " << i << " on edge " << mapped_path[i].first);
             } else
                 res.push_back(mapped_path[i].first, mapped_path[i].second);
@@ -382,7 +380,7 @@ public:
                 }
             }
         }
-        return OneReadMapping(sorted_edges, illumina_gaps, vector<size_t>(0));
+        return OneReadMapping(sorted_edges, illumina_gaps);
     }
 
     void ProcessCluster(const Sequence &s,
@@ -431,12 +429,11 @@ public:
         }
     }
 
-    //FIXME change to io::SingleRead
-    OneReadMapping GetReadAlignment(const Sequence &s) const {
+    OneReadMapping GetReadAlignment(const io::SingleRead &read) const {
+        Sequence s = read.sequence();
         ClustersSet mapping_descr = GetBWAClusters(s); //GetOrderClusters(s);
         vector<int> colors = GetWeightedColors(mapping_descr);
         size_t len =  mapping_descr.size();
-        vector<size_t> real_length;
         vector<vector<EdgeId>> sorted_edges;
         vector<bool> block_gap_closer;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;

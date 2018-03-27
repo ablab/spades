@@ -176,9 +176,8 @@ class PacbioAligner {
         #pragma omp parallel for reduction(+: longer_500, aligned, nontrivial_aligned)
         for (size_t i = 0; i < reads.size(); ++i) {
             size_t thread_num = omp_get_thread_num();
-            Sequence seq(reads[i].sequence());
             DEBUG(reads[i].name());
-            auto current_read_mapping = pac_index_.GetReadAlignment(seq);
+            auto current_read_mapping = pac_index_.GetReadAlignment(reads[i]);
             for (const auto& gap : current_read_mapping.gaps) {
                 gaps_by_thread[thread_num].AddGap(gap);
             }
@@ -191,7 +190,7 @@ class PacbioAligner {
             for (const auto& path : aligned_edges)
                 stats_by_thread[thread_num].path_len_in_edges[path.size()]++;
 
-            if (seq.size() > 500) {
+            if (reads[i].size() > 500) {
                 longer_500++;
                 if (aligned_edges.size() > 0) {
                     aligned++;
