@@ -26,6 +26,7 @@
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "mapping_printer.hpp"
+#include "graph_reader.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -101,11 +102,19 @@ config::debruijn_config::pacbio_processor InitializePacBioProcessor() {
     return pb;
 }
 
+void LoadGraphFromSaves(std::string saves_path, conj_graph_pack &gp){
+        if (saves_path.find(".gfa") != std::string::npos) {
+            INFO("Load gfa")
+            graphio::ScanGraphGFA(saves_path, gp);
+        } else {
+            graphio::ScanGraphPack(saves_path, gp);
+        }
+}
+
 void Launch(size_t K, const string &saves_path, const string &sequence_fasta, const string &mapper_type, const string &output_file, int threads) {
     conj_graph_pack gp(K, "tmp3", 0);
-    graphio::ScanGraphPack(saves_path, gp);
+    LoadGraphFromSaves(saves_path, gp);
     INFO("Loaded graph with " << gp.g.size() << " vertices");
-
     io::ReadStreamList<io::SingleRead> streams;
     streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(sequence_fasta)));
     
