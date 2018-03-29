@@ -300,19 +300,11 @@ inline std::ostream& operator<<(std::ostream& os, const MappingPath<ElementId>& 
 }
 
 inline boost::optional<Sequence> Subseq(const io::SingleRead& read, size_t start, size_t end) {
-    //DEBUG("Requesting subseq of read length " << read.size() << " from " << start << " to " << end);
     VERIFY(end > start);
-    //if (end == start) {
-    //    DEBUG("Returning empty sequence");
-    //    return boost::make_optional(Sequence());
-    //}
     auto subread = read.Substr(start, end);
     if (subread.IsValid()) {
-        //DEBUG("Gap seq valid. Length " << subread.size());
         return boost::make_optional(subread.sequence());
     } else {
-        //DEBUG("Gap seq invalid. Length " << subread.size());
-        //DEBUG("sequence: " << subread.GetSequenceString());
         return boost::none;
     }
 }

@@ -263,7 +263,8 @@ void BWAIndex::Init() {
         fprintf(stderr, "\t%d\n", aln.NM); // print edit distance
         free(aln.cigar);
 #endif
-inline bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
+
+static bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
 //  k-rb > re - k
     if (rb < k && 2 * k  > re + rb)
         return true;
