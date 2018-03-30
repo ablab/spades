@@ -85,19 +85,6 @@ public:
         return Sequence();
     }
 
-    Sequence PathNucls(const vector<EdgeId> &path) const {
-        if(path.empty())
-            return Sequence("");
-        SequenceBuilder result;
-        result.append(Sequence(""));
-        result.append(this->EdgeNucls(path[0]).Subseq(0, this->k()));
-        for (size_t i = 0; i < path.size(); ++i) {
-            result.append(this->EdgeNucls(path[i]).Subseq(this->k()));
-        }
-
-        return result.BuildSequence();
-    }
-
 private:
     DECL_LOGGER("DeBruijnGraph")
 };
