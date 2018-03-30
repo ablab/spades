@@ -53,8 +53,16 @@ public:
         graph_.conjugate(e)->SetEndVertex(graph_.conjugate(v));
     }
 
+    void LinkEdges(EdgeId e1, EdgeId e2) {
+        VertexId v = graph_.EdgeEnd(e1), w = graph_.EdgeStart(e2);
+        DeleteLink(w, e2);
+        LinkOutgoingEdge(v, e2);
+    }
+
     void DeleteLink(VertexId v, EdgeId e) {
-        v->RemoveOutgoingEdge(e);
+        bool res = v->RemoveOutgoingEdge(e);
+        VERIFY(res);
+        graph_.conjugate(e)->SetEndVertex(VertexId(0));
     }
 
     void DeleteUnlinkedEdge(EdgeId e) {
@@ -63,6 +71,12 @@ public:
             delete rc.get();
         }
         delete e.get();
+    }
+
+    void DeleteUnlinkedVertex(VertexId v) {
+        VertexId rc = graph_.conjugate(v);
+        delete rc.get(); // These guys do check that everything is unlinked.
+        delete v.get();
     }
 
     VertexId CreateVertex(const VertexData &data) {
