@@ -14,6 +14,24 @@
 #include "pair_info_count.hpp"
 #include "io/reads/multifile_reader.hpp"
 
+namespace omnigraph {
+
+Sequence Subseq(const io::SingleRead& read, size_t start, size_t end) {
+    VERIFY(end > start);
+    auto subread = read.Substr(start, end);
+    if (subread.IsValid()) {
+        return subread.sequence();
+    } else {
+        return Sequence();
+    }
+}
+
+Sequence Subseq(const io::SingleReadSeq& read, size_t start, size_t end) {
+    return read.sequence().Subseq(start, end);
+}
+
+}
+
 namespace debruijn_graph {
 
 namespace gap_closing {
@@ -50,9 +68,9 @@ class GapTrackingListener : public SequenceMapperListener {
                 size_t seq_start = mr1.initial_range.end_pos + g_.k();
                 size_t seq_end = mr2.initial_range.start_pos;
 
-                auto gap = GapDescription::CreateFixOverlap(g_, read, seq_start, seq_end,
-                                                            e1, mr1.mapped_range.end_pos,
-                                                            e2, mr2.mapped_range.start_pos);
+                auto gap = CreateFixOverlap(g_, read, seq_start, seq_end,
+                                            e1, mr1.mapped_range.end_pos,
+                                            e2, mr2.mapped_range.start_pos);
 
                 if (gap != INVALID_GAP) {
                     answer.push_back(gap);

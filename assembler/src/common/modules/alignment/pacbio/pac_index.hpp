@@ -21,6 +21,7 @@
 #include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "sequence/sequence_tools.hpp"
+
 namespace pacbio {
 enum {
     UNDEF_COLOR = -1,
@@ -68,7 +69,6 @@ public:
         DEBUG("Index constructed");
         read_count_ = 0;
     }
-    ~PacBioMappingIndex(){}
 
     bool similar_in_graph(const MappingInstance &a, const MappingInstance &b,
                  int shift = 0) const {
@@ -340,10 +340,10 @@ public:
                         size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
                         size_t left_offset = a.sorted_positions[a.last_trustable_index].edge_position;
                         size_t right_offset = b.sorted_positions[b.first_trustable_index].edge_position;
-                        auto gap = GapDescription::CreateFixOverlap(g_, s, 
-                                seq_start, seq_end,
-                                a.edgeId, left_offset,
-                                b.edgeId, right_offset);
+                        auto gap = CreateFixOverlap(g_, s,
+                                                    seq_start, seq_end,
+                                                    a.edgeId, left_offset,
+                                                    b.edgeId, right_offset);
                         if (gap != GapDescription()) {
                             illumina_gaps.push_back(gap);
                             DEBUG("adding gap between alignments number " << i<< " and " << j);
