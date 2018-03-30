@@ -584,8 +584,8 @@ public:
     std::string detailed_str(const VertexId v) const {
         std::stringstream ss;
         ss << str(v) << ";";
-        ss << "Incoming edges" << str(IncomingEdges(v)) << "; ";
-        ss << "Outgoing edges" << str(OutgoingEdges(v)) << ";";
+        ss << "Incoming edges " << str(IncomingEdges(v)) << "; ";
+        ss << "Outgoing edges " << str(OutgoingEdges(v)) << ";";
         return ss.str();
     }
 
