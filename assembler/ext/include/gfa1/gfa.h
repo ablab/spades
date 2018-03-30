@@ -64,7 +64,7 @@ typedef struct {
 
 #define gfa_n_vtx(g) ((g)->n_seg << 1)
 
-typedef struct {
+typedef struct gfa_s {
 	// segments
 	uint32_t m_seg, n_seg;
 	gfa_seg_t *seg;
