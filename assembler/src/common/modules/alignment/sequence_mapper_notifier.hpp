@@ -9,7 +9,6 @@
 #define SEQUENCE_MAPPER_NOTIFIER_HPP_
 
 #include "sequence_mapper.hpp"
-#include "short_read_mapper.hpp"
 #include "io/reads/paired_read.hpp"
 #include "io/reads/read_stream_vector.hpp"
 #include "pipeline/graph_pack.hpp"

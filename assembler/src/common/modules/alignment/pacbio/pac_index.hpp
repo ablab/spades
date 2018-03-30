@@ -338,7 +338,6 @@ public:
                         const auto &b = *start_clusters[j];
                         size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + g_.k();
                         size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
-                        //FIXME check index: left_offset should be potentially equal to edge_length
                         size_t left_offset = a.sorted_positions[a.last_trustable_index].edge_position;
                         size_t right_offset = b.sorted_positions[b.first_trustable_index].edge_position;
                         auto gap = GapDescription::CreateFixOverlap(g_, s, 

@@ -8,7 +8,6 @@
 #include "modules/alignment/pacbio/pac_index.hpp"
 #include "hybrid_gap_closer.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
-#include "modules/alignment/short_read_mapper.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "hybrid_aligning.hpp"
@@ -353,12 +352,12 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
                 notifier.Subscribe(lib_id, &mapping_listener);
                 notifier.Subscribe(lib_id, &read_mapper);
 
-                auto mapper_ptr = ChooseProperMapper(gp, reads);
-                //FIXME think of N's proper handling
+                //TODO think of N's proper handling
+                // (currently handled by BasicSequenceMapper and concatenated in single MappingPath)
                 auto single_streams = single_easy_readers(reads, false,
                                                           /*map_paired*/false, /*handle Ns*/false);
 
-                notifier.ProcessLibrary(single_streams, lib_id, *mapper_ptr);
+                notifier.ProcessLibrary(single_streams, lib_id, *MapperInstance(gp));
                 cfg::get_writable().ds.reads[lib_id].data().single_reads_mapped = true;
 
                 INFO("Finished processing long reads from lib " << lib_id);
