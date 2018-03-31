@@ -97,7 +97,7 @@ simp
     ; hidden ec remover
     her
     {
-        ; config used in special meta mode version (always enabled)
+        ; TODO NB config used in special meta mode version (always enabled)
         enabled                     false
         uniqueness_length           1500
         unreliability_threshold     -1.

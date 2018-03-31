@@ -67,7 +67,7 @@ simp
     ; hidden ec remover
     her
     {
-        ; FIXME config also used in special rna mode version (always enabled)
+        ; TODO NB config also used in special rna mode version (always enabled)
         enabled                     false
         uniqueness_length           1500
         unreliability_threshold     0.2

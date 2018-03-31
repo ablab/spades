@@ -183,7 +183,6 @@ public:
 
         algo.Run();
 
-        //FIXME should it be here or in post simplification?
         if (info_container_.mode() == config::pipeline_type::rna) {
             RemoveHiddenLoopEC(g_, gp_.flanking_cov, info_container_.detected_coverage_bound(),
                                simplif_cfg_.her.relative_threshold, removal_handler_);
@@ -313,7 +312,7 @@ public:
         AlgorithmRunningHelper<Graph>::LoopedRunPrimaryOpening(algo,
                 /*first primary iteration cnt*/2, /*max it count*/10);
 
-        //FIXME make part of cycle?
+        //TODO make part of cycle?
         RemoveHiddenEC(gp_.g, gp_.flanking_cov, simplif_cfg_.her, info_container_, removal_handler_);
 
         //TODO better configuration

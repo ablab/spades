@@ -191,7 +191,7 @@ public:
         return total_triggered;
     }
 
-    //FIXME use enum to configure for all_primary/first_primary
+    //TODO use enum instead all_primary/first_primary flags
     static size_t LoopedRun(Algo &algo, size_t min_it_cnt = 1,
                             size_t max_it_cnt = size_t(-1),
                             bool all_primary = false,
