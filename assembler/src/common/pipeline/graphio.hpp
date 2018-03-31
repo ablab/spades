@@ -553,24 +553,19 @@ public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 private:
-    restricted::IdSegmentStorage CreateIdStorage(const string& file_name) {
-        FILE* file = fopen((file_name + ".gid").c_str(), "r");
-        //This is to support compatibility to old saves. Will be removed soon
-        if(file == NULL) {
-            return this->g().GetGraphIdDistributor().ReserveUpTo(1000000000);
-        }
-        VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".gid"));
+    size_t GetMaxId(const string& file_name) {
+        std::ifstream max_id_stream(file_name);
+        VERIFY_MSG(max_id_stream, "Failed to find " << file_name);
         size_t max;
-        int flag = fscanf(file, "%zu\n", &max);
-        VERIFY(flag == 1);
-        fclose(file);
-        return this->g().GetGraphIdDistributor().ReserveUpTo(max);
+        VERIFY_MSG(max_id_stream >> max, "Failed to read max_id");
+        return max;
     }
 
   public:
     /*virtual*/
     void LoadGraph(const string& file_name) {
-        restricted::IdSegmentStorage id_storage = CreateIdStorage(file_name);
+        auto id_storage = this->g().GetGraphIdDistributor().Reserve(GetMaxId(file_name + ".gid"), 
+                /*force_zero_shift*/true);
         INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
         FILE* file = fopen((file_name + ".grp").c_str(), "r");
         VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));

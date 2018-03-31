@@ -104,80 +104,68 @@ public:
         return ListIdDistributor<Iter>(left, right, min_value_, size_);
     }
 
-    IdSegmentStorage() : min_value_(0), size_(0) { }
-
 private:
     IdSegmentStorage(size_t min_value, size_t size) : min_value_(min_value), size_(size) { }
 
-    size_t min_value_;
-    size_t size_;
+    const size_t min_value_;
+    const size_t size_;
 };
 
 // Id distributor for pure_pointer. Singleton.
 class LocalIdDistributor : public IdDistributor, boost::noncopyable {
-    friend class PeriodicIdDistributor;
-
-    static const size_t INITIAL_MAX_INT_ID = 2;
 public:
     size_t GetId() {
-        return max_int_id_++;
+        return next_int_id_++;
     }
 
-    IdSegmentStorage Reserve(size_t size) {
-        max_int_id_ += size;
-        return IdSegmentStorage(max_int_id_ - size, size);
+    //force_zero_shift should only be used for loading from saves
+    IdSegmentStorage Reserve(size_t size, bool force_zero_shift = false) {
+        if (force_zero_shift)
+            next_int_id_ = 0;
+        next_int_id_ += size;
+        return IdSegmentStorage(next_int_id_ - size, size);
     }
-
-    IdSegmentStorage ReserveUpTo(size_t max) {
-        VERIFY(max_int_id_ == INITIAL_MAX_INT_ID);
-        max_int_id_ = max;
-        return IdSegmentStorage(0, max);
-    }
-
-//  static GlobalIdDistributor &GetInstance() {
-//    static GlobalIdDistributor instance(INITIAL_MAX_INT_ID);
-//    return instance;
-//  }
 
     size_t GetMax() const {
-        return max_int_id_;
+        return next_int_id_;
     }
 
-    LocalIdDistributor(size_t min_id_value = INITIAL_MAX_INT_ID) : max_int_id_(min_id_value) { }
+    LocalIdDistributor() : next_int_id_(/*min int id*/2) { }
 
 private:
-    size_t max_int_id_;
+    size_t next_int_id_;
 };
 
+//TODO Legacy?
 /* id distributor used for concurrent algorithms.
 * each thread use their own PeriodicIdDistributor with period equals to
 * the quantity of threads. After thread's job is done Synchronize call are required
 * to increase id in GlobalIdDistributor.
 */
-class PeriodicIdDistributor : public IdDistributor {
-
-public:
-    PeriodicIdDistributor(LocalIdDistributor &id_distributor, size_t first_id, size_t period)
-            : id_distributor_(id_distributor), cur_id_(first_id), period_(period) {
-    }
-
-    virtual size_t GetId() {
-        size_t id = cur_id_;
-        cur_id_ += period_;
-
-        return id;
-    }
-
-    void Synchronize() const {
-        size_t &global_max_id = id_distributor_.max_int_id_;
-        global_max_id = std::max(cur_id_, global_max_id);
-    }
-
-private:
-    LocalIdDistributor &id_distributor_;
-    size_t cur_id_;
-    size_t period_;
-};
+//class PeriodicIdDistributor : public IdDistributor {
+//
+//public:
+//    PeriodicIdDistributor(LocalIdDistributor &id_distributor, size_t first_id, size_t period)
+//            : id_distributor_(id_distributor), cur_id_(first_id), period_(period) {
+//    }
+//
+//    virtual size_t GetId() {
+//        size_t id = cur_id_;
+//        cur_id_ += period_;
+//
+//        return id;
+//    }
+//
+//    void Synchronize() const {
+//        size_t &global_max_id = id_distributor_.next_int_id_;
+//        global_max_id = std::max(cur_id_, global_max_id);
+//    }
+//
+//private:
+//    LocalIdDistributor &id_distributor_;
+//    size_t cur_id_;
+//    size_t period_;
+//};
 
 template<class PurePtrT>
 class PurePtrLock;

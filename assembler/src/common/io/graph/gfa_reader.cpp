@@ -51,7 +51,8 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
             if (mid < id)
                 mid = id;
         }
-        restricted::IdSegmentStorage eid_storage = helper.graph().GetGraphIdDistributor().ReserveUpTo(mid + 2);
+        restricted::IdSegmentStorage eid_storage = helper.graph().GetGraphIdDistributor().Reserve(mid + 2, 
+                /*force zero shift*/true);
         for (size_t i = 0; i < gfa_->n_seg; ++i) {
             gfa_seg_t *seg = gfa_->seg + i;
 
