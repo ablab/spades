@@ -48,17 +48,11 @@ def load_aligns(alnfile, reads):
     paths = []
     with open(alnfile, "r") as aln:
         for ln in aln.readlines():
-            cur_read, seq_start, seq_end, read_len, path, edges_len, score, align = ln.strip().split("\t")
-            if is_aligned(len(align), int(read_len)):
-                paths.append({"path": path, "start": int(seq_start), "end": int(seq_end),
-                              "edge_lens": edges_len.split(",")[:-1], "read": cur_read, "read_len": int(read_len),
-                              "score": int(score)*1.0/int(read_len), "score2": int(score), "aln": align})
-
-    # pool = multiprocessing.Pool(16)
-    # #scores = pool.map(edist, zip(["bahama"], ["banana"]))
-    # scores = pool.map(edist, zip([reads[path["read"]] for path in paths], [path["aln"] for path in paths]))
-    # for i in xrange(len(paths)):
-    #     paths[i]["score"] = scores[i]
+            cur_read, seq_start, seq_end, read_len, path, edges_len, score = ln.strip().split("\t")
+            #if is_aligned(len(align), int(read_len)):
+            paths.append({"path": path, "start": int(seq_start), "end": int(seq_end),
+                          "edge_lens": edges_len.split(",")[:-1], "read": cur_read, "read_len": int(read_len),
+                          "score": int(score)})
     return paths
 
 
@@ -77,7 +71,7 @@ if len(sys.argv) < 3:
 
 readsfile= sys.argv[1]
 alnfile = sys.argv[2]
-outfile = sys.argv[3]
+#outfile = sys.argv[3]
 names = load_names()
 
 reads = load_reads(readsfile)
@@ -93,45 +87,41 @@ lens = []
 plens = []
 scores = []
 orgs = set()
-with open(outfile, "w") as fout:
-    for p in paths:
-        to_add = False
-        cur_name = p["read"]
-        scores.append(p["score"])
-        if p["score"] < 0.2:
-            cur_path = re.findall("^\d+| \d+", p["path"])
-            sm = 0
-            unique_edge = ""
-            unique_edge_len = ""
+#with open(outfile, "w") as fout:
+for p in paths:
+    to_add = False
+    cur_name = p["read"]
+    scores.append(p["score"])
+    if p["score"] < 50:
+        cur_path = re.findall("^\d+| \d+", p["path"])
+        sm = 0
+        unique_edge = ""
+        unique_edge_len = ""
+        for ind in xrange(len(cur_path)):
+            e = cur_path[ind]
+            e_len = int(p["edge_lens"][ind])
+            if e not in used and int(e_len) >= 50:
+                to_add = True
+                unique_edge = e
+                unique_edge_len = int(e_len)
+                break
+        if to_add:
+            orgs.add(" ".join(p["read"].split()[1:]))
+            #print p["read"], p['score']
             for ind in xrange(len(cur_path)):
                 e = cur_path[ind]
+                used.add(e)
                 e_len = int(p["edge_lens"][ind])
-                if e not in used and int(e_len) >= 300:
-                    to_add = True
-                    unique_edge = e
-                    unique_edge_len = int(e_len)
-                    break
-            to_add = True
-            if to_add:
-                nm = ''
-                # for name in names:
-                #     if p["read"].startswith(name):
-                #         orgs.add(name)
-                #         nm = name
-                for ind in xrange(len(cur_path)):
-                    e = cur_path[ind]
-                    used.add(e)
-                    e_len = int(p["edge_lens"][ind])
-                    lens.append(e_len)
-                    plens.append(len(cur_path))
-                cnt += 1
+                lens.append(e_len)
+                plens.append(len(cur_path))
+            cnt += 1
                 #print p["read"], p["score2"], p["score"], len(p["aln"]), p["read_len"], ",".join(cur_path)
-                fout.write(">" + p["read"] + "\n" + p["aln"] + "\n")
+                #fout.write(">" + p["read"] + "\n" + p["aln"] + "\n")
             # else:
             #     print "FAILED ", p["read"], p["score"], len(p["aln"]), p["read_len"]
 
 print "\n".join(sorted(orgs))
-print "16S=", cnt, " Paths=", len(paths), " Reads=", len(reads)
+print "16S=", len(orgs), " Paths=", len(paths), " Reads=", len(reads)
 print "Orgs num=", len(orgs),
 print "Median edge len: ", sorted(lens)[len(lens)/2]
 print "Median path len(in edges): ", sorted(plens)[len(plens)/2]
