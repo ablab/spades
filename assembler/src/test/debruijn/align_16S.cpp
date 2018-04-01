@@ -112,6 +112,7 @@ private:
     int graph_threshold_;
 
     std::vector<ReadMapping> primers_;
+    std::map<VertexId, std::set<VertexId> > dist_;
 
 public:
     SequenceAligner(const conj_graph_pack &gp, 
@@ -195,6 +196,23 @@ public:
         INFO("Primer name=" << read.name() <<" seq=" << read.GetSequenceString() << " " << ans);
     }
 
+    void FormDistanceMatrix() {
+        for (size_t i = 0; i < primers_.size(); ++ i) {
+            for (auto e: primers_[i].e_) {
+                VertexId end_v = gp_.g.EdgeEnd(e);
+                if (dist_.count(end_v) == 0) {
+                    auto path_searcher = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(gp_.g, 1500);
+                    path_searcher.Run(end_v);
+                    auto reached_vertices = path_searcher.ProcessedVertices();
+                    dist_.insert(std::pair<VertexId, std::set<VertexId> > (end_v, std::set<VertexId>()));
+                    for (auto j_iter = reached_vertices.begin(); j_iter != reached_vertices.end(); ++j_iter) {
+                        dist_[end_v].insert(*j_iter);
+                    } 
+                }
+            }
+        }
+    }
+
     void PreparePrimers(std::vector<io::SingleRead> &wrappedprimers, int threads) {
 #pragma omp parallel num_threads(threads)
 #pragma omp for
@@ -214,6 +232,7 @@ public:
 }   
         }   
         std::sort(primers_.begin(), primers_.end());
+        FormDistanceMatrix();
     }
 
     void PrepareInitialState(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, const string &s, bool forward, string &ss, EdgeId &start_e, int &start_pos, int &seq_start_pos) const {
@@ -341,31 +360,20 @@ public:
         int end_pos = b_range.initial_range.start_pos;
         int seq_len = -start_pos + end_pos;
         int path_max_length = (int) ((double) seq_len * pb_config_.path_limit_stretching);
+
         //INFO("path_max_length=" << path_max_length << " seq_len=" << seq_len);
         VertexId start_v = gp_.g.EdgeEnd(a_e);
         VertexId end_v = gp_.g.EdgeStart(b_e);
         if (end_pos < start_pos) {
-            INFO("modifying limits because of some bullshit magic, seq length 0 " << start_pos << " " << end_pos)
+            //INFO("modifying limits because of some bullshit magic, seq length 0 " << start_pos << " " << end_pos)
             end_pos = start_pos;
             return false;
         }
-        
-        auto path_searcher_b = omnigraph::DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(gp_.g, path_max_length);
-        path_searcher_b.Run(end_v);
-        auto path_searcher = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(gp_.g, path_max_length);
-        path_searcher.Run(start_v);
-        auto reached_vertices_b = path_searcher_b.ProcessedVertices();
-        auto reached_vertices = path_searcher.ProcessedVertices();
-
-        for (auto j_iter = reached_vertices_b.begin(); j_iter != reached_vertices_b.end(); ++j_iter) {
-            if (reached_vertices.count(*j_iter) > 0){
-                    vertex_pathlen[*j_iter] = path_searcher_b.GetDistance(*j_iter);
-            }
-        }
-
         if (a_e == b_e){
             if (b_range.mapped_range.start_pos < a_range.mapped_range.start_pos) {
-                if (vertex_pathlen.count(end_v) == 0){
+                //if (vertex_pathlen.count(end_v) == 0){
+                VERIFY(dist_.count(start_v) > 0)
+                if (dist_[start_v].count(end_v) == 0) {
                     DEBUG(" Equaledges, but end before start")
                     return false;
                 } else {
@@ -377,11 +385,12 @@ public:
             return true;
         }
 
-        if (vertex_pathlen.count(end_v) == 0) {
+        //if (vertex_pathlen.count(end_v) == 0) {
+        VERIFY(dist_.count(start_v) > 0)
+        if (dist_[start_v].count(end_v) == 0) {
             //INFO(" Cant get")
             return false;
         }
-        //INFO(" Consistent")
         return true;
     }
 
@@ -397,20 +406,28 @@ public:
         string ss = s.substr(start_pos, min(end_pos, int(s.size()) ) - start_pos);
         int s_len = int(ss.size());
         int path_max_length = ed_threshold_;
-        //INFO(" Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_pos=" <<a_range.initial_range.start_pos << " end_pos=" << b_range.initial_range.start_pos << " start_pos_g=" <<a_range.mapped_range.start_pos << " end_pos_g=" << b_range.mapped_range.start_pos);
+        int tid = omp_get_thread_num();
+        //INFO("TID=" << tid << ". Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_pos=" <<a_range.initial_range.start_pos << " end_pos=" << b_range.initial_range.start_pos << " start_pos_g=" <<a_range.mapped_range.start_pos << " end_pos_g=" << b_range.mapped_range.start_pos);
         if (s_len > 2000 && vertex_pathlen.size() > 100000){
             DEBUG("Dijkstra on't run: Too big gap or too many paths");
             return Mapping();
         }
+        utils::perf_counter perf;
+
         pacbio::DijkstraGapFiller gap_filler = pacbio::DijkstraGapFiller(gp_.g, ss, a_e, b_e, a_range.mapped_range.start_pos, b_range.mapped_range.start_pos, path_max_length, vertex_pathlen);
         gap_filler.CloseGap();
         int score = gap_filler.GetEditDistance();
+        VertexId start_v = gp_.g.EdgeEnd(a_e);
+        VertexId end_v = gp_.g.EdgeStart(b_e);
+        
         if (score == -1){
-            DEBUG("Dijkstra didn't find anything")
+            //INFO("TID=" << tid << ". Dijkstra didn't find anything")
+            INFO("TIME.NO=" << perf.time() << " " << s_len << " " << score << " " << gp_.g.int_id(start_v) << " " << gp_.g.int_id(end_v) << " tid=" << tid);
             score = -1;
             return Mapping();
         } else {
-            DEBUG("Dijkstra score=" << score << " ssize=" << s_len);
+            //INFO("TID=" << tid << ". Dijkstra score=" << score << " ssize=" << s_len);
+            INFO("TIME.YES=" << perf.time() << " " << s_len << " " << score << " " << gp_.g.int_id(start_v) << " " << gp_.g.int_id(end_v) << " tid=" << tid);
         }
         omnigraph::MappingPath<debruijn_graph::EdgeId> ans = gap_filler.GetMappingPath();
         if (ans.size() == 1){
@@ -435,6 +452,7 @@ public:
             for (size_t i = 0; i < mappings[0].e_.size(); ++ i){
                 working_paths.push_back(Mapping(mappings[0].e_.at(i), mappings[0].range_.at(i), 0));
             }
+            utils::perf_counter perf;
             for (size_t i = 1; i < mappings.size(); ++ i){
                 //INFO("Iter=" << i << " " << mappings[i].e_.size());
                 vector<Mapping> new_working_paths;
@@ -442,8 +460,6 @@ public:
                 for (size_t j = 0; j < mappings[i].e_.size(); ++ j) {
                     Mapping best_path;
                     int best_used = -1;
-                    int bad = -1;
-                    int good = -1;
                     for (size_t k = 0; k < working_paths.size(); ++ k) {
                         const MappingRange &a_range = working_paths[k].last_mapping_;
                         const MappingRange &b_range = mappings[i].range_.at(j);
@@ -485,6 +501,8 @@ public:
                 }
                 working_paths = new_working_paths;
             }
+            INFO("TIME.FillGaps=" << perf.time());
+
             for (size_t k = 0; k < working_paths.size(); ++ k) {
                 resulting_paths.push_back(working_paths[k]);
             }
@@ -500,11 +518,13 @@ public:
                 Mapping &path = resulting_paths[i];
                 path.path_.push_back(path.last_edge_, path.last_mapping_);
                 if (path.score_ < ed_threshold_) {
+                    utils::perf_counter perf;
                     DEBUG("Grow Ends front")
                     int before = path.score_;
                     path.score_ += GrowEnds(path.path_, read.GetSequenceString(), false);
                     DEBUG("Grow Ends back")
                     path.score_ += GrowEnds(path.path_, read.GetSequenceString(), true);
+                    INFO("TIME.GrowEnds=" << perf.time() << " " << path.score_);
                     int len_cur = path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos;
                     // if (path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos > 1200) {
                     //     ans = "";
@@ -530,12 +550,12 @@ public:
                     cur_path = "";
                     cur_path_len = "";
                     int end_ind = best_path.path_.size();
-                    int sum = 56;
+                    int sum = gp_.g.k();
                     while (sum - (int) (best_path.path_.mapping_at(end_ind - 1).mapped_range.end_pos - 0) >= 0) {
                         sum -= (int) (best_path.path_.mapping_at(end_ind - 1).mapped_range.end_pos - 0);
                         end_ind --;
                     }   
-                    sum = 56;
+                    sum = gp_.g.k();
                     for (size_t k = 0; k < end_ind; ++ k) {
                         if (sum - (int) (best_path.path_.mapping_at(k).mapped_range.end_pos - best_path.path_.mapping_at(k).mapped_range.start_pos) < 0) {
                             ans += std::to_string(best_path.path_.edge_at(k).int_id())  + ",";
@@ -577,7 +597,7 @@ public:
             //INFO("dist=" << dist << " start_pos=" << start_pos << " end_pos=" << end_pos << " primer_s=" << primer.start_pos_ << " primer_e="<< primer.end_pos_)
             if (dist <= primer_threshold_ && abs(start_pos - primer.start_pos_) < threshold && abs(end_pos - primer.end_pos_) < threshold){
                 num += 1;
-                INFO("dist=" << dist << " start_pos=" << start_pos << " end_pos=" << end_pos << " primer_s=" << primer.start_pos_ << " primer_e="<< primer.end_pos_)
+                INFO("dist=" << dist << " start_pos=" << start_pos << " end_pos=" << end_pos << " primer_s=" << primer.start_pos_ << " primer_e="<< primer.end_pos_ << " sz=" << primer.range_.size())
                 for (size_t i = 0; i < primer.range_.size(); ++ i){
                     //INFO(ind << " e=" << primer.e_[i].int_id() << " " << primer.range_[i].mapped_range.start_pos << " " << primer.range_[i].mapped_range.end_pos)
                     primer.range_[i] = MappingRange(Range(start_pos, end_pos), Range(primer.range_[i].mapped_range.start_pos, primer.range_[i].mapped_range.end_pos));
@@ -593,7 +613,7 @@ public:
         } else {
             vector<Mapping>();
         }
-        INFO("Read2="<< read.name() << " time=" << perf.time())
+        INFO("TIME.Read2="<< perf.time() << " name=" << read.name() )
     }
 };
 
@@ -650,8 +670,8 @@ void Launch(size_t K, const string &saves_path, const string &primer_fasta, cons
 
     config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
     int ed_threshold = 40;
-    int res_ed_threshold = 200;
-    int min_length = 1200;
+    int res_ed_threshold = 100;
+    int min_length = 1400;
     int primer_threshold = 1;
     int graph_threshold = 3;
     SequenceAligner aligner(gp, mode, pb, output_file, ed_threshold, res_ed_threshold, min_length, primer_threshold, graph_threshold); 
