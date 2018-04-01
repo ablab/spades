@@ -99,12 +99,8 @@ for i in table:
 #    print(i[1])
     if i[1]!="-":
          i.insert(1,"hmm+")
- #        print(naive_bayes(i.split()))
-   #     i.insert(1, " ".join(naive_bayes(i)))
     else:
         i.insert(1,"hmm-")
-    #    print(naive_bayes(i.split()))
-    #    i.insert(1, " ".join(naive_bayes(i)))
 
 
 # Add classifier

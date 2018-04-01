@@ -6,8 +6,8 @@ import sys
 from pysam import AlignmentFile
 from Bio import SeqIO, Seq
 import math
-read_len = 100
-k = 77
+read_len = 150
+k = 99
 
 def avg(a) :
     if len(a) == 0:

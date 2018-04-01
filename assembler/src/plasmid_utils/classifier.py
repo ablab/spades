@@ -51,8 +51,8 @@ def naive_bayes(input_list):
             if i==j[0]: 
                 chrom=chrom + log(j[3])
                 plasm=plasm + log(j[4])
-    res = plasm/chrom
-    if res > 1: return "NBC_Plasmid"  #["Plasmid", plasm, chrom]
+    res = plasm - chrom
+    if res > 0: return "NBC_Plasmid"  #["Plasmid", plasm, chrom]
     else: return "NBC_Chromosome" # ["Chromosome", plasm, chrom]
 
    

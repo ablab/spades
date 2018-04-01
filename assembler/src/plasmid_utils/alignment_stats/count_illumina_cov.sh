@@ -31,6 +31,6 @@ else
 fi
 
 echo "Counting average coverage"
-$exec_path/illumina_cov.py $fragments $out_dir/alignment.bam $out_dir/result.txt
+python2 $exec_path/illumina_cov.py $fragments $out_dir/alignment.bam $out_dir/result.txt
 #echo "Counting binned coverage"
 #$SCRIPTS_PATH/alignment_stats/binned_coverage.py $fragments $out_dir/alignment.bam 1000 > $out_dir/result.txt
