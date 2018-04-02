@@ -125,6 +125,9 @@ public:
                 }
                 if (used_count * 2 <  rlen)
                     res.push_back(mapped_path[i].first, mapped_path[i].second);
+                else {
+                    DEBUG ("Filtering " << g_.int_id(mapped_path[i].first) << " " << mapped_path[i].second)
+                }
             }
         }
         return res;
@@ -151,7 +154,8 @@ public:
                 res.push_back(mapped_path[i].first, mapped_path[i].second);
         }
 
-        if (res.size() != mapped_path.size()) {
+//        if (res.size() != mapped_path.size()) {
+        if (true) {
             DEBUG("Seq len " << seq_len);
             for (const auto &e_mr : mapped_path) {
                 EdgeId e = e_mr.first;
