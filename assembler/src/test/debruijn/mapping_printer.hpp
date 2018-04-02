@@ -119,7 +119,7 @@ public:
             //if (max_len >= 1200) {
                 ofstream myfile;
                 myfile.open(output_file_ + ".tsv", std::ofstream::out | std::ofstream::app);
-                myfile << sum_str;
+                myfile << max_str;
                 myfile.close();
             //}
         }
