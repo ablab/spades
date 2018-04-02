@@ -128,7 +128,6 @@ public:
         Sequence s = read.sequence()
         if (s.size() < g_.k())
             return res;
-
         omnigraph::MappingPath<EdgeId> mapped_path = FilterSpuriousAlignments(bwa_mapper_.MapSequence(s), s.size());
         TRACE(read_count_ << " read_count_");
         TRACE("BWA ended")
@@ -136,7 +135,7 @@ public:
         for (const auto &e_mr : mapped_path) {
             EdgeId e = e_mr.first;
             omnigraph::MappingRange mr = e_mr.second;
-            INFO("ReadName=" << read.name() << " BWA loading edge=" << g_.int_id(e) << " edge_length=" << g_.length(e) 
+            DEBUG("ReadName=" << read.name() << " BWA loading edge=" << g_.int_id(e) << " edge_length=" << g_.length(e) 
                                                                     << " e_start=" << mr.mapped_range.start_pos << " e_end=" << mr.mapped_range.end_pos 
                                                                     << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos );
             size_t cut = 0;
@@ -284,20 +283,25 @@ public:
                     }
                     int score1 = STRING_DIST_INF;
                     int score2 = STRING_DIST_INF;
+
+                    utils::perf_counter perf1;
+
                     vector<EdgeId> intermediate_path = BestScoredPath(s, prev_edge, cur_edge, prev_last_index.edge_position, cur_first_index.edge_position, 
                                                                                     start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, true, score1);
 
+
+                    utils::perf_counter perf2;
                     vector<EdgeId> intermediate_path_bf = BestScoredPath(s, prev_edge, cur_edge, prev_last_index.edge_position, cur_first_index.edge_position, 
                                                                                     start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, false, score2);
 
                     if (score1 != score2) {
                         if (score1 > score2 && score1 != STRING_DIST_INF){
-                            INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW!");
+                            INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
                         } else {
-                            INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW2!");
+                            INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW2! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
                         }
                     } else {
-                        INFO("Dijkstra score=" << score1 << " BF score=" << score2);
+                        INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
                     }
                     if (intermediate_path.size() == 0) {
                         DEBUG(DebugEmptyBestScoredPath(start_v, end_v, prev_edge, cur_edge,
@@ -323,11 +327,11 @@ public:
         if (cur_sorted.size() > 0) {
             res.push_back(cur_sorted);
         }
-        if (res.size() > 0){
-            bool forward = true;
-            GrowEnds(res[0], s, !forward);
-            GrowEnds(res[res.size() - 1], s, forward);
-        }
+        // if (res.size() > 0){
+        //     bool forward = true;
+        //     GrowEnds(res[0], s, !forward);
+        //     GrowEnds(res[res.size() - 1], s, forward);
+        // }
         return res;
     }
 
@@ -666,10 +670,10 @@ public:
         path_max_length = score;
         if (score == STRING_DIST_INF){
             path_max_length = max(s_len/3, 20);
-        }
-        INFO(" Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_p=" << start_p << " end_p=" << end_p);
-        if ( ((size_t) s_len)*vertex_pathlen.size() > 200000000){
-            INFO("Dijkstra won't run: Too big gap or too many paths");
+        } 
+        INFO(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len << " max-len " << path_max_length << " start_p=" << start_p << " end_p=" << end_p << " eid=" << start_e.int_id());
+        if ( ((size_t) s_len) > 2000 || vertex_pathlen.size() > 100000){
+            INFO("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
             return vector<EdgeId>(0);
         }
         DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, ss.str(), start_e, end_e, start_p, end_p, path_max_length, vertex_pathlen);

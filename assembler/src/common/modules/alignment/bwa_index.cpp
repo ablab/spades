@@ -48,8 +48,8 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode, size_t le
             memopt_->b = 1;
             memopt_->split_factor = 10.;
             memopt_->pen_clip5 = 0; memopt_->pen_clip3 = 0;
-            memopt_->drop_ratio = 20;
-            memopt_->mask_level = 20;
+            // memopt_->drop_ratio = 20;
+            // memopt_->mask_level = 20;
             if (mode == AlignmentMode::Ont2D) {
                 memopt_->min_chain_weight = 20;
                 memopt_->min_seed_len = 14;

@@ -26,7 +26,6 @@
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "mapping_printer.hpp"
-#include "graph_reader.hpp"
 
 #include <iostream>
 #include <fstream>
