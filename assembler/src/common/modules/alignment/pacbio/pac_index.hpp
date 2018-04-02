@@ -11,7 +11,7 @@
 #include "modules/alignment/edge_index_refiller.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
-#include "assembly_graph/paths/gap.hpp"
+#include "common/modules/alignment/gap_info.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 // FIXME: Layering violation, get rid of this
 #include "pipeline/config_struct.hpp"
@@ -341,7 +341,7 @@ public:
                         size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
                         size_t left_offset = a.sorted_positions[a.last_trustable_index].edge_position;
                         size_t right_offset = b.sorted_positions[b.first_trustable_index].edge_position;
-                        auto gap = CreateFixOverlap(g_, s,
+                        auto gap = CreateGapInfoTryFixOverlap(g_, s,
                                                     seq_start, seq_end,
                                                     a.edgeId, left_offset,
                                                     b.edgeId, right_offset);

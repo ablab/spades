@@ -14,7 +14,7 @@
 #pragma once
 
 #include "extension_chooser.hpp"
-#include "assembly_graph/paths/gap.hpp"
+#include "common/modules/alignment/gap_info.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "path_filter.hpp"
 #include "overlap_analysis.hpp"

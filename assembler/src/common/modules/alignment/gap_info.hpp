@@ -17,10 +17,9 @@ Sequence Subseq(const io::SingleRead& read, size_t start, size_t end);
 
 Sequence Subseq(const io::SingleReadSeq& read, size_t start, size_t end);
 
-inline Sequence Subseq(const Sequence& s, size_t start, size_t end) {
-    return s.Subseq(start, end);
-}
+Sequence Subseq(const Sequence& s, size_t start, size_t end);
 
+//TODO rename to GapInfo
 template<class Graph>
 class GapDescription {
     typedef typename Graph::EdgeId EdgeId;
@@ -174,21 +173,23 @@ private:
 
 };
 
+//Attempts to "shrink" alignments to make them non-overlapping in the query (delivering non-empty "filling" sequence),
+// while remaining within graph edges
 template<class Graph, class ReadT>
-static GapDescription<Graph> CreateFixOverlap(const Graph &g, const ReadT &read,
-                                       size_t seq_start, size_t seq_end,
-                                       typename Graph::EdgeId left, size_t left_offset,
-                                       typename Graph::EdgeId right, size_t right_offset) {
+static GapDescription<Graph> CreateGapInfoTryFixOverlap(const Graph &g, const ReadT &read,
+                                                        size_t seq_start, size_t seq_end,
+                                                        typename Graph::EdgeId left, size_t left_offset,
+                                                        typename Graph::EdgeId right, size_t right_offset) {
     VERIFY(left_offset > 0 && right_offset >= 0 &&
            left_offset <= g.length(left) && right_offset < g.length(right));
 
-    DEBUG("Creating gap description");
+    TRACE("Creating gap description");
 
     //trying to shift on the left edge
     if (seq_start >= seq_end) {
         //+1 is a trick to avoid empty gap sequences
         size_t overlap = seq_start - seq_end + 1;
-        DEBUG("Overlap of size " << overlap << " detected. Fixing.");
+        TRACE("Overlap of size " << overlap << " detected. Fixing.");
         size_t left_shift = std::min(overlap, left_offset - 1);
         VERIFY(seq_start >= left_shift);
         seq_start -= left_shift;
@@ -198,8 +199,8 @@ static GapDescription<Graph> CreateFixOverlap(const Graph &g, const ReadT &read,
     //trying to shift on the right edge
     if (seq_start >= seq_end) {
         //+1 is a trick to avoid empty gap sequences
-        size_t overlap = seq_start - seq_end + 1;
-        DEBUG("Overlap of size " << overlap << " remained. Fixing.");
+        const size_t overlap = seq_start - seq_end + 1;
+        TRACE("Overlap of size " << overlap << " remained. Fixing.");
         size_t right_shift = std::min(overlap, g.length(right) - right_offset - 1);
         VERIFY(seq_end + right_shift <= read.size());
         seq_end += right_shift;
@@ -209,7 +210,7 @@ static GapDescription<Graph> CreateFixOverlap(const Graph &g, const ReadT &read,
     if (seq_start < seq_end) {
         auto gap_seq = Subseq(read, seq_start, seq_end);
         if (!gap_seq.empty()) {
-            DEBUG("Gap info successfully created");
+            TRACE("Gap info successfully created");
             VERIFY(left_offset > 0 && right_offset >= 0 &&
                    left_offset <= g.length(left) && right_offset < g.length(right));
             return GapDescription<Graph>(left, right,
@@ -217,12 +218,10 @@ static GapDescription<Graph> CreateFixOverlap(const Graph &g, const ReadT &read,
                                   g.length(left) - left_offset,
                                   right_offset);
         } else {
-            DEBUG("Something wrong with read subsequence");
+            TRACE("Something wrong with read subsequence");
         }
     } else {
-        size_t overlap = seq_start - seq_end + 1;
-        //FIXME remove warn
-        WARN("Failed to fix overlap of size " << overlap);
+        TRACE("Failed to fix overlap of size " << seq_start - seq_end + 1);
     }
     return GapDescription<Graph>();
 }
