@@ -451,7 +451,6 @@ void load(debruijn_config::truseq_analysis& tsa,
 void load(debruijn_config::bwa_aligner& bwa,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
-    load(bwa.debug, pt, "debug");
     load(bwa.min_contig_len, pt, "min_contig_len");
 }
 
@@ -469,9 +468,7 @@ void load(debruijn_config::pacbio_processor& pb,
   load(pb.pacbio_min_gap_quantity, pt, "pacbio_min_gap_quantity");
   load(pb.contigs_min_gap_quantity, pt, "contigs_min_gap_quantity");
   load(pb.max_contigs_gap_length, pt, "max_contigs_gap_length");
-
 }
-
 
 void load(debruijn_config::position_handler& pos,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
@@ -483,6 +480,7 @@ void load(debruijn_config::position_handler& pos,
   load(pos.late_threading, pt, "late_threading");
   load(pos.careful_labeling, pt, "careful_labeling");
 }
+
 void load(debruijn_config::plasmid& pd,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
@@ -494,9 +492,7 @@ void load(debruijn_config::plasmid& pd,
     load(pd.small_component_relative_coverage, pt, "small_component_relative_coverage");
     load(pd.min_component_length, pt, "min_component_length");
     load(pd.min_isolated_length, pt, "min_isolated_length");
-
 }
-
 
 void load(debruijn_config::gap_closer& gc,
           boost::property_tree::ptree const& pt, bool /*complete*/) {

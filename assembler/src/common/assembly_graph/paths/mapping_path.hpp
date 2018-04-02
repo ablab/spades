@@ -9,7 +9,6 @@
 
 #include "sequence/sequence.hpp"
 #include "sequence/range.hpp"
-#include "gap.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 
 namespace omnigraph {

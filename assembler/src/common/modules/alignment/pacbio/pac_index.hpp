@@ -11,6 +11,7 @@
 #include "modules/alignment/edge_index_refiller.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
+#include "assembly_graph/paths/gap.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 // FIXME: Layering violation, get rid of this
 #include "pipeline/config_struct.hpp"

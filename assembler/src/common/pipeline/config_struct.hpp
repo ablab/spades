@@ -466,7 +466,6 @@ struct debruijn_config {
     };
 
     struct bwa_aligner {
-        bool debug;
         size_t min_contig_len;
     };
 

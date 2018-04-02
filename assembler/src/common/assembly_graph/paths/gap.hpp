@@ -1,5 +1,11 @@
 #pragma once
 
+#include "utils/logger/logger.hpp"
+#include "utils/verify.hpp"
+#include "sequence/sequence.hpp"
+
+#include <boost/optional.hpp>
+
 namespace io {
 class SingleRead;
 class SingleReadSeq;
@@ -35,7 +41,7 @@ class GapDescription {
     //Optional "filling" sequence, giving "additional" nucleotides which
     // should be added while closing the gap.
     // Length guaranteed to be equal to estimated_gap (if present).
-    boost::optional <Sequence> filling_seq_;
+    boost::optional<Sequence> filling_seq_;
 
     GapDescription(EdgeId left, EdgeId right,
                    int estimated_dist,
@@ -49,8 +55,7 @@ class GapDescription {
             filling_seq_(filling_seq) {
     }
 
-    auto AsTuple() const ->
-    decltype(std::make_tuple(left_, right_, left_trim_, right_trim_, estimated_dist_, filling_seq_)) {
+    auto AsTuple() const {
         return std::make_tuple(left_, right_, left_trim_, right_trim_, estimated_dist_, filling_seq_);
     }
 
