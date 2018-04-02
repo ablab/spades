@@ -65,7 +65,7 @@ for i in records:
     ids.append(i.id)  # take all fasta ids and append to table
 
 
-for i in set(ids):
+for i in ids:
   table.append(i.split())
 
 
@@ -179,6 +179,27 @@ for i in plasmids:
 chrom_list = [i.strip() for i in chrom_list] 
 
 
+with open(name+"_no_significant.names", "r") as pl_infile:
+           plasmids=pl_infile.readlines()
+no_sig=[]
+for i in plasmids:
+     if i[:4] == "NODE":
+         no_sig.append(i)
+no_sig = [i.strip() for i in no_sig] 
+
+
+
+with open(name+"_viruses.names", "r") as pl_infile:
+           plasmids=pl_infile.readlines()
+viruses=[]
+for i in plasmids:
+     if i[:4] == "NODE":
+         viruses.append(i)
+viruses = [i.strip() for i in viruses] 
+
+
+
+
 
   
 # add to table
@@ -191,6 +212,10 @@ for i in table:
      i.insert(3, "Unclassified")
   elif  i[0] in chrom_list:
      i.insert(3, "Chromosome")
+  elif  i[0] in no_sig:
+     i.insert(3, "Non-significant")
+  elif  i[0] in viruses:
+     i.insert(3, "Virus")
   else: 
      i.insert(3, "-")
 
