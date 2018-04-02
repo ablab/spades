@@ -67,14 +67,14 @@ struct QueueState {
         return (this->i < state.i || (this->i == state.i && this->gs < state.gs) );
     }
 
-    bool isempty()
+    bool empty()
     {
         return *this == QueueState();
     }
 };
 
 
-class DijkstraGraphSequenceVirtual {
+class DijkstraGraphSequenceBase {
 
 protected:
         bool ShouldUpdateQueue(int seq_ind, int ed)
@@ -95,7 +95,7 @@ protected:
             }
         }
 
-        void Update(QueueState &state, const QueueState &prev_state, int score)
+        void Update(const QueueState &state, const QueueState &prev_state, int score)
         {
             if (visited_.count(state) > 0) {
                 if (visited_[state] >= score){
@@ -115,7 +115,7 @@ protected:
             }
         }
 
-        void AddNewEdge(GraphState gs, QueueState prev_state, int ed)
+        void AddNewEdge(const GraphState &gs, const QueueState &prev_state, int ed)
         {
             utils::perf_counter perf0;
             string tmp = g_.EdgeNucls(gs.e).str();
@@ -159,20 +159,19 @@ protected:
         }
 
 
-        virtual bool AddState(QueueState &cur_state, const EdgeId &e, int ed, int ind, utils::perf_counter &perf) = 0;
+        virtual bool AddState(const QueueState &cur_state, EdgeId e, int ed, int ind, utils::perf_counter &perf) = 0;
 
-        virtual bool IsEndPosition(QueueState &cur_state) = 0;
+        virtual bool IsEndPosition(const QueueState &cur_state) = 0;
 
 public:
-        DijkstraGraphSequenceVirtual(const Graph &g, const string ss, EdgeId start_e, const int start_p, const int path_max_length)
+        DijkstraGraphSequenceBase(const Graph &g, string ss, EdgeId start_e, int start_p, int path_max_length)
                   :g_(g), ss_(ss)
                    , start_e_(start_e)
                    , start_p_(start_p)
-                   , path_max_length_(path_max_length){
-            best_ed_.resize(ss_.size());
-            for (size_t i = 0; i < best_ed_.size(); ++ i){
-                best_ed_[i] = path_max_length_;
-            }
+                   , path_max_length_(path_max_length)
+                   , queue_limit_(1000000)
+                   , iter_limit_(1000000){
+            best_ed_.resize(ss_.size(), path_max_length_);
             AddNewEdge(GraphState(start_e_, start_p_, (int) g_.length(start_e_)), QueueState(), 0);
             min_score_ = -1;
         }
@@ -185,7 +184,7 @@ public:
                 QueueState cur_state = q_.begin()->second;
                 int ed = visited_[cur_state];
                 //INFO("Queue edge=" << cur_state.gs.e.int_id() << " ed=" << ed);
-                if (q_.size() > 1000000 || i > 1000000) {
+                if (q_.size() > queue_limit_ || i > iter_limit_) {
                     //INFO("EdgeDijkstra: queue size is too big ed=" << ed << " q_.size=" << q_.size() << " i=" << i << " s_len=" << ss_.size() << " time=" << perf.time() )
                     if (visited_.count(end_qstate_) > 0){
                         found_path = true;
@@ -207,36 +206,29 @@ public:
                 q_.erase(q_.begin());
                 for (const EdgeId &e: g_.OutgoingEdges(g_.EdgeEnd(cur_state.gs.e))) {
                     found_path = AddState(cur_state, e, ed, i, perf);
-                    //if (found_path) break;
+                    if (found_path) break;
                 }
                 if (found_path) break;
             }
             //INFO("TIME.Dijkstra=" << perf.time())
             if (found_path) {
                 QueueState state = end_qstate_;
-                this->GetSeqEndPosition();
-                while (!state.isempty()) {
+                while (!state.empty()) {
                     gap_path_.push_back(state.gs.e);
                     int tid = omp_get_thread_num();
-                    // if ((int) max(0, (int) prev_states_[state].i) > max(0, (int) state.i) ){
-                    //     INFO("TID=" << tid << " Reconstruct11 " << (int) max(0, prev_states_[state].i) << " " << state.i);
-                    // }
-                    // if (state.gs.start_pos > state.gs.end_pos) {
-                    //     INFO("TID=" << tid <<" Reconstruct12 " << state.gs.start_pos << " " << state.gs.end_pos);
-                    // }
                     int start_edge = (int) max(0, (int) prev_states_[state].i);
                     int end_edge = max(0, (int) state.i);
                     mapping_path_.push_back(state.gs.e, omnigraph::MappingRange(Range(start_edge, end_edge), 
                                                                                 Range(state.gs.start_pos, state.gs.end_pos) ));
                     state = prev_states_[state];
                 }
-                std::reverse(gap_path_.begin(), gap_path_.end());
+                reverse(gap_path_.begin(), gap_path_.end());
                 mapping_path_.reverse();
             }
             return;
         }
 
-        std::vector<EdgeId> GetPath() {
+        vector<EdgeId> GetPath() {
            return gap_path_;
         }
 
@@ -259,15 +251,15 @@ public:
         }    
 
 protected:
-        std::set<std::pair<int, QueueState> > q_;
-        std::map<QueueState, int> visited_;
-        std::map<QueueState, QueueState> prev_states_;
+        set<pair<int, QueueState> > q_;
+        map<QueueState, int> visited_;
+        map<QueueState, QueueState> prev_states_;
 
-        std::vector<EdgeId> gap_path_;
+        vector<EdgeId> gap_path_;
 
         omnigraph::MappingPath<debruijn_graph::EdgeId> mapping_path_;
 
-        std::vector<int> best_ed_;
+        vector<int> best_ed_;
 
         const Graph &g_;
         const string ss_;
@@ -276,17 +268,20 @@ protected:
         int path_max_length_;
         int min_score_;
         QueueState end_qstate_;
+
+        const size_t queue_limit_;
+        const size_t iter_limit_;
 };
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-class DijkstraGapFiller: public DijkstraGraphSequenceVirtual {  
+class DijkstraGapFiller: public DijkstraGraphSequenceBase {  
 
 private:
 
-        virtual bool AddState(QueueState &cur_state, const EdgeId &e, int ed, int ind, utils::perf_counter &perf) {
+        virtual bool AddState(const QueueState &cur_state, EdgeId e, int ed, int ind, utils::perf_counter &perf) {
             bool found_path = false;
             if (reachable_vertex_.size() == 0 || reachable_vertex_.count(g_.EdgeEnd(cur_state.gs.e)) > 0) { 
                 if (reachable_vertex_.size() == 0 || reachable_vertex_.count(g_.EdgeEnd(e)) > 0) {
@@ -314,7 +309,7 @@ private:
                         if (ed + score == path_max_length_) {
                              min_score_ = ed + score;
                              //INFO("++=Final ed2=" << ed + score<< " q_.size=" << q_.size() << " i=" << ind << " s_len=" << ss_.size() << " time=" << perf.time() )
-                             //found_path = true;
+                             found_path = true;
                         }
                     }
                 }
@@ -322,7 +317,7 @@ private:
             return found_path;
         }
 
-        virtual bool IsEndPosition(QueueState &cur_state) {
+        virtual bool IsEndPosition(const QueueState &cur_state) {
             if (cur_state.i == end_qstate_.i && cur_state.gs.e == end_qstate_.gs.e && cur_state.gs.end_pos == end_qstate_.gs.end_pos) {
                 return true;   
             }
@@ -330,10 +325,10 @@ private:
         }
 
 public:
-        DijkstraGapFiller(const Graph &g, const string ss, EdgeId start_e, EdgeId end_e,
-                                  const int start_p, const int end_p, const int path_max_length, 
-                                  const std::map<VertexId, size_t> &reachable_vertex)
-                  : DijkstraGraphSequenceVirtual(g, ss, start_e, start_p, path_max_length)
+        DijkstraGapFiller(const Graph &g, string ss, EdgeId start_e, EdgeId end_e,
+                                  int start_p, int end_p, int path_max_length, 
+                                  const map<VertexId, size_t> &reachable_vertex)
+                  : DijkstraGraphSequenceBase(g, ss, start_e, start_p, path_max_length)
                    , end_e_(end_e) , end_p_(end_p)
                    , reachable_vertex_(reachable_vertex){
             GraphState end_gstate(end_e_, 0, end_p_);
@@ -363,15 +358,15 @@ public:
     protected:
         EdgeId end_e_;
         const int end_p_;
-        const std::map<VertexId, size_t> &reachable_vertex_;
+        const map<VertexId, size_t> &reachable_vertex_;
 };
 
 
 
-class DijkstraEndsReconstructor: public DijkstraGraphSequenceVirtual {
+class DijkstraEndsReconstructor: public DijkstraGraphSequenceBase {
 
 private:
-        virtual bool AddState(QueueState &cur_state, const EdgeId &e, int ed, int ind, utils::perf_counter &perf) {
+        virtual bool AddState(const QueueState &cur_state, EdgeId e, int ed, int ind, utils::perf_counter &perf) {
             bool found_path = false;
             //DEBUG("end_pos=" << cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e))
             GraphState next_state(e, 0, (int) g_.length(e));
@@ -393,7 +388,7 @@ private:
                          min_score_ = ed + score;
                          DEBUG("++=Final ed1=" << ed + score);
                          DEBUG("EdgeDijkstra1: path was found ed=" << ed + score << " q_.size=" << q_.size() << " i=" << ind << " s_len=" << ss_.size() << " time=" << perf.time() )
-                         //found_path = true;
+                         found_path = true;
                          end_qstate_ = state;
                     }
                 }
@@ -401,15 +396,15 @@ private:
             return found_path;
         }
 
-        virtual bool IsEndPosition(QueueState &cur_state) {
+        virtual bool IsEndPosition(const QueueState &cur_state) {
             if (cur_state.i == end_qstate_.i) {
                 return true;   
             }
             return false;
         }
 public:
-        DijkstraEndsReconstructor(const Graph &g, const string ss, EdgeId start_e, const int start_p, const int path_max_length)
-                  :DijkstraGraphSequenceVirtual(g, ss, start_e, start_p, path_max_length) {
+        DijkstraEndsReconstructor(const Graph &g, string ss, EdgeId start_e, int start_p, int path_max_length)
+                  :DijkstraGraphSequenceBase(g, ss, start_e, start_p, path_max_length) {
             end_qstate_ = QueueState();
             if (g_.length(start_e_) + g_.k() - start_p_ + path_max_length_ > ss_.size()){
                 string seq_str = ss_;
