@@ -29,7 +29,7 @@ def load_truepaths(filename):
                 path.append(x.split()[0])
             seq.append(x.split("[")[1].split(",")[0])
 
-        res[cur_read] = { "len": rlen, "path": path, "edgelen": edgelen.split(",")[:-1], "mapped": mapped_seq, "seq": seq }
+        res[cur_read] = { "len": rlen, "path": path, "edgelen": [int(x) for x in edgelen.split(",")[:-1]], "mapped": mapped_seq, "seq": seq }
     fin.close()
     return res
 
@@ -39,7 +39,8 @@ def load_alignments(filename):
     fin = open(filename, "r")
     bwa_num = 0
     for ln in fin.readlines():
-        cur_read, seq_start, seq_end, rlen, path_dirty, edgelen, trash1, trash2 = ln.strip().split("\t")
+        #cur_read, seq_start, seq_end, rlen, path_dirty, edgelen, ed = ln.strip().split("\t")
+        cur_read, seq_start, seq_end, rlen, path_dirty, edgelen, ss, ed = ln.strip().split("\t")
         cur_read = cur_read.split(" ")[0]
         path = []
         edge_tag = []
@@ -62,7 +63,7 @@ def load_alignments(filename):
                     bwa_path.append(x.split()[0])
             seq.append(x.split("[")[1].split(",")[0])
             seq_ends.append(x.split("[")[1].split(",")[1])
-
+        #if int(seq_end) - int(seq_start) > 1000:
         res[cur_read] = { "len": rlen, "path": path, "bwa_path": bwa_path, "edgelen": edgelen.split(",")[:-1], "edge_tag": edge_tag, \
                             "mapped_s":int(seq_start), "mapped_e":int(seq_end), "seq": seq , "seq_end": seq_ends }
     fin.close()
@@ -83,6 +84,7 @@ def cnt_notmapped(reads, truepaths, alignedpaths):
         if r not in truepaths:
             continue
         if r not in alignedpaths:
+            #print r
             res += 1
     return res
 
@@ -106,15 +108,21 @@ def cover_same_subseq(a_start, a_end, b_start, b_end):
 
 def cnt_problembwa(truepaths, alignedpaths):
     res = 0
+    total_path = 0
     for r in alignedpaths.keys():
         if r not in truepaths:
             continue
         j = 0
+        total_path += 1
         for e in truepaths[r]["path"]:
             if j < len(alignedpaths[r]["bwa_path"]) and e == alignedpaths[r]["bwa_path"][j]:
                 j += 1
         if j < len(alignedpaths[r]["bwa_path"]):
             res += 1
+            # print r
+            # print truepaths[r]["path"]
+            # print alignedpaths[r]["bwa_path"] 
+            # print alignedpaths[r]["path"]
     return res
 
 def get_bwa_inds(path, bwapath):
@@ -147,11 +155,17 @@ def is_unique(path, subpath):
     return True
 
 
-def is_wrong_start(truepath, path, true_ind, ind):
+def is_wrong_start(truepath, path, true_ind, ind, edgelen):
     empty = False
     if truepath[true_ind[0]: true_ind[1]] == path[ind[0]: ind[1]] :
         return [False, empty]
     else:
+        s = 0
+        for j in xrange(true_ind[0], true_ind[1] + 1):
+            if truepath[j: true_ind[1]] == path[ind[0]: ind[1]] and s < 56:
+                return [False, empty]
+            if j < len(edgelen):
+                s += edgelen[j]
         if len(path[ind[0]: ind[1]]) == 0:
             empty = True
         return [True, empty]
@@ -161,6 +175,9 @@ def is_wrong_end(truepath, path, true_ind, ind):
     if truepath[true_ind[-2]: true_ind[-1]] == path[ind[-2]: ind[-1]] :
         return [False, empty]
     else:
+        for j in xrange(ind[-2] + 1, ind[-1]):
+            if truepath[true_ind[-2]: true_ind[-1]] == path[ind[-2]: j]:
+                return [False, empty]
         if len(path[ind[-2]: ind[-1]]) == 1:
             empty = True
         return [True, empty]
@@ -177,9 +194,16 @@ def is_wrong_gap(truepath, path, true_ind, ind):
     return [has_wrong_gap, empty]
 
 
+def is_wrong_path(truepath, path):
+    has_good_path = False
+    for j in xrange(len(truepath) - len(path) + 1):
+        if " ".join(truepath[j: j + len(path)]) == " ".join(path):
+            has_good_path = True
+    return has_good_path
+
 def cnt_wronglyclosedgaps(truepaths, alignedpaths):
     res, res_start, res_end = 0, 0, 0
-    res_empty, res_start_empty, res_end_empty = 0, 0, 0
+    res_empty, res_start_empty, res_end_empty, res_good = 0, 0, 0, 0
     unknown = 0
     for r in alignedpaths.keys():
         if r not in truepaths:
@@ -189,7 +213,7 @@ def cnt_wronglyclosedgaps(truepaths, alignedpaths):
         else:
             true_ind = get_bwa_inds(truepaths[r]["path"], alignedpaths[r]["bwa_path"])
             aligned_ind = get_bwa_inds_aligned(alignedpaths[r]["edge_tag"])
-            has_wrong_start, empty = is_wrong_start(truepaths[r]["path"], alignedpaths[r]["path"], true_ind, aligned_ind)
+            has_wrong_start, empty = is_wrong_start(truepaths[r]["path"], alignedpaths[r]["path"], true_ind, aligned_ind, truepaths[r]["edgelen"])
             if has_wrong_start:
                 if empty:
                     res_start_empty += 1
@@ -207,13 +231,19 @@ def cnt_wronglyclosedgaps(truepaths, alignedpaths):
                 res += 1
             if empty:
                 res_empty += 1
-    return [res, res_empty, res_start, res_start_empty, res_end, res_end_empty, unknown]
+            # has_good_path = is_wrong_path(truepaths[r]["path"], alignedpaths[r]["path"])
+            # if not has_good_path:
+            #     print r
+            #     print truepaths[r]["path"]
+            #     print alignedpaths[r]["path"]
+            #     res_good += 1
+    return [res, res_empty, res_start, res_start_empty, res_end, res_end_empty, unknown, res_good]
 
 reads = load_reads(sys.argv[1])
 truepaths = load_truepaths(sys.argv[2])
 alignedpaths = load_alignments(sys.argv[3])
 
-print "Total=", len(reads), " notideal=", cnt_badideal(reads, truepaths),  " notmapped=", cnt_notmapped(reads, truepaths, alignedpaths) 
+print "Total=", len(reads), " notideal=", len(reads) - cnt_badideal(reads, truepaths),  " notmapped=", cnt_notmapped(reads, truepaths, alignedpaths) 
 print "Paths with problems ", cnt_problempaths(truepaths, alignedpaths)
 print "BWA fail ", cnt_problembwa(truepaths, alignedpaths)
 print "Gaps stage problems (in, prefix, suffix, unknown) ", cnt_wronglyclosedgaps(truepaths, alignedpaths) 
