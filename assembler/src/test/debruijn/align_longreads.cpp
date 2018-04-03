@@ -26,6 +26,7 @@
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "mapping_printer.hpp"
+#include "io/gfa/gfa_reader.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -40,25 +41,25 @@ namespace debruijn_graph {
 
 class BWASeedsAligner {
 private:    
-    const conj_graph_pack &gp_;
+    const ConjugateDeBruijnGraph &g_;
     const pacbio::PacBioMappingIndex<Graph> pac_index_;
     MappingPrinterHub mapping_printer_hub_;
 
 public:
-    BWASeedsAligner(const conj_graph_pack &gp, 
+    BWASeedsAligner(const ConjugateDeBruijnGraph &g, 
                  const alignment::BWAIndex::AlignmentMode mode,
                  const config::debruijn_config::pacbio_processor &pb,
                  const string output_file,
                  const string formats):
-      gp_(gp),pac_index_(gp.g, pb, mode), mapping_printer_hub_(gp, output_file, formats){
+      g_(g),pac_index_(g_, pb, mode), mapping_printer_hub_(g_, output_file, formats){
       }
 
     // bool IsCanonical(EdgeId e) const {
-    //     return e <= gp_.g.conjugate(e);
+    //     return e <= g.conjugate(e);
     // }
 
     // EdgeId Canonical(EdgeId e) const {
-    //     return IsCanonical(e) ? e : gp_.g.conjugate(e);
+    //     return IsCanonical(e) ? e : g.conjugate(e);
     // }
 
     bool AlignRead(const io::SingleRead &read){
@@ -101,19 +102,24 @@ config::debruijn_config::pacbio_processor InitializePacBioProcessor() {
     return pb;
 }
 
-void LoadGraphFromSaves(std::string saves_path, conj_graph_pack &gp){
+const ConjugateDeBruijnGraph& LoadGraphFromSaves(const string &saves_path, int K){
         if (saves_path.find(".gfa") != std::string::npos) {
             INFO("Load gfa")
-            graphio::ScanGraphGFA(saves_path, gp);
+            static ConjugateDeBruijnGraph g(K);
+            gfa::GFAReader gfa(saves_path);
+            INFO("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+            gfa.to_graph(g, true);
+            return g;
         } else {
+            static conj_graph_pack gp(K, "tmp3", 0);
             graphio::ScanGraphPack(saves_path, gp);
+            return gp.g;
         }
 }
 
 void Launch(size_t K, const string &saves_path, const string &sequence_fasta, const string &mapper_type, const string &output_file, int threads) {
-    conj_graph_pack gp(K, "tmp3", 0);
-    LoadGraphFromSaves(saves_path, gp);
-    INFO("Loaded graph with " << gp.g.size() << " vertices");
+    const ConjugateDeBruijnGraph &g = LoadGraphFromSaves(saves_path, K);
+    INFO("Loaded graph with " << g.size() << " vertices");
     io::ReadStreamList<io::SingleRead> streams;
     streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(sequence_fasta)));
     
@@ -140,7 +146,7 @@ void Launch(size_t K, const string &saves_path, const string &sequence_fasta, co
     }
 
     config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
-    BWASeedsAligner aligner(gp, mode, pb, output_file, "tsv"); 
+    BWASeedsAligner aligner(g, mode, pb, output_file, "tsv"); 
     INFO("BWASeedsAligner created");
 
     aligner.RunAligner(wrappedreads, threads);

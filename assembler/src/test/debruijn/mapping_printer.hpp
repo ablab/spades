@@ -4,13 +4,13 @@ namespace debruijn_graph {
 
 class MappingPrinter {
 protected:
-    const conj_graph_pack &gp_;
+    const ConjugateDeBruijnGraph &g_;
     std::string output_file_;
 
 public:
 
-    MappingPrinter(const conj_graph_pack &gp, const std::string &output_file)
-                :gp_(gp), output_file_(output_file)
+    MappingPrinter(const ConjugateDeBruijnGraph &g, const std::string &output_file)
+                :g_(g), output_file_(output_file)
     {}
 
     virtual void SaveMapping(const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &aligned_mappings, const io::SingleRead &read) = 0;
@@ -23,8 +23,8 @@ class MappingPrinterTSV: public MappingPrinter {
 
 public:
 
-    MappingPrinterTSV(const conj_graph_pack &gp, const std::string &output_file)
-        :MappingPrinter(gp, output_file)
+    MappingPrinterTSV(const ConjugateDeBruijnGraph &g, const std::string &output_file)
+        :MappingPrinter(g, output_file)
     {
         ofstream tsv_file;
         tsv_file.open(output_file_ + ".tsv", std::ofstream::out);
@@ -36,8 +36,8 @@ public:
         string pathStr = "";
         for (const auto &mappingpath : aligned_mappings){
             for (const auto &edgeid: mappingpath.simple_path()) {
-                VertexId v1 = gp_.g.EdgeStart(edgeid);
-                VertexId v2 = gp_.g.EdgeEnd(edgeid);
+                VertexId v1 = g_.EdgeStart(edgeid);
+                VertexId v2 = g_.EdgeEnd(edgeid);
                 pathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(v1.int_id()) + "," + std::to_string(v2.int_id()) + ") ";
             }
             pathStr += "\n";
@@ -65,14 +65,14 @@ public:
                 EdgeId edgeid = path.edge_at(i);
                 omnigraph::MappingRange mapping = path.mapping_at(i);
                 mapping_start = mapping.mapped_range.start_pos;
-                mapping_end = mapping.mapped_range.end_pos + gp_.g.k();
+                mapping_end = mapping.mapped_range.end_pos + g_.k();
                 //initial_start = mapping.initial_range.start_pos;
-                ///initial_end = mapping.initial_range.end_pos + gp_.g.k();
+                ///initial_end = mapping.initial_range.end_pos + g_.k();
                 if (i > 0){
                     mapping_start = 0;
                 }
                 if (i < path.size() - 1) {
-                    mapping_end = gp_.g.length(edgeid);
+                    mapping_end = g_.length(edgeid);
                     //initial_end = mapping.initial_range.end_pos;
                 }
                 cur_path += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
@@ -91,7 +91,7 @@ public:
                 }
                 seq_end_sum = (int) mapping.initial_range.end_pos;
 
-                string tmp = gp_.g.EdgeNucls(edgeid).str();
+                string tmp = g_.EdgeNucls(edgeid).str();
                 string to_add = tmp.substr(mapping_start, mapping_end - mapping_start);
                 cur_str += to_add;
             }
@@ -130,8 +130,8 @@ public:
 
 class MappingPrinterGPA : public MappingPrinter {
 public:
-    MappingPrinterGPA(const conj_graph_pack &gp, const std::string &output_file)
-        :MappingPrinter(gp, output_file)
+    MappingPrinterGPA(const ConjugateDeBruijnGraph &g, const std::string &output_file)
+        :MappingPrinter(g, output_file)
     {
         ofstream gpa_file;
         gpa_file.open(output_file_ + ".gpa", std::ofstream::out);
@@ -248,14 +248,14 @@ public:
             EdgeId edgeid = mappingpath.edge_at(i);
             omnigraph::MappingRange mapping = mappingpath.mapping_at(i);
             size_t mapping_start = mapping.mapped_range.start_pos;
-            size_t mapping_end = mapping.mapped_range.end_pos + gp_.g.k();
+            size_t mapping_end = mapping.mapped_range.end_pos + g_.k();
             if (i > 0){
                 mapping_start = 0;
             }
             if (i < mappingpath.size() - 1) {
-                mapping_end = gp_.g.length(edgeid);
+                mapping_end = g_.length(edgeid);
             }
-            string tmp = gp_.g.EdgeNucls(edgeid).str();
+            string tmp = g_.EdgeNucls(edgeid).str();
             string to_add = tmp.substr(mapping_start, mapping_end - mapping_start);
             aligned += to_add;
             edgeblocks.push_back(aligned.size());
@@ -265,7 +265,7 @@ public:
 
     void getMappingOnRead(const omnigraph::MappingPath<debruijn_graph::EdgeId> &mappingpath, size_t &start, size_t &end) {
         start = mappingpath.mapping_at(0).initial_range.start_pos;
-        end = mappingpath.mapping_at(mappingpath.size() - 1).initial_range.end_pos + gp_.g.k();
+        end = mappingpath.mapping_at(mappingpath.size() - 1).initial_range.end_pos + g_.k();
         return;
     }
 
@@ -298,12 +298,12 @@ public:
                 EdgeId edgeid = mappingpath.edge_at(i);
                 omnigraph::MappingRange mapping = mappingpath.mapping_at(i);
                 size_t mapping_start = mapping.mapped_range.start_pos;
-                size_t mapping_end = mapping.mapped_range.end_pos + gp_.g.k();
+                size_t mapping_end = mapping.mapped_range.end_pos + g_.k();
                 if (i > 0){
                     mapping_start = 0;
                 }
                 if (i < mappingpath.size() - 1) {
-                    mapping_end = gp_.g.length(edgeid);
+                    mapping_end = g_.length(edgeid);
                 }
                 map<string, string> line = {{"Ind", "A"}, {"Name", ""}, {"ReadName", read.name()}, {"StartR", ""}, {"LenR", ""}, {"DirR", ""}
                                                                       , {"EdgeId", ""}, {"StartE", ""}, {"LenE", ""}, {"DirE", ""}
@@ -357,13 +357,13 @@ private:
 
 public:
 
-    MappingPrinterHub(const conj_graph_pack &gp, const std::string &output_file, const std::string formats)
+    MappingPrinterHub(const ConjugateDeBruijnGraph &g, const std::string &output_file, const std::string formats)
                 :output_file_(output_file) {
         if (formats.find("tsv") != std::string::npos) {
-            mapping_printers_.push_back(new MappingPrinterTSV(gp, output_file_));
+            mapping_printers_.push_back(new MappingPrinterTSV(g, output_file_));
         }
         if (formats.find("gpa") != std::string::npos) {
-            mapping_printers_.push_back(new MappingPrinterGPA(gp, output_file_));
+            mapping_printers_.push_back(new MappingPrinterGPA(g, output_file_));
         }
     }
 
