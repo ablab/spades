@@ -103,6 +103,15 @@ config::debruijn_config::pacbio_processor InitializePacBioProcessor() {
     return pb;
 }
 
+debruijn_graph::ga_config InitializeGaConfig() {
+    debruijn_graph::ga_config aligner_config;
+    aligner_config.run_dijkstra = true;
+    aligner_config.restore_edges = true;
+    aligner_config.find_shortest_path = true;
+
+    return aligner_config;
+}
+
 const ConjugateDeBruijnGraph& LoadGraphFromSaves(const string &saves_path, int K){
         if (saves_path.find(".gfa") != std::string::npos) {
             INFO("Load gfa")
@@ -146,6 +155,8 @@ void Launch(size_t K, const string &saves_path, const string &sequence_fasta, co
         mode = alignment::BWAIndex::AlignmentMode::PacBio;
         exit(-1);
     }
+
+    debruijn_graph::ga_config aligner_config = InitializeGaConfig();
 
     config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
     BWASeedsAligner aligner(g, mode, pb, output_file, "tsv"); 
