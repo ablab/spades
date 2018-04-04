@@ -135,6 +135,7 @@ void assemble_genome() {
             size_t cov = 5;
             double multiplier = 1.3;
             size_t max_cov = 600;
+            conj_gp.used_edges.clear();
             SPAdes.add(new debruijn_graph::ChromosomeRemoval(cov));
             SPAdes.add(new debruijn_graph::ContigOutput(false, "intermediate_contigs"))
                     .add(new debruijn_graph::PairInfoCount())
