@@ -70,6 +70,7 @@ public:
     
         if (aligned_mappings.size() > 0){
             mapping_printer_hub_.SaveMapping(aligned_mappings, read);
+            INFO("Read " << read.name() <<" is aligned")
             return true;
         }  else {
             INFO("Read " << read.name() << " wasn't aligned and length=" << read.sequence().size());
@@ -111,6 +112,7 @@ const ConjugateDeBruijnGraph& LoadGraphFromSaves(const string &saves_path, int K
             gfa.to_graph(g, true);
             return g;
         } else {
+            INFO("Load from saves")
             static conj_graph_pack gp(K, "tmp3", 0);
             graphio::ScanGraphPack(saves_path, gp);
             return gp.g;
