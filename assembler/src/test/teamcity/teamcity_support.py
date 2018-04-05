@@ -739,10 +739,13 @@ def save_contigs(args, output_dir, contig_storage_dir, contigs, rewrite_latest):
 
 
 # Save QUAST report as artifact
-def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, artifact_dir):
+def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, artifact_dir, clean_artifacts_dir = True):
     working_dir = os.getcwd()
     if not (dataset_info.mode in ("standard", "tru", "dip", "meta", "plasmid")):
         return
+
+    if clean_artifacts_dir:
+        shutil.rmtree(artifact_dir, True)
 
     if not os.path.exists(artifact_dir):
         os.makedirs(artifact_dir)
