@@ -489,7 +489,7 @@ class DataScanner {
             DeserializePoint(file, first_real_id, second_real_id, point);
 
             TRACE(first_real_id << " " << second_real_id << " " << point);
-            VERIFY(this->edge_id_map().find(first_real_id) != this->edge_id_map().end())
+            VERIFY_MSG(this->edge_id_map().find(first_real_id) != this->edge_id_map().end(), first_real_id << " is not in the graph");
             EdgeId e1 = this->edge_id_map()[first_real_id];
             EdgeId e2 = this->edge_id_map()[second_real_id];
             if (e1 == EdgeId() || e2 == EdgeId())
@@ -556,6 +556,12 @@ class DataScanner {
   protected:
     DataScanner(Graph &g) : g_(g) {
         INFO("Creating of scanner started");
+        if (g.size()) {
+            for (auto i = g.SmartVertexBegin(); !i.IsEnd(); ++i)
+                vertex_id_map_[(*i).int_id()] = *i;
+            for (auto i = g.SmartEdgeBegin(); !i.IsEnd(); ++i)
+                edge_id_map_[(*i).int_id()] = *i;
+        }
         //    edge_count_ = 0;
     }
 

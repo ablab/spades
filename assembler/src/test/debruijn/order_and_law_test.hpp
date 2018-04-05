@@ -8,6 +8,7 @@
 #pragma once
 #include <boost/test/unit_test.hpp>
 #include "test_utils.hpp"
+#include "random_graph.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
 
 namespace debruijn_graph {
@@ -33,103 +34,12 @@ public:
     }
 };
 
-template<class Graph>
-class RandomGraphConstructor {
-private:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-
-    size_t iteration_number_;
-    size_t max_size_;
-    unsigned rand_seed_;
-
-    Sequence GenerateRandomSequence(size_t length) {
-        string result(length, 'A');
-        for(size_t i = 0; i < length; i++) {
-            result[i] = nucl(rand() % 4);
-        }
-        return Sequence(result);
-    }
-
-    void AddRandomVertex(Graph &graph) {
-        graph.AddVertex();
-    }
-
-    VertexId GetRandomVertex(const Graph &graph) {
-        size_t num = rand() % graph.size();
-        auto it = graph.SmartVertexBegin();
-        for(; num > 0; num--) {
-            ++it;
-        }
-        return *it;
-    }
-
-    EdgeId GetRandomEdge(const Graph &graph) {
-        EdgeId result = *(graph.SmartEdgeBegin());
-        size_t cur = 0;
-        for(auto it = graph.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-            cur++;
-            if(rand() % cur == 0) {
-                result = *it;
-            }
-        }
-        return result;
-    }
-
-    void AddRandomEdge(Graph &graph) {
-        graph.AddEdge(GetRandomVertex(graph), GetRandomVertex(graph), GenerateRandomSequence(rand() % 1000 + graph.k() + 1));
-    }
-
-    void RemoveRandomVertex(Graph &graph) {
-        graph.ForceDeleteVertex(GetRandomVertex(graph));
-    }
-
-    void RemoveRandomEdge(Graph &graph) {
-        graph.DeleteEdge(GetRandomEdge(graph));
-    }
-
-    void PerformRandomOperation(Graph &graph) {
-        if (graph.size() == 0) {
-            AddRandomVertex(graph);
-        } else if (graph.SmartEdgeBegin().IsEnd()) {
-            if (rand() % 2 == 0) {
-                AddRandomVertex(graph);
-            } else {
-                AddRandomEdge(graph);
-            }
-        } else if (graph.size() > 100) {
-            RemoveRandomVertex(graph);
-        } else {
-            size_t tmp = rand() % 9;
-            if (tmp == 0) {
-                AddRandomVertex(graph);
-            } else if (tmp <= 6) {
-                AddRandomEdge(graph);
-            } else {
-                RemoveRandomEdge(graph);
-            }
-        }
-    }
-
-public:
-    RandomGraphConstructor(size_t iteration_number, size_t max_size, unsigned rand_seed = 100) :
-            iteration_number_(iteration_number), max_size_(max_size), rand_seed_(rand_seed) {
-    }
-
-    void Generate(Graph &graph) {
-        srand(rand_seed_);
-        for (size_t i = 0; i < 1000; i++) {
-            PerformRandomOperation(graph);
-        }
-    }
-};
-
 BOOST_FIXTURE_TEST_SUITE(robust_order_tests, fs::TmpFolderFixture)
 
 BOOST_AUTO_TEST_CASE( OrderTest ) {
     string file_name = "src/test/debruijn/graph_fragments/saves/test_save";
     Graph graph(55);
-    RandomGraphConstructor<Graph>(1000, 100, 100).Generate(graph);
+    RandomGraphConstructor<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
     graphio::ConjugateDataPrinter<Graph> printer(graph);
     printer.SaveGraph(file_name);
     printer.SaveEdgeSequences(file_name);

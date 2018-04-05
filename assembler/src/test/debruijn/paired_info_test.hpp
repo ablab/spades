@@ -8,6 +8,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include "paired_info/paired_info_helpers.hpp"
+#include "random_graph.hpp"
 
 namespace debruijn_graph {
 
@@ -433,6 +434,59 @@ BOOST_AUTO_TEST_CASE(PairedInfoPairTraverse) {
                          {1, 9, p2}, {8, 2, pj2},
                          {2, 4, p1}, {3, 1, pj1}};
     BOOST_CHECK_EQUAL(GetEdgePairInfo(pi), test1);
+}
+
+using TestIndex = UnclusteredPairedInfoIndexT<Graph>;
+
+BOOST_AUTO_TEST_CASE(PairedInfoRandomSymmetry) {
+    Graph graph(55);
+    RandomGraphConstructor<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
+
+    TestIndex pi(graph);
+    RandomPairedIndexConstructor<TestIndex>(pi, 100).Generate(20);
+
+    for (auto it = omnigraph::de::pair_begin(pi); it != omnigraph::de::pair_end(pi); ++it) {
+        auto info = *it;
+        auto conj_info = pi.Get(graph.conjugate(it.second()), graph.conjugate(it.first()));
+        BOOST_CHECK_EQUAL(info.size(), conj_info.size());
+        auto offset = DEDistance(graph.length(it.first())) - DEDistance(graph.length(it.second()));
+        for (auto i = info.begin(), ci = conj_info.begin(); i != info.end(); ++i, ++ci) {
+            auto conj_point = *ci;
+            conj_point.d += offset;
+            BOOST_CHECK_EQUAL(*i, conj_point);
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE(PairedInfoRandomSaveLoad) {
+    Graph graph(55);
+    RandomGraphConstructor<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
+
+    TestIndex pi(graph);
+    RandomPairedIndexConstructor<TestIndex>(pi, 100).Generate(100);
+
+    std::string file_name = "src/test/debruijn/graph_fragments/saves/test_save";
+    graphio::ConjugateDataPrinter<Graph> printer(graph);
+    printer.SavePaired(file_name, pi);
+
+    TestIndex ni(graph);
+
+    graphio::ConjugateDataScanner<Graph> scanner(graph);
+    scanner.LoadPaired(file_name, ni);
+
+    BOOST_CHECK_EQUAL(pi.size(), ni.size());
+    for (auto pit = omnigraph::de::pair_begin(pi), nit = omnigraph::de::pair_begin(ni);
+         pit != omnigraph::de::pair_end(pi); ++pit, ++nit) {
+        BOOST_CHECK_EQUAL(pit.first(), nit.first());
+        BOOST_CHECK_EQUAL(pit.second(), nit.second());
+        BOOST_CHECK_EQUAL(pit->size(), nit->size());
+
+        for (auto ppit = pit->begin(), npit = nit->begin();
+             ppit != pit->end(); ++ppit, ++npit) {
+            BOOST_CHECK_EQUAL(ppit->weight, npit->weight);
+            BOOST_CHECK_EQUAL(ppit->d, npit->d);
+        }
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
