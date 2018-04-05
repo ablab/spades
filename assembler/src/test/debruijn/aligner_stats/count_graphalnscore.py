@@ -30,7 +30,7 @@ def form_fasta_forbwamem(alnfile, prefix):
             for ln in alnf.readlines():
                 lst = ln.split("\t")
                 read_name = lst[0].split(" ")[0]
-                aln = lst[-1].strip()
+                aln = lst[-2].strip()
                 alns[read_name] = len(aln)
                 reads_set.add(read_name)
                 forbwamem.write(">" + read_name + "\n" + aln + "\n")

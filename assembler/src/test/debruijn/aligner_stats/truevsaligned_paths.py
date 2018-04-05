@@ -243,7 +243,7 @@ reads = load_reads(sys.argv[1])
 truepaths = load_truepaths(sys.argv[2])
 alignedpaths = load_alignments(sys.argv[3])
 
-print "Total=", len(reads), " notideal=", len(reads) - cnt_badideal(reads, truepaths),  " notmapped=", cnt_notmapped(reads, truepaths, alignedpaths) 
+print "Total=", len(reads), " ideal=", len(reads) - cnt_badideal(reads, truepaths),  " notmapped=", cnt_notmapped(reads, truepaths, alignedpaths) 
 print "Paths with problems ", cnt_problempaths(truepaths, alignedpaths)
 print "BWA fail ", cnt_problembwa(truepaths, alignedpaths)
 print "Gaps stage problems (in, prefix, suffix, unknown) ", cnt_wronglyclosedgaps(truepaths, alignedpaths) 
