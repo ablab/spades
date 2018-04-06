@@ -106,6 +106,8 @@ public:
             if (rlen > length_cutoff || i == 0 || i == mapped_path.size() - 1) {
 //FIXME:: very non-optimal
                 vector<int> used(rlen);
+//left and right ends of ranges;
+                vector<pair<size_t, int> > range_limits;
                 for (size_t j = 0; j < mapped_path.size(); j++) {
                     if (i != j) {
                         if (mapped_path[i].second.initial_range.Intersect(mapped_path[j].second.initial_range)) {
@@ -113,6 +115,8 @@ public:
                                  - mapped_path[i].second.initial_range.start_pos;
                             size_t pos_end = std::min (mapped_path[i].second.initial_range.end_pos, mapped_path[j].second.initial_range.end_pos)
                                  - mapped_path[i].second.initial_range.start_pos;
+                            range_limits.push_back(make_pair(pos_start, 1));
+                            range_limits.push_back(make_pair(pos_end, -1));
                             for (size_t k = pos_start; k < pos_end; k++ )
                                 used[k] = 1;
                         }
@@ -123,6 +127,19 @@ public:
                     if (used[k])
                         used_count++;
                 }
+                sort(range_limits.begin(), range_limits.end());
+                size_t current_cover = 0;
+                if (range_limits.size() > 0) {
+//may be negative if some ranges are zero-sized
+                    int covered_lays = range_limits[0].second;
+                    for (size_t j = 1; j < range_limits.size(); j++) {
+                        if (covered_lays > 0) {
+                            current_cover += range_limits[j].first - range_limits[j - 1].first;
+                        }
+                        covered_lays += range_limits[j].second;
+                    }
+                }
+                VERIFY_MSG(current_cover == used_count, "intellectual covered " << current_cover << " brute force covered " << used_count);
                 if (used_count * 2 <  rlen)
                     res.push_back(mapped_path[i].first, mapped_path[i].second);
                 else {
