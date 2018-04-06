@@ -104,8 +104,6 @@ public:
         for (size_t i = 0; i < mapped_path.size(); i++) {
             size_t rlen = mapped_path[i].second.initial_range.size();
             if (rlen > length_cutoff || i == 0 || i == mapped_path.size() - 1) {
-//FIXME:: very non-optimal
-                vector<int> used(rlen);
 //left and right ends of ranges;
                 vector<pair<size_t, int> > range_limits;
                 for (size_t j = 0; j < mapped_path.size(); j++) {
@@ -117,15 +115,8 @@ public:
                                  - mapped_path[i].second.initial_range.start_pos;
                             range_limits.push_back(make_pair(pos_start, 1));
                             range_limits.push_back(make_pair(pos_end, -1));
-                            for (size_t k = pos_start; k < pos_end; k++ )
-                                used[k] = 1;
                         }
                     }
-                }
-                size_t used_count = 0;
-                for (size_t k = 0; k < rlen; k++) {
-                    if (used[k])
-                        used_count++;
                 }
                 sort(range_limits.begin(), range_limits.end());
                 size_t current_cover = 0;
@@ -139,8 +130,7 @@ public:
                         covered_lays += range_limits[j].second;
                     }
                 }
-                VERIFY_MSG(current_cover == used_count, "intellectual covered " << current_cover << " brute force covered " << used_count);
-                if (used_count * 2 <  rlen)
+                if (current_cover * 2 <  rlen)
                     res.push_back(mapped_path[i].first, mapped_path[i].second);
                 else {
                     DEBUG ("Filtering " << g_.int_id(mapped_path[i].first) << " " << mapped_path[i].second)
