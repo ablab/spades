@@ -1,5 +1,5 @@
 //***************************************************************************
-//* Copyright (c) 2015 Saint Petersburg State University
+//* Copyright (c) 2015-2018 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
@@ -458,6 +458,8 @@ BOOST_AUTO_TEST_CASE(PairedInfoRandomSymmetry) {
     }
 }
 
+const char *file_name = "src/test/debruijn/graph_fragments/saves/test_save";
+
 BOOST_AUTO_TEST_CASE(PairedInfoRandomSaveLoad) {
     Graph graph(55);
     RandomGraphConstructor<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
@@ -465,7 +467,6 @@ BOOST_AUTO_TEST_CASE(PairedInfoRandomSaveLoad) {
     TestIndex pi(graph);
     RandomPairedIndexConstructor<TestIndex>(pi, 100).Generate(100);
 
-    std::string file_name = "src/test/debruijn/graph_fragments/saves/test_save";
     graphio::ConjugateDataPrinter<Graph> printer(graph);
     printer.SavePaired(file_name, pi);
 

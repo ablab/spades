@@ -35,8 +35,18 @@ def show_grp(file):
         print("Edge", id, ":", start, "->", end, ", l =", length, "~", conj_id, ".")
 
 #---- Paired info --------------------------------------------------------------
-def show_prd(file):
-    print("Not implemented yet")
+def show_prd(file, clustered=False):
+    size = read_int(file)
+    point = Struct("fff" if clustered else "ff")
+    for _ in range(size):
+        e1 = read_int(file)
+        inner_size = read_int(file)
+        for _ in range(inner_size):
+            e2 = read_int(file)
+            hist_size = read_int(file)
+            for _ in range(hist_size):
+                p = read_struct(file, point)
+                print(e1, e2, *p, ".")
 
 #---- Edge sequences -----------------------------------------------------------
 ST_SIZE = 8

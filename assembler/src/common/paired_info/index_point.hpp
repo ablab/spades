@@ -40,6 +40,7 @@ public:
         d_ *= (float)d;
         return *this;
     }
+
 private:
     float d_;
 };
@@ -62,6 +63,7 @@ public:
         d_ *= (float)d;
         return *this;
     }
+
 private:
     float d_;
 };
@@ -84,8 +86,8 @@ template<typename T, T OFFSET = 0>
 class DESat {
 public:
     DESat(): _val(OFFSET) {}
-    DESat(int val): _val(shrink(val)) {}
-    DESat(float val): _val(shrink((int)val)) {}
+    DESat(int val): _val(Shrink(val)) {}
+    DESat(float val): _val(Shrink((int)val)) {}
 
     operator float() const {
         return (float)_val - OFFSET;
@@ -100,7 +102,7 @@ public:
     }
 
     static DESat Max() {
-        return DESat(std::numeric_limits<T>::max());
+        return DESat(MAX_VAL);
     }
 
 private:
@@ -110,7 +112,7 @@ private:
     static const T MAX_VAL = std::numeric_limits<T>::max();
 
     template<typename F>
-    static T shrink(F d) {
+    static T Shrink(F d) {
         //Saturate to the allowed interval
         //TODO: optimize
         F t = d + OFFSET;
@@ -188,6 +190,18 @@ struct __attribute((aligned(sizeof(D) + sizeof(W)))) RawPointT {
     }
 
     DEVariance variance() { return 0; } //TODO: remove
+
+    void BinWrite(std::ostream &str) const {
+        //To be optimized
+        str.write(reinterpret_cast<const char *>(this), sizeof(Self));
+        //VERIFY(str);
+    }
+
+    void BinRead(std::istream &str) {
+        //To be optimized
+        str.read(reinterpret_cast<char *>(this), sizeof(Self));
+        //VERIFY(str);
+    }
 };
 
 typedef RawPointT<DEDistance, DEWeight> RawPoint;

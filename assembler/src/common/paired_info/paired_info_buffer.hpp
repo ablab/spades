@@ -89,6 +89,13 @@ class PairedBufferBase {
     EdgePair ConjugatePair(EdgePair ep) const {
         return ConjugatePair(ep.first, ep.second);
     }
+    /**
+     * @brief Checks if an edge pair is canonical (less than its conjugate).
+     */
+    bool IsCanonical(EdgeId e1, EdgeId e2) const {
+        auto ep = std::make_pair(e1, e2);
+        return ep <= this->ConjugatePair(ep);
+    }
 
   private:
     void InsertWithConj(EdgeId e1, EdgeId e2, InnerPoint p) {
@@ -102,7 +109,7 @@ class PairedBufferBase {
         size_ += added;
         if (res.first && !selfconj)
             static_cast<Derived*>(this)->InsertHistView(maxep.first, maxep.second, res.first);
-        else if (selfconj) // This would double the weigth of self-conjugate pairs
+        else if (selfconj) // This would double the weight of self-conjugate pairs
             static_cast<Derived*>(this)->InsertOne(minep.first, minep.second, p);
     }
 
@@ -119,7 +126,7 @@ class PairedBufferBase {
         size_ += added;
         if (res.first && !selfconj)
             static_cast<Derived*>(this)->InsertHistView(maxep.first, maxep.second, res.first);
-        else if (selfconj) // This would double the weigth of self-conjugate pairs
+        else if (selfconj) // This would double the weight of self-conjugate pairs
             static_cast<Derived*>(this)->InsertHist(minep.first, minep.second, h);
     }
 
@@ -183,6 +190,59 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
 
     typename StorageMap::locked_table lock_table() {
         return storage_.lock_table();
+    }
+
+    void BinWrite(std::ostream &str) const {
+        using binary::BinWrite;
+        BinWrite(str, storage_.size());
+        for (const auto &i : storage_) {
+            BinWrite(str, i.first.int_id());
+            auto size_seek = str.tellp();
+            size_t own_size = 0;
+            BinWrite(str, own_size); //Reserving place for the size of the owning part
+            for (const auto &j : i.second) {
+                if (j.second.owning()) {
+                    BinWrite(str, j.first.int_id());
+                    j.second->BinWrite(str);
+                    ++own_size;
+                }
+            }
+            //Now rewrite with the real size
+            str.seekp(size_seek);
+            BinWrite(str, own_size);
+            str.seekp(0, std::ios_base::end);
+        }
+    }
+
+    void BinRead(std::istream &str, const std::map<size_t, EdgeId> &real_ids) { //TODO: get rid of real_ids
+        VERIFY_MSG(!this->size_, "Cannot read into a non-empty buffer");
+        using binary::BinRead;
+        auto storage_size = BinRead<size_t>(str);
+        while (storage_size--) {
+            auto saved_e1 = BinRead<size_t>(str);
+            auto i1 = real_ids.find(saved_e1);
+            VERIFY_MSG(i1 != real_ids.end(), saved_e1 << " is not in the saved graph");
+            auto e1 = i1->second;
+            auto inner_size = BinRead<size_t>(str);
+            while (inner_size--) {
+                auto saved_e2 = BinRead<size_t>(str);
+                auto i2 = real_ids.find(saved_e2);
+                VERIFY_MSG(i2 != real_ids.end(), saved_e2 << " is not in the saved graph");
+                auto e2 = i2->second;
+                auto hist = new InnerHistogram();
+                hist->BinRead(str);
+                DEBUG(saved_e1 << "->" << saved_e2 << ": " << hist->size() << "points");
+                storage_[e1][e2] = InnerHistPtr(hist, /* owning */ true);
+                bool selfconj = this->IsSelfConj(e1, e2);
+                size_t added = hist->size() * (selfconj ? 1 : 2);
+                #pragma omp atomic
+                this->size_ += added;
+                if (!selfconj) {
+                    auto conj = this->ConjugatePair(e1, e2);
+                    storage_[conj.first][conj.second] = InnerHistPtr(hist, /* owning */ false);
+                }
+            }
+        }
     }
 
   private:

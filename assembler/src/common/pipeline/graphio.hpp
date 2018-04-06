@@ -85,12 +85,23 @@ public:
         return value;
     }
 
+    //Helper
+    template<typename T>
+    typename std::enable_if<!std::is_pod<T>::value>::type Read(T &value) {
+        value.BinRead(str_);
+        //VERIFY(!str.fail());
+    }
+
     operator bool() const {
         return (bool)str_;
     }
 
     bool operator!() const {
         return !str_;
+    }
+
+    std::istream &str() { //TODO: get rid of this hack
+        return str_;
     }
 private:
     std::ifstream str_;
@@ -191,28 +202,6 @@ void SaveDetailCoverage(const std::string& pathInCov, const std::string& pathOut
     SaveMapCoverage(pathOutCov, index.outCoverage);
 }
 
-inline void SerializePoint(FILE* file, size_t e1, size_t e2, const RawPoint &p) {
-    fprintf(file, "%zu %zu %.2f %.2f 0.00 .\n", e1, e2, (double)p.d, (double)p.weight);
-}
-
-inline void SerializePoint(FILE* file, size_t e1, size_t e2, const Point &p) {
-    fprintf(file, "%zu %zu %.2f %.2f %.2f .\n", e1, e2, (double)p.d, (double)p.weight, (double)p.var);
-}
-
-inline void DeserializePoint(FILE* file, size_t& e1, size_t& e2, RawPoint &p) {
-    float unused;
-    size_t read_count = fscanf(file, "%zu %zu %f %f %f .\n", &e1, &e2,
-        (float *)&p.d, (float *)&p.weight, (float *)&unused);
-    VERIFY(read_count == 5);
-
-}
-
-inline void DeserializePoint(FILE* file, size_t& e1, size_t& e2, Point &p) {
-    size_t read_count = fscanf(file, "%zu %zu %f %f %f .\n", &e1, &e2,
-                               (float *)&p.d, (float *)&p.weight, (float *)&p.var);
-    VERIFY(read_count == 5);
-}
-
 struct ConjVertexInfo {
     size_t id, conj_id;
 };
@@ -300,39 +289,14 @@ class DataPrinter {
     }
 
     template<class Index>
-    void SavePaired(const string& file_name,
-                    Index const& paired_index) const {
-        FILE* file = fopen((file_name + ".prd").c_str(), "w");
+    void SavePaired(const string& file_prefix, Index const& paired_index) const {
+        //FILE* file = fopen((file_name + ".prd").c_str(), "w");
+        std::string file_name = file_prefix + ".prd";
+        SaveFile file(file_name);
         DEBUG("Saving paired info, " << file_name << " created");
-        VERIFY(file != NULL);
+        VERIFY(file);
 
-        size_t comp_size = 0;
-        for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
-            EdgeId e1 = *I;
-            auto inner_map = paired_index.GetHalf(e1);
-            for (auto entry : inner_map) {
-                if (component_.contains(entry.first)) { // if the second edge also lies in the same component
-                    comp_size += entry.second.size();
-                    continue;
-                }
-            }
-        }
-
-        fprintf(file, "%zu\n", comp_size);
-
-        for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
-            EdgeId e1 = *I;
-            const auto& inner_map = paired_index.GetHalf(e1);
-            std::map<typename Graph::EdgeId, typename Index::HistProxy> ordermap(inner_map.begin(), inner_map.end());
-            for (auto entry : ordermap) {
-                EdgeId e2 = entry.first;
-                if (component_.contains(e2))
-                    for (auto point : entry.second)
-                        SerializePoint(file, e1.int_id(), e2.int_id(), point);
-            }
-        }
-
-        fclose(file);
+        file.Write(paired_index);
     }
 
     void SavePositions(const string& file_name,
@@ -465,45 +429,21 @@ class DataScanner {
     }
 
     template<typename Index>
-    void LoadPaired(const string& file_name,
-                    Index& paired_index,
-                    bool force_exists = true) {
-        typedef typename Graph::EdgeId EdgeId;
-        FILE* file = fopen((file_name + ".prd").c_str(), "r");
-        INFO((file_name + ".prd"));
-        if (force_exists) {
-            VERIFY(file != NULL);
-        } else if (file == NULL) {
-            INFO("Paired info not found, skipping");
-            return;
+    void LoadPaired(const std::string &file_prefix, Index &paired_index, bool force_exists = true) {
+        std::string file_name = file_prefix + ".prd";
+        LoadFile file(file_name);
+        if (!file) {
+            if (force_exists) {
+                VERIFY_MSG(false, "Missing paired index: " << file_name);
+            }
+            else {
+                INFO("Paired info not found, skipping");
+                return;
+            }
         }
+
         INFO("Reading paired info from " << file_name << " started");
-
-        size_t paired_count;
-        int read_count = fscanf(file, "%zu \n", &paired_count);
-        VERIFY(read_count == 1);
-        while (!feof(file)) {
-            size_t first_real_id, second_real_id;
-
-            typename Index::Point point;
-            DeserializePoint(file, first_real_id, second_real_id, point);
-
-            TRACE(first_real_id << " " << second_real_id << " " << point);
-            VERIFY_MSG(this->edge_id_map().find(first_real_id) != this->edge_id_map().end(), first_real_id << " is not in the graph");
-            EdgeId e1 = this->edge_id_map()[first_real_id];
-            EdgeId e2 = this->edge_id_map()[second_real_id];
-            if (e1 == EdgeId() || e2 == EdgeId())
-                continue;
-            TRACE(e1 << " " << e2 << " " << point);
-            //Need to prevent doubling of self-conjugate edge pairs
-            //Their weight would be always even, so we don't lose precision
-            auto ep = std::make_pair(e1, e2);
-            if (ep == paired_index.ConjugatePair(ep))
-                point.weight = math::round(point.weight / 2);
-            paired_index.Add(e1, e2, point);
-        }
-        DEBUG("PII SIZE " << paired_index.size());
-        fclose(file);
+        paired_index.BinRead(file.str(), edge_id_map_); //TODO: get rid of the second argument
     }
 
     bool LoadPositions(const string& file_name,
