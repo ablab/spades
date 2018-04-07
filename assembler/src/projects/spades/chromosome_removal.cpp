@@ -354,11 +354,12 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
 
 
     if (cfg::get().pd->reference_removal != "") {
-        debruijn_graph::config::dataset tmp_dataset;
+        VERIFY_MSG(false, "Reference-based chromosome removal is switched off");
+/*        debruijn_graph::config::dataset tmp_dataset;
         tmp_dataset.reference_genome_filename = cfg::get().pd->reference_removal;
         DEBUG("loading reference.. " <<  tmp_dataset.reference_genome_filename);
         config::load_reference_genome(tmp_dataset, cfg::get().input_dir);
-        gp.genome = GenomeStorage(tmp_dataset.reference_genome);
+        gp.genome = GenomeStorage(tmp_dataset.reference_genome); */
         INFO("Removing all edges with no genomic sequence");
         ReferenceBasedRemoveChromosomal(gp);
         return ;
