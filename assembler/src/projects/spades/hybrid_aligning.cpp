@@ -8,7 +8,6 @@
 #include "modules/alignment/pacbio/pac_index.hpp"
 #include "hybrid_gap_closer.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
-#include "modules/alignment/short_read_mapper.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "hybrid_aligning.hpp"
@@ -27,76 +26,6 @@ class GapTrackingListener : public SequenceMapperListener {
     vector<GapStorage> buffer_storages_;
 
     const GapDescription INVALID_GAP;
-
-    boost::optional<Sequence> Subseq(const io::SingleRead& read, size_t start, size_t end) const {
-        DEBUG("Requesting subseq of read length " << read.size() << " from " << start << " to " << end);
-        VERIFY(end > start);
-        //if (end == start) {
-        //    DEBUG("Returning empty sequence");
-        //    return boost::make_optional(Sequence());
-        //}
-        auto subread = read.Substr(start, end);
-        if (subread.IsValid()) {
-            DEBUG("Gap seq valid. Length " << subread.size());
-            return boost::make_optional(subread.sequence());
-        } else {
-            DEBUG("Gap seq invalid. Length " << subread.size());
-            DEBUG("sequence: " << subread.GetSequenceString());
-            return boost::none;
-        }
-    }
-
-    boost::optional<Sequence> Subseq(const io::SingleReadSeq& read, size_t start, size_t end) const {
-        return boost::make_optional(read.sequence().Subseq(start, end));
-    }
-
-    template<class ReadT>
-    GapDescription
-    CreateDescription(const ReadT& read, size_t seq_start, size_t seq_end,
-                      EdgeId left, size_t left_offset,
-                      EdgeId right, size_t right_offset) const {
-        VERIFY(left_offset > 0 && right_offset < g_.length(right));
-
-        DEBUG("Creating gap description");
-
-        //trying to shift on the left edge
-        if (seq_start >= seq_end) {
-            //+1 is a trick to avoid empty gap sequences
-            size_t overlap = seq_start - seq_end + 1;
-            DEBUG("Overlap of size " << overlap << " detected. Fixing.");
-            size_t left_shift = std::min(overlap, left_offset - 1);
-            VERIFY(seq_start >= left_shift);
-            seq_start -= left_shift;
-            left_offset -= left_shift;
-        }
-        //trying to shift on the right edge
-        if (seq_start >= seq_end) {
-            //+1 is a trick to avoid empty gap sequences
-            size_t overlap = seq_start - seq_end + 1;
-            DEBUG("Overlap of size " << overlap << " remained. Fixing.");
-            size_t right_shift = std::min(overlap, g_.length(right) - right_offset - 1);
-            VERIFY(seq_end + right_shift <= read.size());
-            seq_end += right_shift;
-            right_offset += right_shift;
-        }
-
-        if (seq_start < seq_end) {
-            auto gap_seq = Subseq(read, seq_start, seq_end);
-            if (gap_seq) {
-                DEBUG("Gap info successfully created");
-                return GapDescription(left, right,
-                                      *gap_seq,
-                                      g_.length(left) - left_offset,
-                                      right_offset);
-            } else {
-                DEBUG("Something wrong with read subsequence");
-            }
-        } else {
-            size_t overlap = seq_start - seq_end + 1;
-            DEBUG("Failed to fix overlap of size " << overlap);
-        }
-        return INVALID_GAP;
-    }
 
     template<class ReadT>
     vector<GapDescription> InferGaps(const ReadT& read,
@@ -121,9 +50,9 @@ class GapTrackingListener : public SequenceMapperListener {
                 size_t seq_start = mr1.initial_range.end_pos + g_.k();
                 size_t seq_end = mr2.initial_range.start_pos;
 
-                auto gap = CreateDescription(read, seq_start, seq_end,
-                                             e1, mr1.mapped_range.end_pos,
-                                             e2, mr2.mapped_range.start_pos);
+                auto gap = CreateGapInfoTryFixOverlap(g_, read, seq_start, seq_end,
+                                                      e1, mr1.mapped_range.end_pos,
+                                                      e2, mr2.mapped_range.start_pos);
 
                 if (gap != INVALID_GAP) {
                     answer.push_back(gap);
@@ -246,10 +175,11 @@ class PacbioAligner {
         #pragma omp parallel for reduction(+: longer_500, aligned, nontrivial_aligned)
         for (size_t i = 0; i < reads.size(); ++i) {
             size_t thread_num = omp_get_thread_num();
-            Sequence seq(reads[i].sequence());
-            auto current_read_mapping = pac_index_.GetReadAlignment(seq);
-            for (const auto& gap : current_read_mapping.gaps)
+            DEBUG(reads[i].name());
+            auto current_read_mapping = pac_index_.GetReadAlignment(reads[i]);
+            for (const auto& gap : current_read_mapping.gaps) {
                 gaps_by_thread[thread_num].AddGap(gap);
+            }
 
             const auto& aligned_edges = current_read_mapping.main_storage;
             for (const auto& path : aligned_edges)
@@ -259,14 +189,10 @@ class PacbioAligner {
             for (const auto& path : aligned_edges)
                 stats_by_thread[thread_num].path_len_in_edges[path.size()]++;
 
-            if (seq.size() > 500) {
+            if (reads[i].size() > 500) {
                 longer_500++;
                 if (aligned_edges.size() > 0) {
                     aligned++;
-                    stats_by_thread[thread_num].seeds_percentage[
-                            size_t(floor(double(current_read_mapping.seed_num) * 1000.0
-                                         / (double) seq.size()))]++;
-
                     if (IsNontrivialAlignment(aligned_edges)) {
                         nontrivial_aligned++;
                     }
@@ -331,26 +257,28 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
                         PathStorage<Graph>& path_storage,
                         GapStorage& gap_storage,
                         size_t thread_cnt) {
-    INFO("Aligning library with Pacbio aligner");
+    string lib_for_info = (lib.is_long_read_lib() ? "long reads" : "contigs");
+    INFO("Aligning "<< lib_for_info << " with bwa-mem based aligner");
 
-    INFO("Using seed size: " << cfg::get().pb.pacbio_k);
-
+    alignment::BWAIndex::AlignmentMode mode;
+    if (lib.type() == io::LibraryType::PacBioReads){
+        mode = alignment::BWAIndex::AlignmentMode::PacBio;
+    } else {
+        mode = alignment::BWAIndex::AlignmentMode::Ont2D;
+    }
     //initializing index
     pacbio::PacBioMappingIndex<Graph> pac_index(gp.g,
-                                                cfg::get().pb.pacbio_k,
-                                                cfg::get().K,
-                                                cfg::get().pb.ignore_middle_alignment,
-                                                cfg::get().output_dir,
-                                                cfg::get().pb);
+                                                cfg::get().pb,
+                                                mode);
 
     PacbioAligner aligner(pac_index, path_storage, gap_storage);
 
     auto stream = GetReadsStream(lib);
     aligner(*stream, thread_cnt);
 
-    INFO("For library of " << (lib.is_long_read_lib() ? "long reads" : "contigs") << " :");
-    aligner.stats().report();
-    INFO("PacBio aligning finished");
+    INFO("For library of " << lib_for_info);
+    aligner.stats().Report();
+    INFO("Aligning of " << lib_for_info <<" finished");
 }
 
 void CloseGaps(conj_graph_pack& gp, bool rtype,
@@ -424,12 +352,12 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
                 notifier.Subscribe(lib_id, &mapping_listener);
                 notifier.Subscribe(lib_id, &read_mapper);
 
-                auto mapper_ptr = ChooseProperMapper(gp, reads);
-                //FIXME think of N's proper handling
+                //TODO think of N's proper handling
+                // (currently handled by BasicSequenceMapper and concatenated in single MappingPath)
                 auto single_streams = single_easy_readers(reads, false,
                                                           /*map_paired*/false, /*handle Ns*/false);
 
-                notifier.ProcessLibrary(single_streams, lib_id, *mapper_ptr);
+                notifier.ProcessLibrary(single_streams, lib_id, *MapperInstance(gp));
                 cfg::get_writable().ds.reads[lib_id].data().single_reads_mapped = true;
 
                 INFO("Finished processing long reads from lib " << lib_id);

@@ -599,6 +599,22 @@ private:
 
         const bool exclude_long_seqs = (short_seqs >= min_weight_ && short_seqs > long_seqs);
 
+        //FIXME code duplication
+        //if long sequences are excluded trim coordinates should be recounted
+        if (exclude_long_seqs) {
+            start_trim = 0;
+            end_trim = 0;
+            for (auto it = start; it != end; ++it) {
+                const auto& gap = *it;
+
+                if (gap.filling_seq().size() > long_seq_limit_)
+                    continue;
+
+                start_trim = std::max(start_trim, gap.left_trim());
+                end_trim = std::max(end_trim, gap.right_trim());
+            }
+        }
+
         GapInfos answer;
         for (auto it = start; it != end; ++it) {
             const auto& gap = *it;

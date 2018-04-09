@@ -17,6 +17,7 @@ public:
             : AssemblyStage("Hybrid Aligning", "hybrid_aligning") {
     }
     void run(conj_graph_pack &gp, const char*);
+    DECL_LOGGER("HybridAligning");
 };
 
 }

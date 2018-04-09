@@ -17,19 +17,17 @@ class BWAReadMapper: public debruijn_graph::AbstractSequenceMapper<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     using debruijn_graph::AbstractSequenceMapper<Graph>::g_;
 public:
-    BWAReadMapper(const Graph& g)
+    explicit BWAReadMapper(const Graph& g,
+                           BWAIndex::AlignmentMode mode = BWAIndex::AlignmentMode::Default,
+                           size_t length_cutoff = 0)
             : debruijn_graph::AbstractSequenceMapper<Graph>(g),
-            index_(g) {}
+            index_(g, mode, length_cutoff) {}
 
     omnigraph::MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
         return index_.AlignSequence(sequence);
-    }
-
-    ~BWAReadMapper() {
     }
 
     BWAIndex index_;
 };
 
 }
-

@@ -15,7 +15,7 @@ class GapJoiner {
     omnigraph::EdgeRemover<Graph> edge_remover_;
 
     EdgeId ClipEnd(EdgeId e, size_t to_trim) {
-        VERIFY(to_trim < g_.length(e));
+        VERIFY_MSG(to_trim < g_.length(e), "Asked to trim " << to_trim << " edge " << g_.str(e));
         VERIFY(omnigraph::TerminalVertexCondition<Graph>(g_).Check(g_.EdgeEnd(e)));
         VERIFY(e != g_.conjugate(e));
         if (to_trim == 0) {

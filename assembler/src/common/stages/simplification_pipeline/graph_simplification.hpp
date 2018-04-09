@@ -264,12 +264,7 @@ public:
     }
 
     bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
-        vector<Sequence> path_sequences;
-        for (EdgeId e : path) {
-            path_sequences.push_back(g_.EdgeNucls(e));
-        }
-        Sequence path_sequence(
-            MergeOverlappingSequences(path_sequences, g_.k()));
+        Sequence path_sequence = MergeSequences(g_, path);
         size_t dist = EditDistance(g_.EdgeNucls(edge), path_sequence);
         TRACE( "Bulge sequences with distance " << dist << " were " << g_.EdgeNucls(edge) << " and " << path_sequence);
         return true;

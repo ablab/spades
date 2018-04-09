@@ -282,6 +282,10 @@ public:
         return size_;
     }
 
+    bool empty() const {
+        return size() == 0;
+    }
+
     template<class Seq>
     bool contains(const Seq& s, size_t offset = 0) const {
         VERIFY_DEV(offset + s.size() <= size());

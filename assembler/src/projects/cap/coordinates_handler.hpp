@@ -12,6 +12,7 @@
 #include <algorithm>
 #include "sequence/sequence.hpp"
 #include "sequence/sequence_tools.hpp"
+#include "assembly_graph/paths/path_utils.hpp"
 
 namespace cap {
 
@@ -174,14 +175,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
       }
 
       Sequence ReconstructGenome(const uint genome_id) const {
-          const std::vector<EdgeId> genome_path =
-              AsMappingPath(genome_id).simple_path();
-
-          std::vector<Sequence> path_sequences;
-          for (const auto &e : genome_path)
-              path_sequences.push_back(g_->EdgeNucls(e));
-
-          return MergeOverlappingSequences(path_sequences, g_->k());
+          return debruijn_graph::MergeSequences(g_, AsMappingPath(genome_id).simple_path());
       }
 
       PosArray FilterPosArray(const PosArray &old_array,

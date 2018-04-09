@@ -15,17 +15,10 @@
 #include <set>
 
 namespace pacbio {
-static const int STRING_DIST_INF = 1e8;
 typedef omnigraph::GapDescription<debruijn_graph::Graph> GapDescription;
 
-template<class T>
-struct pair_iterator_less {
-    bool operator ()(pair<size_t, T> const& a, pair<size_t, T> const& b) const {
-        return (a.first < b.first);
-    }
-};
-
 struct MappingInstance {
+    //both positions g_.k() based
     int edge_position;
     int read_position;
     //Now quality is the same with multiplicity, so best quality is 1,
@@ -74,14 +67,16 @@ struct KmerCluster {
     vector<MappingInstance> sorted_positions;
     int size;
 
-    KmerCluster(EdgeId e, const vector<MappingInstance>& v) {
-        last_trustable_index = 0;
+    KmerCluster(EdgeId e, size_t edge_start_pos, size_t edge_end_pos, size_t read_start_pos, size_t read_end_pos) {
+        last_trustable_index = 1;
         first_trustable_index = 0;
-        average_read_position = 0;
+        sorted_positions.push_back(MappingInstance((int)edge_start_pos, (int)read_start_pos, 1));
+        sorted_positions.push_back(MappingInstance((int)edge_end_pos, (int)read_end_pos, 1));
+        VERIFY_MSG(edge_start_pos < edge_end_pos, "range size should be positive");
+        size = int (edge_end_pos - edge_start_pos);
+        average_read_position = (read_start_pos + read_end_pos)/2;
+        average_edge_position = (edge_start_pos + edge_end_pos)/2;
         edgeId = e;
-        size = (int) v.size();
-        sorted_positions = v;
-        FillTrustableIndeces();
     }
 
     bool operator <(const KmerCluster & b) const {
@@ -93,56 +88,13 @@ struct KmerCluster {
         return (b.sorted_positions[b.last_trustable_index].read_position < sorted_positions[first_trustable_index].read_position);
     }
 
-    void FillTrustableIndeces() {
-        //ignore non-unique kmers for distance determination
-        int first_unique_ind = 0;
-        while (first_unique_ind != size - 1 && !(sorted_positions[first_unique_ind].IsUnique())) {
-            first_unique_ind += 1;
-        }
-        int last_unique_ind = size - 1;
-        while (last_unique_ind != 0 && !(sorted_positions[last_unique_ind].IsUnique())) {
-            last_unique_ind -= 1;
-        }
-        last_trustable_index = last_unique_ind;
-        first_trustable_index = first_unique_ind;
-        double tmp_read_position = 0, tmp_edge_position = 0;;
-        vector<int> diffs;
-        for (auto mp : sorted_positions) {
-           tmp_read_position += mp.read_position;
-           tmp_edge_position += mp.edge_position;
-           diffs.push_back(mp.read_position - mp.edge_position);
-        }
-        sort(diffs.begin(), diffs.end());
-        int median_diff = diffs[size/2];
-
-        tmp_read_position /= size;
-        tmp_edge_position /= size;
-        average_read_position = (size_t)trunc(tmp_read_position);
-        average_edge_position = (size_t)trunc(tmp_edge_position);
-
-        if (size > 10) {
-            int max_debug_size = 10;
-            vector<int> distances(max_debug_size);
-            for (int df: diffs) {
-                int ind = abs(df - median_diff)/ 50;
-                if (ind > max_debug_size - 1) ind = max_debug_size - 1;
-                distances [ind] ++;
-            }
-            if (size > 100 || distances[0] * 5 < size * 4) {
-                stringstream s;
-
-                for (int d: distances) {
-                    s << d << " ";
-                }
-//                INFO(s.str());
-
-            }
-        }
-    }
-
     string str(const Graph &g) const{
         stringstream s;
-        s << "Edge: " << g.int_id(edgeId) << " on edge: " << sorted_positions[first_trustable_index].edge_position<< " - "  << sorted_positions[last_trustable_index].edge_position<< ";on read: " << sorted_positions[first_trustable_index].read_position<< " - "  << sorted_positions[last_trustable_index].read_position<< ";size "<< size;
+        s << "Edge: " << g.int_id(edgeId) << " on edge: " << sorted_positions[first_trustable_index].edge_position<<
+                " - "  << sorted_positions[last_trustable_index].edge_position<< ";on read: "
+        << sorted_positions[first_trustable_index].read_position<< " - "
+        << sorted_positions[last_trustable_index].read_position<< ";size "<< size;
+
         return s.str();
     }
 private:
@@ -150,7 +102,8 @@ private:
     ;
 };
 
-struct StatsCounter{
+class StatsCounter{
+public:
     map<size_t,size_t> path_len_in_edges;
     vector<size_t> subreads_length;
     size_t total_len ;
@@ -187,7 +140,7 @@ struct StatsCounter{
         }
     }
 
-    void report() const {
+    void Report() const {
         size_t total = 0;
         for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter){
             total += iter->second;
@@ -205,57 +158,5 @@ struct StatsCounter{
 private:
     DECL_LOGGER("StatsCounter");
 };
-
-inline int StringDistance(string &a, string &b) {
-    int a_len = (int) a.length();
-    int b_len = (int) b.length();
-    int d = min(a_len / 3, b_len / 3);
-    d = max(d, 10);
-    DEBUG(a_len << " " << b_len << " " << d);
-    vector<vector<int> > table(a_len);
-    //int d =
-    for (int i = 0; i < a_len; i++) {
-        table[i].resize(b_len);
-        int low = max(max(0, i - d - 1), i + b_len - a_len - d - 1);
-        int high = min(min(b_len, i + d + 1), i + a_len - b_len + d + 1);
-        TRACE(low << " " <<high);
-        for (int j = low; j < high; j++)
-            table[i][j] = STRING_DIST_INF;
-    }
-    table[a_len - 1][b_len - 1] = STRING_DIST_INF;
-    table[0][0] = 0;
-//free deletions on begin
-//      for(int j = 0; j < b_len; j++)
-//          table[0][j] = 0;
-
-    for (int i = 0; i < a_len; i++) {
-        int low = max(max(0, i - d), i + b_len - a_len - d);
-        int high = min(min(b_len, i + d), i + a_len - b_len + d);
-
-        TRACE(low << " " <<high);
-        for (int j = low; j < high; j++) {
-
-            if (i > 0)
-                table[i][j] = min(table[i][j], table[i - 1][j] + 1);
-            if (j > 0)
-                table[i][j] = min(table[i][j], table[i][j - 1] + 1);
-            if (i > 0 && j > 0) {
-                int add = 1;
-                if (a[i] == b[j])
-                    add = 0;
-                table[i][j] = min(table[i][j], table[i - 1][j - 1] + add);
-            }
-        }
-    }
-    //return table[a_len - 1][b_len - 1];
-//free deletions on end
-    int res = table[a_len - 1][b_len - 1];
-    DEBUG(res);
-//      for(int j = 0; j < b_len; j++){
-//          res = min(table[a_len - 1][j], res);
-//      }
-    return res;
-}
-
 
 }

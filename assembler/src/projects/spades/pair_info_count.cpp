@@ -9,7 +9,6 @@
 #include "io/dataset_support/read_converter.hpp"
 
 #include "pair_info_count.hpp"
-#include "modules/alignment/short_read_mapper.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "paired_info/pair_info_filler.hpp"
@@ -24,6 +23,22 @@ namespace debruijn_graph {
 typedef io::SequencingLibrary<config::LibraryData> SequencingLib;
 using PairedInfoFilter = bf::counting_bloom_filter<std::pair<EdgeId, EdgeId>, 2>;
 using EdgePairCounter = hll::hll_with_hasher<std::pair<EdgeId, EdgeId>>;
+
+std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const conj_graph_pack& gp,
+                                                          const SequencingLib& library) {
+    if (library.type() == io::LibraryType::MatePairs) {
+        INFO("Mapping mate-pairs using BWA-mem mapper");
+        return std::make_shared<alignment::BWAReadMapper<Graph>>(gp.g);
+    }
+
+    if (library.data().unmerged_read_length < gp.k_value && library.type() == io::LibraryType::PairedEnd) {
+        INFO("Mapping PE reads shorter than K with BWA-mem mapper");
+        return std::make_shared<alignment::BWAReadMapper<Graph>>(gp.g);
+    }
+
+    INFO("Selecting usual mapper");
+    return MapperInstance(gp);
+}
 
 class DEFilter : public SequenceMapperListener {
   public:
@@ -185,7 +200,8 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, /*insert_size*/0,
                                                 /*include_merged*/true);
 
-    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable));
+    alignment::BWAReadMapper<Graph> mapper(gp.g);
+    notifier.ProcessLibrary(paired_streams, ilib, mapper);
     //Check read length after lib processing since mate pairs a not used until this step
     VERIFY(reads.data().unmerged_read_length != 0);
 
@@ -242,7 +258,7 @@ static void ProcessSingleReads(conj_graph_pack &gp,
         notifier.Subscribe(ilib, &ss_coverage_filler);
     }
 
-    auto mapper_ptr = ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable);
+    auto mapper_ptr = ChooseProperMapper(gp, reads);
     if (use_binary) {
         auto single_streams = single_binary_readers(reads, false, map_paired);
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
@@ -293,7 +309,7 @@ static void ProcessPairedReads(conj_graph_pack &gp,
 
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
                                                 /*include merged*/true);
-    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable));
+    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
 }
 
 void PairInfoCount::run(conj_graph_pack &gp, const char *) {
@@ -361,7 +377,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
 
                         VERIFY(lib.data().unmerged_read_length != 0);
                         auto reads = paired_binary_readers(lib, /*followed by rc*/false, 0, /*include merged*/true);
-                        notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib, cfg::get().bwa.bwa_enable));
+                        notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib));
                     }
                 }
 
@@ -380,8 +396,6 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
             }
         }
     }
-
-    SensitiveReadMapper<Graph>::EraseIndices();
 }
 
 }

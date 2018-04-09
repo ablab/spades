@@ -497,7 +497,7 @@ class DataScanner {
                                     &start_pos, &end_pos, &m_start_pos, &m_end_pos);
                 //      INFO(cur_str);
                 //      INFO (contigId<<" "<< start_pos<<" "<<end_pos);
-                //      VERIFY(read_count == 3);
+                //      VERIFY(read_count_ == 3);
                 VERIFY(read_count == 5);
                 VERIFY(this->edge_id_map().find(edge_real_id) != this->edge_id_map().end());
                 EdgeId eid = this->edge_id_map()[edge_real_id];

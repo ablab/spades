@@ -9,7 +9,9 @@
 
 #include "assembly_graph/index/edge_multi_index.hpp"
 #include "modules/alignment/edge_index_refiller.hpp"
+#include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
+#include "common/modules/alignment/gap_info.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 // FIXME: Layering violation, get rid of this
 #include "pipeline/config_struct.hpp"
@@ -17,25 +19,22 @@
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 
 #include <algorithm>
+#include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
+#include "sequence/sequence_tools.hpp"
 
 namespace pacbio {
 enum {
     UNDEF_COLOR = -1,
-    DELETED_COLOR = - 2
+    DELETED_COLOR = -2
 };
 
 struct OneReadMapping {
     vector<vector<debruijn_graph::EdgeId>> main_storage;
     vector<GapDescription> gaps;
-    vector<size_t> real_length;
-    //Total used seeds. sum over all subreads;
-    size_t seed_num;
     OneReadMapping(const vector<vector<debruijn_graph::EdgeId>>& main_storage_,
-                   const vector<GapDescription>& gaps_,
-                   const vector<size_t>& real_length_,
-                   size_t seed_num_) :
-            main_storage(main_storage_), gaps(gaps_), real_length(real_length_), seed_num(seed_num_) {
+                   const vector<GapDescription>& gaps_) :
+            main_storage(main_storage_), gaps(gaps_){
     }
 
 };
@@ -43,84 +42,34 @@ struct OneReadMapping {
 template<class Graph>
 class PacBioMappingIndex {
 public:
-    typedef map<typename Graph::EdgeId, vector<MappingInstance> > MappingDescription;
-    typedef pair<typename Graph::EdgeId, vector<MappingInstance> > ClusterDescription;
-    typedef set<KmerCluster<Graph> > ClustersSet;
+    typedef set<KmerCluster<Graph>> ClustersSet;
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> Index;
-    typedef typename Index::KeyWithHash KeyWithHash;
 
 private:
     DECL_LOGGER("PacIndex")
 
     const Graph &g_;
-    size_t pacbio_k;
-    size_t debruijn_k;
-    const static int short_edge_cutoff = 0;
-    const static size_t min_cluster_size = 8;
-    const static int max_similarity_distance = 500;
 
-//Debug stasts
-    int good_follow = 0;
-    int half_bad_follow = 0;
-    int bad_follow = 0;
-
-    set<Sequence> banned_kmers;
-    debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> tmp_index;
-    mutable map<pair<VertexId, VertexId>, size_t> distance_cashed;
-    size_t read_count;
-    bool ignore_map_to_middle;
+    static const int LONG_ALIGNMENT_OVERLAP = 300;
+    static const size_t SHORT_SPURIOUS_LENGTH = 500;
+    mutable map<pair<VertexId, VertexId>, size_t> distance_cashed_;
+    size_t read_count_;
     debruijn_graph::config::debruijn_config::pacbio_processor pb_config_;
+
+    alignment::BWAReadMapper<Graph> bwa_mapper_;
+
 public:
-    MappingDescription GetSeedsFromRead(const Sequence &s) const;
 
-    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_, bool ignore_map_to_middle, const std::string &out_dir, debruijn_graph::config::debruijn_config::pacbio_processor pb_config )
+    PacBioMappingIndex(const Graph &g,
+                        debruijn_graph::config::debruijn_config::pacbio_processor pb_config, alignment::BWAIndex::AlignmentMode mode)
             : g_(g),
-              pacbio_k(k),
-              debruijn_k(debruijn_k_),
-              tmp_index((unsigned) pacbio_k), ignore_map_to_middle(ignore_map_to_middle), pb_config_(pb_config) {
+              pb_config_(pb_config),
+              bwa_mapper_(g, mode, pb_config.bwa_length_cutoff){
         DEBUG("PB Mapping Index construction started");
-        debruijn_graph::EdgeIndexRefiller(out_dir).Refill(tmp_index, g_);
-        INFO("Index constructed");
-        FillBannedKmers();
-        read_count = 0;
+        DEBUG("Index constructed");
+        read_count_ = 0;
     }
-    ~PacBioMappingIndex(){
-        DEBUG("good/ugly/bad counts:" << good_follow << " "<<half_bad_follow << " " << bad_follow);
-    }
-    
-    void FillBannedKmers() {
-        for (int i = 0; i < 4; i++) {
-            auto base = nucl((unsigned char) i);
-            for (int j = 0; j < 4; j++) {
-                auto other = nucl((unsigned char) j);
-                for (size_t other_pos = 0; other_pos < pacbio_k; other_pos++) {
-                    string s = "";
-                    for (size_t k = 0; k < pacbio_k; k++) {
-                        if (k != other_pos)
-                            s += base;
-                        else
-                            s += other;
-                    }
-                    banned_kmers.insert(Sequence(s));
-                }
-            }
-        }
-    }
-
-    bool similar(const MappingInstance &a, const MappingInstance &b,
-                        int shift = 0) const {
-        if (b.read_position + shift < a.read_position) {
-            return similar(b, a, -shift);
-        } else if (b.read_position == a.read_position) {
-            return (abs(int(b.edge_position) + shift - int(a.edge_position)) < 2);
-        } else {
-            return ((b.edge_position + shift - a.edge_position >= (b.read_position - a.read_position) * pb_config_.compression_cutoff) &&
-                ((b.edge_position + shift - a.edge_position) * pb_config_.compression_cutoff <= (b.read_position - a.read_position)));
-        }
-    }
-
 
     bool similar_in_graph(const MappingInstance &a, const MappingInstance &b,
                  int shift = 0) const {
@@ -133,225 +82,109 @@ public:
         }
     }
 
+    typename omnigraph::MappingPath<EdgeId> FilterSpuriousAlignments(typename omnigraph::MappingPath<EdgeId> mapped_path, size_t seq_len) const {
+        omnigraph::MappingPath<EdgeId> res;
 
-    void dfs_cluster(vector<int> &used, vector<MappingInstance> &to_add,
-                     const int cur_ind,
-                     const typename MappingDescription::iterator iter) const {
-        size_t len = iter->second.size();
-        for (size_t k = 0; k < len; k++) {
-            if (!used[k] && similar(iter->second[cur_ind], iter->second[k])) {
-                to_add.push_back(iter->second[k]);
-                used[k] = 1;
-                dfs_cluster(used, to_add, (int) k, iter);
+        for (size_t i = 0; i < mapped_path.size(); i++) {
+            omnigraph::MappingRange current = mapped_path[i].second;
+//Currently everything in kmers
+            size_t expected_additional_left = std::min(current.initial_range.start_pos, current.mapped_range.start_pos);
+            size_t expected_additional_right = std::min(seq_len - current.initial_range.end_pos - g_.k(),
+                                                       g_.length(mapped_path[i].first) - current.mapped_range.end_pos);
+
+            size_t rlen =
+                    mapped_path[i].second.initial_range.end_pos - mapped_path[i].second.initial_range.start_pos;
+
+//FIXME more reasonable condition
+//g_.k() to compare sequence lengths, not kmers
+            if (rlen < SHORT_SPURIOUS_LENGTH && (rlen + g_.k()) * 2 < expected_additional_left + expected_additional_right) {
+                DEBUG ("Skipping spurious alignment " << i << " on edge " << mapped_path[i].first);
+            } else
+                res.push_back(mapped_path[i].first, mapped_path[i].second);
+
+
+        }
+        if (res.size() != mapped_path.size()) {
+            DEBUG("Seq len " << seq_len);
+            for (const auto &e_mr : mapped_path) {
+                EdgeId e = e_mr.first;
+                omnigraph::MappingRange mr = e_mr.second;
+                DEBUG("Alignments were" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" <<
+                     mr.mapped_range.end_pos
+                     << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos);
             }
         }
-    }
-
-    void dfs_cluster_norec(vector<int> &used, vector<MappingInstance> &to_add,
-                     const size_t cur_ind,
-                     const typename MappingDescription::iterator iter, vector<vector<size_t> > &similarity_list) const {
-        std::deque<size_t> stack;
-        stack.push_back(cur_ind);
-        used[cur_ind] = 1;
-        while (stack.size() > 0) {
-            size_t k = stack.back();
-            stack.pop_back();
-            to_add.push_back(iter->second[k]);
-
-            for (size_t i = 0; i < similarity_list[k].size(); i++) {
-                if (!used[similarity_list[k][i]]) {
-                    stack.push_back(similarity_list[k][i]);
-                    used[similarity_list[k][i]] = 1;
-                }
-            }
-        }
-    }
-    ClustersSet GetOrderClusters(const Sequence &s) const {
-        MappingDescription descr = GetSeedsFromRead(s);
-        ClustersSet res;
-        TRACE(read_count << " read_count");
-
-        DEBUG(descr.size() <<"  clusters");
-        for (auto iter = descr.begin(); iter != descr.end(); ++iter) {
-            size_t edge_id = g_.int_id(iter->first);
-            DEBUG(edge_id);
-            sort(iter->second.begin(), iter->second.end(), ReadPositionComparator());
-            set<vector<MappingInstance> > edge_cluster_set;
-            size_t len = iter->second.size();
-            vector<vector<size_t> > similarity_list(len);
-            int cnt = 0;
-            for (size_t i = 0; i < len; i++){
-                for (size_t j = i + 1; j < len; j++){
-                    if (iter->second[i].read_position + max_similarity_distance < iter->second[j].read_position) {
-                        break;
-                    }
-                    if (similar(iter->second[i], iter->second[j])) {
-                        similarity_list[i].push_back(j);
-                        cnt ++;
-                        if (cnt % 10000 == 0) {
-                            DEBUG(cnt);
-                        }
-                    }
-                }
-            }
-
-            DEBUG(len <<"  kmers in cluster");
-            vector<int> used(len);
-            for (size_t i = 0; i < len; i++) {
-                if (!used[i]) {
-                    vector<size_t> new_cluster(len);
-                    vector<size_t> prev(len);
-                    for(size_t j = i; j < len; j++) {
-                        if (!used[j]) {
-                            if (new_cluster[j] == 0) new_cluster[j] = 1, prev[j] = size_t(-1);
-                            for(size_t k = 0; k < similarity_list[j].size(); k++) {
-                                size_t next_ind = similarity_list[j][k];
-                                if (!used[next_ind]) {
-                                    if (new_cluster[next_ind] < new_cluster[j] + 1){
-                                        new_cluster[next_ind] = new_cluster[j] + 1;
-                                        prev[next_ind] = j;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    size_t maxx = 0;
-                    size_t maxj = i;
-                    for(size_t j = i; j < len; j++) {
-                        if (new_cluster[j] > maxx) maxj = j, maxx = new_cluster[j];
-                    }
-                    vector<MappingInstance> to_add;
-                    size_t real_maxj = maxj, first_j = maxj;
-                    while (maxj != size_t(-1)) {
-                        to_add.push_back(iter->second[maxj]);
-                        first_j = maxj;
-                        maxj = prev[maxj];
-                    }
-                    for (auto j = first_j; j < real_maxj; j++)
-                        used[j] = 1;
-                    reverse(to_add.begin(), to_add.end());
-                    TRACE("adding cluster "" edge "<< edge_id << " len " <<to_add.size() )
-                    res.insert(KmerCluster<Graph>(iter->first, to_add));
-                }
-            }
-        }
-        FilterClusters(res);
         return res;
     }
 
-    //Filter incapsulated clusters caused by similar regions
-    void FilterDominatedClusters(ClustersSet &clusters) const {
-        for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
-            size_t edge_id = g_.int_id(i_iter->edgeId);
-            auto sorted_by_edge = i_iter->sorted_positions;
-
-            DEBUG("filtering  with cluster edge, stage 2 "<< edge_id << " len " << sorted_by_edge.size() << " clusters still alive: "<< clusters.size());
-            for (auto j_iter = clusters.begin(); j_iter != clusters.end();) {
-                if (i_iter != j_iter) {
-                    if (dominates(*i_iter, *j_iter)) {
-                        TRACE("cluster is dominated");
-                        auto tmp_iter = j_iter;
-                        tmp_iter++;
-                        TRACE("cluster on edge " << g_.int_id(j_iter->edgeId));
-                        TRACE("erased - dominated");
-                        clusters.erase(j_iter);
-                        j_iter = tmp_iter;
-                    } else {
-                        j_iter++;
-                    }
-                } else {
-                    j_iter++;
-                }
-            }
-            DEBUG("cluster size "<< i_iter->sorted_positions.size() << "survived filtering");
-            i_iter++;
+    ClustersSet GetBWAClusters(const Sequence &s) const {
+        DEBUG("BWA started")
+        ClustersSet res;
+        if (s.size() < g_.k()){
+            return res;
         }
-    }
-    
-    //filter clusters that are too small or fully located on a vertex or dominated by some other cluster.
-    void FilterClusters(ClustersSet &clusters) const {
-        for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
-            size_t edge_id = g_.int_id(i_iter->edgeId);
-
-            int len = (int) g_.length(i_iter->edgeId);
-            auto sorted_by_edge = i_iter->sorted_positions;
-            sort(sorted_by_edge.begin(), sorted_by_edge.end());
-            double good = 0;
-            DEBUG("filtering cluster of size " << sorted_by_edge.size());
-            DEBUG(edge_id <<" : edgeId");
-            for (auto iter = sorted_by_edge.begin(); iter < sorted_by_edge.end(); iter++) {
-                if (iter->IsUnique())
-                    good++;
-//TODO:: back to quality for laaarge genomes (kmer size)?
-                //good += 1.0 / (iter->quality * iter->quality);
+        omnigraph::MappingPath<EdgeId> mapped_path = FilterSpuriousAlignments(bwa_mapper_.MapSequence(s), s.size());
+        TRACE(read_count_ << " read_count_");
+        TRACE("BWA ended")
+        DEBUG(mapped_path.size() <<"  clusters");
+        for (const auto &e_mr : mapped_path) {
+            EdgeId e = e_mr.first;
+            omnigraph::MappingRange mr = e_mr.second;
+            DEBUG("BWA loading edge=" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" << mr.mapped_range.end_pos 
+                                                                    << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos );
+            size_t cut = 0;
+            size_t edge_start_pos = mr.mapped_range.start_pos;
+            size_t edge_end_pos = mr.mapped_range.end_pos;
+            size_t read_start_pos = mr.initial_range.start_pos + cut;
+            size_t read_end_pos = mr.initial_range.end_pos;
+            if (edge_start_pos >= edge_end_pos || read_start_pos >= read_end_pos) {
+                DEBUG ("skipping extra-short alignment");
+                continue;
             }
-            DEBUG("good " << good);
+            res.insert(KmerCluster<Graph>(e, edge_start_pos, edge_end_pos, read_start_pos, read_end_pos));
 
-            if (good < min_cluster_size || (len < short_edge_cutoff)) {
-                if (len < short_edge_cutoff) {
-                    DEBUG("Life is too long, and edge is too short!");
-                }
-                auto tmp_iter = i_iter;
-                tmp_iter++;
-                clusters.erase(i_iter);
-                i_iter = tmp_iter;
-            } else {
-                if (sorted_by_edge[0].edge_position >= len
-                        || sorted_by_edge[i_iter->size - 1].edge_position
-                                <= int(debruijn_k) - int(pacbio_k)) {
-                    DEBUG("All anchors in vertex");
-                    auto tmp_iter = i_iter;
-                    tmp_iter++;
-                    clusters.erase(i_iter);
-                    i_iter = tmp_iter;
-                } else {
-                    i_iter++;
-                }
-            }
         }
-        FilterDominatedClusters(clusters);
+        DEBUG("Ended loading bwa")
+        return res;
     }
 
-    // is "non strictly dominates" required?
-    bool dominates(const KmerCluster<Graph> &a,
-                          const KmerCluster<Graph> &b) const {
-        size_t a_size = a.size;
-        size_t b_size = b.size;
-        if ((double) a_size < (double) b_size * pb_config_.domination_cutoff
-                || a.sorted_positions[a.first_trustable_index].read_position
-                        > b.sorted_positions[b.first_trustable_index].read_position
-                || a.sorted_positions[a.last_trustable_index].read_position
-                        < b.sorted_positions[b.last_trustable_index].read_position) {
-            return false;
-        } else {
-            return true;
-        }
+    std::string DebugEmptyBestScoredPath(VertexId start_v, VertexId end_v, EdgeId prev_edge, EdgeId cur_edge,
+            size_t prev_last_edge_position, size_t cur_first_edge_position, int seq_len) const{
+        size_t result = GetDistance(start_v, end_v, /*update cache*/false);
+        std::ostringstream ss;
+        ss << "Tangled region between edges " << g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) <<  " is not closed, additions from edges: "
+            << int(g_.length(prev_edge)) - int(prev_last_edge_position) <<" " << int(cur_first_edge_position)
+            << " and seq "<< seq_len << " and shortest path " << result;
+        return ss.str();
     }
 
-    vector<vector<EdgeId>> FillGapsInCluster(const vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
+    vector<vector<EdgeId>> FillGapsInCluster(const vector<typename ClustersSet::iterator> &cur_cluster,
                                      const Sequence &s) const {
         vector<EdgeId> cur_sorted;
         vector<vector<EdgeId>> res;
         EdgeId prev_edge = EdgeId(0);
 
         for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();) {
-            EdgeId cur_edge = iter->second->edgeId;
+            EdgeId cur_edge = (*iter)->edgeId;
             if (prev_edge != EdgeId(0)) {
 //Need to find sequence of edges between clusters
                 VertexId start_v = g_.EdgeEnd(prev_edge);
                 VertexId end_v = g_.EdgeStart(cur_edge);
                 auto prev_iter = iter - 1;
-                MappingInstance cur_first_index =
-                        iter->second->sorted_positions[iter->second
-                                ->first_trustable_index];
-                MappingInstance prev_last_index = prev_iter->second
-                        ->sorted_positions[prev_iter->second
-                        ->last_trustable_index];
-
-                if (start_v != end_v ||
-                    (start_v == end_v &&
-                     (double) (cur_first_index.read_position - prev_last_index.read_position) >
-                     (double) (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
+                MappingInstance cur_first_index = (*iter)->sorted_positions[(*iter)->first_trustable_index];
+                MappingInstance prev_last_index = (*prev_iter)->sorted_positions[(*prev_iter)->last_trustable_index];
+                double read_gap_len = (double) (cur_first_index.read_position - prev_last_index.read_position);
+//FIXME:: is g_.k() relevant
+                double stretched_graph_len = (double) (cur_first_index.edge_position + g_.k()) +
+                        ((int) g_.length(prev_edge) - prev_last_index.edge_position) * pb_config_.path_limit_stretching;
+                if (start_v != end_v || (start_v == end_v && read_gap_len > stretched_graph_len)) {
+                    if (start_v == end_v) {
+                        DEBUG("looking for path from vertex to itself, read pos"
+                              << cur_first_index.read_position << " " << prev_last_index.read_position
+                              << " edge pos: "<< cur_first_index.edge_position << " " << prev_last_index.edge_position
+                              <<" edge len " << g_.length(prev_edge));
+                        DEBUG("Read gap len " << read_gap_len << " stretched graph path len" <<  stretched_graph_len);
+                    }
                     DEBUG(" traversing tangled hregion between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
                     DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
                     DEBUG(" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
@@ -364,27 +197,26 @@ public:
                                        g_.length(prev_edge) - prev_last_index.edge_position);
                     tmp = g_.EdgeNucls(cur_edge).str();
                     e_add = tmp.substr(0, cur_first_index.edge_position);
-                    pair<int, int> limits = GetPathLimits(*(prev_iter->second),
-                                                          *(iter->second),
-                                                          (int) s_add.length(),
-                                                          (int) e_add.length());
+                    pair<int, int> limits = GetPathLimits(**prev_iter, **iter, (int) s_add.length(), (int) e_add.length());
                     if (limits.first == -1) {
+                        DEBUG ("Failed to find Path limits");
                         res.push_back(cur_sorted);
                         cur_sorted.clear();
                         prev_edge = EdgeId(0);
                         continue;
                     }
-
+                    
                     vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
                     if (intermediate_path.size() == 0) {
-                        DEBUG("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
+                        DEBUG(DebugEmptyBestScoredPath(start_v, end_v, prev_edge, cur_edge,
+                                      prev_last_index.edge_position, cur_first_index.edge_position, seq_end - seq_start));
                         res.push_back(cur_sorted);
                         cur_sorted.clear();
                         prev_edge = EdgeId(0);
                         continue;
                     }
-                    for (auto j_iter = intermediate_path.begin(); j_iter != intermediate_path.end(); j_iter++) {
-                        cur_sorted.push_back(*j_iter);
+                    for (EdgeId edge: intermediate_path) {
+                        cur_sorted.push_back(edge);
                     }
                 }
             }
@@ -405,10 +237,10 @@ public:
         return res;
     }
 
-    vector<vector<int>> FillConnectionsTable (const ClustersSet &mapping_descr) const{
+    vector<vector<bool>> FillConnectionsTable(const ClustersSet &mapping_descr) const {
         size_t len =  mapping_descr.size();
-        DEBUG("getting colors, table size "<< len);
-        vector<vector<int> > cons_table(len);
+        TRACE("getting colors, table size "<< len);
+        vector<vector<bool>> cons_table(len);
         for (size_t i = 0; i < len; i++) {
             cons_table[i].resize(len);
             cons_table[i][i] = 0;
@@ -429,36 +261,27 @@ public:
 
     vector<int> GetWeightedColors(const ClustersSet &mapping_descr) const {
         size_t len = mapping_descr.size();
-        vector<int> colors(len);
+        vector<int> colors(len, UNDEF_COLOR);
         vector<int> cluster_size(len);
+        size_t ii = 0;
+        for (const auto &cl : mapping_descr) {
+            cluster_size[ii++] = cl.size;
+        }
+        const auto cons_table = FillConnectionsTable(mapping_descr);
+
         vector<int> max_size(len);
         vector<size_t> prev(len);
-        size_t i = 0;
-        for (i = 0; i < len; i++) {
-            prev[i] = -1;
-        }
-        for (i = 0; i < len; i++) {
-            colors[i] = UNDEF_COLOR;
-        }
-        i = 0;
-        for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
-                ++i_iter, ++i) {
-            cluster_size[i] = i_iter->size;
-        }
 
-        auto cons_table = FillConnectionsTable(mapping_descr);
         int cur_color = 0;
         while (true) {
-            for (i = 0; i < len; i++) {
+            for (size_t i = 0; i < len; ++i) {
                 max_size[i] = 0;
-                prev[i] = -1ul;
+                prev[i] = size_t(-1);
             }
-            i = 0;
-            for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
-                        ++i_iter, ++i) {
+            for (size_t i = 0; i < len; ++i) {
                 if (colors[i] != UNDEF_COLOR) continue;
                 max_size[i] = cluster_size[i];
-                for (size_t j = 0; j < i; j ++) {
+                for (size_t j = 0; j < i; j++) {
                     if (colors[j] != -1) continue;
                     if (cons_table[j][i] && max_size[i] < cluster_size[i] + max_size[j]) {
                         max_size[i] = max_size[j] + cluster_size[i];
@@ -490,47 +313,38 @@ public:
                 if (colors[real_maxi] == UNDEF_COLOR) {
                     colors[real_maxi] = DELETED_COLOR;
                 }
-                real_maxi --;
+                real_maxi--;
             }
         }
         return colors;
     }
 
-    GapDescription CreateGapDescription(const KmerCluster<debruijn_graph::Graph>& a,
-                                        const KmerCluster<debruijn_graph::Graph>& b,
-                                        const Sequence& read) const {
-        size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + pacbio_k;
-        size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
-        if (seq_start > seq_end) {
-            DEBUG("Overlapping flanks not supported yet");
-            return GapDescription();
-        }
-        return GapDescription(a.edgeId,
-                              b.edgeId,
-                              read.Subseq(seq_start, seq_end),
-                              g_.length(a.edgeId) - a.sorted_positions[a.last_trustable_index].edge_position - pacbio_k + debruijn_k,
-                              b.sorted_positions[b.first_trustable_index].edge_position);
-    }
-
     OneReadMapping AddGapDescriptions(const vector<typename ClustersSet::iterator> &start_clusters,
                                       const vector<typename ClustersSet::iterator> &end_clusters,
-                                      const vector<vector<EdgeId>> &sortedEdges, const Sequence &s,
-                                      const vector<bool> &block_gap_closer, size_t used_seeds_count) const {
+                                      const vector<vector<EdgeId>> &sorted_edges, const Sequence &s,
+                                      const vector<bool> &block_gap_closer) const {
         DEBUG("adding gaps between subreads");
         vector<GapDescription> illumina_gaps;
-        for (size_t i = 0; i + 1 < sortedEdges.size() ; i++) {
+        for (size_t i = 0; i + 1 < sorted_edges.size() ; i++) {
             if (block_gap_closer[i])
                 continue;
             size_t j = i + 1;
-            EdgeId before_gap = sortedEdges[i][sortedEdges[i].size() - 1];
-            EdgeId after_gap = sortedEdges[j][0];
+            EdgeId before_gap = sorted_edges[i][sorted_edges[i].size() - 1];
+            EdgeId after_gap = sorted_edges[j][0];
 //do not add "gap" for rc-jumping
             if (before_gap != after_gap && before_gap != g_.conjugate(after_gap)) {
                 if (TopologyGap(before_gap, after_gap, true)) {
                     if (start_clusters[j]->CanFollow(*end_clusters[i])) {
-                        auto gap = CreateGapDescription(*end_clusters[i],
-                                                        *start_clusters[j],
-                                                        s);
+                        const auto &a = *end_clusters[i];
+                        const auto &b = *start_clusters[j];
+                        size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + g_.k();
+                        size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
+                        size_t left_offset = a.sorted_positions[a.last_trustable_index].edge_position;
+                        size_t right_offset = b.sorted_positions[b.first_trustable_index].edge_position;
+                        auto gap = CreateGapInfoTryFixOverlap(g_, s,
+                                                    seq_start, seq_end,
+                                                    a.edgeId, left_offset,
+                                                    b.edgeId, right_offset);
                         if (gap != GapDescription()) {
                             illumina_gaps.push_back(gap);
                             DEBUG("adding gap between alignments number " << i<< " and " << j);
@@ -539,93 +353,87 @@ public:
 
                 }
             }
-
         }
-        return OneReadMapping(sortedEdges, illumina_gaps, vector<size_t>(0), used_seeds_count);
+        return OneReadMapping(sorted_edges, illumina_gaps);
     }
 
-    OneReadMapping GetReadAlignment(Sequence &s) const {
-        ClustersSet mapping_descr = GetOrderClusters(s);
+    void ProcessCluster(const Sequence &s,
+                        vector<typename ClustersSet::iterator> &cur_cluster,
+                        vector<typename ClustersSet::iterator> &start_clusters,
+                        vector<typename ClustersSet::iterator> &end_clusters,
+                        vector<vector<EdgeId>> &sorted_edges,
+                        vector<bool> &block_gap_closer) const {
+        sort(cur_cluster.begin(), cur_cluster.end(),
+             [](const typename ClustersSet::iterator& a, const typename ClustersSet::iterator& b) {
+            return (a->average_read_position < b->average_read_position);
+        });
+        VERIFY(cur_cluster.size() > 0);
+        auto cur_cluster_start = cur_cluster.begin();
+        for (auto iter = cur_cluster.begin(); iter != cur_cluster.end(); ++iter) {
+            auto next_iter = iter + 1;
+            if (next_iter == cur_cluster.end() || !IsConsistent(**iter, **next_iter)) {
+                if (next_iter != cur_cluster.end()) {
+                    DEBUG("clusters splitted:");
+                    DEBUG("on "<< (*iter)->str(g_));
+                    DEBUG("and " << (*next_iter)->str(g_));
+                }
+                vector<typename ClustersSet::iterator> splitted_cluster(cur_cluster_start, next_iter);
+                auto res = FillGapsInCluster(splitted_cluster, s);
+                for (auto &cur_sorted:res) {
+                    DEBUG("Adding " <<res.size() << " subreads, cur alignments " << cur_sorted.size());
+                    if (cur_sorted.size() > 0) {
+                        for(EdgeId eee: cur_sorted) {
+                            DEBUG (g_.int_id(eee));
+                        }
+                        start_clusters.push_back(*cur_cluster_start);
+                        end_clusters.push_back(*iter);
+                        sorted_edges.push_back(cur_sorted);
+                        //Blocking gap closing inside clusters;
+                        block_gap_closer.push_back(true);
+                    }
+                }
+                if (block_gap_closer.size() > 0)
+                    block_gap_closer[block_gap_closer.size() - 1] = false;
+                cur_cluster_start = next_iter;
+            } else {
+                DEBUG("connected consecutive clusters:");
+                DEBUG("on "<< (*iter)->str(g_));
+                DEBUG("and " << (*next_iter)->str(g_));
+            }
+        }
+    }
+
+    OneReadMapping GetReadAlignment(const io::SingleRead &read) const {
+        Sequence s = read.sequence();
+        ClustersSet mapping_descr = GetBWAClusters(s); //GetOrderClusters(s);
         vector<int> colors = GetWeightedColors(mapping_descr);
         size_t len =  mapping_descr.size();
-        vector<size_t> real_length;
-        vector<vector<EdgeId>> sortedEdges;
+        vector<vector<EdgeId>> sorted_edges;
         vector<bool> block_gap_closer;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
         vector<int> used(len);
-        size_t used_seed_count = 0;
         auto iter = mapping_descr.begin();
         for (size_t i = 0; i < len; i++, iter ++) {
             used[i] = 0;
             DEBUG(colors[i] <<" " << iter->str(g_));
         }
         for (size_t i = 0; i < len; i++) {
-            if (!used[i]) {
+            int cur_color = colors[i];
+            if (!used[i] && cur_color != DELETED_COLOR) {
                 DEBUG("starting new subread");
-                size_t cur_seed_count = 0;
-                vector<pair<size_t, typename ClustersSet::iterator> > cur_cluster;
+                vector<typename ClustersSet::iterator> cur_cluster;
                 used[i] = 1;
                 int j = 0;
-                int cur_color = colors[i];
-                if (cur_color == DELETED_COLOR)
-                    continue;
-                for (auto i_iter = mapping_descr.begin();
-                        i_iter != mapping_descr.end(); ++i_iter, ++j) {
+                for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end(); ++i_iter, ++j) {
                     if (colors[j] == cur_color) {
-                        cur_cluster.push_back(
-                                make_pair(
-                                        i_iter->average_read_position,
-                                        i_iter));
+                        cur_cluster.push_back(i_iter);
                         used[j] = 1;
-                        cur_seed_count += i_iter->sorted_positions.size();
                     }
                 }
-                sort(cur_cluster.begin(), cur_cluster.end(),
-                     pair_iterator_less<typename ClustersSet::iterator>());
-                VERIFY(cur_cluster.size() > 0);
-                //if (cur_seed_count > used_seed_count)
-                used_seed_count += cur_seed_count;
-                auto cur_cluster_start = cur_cluster.begin();
-                for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();
-                        ++iter) {
-                    auto next_iter = iter + 1;
-                    if (next_iter == cur_cluster.end()
-                            || !IsConsistent(*(iter->second),
-                                             *(next_iter->second))) {
-                        if (next_iter != cur_cluster.end()) {
-                            DEBUG("clusters splitted:");
-                            DEBUG("on "<< iter->second->str(g_));
-                DEBUG("and " << next_iter->second->str(g_));
-                        }
-                        vector<pair<size_t, typename ClustersSet::iterator> > splitted_cluster(
-                                cur_cluster_start, next_iter);
-                        auto res = FillGapsInCluster(
-                                splitted_cluster, s);
-                        for (auto &cur_sorted:res) {
-                            DEBUG("Adding " <<res.size() << " subreads, cur alignments " << cur_sorted.size());
-                            if (cur_sorted.size() > 0) {
-                                for(EdgeId eee: cur_sorted) {
-                                    DEBUG (g_.int_id(eee));
-                                }
-                                start_clusters.push_back(cur_cluster_start->second);
-                                end_clusters.push_back(iter->second);
-                                sortedEdges.push_back(cur_sorted);
-                                //Blocking gap closing inside clusters;
-                                block_gap_closer.push_back(true);
-                            }
-                        }
-                        if (block_gap_closer.size() > 0)
-                            block_gap_closer[block_gap_closer.size() - 1] = false;
-                        cur_cluster_start = next_iter;
-                    } else {
-                        DEBUG("connected consecutive clusters:");
-                        DEBUG("on "<< iter->second->str(g_));
-                        DEBUG("and " << next_iter->second->str(g_));
-                    }
-                }
+                ProcessCluster(s, cur_cluster, start_clusters, end_clusters, sorted_edges, block_gap_closer);
             }
         }
-        return AddGapDescriptions(start_clusters,end_clusters, sortedEdges, s, block_gap_closer, used_seed_count);
+        return AddGapDescriptions(start_clusters, end_clusters, sorted_edges, s, block_gap_closer);
     }
 
     std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a,
@@ -636,10 +444,11 @@ public:
         int seq_len = -start_pos + end_pos;
         //int new_seq_len =
 //TODO::something more reasonable
-        int path_min_len = max(int(floor((seq_len - int(debruijn_k)) * pb_config_.path_limit_pressing)), 0);
-        int path_max_len = (int) ((double) (seq_len + (int) debruijn_k) * pb_config_.path_limit_stretching);
+        int path_min_len = max(int(floor((seq_len - int(g_.k())) * pb_config_.path_limit_pressing)), 0);
+        int path_max_len = (int) ((double) (seq_len + g_.k() * 2) * pb_config_.path_limit_stretching);
         if (seq_len < 0) {
             DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
+            if (path_max_len < 0)
             return std::make_pair(-1, -1);
         }
         path_min_len = max(path_min_len - int(s_add_len + e_add_len), 0);
@@ -647,76 +456,74 @@ public:
         return std::make_pair(path_min_len, path_max_len);
     }
 
-//0 - No, 1 - Yes
-    int IsConsistent(const KmerCluster<Graph> &a,
-                     const KmerCluster<Graph> &b) const {
-        EdgeId a_edge = a.edgeId;
-        EdgeId b_edge = b.edgeId;
-        size_t a_id =  g_.int_id(a_edge);
-        size_t b_id =  g_.int_id(b_edge);
-        DEBUG("clusters on " << a_id << " and " << b_id );
-        if (a.sorted_positions[a.last_trustable_index].read_position + (int) pb_config_.max_path_in_dijkstra <
-            b.sorted_positions[b.first_trustable_index].read_position) {
-            DEBUG ("Clusters are too far in read");
-            return 0;
-        }
-        VertexId start_v = g_.EdgeEnd(a_edge);
-        size_t addition = g_.length(a_edge);
-        VertexId end_v = g_.EdgeStart(b_edge);
-        pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
-
+    size_t GetDistance(VertexId start_v, VertexId end_v,
+                       bool update_cache = true) const {
         size_t result = size_t(-1);
-        bool not_found = true;
-        auto distance_it = distance_cashed.begin();
+        pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
+        bool not_found;
+        auto distance_it = distance_cashed_.begin();
+        //FIXME should permit multiple readers
 #pragma omp critical(pac_index)
         {
-            distance_it = distance_cashed.find(vertex_pair);
-            not_found = (distance_it == distance_cashed.end());
+            distance_it = distance_cashed_.find(vertex_pair);
+            not_found = (distance_it == distance_cashed_.end());
         }
         if (not_found) {
             omnigraph::DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
-                    omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, pb_config_.max_path_in_dijkstra, pb_config_.max_vertex_in_dijkstra));
+                    omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_,
+                                                                                            pb_config_.max_path_in_dijkstra,
+                                                                                            pb_config_.max_vertex_in_dijkstra));
             dijkstra.Run(start_v);
             if (dijkstra.DistanceCounted(end_v)) {
                 result = dijkstra.GetDistance(end_v);
             }
+            if (update_cache) {
 #pragma omp critical(pac_index)
-            {
-                distance_it = distance_cashed.insert({vertex_pair, result}).first;
+                distance_cashed_.insert({vertex_pair, result});
             }
         } else {
-            DEBUG("taking from cashed");
+            TRACE("taking from cashed");
+            result = distance_it->second;
         }
 
-        result = distance_it->second;
+        return result;
+    }
+
+    bool IsConsistent(const KmerCluster<Graph> &a,
+                     const KmerCluster<Graph> &b) const {
+        EdgeId a_edge = a.edgeId;
+        EdgeId b_edge = b.edgeId;
+        DEBUG("clusters on " << g_.int_id(a_edge) << " and " << g_.int_id(b_edge));
+        //FIXME: Is this check useful?
+        if (a.sorted_positions[a.last_trustable_index].read_position +
+                    (int) pb_config_.max_path_in_dijkstra <
+            b.sorted_positions[b.first_trustable_index].read_position) {
+            DEBUG("Clusters are too far in read");
+            return false;
+        }
+        size_t result = GetDistance(g_.EdgeEnd(a_edge), g_.EdgeStart(b_edge));
         DEBUG (result);
         if (result == size_t(-1)) {
-            return 0;
+            return false;
         }
-        //TODO: Serious optimization possible
-        int near_to_cluster_end = 500;
-        for (auto a_iter = a.sorted_positions.begin();
-                a_iter != a.sorted_positions.end(); ++a_iter) {
-            if (a_iter - a.sorted_positions.begin() > near_to_cluster_end &&  a.sorted_positions.end() - a_iter > near_to_cluster_end) continue;
-            int cnt = 0;
-            for (auto b_iter = b.sorted_positions.begin();
-                    b_iter != b.sorted_positions.end() && cnt < near_to_cluster_end; ++b_iter, cnt ++) {
-                if (similar_in_graph(*a_iter, *b_iter, (int) (result + addition))) {
-                    return 1;
-                }
-            }
-            cnt = 0;
-            if ( (int) b.sorted_positions.size() > near_to_cluster_end) {
-                for (auto b_iter = b.sorted_positions.end() - 1;
-                                        b_iter != b.sorted_positions.begin() && cnt < near_to_cluster_end; --b_iter, cnt ++) {
-                    if (similar_in_graph(*a_iter, *b_iter,
-                                (int) (result + addition))) {
-                        return 1;
-                    }
-                }
+        result += g_.length(a_edge);
+        if (similar_in_graph(a.sorted_positions[1], b.sorted_positions[0], (int)result)) {
+            DEBUG(" similar! ")
+        } else {
+//FIXME: reconsider this condition! i.e only one large range? That may allow to decrease the bwa length cutoff
+            if (a.size > LONG_ALIGNMENT_OVERLAP && b.size > LONG_ALIGNMENT_OVERLAP &&
+                 - a.sorted_positions[1].edge_position +  (int)result + b.sorted_positions[0].edge_position  <=
+                        b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * int(g_.k())) {
+                DEBUG("overlapping range magic worked, " << - a.sorted_positions[1].edge_position +
+                                                           (int)result + b.sorted_positions[0].edge_position
+                      << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k());
+                DEBUG("Ranges:" << a.str(g_) << " " << b.str(g_)
+                                <<" llength and dijkstra shift :" << g_.length(a_edge) << " " << (result - g_.length(a_edge)));
+            } else {
+                return false;
             }
         }
-        return 0;
+        return true;
     }
 
     string PathToString(const vector<EdgeId>& path) const {
@@ -728,36 +535,49 @@ public:
         }
         return res;
     }
-//TODO this should be replaced by Dijkstra based graph-read alignment
+
     vector<EdgeId> BestScoredPath(const Sequence &s, VertexId start_v, VertexId end_v,
                                   int path_min_length, int path_max_length,
                                   int start_pos, int end_pos, string &s_add,
                                   string &e_add) const {
-        DEBUG(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
+        TRACE(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
         omnigraph::PathStorageCallback<Graph> callback(g_);
-        ProcessPaths(g_,
+        int pres = ProcessPaths(g_,
                     path_min_length, path_max_length,
                     start_v, end_v,
                     callback);
+        DEBUG("PathProcessor result: " << pres << " limits " << path_min_length << " " << path_max_length);
         vector<vector<EdgeId> > paths = callback.paths();
-        DEBUG("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
+        TRACE("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
         int s_len = int(s.size());
+        if (end_pos < start_pos) {
+            DEBUG ("modifying limits because of some bullshit magic, seq length 0")
+            end_pos = start_pos;
+        }
         string seq_string = s.Subseq(start_pos, min(end_pos + 1, s_len)).str();
         size_t best_path_ind = paths.size();
-        int best_score = STRING_DIST_INF;
-        DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
+        int best_score = std::numeric_limits<int>::max();
         if (paths.size() == 0) {
+            DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
             DEBUG ("no paths");
             return vector<EdgeId>(0);
         }
         if (seq_string.length() > pb_config_.max_contigs_gap_length) {
+            DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
             DEBUG("Gap is too large");
             return vector<EdgeId>(0);
         }
+        bool additional_debug = (paths.size() > 1 && paths.size() < 10);
         for (size_t i = 0; i < paths.size(); i++) {
+            DEBUG("path len "<< paths[i].size());
+            if (paths[i].size() == 0) {
+                DEBUG ("Pathprocessor returns path with size = 0")
+            }
             string cur_string = s_add + PathToString(paths[i]) + e_add;
-            DEBUG("cur_string: " << cur_string <<"\n seq_string " << seq_string);
-            if (paths.size() > 1 && paths.size() < 10) {
+            TRACE("cur_string: " << cur_string <<"\n seq_string " << seq_string);
+            int cur_score = StringDistance(cur_string, seq_string);
+            //DEBUG only
+            if (additional_debug) {
                 TRACE("candidate path number "<< i << " , len " << cur_string.length());
                 TRACE("graph candidate: " << cur_string);
                 TRACE("in pacbio read: " << seq_string);
@@ -765,9 +585,6 @@ public:
                         ++j_iter) {
                     DEBUG(g_.int_id(*j_iter));
                 }
-            }
-            int cur_score = StringDistance(cur_string, seq_string);
-            if (paths.size() > 1 && paths.size() < 10) {
                 DEBUG("score: "<< cur_score);
             }
             if (cur_score < best_score) {
@@ -775,125 +592,21 @@ public:
                 best_path_ind = i;
             }
         }
-        DEBUG(best_score);
-        if (best_score == STRING_DIST_INF)
+        TRACE(best_score);
+        if (best_score == std::numeric_limits<int>::max()) {
+            if (paths.size() < 10) {
+                for (size_t i = 0; i < paths.size(); i++) {
+                    DEBUG ("failed with strings " << seq_string << " " << s_add + PathToString(paths[i]) + e_add);
+                }
+            }
+            DEBUG (paths.size() << " paths available");
             return vector<EdgeId>(0);
-        if (paths.size() > 1 && paths.size() < 10) {
-            DEBUG("best score found! Path " <<best_path_ind <<" score "<< best_score);
+        }
+        if (additional_debug) {
+            TRACE("best score found! Path " <<best_path_ind <<" score "<< best_score);
         }
         return paths[best_path_ind];
     }
-
-    // Short read alignment
-    omnigraph::MappingPath<EdgeId> GetShortReadAlignment(const Sequence &s) const {
-        ClustersSet mapping_descr = GetOrderClusters(s);
-        map<EdgeId, KmerCluster<Graph> > largest_clusters;
-
-        //Selecting the biggest cluster for each edge
-        for (auto iter = mapping_descr.begin(); iter != mapping_descr.end(); ++iter) {
-
-            auto first_cluster = iter->sorted_positions[iter->first_trustable_index];
-            auto last_cluster = iter->sorted_positions[iter->last_trustable_index];
-            int read_range = last_cluster.read_position - first_cluster.read_position;
-            int edge_range = last_cluster.edge_position - first_cluster.edge_position;
-            int cluster_szie = iter->last_trustable_index - iter->first_trustable_index;
-            if (cluster_szie > 2 * read_range || edge_range < 0 || 2 * edge_range < read_range || edge_range > 2 * read_range) {
-                //skipping cluster
-                continue;
-            }
-
-            auto edge_cluster = largest_clusters.find(iter->edgeId);
-            if (edge_cluster != largest_clusters.end()) {
-                if (edge_cluster->second.last_trustable_index - edge_cluster->second.first_trustable_index
-                        < iter->last_trustable_index - iter->first_trustable_index) {
-
-                    edge_cluster->second = *iter;
-                }
-            } else {
-                largest_clusters.insert(make_pair(iter->edgeId, *iter));
-            }
-        }
-
-        omnigraph::MappingPath<EdgeId> result;
-        for (auto iter = largest_clusters.begin(); iter != largest_clusters.end(); ++iter) {
-            auto first_cluster = iter->second.sorted_positions[iter->second.first_trustable_index];
-            auto last_cluster = iter->second.sorted_positions[iter->second.last_trustable_index];
-            omnigraph::MappingRange range(Range(first_cluster.read_position, last_cluster.read_position),
-                                          Range(first_cluster.edge_position, last_cluster.edge_position));
-            result.join({iter->second.edgeId, range});
-        }
-
-        return result;
-    }
-
-    std::pair<EdgeId, size_t> GetUniqueKmerPos(const RtSeq& kmer) const {
-        KeyWithHash kwh = tmp_index.ConstructKWH(kmer);
-
-        if (tmp_index.valid(kwh.key())) {
-            auto keys = tmp_index.get(kwh);
-            if (keys.size() == 1) {
-                return make_pair(keys[0].edge_id, keys[0].offset);
-            }
-        }
-        return std::make_pair(EdgeId(0), -1u);
-    }
-
-
 };
-
-template<class Graph>
-typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>::GetSeedsFromRead(const Sequence &s) const {
-    MappingDescription res;
-    //WARNING: removed read_count from here to make const methods
-    int local_read_count = 0;
-    ++local_read_count;
-    if (s.size() < pacbio_k)
-        return res;
-
-    //RtSeq kmer = s.start<RtSeq>(pacbio_k);
-    KeyWithHash kwh = tmp_index.ConstructKWH(s.start<RtSeq>(pacbio_k));
-
-    for (size_t j = pacbio_k; j < s.size(); ++j) {
-        kwh = kwh << s[j];
-        if (!tmp_index.valid(kwh.key())) {
-//          INFO("not valid kmer");
-            continue;
-        }
-        auto keys = tmp_index.get(kwh);
-        TRACE("Valid key, size: "<< keys.size());
-
-        int quality = (int) keys.size();
-        if (quality > 1000) {
-            DEBUG ("Ignoring repretive kmer")
-            continue;
-        }
-        for (auto iter = keys.begin(); iter != keys.end(); ++iter) {
-
-            TRACE("and quality:" << quality);
-            int offset = (int)iter->offset;
-            int s_stretched = int ((double)s.size() * 1.2 + 50);
-            int edge_len = int(g_.length(iter->edge_id));
-            //No alignment in vertex, and further than s+eps bp from edge ends;
-            bool correct_alignment = offset > int(debruijn_k - pacbio_k) && offset < edge_len;
-            if (ignore_map_to_middle) {
-                correct_alignment &= (offset < int(debruijn_k - pacbio_k) + s_stretched || offset > edge_len - s_stretched);
-            }
-            if (correct_alignment) {
-                res[iter->edge_id].push_back(MappingInstance((int) iter->offset, (int) (j - pacbio_k + 1), quality));
-            }
-        }
-    }
-
-    for (auto iter = res.begin(); iter != res.end(); ++iter) {
-        sort(iter->second.begin(), iter->second.end());
-        DEBUG("read count "<< local_read_count);
-        DEBUG("edge: " << g_.int_id(iter->first) << "size: " << iter->second.size());
-        for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter++) {
-            DEBUG(j_iter->str());
-        }
-    }
-
-    return res;
-}
 
 }

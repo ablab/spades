@@ -5,11 +5,10 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(modules CXX)
+project(sequence CXX)
 
-add_library(modules STATIC
-            genome_consistance_checker.cpp
-            alignment/gap_info.cpp
-            alignment/bwa_index.cpp)
+add_library(sequence STATIC
+            sequence_tools.cpp)
 
-target_link_libraries(modules bwa)
+target_link_libraries(sequence edlib)
+
