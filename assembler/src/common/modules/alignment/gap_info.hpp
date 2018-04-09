@@ -145,14 +145,14 @@ public:
         return res;
     }
 
-    string str(const Graph &g) const {
-        stringstream s;
+    std::string str(const Graph &g) const {
+        std::stringstream s;
         s << "left: " << g.str(left_)
           << "; right: " << g.str(right_)
           << "; estimated distance : " << estimated_dist_
           << "; left trim: " << left_trim_
           << "; right trim: " << right_trim_
-          << "; sequence " << (filling_seq_ ? filling_seq_->str() : "no_sequence") << endl;
+          << "; sequence " << (filling_seq_ ? filling_seq_->str() : "no_sequence") << std::endl;
         return s.str();
     }
 
