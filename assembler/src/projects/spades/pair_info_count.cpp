@@ -200,8 +200,7 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, /*insert_size*/0,
                                                 /*include_merged*/true);
 
-    alignment::BWAReadMapper<Graph> mapper(gp.g);
-    notifier.ProcessLibrary(paired_streams, ilib, mapper);
+    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
     //Check read length after lib processing since mate pairs a not used until this step
     VERIFY(reads.data().unmerged_read_length != 0);
 
