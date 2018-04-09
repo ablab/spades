@@ -10,28 +10,48 @@ import os.path
 from struct import Struct
 import sys
 
-def read_int(file, size=8, signed=False):
-    bytes = file.read(size)
-    if len(bytes) < size:
-        raise EOFError
-    return int.from_bytes(bytes, byteorder=sys.byteorder, signed=signed)
+def read_int(file, size=None, signed=False):
+    if size:
+        bytes = file.read(size)
+        if len(bytes) < size:
+            raise EOFError
+        return int.from_bytes(bytes, byteorder=sys.byteorder, signed=signed)
+
+    byte = 0xFF
+    result = 0
+    shift = 0
+    while byte & 0x80:
+        bytes = file.read(1)
+        if not len(bytes):
+            raise EOFError
+        byte = bytes[0]
+        result = result | ((byte & 0x7F) << shift)
+        shift += 7
+    return result
 
 def read_struct(file, struct):
     return struct.unpack(file.read(struct.size))
 
 #---- De Bruijn graph ----------------------------------------------------------
 def show_grp(file):
-    header = Struct("qq")
-    vertex_count, edge_count = read_struct(file)
+    vertex_count = read_int(file)
+    edge_count = read_int(file)
     print(vertex_count, edge_count)
     vertex = Struct("qq")
     for _ in range(vertex_count):
-        id, conj_id = read_struct(file)
+        id = read_int(file)
+        conj_id = read_int(file)
+        #id, conj_id = read_struct(file, vertex)
         print("Vertex", id, "~", conj_id, ".")
     print()
     edge = Struct("qqqqq")
     for _ in range(edge_count):
-        id, conj_id, start, end, length = read_struct(edge, file)
+        id = read_int(file)
+        conj_id = read_int(file)
+        start = read_int(file)
+        end = read_int(file)
+        length = read_int(file)
+        #id, conj_id, start, end, length = read_struct(file, edge)
         print("Edge", id, ":", start, "->", end, ", l =", length, "~", conj_id, ".")
 
 #---- Paired info --------------------------------------------------------------
@@ -67,7 +87,7 @@ def show_sqn(file):
             id = read_int(file)
         except EOFError:
             break
-        length = read_int(file)
+        length = read_int(file, 8)
         print(">", id, "_length_", length, sep="")
         print("".join(unpack_seq(file.read((length + ST_NUC - 1) // ST_NUC * ST_SIZE), length)))
 

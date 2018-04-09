@@ -41,15 +41,10 @@ public:
     {}
 
     template<typename T>
-    typename std::enable_if<std::is_pod<T>::value>::type Write(const T &value) {
-        str_.write(reinterpret_cast<const char *>(&value), sizeof(T));
+    SaveFile & operator<<(const T &value) {
+        binary::BinWrite(str_, value);
         //VERIFY(!str.fail());
-    }
-
-    template<typename T>
-    typename std::enable_if<!std::is_pod<T>::value>::type Write(const T &value) {
-        value.BinWrite(str_);
-        //VERIFY(!str.fail());
+        return *this;
     }
 
     operator bool() const {
@@ -70,26 +65,17 @@ public:
     {}
 
     template<typename T>
-    typename std::enable_if<std::is_pod<T>::value, T>::type Read() {
-        T value;
-        str_.read(reinterpret_cast<char *>(&value), sizeof(T));
+    LoadFile & operator>>(T &value) {
+        binary::BinRead(str_, value);
         //VERIFY(!str.fail());
-        return value;
+        return *this;
     }
 
     template<typename T>
-    typename std::enable_if<!std::is_pod<T>::value, T>::type Read() {
-        T value;
-        value.BinRead(str_);
-        //VERIFY(!str.fail());
-        return value;
-    }
-
-    //Helper
-    template<typename T>
-    typename std::enable_if<!std::is_pod<T>::value>::type Read(T &value) {
-        value.BinRead(str_);
-        //VERIFY(!str.fail());
+    T Read() {
+        T result;
+        (*this) >> result;
+        return result;
     }
 
     operator bool() const {
@@ -202,14 +188,6 @@ void SaveDetailCoverage(const std::string& pathInCov, const std::string& pathOut
     SaveMapCoverage(pathOutCov, index.outCoverage);
 }
 
-struct ConjVertexInfo {
-    size_t id, conj_id;
-};
-
-struct ConjEdgeInfo {
-    size_t id, conj_id, from_id, to_id, length;
-};
-
 template<class Graph>
 class DataPrinter {
     typedef typename Graph::EdgeId EdgeId;
@@ -254,8 +232,7 @@ class DataPrinter {
         INFO("Graph saving to " << grp_name << " started");
         VERIFY_MSG(file, "Couldn't open file " << grp_name << " on write");
 
-        file.Write(component_.v_size());
-        file.Write(component_.e_size());
+        file << component_.v_size() << component_.e_size();
 
         for (auto iter = component_.v_begin(); iter != component_.v_end(); ++iter)
             WriteInfo(file, *iter);
@@ -271,8 +248,7 @@ class DataPrinter {
         //todo switch to general function after its switching to fasta
         DEBUG("Saving sequences, " << file_name << " created");
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
-            //out.Write(iter->int_id());
-            out.Write(component_.g().EdgeNucls(*iter));
+            out << iter->int_id() << component_.g().EdgeNucls(*iter);
         }
     }
 
@@ -296,7 +272,7 @@ class DataPrinter {
         DEBUG("Saving paired info, " << file_name << " created");
         VERIFY(file);
 
-        file.Write(paired_index);
+        file << paired_index;
     }
 
     void SavePositions(const string& file_name,
@@ -358,15 +334,13 @@ public:
 protected:
 
     void WriteInfo(SaveFile &str, VertexId v) const override {
-        ConjVertexInfo info = {v.int_id(), this->component().g().conjugate(v).int_id()};
-        str.Write(info);
+        str << v.int_id() << this->component().g().conjugate(v).int_id();
     }
 
     void WriteInfo(SaveFile &str, EdgeId e) const override {
         const auto &g = this->component().g();
-        ConjEdgeInfo info = {e.int_id(), g.conjugate(e).int_id(),
-                                  g.EdgeStart(e).int_id(), g.EdgeEnd(e).int_id(), g.length(e)};
-        str.Write(info);
+        str << e.int_id() << g.conjugate(e).int_id()
+            << g.EdgeStart(e).int_id() << g.EdgeEnd(e).int_id() << g.length(e);
     }
 };
 
@@ -566,12 +540,12 @@ private:
         VERIFY_MSG(sqn_file, "Couldn't find file " << sqn_name);
 
         INFO("Reading conjugate de bruijn graph from " << file_name << " started");
-        auto vertex_count = grp_file.Read<size_t>();
-        auto edge_count = grp_file.Read<size_t>();
+        size_t vertex_count, edge_count;
+        grp_file >> vertex_count >> edge_count;
 
         while (vertex_count--) {
-            auto info = grp_file.Read<ConjVertexInfo>();
-            size_t vertex_real_id = info.id, conjugate_id = info.conj_id;
+            size_t vertex_real_id, conjugate_id;
+            grp_file >> vertex_real_id >> conjugate_id;
             TRACE("Vertex "<<vertex_real_id<<" ~ "<<conjugate_id<<" .");
 
             if (this->vertex_id_map().find(vertex_real_id) == this->vertex_id_map().end()) {
@@ -586,15 +560,15 @@ private:
         }
 
         while (edge_count--) {
-            auto info = grp_file.Read<ConjEdgeInfo>();
-            size_t e_real_id = info.id, start_id = info.from_id, fin_id = info.to_id,
-                    length = info.length, conjugate_edge_id = info.conj_id;
-
-            //auto seq_id = sqn_file.Read<size_t>();
-            auto tmp = sqn_file.Read<Sequence>();
+            size_t e_real_id, conjugate_edge_id, start_id, fin_id, length;
+            grp_file >> e_real_id >> conjugate_edge_id >> start_id >> fin_id >> length;
             TRACE("Edge " << e_real_id << " : " << start_id << " -> "
                   << fin_id << " l = " << length << " ~ " << conjugate_edge_id);
-            if (this->edge_id_map().find((int) e_real_id) == this->edge_id_map().end()) {
+            size_t sqn_id;
+            Sequence tmp;
+            sqn_file >> sqn_id >> tmp;
+
+            if (this->edge_id_map().find(e_real_id) == this->edge_id_map().end()) {
                 size_t ids[2] = {e_real_id, conjugate_edge_id};
                 auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
                 EdgeId eid = this->g().AddEdge(this->vertex_id_map()[start_id], this->vertex_id_map()[fin_id], tmp, id_distributor);

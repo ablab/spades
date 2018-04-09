@@ -194,7 +194,7 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
 
     void BinWrite(std::ostream &str) const {
         using binary::BinWrite;
-        BinWrite(str, storage_.size());
+        BinWrite<size_t>(str, storage_.size());
         for (const auto &i : storage_) {
             BinWrite(str, i.first.int_id());
             auto size_seek = str.tellp();
