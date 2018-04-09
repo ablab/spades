@@ -12,6 +12,7 @@
 #include "pipeline/graphio.hpp"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
+#include "io/graph/gfa_reader.hpp"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/osequencestream.hpp"
 
@@ -257,6 +258,14 @@ Sequence MergeSequences(const Graph &g,
     return MergeOverlappingSequences(path_sequences, g.k());
 }
 
+static bool ends_with(const std::string &s, const std::string &p) {
+    if (s.size() < p.size())
+        return false;
+
+    return (s.compare(s.size() - p.size(), p.size(), p) == 0);
+}
+
+
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     utils::perf_counter pc;
@@ -277,7 +286,13 @@ int main(int argc, char* argv[]) {
 
     using namespace debruijn_graph;
     ConjugateDeBruijnGraph graph(cfg.k);
-    graphio::ScanBasicGraph(cfg.load_from, graph);
+    if (ends_with(cfg.load_from, ".gfa")) {
+        gfa::GFAReader gfa(cfg.load_from);
+        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+        gfa.to_graph(graph);
+    } else {
+        graphio::ScanBasicGraph(cfg.load_from, graph);
+    }
     INFO("Graph loaded. Total vertices: " << graph.size());
 
     // Collect all the edges
