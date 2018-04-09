@@ -104,7 +104,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     /*
      * Is thread safe if different threads process different edges.
      */
-    bool IsThreadSafe() const {
+    bool IsThreadSafe() const override {
         return true;
     }
 };
