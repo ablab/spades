@@ -221,20 +221,24 @@ def usage(spades_version, show_hidden=False, mode=None):
     sys.stderr.write("-2\t<filename>\tfile with reverse paired-end reads" + "\n")
     sys.stderr.write("-s\t<filename>\tfile with unpaired reads" + "\n")
     sys.stderr.write("--merged\t<filename>\tfile with merged forward and reverse paired-end reads" + "\n")
+    if mode == "meta":
+        allowed_lib_ids = "1"
+    else:
+        allowed_lib_ids = "1,2,...," + str(MAX_LIBS_NUMBER)
     sys.stderr.write("--pe<#>-12\t<filename>\tfile with interlaced"\
-                         " reads for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
+                         " reads for paired-end library number <#> (<#> = %s)" % allowed_lib_ids + "\n")
     sys.stderr.write("--pe<#>-1\t<filename>\tfile with forward reads"\
-                         " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
+                         " for paired-end library number <#> (<#> = %s)" % allowed_lib_ids + "\n")
     sys.stderr.write("--pe<#>-2\t<filename>\tfile with reverse reads"\
-                         " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
+                         " for paired-end library number <#> (<#> = %s)" % allowed_lib_ids + "\n")
     sys.stderr.write("--pe<#>-s\t<filename>\tfile with unpaired reads"\
-                         " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
+                         " for paired-end library number <#> (<#> = %s)" % allowed_lib_ids + "\n")
     sys.stderr.write("--pe<#>-m\t<filename>\tfile with merged reads"\
-                         " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
+                         " for paired-end library number <#> (<#> = %s)" % allowed_lib_ids + "\n")
     sys.stderr.write("--pe<#>-<or>\torientation of reads"\
-                         " for paired-end library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
+                         " for paired-end library number <#> (<#> = %s; <or> = fr, rf, ff)" % allowed_lib_ids + "\n")
     sys.stderr.write("--s<#>\t\t<filename>\tfile with unpaired reads"\
-                     " for single reads library number <#> (<#> = 1,2,..,9)" + "\n")
+                     " for single reads library number <#> (<#> = %s)" % allowed_lib_ids + "\n")
     if mode not in ["rna", "meta"]:
         sys.stderr.write("--mp<#>-12\t<filename>\tfile with interlaced"\
                              " reads for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
@@ -265,8 +269,9 @@ def usage(spades_version, show_hidden=False, mode=None):
         sys.stderr.write("--nanopore\t<filename>\tfile with Nanopore reads\n")
     if not mode == "rna":
         sys.stderr.write("--tslr\t<filename>\tfile with TSLR-contigs\n")
-    sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
-    sys.stderr.write("--untrusted-contigs\t<filename>\tfile with untrusted contigs\n")
+    if not mode == "meta":
+        sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
+        sys.stderr.write("--untrusted-contigs\t<filename>\tfile with untrusted contigs\n")
     if mode == "dip":
         sys.stderr.write("Input haplocontigs:" + "\n")
         sys.stderr.write("--hap\t<filename>\tfile with haplocontigs" + "\n")

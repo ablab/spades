@@ -440,6 +440,11 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                           ', '.join(spades_logic.READS_TYPES_USED_IN_RNA_SEQ) + ' in RNA-Seq mode!')
         #if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
         #    support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
+    if options_storage.meta and not options_storage.only_error_correction:
+        if len(support.get_lib_ids_by_type(dataset_data, "paired-end")) != 1 or \
+           len(dataset_data) - len(support.get_lib_ids_by_type(dataset_data, "tslr")) > 1:
+            support.error('you cannot specify any data types except a single paired-end library '
+                          '(optionally accompanied by TSLR-contigs) in metaSPAdes mode!')
 
     if existing_dataset_data is None:
         pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'),
