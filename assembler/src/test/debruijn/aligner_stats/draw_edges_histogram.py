@@ -168,7 +168,7 @@ def is_wrong_end(truepath, path, true_ind, ind, edgelen):
         if len(path[ind[-2]: ind[-1]]) == 1:
             empty = True
         ln = 0
-        for it in xrange(true_ind[-2], true_ind[-1]):
+        for it in xrange(true_ind[-2] + 1, true_ind[-1]):
             ln += edgelen[it]
         return [True, empty, ln]
 
@@ -230,24 +230,24 @@ def build_histogram(tpaths, apaths1, apaths2, K, name):
     res_prefix1, res_suffix1, res_plus1 = form_length_lists(tpaths, apaths1, K)
     res_prefix2, res_suffix2, res_plus2 = form_length_lists(tpaths, apaths2, K)
     plt.figure()
-    plt.hist(res_plus1, 80, color="blue", alpha=0.4, label="initial")
-    plt.hist(res_plus2, 80, color="green", alpha=0.4, label="new weights")
+    plt.hist(res_plus1, 80, color="blue", alpha=0.4, label="initial", normed=1)
+    plt.hist(res_plus2, 80, color="green", alpha=0.4, label="new weights", normed=1)
     #plt.axis([0, 1000, 0, 15000])
-    plt.title("Lost on edges: " + name)
+    plt.title("Lost on ends: " + name)
     plt.legend(loc='upper right')
     plt.savefig(name + '_edge_length_hist_sum.png')
 
     plt.figure()
-    plt.hist(res_prefix1, 80, color="blue", alpha=0.4, label="initial")
-    plt.hist(res_prefix2, 80, color="green", alpha=0.4, label="new weights")
+    plt.hist(res_prefix1, 80, color="blue", alpha=0.4, label="initial", normed=1)
+    plt.hist(res_prefix2, 80, color="green", alpha=0.4, label="new weights", normed=1)
     #plt.axis([0, 1000, 0, 1000])
     plt.title("Lost in prefix: " + name)
     plt.legend(loc='upper right')
     plt.savefig(name + '_edge_length_hist_prefix.png')
 
     plt.figure()
-    plt.hist(res_suffix1, 80, color="blue", alpha=0.4, label="initial")
-    plt.hist(res_suffix2, 80, color="green", alpha=0.4, label="new weights")
+    plt.hist(res_suffix1, 80, color="blue", alpha=0.4, label="initial", normed=1)
+    plt.hist(res_suffix2, 80, color="green", alpha=0.4, label="new weights", normed=1)
     #plt.axis([0, 1000, 0, 1000])
     plt.title("Lost in suffix: " + name)
     plt.legend(loc='upper right')

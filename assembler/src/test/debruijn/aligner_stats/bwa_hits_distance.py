@@ -201,11 +201,6 @@ def cnt_median_alignment_length(tpaths, apaths, K):
 
     print wrong_start, unknown
     print sum(res)*1.0/len(res), sum(res_prefix)*1.0/len(res_prefix), sum(res_suffix)*1.0/len(res_suffix), sum(res_plus)*1.0/len(res_plus)
-
-    plt.figure()
-    plt.hist(res_plus, 80, facecolor='green')
-    plt.axis([0, 10000, 0, 12000])
-    plt.savefig('len_d.png')
     return sorted(res)[len(res)/2], sorted(res_prefix)[len(res_prefix)/2], sorted(res_suffix)[len(res_suffix)/2], sorted(res_plus)[len(res_plus)/2] 
 
 
