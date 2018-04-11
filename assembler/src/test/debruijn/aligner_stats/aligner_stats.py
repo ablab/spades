@@ -58,14 +58,35 @@ def is_aligned(al_len, str_len):
     else:
         return True
 
+def make_table(results, row_names, caption):
+    html = """<html><table border="1"><tr><th></th>"""
+    for run_name in sorted(results.keys()):
+        html += """<th><div style="width: 200px; height: 50px; overflow: auto">{} </div></th>""".format(run_name)
+    html += "</tr>"
+    for stat in row_names:
+        html += "<tr><td>{}</td>".format(stat)
+        for run_name in sorted(results.keys()):
+            item = results[run_name]
+            html += "<td>{}</td>".format(str(item[stat]))
+        html += "</tr>"
+    html += "</table>"
+    html += "<p>{}</p>".format("<br>".join(caption))
+    html += "</html>"
+    return html
+
+def save_html(s, fl):
+    with open(fl, "w") as fout:
+        fout.write(s)
+
 
 if (len(sys.argv) < 4):
-    print "Usage: aligner_stats.py <file with .bam> <file with reads .fasta> <file with alignment info>"
+    print "Usage: aligner_stats.py <file with .bam> <file with reads .fasta> <file with alignment info> <name>"
     exit(-1)
 
 align_file = sys.argv[3]
 read_file = sys.argv[2]
 readsbwamem = sys.argv[1]
+html_name = sys.argv[4]
 
 reads_len = load_reads_len(read_file)
 names_set = load_good_reads(readsbwamem)
@@ -103,6 +124,18 @@ with open(align_file, "r") as fin:
                 path_med_len.append(len(path_len.split(",")) - 1)
                 edge_med_len.extend([int(x) for x in path_len.split(",")[:-1]])
         ln = fin.readline()
+res = {}
+row_names = ["Total number of reads", "Number of aligned reads", "Total reads length (in nucs)", "Aligned length (in nucs)", "Number of non-trivial paths"]
+res[align_file] = {"Total number of reads": total_readnum \
+                     , "Number of aligned reads": str(aligned_num) + " (" + str("{:.2f}".format(aligned_num*1.0/total_readnum)) + ")" \
+                     , "Total reads length (in nucs)": total_readlen\
+                     , "Aligned length (in nucs)": str(aligned_len) + " (" + str("{:.2f}".format(aligned_len*1.0/total_readlen)) + ")"
+                     , "Number of non-trivial paths": str(path_cnt) + " (" + str("{:.2f}".format(path_cnt*1.0/total_readnum)) + ")"}
+
+caption_below = ["Non-trivial paths -- paths that contain more than 1 edge"]
+
+table = make_table(res, row_names, caption_below)
+save_html(table, html_name)
 
 print "aligned: ", aligned_num, " total: ", total_readnum, " %: ", aligned_num*1.0/total_readnum*100
 print "aligned len: ", aligned_len, " total len: ", total_readlen, " %: ", aligned_len*1.0/total_readlen*100
