@@ -17,8 +17,6 @@
 
 namespace omnigraph {
 
-using std::vector;
-
 /**
 * ActionHandler is base listening class for graph events. All structures and information storages
 * which are meant to synchronize with graph should use this structure. In order to make handler listen
@@ -87,7 +85,7 @@ public:
      * @param old_edges path of edges to be replaced with single edge
      * @param new_edge new edge that was added to be a replacement of path
      */
-    virtual void HandleMerge(const vector<EdgeId> & /*old_edges*/, EdgeId /*new_edge*/) { }
+    virtual void HandleMerge(const std::vector<EdgeId> & /*old_edges*/, EdgeId /*new_edge*/) { }
 
     /**
      * High level event which is triggered when glue operation is performed on graph, which is when
@@ -193,7 +191,7 @@ public:
     virtual void
             ApplyDelete(Handler &handler, EdgeId e) const = 0;
 
-    virtual void ApplyMerge(Handler &handler, vector<EdgeId> old_edges,
+    virtual void ApplyMerge(Handler &handler, const std::vector<EdgeId> &old_edges,
                             EdgeId new_edge) const = 0;
 
     virtual void ApplyGlue(Handler &handler, EdgeId new_edge, EdgeId edge1,
@@ -217,34 +215,34 @@ public:
     typedef typename Graph::EdgeId EdgeId;
     typedef ActionHandler<VertexId, EdgeId> Handler;
 
-    virtual void ApplyAdd(Handler &handler, VertexId v) const {
+    void ApplyAdd(Handler &handler, VertexId v) const override {
         handler.HandleAdd(v);
     }
 
-    virtual void ApplyAdd(Handler &handler, EdgeId e) const {
+    void ApplyAdd(Handler &handler, EdgeId e) const override {
         handler.HandleAdd(e);
     }
 
-    virtual void ApplyDelete(Handler &handler, VertexId v) const {
+    void ApplyDelete(Handler &handler, VertexId v) const override {
         handler.HandleDelete(v);
     }
 
-    virtual void ApplyDelete(Handler &handler, EdgeId e) const {
+    void ApplyDelete(Handler &handler, EdgeId e) const override {
         handler.HandleDelete(e);
     }
 
-    virtual void ApplyMerge(Handler &handler, vector<EdgeId> old_edges,
-                            EdgeId new_edge) const {
+    void ApplyMerge(Handler &handler, const std::vector<EdgeId> &old_edges,
+                            EdgeId new_edge) const override {
         handler.HandleMerge(old_edges, new_edge);
     }
 
-    virtual void ApplyGlue(Handler &handler, EdgeId new_edge, EdgeId edge1,
-                           EdgeId edge2) const {
+    void ApplyGlue(Handler &handler, EdgeId new_edge, EdgeId edge1,
+                           EdgeId edge2) const override {
         handler.HandleGlue(new_edge, edge1, edge2);
     }
 
-    virtual void ApplySplit(Handler &handler, EdgeId old_edge, EdgeId new_edge1,
-                            EdgeId new_edge2) const {
+    void ApplySplit(Handler &handler, EdgeId old_edge, EdgeId new_edge1,
+                            EdgeId new_edge2) const override {
         handler.HandleSplit(old_edge, new_edge1, new_edge2);
     }
 
@@ -259,18 +257,29 @@ public:
 template<class Graph>
 class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
         typename Graph::EdgeId> {
-private:
-    Graph &graph_;
 public:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef ActionHandler<VertexId, EdgeId> Handler;
 
+private:
+    Graph &graph_;
+
+    std::vector<EdgeId> RCPath(const std::vector<EdgeId> &path) const {
+        std::vector<EdgeId> rc_path;
+        rc_path.reserve(path.size());
+        for (int i = (int) path.size() - 1; i >= 0; i--) {
+            rc_path.push_back(graph_.conjugate(path[i]));
+        }
+        return rc_path;
+    }
+
+public:
     PairedHandlerApplier(Graph &graph)
             : graph_(graph) {
     }
 
-    virtual void ApplyAdd(Handler &handler, VertexId v) const {
+    void ApplyAdd(Handler &handler, VertexId v) const override {
         VertexId rcv = graph_.conjugate(v);
         handler.HandleAdd(v);
         if (v != rcv) {
@@ -278,7 +287,7 @@ public:
         }
     }
 
-    virtual void ApplyAdd(Handler &handler, EdgeId e) const {
+    void ApplyAdd(Handler &handler, EdgeId e) const override {
         EdgeId rce = graph_.conjugate(e);
         handler.HandleAdd(e);
         if (e != rce) {
@@ -286,7 +295,7 @@ public:
         }
     }
 
-    virtual void ApplyDelete(Handler &handler, VertexId v) const {
+    void ApplyDelete(Handler &handler, VertexId v) const override {
         VertexId rcv = graph_.conjugate(v);
         handler.HandleDelete(v);
         if (v != rcv) {
@@ -294,7 +303,7 @@ public:
         }
     }
 
-    virtual void ApplyDelete(Handler &handler, EdgeId e) const {
+    void ApplyDelete(Handler &handler, EdgeId e) const override {
         EdgeId rce = graph_.conjugate(e);
         handler.HandleDelete(e);
         if (e != rce) {
@@ -302,21 +311,17 @@ public:
         }
     }
 
-    virtual void ApplyMerge(Handler &handler, vector<EdgeId> old_edges,
-                            EdgeId new_edge) const {
+    void ApplyMerge(Handler &handler, const std::vector<EdgeId> &old_edges,
+                            EdgeId new_edge) const override {
         EdgeId rce = graph_.conjugate(new_edge);
         handler.HandleMerge(old_edges, new_edge);
         if (new_edge != rce) {
-            vector<EdgeId> rc_old_edges;
-            for (int i = (int) old_edges.size() - 1; i >= 0; i--) {
-                rc_old_edges.push_back(graph_.conjugate(old_edges[i]));
-            }
-            handler.HandleMerge(rc_old_edges, rce);
+            handler.HandleMerge(RCPath(old_edges), rce);
         }
     }
 
-    virtual void ApplyGlue(Handler &handler, EdgeId new_edge, EdgeId edge1,
-                           EdgeId edge2) const {
+    void ApplyGlue(Handler &handler, EdgeId new_edge, EdgeId edge1,
+                           EdgeId edge2) const override {
         EdgeId rc_edge1 = graph_.conjugate(edge1);
         EdgeId rc_edge2 = graph_.conjugate(edge2);
         VERIFY(edge1 != edge2);
@@ -327,8 +332,8 @@ public:
         }
     }
 
-    virtual void ApplySplit(Handler &handler, EdgeId old_edge,
-                            EdgeId new_edge_1, EdgeId new_edge2) const {
+    void ApplySplit(Handler &handler, EdgeId old_edge,
+                            EdgeId new_edge_1, EdgeId new_edge2) const override {
         EdgeId rce = graph_.conjugate(old_edge);
         //VERIFY(old_edge != rce);
         handler.HandleSplit(old_edge, new_edge_1, new_edge2);
