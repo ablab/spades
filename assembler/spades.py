@@ -401,6 +401,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
         if options_storage.k_mers and options_storage.k_mers != 'auto' and len(options_storage.k_mers) > 1:
             support.error("you cannot specify multiple k-mer sizes in RNA-Seq mode!", log)
+        if options_storage.restart_from and options_storage.restart_from.startswith('k'):
+            support.error("you cannot restart rnaSPAdes from a certain k-mer size, use --restart-from as", log)
     if [options_storage.meta, options_storage.large_genome, options_storage.truseq_mode,
        options_storage.rna, options_storage.plasmid, options_storage.single_cell].count(True) > 1:
         support.error("you cannot simultaneously use more than one mode out of "
@@ -496,20 +498,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.k_mers:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
         elif options_storage.rna:
-            k_value = options_storage.K_MERS_RNA[0]
-            if not options_storage.iontorrent:
-                k_value = int(support.get_reads_length(dataset_data, log, ['merged reads']) / 2) - 1
-                if k_value % 2 == 0:
-                    k_value -= 1
-                if k_value < options_storage.MIN_K:
-                    log.info("\n" + 'Default k value (' + str(k_value) + ') is too small, all k values should be between %d and %d. Setting k=%d.\n'
-                             % (options_storage.MIN_K, options_storage.MAX_K, options_storage.MIN_K))
-                    k_value = options_storage.MIN_K
-                if k_value > options_storage.MAX_K:
-                    log.info("\n" + 'Default k value (' + str(k_value) + ') is too large, all k values should be between %d and %d. Setting k=%d.\n'
-                             % (options_storage.MIN_K, options_storage.MAX_K, options_storage.MAX_K))
-                    k_value = options_storage.MAX_K
-            cfg["assembly"].__dict__["iterative_K"] = k_value
+            cfg["assembly"].__dict__["iterative_K"] = 'auto'
         else:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
         cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
@@ -558,8 +547,6 @@ def check_cfg_for_partial_run(cfg, type='restart-from'):  # restart-from ot stop
             if not k_to_check:
                 if options_storage.auto_K_allowed():
                     k_to_check = list(set(options_storage.K_MERS_SHORT + options_storage.K_MERS_150 + options_storage.K_MERS_250))
-                elif options_storage.rna:
-                    k_to_check = [cfg["assembly"].__dict__["iterative_K"]]
                 else:
                     k_to_check = options_storage.K_MERS_SHORT
             for k in k_to_check:
@@ -702,6 +689,22 @@ def main(args):
 
     if not options_storage.continue_mode:
         log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
+
+    if options_storage.rna and cfg["assembly"].__dict__["iterative_K"] == 'auto':
+        k_value = options_storage.K_MERS_RNA[0]
+        if not options_storage.iontorrent:
+            k_value = int(support.get_reads_length(dataset_data, log, ['merged reads']) / 2) - 1
+            if k_value % 2 == 0:
+                k_value -= 1
+            if k_value < options_storage.MIN_K:
+                log.info("\n" + 'Default k value (' + str(k_value) + ') is too small, all k values should be between %d and %d. Setting k=%d.\n'
+                         % (options_storage.MIN_K, options_storage.MAX_K, options_storage.MIN_K))
+                k_value = options_storage.MIN_K
+            if k_value > options_storage.MAX_K:
+                log.info("\n" + 'Default k value (' + str(k_value) + ') is too large, all k values should be between %d and %d. Setting k=%d.\n'
+                         % (options_storage.MIN_K, options_storage.MAX_K, options_storage.MAX_K))
+                k_value = options_storage.MAX_K
+        cfg["assembly"].__dict__["iterative_K"] = k_value
 
     # splitting interlaced reads and processing Ns in additional contigs if needed
     if support.dataset_has_interlaced_reads(dataset_data) or support.dataset_has_additional_contigs(dataset_data)\

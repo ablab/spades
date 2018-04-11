@@ -468,7 +468,7 @@ For example, if specified K values are 21, 33 and 55 and SPAdes was stopped or c
 
 -   `ec` – start from error correction
 -   `as` – restart assembly module from the first iteration
--   `k<int>` – restart from the iteration with specified k values, e.g. k55
+-   `k<int>` – restart from the iteration with specified k values, e.g. k55 (not available in RNA-Seq mode)
 -   `mc` – restart mismatch correction
 -   `last` – restart from the last available check-point (similar to `--continue`)
 

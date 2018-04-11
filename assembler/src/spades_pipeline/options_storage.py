@@ -289,7 +289,10 @@ def usage(spades_version, show_hidden=False, mode=None):
         if mode not in ["rna", "meta"]:
             sys.stderr.write("--careful\t\ttries to reduce number of mismatches and short indels" + "\n")
         sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
-        sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc', 'last')" + "\n")
+        if mode == "rna":
+            sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'last')" + "\n")
+        else:
+            sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc', 'last')" + "\n")
     sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
                          " compress the corrected reads" + "\n")
     sys.stderr.write("--disable-rr\t\tdisables repeat resolution stage"\
