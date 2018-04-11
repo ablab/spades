@@ -265,9 +265,9 @@ def usage(spades_version, show_hidden=False, mode=None):
         sys.stderr.write("--nxmate<#>-2\t<filename>\tfile with reverse reads"\
                              " for Lucigen NxMate library number <#> (<#> = 1,2,..,9)" + "\n")
         sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
+    if not mode == "rna":
         sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
         sys.stderr.write("--nanopore\t<filename>\tfile with Nanopore reads\n")
-    if not mode == "rna":
         sys.stderr.write("--tslr\t<filename>\tfile with TSLR-contigs\n")
     if not mode == "meta":
         sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
