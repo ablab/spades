@@ -4,11 +4,12 @@ import os
 import sys
 
 
-if len(sys.argv) < 3:
-    print "Usage: run_experiment.py <exe-file> <datasets list: E.coli_synth,C.elegans,Rumen,Smarr>"
+if len(sys.argv) < 4:
+    print "Usage: run_experiment.py <exe-file> <gap_algo: bf/dijkstra> <datasets list: E.coli_synth,C.elegans,Rumen,Smarr>"
     exit(-1)
 run_file = sys.argv[1]
-datasets = sys.argv[2].split(",")
+gap_mode = sys.argv[2]
+datasets = sys.argv[3].split(",")
 feature_name = run_file.split("/")[-3]
 exe_name = run_file.split("/")[-1]
 
@@ -38,9 +39,9 @@ def extract_params(name, fl):
     return res
 
 
-def run(exe, params, prefix):
+def run(exe, params, prefix, gap_mode):
     cmd = exe
-    args = str(params[d]["K"]) + " " + params[d]["saves"] + " " + params[d]["reads"] + " " + params[d]["type"] + " " + prefix
+    args = str(params[d]["K"]) + " " + params[d]["saves"] + " " + params[d]["reads"] + " " + params[d]["type"] + " " + gap_mode + " " + prefix
     print "Run " + cmd + " " + args
     process = subprocess.Popen(cmd + " " + args + " > " + prefix + ".log", shell=True, stderr = subprocess.PIPE)#, stdout=subprocess.PIPE, stderr = subprocess.PIPE)
     process.wait()
@@ -60,5 +61,5 @@ if not os.path.exists(resultsdir + "/" + feature_name):
     os.makedirs(resultsdir + "/" + feature_name)
 for d in datasets:
     print "Dataset: ", d
-    run(run_file, params, run_prefix + "_" + d)
+    run(run_file, params, run_prefix + "_" + d, gap_mode)
 
