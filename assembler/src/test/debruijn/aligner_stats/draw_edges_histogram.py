@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 
 def load_reads(filename):
@@ -225,33 +226,24 @@ def form_length_lists(tpaths, apaths, K, edges = True, use_edges_len =True):
     return res_prefix, res_suffix, res_plus
 
 
+def plot_hist(res1, res2, mx, name):
+    fig = plt.figure()
+    plt.hist(res1, 80, color="blue", alpha=0.4, label="initial", normed=1)
+    plt.hist(res2, 80, color="green", alpha=0.4, label="new weights", normed=1)
+    plt.axis([0, mx, 0, 0.005])
+    plt.title(name)
+    plt.legend(loc='upper right')
+    return fig
 
 def build_histogram(tpaths, apaths1, apaths2, K, name):
     res_prefix1, res_suffix1, res_plus1 = form_length_lists(tpaths, apaths1, K)
     res_prefix2, res_suffix2, res_plus2 = form_length_lists(tpaths, apaths2, K)
-    plt.figure()
-    plt.hist(res_plus1, 80, color="blue", alpha=0.4, label="initial", normed=1)
-    plt.hist(res_plus2, 80, color="green", alpha=0.4, label="new weights", normed=1)
-    #plt.axis([0, 1000, 0, 15000])
-    plt.title("Lost on ends: " + name)
-    plt.legend(loc='upper right')
-    plt.savefig(name + '_edge_length_hist_sum.png')
-
-    plt.figure()
-    plt.hist(res_prefix1, 80, color="blue", alpha=0.4, label="initial", normed=1)
-    plt.hist(res_prefix2, 80, color="green", alpha=0.4, label="new weights", normed=1)
-    #plt.axis([0, 1000, 0, 1000])
-    plt.title("Lost in prefix: " + name)
-    plt.legend(loc='upper right')
-    plt.savefig(name + '_edge_length_hist_prefix.png')
-
-    plt.figure()
-    plt.hist(res_suffix1, 80, color="blue", alpha=0.4, label="initial", normed=1)
-    plt.hist(res_suffix2, 80, color="green", alpha=0.4, label="new weights", normed=1)
-    #plt.axis([0, 1000, 0, 1000])
-    plt.title("Lost in suffix: " + name)
-    plt.legend(loc='upper right')
-    plt.savefig(name + '_edge_length_hist_suffix.png')
+    mx = max([max(res_prefix1), max(res_prefix2), max(res_suffix1), max(res_suffix2), max(res_plus1), max(res_plus2)])
+    pp = PdfPages("hist_ends_" + name + ".pdf")
+    pp.savefig(plot_hist(res_plus1, res_plus2, mx, "Lost on ends: " + name))
+    pp.savefig(plot_hist(res_prefix1, res_prefix2, mx, "Lost prefix: " + name))
+    pp.savefig(plot_hist(res_suffix1, res_suffix2, mx, "Lost suffix: " + name))
+    pp.close() 
 
 reads = load_reads(sys.argv[1])
 truepaths = load_truepaths(sys.argv[2])
