@@ -131,26 +131,7 @@ void assemble_genome() {
         if (!cfg::get().series_analysis.empty())
             SPAdes.add<debruijn_graph::SeriesAnalysis>();
 
-        if (cfg::get().pd) {
-            size_t cov = 5;
-            double multiplier = 1.3;
-            size_t max_cov = 600;
-            conj_gp.used_edges.clear();
-            SPAdes.add(new debruijn_graph::ChromosomeRemoval(cov));
-            SPAdes.add(new debruijn_graph::ContigOutput(false, "intermediate_contigs"))
-                    .add(new debruijn_graph::PairInfoCount())
-                    .add(new debruijn_graph::DistanceEstimation());
 
-            SPAdes.add(new debruijn_graph::ContigOutput(true, cfg::get().co.contigs_name + std::to_string(cov)));
-
-            while (cov < max_cov) {
-                SPAdes.add(new debruijn_graph::ChromosomeRemoval(cov));
-                SPAdes.add(new debruijn_graph::RepeatResolution());
-                SPAdes.add(new debruijn_graph::ContigOutput(true, GetContigName(cfg::get().co.contigs_name, cov)));
-                cov = std::max(cov + 5, size_t(cov*multiplier));
-            }
-        }
-        else {
         if (HybridLibrariesPresent()) {
             SPAdes.add(new debruijn_graph::HybridLibrariesAligning());
         }
@@ -161,7 +142,21 @@ void assemble_genome() {
               .add(new debruijn_graph::PairInfoCount())
               .add(new debruijn_graph::DistanceEstimation())
               .add(new debruijn_graph::RepeatResolution());
+
+        if (cfg::get().pd) {
+            size_t cov = 5;
+            double multiplier = 1.3;
+            size_t max_cov = 600;
+            conj_gp.used_edges.clear();
+            SPAdes.add(new debruijn_graph::ContigOutput(true, GetContigName(cfg::get().co.contigs_name, 0)));
+            while (cov < max_cov) {
+                SPAdes.add(new debruijn_graph::ChromosomeRemoval(cov));
+                SPAdes.add(new debruijn_graph::RepeatResolution());
+                SPAdes.add(new debruijn_graph::ContigOutput(true, GetContigName(cfg::get().co.contigs_name, cov)));
+                cov = std::max(cov + 5, size_t(cov*multiplier));
+            }
         }
+
     } else {
         SPAdes.add<debruijn_graph::ContigOutput>(false);
     }

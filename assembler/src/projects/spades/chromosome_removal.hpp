@@ -27,6 +27,7 @@ private:
     std::unordered_map <EdgeId, size_t> long_component_;
     std::unordered_map <VertexId, size_t> long_vertex_component_;
     std::unordered_map <EdgeId, size_t> deadends_count_;
+
     size_t ext_limit_;
     size_t CalculateComponentSize(debruijn_graph::EdgeId e, Graph &g_);
 
@@ -46,7 +47,7 @@ private:
 
     DECL_LOGGER("ChromosomeRemoval");
 
-
+    void OutputSuspiciousComponents (conj_graph_pack &gp, double ext_limit_);
     void ReferenceBasedRemoveChromosomal(conj_graph_pack &gp);
 };
 }

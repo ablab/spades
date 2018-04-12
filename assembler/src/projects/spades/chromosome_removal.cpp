@@ -317,6 +317,7 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
     }
 }
 
+
 void RunHMMDetectionScript (conj_graph_pack &gp) {
     stringstream ss;
 //FIXME to config
@@ -329,6 +330,23 @@ void RunHMMDetectionScript (conj_graph_pack &gp) {
     INFO ("Doing HMM based filtation! " + ss.str());
     system (ss.str().c_str());
 }
+
+void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, double ext_limit_) {
+    long_vertex_component_.clear();
+    long_component_.clear();
+    deadends_count_.clear();
+    size_t component_size_limit = 200000;
+    DEBUG("calculating component sizes");
+    for (auto iter = gp.g.ConstEdgeBegin(true); ! iter.IsEnd(); ++iter) {
+        if (long_component_.find(*iter) == long_component_.end()) {
+            CalculateComponentSize(*iter, gp.g);
+        }
+    }
+    for (auto iter = gp.g.ConstEdgeBegin(true); ! iter.IsEnd(); ++iter) {
+
+    }
+}
+
 
 void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     //FIXME Seriously?! cfg::get().ds like hundred times...
@@ -355,7 +373,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
 
     if (cfg::get().pd->reference_removal != "") {
         VERIFY_MSG(false, "Reference-based chromosome removal is switched off");
-/*        debruijn_graph::config::dataset tmp_dataset;
+/*      debruijn_graph::config::dataset tmp_dataset;
         tmp_dataset.reference_genome_filename = cfg::get().pd->reference_removal;
         DEBUG("loading reference.. " <<  tmp_dataset.reference_genome_filename);
         config::load_reference_genome(tmp_dataset, cfg::get().input_dir);
@@ -382,8 +400,10 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
             chromosome_coverage = RemoveEdgesByList(gp, additional_list);
         else
             chromosome_coverage = -1;
-        if (cfg::get().pd->iterative_coverage_elimination)
+        if (cfg::get().pd->iterative_coverage_elimination) {
+            OutputSuspiciousComponents (gp, ext_limit_);
             RemoveNearlyEverythingByCoverage(gp, ext_limit_);
+        }
         else
             MetaChromosomeRemoval(gp);
     }
