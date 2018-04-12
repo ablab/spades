@@ -274,8 +274,8 @@ def construct_quast_limit_map(dataset_info, prefix, add_all_params = False):
                                         ('min_mis',         "# misassemblies",          True,   True, False, 1),
                                         ('min_genome_mapped', "Genome fraction (%)",    True,   False, False, 0.5),
                                         ('min_genes',       "# genes",                  True,   True, True, 0.01),
-                                        ('max_indels',      "# indels per 100 kbp",     False,  False, True, 0.05),
-                                        ('max_subs',        "# mismatches per 100 kbp", False,  False, True, 0.05),
+                                        ('max_indels',      "# indels per 100 kbp",     False,  False, False, 1),
+                                        ('max_subs',        "# mismatches per 100 kbp", False,  False, False, 1),
                                         ('max_localmis',    "# local misassemblies",    False,  True, False, 1),
                                         ('max_ns',          "# N's per 100 kbp",        False,  False, True, 0.05),
                                         ('max_dr',          "Duplication ratio",        False,  False, False, 0.03)], add_all_params)
