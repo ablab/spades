@@ -48,9 +48,10 @@ public:
     BWASeedsAligner(const ConjugateDeBruijnGraph &g, 
                  const alignment::BWAIndex::AlignmentMode mode,
                  const config::debruijn_config::pacbio_processor &pb,
+                 const bool use_dijkstra,
                  const string output_file,
                  const string formats):
-      g_(g),pac_index_(g_, pb, mode), mapping_printer_hub_(g_, output_file, formats){
+      g_(g),pac_index_(g_, pb, mode, use_dijkstra), mapping_printer_hub_(g_, output_file, formats){
       }
 
     // bool IsCanonical(EdgeId e) const {
@@ -127,7 +128,11 @@ const ConjugateDeBruijnGraph& LoadGraphFromSaves(const string &saves_path, int K
         }
 }
 
-void Launch(size_t K, const string &saves_path, const string &sequence_fasta, const string &mapper_type, const string &output_file, int threads) {
+void Launch(size_t K, const string &saves_path, 
+                      const string &sequence_fasta, 
+                      const string &mapper_type, 
+                      const string &gapclose_type, 
+                      const string &output_file, int threads) {
     const ConjugateDeBruijnGraph &g = LoadGraphFromSaves(saves_path, K);
     INFO("Loaded graph with " << g.size() << " vertices");
     io::ReadStreamList<io::SingleRead> streams;
@@ -158,7 +163,11 @@ void Launch(size_t K, const string &saves_path, const string &sequence_fasta, co
     debruijn_graph::ga_config aligner_config = InitializeGaConfig();
 
     config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
-    BWASeedsAligner aligner(g, mode, pb, output_file, "tsv"); 
+    bool use_dijkstra = true;
+    if (gapclose_type == "bf") {
+        use_dijkstra = false;
+    }
+    BWASeedsAligner aligner(g, mode, pb, use_dijkstra, output_file, "tsv"); 
     INFO("BWASeedsAligner created");
 
     aligner.RunAligner(wrappedreads, threads);
@@ -166,14 +175,14 @@ void Launch(size_t K, const string &saves_path, const string &sequence_fasta, co
 }
 
 int main(int argc, char **argv) {
-    if (argc < 6) {
+    if (argc < 7) {
         cout << "Usage: longreads_aligner <K>"
-             << " <saves path> <sequences file (fasta/fastq)> <mapper type: {pacbio, nanopore, default} > <ouput-prefix> {threads-num(16)}" << endl;
+             << " <saves path> <sequences file (fasta/fastq)> <mapper type: {pacbio, nanopore, 16S} > <gap close type: {bf, dijkstra(default)} > <ouput-prefix> {threads-num(16)}" << endl;
         exit(1);
     }
     int threads = 16;
-    if (argc == 7) {
-        threads = std::stoi(argv[6]);
+    if (argc == 8) {
+        threads = std::stoi(argv[7]);
     }
     omp_set_num_threads(threads);
     create_console_logger();
@@ -184,7 +193,9 @@ int main(int argc, char **argv) {
     INFO("Load sequences from " << sequence_file);
     string mapper_type = argv[4];
     INFO("Mapper type " << mapper_type);
-    string output_file = argv[5];
-    debruijn_graph::Launch(K, saves_path, sequence_file, mapper_type, output_file, threads);
+    string gapclose_type = argv[5];
+    INFO("Gap close type " << gapclose_type);
+    string output_file = argv[6];
+    debruijn_graph::Launch(K, saves_path, sequence_file, mapper_type, gapclose_type, output_file, threads);
     return 0;
 }

@@ -64,13 +64,16 @@ private:
 
     alignment::BWAReadMapper<Graph> bwa_mapper_;
 
+    bool use_dijkstra_;
+
 public:
 
     PacBioMappingIndex(const Graph &g,
-                       debruijn_graph::config::pacbio_processor pb_config, alignment::BWAIndex::AlignmentMode mode)
+                        debruijn_graph::config::pacbio_processor pb_config, alignment::BWAIndex::AlignmentMode mode, bool use_dijkstra)
             : g_(g),
               pb_config_(pb_config),
-              bwa_mapper_(g, mode, pb_config.bwa_length_cutoff) {
+              bwa_mapper_(g, mode, pb_config.bwa_length_cutoff),
+              use_dijkstra_(use_dijkstra){
         DEBUG("PB Mapping Index construction started");
         DEBUG("Index constructed");
         read_count_ = 0;
@@ -287,22 +290,22 @@ public:
                     utils::perf_counter perf1;
 
                     vector<EdgeId> intermediate_path = BestScoredPath(s, prev_edge, cur_edge, prev_last_index.edge_position, cur_first_index.edge_position, 
-                                                                                    start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, true, score1);
+                                                                                    start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, use_dijkstra_, score1);
 
 
-                    utils::perf_counter perf2;
-                    vector<EdgeId> intermediate_path_bf = BestScoredPath(s, prev_edge, cur_edge, prev_last_index.edge_position, cur_first_index.edge_position, 
-                                                                                    start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, false, score2);
+                    // utils::perf_counter perf2;
+                    // vector<EdgeId> intermediate_path_bf = BestScoredPath(s, prev_edge, cur_edge, prev_last_index.edge_position, cur_first_index.edge_position, 
+                    //                                                                 start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, false, score2);
 
-                    if (score1 != score2) {
-                        if (score1 > score2 && score1 != STRING_DIST_INF){
-                            INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
-                        } else {
-                            INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW2! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
-                        }
-                    } else {
-                        INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
-                    }
+                    // if (score1 != score2) {
+                    //     if (score1 > score2 && score1 != STRING_DIST_INF){
+                    //         INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
+                    //     } else {
+                    //         INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW2! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
+                    //     }
+                    // } else {
+                    //     INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
+                    // }
                     if (intermediate_path.size() == 0) {
                         DEBUG(DebugEmptyBestScoredPath(start_v, end_v, prev_edge, cur_edge,
                                       prev_last_index.edge_position, cur_first_index.edge_position, seq_end - seq_start));
