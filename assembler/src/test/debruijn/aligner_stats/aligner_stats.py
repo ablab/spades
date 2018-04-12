@@ -58,10 +58,11 @@ def is_aligned(al_len, str_len):
     else:
         return True
 
-def make_table(results, row_names, caption):
-    html = """<html><table border="1"><tr><th></th>"""
+
+def make_table(results, row_names, caption, name):
+    html = """<html><table border="1"><caption>{}</caption><tr><th></th>""".format(name)
     for run_name in sorted(results.keys()):
-        html += """<th><div style="width: 200px; height: 50px; overflow: auto">{} </div></th>""".format(run_name)
+        html += """<th><div style="width: 200px; height: 50px; overflow: auto">{}</div></th>""".format(run_name)
     html += "</tr>"
     for stat in row_names:
         html += "<tr><td>{}</td>".format(stat)
@@ -80,10 +81,10 @@ def save_html(s, fl):
 
 
 if (len(sys.argv) < 4):
-    print "Usage: aligner_stats.py <file with .bam> <file with reads .fasta> <file with alignment info> <name>"
+    print "Usage: aligner_stats.py <file with .bam> <file with reads .fasta> <files with alignment info ,-separated> <table-name>"
     exit(-1)
 
-align_file = sys.argv[3]
+align_files = sys.argv[3].strip().split(",")
 read_file = sys.argv[2]
 readsbwamem = sys.argv[1]
 html_name = sys.argv[4]
@@ -101,46 +102,51 @@ for k in reads_len.keys():
 
 print "Count total len ", total_readlen, total_readnum
 
-aligned_len = 0
-aligned_num = 0
-path_cnt = 0
-path_cnt_len = 0
-path_med_len = []
-edge_med_len = []
 
-with open(align_file, "r") as fin:
-    ln = fin.readline()
-    while ln != "":
-        [name, start, end, sz, path, path_len, subread, ed] = ln.split("\t")
-        start = int(start)
-        end = int(end)
-        name = name.split(" ")[0]
-        if name in names_set and is_aligned(end-start, reads_len[name]):
-            aligned_num += 1
-            aligned_len += (end - start)
-            if len(path_len.split(",")) > 2:
-                path_cnt += 1
-                path_cnt_len += sum([int(x) for x in path_len.split(",")[:-1]])
-                path_med_len.append(len(path_len.split(",")) - 1)
-                edge_med_len.extend([int(x) for x in path_len.split(",")[:-1]])
-        ln = fin.readline()
 res = {}
 row_names = ["Total number of reads", "Number of aligned reads", "Total reads length (in nucs)", "Aligned length (in nucs)", "Number of non-trivial paths"]
-res[align_file] = {"Total number of reads": total_readnum \
-                     , "Number of aligned reads": str(aligned_num) + " (" + str("{:.2f}".format(aligned_num*1.0/total_readnum)) + ")" \
-                     , "Total reads length (in nucs)": total_readlen\
-                     , "Aligned length (in nucs)": str(aligned_len) + " (" + str("{:.2f}".format(aligned_len*1.0/total_readlen)) + ")"
-                     , "Number of non-trivial paths": str(path_cnt) + " (" + str("{:.2f}".format(path_cnt*1.0/total_readnum)) + ")"}
+
+for align_file in align_files:
+    aligned_len = 0
+    aligned_num = 0
+    path_cnt = 0
+    path_cnt_len = 0
+    path_med_len = []
+    edge_med_len = []
+    with open(align_file, "r") as fin:
+        ln = fin.readline()
+        while ln != "":
+            [name, start, end, sz, path, path_len, subread, ed] = ln.split("\t")
+            start = int(start)
+            end = int(end)
+            name = name.split(" ")[0]
+            if name in names_set and is_aligned(end-start, reads_len[name]):
+                aligned_num += 1
+                aligned_len += (end - start)
+                if len(path_len.split(",")) > 2:
+                    path_cnt += 1
+                    path_cnt_len += sum([int(x) for x in path_len.split(",")[:-1]])
+                    path_med_len.append(len(path_len.split(",")) - 1)
+                    edge_med_len.extend([int(x) for x in path_len.split(",")[:-1]])
+            ln = fin.readline()
+    
+    res[align_file] = {"Total number of reads": total_readnum \
+                         , "Number of aligned reads": str(aligned_num) + " (" + str("{:.2f}".format(aligned_num*1.0/total_readnum)) + ")" \
+                         , "Total reads length (in nucs)": total_readlen\
+                         , "Aligned length (in nucs)": str(aligned_len) + " (" + str("{:.2f}".format(aligned_len*1.0/total_readlen)) + ")"
+                         , "Number of non-trivial paths": str(path_cnt) + " (" + str("{:.2f}".format(path_cnt*1.0/total_readnum)) + ")"}
+
+    print "aligned: ", aligned_num, " total: ", total_readnum, " %: ", aligned_num*1.0/total_readnum*100
+    print "aligned len: ", aligned_len, " total len: ", total_readlen, " %: ", aligned_len*1.0/total_readlen*100
+    print "paths with more than 1 edge: ", path_cnt, " total len: ", path_cnt_len, " %: ", path_cnt*1.0/total_readnum*100
+    print "median path len: ", sorted(path_med_len)[len(path_med_len)/2]
+    print "median edge len: ", sorted(edge_med_len)[len(edge_med_len)/2]
+    print "avg path len: ", sum(path_med_len)/len(path_med_len)
+    print "avg edge len: ", sum(edge_med_len)/len(edge_med_len)
 
 caption_below = ["Non-trivial paths -- paths that contain more than 1 edge"]
 
-table = make_table(res, row_names, caption_below)
-save_html(table, html_name)
+table = make_table(res, row_names, caption_below, html_name[:-5])
+save_html(table, "aligner_stats_" + html_name)
 
-print "aligned: ", aligned_num, " total: ", total_readnum, " %: ", aligned_num*1.0/total_readnum*100
-print "aligned len: ", aligned_len, " total len: ", total_readlen, " %: ", aligned_len*1.0/total_readlen*100
-print "paths with more than 1 edge: ", path_cnt, " total len: ", path_cnt_len, " %: ", path_cnt*1.0/total_readnum*100
-print "median path len: ", sorted(path_med_len)[len(path_med_len)/2]
-print "median edge len: ", sorted(edge_med_len)[len(edge_med_len)/2]
-print "avg path len: ", sum(path_med_len)/len(path_med_len)
-print "avg edge len: ", sum(edge_med_len)/len(edge_med_len)
+    

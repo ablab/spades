@@ -246,17 +246,155 @@ def cnt_wronglyclosedgaps(truepaths, alignedpaths, K):
             #     res_good += 1
     return [res, res_empty, res_start, res_start_empty, res_end, res_end_empty, unknown]
 
+def is_wrong_start2(truepath, path, true_ind, ind, edgelen):
+    empty = False
+    if truepath[true_ind[0]: true_ind[1]] == path[ind[0]: ind[1]] :
+        return [False, empty, -1]
+    else:
+        if len(path[ind[0]: ind[1]]) == 0:
+            empty = True
+        ln = 0
+        for it in xrange(true_ind[0], true_ind[1]):
+            ln += edgelen[it]
+        #print truepath[true_ind[0]: true_ind[1]], path[ind[0]: ind[1]] 
+        return [True, empty, ln]
+
+def is_wrong_end2(truepath, path, true_ind, ind, edgelen):
+    empty = False
+    if truepath[true_ind[-2]: true_ind[-1]] == path[ind[-2]: ind[-1]] :
+        return [False, empty, -1]
+    else:
+        if len(path[ind[-2]: ind[-1]]) == 1:
+            empty = True
+        ln = 0
+        for it in xrange(true_ind[-2] + 1, true_ind[-1]):
+            ln += edgelen[it]
+        return [True, empty, ln]
+
+
+def cnt_median_alignment_length(tpaths, apaths, K, edges = True, use_edges_len =True):
+    unknown = 0
+    res_prefix = []
+    res_suffix = []
+    res_plus = []
+    wrong_start = 0
+    wrong_end = 0
+    for r in apaths.keys():
+        if r not in tpaths:
+            continue
+        if not is_unique(tpaths[r]["path"], apaths[r]["bwa_path"]):
+            unknown += 1
+        else:
+            if edges:
+                true_ind = get_bwa_inds(tpaths[r]["path"], apaths[r]["bwa_path"])
+                aligned_ind = get_bwa_inds_aligned(apaths[r]["edge_tag"])
+                has_wrong_start, empty, ln = is_wrong_start2(tpaths[r]["path"], apaths[r]["path"], true_ind, aligned_ind, tpaths[r]["edgelen"])
+                m = 0
+                if has_wrong_start:
+                    wrong_start += 1
+                    if use_edges_len:
+                        res_prefix.append(ln)
+                        m += ln
+                    else:    
+                        res_prefix.append( apaths[r]["mapped_s"] )
+                        m += apaths[r]["mapped_s"] 
+                has_wrong_end, empty, ln = is_wrong_end2(tpaths[r]["path"], apaths[r]["path"], true_ind, aligned_ind, tpaths[r]["edgelen"])
+                if has_wrong_end:
+                    wrong_end += 1
+                    if use_edges_len:
+                        res_suffix.append(ln)
+                        m += ln
+                    else:
+                        res_suffix.append( apaths[r]["len"] - apaths[r]["mapped_e"] - K)
+                        m += apaths[r]["len"] - apaths[r]["mapped_e"] - K
+                if has_wrong_end or has_wrong_start:
+                    res_plus.append(m)
+            else:
+                if apaths[r]["mapped_s"] > 0:
+                    res_prefix.append( apaths[r]["mapped_s"] )
+                if apaths[r]["len"] - apaths[r]["mapped_e"] - K > 0:
+                    res_suffix.append( apaths[r]["len"] - apaths[r]["mapped_e"] - K)
+            #if apaths[r]["len"] - apaths[r]["mapped_e"] - K + apaths[r]["mapped_s"] > 100:
+                if apaths[r]["mapped_s"] > 0 or apaths[r]["len"] - apaths[r]["mapped_e"] - K > 0:
+                    res_plus.append( apaths[r]["len"] - apaths[r]["mapped_e"] - K + apaths[r]["mapped_s"])
+
+    # print "Unknown=", unknown
+    # print sum(res_prefix)*1.0/len(res_prefix), sum(res_suffix)*1.0/len(res_suffix), sum(res_plus)*1.0/len(res_plus)
+    return sorted(res_prefix)[len(res_prefix)/2], sorted(res_suffix)[len(res_suffix)/2], sorted(res_plus)[len(res_plus)/2] 
+
+def make_table(results, row_names, caption, name):
+    html = """<html><table border="1"><caption>{}</caption><tr><th></th>""".format(name)
+    for run_name in sorted(results.keys()):
+        html += """<th><div style="width: 200px; height: 50px; overflow: auto">{}</div></th>""".format(run_name)
+    html += "</tr>"
+    for stat in row_names:
+        html += "<tr><td>{}</td>".format(stat)
+        for run_name in sorted(results.keys()):
+            item = results[run_name]
+            html += "<td>{}</td>".format(str(item[stat]))
+        html += "</tr>"
+    html += "</table>"
+    html += "<p>{}</p>".format("<br>".join(caption))
+    html += "</html>"
+    return html
+
+def save_html(s, fl):
+    with open(fl, "w") as fout:
+        fout.write(s)
+
 reads = load_reads(sys.argv[1])
 truepaths = load_truepaths(sys.argv[2])
-alignedpaths = load_alignments(sys.argv[3])
+aligned_files = sys.argv[3].strip().split(",")
 K = int(sys.argv[4])
+html_name = sys.argv[5]
+res = {}
+for fl in aligned_files:
+    alignedpaths = load_alignments(fl)
+    print "Total=", len(reads), " ideal=", len(reads) - cnt_badideal(reads, truepaths),  " notmapped=", cnt_notmapped(reads, truepaths, alignedpaths) 
+    path_problems = cnt_problempaths(truepaths, alignedpaths)
+    print "Paths with problems ", path_problems
+    bwa_problems = cnt_problembwa(truepaths, alignedpaths)
+    print "BWA fail ", bwa_problems
+    print "Warning: works only without GrowEnds()"
+    [wrong_gaps, wrong_gap_empty, wrong_start, wrong_start_empty, wrong_end, wrong_end_empty, unknown] = cnt_wronglyclosedgaps(truepaths, alignedpaths, K) 
+    print "Gaps stage problems (in, prefix, suffix, unknown) ", [wrong_gaps, wrong_gap_empty, wrong_start, wrong_start_empty, wrong_end, wrong_end_empty, unknown]
+    [med_prefix, med_suffix, med_sum] = cnt_median_alignment_length(truepaths, alignedpaths, K)
+    print "Median proportion of length of alignment between two fathest bwa hits to read length", med_prefix, med_suffix, med_sum 
+
+    
+    row_names = ["Total number of reads", \
+                 "Read has true path (#reads)",\
+                 "Didn't mapped with GAligner (#reads)",\
+                 "Path is not equal to true path (#reads)",\
+                 "Path is wrong but we don't know why (#reads)",\
+                 "Resulting BWA hits failure (#reads)", \
+                 "Gap stage failure (#reads)", \
+                 "Incorrect prefix/suffix (#reads)" , \
+                 "Median length(in nucs) of skipped prefix/suffix/both"
+                 ]
+    res[fl] = {"Total number of reads" : len(reads), \
+                 "Read has true path (#reads)": len(reads) - cnt_badideal(reads, truepaths),\
+                 "Didn't mapped with GAligner (#reads)" : cnt_notmapped(reads, truepaths, alignedpaths),\
+                 "Path is not equal to true path (#reads)": path_problems,\
+                 "Path is wrong but we don't know why (#reads)": unknown,\
+                 "Resulting BWA hits failure (#reads)": bwa_problems, \
+                 "Gap stage failure (#reads)": str(wrong_gaps) + " + " + str(wrong_gap_empty) + "(didn't closed)", \
+                 "Incorrect prefix/suffix (#reads)" : str(wrong_start + wrong_start_empty) + "/" + str(wrong_end + wrong_end_empty), \
+                 "Median length(in nucs) of skipped prefix/suffix/both" : \
+                 str(med_prefix) + "/" + str(med_suffix) + "/" + str(med_sum)}
 
 
-print "Total=", len(reads), " ideal=", len(reads) - cnt_badideal(reads, truepaths),  " notmapped=", cnt_notmapped(reads, truepaths, alignedpaths) 
-print "Paths with problems ", cnt_problempaths(truepaths, alignedpaths)
-print "BWA fail ", cnt_problembwa(truepaths, alignedpaths)
-print "Warning: works only without GrowEnds()"
-print "Gaps stage problems (in, prefix, suffix, unknown) ", cnt_wronglyclosedgaps(truepaths, alignedpaths, K) 
+
+caption_below = ["Reference substr -- alignment of read to reference, produced by BWA MEM, with length > 0.8*(read length)",\
+                 "True path -- an alignment on graph reference substr found by MapRead()",\
+                 "Resulting BWA hits -- BWA hits after filtering, sorting etc., just before Gap closing stage", \
+                 "Resulting BWA hits failure -- BWA hits are on edges that are not in true path or not in correct order",\
+                 "Gap stage failure -- gap between two neibouring BWA hits wasn't closed by correct list of edges",\
+                 "Prefix -- subpath of edges before first BWA hit edge in the path",\
+                 "Suffix -- subpath of edges after last BWA hit edge in the path"]
+
+table = make_table(res, row_names, caption_below, html_name[:-5])
+save_html(table, "path_statistics_" + html_name)
 
 
 
