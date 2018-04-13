@@ -69,7 +69,7 @@ private:
 public:
 
     PacBioMappingIndex(const Graph &g,
-                        debruijn_graph::config::pacbio_processor pb_config, alignment::BWAIndex::AlignmentMode mode, bool use_dijkstra)
+                        debruijn_graph::config::pacbio_processor pb_config, alignment::BWAIndex::AlignmentMode mode, bool use_dijkstra = false)
             : g_(g),
               pb_config_(pb_config),
               bwa_mapper_(g, mode, pb_config.bwa_length_cutoff),

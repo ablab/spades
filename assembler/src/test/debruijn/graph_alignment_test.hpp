@@ -18,7 +18,6 @@
 
 #include "modules/alignment/pacbio/pac_index.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
-#include "modules/alignment/short_read_mapper.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "io/reads/multifile_reader.hpp"
@@ -110,7 +109,7 @@ BOOST_AUTO_TEST_CASE( TrivialTest ) {
     io::SingleRead r("read", s);
     config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
     alignment::BWAIndex::AlignmentMode mode = alignment::BWAIndex::AlignmentMode::PacBio;
-    pacbio::PacBioMappingIndex<Graph> pac_index(g, "./src/test/debruijn/graph_fragments/gralign/tmp2", pb, mode);
+    pacbio::PacBioMappingIndex<Graph> pac_index(g, pb, mode, true);
     auto current_read_mapping = pac_index.GetReadAlignment(r);
     const auto& aligned_edges = current_read_mapping.main_storage;
     std::string pathStr = "";
