@@ -228,7 +228,7 @@ def main(ds_args_list, general_args_list, spades_home, bin_home):
 
     try:
         log.info("===== Assembling started.\n")
-        binary_path = os.path.join(bin_home, "dipspades")
+        binary_path = os.path.join(bin_home, "spades-dipspades-core")
         command = [binary_path, config_fname]
         support.sys_call(command, log)
         log.info("\n===== Assembling finished.\n")

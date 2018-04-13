@@ -55,7 +55,7 @@ def run_corrector(configs_dir, execution_home, cfg,
     cfg.tmp_dir = support.get_tmp_dir(prefix="corrector_")
 
     prepare_config_corr(cfg_file_name, cfg, ext_python_modules_home)
-    binary_name = "corrector"
+    binary_name = "spades-corrector-core"
 
     command = [os.path.join(execution_home, binary_name),
                os.path.abspath(cfg_file_name), os.path.abspath(to_correct)]

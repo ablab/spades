@@ -7,18 +7,18 @@
 
 project(dipspades CXX)
 
-add_executable(dipspades
+add_executable(spades-dipspades-core
                dipspades_config.cpp
                utils/files_utils.cpp
                main.cpp)
 
-target_link_libraries(dipspades common_modules ${COMMON_LIBRARIES})
+target_link_libraries(spades-dipspades-core common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
-  set_target_properties(dipspades PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(spades-dipspades-core PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
-install(TARGETS dipspades
+install(TARGETS spades-dipspades-core
         DESTINATION bin
         COMPONENT runtime)
 install(DIRECTORY "${SPADES_CFG_DIR}/dipspades"

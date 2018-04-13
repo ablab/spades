@@ -22,7 +22,7 @@ if (NOT HAVE_SHM_OPEN AND NOT HAVE_SHM_OPEN_IN_RT)
   error("Cannot find shm_open()")
 endif()
 
-add_executable(bwa-spades
+add_executable(spades-bwa
                bamlite.c
                bwa.c
                bwamem.c
@@ -59,14 +59,14 @@ add_executable(bwa-spades
                malloc_wrap.c
                )
 
-target_link_libraries(bwa-spades z m)
+target_link_libraries(spades-bwa z m)
 if (HAVE_SHM_OPEN_IN_RT)
-  target_link_libraries(bwa-spades rt)
+  target_link_libraries(spades-bwa rt)
 endif()
 
 if (SPADES_STATIC_BUILD)
-  set_target_properties(bwa-spades PROPERTIES LINK_SEARCH_START_STATIC 1)
+  set_target_properties(spades-bwa PROPERTIES LINK_SEARCH_START_STATIC 1)
 endif()
 
-install(TARGETS bwa-spades
+install(TARGETS spades-bwa
         RUNTIME DESTINATION bin)

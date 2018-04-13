@@ -516,7 +516,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     if (not options_storage.only_error_correction) and options_storage.mismatch_corrector:
         cfg["mismatch_corrector"] = empty_config()
         cfg["mismatch_corrector"].__dict__["skip-masked"] = None
-        cfg["mismatch_corrector"].__dict__["bwa"] = os.path.join(bin_home, "bwa-spades")
+        cfg["mismatch_corrector"].__dict__["bwa"] = os.path.join(bin_home, "spades-bwa")
         cfg["mismatch_corrector"].__dict__["threads"] = options_storage.threads
         cfg["mismatch_corrector"].__dict__["output-dir"] = options_storage.output_dir
     cfg["run_truseq_postprocessing"] = options_storage.run_truseq_postprocessing
@@ -877,7 +877,7 @@ def main(args):
                     if os.path.isfile(result_scaffolds_filename):
                         shutil.move(result_scaffolds_filename, assembled_scaffolds_filename)
                     reads_library = dataset_data[0]
-                    alignment_bin = os.path.join(bin_home, "bwa-spades")
+                    alignment_bin = os.path.join(bin_home, "spades-bwa")
                     alignment_dir = os.path.join(cfg["common"].output_dir, "alignment")
                     sam_files = alignment.align_bwa(alignment_bin, assembled_scaffolds_filename, dataset_data, alignment_dir, log, options_storage.threads)
                     moleculo_postprocessing.moleculo_postprocessing(assembled_scaffolds_filename, truseq_long_reads_file_base, sam_files, log)

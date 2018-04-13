@@ -136,7 +136,7 @@ def ReadDataset(dataset_file):
     return datasets
 
 def ConstructSubreferences(datasets, reference_file, output_dir, index = None, threads = 1, log = None):
-    bwa_command = "bin/bwa-spades"
+    bwa_command = "bin/spades-bwa"
     if log == None:
         log = logging.getLogger('reference_construction')
         log.setLevel(logging.INFO)

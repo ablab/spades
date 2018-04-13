@@ -9,7 +9,7 @@ project(hammer CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(hammer
+add_executable(spades-hammer
                main.cpp
                hammer_tools.cpp
                hamcluster.cpp
@@ -22,13 +22,13 @@ add_executable(hammer
 #  add_subdirectory(quake_count)
 #  add_subdirectory(gen_test_data)
 
-target_link_libraries(hammer input utils mph_index pipeline BamTools format gqf ${COMMON_LIBRARIES})
+target_link_libraries(spades-hammer input utils mph_index pipeline BamTools format gqf ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
-  set_target_properties(hammer PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(spades-hammer PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
-install(TARGETS hammer
+install(TARGETS spades-hammer
         DESTINATION bin
         COMPONENT runtime)
 install(DIRECTORY "${SPADES_CFG_DIR}/hammer"

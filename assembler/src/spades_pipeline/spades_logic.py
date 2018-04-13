@@ -208,7 +208,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     cfg_fn = os.path.join(dst_configs, "config.info")
     prepare_config_spades(cfg_fn, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home)
 
-    command = [os.path.join(execution_home, "spades"), cfg_fn]
+    command = [os.path.join(execution_home, "spades-core"), cfg_fn]
 
     add_configs(command, dst_configs)
 
@@ -256,7 +256,7 @@ def run_scaffold_correction(configs_dir, execution_home, cfg, log, latest, K):
         process_cfg.substitute_params(construction_cfg_file_name, {"read_buffer_size": cfg.read_buffer_size}, log)
     process_cfg.substitute_params(os.path.join(dst_configs, "moleculo_mode.info"), {"scaffolds_file": scaffolds_file}, log)
     prepare_config_scaffold_correction(cfg_file_name, cfg, log, saves_dir, K)
-    command = [os.path.join(execution_home, "scaffold_correction"), cfg_file_name]
+    command = [os.path.join(execution_home, "spades-truseq-scfcorrection"), cfg_file_name]
     add_configs(command, dst_configs)
     log.info(str(command))
     support.sys_call(command, log)

@@ -9,7 +9,7 @@ project(ionhammer CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(ionhammer
+add_executable(spades-ionhammer
                kmer_data.cpp
                subcluster.cpp
                err_helper_table.cpp
@@ -25,25 +25,23 @@ add_executable(ionhammer
                gamma_poisson_model.cpp
                normal_quality_model.cpp)
 
-add_executable(kmer_evaluator
-               kmer_data.cpp
-               kmer_evaluator.cpp
-               kmer_helpers.cpp
-               err_helper_table.cpp)
+#add_executable(kmer_evaluator
+#               kmer_data.cpp
+#               kmer_evaluator.cpp
+#               kmer_helpers.cpp
+#               err_helper_table.cpp)
 
 
 
-target_link_libraries(ionhammer input utils pipeline mph_index BamTools ${COMMON_LIBRARIES})
-target_link_libraries(kmer_evaluator input  utils mph_index  BamTools ${COMMON_LIBRARIES})
+target_link_libraries(spades-ionhammer input utils pipeline mph_index BamTools ${COMMON_LIBRARIES})
+#target_link_libraries(kmer_evaluator input  utils mph_index  BamTools ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
-  set_target_properties(ionhammer PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(spades-ionhammer PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
-install(TARGETS ionhammer
+install(TARGETS spades-ionhammer
         RUNTIME DESTINATION bin)
-#install(TARGETS kmer_evaluator
-#        RUNTIME DESTINATION bin)
 install(DIRECTORY "${SPADES_CFG_DIR}/ionhammer"
         DESTINATION share/spades/configs
                 FILES_MATCHING PATTERN "*.cfg")

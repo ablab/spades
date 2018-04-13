@@ -134,10 +134,10 @@ def run_hammer(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg
         cfg.tmp_dir = support.get_tmp_dir(prefix="hammer_")
         if cfg.iontorrent:
             prepare_config_ih(cfg_file_name, cfg, ext_python_modules_home)
-            binary_name = "ionhammer"
+            binary_name = "spades-ionhammer"
         else:
             prepare_config_bh(cfg_file_name, cfg, log)
-            binary_name = "hammer"
+            binary_name = "spades-hammer"
 
         command = [os.path.join(execution_home, binary_name),
                    os.path.abspath(cfg_file_name)]

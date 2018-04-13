@@ -7,7 +7,7 @@
 
 project(spades CXX)
 
-add_executable(spades main.cpp
+add_executable(spades-core main.cpp
             gap_closer.cpp
             mismatch_correction.cpp
             pair_info_count.cpp
@@ -20,14 +20,14 @@ add_executable(spades main.cpp
             series_analysis.cpp
             ../mts/contig_abundance.cpp)
 
-target_include_directories(spades PRIVATE ${EXT_DIR}/include/ConsensusCore)
-target_link_libraries(spades ConsensusCore common_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
+target_include_directories(spades-core PRIVATE ${EXT_DIR}/include/ConsensusCore)
+target_link_libraries(spades-core ConsensusCore common_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
-  set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(spades-core PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
-install(TARGETS spades
+install(TARGETS spades-core
         DESTINATION bin
         COMPONENT runtime)
 install(DIRECTORY "${SPADES_CFG_DIR}/debruijn"

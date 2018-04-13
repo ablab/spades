@@ -23,7 +23,7 @@ def align(contigs_file, left, right, out_dir, threads):
     log.addHandler(console)
     #logging
 
-    bwa_command='bin/bwa-spades'
+    bwa_command='bin/spades-bwa'
     index = alignment.index_bwa(bwa_command, log, contigs_file, os.path.join(out_dir, "bwa_index"), "bwtsw")
     index = os.path.join(out_dir, "bwa_index", "index")
     sam = alignment.align_bwa_pe_lib(bwa_command, index, left, right, os.path.join(out_dir, "align"), log, threads)
