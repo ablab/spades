@@ -166,12 +166,13 @@ std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<GraphCursor>
 }
 
 using debruijn_graph::EdgeId;
+using debruijn_graph::VertexId;
 using debruijn_graph::ConjugateDeBruijnGraph;
-using EdgeAlnInfo = std::unordered_map<EdgeId,   std::pair<unsigned, unsigned>>;
-EdgeAlnInfo matched_edges(const std::vector<EdgeId> &edges,
-                          const ConjugateDeBruijnGraph &graph,
-                          const hmmer::HMM &hmm, const cfg &cfg,
-                          ESL_STOPWATCH *w) {
+using EdgeAlnInfo = std::unordered_map<EdgeId, std::pair<unsigned, unsigned>>;
+EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
+                         const ConjugateDeBruijnGraph &graph,
+                         const hmmer::HMM &hmm, const cfg &cfg,
+                         ESL_STOPWATCH *w) {
     bool hmm_in_aas = hmm.abc()->K == 20;
     hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
 
@@ -265,6 +266,44 @@ static bool ends_with(const std::string &s, const std::string &p) {
     return (s.compare(s.size() - p.size(), p.size(), p) == 0);
 }
 
+std::unordered_map<EdgeId, std::unordered_set<VertexId>> ExtractNeighbourhoods(const EdgeAlnInfo &matched_edges,
+                                                                               const ConjugateDeBruijnGraph &graph,
+                                                                               size_t mult) {
+    using namespace debruijn_graph;
+
+    std::unordered_map<EdgeId, std::unordered_set<VertexId>> neighbourhoods;
+    for (const auto &entry : matched_edges) {
+        EdgeId e = entry.first;
+        INFO("Extracting neighbourhood of edge " << e);
+
+        std::pair<unsigned, unsigned> overhangs = entry.second;
+        overhangs.first *= mult; overhangs.second *= mult;
+        INFO("Dijkstra bounds set to " << overhangs);
+
+        std::vector<VertexId> fvertices, bvertices;
+        // If hmm overhangs from the edge, then run edge-bounded dijkstra to
+        // extract the graph neighbourhood.
+        if (overhangs.second > 0) {
+            auto fdijkstra = omnigraph::CreateEdgeBoundedDijkstra(graph, overhangs.second);
+            fdijkstra.Run(graph.EdgeEnd(e));
+            fvertices = fdijkstra.ReachedVertices();
+        }
+        if (overhangs.first > 0) {
+            auto bdijkstra = omnigraph::CreateBackwardEdgeBoundedDijkstra(graph, overhangs.first);
+            bdijkstra.Run(graph.EdgeStart(e));
+            bvertices = bdijkstra.ReachedVertices();
+        }
+
+        INFO("Total " << std::make_pair(bvertices.size(), fvertices.size()) << " extracted");
+
+        neighbourhoods[e].insert(fvertices.begin(), fvertices.end());
+        neighbourhoods[e].insert(bvertices.begin(), bvertices.end());
+        neighbourhoods[e].insert(graph.EdgeEnd(e));
+        neighbourhoods[e].insert(graph.EdgeStart(e));
+    }
+
+    return neighbourhoods;
+}
 
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
@@ -312,6 +351,7 @@ int main(int argc, char* argv[]) {
     ESL_STOPWATCH *w = esl_stopwatch_Create();
 
     // Outer loop: over each query HMM in <hmmfile>.
+    std::unordered_set<std::vector<EdgeId>> to_rescore;
     while (hmmw) {
         const hmmer::HMM &hmm = hmmw.get();
         P7_HMM *p7hmm = hmmw->get();
@@ -324,39 +364,13 @@ int main(int argc, char* argv[]) {
 
         // Collect the neighbourhood of the matched edges
         bool hmm_in_aas = hmm.abc()->K == 20;
-        size_t mult =  (hmm_in_aas ? 6 : 2);
         std::vector<EdgeId> match_edges;
-        std::unordered_map<EdgeId, std::unordered_set<VertexId>> neighbourhoods;
-        for (const auto &entry : matched_edges(edges, graph, hmm, cfg, w)) {
-            EdgeId e = entry.first;
-            match_edges.push_back(e);
-            INFO("Extracting neighbourhood of edge " << e);
-
-            std::pair<unsigned, unsigned> overhangs = entry.second;
-            overhangs.first *= mult; overhangs.second *= mult;
-            INFO("Dijkstra bounds set to " << overhangs);
-
-            std::vector<VertexId> fvertices, bvertices;
-            // If hmm overhangs from the edge, then run edge-bounded dijkstra to
-            // extract the graph neighbourhood.
-            if (overhangs.second > 0) {
-                auto fdijkstra = omnigraph::CreateEdgeBoundedDijkstra(graph, overhangs.second);
-                fdijkstra.Run(graph.EdgeEnd(e));
-                fvertices = fdijkstra.ReachedVertices();
-            }
-            if (overhangs.first > 0) {
-                auto bdijkstra = omnigraph::CreateBackwardEdgeBoundedDijkstra(graph, overhangs.first);
-                bdijkstra.Run(graph.EdgeStart(e));
-                bvertices = bdijkstra.ReachedVertices();
-            }
-
-            INFO("Total " << std::make_pair(bvertices.size(), fvertices.size()) << " extracted");
-
-            neighbourhoods[e].insert(fvertices.begin(), fvertices.end());
-            neighbourhoods[e].insert(bvertices.begin(), bvertices.end());
-            neighbourhoods[e].insert(graph.EdgeEnd(e));
-            neighbourhoods[e].insert(graph.EdgeStart(e));
-        }
+        std::unordered_map<EdgeId, std::unordered_set<VertexId>>
+                neighbourhoods = ExtractNeighbourhoods(MatchedEdges(edges, graph, hmm, cfg, w),
+                                                       graph,
+                                                       (hmm_in_aas ? 6 : 2));
+        for (const auto &entry : neighbourhoods)
+            match_edges.push_back(entry.first);
 
         // See, whether we could join some components
         INFO("Joining components")
@@ -461,7 +475,7 @@ int main(int argc, char* argv[]) {
         INFO("Total " << resultant_paths.size() << " resultant paths extracted");
         std::sort(resultant_paths.begin(), resultant_paths.end());
 
-        std::unordered_set<std::vector<EdgeId>> to_rescore;
+        std::unordered_set<std::vector<EdgeId>> to_rescore_local;
         if (cfg.save) {
             if (resultant_paths.size()) {
                 std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".paths.fa", std::ios::out);
@@ -483,17 +497,19 @@ int main(int argc, char* argv[]) {
                     } else {
                         io::WriteWrapped(result.seq, o);
                     }
-                    if (cfg.rescore && result.path.size() > 0)
+                    if (cfg.rescore && result.path.size() > 0) {
+                        to_rescore_local.insert(result.path);
                         to_rescore.insert(result.path);
+                    }
                 }
             }
         }
 
-        INFO("Total " << to_rescore.size() << " paths to rescore");
-        if (cfg.rescore && to_rescore.size()) {
+        INFO("Total " << to_rescore_local.size() << " local paths to rescore");
+        if (cfg.rescore && to_rescore_local.size()) {
             std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".edges.fa", std::ios::out);
 
-            for (const auto &entry : to_rescore) {
+            for (const auto &entry : to_rescore_local) {
                 o << ">";
                 for (size_t i = 0; i < entry.size(); ++i) {
                     o << entry[i];
@@ -507,6 +523,22 @@ int main(int argc, char* argv[]) {
 
         hmmw = hmmfile.read();
     } // end outer loop over query HMMs
+
+    INFO("Total " << to_rescore.size() << " paths to rescore");
+    if (cfg.rescore && to_rescore.size()) {
+        std::ofstream o(std::string("graph-hmm") + ".all.edges.fa", std::ios::out);
+
+        for (const auto &entry : to_rescore) {
+            o << ">";
+            for (size_t i = 0; i < entry.size(); ++i) {
+                o << entry[i];
+                if (i != entry.size() - 1)
+                    o << "_";
+            }
+            o << '\n';
+            io::WriteWrapped(MergeSequences(graph, entry).str(), o);
+        }
+    }
 
     esl_stopwatch_Destroy(w);
 
