@@ -9,5 +9,6 @@ project(gfa1 C)
 
 # Create libraries.
 add_library(gfa1 STATIC gfa.c)
+target_link_libraries(gfa1 ${ZLIB_LIBRARIES})
 
 
