@@ -9,7 +9,10 @@ namespace path_extend {
 void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
     auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     ScaffoldGraphStorageConstructor storage_constructor(small_path_length_threshold_, large_path_length_threshold_, gp_);
-    bool scaffolding_mode = false;
+    bool scaffolding_mode = true;
+
+    INFO(small_path_length_threshold_);
+    AnalyzePaths(old_paths, small_path_length_threshold_);
 
     size_t num_threads = cfg::get().max_threads;
     auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
@@ -105,7 +108,7 @@ void PathScaffolder::MergeUnivocalEdges(const vector<PathScaffolder::ScaffoldEdg
         auto end = connection.second;
         auto start_conjugate = start.getConjugateFromGraph(gp_.g);
         auto end_conjugate = end.getConjugateFromGraph(gp_.g);
-        if (merge_connections.find(end_conjugate) != merge_connections.end() and
+        if (merge_connections.find(end_conjugate) == merge_connections.end() or
             merge_connections.at(end_conjugate) != start_conjugate) {
             WARN("Conjugate connection does not correspond to direct connection")
             merge_connections.at(end_conjugate) = start_conjugate;
@@ -167,5 +170,139 @@ void PathScaffolder::MergeUnivocalEdges(const vector<PathScaffolder::ScaffoldEdg
             ExtendPathAlongConnections(start, merge_connections, start_to_distance);
         }
     }
+}
+void PathScaffolder::AnalyzePaths(const PathContainer &paths, size_t min_length) const {
+    INFO("Analyzing long paths");
+    auto dataset_info = cfg::get().ds;
+    for (size_t lib_index = 0; lib_index < dataset_info.reads.lib_count(); ++lib_index) {
+        const auto &lib = dataset_info.reads[lib_index];
+        if (lib.type() != io::LibraryType::Clouds10x) {
+            continue;
+        }
+        size_t no_candidates = 0;
+        size_t single_candidate = 0;
+        size_t simple_step_made = 0;
+        size_t whole_step_made = 0;
+        size_t rc_candidate = 0;
+        size_t no_tip = 0;
+        size_t total = 0;
+        size_t multiple_candidates = 0;
+        double total_no_candidate_coverage = 0;
+        double total_single_coverage = 0;
+        path_extend::PathExtendParamsContainer params(cfg::get().ds,
+                                                      cfg::get().pe_params,
+                                                      cfg::get().ss,
+                                                      cfg::get().output_dir,
+                                                      cfg::get().mode,
+                                                      cfg::get().uneven_depth,
+                                                      cfg::get().avoid_rc_connections,
+                                                      cfg::get().use_scaffolder);
+        const auto &pset = params.pset;
+        shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.scaffolding_indices[lib_index]);
+
+        shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib);
+
+        auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp_.g, counter,
+                                                                           pset.scaffolder_options.cl_threshold,
+                                                                           pset.scaffolder_options.var_coeff);
+        GraphCoverageMap cover_map(gp_.g);
+        ScaffoldingUniqueEdgeStorage unique_storage;
+        UsedUniqueStorage used_unique_storage(unique_storage);
+        auto scaff_extender = make_shared<ScaffoldingPathExtender>(gp_, cover_map,
+                                                                   used_unique_storage, scaff_chooser,
+                                                                   MakeGapAnalyzer(paired_lib->GetIsVar()),
+                                                                   paired_lib->GetISMax(),
+                                                                   false, /* investigate short loops */
+                                                                   params.avoid_rc_connections);
+        ExtensionChooser::EdgeContainer sources;
+        PathContainer* empty;
+        for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+            if (gp_.g.IncomingEdgeCount(gp_.g.EdgeStart(*iter)) == 0) {
+                sources.push_back(EdgeWithDistance(*iter, 0));
+            }
+        }
+        for (const auto& path: paths) {
+            if (path.first->Length() <= min_length) {
+                continue;
+            }
+            ++total;
+            EdgeId back = path.first->Back();
+            if (gp_.g.OutgoingEdgeCount(gp_.g.EdgeEnd(back)) != 0) {
+                ++no_tip;
+                continue;
+            }
+            auto candidates = scaff_chooser->Filter(*(path.first), sources);
+            if (candidates.size() == 0) {
+                ++no_candidates;
+                total_no_candidate_coverage += gp_.g.coverage(back);
+
+            } else if (candidates.size() == 1) {
+                ++single_candidate;
+
+                if (scaff_extender->MakeSimpleGrowStep(*(path.first), empty)) {
+                    ++simple_step_made;
+                }
+                if (scaff_extender->MakeGrowStep((*(path.first)), empty)) {
+                    ++whole_step_made;
+                }
+                total_single_coverage += gp_.g.coverage(back);
+                if (gp_.g.conjugate(back) == candidates[0].e_ or back == candidates[0].e_) {
+                    ++rc_candidate;
+                }
+
+            } else {
+                ++multiple_candidates;
+            }
+        }
+        INFO("Total paths: " << total);
+        INFO("No tips: " << no_tip);
+        INFO("Single candidate: " << single_candidate);
+        if (single_candidate > 0) {
+            double mean_single_candidate_coverage = total_single_coverage / static_cast<double>(single_candidate);
+            INFO("Mean coverage of single candidate edge: " << mean_single_candidate_coverage);
+        }
+        INFO("Simple step made: " << simple_step_made);
+        INFO("Whole step made: " << whole_step_made);
+        INFO("RC candidate: " << rc_candidate);
+        INFO("No candidates: " << no_candidates);
+        if (no_candidates > 0) {
+            double mean_no_candidate_coverage = total_no_candidate_coverage / static_cast<double>(no_candidates);
+            INFO("Mean coverage of edge with no candidates: " << mean_no_candidate_coverage);
+        }
+        INFO("Multiple candidates: " << multiple_candidates);
+    }
+
+}
+shared_ptr<GapAnalyzer> PathScaffolder::MakeGapAnalyzer(double is_variation) const {
+    path_extend::PathExtendParamsContainer params(cfg::get().ds,
+                                                  cfg::get().pe_params,
+                                                  cfg::get().ss,
+                                                  cfg::get().output_dir,
+                                                  cfg::get().mode,
+                                                  cfg::get().uneven_depth,
+                                                  cfg::get().avoid_rc_connections,
+                                                  cfg::get().use_scaffolder);
+    const auto &pset = params.pset;
+
+    vector<shared_ptr<GapAnalyzer>> joiners;
+    if (pset.scaffolder_options.use_la_gap_joiner)
+        joiners.push_back(std::make_shared<LAGapAnalyzer>(gp_.g, pset.scaffolder_options.min_overlap_length,
+                                                          pset.scaffolder_options.flank_multiplication_coefficient,
+                                                          pset.scaffolder_options.flank_addition_coefficient));
+
+
+    joiners.push_back(std::make_shared<HammingGapAnalyzer>(gp_.g,
+                                                           pset.scaffolder_options.min_gap_score,
+                                                           pset.scaffolder_options.short_overlap,
+                                                           (int) pset.scaffolder_options.basic_overlap_coeff
+                                                               * cfg::get().ds.RL));
+
+    //todo introduce explicit must_overlap_coeff and rename max_can_overlap -> can_overlap_coeff
+    return std::make_shared<CompositeGapAnalyzer>(gp_.g,
+                                                  joiners,
+                                                  size_t(math::round(pset.scaffolder_options.max_can_overlap
+                                                                         * is_variation)), /* may overlap threshold */
+                                                  int(math::round(-pset.scaffolder_options.var_coeff * is_variation)), /* must overlap threshold */
+                                                  pset.scaffolder_options.artificial_gap);
 }
 }

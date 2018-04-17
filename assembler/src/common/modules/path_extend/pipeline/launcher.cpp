@@ -16,6 +16,7 @@
 #include "modules/path_extend/read_cloud_path_extend/extension_chooser_checker.hpp"
 #include "modules/path_extend/read_cloud_path_extend/path_scaffolder.hpp"
 #include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
+#include "read_cloud_path_extend/fragment_model/distribution_extractor.hpp"
 
 #include "alignment/long_read_storage.hpp"
 #include "alignment/rna/ss_coverage.hpp"
@@ -735,6 +736,7 @@ void PathExtendLauncher::Launch() {
     if (cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
         const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
         const size_t large_path_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
+
         PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_,
                                        small_path_length_threshold,
                                        large_path_length_threshold);
