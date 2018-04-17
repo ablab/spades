@@ -491,6 +491,7 @@ void load(debruijn_config::read_cloud_resolver::scaffold_graph_construction& sca
     using config_common::load;
     load(scaff_con.count_threshold, pt, "count_threshold");
     load(scaff_con.vertex_multiplier, pt, "vertex_multiplier");
+    load(scaff_con.score_threshold, pt, "score_threshold");
     load(scaff_con.connection_score_threshold, pt, "connection_score_threshold");
     load(scaff_con.relative_coverage_threshold, pt, "relative_coverage_threshold");
     load(scaff_con.connection_length_threshold, pt, "connection_length_threshold");

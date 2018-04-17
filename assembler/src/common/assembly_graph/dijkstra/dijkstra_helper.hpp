@@ -84,7 +84,7 @@ public:
         put_checkers.push_back(bound_put_checker);
         return LengthBoundedDijkstra(graph, LengthBoundedDijkstraSettings(
             LengthCalculator<Graph>(graph),
-            BoundProcessChecker<Graph>(length_threshold),
+            BoundProcessChecker<Graph>(distance_bound),
             CompositePutChecker<Graph>(put_checkers),
             ForwardNeighbourIteratorFactory<Graph>(graph)),
                                      max_vertex_number);

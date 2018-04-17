@@ -21,6 +21,7 @@
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
 #include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
+#include "read_cloud_path_extend/fragment_model/distribution_extractor.hpp"
 
 #include <unordered_set>
 namespace path_extend {
@@ -732,6 +733,7 @@ void PathExtendLauncher::Launch() {
     if (cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
         const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
         const size_t large_path_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
+
         PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_,
                                        small_path_length_threshold,
                                        large_path_length_threshold);
@@ -741,13 +743,15 @@ void PathExtendLauncher::Launch() {
         DebugOutputPaths(contig_paths, "merged_polished_paths");
 
         GraphCoverageMap merged_polished_map(graph_, contig_paths, true);
-    DebugOutputPaths(contig_paths, "polished_paths");
+        DebugOutputPaths(contig_paths, "polished_paths");
 
-    TraverseLoops(contig_paths, polished_map);
-        DebugOutputPaths(contig_paths, "loop_traveresed");
-
-    RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
-    DebugOutputPaths(contig_paths, "overlap_removed");
+        TraverseLoops(gp_.contig_paths, polished_map);
+        DebugOutputPaths(gp_.contig_paths, "loop_traveresed");
+        RemoveOverlapsAndArtifacts(gp_.contig_paths, merged_polished_map, resolver);
+        DebugOutputPaths(gp_.contig_paths, "overlap_removed_merged");
+    } else {
+        gp_.contig_paths = std::move(polished_paths);
+    }
 
     RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
     DebugOutputPaths(contig_paths, "overlap_removed");
