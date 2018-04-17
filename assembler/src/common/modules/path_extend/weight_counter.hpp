@@ -303,7 +303,6 @@ public:
     CoverageAwareIdealInfoProvider(const Graph& g, const shared_ptr<PairedInfoLibrary>& lib,
                                     size_t read_length) :
                 BasicIdealInfoProvider(lib), g_(g), read_length_(read_length) {
-        INFO(read_length_ << ", " << g_.k());
         VERIFY(read_length_ > g_.k());
     }
 

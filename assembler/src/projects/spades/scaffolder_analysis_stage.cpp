@@ -25,7 +25,7 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
                                             << " edges in small scaffold graph");
     size_t length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
     auto graph_gap_closer = gap_closer_constructor.ConstructGraphBasedGapCloser(small_scaffold_graph, length_threshold);
-    graph_gap_closer->CloseGaps(small_scaffold_graph);
+//    graph_gap_closer->CloseGaps(small_scaffold_graph);
 //    auto barcode_gap_closer = gap_closer_constructor.ConstructCloudBasedGapCloser(small_scaffold_graph, length_threshold);
 //    barcode_gap_closer->CloseGaps(small_scaffold_graph);
     INFO(small_scaffold_graph.VertexCount() << " vertices and " << small_scaffold_graph.EdgeCount()

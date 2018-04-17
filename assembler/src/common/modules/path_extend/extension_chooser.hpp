@@ -796,7 +796,9 @@ public:
         }
         set<EdgeId> candidates = FindCandidates(path);
         EdgeContainer result;
+        DEBUG("Intermediate scaffolding edges: " << candidates.size());
         FindBestFittedEdgesForClustered(path, candidates, result);
+        DEBUG("Final scaffolding edges: " << result.size());
         return result;
     }
 
@@ -1454,6 +1456,9 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
 
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
         vector<EdgeWithDistance> result;
+        DEBUG("Trying to extend path " << path.GetId());
+        DEBUG("Current length: " << path.Length());
+        DEBUG("Trying to extend edge " << path.Back());
         auto path_barcodes = barcode_entry_collector_->CollectEntry(path);
         DEBUG(path_barcodes.size() << " barcodes on path");
         if (path_barcodes.size() == 0) {

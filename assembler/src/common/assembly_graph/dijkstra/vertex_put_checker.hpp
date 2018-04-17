@@ -82,8 +82,8 @@ class CompositePutChecker : public VertexPutChecker<Graph, distance_t> {
 
     vector<shared_ptr<VertexPutChecker<Graph, distance_t>>> put_checkers_;
  public:
-    explicit CompositePutChecker(const vector<shared_ptr<VertexPutChecker<Graph, distance_t>>>& put_checkers) : VertexPutChecker<Graph, distance_t>(),
-                                        put_checkers_(put_checkers) { }
+    explicit CompositePutChecker(const vector<shared_ptr<VertexPutChecker<Graph, distance_t>>>& put_checkers) :
+        VertexPutChecker<Graph, distance_t>(), put_checkers_(put_checkers) { }
     bool Check(VertexId vertex, EdgeId edge, distance_t length) const {
         auto put_check_predicate = [vertex, edge, length] (shared_ptr<VertexPutChecker<Graph, distance_t>> put_checker) {
           return put_checker->Check(vertex, edge, length);

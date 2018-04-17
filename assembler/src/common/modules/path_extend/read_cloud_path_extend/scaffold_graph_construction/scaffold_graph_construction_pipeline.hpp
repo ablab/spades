@@ -30,7 +30,7 @@ class CloudScaffoldGraphConstructionPipeline {
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> construction_stages_;
     vector<shared_ptr<path_extend::scaffold_graph::ScaffoldGraph>> intermediate_results_;
     const Graph &g_;
-    const path_extend::ScaffolderParams &params_;
+    const path_extend::ScaffolderParams params_;
 
  public:
     CloudScaffoldGraphConstructionPipeline(shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> initial_constructor_,

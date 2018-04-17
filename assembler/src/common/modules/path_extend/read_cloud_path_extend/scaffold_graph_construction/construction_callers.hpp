@@ -9,6 +9,7 @@ struct ScaffolderParams {
   size_t tail_threshold_;
   size_t count_threshold_;
   double vertex_multiplier_;
+  double score_threshold_;
   double connection_score_threshold_;
   double relative_coverage_threshold_;
   size_t connection_length_threshold_;
@@ -22,6 +23,7 @@ struct ScaffolderParams {
                    size_t tail_threshold_,
                    size_t count_threshold_,
                    double vertex_multiplier_,
+                   double score_threshold_,
                    double connection_barcode_threshold_,
                    double relative_coverage_threshold_,
                    size_t connection_length_threshold_,

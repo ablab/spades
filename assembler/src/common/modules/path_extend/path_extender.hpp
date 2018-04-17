@@ -1355,7 +1355,6 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
 
     void InitSources() {
         sources_.clear();
-
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (g_.IncomingEdgeCount(g_.EdgeStart(*iter)) == 0) {
                 sources_.push_back(EdgeWithDistance(*iter, 0));
@@ -1399,10 +1398,12 @@ protected:
     bool CheckEdge(BidirectionalPath& path, const EdgeId& e) {
         if (e == path.Back()
             || (avoid_rc_connections_ && e == g_.conjugate(path.Back()))) {
+            DEBUG("RC connection");
             return false;
         }
 
         if (this->DetectCycleScaffolding(path, e)) {
+            DEBUG("Cycle scaffolding")
             return false;
         }
         return true;
@@ -1430,6 +1431,8 @@ protected:
                 DEBUG("Overlap is not large enough")
                 return result;
             }
+
+            return gap;
         } else {
             DEBUG("Gap joiners off");
             VERIFY(candidate.d_ > int(g_.k()));
@@ -1456,12 +1459,15 @@ protected:
         DEBUG("Candidate size = " << candidates.size())
         for (const auto& candidate: candidates) {
             EdgeId e = candidate.e_;
+            DEBUG(e.int_id());
             if (not CheckEdge(path, e)) {
+                DEBUG("Edge check failed")
                 continue;
             }
 
             boost::optional<Gap> gap = GetGap(path, candidate, must_overlap, e);
             if (not gap.is_initialized()) {
+                DEBUG("Gap is not initialized")
                 continue;
             }
             EdgeWithGap ewg(e, NormalizeGap(gap.get()));
