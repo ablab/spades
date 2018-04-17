@@ -11,6 +11,7 @@
 namespace path_extend {
 path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_, size_t tail_threshold_,
                                                 size_t count_threshold_, double vertex_multiplier_,
+                                                double score_threshold_,
                                                 double connection_score_threshold,
                                                 double relative_coverage_threshold_,
                                                 size_t connection_length_threshold_,
@@ -22,6 +23,7 @@ path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_, size_t
     tail_threshold_(tail_threshold_),
     count_threshold_(count_threshold_),
     vertex_multiplier_(vertex_multiplier_),
+    score_threshold_(score_threshold_),
     connection_score_threshold_(connection_score_threshold),
     relative_coverage_threshold_(relative_coverage_threshold_),
     connection_length_threshold_(connection_length_threshold_),
@@ -41,9 +43,10 @@ shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> BarcodeScoreCo
     auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(g_, barcode_extractor_);
     vector<ScaffoldGraph::ScaffoldGraphVertex> scaffold_vertices;
     copy(scaffold_graph.vbegin(), scaffold_graph.vend(), back_inserter(scaffold_vertices));
-    ScoreDistributionBasedThresholdFinder
-        threshold_finder(g_, scaffold_vertices, score_function, params.vertex_multiplier_);
-    double score_threshold = threshold_finder.GetThreshold();
+//    ScoreDistributionBasedThresholdFinder
+//        threshold_finder(g_, scaffold_vertices, score_function, params.vertex_multiplier_);
+//    double score_threshold = threshold_finder.GetThreshold();
+    double score_threshold = params.score_threshold_;
     INFO("Setting containment index threshold to " << score_threshold);
     auto constructor = make_shared<path_extend::scaffold_graph::ScoreFunctionScaffoldGraphFilter>(g_, scaffold_graph,
                                                                                                   score_function,

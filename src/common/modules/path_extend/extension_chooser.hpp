@@ -1560,43 +1560,6 @@ private:
     DECL_LOGGER("CoordCoverageExtensionChooser");
 };
 
-class EdgesGetter {
- public:
-    virtual ~EdgesGetter() {}
-
-    virtual vector<EdgeId> GetUniqueEdges(const BidirectionalPath& path) const = 0;
-};
-
-
-class PredicateBasedUniqueEdgesGetter: public EdgesGetter {
-    const Graph& g_;
-    const func::TypedPredicate<EdgeId> predicate_;
-    const size_t distance_;
- public:
-    PredicateBasedUniqueEdgesGetter(const Graph &g, const func::TypedPredicate<EdgeId>& predicate, size_t distance)
-        : g_(g), predicate_(predicate), distance_(distance) {}
-
-    virtual vector<EdgeId> GetUniqueEdges(const BidirectionalPath& path) const override {
-        DEBUG("Getting unique edges");
-        vector<EdgeId> result;
-        for (int i =  (int)path.Size() - 1; i >= 0; --i) {
-            DEBUG("Applying predicate");
-            if (predicate_(path.At(i))) {
-                result.push_back(path.At(i));
-            }
-            DEBUG("Pushed back");
-            if (path.LengthAt(i) > distance_) {
-                return result;
-            }
-        }
-        std::reverse(result.begin(), result.end());
-        DEBUG("Finished getting unique edges");
-        return result;
-    }
-
-    DECL_LOGGER("PredicateBasedUniqueEdgesGetter");
-};
-
 class BarcodeEntryCollector {
  public:
     virtual ~BarcodeEntryCollector() {}
@@ -1639,11 +1602,22 @@ class SimpleBarcodeEntryCollector: public BarcodeEntryCollector {
         };
         auto edge_predicate = func::AndOperator<EdgeId>(coverage_predicate, length_predicate);
         DEBUG("Got predicate")
-        PredicateBasedUniqueEdgesGetter edges_getter(g_, edge_predicate, distance_);
-        auto edges = edges_getter.GetUniqueEdges(path);
+        auto edges_and_extra_prefix = GetUniqueEdges(path, edge_predicate, distance_);
+        auto unique_edges = edges_and_extra_prefix.first;
+        size_t extra_prefix_length = edges_and_extra_prefix.second;
         DEBUG("Got unique edges");
         barcode_index::SimpleVertexEntry result;
-        for (const auto& edge: edges) {
+        if (extra_prefix_length > 0 and unique_edges.size() > 0) {
+            auto last_edge = unique_edges.back();
+            //todo ineffective method
+            auto barcodes_from_tail = barcode_index_->GetBarcodesFromRange(last_edge, 1,
+                                                                           extra_prefix_length, g_.length(last_edge));
+            for (const auto& barcode: barcodes_from_tail) {
+                result.insert(barcode);
+            }
+            unique_edges.pop_back();
+        }
+        for (const auto& edge: unique_edges) {
             auto barcode_it_begin = barcode_index_->barcode_iterator_begin(edge);
             auto barcode_it_end = barcode_index_->barcode_iterator_end(edge);
             for (auto it = barcode_it_begin; it != barcode_it_end; ++it) {
@@ -1662,6 +1636,25 @@ class SimpleBarcodeEntryCollector: public BarcodeEntryCollector {
             }
         }
         return 0;
+    }
+
+    std::pair<vector<EdgeId>, size_t> GetUniqueEdges(const BidirectionalPath& path,
+                                                     const func::TypedPredicate<EdgeId>& predicate,
+                                                     size_t distance) const {
+        DEBUG("Getting unique edges");
+        vector<EdgeId> result;
+        for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+            DEBUG("Applying predicate");
+            if (predicate(path.At(i))) {
+                result.push_back(path.At(i));
+                DEBUG("Pushed back " << path.At(i).int_id());
+            }
+            if (path.LengthAt(i) > distance) {
+                return std::make_pair(result, path.LengthAt(i) - distance);
+            }
+        }
+        DEBUG("Finished getting unique edges");
+        return std::make_pair(result, static_cast<size_t>(0));
     }
 
     DECL_LOGGER("SimpleBarcodeEntryCollector");
@@ -1684,6 +1677,9 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
 
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
         vector<EdgeWithDistance> result;
+        DEBUG("Trying to extend path " << path.GetId());
+        DEBUG("Current length: " << path.Length());
+        DEBUG("Trying to extend edge " << path.Back());
         auto path_barcodes = barcode_entry_collector_->CollectEntry(path);
         DEBUG(path_barcodes.size() << " barcodes on path");
         if (path_barcodes.size() == 0) {
