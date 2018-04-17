@@ -16,7 +16,7 @@ class ChromosomeRemoval : public spades::AssemblyStage {
 public:
     ChromosomeRemoval(size_t ext_limit = 0)
             : AssemblyStage("Chromosome Removal", "THIS SHOULD BE REWRITTEN AFTER STAGES REVISITED"), long_component_(), long_vertex_component_(),
-              deadends_count_(), ext_limit_(ext_limit), full_name_(std::string("chromosome_removal") + (ext_limit == 0?std::string(""):std::to_string(ext_limit))) {
+              deadends_count_(), component_list_(), ext_limit_(ext_limit), full_name_(std::string("chromosome_removal") + (ext_limit == 0?std::string(""):std::to_string(ext_limit))) {
         this->set_id(full_name_);
     }
 
@@ -27,6 +27,7 @@ private:
     std::unordered_map <EdgeId, size_t> long_component_;
     std::unordered_map <VertexId, size_t> long_vertex_component_;
     std::unordered_map <EdgeId, size_t> deadends_count_;
+    std::vector<std::vector<EdgeId>> component_list_;
 
     size_t ext_limit_;
     size_t CalculateComponentSize(debruijn_graph::EdgeId e, Graph &g_);

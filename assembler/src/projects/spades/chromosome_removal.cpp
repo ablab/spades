@@ -68,6 +68,7 @@ size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
         long_vertex_component_[g_.EdgeStart(edge)] = ans;
         long_vertex_component_[g_.EdgeEnd(edge)] = ans;
         deadends_count_[edge] = deadend_count;
+        component_list_.push_back(vector(used.begin(), used.end()));
     }
     return ans;
 }
@@ -335,15 +336,61 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, double 
     long_vertex_component_.clear();
     long_component_.clear();
     deadends_count_.clear();
-    size_t component_size_limit = 200000;
+    component_list_.clear();
+    size_t component_size_max = 200000;
+    size_t component_size_min = 1000;
+    std::string out_file = "components";
+    double var = 0.3;
     DEBUG("calculating component sizes");
     for (auto iter = gp.g.ConstEdgeBegin(true); ! iter.IsEnd(); ++iter) {
         if (long_component_.find(*iter) == long_component_.end()) {
             CalculateComponentSize(*iter, gp.g);
         }
     }
-    for (auto iter = gp.g.ConstEdgeBegin(true); ! iter.IsEnd(); ++iter) {
+    CoverageUniformityAnalyzer coverage_analyzer(gp.g, 0);
+    for (auto &comp: component_list_) {
+        VERIFY(comp.size() > 0);
+        EdgeId first_edge = comp[0];
+//conjugate, so /2
+        size_t comp_size = (long_component_[first_edge])/2;
+        size_t deadends_count = deadends_count_[first_edge] ;
+        if (comp_size > component_size_min && comp_size < component_size_max &&
+                (deadends_count == 0 || deadends_count == 4)) {
 
+            vector<pair<double, size_t>> coverages;
+            size_t total_len = 0;
+            size_t used_len = 0;
+            for (auto edge:comp) {
+                coverages.push_back (make_pair(gp.g.coverage(edge), gp.g.length(edge)));
+                total_len += gp.g.length(edge));
+                if (gp.used_edges.find(edge) != gp.used_edges.end())
+                    used_len += gp.g.length(edge);
+            }
+            if (used_len > 0.5 * total_len) {
+                DEBUG("Already found circular path ");
+                continue;
+            }
+            double average_cov = coverage_analyzer.CountMedianCoverage(coverages, total_len);
+            size_t good_len = 0;
+            for (auto edge:comp) {
+                if (gp.g.coverage(edge) > (1-var) * average_cov && gp.g.coverage(edge) < (1 - var) * average_cov)
+                    good_len += gp.g.length(edge);
+            }
+            if (average_cov < ext_limit_ * 1.3) {
+                DEBUG ("component coverage close to current limit");
+            } else if (good_len < 0.8 * total_len) {
+                DEBUG ("component coverage too variable: fraction close to average" << good_len *1.0/total_len);
+            } else {
+                std::ofstream is(cfg::get().output_dir + out_file);
+                size_t count = 0;
+                for (const auto &s: res_strings) {
+                    is << ">NODE_" << count << endl;
+                    is << s << endl;
+                    count ++;
+                }
+            }
+
+        }
     }
 }
 

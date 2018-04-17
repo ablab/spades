@@ -18,17 +18,24 @@ double CoverageUniformityAnalyzer::CountMedianCoverage() const{
             short_len += g_.length(*iter);
         }
     }
+    double res = CountMedianCoverage(coverages, total_len);
+    INFO ("genomic coverage is "<< res << " calculated of length " << size_t (double(total_len) * 0.5));
+    return res;
+}
+
+double CoverageUniformityAnalyzer::CountMedianCoverage(std::vector<std::pair<double, size_t>> coverages, size_t total_len) const {
     if (total_len == 0){
         INFO("Median coverage detection failed, not enough long edges");
         return -1.0;
     }
     std::sort(coverages.begin(), coverages.end());
     size_t i = 0;
+    size_t cur_len = 0;
     while (cur_len < total_len/2 && i <coverages.size()) {
         cur_len += coverages[i].second;
         i++;
     }
-    INFO ("genomic coverage is "<< coverages[i - 1].first << " calculated of length " << size_t (double(total_len) * 0.5));
+
     return coverages[i - 1].first;
 }
 

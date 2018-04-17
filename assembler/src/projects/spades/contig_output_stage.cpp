@@ -30,6 +30,7 @@ bool CheckUsedPath(const path_extend::BidirectionalPath* path, set<EdgeId> &used
     }
     for (size_t i = 0; i < path_len; i++) {
         used_edges.insert(path->At(i));
+        used_edges.insert(g.conjugate(path->At(i)));
     }
     if (used_len > total_len * 0.8) return true;
     else return false;
