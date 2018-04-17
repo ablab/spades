@@ -18,6 +18,7 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParamsFromCfg(s
                                         LENGTH_NORMALIZER_EXPONENT);
     double vertex_multiplier = cfg::get().ts_res.scaff_con.vertex_multiplier * length_normalizer;
 
+    double score_threshold = cfg::get().ts_res.scaff_con.score_threshold;
     double connection_score_threshold = cfg::get().ts_res.scaff_con.connection_score_threshold;
     double relative_coverage_threshold = cfg::get().ts_res.scaff_con.relative_coverage_threshold;
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
@@ -27,7 +28,7 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParamsFromCfg(s
 
     size_t transitive_distance_threshold = cfg::get().ts_res.scaff_con.transitive_distance_threshold;
     size_t min_length_for_barcode_collection = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
-    ScaffolderParams result(length_threshold, tail_threshold, count_threshold, vertex_multiplier,
+    ScaffolderParams result(length_threshold, tail_threshold, count_threshold, vertex_multiplier, score_threshold,
                             connection_score_threshold, relative_coverage_threshold,
                             connection_length_threshold, connection_count_threshold,
                             initial_distance, split_procedure_strictness, transitive_distance_threshold,
@@ -133,12 +134,11 @@ CloudScaffoldGraphConstructionPipeline GapScaffoldGraphPipelineConstructor::Cons
     auto params = params_constructor.ConstructScaffolderParamsFromCfg(min_length_);
     auto initial_constructor = GetInitialConstructor(params, scaffold_vertices);
     auto iterative_constructor_callers = ConstructStages(params, scaffold_vertices);
-    INFO("Created constructors");
+    INFO("Created " << iterative_constructor_callers.size() << " stages");
     CloudScaffoldGraphConstructionPipeline pipeline(initial_constructor, gp_.g, params);
     for (const auto stage: iterative_constructor_callers) {
         pipeline.AddStage(stage);
     }
-    pipeline.Run();
     return pipeline;
 }
 GapScaffoldGraphPipelineConstructor::GapScaffoldGraphPipelineConstructor(
@@ -252,9 +252,10 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> MergingScaffoldGraph
     auto scaffold_index_extractor = ConstructSimpleEdgeIndex(scaffold_vertices, barcode_extractor_, params, max_threads_);
 
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
-
     const size_t min_pipeline_length = cfg::get().ts_res.scaff_con.full_pipeline_length;
     bool launch_full_pipeline = min_length_ >= min_pipeline_length;
+    INFO("Min scaffold vertex length: " << min_length_);
+    INFO("Full pipeline length threshold: " << min_pipeline_length);
     if (launch_full_pipeline) {
         const double EDGE_LENGTH_FRACTION = 0.5;
         auto fraction_tail_threshold_getter =
@@ -270,9 +271,9 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> MergingScaffoldGraph
                                                                                         max_threads_));
         iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
     }
-    bool scaffolding_mode = true;
-    iterative_constructor_callers.push_back(make_shared<CompositeConnectionConstructorCaller>(
-        gp_, barcode_extractor_, scaffold_index_extractor, unique_storage_, max_threads_, scaffolding_mode));
+//    bool scaffolding_mode = true;
+//    iterative_constructor_callers.push_back(make_shared<CompositeConnectionConstructorCaller>(
+//        gp_, barcode_extractor_, scaffold_index_extractor, unique_storage_, max_threads_, scaffolding_mode));
     return iterative_constructor_callers;
 }
 } //path_extend

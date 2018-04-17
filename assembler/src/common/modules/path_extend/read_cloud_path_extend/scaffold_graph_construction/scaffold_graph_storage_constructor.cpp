@@ -135,16 +135,22 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
             pipeline_constructor = make_shared<FullScaffoldGraphPipelineConstructor>(gp_, unique_storage,
                                                                                      barcode_extractor_,
                                                                                      max_threads_, min_length);
+            INFO("Constructing scaffold graph in basic mode");
+            break;
         }
         case scaffold_graph_construction_pipeline_type::Scaffolding: {
             pipeline_constructor = make_shared<MergingScaffoldGraphPipelineConstructor>(gp_, unique_storage,
                                                                                         barcode_extractor_,
                                                                                         max_threads_, min_length);
+            INFO("Constructing scaffold graph in gap closer mode");
+            break;
         }
         case scaffold_graph_construction_pipeline_type::Binning: {
             pipeline_constructor = make_shared<BinningScaffoldGraphPipelineConstructor>(gp_, unique_storage,
                                                                                         barcode_extractor_,
                                                                                         max_threads_, min_length);
+            INFO("Constructing scaffold graph in binning mode");
+            break;
         }
     }
     auto pipeline = pipeline_constructor->ConstructPipeline(scaffold_vertices);

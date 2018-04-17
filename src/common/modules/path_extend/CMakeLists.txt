@@ -44,7 +44,11 @@ add_library(path_extend STATIC
             read_cloud_path_extend/scaffold_graph_construction/containment_index_threshold_finder.cpp
             read_cloud_path_extend/read_cloud_polisher_support.cpp
             read_cloud_path_extend/scaffold_graph_construction/construction_callers.cpp
-            read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_constructor.cpp)
+            read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_constructor.cpp
+        read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.cpp
+            read_cloud_path_extend/scaffold_graph_gap_closer/scaffold_graph_gap_closer.cpp
+            read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.cpp
+            read_cloud_path_extend/fragment_model/distribution_extractor.cpp)
 
 target_link_libraries(path_extend assembly_graph ssw configs)
 
