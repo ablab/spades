@@ -31,6 +31,9 @@ struct Gap {
     uint32_t trash_previous;
     uint32_t trash_current;
 
+//True if gap is resolved not by ordinary procedure but by some sort of magic, and should not be changed.
+    bool is_final;
+
     static const int INVALID_GAP = std::numeric_limits<int>::min();
 
     static const Gap& INVALID() {
@@ -39,16 +42,17 @@ struct Gap {
     }
 
     //gap is in k+1-mers and does not know about "trash" regions
-    explicit Gap(int gap_ = 0, uint32_t trash_previous_ = 0, uint32_t trash_current_ = 0)
-     : gap(gap_), trash_previous(trash_previous_), trash_current(trash_current_)
+    explicit Gap(int gap_ = 0, uint32_t trash_previous_ = 0, uint32_t trash_current_ = 0, bool is_final_ = true)
+     : gap(gap_), trash_previous(trash_previous_), trash_current(trash_current_), is_final(is_final_)
      { }
 
     Gap conjugate() const {
-        return Gap(gap, trash_current, trash_previous);
+        return Gap(gap, trash_current, trash_previous, is_final);
     }
 
     bool operator==(const Gap &that) const {
-        return gap == that.gap && trash_previous == that.trash_previous && trash_current == that.trash_current;
+        return gap == that.gap && trash_previous == that.trash_previous && trash_current == that.trash_current
+               && is_final == that.is_final;
     }
 
     bool operator!=(const Gap &that) const {
@@ -69,7 +73,7 @@ struct Gap {
 };
 
 inline std::ostream& operator<<(std::ostream& os, Gap gap) {
-    return os << "[" << gap.gap << ", " << gap.trash_previous << ", " << gap.trash_current << "]";
+    return os << "[" << gap.gap << ", " << gap.trash_previous << ", " << gap.trash_current << "], final: "<< gap.is_final;
 }
 
 class PathListener {

@@ -1212,7 +1212,7 @@ protected:
         if (candidates.size() == 1) {
             DEBUG("push");
             EdgeId eid = candidates.back().e_;
-            path.PushBack(eid, Gap(candidates.back().d_));
+            path.PushBack(eid, Gap(candidates.back().d_, 0, 0, false));
             DEBUG("push done");
             return true;
         }
@@ -1229,13 +1229,13 @@ protected:
             for (size_t i = 1; i < candidates.size(); ++i) {
                 DEBUG("push other candidates " << i);
                 BidirectionalPath *p = new BidirectionalPath(path);
-                p->PushBack(candidates[i].e_, Gap(candidates[i].d_));
+                p->PushBack(candidates[i].e_, Gap(candidates[i].d_, 0 ,0, false));
                 BidirectionalPath *cp = new BidirectionalPath(p->Conjugate());
                 paths_storage->AddPair(p, cp);
             }
 
             DEBUG("push");
-            path.PushBack(candidates.front().e_, Gap(candidates.front().d_));
+            path.PushBack(candidates.front().e_, Gap(candidates.front().d_, 0, 0, false));
             DEBUG("push done");
             res = true;
 
@@ -1282,7 +1282,7 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
         }
         return Gap(gap.estimated_dist() + int(g_.k())
                    - int(gap.left_trim()) - int(gap.right_trim()),
-                   uint32_t(gap.left_trim()), uint32_t(gap.right_trim()));
+                   uint32_t(gap.left_trim()), uint32_t(gap.right_trim()), false);
     }
 
 protected:
@@ -1349,7 +1349,7 @@ protected:
         } else {
             DEBUG("Gap joiners off");
             VERIFY(candidates.back().d_ > int(g_.k()));
-            gap = Gap(candidates.back().d_);
+            gap = Gap(candidates.back().d_, 0, 0, false);
         }
 
         return TryUseEdge(path, e, NormalizeGap(gap));
