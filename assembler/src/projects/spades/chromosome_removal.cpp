@@ -68,7 +68,7 @@ size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
         long_vertex_component_[g_.EdgeStart(edge)] = ans;
         long_vertex_component_[g_.EdgeEnd(edge)] = ans;
         deadends_count_[edge] = deadend_count;
-        component_list_.push_back(vector(used.begin(), used.end()));
+        component_list_.push_back(std::vector<EdgeId>(used.begin(), used.end()));
     }
     return ans;
 }
@@ -320,19 +320,20 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
 
 
 void RunHMMDetectionScript (conj_graph_pack &gp) {
-    stringstream ss;
-//FIXME to config
-//FIXME I'll be murdered if _THIS_ will fall into  master
-
-    char result[PATH_MAX];
-    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-    ss <<"python " << fs::parent_path(fs::parent_path(result)) << "/src/plasmid_utils/chromosomal_contig_removal.py";
-    ss << " " <<  cfg::get().output_dir + "chromosome_removal_only_prefilter.fasta";
-    INFO ("Doing HMM based filtation! " + ss.str());
-    system (ss.str().c_str());
+//TODO remove
+//    stringstream ss;
+////FIXME to config
+////FIXME I'll be murdered if _THIS_ will fall into  master
+//
+//    char result[PATH_MAX];
+//    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+//    ss <<"python " << fs::parent_path(fs::parent_path(result)) << "/src/plasmid_utils/chromosomal_contig_removal.py";
+//    ss << " " <<  cfg::get().output_dir + "chromosome_removal_only_prefilter.fasta";
+//    INFO ("Doing HMM based filtation! " + ss.str());
+//    system (ss.str().c_str());
 }
 
-void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, double ext_limit_) {
+void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, size_t ext_limit_) {
     long_vertex_component_.clear();
     long_component_.clear();
     deadends_count_.clear();
@@ -354,6 +355,7 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, double 
 //conjugate, so /2
         size_t comp_size = (long_component_[first_edge])/2;
         size_t deadends_count = deadends_count_[first_edge] ;
+        size_t component_count = 1;
         if (comp_size > component_size_min && comp_size < component_size_max &&
                 (deadends_count == 0 || deadends_count == 4)) {
 
@@ -362,7 +364,7 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, double 
             size_t used_len = 0;
             for (auto edge:comp) {
                 coverages.push_back (make_pair(gp.g.coverage(edge), gp.g.length(edge)));
-                total_len += gp.g.length(edge));
+                total_len += gp.g.length(edge);
                 if (gp.used_edges.find(edge) != gp.used_edges.end())
                     used_len += gp.g.length(edge);
             }
@@ -382,12 +384,17 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, double 
                 DEBUG ("component coverage too variable: fraction close to average" << good_len *1.0/total_len);
             } else {
                 std::ofstream is(cfg::get().output_dir + out_file);
-                size_t count = 0;
-                for (const auto &s: res_strings) {
-                    is << ">NODE_" << count << endl;
-                    is << s << endl;
-                    count ++;
+                size_t count = 1;
+                for (auto edge: comp) {
+                    if (edge <= gp.g.conjugate(edge)) {
+                        is << ">COMPONENT_" << component_count << "_EDGE_" << count << endl;
+                        is << gp.g.EdgeNucls(edge) << endl;
+                        count++;
+                        gp.g.DeleteEdge(edge);
+                    }
                 }
+
+                component_count ++;
             }
 
         }

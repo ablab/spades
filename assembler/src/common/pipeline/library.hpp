@@ -239,7 +239,7 @@ public:
     }
 
 private:
-    LibrabryType type_;
+    LibraryType type_;
     LibraryOrientation orientation_;
 
     std::vector<std::string> left_paired_reads_;

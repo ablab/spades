@@ -23,13 +23,13 @@ public:
     void run(conj_graph_pack &gp, const char *);
 
 private:
-    std::string full_name_;
     std::unordered_map <EdgeId, size_t> long_component_;
     std::unordered_map <VertexId, size_t> long_vertex_component_;
     std::unordered_map <EdgeId, size_t> deadends_count_;
     std::vector<std::vector<EdgeId>> component_list_;
 
     size_t ext_limit_;
+    std::string full_name_;
     size_t CalculateComponentSize(debruijn_graph::EdgeId e, Graph &g_);
 
     double RemoveLongGenomicEdges(conj_graph_pack &gp, size_t long_edge_bound, double coverage_limits,
@@ -48,7 +48,7 @@ private:
 
     DECL_LOGGER("ChromosomeRemoval");
 
-    void OutputSuspiciousComponents (conj_graph_pack &gp, double ext_limit_);
+    void OutputSuspiciousComponents (conj_graph_pack &gp, size_t ext_limit_);
     void ReferenceBasedRemoveChromosomal(conj_graph_pack &gp);
 };
 }
