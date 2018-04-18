@@ -46,6 +46,10 @@ struct Gap {
      : gap(gap_), trash_previous(trash_previous_), trash_current(trash_current_), is_final(is_final_)
      { }
 
+    explicit Gap(int gap_, bool is_final_)
+            : gap(gap_), trash_previous(0), trash_current(0), is_final(is_final_)
+    { }
+
     Gap conjugate() const {
         return Gap(gap, trash_current, trash_previous, is_final);
     }
