@@ -340,7 +340,7 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, size_t 
     component_list_.clear();
     size_t component_size_max = 200000;
     size_t component_size_min = 1000;
-    std::string out_file = "components";
+    std::string out_file = "components" + std::string(ext_limit_);
     double var = 0.3;
     DEBUG("calculating component sizes");
     for (auto iter = gp.g.ConstEdgeBegin(true); ! iter.IsEnd(); ++iter) {
@@ -358,7 +358,7 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, size_t 
         size_t component_count = 1;
         if (comp_size > component_size_min && comp_size < component_size_max &&
                 (deadends_count == 0 || deadends_count == 4)) {
-
+            DEBUG("Checking component size " << comp_size);
             vector<pair<double, size_t>> coverages;
             size_t total_len = 0;
             size_t used_len = 0;
@@ -383,6 +383,7 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, size_t 
             } else if (good_len < 0.8 * total_len) {
                 DEBUG ("component coverage too variable: fraction close to average" << good_len *1.0/total_len);
             } else {
+                DEBUG("Component is good!");
                 std::ofstream is(cfg::get().output_dir + out_file);
                 size_t count = 1;
                 for (auto edge: comp) {
