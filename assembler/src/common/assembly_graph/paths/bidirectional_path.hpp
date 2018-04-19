@@ -545,9 +545,9 @@ private:
         data_.push_front(e);
         if (gap_len_.size() > 0) {
             VERIFY(gap_len_[0] == Gap());
-            gap_len_[0]= gap;
+            gap_len_[0] = gap;
         }
-        gap_len_.push_front(Gap(0, {0, 0}));
+        gap_len_.push_front(Gap());
 
         int length = (int) g_.length(e);
         if (cumulative_len_.empty()) {
