@@ -89,7 +89,7 @@ def scikit_multNB (input_list):
  #   print (clf.predict_proba(a))
 
 #    return str(clf.predict(a)), str(clf.predict_proba(a))
-    return clf.predict(a)[0] + " " + " ".join(map(str,clf.predict_proba(a)[0])) 
+    return clf.predict(a)[0] + " " + " ".join(map(str,clf.predict_log_proba(a)[0])) 
 #print(clf.predict(a))
 #print(clf.predict_proba(a))
 

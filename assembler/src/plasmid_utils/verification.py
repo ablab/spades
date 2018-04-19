@@ -122,26 +122,6 @@ for i in table:
         i.append("hmm-")
 
 
-# Add classifier
-
-for i in table:   # print (i)
-    if i[2]!="-":
-        i.append (naive_bayes(i[2].split(" ")))
-    else:
-         i.append ("NBC_Unknown")
-
-
-
-# Add scikit_classifier 
-for i in table:   # print (i)
-    if i[2]!="-" or i[2][0]!="-":
-        print (i[2].split(" "))
-        i.append (scikit_multNB(i[2].split(" ")))
-    else:
-         i.append ("Sc_NBC_Unknown")
-
-
-
 
 # add cbar results 
 with open(name + "_cbar.txt", "r") as infile3:
@@ -160,6 +140,27 @@ for i in table:
     i.append("cbar+")
   else:
     i.append("cbar-")
+
+
+# Add classifier
+
+for i in table:   # print (i)
+    if i[2]!="-":
+        i.append (naive_bayes(i[2].split(" ")))
+    else:
+         i.append ("NBC_Unknown")
+
+
+
+# Add scikit_classifier 
+for i in table:   # print (i)
+    if i[2]!="-" or i[2][0]!="-":
+        print (i[2].split(" "))
+        i.append (scikit_multNB(i[2].split(" ")))
+    else:
+         i.append ("Scikit_NBC_Unknown")
+
+
 
 # add blast results
 
@@ -231,19 +232,19 @@ viruses_list = [i.strip() for i in viruses_list]
 # add to table
 for i in table:
   if i[0] in plasmids_list:
-    i.insert(3, "Plasmid") #+ plasmids[plasmids_list.index(i[0])+1])
+    i.append( "Plasmid") #+ plasmids[plasmids_list.index(i[0])+1])
   elif  i[0] in plasmids_bad_list:
-    i.insert(3, "Plasmid_bad") # + plasmids_bad[plasmids_bad_list.index(i[0])+1])
+    i.append("Plasmid_bad") # + plasmids_bad[plasmids_bad_list.index(i[0])+1])
   elif i[0] in unclass_list:
-     i.insert(3, "Unclassified")
+     i.append("Unclassified")
   elif  i[0] in chrom_list:
-     i.insert(3, "Chromosome")
+     i.append("Chromosome")
   elif  i[0] in no_sig_list:
-     i.insert(3, "Non-significant")
+     i.append("Non-significant")
   elif  i[0] in viruses_list:
-     i.insert(3, "Virus")
+     i.append("Virus")
   else: 
-     i.insert(3, "-")
+     i.append("-")
 
 
 
