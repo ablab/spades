@@ -103,8 +103,8 @@ std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const Bidirectional
         TRACE("Adding edge " << g_.str(path[i]));
         TRACE("Gap " << gap);
 
-        answer.erase((gap.trash_previous <= answer.length()) ?
-                            answer.length() - gap.trash_previous : 0);
+        answer.erase((gap.trash.previous <= answer.length()) ?
+                            answer.length() - gap.trash.previous : 0);
 
         int overlap_after_trim = gap.overlap_after_trim(k_);
         TRACE("Overlap after trim " << overlap_after_trim);
@@ -116,7 +116,7 @@ std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const Bidirectional
 
         VERIFY(overlap_after_trim >= 0);
 
-        answer += g_.EdgeNucls(path[i]).Subseq(gap.trash_current + overlap_after_trim).str();
+        answer += g_.EdgeNucls(path[i]).Subseq(gap.trash.current + overlap_after_trim).str();
     }
     TRACE("Sequence formed");
 

@@ -156,8 +156,8 @@ BOOST_AUTO_TEST_CASE( SimpleGapTest ) {
     size_t k = 5;
     path_extend::Gap g = MimicLAGapAnalyzer(k, s1, s2);
     BOOST_CHECK_EQUAL(14, 14);
-    BOOST_CHECK_EQUAL(g.trash_current, 4);
-    BOOST_CHECK_EQUAL(g.trash_previous, 4);
+    BOOST_CHECK_EQUAL(g.trash.current, 4);
+    BOOST_CHECK_EQUAL(g.trash.previous, 4);
     BOOST_CHECK_EQUAL(g.gap, -15);
 }
 

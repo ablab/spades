@@ -280,7 +280,7 @@ private:
             p.PopBack(p.Size() - loop_start_index);
 
             if (p.Back() != loop_incoming) {
-                p.PushBack(loop_incoming, Gap(max(0, gap.gap - (int) g_.length(loop_incoming)  - (int) g_.length(forward_cycle_edge)), gap.trash_previous));
+                p.PushBack(loop_incoming, Gap(max(0, gap.gap - (int) g_.length(loop_incoming)  - (int) g_.length(forward_cycle_edge)), {gap.trash.previous, 0}));
             }
             p.PushBack(forward_cycle_edge);
             DEBUG("Restored the path");
@@ -944,7 +944,7 @@ protected:
         bool success = used_storage_.TryUseEdge(path, e, gap);
         if (success) {
             DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
-                                          << gap.gap << ", trash length: " << gap.trash_previous << "-" << gap.trash_current);
+                                          << gap.gap << ", trash length: " << gap.trash.previous << "-" << gap.trash.current);
         }
         return success;
     }
@@ -1282,7 +1282,7 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
         }
         return Gap(gap.estimated_dist() + int(g_.k())
                    - int(gap.left_trim()) - int(gap.right_trim()),
-                   uint32_t(gap.left_trim()), uint32_t(gap.right_trim()), false);
+                   {uint32_t(gap.left_trim()), uint32_t(gap.right_trim())}, false);
     }
 
 protected:
@@ -1358,7 +1358,7 @@ protected:
     Gap NormalizeGap(Gap gap) const {
         VERIFY(gap != Gap::INVALID());
         if (gap.overlap_after_trim(g_.k()) > 0)
-            gap.trash_current += gap.overlap_after_trim(g_.k());
+            gap.trash.current += gap.overlap_after_trim(g_.k());
         return gap;
     }
 

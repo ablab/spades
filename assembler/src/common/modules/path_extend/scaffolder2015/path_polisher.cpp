@@ -126,7 +126,7 @@ Gap PathExtenderGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bid
         added += g_.length(result.Back());
     }
     //FIXME think of checking for 0 in advance
-    return Gap(orig_gap.gap - (int) added, 0, orig_gap.trash_current);
+    return Gap(orig_gap.gap - (int) added, {0, orig_gap.trash.current});
 }
 
 Gap DijkstraGapCloser::FillWithBridge(const Gap &orig_gap,
@@ -284,7 +284,7 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
 Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, BidirectionalPath &path) const {
     VertexId target_vertex = g_.EdgeStart(target_edge);
 //TODO:: condition about trash_previous - do we need it globally?
-    if (orig_gap.gap <= min_gap_ || orig_gap.trash_previous > 0) {
+    if (orig_gap.gap <= min_gap_ || orig_gap.trash.previous > 0) {
         return orig_gap;
     } else {
         vector<EdgeId> addition;

@@ -27,9 +27,12 @@ namespace path_extend {
 class BidirectionalPath;
 
 struct Gap {
+    struct Trash {
+        uint32_t previous;
+        uint32_t current;
+    };
     int gap;
-    uint32_t trash_previous;
-    uint32_t trash_current;
+    Trash trash;
 
 //True if gap is resolved not by ordinary procedure but by some sort of magic, and should not be changed.
     bool is_final;
@@ -42,20 +45,20 @@ struct Gap {
     }
 
     //gap is in k+1-mers and does not know about "trash" regions
-    explicit Gap(int gap_ = 0, uint32_t trash_previous_ = 0, uint32_t trash_current_ = 0, bool is_final_ = true)
-     : gap(gap_), trash_previous(trash_previous_), trash_current(trash_current_), is_final(is_final_)
+    explicit Gap(int gap_, Gap::Trash trash_, bool is_final_ = true)
+     : gap(gap_), trash(trash_), is_final(is_final_)
      { }
 
-    explicit Gap(int gap_, bool is_final_)
-            : gap(gap_), trash_previous(0), trash_current(0), is_final(is_final_)
+    explicit Gap(int gap_ = 0, bool is_final_ = true)
+            : gap(gap_), trash{0, 0}, is_final(is_final_)
     { }
 
     Gap conjugate() const {
-        return Gap(gap, trash_current, trash_previous, is_final);
+        return Gap(gap, {trash.current, trash.previous}, is_final);
     }
 
     bool operator==(const Gap &that) const {
-        return gap == that.gap && trash_previous == that.trash_previous && trash_current == that.trash_current
+        return gap == that.gap && trash.previous == that.trash.previous && trash.current == that.trash.current
                && is_final == that.is_final;
     }
 
@@ -68,16 +71,16 @@ struct Gap {
     }
 
     int overlap_after_trim(size_t k) const {
-        return overlap(k) - trash_current - trash_previous;
+        return overlap(k) - trash.current - trash.previous;
     }
 
     bool NoTrash() const {
-        return trash_current == 0 && trash_previous == 0;
+        return trash.current == 0 && trash.previous == 0;
     }
 };
 
 inline std::ostream& operator<<(std::ostream& os, Gap gap) {
-    return os << "[" << gap.gap << ", " << gap.trash_previous << ", " << gap.trash_current << "], final: "<< gap.is_final;
+    return os << "[" << gap.gap << ", " << gap.trash.previous << ", " << gap.trash.current << "], final: "<< gap.is_final;
 }
 
 class PathListener {
@@ -540,7 +543,7 @@ private:
             VERIFY(gap_len_[0] == Gap());
             gap_len_[0]= gap;
         }
-        gap_len_.push_front(Gap(0, 0, 0));
+        gap_len_.push_front(Gap(0, {0, 0}));
 
         int length = (int) g_.length(e);
         if (cumulative_len_.empty()) {
