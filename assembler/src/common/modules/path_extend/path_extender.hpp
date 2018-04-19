@@ -1212,7 +1212,7 @@ protected:
         if (candidates.size() == 1) {
             DEBUG("push");
             EdgeId eid = candidates.back().e_;
-            path.PushBack(eid, Gap(candidates.back().d_, false));
+            path.PushBack(eid, Gap(candidates.back().d_));
             DEBUG("push done");
             return true;
         }
@@ -1229,13 +1229,13 @@ protected:
             for (size_t i = 1; i < candidates.size(); ++i) {
                 DEBUG("push other candidates " << i);
                 BidirectionalPath *p = new BidirectionalPath(path);
-                p->PushBack(candidates[i].e_, Gap(candidates[i].d_, false));
+                p->PushBack(candidates[i].e_, Gap(candidates[i].d_));
                 BidirectionalPath *cp = new BidirectionalPath(p->Conjugate());
                 paths_storage->AddPair(p, cp);
             }
 
             DEBUG("push");
-            path.PushBack(candidates.front().e_, Gap(candidates.front().d_, false));
+            path.PushBack(candidates.front().e_, Gap(candidates.front().d_));
             DEBUG("push done");
             res = true;
 
