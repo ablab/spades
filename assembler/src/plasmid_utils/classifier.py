@@ -1,5 +1,7 @@
-from math import log
+from sklearn.naive_bayes import MultinomialNB
 
+
+from math import log
 #Laplasian Smoothing
 def lap_smooth(table):
     ### adds 1 to each element of the table. Don't forget to add # of rows to denominator
@@ -17,8 +19,6 @@ def naive_bayes(input_list):
     plasm_genes=1041995
     chrom_genes=2990937
 
-
-
 # Open table
     with open("/Nancy/mrayko/jgi_10k/pfam_count_total_fin_sorted10.txt", 'r') as infile:
         table=infile.readlines()
@@ -34,11 +34,11 @@ def naive_bayes(input_list):
 
 # Add probabilities
 
-#P (plasm) of each hmm - # of occurences on plamids div. by (total number of genes in plasmids + num. of hmms)
-
-
 
     table=lap_smooth(table)
+    for i in table:
+    	for j in i[1:3]:
+    		if j==0: print (j)
 
     for i in table:
         i.append (float(i[1])/(chrom_genes+len(table)))	
@@ -48,16 +48,51 @@ def naive_bayes(input_list):
     chrom=0
     for i in input_list:
         for j in table:
-            if i==j[0]: 
-                chrom=chrom + log(j[3])
-                plasm=plasm + log(j[4])
+            #print (j[0])
+            if i==j[0]:
+            	#print
+                print ("log prob Chrom ", log(j[3])) 
+                #print ("plasm")
+                print ("log prob Plasm", log(j[4]))
+                chrom=chrom+log(j[3])
+                plasm=plasm+log(j[4])
+                
     res = plasm - chrom
-    if res > 0: return "NBC_Plasmid"  #["Plasmid", plasm, chrom]
-    else: return "NBC_Chromosome" # ["Chromosome", plasm, chrom]
+    if res > 0: return "Plasmid" + "  " +  str(plasm) + " " + str(chrom)
+    else: return str("Chromosome" + " " +  str(plasm) + " " +  str(chrom))
 
-   
-#print ("P plasmid = ", plasm) 
-#print ("P chromosome = ", chrom)
+
+def create_vector_pfams(hmms): # list of hmm lists
+
+    with open("pfam_names.list", "r") as infile:
+        pfam_list=infile.readlines()
+    pfam_list = [i.strip() for i in pfam_list] 
+
+
+    vector=[len(pfam_list)*[0]]*len(hmms)
+    for i in range(0,len(hmms)): # take each hit
+       for j in hmms[i]:
+        #print (j)
+        hit_index = pfam_list.index(j)
+        vector[i][hit_index]+=1
+    return vector
+
+
+def scikit_multNB (input_list):
+    import pickle
+    # load it again
+    with open('my_dumped_classifier.pkl', 'rb') as fid:
+        clf = pickle.load(fid)
+
+    a=create_vector_pfams([input_list])
+#    print (clf.predict(a))
+ #   print (clf.predict_proba(a))
+
+#    return str(clf.predict(a)), str(clf.predict_proba(a))
+    return clf.predict(a)[0] + " " + " ".join(map(str,clf.predict_proba(a)[0])) 
+#print(clf.predict(a))
+#print(clf.predict_proba(a))
+
 
 
 
@@ -65,29 +100,26 @@ def naive_bayes(input_list):
 
 # Apply classifier
 
-
-
-   
-
-
-
 def main():
-    return
 #lap_smooth(table)
 #	print (table[:3])
-#	input_list=("MCM_OB", "Phage_integrase", "Phage_integrase")
-#	print (naive_bayes(input_list))
+	#input_list=("MCM_OB", "Phage_integrase", "Phage_integrase")
+
+    #t="DUF11 CARDB TRAP_beta DUF2393"
+#    t="Y1_Tnp Y1_Tnp"
+ #   t=("HTH_17", "DUF5447", "Phage_Coat_B", "DUF2523", "Zot", "Phage_integrase", "PhdYeFM_antitox","ParE_toxin")
+    t = "Terminase_2 Resolvase HTH_17 Phage_AlpA VirE DUF3924 HTH_39"
+    input_list=(t.split(" "))
+   
+    print (naive_bayes(input_list))
+    print (scikit_multNB(input_list))
+    return
 
 
-#	return
+
+
+
 
 if __name__ == "__main__":
     # execute only if run as a script
     main()
-#print (434/0.000144770685574)
-#print (110/0.000104607027865)
-#print (int(1)/2990937)
-#print (plasm_genes+len(table))
-#print (int(1)/(plasm_genes+len(table)))
-#27     i.append (int(i[1])/2990937.0)
-#28     i.append (int(i[2])/1041995.0)

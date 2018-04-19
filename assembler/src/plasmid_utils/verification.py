@@ -8,7 +8,7 @@ from glob import glob
 from Bio import SeqIO
 from parse_blast_xml import parser
 from classifier import naive_bayes
-
+from classifier import scikit_multNB
 
 name_file = os.path.split(sys.argv[1])[1]
 
@@ -33,15 +33,16 @@ cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
 
 
 # run hmm
-os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
-os.system (hmmscan + " --noali --cut_ga  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
-os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$5<0.001 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
+#os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+
+#os.system (hmmscan + " --noali   -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+#os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$5<0.001 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 # run cbar
-os.system(cbar + " " + sys.argv[1] + " " + name + "_cbar.txt")
+#os.system(cbar + " " + sys.argv[1] + " " + name + "_cbar.txt")
 
 # run blast
-os.system ("blastn -query " + sys.argv[1] + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
+#os.system ("blastn -query " + sys.argv[1] + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
 
 
 # parse hmms
@@ -56,6 +57,13 @@ for i in tblout_pfam:
     i=[x for x in i if x]
 
 
+# get list of proteins
+pr=[]
+proteins = list(SeqIO.parse(name+"_proteins.fa", "fasta"))
+for i in proteins: 
+   pr.append(i.id)
+
+
 # Create table backbone.
 table =[]
 
@@ -63,7 +71,6 @@ ids=[]
 records = list(SeqIO.parse(sys.argv[1], "fasta"))
 for i in records: 
     ids.append(i.id)  # take all fasta ids and append to table
-
 
 for i in ids:
   table.append(i.split())
@@ -74,11 +81,13 @@ tblout_pfam = [i.split() for i in tblout_pfam]
 # add list of domains
 for item in table: # In table - add new field, and for each row
     item.append([])
+    pr_list=[]
     for j in tblout_pfam[3:-10]:  #check tblout (last 10 - service strings)
         if j[2] and item[0]: # if there is a protein in tblout and SRR in table
-            if item[0] in j[2]: # if there's the SRR in protein ID
-                item[-1].append(str(j[0])) # add to this new field
-
+            if j[2] not in pr_list: #  if we didn't see this protein yet
+                if item[0] in j[2]  and float(j[4]) < 0.01  : # if there's the SRR in protein ID and e-value < 0.01
+                    pr_list.append(j[2]) # add this protein to the list for given SRR
+                    item[-1].append(str(j[0])) # add to this new field
     # add our list378
     item.insert(-1,[])
     for i in item[-1]:
@@ -92,28 +101,45 @@ for item in table: # In table - add new field, and for each row
     item[-1]=' '.join(item[-1]) # turn list of genes into the string
     item[-2]=' '.join(item[-2])
 
+     # add number of total predicted proteins
+    counter=0
+    for i in pr: 
+        if item[0] in i: counter+=1
+ 
+    item.append (str(counter))
+     # add number of pfam hits
+    item.append(str(len(pr_list)))
+
+
 
 
 # Add HMM results
 for i in table:
 #    print(i[1])
     if i[1]!="-":
-         i.insert(1,"hmm+")
+        i.append("hmm+")
     else:
-        i.insert(1,"hmm-")
+        i.append("hmm-")
 
 
 # Add classifier
 
 for i in table:   # print (i)
-    if i[3]!="-":
-        i.insert (2,naive_bayes(i[3].split(" ")))
+    if i[2]!="-":
+        i.append (naive_bayes(i[2].split(" ")))
     else:
-         i.insert (2,"NBC_Unknown")
+         i.append ("NBC_Unknown")
 
-   #     i.insert(2, " ".join(naive_bayes(i)))
-#    else:
-  #      i.insert(2, "-")
+
+
+# Add scikit_classifier 
+for i in table:   # print (i)
+    if i[2]!="-" or i[2][0]!="-":
+        print (i[2].split(" "))
+        i.append (scikit_multNB(i[2].split(" ")))
+    else:
+         i.append ("Sc_NBC_Unknown")
+
 
 
 
@@ -131,9 +157,9 @@ for i in cbar_res[:10]:
 
 for i in table:
   if i[0] in cbar_list:
-    i.insert(2, "cbar+")
+    i.append("cbar+")
   else:
-    i.insert(2, "cbar-")
+    i.append("cbar-")
 
 # add blast results
 
@@ -151,9 +177,9 @@ plasmids_list = [i.strip() for i in plasmids_list]
 
 
 with open(name+"_plasmids_bad.names", "r") as pl_infile:
-          plasmids=pl_infile.readlines()
+          plasmids_bad=pl_infile.readlines()
 plasmids_bad_list=[]
-for i in plasmids:
+for i in plasmids_bad:
     if i[:4] == "NODE":
         plasmids_bad_list.append(i)
 
@@ -161,9 +187,9 @@ plasmids_bad_list = [i.strip() for i in plasmids_bad_list]
 
 
 with open(name+"_unclassified.names", "r") as pl_infile:
-           plasmids=pl_infile.readlines()
+           unclass=pl_infile.readlines()
 unclass_list=[]
-for i in plasmids:
+for i in unclass:
     if i[:4] == "NODE":
          unclass_list.append(i)  
 
@@ -171,31 +197,31 @@ unclass_list = [i.strip() for i in unclass_list]
 
 
 with open(name+"_chromosome.names", "r") as pl_infile:
-           plasmids=pl_infile.readlines()
+           chroms=pl_infile.readlines()
 chrom_list=[]
-for i in plasmids:
+for i in chroms:
      if i[:4] == "NODE":
          chrom_list.append(i)
 chrom_list = [i.strip() for i in chrom_list] 
 
 
 with open(name+"_no_significant.names", "r") as pl_infile:
-           plasmids=pl_infile.readlines()
-no_sig=[]
-for i in plasmids:
+           no_sign=pl_infile.readlines()
+no_sig_list=[]
+for i in no_sign:
      if i[:4] == "NODE":
-         no_sig.append(i)
-no_sig = [i.strip() for i in no_sig] 
+         no_sig_list.append(i)
+no_sig_list = [i.strip() for i in no_sig_list] 
 
 
 
 with open(name+"_viruses.names", "r") as pl_infile:
-           plasmids=pl_infile.readlines()
-viruses=[]
-for i in plasmids:
+           viruses=pl_infile.readlines()
+viruses_list=[]
+for i in viruses:
      if i[:4] == "NODE":
-         viruses.append(i)
-viruses = [i.strip() for i in viruses] 
+         viruses_list.append(i)
+viruses_list = [i.strip() for i in viruses_list] 
 
 
 
@@ -205,19 +231,20 @@ viruses = [i.strip() for i in viruses]
 # add to table
 for i in table:
   if i[0] in plasmids_list:
-    i.insert(3, "Plasmid")
+    i.insert(3, "Plasmid") #+ plasmids[plasmids_list.index(i[0])+1])
   elif  i[0] in plasmids_bad_list:
-    i.insert(3, "Plasmid_bad")
+    i.insert(3, "Plasmid_bad") # + plasmids_bad[plasmids_bad_list.index(i[0])+1])
   elif i[0] in unclass_list:
      i.insert(3, "Unclassified")
   elif  i[0] in chrom_list:
      i.insert(3, "Chromosome")
-  elif  i[0] in no_sig:
+  elif  i[0] in no_sig_list:
      i.insert(3, "Non-significant")
-  elif  i[0] in viruses:
+  elif  i[0] in viruses_list:
      i.insert(3, "Virus")
   else: 
      i.insert(3, "-")
+
 
 
 # Output
@@ -225,8 +252,11 @@ for i in table:
 #for i in table:
  #   print ('\t'.join(i))
 
+#print (table[:3])
+
 with open(name + "_result_table.tsv", "w") as outfile:
     for i in table:
 #        print('\t'.join(i))
-        outfile.write('\t'.join(i)+"\n")
+         outfile.write('\t'.join(i)+"\n")
+#         outfile.write(""i)
 
