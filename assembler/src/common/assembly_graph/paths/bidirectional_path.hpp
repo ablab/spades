@@ -30,6 +30,10 @@ struct Gap {
     struct Trash {
         uint32_t previous;
         uint32_t current;
+
+        Trash(uint32_t previous_, uint32_t current_) :
+            previous(previous_), current(current_) {
+        }
     };
     int gap;
     Trash trash;
