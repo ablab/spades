@@ -50,6 +50,7 @@ class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
   EdgeId edge() const {
     return c0_.edge();  // FIXME during edge path reconstruction we miss edges of two last nucleotides
   }
+  std::vector<EdgeId> edges() const { return { c0_.edge(), c1_.edge(), c2_.edge() }; }
 
   std::vector<This> prev() const;  // TODO implement it
 

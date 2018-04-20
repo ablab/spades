@@ -158,8 +158,14 @@ std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<GraphCursor>
         if (it->is_empty())
             continue;
 
-        if (path.size() == 0 || it->edge() != path.back())
+        if (path.size() == 0 || it->edge() != path.back()) {
             path.push_back(it->edge());
+        } else {
+            for (auto e : it->edges())
+                if (e != path.back())
+                    path.push_back(e);
+        }
+
     }
 
     return path;
