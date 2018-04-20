@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * oreadstream.hpp
- *
- *  Created on: 23.06.2011
- *      Author: vyahhi
- */
-
 #pragma once
 
 #include <fstream>

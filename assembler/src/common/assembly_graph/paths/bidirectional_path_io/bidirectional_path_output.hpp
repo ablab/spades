@@ -15,14 +15,14 @@ template<class Graph>
 using EdgeNamingF = std::function<std::string (const Graph&, EdgeId)>;
 
 template<class Graph>
-EdgeNamingF<Graph> IdNamingF(const string &prefix = "") {
+EdgeNamingF<Graph> IdNamingF(const std::string &prefix = "") {
     return [=](const Graph &g, EdgeId e) {
         return io::MakeContigId(g.int_id(e), prefix);
     };
 }
 
 template<class Graph>
-EdgeNamingF<Graph> BasicNamingF(const string &prefix = "EDGE") {
+EdgeNamingF<Graph> BasicNamingF(const std::string &prefix = "EDGE") {
     return [=](const Graph &g, EdgeId e) {
         return io::MakeContigId(g.int_id(e), g.length(e) + g.k(), g.coverage(e), prefix);
     };
@@ -32,14 +32,14 @@ template<class Graph>
 class CanonicalEdgeHelper {
     const Graph &g_;
     const EdgeNamingF<Graph> naming_f_;
-    const string pos_orient_;
-    const string neg_orient_;
+    const std::string pos_orient_;
+    const std::string neg_orient_;
 public:
 
     CanonicalEdgeHelper(const Graph &g,
                         EdgeNamingF<Graph> naming_f = IdNamingF<Graph>(),
-                        const string& pos_orient = "+",
-                        const string& neg_orient = "-") :
+                        const std::string& pos_orient = "+",
+                        const std::string& neg_orient = "-") :
             g_(g), naming_f_(naming_f),
             pos_orient_(pos_orient), neg_orient_(neg_orient) {
     }
@@ -74,10 +74,10 @@ class FastgWriter {
     CanonicalEdgeHelper<Graph> short_namer_;
     CanonicalEdgeHelper<Graph> extended_namer_;
 
-    string ToPathString(const BidirectionalPath &path) const {
+    std::string ToPathString(const BidirectionalPath &path) const {
         if (path.Empty())
             return "";
-        string res = short_namer_.EdgeOrientationString(path.Front());
+        std::string res = short_namer_.EdgeOrientationString(path.Front());
         for (size_t i = 1; i < path.Size(); ++i) {
             if (graph_.EdgeEnd(path[i - 1]) != graph_.EdgeStart(path[i]) || path.GapAt(i).gap > 0) {
                 res += ";\n" + short_namer_.EdgeOrientationString(path[i]);
@@ -88,8 +88,8 @@ class FastgWriter {
         return res;
     }
 
-    string FormHeader(const string &id,
-                      const set<string>& next_ids) {
+    std::string FormHeader(const std::string &id,
+                           const std::set<std::string>& next_ids) {
         std::stringstream ss;
         ss << id;
         if (next_ids.size() > 0) {
@@ -112,11 +112,11 @@ public:
               extended_namer_(graph_, edge_naming_f, "", "'") {
     }
 
-    void WriteSegmentsAndLinks(const string &fn) {
+    void WriteSegmentsAndLinks(const std::string &fn) {
         io::OFastaReadStream os(fn);
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             EdgeId e = *it;
-            set<string> next;
+            std::set<std::string> next;
             for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(e))) {
                 next.insert(extended_namer_.EdgeOrientationString(next_e));
             }
@@ -125,7 +125,7 @@ public:
         }
     }
 
-    void WritePaths(const ScaffoldStorage &scaffold_storage, const string &fn) const {
+    void WritePaths(const ScaffoldStorage &scaffold_storage, const std::string &fn) const {
         std::ofstream os(fn);
         for (const auto& scaffold_info : scaffold_storage) {
             os << scaffold_info.name << "\n";
@@ -177,7 +177,8 @@ class GFAWriter {
         }
     }
 
-    void WritePath(const std::string& name, size_t segment_id, const vector<std::string> &edge_strs) {
+    void WritePath(const std::string& name, size_t segment_id,
+                   const std::vector<std::string> &edge_strs) {
         os_ << "P" << "\t" ;
         os_ << name << "_" << segment_id << "\t";
         std::string delimeter = "";
@@ -241,7 +242,7 @@ class ContigWriter {
 
 public:
 
-    static void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const string &fn) {
+    static void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const std::string &fn) {
         io::OFastaReadStream oss(fn);
         std::ofstream os_fastg;
 
@@ -251,7 +252,7 @@ public:
         }
     }
 
-    static PathsWriterT BasicFastaWriter(const string &fn) {
+    static PathsWriterT BasicFastaWriter(const std::string &fn) {
         return [=](const ScaffoldStorage& scaffold_storage) {
             WriteScaffolds(scaffold_storage, fn);
         };
@@ -269,7 +270,7 @@ public:
         OutputPaths(paths, vector<PathsWriterT>{writer});
     }
 
-    void OutputPaths(const PathContainer &paths, const string &fn) const {
+    void OutputPaths(const PathContainer &paths, const std::string &fn) const {
         OutputPaths(paths, BasicFastaWriter(fn));
     }
 

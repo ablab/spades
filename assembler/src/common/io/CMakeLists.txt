@@ -8,9 +8,9 @@
 project(input CXX)
 
 add_library(input STATIC
-        reads/parser.cpp
-        sam/read.cpp
-        sam/sam_reader.cpp)
+            reads/parser.cpp
+            sam/read.cpp
+            sam/sam_reader.cpp)
 
 target_link_libraries(input BamTools samtools)
 

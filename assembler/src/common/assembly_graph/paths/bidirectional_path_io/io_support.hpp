@@ -1,6 +1,8 @@
-//
-// Created by andrey on 23.01.17.
-//
+//***************************************************************************
+//* Copyright (c) 2018 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #pragma once
 
