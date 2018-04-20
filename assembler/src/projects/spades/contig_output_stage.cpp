@@ -12,7 +12,7 @@
 namespace debruijn_graph {
 
 vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
-                                                     path_extend::FastgWriter<Graph> &fastg_writer) {
+                                                     path_extend::FastgPathWriter &fastg_writer) {
     using namespace path_extend;
     vector<PathsWriterT> writers;
 
@@ -51,11 +51,12 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     INFO("Outputting FastG graph to " << output_dir << "assembly_graph.fastg");
     std::string fastg_fn = output_dir + "assembly_graph.fastg";
 
-    FastgWriter<Graph> fastg_writer(gp.g,
-                                    cfg::get().pd ?
-                                    PlasmidNamingF<Graph>(io::BasicNamingF<Graph>(), gp.components) :
-                                    io::BasicNamingF<Graph>());
-    fastg_writer.WriteSegmentsAndLinks(fastg_fn);
+    FastgPathWriter fastg_writer(gp.g,
+                                 fastg_fn,
+                                 cfg::get().pd ?
+                                 PlasmidNamingF<Graph>(io::BasicNamingF<Graph>(), gp.components) :
+                                 io::BasicNamingF<Graph>());
+    fastg_writer.WriteSegmentsAndLinks();
 
     if (output_paths_ && gp.contig_paths.size() != 0) {
         auto name_generator = MakeContigNameGenerator(cfg::get().mode, gp);

@@ -9,17 +9,12 @@
 
 #include "io/utils/edge_namer.hpp"
 #include "io/graph/gfa_writer.hpp"
+#include "io/graph/fastg_writer.hpp"
 #include "io_support.hpp"
 
 namespace path_extend {
 
-template<class Graph>
-class FastgWriter {
-    typedef typename Graph::EdgeId EdgeId;
-    const Graph &graph_;
-    io::CanonicalEdgeHelper<Graph> short_namer_;
-    io::CanonicalEdgeHelper<Graph> extended_namer_;
-
+class FastgPathWriter : public io::FastgWriter {
     std::string ToPathString(const BidirectionalPath &path) const {
         if (path.Empty())
             return "";
@@ -34,41 +29,8 @@ class FastgWriter {
         return res;
     }
 
-    std::string FormHeader(const std::string &id,
-                           const std::set<std::string>& next_ids) {
-        std::stringstream ss;
-        ss << id;
-        if (next_ids.size() > 0) {
-            auto delim = ":";
-            for (const auto &s : next_ids) {
-                ss  << delim << s;
-                delim = ",";
-            }
-        }
-        ss << ";";
-        return ss.str();
-    }
-
 public:
-    FastgWriter(const Graph &graph,
-                io::EdgeNamingF<Graph> edge_naming_f = io::BasicNamingF<Graph>())
-            : graph_(graph),
-              short_namer_(graph_),
-              extended_namer_(graph_, edge_naming_f, "", "'") {
-    }
-
-    void WriteSegmentsAndLinks(const std::string &fn) {
-        io::OFastaReadStream os(fn);
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            EdgeId e = *it;
-            std::set<std::string> next;
-            for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(e))) {
-                next.insert(extended_namer_.EdgeOrientationString(next_e));
-            }
-            os << io::SingleRead(FormHeader(extended_namer_.EdgeOrientationString(e), next),
-                                 graph_.EdgeNucls(e).str());
-        }
-    }
+    using io::FastgWriter::FastgWriter;
 
     void WritePaths(const ScaffoldStorage &scaffold_storage, const std::string &fn) const {
         std::ofstream os(fn);
