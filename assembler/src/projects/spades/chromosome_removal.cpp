@@ -351,13 +351,13 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, size_t 
         }
     }
     CoverageUniformityAnalyzer coverage_analyzer(gp.g, 0);
+    size_t component_count = 1;
     for (auto &comp: component_list_) {
         VERIFY(comp.size() > 0);
         EdgeId first_edge = comp[0];
 //conjugate, so /2
         size_t comp_size = (long_component_[first_edge])/2;
         size_t deadends_count = deadends_count_[first_edge] ;
-        size_t component_count = 1;
         if (comp_size > component_size_min && comp_size < component_size_max &&
                 (deadends_count == 0 || deadends_count == 4)) {
             DEBUG("Checking component size " << comp_size);
