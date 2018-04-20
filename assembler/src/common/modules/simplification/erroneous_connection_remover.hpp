@@ -642,7 +642,7 @@ protected:
             size_t e_len = g.length(e);
             size_t induced_repeat_len =
                     CumulativeLength(g, unique_path_finder.UniquePathBackward(e)) - (e_len / 2);
-            if (induced_repeat_len > max_repeat_len_) {
+            if (induced_repeat_len > max_repeat_len_ || g.OutgoingEdgeCount(g.EdgeEnd(e)) == 0) {
                 EdgeId to_del = e;
                 if (e_len > 1) {
                     to_del = g.SplitEdge(e, e_len / 2).second;
