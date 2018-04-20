@@ -340,7 +340,9 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, size_t 
     component_list_.clear();
     size_t component_size_max = 200000;
     size_t component_size_min = 1000;
-    std::string out_file = "components" + std::to_string(ext_limit_);
+    string tmp = std::to_string(ext_limit_);
+    while (tmp.length() < 4) tmp = "_" + tmp;
+    std::string out_file = "components" + tmp + ".fasta";
     double var = 0.3;
     DEBUG("calculating component sizes");
     for (auto iter = gp.g.ConstEdgeBegin(true); ! iter.IsEnd(); ++iter) {
@@ -388,7 +390,7 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, size_t 
                 size_t count = 1;
                 for (auto edge: comp) {
                     if (edge <= gp.g.conjugate(edge)) {
-                        is << ">COMPONENT_" << component_count << "_EDGE_" << count << endl;
+                        is << ">CUTOFF_" << ext_limit_ <<"_COMPONENT_" << component_count << "_EDGE_" << count  << endl;
                         is << gp.g.EdgeNucls(edge) << endl;
                         count++;
                         gp.g.DeleteEdge(edge);
