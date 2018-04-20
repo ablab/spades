@@ -14,4 +14,4 @@ add_library(input STATIC
 
 target_link_libraries(input BamTools samtools)
 
-add_subdirectory(gfa)
+add_subdirectory(graph)

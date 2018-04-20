@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2018 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "gfa_reader.hpp"
 
 #include "assembly_graph/core/graph.hpp"

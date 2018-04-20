@@ -11,7 +11,7 @@
 #include "utils/logger/logger.hpp"
 #include "utils/segfault_handler.hpp"
 
-#include "io/gfa/gfa_reader.hpp"
+#include "io/graph/gfa_reader.hpp"
 
 #include "version.hpp"
 

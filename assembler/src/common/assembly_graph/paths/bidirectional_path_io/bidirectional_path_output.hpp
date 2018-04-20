@@ -7,72 +7,18 @@
 
 #pragma once
 
+#include "io/utils/edge_namer.hpp"
+#include "io/graph/gfa_writer.hpp"
 #include "io_support.hpp"
 
 namespace path_extend {
 
 template<class Graph>
-using EdgeNamingF = std::function<std::string (const Graph&, EdgeId)>;
-
-template<class Graph>
-EdgeNamingF<Graph> IdNamingF(const std::string &prefix = "") {
-    return [=](const Graph &g, EdgeId e) {
-        return io::MakeContigId(g.int_id(e), prefix);
-    };
-}
-
-template<class Graph>
-EdgeNamingF<Graph> BasicNamingF(const std::string &prefix = "EDGE") {
-    return [=](const Graph &g, EdgeId e) {
-        return io::MakeContigId(g.int_id(e), g.length(e) + g.k(), g.coverage(e), prefix);
-    };
-}
-
-template<class Graph>
-class CanonicalEdgeHelper {
-    const Graph &g_;
-    const EdgeNamingF<Graph> naming_f_;
-    const std::string pos_orient_;
-    const std::string neg_orient_;
-public:
-
-    CanonicalEdgeHelper(const Graph &g,
-                        EdgeNamingF<Graph> naming_f = IdNamingF<Graph>(),
-                        const std::string& pos_orient = "+",
-                        const std::string& neg_orient = "-") :
-            g_(g), naming_f_(naming_f),
-            pos_orient_(pos_orient), neg_orient_(neg_orient) {
-    }
-
-    bool IsCanonical(EdgeId e) const {
-        return e <= g_.conjugate(e);
-    }
-
-    EdgeId Canonical(EdgeId e) const {
-        return IsCanonical(e) ? e : g_.conjugate(e);
-    }
-
-    std::string GetOrientation(EdgeId e) const {
-        return IsCanonical(e) ? pos_orient_ : neg_orient_;
-    }
-
-    std::string EdgeOrientationString(EdgeId e,
-                                      const std::string &delim = "") const {
-        return naming_f_(g_, Canonical(e)) + delim + GetOrientation(e);
-    }
-
-    std::string EdgeString(EdgeId e) const {
-        VERIFY(IsCanonical(e));
-        return naming_f_(g_, e);
-    }
-};
-
-template<class Graph>
 class FastgWriter {
     typedef typename Graph::EdgeId EdgeId;
     const Graph &graph_;
-    CanonicalEdgeHelper<Graph> short_namer_;
-    CanonicalEdgeHelper<Graph> extended_namer_;
+    io::CanonicalEdgeHelper<Graph> short_namer_;
+    io::CanonicalEdgeHelper<Graph> extended_namer_;
 
     std::string ToPathString(const BidirectionalPath &path) const {
         if (path.Empty())
@@ -104,9 +50,8 @@ class FastgWriter {
     }
 
 public:
-
     FastgWriter(const Graph &graph,
-                EdgeNamingF<Graph> edge_naming_f = BasicNamingF<Graph>())
+                io::EdgeNamingF<Graph> edge_naming_f = io::BasicNamingF<Graph>())
             : graph_(graph),
               short_namer_(graph_),
               extended_namer_(graph_, edge_naming_f, "", "'") {
@@ -137,46 +82,7 @@ public:
 
 };
 
-template<class Graph>
-class GFAWriter {
-    typedef typename Graph::EdgeId EdgeId;
-    const Graph &graph_;
-    CanonicalEdgeHelper<Graph> edge_namer_;
-    std::ostream &os_;
-
-    void WriteSegment(const std::string& edge_id, const Sequence &seq, double cov) {
-        os_ << "S\t" << edge_id << "\t"
-            << seq.str() << "\t"
-            << "KC:i:" << size_t(math::round(cov)) << "\n";
-    }
-
-    void WriteSegments() {
-        for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-            EdgeId e = *it;
-            WriteSegment(edge_namer_.EdgeString(e), graph_.EdgeNucls(e),
-                         graph_.coverage(e) * double(graph_.length(e)));
-        }
-    }
-
-    void WriteLink(EdgeId e1, EdgeId e2,
-                   size_t overlap_size) {
-        os_ << "L\t" << edge_namer_.EdgeOrientationString(e1, "\t") << "\t"
-            << edge_namer_.EdgeOrientationString(e2, "\t") << "\t"
-            << overlap_size << "M\n";
-    }
-
-    void WriteLinks() {
-        //TODO switch to constant vertex iterator
-        for (auto it = graph_.SmartVertexBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
-            VertexId v = *it;
-            for (auto inc_edge : graph_.IncomingEdges(v)) {
-                for (auto out_edge : graph_.OutgoingEdges(v)) {
-                    WriteLink(inc_edge, out_edge, graph_.k());
-                }
-            }
-        }
-    }
-
+class GFAPathWriter : public gfa::GFAWriter {
     void WritePath(const std::string& name, size_t segment_id,
                    const std::vector<std::string> &edge_strs) {
         os_ << "P" << "\t" ;
@@ -196,17 +102,7 @@ class GFAWriter {
     }
 
 public:
-    GFAWriter(const Graph &graph, std::ostream &os,
-              EdgeNamingF<Graph> naming_f = IdNamingF<Graph>())
-            : graph_(graph),
-              edge_namer_(graph_, naming_f),
-              os_(os) {
-    }
-
-    void WriteSegmentsAndLinks() {
-        WriteSegments();
-        WriteLinks();
-    }
+    using gfa::GFAWriter::GFAWriter;
 
     void WritePaths(const ScaffoldStorage &scaffold_storage) {
         for (const auto& scaffold_info : scaffold_storage) {
@@ -241,7 +137,6 @@ class ContigWriter {
     shared_ptr<ContigNameGenerator> name_generator_;
 
 public:
-
     static void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const std::string &fn) {
         io::OFastaReadStream oss(fn);
         std::ofstream os_fastg;

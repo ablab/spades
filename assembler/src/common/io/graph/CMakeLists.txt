@@ -4,10 +4,10 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(gfaio CXX)
+project(graphio CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_library(gfaio STATIC
-            gfa_reader.cpp)
-target_link_libraries(gfaio gfa1)
+add_library(graphio STATIC
+            gfa_reader.cpp gfa_writer.cpp)
+target_link_libraries(graphio gfa1)
