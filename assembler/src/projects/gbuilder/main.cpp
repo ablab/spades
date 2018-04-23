@@ -14,6 +14,7 @@
 
 #include "io/dataset_support/read_converter.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
+#include "io/reads/osequencestream.hpp"
 
 #include "assembly_graph/construction/debruijn_graph_constructor.hpp"
 
@@ -54,7 +55,7 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       cfg.file << value("dataset description (in YAML)"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("-o") & value("dir", cfg.outdir)) % "output directory to use",
+      (option("-o") & value("dir", cfg.outdir)) % "scratch directory to use",
       (option("-b") & integer("value", cfg.buff_size)) % "sorting buffer size, per thread"
   );
 
@@ -124,8 +125,8 @@ int main(int argc, char* argv[]) {
         // Step 3: output stuff
         size_t idx = 1;
         for (const auto &edge: edge_sequences) {
-            std::cout << ">" << idx++ << '\n';
-            std::cout << edge << '\n';
+            std::cout << std::string(">") << idx++ << "\n";
+            io::WriteWrapped(edge.str(), std::cout);
         }
     } catch (const std::string &s) {
         std::cerr << s;
