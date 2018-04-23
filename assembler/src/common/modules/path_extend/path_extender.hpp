@@ -304,7 +304,10 @@ private:
             }
             else {
                 DEBUG("Multiple cycles");
-                path.PushBack(loop_outgoing, Gap(int(g_.k() + BASIC_N_CNT)));
+                //If the forward edge is shorter than K, avoid overlapping bases between backward edge and outgoing edge
+                //Make sure that the N-stretch will be exactly 100 bp
+                uint32_t overlapping_bases = (uint32_t) max(int(g_.k()) - int(g_.length(forward_cycle_edge)), 0);
+                path.PushBack(loop_outgoing, Gap(int(g_.k() + BASIC_N_CNT - overlapping_bases), {0, overlapping_bases}));
             }
         }
         else {
