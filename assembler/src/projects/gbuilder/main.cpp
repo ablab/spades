@@ -35,16 +35,23 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
+enum class mode {
+    unitigs, fastg, gfa
+};
+
 struct gcfg {
     gcfg()
-            : k(21), outdir("."), nthreads(omp_get_max_threads() / 2 + 1), buff_size(512ULL << 20)
+            : k(21), tmpdir("tmp"), nthreads(omp_get_max_threads() / 2 + 1), buff_size(512ULL << 20),
+              mode(mode::unitigs)
     {}
 
     unsigned k;
     std::string file;
-    std::string outdir;
+    std::string tmpdir;
+    std::string outfile;
     unsigned nthreads;
     size_t buff_size;
+    mode mode;
 };
 
 
@@ -53,13 +60,18 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
 
   auto cli = (
       cfg.file << value("dataset description (in YAML)"),
+      cfg.outfile << value("output filename"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("-o") & value("dir", cfg.outdir)) % "scratch directory to use",
-      (option("-b") & integer("value", cfg.buff_size)) % "sorting buffer size, per thread"
+      (option("-tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
+      (option("-b") & integer("value", cfg.buff_size)) % "sorting buffer size, per thread",
+      one_of(option("-unitigs").set(cfg.mode, mode::unitigs) % "produce unitigs (default)",
+             option("-fastg").set(cfg.mode, mode::fastg) % "produce graph in FASTG format",
+             option("-gfa").set(cfg.mode, mode::gfa) % "produce graph in GFA1 format")
   );
 
-  if (!parse(argc, argv, cli)) {
+  auto result = parse(argc, argv, cli);
+  if (!result) {
       std::cout << make_man_page(cli, argv[0]);
       exit(1);
   }
@@ -77,7 +89,7 @@ int main(int argc, char* argv[]) {
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
-        std::string outdir = cfg.outdir, dataset_desc = cfg.file;
+        std::string tmpdir = cfg.tmpdir, dataset_desc = cfg.file;
         size_t buff_size = cfg.buff_size;
 
         create_console_logger();
@@ -86,18 +98,29 @@ int main(int argc, char* argv[]) {
 
         INFO("K-mer length set to " << k);
         INFO("# of threads to use: " << nthreads);
+        switch (cfg.mode) {
+            case mode::unitigs:
+                INFO("Producing unitigs only");
+                break;
+            case mode::fastg:
+                INFO("Producing graph in FASTG format");
+                break;
+            case mode::gfa:
+                INFO("Producing graph in GFA1 format");
+                break;
+        }
 
         nthreads = std::min(nthreads, (unsigned) omp_get_max_threads());
         // Inform OpenMP runtime about this :)
         omp_set_num_threads((int) nthreads);
 
-        fs::make_dir(outdir);
-        auto workdir = fs::tmp::make_temp_dir(outdir, "construction");
+        fs::make_dir(tmpdir);
+        auto workdir = fs::tmp::make_temp_dir(tmpdir, "construction");
 
         io::DataSet<debruijn_graph::config::LibraryData> dataset;
         dataset.load(dataset_desc);
         // FIXME: Get rid of this "/" junk
-        debruijn_graph::config::init_libs(dataset, nthreads, buff_size, outdir + "/");
+        debruijn_graph::config::init_libs(dataset, nthreads, buff_size, tmpdir + "/");
 
         std::vector<size_t> libs_for_construction;
         for (size_t i = 0; i < dataset.lib_count(); ++i)
@@ -122,11 +145,19 @@ int main(int argc, char* argv[]) {
         else
             edge_sequences = debruijn_graph::UnbranchingPathExtractor(ext_index, k).ExtractUnbranchingPaths(nchunks);
 
-        // Step 3: output stuff
-        size_t idx = 1;
-        for (const auto &edge: edge_sequences) {
-            std::cout << std::string(">") << idx++ << "\n";
-            io::WriteWrapped(edge.str(), std::cout);
+        if (cfg.mode == mode::unitigs) {
+            // Step 3: output stuff
+
+            size_t idx = 1;
+            for (const auto &edge: edge_sequences) {
+                std::cout << std::string(">") << idx++ << "\n";
+                io::WriteWrapped(edge.str(), std::cout);
+            }
+        } else {
+            // Step 3: build the graph
+            INFO("Building graph");
+            debruijn_graph::DeBruijnGraph g(k);
+            debruijn_graph::FastGraphFromSequencesConstructor<debruijn_graph::DeBruijnGraph>(k, ext_index).ConstructGraph(g, edge_sequences);
         }
     } catch (const std::string &s) {
         std::cerr << s;
