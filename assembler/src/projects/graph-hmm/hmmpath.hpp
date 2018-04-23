@@ -301,7 +301,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     D = std::move(Dnew);
   };
 
-  Depth<GraphCursor> depth;
+  DepthAtLeast<GraphCursor> depth;
 
   INFO("Original (before filtering) initial set size: " << initial_original.size());
   std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
