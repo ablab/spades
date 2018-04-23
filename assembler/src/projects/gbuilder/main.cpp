@@ -19,7 +19,7 @@
 
 #include "version.hpp"
 
-#include <cxxopts/cxxopts.hpp>
+#include <clipp/clipp.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -34,38 +34,50 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
+struct gcfg {
+    gcfg()
+            : k(21), outdir("."), nthreads(omp_get_max_threads() / 2 + 1), buff_size(512ULL << 20)
+    {}
+
+    unsigned k;
+    std::string file;
+    std::string outdir;
+    unsigned nthreads;
+    size_t buff_size;
+};
+
+
+void process_cmdline(int argc, char **argv, gcfg &cfg) {
+  using namespace clipp;
+
+  auto cli = (
+      cfg.file << value("dataset description (in YAML)"),
+      (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
+      (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
+      (option("-o") & value("dir", cfg.outdir)) % "output directory to use",
+      (option("-b") & integer("value", cfg.buff_size)) % "sorting buffer size, per thread"
+  );
+
+  if (!parse(argc, argv, cli)) {
+      std::cout << make_man_page(cli, argv[0]);
+      exit(1);
+  }
+}
+
+
 int main(int argc, char* argv[]) {
+    gcfg cfg;
+
     srand(42);
     srandom(42);
 
+    process_cmdline(argc, argv, cfg);
+
     try {
-        unsigned nthreads;
-        unsigned k;
-        std::string outdir, dataset_desc;
-        std::vector<std::string> input;
-        size_t buff_size = 512;
-        buff_size <<= 20;
-
-        cxxopts::Options options(argv[0], " kmer count read filter");
-        options.add_options()
-                ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("21"), "K")
-                ("d,dataset", "Dataset description (in YAML)", cxxopts::value<std::string>(dataset_desc), "file")
-                ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(omp_get_max_threads() / 2 + 1)), "num")
-                ("o,outdir", "Output directory to use", cxxopts::value<std::string>(outdir)->default_value("."), "dir")
-                ("b,bufsize", "Sorting buffer size, per thread", cxxopts::value<size_t>(buff_size)->default_value("536870912"))
-                ("h,help", "Print help");
-
-        options.parse(argc, argv);
-        if (options.count("help")) {
-            std::cout << options.help() << std::endl;
-            exit(0);
-        }
-
-        if (!options.count("dataset")) {
-            std::cerr << "ERROR: No input files were specified" << std::endl << std::endl;
-            std::cout << options.help() << std::endl;
-            exit(-1);
-        }
+        unsigned nthreads = cfg.nthreads;
+        unsigned k = cfg.k;
+        std::string outdir = cfg.outdir, dataset_desc = cfg.file;
+        size_t buff_size = cfg.buff_size;
 
         create_console_logger();
 
@@ -112,15 +124,15 @@ int main(int argc, char* argv[]) {
         // Step 3: output stuff
         size_t idx = 1;
         for (const auto &edge: edge_sequences) {
-            std::cerr << ">" << idx++ << '\n';
-            std::cerr << edge << '\n';
+            std::cout << ">" << idx++ << '\n';
+            std::cout << edge << '\n';
         }
-    } catch (std::string const &s) {
+    } catch (const std::string &s) {
         std::cerr << s;
         return EINTR;
-    } catch (const cxxopts::OptionException &e) {
-        std::cerr << "error parsing options: " << e.what() << std::endl;
-        exit(1);
+    } catch (const std::exception &e) {
+        std::cerr << "ERROR: " << e.what() << '\n';
+        return EINTR;
     }
 
     return 0;
