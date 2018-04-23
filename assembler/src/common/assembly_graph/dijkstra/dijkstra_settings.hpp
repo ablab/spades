@@ -72,7 +72,7 @@ class CountingDijkstraSettings {
     const Graph &graph_;
 
     NeighbourIteratorFactory neigh_iter_factory_;
-    static const distance_t inf = 100000000;
+    static const distance_t inf = std::numeric_limits<distance_t>::max();
     const size_t max_size_;
     const size_t edge_length_bound_;
     mutable size_t current_;
@@ -104,9 +104,7 @@ public:
     bool CheckPutVertex(VertexId , EdgeId edge, distance_t ) const{
         if (current_ < max_size_)
             ++current_;
-        if (current_ < max_size_ && GetLength(edge) < inf)
-            return true;
-        return false;
+        return current_ < max_size_ && GetLength(edge) < inf;
     }
 
     typename NeighbourIteratorFactory::NeighbourIterator GetIterator(VertexId vertex) {
