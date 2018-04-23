@@ -126,7 +126,7 @@ Gap PathExtenderGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bid
         added += g_.length(result.Back());
     }
     //FIXME think of checking for 0 in advance
-    return Gap(orig_gap.gap - (int) added, {0, orig_gap.trash.current});
+    return Gap(orig_gap.gap - (int) added, {0, orig_gap.trash.current}, false);
 }
 
 Gap DijkstraGapCloser::FillWithBridge(const Gap &orig_gap,
@@ -166,8 +166,8 @@ Gap DijkstraGapCloser::FillWithBridge(const Gap &orig_gap,
         min_gap_after = std::max(min_gap_after, min_gap_);
         min_gap_before = std::max(min_gap_before, min_gap_);
         DEBUG(bridge.int_id() << " " << min_gap_before);
-        result.PushBack(bridge, Gap(min_gap_before));
-        return Gap(min_gap_after);
+        result.PushBack(bridge, Gap(min_gap_before, false));
+        return Gap(min_gap_after, false);
     }
 }
 
@@ -184,7 +184,7 @@ Gap DijkstraGapCloser::FillWithMultiplePaths(const PathsT& paths,
     if (changed) {
         int gap = max(min_gap_,
                       int(MinPathLength(paths) - omnigraph::CumulativeLength(g_, left)));
-        return Gap(gap);
+        return Gap(gap, false);
     } else
         return Gap::INVALID();
 }
@@ -322,7 +322,7 @@ Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
         }
 
         int len = int(CumulativeLength(g_, addition));
-        Gap gap(orig_gap.gap - len);
+        Gap gap(orig_gap.gap - len, false);
         if (gap.gap < min_gap_ && addition.size() > 0) {
             //todo constant
             if (orig_gap.gap * 2 < len) {
@@ -330,9 +330,9 @@ Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
                 DEBUG("Filled len" << len);
             }
             if (g_.EdgeEnd(addition.back()) != target_vertex)
-                gap = Gap(min_gap_);
+                gap = Gap(min_gap_, false);
             else
-                gap = Gap();
+                gap = Gap(0, false);
         }
         for (EdgeId e : addition) {
             DEBUG(g_.int_id(e));
