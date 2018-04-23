@@ -337,11 +337,13 @@ def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exi
 # Run QUAST on all contigs that need to be evaluated
 def quast_analysis(contigs, dataset_info, folder):
     exit_code = 0
-    for name, file_name, prefix, opts in contigs:
+    for name, file_name, prefix, opts, ext in contigs:
+        if ext != "fasta":
+            continue
         log.log("======= " + name.upper() + " SUMMARY =======")
         if prefix != "":
             prefix = prefix + "_"
-        qcode = quast_run_and_assess(dataset_info, os.path.join(folder, file_name + ".fasta"),
+        qcode = quast_run_and_assess(dataset_info, os.path.join(folder, file_name + "." + ext),
                         os.path.join(folder, "QUAST_RESULTS_" +name.upper()), name, prefix, 10, opts)
         if qcode != 0:
             log.err("Analysis for " + name + " did not pass, exit code " + str(qcode))
@@ -491,13 +493,15 @@ def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
     enable_comparison = (dataset_info.mode in ("standard", "tru", "dip", "meta", "plasmid"))
 
     if enable_comparison and contig_storage_dir != '' and 'quast_params' in dataset_info.__dict__ and dataset_info.quast_params and '-R' in dataset_info.quast_params:
-        for name, file_name, prefix, opts in contigs:
-            fn = os.path.join(output_dir, file_name + ".fasta") 
+        for name, file_name, prefix, opts, ext in contigs:
+            if ext != "fasta":
+                continue
+            fn = os.path.join(output_dir, file_name + "." + ext) 
             if not os.path.exists(fn):
                 log.err('File for comparison is not found: ' + fn)
                 exit_code = 8
 
-            latest_ctg = os.path.join(contig_storage_dir, "latest_" + name + ".fasta")
+            latest_ctg = os.path.join(contig_storage_dir, "latest_" + name + "." + ext)
             if os.path.exists(latest_ctg):
                 log.log("======= " + name.upper() + " COMPARISON =======")
                 quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP_" + name.upper())
@@ -547,19 +551,24 @@ def load_info(dataset_path):
 
 # Get contig list to be assessed for this run
 def get_contigs_list(args, dataset_info, before_rr = False):
-    contigs = [("contigs", "contigs", "", "")]
-    contigs.append(("scaffolds", "scaffolds", "sc", " --scaffolds "))
+    contigs = [("contigs", "contigs", "", "", "fasta")]
+    contigs.append(("scaffolds", "scaffolds", "sc", " --scaffolds ", "fasta"))
+    contigs.append(("contigs paths", "contigs", "", "", "paths"))
+    contigs.append(("scaffolds paths", "scaffolds", "", "", "paths"))
 
     if dataset_info.mode == "dip":
-        contigs = [("contigs", "dipspades/consensus_contigs", "", "")]
+        contigs = [("contigs", "dipspades/consensus_contigs", "", "", "fasta")]
     if dataset_info.mode == "tru":
-        contigs = [("contigs", "truseq_long_reads", "", "")]
+        contigs = [("contigs", "truseq_long_reads", "", "", "fasta")]
     if dataset_info.mode == "rna":
-        contigs = [("transcripts", "transcripts", "", "")]
+        contigs = [("transcripts", "transcripts", "", "", "fasta")]
     if dataset_info.mode == "meta":
-        contigs.append(("preliminary", "first_pe_contigs", "prelim", ""))
+        contigs.append(("preliminary", "first_pe_contigs", "prelim", "", "fasta"))
     if before_rr and dataset_info.mode in ("standard", "meta"):
-        contigs.append(("before_rr", "before_rr", "", ""))
+        contigs.append(("before_rr", "before_rr", "", "", "fasta"))
+        if dataset_info.mode == "standard":
+            contigs.append(("assembly_graph", "assembly_graph", "", "", "fastg"))
+            contigs.append(("assembly_graph_with_scaffolds", "assembly_graph_with_scaffolds", "", "", "gfa"))
     return contigs
 
 
@@ -716,23 +725,18 @@ def save_contigs(args, output_dir, contig_storage_dir, contigs, rewrite_latest):
         ctg_suffix = "_" + args.contig_name
         log.log("Contigs have suffix " + ctg_suffix)
 
-    for name, file_name, prefix, opts in contigs:
-        saved_ctg_name = name_prefix + name + ctg_suffix + ".fasta"
-        spades_filename = os.path.join(output_dir, file_name + ".fasta")
+    for name, file_name, prefix, opts, ext in contigs:
+        saved_ctg_name = name_prefix + name + ctg_suffix + "." + ext
+        spades_filename = os.path.join(output_dir, file_name + "." + ext)
         if not os.path.exists(spades_filename):
-            log.warn("Contigs " + spades_filename + " do not exist ")
+            log.warn("File " + spades_filename + " do not exist ")
             continue
         shutil.copy(spades_filename, os.path.join(contig_storage_dir, saved_ctg_name))
         log.log(name + " saved to " + os.path.join(contig_storage_dir, saved_ctg_name))
 
-        saved_paths_name = name_prefix + name + ctg_suffix + ".paths"
-        spades_paths_name = os.path.join(output_dir, file_name + ".paths")
-        if os.path.exists(spades_paths_name):
-            shutil.copy(spades_paths_name, os.path.join(contig_storage_dir, saved_paths_name))
-
         if rewrite_latest:
             log.log("Creating latest symlink")
-            lc =  os.path.join(contig_storage_dir, "latest_" + name + ".fasta")
+            lc =  os.path.join(contig_storage_dir, "latest_" + name + "." + ext)
             if os.path.islink(lc):
                 os.remove(lc)
             os.symlink(os.path.join(contig_storage_dir, saved_ctg_name), lc)
@@ -751,7 +755,9 @@ def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, art
         os.makedirs(artifact_dir)
 
     log.log("======= Saving report of to " + artifact_dir + " =======")
-    for name, file_name, prefix, opts in contigs:
+    for name, file_name, prefix, opts, ext in contigs:
+        if ext != "fasta":
+            continue
         quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP_" + name.upper())
 
         if not os.path.exists(quast_output_dir):
@@ -759,12 +765,12 @@ def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, art
                 log.err('QUAST params are not set')
                 return
 
-            fn = os.path.join(output_dir, file_name + ".fasta") 
+            fn = os.path.join(output_dir, file_name + "." + ext)
             if not os.path.exists(fn):
                 log.err('File for analysis is no found: ' + fn)
                 continue
 
-            latest_ctg = os.path.join(contig_storage_dir, "latest_" + name + ".fasta")
+            latest_ctg = os.path.join(contig_storage_dir, "latest_" + name + "." + ext)
             flist = [fn]
             if not os.path.exists(fn):
                 flist.append(latest_ctg)

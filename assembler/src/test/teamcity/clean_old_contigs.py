@@ -18,7 +18,7 @@ import datetime
 
 
 def remove_in_dir(contig_dir, days_difference):
-    contigs = sorted(glob.glob(os.path.join(contig_dir, "*.fasta")))
+    contigs = sorted(glob.glob(os.path.join(contig_dir, "*.fast?")) + glob.glob(os.path.join(contig_dir, "*.gfa")) + glob.glob(os.path.join(contig_dir, "*.paths")))
     except_list = []
     for c in contigs:
         if c.find("latest_") != -1:
