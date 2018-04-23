@@ -351,6 +351,7 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, size_t 
         }
     }
     CoverageUniformityAnalyzer coverage_analyzer(gp.g, 0);
+    std::ofstream is(cfg::get().output_dir + out_file);
     size_t component_count = 1;
     for (auto &comp: component_list_) {
         VERIFY(comp.size() > 0);
@@ -386,11 +387,10 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, size_t 
                 DEBUG ("component coverage too variable: fraction close to average" << good_len *1.0/total_len);
             } else {
                 DEBUG("Component is good!");
-                std::ofstream is(cfg::get().output_dir + out_file);
                 size_t count = 1;
                 for (auto edge: comp) {
                     if (edge <= gp.g.conjugate(edge)) {
-                        is << ">CUTOFF_" << ext_limit_ <<"_COMPONENT_" << component_count << "_EDGE_" << count  << endl;
+                        is << ">CUTOFF_" << ext_limit_ <<"_COMPONENT_" << component_count << "_EDGE_" << count <<"_cov_" << gp.g.coverage(edge)  << endl;
                         is << gp.g.EdgeNucls(edge) << endl;
                         count++;
                         gp.g.DeleteEdge(edge);
