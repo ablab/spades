@@ -69,6 +69,10 @@ class DepthAtLeast {
 
  public:
   bool depth_at_least(const GraphCursor &cursor, double d) {
+    if (d <= 0) {
+      return true;
+    }
+
     if (depth_.count(cursor)) {
       const auto &cached = depth_.find(cursor)->second;
       if (cached.value >= d) {

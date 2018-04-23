@@ -305,7 +305,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   INFO("Original (before filtering) initial set size: " << initial_original.size());
   std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
-               [&](const GraphCursor &cursor) { return 1.5 * depth.depth(cursor) + 10 > fees.M / 2; });  // FIXME Correct this condition for local-local matching
+               [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, static_cast<double>(fees.M) / 3 - 10); });  // FIXME Correct this condition for local-local matching
   INFO("Initial set size: " << initial.size());
 
   StateSet I, M, D;
@@ -317,7 +317,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   size_t positions_left = fees.M;
   auto depth_filter_cursor = [&](const GraphCursor &cursor) -> bool {
-    return 1.5 * depth.depth(cursor) + 10 < positions_left;
+    return !depth.depth_at_least(cursor, static_cast<double>(positions_left) / 3 - 10);
   };
 
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0], "i");
