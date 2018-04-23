@@ -11,6 +11,8 @@
 
 #include "io/reads/read_processor.hpp"
 #include "io/reads/io_helper.hpp"
+#include "io/graph/gfa_writer.hpp"
+#include "io/graph/fastg_writer.hpp"
 
 #include "io/dataset_support/read_converter.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
@@ -41,8 +43,9 @@ enum class mode {
 
 struct gcfg {
     gcfg()
-            : k(21), tmpdir("tmp"), nthreads(omp_get_max_threads() / 2 + 1), buff_size(512ULL << 20),
-              mode(mode::unitigs)
+        : k(21), tmpdir("tmp"), outfile("-"),
+          nthreads(omp_get_max_threads() / 2 + 1), buff_size(512ULL << 20),
+          mode(mode::unitigs)
     {}
 
     unsigned k;
@@ -97,7 +100,6 @@ int main(int argc, char* argv[]) {
         INFO("Starting SPAdes standalone graph builder, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
 
         INFO("K-mer length set to " << k);
-        INFO("# of threads to use: " << nthreads);
         switch (cfg.mode) {
             case mode::unitigs:
                 INFO("Producing unitigs only");
@@ -113,6 +115,8 @@ int main(int argc, char* argv[]) {
         nthreads = std::min(nthreads, (unsigned) omp_get_max_threads());
         // Inform OpenMP runtime about this :)
         omp_set_num_threads((int) nthreads);
+
+        INFO("# of threads to use: " << nthreads);
 
         fs::make_dir(tmpdir);
         auto workdir = fs::tmp::make_temp_dir(tmpdir, "construction");
@@ -148,24 +152,39 @@ int main(int argc, char* argv[]) {
         if (cfg.mode == mode::unitigs) {
             // Step 3: output stuff
 
+            INFO("Saving unitigs to " << cfg.outfile);
             size_t idx = 1;
+            std::ofstream f(cfg.outfile);
             for (const auto &edge: edge_sequences) {
-                std::cout << std::string(">") << idx++ << "\n";
-                io::WriteWrapped(edge.str(), std::cout);
+                f << std::string(">") << io::MakeContigId(idx++, edge.size(), "EDGE") << std::endl;
+                io::WriteWrapped(edge.str(), f);
             }
         } else {
             // Step 3: build the graph
             INFO("Building graph");
             debruijn_graph::DeBruijnGraph g(k);
             debruijn_graph::FastGraphFromSequencesConstructor<debruijn_graph::DeBruijnGraph>(k, ext_index).ConstructGraph(g, edge_sequences);
+
+            INFO("Saving graph to " << cfg.outfile);
+            if (cfg.mode == mode::gfa) {
+                std::ofstream f(cfg.outfile);
+                gfa::GFAWriter gfa_writer(g, f);
+                gfa_writer.WriteSegmentsAndLinks();
+            } else if (cfg.mode == mode::fastg) {
+                io::FastgWriter fastg_writer(g, cfg.outfile);
+                fastg_writer.WriteSegmentsAndLinks();
+            } else
+                FATAL_ERROR("Invalid mode");
         }
     } catch (const std::string &s) {
-        std::cerr << s;
+        std::cerr << s << std::endl;
         return EINTR;
     } catch (const std::exception &e) {
-        std::cerr << "ERROR: " << e.what() << '\n';
+        std::cerr << "ERROR: " << e.what() << std::endl;
         return EINTR;
     }
+
+    INFO("SPAdes standalone graph builder finished");
 
     return 0;
 }
