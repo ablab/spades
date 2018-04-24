@@ -30,6 +30,7 @@
 #include <string>
 
 #include "aa.hpp"
+#include "depth_filter.hpp"
 
 void create_console_logger() {
     using namespace logging;
@@ -375,7 +376,7 @@ int main(int argc, char* argv[]) {
         esl_stopwatch_Start(w);
 
         // Collect the neighbourhood of the matched edges
-        auto matched_edges = MatchedEdges(edges, graph, hmm, cfg, w);
+        EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg, w);
         bool hmm_in_aas = hmm.abc()->K == 20;
         std::unordered_map<EdgeId, std::unordered_set<VertexId>>
                 neighbourhoods = ExtractNeighbourhoods(matched_edges,
@@ -457,7 +458,31 @@ int main(int argc, char* argv[]) {
                 DrawComponent(component, graph, std::to_string(graph.int_id(e)), match_edges);
             }
 
-            auto initial = all(component);
+            int coef = hmm_in_aas ? 3 : 1;
+            int loverhang = (matched_edges[e].first + 10) * coef;
+            int roverhang = (matched_edges[e].second + 10) * coef;
+
+            using GraphCursor = std::decay_t<decltype(all(component)[0])>;
+            std::vector<GraphCursor> initial_new;
+            if (loverhang > 0) {
+              GraphCursor start = get_cursor(component, e, 0);
+              auto left_cursors = impl::depth_subset(start, loverhang * 2, false);
+              initial_new.insert(initial_new.end(), left_cursors.cbegin(), left_cursors.cend());
+            }
+
+            size_t len = component.g().length(e) + component.g().k();
+            if (roverhang > 0) {
+              GraphCursor end = get_cursor(component, e, len - 1);
+              auto right_cursors = impl::depth_subset(end, roverhang * 2, true);
+              initial_new.insert(initial_new.end(), right_cursors.cbegin(), right_cursors.cend());
+            }
+
+            for (size_t i = std::max(0, -loverhang); i < len - std::max(0, -roverhang); ++i) {
+              initial_new.push_back(get_cursor(component, e, i));
+            }
+
+            std::vector<GraphCursor> initial = all(component);
+            initial = initial_new;
 
             INFO("Running path search");
             std::vector<PathInfo> local_results;
