@@ -139,4 +139,49 @@ class DepthAtLeast {
   }
 };
 
+template <typename GraphCursor>
+std::vector<GraphCursor> depth_subset(std::vector<std::pair<GraphCursor, size_t>> initial, bool forward = true) {
+  std::unordered_set<GraphCursor> visited;
+  struct CursorWithDepth {
+    GraphCursor cursor;
+    size_t depth;
+    bool operator<(const CursorWithDepth &other) const {
+      return depth < other.depth;
+    }
+  };
+
+  std::priority_queue<CursorWithDepth> q;
+
+  for (const auto &cursor_with_depth : initial) {
+    q.push({cursor_with_depth.first, cursor_with_depth.second});
+  }
+
+  while (!q.empty()) {
+    CursorWithDepth cursor_with_depth = q.top();
+    q.pop();
+
+    if (visited.count(cursor_with_depth.cursor)) {
+      continue;
+    }
+
+    visited.insert(cursor_with_depth.cursor);
+
+    if (cursor_with_depth.depth > 0) {
+      auto cursors = forward ? cursor_with_depth.cursor.next() : cursor_with_depth.cursor.prev();
+      for (const auto &cursor : cursors) {
+        if (!visited.count(cursor)) {
+          q.push({cursor, cursor_with_depth.depth - 1});
+        }
+      }
+    }
+  }
+
+  return std::vector<GraphCursor>(visited.cbegin(), visited.cend());
+}
+
+template <typename GraphCursor>
+std::vector<GraphCursor> depth_subset(const GraphCursor& cursor, size_t depth, bool forward = true) {
+  return depth_subset(std::vector<std::pair<GraphCursor, size_t>>({std::make_pair(cursor, depth)}), forward);
+}
+
 }  // namespace impl
