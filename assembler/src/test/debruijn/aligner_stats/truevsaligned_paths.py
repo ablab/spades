@@ -39,8 +39,8 @@ def load_alignments(filename):
     fin = open(filename, "r")
     bwa_num = 0
     for ln in fin.readlines():
-        #cur_read, seq_start, seq_end, rlen, path_dirty, edgelen, ed = ln.strip().split("\t")
-        cur_read, seq_start, seq_end, rlen, path_dirty, edgelen, ss, ed = ln.strip().split("\t")
+        cur_read, seq_start, seq_end, rlen, path_dirty, edgelen, ed = ln.strip().split("\t")
+        #cur_read, seq_start, seq_end, rlen, path_dirty, edgelen, ss, ed = ln.strip().split("\t")
         cur_read = cur_read.split(" ")[0]
         path = []
         edge_tag = []
@@ -363,20 +363,20 @@ for fl in aligned_files:
 
     
     row_names = ["Total number of reads", \
-                 "Read has true path (#reads)",\
-                 "Didn't mapped with GAligner (#reads)",\
+                 "Read aligned to ref and corresponding ref subseq to graph (#reads)",\
+                 "Mapped with GAligner (#reads)",\
                  "Path is not equal to true path (#reads)",\
-                 "Path is wrong but we don't know why (#reads)",\
+                 "Path is wrong. BWA hits uncertainty (#reads)",\
                  "Resulting BWA hits failure (#reads)", \
                  "Gap stage failure (#reads)", \
                  "Incorrect prefix/suffix (#reads)" , \
                  "Median length(in nucs) of skipped prefix/suffix/both"
                  ]
     res[fl] = {"Total number of reads" : len(reads), \
-                 "Read has true path (#reads)": len(reads) - cnt_badideal(reads, truepaths),\
-                 "Didn't mapped with GAligner (#reads)" : cnt_notmapped(reads, truepaths, alignedpaths),\
+                 "Read aligned to ref and corresponding ref subseq to graph (#reads)": len(reads) - cnt_badideal(reads, truepaths),\
+                 "Mapped with GAligner (#reads)" : len(reads) - cnt_badideal(reads, truepaths) - cnt_notmapped(reads, truepaths, alignedpaths),\
                  "Path is not equal to true path (#reads)": path_problems,\
-                 "Path is wrong but we don't know why (#reads)": unknown,\
+                 "Path is wrong. BWA hits uncertainty (#reads)": unknown - bwa_problems,\
                  "Resulting BWA hits failure (#reads)": bwa_problems, \
                  "Gap stage failure (#reads)": str(wrong_gaps) + " + " + str(wrong_gap_empty) + "(didn't closed)", \
                  "Incorrect prefix/suffix (#reads)" : str(wrong_start + wrong_start_empty) + "/" + str(wrong_end + wrong_end_empty), \
@@ -385,8 +385,8 @@ for fl in aligned_files:
 
 
 
-caption_below = ["Reference substr -- alignment of read to reference, produced by BWA MEM, with length > 0.8*(read length)",\
-                 "True path -- an alignment on graph reference substr found by MapRead()",\
+caption_below = ["Read aligned to ref and corresponding ref subseq to graph -- read aligned to reference by BWA MEM and alignment length > 0.8*(read length). After ref subseq mapped to graph -- the result of it is a true path.",\
+                 "True path -- path produced by MapRead(), aligning sequence from reference that represents read",\
                  "Resulting BWA hits -- BWA hits after filtering, sorting etc., just before Gap closing stage", \
                  "Resulting BWA hits failure -- BWA hits are on edges that are not in true path or not in correct order",\
                  "Gap stage failure -- gap between two neibouring BWA hits wasn't closed by correct list of edges",\
