@@ -217,18 +217,18 @@ public:
         int s_len = int(ss.size());
         int score = max(20, s_len/4);
         if (s_len > 2000) {
-            INFO("EdgeDijkstra: sequence is too long " << s_len)
+            DEBUG("EdgeDijkstra: sequence is too long " << s_len)
             return;
         }
         if (s_len < g_.length(start_e) + g_.k() - start_pos) {
-            INFO("EdgeDijkstra: sequence is too small " << s_len)
+            DEBUG("EdgeDijkstra: sequence is too small " << s_len)
             return;
         }
         DijkstraEndsReconstructor algo = DijkstraEndsReconstructor(g_, ss.str(), start_e, start_pos, score);
         algo.CloseGap();
         score = algo.GetEditDistance();
         if (score == -1){
-            INFO("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
+            DEBUG("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
             score = STRING_DIST_INF;
             return;
         }
@@ -299,12 +299,12 @@ public:
 
                     // if (score1 != score2) {
                     //     if (score1 > score2 && score1 != STRING_DIST_INF){
-                    //         INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
+                    //         DEBUG("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
                     //     } else {
-                    //         INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW2! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
+                    //         DEBUG("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW2! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
                     //     }
                     // } else {
-                    //     INFO("Dijkstra score=" << score1 << " BF score=" << score2 << " len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
+                    //     DEBUG("Dijkstra score=" << score1 << " BF score=" << score2 << " len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
                     // }
                     if (intermediate_path.size() == 0) {
                         DEBUG(DebugEmptyBestScoredPath(start_v, end_v, prev_edge, cur_edge,
@@ -664,7 +664,7 @@ public:
                 }
         }
         if (end_pos < start_pos) {
-            WARN ("modifying limits because of some bullshit magic, seq length 0")
+            DEBUG ("modifying limits because of some bullshit magic, seq length 0")
             end_pos = start_pos;
         }
 
@@ -674,16 +674,16 @@ public:
         if (score == STRING_DIST_INF){
             path_max_length = max(s_len/3, 20);
         } 
-        INFO(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len << " max-len " << path_max_length << " start_p=" << start_p << " end_p=" << end_p << " eid=" << start_e.int_id());
+        DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len << " max-len " << path_max_length << " start_p=" << start_p << " end_p=" << end_p << " eid=" << start_e.int_id());
         if ( ((size_t) s_len) > 2000 || vertex_pathlen.size() > 100000){
-            INFO("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
+            DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
             return vector<EdgeId>(0);
         }
         DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, ss.str(), start_e, end_e, start_p, end_p, path_max_length, vertex_pathlen);
         gap_filler.CloseGap();
         score = gap_filler.GetEditDistance();
         if (score == -1){
-            INFO("Dijkstra didn't find anything")
+            DEBUG("Dijkstra didn't find anything")
             score = STRING_DIST_INF;
             return vector<EdgeId>(0);
         }
@@ -761,12 +761,12 @@ public:
         }
         // else {
         //     string cur_string = s_add + PathToString(paths[best_path_ind]) + e_add;
-        //     INFO("cur_string: " << cur_string <<"\n seq_string " << seq_string);
+        //     DEBUG("cur_string: " << cur_string <<"\n seq_string " << seq_string);
         //     string str = "";
         //     for (const EdgeId &e: paths[best_path_ind]) {
         //         str += std::to_string(e.int_id()) + ",";
         //     }
-        //     INFO("edges: " << str);
+        //     DEBUG("edges: " << str);
         // }
         if (additional_debug) {
             TRACE("best score found! Path " <<best_path_ind <<" score "<< best_score);
@@ -781,7 +781,7 @@ public:
                                   int start_pos, int end_pos, const string &s_add,
                                   const string &e_add, bool dijkstra, int &score) const {
 
-        INFO(" All Params " << start_e.int_id() << " " << end_e.int_id() << " " << path_max_length << " s_add=" <<   s_add << " e_add=" << e_add 
+        DEBUG(" All Params " << start_e.int_id() << " " << end_e.int_id() << " " << path_max_length << " s_add=" <<   s_add << " e_add=" << e_add 
                             << " start_pos=" << start_pos << " end_pos=" << end_pos);
 
         auto pathSearcher = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, path_max_length);
@@ -795,7 +795,7 @@ public:
 
         DEBUG("Get vertices num=" << reachedVertices.size());
         if (end_pos < start_pos) {
-            WARN ("modifying limits because of some bullshit magic, seq length 0")
+            DEBUG ("modifying limits because of some bullshit magic, seq length 0")
             end_pos = start_pos;
         }
         int s_len = int(s.size());

@@ -26,6 +26,8 @@
 #include "io/reads/multifile_reader.hpp"
 #include "mapping_printer.hpp"
 #include "io/gfa/gfa_reader.hpp"
+#include "llvm/Support/YAMLParser.h"
+#include "llvm/Support/YAMLTraits.h"
 
 #include <iostream>
 #include <fstream>
@@ -38,11 +40,70 @@ void create_console_logger() {
 
 namespace debruijn_graph {
 
+struct GAlignerConfig {
+    // general
+    int K;
+    string path_to_graphfile;
+    string path_to_sequences; 
+    string workdir;
+    string data_type; // pacbio, nanopore, 16S
+    bool run_dijkstra; // default: true
+    string output_format; // default: tsv and gpa without CIGAR
+    
+    //path construction
+    config::debruijn_config::pacbio_processor pb;
+
+    // dijkstra
+    bool find_shortest_path; // default: false
+    bool restore_mapping; // default: false
+
+};
+
+}
+
+
+namespace llvm { namespace yaml {
+
+template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
+    static void mapping(IO& io, debruijn_graph::GAlignerConfig& cfg) {
+        io.mapRequired("k", cfg.K);
+        io.mapRequired("path_to_graphfile", cfg.path_to_graphfile);
+        io.mapRequired("path_to_sequences", cfg.path_to_sequences);
+        io.mapRequired("workdir", cfg.workdir);
+        io.mapRequired("data_type", cfg.data_type);
+        io.mapRequired("output_format", cfg.output_format);
+        io.mapRequired("run_dijkstra", cfg.run_dijkstra);
+
+        io.mapRequired("pb.bwa_length_cutoff", cfg.pb.bwa_length_cutoff);
+        io.mapRequired("pb.compression_cutoff", cfg.pb.compression_cutoff);
+        io.mapRequired("pb.path_limit_stretching", cfg.pb.path_limit_stretching);
+        io.mapRequired("pb.path_limit_pressing", cfg.pb.path_limit_pressing);
+        io.mapRequired("pb.max_path_in_dijkstra", cfg.pb.max_path_in_dijkstra);
+        io.mapRequired("pb.max_vertex_in_dijkstra", cfg.pb.max_vertex_in_dijkstra);
+        io.mapRequired("pb.long_seq_limit", cfg.pb.long_seq_limit);
+        io.mapRequired("pb.pacbio_min_gap_quantity", cfg.pb.pacbio_min_gap_quantity);
+        io.mapRequired("pb.contigs_min_gap_quantity", cfg.pb.contigs_min_gap_quantity);
+        io.mapRequired("pb.max_contigs_gap_length", cfg.pb.max_contigs_gap_length);
+
+
+        io.mapRequired("find_shortest_path", cfg.find_shortest_path);
+        io.mapRequired("restore_mapping", cfg.restore_mapping);
+        
+    }
+};
+
+} }
+
+namespace debruijn_graph {
+
 class BWASeedsAligner {
 private:    
     const ConjugateDeBruijnGraph &g_;
     const pacbio::PacBioMappingIndex<Graph> pac_index_;
     MappingPrinterHub mapping_printer_hub_;
+
+    int aligned_reads;
+    int processed_reads;
 
 public:
     BWASeedsAligner(const ConjugateDeBruijnGraph &g, 
@@ -52,92 +113,74 @@ public:
                  const string output_file,
                  const string formats):
       g_(g),pac_index_(g_, pb, mode, use_dijkstra), mapping_printer_hub_(g_, output_file, formats){
+        aligned_reads = 0;
+        processed_reads = 0;
       }
 
-    // bool IsCanonical(EdgeId e) const {
-    //     return e <= g.conjugate(e);
-    // }
-
-    // EdgeId Canonical(EdgeId e) const {
-    //     return IsCanonical(e) ? e : g.conjugate(e);
-    // }
-
-    bool AlignRead(const io::SingleRead &read){
-        Sequence seq(read.sequence());
-        INFO("Read " << read.name() <<". Current Read")
-        auto current_read_mapping = pac_index_.GetReadAlignment(seq);
+    void AlignRead(const io::SingleRead &read){
+        DEBUG("Read " << read.name() <<". Current Read")
+        auto current_read_mapping = pac_index_.GetReadAlignment(read);
         const auto& aligned_mappings = current_read_mapping.main_storage;
     
         if (aligned_mappings.size() > 0){
             mapping_printer_hub_.SaveMapping(aligned_mappings, read);
-            INFO("Read " << read.name() <<" is aligned")
-            return true;
+            DEBUG("Read " << read.name() <<" is aligned");
+#pragma omp critical(align_read)
+            {
+                aligned_reads ++;
+            }
         }  else {
-            INFO("Read " << read.name() << " wasn't aligned and length=" << read.sequence().size());
-            return false;
+            DEBUG("Read " << read.name() << " wasn't aligned and length=" << read.sequence().size());
         }
+#pragma omp critical(align_read)
+        {
+            processed_reads ++;
+        }
+        return;
     } 
 
     void RunAligner(std::vector<io::SingleRead> &wrappedreads, int threads) {
+        int step = 10;
 #pragma omp parallel num_threads(threads)
 #pragma omp for
         for (size_t i =0 ; i < wrappedreads.size(); ++i) {
             AlignRead(wrappedreads[i]);
+#pragma omp critical(aligner)
+            {
+                if (processed_reads*100/wrappedreads.size() >= step) {
+                    INFO("Processed \% reads: " << processed_reads*100/wrappedreads.size() << 
+                         "\% Aligned reads: " << aligned_reads*100/processed_reads << 
+                         "\% (" << aligned_reads << " out of " << processed_reads << ")")
+                    step += 10;
+                }
+            } 
         }
     } 
 };
 
-config::debruijn_config::pacbio_processor InitializePacBioProcessor() {
-    config::debruijn_config::pacbio_processor pb;  
-    pb.bwa_length_cutoff = 0; //500
-    pb.compression_cutoff = 0.6; // 0.6
-    pb.path_limit_stretching = 1.3; //1.3
-    pb.path_limit_pressing = 0.7;//0.7
-    pb.max_path_in_dijkstra = 15000; //15000
-    pb.max_vertex_in_dijkstra = 2000; //2000
-//gap_closer
-    pb.long_seq_limit = 400; //400
-    pb.pacbio_min_gap_quantity = 2; //2
-    pb.contigs_min_gap_quantity = 1; //1
-    pb.max_contigs_gap_length = 10000; // 10000
-    return pb;
-}
-
-debruijn_graph::ga_config InitializeGaConfig() {
-    debruijn_graph::ga_config aligner_config;
-    aligner_config.run_dijkstra = true;
-    aligner_config.restore_edges = true;
-    aligner_config.find_shortest_path = true;
-
-    return aligner_config;
-}
-
-const ConjugateDeBruijnGraph& LoadGraphFromSaves(const string &saves_path, int K){
+const ConjugateDeBruijnGraph& LoadGraph(const string saves_path, const string workdir, int K){
         if (saves_path.find(".gfa") != std::string::npos) {
-            INFO("Load gfa")
+            DEBUG("Load gfa")
             static ConjugateDeBruijnGraph g(K);
             gfa::GFAReader gfa(saves_path);
-            INFO("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+            DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
             gfa.to_graph(g, true);
             return g;
         } else {
-            INFO("Load from saves")
-            static conj_graph_pack gp(K, "tmp3", 0);
+            DEBUG("Load from saves")
+            static conj_graph_pack gp(K, workdir, 0);
             graphio::ScanGraphPack(saves_path, gp);
             return gp.g;
         }
 }
 
-void Launch(size_t K, const string &saves_path, 
-                      const string &sequence_fasta, 
-                      const string &mapper_type, 
-                      const string &gapclose_type, 
-                      const string &output_file, int threads) {
-    const ConjugateDeBruijnGraph &g = LoadGraphFromSaves(saves_path, K);
+void Launch(debruijn_graph::GAlignerConfig &cfg, const string output_file, int threads) {
+    const ConjugateDeBruijnGraph &g = LoadGraph(cfg.path_to_graphfile, cfg.workdir, cfg.K);
     INFO("Loaded graph with " << g.size() << " vertices");
     io::ReadStreamList<io::SingleRead> streams;
-    streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(sequence_fasta)));
+    streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(cfg.path_to_sequences)));
     
+    // TODO - wrapped?
     io::SingleStreamPtr sstream = io::MultifileWrap(streams); 
     std::vector<io::SingleRead> wrappedreads; 
     while (!sstream->eof()) {
@@ -145,57 +188,49 @@ void Launch(size_t K, const string &saves_path,
         *sstream >> read;
         wrappedreads.push_back(std::move(read));
     }
-    INFO("Loaded sequences from " << sequence_fasta);
+    INFO("Loaded sequences from " << cfg.path_to_sequences);
     
     alignment::BWAIndex::AlignmentMode mode;
-    if (mapper_type == "pacbio"){
+    if (cfg.data_type == "pacbio"){
         mode = alignment::BWAIndex::AlignmentMode::PacBio;
-    } else if (mapper_type == "nanopore"){
+    } else if (cfg.data_type == "nanopore"){
         mode = alignment::BWAIndex::AlignmentMode::Ont2D;
-    } else if (mapper_type == "16S"){
+    } else if (cfg.data_type == "16S"){
         mode = alignment::BWAIndex::AlignmentMode::Rna16S;
     } else {
         INFO("No appropriate mode")
-        mode = alignment::BWAIndex::AlignmentMode::PacBio;
         exit(-1);
     }
-
-    debruijn_graph::ga_config aligner_config = InitializeGaConfig();
-
-    config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
-    bool use_dijkstra = true;
-    if (gapclose_type == "bf") {
-        use_dijkstra = false;
-    }
-    BWASeedsAligner aligner(g, mode, pb, use_dijkstra, output_file, "tsv"); 
+    
+    BWASeedsAligner aligner(g, mode, cfg.pb, cfg.run_dijkstra, output_file, cfg.output_format); 
     INFO("BWASeedsAligner created");
 
     aligner.RunAligner(wrappedreads, threads);
+    INFO("Finished")
 }
 }
 
 int main(int argc, char **argv) {
-    if (argc < 7) {
-        cout << "Usage: longreads_aligner <K>"
-             << " <saves path> <sequences file (fasta/fastq)> <mapper type: {pacbio, nanopore, 16S} > <gap close type: {bf, dijkstra(default)} > <ouput-prefix> {threads-num(16)}" << endl;
+    if (argc < 3) {
+        cout << "Usage: longreads_aligner <*.yaml> <outfile> {threads}\n";
         exit(1);
     }
+    create_console_logger();
+    string cfg = argv[1];
+    auto buf = llvm::MemoryBuffer::getFile(cfg);
+    VERIFY_MSG(buf, "Failed to load config file " + cfg);
+    llvm::yaml::Input yin(*buf.get());
+    debruijn_graph::GAlignerConfig config;
+    yin >> config;
+
+    string output_file = argv[2];
+
     int threads = 16;
-    if (argc == 8) {
-        threads = std::stoi(argv[7]);
+    if (argc == 4) {
+        threads = std::stoi(argv[3]);
     }
     omp_set_num_threads(threads);
-    create_console_logger();
-    size_t K = std::stoll(argv[1]);
-    string saves_path = argv[2];
-    INFO("Load graph from " << saves_path);
-    string sequence_file = argv[3];
-    INFO("Load sequences from " << sequence_file);
-    string mapper_type = argv[4];
-    INFO("Mapper type " << mapper_type);
-    string gapclose_type = argv[5];
-    INFO("Gap close type " << gapclose_type);
-    string output_file = argv[6];
-    debruijn_graph::Launch(K, saves_path, sequence_file, mapper_type, gapclose_type, output_file, threads);
+
+    debruijn_graph::Launch(config, output_file, threads);
     return 0;
 }

@@ -42,7 +42,7 @@ public:
             }
             pathStr += "\n";
         }
-        INFO("Paths: " << pathStr);
+        DEBUG("Paths: " << pathStr);
         string sum_str = "";
         string max_str = "";
         int max_len = 0;
@@ -111,9 +111,9 @@ public:
         }
         sum_str = read.name() + "\t" + std::to_string(seq_start_sum) + "\t" + std::to_string(seq_end_sum) + "\t" 
                                              + std::to_string(read.sequence().size())+  "\t" + cur_path_sum + "\t" + cur_path_len_sum + "\t" + cur_str_sum + "\n";
-        INFO("Read " << read.name() << " aligned and length=" << read.sequence().size());
-        INFO("Read " << read.name() << ". Paths with ends: " << cur_path_sum );
-        //INFO("Seq subs: " << subStr);
+        DEBUG("Read " << read.name() << " aligned and length=" << read.sequence().size());
+        DEBUG("Read " << read.name() << ". Paths with ends: " << cur_path_sum );
+        //DEBUG("Seq subs: " << subStr);
 #pragma omp critical
         {
             //if (max_len >= 1200) {

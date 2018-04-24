@@ -3,7 +3,6 @@
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 #include "utils/perf/perfcounter.hpp"
 #include "string_distance.hpp"
-#include "galigner_config.hpp"
 
 namespace pacbio {
 
