@@ -7,17 +7,18 @@
 
 #pragma once
 
+#include "utils/stacktrace.hpp"
+#include "utils/verify.hpp"
+#include "utils/parallel/openmp_wrapper.h"
+#include "folly/PackedSyncPtr.h"
+
 #include <boost/utility.hpp>
 
 #include <ostream>
 #include <unordered_set>
 #include <unordered_map>
-#include "utils/stacktrace.hpp"
 #include <algorithm>
 #include <map>
-#include "utils/parallel/openmp_wrapper.h"
-#include "folly/PackedSyncPtr.h"
-
 
 namespace restricted {
 
@@ -184,12 +185,6 @@ struct pure_pointer {
         ptr_.init(pointer_type(0), MAX_THREAD_CNT);
     }
 
-    explicit pure_pointer(T *ptr)
-            : int_id_(size_t(ptr)) {
-        ptr_.init(ptr, MAX_THREAD_CNT);
-        VERIFY(int_id_ < 2);
-    }
-
     explicit pure_pointer(T *ptr, IdDistributor &idDistributor)
             : int_id_(generate_id(ptr, idDistributor)) {
         ptr_.init(ptr, MAX_THREAD_CNT);
@@ -329,6 +324,7 @@ class PurePtrMarker {
     void ChangeMark(PurePtrT &pure_ptr, uint16_t new_mark) const {
         LockWithData &lock_with_data = pure_ptr.ptr_;
         lock_with_data.lock();
+        VERIFY_MSG(lock_with_data.extra() != new_mark, "Marks are the same");
         lock_with_data.setExtra(new_mark);
         lock_with_data.unlock();
     }
@@ -455,15 +451,14 @@ public:
         return !(*this == rhs);
     }
 
-    template<class Comparator>
-    void Copy(std::set<T, Comparator> &container) const {
+    template<class Container>
+    void Copy(Container &container) const {
         container.insert(base_set_.begin(), base_set_.end());
     }
 
 private:
     base_set_t base_set_;
 };
-
 
 template<class Key, class Value>
 struct map {
@@ -534,8 +529,8 @@ public:
         return !(*this == rhs);
     }
 
-    template<class Comparator>
-    void Copy(std::map<Key, Value, Comparator> &container) const {
+    template<class Container>
+    void Copy(Container &container) const {
         container.insert(base_map_.begin(), base_map_.end());
     }
 

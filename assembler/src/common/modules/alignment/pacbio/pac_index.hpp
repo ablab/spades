@@ -165,11 +165,11 @@ public:
                                      const Sequence &s) const {
         vector<EdgeId> cur_sorted;
         vector<vector<EdgeId>> res;
-        EdgeId prev_edge = EdgeId(0);
+        EdgeId prev_edge = EdgeId();
 
         for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();) {
             EdgeId cur_edge = (*iter)->edgeId;
-            if (prev_edge != EdgeId(0)) {
+            if (prev_edge != EdgeId()) {
 //Need to find sequence of edges between clusters
                 VertexId start_v = g_.EdgeEnd(prev_edge);
                 VertexId end_v = g_.EdgeStart(cur_edge);
@@ -205,7 +205,7 @@ public:
                         DEBUG ("Failed to find Path limits");
                         res.push_back(cur_sorted);
                         cur_sorted.clear();
-                        prev_edge = EdgeId(0);
+                        prev_edge = EdgeId();
                         continue;
                     }
                     
@@ -215,7 +215,7 @@ public:
                                       prev_last_index.edge_position, cur_first_index.edge_position, seq_end - seq_start));
                         res.push_back(cur_sorted);
                         cur_sorted.clear();
-                        prev_edge = EdgeId(0);
+                        prev_edge = EdgeId();
                         continue;
                     }
                     for (EdgeId edge: intermediate_path) {

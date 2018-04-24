@@ -229,7 +229,7 @@ private:
             edge = CorrectNucl(edge, it->first, it->second);
         }
         EdgeId tmp = Compressor<Graph>(gp_.g).CompressVertexEdgeId(gp_.g.EdgeEnd(edge));
-        if (tmp == EdgeId(0))
+        if (tmp == EdgeId())
             return edge;
         else
             return tmp;
@@ -259,7 +259,7 @@ private:
     size_t CorrectEdge(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics) {
         vector<pair<size_t, char>> to_correct = FindMismatches(edge, statistics);
         EdgeId new_edge = CorrectNucls(edge, to_correct);
-        if (new_edge == EdgeId(0))
+        if (new_edge == EdgeId())
             new_edge = edge;
 
         return to_correct.size();

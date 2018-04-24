@@ -71,7 +71,7 @@ public:
                            boost::none) {
     }
 
-    GapDescription() : GapDescription(EdgeId(0), EdgeId(0), INVALID_GAP) {
+    GapDescription() : GapDescription(EdgeId(), EdgeId(), INVALID_GAP) {
     }
 
     GapDescription(EdgeId left, EdgeId right,

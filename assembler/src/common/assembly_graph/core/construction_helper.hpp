@@ -42,13 +42,13 @@ public:
     }
 
     void LinkIncomingEdge(VertexId v, EdgeId e) {
-        VERIFY(graph_.EdgeEnd(e) == VertexId(0));
+        VERIFY(graph_.EdgeEnd(e) == VertexId());
         graph_.conjugate(v)->AddOutgoingEdge(graph_.conjugate(e));
         e->SetEndVertex(v);
     }
 
     void LinkOutgoingEdge(VertexId v, EdgeId e) {
-        VERIFY(graph_.EdgeEnd(graph_.conjugate(e)) == VertexId(0));
+        VERIFY(graph_.EdgeEnd(graph_.conjugate(e)) == VertexId());
         v->AddOutgoingEdge(e);
         graph_.conjugate(e)->SetEndVertex(graph_.conjugate(v));
     }
@@ -62,7 +62,7 @@ public:
     void DeleteLink(VertexId v, EdgeId e) {
         bool res = v->RemoveOutgoingEdge(e);
         VERIFY(res);
-        graph_.conjugate(e)->SetEndVertex(VertexId(0));
+        graph_.conjugate(e)->SetEndVertex(VertexId());
     }
 
     void DeleteUnlinkedEdge(EdgeId e) {

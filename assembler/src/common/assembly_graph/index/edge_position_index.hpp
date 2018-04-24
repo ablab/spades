@@ -30,7 +30,7 @@ struct EdgeInfo {
 
     EdgeInfo conjugate(size_t k) const {
         if(!valid()) {
-            return EdgeInfo(IdType(0), unsigned(-1), count);
+            return EdgeInfo(IdType(), unsigned(-1), count);
         } else {
             return EdgeInfo(edge_id->conjugate(), (unsigned)edge_id->length(k) - offset, count);
         }

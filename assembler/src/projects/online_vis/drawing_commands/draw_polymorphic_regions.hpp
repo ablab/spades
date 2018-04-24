@@ -44,7 +44,7 @@ class DrawPolymorphicRegions : public DrawingCommand {
             firstKmer = curr_env.kmer_mapper().Substitute(firstKmer);
             secondKmer = curr_env.kmer_mapper().Substitute(secondKmer);
             pair<EdgeId, size_t> positionFirst = curr_env.index().get(firstKmer);
-            if(positionFirst.first == EdgeId(0))
+            if(positionFirst.first == EdgeId())
             {
                 continue;
             }
@@ -57,7 +57,7 @@ class DrawPolymorphicRegions : public DrawingCommand {
             else
             {
                 pair<EdgeId, size_t> positionSecond = curr_env.index().get(secondKmer);
-                if(positionSecond.first == EdgeId(0))
+                if(positionSecond.first == EdgeId())
                 {
                     continue;
                 }

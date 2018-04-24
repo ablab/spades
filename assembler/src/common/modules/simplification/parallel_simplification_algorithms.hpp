@@ -125,14 +125,14 @@ class ParallelSimpleBRFunctor {
                 return candidate;
             }
         }
-        return EdgeId(0);
+        return EdgeId();
     }
 
     bool ProcessEdges(const vector<EdgeId>& edges) {
         for (EdgeId e : edges) {
             if (g_.length(e) <= max_length_ && math::le(g_.coverage(e), max_coverage_)) {
                 EdgeId alt = Alternative(e, edges);
-                if (alt != EdgeId(0) && math::ge(g_.coverage(alt) * max_relative_coverage_, g_.coverage(e))) {
+                if (alt != EdgeId() && math::ge(g_.coverage(alt) * max_relative_coverage_, g_.coverage(e))) {
                     //does not work in multiple threads for now...
                     //Reasons: id distribution, kmer-mapping
                     handler_f_(e);
@@ -537,7 +537,7 @@ class ParallelCompressor {
     VertexId LockingGetInit(VertexId v) {
         VertexLockT lock(v);
         if (!CheckConsistent(v))
-            return VertexId(0);
+            return VertexId();
 
         //works even if this edge is already unlinked from the vertex =)
         VERIFY(g_.CheckUniqueIncomingEdge(v));
@@ -563,7 +563,7 @@ public:
 
     bool Process(VertexId v, size_t idx) {
         VertexId init = LockingGetInit(v);
-        if (init != VertexId(0))
+        if (init != VertexId())
             ProcessBranching(v, init, idx);
         return false;
     }

@@ -453,7 +453,7 @@ class DataScanner {
             VERIFY(this->edge_id_map().find(first_real_id) != this->edge_id_map().end())
             EdgeId e1 = this->edge_id_map()[first_real_id];
             EdgeId e2 = this->edge_id_map()[second_real_id];
-            if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
+            if (e1 == EdgeId() || e2 == EdgeId())
                 continue;
             TRACE(e1 << " " << e2 << " " << point);
             //Need to prevent doubling of self-conjugate edge pairs

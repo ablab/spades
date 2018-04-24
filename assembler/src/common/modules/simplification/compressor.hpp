@@ -72,13 +72,13 @@ public:
      * @return true if vertex can be compressed and false otherwise
      */
     bool CompressVertex(VertexId v) {
-        return CompressVertexEdgeId(v) != EdgeId(0);
+        return CompressVertexEdgeId(v) != EdgeId();
     }
 
     EdgeId CompressVertexEdgeId(VertexId v) {
         TRACE("Processing vertex " << graph_.str(v) << " started");
         if (!compress_condition_.Check(v)) {
-            return EdgeId(0);
+            return EdgeId();
         }
         TRACE("Vertex " << graph_.str(v) << " judged compressible");
         return CompressWithoutChecks(v);

@@ -81,8 +81,8 @@ class Dijkstra {
         prev_vert_map_.clear();
         set_finished(false);
         settings_.Init(start);
-        queue.push(element_t<Graph, distance_t>(0, start, VertexId(0), EdgeId(0)));
-        prev_vert_map_[start] = std::pair<VertexId, EdgeId>(VertexId(0), EdgeId(0));
+        queue.push(element_t<Graph, distance_t>(0, start, VertexId(), EdgeId()));
+        prev_vert_map_[start] = std::pair<VertexId, EdgeId>(VertexId(), EdgeId());
     }
 
     void set_finished(bool state) {
@@ -206,7 +206,7 @@ public:
         VertexId prev_vertex = utils::get(prev_vert_map_, vertex).first;
         EdgeId edge = utils::get(prev_vert_map_, curr_vertex).second;
 
-        while (prev_vertex != VertexId(0)) {
+        while (prev_vertex != VertexId()) {
             if (graph_.EdgeStart(edge) == prev_vertex)
                 path.insert(path.begin(), edge);
             else
