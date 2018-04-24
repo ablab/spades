@@ -33,10 +33,10 @@ class TipsProjector {
         } else {
             utils::push_back_all(edges, gp_.g.IncomingEdges(gp_.g.EdgeEnd(tip)));
         }
-        restricted::set<EdgeId> edges_set(edges.begin(), edges.end());
+        std::set<EdgeId> edges_set(edges.begin(), edges.end());
         edges_set.erase(tip);
         if (edges_set.size() == 1)
-            return optional < EdgeId > (*edges_set.begin());
+            return optional<EdgeId>(*edges_set.begin());
         else
             return boost::none;
     }
