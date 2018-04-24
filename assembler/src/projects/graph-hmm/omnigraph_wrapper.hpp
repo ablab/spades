@@ -174,6 +174,17 @@ inline std::ostream &operator<<(std::ostream &os, const DebruijnComponentCursor 
 std::vector<DebruijnGraphCursor> all(const debruijn_graph::ConjugateDeBruijnGraph &g);
 std::vector<DebruijnComponentCursor> all(const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &c);
 
+inline
+DebruijnGraphCursor get_cursor(const debruijn_graph::ConjugateDeBruijnGraph &g, const debruijn_graph::EdgeId &e, size_t pos) {
+    return {&g, e, pos};
+}
+
+inline
+DebruijnComponentCursor get_cursor(omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &g,
+                                   const debruijn_graph::EdgeId &e, size_t pos) {
+    return {&g, e, pos};
+}
+
 namespace hmm {
 struct Fees;
 };
