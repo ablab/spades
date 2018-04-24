@@ -375,15 +375,12 @@ int main(int argc, char* argv[]) {
         esl_stopwatch_Start(w);
 
         // Collect the neighbourhood of the matched edges
+        auto matched_edges = MatchedEdges(edges, graph, hmm, cfg, w);
         bool hmm_in_aas = hmm.abc()->K == 20;
         std::unordered_map<EdgeId, std::unordered_set<VertexId>>
-                neighbourhoods = ExtractNeighbourhoods(MatchedEdges(edges, graph, hmm, cfg, w),
+                neighbourhoods = ExtractNeighbourhoods(matched_edges,
                                                        graph,
                                                        (hmm_in_aas ? 6 : 2));
-
-        std::vector<EdgeId> match_edges;
-        for (const auto &entry : neighbourhoods)
-            match_edges.push_back(entry.first);
 
         // See, whether we could join some components
         INFO("Joining components")
@@ -429,6 +426,10 @@ int main(int argc, char* argv[]) {
                 resultant_paths.push_back({kv.second, seq});
             }
         };
+
+        std::vector<EdgeId> match_edges;
+        for (const auto &entry : matched_edges)
+            match_edges.push_back(entry.first);
 
         for (const auto &kv : neighbourhoods) {
             EdgeId e = kv.first;
