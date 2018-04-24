@@ -351,9 +351,7 @@ int main(int argc, char* argv[]) {
     std::vector<EdgeId> edges;
     for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         EdgeId edge = *it;
-        if (cfg.int_id == 0 ||
-            edge.int_id() == cfg.int_id)
-        edges.push_back(edge);
+        if (cfg.int_id == 0 || edge.int_id() == cfg.int_id) edges.push_back(edge);
     }
 
     auto hmmw = hmmfile.read();
