@@ -318,6 +318,48 @@ std::unordered_map<EdgeId, std::unordered_set<VertexId>> ExtractNeighbourhoods(c
     return neighbourhoods;
 }
 
+using Neighbourhoods = std::unordered_map<EdgeId, std::unordered_set<VertexId>>;
+
+Neighbourhoods join_components(const Neighbourhoods &neighbourhoods,
+                               const EdgeAlnInfo &matched_edges,
+                               const debruijn_graph::ConjugateDeBruijnGraph &graph) {
+    std::vector<std::pair<EdgeId, std::unordered_set<VertexId>>> neighbourhoods_vector(neighbourhoods.cbegin(),
+                                                                                       neighbourhoods.cend());
+    auto matched_part_length = [&matched_edges](EdgeId edge_id) {
+        std::pair<int, int> overhangs = matched_edges.find(edge_id)->second;
+        return std::max(0, overhangs.first) + std::max(0, overhangs.second);
+    };
+
+    std::sort(neighbourhoods_vector.begin(), neighbourhoods_vector.end(),
+              [&matched_part_length](const auto &n1, const auto &n2) {
+                  return matched_part_length(n1.first) > matched_part_length(n2.first);
+              });
+
+    std::unordered_set<EdgeId> removed;
+    for (auto it = neighbourhoods_vector.begin(); it != neighbourhoods_vector.end(); ++it) {
+        if (removed.count(it->first)) {
+            continue;
+        }
+        for (auto to_check = std::next(it); to_check != neighbourhoods_vector.end(); ++to_check) {
+            VertexId vstart = graph.EdgeStart(to_check->first), vend = graph.EdgeEnd(to_check->first);
+            if (it->second.count(vstart) || it->second.count(vend)) {
+                it->second.insert(to_check->second.begin(), to_check->second.end());
+                removed.insert(to_check->first);
+            }
+        }
+    }
+
+    Neighbourhoods result;
+    for (auto it = neighbourhoods_vector.begin(); it != neighbourhoods_vector.end(); ++it) {
+        if (!removed.count(it->first)) {
+            result.insert(*it);
+        }
+    }
+
+    return result;
+}
+
+
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     utils::perf_counter pc;
@@ -376,23 +418,21 @@ int main(int argc, char* argv[]) {
         // Collect the neighbourhood of the matched edges
         EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg, w);
         bool hmm_in_aas = hmm.abc()->K == 20;
-        std::unordered_map<EdgeId, std::unordered_set<VertexId>>
-                neighbourhoods = ExtractNeighbourhoods(matched_edges,
-                                                       graph,
-                                                       (hmm_in_aas ? 6 : 2));
+        Neighbourhoods neighbourhoods = ExtractNeighbourhoods(matched_edges, graph, (hmm_in_aas ? 6 : 2));
 
         // See, whether we could join some components
         INFO("Joining components")
-        for (auto it = neighbourhoods.begin(); it != neighbourhoods.end(); ++it) {
-            for (auto to_check = std::next(it); to_check != neighbourhoods.end(); ) {
-                VertexId vstart = graph.EdgeStart(to_check->first), vend = graph.EdgeEnd(to_check->first);
-                if (it->second.count(vstart) || it->second.count(vend)) {
-                    it->second.insert(to_check->second.begin(), to_check->second.end());
-                    to_check = neighbourhoods.erase(to_check);
-                } else
-                    ++to_check;
-            }
-        }
+        // for (auto it = neighbourhoods.begin(); it != neighbourhoods.end(); ++it) {
+        //     for (auto to_check = std::next(it); to_check != neighbourhoods.end(); ) {
+        //         VertexId vstart = graph.EdgeStart(to_check->first), vend = graph.EdgeEnd(to_check->first);
+        //         if (it->second.count(vstart) || it->second.count(vend)) {
+        //             it->second.insert(to_check->second.begin(), to_check->second.end());
+        //             to_check = neighbourhoods.erase(to_check);
+        //         } else
+        //             ++to_check;
+        //     }
+        // }
+        neighbourhoods = join_components(neighbourhoods, matched_edges, graph);
         INFO("Total unique neighbourhoods extracted " << neighbourhoods.size());
 
         struct PathInfo {
