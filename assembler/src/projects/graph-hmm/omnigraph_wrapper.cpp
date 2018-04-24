@@ -49,7 +49,7 @@ inline std::vector<DebruijnGraphCursor> DebruijnGraphCursor::next() const {
     return result;
 }
 
-inline std::vector<DebruijnComponentCursor> DebruijnComponentCursor::prev() const {
+std::vector<DebruijnComponentCursor> DebruijnComponentCursor::prev() const {
     const ConjugateDeBruijnGraph &g = c_->g();
 
     // Case 1: edge is a tip and we're inside the terminal vertex
