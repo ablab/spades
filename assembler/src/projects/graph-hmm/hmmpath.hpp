@@ -303,6 +303,15 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   DepthAtLeast<GraphCursor> depth;
 
+  std::unordered_set<GraphCursor> neighbourhood(initial_original.cbegin(), initial_original.cend());
+  auto neighbourhood_filter_cursor = [&](const GraphCursor &cursor) -> bool {
+    return !cursor.is_empty() && !neighbourhood.count(cursor);  // TODO Add empty() to neighbourhood set
+  };
+  auto neighbourhood_filter_pair = [&](const auto &kv) -> bool {
+    const GraphCursor &cursor = kv.first;
+    return neighbourhood_filter_cursor(cursor);
+  };
+
   INFO("Original (before filtering) initial set size: " << initial_original.size());
   std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
                [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, static_cast<double>(fees.M) / 3 - 10); });  // FIXME Correct this condition for local-local matching
@@ -320,8 +329,12 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     return !depth.depth_at_least(cursor, static_cast<double>(positions_left) / 3 - 10);
   };
 
+  auto depth_and_neib_filter_cursor = [&](const GraphCursor &cursor) -> bool {
+    return depth_filter_cursor(cursor) || neighbourhood_filter_cursor(cursor);
+  };
+
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0], "i");
-  i_loop_processing(I, 0, depth_filter_cursor);  // Do we really need I at the beginning???
+  i_loop_processing(I, 0, depth_and_neib_filter_cursor);  // Do we really need I at the beginning???
   size_t n = 1;
   for (size_t m = 1; m <= fees.M; ++m) {
     positions_left = fees.M - m;
@@ -358,12 +371,18 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     M.filter(top, absolute_threshold);
     D.filter(top, absolute_threshold);
 
-    size_t filtered = 0;
-    filtered += I.filter(depth_filter_pair);
-    filtered += M.filter(depth_filter_pair);
-    filtered += D.filter(depth_filter_pair);
+    size_t depth_filtered = 0;
+    depth_filtered += I.filter(depth_filter_pair);
+    depth_filtered += M.filter(depth_filter_pair);
+    depth_filtered += D.filter(depth_filter_pair);
+
+    size_t neighbourhood_filtered = 0;
+    neighbourhood_filtered += I.filter(neighbourhood_filter_pair);
+    neighbourhood_filtered += M.filter(neighbourhood_filter_pair);
+    neighbourhood_filtered += D.filter(neighbourhood_filter_pair);
     if (m >= n) {
-      INFO("depth-filtered " << filtered << ", positions left = " << positions_left << " states m = " << m);
+      INFO("depth-filtered " << depth_filtered << ", positions left = " << positions_left << " states m = " << m);
+      INFO("neighbourhood-filtered " << neighbourhood_filtered);
       INFO("I = " << I.size() << " M = " << M.size() << " D = " << D.size());
       auto scores = M.scores();
       std::sort(scores.begin(), scores.end());

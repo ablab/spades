@@ -463,33 +463,34 @@ int main(int argc, char* argv[]) {
             int roverhang = (matched_edges[e].second + 10) * coef;
 
             using GraphCursor = std::decay_t<decltype(all(component)[0])>;
-            std::vector<GraphCursor> initial_new;
+            std::vector<GraphCursor> neib_cursors;
             if (loverhang > 0) {
               GraphCursor start = get_cursor(component, e, 0);
               auto left_cursors = impl::depth_subset(start, loverhang * 2, false);
-              initial_new.insert(initial_new.end(), left_cursors.cbegin(), left_cursors.cend());
+              neib_cursors.insert(neib_cursors.end(), left_cursors.cbegin(), left_cursors.cend());
             }
 
             size_t len = component.g().length(e) + component.g().k();
+            INFO("Edge length: " << len);
+            INFO("Edge overhangs: " << loverhang << " " << roverhang);
             if (roverhang > 0) {
               GraphCursor end = get_cursor(component, e, len - 1);
               auto right_cursors = impl::depth_subset(end, roverhang * 2, true);
-              initial_new.insert(initial_new.end(), right_cursors.cbegin(), right_cursors.cend());
+              neib_cursors.insert(neib_cursors.end(), right_cursors.cbegin(), right_cursors.cend());
             }
 
             for (size_t i = std::max(0, -loverhang); i < len - std::max(0, -roverhang); ++i) {
-              initial_new.push_back(get_cursor(component, e, i));
+              neib_cursors.push_back(get_cursor(component, e, i));
             }
 
-            std::vector<GraphCursor> initial = all(component);
-            initial = initial_new;
+            // neib_cursors = all(component);
 
             INFO("Running path search");
             std::vector<PathInfo> local_results;
             if (hmm_in_aas) {
-                run_search(make_aa_cursors(initial), e, cfg.top, local_results);
+                run_search(make_aa_cursors(neib_cursors), e, cfg.top, local_results);
             } else {
-                run_search(initial, e, cfg.top, local_results);
+                run_search(neib_cursors, e, cfg.top, local_results);
             }
 
             std::unordered_set<std::vector<EdgeId>> paths;
