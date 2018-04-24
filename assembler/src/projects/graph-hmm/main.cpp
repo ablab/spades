@@ -174,7 +174,7 @@ std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<GraphCursor>
 using debruijn_graph::EdgeId;
 using debruijn_graph::VertexId;
 using debruijn_graph::ConjugateDeBruijnGraph;
-using EdgeAlnInfo = std::unordered_map<EdgeId, std::pair<unsigned, unsigned>>;
+using EdgeAlnInfo = std::unordered_map<EdgeId, std::pair<int, int>>;
 EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
                          const ConjugateDeBruijnGraph &graph,
                          const hmmer::HMM &hmm, const cfg &cfg,
@@ -221,16 +221,22 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
             std::pair<int, int> seqpos = domain.seqpos();
             std::pair<int, int> hmmpos = domain.hmmpos();
 
-            long roverhang = std::max((domain.M() - hmmpos.second) - (domain.L() - seqpos.second), 0L);
-            long loverhang = std::max(hmmpos.first - seqpos.first, 0);
+            int roverhang = static_cast<int>(domain.M() - hmmpos.second) - static_cast<int>(domain.L() - seqpos.second);
+            int loverhang = static_cast<int>(hmmpos.first) - static_cast<int>(seqpos.first);
 
-            auto &entry = match_edges[e];
-            if (entry.first < loverhang)
-                entry.first = unsigned(loverhang);
-            if (entry.second < roverhang)
-                entry.second = unsigned(roverhang);
+            if (!match_edges.count(e)) {
+                match_edges[e] = {loverhang, roverhang};
+            } else {
+                auto &entry = match_edges[e];
+                if (entry.first < loverhang) {
+                    entry.first = loverhang;
+                }
+                if (entry.second < roverhang) {
+                    entry.second = roverhang;
+                }
+            }
 
-            INFO("" << e << ":" << entry);
+            INFO("" << e << ":" << match_edges[e]);
         }
     }
     INFO("Total matched edges: " << match_edges.size());
@@ -274,7 +280,7 @@ static bool ends_with(const std::string &s, const std::string &p) {
 
 std::unordered_map<EdgeId, std::unordered_set<VertexId>> ExtractNeighbourhoods(const EdgeAlnInfo &matched_edges,
                                                                                const ConjugateDeBruijnGraph &graph,
-                                                                               size_t mult) {
+                                                                               int mult) {
     using namespace debruijn_graph;
 
     std::unordered_map<EdgeId, std::unordered_set<VertexId>> neighbourhoods;
@@ -282,7 +288,7 @@ std::unordered_map<EdgeId, std::unordered_set<VertexId>> ExtractNeighbourhoods(c
         EdgeId e = entry.first;
         INFO("Extracting neighbourhood of edge " << e);
 
-        std::pair<unsigned, unsigned> overhangs = entry.second;
+        std::pair<int, int> overhangs = entry.second;
         overhangs.first *= mult; overhangs.second *= mult;
         INFO("Dijkstra bounds set to " << overhangs);
 
@@ -370,11 +376,12 @@ int main(int argc, char* argv[]) {
 
         // Collect the neighbourhood of the matched edges
         bool hmm_in_aas = hmm.abc()->K == 20;
-        std::vector<EdgeId> match_edges;
         std::unordered_map<EdgeId, std::unordered_set<VertexId>>
                 neighbourhoods = ExtractNeighbourhoods(MatchedEdges(edges, graph, hmm, cfg, w),
                                                        graph,
                                                        (hmm_in_aas ? 6 : 2));
+
+        std::vector<EdgeId> match_edges;
         for (const auto &entry : neighbourhoods)
             match_edges.push_back(entry.first);
 
