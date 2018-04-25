@@ -398,7 +398,7 @@ int main(int argc, char* argv[]) {
 
     auto hmmw = hmmfile.read();
     if (!hmmw) {
-        FATAL_ERROR("Error reading HMM file "<< cfg.hmmfile);
+        FATAL_ERROR("Error reading HMM file " << cfg.hmmfile);
     }
 
     ESL_STOPWATCH *w = esl_stopwatch_Create();
