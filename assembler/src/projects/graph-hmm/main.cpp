@@ -325,14 +325,14 @@ Neighbourhoods join_components(const Neighbourhoods &neighbourhoods,
                                const debruijn_graph::ConjugateDeBruijnGraph &graph) {
     std::vector<std::pair<EdgeId, std::unordered_set<VertexId>>> neighbourhoods_vector(neighbourhoods.cbegin(),
                                                                                        neighbourhoods.cend());
-    auto matched_part_length = [&matched_edges](EdgeId edge_id) {
+    auto unmatched_part_length = [&matched_edges, &graph](EdgeId edge_id) {
         std::pair<int, int> overhangs = matched_edges.find(edge_id)->second;
         return std::max(0, overhangs.first) + std::max(0, overhangs.second);
     };
 
     std::sort(neighbourhoods_vector.begin(), neighbourhoods_vector.end(),
-              [&matched_part_length](const auto &n1, const auto &n2) {
-                  return matched_part_length(n1.first) > matched_part_length(n2.first);
+              [&unmatched_part_length](const auto &n1, const auto &n2) {
+                  return unmatched_part_length(n1.first) < unmatched_part_length(n2.first);
               });
 
     std::unordered_set<EdgeId> removed;
