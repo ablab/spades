@@ -10,6 +10,7 @@
 #include "test_utils.hpp"
 #include "random_graph.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
+#include "pipeline/graphio/graph.hpp"
 
 namespace debruijn_graph {
 template<class Graph>
@@ -40,12 +41,13 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
     string file_name = "src/test/debruijn/graph_fragments/saves/test_save";
     Graph graph(55);
     RandomGraphConstructor<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
-    graphio::ConjugateDataPrinter<Graph> printer(graph);
-    printer.SaveGraph(file_name);
-    printer.SaveEdgeSequences(file_name);
+
+    graphio::GraphIO<Graph> io;
+    io.Save(file_name, graph);
+
     Graph new_graph(55);
-    graphio::ConjugateDataScanner<Graph> scanner(new_graph);
-    scanner.LoadGraph(file_name);
+    io.Load(file_name, new_graph);
+
     IteratorOrderChecker<Graph> checker(graph, new_graph);
     BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
     BOOST_CHECK(checker.CheckOrder(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin()));

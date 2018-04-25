@@ -26,6 +26,8 @@
 #include <fstream>
 #include <cstdio>
 
+#include "graphio/io_base.hpp"
+
 namespace debruijn_graph {
 
 namespace graphio {
@@ -33,65 +35,6 @@ namespace graphio {
 using namespace omnigraph;
 using namespace omnigraph::de;
 //todo think of inner namespace
-
-class SaveFile {
-public:
-    SaveFile(const std::string &filename):
-            str_(filename, std::ios::binary)
-    {}
-
-    template<typename T>
-    SaveFile & operator<<(const T &value) {
-        binary::BinWrite(str_, value);
-        //VERIFY(!str.fail());
-        return *this;
-    }
-
-    operator bool() const {
-        return (bool)str_;
-    }
-
-    bool operator!() const {
-        return !str_;
-    }
-private:
-    std::ofstream str_;
-};
-
-class LoadFile {
-public:
-    LoadFile(const std::string &filename):
-            str_(filename, std::ios::binary)
-    {}
-
-    template<typename T>
-    LoadFile & operator>>(T &value) {
-        binary::BinRead(str_, value);
-        //VERIFY(!str.fail());
-        return *this;
-    }
-
-    template<typename T>
-    T Read() {
-        T result;
-        (*this) >> result;
-        return result;
-    }
-
-    operator bool() const {
-        return (bool)str_;
-    }
-
-    bool operator!() const {
-        return !str_;
-    }
-
-    std::istream &str() { //TODO: get rid of this hack
-        return str_;
-    }
-private:
-    std::ifstream str_;
-};
 
 template<class KmerMapper>
 void SaveKmerMapper(const string& file_name,
