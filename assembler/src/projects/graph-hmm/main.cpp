@@ -71,7 +71,6 @@ extern "C" {
 #include "easel.h"
 #include "esl_alphabet.h"
 #include "esl_sq.h"
-#include "esl_stopwatch.h"
 
 #include "hmmer.h"
 }
@@ -178,8 +177,7 @@ using debruijn_graph::ConjugateDeBruijnGraph;
 using EdgeAlnInfo = std::unordered_map<EdgeId, std::pair<int, int>>;
 EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
                          const ConjugateDeBruijnGraph &graph,
-                         const hmmer::HMM &hmm, const cfg &cfg,
-                         ESL_STOPWATCH *w) {
+                         const hmmer::HMM &hmm, const cfg &cfg) {
     bool hmm_in_aas = hmm.abc()->K == 20;
     hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
 
@@ -206,7 +204,6 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
     }
 
     matcher.summarize();
-    esl_stopwatch_Stop(w);
 
     EdgeAlnInfo match_edges;
     for (const auto &hit : matcher.hits()) {
@@ -246,7 +243,7 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
     if (match_edges.size() && cfg.debug) {
         p7_tophits_Targets(stderr, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
         p7_tophits_Domains(stderr, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-        p7_pli_Statistics(stderr, matcher.pipeline(), w); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
+        p7_pli_Statistics(stderr, matcher.pipeline(), nullptr); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
     }
 
     return match_edges;
@@ -410,8 +407,6 @@ int main(int argc, char* argv[]) {
         if (cfg.int_id == 0 || edge.int_id() == cfg.int_id) edges.push_back(edge);
     }
 
-    ESL_STOPWATCH *w = esl_stopwatch_Create();
-
     std::unordered_set<std::vector<EdgeId>> to_rescore;
 
     // Outer loop: over each query HMM in <hmmfile>.
@@ -423,10 +418,8 @@ int main(int argc, char* argv[]) {
         if (p7hmm->acc)  { if (fprintf(stderr, "Accession:   %s\n", p7hmm->acc)  < 0) FATAL_ERROR("write failed"); }
         if (p7hmm->desc) { if (fprintf(stderr, "Description: %s\n", p7hmm->desc) < 0) FATAL_ERROR("write failed"); }
 
-        esl_stopwatch_Start(w);
-
         // Collect the neighbourhood of the matched edges
-        EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg, w);
+        EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);
         bool hmm_in_aas = hmm.abc()->K == 20;
         Neighbourhoods neighbourhoods = ExtractNeighbourhoods(matched_edges, graph, (hmm_in_aas ? 6 : 2));
 
@@ -625,8 +618,6 @@ int main(int argc, char* argv[]) {
             io::WriteWrapped(MergeSequences(graph, entry).str(), o);
         }
     }
-
-    esl_stopwatch_Destroy(w);
 
     return 0;
 }
