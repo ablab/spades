@@ -6,6 +6,28 @@
 
 namespace pacbio {
 
+struct GapClosingConfig {
+    bool run_dijkstra; // default: true
+    bool restore_ends; // default: false
+    // dijkstra
+    int max_vertex_in_gap;
+    int max_gap_length;
+    int queue_limit;
+    int iteration_limit;
+    bool find_shortest_path; // default: false
+    bool restore_mapping; // default: false
+
+    GapClosingConfig()
+        :run_dijkstra(false), 
+         restore_ends(false),
+         max_vertex_in_gap(-1),
+         max_gap_length(-1),
+         queue_limit(-1),
+         iteration_limit(-1), 
+         find_shortest_path(false), 
+         restore_mapping(false) {}
+};
+
 
 struct GraphState {
     EdgeId e;
@@ -164,13 +186,15 @@ protected:
         virtual bool IsEndPosition(const QueueState &cur_state) = 0;
 
 public:
-        DijkstraGraphSequenceBase(const Graph &g, string ss, EdgeId start_e, int start_p, int path_max_length)
-                  :g_(g), ss_(ss)
+        DijkstraGraphSequenceBase(const Graph &g, const GapClosingConfig &gap_cfg, string ss, EdgeId start_e, int start_p, int path_max_length)
+                  :g_(g)
+                   , gap_cfg_(gap_cfg)    
+                   , ss_(ss)
                    , start_e_(start_e)
                    , start_p_(start_p)
                    , path_max_length_(path_max_length)
-                   , queue_limit_(1000000)
-                   , iter_limit_(1000000){
+                   , queue_limit_(gap_cfg_.queue_limit)
+                   , iter_limit_(gap_cfg_.iteration_limit){
             best_ed_.resize(ss_.size(), path_max_length_);
             AddNewEdge(GraphState(start_e_, start_p_, (int) g_.length(start_e_)), QueueState(), 0);
             min_score_ = -1;
@@ -206,9 +230,9 @@ public:
                 q_.erase(q_.begin());
                 for (const EdgeId &e: g_.OutgoingEdges(g_.EdgeEnd(cur_state.gs.e))) {
                     found_path = AddState(cur_state, e, ed, i, perf);
-                    if (found_path) break;
+                    if (!gap_cfg_.find_shortest_path && found_path) break;
                 }
-                if (found_path) break;
+                if (!gap_cfg_.find_shortest_path && found_path) break;
             }
             //INFO("TIME.Dijkstra=" << perf.time())
             if (found_path) {
@@ -262,6 +286,7 @@ protected:
         vector<int> best_ed_;
 
         const Graph &g_;
+        const GapClosingConfig &gap_cfg_;
         const string ss_;
         EdgeId start_e_;
         const int start_p_;
@@ -325,10 +350,10 @@ private:
         }
 
 public:
-        DijkstraGapFiller(const Graph &g, string ss, EdgeId start_e, EdgeId end_e,
+        DijkstraGapFiller(const Graph &g, const GapClosingConfig &gap_cfg, string ss, EdgeId start_e, EdgeId end_e,
                                   int start_p, int end_p, int path_max_length, 
                                   const map<VertexId, size_t> &reachable_vertex)
-                  : DijkstraGraphSequenceBase(g, ss, start_e, start_p, path_max_length)
+                  : DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length)
                    , end_e_(end_e) , end_p_(end_p)
                    , reachable_vertex_(reachable_vertex){
             GraphState end_gstate(end_e_, 0, end_p_);
@@ -403,8 +428,8 @@ private:
             return false;
         }
 public:
-        DijkstraEndsReconstructor(const Graph &g, string ss, EdgeId start_e, int start_p, int path_max_length)
-                  :DijkstraGraphSequenceBase(g, ss, start_e, start_p, path_max_length) {
+        DijkstraEndsReconstructor(const Graph &g, const GapClosingConfig &gap_cfg, string ss, EdgeId start_e, int start_p, int path_max_length)
+                  :DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length) {
             end_qstate_ = QueueState();
             if (g_.length(start_e_) + g_.k() - start_p_ + path_max_length_ > ss_.size()){
                 string seq_str = ss_;

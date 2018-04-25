@@ -64,16 +64,18 @@ private:
 
     alignment::BWAReadMapper<Graph> bwa_mapper_;
 
-    bool use_dijkstra_;
+    GapClosingConfig gap_cfg_;
 
 public:
 
     PacBioMappingIndex(const Graph &g,
-                        debruijn_graph::config::pacbio_processor pb_config, alignment::BWAIndex::AlignmentMode mode, bool use_dijkstra = false)
+                        debruijn_graph::config::pacbio_processor pb_config, 
+                        alignment::BWAIndex::AlignmentMode mode, 
+                        GapClosingConfig gap_cfg=GapClosingConfig())
             : g_(g),
               pb_config_(pb_config),
               bwa_mapper_(g, mode, pb_config.bwa_length_cutoff),
-              use_dijkstra_(use_dijkstra){
+              gap_cfg_(gap_cfg){
         DEBUG("PB Mapping Index construction started");
         DEBUG("Index constructed");
         read_count_ = 0;
@@ -216,7 +218,7 @@ public:
 
         int s_len = int(ss.size());
         int score = max(20, s_len/4);
-        if (s_len > 2000) {
+        if (s_len > gap_cfg_.max_gap_length) {
             DEBUG("EdgeDijkstra: sequence is too long " << s_len)
             return;
         }
@@ -224,7 +226,7 @@ public:
             DEBUG("EdgeDijkstra: sequence is too small " << s_len)
             return;
         }
-        DijkstraEndsReconstructor algo = DijkstraEndsReconstructor(g_, ss.str(), start_e, start_pos, score);
+        DijkstraEndsReconstructor algo = DijkstraEndsReconstructor(g_, gap_cfg_, ss.str(), start_e, start_pos, score);
         algo.CloseGap();
         score = algo.GetEditDistance();
         if (score == -1){
@@ -290,7 +292,7 @@ public:
                     utils::perf_counter perf1;
 
                     vector<EdgeId> intermediate_path = BestScoredPath(s, prev_edge, cur_edge, prev_last_index.edge_position, cur_first_index.edge_position, 
-                                                                                    start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, use_dijkstra_, score1);
+                                                                                    start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, gap_cfg_.run_dijkstra, score1);
 
 
                     // utils::perf_counter perf2;
@@ -330,11 +332,11 @@ public:
         if (cur_sorted.size() > 0) {
             res.push_back(cur_sorted);
         }
-        // if (res.size() > 0){
-        //     bool forward = true;
-        //     GrowEnds(res[0], s, !forward);
-        //     GrowEnds(res[res.size() - 1], s, forward);
-        // }
+        if (gap_cfg_.restore_ends && res.size() > 0){
+            bool forward = true;
+            GrowEnds(res[0], s, !forward);
+            GrowEnds(res[res.size() - 1], s, forward);
+        }
         return res;
     }
 
@@ -675,11 +677,11 @@ public:
             path_max_length = max(s_len/3, 20);
         } 
         DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len << " max-len " << path_max_length << " start_p=" << start_p << " end_p=" << end_p << " eid=" << start_e.int_id());
-        if ( ((size_t) s_len) > 2000 || vertex_pathlen.size() > 100000){
+        if ( ((size_t) s_len) > gap_cfg_.max_gap_length || vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap){
             DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
             return vector<EdgeId>(0);
         }
-        DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, ss.str(), start_e, end_e, start_p, end_p, path_max_length, vertex_pathlen);
+        DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, gap_cfg_, ss.str(), start_e, end_e, start_p, end_p, path_max_length, vertex_pathlen);
         gap_filler.CloseGap();
         score = gap_filler.GetEditDistance();
         if (score == -1){

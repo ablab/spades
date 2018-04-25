@@ -49,17 +49,12 @@ struct GAlignerConfig {
     string path_to_sequences; 
     string workdir;
     string data_type; // pacbio, nanopore, 16S
-    bool run_dijkstra; // default: true
-    bool run_ends_extension; // default: false
+    
     string output_format; // default: tsv and gpa without CIGAR
     
     //path construction
     config::debruijn_config::pacbio_processor pb;
-
-    // dijkstra
-    bool find_shortest_path; // default: false
-    bool restore_mapping; // default: false
-
+    pacbio::GapClosingConfig gap_cfg;
 };
 
 }
@@ -75,8 +70,8 @@ template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
         io.mapRequired("workdir", cfg.workdir);
         io.mapRequired("data_type", cfg.data_type);
         io.mapRequired("output_format", cfg.output_format);
-        io.mapRequired("run_dijkstra", cfg.run_dijkstra);
-        io.mapRequired("run_ends_extension", cfg.run_ends_extension);
+        io.mapRequired("run_dijkstra", cfg.gap_cfg.run_dijkstra);
+        io.mapRequired("restore_ends", cfg.gap_cfg.restore_ends);
 
         io.mapRequired("pb.bwa_length_cutoff", cfg.pb.bwa_length_cutoff);
         io.mapRequired("pb.compression_cutoff", cfg.pb.compression_cutoff);
@@ -89,9 +84,12 @@ template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
         io.mapRequired("pb.contigs_min_gap_quantity", cfg.pb.contigs_min_gap_quantity);
         io.mapRequired("pb.max_contigs_gap_length", cfg.pb.max_contigs_gap_length);
 
-
-        io.mapRequired("find_shortest_path", cfg.find_shortest_path);
-        io.mapRequired("restore_mapping", cfg.restore_mapping);
+        io.mapRequired("gap_dijkstra.max_vertex_in_gap", cfg.gap_cfg.max_vertex_in_gap);
+        io.mapRequired("gap_dijkstra.max_gap_length", cfg.gap_cfg.max_gap_length);
+        io.mapRequired("gap_dijkstra.queue_limit", cfg.gap_cfg.queue_limit);
+        io.mapRequired("gap_dijkstra.iteration_limit", cfg.gap_cfg.iteration_limit);
+        io.mapRequired("gap_dijkstra.find_shortest_path", cfg.gap_cfg.find_shortest_path);
+        io.mapRequired("gap_dijkstra.restore_mapping", cfg.gap_cfg.restore_mapping);
         
     }
 };
@@ -113,10 +111,10 @@ public:
     BWASeedsAligner(const ConjugateDeBruijnGraph &g, 
                  const alignment::BWAIndex::AlignmentMode mode,
                  const config::debruijn_config::pacbio_processor &pb,
-                 const bool use_dijkstra,
+                 const pacbio::GapClosingConfig gap_cfg,
                  const string output_file,
                  const string formats):
-      g_(g),pac_index_(g_, pb, mode, use_dijkstra), mapping_printer_hub_(g_, output_file, formats){
+      g_(g),pac_index_(g_, pb, mode, gap_cfg), mapping_printer_hub_(g_, output_file, formats){
         aligned_reads = 0;
         processed_reads = 0;
       }
@@ -153,7 +151,7 @@ public:
             {
                 if (processed_reads*100/wrappedreads.size() >= step) {
                     INFO("Processed \% reads: " << processed_reads*100/wrappedreads.size() << 
-                         "\% Aligned reads: " << aligned_reads*100/processed_reads << 
+                         "\%, Aligned reads: " << aligned_reads*100/processed_reads << 
                          "\% (" << aligned_reads << " out of " << processed_reads << ")")
                     step += 10;
                 }
@@ -214,9 +212,10 @@ void Launch(debruijn_graph::GAlignerConfig &cfg, const string output_file, int t
         exit(-1);
     }
     
-    BWASeedsAligner aligner(g, mode, cfg.pb, cfg.run_dijkstra, output_file, cfg.output_format); 
+    BWASeedsAligner aligner(g, mode, cfg.pb, cfg.gap_cfg, output_file, cfg.output_format); 
     INFO("BWASeedsAligner created");
 
+    INFO("Processing " << wrappedreads.size() << " reads..")
     aligner.RunAligner(wrappedreads, threads);
     INFO("Finished")
 }

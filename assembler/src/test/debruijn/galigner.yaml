@@ -5,7 +5,7 @@ workdir: ./tmp3
 data_type: pacbio
 output_format: tsv,gpa
 run_dijkstra: true
-run_ends_extension: false
+restore_ends: false
 
 pb.bwa_length_cutoff: 0
 pb.compression_cutoff: 0.6
@@ -18,5 +18,9 @@ pb.pacbio_min_gap_quantity: 2
 pb.contigs_min_gap_quantity: 1
 pb.max_contigs_gap_length: 10000
 
-find_shortest_path: false
-restore_mapping: false
+gap_dijkstra.max_vertex_in_gap: 100000
+gap_dijkstra.max_gap_length: 2000
+gap_dijkstra.queue_limit: 1000000
+gap_dijkstra.iteration_limit: 1000000
+gap_dijkstra.find_shortest_path: false
+gap_dijkstra.restore_mapping: false
