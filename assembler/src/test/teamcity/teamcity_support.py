@@ -553,8 +553,8 @@ def load_info(dataset_path):
 def get_contigs_list(args, dataset_info, before_rr = False):
     contigs = [("contigs", "contigs", "", "", "fasta")]
     contigs.append(("scaffolds", "scaffolds", "sc", " --scaffolds ", "fasta"))
-    contigs.append(("contigs paths", "contigs", "", "", "paths"))
-    contigs.append(("scaffolds paths", "scaffolds", "", "", "paths"))
+    contigs.append(("contigs_paths", "contigs", "", "", "paths"))
+    contigs.append(("scaffolds_paths", "scaffolds", "", "", "paths"))
 
     if dataset_info.mode == "dip":
         contigs = [("contigs", "dipspades/consensus_contigs", "", "", "fasta")]

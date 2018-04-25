@@ -145,8 +145,7 @@ inline path_extend::Gap MimicLAGapAnalyzer(size_t k, Sequence &s1, Sequence &s2)
 
     return path_extend::Gap(
             (int) (k - overlap_info.r1.size() - s1.size() + overlap_info.r1.end_pos - overlap_info.r2.start_pos),
-            (uint32_t) (s1.size() - overlap_info.r1.end_pos),
-            (uint32_t) overlap_info.r2.start_pos);
+            {(uint32_t) (s1.size() - overlap_info.r1.end_pos), (uint32_t) overlap_info.r2.start_pos});
 }
 
 //TODO what does it test?! Why is it not a test of SWOverlapAnalyzer?
