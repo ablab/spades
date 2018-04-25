@@ -5,6 +5,7 @@ workdir: ./tmp3
 data_type: pacbio
 output_format: tsv,gpa
 run_dijkstra: true
+run_ends_extension: false
 
 pb.bwa_length_cutoff: 0
 pb.compression_cutoff: 0.6

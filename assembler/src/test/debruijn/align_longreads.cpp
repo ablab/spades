@@ -29,6 +29,8 @@
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <iostream>
 #include <fstream>
 
@@ -48,6 +50,7 @@ struct GAlignerConfig {
     string workdir;
     string data_type; // pacbio, nanopore, 16S
     bool run_dijkstra; // default: true
+    bool run_ends_extension; // default: false
     string output_format; // default: tsv and gpa without CIGAR
     
     //path construction
@@ -73,6 +76,7 @@ template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
         io.mapRequired("data_type", cfg.data_type);
         io.mapRequired("output_format", cfg.output_format);
         io.mapRequired("run_dijkstra", cfg.run_dijkstra);
+        io.mapRequired("run_ends_extension", cfg.run_ends_extension);
 
         io.mapRequired("pb.bwa_length_cutoff", cfg.pb.bwa_length_cutoff);
         io.mapRequired("pb.compression_cutoff", cfg.pb.compression_cutoff);
@@ -161,6 +165,8 @@ public:
 const ConjugateDeBruijnGraph& LoadGraph(const string saves_path, const string workdir, int K){
         if (saves_path.find(".gfa") != std::string::npos) {
             DEBUG("Load gfa")
+            struct stat sb;
+            VERIFY_MSG(stat(saves_path.c_str(), &sb) == 0 and S_ISREG(sb.st_mode), "GFA-file " + saves_path + " doesn't exist");   
             static ConjugateDeBruijnGraph g(K);
             gfa::GFAReader gfa(saves_path);
             DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
@@ -168,6 +174,12 @@ const ConjugateDeBruijnGraph& LoadGraph(const string saves_path, const string wo
             return g;
         } else {
             DEBUG("Load from saves")
+            struct stat sb;
+            if (stat(workdir.c_str(), &sb) != 0 or !S_ISDIR(sb.st_mode))
+            {
+                int status = mkdir(workdir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+                VERIFY_MSG(status == 0, "Failed to create workdir " + workdir);   
+            }
             static conj_graph_pack gp(K, workdir, 0);
             graphio::ScanGraphPack(saves_path, gp);
             return gp.g;
