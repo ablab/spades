@@ -602,10 +602,10 @@ int main(int argc, char* argv[]) {
                     }
                     if (cfg.rescore && result.path.size() > 0) {
                         to_rescore_local.insert(result.path);
-                        to_rescore.insert(result.path);
                     }
                 }
             }
+            to_rescore.insert(to_rescore_local.cbegin(), to_rescore_local.cend());
         }
 
         INFO("Total " << to_rescore_local.size() << " local paths to rescore");
