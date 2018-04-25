@@ -376,6 +376,23 @@ std::vector<hmmer::HMM> parse_hmm_file(const std::string &filename) {
     return hmms;
 }
 
+void export_edges(const std::unordered_set<std::vector<EdgeId>> entries,
+                  const debruijn_graph::ConjugateDeBruijnGraph &graph,
+                  const std::string &filename) {
+    std::ofstream o(filename, std::ios::out);
+
+    for (const auto &entry : entries) {
+        o << ">";
+        for (size_t i = 0; i < entry.size(); ++i) {
+            o << entry[i];
+            if (i != entry.size() - 1)
+                o << "_";
+        }
+        o << '\n';
+        io::WriteWrapped(MergeSequences(graph, entry).str(), o);
+    }
+}
+
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     utils::perf_counter pc;
@@ -588,35 +605,13 @@ int main(int argc, char* argv[]) {
 
         INFO("Total " << to_rescore_local.size() << " local paths to rescore");
         if (cfg.rescore && to_rescore_local.size()) {
-            std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".edges.fa", std::ios::out);
-
-            for (const auto &entry : to_rescore_local) {
-                o << ">";
-                for (size_t i = 0; i < entry.size(); ++i) {
-                    o << entry[i];
-                    if (i != entry.size() - 1)
-                        o << "_";
-                }
-                o << '\n';
-                io::WriteWrapped(MergeSequences(graph, entry).str(), o);
-            }
+            export_edges(to_rescore_local, graph, std::string("graph-hmm-") + p7hmm->name + ".edges.fa");
         }
     } // end outer loop over query HMMs
 
     INFO("Total " << to_rescore.size() << " paths to rescore");
     if (cfg.rescore && to_rescore.size()) {
-        std::ofstream o(std::string("graph-hmm") + ".all.edges.fa", std::ios::out);
-
-        for (const auto &entry : to_rescore) {
-            o << ">";
-            for (size_t i = 0; i < entry.size(); ++i) {
-                o << entry[i];
-                if (i != entry.size() - 1)
-                    o << "_";
-            }
-            o << '\n';
-            io::WriteWrapped(MergeSequences(graph, entry).str(), o);
-        }
+        export_edges(to_rescore, graph, std::string("graph-hmm") + ".all.edges.fa");
     }
 
     return 0;
