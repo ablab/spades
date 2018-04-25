@@ -442,16 +442,6 @@ int main(int argc, char* argv[]) {
 
         // See, whether we could join some components
         INFO("Joining components")
-        // for (auto it = neighbourhoods.begin(); it != neighbourhoods.end(); ++it) {
-        //     for (auto to_check = std::next(it); to_check != neighbourhoods.end(); ) {
-        //         VertexId vstart = graph.EdgeStart(to_check->first), vend = graph.EdgeEnd(to_check->first);
-        //         if (it->second.count(vstart) || it->second.count(vend)) {
-        //             it->second.insert(to_check->second.begin(), to_check->second.end());
-        //             to_check = neighbourhoods.erase(to_check);
-        //         } else
-        //             ++to_check;
-        //     }
-        // }
         neighbourhoods = join_components(neighbourhoods, matched_edges, graph);
         INFO("Total unique neighbourhoods extracted " << neighbourhoods.size());
 
