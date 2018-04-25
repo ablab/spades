@@ -393,6 +393,17 @@ void export_edges(const std::unordered_set<std::vector<EdgeId>> entries,
     }
 }
 
+void load_graph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename) {
+    using namespace debruijn_graph;
+    if (ends_with(filename, ".gfa")) {
+        gfa::GFAReader gfa(filename);
+        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+        gfa.to_graph(graph);
+    } else {
+        graphio::ScanBasicGraph(filename, graph);
+    }
+}
+
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     utils::perf_counter pc;
@@ -407,14 +418,9 @@ int main(int argc, char* argv[]) {
     INFO("Starting Graph HMM aligning engine, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
 
     using namespace debruijn_graph;
-    ConjugateDeBruijnGraph graph(cfg.k);
-    if (ends_with(cfg.load_from, ".gfa")) {
-        gfa::GFAReader gfa(cfg.load_from);
-        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(graph);
-    } else {
-        graphio::ScanBasicGraph(cfg.load_from, graph);
-    }
+
+    debruijn_graph::ConjugateDeBruijnGraph graph(cfg.k);
+    load_graph(graph, cfg.load_from);
     INFO("Graph loaded. Total vertices: " << graph.size());
 
     // Collect all the edges
