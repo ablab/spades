@@ -359,6 +359,25 @@ Neighbourhoods join_components(const Neighbourhoods &neighbourhoods,
     return result;
 }
 
+std::vector<hmmer::HMM> parse_hmm_file(const std::string &filename) {
+    /* Open the query profile HMM file */
+    hmmer::HMMFile hmmfile(filename);
+    if (!hmmfile.valid()) {
+        FATAL_ERROR("Error opening HMM file " << filename);
+    }
+
+    std::vector<hmmer::HMM> hmms;
+
+    while (auto hmmw = hmmfile.read()) {
+        hmms.push_back(std::move(hmmw.get()));
+    }
+
+    if (hmms.empty()) {
+        FATAL_ERROR("Error reading HMM file " << filename);
+    }
+
+    return hmms;
+}
 
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
@@ -372,11 +391,6 @@ int main(int argc, char* argv[]) {
 
     create_console_logger();
     INFO("Starting Graph HMM aligning engine, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
-
-    /* Open the query profile HMM file */
-    hmmer::HMMFile hmmfile(cfg.hmmfile);
-    if (!hmmfile.valid())
-        FATAL_ERROR("Error opening HMM file "<< cfg.hmmfile);
 
     using namespace debruijn_graph;
     ConjugateDeBruijnGraph graph(cfg.k);
@@ -396,18 +410,14 @@ int main(int argc, char* argv[]) {
         if (cfg.int_id == 0 || edge.int_id() == cfg.int_id) edges.push_back(edge);
     }
 
-    auto hmmw = hmmfile.read();
-    if (!hmmw) {
-        FATAL_ERROR("Error reading HMM file " << cfg.hmmfile);
-    }
-
     ESL_STOPWATCH *w = esl_stopwatch_Create();
 
-    // Outer loop: over each query HMM in <hmmfile>.
     std::unordered_set<std::vector<EdgeId>> to_rescore;
-    while (hmmw) {
-        const hmmer::HMM &hmm = hmmw.get();
-        P7_HMM *p7hmm = hmmw->get();
+
+    // Outer loop: over each query HMM in <hmmfile>.
+    auto hmms = parse_hmm_file(cfg.hmmfile);
+    for (const auto &hmm : hmms) {
+        P7_HMM *p7hmm = hmm.get();
 
         if (fprintf(stderr, "Query:       %s  [M=%d]\n", p7hmm->name, p7hmm->M) < 0) FATAL_ERROR("write failed");
         if (p7hmm->acc)  { if (fprintf(stderr, "Accession:   %s\n", p7hmm->acc)  < 0) FATAL_ERROR("write failed"); }
@@ -447,7 +457,7 @@ int main(int argc, char* argv[]) {
 
         std::vector<PathInfo> results;
         std::vector<std::pair<double, std::string>> resultant_paths;
-        auto fees = hmm::fees_from_hmm(p7hmm, hmmw->abc());
+        auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
 
         auto run_search = [&](const auto &initial, EdgeId e, size_t top,
                               std::vector<PathInfo> &local_results) {
@@ -598,8 +608,6 @@ int main(int argc, char* argv[]) {
                 io::WriteWrapped(MergeSequences(graph, entry).str(), o);
             }
         }
-
-        hmmw = hmmfile.read();
     } // end outer loop over query HMMs
 
     INFO("Total " << to_rescore.size() << " paths to rescore");
