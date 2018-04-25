@@ -43,6 +43,7 @@ void create_console_logger() {
 struct cfg {
     std::string load_from;
     std::string hmmfile;
+    std::string output_dir = "";
     size_t k;
     size_t top;
     uint64_t int_id;
@@ -82,6 +83,7 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       cfg.hmmfile    << value("hmm file"),
       cfg.load_from  << value("load from"),
       cfg.k          << integer("k-mer size"),
+      required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
       (option("--top") & integer("x", cfg.top)) % "extract top x paths",
       (option("--edge_id") & integer("value", cfg.int_id)) % "match around edge",
       (option("--min_size") & integer("value", cfg.min_size)) % "minimal component size to consider (default: 2)",
@@ -415,6 +417,13 @@ int main(int argc, char* argv[]) {
     process_cmdline(argc, argv, cfg);
 
     create_console_logger();
+
+    int status = mkdir(cfg.output_dir.c_str(), 0775);
+    if (status != 0) {
+        ERROR("Cannot create output directory: " << cfg.output_dir);
+        std::exit(1);
+    }
+
     INFO("Starting Graph HMM aligning engine, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
 
     using namespace debruijn_graph;
@@ -572,7 +581,7 @@ int main(int argc, char* argv[]) {
         std::unordered_set<std::vector<EdgeId>> to_rescore_local;
         if (cfg.save) {
             if (resultant_paths.size()) {
-                std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".paths.fa", std::ios::out);
+                std::ofstream o(cfg.output_dir + std::string("/graph-hmm-") + p7hmm->name + ".paths.fa", std::ios::out);
                 for (const auto &result : resultant_paths) {
                     o << ">Score_" << result.first << '\n';
                     io::WriteWrapped(result.second, o);
@@ -580,7 +589,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (results.size()) {
-                std::ofstream o(std::string("graph-hmm-") + p7hmm->name + ".fa", std::ios::out);
+                std::ofstream o(cfg.output_dir + std::string("/graph-hmm-") + p7hmm->name + ".fa", std::ios::out);
                 for (const auto &result : results) {
                     o << ">" << result.leader << "_" << result.priority;
                     if (result.seq.size() == 0)
@@ -601,13 +610,13 @@ int main(int argc, char* argv[]) {
 
         INFO("Total " << to_rescore_local.size() << " local paths to rescore");
         if (cfg.rescore && to_rescore_local.size()) {
-            export_edges(to_rescore_local, graph, std::string("graph-hmm-") + p7hmm->name + ".edges.fa");
+            export_edges(to_rescore_local, graph, cfg.output_dir + std::string("/graph-hmm-") + p7hmm->name + ".edges.fa");
         }
     } // end outer loop over query HMMs
 
     INFO("Total " << to_rescore.size() << " paths to rescore");
     if (cfg.rescore && to_rescore.size()) {
-        export_edges(to_rescore, graph, std::string("graph-hmm") + ".all.edges.fa");
+        export_edges(to_rescore, graph, cfg.output_dir + std::string("/graph-hmm") + ".all.edges.fa");
     }
 
     return 0;
