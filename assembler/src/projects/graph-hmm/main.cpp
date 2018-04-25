@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
+#include <omp.h>
 
 #include "aa.hpp"
 #include "depth_filter.hpp"
@@ -45,6 +46,7 @@ struct cfg {
     std::string hmmfile;
     std::string output_dir = "";
     size_t k;
+    int threads = 4;
     size_t top;
     uint64_t int_id;
     unsigned min_size;
@@ -85,6 +87,7 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       cfg.k          << integer("k-mer size"),
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
       (option("--top") & integer("x", cfg.top)) % "extract top x paths",
+      (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
       (option("--edge_id") & integer("value", cfg.int_id)) % "match around edge",
       (option("--min_size") & integer("value", cfg.min_size)) % "minimal component size to consider (default: 2)",
       (option("--max_size") & integer("value", cfg.max_size)) % "maximal component size to consider (default: 1000)",
@@ -443,7 +446,10 @@ int main(int argc, char* argv[]) {
 
     // Outer loop: over each query HMM in <hmmfile>.
     auto hmms = parse_hmm_file(cfg.hmmfile);
-    for (const auto &hmm : hmms) {
+    omp_set_num_threads(cfg.threads);
+    #pragma omp parallel for
+    for (size_t _i = 0; _i < hmms.size(); ++_i) {
+        const auto &hmm = hmms[_i];
         P7_HMM *p7hmm = hmm.get();
 
         if (fprintf(stderr, "Query:       %s  [M=%d]\n", p7hmm->name, p7hmm->M) < 0) FATAL_ERROR("write failed");
@@ -451,7 +457,12 @@ int main(int argc, char* argv[]) {
         if (p7hmm->desc) { if (fprintf(stderr, "Description: %s\n", p7hmm->desc) < 0) FATAL_ERROR("write failed"); }
 
         // Collect the neighbourhood of the matched edges
-        EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);
+        EdgeAlnInfo matched_edges;
+        #pragma omp critical  // TODO Clarify hmmmatch thread-safety
+        {
+            // EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);
+            matched_edges = MatchedEdges(edges, graph, hmm, cfg);
+        }
         bool hmm_in_aas = hmm.abc()->K == 20;
         Neighbourhoods neighbourhoods = ExtractNeighbourhoods(matched_edges, graph, (hmm_in_aas ? 6 : 2));
 
@@ -605,7 +616,10 @@ int main(int argc, char* argv[]) {
                     }
                 }
             }
-            to_rescore.insert(to_rescore_local.cbegin(), to_rescore_local.cend());
+            #pragma omp critical
+            {
+                to_rescore.insert(to_rescore_local.cbegin(), to_rescore_local.cend());
+            }
         }
 
         INFO("Total " << to_rescore_local.size() << " local paths to rescore");
