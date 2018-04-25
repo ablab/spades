@@ -122,7 +122,7 @@ public:
     void AlignRead(const io::SingleRead &read){
         DEBUG("Read " << read.name() <<". Current Read")
         auto current_read_mapping = pac_index_.GetReadAlignment(read);
-        const auto& aligned_mappings = current_read_mapping.main_storage;
+        const auto& aligned_mappings = current_read_mapping.mapping_paths;
     
         if (aligned_mappings.size() > 0){
             mapping_printer_hub_.SaveMapping(aligned_mappings, read);

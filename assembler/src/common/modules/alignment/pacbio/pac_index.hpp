@@ -36,11 +36,16 @@ enum {
 };
 
 struct OneReadMapping {
-    std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > main_storage;
+    std::vector<vector<debruijn_graph::EdgeId>> main_storage;
+    std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> mapping_paths;
     std::vector<GapDescription> gaps;
-    OneReadMapping(const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>>& main_storage_,
+    OneReadMapping(const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>>& mapping_paths_,
                    const std::vector<GapDescription>& gaps_) :
-            main_storage(main_storage_), gaps(gaps_){
+            mapping_paths(mapping_paths_), gaps(gaps_){
+            main_storage.reserve(mapping_paths.size());
+            for (auto mpath: mapping_paths) {
+                main_storage.push_back(mpath.simple_path());
+            }
     }
 };
 
@@ -493,7 +498,7 @@ public:
                 for (auto &cur_sorted:res) {
                     DEBUG("Adding " <<res.size() << " subreads, cur alignments " << cur_sorted.size());
                     if (cur_sorted.size() > 0) {
-                        for(EdgeId eee: cur_sorted.path()) {
+                        for(EdgeId eee: cur_sorted.simple_path()) {
                             DEBUG (g_.int_id(eee));
                         }
                         start_clusters.push_back(*cur_cluster_start);

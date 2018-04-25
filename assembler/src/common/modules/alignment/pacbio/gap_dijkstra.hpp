@@ -1,6 +1,8 @@
 #include "assembly_graph/index/edge_multi_index.hpp"
 #include "modules/alignment/edge_index_refiller.hpp"
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
+#include "assembly_graph/paths/path_utils.hpp"
 #include "utils/perf/perfcounter.hpp"
 #include "string_distance.hpp"
 
@@ -30,11 +32,11 @@ struct GapClosingConfig {
 
 
 struct GraphState {
-    EdgeId e;
+    debruijn_graph::EdgeId e;
     int start_pos;
     int end_pos;
 
-    GraphState(EdgeId e_, int start_pos_, int end_pos_)
+    GraphState(debruijn_graph::EdgeId e_, int start_pos_, int end_pos_)
                 : e(e_), start_pos(start_pos_), end_pos(end_pos_)
     {}
 
@@ -62,10 +64,10 @@ struct QueueState {
     int i;
 
     QueueState()
-            : gs(EdgeId(), -1, -1), i(-1)
+            : gs(debruijn_graph::EdgeId(), -1, -1), i(-1)
     {}
 
-    QueueState(EdgeId &e_, int start_pos_, int end_pos_, int i_)
+    QueueState(debruijn_graph::EdgeId &e_, int start_pos_, int end_pos_, int i_)
                 : gs(e_, start_pos_, end_pos_), i(i_)
     {}
 
@@ -181,12 +183,12 @@ protected:
         }
 
 
-        virtual bool AddState(const QueueState &cur_state, EdgeId e, int ed, int ind, utils::perf_counter &perf) = 0;
+        virtual bool AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed, int ind, utils::perf_counter &perf) = 0;
 
         virtual bool IsEndPosition(const QueueState &cur_state) = 0;
 
 public:
-        DijkstraGraphSequenceBase(const Graph &g, const GapClosingConfig &gap_cfg, string ss, EdgeId start_e, int start_p, int path_max_length)
+        DijkstraGraphSequenceBase(const debruijn_graph::Graph &g, const GapClosingConfig &gap_cfg, string ss, debruijn_graph::EdgeId start_e, int start_p, int path_max_length)
                   :g_(g)
                    , gap_cfg_(gap_cfg)    
                    , ss_(ss)
@@ -228,7 +230,7 @@ public:
                 }
                 i ++;
                 q_.erase(q_.begin());
-                for (const EdgeId &e: g_.OutgoingEdges(g_.EdgeEnd(cur_state.gs.e))) {
+                for (const debruijn_graph::EdgeId &e: g_.OutgoingEdges(g_.EdgeEnd(cur_state.gs.e))) {
                     found_path = AddState(cur_state, e, ed, i, perf);
                     if (!gap_cfg_.find_shortest_path && found_path) break;
                 }
@@ -252,7 +254,7 @@ public:
             return;
         }
 
-        vector<EdgeId> GetPath() {
+        vector<debruijn_graph::EdgeId> GetPath() {
            return gap_path_;
         }
 
@@ -279,16 +281,16 @@ protected:
         map<QueueState, int> visited_;
         map<QueueState, QueueState> prev_states_;
 
-        vector<EdgeId> gap_path_;
+        vector<debruijn_graph::EdgeId> gap_path_;
 
         omnigraph::MappingPath<debruijn_graph::EdgeId> mapping_path_;
 
         vector<int> best_ed_;
 
-        const Graph &g_;
+        const debruijn_graph::Graph &g_;
         const GapClosingConfig &gap_cfg_;
         const string ss_;
-        EdgeId start_e_;
+        debruijn_graph::EdgeId start_e_;
         const int start_p_;
         int path_max_length_;
         int min_score_;
@@ -306,7 +308,7 @@ class DijkstraGapFiller: public DijkstraGraphSequenceBase {
 
 private:
 
-        virtual bool AddState(const QueueState &cur_state, EdgeId e, int ed, int ind, utils::perf_counter &perf) {
+        virtual bool AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed, int ind, utils::perf_counter &perf) {
             bool found_path = false;
             if (reachable_vertex_.size() == 0 || reachable_vertex_.count(g_.EdgeEnd(cur_state.gs.e)) > 0) { 
                 if (reachable_vertex_.size() == 0 || reachable_vertex_.count(g_.EdgeEnd(e)) > 0) {
@@ -350,9 +352,9 @@ private:
         }
 
 public:
-        DijkstraGapFiller(const Graph &g, const GapClosingConfig &gap_cfg, string ss, EdgeId start_e, EdgeId end_e,
+        DijkstraGapFiller(const debruijn_graph::Graph &g, const GapClosingConfig &gap_cfg, string ss, debruijn_graph::EdgeId start_e, debruijn_graph::EdgeId end_e,
                                   int start_p, int end_p, int path_max_length, 
-                                  const map<VertexId, size_t> &reachable_vertex)
+                                  const map<debruijn_graph::VertexId, size_t> &reachable_vertex)
                   : DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length)
                    , end_e_(end_e) , end_p_(end_p)
                    , reachable_vertex_(reachable_vertex){
@@ -381,9 +383,9 @@ public:
         }
 
     protected:
-        EdgeId end_e_;
+        debruijn_graph::EdgeId end_e_;
         const int end_p_;
-        const map<VertexId, size_t> &reachable_vertex_;
+        const map<debruijn_graph::VertexId, size_t> &reachable_vertex_;
 };
 
 
@@ -391,7 +393,7 @@ public:
 class DijkstraEndsReconstructor: public DijkstraGraphSequenceBase {
 
 private:
-        virtual bool AddState(const QueueState &cur_state, EdgeId e, int ed, int ind, utils::perf_counter &perf) {
+        virtual bool AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed, int ind, utils::perf_counter &perf) {
             bool found_path = false;
             //DEBUG("end_pos=" << cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e))
             GraphState next_state(e, 0, (int) g_.length(e));
@@ -428,7 +430,7 @@ private:
             return false;
         }
 public:
-        DijkstraEndsReconstructor(const Graph &g, const GapClosingConfig &gap_cfg, string ss, EdgeId start_e, int start_p, int path_max_length)
+        DijkstraEndsReconstructor(const debruijn_graph::Graph &g, const GapClosingConfig &gap_cfg, string ss, debruijn_graph::EdgeId start_e, int start_p, int path_max_length)
                   :DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length) {
             end_qstate_ = QueueState();
             if (g_.length(start_e_) + g_.k() - start_p_ + path_max_length_ > ss_.size()){
