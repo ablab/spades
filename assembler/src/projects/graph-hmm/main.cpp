@@ -423,8 +423,12 @@ int main(int argc, char* argv[]) {
 
     int status = mkdir(cfg.output_dir.c_str(), 0775);
     if (status != 0) {
-        ERROR("Cannot create output directory: " << cfg.output_dir);
-        std::exit(1);
+        if (errno == EEXIST) {
+            WARN("Output directory exists: " << cfg.output_dir);
+        } else {
+            ERROR("Cannot create output directory: " << cfg.output_dir);
+            std::exit(1);
+        }
     }
 
     INFO("Starting Graph HMM aligning engine, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
