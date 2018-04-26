@@ -534,7 +534,7 @@ int main(int argc, char* argv[]) {
             }
 
             int coef = hmm_in_aas ? 3 : 1;
-            int loverhang = (matched_edges[e].first + 10) * coef;
+            int loverhang = (matched_edges[e].first + 10) * coef; // TODO unify overhangs processing
             int roverhang = (matched_edges[e].second + 10) * coef;
 
             using GraphCursor = std::decay_t<decltype(all(component)[0])>;
