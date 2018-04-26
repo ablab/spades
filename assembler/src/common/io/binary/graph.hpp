@@ -9,11 +9,7 @@
 #include "io/id_mapper.hpp"
 #include "io_base.hpp"
 
-namespace debruijn_graph {
-
-namespace graphio {
-
-using io::IdMapper;
+namespace io {
 
 template<typename Graph>
 class GraphIO : public IOBase<Graph> {
@@ -48,7 +44,7 @@ protected:
     void LoadImpl(LoadFile &file, Graph &graph) override {
         size_t max_id;
         file >> max_id;
-        restricted::IdSegmentStorage id_storage = graph.GetGraphIdDistributor().ReserveUpTo(max_id);
+        auto id_storage = graph.GetGraphIdDistributor().ReserveUpTo(max_id);
 
         size_t vertex_count, edge_count;
         file >> vertex_count >> edge_count;
@@ -85,7 +81,5 @@ private:
     IdMapper<typename Graph::VertexId> vertex_mapper_;
     IdMapper<typename Graph::EdgeId> edge_mapper_;
 };
-
-}
 
 }

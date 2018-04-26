@@ -10,7 +10,7 @@
 #include "test_utils.hpp"
 #include "random_graph.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
-#include "pipeline/graphio/graph.hpp"
+#include "io/binary/graph.hpp"
 
 namespace debruijn_graph {
 template<class Graph>
@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
     Graph graph(55);
     RandomGraphConstructor<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
 
-    graphio::GraphIO<Graph> io;
+    io::GraphIO<Graph> io;
     io.Save(file_name, graph);
 
     Graph new_graph(55);

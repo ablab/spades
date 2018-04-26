@@ -9,11 +9,7 @@
 #include "io/id_mapper.hpp"
 #include "io_base.hpp"
 
-namespace debruijn_graph {
-
-namespace graphio {
-
-using io::IdMapper;
+namespace io {
 
 template<typename Index>
 class PairedIndexIO : public IOBase<Index> {
@@ -31,7 +27,5 @@ protected:
 private:
     const IdMapper<typename Index::EdgeId> &mapper_;
 };
-
-}
 
 }

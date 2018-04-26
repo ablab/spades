@@ -9,7 +9,7 @@
 #include <boost/test/unit_test.hpp>
 #include "paired_info/paired_info_helpers.hpp"
 #include "random_graph.hpp"
-#include "pipeline/graphio/paired_index.hpp"
+#include "io/binary/paired_index.hpp"
 
 namespace debruijn_graph {
 
@@ -462,16 +462,18 @@ BOOST_AUTO_TEST_CASE(PairedInfoRandomSymmetry) {
 const char *file_name = "src/test/debruijn/graph_fragments/saves/test_save";
 
 BOOST_AUTO_TEST_CASE(PairedInfoRandomSaveLoad) {
+    using namespace io;
+
     Graph graph(55);
     RandomGraphConstructor<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
 
     TestIndex pi(graph);
     RandomPairedIndexConstructor<TestIndex>(pi, 100).Generate(100);
     
-    io::IdMapper<Graph::EdgeId> mapper;
+    IdMapper<Graph::EdgeId> mapper;
     for (auto i = graph.SmartEdgeBegin(); !i.IsEnd(); ++i)
         mapper[(*i).int_id()] = *i;
-    graphio::PairedIndexIO<TestIndex> io(mapper);
+    PairedIndexIO<TestIndex> io(mapper);
     io.Save(file_name, pi);
 
     TestIndex ni(graph);

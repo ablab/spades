@@ -6,9 +6,7 @@
 
 #pragma once
 
-namespace debruijn_graph {
-
-namespace graphio {
+namespace io {
 
 class SaveFile {
 public:
@@ -100,7 +98,5 @@ private:
     const char *name_, *ext_;
     unsigned version_;
 };
-
-}
 
 }

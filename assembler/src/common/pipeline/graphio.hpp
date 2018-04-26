@@ -26,7 +26,7 @@
 #include <fstream>
 #include <cstdio>
 
-#include "graphio/io_base.hpp"
+#include "io/binary/io_base.hpp"
 
 namespace debruijn_graph {
 
@@ -34,6 +34,7 @@ namespace graphio {
 
 using namespace omnigraph;
 using namespace omnigraph::de;
+using namespace io;
 //todo think of inner namespace
 
 template<class KmerMapper>
@@ -361,7 +362,7 @@ class DataScanner {
 
         INFO("Reading paired info from " << file_name << " started");
         //--Temporary--
-        io::IdMapper<EdgeId> mapper;
+        IdMapper<EdgeId> mapper;
         for (const auto i: edge_id_map_) {
             mapper[i.first] = i.second;
         }
