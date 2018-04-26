@@ -26,7 +26,6 @@ inline void PopFront(BidirectionalPath * const path, size_t cnt) {
 }
 
 class OverlapRemover {
-    const Graph &g_;
     const PathContainer &paths_;
     const OverlapFindingHelper helper_;
     SplitsStorage splits_;
@@ -119,7 +118,6 @@ public:
                          GraphCoverageMap &coverage_map,
                          size_t min_edge_len,// = 0,
                          size_t max_diff) :// = 0) :
-            g_(g),
             paths_(paths),
             helper_(g, coverage_map,
                     min_edge_len, max_diff) {
@@ -208,7 +206,6 @@ private:
 };
 
 class PathDeduplicator {
-    const Graph& g_;
     PathContainer &paths_;
     const bool equal_only_;
     const OverlapFindingHelper helper_;
@@ -235,7 +232,6 @@ public:
                      size_t min_edge_len,
                      size_t max_diff,
                      bool equal_only) :
-            g_(g),
             paths_(paths),
             equal_only_(equal_only),
             helper_(g, coverage_map, min_edge_len, max_diff) {}

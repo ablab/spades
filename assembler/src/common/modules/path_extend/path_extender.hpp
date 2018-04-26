@@ -841,14 +841,11 @@ public:
 
     CompositeExtender(const Graph &g, GraphCoverageMap& cov_map,
                       UsedUniqueStorage &unique,
-                      const vector<shared_ptr<PathExtender>> &pes,
-                      size_t max_diff_len)
+                      const vector<shared_ptr<PathExtender>> &pes)
             : g_(g),
               cover_map_(cov_map),
               used_storage_(unique),
-              extenders_(pes),
-              max_diff_len_(max_diff_len) {
-    }
+              extenders_(pes) {}
 
     void GrowAll(PathContainer& paths, PathContainer& result) {
         result.clear();
@@ -866,7 +863,6 @@ private:
     GraphCoverageMap &cover_map_;
     UsedUniqueStorage &used_storage_;
     vector<shared_ptr<PathExtender>> extenders_;
-    size_t max_diff_len_;
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) {
         DEBUG("make grow step composite extender");
@@ -1182,8 +1178,6 @@ protected:
 
 
 class MultiExtender: public SimpleExtender {
-    size_t max_candidates_;
-
 public:
     MultiExtender(const conj_graph_pack &gp,
                   const GraphCoverageMap &cov_map,
@@ -1192,11 +1186,8 @@ public:
                   size_t is,
                   bool investigate_short_loops,
                   bool use_short_loop_cov_resolver,
-                  double weight_threshold,
-                  size_t max_candidates = 0) :
-        SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold),
-        max_candidates_(max_candidates) {
-    }
+                  double weight_threshold) :
+            SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold) {}
 
 protected:
     bool AddCandidates(BidirectionalPath& path, PathContainer* paths_storage, ExtensionChooser::EdgeContainer& candidates) override {

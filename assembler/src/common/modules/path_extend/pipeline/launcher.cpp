@@ -497,8 +497,7 @@ void PathExtendLauncher::Launch() {
     Extenders extenders = ConstructExtenders(cover_map, used_unique_storage);
     CompositeExtender composite_extender(gp_.g, cover_map,
                                          used_unique_storage,
-                                         extenders,
-                                         params_.max_path_diff);
+                                         extenders);
 
     auto paths = resolver.ExtendSeeds(seeds, composite_extender);
     DebugOutputPaths(paths, "raw_paths");
