@@ -49,7 +49,6 @@ struct cfg {
     int threads = 4;
     size_t top;
     uint64_t int_id;
-    unsigned min_size;
     unsigned max_size;
     bool debug;
     bool draw;
@@ -59,7 +58,7 @@ struct cfg {
     hmmer::hmmer_cfg hcfg;
     cfg()
             : load_from(""), hmmfile(""), k(0), top(10),
-              int_id(0), min_size(2), max_size(1000),
+              int_id(0), max_size(1000),
               debug(false), draw(false),
               save(true), rescore(true)
     {}
@@ -89,7 +88,6 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       (option("--top") & integer("x", cfg.top)) % "extract top x paths",
       (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
       (option("--edge_id") & integer("value", cfg.int_id)) % "match around edge",
-      (option("--min_size") & integer("value", cfg.min_size)) % "minimal component size to consider (default: 2)",
       (option("--max_size") & integer("value", cfg.max_size)) % "maximal component size to consider (default: 1000)",
       // Control of output
       cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
@@ -513,18 +511,17 @@ int main(int argc, char* argv[]) {
         for (const auto &kv : neighbourhoods) {
             EdgeId e = kv.first;
 
-            INFO("Looking HMM path around " <<e);
+            INFO("Looking HMM path around " << e);
+            if (matched_edges[e].first <= 0 && matched_edges[e].second <= 0) {
+                INFO("Component has only single edge, do not run the algorithm");
+                results.emplace_back(e, 0, std::string(), std::vector<EdgeId>(1, e));
+                continue;
+            }
+
             auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromVertices(graph,
                                                                                              kv.second.begin(), kv.second.end(),
                                                                                              true);
             INFO("Neighbourhood vertices: " << component.v_size() << ", edges: " << component.e_size());
-
-            if (component.e_size()/2 < cfg.min_size) {
-                INFO("Component is too small (" << component.e_size() / 2 << " vs " << cfg.min_size << "), skipping");
-                // Special case: if the component has only a single edge, add it to results
-                results.emplace_back(e, 0, std::string(), std::vector<EdgeId>(1, e));
-                continue;
-            }
 
             if (component.e_size()/2 > cfg.max_size) {
                 WARN("Component is too large (" << component.e_size() / 2 << " vs " << cfg.max_size << "), skipping");
