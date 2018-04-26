@@ -1179,15 +1179,7 @@ protected:
 
 class MultiExtender: public SimpleExtender {
 public:
-    MultiExtender(const conj_graph_pack &gp,
-                  const GraphCoverageMap &cov_map,
-                  UsedUniqueStorage &unique,
-                  shared_ptr<ExtensionChooser> ec,
-                  size_t is,
-                  bool investigate_short_loops,
-                  bool use_short_loop_cov_resolver,
-                  double weight_threshold) :
-            SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold) {}
+    using SimpleExtender::SimpleExtender;
 
 protected:
     bool AddCandidates(BidirectionalPath& path, PathContainer* paths_storage, ExtensionChooser::EdgeContainer& candidates) override {
