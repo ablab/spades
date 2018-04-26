@@ -21,7 +21,7 @@ public:
         return edge_mapper_;
     }
 
-protected:
+private:
     void SaveImpl(SaveFile &file, const Graph &graph) override {
         file << graph.GetGraphIdDistributor().GetMax();
 
@@ -77,7 +77,7 @@ protected:
             }
         }
     }
-private:
+
     IdMapper<typename Graph::VertexId> vertex_mapper_;
     IdMapper<typename Graph::EdgeId> edge_mapper_;
 };

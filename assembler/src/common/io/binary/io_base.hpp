@@ -91,12 +91,12 @@ public:
 protected:
     IOBase(const char *name, const char *ext):
             name_(name), ext_(ext), version_(0) {}
+    const char *name_, *ext_;
+    unsigned version_;
+
 private:
     virtual void SaveImpl(SaveFile &file, const T &value) = 0;
     virtual void LoadImpl(LoadFile &file, T &value) = 0;
-
-    const char *name_, *ext_;
-    unsigned version_;
 };
 
 }
