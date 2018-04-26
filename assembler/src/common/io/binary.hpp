@@ -10,6 +10,8 @@
 #include <iostream>
 #include "llvm/Support/LEB128.h"
 
+namespace io {
+
 namespace binary {
 
 enum EncodingType {
@@ -72,6 +74,8 @@ T BinRead(std::istream &str) {
     T result;
     BinRead(str, result);
     return result;
+}
+
 }
 
 }

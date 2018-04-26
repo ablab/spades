@@ -181,7 +181,7 @@ public:
 
     void BinWrite(std::ostream &str) const {
         //To be optimized
-        binary::BinWrite(str, size());
+        io::binary::BinWrite(str, size());
         for (const auto &i : *this)
             i.BinWrite(str);
     }
@@ -189,7 +189,7 @@ public:
     void BinRead(std::istream &str) {
         VERIFY_MSG(!size(), "Cannot read into a non-empty histogram");
         //To be optimized
-        auto count = binary::BinRead<size_t>(str);
+        auto count = io::binary::BinRead<size_t>(str);
         while (count--) {
             Point tmp;
             tmp.BinRead(str);

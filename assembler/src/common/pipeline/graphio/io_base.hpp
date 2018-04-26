@@ -17,7 +17,7 @@ public:
 
     template<typename T>
     SaveFile &operator<<(const T &value) {
-        binary::BinWrite(str_, value);
+        io::binary::BinWrite(str_, value);
         //VERIFY(!str.fail());
         return *this;
     }
@@ -41,7 +41,7 @@ public:
 
     template<typename T>
     LoadFile &operator>>(T &value) {
-        binary::BinRead(str_, value);
+        io::binary::BinRead(str_, value);
         //VERIFY(!str.fail());
         return *this;
     }
@@ -99,44 +99,6 @@ private:
 
     const char *name_, *ext_;
     unsigned version_;
-};
-
-template<typename Graph>
-class IdMapper {
-public:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-
-    void SetVertex(size_t id, VertexId v) {
-        vertex_map_[id] = v;
-    }
-
-    VertexId GetVertex(size_t id) const {
-        auto i = vertex_map_.find(id);
-        VERIFY_MSG(i != vertex_map_.end(), "Vertex " << id << " is not in the graph");
-        return i->second;
-    }
-
-    bool HasVertex(size_t id) const {
-        return vertex_map_.count(id);
-    }
-
-    void SetEdge(size_t id, EdgeId v) {
-        edge_map_[id] = v;
-    }
-
-    EdgeId GetEdge(size_t id) const {
-        auto i = edge_map_.find(id);
-        VERIFY_MSG(i != edge_map_.end(), "Edge " << id << " is not in the graph");
-        return i->second;
-    }
-
-    bool HasEdge(size_t id) const {
-        return edge_map_.count(id);
-    }
-private:
-    std::unordered_map<size_t, VertexId> vertex_map_;
-    std::unordered_map<size_t, EdgeId> edge_map_;
 };
 
 }

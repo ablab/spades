@@ -8,6 +8,7 @@
 
 #include "histogram.hpp"
 #include "histptr.hpp"
+#include "io/id_mapper.hpp"
 
 namespace omnigraph {
 
@@ -193,7 +194,7 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
     }
 
     void BinWrite(std::ostream &str) const {
-        using binary::BinWrite;
+        using io::binary::BinWrite;
         BinWrite<size_t>(str, storage_.size());
         for (const auto &i : storage_) {
             BinWrite(str, i.first.int_id());
@@ -214,21 +215,17 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
         }
     }
 
-    void BinRead(std::istream &str, const std::map<size_t, EdgeId> &real_ids) { //TODO: get rid of real_ids
+    void BinRead(std::istream &str, const io::IdMapper<EdgeId> &mapper) { //TODO: get rid of mapper
         VERIFY_MSG(!this->size_, "Cannot read into a non-empty buffer");
-        using binary::BinRead;
+        using io::binary::BinRead;
         auto storage_size = BinRead<size_t>(str);
         while (storage_size--) {
             auto saved_e1 = BinRead<size_t>(str);
-            auto i1 = real_ids.find(saved_e1);
-            VERIFY_MSG(i1 != real_ids.end(), saved_e1 << " is not in the saved graph");
-            auto e1 = i1->second;
+            auto e1 = mapper[saved_e1];
             auto inner_size = BinRead<size_t>(str);
             while (inner_size--) {
                 auto saved_e2 = BinRead<size_t>(str);
-                auto i2 = real_ids.find(saved_e2);
-                VERIFY_MSG(i2 != real_ids.end(), saved_e2 << " is not in the saved graph");
-                auto e2 = i2->second;
+                auto e2 = mapper[saved_e2];
                 auto hist = new InnerHistogram();
                 hist->BinRead(str);
                 DEBUG(saved_e1 << "->" << saved_e2 << ": " << hist->size() << "points");

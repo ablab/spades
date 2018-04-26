@@ -360,7 +360,13 @@ class DataScanner {
         }
 
         INFO("Reading paired info from " << file_name << " started");
-        paired_index.BinRead(file.str(), edge_id_map_); //TODO: get rid of the second argument
+        //--Temporary--
+        io::IdMapper<EdgeId> mapper;
+        for (const auto i: edge_id_map_) {
+            mapper[i.first] = i.second;
+        }
+        //-------------
+        paired_index.BinRead(file.str(), mapper); //TODO: get rid of the second argument
     }
 
     bool LoadPositions(const string& file_name,

@@ -6,11 +6,14 @@
 
 #pragma once
 
+#include "io/id_mapper.hpp"
 #include "io_base.hpp"
 
 namespace debruijn_graph {
 
 namespace graphio {
+
+using io::IdMapper;
 
 template<typename Graph>
 class GraphIO : public IOBase<Graph> {
@@ -18,8 +21,8 @@ public:
     GraphIO():
             IOBase<Graph>("debruijn graph", ".grp") {}
 
-    const IdMapper<Graph> &GetMapper() {
-        return mapper_;
+    const IdMapper<typename Graph::EdgeId> &GetEdgeMapper() {
+        return edge_mapper_;
     }
 
 protected:
@@ -55,11 +58,11 @@ protected:
             file >> ids[0] >> ids[1];
             TRACE("Vertex " << ids[0] << " ~ " << ids[1] << " .");
 
-            if (!mapper_.HasVertex(ids[0])) {
+            if (!vertex_mapper_.count(ids[0])) {
                 auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
                 auto new_id = graph.AddVertex(typename Graph::VertexData(), id_distributor);
-                mapper_.SetVertex(ids[0], new_id);
-                mapper_.SetVertex(ids[1], graph.conjugate(new_id));
+                vertex_mapper_[ids[0]] = new_id;
+                vertex_mapper_[ids[1]] = graph.conjugate(new_id);
             }
         }
 
@@ -70,16 +73,17 @@ protected:
             file >> ids[0] >> ids[1] >> start_id >> fin_id >> seq;
             TRACE("Edge " << ids[0] << " : " << start_id << " -> "
                           << fin_id << " l = " << seq.size() << " ~ " << ids[1]);
-            if (!mapper_.HasEdge(ids[0])) {
+            if (!edge_mapper_.count(ids[0])) {
                 auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
-                auto new_id = graph.AddEdge(mapper_.GetVertex(start_id), mapper_.GetVertex(fin_id), seq, id_distributor);
-                mapper_.SetEdge(ids[0], new_id);
-                mapper_.SetEdge(ids[1], graph.conjugate(new_id));
+                auto new_id = graph.AddEdge(vertex_mapper_[start_id], vertex_mapper_[fin_id], seq, id_distributor);
+                edge_mapper_[ids[0]] = new_id;
+                edge_mapper_[ids[1]] = graph.conjugate(new_id);
             }
         }
     }
 private:
-    IdMapper<Graph> mapper_;
+    IdMapper<typename Graph::VertexId> vertex_mapper_;
+    IdMapper<typename Graph::EdgeId> edge_mapper_;
 };
 
 }
