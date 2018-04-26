@@ -54,7 +54,7 @@ struct gcfg {
     std::string outfile;
     unsigned nthreads;
     size_t buff_size;
-    mode mode;
+    enum mode mode;
 };
 
 

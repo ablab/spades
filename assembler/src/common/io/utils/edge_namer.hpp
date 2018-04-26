@@ -10,6 +10,7 @@
 #include "common/utils/verify.hpp"
 
 #include <string>
+#include <functional>
 
 namespace io {
 template<class Graph>
