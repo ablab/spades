@@ -25,9 +25,12 @@
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "mapping_printer.hpp"
+
 #include "io/gfa/gfa_reader.hpp"
+
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
+#include <cxxopts/cxxopts.hpp>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -222,26 +225,40 @@ void Launch(debruijn_graph::GAlignerConfig &cfg, const string output_file, int t
 }
 
 int main(int argc, char **argv) {
-    if (argc < 3) {
-        cout << "Usage: longreads_aligner <*.yaml> <outfile> {threads}\n";
-        exit(1);
+
+    unsigned nthreads;
+    std::string cfg, output_file;
+
+    cxxopts::Options options(argv[0], " <YAML-config sequences and graph description> - Tool for sequence alignment on graph");
+    options.add_options()
+            ("o,outfile", "Output file prefix", cxxopts::value<std::string>(output_file)->default_value("./galigner_output"), "prefix")
+            ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(min(omp_get_max_threads(), 16))), "num")
+            ("h,help", "Print help");
+
+    options.add_options("Input")
+                ("positional", "", cxxopts::value<std::string>(cfg));
+
+    options.parse_positional("positional");
+    options.parse(argc, argv);
+    if (options.count("help")) {
+        std::cout << options.help() << std::endl;
+        exit(0);
     }
+
+    if (!options.count("positional")) {
+        std::cerr << "ERROR: No input YAML was specified" << std::endl << std::endl;
+        std::cout << options.help() << std::endl;
+        exit(-1);
+    }
+
     create_console_logger();
-    string cfg = argv[1];
     auto buf = llvm::MemoryBuffer::getFile(cfg);
     VERIFY_MSG(buf, "Failed to load config file " + cfg);
     llvm::yaml::Input yin(*buf.get());
     debruijn_graph::GAlignerConfig config;
     yin >> config;
+    omp_set_num_threads(nthreads);
 
-    string output_file = argv[2];
-
-    int threads = 16;
-    if (argc == 4) {
-        threads = std::stoi(argv[3]);
-    }
-    omp_set_num_threads(threads);
-
-    debruijn_graph::Launch(config, output_file, threads);
+    debruijn_graph::Launch(config, output_file, nthreads);
     return 0;
 }
