@@ -177,28 +177,28 @@ public:
         if (forward){
             start_e = path.edge_at(path.size() - 1);
             omnigraph::MappingRange mapping = path.mapping_at(path.size() - 1);
-            start_pos = mapping.mapped_range.end_pos;
+            start_pos = (int) mapping.mapped_range.end_pos;
             ss = s.Subseq(mapping.initial_range.end_pos, (int) s.size() );
         } else {
             start_e = g_.conjugate(path.edge_at(0));
             omnigraph::MappingRange mapping = path.mapping_at(0);
-            start_pos = min(g_.length(start_e), g_.length(start_e) + g_.k() - mapping.mapped_range.start_pos);
+            start_pos = min((int) g_.length(start_e), (int) g_.length(start_e) + (int) g_.k() - (int) mapping.mapped_range.start_pos);
             ss = !s.Subseq(0, mapping.initial_range.start_pos);
         }
     }
 
     void UpdatePath(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, std::vector<EdgeId> &ans, int end_pos, bool forward) const {
         if (forward) {
-            for (int i = 1; i < ans.size() - 1; ++i) {
+            for (int i = 1; i < (int) ans.size() - 1; ++i) {
                 path.push_back(ans[i], omnigraph::MappingRange(Range(0, 0), Range(0, g_.length(ans[i])) ));
             }
             path.push_back(ans[ans.size() - 1], omnigraph::MappingRange(Range(0, 0), Range(0, end_pos -  g_.k()) ));
         } else {
             omnigraph::MappingPath<debruijn_graph::EdgeId> cur_sorted;
-            int start = g_.length(ans[ans.size() - 1]) + g_.k() - end_pos;
-            int cur_ind = ans.size() - 1;
+            int start = (int) g_.length(ans[ans.size() - 1]) + (int) g_.k() - end_pos;
+            int cur_ind = (int) ans.size() - 1;
             while (cur_ind >= 0 && start - (int) g_.length(ans[cur_ind]) > 0){
-                start -= g_.length(ans[cur_ind]);
+                start -= (int) g_.length(ans[cur_ind]);
                 cur_ind --;
             }
             if (cur_ind > 0){
@@ -207,7 +207,7 @@ public:
             for (int i = cur_ind - 1; i > 0; --i) {
                 cur_sorted.push_back(g_.conjugate(ans[i]), omnigraph::MappingRange(Range(0, 0), Range(0, g_.length(ans[i])) ));
             }
-            for (int i = 0; i < path.size(); ++i) {
+            for (size_t i = 0; i < path.size(); ++i) {
                 cur_sorted.push_back(path[i].first, path[i].second);
             }
             path = cur_sorted;
@@ -223,11 +223,11 @@ public:
 
         int s_len = int(ss.size());
         int score = max(20, s_len/4);
-        if (s_len > gap_cfg_.max_gap_length) {
+        if (s_len > (int) gap_cfg_.max_gap_length) {
             DEBUG("EdgeDijkstra: sequence is too long " << s_len)
             return;
         }
-        if (s_len < g_.length(start_e) + g_.k() - start_pos) {
+        if (s_len < (int) g_.length(start_e) + (int) g_.k() - start_pos) {
             DEBUG("EdgeDijkstra: sequence is too small " << s_len)
             return;
         }
@@ -292,7 +292,7 @@ public:
                         continue;
                     }
                     int score1 = STRING_DIST_INF;
-                    int score2 = STRING_DIST_INF;
+                    // int score2 = STRING_DIST_INF;
 
                     utils::perf_counter perf1;
 

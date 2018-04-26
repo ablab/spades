@@ -145,7 +145,7 @@ public:
     } 
 
     void RunAligner(std::vector<io::SingleRead> &wrappedreads, int threads) {
-        int step = 10;
+        size_t step = 10;
 #pragma omp parallel num_threads(threads)
 #pragma omp for
         for (size_t i =0 ; i < wrappedreads.size(); ++i) {
@@ -244,7 +244,6 @@ int main(int argc, char **argv) {
         std::cout << options.help() << std::endl;
         exit(0);
     }
-
     if (!options.count("positional")) {
         std::cerr << "ERROR: No input YAML was specified" << std::endl << std::endl;
         std::cout << options.help() << std::endl;
