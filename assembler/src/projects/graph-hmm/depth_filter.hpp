@@ -38,7 +38,7 @@ class Depth {
       return depth_[cursor] = std::numeric_limits<double>::infinity();
     }
 
-    if (cursor.letter() == '*') {
+    if (cursor.letter() == '*' || cursor.letter() == 'X') {
       // INFO("Empty depth " << cursor);
       return depth_[cursor] = 0;
     }
@@ -105,7 +105,7 @@ class DepthAtLeast {
       return depth_[cursor] = {std::numeric_limits<double>::infinity(), true};
     }
 
-    if (cursor.letter() == '*') {
+    if (cursor.letter() == '*' || cursor.letter() == 'X') {
       return depth_[cursor] = {0, true};
     }
 

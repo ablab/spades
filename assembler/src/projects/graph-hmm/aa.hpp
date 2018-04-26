@@ -36,7 +36,7 @@ constexpr typename std::underlying_type<E>::type to_underlying(E e) noexcept {
   return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
-constexpr char one_letter_codes[] = "ACDEFGHIKLMNPQRSTVWY*";
+constexpr char one_letter_codes[] = "ACDEFGHIKLMNPQRSTVWYX";
 
 constexpr char to_one_letter(AminoAcid aa) {
   return one_letter_codes[to_underlying(aa)];

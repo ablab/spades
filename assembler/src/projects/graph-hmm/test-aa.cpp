@@ -38,7 +38,7 @@ TEST(TranslateViaCursorAntibody, TRANSLATION) {
 
 TEST(StopCodons, TRANSLATION) {
   std::string nts = "TAGTAATGA";
-  std::string aas = "***";
+  std::string aas = "XXX";
   EXPECT_EQ(translate(nts), aas);
 }
 
