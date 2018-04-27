@@ -206,11 +206,13 @@ def update_thresholds_for_config(args, config):
     log.log("Using etalon contigs prefix: " + full_etalon_contigs_prefix)
 
     to_update = {}
-    for name, file_name, prefix, opts in contigs:
+    for name, file_name, prefix, opts, ext in contigs:
+        if ext != ".fasta" and ext != ".fa":
+            continue
         log.log("======= PROCESSING " + name.upper() + " =======")
         if prefix != "":
             prefix = prefix + "_"
-        to_update.update(quast_run_and_update(dataset_info, full_etalon_contigs_prefix + name + etalon_contigs_suffix + ".fasta", os.path.join(args.tmp_dir, "QUAST_RESULTS_"  + dataset_info.name.upper() + "_" + name.upper()), name, prefix, opts))
+        to_update.update(quast_run_and_update(dataset_info, full_etalon_contigs_prefix + name + etalon_contigs_suffix + "." + ext, os.path.join(args.tmp_dir, "QUAST_RESULTS_"  + dataset_info.name.upper() + "_" + name.upper()), name, prefix, opts))
 
     substitute_params(config, to_update)
     log.log("    <<<<<<<< Finished updating " + config)
