@@ -443,13 +443,13 @@ void load(debruijn_config::truseq_analysis& tsa,
   load(tsa.genome_file, pt, "genome_file");
 }
 
-void load(debruijn_config::bwa_aligner& bwa,
+void load(bwa_aligner& bwa,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
     load(bwa.min_contig_len, pt, "min_contig_len");
 }
 
-void load(debruijn_config::pacbio_processor& pb,
+void load(pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 

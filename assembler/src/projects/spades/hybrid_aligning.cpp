@@ -23,17 +23,17 @@ class GapTrackingListener : public SequenceMapperListener {
     const Graph& g_;
     GapStorage& gap_storage_;
     const GapStorage empty_storage_;
-    vector<GapStorage> buffer_storages_;
+    std::vector<GapStorage> buffer_storages_;
 
     const GapDescription INVALID_GAP;
 
     template<class ReadT>
-    vector<GapDescription> InferGaps(const ReadT& read,
-            const MappingPath<EdgeId>& mapping) const {
+    std::vector<GapDescription> InferGaps(const ReadT& read,
+                                          const MappingPath<EdgeId>& mapping) const {
         TerminalVertexCondition<Graph> tip_condition(g_);
         DEBUG("Inferring gaps")
         VERIFY(!mapping.empty());
-        vector<GapDescription> answer;
+        std::vector<GapDescription> answer;
         for (size_t i = 0; i < mapping.size() - 1; ++i) {
             EdgeId e1 = mapping.edge_at(i);
             EdgeId e2 = mapping.edge_at(i + 1);
@@ -136,7 +136,7 @@ private:
     DECL_LOGGER("GapTrackingListener");
 };
 
-bool IsNontrivialAlignment(const vector<vector<EdgeId>>& aligned_edges) {
+bool IsNontrivialAlignment(const std::vector<std::vector<EdgeId>>& aligned_edges) {
     for (size_t j = 0; j < aligned_edges.size(); j++)
         if (aligned_edges[j].size() > 1)
             return true;
@@ -162,11 +162,11 @@ class PacbioAligner {
     const size_t read_buffer_size_;
 
     void ProcessReadsBatch(const std::vector<io::SingleRead>& reads, size_t thread_cnt) {
-        vector<PathStorage<Graph>> long_reads_by_thread(thread_cnt,
-                                                        empty_path_storage_);
-        vector<GapStorage> gaps_by_thread(thread_cnt,
-                                          empty_gap_storage_);
-        vector<pacbio::StatsCounter> stats_by_thread(thread_cnt);
+        std::vector<PathStorage<Graph>> long_reads_by_thread(thread_cnt,
+                                                             empty_path_storage_);
+        std::vector<GapStorage> gaps_by_thread(thread_cnt,
+                                               empty_gap_storage_);
+        std::vector<pacbio::StatsCounter> stats_by_thread(thread_cnt);
 
         size_t longer_500 = 0;
         size_t aligned = 0;
@@ -290,7 +290,7 @@ void CloseGaps(conj_graph_pack& gp, bool rtype,
     if (rtype) {
         consensus_f = &PoaConsensus;
     } else {
-        consensus_f = [=](const vector<string>& gap_seqs) {
+        consensus_f = [=](const std::vector<string>& gap_seqs) {
             return TrivialConsenus(gap_seqs, cfg::get().pb.max_contigs_gap_length);
         };
     }

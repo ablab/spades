@@ -7,10 +7,11 @@
 
 #pragma once
 
-#include "utils/ph_map/perfect_hash_map.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "assembly_graph/core/graph.hpp"
+
 #include <algorithm>
+#include <sstream>
 #include <map>
 #include <set>
 
@@ -23,16 +24,16 @@ struct MappingInstance {
     int read_position;
     //Now quality is the same with multiplicity, so best quality is 1,
     int quality;
-    MappingInstance(int edge_position, int read_position, int quality) :
-            edge_position(edge_position), read_position(read_position), quality(quality) {
-    }
+    
+    MappingInstance(int edge_position, int read_position, int quality)
+            : edge_position(edge_position), read_position(read_position), quality(quality) {}
 
-    inline bool IsUnique() const {
+    bool IsUnique() const {
         return (quality == 1);
     }
 
-    string str() {
-        stringstream s;
+    std::string str() {
+        std::stringstream s;
         s << "E: " << edge_position << " R: " << read_position << " Q: " << quality;
         return s.str();
     }
@@ -45,8 +46,7 @@ struct MappingInstance {
             return false;
     }
 private:
-    DECL_LOGGER("MappingInstance")
-    ;
+    DECL_LOGGER("MappingInstance");
 };
 
 //Less by READ position
@@ -64,7 +64,7 @@ struct KmerCluster {
     size_t average_read_position;
     size_t average_edge_position;
     EdgeId edgeId;
-    vector<MappingInstance> sorted_positions;
+    std::vector<MappingInstance> sorted_positions;
     int size;
 
     KmerCluster(EdgeId e, size_t edge_start_pos, size_t edge_end_pos, size_t read_start_pos, size_t read_end_pos) {
@@ -80,7 +80,7 @@ struct KmerCluster {
     }
 
     bool operator <(const KmerCluster & b) const {
-        return (average_read_position < b.average_read_position ||(average_read_position == b.average_read_position && edgeId < b.edgeId) ||
+        return (average_read_position < b.average_read_position || (average_read_position == b.average_read_position && edgeId < b.edgeId) ||
                 (average_read_position == b.average_read_position && edgeId == b.edgeId && sorted_positions < b.sorted_positions));
     }
 
@@ -88,8 +88,8 @@ struct KmerCluster {
         return (b.sorted_positions[b.last_trustable_index].read_position < sorted_positions[first_trustable_index].read_position);
     }
 
-    string str(const Graph &g) const{
-        stringstream s;
+    std::string str(const Graph &g) const{
+        std::stringstream s;
         s << "Edge: " << g.int_id(edgeId) << " on edge: " << sorted_positions[first_trustable_index].edge_position<<
                 " - "  << sorted_positions[last_trustable_index].edge_position<< ";on read: "
         << sorted_positions[first_trustable_index].read_position<< " - "
@@ -98,18 +98,17 @@ struct KmerCluster {
         return s.str();
     }
 private:
-    DECL_LOGGER("KmerCluster")
-    ;
+    DECL_LOGGER("KmerCluster");
 };
 
-class StatsCounter{
+class StatsCounter {
 public:
-    map<size_t,size_t> path_len_in_edges;
-    vector<size_t> subreads_length;
+    std::map<size_t,size_t> path_len_in_edges;
+    std::vector<size_t> subreads_length;
     size_t total_len ;
     size_t reads_with_conjugate;
     size_t subreads_count;
-    map<size_t, size_t> seeds_percentage;
+    std::map<size_t, size_t> seeds_percentage;
     StatsCounter() {
         total_len = 0;
         reads_with_conjugate = 0;
@@ -142,7 +141,7 @@ public:
 
     void Report() const {
         size_t total = 0;
-        for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter){
+        for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter) {
             total += iter->second;
         }
         size_t cur = 0;

@@ -11,6 +11,8 @@
 #include "modules/path_extend/pe_config_struct.hpp"
 #include "pipeline/library.hpp"
 
+#include "configs/aligner_config.hpp"
+
 #include <boost/optional.hpp>
 #include "math/xmath.h"
 
@@ -173,7 +175,6 @@ struct dataset {
 
 // struct for debruijn project's configuration file
 struct debruijn_config {
-
     pipeline_type mode;
     bool uneven_depth;
 
@@ -400,20 +401,6 @@ struct debruijn_config {
         size_t min_isolated_length;
     };
 
-    struct pacbio_processor {
-        size_t bwa_length_cutoff; //500
-        double compression_cutoff; // 0.6
-        double path_limit_stretching; //1.3
-        double path_limit_pressing;//0.7
-        size_t max_path_in_dijkstra; //15000
-        size_t max_vertex_in_dijkstra; //2000
-//gap_closer
-        size_t long_seq_limit; //400
-        size_t pacbio_min_gap_quantity; //2
-        size_t contigs_min_gap_quantity; //1
-        size_t max_contigs_gap_length; // 10000
-    };
-
     struct position_handler {
         size_t max_mapping_gap;
         size_t max_gap_diff;
@@ -459,10 +446,6 @@ struct debruijn_config {
         double strong_probability_threshold;
         double coverage_threshold;
         bool use_coverage_threshold;
-    };
-
-    struct bwa_aligner {
-        size_t min_contig_len;
     };
 
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
