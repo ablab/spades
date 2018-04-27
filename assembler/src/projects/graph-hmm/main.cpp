@@ -244,9 +244,12 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
 
     int textw = 120;
     if (match_edges.size() && cfg.debug) {
-        p7_tophits_Targets(stderr, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-        p7_tophits_Domains(stderr, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-        p7_pli_Statistics(stderr, matcher.pipeline(), nullptr); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
+        #pragma omp critical(console)
+        {
+            p7_tophits_Targets(stderr, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+            p7_tophits_Domains(stderr, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+            p7_pli_Statistics(stderr, matcher.pipeline(), nullptr); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
+        }
     }
 
     return match_edges;
