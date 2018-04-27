@@ -223,12 +223,6 @@ void load(debruijn_config::construction& con,
     load(con.early_tc, pt, "early_tip_clipper", complete);
 }
 
-void load(debruijn_config::sensitive_mapper& sensitive_map,
-          boost::property_tree::ptree const& pt, bool complete) {
-    using config_common::load;
-    load(sensitive_map.k, pt, "k", complete);
-}
-
 void load(estimation_mode &est_mode,
           boost::property_tree::ptree const &pt, std::string const &key,
           bool complete) {
@@ -765,8 +759,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
 
     load(cfg.use_scaffolder, pt, "use_scaffolder", complete);
     load(cfg.avoid_rc_connections, pt, "avoid_rc_connections", complete);
-
-    load(cfg.sensitive_map, pt, "sensitive_mapper", complete);
 
     bool save_gp;
     load(save_gp, pt, "save_gp", complete);

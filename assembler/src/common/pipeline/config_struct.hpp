@@ -362,10 +362,6 @@ struct debruijn_config {
     simplification simp;
     boost::optional<simplification> preliminary_simp;
 
-    struct sensitive_mapper {
-        size_t k;
-    };
-
     struct distance_estimator {
         double linkage_distance_coeff;
         double max_distance_coeff;
@@ -554,7 +550,6 @@ struct debruijn_config {
     bool avoid_rc_connections;
 
     construction con;
-    sensitive_mapper sensitive_map;
     distance_estimator de;
     smoothing_distance_estimator ade;
     ambiguous_distance_estimator amb_de;
