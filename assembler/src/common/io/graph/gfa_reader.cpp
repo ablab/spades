@@ -82,7 +82,8 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
                  v2 = helper.CreateVertex(DeBruijnVertexData(), id_distributor);
 
         helper.LinkIncomingEdge(v1, edges[i]);
-        helper.LinkIncomingEdge(v2, g.conjugate(edges[i]));
+        if (edges[i] != g.conjugate(edges[i]))
+            helper.LinkIncomingEdge(v2, g.conjugate(edges[i]));
 
         vertices.insert(v1);
         vertices.insert(v2);
