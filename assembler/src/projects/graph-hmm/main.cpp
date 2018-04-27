@@ -178,36 +178,39 @@ using debruijn_graph::EdgeId;
 using debruijn_graph::VertexId;
 using debruijn_graph::ConjugateDeBruijnGraph;
 using EdgeAlnInfo = std::unordered_map<EdgeId, std::pair<int, int>>;
-EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
-                         const ConjugateDeBruijnGraph &graph,
-                         const hmmer::HMM &hmm, const cfg &cfg) {
+
+
+auto score_sequences(const std::vector<std::string> &seqs,
+                     const hmmer::HMM &hmm, const cfg &cfg) {
     bool hmm_in_aas = hmm.abc()->K == 20;
     hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
 
     if (!hmm_in_aas) {
         INFO("HMM in nucleotides");
-        for (size_t i = 0; i < edges.size(); ++i) {
-            // FIXME: this conversion is pointless
+        for (size_t i = 0; i < seqs.size(); ++i) {
             std::string ref = std::to_string(i);
-            std::string seq = graph.EdgeNucls(edges[i]).str();
-            matcher.match(ref.c_str(), seq.c_str());
+            matcher.match(ref.c_str(), seqs[i].c_str());
         }
     } else {
         INFO("HMM in amino acids");
-        for (size_t i = 0; i < edges.size(); ++i) {
+        for (size_t i = 0; i < seqs.size(); ++i) {
             // FIXME: this conversion is pointless
             std::string ref = std::to_string(i);
-            std::string seq = graph.EdgeNucls(edges[i]).str();
             for (size_t shift = 0; shift < 3; ++shift) {
                 std::string ref_shift = ref + "_" + std::to_string(shift);
-                std::string seq_aas = translate(seq.c_str() + shift);
+                std::string seq_aas = translate(seqs[i].c_str() + shift);
                 matcher.match(ref_shift.c_str(), seq_aas.c_str());
             }
         }
     }
 
     matcher.summarize();
+    return matcher;
+}
 
+EdgeAlnInfo get_matched_edges(const std::vector<EdgeId> &edges,
+                              const hmmer::HMMMatcher &matcher,
+                              const cfg &cfg) {
     EdgeAlnInfo match_edges;
     for (const auto &hit : matcher.hits()) {
         if (!hit.reported() || !hit.included())
@@ -242,17 +245,41 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
     }
     INFO("Total matched edges: " << match_edges.size());
 
+    return match_edges;
+}
+
+EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
+                         const ConjugateDeBruijnGraph &graph,
+                         const hmmer::HMM &hmm, const cfg &cfg) {
+    std::vector<std::string> seqs;
+    for (size_t i = 0; i < edges.size(); ++i) {
+        std::string ref = std::to_string(i);
+        seqs.push_back(graph.EdgeNucls(edges[i]).str());
+    }
+    auto matcher = score_sequences(seqs, hmm, cfg);
+
+    auto match_edges = get_matched_edges(edges, matcher, cfg);
+
     int textw = 120;
     if (match_edges.size() && cfg.debug) {
         #pragma omp critical(console)
         {
-            p7_tophits_Targets(stderr, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-            p7_tophits_Domains(stderr, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-            p7_pli_Statistics(stderr, matcher.pipeline(), nullptr); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
+            p7_tophits_Targets(stdout, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+            p7_tophits_Domains(stdout, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
+            p7_pli_Statistics(stdout, matcher.pipeline(), nullptr); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
         }
     }
 
     return match_edges;
+}
+
+void output_matches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, const std::string &filename) {
+    P7_HMM *p7hmm = hmm.get();
+    FILE *fp = fopen(filename.c_str(), "w");
+    p7_tophits_TabularDomains(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline(), true);
+    // if (domtblfp)  p7_tophits_TabularTargets(domtblfp, hmm->name, hmm->acc, info->th, info->pli, (nquery == 1)); --- seems to be not very useful
+    // p7_tophits_TabularXfam(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline());
+    fclose(fp);
 }
 
 std::string PathToString(const std::vector<EdgeId>& path,
@@ -457,9 +484,9 @@ int main(int argc, char* argv[]) {
         const auto &hmm = hmms[_i];
         P7_HMM *p7hmm = hmm.get();
 
-        if (fprintf(stderr, "Query:       %s  [M=%d]\n", p7hmm->name, p7hmm->M) < 0) FATAL_ERROR("write failed");
-        if (p7hmm->acc)  { if (fprintf(stderr, "Accession:   %s\n", p7hmm->acc)  < 0) FATAL_ERROR("write failed"); }
-        if (p7hmm->desc) { if (fprintf(stderr, "Description: %s\n", p7hmm->desc) < 0) FATAL_ERROR("write failed"); }
+        if (fprintf(stdout, "Query:       %s  [M=%d]\n", p7hmm->name, p7hmm->M) < 0) FATAL_ERROR("write failed");
+        if (p7hmm->acc)  { if (fprintf(stdout, "Accession:   %s\n", p7hmm->acc)  < 0) FATAL_ERROR("write failed"); }
+        if (p7hmm->desc) { if (fprintf(stdout, "Description: %s\n", p7hmm->desc) < 0) FATAL_ERROR("write failed"); }
 
         // Collect the neighbourhood of the matched edges
         EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);  // hhmer is thread-safe
