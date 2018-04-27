@@ -111,12 +111,12 @@ public:
         return result;
     }
 
-    void AddEdgePosition(EdgeId edge, string contig_id, size_t start, size_t end, size_t m_start, size_t m_end) {
+    void AddEdgePosition(EdgeId edge, const string &contig_id, size_t start, size_t end, size_t m_start, size_t m_end) {
         VERIFY(this->IsAttached());
         AddEdgePosition(edge, contig_id, MappingRange(start, end, m_start, m_end));
     }
 
-    void AddEdgePosition(EdgeId edge, string contig_id, MappingRange new_pos) {
+    void AddEdgePosition(EdgeId edge, const string &contig_id, MappingRange new_pos) {
         VERIFY(this->IsAttached());
         if (new_pos.empty())
             return;

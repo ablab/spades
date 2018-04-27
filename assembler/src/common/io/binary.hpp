@@ -76,6 +76,21 @@ T BinRead(std::istream &str) {
     return result;
 }
 
+//Specializations
+template<>
+void BinWrite(std::ostream &str, const std::string &value) {
+    BinWrite(str, value.length());
+    str.write(value.data(), value.length());
+}
+
+template<>
+void BinRead(std::istream &str, std::string &value) {
+    size_t size;
+    BinRead(str, size);
+    value.reserve(size);
+    str.read(const_cast<char *>(value.data()), value.length());
+}
+
 }
 
 }
