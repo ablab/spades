@@ -207,7 +207,7 @@ def update_thresholds_for_config(args, config):
 
     to_update = {}
     for name, file_name, prefix, opts, ext in contigs:
-        if ext != ".fasta" and ext != ".fa":
+        if ext != "fasta" and ext != "fa":
             continue
         log.log("======= PROCESSING " + name.upper() + " =======")
         if prefix != "":
