@@ -273,12 +273,21 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
     return match_edges;
 }
 
-void output_matches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, const std::string &filename) {
+void output_matches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, const std::string &filename,
+                    const std::string &format = "tblout") {
     P7_HMM *p7hmm = hmm.get();
     FILE *fp = fopen(filename.c_str(), "w");
-    p7_tophits_TabularDomains(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline(), true);
-    // if (domtblfp)  p7_tophits_TabularTargets(domtblfp, hmm->name, hmm->acc, info->th, info->pli, (nquery == 1)); --- seems to be not very useful
-    // p7_tophits_TabularXfam(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline());
+    if (format == "domtblout") {
+        p7_tophits_TabularDomains(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline(), true);
+        // TODO Output tail
+    } else if (format == "tblout") {
+        p7_tophits_TabularDomains(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline(), true);
+        // TODO Output tail
+    } else if (format == "pfamtblout") {
+        p7_tophits_TabularXfam(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline());
+    } else {
+        FATAL_ERROR("unknown output format");
+    }
     fclose(fp);
 }
 
@@ -652,6 +661,15 @@ int main(int argc, char* argv[]) {
         if (cfg.rescore && to_rescore_local.size()) {
             export_edges(to_rescore_local, graph, cfg.output_dir + std::string("/graph-hmm-") + p7hmm->name + ".edges.fa");
         }
+
+        std::vector<std::string> seqs_to_rescore;
+        for (const auto &entry : to_rescore_local) {
+            seqs_to_rescore.push_back(MergeSequences(graph, entry).str());
+        }
+        auto matcher = score_sequences(seqs_to_rescore, hmm, cfg);
+        output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".tblout", "tblout");
+        output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".pfamtblout", "pfamtblout");
+
     } // end outer loop over query HMMs
 
     INFO("Total " << to_rescore.size() << " paths to rescore");
