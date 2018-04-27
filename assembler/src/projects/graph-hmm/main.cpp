@@ -418,7 +418,8 @@ std::vector<hmmer::HMM> parse_hmm_file(const std::string &filename) {
     return hmms;
 }
 
-void export_edges(const std::unordered_set<std::vector<EdgeId>> entries,
+template <typename Container>
+void export_edges(const Container entries,
                   const debruijn_graph::ConjugateDeBruijnGraph &graph,
                   const std::string &filename) {
     std::ofstream o(filename, std::ios::out);
@@ -669,12 +670,13 @@ int main(int argc, char* argv[]) {
         auto matcher = score_sequences(seqs_to_rescore, hmm, cfg);
         output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".tblout", "tblout");
         output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".pfamtblout", "pfamtblout");
-
     } // end outer loop over query HMMs
 
     INFO("Total " << to_rescore.size() << " paths to rescore");
     if (cfg.rescore && to_rescore.size()) {
-        export_edges(to_rescore, graph, cfg.output_dir + std::string("/graph-hmm") + ".all.edges.fa");
+        std::vector<std::vector<EdgeId>> to_rescore_vector(to_rescore.cbegin(), to_rescore.cend());
+        std::sort(to_rescore_vector.begin(), to_rescore_vector.end());  // TODO Move sorting inside the function
+        export_edges(to_rescore_vector, graph, cfg.output_dir + std::string("/graph-hmm") + ".all.edges.fa");
     }
 
     return 0;
