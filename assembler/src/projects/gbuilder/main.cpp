@@ -37,7 +37,7 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
-enum class mode {
+enum class output_type {
     unitigs, fastg, gfa
 };
 
@@ -45,7 +45,7 @@ struct gcfg {
     gcfg()
         : k(21), tmpdir("tmp"), outfile("-"),
           nthreads(omp_get_max_threads() / 2 + 1), buff_size(512ULL << 20),
-          mode(mode::unitigs)
+          mode(output_type::unitigs)
     {}
 
     unsigned k;
@@ -54,7 +54,7 @@ struct gcfg {
     std::string outfile;
     unsigned nthreads;
     size_t buff_size;
-    enum mode mode;
+    enum output_type mode;
 };
 
 
@@ -68,9 +68,9 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
       (option("-tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
       (option("-b") & integer("value", cfg.buff_size)) % "sorting buffer size, per thread",
-      one_of(option("-unitigs").set(cfg.mode, mode::unitigs) % "produce unitigs (default)",
-             option("-fastg").set(cfg.mode, mode::fastg) % "produce graph in FASTG format",
-             option("-gfa").set(cfg.mode, mode::gfa) % "produce graph in GFA1 format")
+      one_of(option("-unitigs").set(cfg.mode, output_type::unitigs) % "produce unitigs (default)",
+             option("-fastg").set(cfg.mode, output_type::fastg) % "produce graph in FASTG format",
+             option("-gfa").set(cfg.mode, output_type::gfa) % "produce graph in GFA1 format")
   );
 
   auto result = parse(argc, argv, cli);
@@ -101,13 +101,13 @@ int main(int argc, char* argv[]) {
 
         INFO("K-mer length set to " << k);
         switch (cfg.mode) {
-            case mode::unitigs:
+            case output_type::unitigs:
                 INFO("Producing unitigs only");
                 break;
-            case mode::fastg:
+            case output_type::fastg:
                 INFO("Producing graph in FASTG format");
                 break;
-            case mode::gfa:
+            case output_type::gfa:
                 INFO("Producing graph in GFA1 format");
                 break;
         }
@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
         else
             edge_sequences = debruijn_graph::UnbranchingPathExtractor(ext_index, k).ExtractUnbranchingPaths(nchunks);
 
-        if (cfg.mode == mode::unitigs) {
+        if (cfg.mode == output_type::unitigs) {
             // Step 3: output stuff
 
             INFO("Saving unitigs to " << cfg.outfile);
@@ -166,11 +166,11 @@ int main(int argc, char* argv[]) {
             debruijn_graph::FastGraphFromSequencesConstructor<debruijn_graph::DeBruijnGraph>(k, ext_index).ConstructGraph(g, edge_sequences);
 
             INFO("Saving graph to " << cfg.outfile);
-            if (cfg.mode == mode::gfa) {
+            if (cfg.mode == output_type::gfa) {
                 std::ofstream f(cfg.outfile);
                 gfa::GFAWriter gfa_writer(g, f);
                 gfa_writer.WriteSegmentsAndLinks();
-            } else if (cfg.mode == mode::fastg) {
+            } else if (cfg.mode == output_type::fastg) {
                 io::FastgWriter fastg_writer(g, cfg.outfile);
                 fastg_writer.WriteSegmentsAndLinks();
             } else
