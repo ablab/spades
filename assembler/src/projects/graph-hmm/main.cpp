@@ -462,12 +462,7 @@ int main(int argc, char* argv[]) {
         if (p7hmm->desc) { if (fprintf(stderr, "Description: %s\n", p7hmm->desc) < 0) FATAL_ERROR("write failed"); }
 
         // Collect the neighbourhood of the matched edges
-        EdgeAlnInfo matched_edges;
-        #pragma omp critical  // TODO Clarify hmmmatch thread-safety
-        {
-            // EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);
-            matched_edges = MatchedEdges(edges, graph, hmm, cfg);
-        }
+        EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);  // hhmer is thread-safe
         bool hmm_in_aas = hmm.abc()->K == 20;
         Neighbourhoods neighbourhoods = ExtractNeighbourhoods(matched_edges, graph, (hmm_in_aas ? 6 : 2));
 
