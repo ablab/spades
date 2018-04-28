@@ -198,7 +198,7 @@ auto score_sequences(const std::vector<std::string> &seqs,
             matcher.match(ref.c_str(), seqs[i].c_str());
         } else {
             for (size_t shift = 0; shift < 3; ++shift) {
-                std::string ref_shift = ref + "_" + std::to_string(shift);
+                std::string ref_shift = ref + "/" + std::to_string(shift);
                 std::string seq_aas = translate(seqs[i].c_str() + shift);
                 matcher.match(ref_shift.c_str(), seq_aas.c_str());
             }
