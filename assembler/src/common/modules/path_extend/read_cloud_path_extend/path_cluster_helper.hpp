@@ -1,3 +1,5 @@
+#pragma once
+
 #include "common/barcode_index/cluster_storage.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 

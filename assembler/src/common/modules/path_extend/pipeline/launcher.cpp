@@ -16,6 +16,7 @@
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
 #include "modules/path_extend/read_cloud_path_extend/path_scaffolder.hpp"
 #include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_model/distribution_extractor.hpp"
 namespace path_extend {
 
 using namespace debruijn_graph;

@@ -254,8 +254,8 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> MergingScaffoldGraph
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
     const size_t min_pipeline_length = cfg::get().ts_res.scaff_con.full_pipeline_length;
     bool launch_full_pipeline = min_length_ >= min_pipeline_length;
-    INFO(min_length_);
-    INFO(min_pipeline_length);
+    INFO("Min scaffold vertex length: " << min_length_);
+    INFO("Full pipeline length threshold: " << min_pipeline_length);
     if (launch_full_pipeline) {
         const double EDGE_LENGTH_FRACTION = 0.5;
         auto fraction_tail_threshold_getter =

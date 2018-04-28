@@ -90,7 +90,7 @@ void ScaffoldGraphSerializer::LoadScaffoldGraph(ifstream &fin,
     for (const auto& edge: edges) {
         graph.AddEdgeSimple(edge);
         ++current;
-        if (current % block_size == 0) {
+        if (block_size != 0 and current % block_size == 0) {
             DEBUG("Added " << current << " edges out of " << edges.size());
         }
     }
