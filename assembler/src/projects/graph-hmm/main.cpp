@@ -642,7 +642,7 @@ int main(int argc, char* argv[]) {
         std::unordered_set<std::vector<EdgeId>> to_rescore_local;
         if (cfg.save) {
             if (resultant_paths.size()) {
-                std::ofstream o(cfg.output_dir + std::string("/graph-hmm-") + p7hmm->name + ".paths.fa", std::ios::out);
+                std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".paths.fa", std::ios::out);
                 for (const auto &result : resultant_paths) {
                     o << ">Score_" << result.first << '\n';
                     io::WriteWrapped(result.second, o);
@@ -650,7 +650,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (results.size()) {
-                std::ofstream o(cfg.output_dir + std::string("/graph-hmm-") + p7hmm->name + ".fa", std::ios::out);
+                std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".fa", std::ios::out);
                 for (const auto &result : results) {
                     o << ">" << result.leader << "_" << result.priority;
                     if (result.seq.size() == 0)
@@ -674,7 +674,7 @@ int main(int argc, char* argv[]) {
 
         INFO("Total " << to_rescore_local.size() << " local paths to rescore");
         if (cfg.rescore && to_rescore_local.size()) {
-            export_edges(to_rescore_local, graph, cfg.output_dir + std::string("/graph-hmm-") + p7hmm->name + ".edges.fa");
+            export_edges(to_rescore_local, graph, cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
         }
 
         std::vector<std::string> seqs_to_rescore;
@@ -684,14 +684,14 @@ int main(int argc, char* argv[]) {
             seqs_to_rescore.push_back(kv.second);
         }
         auto matcher = score_sequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
-        output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".tblout", "tblout");
-        output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".domtblout", "domtblout");
-        output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".pfamtblout", "pfamtblout");
+        output_matches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
+        output_matches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
+        output_matches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
     } // end outer loop over query HMMs
 
     INFO("Total " << to_rescore.size() << " paths to rescore");
     if (cfg.rescore && to_rescore.size()) {
-        export_edges(to_rescore, graph, cfg.output_dir + std::string("/graph-hmm") + ".all.edges.fa");
+        export_edges(to_rescore, graph, cfg.output_dir + "/all.edges.fa");
     }
 
     return 0;
