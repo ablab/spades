@@ -281,7 +281,7 @@ void output_matches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, con
         p7_tophits_TabularDomains(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline(), true);
         // TODO Output tail
     } else if (format == "tblout") {
-        p7_tophits_TabularDomains(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline(), true);
+        p7_tophits_TabularTargets(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline(), true);
         // TODO Output tail
     } else if (format == "pfamtblout") {
         p7_tophits_TabularXfam(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline());
