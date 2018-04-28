@@ -685,6 +685,7 @@ int main(int argc, char* argv[]) {
         }
         auto matcher = score_sequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
         output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".tblout", "tblout");
+        output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".domtblout", "domtblout");
         output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".pfamtblout", "pfamtblout");
     } // end outer loop over query HMMs
 
