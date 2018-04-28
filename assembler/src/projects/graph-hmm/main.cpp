@@ -181,21 +181,22 @@ using EdgeAlnInfo = std::unordered_map<EdgeId, std::pair<int, int>>;
 
 
 auto score_sequences(const std::vector<std::string> &seqs,
+                     const std::vector<std::string> &refs,
                      const hmmer::HMM &hmm, const cfg &cfg) {
     bool hmm_in_aas = hmm.abc()->K == 20;
     hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
 
     if (!hmm_in_aas) {
         INFO("HMM in nucleotides");
-        for (size_t i = 0; i < seqs.size(); ++i) {
-            std::string ref = std::to_string(i);
-            matcher.match(ref.c_str(), seqs[i].c_str());
-        }
     } else {
         INFO("HMM in amino acids");
-        for (size_t i = 0; i < seqs.size(); ++i) {
-            // FIXME: this conversion is pointless
-            std::string ref = std::to_string(i);
+    }
+
+    for (size_t i = 0; i < seqs.size(); ++i) {
+        std::string ref = refs.size() > i ? refs[i] : std::to_string(i);
+        if (!hmm_in_aas) {
+            matcher.match(ref.c_str(), seqs[i].c_str());
+        } else {
             for (size_t shift = 0; shift < 3; ++shift) {
                 std::string ref_shift = ref + "_" + std::to_string(shift);
                 std::string seq_aas = translate(seqs[i].c_str() + shift);
@@ -256,7 +257,7 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
         std::string ref = std::to_string(i);
         seqs.push_back(graph.EdgeNucls(edges[i]).str());
     }
-    auto matcher = score_sequences(seqs, hmm, cfg);
+    auto matcher = score_sequences(seqs, {}, hmm, cfg);
 
     auto match_edges = get_matched_edges(edges, matcher, cfg);
 
@@ -677,10 +678,12 @@ int main(int argc, char* argv[]) {
         }
 
         std::vector<std::string> seqs_to_rescore;
-        for (const auto &entry : to_rescore_local) {
-            seqs_to_rescore.push_back(MergeSequences(graph, entry).str());
+        std::vector<std::string> refs_to_rescore;
+        for (const auto &kv : edges2sequences(to_rescore_local, graph)) {
+            refs_to_rescore.push_back(kv.first);
+            seqs_to_rescore.push_back(kv.second);
         }
-        auto matcher = score_sequences(seqs_to_rescore, hmm, cfg);
+        auto matcher = score_sequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
         output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".tblout", "tblout");
         output_matches(hmm, matcher, cfg.output_dir + "/graph-hmm-" + p7hmm->name + ".pfamtblout", "pfamtblout");
     } // end outer loop over query HMMs
