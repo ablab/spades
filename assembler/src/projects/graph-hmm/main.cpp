@@ -419,20 +419,33 @@ std::vector<hmmer::HMM> parse_hmm_file(const std::string &filename) {
 }
 
 template <typename Container>
-void export_edges(const Container entries,
+auto edges2sequences(const Container &entries,
+                     const debruijn_graph::ConjugateDeBruijnGraph &graph) {
+    std::vector<std::pair<std::string, std::string>> ids_n_seqs;
+    for (const auto &entry : entries) {
+        std::stringstream id;
+        for (size_t i = 0; i < entry.size(); ++i) {
+            id << entry[i];
+            if (i != entry.size() - 1)
+                id << "_";
+        }
+        std::string seq = MergeSequences(graph, entry).str();
+        ids_n_seqs.push_back({id.str(), seq});
+    }
+
+    std::sort(ids_n_seqs.begin(), ids_n_seqs.end());
+    return ids_n_seqs;
+}
+
+template <typename Container>
+void export_edges(const Container &entries,
                   const debruijn_graph::ConjugateDeBruijnGraph &graph,
                   const std::string &filename) {
     std::ofstream o(filename, std::ios::out);
 
-    for (const auto &entry : entries) {
-        o << ">";
-        for (size_t i = 0; i < entry.size(); ++i) {
-            o << entry[i];
-            if (i != entry.size() - 1)
-                o << "_";
-        }
-        o << '\n';
-        io::WriteWrapped(MergeSequences(graph, entry).str(), o);
+    for (const auto &kv : edges2sequences(entries, graph)) {
+        o << ">" << kv.first << "\n";
+        io::WriteWrapped(kv.second, o);
     }
 }
 
@@ -674,9 +687,7 @@ int main(int argc, char* argv[]) {
 
     INFO("Total " << to_rescore.size() << " paths to rescore");
     if (cfg.rescore && to_rescore.size()) {
-        std::vector<std::vector<EdgeId>> to_rescore_vector(to_rescore.cbegin(), to_rescore.cend());
-        std::sort(to_rescore_vector.begin(), to_rescore_vector.end());  // TODO Move sorting inside the function
-        export_edges(to_rescore_vector, graph, cfg.output_dir + std::string("/graph-hmm") + ".all.edges.fa");
+        export_edges(to_rescore, graph, cfg.output_dir + std::string("/graph-hmm") + ".all.edges.fa");
     }
 
     return 0;
