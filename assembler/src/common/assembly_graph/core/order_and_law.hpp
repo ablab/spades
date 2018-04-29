@@ -324,7 +324,6 @@ class PurePtrMarker {
     void ChangeMark(PurePtrT &pure_ptr, uint16_t new_mark) const {
         LockWithData &lock_with_data = pure_ptr.ptr_;
         lock_with_data.lock();
-        VERIFY_MSG(lock_with_data.extra() != new_mark, "Marks are the same");
         lock_with_data.setExtra(new_mark);
         lock_with_data.unlock();
     }
