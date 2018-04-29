@@ -555,10 +555,15 @@ public:
 private:
     size_t GetMaxId(const string& file_name) {
         std::ifstream max_id_stream(file_name);
-        VERIFY_MSG(max_id_stream, "Failed to find " << file_name);
-        size_t max;
-        VERIFY_MSG(max_id_stream >> max, "Failed to read max_id");
-        return max;
+        if (!max_id_stream) {
+            //TODO remove. Here to support compatibility to old saves in tests. 
+            return 1000000000;
+        } else {
+            //VERIFY_MSG(max_id_stream, "Failed to find " << file_name);
+            size_t max;
+            VERIFY_MSG(max_id_stream >> max, "Failed to read max_id");
+            return max;
+        }
     }
 
   public:
