@@ -46,7 +46,8 @@ public:
 
 class GFAPathWriter : public gfa::GFAWriter {
     void WritePath(const std::string& name, size_t segment_id,
-                   const std::vector<std::string> &edge_strs) {
+                   const std::vector<std::string> &edge_strs,
+                   const std::string &flags) {
         os_ << "P" << "\t" ;
         os_ << name << "_" << segment_id << "\t";
         std::string delimeter = "";
@@ -54,34 +55,31 @@ class GFAPathWriter : public gfa::GFAWriter {
             os_ << delimeter << e;
             delimeter = ",";
         }
-        os_ << "\t*\n";
-//        delimeter = "";
-//        for (size_t i = 0; i < edge_strs.size() - 1; ++i) {
-//            os_ << delimeter << "*";
-//            delimeter = ",";
-//        }
-//        os_ << "\n";
+        os_ << "\t*";
+        if (flags.length())
+            os_ << "\t" << flags;
+        os_ << "\n";
     }
 
 public:
     using gfa::GFAWriter::GFAWriter;
 
     void WritePaths(const std::vector<EdgeId> &edges,
-                    const std::string &name) {
+                    const std::string &name, const std::string &flags = "") {
         std::vector<std::string> segmented_path;
         size_t segment_id = 1;
         for (size_t i = 0; i < edges.size() - 1; ++i) {
             EdgeId e = edges[i];
             segmented_path.push_back(edge_namer_.EdgeOrientationString(e));
             if (graph_.EdgeEnd(e) != graph_.EdgeStart(edges[i+1])) {
-                WritePath(name, segment_id, segmented_path);
+                WritePath(name, segment_id, segmented_path, flags);
                 segment_id++;
                 segmented_path.clear();
             }
         }
 
         segmented_path.push_back(edge_namer_.EdgeOrientationString(edges.back()));
-        WritePath(name, segment_id, segmented_path);
+        WritePath(name, segment_id, segmented_path, flags);
     }
 
     void WritePaths(const ScaffoldStorage &scaffold_storage) {
@@ -97,14 +95,14 @@ public:
                 EdgeId e = p[i];
                 segmented_path.push_back(edge_namer_.EdgeOrientationString(e));
                 if (graph_.EdgeEnd(e) != graph_.EdgeStart(p[i+1]) || p.GapAt(i+1).gap > 0) {
-                    WritePath(scaffold_info.name, segment_id, segmented_path);
+                    WritePath(scaffold_info.name, segment_id, segmented_path, "");
                     segment_id++;
                     segmented_path.clear();
                 }
             }
 
             segmented_path.push_back(edge_namer_.EdgeOrientationString(p.Back()));
-            WritePath(scaffold_info.name, segment_id, segmented_path);
+            WritePath(scaffold_info.name, segment_id, segmented_path, "");
         }
     }
 
