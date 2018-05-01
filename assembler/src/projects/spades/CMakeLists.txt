@@ -20,7 +20,6 @@ add_executable(spades-core main.cpp
             series_analysis.cpp
             ../mts/contig_abundance.cpp)
 
-target_include_directories(spades-core PRIVATE ${EXT_DIR}/include/ConsensusCore)
 target_link_libraries(spades-core graphio ConsensusCore common_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)

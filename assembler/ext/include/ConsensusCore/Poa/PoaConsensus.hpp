@@ -42,8 +42,8 @@
 #include <utility>
 #include <vector>
 
-#include "Poa/PoaConfig.hpp"
-#include "Poa/PoaGraph.hpp"
+#include "PoaConfig.hpp"
+#include "PoaGraph.hpp"
 
 namespace ConsensusCore
 {
