@@ -11,6 +11,17 @@
 
 namespace debruijn_graph {
 
+namespace gap_closing {
+class GapStorage;
+};
+
+void PacbioAlignLibrary(const conj_graph_pack& gp,
+                        const io::SequencingLibrary<config::LibraryData>& lib,
+                        PathStorage<Graph>& path_storage,
+                        gap_closing::GapStorage& gap_storage,
+                        size_t thread_cnt);
+
+
 class HybridLibrariesAligning : public spades::AssemblyStage {
 public:
     HybridLibrariesAligning()
