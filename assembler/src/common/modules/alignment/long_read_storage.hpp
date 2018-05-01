@@ -19,45 +19,47 @@ template<class Graph>
 class PathInfo {
 public:
     typedef typename Graph::EdgeId EdgeId;
-    std::vector<EdgeId> path;
 
 private:
-    mutable size_t w;
+    std::vector<EdgeId> path_;
+    mutable size_t w_;
 
 public:
-    const vector<EdgeId>& getPath() const {
-        return path;
+    const std::vector<EdgeId>& path() const {
+        return path_;
+    }
+    std::vector<EdgeId>& path() {
+        return path_;
     }
 
-    size_t getWeight() const {
-        return w;
+    size_t weight() const {
+        return w_;
     }
 
-    void increaseWeight(int addition = 1) const {
-        w += addition;
+    void increase_weight(int addition = 1) const {
+        w_ += addition;
     }
 
     bool operator<(const PathInfo<Graph> &other) const {
-        return path < other.path;
+        return path_ < other.path_;
     }
 
     PathInfo(const std::vector<EdgeId> &p, size_t weight = 0) :
-            path(p), w(weight) {
+            path_(p), w_(weight) {
     }
 
     PathInfo(const PathInfo<Graph> &other) {
-        path = other.path;
-        w = other.w;
+        path_ = other.path_;
+        w_ = other.w_;
     }
 
     std::string str(const Graph &g_) const {
         std::stringstream s;
-        for(auto iter = path.begin(); iter != path.end(); iter ++ ){
-            s << g_.int_id(*iter) << " ";
+        for (EdgeId e : path_) {
+            s << g_.int_id(e) << " ";
         }
         return s.str();
     }
-
 };
 
 template<class Graph>
@@ -70,12 +72,12 @@ class PathStorage {
     InnerIndex inner_index_;
     static const size_t kLongEdgeForStats = 500;
 
-    void HiddenAddPath(const vector<EdgeId> &p, int w){
+    void HiddenAddPath(const std::vector<EdgeId> &p, int w) {
         if (p.size() == 0 ) return;
         for (typename std::set<PathInfo<Graph> >::iterator iter = inner_index_[p[0]].begin(); iter != inner_index_[p[0]].end(); ++iter) {
 
-            if (iter->path == p) {
-                iter->increaseWeight(w);
+            if (iter->path() == p) {
+                iter->increase_weight(w);
                 return;
             }
         }
@@ -99,7 +101,7 @@ public:
                 iter++) {
             for (auto j_iter = iter->second.begin();
                     j_iter != iter->second.end(); j_iter++) {
-                this->AddPath(j_iter->path, (int) j_iter->getWeight());
+                this->AddPath(j_iter->path(), (int) j_iter->weight());
             }
         }
     }
@@ -122,10 +124,10 @@ public:
             std::set<PathInfo<Graph> > new_tmp;
             for (auto j_iter = tmp.begin(); j_iter != tmp.end(); j_iter++) {
                 PathInfo<Graph> pi = *(j_iter);
-                for (size_t k = 0; k < pi.path.size(); k++)
-                    if (old_to_new.find(pi.path[k]) != old_to_new.end()) {
+                for (size_t k = 0; k < pi.path().size(); k++)
+                    if (old_to_new.find(pi.path()[k]) != old_to_new.end()) {
 //                        INFO(g_.int_id(old_to_new[pi.path[k]]));
-                        pi.path[k] = old_to_new[pi.path[k]];
+                        pi.path()[k] = old_to_new[pi.path()[k]];
                     }
                 DEBUG(pi.str(g_));
                 new_tmp.insert(pi);
@@ -171,13 +173,13 @@ public:
             filestr<< iter->second.size() << std::endl;
             int non1 = 0;
             for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
-                filestr << " Weight: " << j_iter->getWeight();
-                if (j_iter->getWeight() > stats_weight_cutoff)
+                filestr << " Weight: " << j_iter->weight();
+                if (j_iter->weight() > stats_weight_cutoff)
                     non1++;
 
-                filestr << " length: " << j_iter->path.size() << " ";
-                for (auto p_iter = j_iter->path.begin(); p_iter != j_iter->path.end(); ++p_iter) {
-                    if (p_iter != j_iter->path.end() - 1 && j_iter->getWeight() > stats_weight_cutoff) {
+                filestr << " length: " << j_iter->path().size() << " ";
+                for (auto p_iter = j_iter->path().begin(); p_iter != j_iter->path().end(); ++p_iter) {
+                    if (p_iter != j_iter->path().end() - 1 && j_iter->weight() > stats_weight_cutoff) {
                         continued_edges.insert(*p_iter);
                     }
 
@@ -283,7 +285,7 @@ public:
     void AddStorage(PathStorage<Graph> &to_add) {
         for (auto iter = to_add.inner_index_.begin(); iter != to_add.inner_index_.end(); iter++) {
             for(auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter ++) {
-                this->AddPath(j_iter->path, (int) j_iter->getWeight());
+                this->AddPath(j_iter->path(), (int) j_iter->weight());
             }
         }
     }

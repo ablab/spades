@@ -326,14 +326,14 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
     std::vector<PathInfo<Graph>> paths;
     gp_.single_long_reads[lib_index].SaveAllPaths(paths);
     for (const auto &path: paths) {
-        const auto &edges = path.getPath();
+        const auto &edges = path.path();
         if (edges.size() <= size_threshold)
             continue;
 
         BidirectionalPath *new_path = new BidirectionalPath(gp_.g, edges);
         BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
-        new_path->SetWeight((float) path.getWeight());
-        conj_path->SetWeight((float) path.getWeight());
+        new_path->SetWeight((float) path.weight());
+        conj_path->SetWeight((float) path.weight());
         unique_data_.long_reads_paths_[lib_index].AddPair(new_path, conj_path);
     }
     DEBUG("Long reads paths " << unique_data_.long_reads_paths_[lib_index].size());
