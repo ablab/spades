@@ -110,7 +110,7 @@ public:
     }
 
     bool has_filling() const {
-        return filling_seq_;
+        return static_cast<bool>(filling_seq_);
     }
 
     Sequence filling_seq() const {
