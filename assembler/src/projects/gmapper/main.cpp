@@ -5,19 +5,35 @@
 //***************************************************************************
 
 #include "assembly_graph/core/graph.hpp"
-#include "assembly_graph/core/construction_helper.hpp"
+
+#include "modules/alignment/sequence_mapper_notifier.hpp"
+#include "modules/alignment/bwa_sequence_mapper.hpp"
+#include "modules/alignment/long_read_mapper.hpp"
+
+#include "io/graph/gfa_reader.hpp"
+#include "io/dataset_support/read_converter.hpp"
+#include "io/dataset_support/dataset_readers.hpp"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/logger/logger.hpp"
 #include "utils/segfault_handler.hpp"
+#include "utils/filesystem/temporary.hpp"
 
-#include "io/graph/gfa_reader.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "pipeline/configs/aligner_config.hpp"
+
+#include "projects/spades/hybrid_aligning.hpp"
+#include "projects/spades/hybrid_gap_closer.hpp"
 
 #include "version.hpp"
 
+#include <clipp/clipp.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #include <string>
+#include <fstream>
 
 void create_console_logger() {
     using namespace logging;
@@ -29,25 +45,169 @@ void create_console_logger() {
 
 using namespace debruijn_graph;
 
+struct gcfg {
+    gcfg()
+        : k(21), tmpdir("tmp"), outfile("-"),
+          nthreads(omp_get_max_threads() / 2 + 1)
+    {}
+
+    unsigned k;
+    std::string file;
+    std::string graph;
+    std::string tmpdir;
+    std::string outfile;
+    unsigned nthreads;
+};
+
+void process_cmdline(int argc, char **argv, gcfg &cfg) {
+  using namespace clipp;
+
+  auto cli = (
+      cfg.file << value("dataset description (in YAML)"),
+      cfg.graph << value("graph (in GFA)"),
+      cfg.outfile << value("output filename"),
+      (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
+      (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
+      (option("-tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
+  );
+
+  auto result = parse(argc, argv, cli);
+  if (!result) {
+      std::cout << make_man_page(cli, argv[0]);
+      exit(1);
+  }
+}
+
+typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;
+typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> SequencingLib;
+
+std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const conj_graph_pack& gp,
+                                                          const SequencingLib& library) {
+    if (library.type() == io::LibraryType::MatePairs) {
+        INFO("Mapping mate pairs using BWA-mem mapper");
+        return std::make_shared<alignment::BWAReadMapper<Graph>>(gp.g);
+    }
+
+    if (library.data().unmerged_read_length < gp.k_value && library.type() == io::LibraryType::PairedEnd) {
+        INFO("Mapping PE reads shorter than K with BWA-mem mapper");
+        return std::make_shared<alignment::BWAReadMapper<Graph>>(gp.g);
+    }
+
+    INFO("Selecting usual mapper");
+    return MapperInstance(gp);
+}
+
+static void ProcessSingleReads(conj_graph_pack &gp, DataSet &dataset,
+                               size_t ilib,
+                               bool use_binary = true,
+                               bool map_paired = false) {
+    SequencingLib &lib = dataset[ilib];
+    SequenceMapperNotifier notifier(gp, dataset.lib_count());
+
+    LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib],
+                               ChooseProperReadPathExtractor(gp.g, lib.type()));
+
+    if (lib.is_contig_lib()) {
+        //FIXME pretty awful, would be much better if listeners were shared ptrs
+        notifier.Subscribe(ilib, &read_mapper);
+    }
+
+    auto mapper_ptr = ChooseProperMapper(gp, lib);
+    if (use_binary) {
+        auto single_streams = single_binary_readers(lib, false, map_paired);
+        notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
+    } else {
+        auto single_streams = single_easy_readers(lib, false,
+                                                  map_paired, /*handle Ns*/false);
+        notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
+    }
+}
+
+#if 0
+static void ProcessPairedReads(conj_graph_pack &gp,
+                               DataSet &dataset, size_t ilib) {
+    SequencingLib &lib = dataset[ilib];
+    SequenceMapperNotifier notifier(gp, dataset.lib_count());
+
+    auto paired_streams = paired_binary_readers(lib, /*followed by rc*/false, 0, /*include merged*/true);
+    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, lib));
+}
+#endif
+
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
-    utils::perf_counter pc;
+    gcfg cfg;
 
     srand(42);
     srandom(42);
 
+    process_cmdline(argc, argv, cfg);
+
     create_console_logger();
     INFO("Starting GFA reader, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
 
-    std::string fname(argv[1]);
-    ConjugateDeBruijnGraph g(55);
+    try {
+        unsigned nthreads = cfg.nthreads;
+        unsigned k = cfg.k;
+        std::string tmpdir = cfg.tmpdir, dataset_desc = cfg.file;
 
-    {
-        gfa::GFAReader gfa(fname);
-        INFO("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+        fs::make_dir(tmpdir);
 
-        gfa.to_graph(g);
+        DataSet dataset;
+        dataset.load(dataset_desc);
+
+        debruijn_graph::conj_graph_pack gp(k, tmpdir, dataset.lib_count());
+
+        INFO("Loading de Bruijn graph from " << cfg.graph);
+        {
+            gfa::GFAReader gfa(cfg.graph);
+            INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+
+            gfa.to_graph(gp.g);
+        }
+        {
+            size_t sz = 0;
+            for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it)
+                sz += 1;
+
+            INFO("Graph loaded. Total vertices: " << gp.g.size() << " Total edges: " << sz);
+        }
+
+        // FIXME: Get rid of this "/" junk
+        debruijn_graph::config::init_libs(dataset, nthreads, 512ULL << 20, tmpdir + "/");
+
+        gp.kmer_mapper.Attach();
+        gp.EnsureBasicMapping();
+
+    for (size_t i = 0; i < dataset.lib_count(); ++i) {
+        auto &lib = dataset[i];
+        auto& path_storage = gp.single_long_reads[i];
+        if (lib.is_contig_lib()) {
+            INFO("Mapping contigs library #" << i);
+            ProcessSingleReads(gp, dataset, i, false);
+        } else if (lib.is_long_read_lib()) {
+            gap_closing::GapStorage gap_storage(gp.g);
+
+            debruijn_graph::config::pacbio_processor pb;
+
+            PacbioAlignLibrary(gp, lib,
+                               path_storage, gap_storage,
+                               nthreads, pb);
+        } else {
+            WARN("Could only map contigs or long reads so far, skipping the library");
+            continue;
+        }
+        INFO("Saving to " << cfg.outfile);
+        path_storage.DumpToFile(cfg.outfile);
     }
-    
+
+    } catch (const std::string &s) {
+        std::cerr << s << std::endl;
+        return EINTR;
+    } catch (const std::exception &e) {
+        std::cerr << "ERROR: " << e.what() << std::endl;
+        return EINTR;
+    }
+
     return 0;
 }
