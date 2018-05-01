@@ -283,19 +283,16 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
                         const io::SequencingLibrary<config::LibraryData>& lib,
                         PathStorage<Graph>& path_storage,
                         gap_closing::GapStorage& gap_storage,
-                        size_t thread_cnt) {
+                        size_t thread_cnt, const config::pacbio_processor &pb) {
     string lib_for_info = (lib.is_long_read_lib() ? "long reads" : "contigs");
     INFO("Aligning "<< lib_for_info << " with bwa-mem based aligner");
 
-    alignment::BWAIndex::AlignmentMode mode;
-    if (lib.type() == io::LibraryType::PacBioReads){
-        mode = alignment::BWAIndex::AlignmentMode::PacBio;
-    } else {
-        mode = alignment::BWAIndex::AlignmentMode::Ont2D;
-    }
-    //initializing index
-    pacbio::PacBioMappingIndex<Graph> pac_index(gp.g,
-                                                cfg::get().pb,
+    alignment::BWAIndex::AlignmentMode mode =
+            (lib.type() == io::LibraryType::PacBioReads ?
+             alignment::BWAIndex::AlignmentMode::PacBio : alignment::BWAIndex::AlignmentMode::Ont2D);
+
+    // Initialize index
+    pacbio::PacBioMappingIndex<Graph> pac_index(gp.g, pb,
                                                 mode);
 
     PacbioAligner aligner(pac_index, path_storage, gap_storage);
@@ -334,7 +331,7 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
                 //TODO put alternative alignment right here
                 PacbioAlignLibrary(gp, lib,
                                    path_storage, gap_storage,
-                                   cfg::get().max_threads);
+                                   cfg::get().max_threads, cfg::get().pb);
             } else {
                 gp.EnsureBasicMapping();
                 gap_closing::GapTrackingListener mapping_listener(gp.g, gap_storage);
