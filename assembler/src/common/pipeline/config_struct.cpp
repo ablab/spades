@@ -205,7 +205,7 @@ void load(construction_mode& con_mode,
 }
 
 void load(debruijn_config::construction::early_tip_clipper& etc,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool) {
     using config_common::load;
     load(etc.enable, pt, "enable");
     etc.length_bound = pt.get_optional<size_t>("length_bound");
