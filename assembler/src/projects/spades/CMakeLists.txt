@@ -7,7 +7,7 @@
 
 project(spades CXX)
 
-add_executable(spades-core main.cpp
+add_library(spades-stages STATIC
             gap_closer.cpp
             mismatch_correction.cpp
             pair_info_count.cpp
@@ -16,11 +16,14 @@ add_executable(spades-core main.cpp
             repeat_resolving.cpp
             contig_output_stage.cpp
             hybrid_aligning.cpp
-            chromosome_removal.cpp
-            series_analysis.cpp
-            ../mts/contig_abundance.cpp)
+            chromosome_removal.cpp)
+target_link_libraries(spades-stages ConsensusCore)
 
-target_link_libraries(spades-core graphio ConsensusCore common_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
+add_executable(spades-core main.cpp
+                           series_analysis.cpp
+                           ../mts/contig_abundance.cpp)
+
+target_link_libraries(spades-core spades-stages graphio common_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades-core PROPERTIES LINK_SEARCH_END_STATIC 1)
