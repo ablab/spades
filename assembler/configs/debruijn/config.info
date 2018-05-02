@@ -78,10 +78,6 @@ paired_info_statistics false
 ; set it true to get statistics for pair information (over gaps), such as false positive/negative, perfect match, etc.
 paired_info_scaffolder false
 
-;FIXME is it always simple?
-estimation_mode simple
-; simple, weighted, extensive, smoothing
-
 ;the only option left from repeat resolving
 max_repeat_length 8000
 

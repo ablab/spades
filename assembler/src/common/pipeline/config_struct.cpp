@@ -107,14 +107,6 @@ vector<string> ConstructionModeNames() {
                     {"extension", construction_mode::extention}}, construction_mode::total);
 }
 
-vector<string> EstimationModeNames() {
-    return CheckedNames<estimation_mode>({
-                    {"simple", estimation_mode::simple},
-                    {"weighted", estimation_mode::weighted},
-                    {"smoothing", estimation_mode::smoothing}}, estimation_mode::total);
-}
-
-
 vector<string> ResolveModeNames() {
     return CheckedNames<resolving_mode>({
                     {"none", resolving_mode::none},
@@ -221,14 +213,6 @@ void load(debruijn_config::construction& con,
 
     con.read_buffer_size *= 1024 * 1024;
     load(con.early_tc, pt, "early_tip_clipper", complete);
-}
-
-void load(estimation_mode &est_mode,
-          boost::property_tree::ptree const &pt, std::string const &key,
-          bool complete) {
-    if (complete || pt.find(key) != pt.not_found()) {
-        est_mode = ModeByName<estimation_mode>(pt.get<std::string>(key), EstimationModeNames());
-    }
 }
 
 void load(debruijn_config::simplification::bulge_remover& br,
@@ -739,7 +723,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
 
     load(cfg.max_repeat_length, pt, "max_repeat_length", complete);
 
-    load(cfg.est_mode, pt, "estimation_mode", complete);
     load(cfg.de, pt, "de", complete);
     load(cfg.ade, pt, "ade", complete); // advanced distance estimator:
     load(cfg.amb_de, pt, "amb_de", complete);

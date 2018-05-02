@@ -59,16 +59,6 @@ enum class construction_mode : char {
 
 std::vector<std::string> ConstructionModeNames();
 
-enum class estimation_mode : char {
-    simple = 0,
-    weighted,
-    smoothing,
-
-    total
-};
-
-std::vector<std::string> EstimationModeNames();
-
 enum class resolving_mode : char {
     none = 0,
     path_extend,
@@ -526,7 +516,6 @@ struct debruijn_config {
     size_t max_threads;
     size_t max_memory;
 
-    estimation_mode est_mode;
     resolving_mode rm;
     path_extend::pe_config::MainPEParamsT pe_params;
     boost::optional<path_extend::pe_config::MainPEParamsT> prelim_pe_params;

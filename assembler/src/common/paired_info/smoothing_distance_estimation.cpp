@@ -106,12 +106,6 @@ void SmoothingDistanceEstimator::ProcessEdge(EdgeId e1, const InPairedIndex &pi,
         if (forward.size() == 0) {
             estimated = FindEdgePairDistances(ep, hist);
             ++gap_distances;
-        } else if (forward.size() > 0 && (!only_scaffolding_)) {
-            //TODO: remove THIS
-            InPairedIndex temp_index(this->graph());
-            temp_index.AddMany(e1, e2, hist);
-            auto hist = temp_index.Get(e1, e2);
-            estimated = this->base::EstimateEdgePairDistances(ep, hist, forward);
         }
         DEBUG(gap_distances << " distances between gap edge pairs have been found");
         OutHistogram res = this->ClusterResult(ep, estimated);
