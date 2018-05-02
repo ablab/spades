@@ -268,8 +268,8 @@ private:
     std::vector<EdgeId> RCPath(const std::vector<EdgeId> &path) const {
         std::vector<EdgeId> rc_path;
         rc_path.reserve(path.size());
-        for (int i = (int) path.size() - 1; i >= 0; i--) {
-            rc_path.push_back(graph_.conjugate(path[i]));
+        for (auto it = path.rbegin(), end = path.rend(); it != end; ++it) {
+            rc_path.push_back(graph_.conjugate(*it));
         }
         return rc_path;
     }

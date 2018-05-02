@@ -137,37 +137,6 @@ private:
     size_t next_int_id_;
 };
 
-//TODO Legacy?
-/* id distributor used for concurrent algorithms.
-* each thread use their own PeriodicIdDistributor with period equals to
-* the quantity of threads. After thread's job is done Synchronize call are required
-* to increase id in GlobalIdDistributor.
-*/
-//class PeriodicIdDistributor : public IdDistributor {
-//
-//public:
-//    PeriodicIdDistributor(LocalIdDistributor &id_distributor, size_t first_id, size_t period)
-//            : id_distributor_(id_distributor), cur_id_(first_id), period_(period) {
-//    }
-//
-//    virtual size_t GetId() {
-//        size_t id = cur_id_;
-//        cur_id_ += period_;
-//
-//        return id;
-//    }
-//
-//    void Synchronize() const {
-//        size_t &global_max_id = id_distributor_.next_int_id_;
-//        global_max_id = std::max(cur_id_, global_max_id);
-//    }
-//
-//private:
-//    LocalIdDistributor &id_distributor_;
-//    size_t cur_id_;
-//    size_t period_;
-//};
-
 template<class PurePtrT>
 class PurePtrLock;
 
