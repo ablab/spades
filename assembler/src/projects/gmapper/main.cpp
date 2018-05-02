@@ -14,6 +14,8 @@
 #include "io/dataset_support/read_converter.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 
+#include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
+
 #include "utils/logger/log_writers.hpp"
 #include "utils/logger/logger.hpp"
 #include "utils/segfault_handler.hpp"
@@ -198,7 +200,18 @@ int main(int argc, char* argv[]) {
             continue;
         }
         INFO("Saving to " << cfg.outfile);
-        path_storage.DumpToFile(cfg.outfile);
+
+        std::ofstream os(cfg.outfile);
+        path_extend::GFAPathWriter gfa_writer(gp.g, os);
+        gfa_writer.WriteSegmentsAndLinks();
+
+        std::vector<PathInfo<Graph>> paths;
+        path_storage.SaveAllPaths(paths);
+        size_t idx = 0;
+        for (const auto& entry : paths) {
+            idx += 1;
+            gfa_writer.WritePaths(entry.path(), std::to_string(idx), "Z:W:" + std::to_string(entry.weight()));
+        }
     }
 
     } catch (const std::string &s) {
