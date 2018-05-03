@@ -52,7 +52,7 @@ simp
     }
     
     ; relative edge disconnector:
-    relative_ed
+    red
     {
         enabled true
         diff_mult  5.
@@ -132,6 +132,14 @@ preliminary_simp
         max_relative_coverage		0.5		; bulge_cov < this * not_bulge_cov
         max_delta			10
         max_relative_delta		0.1
+    }
+
+    ; Currently will not work even if enabled. Left for experiments.
+    ; relative edge disconnector:
+    red
+    {
+        enabled false
+        diff_mult  10.
     }
 }
 

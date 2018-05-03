@@ -434,10 +434,16 @@ AlgoPtr<Graph> RelativelyLowCoverageDisconnectorInstance(Graph &g,
         INFO("Disconnection of relatively low covered edges disabled");
         return nullptr;
     }
+    using Condition=omnigraph::simplification::relative_coverage::RelativeCovDisconnectionCondition<Graph>;
+
+    func::TypedPredicate<EdgeId> condition = Condition(g, flanking_cov, rced_config.diff_mult, rced_config.edge_sum);
+
+    if (math::gr(rced_config.unconditional_diff_mult, 0.)) {
+        condition = func::Or(Condition(g, flanking_cov, rced_config.unconditional_diff_mult, 0), condition);
+    }
 
     return std::make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g,
-            omnigraph::simplification::relative_coverage::
-            RelativeCovDisconnectionCondition<Graph>(g, flanking_cov, rced_config.diff_mult, rced_config.edge_sum),
+            condition,
             info.chunk_cnt(),
             nullptr);
 }

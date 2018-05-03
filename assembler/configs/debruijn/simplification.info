@@ -101,11 +101,12 @@ simp
     }
     
     ; relative edge disconnector:
-    relative_ed
+    red
     {
         enabled false
         diff_mult  20.
         edge_sum   10000
+        unconditional_diff_mult 0. ; 0. to disable
     }
 
     ; final tip clipper:

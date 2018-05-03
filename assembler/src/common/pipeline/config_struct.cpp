@@ -251,6 +251,7 @@ void load(debruijn_config::simplification::relative_coverage_edge_disconnector& 
   load(relative_ed.enabled, pt, "enabled");
   load(relative_ed.diff_mult, pt, "diff_mult", complete);
   load(relative_ed.edge_sum, pt, "edge_sum", complete);
+  load(relative_ed.unconditional_diff_mult, pt, "unconditional_diff_mult", complete);
 }
 
 void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,
@@ -567,7 +568,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.ec, pt, "ec", complete); // erroneous connections remover:
   load(simp.rcec, pt, "rcec", complete); // relative coverage erroneous connections remover
   load(simp.rcc, pt, "rcc", complete); // relative coverage component remover:
-  load(simp.relative_ed, pt, "relative_ed", complete); // relative edge disconnector:
+  load(simp.red, pt, "red", complete); // relative edge disconnector:
   load(simp.tec, pt, "tec", complete); // topology aware erroneous connections remover:
   load(simp.trec, pt, "trec", complete); // topology and reliability based erroneous connections remover:
   load(simp.isec, pt, "isec", complete); // interstrand erroneous connections remover (thorn remover):

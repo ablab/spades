@@ -282,6 +282,7 @@ struct debruijn_config {
             bool enabled;
             double diff_mult;
             size_t edge_sum;
+            double unconditional_diff_mult;
         };
 
         struct relative_coverage_comp_remover {
@@ -316,7 +317,7 @@ struct debruijn_config {
         erroneous_connections_remover ec;
         relative_coverage_ec_remover rcec;
         relative_coverage_comp_remover rcc;
-        relative_coverage_edge_disconnector relative_ed;
+        relative_coverage_edge_disconnector red;
         topology_based_ec_remover tec;
         tr_based_ec_remover trec;
         interstrand_ec_remover isec;
