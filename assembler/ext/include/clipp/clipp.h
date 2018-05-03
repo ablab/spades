@@ -349,13 +349,7 @@ inline T clamped_on_limits(const V& v) {
  *
  *****************************************************************************/
 template<class T>
-struct make {
-    static inline T from(const char* s) {
-        if(!s) return false;
-        //a conversion from const char* to / must exist
-        return static_cast<T>(s);
-    }
-};
+struct make;
 
 template<>
 struct make<bool> {
@@ -1231,9 +1225,6 @@ public:
     template<class Target>
     Derived&
     set(Target& t) {
-        static_assert(!std::is_pointer<Target>::value,
-                      "parameter target type must not be a pointer");
-
         return call(clipp::set(t));
     }
 
@@ -1360,9 +1351,6 @@ public:
         >::type>
     Derived&
     target(T& t) {
-        static_assert(!std::is_pointer<T>::value,
-                      "parameter target type must not be a pointer");
-
         set(t);
         return *static_cast<Derived*>(this);
     }
