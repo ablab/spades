@@ -360,7 +360,7 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, size_t 
         size_t comp_size = (long_component_[first_edge])/2;
         size_t deadends_count = deadends_count_[first_edge] ;
         if (comp_size > component_size_min && comp_size < component_size_max &&
-                (deadends_count == 0 || deadends_count == 4)) {
+                ( deadends_count <= 4)) {
             DEBUG("Checking component size " << comp_size);
             vector<pair<double, size_t>> coverages;
             size_t total_len = 0;
