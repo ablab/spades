@@ -262,8 +262,8 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
 
     auto match_edges = get_matched_edges(edges, matcher, cfg);
 
-    int textw = 120;
     if (match_edges.size() && cfg.debug) {
+        int textw = 120;
         #pragma omp critical(console)
         {
             p7_tophits_Targets(stdout, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
@@ -275,8 +275,8 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
     return match_edges;
 }
 
-void output_matches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, const std::string &filename,
-                    const std::string &format = "tblout") {
+void OutputMatches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, const std::string &filename,
+                   const std::string &format = "tblout") {
     P7_HMM *p7hmm = hmm.get();
     FILE *fp = fopen(filename.c_str(), "w");
     if (format == "domtblout") {
@@ -400,7 +400,7 @@ Neighbourhoods join_components(const Neighbourhoods &neighbourhoods,
     return result;
 }
 
-std::vector<hmmer::HMM> parse_hmm_file(const std::string &filename) {
+std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
     /* Open the query profile HMM file */
     hmmer::HMMFile hmmfile(filename);
     if (!hmmfile.valid()) {
@@ -409,9 +409,8 @@ std::vector<hmmer::HMM> parse_hmm_file(const std::string &filename) {
 
     std::vector<hmmer::HMM> hmms;
 
-    while (auto hmmw = hmmfile.read()) {
-        hmms.push_back(std::move(hmmw.get()));
-    }
+    while (auto hmmw = hmmfile.read())
+        hmms.emplace_back(std::move(hmmw.get()));
 
     if (hmms.empty()) {
         FATAL_ERROR("Error reading HMM file " << filename);
@@ -421,8 +420,8 @@ std::vector<hmmer::HMM> parse_hmm_file(const std::string &filename) {
 }
 
 template <typename Container>
-auto edges2sequences(const Container &entries,
-                     const debruijn_graph::ConjugateDeBruijnGraph &graph) {
+auto EdgesToSequences(const Container &entries,
+                      const debruijn_graph::ConjugateDeBruijnGraph &graph) {
     std::vector<std::pair<std::string, std::string>> ids_n_seqs;
     for (const auto &entry : entries) {
         std::stringstream id;
@@ -440,18 +439,18 @@ auto edges2sequences(const Container &entries,
 }
 
 template <typename Container>
-void export_edges(const Container &entries,
-                  const debruijn_graph::ConjugateDeBruijnGraph &graph,
-                  const std::string &filename) {
+void ExportEdges(const Container &entries,
+                 const debruijn_graph::ConjugateDeBruijnGraph &graph,
+                 const std::string &filename) {
     std::ofstream o(filename, std::ios::out);
 
-    for (const auto &kv : edges2sequences(entries, graph)) {
+    for (const auto &kv : EdgesToSequences(entries, graph)) {
         o << ">" << kv.first << "\n";
         io::WriteWrapped(kv.second, o);
     }
 }
 
-void load_graph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename) {
+void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename) {
     using namespace debruijn_graph;
     if (ends_with(filename, ".gfa")) {
         gfa::GFAReader gfa(filename);
@@ -489,7 +488,7 @@ int main(int argc, char* argv[]) {
     using namespace debruijn_graph;
 
     debruijn_graph::ConjugateDeBruijnGraph graph(cfg.k);
-    load_graph(graph, cfg.load_from);
+    LoadGraph(graph, cfg.load_from);
     INFO("Graph loaded. Total vertices: " << graph.size());
 
     // Collect all the edges
@@ -502,7 +501,7 @@ int main(int argc, char* argv[]) {
     std::unordered_set<std::vector<EdgeId>> to_rescore;
 
     // Outer loop: over each query HMM in <hmmfile>.
-    auto hmms = parse_hmm_file(cfg.hmmfile);
+    auto hmms = ParseHMMFile(cfg.hmmfile);
     omp_set_num_threads(cfg.threads);
     #pragma omp parallel for
     for (size_t _i = 0; _i < hmms.size(); ++_i) {
@@ -675,24 +674,24 @@ int main(int argc, char* argv[]) {
 
         INFO("Total " << to_rescore_local.size() << " local paths to rescore");
         if (cfg.rescore && to_rescore_local.size()) {
-            export_edges(to_rescore_local, graph, cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
+            ExportEdges(to_rescore_local, graph, cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
         }
 
         std::vector<std::string> seqs_to_rescore;
         std::vector<std::string> refs_to_rescore;
-        for (const auto &kv : edges2sequences(to_rescore_local, graph)) {
+        for (const auto &kv : EdgesToSequences(to_rescore_local, graph)) {
             refs_to_rescore.push_back(kv.first);
             seqs_to_rescore.push_back(kv.second);
         }
         auto matcher = score_sequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
-        output_matches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
-        output_matches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
-        output_matches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
+        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
+        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
+        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
     } // end outer loop over query HMMs
 
     INFO("Total " << to_rescore.size() << " paths to rescore");
     if (cfg.rescore && to_rescore.size()) {
-        export_edges(to_rescore, graph, cfg.output_dir + "/all.edges.fa");
+        ExportEdges(to_rescore, graph, cfg.output_dir + "/all.edges.fa");
     }
 
     return 0;
