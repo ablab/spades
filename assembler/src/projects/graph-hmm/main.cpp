@@ -461,6 +461,77 @@ void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string 
     }
 }
 
+struct HMMPathInfo {
+    EdgeId leader;
+    unsigned priority;
+    std::string seq;
+    std::vector<EdgeId> path;
+
+    HMMPathInfo(EdgeId e, unsigned prio, std::string s, std::vector<EdgeId> p)
+            : leader(e), priority(prio), seq(std::move(s)), path(std::move(p)) {}
+};
+
+void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
+                 const cfg &cfg,
+                 const std::vector<HMMPathInfo> &results,
+                 const std::vector<std::pair<double, std::string>> &resultant_paths,
+                 std::unordered_set<std::vector<EdgeId>> &to_rescore) {
+    P7_HMM *p7hmm = hmm.get();
+
+    INFO("Total " << results.size() << " results extracted");
+    INFO("Total " << resultant_paths.size() << " resultant paths extracted");
+
+    std::unordered_set<std::vector<EdgeId>> to_rescore_local;
+    if (cfg.save) {
+        if (resultant_paths.size()) {
+            std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".paths.fa", std::ios::out);
+            for (const auto &result : resultant_paths) {
+                o << ">Score_" << result.first << '\n';
+                io::WriteWrapped(result.second, o);
+            }
+        }
+
+        if (results.size()) {
+            std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".fa", std::ios::out);
+            for (const auto &result : results) {
+                o << ">" << result.leader << "_" << result.priority;
+                if (result.seq.size() == 0)
+                    o << " (whole edge)";
+                o << '\n';
+                if (result.seq.size() == 0) {
+                    io::WriteWrapped(graph.EdgeNucls(result.leader).str(), o);
+                } else {
+                    io::WriteWrapped(result.seq, o);
+                }
+                if (cfg.rescore && result.path.size() > 0) {
+                    to_rescore_local.insert(result.path);
+                }
+            }
+        }
+#pragma omp critical
+        {
+            to_rescore.insert(to_rescore_local.cbegin(), to_rescore_local.cend());
+        }
+    }
+
+    if (cfg.rescore && to_rescore_local.size()) {
+        INFO("Total " << to_rescore_local.size() << " local paths to rescore");
+
+        ExportEdges(to_rescore_local, graph, cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
+
+        std::vector<std::string> seqs_to_rescore;
+        std::vector<std::string> refs_to_rescore;
+        for (const auto &kv : EdgesToSequences(to_rescore_local, graph)) {
+            refs_to_rescore.push_back(kv.first);
+            seqs_to_rescore.push_back(kv.second);
+        }
+        auto matcher = score_sequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
+        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
+        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
+        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
+    }
+}
+
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     utils::perf_counter pc;
@@ -522,22 +593,13 @@ int main(int argc, char* argv[]) {
         neighbourhoods = join_components(neighbourhoods, matched_edges, graph);
         INFO("Total unique neighbourhoods extracted " << neighbourhoods.size());
 
-        struct PathInfo {
-            EdgeId leader;
-            unsigned priority;
-            std::string seq;
-            std::vector<EdgeId> path;
-
-            PathInfo(EdgeId e, unsigned prio, std::string s, std::vector<EdgeId> p)
-                    : leader(e), priority(prio), seq(std::move(s)), path(std::move(p)) {}
-        };
-
-        std::vector<PathInfo> results;
+        std::vector<HMMPathInfo> results;
         std::vector<std::pair<double, std::string>> resultant_paths;
         auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
 
         auto run_search = [&](const auto &initial, EdgeId e, size_t top,
-                              std::vector<PathInfo> &local_results) {
+                              std::vector<HMMPathInfo> &local_results,
+                              std::vector<std::pair<double, std::string>> &resultant_paths) {
             auto result = find_best_path(fees, initial);
 
             INFO("Best score: " << result.best_score());
@@ -610,83 +672,42 @@ int main(int argc, char* argv[]) {
             // neib_cursors = all(component);
 
             INFO("Running path search");
-            std::vector<PathInfo> local_results;
+            std::vector<HMMPathInfo> local_results;
+            std::vector<std::pair<double, std::string>> local_resultant_paths;
+
             if (hmm_in_aas) {
-                run_search(make_aa_cursors(neib_cursors), e, cfg.top, local_results);
+                run_search(make_aa_cursors(neib_cursors), e, cfg.top, local_results, local_resultant_paths);
             } else {
-                run_search(neib_cursors, e, cfg.top, local_results);
+                run_search(neib_cursors, e, cfg.top, local_results, local_resultant_paths);
             }
+
+            results.insert(results.end(), local_results.begin(), local_results.end());
+            resultant_paths.insert(resultant_paths.end(), local_resultant_paths.begin(), local_resultant_paths.end());
 
             std::unordered_set<std::vector<EdgeId>> paths;
             for (const auto& entry : local_results)
                 paths.insert(entry.path);
-            results.insert(results.end(), local_results.begin(), local_results.end());
-
             INFO("Total " << paths.size() << " unique edge paths extracted");
-            size_t idx = 0;
-            for (const auto &path : paths) {
-                INFO("Path length : " << path.size() << " edges");
-                for (EdgeId e : path)
-                    INFO("" << e.int_id());
-                if (cfg.draw) {
-                    INFO("Writing component around path");
-                    DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
-                }
-                idx += 1;
-            }
-        }
-        INFO("Total " << results.size() << " results extracted");
-        INFO("Total " << resultant_paths.size() << " resultant paths extracted");
-        std::sort(resultant_paths.begin(), resultant_paths.end());
 
-        std::unordered_set<std::vector<EdgeId>> to_rescore_local;
-        if (cfg.save) {
-            if (resultant_paths.size()) {
-                std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".paths.fa", std::ios::out);
-                for (const auto &result : resultant_paths) {
-                    o << ">Score_" << result.first << '\n';
-                    io::WriteWrapped(result.second, o);
-                }
-            }
-
-            if (results.size()) {
-                std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".fa", std::ios::out);
-                for (const auto &result : results) {
-                    o << ">" << result.leader << "_" << result.priority;
-                    if (result.seq.size() == 0)
-                        o << " (whole edge)";
-                    o << '\n';
-                    if (result.seq.size() == 0) {
-                        io::WriteWrapped(graph.EdgeNucls(result.leader).str(), o);
-                    } else {
-                        io::WriteWrapped(result.seq, o);
-                    }
-                    if (cfg.rescore && result.path.size() > 0) {
-                        to_rescore_local.insert(result.path);
-                    }
-                }
-            }
-            #pragma omp critical
             {
-                to_rescore.insert(to_rescore_local.cbegin(), to_rescore_local.cend());
+                size_t idx = 0;
+                for (const auto &path : paths) {
+                    INFO("Path length : " << path.size() << " edges");
+                    for (EdgeId e : path)
+                        INFO("" << e.int_id());
+                    if (cfg.draw) {
+                        INFO("Writing component around path");
+                        DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
+                    }
+                    idx += 1;
+                }
             }
         }
 
-        INFO("Total " << to_rescore_local.size() << " local paths to rescore");
-        if (cfg.rescore && to_rescore_local.size()) {
-            ExportEdges(to_rescore_local, graph, cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
-        }
-
-        std::vector<std::string> seqs_to_rescore;
-        std::vector<std::string> refs_to_rescore;
-        for (const auto &kv : EdgesToSequences(to_rescore_local, graph)) {
-            refs_to_rescore.push_back(kv.first);
-            seqs_to_rescore.push_back(kv.second);
-        }
-        auto matcher = score_sequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
-        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
-        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
-        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
+        std::sort(resultant_paths.begin(), resultant_paths.end());
+        SaveResults(hmm, graph, cfg,
+                    results, resultant_paths,
+                    to_rescore);
     } // end outer loop over query HMMs
 
     INFO("Total " << to_rescore.size() << " paths to rescore");
