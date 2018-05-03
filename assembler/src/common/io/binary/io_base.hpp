@@ -6,12 +6,18 @@
 
 #pragma once
 
+#include <fstream>
+#include <memory>
+#include <string>
+#include <vector>
+
 namespace io {
 
 class SaveFile {
 public:
-    SaveFile(const std::string &filename) :
-            str_(filename, std::ios::binary) {}
+    SaveFile(const std::string &filename)
+            : str_(filename, std::ios::binary) {
+    }
 
     template<typename T>
     SaveFile &operator<<(const T &value) {
@@ -34,8 +40,9 @@ private:
 
 class LoadFile {
 public:
-    LoadFile(const std::string &filename) :
-            str_(filename, std::ios::binary) {}
+    LoadFile(const std::string &filename)
+            : str_(filename, std::ios::binary) {
+    }
 
     template<typename T>
     LoadFile &operator>>(T &value) {
@@ -67,12 +74,17 @@ private:
     std::ifstream str_;
 };
 
-template <typename T>
+template<typename T>
 class IOBase {
 public:
-    typedef T Type;
+    virtual void Save(const std::string &basename, const T &value) = 0;
+    virtual void Load(const std::string &basename, T &value) = 0;
+};
 
-    void Save(const std::string &basename, const T &value) {
+template <typename T>
+class IOSingle : public IOBase<T> {
+public:
+    void Save(const std::string &basename, const T &value) override {
         std::string filename = basename + ext_;
         SaveFile file(filename);
         DEBUG("Saving " << name_ << " into " << filename);
@@ -80,7 +92,7 @@ public:
         this->SaveImpl(file, value);
     }
 
-    void Load(const std::string &basename, T &value) {
+    void Load(const std::string &basename, T &value) override {
         std::string filename = basename + ext_;
         LoadFile file(filename);
         DEBUG("Loading " << name_ << " from " << filename);
@@ -89,14 +101,41 @@ public:
     }
 
 protected:
-    IOBase(const char *name, const char *ext):
-            name_(name), ext_(ext), version_(0) {}
+    IOSingle(const char *name, const char *ext)
+            : name_(name), ext_(ext), version_(0) {
+    }
     const char *name_, *ext_;
     unsigned version_;
 
 private:
     virtual void SaveImpl(SaveFile &file, const T &value) = 0;
     virtual void LoadImpl(LoadFile &file, T &value) = 0;
+};
+
+template<typename T>
+class IOCollection : public IOBase<T> {
+public:
+    typedef typename T::value_type Index;
+    typedef std::unique_ptr<IOBase<Index>> IOPtr;
+
+    IOCollection(IOPtr io)
+        : io_(std::move(io)) {
+    }
+
+    void Save(const std::string &basename, const T &value) override {
+        for (size_t i = 0; i < value.size(); ++i) {
+            io_->Save(basename + "_" + std::to_string(i), value[i]);
+        }
+    }
+
+    void Load(const std::string &basename, T &value) override {
+        for (size_t i = 0; i < value.size(); ++i) {
+            io_->Load(basename + "_" + std::to_string(i), value[i]);
+        }
+    }
+
+private:
+    IOPtr io_;
 };
 
 }

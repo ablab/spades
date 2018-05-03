@@ -12,11 +12,13 @@
 namespace io {
 
 template<typename Graph>
-class EdgeIndexIO : public IOBase<debruijn_graph::KmerFreeEdgeIndex<Graph>> {
+class EdgeIndexIO : public IOSingle<debruijn_graph::KmerFreeEdgeIndex<Graph>> {
 public:
     typedef debruijn_graph::KmerFreeEdgeIndex<Graph> Type;
-    EdgeIndexIO():
-            IOBase<Type>("edge index", ".kmidx"){}
+    EdgeIndexIO()
+            : IOSingle<Type>("edge index", ".kmidx") {
+    }
+
 private:
     void SaveImpl(SaveFile &file, const Type &index) override {
         file << (uint32_t)index.k() << index;

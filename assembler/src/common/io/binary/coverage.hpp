@@ -11,22 +11,21 @@
 
 namespace io {
 
-template<template<typename> typename IndexT, typename Graph>
-class CoverageIO : public IOBase<IndexT<Graph>> {
+template<typename Index>
+class CoverageIO : public IOBase<Index> {
 public:
-    typedef IndexT<Graph> Type;
-    typedef IdMapper<typename Graph::EdgeId> Mapper;
+    typedef IdMapper<typename Index::EdgeId> Mapper;
     CoverageIO(const Mapper &mapper):
             IOBase<Type>("coverage", ".cvr"), mapper_(mapper) {}
 private:
-    void SaveImpl(SaveFile &file, const Type &index) {
+    void SaveImpl(SaveFile &file, const Index &index) {
         for (auto it = index.g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             auto e = *it;
             file << e.int_id() << index.RawCoverage(e);
         }
     }
 
-    void LoadImpl(LoadFile &file, Type &index) {
+    void LoadImpl(LoadFile &file, Index &index) {
         while (file) { //Read until the end
             auto eid = mapper_[file.Read<size_t>()];
             auto cov = file.Read<unsigned>();

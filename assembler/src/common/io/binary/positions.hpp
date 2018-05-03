@@ -6,18 +6,20 @@
 
 #pragma once
 
+#include "io/id_mapper.hpp"
 #include "io_base.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 
 namespace io {
 
 template<typename Graph>
-class EdgePositionsIO : IOBase<typename omnigraph::EdgesPositionHandler<Graph>> {
+class EdgePositionsIO : IOSingle<typename omnigraph::EdgesPositionHandler<Graph>> {
 public:
     typedef omnigraph::EdgesPositionHandler<Graph> Type;
     typedef IdMapper<typename Graph::EdgeId> Mapper;
-    EdgePositionsIO(const Mapper &mapper):
-            IOBase<Type>("edge positions", ".pos"), mapper_(mapper) {}
+    EdgePositionsIO(const Mapper &mapper)
+            : IOSingle<Type>("edge positions", ".pos"), mapper_(mapper) {
+    }
 
 private:
     void SaveImpl(SaveFile &file, const Type &edge_pos) override {

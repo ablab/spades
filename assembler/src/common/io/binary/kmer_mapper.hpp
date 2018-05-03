@@ -12,11 +12,13 @@
 namespace io {
 
 template<typename Graph>
-class KmerMapperIO : IOBase<debruijn_graph::KmerMapper<Graph>> {
+class KmerMapperIO : IOSingle<debruijn_graph::KmerMapper<Graph>> {
 public:
     typedef debruijn_graph::KmerMapper<Graph> Type;
-    KmerMapperIO():
-            IOBase<Type>("kmer mapper", ".kmm") {}
+    KmerMapperIO()
+            : IOSingle<Type>("kmer mapper", ".kmm") {
+    }
+
 private:
     void SaveImpl(SaveFile &file, const Type &mapper) override {
         file << (uint32_t)mapper.k() << mapper;

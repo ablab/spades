@@ -576,6 +576,8 @@ class PairedIndices {
     Storage data_;
 
 public:
+    typedef Index value_type;
+
     PairedIndices() {}
 
     PairedIndices(const typename Index::Graph& graph, size_t lib_num) {

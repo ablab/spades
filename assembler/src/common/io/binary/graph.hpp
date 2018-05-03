@@ -9,13 +9,17 @@
 #include "io/id_mapper.hpp"
 #include "io_base.hpp"
 
+#include "common/assembly_graph/components/graph_component.hpp"
+#include "common/sequence/sequence.hpp"
+
 namespace io {
 
 template<typename Graph>
-class GraphIO : public IOBase<Graph> {
+class GraphIO : public IOSingle<Graph> {
 public:
-    GraphIO():
-            IOBase<Graph>("debruijn graph", ".grp") {}
+    GraphIO()
+            : IOSingle<Graph>("debruijn graph", ".grp") {
+    }
 
     const IdMapper<typename Graph::EdgeId> &GetEdgeMapper() {
         return edge_mapper_;
@@ -25,7 +29,7 @@ private:
     void SaveImpl(SaveFile &file, const Graph &graph) override {
         file << graph.GetGraphIdDistributor().GetMax();
 
-        auto component = GraphComponent<Graph>::WholeGraph(graph);
+        auto component = omnigraph::GraphComponent<Graph>::WholeGraph(graph);
         file << component.v_size() << component.e_size();
 
         for (auto iter = component.v_begin(); iter != component.v_end(); ++iter) {
@@ -51,7 +55,7 @@ private:
 
         while (vertex_count--) {
             size_t ids[2];
-            file >> ids[0] >> ids[1];
+            file >> ids;
             TRACE("Vertex " << ids[0] << " ~ " << ids[1] << " .");
 
             if (!vertex_mapper_.count(ids[0])) {
@@ -63,15 +67,14 @@ private:
         }
 
         while (edge_count--) {
-            size_t ids[2];
-            size_t start_id, fin_id;
+            size_t ids[2], vertex_ids[2];
             Sequence seq;
-            file >> ids[0] >> ids[1] >> start_id >> fin_id >> seq;
-            TRACE("Edge " << ids[0] << " : " << start_id << " -> "
-                          << fin_id << " l = " << seq.size() << " ~ " << ids[1]);
+            file >> ids >> vertex_ids >> seq;
+            TRACE("Edge " << ids[0] << " : " << vertex_ids[0] << " -> "
+                          << vertex_ids[1] << " l = " << seq.size() << " ~ " << ids[1]);
             if (!edge_mapper_.count(ids[0])) {
                 auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
-                auto new_id = graph.AddEdge(vertex_mapper_[start_id], vertex_mapper_[fin_id], seq, id_distributor);
+                auto new_id = graph.AddEdge(vertex_mapper_[vertex_ids[0]], vertex_mapper_[vertex_ids[1]], seq, id_distributor);
                 edge_mapper_[ids[0]] = new_id;
                 edge_mapper_[ids[1]] = graph.conjugate(new_id);
             }
