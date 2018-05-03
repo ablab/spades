@@ -402,9 +402,10 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.restart_from and options_storage.restart_from.startswith('k'):
             support.error("you cannot restart rnaSPAdes from a certain k-mer size, use --restart-from as", log)
     if [options_storage.meta, options_storage.large_genome, options_storage.truseq_mode,
-       options_storage.rna, options_storage.plasmid, options_storage.single_cell].count(True) > 1:
+       options_storage.rna, options_storage.plasmid, options_storage.single_cell].count(True) > 1 and [options_storage.large_genome, options_storage.truseq_mode,  
+       options_storage.rna, options_storage.single_cell].count(True) > 0:
         support.error("you cannot simultaneously use more than one mode out of "
-                      "Metagenomic, Large genome, Illumina TruSeq, RNA-Seq, Plasmid, and Single-cell!", log)
+                      "Metagenomic, Large genome, Illumina TruSeq, RNA-Seq, Plasmid, and Single-cell (except combining Metagenomic and Plasmid)!", log)
     if options_storage.continue_mode:
         return None, None
 
