@@ -130,13 +130,17 @@ def process_quast_report(args, report, limit_map):
 def quast_run_and_update(dataset_info, fn, output_dir, name, prefix, opts):
     if not os.path.exists(fn):
         log.err("File not found " + fn)
-	return {}
+        return {}
+
+    if 'quast_params' not in dataset_info.__dict__:
+        log.log("quast_params are not set, will not run QUAST")
+        return {}
 
     log.log("Processing " + fn)
     qcode = run_quast(dataset_info, [fn], output_dir, opts)
     if qcode != 0:
         log.err("Failed to run QUAST!")
-	return {}
+        return {}
 
     limit_map = construct_rnaquast_limit_map(dataset_info, prefix, True) if dataset_info.mode == "rna" else construct_quast_limit_map(dataset_info, prefix, True)
 
