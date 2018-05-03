@@ -275,7 +275,7 @@ template<class Graph>
 class DefaultLabeler : public GraphLabeler<Graph> {
 private:
     const Graph &g_;
-    const omnigraph::EdgesPositionHandler<Graph> &edges_positions_;
+    const omnigraph::EdgesPositionHandler<Graph> * const edges_positions_;
 protected:
     typedef GraphLabeler<Graph> super;
     typedef typename super::EdgeId EdgeId;
@@ -283,7 +283,11 @@ protected:
 public:
 
     DefaultLabeler(const Graph &g, const omnigraph::EdgesPositionHandler<Graph> &position_handler) :
-            g_(g), edges_positions_(position_handler) {
+            g_(g), edges_positions_(&position_handler) {
+    }
+
+    explicit DefaultLabeler(const Graph &g) :
+            g_(g), edges_positions_(nullptr) {
     }
 
     virtual std::string label(VertexId vertexId) const {
@@ -293,15 +297,15 @@ public:
     virtual std::string label(EdgeId edgeId) const {
         std::string ret_label;
         ret_label += "Id " + g_.str(edgeId) + "\\n";
-        ret_label += "Positions:\\n" + edges_positions_.str(edgeId);
+        if (edges_positions_)
+            ret_label += "Positions:\\n" + edges_positions_->str(edgeId);
+
         size_t len = g_.length(edgeId);
         double cov = g_.coverage(edgeId);
         ret_label += "Len(cov): " + std::to_string(len) + "(" + std::to_string(cov) + ")";
         return ret_label;
     }
 
-    virtual ~DefaultLabeler() {
-    }
 };
 }
 }
