@@ -10,11 +10,13 @@
 
 #include "visualization/visualization.hpp"
 #include "pipeline/graphio.hpp"
-#include "utils/logger/log_writers.hpp"
-#include "utils/segfault_handler.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/osequencestream.hpp"
+
+#include "utils/parallel/openmp_wrapper.h"
+#include "utils/logger/log_writers.hpp"
+#include "utils/segfault_handler.hpp"
 
 #include "version.hpp"
 
@@ -28,7 +30,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
-#include <omp.h>
 
 #include "aa.hpp"
 #include "depth_filter.hpp"
