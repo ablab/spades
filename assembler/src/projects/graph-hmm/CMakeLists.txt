@@ -21,7 +21,7 @@ add_executable(looper
                fasta_reader.cpp fees.cpp
                graph.cpp)
 
-target_link_libraries(graph-hmm hmmercpp input utils pipeline gfaio ${COMMON_LIBRARIES})
+target_link_libraries(graph-hmm graphio hmmercpp input utils pipeline ${COMMON_LIBRARIES})
 target_link_libraries(looper hmmercpp input utils pipeline ${COMMON_LIBRARIES})
 
 add_subdirectory(googletest)

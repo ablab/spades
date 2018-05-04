@@ -7,6 +7,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/components/graph_component.hpp"
+#include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
 #include "visualization/visualization.hpp"
 #include "pipeline/graphio.hpp"
@@ -55,13 +56,14 @@ struct cfg {
     bool draw;
     bool save;
     bool rescore;
+    bool annotate_graph;
 
     hmmer::hmmer_cfg hcfg;
     cfg()
             : load_from(""), hmmfile(""), k(0), top(10),
               int_id(0), max_size(1000),
               debug(false), draw(false),
-              save(true), rescore(true)
+              save(true), rescore(true), annotate_graph(true)
     {}
 };
 
@@ -115,8 +117,8 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       cfg.debug << option("--debug") % "enable extensive debug output",
       cfg.draw  << option("--draw")  % "draw pictures around the interesting edges",
       cfg.save << option("--save") % "save found sequences",
-      cfg.rescore  << option("--rescore")  % "rescore paths via HMMer"
-
+      cfg.rescore  << option("--rescore")  % "rescore paths via HMMer",
+      cfg.annotate_graph << option("--annotate-graph") % "emit paths in GFA graph"
   );
 
   if (!parse(argc, argv, cli)) {
@@ -717,6 +719,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::unordered_set<std::vector<EdgeId>> to_rescore;
+    std::set<std::pair<std::string, std::vector<EdgeId>>> gfa_paths;
 
     // Outer loop: over each query HMM in <hmmfile>.
     auto hmms = ParseHMMFile(cfg.hmmfile);
@@ -731,6 +734,23 @@ int main(int argc, char* argv[]) {
 
         std::sort(results.begin(), results.end());
         SaveResults(hmm, graph, cfg, results);
+
+        if (cfg.annotate_graph) {
+            std::unordered_set<std::vector<EdgeId>> unique_paths;
+            for (const auto &result : results){
+                if (result.path.size() == 0)
+                    continue;
+
+                unique_paths.insert(result.path);
+            }
+
+            for (const auto &path : unique_paths) {
+#               pragma omp critical
+                {
+                    gfa_paths.insert({ std::string(hmm.get()->name), path });
+                }
+            }
+        }
 
         if (cfg.rescore) {
             Rescore(hmm, graph, cfg, results);
@@ -747,8 +767,20 @@ int main(int argc, char* argv[]) {
         }
     } // end outer loop over query HMMs
 
-    INFO("Total " << to_rescore.size() << " paths to rescore");
-    ExportEdges(to_rescore, graph, cfg.output_dir + "/all.edges.fa");
+    if (cfg.rescore) {
+        INFO("Total " << to_rescore.size() << " paths to rescore");
+        ExportEdges(to_rescore, graph, cfg.output_dir + "/all.edges.fa");
+    }
+
+    if (cfg.annotate_graph) {
+        std::ofstream os(cfg.output_dir + "/graph_with_hmm_paths.gfa");
+        path_extend::GFAPathWriter gfa_writer(graph, os);
+        gfa_writer.WriteSegmentsAndLinks();
+
+        for (const auto& entry : gfa_paths) {
+            gfa_writer.WritePaths(entry.second, entry.first);
+        }
+    }
 
     return 0;
 }
