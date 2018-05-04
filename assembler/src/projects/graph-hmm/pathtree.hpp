@@ -5,10 +5,10 @@
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 
 #include <memory>
+#include <queue>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <queue>
 
 namespace pathtree {
 
@@ -39,8 +39,7 @@ template <class T>
 size_t ObjectCounter<T>::count_current_ = 0;
 
 template <typename T>
-class Node : public ObjectCounter<Node<T>>,
-             public llvm::RefCountedBase<Node<T>> {
+class Node : public ObjectCounter<Node<T>>, public llvm::RefCountedBase<Node<T>> {
   using This = Node<T>;
   using ThisRef = llvm::IntrusiveRefCntPtr<This>;
 
@@ -56,12 +55,9 @@ class Node : public ObjectCounter<Node<T>>,
     return result;
   }
 
-  Node(const T &payload, const ThisRef &parent = nullptr)
-      : payload_{payload}, parent_{parent} {}
+  Node(const T &payload, const ThisRef &parent = nullptr) : payload_{payload}, parent_{parent} {}
 
-  static ThisRef child(const T &payload, const ThisRef &parent = nullptr) {
-    return new This(payload, parent);
-  }
+  static ThisRef child(const T &payload, const ThisRef &parent = nullptr) { return new This(payload, parent); }
 
   const auto &payload() const { return payload_; }
 
@@ -70,7 +66,7 @@ class Node : public ObjectCounter<Node<T>>,
   ThisRef parent_;
 };
 
-template<class T>
+template <class T>
 using NodeRef = llvm::IntrusiveRefCntPtr<Node<T>>;
 
 template <typename T>
@@ -122,7 +118,8 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     assert(other->scores_.size());
     auto best = other->best_ancestor();
 
-    if (this->scores_.size() == 0 || this->score() > best->second.first + add_fee) {  // TODO the resultant scores_ should not be empty
+    if (this->scores_.size() == 0 ||
+        this->score() > best->second.first + add_fee) {  // TODO the resultant scores_ should not be empty
       this->scores_.clear();
       this->scores_[best->first] = {best->second.first + add_fee, best->second.second};
     }
@@ -158,19 +155,17 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     };
 
     std::unordered_map<const This *, TopScore> result;
-    std::unordered_map<const This *, std::unordered_set<This*>> forward;
+    std::unordered_map<const This *, std::unordered_set<This *>> forward;
 
     struct Comp {
-      bool operator()(const Payload &e1, const Payload &e2) const {
-        return e1.score > e2.score;
-      }
+      bool operator()(const Payload &e1, const Payload &e2) const { return e1.score > e2.score; }
     };
 
     std::priority_queue<Payload, std::vector<Payload>, Comp> q;
     for (const auto &kv : scores_) {
       This *p = kv.second.second.get();
       q.push({p, kv.second.first, this});
-      forward[p].insert(const_cast<This*>(this));
+      forward[p].insert(const_cast<This *>(this));
     }
 
     while (!q.empty()) {
@@ -190,7 +185,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       for (auto it = state->scores_.cbegin(); it != state->scores_.cend(); ++it) {
         score_t delta = it->second.first - best->second.first;
         This *p = it->second.second.get();
-        if (p) { // is not master source TODO make a method
+        if (p) {  // is not master source TODO make a method
           q.push({p, score + delta, state});
           forward[p].insert(const_cast<This *>(state));
         }
@@ -201,7 +196,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
   }
 
   auto exit_scores() const {
-    std::unordered_map<const This*, score_t> result;
+    std::unordered_map<const This *, score_t> result;
     for (const auto &kv : scores_) {
       result[kv.first] = kv.second.fisrt;
     }
@@ -265,9 +260,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     return result;
   }
 
-  bool check_all_states_have_children() const {
-    return states_without_children().size() == 0;
-  }
+  bool check_all_states_have_children() const { return states_without_children().size() == 0; }
 
   void clean_non_aggressive() {
     if (!check_all_states_have_children()) {
@@ -342,7 +335,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     assert(q.empty());
     // Remove collapsed states recursively
     for (This *p : collapsed) {
-      for (This * pp : forward[p]) {
+      for (This *pp : forward[p]) {
         q.push(pp);
       }
     }
@@ -366,7 +359,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       if (current->scores_.size() == 0) {
         TRACE("We collapse current state");
         collapsed.insert(current);
-        for (This * pp : forward[current]) {
+        for (This *pp : forward[current]) {
           q.push(pp);
         }
       }
@@ -413,7 +406,8 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
         auto best = p->best_ancestor();
         for (auto it = p->scores_.cbegin(); it != p->scores_.cend(); ++it) {
           double delta = it->second.first - best->second.first;
-          auto spt = make_child(std::make_tuple(it->first, cost + delta, const_cast<const This*>(it->second.second.get())), tail);
+          auto spt = make_child(
+              std::make_tuple(it->first, cost + delta, const_cast<const This *>(it->second.second.get())), tail);
           if (it != best) {
             q.push(spt);
           } else {
@@ -468,7 +462,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     }
 
     if (best == it_terminal) {
-      for (auto it = scores_.begin(); it != scores_.end(); ) {
+      for (auto it = scores_.begin(); it != scores_.end();) {
         if (!it->first.is_empty()) {
           it = scores_.erase(it);
         } else {
@@ -564,7 +558,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
   std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
 };
 
-template<class GraphCursor>
+template <class GraphCursor>
 using PathLinkRef = llvm::IntrusiveRefCntPtr<PathLink<GraphCursor>>;
 }  // namespace pathtree
 
