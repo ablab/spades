@@ -8,7 +8,7 @@ double levenshtein_substring_score(const std::string &s, const std::string &quer
   auto graph = Graph({s});
   auto result = find_best_path(fees, graph.all());
   auto paths = result.top_k(5);
-  return paths[0].second;
+  return paths[0].score;
 }
 
 TEST(LevenshteinZero, LEVENSHTEIN_SUBSTRING) {

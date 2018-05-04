@@ -371,7 +371,12 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     INFO(collapsed.size() << " states collapsed");
   }
 
-  std::vector<std::pair<std::vector<GraphCursor>, double>> top_k(size_t k) const {
+  struct AnnotatedPath {
+    std::vector<GraphCursor> path;
+    double score;
+  };
+
+  std::vector<AnnotatedPath> top_k(size_t k) const {
     using Payload = std::tuple<GraphCursor, double, const This *>;
     using Node = Node<Payload>;
     using SPT = NodeRef<Payload>;
@@ -381,7 +386,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       }
     };
     std::priority_queue<SPT, std::vector<SPT>, Comp> q;
-    auto extract_path = [&q]() {
+    auto extract_path = [&q]() -> AnnotatedPath {
       assert(!q.empty());
       SPT tail = q.top();
       q.pop();
@@ -425,10 +430,10 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
 
       std::reverse(path.begin(), path.end());
 
-      return std::make_pair(path, cost);
+      return AnnotatedPath{path, cost};
     };
 
-    std::vector<std::pair<std::vector<GraphCursor>, double>> result;
+    std::vector<AnnotatedPath> result;
     auto best = best_ancestor();
     if (best == scores_.end()) {
       return result;
@@ -565,6 +570,7 @@ using PathLinkRef = llvm::IntrusiveRefCntPtr<PathLink<GraphCursor>>;
 template <class GraphCursor>
 class PathSet {
  public:
+  using AnnotatedPath = typename pathtree::PathLink<GraphCursor>::AnnotatedPath;
   class path_container {
    public:
     path_container(const pathtree::PathLink<GraphCursor> &paths, size_t k) : paths_(paths.top_k(k)) {}
@@ -583,18 +589,18 @@ class PathSet {
       }
       return s;
     }
-    std::string str(size_t n) const { return str(paths_[n].first); }
+    std::string str(size_t n) const { return str(paths_[n].path); }
 
    private:
-    std::vector<std::pair<std::vector<GraphCursor>, double>> paths_;
+    std::vector<AnnotatedPath> paths_;
   };
 
   pathtree::PathLink<GraphCursor> &pathlink() { return pathlink_; }
   const pathtree::PathLink<GraphCursor> &pathlink() const { return pathlink_; }
 
   double best_score() const { return pathlink_.score(); }
-  std::vector<GraphCursor> best_path() const { return top_k(1)[0].first; }
-  std::string best_path_string() const { return path_container::str(best_path()); }
+  AnnotatedPath best_path() const { return top_k(1)[0]; }
+  std::string best_path_string() const { return path_container::str(best_path().path); }
 
   path_container top_k(size_t k) const { return path_container(pathlink_, k); }
 

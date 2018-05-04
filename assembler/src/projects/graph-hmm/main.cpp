@@ -585,9 +585,9 @@ void TraceHMM(const hmmer::HMM &hmm,
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
         size_t idx = 0;
-        for (const auto& kv : top_paths) {
-            auto seq = top_paths.str(kv.first);
-            local_results.emplace_back(p7hmm->name, e, idx++, kv.second, seq, to_path(kv.first));
+        for (const auto& annotated_path : top_paths) {
+            auto seq = top_paths.str(annotated_path.path);
+            local_results.emplace_back(p7hmm->name, e, idx++, annotated_path.score, seq, to_path(annotated_path.path));
         }
     };
 

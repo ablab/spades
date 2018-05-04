@@ -269,15 +269,15 @@ static int serial_master(const cfg &cfg) {
 
     std::ofstream ofs(cfg.output_dir + "/" + hmm->name + ".fa", std::ios::out);
     ofs.precision(13);
-    for (const auto &kv : top_paths) {
-      ofs << ">Score=" << kv.second << "\n";
-      ofs << kv.first << "\n";
+    for (const auto &annotated_path : top_paths) {
+      ofs << ">Score=" << annotated_path.score << "\n";
+      ofs << annotated_path.path << "\n";
     }
 
     if (cfg.debug) {
       INFO("Checking path presence in the initial graph");
       for (const auto gene_score : top_paths) {
-        auto path = graph.trace_exact_sequence(top_paths.str(gene_score.first));
+        auto path = graph.trace_exact_sequence(top_paths.str(gene_score.path));
         TRACE(path);
       }
 
@@ -285,9 +285,9 @@ static int serial_master(const cfg &cfg) {
       auto reversed_result = find_best_path_rev(fees.reversed(), rev_initial);
       auto top_reversed_paths = reversed_result.top_k(100);
 
-      for (const auto &kv : top_reversed_paths) {
-        ofs << ">Score=" << kv.second << "\n";
-        std::string seq = top_reversed_paths.str(kv.first);
+      for (const auto &annotated_path : top_reversed_paths) {
+        ofs << ">Score=" << annotated_path.score << "\n";
+        std::string seq = top_reversed_paths.str(annotated_path.path);
         std::reverse(ALL(seq));
         ofs << seq << "\n";
       }
@@ -301,9 +301,9 @@ static int serial_master(const cfg &cfg) {
 
       std::ofstream gene_ofs(cfg.output_dir + "/" + hmm->name + "_genes.fa", std::ios::out);
       gene_ofs.precision(13);
-      for (const auto &kv : top_paths) {
-        gene_ofs << ">Score=" << kv.second << "\n";
-        gene_ofs << kv.first << "\n";
+      for (const auto &annotated_path : top_paths) {
+        gene_ofs << ">Score=" << annotated_path.score << "\n";
+        gene_ofs << annotated_path.path << "\n";
       }
     }
 
