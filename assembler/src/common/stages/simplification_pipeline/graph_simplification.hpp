@@ -116,8 +116,9 @@ private:
         } else if (next_token_ == "rlmk") {
             //Read length minus k
             VERIFY_MSG(settings_.read_length() > g_.k(), "Read length was shorter than K");
-            DEBUG("Creating (rl - k) bound");
-            size_t length_bound = settings_.read_length() - g_.k();
+            double length_coeff = std::stod(ReadNext());
+            DEBUG("Creating (rl - k) bound. Multiplicative coefficient: " << length_coeff);
+            size_t length_bound = size_t(math::round(length_coeff * double(settings_.read_length() - g_.k())));
             RelaxMin(min_length_bound, length_bound);
             DEBUG("Min length bound - " << min_length_bound);
             return LengthUpperBound<Graph>(g_, length_bound);

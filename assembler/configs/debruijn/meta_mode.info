@@ -110,12 +110,17 @@ simp
 
     init_clean
     {
+        activation_cov  -1.
         early_it_only   false
+        ; it_config late
+
         ier
         {
             enabled true
         }
-        tip_condition   "{ rlmk, cb 1.2, mmm 2 }"
+        ;tip_condition   "loop -1 { rlmk 1., cb 1.2, mmm 2 } { lb 20, cb 3. }"
+        ;tip_condition   "{ rlmk 1., cb 1.2, mmm 2 } { lb 30, cb 1.1 } { lb 20, cb 2.1 } { lb 10, cb 3.1 }"
+        tip_condition   "{ rlmk 1., cb 1.2, mmm 2 } { lb 30, cb 1.1 } { lb 20, cb 2.1 }"
         ec_condition    "{ ec_lb 0, cb 0.9 }"
         disconnect_flank_cov    0.8
     }
