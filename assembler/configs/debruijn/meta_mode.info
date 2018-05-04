@@ -5,9 +5,6 @@ two_step_rr true
 ; enables/disables usage of intermediate contigs in two-step pipeline
 use_intermediate_contigs true
 
-;if true simple mismatches are corrected
-correct_mismatches          false
-
 ;flanking coverage range
 flanking_range 30
 

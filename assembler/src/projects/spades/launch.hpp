@@ -112,8 +112,8 @@ void assemble_genome() {
         SPAdes.add<debruijn_graph::GapClosing>("late_gapcloser");
 
     SPAdes.add<debruijn_graph::SimplificationCleanup>();
-    //currently cannot be used with two step rr
-    if (cfg::get().correct_mismatches && !two_step_rr)
+
+    if (cfg::get().correct_mismatches)
         SPAdes.add<debruijn_graph::MismatchCorrection>();
 
     if (cfg::get().rr_enable) {
