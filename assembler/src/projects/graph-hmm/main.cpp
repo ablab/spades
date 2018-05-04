@@ -442,6 +442,9 @@ template <typename Container>
 void ExportEdges(const Container &entries,
                  const debruijn_graph::ConjugateDeBruijnGraph &graph,
                  const std::string &filename) {
+    if (entries.size() == 0)
+        return;
+
     std::ofstream o(filename, std::ios::out);
 
     for (const auto &kv : EdgesToSequences(entries, graph)) {
@@ -480,8 +483,7 @@ struct HMMPathInfo {
 
 void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
                  const cfg &cfg,
-                 const std::vector<HMMPathInfo> &results,
-                 std::unordered_set<std::vector<EdgeId>> &to_rescore) {
+                 const std::vector<HMMPathInfo> &results) {
     P7_HMM *p7hmm = hmm.get();
 
     INFO("Total " << results.size() << " resultant paths extracted");
@@ -517,28 +519,38 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
                 }
             }
         }
-#pragma omp critical
-        {
-            to_rescore.insert(to_rescore_local.cbegin(), to_rescore_local.cend());
-        }
+    }
+}
+
+void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
+             const cfg &cfg,
+             const std::vector<HMMPathInfo> &results) {
+    P7_HMM *p7hmm = hmm.get();
+
+    std::unordered_set<std::vector<EdgeId>> to_rescore;
+
+    for (const auto &result : results) {
+        if (result.path.size() == 0)
+            continue;
+
+        to_rescore.insert(result.path);
     }
 
-    if (cfg.rescore && to_rescore_local.size()) {
-        INFO("Total " << to_rescore_local.size() << " local paths to rescore");
+    INFO("Total " << to_rescore.size() << " local paths to rescore");
 
-        ExportEdges(to_rescore_local, graph, cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
+    ExportEdges(to_rescore, graph, cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
 
-        std::vector<std::string> seqs_to_rescore;
-        std::vector<std::string> refs_to_rescore;
-        for (const auto &kv : EdgesToSequences(to_rescore_local, graph)) {
-            refs_to_rescore.push_back(kv.first);
-            seqs_to_rescore.push_back(kv.second);
-        }
-        auto matcher = score_sequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
-        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
-        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
-        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
+    std::vector<std::string> seqs_to_rescore;
+    std::vector<std::string> refs_to_rescore;
+    for (const auto &kv : EdgesToSequences(to_rescore, graph)) {
+        refs_to_rescore.push_back(kv.first);
+        seqs_to_rescore.push_back(kv.second);
     }
+
+    auto matcher = score_sequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
+    OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
+    OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
+    OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
 }
 
 void TraceHMM(const hmmer::HMM &hmm,
@@ -715,18 +727,28 @@ int main(int argc, char* argv[]) {
 
         std::vector<HMMPathInfo> results;
 
-        TraceHMM(hmm, graph, edges, cfg,
-                 results);
+        TraceHMM(hmm, graph, edges, cfg, results);
 
         std::sort(results.begin(), results.end());
-        SaveResults(hmm, graph, cfg,
-                    results, to_rescore);
+        SaveResults(hmm, graph, cfg, results);
+
+        if (cfg.rescore) {
+            Rescore(hmm, graph, cfg, results);
+
+            for (const auto &result : results) {
+                if (result.path.size() == 0)
+                    continue;
+
+#pragma omp critical
+                {
+                    to_rescore.insert(result.path);
+                }
+            }
+        }
     } // end outer loop over query HMMs
 
     INFO("Total " << to_rescore.size() << " paths to rescore");
-    if (cfg.rescore && to_rescore.size()) {
-        ExportEdges(to_rescore, graph, cfg.output_dir + "/all.edges.fa");
-    }
+    ExportEdges(to_rescore, graph, cfg.output_dir + "/all.edges.fa");
 
     return 0;
 }
