@@ -532,6 +532,137 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
     }
 }
 
+void TraceHMM(const hmmer::HMM &hmm,
+              const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
+              const cfg &cfg,
+              std::vector<HMMPathInfo> &results,
+              std::vector<std::pair<double, std::string>> &resultant_paths) {
+    P7_HMM *p7hmm = hmm.get();
+
+    if (fprintf(stdout, "Query:       %s  [M=%d]\n", p7hmm->name, p7hmm->M) < 0) FATAL_ERROR("write failed");
+    if (p7hmm->acc)  { if (fprintf(stdout, "Accession:   %s\n", p7hmm->acc)  < 0) FATAL_ERROR("write failed"); }
+    if (p7hmm->desc) { if (fprintf(stdout, "Description: %s\n", p7hmm->desc) < 0) FATAL_ERROR("write failed"); }
+
+    // Collect the neighbourhood of the matched edges
+    EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);  // hhmer is thread-safe
+    bool hmm_in_aas = hmm.abc()->K == 20;
+    Neighbourhoods neighbourhoods = ExtractNeighbourhoods(matched_edges, graph, (hmm_in_aas ? 6 : 2));
+
+    // See, whether we could join some components
+    INFO("Joining components");
+    neighbourhoods = join_components(neighbourhoods, matched_edges, graph);
+    INFO("Total unique neighbourhoods extracted " << neighbourhoods.size());
+
+    auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
+
+    auto run_search = [&](const auto &initial, EdgeId e, size_t top,
+                          std::vector<HMMPathInfo> &local_results,
+                          std::vector<std::pair<double, std::string>> &resultant_paths) {
+        auto result = find_best_path(fees, initial);
+
+        INFO("Best score: " << result.best_score());
+        INFO("Best of the best");
+        INFO(result.best_path_string());
+        INFO("Extracting top paths");
+        auto top_paths = result.top_k(top);
+        size_t idx = 0;
+        for (const auto& kv : top_paths) {
+            auto seq = top_paths.str(kv.first);
+            local_results.emplace_back(e, idx++, seq, to_path(kv.first));
+            resultant_paths.push_back({kv.second, seq});
+        }
+    };
+
+    std::vector<EdgeId> match_edges;
+    for (const auto &entry : matched_edges)
+        match_edges.push_back(entry.first);
+
+    for (const auto &kv : neighbourhoods) {
+        EdgeId e = kv.first;
+
+        INFO("Looking HMM path around " << e);
+        if (matched_edges[e].first <= 0 && matched_edges[e].second <= 0) {
+            INFO("Component has only single edge, do not run the algorithm");
+            results.emplace_back(e, 0, std::string(), std::vector<EdgeId>(1, e));
+            continue;
+        }
+
+        auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromVertices(graph,
+                                                                                         kv.second.begin(), kv.second.end(),
+                                                                                         true);
+        INFO("Neighbourhood vertices: " << component.v_size() << ", edges: " << component.e_size());
+
+        if (component.e_size()/2 > cfg.max_size) {
+            WARN("Component is too large (" << component.e_size() / 2 << " vs " << cfg.max_size << "), skipping");
+            continue;
+        }
+
+        if (cfg.draw) {
+            INFO("Writing component around edge " << e);
+            DrawComponent(component, graph, std::to_string(graph.int_id(e)), match_edges);
+        }
+
+        int coef = hmm_in_aas ? 3 : 1;
+        int loverhang = (matched_edges[e].first + 10) * coef; // TODO unify overhangs processing
+        int roverhang = (matched_edges[e].second + 10) * coef;
+
+        using GraphCursor = std::decay_t<decltype(all(component)[0])>;
+        std::vector<GraphCursor> neib_cursors;
+        if (loverhang > 0) {
+            GraphCursor start = get_cursor(component, e, 0);
+            auto left_cursors = impl::depth_subset(start, loverhang * 2, false);
+            neib_cursors.insert(neib_cursors.end(), left_cursors.cbegin(), left_cursors.cend());
+        }
+
+        size_t len = component.g().length(e) + component.g().k();
+        INFO("Edge length: " << len);
+        INFO("Edge overhangs: " << loverhang << " " << roverhang);
+        if (roverhang > 0) {
+            GraphCursor end = get_cursor(component, e, len - 1);
+            auto right_cursors = impl::depth_subset(end, roverhang * 2, true);
+            neib_cursors.insert(neib_cursors.end(), right_cursors.cbegin(), right_cursors.cend());
+        }
+
+        for (size_t i = std::max(0, -loverhang); i < len - std::max(0, -roverhang); ++i) {
+            neib_cursors.push_back(get_cursor(component, e, i));
+        }
+
+        // neib_cursors = all(component);
+
+        INFO("Running path search");
+        std::vector<HMMPathInfo> local_results;
+        std::vector<std::pair<double, std::string>> local_resultant_paths;
+
+        if (hmm_in_aas) {
+            run_search(make_aa_cursors(neib_cursors), e, cfg.top, local_results, local_resultant_paths);
+        } else {
+            run_search(neib_cursors, e, cfg.top, local_results, local_resultant_paths);
+        }
+
+        results.insert(results.end(), local_results.begin(), local_results.end());
+        resultant_paths.insert(resultant_paths.end(), local_resultant_paths.begin(), local_resultant_paths.end());
+
+        std::unordered_set<std::vector<EdgeId>> paths;
+        for (const auto& entry : local_results)
+            paths.insert(entry.path);
+        INFO("Total " << paths.size() << " unique edge paths extracted");
+
+        {
+            size_t idx = 0;
+            for (const auto &path : paths) {
+                INFO("Path length : " << path.size() << " edges");
+                for (EdgeId e : path)
+                    INFO("" << e.int_id());
+                if (cfg.draw) {
+                    INFO("Writing component around path");
+                    DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
+                }
+                idx += 1;
+            }
+        }
+    }
+}
+
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     utils::perf_counter pc;
@@ -577,132 +708,12 @@ int main(int argc, char* argv[]) {
     #pragma omp parallel for
     for (size_t _i = 0; _i < hmms.size(); ++_i) {
         const auto &hmm = hmms[_i];
-        P7_HMM *p7hmm = hmm.get();
-
-        if (fprintf(stdout, "Query:       %s  [M=%d]\n", p7hmm->name, p7hmm->M) < 0) FATAL_ERROR("write failed");
-        if (p7hmm->acc)  { if (fprintf(stdout, "Accession:   %s\n", p7hmm->acc)  < 0) FATAL_ERROR("write failed"); }
-        if (p7hmm->desc) { if (fprintf(stdout, "Description: %s\n", p7hmm->desc) < 0) FATAL_ERROR("write failed"); }
-
-        // Collect the neighbourhood of the matched edges
-        EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);  // hhmer is thread-safe
-        bool hmm_in_aas = hmm.abc()->K == 20;
-        Neighbourhoods neighbourhoods = ExtractNeighbourhoods(matched_edges, graph, (hmm_in_aas ? 6 : 2));
-
-        // See, whether we could join some components
-        INFO("Joining components")
-        neighbourhoods = join_components(neighbourhoods, matched_edges, graph);
-        INFO("Total unique neighbourhoods extracted " << neighbourhoods.size());
 
         std::vector<HMMPathInfo> results;
         std::vector<std::pair<double, std::string>> resultant_paths;
-        auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
 
-        auto run_search = [&](const auto &initial, EdgeId e, size_t top,
-                              std::vector<HMMPathInfo> &local_results,
-                              std::vector<std::pair<double, std::string>> &resultant_paths) {
-            auto result = find_best_path(fees, initial);
-
-            INFO("Best score: " << result.best_score());
-            INFO("Best of the best");
-            INFO(result.best_path_string());
-            INFO("Extracting top paths");
-            auto top_paths = result.top_k(top);
-            size_t idx = 0;
-            for (const auto& kv : top_paths) {
-                auto seq = top_paths.str(kv.first);
-                local_results.emplace_back(e, idx++, seq, to_path(kv.first));
-                resultant_paths.push_back({kv.second, seq});
-            }
-        };
-
-        std::vector<EdgeId> match_edges;
-        for (const auto &entry : matched_edges)
-            match_edges.push_back(entry.first);
-
-        for (const auto &kv : neighbourhoods) {
-            EdgeId e = kv.first;
-
-            INFO("Looking HMM path around " << e);
-            if (matched_edges[e].first <= 0 && matched_edges[e].second <= 0) {
-                INFO("Component has only single edge, do not run the algorithm");
-                results.emplace_back(e, 0, std::string(), std::vector<EdgeId>(1, e));
-                continue;
-            }
-
-            auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromVertices(graph,
-                                                                                             kv.second.begin(), kv.second.end(),
-                                                                                             true);
-            INFO("Neighbourhood vertices: " << component.v_size() << ", edges: " << component.e_size());
-
-            if (component.e_size()/2 > cfg.max_size) {
-                WARN("Component is too large (" << component.e_size() / 2 << " vs " << cfg.max_size << "), skipping");
-                continue;
-            }
-
-            if (cfg.draw) {
-                INFO("Writing component around edge " << e);
-                DrawComponent(component, graph, std::to_string(graph.int_id(e)), match_edges);
-            }
-
-            int coef = hmm_in_aas ? 3 : 1;
-            int loverhang = (matched_edges[e].first + 10) * coef; // TODO unify overhangs processing
-            int roverhang = (matched_edges[e].second + 10) * coef;
-
-            using GraphCursor = std::decay_t<decltype(all(component)[0])>;
-            std::vector<GraphCursor> neib_cursors;
-            if (loverhang > 0) {
-              GraphCursor start = get_cursor(component, e, 0);
-              auto left_cursors = impl::depth_subset(start, loverhang * 2, false);
-              neib_cursors.insert(neib_cursors.end(), left_cursors.cbegin(), left_cursors.cend());
-            }
-
-            size_t len = component.g().length(e) + component.g().k();
-            INFO("Edge length: " << len);
-            INFO("Edge overhangs: " << loverhang << " " << roverhang);
-            if (roverhang > 0) {
-              GraphCursor end = get_cursor(component, e, len - 1);
-              auto right_cursors = impl::depth_subset(end, roverhang * 2, true);
-              neib_cursors.insert(neib_cursors.end(), right_cursors.cbegin(), right_cursors.cend());
-            }
-
-            for (size_t i = std::max(0, -loverhang); i < len - std::max(0, -roverhang); ++i) {
-              neib_cursors.push_back(get_cursor(component, e, i));
-            }
-
-            // neib_cursors = all(component);
-
-            INFO("Running path search");
-            std::vector<HMMPathInfo> local_results;
-            std::vector<std::pair<double, std::string>> local_resultant_paths;
-
-            if (hmm_in_aas) {
-                run_search(make_aa_cursors(neib_cursors), e, cfg.top, local_results, local_resultant_paths);
-            } else {
-                run_search(neib_cursors, e, cfg.top, local_results, local_resultant_paths);
-            }
-
-            results.insert(results.end(), local_results.begin(), local_results.end());
-            resultant_paths.insert(resultant_paths.end(), local_resultant_paths.begin(), local_resultant_paths.end());
-
-            std::unordered_set<std::vector<EdgeId>> paths;
-            for (const auto& entry : local_results)
-                paths.insert(entry.path);
-            INFO("Total " << paths.size() << " unique edge paths extracted");
-
-            {
-                size_t idx = 0;
-                for (const auto &path : paths) {
-                    INFO("Path length : " << path.size() << " edges");
-                    for (EdgeId e : path)
-                        INFO("" << e.int_id());
-                    if (cfg.draw) {
-                        INFO("Writing component around path");
-                        DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
-                    }
-                    idx += 1;
-                }
-            }
-        }
+        TraceHMM(hmm, graph, edges, cfg,
+                 results, resultant_paths);
 
         std::sort(resultant_paths.begin(), resultant_paths.end());
         SaveResults(hmm, graph, cfg,
