@@ -413,3 +413,5 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 }
 
 }  // namespace impl
+
+// vim: set ts=2 tw=2 et :
