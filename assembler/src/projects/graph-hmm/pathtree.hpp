@@ -603,3 +603,5 @@ class PathSet {
  private:
   pathtree::PathLink<GraphCursor> pathlink_;
 };
+
+// vim: set ts=2 tw=2 et :
