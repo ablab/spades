@@ -504,7 +504,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
                 for (const auto &result : results) {
                     if (result.seq.size() == 0)
                         continue;
-                    o << ">Score=" << result.score << "|Alignment=" << result.alignment << '\n';
+                    o << ">Score=" << result.score << "|Edges=" << join(result.path) << "|Alignment=" << result.alignment << '\n';
                     io::WriteWrapped(result.seq, o);
                 }
             }
