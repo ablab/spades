@@ -29,8 +29,24 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
  public:
   void set_event(size_t m, EventType type) {
     for (auto &kv : *this) {
-      kv.second->event = {static_cast<unsigned int>(m), type};
+      if (!kv.first.is_empty()) {
+        kv.second->event = {static_cast<unsigned int>(m), type};
+      }
     }
+  }
+
+  bool check_events() const {
+    for (const auto &kv : *this) {
+      if (!kv.first.is_empty() && kv.second->event.type == EventType::NONE) {
+        ERROR("None event on position " << kv.first);
+        return false;
+      }
+      if (kv.first.is_empty() && kv.second->event.type != EventType::NONE) {
+        ERROR("Nontrivial event on empty cursor position " << kv.first);
+        return false;
+      }
+    }
+    return true;
   }
 
   const PathLinkRef<GraphCursor> &get_or_create(const GraphCursor &key) {
@@ -187,9 +203,11 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     for (const auto &kv : I) {
       updated.insert(kv.first);
     }
+    I.set_event(m, EventType::INSERTION);
     StateSet Inew = I.clone();
     for (size_t i = 0; i < max_insertions; ++i) {
       updated = transfer_upd(Inew, I, fees.t[m][p7H_II], fees.ins[m], "o", updated);
+      Inew.set_event(m, EventType::INSERTION);
       TRACE(updated.size() << " items updated");
       for (const auto &cur : updated) {
         I[cur] = Inew[cur]->clone();  // TODO Implement minor updation detection
@@ -374,6 +392,10 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
       INFO("Step #: " << m);
       INFO("# states " << m << " => " << n_of_states << ": I = " << I.size() << " M = " << M.size() << " D = " << D.size());
     }
+
+    I.set_event(m, EventType::INSERTION);
+    M.set_event(m, EventType::MATCH);
+
     I.filter(top, absolute_threshold);
     M.filter(top, absolute_threshold);
     D.filter(top, absolute_threshold);
@@ -388,8 +410,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     neighbourhood_filtered += M.filter(neighbourhood_filter_pair);
     neighbourhood_filtered += D.filter(neighbourhood_filter_pair);
 
-    I.set_event(m, EventType::INSERTION);
-    M.set_event(m, EventType::MATCH);
 
     if (m >= n) {
       INFO("depth-filtered " << depth_filtered << ", positions left = " << positions_left << " states m = " << m);

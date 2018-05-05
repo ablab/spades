@@ -10,7 +10,7 @@
 #include <unordered_set>
 #include <vector>
 
-enum class EventType { MATCH, INSERTION };
+enum class EventType { NONE, MATCH, INSERTION };
 
 namespace pathtree {
 
@@ -129,12 +129,18 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
         this->score() > best->second.first + add_fee) {  // TODO the resultant scores_ should not be empty
       this->scores_.clear();
       this->scores_[best->first] = {best->second.first + add_fee, best->second.second};
+
+      this->event = other->event;
     }
 
     assert(scores_.size());
   }
 
   void merge_update(const This *other, double add_fee = 0) {
+    if (this->scores_.size() == 0 || this->score() > other->score() + add_fee) {
+      this->event = other->event;
+    }
+
     for (const auto &kv : other->scores_) {
       update(kv.first, kv.second.first + add_fee, kv.second.second);
     }
@@ -411,11 +417,11 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
 
       while (p) {
         auto new_tail = tail;
-        // p->clean_left_link_();
         auto best = p->best_ancestor();
         for (auto it = p->scores_.cbegin(); it != p->scores_.cend(); ++it) {
           double delta = it->second.first - best->second.first;
           auto spt = make_child<Payload>({it->first, cost + delta, const_cast<const This *>(it->second.second.get())}, tail);
+          assert(spt->payload().gp.is_empty() == (spt->payload().p->event.type == EventType::NONE));
           if (it != best) {
             q.push(spt);
           } else {
@@ -431,12 +437,14 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       }
 
       std::vector<GraphCursor> path;
+      std::vector<Event> events;
 
       for (const auto &tpl : tail->collect()) {
         path.push_back(tpl.gp);
+        events.push_back(tpl.p->event);
       }
 
-      return AnnotatedPath{path, cost, {}};
+      return AnnotatedPath{path, cost, events};
     };
 
     std::vector<AnnotatedPath> result;
@@ -596,7 +604,34 @@ class PathSet {
       }
       return s;
     }
+
+    static std::string event_str(const AnnotatedPath &apath) {
+      std::string s;
+      size_t prev_position = 0;
+      assert(apath.path.size() == apath.events.size());
+      for (size_t i = 0; i < apath.path.size(); ++i) {
+        if (apath.path[i].is_empty()) {
+          // assert(apath.events[i].type == EventType::NONE);
+          continue;
+        };
+
+        if (apath.events[i].type == EventType::NONE) {
+          ERROR("Position: " << i);
+          ERROR("Path: " << str(apath.path));
+          ERROR("Alignment:" << s);
+        }
+        assert(apath.events[i].type != EventType::NONE);
+        for (size_t j = prev_position + 1; j< apath.events[i].m; ++j) {
+          s += '-';
+        }
+        prev_position = apath.events[i].m;
+        s += apath.events[i].type == EventType::MATCH ? 'M' : 'I';
+      }
+      return s;
+    }
+
     std::string str(size_t n) const { return str(paths_[n].path); }
+    std::string event_str(size_t n) const { return event_str(paths_[n]); }
 
    private:
     std::vector<AnnotatedPath> paths_;
