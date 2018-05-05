@@ -27,6 +27,12 @@ using pathtree::PathLinkRef;
 template <typename GraphCursor>
 class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>> {
  public:
+  void set_event(unsigned int m, EventType type) {
+    for (auto &kv : *this) {
+      kv.second->event  = {m, type};
+    }
+  }
+
   const PathLinkRef<GraphCursor> &get_or_create(const GraphCursor &key) {
     return this->insert({key, new PathLink<GraphCursor>()}).first->second;
   }
@@ -335,6 +341,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0], "i");
   i_loop_processing(I, 0, depth_and_neib_filter_cursor);  // Do we really need I at the beginning???
+  I.set_event(0, EventType::INSERTION);
   size_t n = 1;
   for (size_t m = 1; m <= fees.M; ++m) {
     positions_left = fees.M - m;
@@ -380,6 +387,10 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     neighbourhood_filtered += I.filter(neighbourhood_filter_pair);
     neighbourhood_filtered += M.filter(neighbourhood_filter_pair);
     neighbourhood_filtered += D.filter(neighbourhood_filter_pair);
+
+    I.set_event(m, EventType::INSERTION);
+    M.set_event(m, EventType::MATCH);
+
     if (m >= n) {
       INFO("depth-filtered " << depth_filtered << ", positions left = " << positions_left << " states m = " << m);
       INFO("neighbourhood-filtered " << neighbourhood_filtered);
