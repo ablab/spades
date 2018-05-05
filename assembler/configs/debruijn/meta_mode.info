@@ -56,6 +56,7 @@ simp
     {
         enabled true
         diff_mult  5.
+        unconditional_diff_mult 50.
     }
 
     ; bulge remover:
@@ -140,6 +141,7 @@ preliminary_simp
     {
         enabled false
         diff_mult  10.
+        unconditional_diff_mult 100.
     }
 }
 
