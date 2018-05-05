@@ -589,7 +589,11 @@ void TraceHMM(const hmmer::HMM &hmm,
         size_t idx = 0;
         for (const auto& annotated_path : top_paths) {
             auto seq = top_paths.str(annotated_path.path);
-            local_results.emplace_back(p7hmm->name, e, idx++, annotated_path.score, seq, to_path(annotated_path.path));
+            auto edge_path = to_path(annotated_path.path);
+            if (edge_path.size() == 0)
+                continue;
+
+            local_results.emplace_back(p7hmm->name, e, idx++, annotated_path.score, seq, std::move(edge_path));
         }
     };
 
