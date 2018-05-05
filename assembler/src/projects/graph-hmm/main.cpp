@@ -43,6 +43,17 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
+template <typename T>
+std::string join(const std::vector<T> &v, const std::string &sep = "_") {
+    std::stringstream ss;
+    for (size_t i = 0; i < v.size(); ++i) {
+        ss << v[i];
+        if (i != v.size() - 1) ss << sep;
+    }
+
+    return ss.str();
+}
+
 struct cfg {
     std::string load_from;
     std::string hmmfile;
@@ -426,14 +437,9 @@ auto EdgesToSequences(const Container &entries,
                       const debruijn_graph::ConjugateDeBruijnGraph &graph) {
     std::vector<std::pair<std::string, std::string>> ids_n_seqs;
     for (const auto &entry : entries) {
-        std::stringstream id;
-        for (size_t i = 0; i < entry.size(); ++i) {
-            id << entry[i];
-            if (i != entry.size() - 1)
-                id << "_";
-        }
+        std::string id = join(entry);
         std::string seq = MergeSequences(graph, entry).str();
-        ids_n_seqs.push_back({id.str(), seq});
+        ids_n_seqs.push_back({id, seq});
     }
 
     std::sort(ids_n_seqs.begin(), ids_n_seqs.end());
