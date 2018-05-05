@@ -591,7 +591,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
         if (!top_paths.empty()) {
-          INFO("Best of the best");
+          INFO("Best sequence in the current component");
           INFO(top_paths.str(0));
         }
         size_t idx = 0;
