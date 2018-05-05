@@ -593,6 +593,7 @@ class PathSet {
     auto begin() const { return paths_.begin(); }
     auto end() const { return paths_.end(); }
     size_t size() const { return paths_.size(); }
+    bool empty() const { return paths_.empty(); }
     auto operator[](size_t n) const { return paths_[n]; }
 
     static std::string str(const std::vector<GraphCursor> &path) {
