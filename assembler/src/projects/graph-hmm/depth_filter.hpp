@@ -68,6 +68,8 @@ class DepthAtLeast {
   };
 
  public:
+  const size_t STACK_LIMIT = 50000;
+
   bool depth_at_least(const GraphCursor &cursor, double d) {
     if (d <= 0) {
       return true;
@@ -82,11 +84,16 @@ class DepthAtLeast {
       }
     }
 
-    std::unordered_set<GraphCursor> stack;
     const double coef = 2.0;
     size_t stack_limit = static_cast<size_t>(coef * d);
     stack_limit = std::max<size_t>(stack_limit, 10);
+
+    assert(stack_limit >= d);
+    assert(stack_limit <= STACK_LIMIT);
+
+    std::unordered_set<GraphCursor> stack;
     get_depth_(cursor, stack, stack_limit);
+    assert(stack.empty());
 
     assert(depth_.count(cursor));
     return depth_at_least(cursor, d);
@@ -99,8 +106,6 @@ class DepthAtLeast {
   size_t max_stack_size_ = 0;
 
   Estimation get_depth_(const GraphCursor &cursor, std::unordered_set<GraphCursor> &stack, size_t stack_limit) {
-    assert(stack_limit < 100000);
-
     if (cursor.is_empty()) {
       return depth_[cursor] = {std::numeric_limits<double>::infinity(), true};
     }

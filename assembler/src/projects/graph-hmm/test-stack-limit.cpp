@@ -8,7 +8,10 @@ TEST(DepthAtLeast, Depth) {
     auto graph = Graph({s});
     impl::DepthAtLeast<Graph::GraphCursor> depthAtLeast;
     auto cursor = graph.begins()[0];
-    EXPECT_TRUE(depthAtLeast.depth_at_least(cursor, std::min<int>(n, 9999)));
+    EXPECT_TRUE(depthAtLeast.depth_at_least(cursor, std::min<size_t>(n, depthAtLeast.STACK_LIMIT / 2)));
+    if (n < depthAtLeast.STACK_LIMIT / 2) {
+      EXPECT_FALSE(depthAtLeast.depth_at_least(cursor, n + 1));
+    }
   }
 }
 
