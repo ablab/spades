@@ -409,14 +409,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
 
       TRACE("Extracting path with cost " << cost);
 
-      std::vector<GraphCursor> path;
-
-      for (const auto &tpl : tail->collect()) {
-        path.push_back(tpl.gp);
-      }
-
-      std::reverse(path.begin(), path.end());
-
       while (p) {
         auto new_tail = tail;
         // p->clean_left_link_();
@@ -430,7 +422,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
             new_tail = spt;
           }
         }
-        path.push_back(best->first);
         p = best->second.second.get();
         tail = new_tail;
 
@@ -439,7 +430,11 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
         }
       }
 
-      std::reverse(path.begin(), path.end());
+      std::vector<GraphCursor> path;
+
+      for (const auto &tpl : tail->collect()) {
+        path.push_back(tpl.gp);
+      }
 
       return AnnotatedPath{path, cost, {}};
     };
