@@ -10,7 +10,14 @@
 #include <unordered_set>
 #include <vector>
 
+enum class EventType { MATCH, INSERTION };
+
 namespace pathtree {
+
+struct Event {
+  unsigned int m;  // We do not need size_t here
+  EventType type;
+};
 
 template <class T>
 class ObjectCounter {
@@ -374,15 +381,21 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
   struct AnnotatedPath {
     std::vector<GraphCursor> path;
     double score;
+    std::vector<Event> events;
   };
 
   std::vector<AnnotatedPath> top_k(size_t k) const {
-    using Payload = std::tuple<GraphCursor, double, const This *>;
+    // using Payload = std::tuple<GraphCursor, double, const This *>;
+    struct Payload {
+      GraphCursor gp;
+      double cost;
+      const This *p;
+    };
     using Node = Node<Payload>;
     using SPT = NodeRef<Payload>;
     struct Comp {
       bool operator()(const SPT &e1, const SPT &e2) const {
-        return std::get<1>(e1->payload()) > std::get<1>(e2->payload());
+        return e1->payload().cost> e2->payload().cost;
       }
     };
     std::priority_queue<SPT, std::vector<SPT>, Comp> q;
@@ -390,17 +403,16 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
       assert(!q.empty());
       SPT tail = q.top();
       q.pop();
-      GraphCursor gp;
-      const This *p;
-      double cost;
-      std::tie(gp, cost, p) = tail->payload();
+      // GraphCursor gp;
+      const This *p = tail->payload().p;
+      double cost = tail->payload().cost;
 
       TRACE("Extracting path with cost " << cost);
 
       std::vector<GraphCursor> path;
 
       for (const auto &tpl : tail->collect()) {
-        path.push_back(std::get<GraphCursor>(tpl));
+        path.push_back(tpl.gp);
       }
 
       std::reverse(path.begin(), path.end());
@@ -411,8 +423,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
         auto best = p->best_ancestor();
         for (auto it = p->scores_.cbegin(); it != p->scores_.cend(); ++it) {
           double delta = it->second.first - best->second.first;
-          auto spt = make_child(
-              std::make_tuple(it->first, cost + delta, const_cast<const This *>(it->second.second.get())), tail);
+          auto spt = make_child<Payload>({it->first, cost + delta, const_cast<const This *>(it->second.second.get())}, tail);
           if (it != best) {
             q.push(spt);
           } else {
@@ -430,7 +441,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
 
       std::reverse(path.begin(), path.end());
 
-      return AnnotatedPath{path, cost};
+      return AnnotatedPath{path, cost, {}};
     };
 
     std::vector<AnnotatedPath> result;
@@ -441,7 +452,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     }
 
     double best_score = best->second.first;
-    auto initial = make_child(std::make_tuple(GraphCursor(), best_score, this));
+    auto initial = make_child<Payload>({GraphCursor(), best_score, this});
     q.push(initial);
 
     for (size_t i = 0; i < k && !q.empty(); ++i) {
@@ -559,6 +570,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
 
   ThisRef clone() const { return new This(*this); }
 
+  Event event;
  private:
   std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
 };
