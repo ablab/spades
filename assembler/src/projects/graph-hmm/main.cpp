@@ -495,7 +495,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
     if (cfg.save) {
         if (results.size()) {
             {
-                std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".paths.fa", std::ios::out);
+                std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".seqs.fa", std::ios::out);
                 for (const auto &result : results) {
                     if (result.seq.size() == 0)
                         continue;
