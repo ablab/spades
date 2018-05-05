@@ -414,7 +414,7 @@ void RawSimplification::run(conj_graph_pack &gp, const char*) {
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 
     GraphSimplifier simplifier(gp, CreateInfoContainer(gp),
-                               cfg::get().simp,
+                               preliminary_ ? *cfg::get().preliminary_simp : cfg::get().simp,
                                nullptr/*removal_handler_f*/,
                                printer);
     simplifier.InitialCleaning();

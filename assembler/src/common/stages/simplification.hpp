@@ -12,9 +12,13 @@
 namespace debruijn_graph {
 
 class RawSimplification : public spades::AssemblyStage {
+    //TODO this is a dirty hack to get a different behavior for last meta iteration!
+    //Has nothing to do with two-step concept...
+    const bool preliminary_;
 public:
-    RawSimplification()
-            : AssemblyStage("Raw Simplification", "raw_simplification") { }
+    RawSimplification(bool preliminary = false)
+            : AssemblyStage("Raw Simplification", "raw_simplification"),
+              preliminary_(preliminary) { }
 
     void run(conj_graph_pack &gp, const char *);
 };
