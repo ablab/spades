@@ -609,12 +609,6 @@ void TraceHMM(const hmmer::HMM &hmm,
         EdgeId e = kv.first;
 
         INFO("Looking HMM path around " << e);
-        if (matched_edges[e].first <= 0 && matched_edges[e].second <= 0) {
-            INFO("Component has only single edge, will not run full path tracer");
-            results.emplace_back(p7hmm->name, e, 0, 0, std::string(), std::vector<EdgeId>(1, e), "");
-            continue;
-        }
-
         auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromVertices(graph,
                                                                                          kv.second.begin(), kv.second.end(),
                                                                                          true);
