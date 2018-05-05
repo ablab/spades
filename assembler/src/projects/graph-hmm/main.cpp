@@ -626,7 +626,7 @@ void TraceHMM(const hmmer::HMM &hmm,
 
         if (cfg.draw) {
             INFO("Writing component around edge " << e);
-            DrawComponent(component, graph, std::to_string(graph.int_id(e)), match_edges);
+            DrawComponent(component, graph, cfg.output_dir + "/" + std::to_string(graph.int_id(e)), match_edges);
         }
 
         int coef = hmm_in_aas ? 3 : 1;
@@ -680,7 +680,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                     INFO("" << e.int_id());
                 if (cfg.draw) {
                     INFO("Writing component around path");
-                    DrawComponent(component, graph, std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
+                    DrawComponent(component, graph, cfg.output_dir + "/" + std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
                 }
                 idx += 1;
             }
