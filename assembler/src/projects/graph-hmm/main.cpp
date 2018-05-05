@@ -268,7 +268,6 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
                          const hmmer::HMM &hmm, const cfg &cfg) {
     std::vector<std::string> seqs;
     for (size_t i = 0; i < edges.size(); ++i) {
-        std::string ref = std::to_string(i);
         seqs.push_back(graph.EdgeNucls(edges[i]).str());
     }
     auto matcher = ScoreSequences(seqs, {}, hmm, cfg);
