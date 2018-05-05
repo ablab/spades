@@ -606,7 +606,7 @@ void TraceHMM(const hmmer::HMM &hmm,
 
         INFO("Looking HMM path around " << e);
         if (matched_edges[e].first <= 0 && matched_edges[e].second <= 0) {
-            INFO("Component has only single edge, do not run the algorithm");
+            INFO("Component has only single edge, will not run full path tracer");
             results.emplace_back(p7hmm->name, e, 0, 0, std::string(), std::vector<EdgeId>(1, e));
             continue;
         }
@@ -741,17 +741,14 @@ int main(int argc, char* argv[]) {
 
         if (cfg.annotate_graph) {
             std::unordered_set<std::vector<EdgeId>> unique_paths;
-            for (const auto &result : results){
-                if (result.path.size() == 0)
-                    continue;
-
+            for (const auto &result : results)
                 unique_paths.insert(result.path);
-            }
 
+            size_t idx = 0;
             for (const auto &path : unique_paths) {
 #               pragma omp critical
                 {
-                    gfa_paths.insert({ std::string(hmm.get()->name), path });
+                    gfa_paths.insert({ std::string(hmm.get()->name) + "_" + std::to_string(idx++), path });
                 }
             }
         }
@@ -760,9 +757,6 @@ int main(int argc, char* argv[]) {
             Rescore(hmm, graph, cfg, results);
 
             for (const auto &result : results) {
-                if (result.path.size() == 0)
-                    continue;
-
 #pragma omp critical
                 {
                     to_rescore.insert(result.path);
@@ -777,7 +771,9 @@ int main(int argc, char* argv[]) {
     }
 
     if (cfg.annotate_graph) {
-        std::ofstream os(cfg.output_dir + "/graph_with_hmm_paths.gfa");
+        std::string fname = cfg.output_dir + "/graph_with_hmm_paths.gfa";
+        INFO("Saving annotated graph to " << fname)
+        std::ofstream os(fname);
         path_extend::GFAPathWriter gfa_writer(graph, os);
         gfa_writer.WriteSegmentsAndLinks();
 
