@@ -589,6 +589,8 @@ void TraceHMM(const hmmer::HMM &hmm,
         size_t idx = 0;
         for (const auto& annotated_path : top_paths) {
             auto seq = top_paths.str(annotated_path.path);
+            auto event_str = top_paths.event_str(annotated_path);
+            INFO(event_str);
             auto edge_path = to_path(annotated_path.path);
             if (edge_path.size() == 0)
                 continue;
