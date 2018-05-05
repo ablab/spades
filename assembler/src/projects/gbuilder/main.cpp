@@ -99,6 +99,13 @@ int main(int argc, char* argv[]) {
 
         INFO("Starting SPAdes standalone graph builder, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
 
+        if (k < runtime_k::MIN_K)
+            FATAL_ERROR("k-mer size " << k << " is too low");
+        if (k >= runtime_k::MAX_K)
+            FATAL_ERROR("k-mer size " << k << " is too high, recompile with larger SPADES_MAX_K option");
+        if (k % 2 == 0)
+            FATAL_ERROR("k-mer size must be odd");
+
         INFO("K-mer length set to " << k);
         switch (cfg.mode) {
             case output_type::unitigs:
