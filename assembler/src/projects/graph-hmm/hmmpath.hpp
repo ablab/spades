@@ -27,9 +27,9 @@ using pathtree::PathLinkRef;
 template <typename GraphCursor>
 class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>> {
  public:
-  void set_event(unsigned int m, EventType type) {
+  void set_event(size_t m, EventType type) {
     for (auto &kv : *this) {
-      kv.second->event  = {m, type};
+      kv.second->event = {static_cast<unsigned int>(m), type};
     }
   }
 
