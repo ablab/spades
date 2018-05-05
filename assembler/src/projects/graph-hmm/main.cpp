@@ -473,14 +473,15 @@ struct HMMPathInfo {
     double score;
     std::string seq;
     std::vector<EdgeId> path;
+    std::string alignment;
 
     bool operator<(const HMMPathInfo &that) const {
         return score < that.score;
     }
 
-    HMMPathInfo(std::string name, EdgeId e, unsigned prio, double sc, std::string s, std::vector<EdgeId> p)
+    HMMPathInfo(std::string name, EdgeId e, unsigned prio, double sc, std::string s, std::vector<EdgeId> p, std::string alignment)
             : hmmname(std::move(name)), leader(e), priority(prio), score(sc),
-              seq(std::move(s)), path(std::move(p)) {}
+              seq(std::move(s)), path(std::move(p)), alignment(std::move(alignment)) {}
 };
 
 void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
@@ -498,7 +499,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
                 for (const auto &result : results) {
                     if (result.seq.size() == 0)
                         continue;
-                    o << ">Score_" << result.score << '\n';
+                    o << ">Score=" << result.score << "|Alignment=" << result.alignment << '\n';
                     io::WriteWrapped(result.seq, o);
                 }
             }
@@ -582,20 +583,21 @@ void TraceHMM(const hmmer::HMM &hmm,
         auto result = find_best_path(fees, initial);
 
         INFO("Best score: " << result.best_score());
-        INFO("Best of the best");
-        INFO(result.best_path_string());
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
+        if (!top_paths.empty()) {
+          INFO("Best of the best");
+          INFO(top_paths.str(0));
+        }
         size_t idx = 0;
         for (const auto& annotated_path : top_paths) {
             auto seq = top_paths.str(annotated_path.path);
-            auto event_str = top_paths.event_str(annotated_path);
-            INFO(event_str);
+            auto alignment = top_paths.event_str(annotated_path);
             auto edge_path = to_path(annotated_path.path);
             if (edge_path.size() == 0)
                 continue;
 
-            local_results.emplace_back(p7hmm->name, e, idx++, annotated_path.score, seq, std::move(edge_path));
+            local_results.emplace_back(p7hmm->name, e, idx++, annotated_path.score, seq, std::move(edge_path), std::move(alignment));
         }
     };
 
@@ -609,7 +611,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         INFO("Looking HMM path around " << e);
         if (matched_edges[e].first <= 0 && matched_edges[e].second <= 0) {
             INFO("Component has only single edge, will not run full path tracer");
-            results.emplace_back(p7hmm->name, e, 0, 0, std::string(), std::vector<EdgeId>(1, e));
+            results.emplace_back(p7hmm->name, e, 0, 0, std::string(), std::vector<EdgeId>(1, e), "");
             continue;
         }
 
@@ -748,7 +750,7 @@ int main(int argc, char* argv[]) {
 
             size_t idx = 0;
             for (const auto &path : unique_paths) {
-#               pragma omp critical
+                #pragma omp critical
                 {
                     gfa_paths.insert({ std::string(hmm.get()->name) + "_" + std::to_string(idx++), path });
                 }
@@ -759,7 +761,7 @@ int main(int argc, char* argv[]) {
             Rescore(hmm, graph, cfg, results);
 
             for (const auto &result : results) {
-#pragma omp critical
+                #pragma omp critical
                 {
                     to_rescore.insert(result.path);
                 }
