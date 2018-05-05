@@ -194,9 +194,9 @@ using debruijn_graph::ConjugateDeBruijnGraph;
 using EdgeAlnInfo = std::unordered_map<EdgeId, std::pair<int, int>>;
 
 
-auto score_sequences(const std::vector<std::string> &seqs,
-                     const std::vector<std::string> &refs,
-                     const hmmer::HMM &hmm, const cfg &cfg) {
+auto ScoreSequences(const std::vector<std::string> &seqs,
+                    const std::vector<std::string> &refs,
+                    const hmmer::HMM &hmm, const cfg &cfg) {
     bool hmm_in_aas = hmm.abc()->K == 20;
     hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
 
@@ -271,7 +271,7 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
         std::string ref = std::to_string(i);
         seqs.push_back(graph.EdgeNucls(edges[i]).str());
     }
-    auto matcher = score_sequences(seqs, {}, hmm, cfg);
+    auto matcher = ScoreSequences(seqs, {}, hmm, cfg);
 
     auto match_edges = get_matched_edges(edges, matcher, cfg);
 
@@ -556,7 +556,7 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
         seqs_to_rescore.push_back(kv.second);
     }
 
-    auto matcher = score_sequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
+    auto matcher = ScoreSequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
     OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
     OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
     OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
