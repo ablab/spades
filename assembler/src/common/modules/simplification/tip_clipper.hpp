@@ -105,12 +105,13 @@ class MismatchTipCondition : public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
-    size_t max_diff_;
+    double max_diff_;
 
     size_t Hamming(EdgeId edge1, EdgeId edge2) const {
         size_t cnt = 0;
         Sequence seq1 = this->g().EdgeNucls(edge1);
         Sequence seq2 = this->g().EdgeNucls(edge2);
+        VERIFY(seq1.size() < seq2.size());
         size_t len = std::min(seq1.size(), seq2.size());
         for(size_t i = this->g().k(); i < len; i++) {
             if(seq1[i] != seq2[i])
@@ -122,16 +123,21 @@ class MismatchTipCondition : public EdgeCondition<Graph> {
     bool InnerCheck(EdgeId e) const {
         size_t len = this->g().length(e);
         for (auto alt : this->g().OutgoingEdges(this->g().EdgeStart(e))) {
-            if (e != alt && len < this->g().length(alt) && Hamming(e, alt) <= max_diff_) {
-                return true;
+            if (e != alt && len < this->g().length(alt)) {
+                auto diff_bound = math::ge(max_diff_, 1.) ? max_diff_ : max_diff_ * double(len);
+                if (Hamming(e, alt) <= size_t(math::round(diff_bound)))
+                    return true;
             }
         }
         return false;
     }
 
 public:
-    MismatchTipCondition(const Graph& g, size_t max_diff) : 
+    //if max_diff >= 1 -- rounded and taken as absolute bound
+    //if max_diff < 1 -- taken as fraction
+    MismatchTipCondition(const Graph& g, double max_diff) :
         base(g), max_diff_(max_diff) {
+        VERIFY_MSG(math::ge(max_diff, 0.), "Can not be negative");
     }
 
     bool Check(EdgeId e) const override {

@@ -181,7 +181,8 @@ public:
                     "Initial isolated edge remover");
         }
 
-        algo.Run();
+        //Currently need force_primary_launch = true for correct behavior of looped TipClipper
+        algo.Run(/*force primary launch*/true);
 
         if (info_container_.mode() == config::pipeline_type::rna) {
             RemoveHiddenLoopEC(g_, gp_.flanking_cov, info_container_.detected_coverage_bound(),

@@ -130,9 +130,7 @@ preliminary_simp
 {
     init_clean
     {
-        ;tip_condition   "loop -1 { rlmk 1., cb 1.2, mmm 2 } { lb 20, cb 3. }"
-        ;tip_condition   "{ rlmk 1., cb 1.2, mmm 2 } { lb 30, cb 1.1 } { lb 20, cb 2.1 } { lb 10, cb 3.1 }"
-        tip_condition   "{ rlmk 1., cb 1.2, mmm 2 } { lb 30, cb 1.1 } { lb 20, cb 2.1 }"
+        tip_condition   "loop 2 { rlmk 1., cb 1.2, mmm 2 } { rlmk 1., cb 1.2, mmm 0.05 } { rl 0.2, cb 1.2 }"
         ec_condition    "{ ec_lb 0, cb 0.9 }"
         disconnect_flank_cov    0.8
     }
