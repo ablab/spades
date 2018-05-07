@@ -6,7 +6,7 @@
 
 #include "io/dataset_support/read_converter.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
-#include "io/reads/osequencestream.hpp"
+#include "io/graph/gfa_reader.hpp"
 
 #include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
@@ -14,15 +14,15 @@
 #include "projects/mts/contig_abundance.hpp"
 #include "projects/spades/series_analysis.hpp"
 
-#include "utils/stl_utils.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 
+#include <clipp/clipp.h>
+
 #include <string>
 #include <numeric>
 
-#include <cxxopts/cxxopts.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -36,14 +36,32 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
-namespace debruijn_graph {
+static bool ends_with(const std::string &s, const std::string &p) {
+    if (s.size() < p.size())
+        return false;
+
+    return (s.compare(s.size() - p.size(), p.size(), p) == 0);
+}
+
+void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename) {
+    using namespace debruijn_graph;
+    if (ends_with(filename, ".gfa")) {
+        gfa::GFAReader gfa(filename);
+        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+        gfa.to_graph(graph);
+    } else {
+        graphio::ScanBasicGraph(filename, graph);
+    }
+}
+
+using namespace debruijn_graph;
 
 template<class Graph>
 class EdgeProfileStorage : public omnigraph::GraphActionHandler<Graph> {
     typedef omnigraph::GraphActionHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef Profile<Abundance> AbundanceVector;
-    
+
     size_t sample_cnt_;
     std::map<EdgeId, AbundanceVector> profiles_;
 
@@ -71,12 +89,12 @@ public:
         for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             profiles_[*it] = AbundanceVector(sample_cnt_, 0.);
         }
-        
+
 #       pragma omp parallel for
         for (size_t i = 0; i < sample_cnt_; ++i) {
             Fill(streams[i], i, mapper);
         }
-        
+
         for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             auto &p = profiles_[e];
@@ -92,23 +110,34 @@ public:
 
 };
 
-void Run(const string &saves_path, const string &dataset_desc, size_t K,
-         const string &profiles_fn, size_t nthreads, const string &tmp_dir) {
-    fs::make_dir(tmp_dir);
+typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;
+typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> SequencingLib;
 
-    io::DataSet<debruijn_graph::config::LibraryData> dataset;
+void Run(const std::string &graph_path, const std::string &dataset_desc, size_t K,
+         const std::string &profiles_fn, size_t nthreads, const std::string &tmpdir) {
+    DataSet dataset;
     dataset.load(dataset_desc);
 
-    fs::make_dir(tmp_dir);
-    size_t buff_size = 512;
-    buff_size <<= 20;
-    debruijn_graph::config::init_libs(dataset, nthreads, buff_size, tmp_dir);
+    debruijn_graph::conj_graph_pack gp(K, tmpdir, dataset.lib_count());
+
+    INFO("Loading de Bruijn graph from " << graph_path);
+    LoadGraph(gp.g, graph_path);
+    {
+        size_t sz = 0;
+        for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it)
+            sz += 1;
+
+        INFO("Graph loaded. Total vertices: " << gp.g.size() << " Total edges: " << sz);
+    }
+
+    // FIXME: Get rid of this "/" junk
+    debruijn_graph::config::init_libs(dataset, nthreads, 512ULL << 20, tmpdir + "/");
+
+    gp.kmer_mapper.Attach();
+    gp.EnsureBasicMapping();
+
     std::vector<size_t> libs(dataset.lib_count());
     std::iota(libs.begin(), libs.end(), 0);
-
-    conj_graph_pack gp(K, tmp_dir, 0);
-    gp.kmer_mapper.Attach();
-    graphio::ScanGraphPack(saves_path, gp);
 
     io::BinarySingleStreams single_readers =
             io::single_binary_readers_for_libs(dataset, libs,
@@ -125,41 +154,54 @@ void Run(const string &saves_path, const string &dataset_desc, size_t K,
     }
 }
 
+struct gcfg {
+    gcfg()
+        : k(21), tmpdir("tmp"), outfile("-"),
+          nthreads(omp_get_max_threads() / 2 + 1)
+    {}
+
+    unsigned k;
+    std::string file;
+    std::string graph;
+    std::string tmpdir;
+    std::string outfile;
+    unsigned nthreads;
+};
+
+void process_cmdline(int argc, char **argv, gcfg &cfg) {
+  using namespace clipp;
+
+  auto cli = (
+      cfg.file << value("dataset description (in YAML)"),
+      cfg.graph << value("graph (in GFA)"),
+      cfg.outfile << value("output filename"),
+      (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
+      (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
+      (option("-tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
+  );
+
+  auto result = parse(argc, argv, cli);
+  if (!result) {
+      std::cout << make_man_page(cli, argv[0]);
+      exit(1);
+  }
 }
 
 int main(int argc, char** argv) {
-    srand(42);
-    srandom(42);
+    utils::segfault_handler sh;
+    gcfg cfg;
+
+    process_cmdline(argc, argv, cfg);
+
+    create_console_logger();
+    INFO("Built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
+
     try {
-        unsigned nthreads;
-        unsigned k;
-        std::string workdir, saves_path, dataset_fn, profiles_fn;
+        unsigned nthreads = cfg.nthreads;
+        unsigned k = cfg.k;
+        std::string tmpdir = cfg.tmpdir;
 
-        cxxopts::Options options(argv[0], " analyze strain mix in existing graph");
-        options.add_options()
-                ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("55"), "K")
-                ("g,graph", "saves of the graph", cxxopts::value<std::string>(saves_path))
-                ("d,dataset", "Dataset description (in YAML)", cxxopts::value<std::string>(dataset_fn), "file")
-                ("p,profiles", "File to store profiles", cxxopts::value<std::string>(profiles_fn), "file")
-                ("t,threads", "# of threads to use (default: max threads / 2", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(omp_get_max_threads() / 2)), "num")
-                ("w,workdir", "Working directory (default: .)", cxxopts::value<std::string>(workdir)->default_value("."), "dir")
-                ("h,help", "Print help");
-
-        options.parse(argc, argv);
-        if (options.count("help")) {
-            std::cout << options.help() << std::endl;
-            exit(0);
-        }
-
-        if (!options.count("graph")) {
-            std::cerr << "ERROR: No input files were specified" << std::endl << std::endl;
-            std::cout << options.help() << std::endl;
-            exit(-1);
-        }
-
-        create_console_logger();
-
-        INFO("Built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
+        fs::make_dir(tmpdir);
 
         INFO("K-mer length set to " << k);
         INFO("# of threads to use: " << nthreads);
@@ -168,13 +210,12 @@ int main(int argc, char** argv) {
         // Inform OpenMP runtime about this :)
         omp_set_num_threads((int) nthreads);
 
-        debruijn_graph::Run(saves_path, dataset_fn, k,
-                            profiles_fn, nthreads, workdir + "/tmp/");
-    } catch (std::string const &s) {
-        std::cerr << s;
+        Run(cfg.graph, cfg.file, k, cfg.outfile, nthreads, tmpdir);
+    } catch (const std::string &s) {
+        std::cerr << s << std::endl;
         return EINTR;
-    } catch (const cxxopts::OptionException &e) {
-        std::cerr << "error parsing options: " << e.what() << std::endl;
-        exit(1);
+    } catch (const std::exception &e) {
+        std::cerr << "ERROR: " << e.what() << std::endl;
+        return EINTR;
     }
 }
