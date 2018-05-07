@@ -16,6 +16,7 @@
 
 namespace omnigraph {
 
+//TODO use flanking coverage here
 template<class Graph>
 class RelativeCoverageTipCondition: public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
