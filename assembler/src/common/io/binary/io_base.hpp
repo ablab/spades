@@ -115,8 +115,7 @@ private:
 template<typename T>
 class IOCollection : public IOBase<T> {
 public:
-    typedef typename T::value_type Index;
-    typedef std::unique_ptr<IOBase<Index>> IOPtr;
+    typedef std::unique_ptr<IOBase<typename T::value_type>> IOPtr;
 
     IOCollection(IOPtr io)
         : io_(std::move(io)) {

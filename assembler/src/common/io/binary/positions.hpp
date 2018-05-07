@@ -13,7 +13,7 @@
 namespace io {
 
 template<typename Graph>
-class EdgePositionsIO : IOSingle<typename omnigraph::EdgesPositionHandler<Graph>> {
+class EdgePositionsIO : public IOSingle<typename omnigraph::EdgesPositionHandler<Graph>> {
 public:
     typedef omnigraph::EdgesPositionHandler<Graph> Type;
     typedef IdMapper<typename Graph::EdgeId> Mapper;
@@ -25,7 +25,7 @@ private:
     void SaveImpl(SaveFile &file, const Type &edge_pos) override {
         for (auto it = edge_pos.g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             auto pos_it = edge_pos.GetEdgePositions(*it);
-            file << it->int_id() << pos_it.size();
+            file << (*it).int_id() << pos_it.size();
             for (const auto &i : pos_it) {
                 file << i.contigId;
                 file << i.mr.initial_range.start_pos << i.mr.initial_range.end_pos

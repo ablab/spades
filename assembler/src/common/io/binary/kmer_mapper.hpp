@@ -12,7 +12,7 @@
 namespace io {
 
 template<typename Graph>
-class KmerMapperIO : IOSingle<debruijn_graph::KmerMapper<Graph>> {
+class KmerMapperIO : public IOSingle<debruijn_graph::KmerMapper<Graph>> {
 public:
     typedef debruijn_graph::KmerMapper<Graph> Type;
     KmerMapperIO()

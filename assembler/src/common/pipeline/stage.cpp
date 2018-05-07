@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "pipeline/stage.hpp"
-#include "pipeline/graphio.hpp"
+#include "io/binary/graphio.hpp"
 
 #include "utils/logger/log_writers.hpp"
 
@@ -21,7 +21,7 @@ void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
     std::string p = fs::append_path(load_from, prefix == NULL ? id_ : prefix);
     INFO("Loading current state from " << p);
 
-    debruijn_graph::graphio::ScanAll(p, gp, false);
+    debruijn_graph::graphio::ScanAll(p, gp);
     debruijn_graph::config::load_lib_data(p);
 }
 

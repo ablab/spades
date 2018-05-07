@@ -26,15 +26,12 @@
 #include <fstream>
 #include <cstdio>
 
-#include "io/binary/io_base.hpp"
-
 namespace debruijn_graph {
 
 namespace graphio {
 
 using namespace omnigraph;
 using namespace omnigraph::de;
-using namespace io;
 //todo think of inner namespace
 
 template<class KmerMapper>
@@ -132,6 +129,29 @@ void SaveDetailCoverage(const std::string& pathInCov, const std::string& pathOut
     SaveMapCoverage(pathOutCov, index.outCoverage);
 }
 
+inline void SerializePoint(FILE* file, size_t e1, size_t e2, const RawPoint &p) {
+    fprintf(file, "%zu %zu %.2f %.2f 0.00 .\n", e1, e2, (double)p.d, (double)p.weight);
+}
+
+inline void SerializePoint(FILE* file, size_t e1, size_t e2, const Point &p) {
+    fprintf(file, "%zu %zu %.2f %.2f %.2f .\n", e1, e2, (double)p.d, (double)p.weight, (double)p.var);
+}
+
+inline void DeserializePoint(FILE* file, size_t& e1, size_t& e2, RawPoint &p) {
+    float unused;
+    size_t read_count = fscanf(file, "%zu %zu %f %f %f .\n", &e1, &e2,
+        (float *)&p.d, (float *)&p.weight, (float *)&unused);
+    VERIFY(read_count == 5);
+
+}
+
+inline void DeserializePoint(FILE* file, size_t& e1, size_t& e2, Point &p) {
+    size_t read_count = fscanf(file, "%zu %zu %f %f %f .\n", &e1, &e2,
+                               (float *)&p.d, (float *)&p.weight, (float *)&p.var);
+    VERIFY(read_count == 5);
+}
+
+
 template<class Graph>
 class DataPrinter {
     typedef typename Graph::EdgeId EdgeId;
@@ -163,36 +183,41 @@ class DataPrinter {
     }
 
   public:
-    virtual ~DataPrinter() {
-    }
 
     void SaveGraph(const string& file_name) const {
         FILE* gid_file = fopen((file_name + ".gid").c_str(), "w");
         size_t max_id = this->component().g().GetGraphIdDistributor().GetMax();
         fprintf(gid_file, "%zu\n", max_id);
         fclose(gid_file);
-        std::string grp_name = file_name + ".grp";
-        SaveFile file(grp_name);
-        INFO("Graph saving to " << grp_name << " started");
-        VERIFY_MSG(file, "Couldn't open file " << grp_name << " on write");
+        FILE* file = fopen((file_name + ".grp").c_str(), "w");
+        DEBUG("Graph saving to " << file_name << " started");
+        VERIFY_MSG(file != NULL,
+                   "Couldn't open file " << (file_name + ".grp") << " on write");
+        size_t vertex_count = component_.v_size();
+        size_t edge_count = component_.e_size();
+        fprintf(file, "%zu %zu \n", vertex_count, edge_count);
+        for (auto iter = component_.v_begin(); iter != component_.v_end(); ++iter) {
+            Save(file, *iter);
+        }
 
-        file << component_.v_size() << component_.e_size();
+        fprintf(file, "\n");
 
-        for (auto iter = component_.v_begin(); iter != component_.v_end(); ++iter)
-            WriteInfo(file, *iter);
+        for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
+            Save(file, *iter);
+        }
+        DEBUG("Graph saving to " << file_name << " finished");
 
-        for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter)
-            WriteInfo(file, *iter);
-
-        INFO("Graph saving to " << grp_name << " finished");
+        fclose(file);
     }
 
     void SaveEdgeSequences(const string& file_name) const {
-        SaveFile out(file_name + ".sqn");
+        ofstream out(file_name + ".sqn");
         //todo switch to general function after its switching to fasta
-        DEBUG("Saving sequences, " << file_name << " created");
+        DEBUG("Saving sequences, " << file_name <<" created");
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
-            out << iter->int_id() << component_.g().EdgeNucls(*iter);
+            EdgeId e = *iter;
+            out << ">" << e.int_id() << endl;
+            out << component_.g().EdgeNucls(e) << endl;
         }
     }
 
@@ -209,14 +234,39 @@ class DataPrinter {
     }
 
     template<class Index>
-    void SavePaired(const string& file_prefix, Index const& paired_index) const {
-        //FILE* file = fopen((file_name + ".prd").c_str(), "w");
-        std::string file_name = file_prefix + ".prd";
-        SaveFile file(file_name);
-        DEBUG("Saving paired info, " << file_name << " created");
-        VERIFY(file);
+    void SavePaired(const string& file_name,
+                    Index const& paired_index) const {
+        FILE* file = fopen((file_name + ".prd").c_str(), "w");
+        DEBUG("Saving paired info, " << file_name <<" created");
+        VERIFY(file != NULL);
 
-        file << paired_index;
+        size_t comp_size = 0;
+        for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
+            EdgeId e1 = *I;
+            auto inner_map = paired_index.GetHalf(e1);
+            for (auto entry : inner_map) {
+                if (component_.contains(entry.first)) { // if the second edge also lies in the same component
+                    comp_size += entry.second.size();
+                    continue;
+                }
+            }
+        }
+
+        fprintf(file, "%zu\n", comp_size);
+
+        for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
+            EdgeId e1 = *I;
+            const auto& inner_map = paired_index.GetHalf(e1);
+            std::map<typename Graph::EdgeId, typename Index::HistProxy> ordermap(inner_map.begin(), inner_map.end());
+            for (auto entry : ordermap) {
+                EdgeId e2 = entry.first;
+                if (component_.contains(e2))
+                    for (auto point : entry.second)
+                        SerializePoint(file, e1.int_id(), e2.int_id(), point);
+            }
+        }
+
+        fclose(file);
     }
 
     void SavePositions(const string& file_name,
@@ -234,9 +284,21 @@ class DataPrinter {
         }
     }
 
-protected:
-    virtual void WriteInfo(SaveFile &str, EdgeId eid) const = 0;
-    virtual void WriteInfo(SaveFile &str, VertexId eid) const = 0;
+  private:
+    void Save(FILE* file, EdgeId eid) const {
+        fprintf(file, "%s\n", ToPrint(eid).c_str());
+    }
+
+    void Save(FILE* file, VertexId vid) const {
+        fprintf(file, "%s\n", ToPrint(vid).c_str());
+    }
+
+    const GraphComponent<Graph> component_;
+
+    virtual std::string ToPrint(VertexId v) const = 0;
+    virtual std::string ToPrint(EdgeId e) const = 0;
+
+  protected:
 
     //todo optimize component copy
 //    DataPrinter(const GraphComponent<Graph>& component) :
@@ -251,8 +313,9 @@ protected:
         return component_;
     }
 
-private:
-    const GraphComponent<Graph> component_;
+  public:
+    virtual ~DataPrinter() {
+    }
 };
 
 template<class Graph>
@@ -260,8 +323,7 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
     typedef DataPrinter<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-
-public:
+  public:
     ConjugateDataPrinter(Graph const& g) :
             base(GraphComponent<Graph>::WholeGraph(g)) {
     }
@@ -275,17 +337,32 @@ public:
             base(GraphComponent<Graph>::FromVertices(g, begin, end, true)) {
     }
 
-protected:
-
-    void WriteInfo(SaveFile &str, VertexId v) const override {
-        str << v.int_id() << this->component().g().conjugate(v).int_id();
+    std::string ToPrint(VertexId v) const {
+        stringstream ss;
+        ss
+                << "Vertex "
+                << v.int_id()
+                << " ~ "
+                << this->component().g().conjugate(v).int_id() << " .";
+        return ss.str();
     }
 
-    void WriteInfo(SaveFile &str, EdgeId e) const override {
-        const auto &g = this->component().g();
-        str << e.int_id() << g.conjugate(e).int_id()
-            << g.EdgeStart(e).int_id() << g.EdgeEnd(e).int_id() << g.length(e);
+    std::string ToPrint(EdgeId e) const {
+        stringstream ss;
+        ss
+                << "Edge "
+                << e.int_id()
+                << " : "
+                << this->component().g().EdgeStart(e).int_id()
+                << " -> "
+                << this->component().g().EdgeEnd(e).int_id()
+                << ", l = "
+                << this->component().g().length(e)
+                << " ~ "
+                << this->component().g().conjugate(e).int_id() << " .";
+        return ss.str();
     }
+
 };
 
 template<class Graph>
@@ -347,27 +424,45 @@ class DataScanner {
     }
 
     template<typename Index>
-    void LoadPaired(const std::string &file_prefix, Index &paired_index, bool force_exists = true) {
-        std::string file_name = file_prefix + ".prd";
-        LoadFile file(file_name);
-        if (!file) {
-            if (force_exists) {
-                VERIFY_MSG(false, "Missing paired index: " << file_name);
-            }
-            else {
-                INFO("Paired info not found, skipping");
-                return;
-            }
+    void LoadPaired(const string& file_name,
+                    Index& paired_index,
+                    bool force_exists = true) {
+        typedef typename Graph::EdgeId EdgeId;
+        FILE* file = fopen((file_name + ".prd").c_str(), "r");
+        INFO((file_name + ".prd"));
+        if (force_exists) {
+            VERIFY(file != NULL);
+        } else if (file == NULL) {
+            INFO("Paired info not found, skipping");
+            return;
         }
-
         INFO("Reading paired info from " << file_name << " started");
-        //--Temporary--
-        IdMapper<EdgeId> mapper;
-        for (const auto i: edge_id_map_) {
-            mapper[i.first] = i.second;
+
+        size_t paired_count;
+        int read_count = fscanf(file, "%zu \n", &paired_count);
+        VERIFY(read_count == 1);
+        while (!feof(file)) {
+            size_t first_real_id, second_real_id;
+
+            typename Index::Point point;
+            DeserializePoint(file, first_real_id, second_real_id, point);
+
+            TRACE(first_real_id << " " << second_real_id << " " << point);
+            VERIFY(this->edge_id_map().find(first_real_id) != this->edge_id_map().end())
+            EdgeId e1 = this->edge_id_map()[first_real_id];
+            EdgeId e2 = this->edge_id_map()[second_real_id];
+            if (e1 == EdgeId() || e2 == EdgeId())
+                continue;
+            TRACE(e1 << " " << e2 << " " << point);
+            //Need to prevent doubling of self-conjugate edge pairs
+            //Their weight would be always even, so we don't lose precision
+            auto ep = std::make_pair(e1, e2);
+            if (ep == paired_index.ConjugatePair(ep))
+                point.weight = math::round(point.weight / 2);
+            paired_index.Add(e1, e2, point);
         }
-        //-------------
-        paired_index.BinRead(file.str(), mapper); //TODO: get rid of the second argument
+        DEBUG("PII SIZE " << paired_index.size());
+        fclose(file);
     }
 
     bool LoadPositions(const string& file_name,
@@ -420,12 +515,6 @@ class DataScanner {
   protected:
     DataScanner(Graph &g) : g_(g) {
         INFO("Creating of scanner started");
-        if (g.size()) {
-            for (auto i = g.SmartVertexBegin(); !i.IsEnd(); ++i)
-                vertex_id_map_[(*i).int_id()] = *i;
-            for (auto i = g.SmartEdgeBegin(); !i.IsEnd(); ++i)
-                edge_id_map_[(*i).int_id()] = *i;
-        }
         //    edge_count_ = 0;
     }
 
@@ -476,29 +565,27 @@ private:
     }
 
   public:
-    void LoadGraph(const string& file_name) override {
-        auto id_storage = this->g().GetGraphIdDistributor().Reserve(GetMaxId(file_name + ".gid"),
+    /*virtual*/
+    void LoadGraph(const string& file_name) {
+        auto id_storage = this->g().GetGraphIdDistributor().Reserve(GetMaxId(file_name + ".gid"), 
                 /*force_zero_shift*/true);
-        INFO("Trying to read conjugate de bruijn graph from " << file_name);
-
-        std::string grp_name = file_name + ".grp";
-        LoadFile grp_file(grp_name);
-        VERIFY_MSG(grp_file, "Couldn't find file " << grp_name);
-
-        std::string sqn_name = file_name + ".sqn";
-        LoadFile sqn_file(sqn_name);
-        VERIFY_MSG(sqn_file, "Couldn't find file " << sqn_name);
-
-        INFO("Reading conjugate de bruijn graph from " << file_name << " started");
-        size_t vertex_count, edge_count;
-        grp_file >> vertex_count >> edge_count;
-
-        while (vertex_count--) {
+        INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
+        FILE* file = fopen((file_name + ".grp").c_str(), "r");
+        VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
+        FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
+        VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".sqn"));
+        INFO("Reading conjugate de bruijn  graph from " << file_name << " started");
+        size_t vertex_count;
+        size_t edge_count;
+        int flag = fscanf(file, "%zu %zu \n", &vertex_count, &edge_count);
+        VERIFY(flag == 2);
+        for (size_t i = 0; i < vertex_count; i++) {
             size_t vertex_real_id, conjugate_id;
-            grp_file >> vertex_real_id >> conjugate_id;
+            flag = fscanf(file, "Vertex %zu ~ %zu .\n", &vertex_real_id, &conjugate_id);
             TRACE("Vertex "<<vertex_real_id<<" ~ "<<conjugate_id<<" .");
+            VERIFY(flag == 2);
 
-            if (this->vertex_id_map().find(vertex_real_id) == this->vertex_id_map().end()) {
+            if (this->vertex_id_map().find((int) vertex_real_id) == this->vertex_id_map().end()) {
                 size_t ids[2] = {vertex_real_id, conjugate_id};
                 auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
                 VertexId vid = this->g().AddVertex(typename Graph::VertexData(), id_distributor);
@@ -509,23 +596,47 @@ private:
             }
         }
 
-        while (edge_count--) {
-            size_t e_real_id, conjugate_edge_id, start_id, fin_id, length;
-            grp_file >> e_real_id >> conjugate_edge_id >> start_id >> fin_id >> length;
+        char first_char = (char) getc(sequence_file);
+        VERIFY(!ferror(sequence_file));
+        ungetc(first_char, sequence_file);
+        bool fasta = (first_char == '>'); // if it's not fasta, then it's old .sqn
+
+
+        if (!fasta) {
+            size_t tmp_edge_count;
+            flag = fscanf(sequence_file, "%zu", &tmp_edge_count);
+            VERIFY(flag == 1);
+            VERIFY(edge_count == tmp_edge_count);
+        }
+
+        const size_t longstring_size = 1000500; // TODO: O RLY magic constant? => Can't load edges >= 1Mbp
+        char longstring[longstring_size];
+        for (size_t i = 0; i < edge_count; i++) {
+            size_t e_real_id, start_id, fin_id, length, conjugate_edge_id;
+            flag = fscanf(file, "Edge %zu : %zu -> %zu, l = %zu ~ %zu .\n",
+                          &e_real_id, &start_id, &fin_id, &length, &conjugate_edge_id);
+            VERIFY(flag == 5);
+            VERIFY(length < longstring_size);
+            if (fasta) {
+                flag = fscanf(sequence_file, ">%zu\n%s\n", &e_real_id, longstring);
+            }
+            else {
+                flag = fscanf(sequence_file, "%zu %s .", &e_real_id, longstring);
+            }
+            VERIFY(flag == 2);
             TRACE("Edge " << e_real_id << " : " << start_id << " -> "
                   << fin_id << " l = " << length << " ~ " << conjugate_edge_id);
-            size_t sqn_id;
-            Sequence tmp;
-            sqn_file >> sqn_id >> tmp;
-
-            if (this->edge_id_map().find(e_real_id) == this->edge_id_map().end()) {
+            if (this->edge_id_map().find((int) e_real_id) == this->edge_id_map().end()) {
                 size_t ids[2] = {e_real_id, conjugate_edge_id};
                 auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
+                Sequence tmp(longstring);
                 EdgeId eid = this->g().AddEdge(this->vertex_id_map()[start_id], this->vertex_id_map()[fin_id], tmp, id_distributor);
                 this->edge_id_map()[e_real_id] = eid;
                 this->edge_id_map()[conjugate_edge_id] = this->g().conjugate(eid);
             }
         }
+        fclose(file);
+        fclose(sequence_file);
     }
   public:
     ConjugateDataScanner(Graph& g) :
@@ -713,7 +824,8 @@ void PrintWithPairedIndex(const string& file_name, const graph_pack& gp,
 template<class graph_pack, class VertexIt>
 void PrinGraphPack(const string& file_name, const graph_pack& gp,
                    VertexIt begin, VertexIt end) {
-    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g, begin, end);
+    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g,
+                                                                          begin, end);
     PrintGraphPack(file_name, printer, gp);
 }
 

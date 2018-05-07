@@ -27,11 +27,12 @@ namespace omnigraph {
 template<class Graph>
 class CoverageIndex : public GraphActionHandler<Graph> {
     typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
 
     Graph& g_;
 
  public:
+    typedef typename Graph::EdgeId EdgeId;
+
     CoverageIndex(Graph &g)
             : GraphActionHandler<Graph>(g, "CoverageIndex"), g_(g) {
     }

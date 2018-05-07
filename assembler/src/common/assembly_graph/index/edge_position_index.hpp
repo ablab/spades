@@ -132,7 +132,7 @@ public:
     }
 
     template<class Reader>
-    void BinRead(Reader &reader, const std::string/* &FileName*/) {
+    void BinRead(Reader &reader) {
         this->clear();
         this->index_ptr_->deserialize(reader);
         size_t sz = 0;

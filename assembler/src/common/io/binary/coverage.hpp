@@ -12,11 +12,11 @@
 namespace io {
 
 template<typename Index>
-class CoverageIO : public IOBase<Index> {
+class CoverageIO : public IOSingle<Index> {
 public:
     typedef IdMapper<typename Index::EdgeId> Mapper;
     CoverageIO(const Mapper &mapper):
-            IOBase<Type>("coverage", ".cvr"), mapper_(mapper) {}
+            IOSingle<Index>("coverage", ".cvr"), mapper_(mapper) {}
 private:
     void SaveImpl(SaveFile &file, const Index &index) {
         for (auto it = index.g().ConstEdgeBegin(); !it.IsEnd(); ++it) {

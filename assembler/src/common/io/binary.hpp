@@ -69,6 +69,7 @@ auto BinRead(std::istream &str, T &value) -> decltype(std::declval<T>().BinRead(
 }
 
 //Specialization for sized containers
+/*
 template<typename T>
 decltype(std::declval<const T>().begin(), std::declval<const T>().end(), std::declval<const T>().size(), void())
 BinWrite(std::ostream &str, const T &value) {
@@ -76,6 +77,7 @@ BinWrite(std::ostream &str, const T &value) {
     for (const auto &i : value)
         BinWrite(str, i);
 }
+ */
 
 //Ad-hoc overloads
 template<typename T, size_t N>
