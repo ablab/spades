@@ -606,6 +606,29 @@ class PathSet {
       return s;
     }
 
+    static std::string compress_alignment(const std::string &s) {
+      size_t count = 0;
+      char prev_c = '\0';
+      std::string result;
+      for (size_t i = 0; i <= s.size(); ++i) {
+        char c = s[i];
+        if (c == prev_c) {
+          ++count;
+        } else {
+          if (prev_c != '\0') {
+            if (count > 1) {
+              result += std::to_string(count);
+            }
+            result += prev_c;
+          }
+          count = 1;
+        }
+        prev_c = c;
+      }
+
+      return result;
+    }
+
     static std::string alignment(const AnnotatedPath &apath, size_t m) {
       std::string s;
       size_t prev_position = 0;
