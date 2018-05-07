@@ -751,7 +751,7 @@ int main(int argc, char* argv[]) {
             for (const auto &path : unique_paths) {
                 #pragma omp critical
                 {
-                    gfa_paths.insert({ std::string(hmm.get()->name) + "_" + std::to_string(idx++), path });
+                    gfa_paths.insert({ std::string(hmm.get()->name) + "_" + std::to_string(idx++) + "_length_" + std::to_string(path.size()), path });
                 }
             }
         }
