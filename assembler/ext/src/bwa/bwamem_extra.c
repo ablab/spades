@@ -82,7 +82,7 @@ mem_alnreg_v mem_align1(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *
 	seq = malloc(l_seq);
 	memcpy(seq, seq_, l_seq); // makes a copy of seq_
 	ar = mem_align1_core(opt, bwt, bns, pac, l_seq, seq, 0);
-	mem_mark_primary_se(opt, ar.n, ar.a, lrand48());
+	mem_mark_primary_se(opt, ar.n, ar.a, 42); /* SPADES LOCAL */
 	free(seq);
 	return ar;
 }

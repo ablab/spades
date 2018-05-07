@@ -258,7 +258,7 @@ static uint8_t *add1(const kseq_t *seq, bntseq_t *bns, uint8_t *pac, int64_t *m_
 		}
 		lasts = seq->seq.s[i];
 		{ // fill buffer
-			if (c >= 4) c = lrand48()&3;
+			if (c >= 4) c = i & 3; /* SPADES LOCAL */
 			if (bns->l_pac == *m_pac) { // double the pac size
 				*m_pac <<= 1;
 				pac = realloc(pac, *m_pac/4);
