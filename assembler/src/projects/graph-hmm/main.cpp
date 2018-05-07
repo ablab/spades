@@ -599,7 +599,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             auto seq = top_paths.str(annotated_path.path);
             auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, p7hmm->M));
             auto edge_path = to_path(annotated_path.path);
-            if (edge_path.size() == 0)
+            if (edge_path.size() == 0)  // TODO just do not extract empty paths, fix extraction method in pathtree.hpp. Remove this if{} when fixed
                 continue;
 
             local_results.emplace_back(p7hmm->name, e, idx++, annotated_path.score, seq, std::move(edge_path), std::move(alignment));
