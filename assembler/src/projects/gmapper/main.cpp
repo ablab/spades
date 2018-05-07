@@ -136,6 +136,24 @@ static void ProcessPairedReads(conj_graph_pack &gp,
 }
 #endif
 
+static bool ends_with(const std::string &s, const std::string &p) {
+    if (s.size() < p.size())
+        return false;
+
+    return (s.compare(s.size() - p.size(), p.size(), p) == 0);
+}
+
+void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename) {
+    using namespace debruijn_graph;
+    if (ends_with(filename, ".gfa")) {
+        gfa::GFAReader gfa(filename);
+        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+        gfa.to_graph(graph);
+    } else {
+        graphio::ScanBasicGraph(filename, graph);
+    }
+}
+
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     gcfg cfg;
@@ -161,12 +179,7 @@ int main(int argc, char* argv[]) {
         debruijn_graph::conj_graph_pack gp(k, tmpdir, dataset.lib_count());
 
         INFO("Loading de Bruijn graph from " << cfg.graph);
-        {
-            gfa::GFAReader gfa(cfg.graph);
-            INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-
-            gfa.to_graph(gp.g);
-        }
+        LoadGraph(gp.g, cfg.graph);
         {
             size_t sz = 0;
             for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it)
