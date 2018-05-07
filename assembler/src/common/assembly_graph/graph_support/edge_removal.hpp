@@ -160,7 +160,7 @@ public:
                 RemoveIsolatedOrCompress(g_, end);
                 TRACE("End processed");
             }
-            return EdgeId(0);
+            return EdgeId();
         } else {
             pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, trim_len_);
             edge_remover_.DeleteEdgeOptCompress(split_res.first, compress);

@@ -125,14 +125,14 @@ class ParallelSimpleBRFunctor {
                 return candidate;
             }
         }
-        return EdgeId(0);
+        return EdgeId();
     }
 
     bool ProcessEdges(const vector<EdgeId>& edges) {
         for (EdgeId e : edges) {
             if (g_.length(e) <= max_length_ && math::le(g_.coverage(e), max_coverage_)) {
                 EdgeId alt = Alternative(e, edges);
-                if (alt != EdgeId(0) && math::ge(g_.coverage(alt) * max_relative_coverage_, g_.coverage(e))) {
+                if (alt != EdgeId() && math::ge(g_.coverage(alt) * max_relative_coverage_, g_.coverage(e))) {
                     //does not work in multiple threads for now...
                     //Reasons: id distribution, kmer-mapping
                     handler_f_(e);
@@ -354,7 +354,7 @@ class ParallelCompressor {
 
     Graph& g_;
     typename Graph::HelperT helper_;
-    restricted::IdSegmentStorage segment_storage_;
+    std::unique_ptr<restricted::IdSegmentStorage> segment_storage_;
 
     bool IsBranching(VertexId v) const {
 //        VertexLockT lock(v);
@@ -503,7 +503,7 @@ class ParallelCompressor {
             //so we can collect edges without any troubles (and actually without locks todo check!)
             vector<EdgeId> edges = CollectEdges(to_compress);
 
-            restricted::ListIdDistributor<restricted::SegmentIterator> id_distributor = segment_storage_.GetSegmentIdDistributor(2 * idx, 2 * idx + 1);
+            auto id_distributor = segment_storage_->GetSegmentIdDistributor(2 * idx, 2 * idx + 1);
 
             EdgeId new_edge = SyncAddEdge(g_.EdgeStart(edges.front()), g_.EdgeEnd(edges.back()), MergeSequences(g_, edges), id_distributor);
 
@@ -537,7 +537,7 @@ class ParallelCompressor {
     VertexId LockingGetInit(VertexId v) {
         VertexLockT lock(v);
         if (!CheckConsistent(v))
-            return VertexId(0);
+            return VertexId();
 
         //works even if this edge is already unlinked from the vertex =)
         VERIFY(g_.CheckUniqueIncomingEdge(v));
@@ -558,12 +558,12 @@ public:
     }
 
     void PrepareForProcessing(size_t interesting_cnt) {
-        segment_storage_ = g_.GetGraphIdDistributor().Reserve(interesting_cnt * 2);
+        segment_storage_ = std::make_unique<restricted::IdSegmentStorage>(g_.GetGraphIdDistributor().Reserve(interesting_cnt * 2));
     }
 
     bool Process(VertexId v, size_t idx) {
         VertexId init = LockingGetInit(v);
-        if (init != VertexId(0))
+        if (init != VertexId())
             ProcessBranching(v, init, idx);
         return false;
     }

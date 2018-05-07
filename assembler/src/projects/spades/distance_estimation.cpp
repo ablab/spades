@@ -27,7 +27,6 @@ void estimate_with_estimator(const Graph &graph,
                              const omnigraph::de::AbstractDistanceEstimator& estimator,
                              omnigraph::de::AbstractPairInfoChecker<Graph>& checker,
                              PairedIndexT& clustered_index) {
-    using config::estimation_mode;
     DEBUG("Estimating distances");
 
     estimator.Estimate(clustered_index, cfg::get().max_threads);
@@ -97,12 +96,47 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
     }
 }
 
+void estimate_scaffolding_distance(conj_graph_pack& gp,
+                       const io::SequencingLibrary<config::LibraryData> &lib,
+                       const UnclusteredPairedIndexT& paired_index,
+                       PairedIndexT& scaffolding_index) {
+    INFO("Filling scaffolding index");
+
+    double is_var = lib.data().insert_size_deviation;
+    size_t delta = size_t(is_var);
+    size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
+    GraphDistanceFinder dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
+                                    lib.data().unmerged_read_length, delta);
+    size_t max_distance = size_t(cfg::get().de.max_distance_coeff_scaff * is_var);
+
+    DEBUG("Retaining insert size distribution for it");
+    if (lib.data().insert_size_distribution.size() == 0) {
+        WARN("The library will not be used for scaffolding");
+        return;
+    }
+
+    WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
+    DEBUG("Weight Wrapper Done");
+
+//        PairInfoWeightFilter<Graph> filter(gp.g, 0.);
+    PairInfoWeightChecker<Graph> checker(gp.g, 0.);
+    DEBUG("Weight Filter Done");
+
+    SmoothingDistanceEstimator estimator(gp.g, paired_index, dist_finder,
+                                         [&] (int i) {return wrapper.CountWeight(i);},
+                                         linkage_distance, max_distance,
+                                         cfg::get().ade.threshold, cfg::get().ade.range_coeff,
+                                         cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,
+                                         cfg::get().ade.min_peak_points, cfg::get().ade.inv_density,
+                                         cfg::get().ade.percentage,
+                                         cfg::get().ade.derivative_threshold);
+    estimate_with_estimator<Graph>(gp.g, estimator, checker, scaffolding_index);
+}
+
 void estimate_distance(conj_graph_pack& gp,
                        const io::SequencingLibrary<config::LibraryData> &lib,
                        const UnclusteredPairedIndexT& paired_index,
-                       PairedIndexT& clustered_index,
-                       PairedIndexT& scaffolding_index) {
-    using config::estimation_mode;
+                       PairedIndexT& clustered_index) {
 
     const config::debruijn_config& config = cfg::get();
     size_t delta = size_t(lib.data().insert_size_deviation);
@@ -110,64 +144,14 @@ void estimate_distance(conj_graph_pack& gp,
     GraphDistanceFinder dist_finder(gp.g,  (size_t)math::round(lib.data().mean_insert_size), lib.data().unmerged_read_length, delta);
     size_t max_distance = size_t(config.de.max_distance_coeff * lib.data().insert_size_deviation);
 
-    std::function<double(int)> weight_function;
-
-    if (config.est_mode == estimation_mode::weighted   ||                    // in these cases we need a weight function
-        config.est_mode == estimation_mode::smoothing) {                     // to estimate graph distances in the histogram
-        if (lib.data().insert_size_distribution.size() == 0) {
-            WARN("No insert size distribution found, stopping distance estimation");
-            return;
-        }
-
-        WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
-        DEBUG("Weight Wrapper Done");
-        weight_function = std::bind(&WeightDEWrapper::CountWeight, wrapper, std::placeholders::_1);
-    }  else
-        weight_function = UnityFunction;
-
     PairInfoWeightChecker<Graph> checker(gp.g, config.de.clustered_filter_threshold);
 
     INFO("Weight Filter Done");
 
-    switch (config.est_mode) {
-        case estimation_mode::simple: {
-            const AbstractDistanceEstimator&
-                    estimator =
-                    DistanceEstimator(gp.g, paired_index, dist_finder,
-                                             linkage_distance, max_distance);
+    DistanceEstimator estimator(gp.g, paired_index, dist_finder,
+                                     linkage_distance, max_distance);
 
-            estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
-            break;
-        }
-        case estimation_mode::weighted: {
-            const AbstractDistanceEstimator&
-                    estimator =
-                    WeightedDistanceEstimator(gp.g, paired_index,
-                                                     dist_finder, weight_function, linkage_distance, max_distance);
-
-            estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
-            break;
-        }
-        case estimation_mode::smoothing: {
-            const AbstractDistanceEstimator&
-                    estimator =
-                    SmoothingDistanceEstimator(gp.g, paired_index,
-                                                      dist_finder, weight_function, linkage_distance, max_distance,
-                                                      config.ade.threshold,
-                                                      config.ade.range_coeff,
-                                                      config.ade.delta_coeff, config.ade.cutoff,
-                                                      config.ade.min_peak_points,
-                                                      config.ade.inv_density,
-                                                      config.ade.percentage,
-                                                      config.ade.derivative_threshold);
-
-            estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
-            break;
-        }
-        default: {
-            VERIFY_MSG(false, "Unexpected estimation mode value")
-        }
-    }
+    estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
 
     INFO("Refining clustered pair information ");                             // this procedure checks, whether index
     RefinePairedInfo(gp.g, clustered_index);                                  // contains intersecting paired info clusters,
@@ -175,46 +159,11 @@ void estimate_distance(conj_graph_pack& gp,
 
     INFO("Improving paired information");
     PairInfoImprover<Graph> improver(gp.g, clustered_index, lib,
-                                     config.mode == debruijn_graph::config::pipeline_type::meta  ? std::numeric_limits<size_t>::max() : config.max_repeat_length);
+                                     config.mode == debruijn_graph::config::pipeline_type::meta ?
+                                     std::numeric_limits<size_t>::max() : config.max_repeat_length);
 
     improver.ImprovePairedInfo((unsigned) config.max_threads);
 
-    if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-        INFO("Filling scaffolding index");
-
-        double is_var = lib.data().insert_size_deviation;
-        size_t delta = size_t(is_var);
-        size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
-        GraphDistanceFinder dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
-                                               lib.data().unmerged_read_length, delta);
-        size_t max_distance = size_t(cfg::get().de.max_distance_coeff_scaff * is_var);
-        std::function<double(int)> weight_function;
-
-        DEBUG("Retaining insert size distribution for it");
-        if (lib.data().insert_size_distribution.size() == 0) {
-            WARN("The library will not be used for scaffolding");
-            return;
-        }
-
-
-        WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
-        DEBUG("Weight Wrapper Done");
-        weight_function = std::bind(&WeightDEWrapper::CountWeight, wrapper, std::placeholders::_1);
-
-//        PairInfoWeightFilter<Graph> filter(gp.g, 0.);
-        PairInfoWeightChecker<Graph> checker(gp.g, 0.);
-        DEBUG("Weight Filter Done");
-
-        const AbstractDistanceEstimator& estimator =
-                SmoothingDistanceEstimator(gp.g, paired_index, dist_finder,
-                                                  weight_function, linkage_distance, max_distance,
-                                                  cfg::get().ade.threshold, cfg::get().ade.range_coeff,
-                                                  cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,
-                                                  cfg::get().ade.min_peak_points, cfg::get().ade.inv_density,
-                                                  cfg::get().ade.percentage,
-                                                  cfg::get().ade.derivative_threshold, true);
-        estimate_with_estimator<Graph>(gp.g, estimator, checker, scaffolding_index);
-    }
 }
 
 void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
@@ -222,7 +171,12 @@ void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
         if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
             if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
                 INFO("Processing library #" << i);
-                estimate_distance(gp, cfg::get().ds.reads[i], gp.paired_indices[i], gp.clustered_indices[i], gp.scaffolding_indices[i]);
+                estimate_distance(gp, cfg::get().ds.reads[i], gp.paired_indices[i],
+                                  gp.clustered_indices[i]);
+                if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
+                    estimate_scaffolding_distance(gp, cfg::get().ds.reads[i], gp.paired_indices[i],
+                                                  gp.scaffolding_indices[i]);
+                }
             }
             if (!cfg::get().preserve_raw_paired_index) {
                 INFO("Clearing raw paired index");

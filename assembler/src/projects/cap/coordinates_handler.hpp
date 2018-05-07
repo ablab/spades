@@ -158,7 +158,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
           size_t cur_start = 0;
           for (const auto &edge : genome_path) {
-              if (edge == EdgeId(0)) {
+              if (edge == EdgeId()) {
                   DEBUG("ZERO EDGE!");
                   continue;
               }
@@ -333,7 +333,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
                   return make_pair(e, GetForwardPos(e, genome_id, pos));
               }
           }
-          return make_pair(EdgeId(0), -1u);
+          return make_pair(EdgeId(), -1u);
       }
 
       pair<EdgeId, size_t> StepForwardPos(const EdgeId last_edge, const uint genome_id,
@@ -1043,7 +1043,7 @@ void CoordinatesHandler<Graph>::StoreGenomeThread(
     }
 
     do {
-        if (cur_edge == EdgeId(0)) {
+        if (cur_edge == EdgeId()) {
             INFO("Could not thread genome path! genome_id=" << int(genome_id));
             return;
         }
@@ -1057,7 +1057,7 @@ void CoordinatesHandler<Graph>::StoreGenomeThread(
         const VertexId v = g_->EdgeEnd(cur_edge);
 
         //DEBUG("current edge " << g_->str(cur_edge) << ", outgoing count " << g_->OutgoingEdgeCount(v));
-        cur_edge = EdgeId(0);
+        cur_edge = EdgeId();
         for (const auto &out_edge : g_->OutgoingEdges(v)) {
             //DEBUG("considering edge " << g_->str(out_edge) << " at position (seq) " << genome_pos);
 
@@ -1094,7 +1094,7 @@ CoordinatesHandler<Graph>::FindGenomeFirstEdge(const uint genome_id) const {
 
     // remember first edge and update it
     VERIFY_MSG(false, "Could not find start of the sequence in graph");
-    return EdgeId(0);
+    return EdgeId();
 }
 
 template <class Graph>

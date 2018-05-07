@@ -231,8 +231,8 @@ class GapCloser {
     }
 
     bool MatchesEnd(const Sequence &long_seq, const Sequence &short_seq, bool from_begin) const {
-        return from_begin ? long_seq.Subseq(0, short_seq.size()) == short_seq
-                          : long_seq.Subseq(long_seq.size() - short_seq.size()) == short_seq;
+        return from_begin ? long_seq.First(short_seq.size()) == short_seq
+                          : long_seq.Last(short_seq.size()) == short_seq;
     }
 
     void CorrectLeft(EdgeId first, EdgeId second, int overlap, const vector<size_t> &diff_pos) {

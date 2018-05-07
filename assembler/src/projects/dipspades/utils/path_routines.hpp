@@ -104,7 +104,7 @@ EdgeId GetEdgeById(conj_graph_pack & gp, size_t id){
     for(auto e = gp.g.SmartEdgeBegin(); !e.IsEnd(); ++e)
         if(gp.g.int_id(*e) == id)
             return *e;
-    return EdgeId(0);
+    return EdgeId();
 }
 
 bool IsPathRegionCorrect(pair<size_t, size_t> region, size_t path_size){

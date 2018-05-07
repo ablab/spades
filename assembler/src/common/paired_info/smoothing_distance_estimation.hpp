@@ -38,8 +38,7 @@ public:
                                size_t min_peak_points,
                                double inv_density,
                                double percentage,
-                               double derivative_threshold,
-                               bool only_scaffolding = false) :
+                               double derivative_threshold) :
             base(graph, histogram, dist_finder, weight_f, linkage_distance, max_distance),
             threshold_(threshold),
             range_coeff_(range_coeff),
@@ -49,7 +48,6 @@ public:
             inv_density_(inv_density),
             percentage_(percentage),
             deriv_thr(derivative_threshold),
-            only_scaffolding_(only_scaffolding),
             gap_distances(0) { }
 
     virtual ~SmoothingDistanceEstimator() { }
@@ -80,7 +78,6 @@ private:
     double inv_density_;
     double percentage_;
     double deriv_thr;
-    bool only_scaffolding_;
     mutable size_t gap_distances;
 
     EstimHist FindEdgePairDistances(EdgePair ep,

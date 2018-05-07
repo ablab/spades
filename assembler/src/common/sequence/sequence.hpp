@@ -5,8 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#ifndef SEQUENCE_HPP_
-#define SEQUENCE_HPP_
+#pragma once
 
 #include <vector>
 #include <string>
@@ -116,6 +115,8 @@ class Sequence {
             bytes[cur] = 0;
     }
 
+    inline bool ReadHeader(std::istream &file);
+    inline bool WriteHeader(std::ostream &file) const;
 
     Sequence(size_t size, int)
             : from_(0), size_(size), rtl_(false), data_(ManagedNuclBuffer::create(size_)) {}
@@ -165,8 +166,6 @@ public:
 
     Sequence(const Sequence &s)
             : Sequence(s, s.from_, s.size_, s.rtl_) {}
-
-    ~Sequence() { }
 
     const Sequence &operator=(const Sequence &rhs) {
         if (&rhs == this)
@@ -237,33 +236,17 @@ public:
     inline Sequence Subseq(size_t from, size_t to) const;
 
     inline Sequence Subseq(size_t from) const; // up to size_ by default
+
+    inline Sequence operator+(const Sequence &s) const;
+
     inline Sequence First(size_t count) const;
 
     inline Sequence Last(size_t count) const;
 
-    inline Sequence operator+(const Sequence &s) const;
-
-    /////todo what are these methods???
     inline size_t find(const Sequence &t, size_t from = 0) const;
-
-    inline size_t similar(const Sequence &t, size_t k, char directed = 0) const;
-
-    inline size_t leftSimilar(const Sequence &t, size_t k) const;
-
-    inline size_t rightSimilar(const Sequence &t, size_t k) const;
-
-    /**
-     * @param from inclusive
-     * @param to exclusive;
-     * @return true if two sequences intersect
-     */
-    inline bool intersects(const Sequence &t) const;
 
     template<size_t size2_>
     Seq<size2_> start() const;
-
-    template<size_t size2_>
-    Seq<size2_> fast_start() const;
 
     template<size_t size2_>
     Seq<size2_> end() const;
@@ -297,10 +280,6 @@ public:
         return true;
     }
 
-private:
-    inline bool ReadHeader(std::istream &file);
-    inline bool WriteHeader(std::ostream &file) const;
-
 public:
     inline bool BinRead(std::istream &file);
     inline bool BinWrite(std::ostream &file) const;
@@ -318,30 +297,6 @@ Seq<size2_> Sequence::start() const {
 }
 
 template<size_t size2_>
-Seq<size2_> Sequence::fast_start() const {
-    ST result[(size2_ + STN - 1) >> STNBits] = {0};
-
-    size_t start = from_ >> STNBits;
-    size_t end = (from_ + size_ - 1) >> STNBits;
-    size_t shift = (from_ & (STN - 1)) << 1;
-    const ST *bytes = data_->data();
-
-    for (size_t i = start; i <= end; ++i) {
-        result[i - start] = bytes[i] >> shift;
-    }
-
-    if (shift != 0) {
-        shift = STBits - shift;
-
-        for (size_t i = start + 1; i <= end; ++i) {
-            result[i - start - 1] |= bytes[i] << shift;
-        }
-    }
-
-    return (rtl_ ? !Seq<size2_>(result) : Seq<size2_>(result));
-}
-
-template<size_t size2_>
 Seq<size2_> Sequence::end() const {
     return Seq<size2_>(*this, size_ - size2_);
 }
@@ -355,24 +310,6 @@ Seq Sequence::start(size_t k) const {
 template<class Seq>
 Seq Sequence::end(size_t k) const {
     return Seq(unsigned(k), *this, size_ - k);
-}
-
-
-Sequence Sequence::First(size_t count) const {
-    return Subseq(0, count);
-}
-
-Sequence Sequence::Last(size_t count) const {
-    return Subseq(size_ - count);
-}
-
-bool Sequence::intersects(const Sequence &t) const {
-    for (size_t i = 0; i < std::min(size_, t.size_); ++i) {
-        if (this->operator[](i) == t[i]) {
-            return true;
-        }
-    }
-    return false;
 }
 
 // O(1)
@@ -394,6 +331,14 @@ Sequence Sequence::Subseq(size_t from) const {
     return Subseq(from, size_);
 }
 
+Sequence Sequence::First(size_t count) const {
+    return Subseq(0, count);
+}
+
+Sequence Sequence::Last(size_t count) const {
+    return Subseq(size_ - count);
+}
+
 /**
  * @todo : must be KMP or hashing instead of this
  */
@@ -404,45 +349,6 @@ size_t Sequence::find(const Sequence &t, size_t from) const {
         }
     }
     return -1ULL;
-}
-
-/**
- *
- *@param k  minimal intersection of sequences
- *@param directed  LEFT means that after intersection t continues to left over _this and matches perfectly with _this on overlaping
- *@return 0 - undirected similarity, 1: t extends this to right, -1: this extends t
- *
- */
-size_t Sequence::similar(const Sequence &t, size_t k, char directed) const {
-    size_t result = 0;
-    if (directed != -1)
-        result |= rightSimilar(t, k);
-    if (directed != 1)
-        result |= leftSimilar(t, k);
-    return result;
-}
-
-size_t Sequence::leftSimilar(const Sequence &t, size_t k) const {
-    return t.rightSimilar(*this, k);
-}
-
-size_t Sequence::rightSimilar(const Sequence &t, size_t k) const {
-    size_t tsz = t.size();
-    size_t sz = size();
-    Sequence d(t.Subseq(0, k));
-    for (size_t res = find(d, 0); res != -1ULL; res = find(d, res + 1)) {
-        if (res + tsz < sz)
-            continue;
-        size_t i;
-        for (i = k; i + res < sz; i++) {
-            if (t[i] != this->operator[](i + res)) {
-                break;
-            };
-        }
-        if (i == sz - res)
-            return 1;
-    }
-    return 0;
 }
 
 /**
@@ -574,5 +480,3 @@ public:
         return s;
     }
 };
-
-#endif /* SEQUENCE_HPP_ */

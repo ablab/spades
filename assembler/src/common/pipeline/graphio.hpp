@@ -453,7 +453,7 @@ class DataScanner {
             VERIFY(this->edge_id_map().find(first_real_id) != this->edge_id_map().end())
             EdgeId e1 = this->edge_id_map()[first_real_id];
             EdgeId e2 = this->edge_id_map()[second_real_id];
-            if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
+            if (e1 == EdgeId() || e2 == EdgeId())
                 continue;
             TRACE(e1 << " " << e2 << " " << point);
             //Need to prevent doubling of self-conjugate edge pairs
@@ -553,24 +553,24 @@ public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 private:
-    restricted::IdSegmentStorage CreateIdStorage(const string& file_name) {
-        FILE* file = fopen((file_name + ".gid").c_str(), "r");
-        //This is to support compatibility to old saves. Will be removed soon
-        if(file == NULL) {
-            return this->g().GetGraphIdDistributor().ReserveUpTo(1000000000);
+    size_t GetMaxId(const string& file_name) {
+        std::ifstream max_id_stream(file_name);
+        if (!max_id_stream) {
+            //TODO remove. Here to support compatibility to old saves in tests. 
+            return 1000000000;
+        } else {
+            //VERIFY_MSG(max_id_stream, "Failed to find " << file_name);
+            size_t max;
+            VERIFY_MSG(max_id_stream >> max, "Failed to read max_id");
+            return max;
         }
-        VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".gid"));
-        size_t max;
-        int flag = fscanf(file, "%zu\n", &max);
-        VERIFY(flag == 1);
-        fclose(file);
-        return this->g().GetGraphIdDistributor().ReserveUpTo(max);
     }
 
   public:
     /*virtual*/
     void LoadGraph(const string& file_name) {
-        restricted::IdSegmentStorage id_storage = CreateIdStorage(file_name);
+        auto id_storage = this->g().GetGraphIdDistributor().Reserve(GetMaxId(file_name + ".gid"), 
+                /*force_zero_shift*/true);
         INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
         FILE* file = fopen((file_name + ".grp").c_str(), "r");
         VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));

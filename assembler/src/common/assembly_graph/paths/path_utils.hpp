@@ -44,7 +44,7 @@ namespace debruijn_graph {
             return res;
         size_t suffix_len = 0;
         while (cur_dist > 0) {
-            EdgeId prev_edge(0);
+            EdgeId prev_edge;
             bool found = false;
             for (auto edge: g.IncomingEdges(cur_vertex)) {
                 if ((dijkstra.DistanceCounted(g.EdgeStart(edge))) && (

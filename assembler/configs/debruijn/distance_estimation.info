@@ -40,7 +40,3 @@ amb_de {
     relative_length_threshold       0.8
     relative_seq_threshold          0.5
 }
-
-sensitive_mapper {
-    k   19
-}

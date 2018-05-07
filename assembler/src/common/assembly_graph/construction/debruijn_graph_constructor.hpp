@@ -414,13 +414,13 @@ private:
         bool IsRC() const { return hash_and_mask_ & 2; }
         bool IsStart() const { return hash_and_mask_ & 1; }
         EdgeId GetEdge() const { return edge_; }
-        bool IsInvalid() { return hash_and_mask_ + 1 == 0 && edge_ == EdgeId(0); }
+        bool IsInvalid() { return hash_and_mask_ + 1 == 0 && edge_ == EdgeId(); }
 
         LinkRecord(size_t hash, EdgeId edge, bool is_start, bool is_rc)
                 : hash_and_mask_((hash << 2) | (BitBool(is_rc) << 1)| BitBool(is_start)), edge_(edge) { }
 
         LinkRecord()
-                : hash_and_mask_(-1ul), edge_(0) {}
+                : hash_and_mask_(-1ul) {}
 
 
         bool operator<(const LinkRecord &other) const {
@@ -450,7 +450,7 @@ private:
 
     void CollectLinkRecords(typename Graph::HelperT &helper, const Graph &graph, std::vector<LinkRecord> &records, const vector<Sequence> &sequences) const {
         size_t size = sequences.size();
-        records.resize(size * 2, LinkRecord(0, EdgeId(0), false, false));
+        records.resize(size * 2, LinkRecord(0, EdgeId(), false, false));
         restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
 #       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < size; ++i) {

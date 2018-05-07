@@ -13,7 +13,7 @@ std::pair<EdgeId, int> ExtensionChooser2015::FindLastUniqueInPath(const Bidirect
             return std::make_pair(path.At(i), i);
         }
     }
-    return std::make_pair(EdgeId(0), -1);
+    return std::make_pair(EdgeId(), -1);
 }
 
 ExtensionChooser::EdgeContainer ExtensionChooser2015::FindNextUniqueEdge(const EdgeId from) const {

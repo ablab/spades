@@ -338,18 +338,18 @@ protected:
     EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data,
                          restricted::IdDistributor &idDistributor) {
         EdgeId newEdge(new PairedEdge<DataMaster>(v2, data), idDistributor);
-        if (v1 != VertexId(0))
+        if (v1 != VertexId())
             v1->AddOutgoingEdge(newEdge);
         return newEdge;
     }
 
     EdgeId HiddenAddEdge(const EdgeData& data, restricted::IdDistributor& id_distributor) {
-        EdgeId result = AddSingleEdge(VertexId(0), VertexId(0), data, id_distributor);
+        EdgeId result = AddSingleEdge(VertexId(), VertexId(), data, id_distributor);
         if (this->master().isSelfConjugate(data)) {
             result->set_conjugate(result);
             return result;
         }
-        EdgeId rcEdge = AddSingleEdge(VertexId(0), VertexId(0), this->master().conjugate(data), id_distributor);
+        EdgeId rcEdge = AddSingleEdge(VertexId(), VertexId(), this->master().conjugate(data), id_distributor);
         result->set_conjugate(rcEdge);
         rcEdge->set_conjugate(result);
         return result;

@@ -78,8 +78,10 @@ void assemble_genome() {
     }
 
     // Build the pipeline
-    SPAdes.add<debruijn_graph::Construction>()
-          .add<debruijn_graph::GenomicInfoFiller>();
+    SPAdes.add<debruijn_graph::Construction>();
+
+    if (cfg::get().mode != debruijn_graph::config::pipeline_type::meta)
+        SPAdes.add<debruijn_graph::GenomicInfoFiller>();
 
     VERIFY(!cfg::get().gc.before_raw_simplify || !cfg::get().gc.before_simplify);
 

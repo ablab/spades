@@ -178,7 +178,7 @@ typename ObservableGraph<DataMaster>::VertexId ObservableGraph<DataMaster>::AddV
 template<class DataMaster>
 void ObservableGraph<DataMaster>::DeleteVertex(VertexId v) {
     VERIFY(base::IsDeadEnd(v) && base::IsDeadStart(v));
-    VERIFY(v != VertexId(NULL));
+    VERIFY(v != VertexId());
     FireDeleteVertex(v);
     base::HiddenDeleteVertex(v);
 }

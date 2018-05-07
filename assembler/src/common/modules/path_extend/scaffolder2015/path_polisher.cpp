@@ -246,7 +246,7 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
 
     if (candidates.size() <= 1) {
         if (candidates.size() == 0 || candidates.begin()->first == target_edge)
-            return EdgeId(0);
+            return EdgeId();
         else 
             return (candidates.begin()->first);
     } else {
@@ -256,7 +256,7 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
                 break;
         }
         if (i < 0) {
-            return EdgeId(0);
+            return EdgeId();
         } else {
             EdgeId last_unique = path[i];
             for (auto &pair: candidates){
@@ -276,7 +276,7 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
             if (to_sort[0].second > to_sort[1].second * weight_priority && to_sort[0].first != target_edge)
                 return to_sort[0].first;
             else
-                return EdgeId(0);
+                return EdgeId();
         }
     }
 }
@@ -308,9 +308,9 @@ Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
                 present_in_paths.insert(e);
 
         size_t total = 0;
-        while (last_e != EdgeId(0)) {
+        while (last_e != EdgeId()) {
             last_e = FindNext(path, present_in_paths, last_v, target_edge);
-            if (last_e != EdgeId(0)) {
+            if (last_e != EdgeId()) {
                 last_v = g_.EdgeEnd(last_e);
                 addition.push_back(last_e);
                 total += g_.length(last_e);
