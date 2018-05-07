@@ -24,3 +24,6 @@ if (SPADES_STATIC_BUILD)
   set_target_properties(spades-read-filter PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
+install(TARGETS spades-kmercount
+        DESTINATION bin
+        COMPONENT runtime)

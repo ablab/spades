@@ -17,3 +17,7 @@ target_link_libraries(spades-gbuilder graphio common_modules ${COMMON_LIBRARIES}
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades-gbuilder PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
+
+install(TARGETS spades-gbuilder
+        DESTINATION bin
+        COMPONENT runtime)
