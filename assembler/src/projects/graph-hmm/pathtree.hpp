@@ -606,7 +606,7 @@ class PathSet {
       return s;
     }
 
-    static std::string event_str(const AnnotatedPath &apath) {
+    static std::string alignment(const AnnotatedPath &apath, size_t m) {
       std::string s;
       size_t prev_position = 0;
       assert(apath.path.size() == apath.events.size());
@@ -622,17 +622,22 @@ class PathSet {
           ERROR("Alignment:" << s);
         }
         assert(apath.events[i].type != EventType::NONE);
-        for (size_t j = prev_position + 1; j< apath.events[i].m; ++j) {
+        for (size_t j = prev_position + 1; j < apath.events[i].m; ++j) {
           s += '-';
         }
         prev_position = apath.events[i].m;
         s += apath.events[i].type == EventType::MATCH ? 'M' : 'I';
       }
+
+      // Add trailing gaps (-)
+      for (size_t j = prev_position + 1; j <= m; ++j) {
+          s += '-';
+      }
       return s;
     }
 
     std::string str(size_t n) const { return str(paths_[n].path); }
-    std::string event_str(size_t n) const { return event_str(paths_[n]); }
+    std::string alignment(size_t n, size_t m = 0) const { return alignment(paths_[n], m); }
 
    private:
     std::vector<AnnotatedPath> paths_;
