@@ -210,7 +210,8 @@ int main(int argc, char* argv[]) {
         size_t idx = 0;
         for (const auto& entry : paths) {
             idx += 1;
-            gfa_writer.WritePaths(entry.path(), std::to_string(idx), "Z:W:" + std::to_string(entry.weight()));
+            gfa_writer.WritePaths(entry.path(), std::string("PATH_") + std::to_string(idx) + "_length_" + std::to_string(entry.path().size()) + "_weigth_" + std::to_string(entry.weight()),
+                                  "Z:W:" + std::to_string(entry.weight()));
         }
     }
 
