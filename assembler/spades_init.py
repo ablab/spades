@@ -29,7 +29,7 @@ def init():
     global ext_python_modules_home
 
     # users configuration (spades_init.py and spades binary are in the same directory)
-    if isfile(os.path.join(spades_home, 'spades')):
+    if isfile(os.path.join(spades_home, 'spades-core')):
         install_prefix = dirname(spades_home)
         bin_home = join(install_prefix, 'bin')
         spades_home = join(install_prefix, 'share', 'spades')
