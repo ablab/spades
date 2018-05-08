@@ -13,14 +13,12 @@
 //headers with tests
 #include "debruijn_graph_test.hpp"
 #include "simplification_test.hpp"
-#include "order_and_law_test.hpp"
 #include "path_extend_test.hpp"
 #include "overlap_removal_test.hpp"
 #include "overlap_analysis_test.hpp"
 //#include "detail_coverage_test.hpp"
 #include "paired_info_test.hpp"
-//fixme why is it disabled
-//#include "pair_info_test.hpp"
+#include "io_test.hpp"
 
 #define BOOST_TEST_SOURCE
 #include <boost/test/impl/unit_test_main.ipp>

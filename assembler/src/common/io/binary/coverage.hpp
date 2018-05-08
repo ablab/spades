@@ -26,8 +26,9 @@ private:
     }
 
     void LoadImpl(LoadFile &file, Index &index) {
-        while (file) { //Read until the end
-            auto eid = mapper_[file.Read<size_t>()];
+        size_t e;
+        while (file >> e) { //Read until the end
+            auto eid = mapper_[e];
             auto cov = file.Read<unsigned>();
             index.SetRawCoverage(eid, cov);
         }

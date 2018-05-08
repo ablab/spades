@@ -7,7 +7,18 @@
 
 #pragma once
 
+#include "modules/alignment/kmer_mapper.hpp"
+
 namespace debruijn_graph {
+
+const size_t MAX_SEQ_LENGTH = 1000;
+inline Sequence RandomSequence(size_t length) {
+    std::string result(length, 'A');
+    for (size_t i = 0; i < length; i++) {
+        result[i] = nucl((char)rand() % 4);
+    }
+    return Sequence(result);
+}
 
 template<class Graph>
 class RandomGraphAccessor {
@@ -44,49 +55,66 @@ private:
     const Graph &graph_;
 };
 
-template<class Graph>
-class RandomGraphConstructor : private RandomGraphAccessor<Graph> {
-private:
-    Graph &graph_;
+template<typename T>
+class RandomConstructor {
 
-    size_t max_size_;
-    unsigned rand_seed_;
-
-    Sequence GenerateRandomSequence(size_t length) {
-        std::string result(length, 'A');
-        for (size_t i = 0; i < length; i++) {
-            result[i] = nucl((char)rand() % 4);
-        }
-        return Sequence(result);
+public:
+    RandomConstructor(const char *name, T &value, size_t max_size)
+            : name_(name), value_(value), max_size_(max_size) {
     }
 
+    void Generate(size_t iterations, unsigned rand_seed = 100) {
+        srand(rand_seed);
+        while (iterations--)
+            PerformRandomOperation();
+        DEBUG("Generated random " << name_);
+    }
+
+private:
+    virtual void PerformRandomOperation() = 0;
+    const char *name_;
+
+protected:
+    T &value_;
+    const size_t max_size_;
+};
+
+template<class Graph>
+class RandomGraph : public RandomConstructor<Graph>, private RandomGraphAccessor<Graph> {
+
+public:
+    RandomGraph(Graph &graph, size_t max_size = 1000)
+            : RandomConstructor<Graph>("graph", graph, max_size)
+            , RandomGraphAccessor<Graph>(graph) {
+    }
+
+private:
     void AddRandomVertex() {
-        graph_.AddVertex();
+        this->value_.AddVertex();
     }
 
     void AddRandomEdge() {
-        static const size_t MAX_SEQ_LENGTH = 1000;
-        graph_.AddEdge(this->GetRandomVertex(), this->GetRandomVertex(),
-                       GenerateRandomSequence(rand() % MAX_SEQ_LENGTH + graph_.k() + 1));
+        this->value_.AddEdge(this->GetRandomVertex(), this->GetRandomVertex(),
+                             RandomSequence(rand() % MAX_SEQ_LENGTH + this->value_.k() + 1));
     }
 
     void RemoveRandomVertex() {
-        graph_.ForceDeleteVertex(this->GetRandomVertex());
+        this->value_.ForceDeleteVertex(this->GetRandomVertex());
     }
 
     void RemoveRandomEdge() {
-        graph_.DeleteEdge(this->GetRandomEdge());
+        this->value_.DeleteEdge(this->GetRandomEdge());
     }
 
-    void PerformRandomOperation() {
-        if (!graph_.size())
+    void PerformRandomOperation() override {
+        if (!this->value_.size())
             AddRandomVertex();
-        else if (graph_.SmartEdgeBegin().IsEnd()) {
+        else if (this->value_.SmartEdgeBegin().IsEnd()) {
             if (rand() % 2)
                 AddRandomVertex();
             else
                 AddRandomEdge();
-        } else if (graph_.size() > max_size_) {
+        } else if (this->value_.size() > this->max_size_) {
             RemoveRandomVertex();
         } else {
             size_t tmp = rand() % 9;
@@ -98,25 +126,18 @@ private:
                 RemoveRandomEdge();
         }
     }
-
-public:
-    RandomGraphConstructor(Graph &graph, size_t max_size) :
-            RandomGraphAccessor<Graph>(graph), graph_(graph), max_size_(max_size) {
-    }
-
-    void Generate(size_t iterations, unsigned rand_seed = 100) {
-        srand(rand_seed);
-        while (iterations--)
-            PerformRandomOperation();
-        DEBUG("Generated graph of size " << graph_.size());
-    }
 };
 
 template<class Index>
-class RandomPairedIndexConstructor: private RandomGraphAccessor<typename Index::Graph> {
-private:
-    Index &index_;
+class RandomPairedIndex: public RandomConstructor<Index>, private RandomGraphAccessor<typename Index::Graph> {
 
+public:
+    RandomPairedIndex(Index &index, size_t max_size = 1000)
+            : RandomConstructor<Index>("paired index", index, max_size)
+            , RandomGraphAccessor<Graph>(index.graph()) {
+    }
+
+private:
     typedef typename Index::Graph Graph;
     typedef typename Index::Point Point;
 
@@ -126,35 +147,35 @@ private:
         using namespace omnigraph::de;
         const size_t MAX_DIST = 100;
         auto point = Point(DEDistance(rand() % MAX_DIST), DEWeight(1));
-        index_.Add(this->GetRandomEdge(), this->GetRandomEdge(), point);
+        this->value_.Add(this->GetRandomEdge(), this->GetRandomEdge(), point);
     }
 
     void RemoveRandomPoint() {
-        size_t num = rand() % index_.size();
-        auto i = omnigraph::de::pair_begin(index_);
+        size_t num = rand() % this->value_.size();
+        auto i = omnigraph::de::pair_begin(this->value_);
         do {
             for (auto j : *i)
                 if (num--) {
-                    index_.Remove(i.first(), i.second(), j);
+                    this->value_.Remove(i.first(), i.second(), j);
                     return;
                 }
-        } while (++i != omnigraph::de::pair_end(index_));
+        } while (++i != omnigraph::de::pair_end(this->value_));
     }
 
     void RemoveRandomHistogram() {
-        index_.Remove(this->GetRandomEdge(), this->GetRandomEdge());
+        this->value_.Remove(this->GetRandomEdge(), this->GetRandomEdge());
     }
 
     void RemoveRandomEdgeInfo() {
-        index_.Remove(this->GetRandomEdge());
+        this->value_.Remove(this->GetRandomEdge());
     }
 
-    void PerformRandomOperation() {
+    void PerformRandomOperation() override {
         enum OpDistr {RemoveEdge = 0, RemoveHist = 1, RemovePoint = 4, AddPoint = 12};
         size_t dice = rand() % AddPoint;
-        if (!index_.size())
+        if (!this->value_.size())
             dice = AddPoint;
-        else if (index_.size() >= max_size_)
+        else if (this->value_.size() >= max_size_)
             dice = rand() % RemovePoint;
         if (dice <= RemoveEdge)
             RemoveRandomEdgeInfo();
@@ -165,17 +186,24 @@ private:
         else
             AddRandomPoint();
     }
+};
+
+template<typename Graph>
+class RandomKmerMapper : public RandomConstructor<KmerMapper<Graph>> {
 
 public:
-    RandomPairedIndexConstructor(Index &index, size_t max_size) :
-            RandomGraphAccessor<Graph>(index.graph()), index_(index), max_size_(max_size) {
+    typedef KmerMapper<Graph> Type;
+
+    RandomKmerMapper(Type &mapper, size_t max_size = 100)
+            : RandomConstructor<Type>("kmer mapper", mapper, max_size) {
     }
 
-    void Generate(size_t iterations, unsigned rand_seed = 100) {
-        srand(rand_seed);
-        while (iterations--)
-            PerformRandomOperation();
-        DEBUG("Generated index of size " << index_.size());
+private:
+    void PerformRandomOperation() override {
+        if (this->value_.size() < this->max_size_) {
+            auto length = rand() % MAX_SEQ_LENGTH + this->value_.k() + 1;
+            this->value_.RemapKmers(RandomSequence(length), RandomSequence(length));
+        }
     }
 };
 

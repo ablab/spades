@@ -12,6 +12,10 @@
 
 namespace io {
 
+inline SaveFile &operator<<(SaveFile &file, const Range &range) {
+    return (file << range.start_pos << range.end_pos);
+}
+
 template<typename Graph>
 class EdgePositionsIO : public IOSingle<typename omnigraph::EdgesPositionHandler<Graph>> {
 public:
@@ -27,9 +31,7 @@ private:
             auto pos_it = edge_pos.GetEdgePositions(*it);
             file << (*it).int_id() << pos_it.size();
             for (const auto &i : pos_it) {
-                file << i.contigId;
-                file << i.mr.initial_range.start_pos << i.mr.initial_range.end_pos
-                     << i.mr.mapped_range.start_pos  << i.mr.initial_range.end_pos;
+                file << i.contigId << i.mr.initial_range << i.mr.mapped_range;
             }
         }
     }
@@ -37,14 +39,15 @@ private:
     void LoadImpl(LoadFile &file, Type &edge_pos) override {
         VERIFY(!edge_pos.IsAttached());
         edge_pos.Attach();
-        while (file) { //Read until the end
-            auto eid = mapper_[file.Read<size_t>()];
+        size_t e;
+        while (file >> e) { //Read until the end
+            auto eid = mapper_[e];
             auto info_count = file.Read<size_t>();
             while (info_count--) {
                 auto contig = file.Read<std::string>();
-                size_t start_pos, end_pos, m_start_pos, m_end_pos;
-                file >> start_pos >> end_pos >> m_start_pos >> m_end_pos;
-                edge_pos.AddEdgePosition(eid, contig, start_pos, end_pos, m_start_pos, m_end_pos);
+                size_t pos[4];
+                file >> pos;
+                edge_pos.AddEdgePosition(eid, contig, pos[0], pos[1], pos[2], pos[3]);
             }
         }
     };

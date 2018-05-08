@@ -441,10 +441,10 @@ using TestIndex = UnclusteredPairedInfoIndexT<Graph>;
 
 BOOST_AUTO_TEST_CASE(PairedInfoRandomSymmetry) {
     Graph graph(55);
-    RandomGraphConstructor<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
+    RandomGraph<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
 
     TestIndex pi(graph);
-    RandomPairedIndexConstructor<TestIndex>(pi, 100).Generate(20);
+    RandomPairedIndex<TestIndex>(pi, 100).Generate(20);
 
     for (auto it = omnigraph::de::pair_begin(pi); it != omnigraph::de::pair_end(pi); ++it) {
         auto info = *it;
@@ -455,41 +455,6 @@ BOOST_AUTO_TEST_CASE(PairedInfoRandomSymmetry) {
             auto conj_point = *ci;
             conj_point.d += offset;
             BOOST_CHECK_EQUAL(*i, conj_point);
-        }
-    }
-}
-
-const char *file_name = "src/test/debruijn/graph_fragments/saves/test_save";
-
-BOOST_AUTO_TEST_CASE(PairedInfoRandomSaveLoad) {
-    using namespace io;
-
-    Graph graph(55);
-    RandomGraphConstructor<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
-
-    TestIndex pi(graph);
-    RandomPairedIndexConstructor<TestIndex>(pi, 100).Generate(100);
-    
-    IdMapper<Graph::EdgeId> mapper;
-    for (auto i = graph.SmartEdgeBegin(); !i.IsEnd(); ++i)
-        mapper[(*i).int_id()] = *i;
-    PairedIndexIO<TestIndex> io(mapper);
-    io.Save(file_name, pi);
-
-    TestIndex ni(graph);
-    io.Load(file_name, ni);
-
-    BOOST_CHECK_EQUAL(pi.size(), ni.size());
-    for (auto pit = omnigraph::de::pair_begin(pi), nit = omnigraph::de::pair_begin(ni);
-         pit != omnigraph::de::pair_end(pi); ++pit, ++nit) {
-        BOOST_CHECK_EQUAL(pit.first(), nit.first());
-        BOOST_CHECK_EQUAL(pit.second(), nit.second());
-        BOOST_CHECK_EQUAL(pit->size(), nit->size());
-
-        for (auto ppit = pit->begin(), npit = nit->begin();
-             ppit != pit->end(); ++ppit, ++npit) {
-            BOOST_CHECK_EQUAL(ppit->weight, npit->weight);
-            BOOST_CHECK_EQUAL(ppit->d, npit->d);
         }
     }
 }
