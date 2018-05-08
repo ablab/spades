@@ -56,7 +56,7 @@ class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<Grap
     return states;
   }
 
-  bool impute(const GraphCursor &cursor,
+  bool update(const GraphCursor &cursor,
               score_t score,
               const PathLinkRef<GraphCursor> &plink) {
     auto it_fl = this->insert({cursor, {plink, score}});
@@ -73,6 +73,23 @@ class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<Grap
       return true;
     }
     return false;
+  }
+
+  template <typename Set>
+  size_t merge(const Set &S, score_t fee = 0) {
+    size_t count = 0;
+
+    for (const auto &state : S.states()) {
+      count += update(state.cursor, state.score + fee, state.plink);
+    }
+
+    return count;
+  }
+
+  void increment(score_t fee = 0) {
+    for (auto &kv : *this) {
+      kv.second.score += fee;
+    }
   }
 
   template <typename Predicate>
@@ -253,6 +270,7 @@ template <typename GraphCursor>
 PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<GraphCursor> &initial_original) {
   const double absolute_threshold = 100.0;
   using StateSet = StateSet<GraphCursor>;
+  using DeletionStateSet = DeletionStateSet<GraphCursor>;
   const auto &code = fees.code;
 
   INFO("pHMM size: " << fees.M);
@@ -275,9 +293,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   std::vector<GraphCursor> initial;
 
-  auto transfer = [&code, &initial](StateSet &to, const StateSet &from, double transfer_fee,
+  auto transfer = [&code, &initial](StateSet &to, const auto &from, double transfer_fee,
                                     const std::vector<double> &emission_fees, const std::string & = "") {
-    assert(&to != &from);
+    assert((void*)(&to) != (void*)(&from));
     for (const auto &state : from.states()) {
       const auto &cur = state.cursor;
       const auto &fee = state.score;
@@ -437,7 +455,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     }
   };
 
-  auto dm_new = [&](StateSet &D, StateSet &M, const StateSet &I, size_t m) {
+  auto dm_new_bak = [&](StateSet &D, StateSet &M, const StateSet &I, size_t m) {
     StateSet Dnew;
     merge_state_set(Dnew, M, fees.t[m - 1][p7H_MD]);
     merge_state_set(Dnew, D, fees.t[m - 1][p7H_DD]);
@@ -451,6 +469,20 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     transfer(M, preM, 0, fees.mat[m], "m");
 
     D = std::move(Dnew);
+  };
+
+  auto dm_new = [&](DeletionStateSet &D, StateSet &M, const StateSet &I, size_t m) {
+    DeletionStateSet preM = D;
+
+    D.increment(fees.t[m - 1][p7H_DD]);
+    D.merge(M, fees.t[m - 1][p7H_MD]);
+
+    preM.increment(fees.t[m - 1][p7H_DM]);
+    preM.merge(M, fees.t[m - 1][p7H_MM]);
+    preM.merge(I, fees.t[m - 1][p7H_IM]);
+
+    M.clear();
+    transfer(M, preM, 0, fees.mat[m], "m");
   };
 
   DepthAtLeast<GraphCursor> depth;
@@ -469,7 +501,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
                [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, static_cast<double>(fees.M) / 3 - 10); });  // FIXME Correct this condition for local-local matching
   INFO("Initial set size: " << initial.size());
 
-  StateSet I, M, D;
+  StateSet I, M;
+  DeletionStateSet D;
   const auto empty = GraphCursor();
   auto base = PathLink<GraphCursor>::master_source();
   M[empty] = base;  // TODO Implement and use empty Trajectory() instead of Trajectory(0)
@@ -556,7 +589,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
   PathSet<GraphCursor> result;
   auto &terminal = result.pathlink();
   terminal.update(empty, std::numeric_limits<double>::infinity(), base);
-  auto upd_terminal = [&](const StateSet &S, double fee) {
+  auto upd_terminal = [&terminal](const auto &S, double fee) {
     for (const auto &state : S.states()) {
       terminal.update(state.cursor, state.score + fee, state.plink);
     }
