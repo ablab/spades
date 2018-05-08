@@ -29,19 +29,20 @@ private:
     void SaveImpl(SaveFile &file, const Graph &graph) override {
         file << graph.GetGraphIdDistributor().GetMax();
 
-        auto component = omnigraph::GraphComponent<Graph>::WholeGraph(graph);
-        file << component.v_size() << component.e_size();
-
-        for (auto iter = component.v_begin(); iter != component.v_end(); ++iter) {
-            auto v = *iter;
-            file << v.int_id() << graph.conjugate(v).int_id();
-        }
-
-        for (auto iter = component.e_begin(); iter != component.e_end(); ++iter) {
-            auto e = *iter;
-            file << e.int_id() << graph.conjugate(e).int_id()
-                 << graph.EdgeStart(e).int_id() << graph.EdgeEnd(e).int_id()
-                 << graph.EdgeNucls(e);
+        for (auto v1 : graph) {
+            file << v1.int_id() << graph.conjugate(v1).int_id();
+            std::unordered_set<EdgeId> to_write; //TODO: reserve bytes, then rewrite in the end?
+            for (auto e : graph.OutgoingEdges(v1)) {
+                if (e <= graph.conjugate(e))
+                    to_write.insert(e);
+            }
+            file << (size_t)to_write.size();
+            for (auto e1 : to_write) {
+                auto e2 = graph.conjugate(e1);
+                file << e1.int_id() << e2.int_id()
+                     << graph.EdgeEnd(e1).int_id() << graph.EdgeStart(e2).int_id()
+                     << graph.EdgeNucls(e1);
+            }
         }
     }
 
@@ -50,33 +51,33 @@ private:
         file >> max_id;
         auto id_storage = graph.GetGraphIdDistributor().ReserveUpTo(max_id);
 
-        size_t vertex_count, edge_count;
-        file >> vertex_count >> edge_count;
-
-        while (vertex_count--) {
-            size_t ids[2];
-            file >> ids;
+        auto TryAddVertex = [&](size_t ids[2]) {
+            if (vertex_mapper_.count(ids[0]))
+                return;
             TRACE("Vertex " << ids[0] << " ~ " << ids[1] << " .");
+            auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
+            auto new_id = graph.AddVertex(typename Graph::VertexData(), id_distributor);
+            vertex_mapper_[ids[0]] = new_id;
+            vertex_mapper_[ids[1]] = graph.conjugate(new_id);
+        };
 
-            if (!vertex_mapper_.count(ids[0])) {
-                auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
-                auto new_id = graph.AddVertex(typename Graph::VertexData(), id_distributor);
-                vertex_mapper_[ids[0]] = new_id;
-                vertex_mapper_[ids[1]] = graph.conjugate(new_id);
-            }
-        }
+        size_t start_ids[2];
+        while (file >> start_ids) { //Read until the end
+            TryAddVertex(start_ids);
+            auto count = file.Read<size_t>();
+            while (count--) {
+                size_t edge_ids[2], end_ids[2];
+                Sequence seq;
+                file >> edge_ids >> end_ids >> seq;
+                TRACE("Edge " << edge_ids[0] << " : " << start_ids[0] << " -> "
+                              << end_ids[0] << " l = " << seq.size() << " ~ " << edge_ids[1]);
+                TryAddVertex(end_ids);
 
-        while (edge_count--) {
-            size_t ids[2], vertex_ids[2];
-            Sequence seq;
-            file >> ids >> vertex_ids >> seq;
-            TRACE("Edge " << ids[0] << " : " << vertex_ids[0] << " -> "
-                          << vertex_ids[1] << " l = " << seq.size() << " ~ " << ids[1]);
-            if (!edge_mapper_.count(ids[0])) {
-                auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
-                auto new_id = graph.AddEdge(vertex_mapper_[vertex_ids[0]], vertex_mapper_[vertex_ids[1]], seq, id_distributor);
-                edge_mapper_[ids[0]] = new_id;
-                edge_mapper_[ids[1]] = graph.conjugate(new_id);
+                VERIFY(!edge_mapper_.count(edge_ids[0]));
+                auto id_distributor = id_storage.GetSegmentIdDistributor(edge_ids, edge_ids + 2);
+                auto new_id = graph.AddEdge(vertex_mapper_[start_ids[0]], vertex_mapper_[end_ids[0]], seq, id_distributor);
+                edge_mapper_[edge_ids[0]] = new_id;
+                edge_mapper_[edge_ids[1]] = graph.conjugate(new_id);
             }
         }
     }
