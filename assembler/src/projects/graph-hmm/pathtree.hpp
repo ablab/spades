@@ -11,6 +11,8 @@
 #include <vector>
 
 enum class EventType { NONE, MATCH, INSERTION };
+using score_t = double;
+
 
 namespace pathtree {
 
@@ -152,8 +154,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     result->scores_[GraphCursor()] = std::make_pair(0, nullptr);  // master_source score should be 0
     return result;
   }
-
-  using score_t = double;
 
   auto best_scores() const {
     struct Payload {
