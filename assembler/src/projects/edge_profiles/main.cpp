@@ -56,16 +56,15 @@ void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string 
 
 using namespace debruijn_graph;
 
-template<class Graph>
-class EdgeProfileStorage : public omnigraph::GraphActionHandler<Graph> {
-    typedef omnigraph::GraphActionHandler<Graph> base;
-    typedef typename Graph::EdgeId EdgeId;
+class EdgeProfileStorage {
+    typedef ConjugateDeBruijnGraph::EdgeId EdgeId;
     typedef Profile<Abundance> AbundanceVector;
 
+    const ConjugateDeBruijnGraph &g_;
     size_t sample_cnt_;
     std::map<EdgeId, AbundanceVector> profiles_;
 
-    //FIXME self-conjugate edge coverage?!
+    // FIXME self-conjugate edge coverage?!
     template<class SingleStream, class Mapper>
     void Fill(SingleStream &reader, size_t stream_id, const Mapper &mapper) {
         typename SingleStream::ReadT read;
@@ -81,12 +80,12 @@ class EdgeProfileStorage : public omnigraph::GraphActionHandler<Graph> {
     };
 
 public:
-    EdgeProfileStorage(const Graph &g, size_t sample_cnt) :
-            base(g, "EdgeProfiles"), sample_cnt_(sample_cnt) {}
+    EdgeProfileStorage(const ConjugateDeBruijnGraph &g, size_t sample_cnt) :
+            g_(g), sample_cnt_(sample_cnt) {}
 
     template<class SingleStreamList, class Mapper>
     void Fill(SingleStreamList &streams, const Mapper &mapper) {
-        for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
+        for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             profiles_[*it] = AbundanceVector(sample_cnt_, 0.);
         }
 
@@ -95,11 +94,11 @@ public:
             Fill(streams[i], i, mapper);
         }
 
-        for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
+        for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             auto &p = profiles_[e];
             for (size_t i = 0; i < sample_cnt_; ++i) {
-                p[i] = p[i] / double(this->g().length(e));
+                p[i] = p[i] / float(g_.length(e));
             }
         }
     }
@@ -143,7 +142,7 @@ void Run(const std::string &graph_path, const std::string &dataset_desc, size_t 
             io::single_binary_readers_for_libs(dataset, libs,
                                                /*followed by rc*/true, /*including paired*/true);
     size_t sample_cnt = dataset.lib_count();
-    EdgeProfileStorage<Graph> profile_storage(gp.g, sample_cnt);
+    EdgeProfileStorage profile_storage(gp.g, sample_cnt);
 
     profile_storage.Fill(single_readers, *MapperInstance(gp));
 
