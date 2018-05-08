@@ -27,6 +27,40 @@ using pathtree::PathLinkRef;
 template <typename GraphCursor>
 class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>> {
  public:
+  struct State {
+    GraphCursor cursor;
+    PathLinkRef<GraphCursor> plink;
+    score_t score;
+  };
+
+  std::vector<State> states() const {  // TODO implement this as a generator
+    std::vector<State> states;
+    for (const auto &kv : *this) {
+      const auto &cursor = kv.first;
+      const auto &score = kv.second->score();
+      const auto &plink = kv.second;
+
+      states.push_back({cursor, plink, score});
+    }
+
+    return states;
+  }
+
+  template <typename Container>
+  std::vector<State> states(const Container &container) const {  // TODO implement this as a generator
+    std::vector<State> states;
+    for (const auto &cursor : container) {
+      auto it = this->find(cursor);
+      assert(it != this->cend());
+      const auto &score = it->second->score();
+      const auto &plink = it->second;
+
+      states.push_back({cursor, plink, score});
+    }
+
+    return states;
+  }
+
   void set_event(size_t m, EventType type) {
     for (auto &kv : *this) {
       if (!kv.first.is_empty()) {
@@ -150,10 +184,10 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
   auto transfer = [&code, &initial](StateSet &to, const StateSet &from, double transfer_fee,
                                     const std::vector<double> &emission_fees, const std::string & = "") {
     assert(&to != &from);
-    for (const auto &kv : from) {
-      const auto &cur = kv.first;
-      const auto &fee = kv.second->score();
-      const auto &id = kv.second;
+    for (const auto &state : from.states()) {
+      const auto &cur = state.cursor;
+      const auto &fee = state.score;
+      const auto &id = state.plink;
       if (cur.is_empty()) {
         // This branch is used only during BEGIN->M, BEGIN->I and D->M transfers
         for (size_t i = 0; i < initial.size(); ++i) {
@@ -178,11 +212,10 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
                                         const std::unordered_set<GraphCursor> &keys) {
     assert(&to != &from);
     std::unordered_set<GraphCursor> updated;
-    for (const auto &cur : keys) {
-      auto it = from.find(cur);
-      assert(it != from.cend());
-      const auto &fee = it->second->score();
-      const auto &id = it->second;
+    for (const auto &state : from.states(keys)) {
+      const auto &cur = state.cursor;
+      const auto &fee = state.score;
+      const auto &id = state.plink;
       auto next_pairs = cur.next_pairs();
       for (size_t i = 0; i < next_pairs.size(); ++i) {
         const auto &next = next_pairs[i].first;
@@ -287,6 +320,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     TRACE(processed.size() << " states processed in I-loop m = " << m);
     TRACE(taken_values << " values extracted from queue m = " << m);
     // TODO update secondary references.
+    // Cycle references may appear =(
   };
 
   auto i_loop_processing = [&](StateSet &I, size_t m, const auto &filter) {
@@ -429,8 +463,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
   auto &terminal = result.pathlink();
   terminal.update(empty, std::numeric_limits<double>::infinity(), base);
   auto upd_terminal = [&](const StateSet &S, double fee) {
-    for (const auto &kv : S) {
-      terminal.update(kv.first, kv.second->score() + fee, kv.second);
+    for (const auto &state : S.states()) {
+      terminal.update(state.cursor, state.score + fee, state.plink);
     }
   };
 
