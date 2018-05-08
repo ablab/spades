@@ -353,24 +353,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
                                     const std::vector<double> &emission_fees) {
     assert((void*)(&to) != (void*)(&from));
     for (const auto &state : from.states()) {
-      const auto &cur = state.cursor;
-      const auto &fee = state.score;
-      const auto &id = state.plink;
-      if (cur.is_empty()) {
-        // This branch is used only during BEGIN->M, BEGIN->I and D->M transfers
-        for (size_t i = 0; i < initial.size(); ++i) {
-          const auto &next = initial[i];
-          double cost = fee + transfer_fee + emission_fees[code(next.letter())];
-          to.update(next, cost, cur, id);
-        }
-      } else {
-        auto next_pairs = cur.next_pairs();
-        for (size_t i = 0; i < next_pairs.size(); ++i) {
-          const auto &next = next_pairs[i].first;
-          char letter = next_pairs[i].second;
-          double cost = fee + transfer_fee + emission_fees[code(letter)];
-          to.update(next, cost, cur, id);
-        }
+      for (const auto &next : (state.cursor.is_empty() ? initial : state.cursor.next())) {
+        double cost = state.score + transfer_fee + emission_fees[code(next.letter())];
+        to.update(next, cost, state.cursor, state.plink);
       }
     }
   };
