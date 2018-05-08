@@ -145,6 +145,33 @@ auto make_state_iterator(const Map &map, const Iterator &it) {
   return StateIterator<Map, Iterator>(it);
 }
 
+template <typename Map, typename Iterator>
+class Key2KeyValueIterator : public llvm::iterator_facade_base<Key2KeyValueIterator<Map, Iterator>,
+                                                               std::forward_iterator_tag,
+                                                               typename Map::value_type> {
+  using This = Key2KeyValueIterator<Map, Iterator>;
+ public:
+  Key2KeyValueIterator(const Map &map, const Iterator &it) : map_{map}, it_{it} {}
+
+  const auto& operator*() const { return *map_.find(*it_); }
+
+  This &operator++() {
+    ++it_;
+    return *this;
+  }
+
+  bool operator==(const This &that) const { return it_ == that.it_; }
+
+ private:
+  const Map& map_;
+  Iterator it_;
+};
+
+template <typename Map, typename Iterator>
+auto make_key_to_key_value_iterator(const Map &map, const Iterator &it) {
+  return Key2KeyValueIterator<Map, Iterator>(map, it);
+}
+
 template <typename Map>
 class StateMap : public ScoresFilterMapMixin<Map> {
  public:
@@ -154,6 +181,14 @@ class StateMap : public ScoresFilterMapMixin<Map> {
                             make_state_iterator(*p, p->cend()));
   }
 
+  template <typename Container>
+  auto states(const Container &container) const {
+    const Map *p = crtp_this();
+    auto b = make_key_to_key_value_iterator(*p, container.cbegin());
+    auto e = make_key_to_key_value_iterator(*p, container.cend());
+    return llvm::make_range(make_state_iterator(*p, b),
+                            make_state_iterator(*p, e));
+  }
   // auto states() const {  // TODO implement this as a generator
   //   using GraphCursor = typename Map::key_type;
   //   std::vector<State<GraphCursor>> states;
@@ -164,18 +199,18 @@ class StateMap : public ScoresFilterMapMixin<Map> {
   //   return states;
   // }
 
-  template <typename Container>
-  auto states(const Container &container) const {  // TODO implement this as a generator
-    using GraphCursor = typename Map::key_type;
-    std::vector<State<GraphCursor>> states;
-    for (const auto &cursor : container) {
-      auto it = crtp_this()->find(cursor);
-      assert(it != crtp_this()->cend());
-      states.push_back(Map::kv2state(*it));
-    }
-
-    return states;
-  }
+  // template <typename Container>
+  // auto states(const Container &container) const {  // TODO implement this as a generator
+  //   using GraphCursor = typename Map::key_type;
+  //   std::vector<State<GraphCursor>> states;
+  //   for (const auto &cursor : container) {
+  //     auto it = crtp_this()->find(cursor);
+  //     assert(it != crtp_this()->cend());
+  //     states.push_back(Map::kv2state(*it));
+  //   }
+  //
+  //   return states;
+  // }
 
  private:
   Map *crtp_this() { return static_cast<Map *>(this); }
