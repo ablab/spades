@@ -15,6 +15,9 @@
 
 #include "depth_filter.hpp"
 
+#include <llvm/ADT/iterator.h>
+#include <llvm/ADT/iterator_range.h>
+
 extern "C" {
 #include "hmmer.h"
 }
@@ -114,18 +117,52 @@ struct State {
   score_t score;
 };
 
+template <typename Map, typename Iterator>
+class StateIterator : public llvm::iterator_facade_base<StateIterator<Map, Iterator>,
+                                                        std::forward_iterator_tag,
+                                                        State<typename Map::key_type>> {
+  using This = StateIterator<Map, Iterator>;
+  using GraphCursor = typename Map::key_type;
+
+ public:
+  StateIterator(const Iterator &it) : it_{it} {}
+
+  State<GraphCursor> operator*() const { return Map::kv2state(*it_); }
+
+  This &operator++() {
+    ++it_;
+    return *this;
+  }
+
+  bool operator==(const This &that) const { return it_ == that.it_; }
+
+ private:
+  Iterator it_;
+};
+
+template <typename Map, typename Iterator>
+auto make_state_iterator(const Map &map, const Iterator &it) {
+  return StateIterator<Map, Iterator>(it);
+}
+
 template <typename Map>
 class StateMap : public ScoresFilterMapMixin<Map> {
  public:
-  auto states() const {  // TODO implement this as a generator
-    using GraphCursor = typename Map::key_type;
-    std::vector<State<GraphCursor>> states;
-    for (const auto &kv : *crtp_this()) {
-      states.push_back(Map::kv2state(kv));
-    }
-
-    return states;
+  auto states() const {
+    const Map *p = crtp_this();
+    return llvm::make_range(make_state_iterator(*p, p->cbegin()),
+                            make_state_iterator(*p, p->cend()));
   }
+
+  // auto states() const {  // TODO implement this as a generator
+  //   using GraphCursor = typename Map::key_type;
+  //   std::vector<State<GraphCursor>> states;
+  //   for (const auto &kv : *crtp_this()) {
+  //     states.push_back(Map::kv2state(kv));
+  //   }
+  //
+  //   return states;
+  // }
 
   template <typename Container>
   auto states(const Container &container) const {  // TODO implement this as a generator
