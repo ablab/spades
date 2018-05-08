@@ -123,32 +123,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>> {
     }
   }
 
-  void merge_update_best(const This *other, double add_fee = 0) {
-    assert(other->scores_.size());
-    auto best = other->best_ancestor();
-
-    if (this->scores_.size() == 0 ||
-        this->score() > best->second.first + add_fee) {  // TODO the resultant scores_ should not be empty
-      this->scores_.clear();
-      this->scores_[best->first] = {best->second.first + add_fee, best->second.second};
-
-      this->event = other->event;
-    }
-
-    assert(scores_.size());
-  }
-
-  void merge_update(const This *other, double add_fee = 0) {
-    if (this->scores_.size() == 0 || this->score() > other->score() + add_fee) {
-      this->event = other->event;
-    }
-
-    for (const auto &kv : other->scores_) {
-      update(kv.first, kv.second.first + add_fee, kv.second.second);
-    }
-    assert(scores_.size());
-  }
-
   static ThisRef master_source() {
     auto result(new This());
     result->scores_[GraphCursor()] = std::make_pair(0, nullptr);  // master_source score should be 0

@@ -294,7 +294,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
   std::vector<GraphCursor> initial;
 
   auto transfer = [&code, &initial](StateSet &to, const auto &from, double transfer_fee,
-                                    const std::vector<double> &emission_fees, const std::string & = "") {
+                                    const std::vector<double> &emission_fees) {
     assert((void*)(&to) != (void*)(&from));
     for (const auto &state : from.states()) {
       const auto &cur = state.cursor;
@@ -439,38 +439,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     return fees.is_i_loop_non_negative(m) ? i_loop_processing_non_negative(I, m, filter) : i_loop_processing_negative(I, m);
   };
 
-  auto merge_state_set = [](StateSet &target, const StateSet &source, double transfer_fee = 0) {
-    for (const auto &kv : source) {
-      const auto &cur = kv.first;
-      const auto &id = kv.second;
-      target.get_or_create(cur)->merge_update(id.get(), transfer_fee);
-    }
-  };
-
-  auto merge_state_set_best = [](StateSet &target, const StateSet &source, double transfer_fee = 0) {
-    for (const auto &kv : source) {
-      const auto &cur = kv.first;
-      const auto &id = kv.second;
-      target.get_or_create(cur)->merge_update_best(id.get(), transfer_fee);
-    }
-  };
-
-  auto dm_new_bak = [&](StateSet &D, StateSet &M, const StateSet &I, size_t m) {
-    StateSet Dnew;
-    merge_state_set(Dnew, M, fees.t[m - 1][p7H_MD]);
-    merge_state_set(Dnew, D, fees.t[m - 1][p7H_DD]);
-
-    StateSet preM;
-    // It's enough to merge only best scores here
-    merge_state_set_best(preM, M, fees.t[m - 1][p7H_MM]);
-    merge_state_set_best(preM, D, fees.t[m - 1][p7H_DM]);
-    merge_state_set_best(preM, I, fees.t[m - 1][p7H_IM]);
-    M.clear();
-    transfer(M, preM, 0, fees.mat[m], "m");
-
-    D = std::move(Dnew);
-  };
-
   auto dm_new = [&](DeletionStateSet &D, StateSet &M, const StateSet &I, size_t m) {
     DeletionStateSet preM = D;
 
@@ -482,7 +450,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     preM.merge(I, fees.t[m - 1][p7H_IM]);
 
     M.clear();
-    transfer(M, preM, 0, fees.mat[m], "m");
+    transfer(M, preM, 0, fees.mat[m]);
   };
 
   DepthAtLeast<GraphCursor> depth;
@@ -518,7 +486,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     return depth_filter_cursor(cursor) || neighbourhood_filter_cursor(cursor);
   };
 
-  transfer(I, M, fees.t[0][p7H_MI], fees.ins[0], "i");
+  transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
   i_loop_processing(I, 0, depth_and_neib_filter_cursor);  // Do we really need I at the beginning???
   I.set_event(0, EventType::INSERTION);
   size_t n = 1;
@@ -532,7 +500,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
     dm_new(D, M, I, m);
     I.clear();
-    transfer(I, M, fees.t[m][p7H_MI], fees.ins[m], "i");
+    transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
     i_loop_processing(I, m, depth_filter_cursor);
 
     size_t n_of_states = D.size() + I.size() + M.size();
