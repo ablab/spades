@@ -24,17 +24,111 @@ namespace impl {
 using pathtree::PathLink;
 using pathtree::PathLinkRef;
 
+
+
+template <typename GraphCursor>
+struct ScoredPLink {
+  PathLinkRef<GraphCursor> plink;
+  score_t score;
+};
+
+template <typename GraphCursor>
+struct State {
+  GraphCursor cursor;
+  PathLinkRef<GraphCursor> plink;
+  score_t score;
+};
+
+
+template <typename GraphCursor>
+class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<GraphCursor>> {
+ public:
+  std::vector<State<GraphCursor>> states() const {  // TODO implement this as a generator
+    std::vector<State<GraphCursor>> states;
+    for (const auto &kv : *this) {
+      const auto &cursor = kv.first;
+      const auto &score = kv.second.score;
+      const auto &plink = kv.second.plink;
+
+      states.push_back({cursor, plink, score});
+    }
+
+    return states;
+  }
+
+  bool impute(const GraphCursor &cursor,
+              score_t score,
+              const PathLinkRef<GraphCursor> &plink) {
+    auto it_fl = this->insert({cursor, {plink, score}});
+    auto it = it_fl.first;
+    bool inserted = it_fl.second;
+
+    if (inserted) {
+      return true;
+    }
+
+    const score_t &prev_score = it->second.score;
+    if (prev_score > score) {
+      it->second = {plink, score};
+      return true;
+    }
+    return false;
+  }
+
+  template <typename Predicate>
+  size_t filter(const Predicate &predicate) {
+    size_t count = 0;
+    for (auto it = this->begin(); it != this->end();) {
+      if (predicate(*it)) {
+        it = this->erase(it);
+        ++count;
+      } else {
+        ++it;
+      }
+    }
+
+    return count;
+  }
+
+  // TODO refactor it, make general code instof copy-paste
+  auto scores() {
+    std::vector<double> scores;
+    scores.reserve(this->size());
+    for (auto it = this->begin(); it != this->end(); ++it) {
+      scores.push_back(it->second.score);
+    }
+
+    return scores;
+  }
+
+
+  size_t filter(size_t n, double score) {
+    n = std::min(n, this->size());
+    if (n == 0) {
+      this->clear();
+      return 0;
+    }
+
+    {
+      auto scores = this->scores();
+      std::nth_element(scores.begin(), scores.begin() + n - 1, scores.end());
+      score = std::min(score, scores[n - 1]);
+    }
+
+    auto pred = [score](const auto &kv) {
+      return kv.second.score > score;
+    };
+
+    return this->filter(pred);
+  }
+};
+
+
 template <typename GraphCursor>
 class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>> {
  public:
-  struct State {
-    GraphCursor cursor;
-    PathLinkRef<GraphCursor> plink;
-    score_t score;
-  };
-
-  std::vector<State> states() const {  // TODO implement this as a generator
-    std::vector<State> states;
+  std::vector<State<GraphCursor>> states() const {  // TODO implement this as a generator
+    std::vector<State<GraphCursor>> states;
     for (const auto &kv : *this) {
       const auto &cursor = kv.first;
       const auto &score = kv.second->score();
@@ -47,8 +141,8 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
   }
 
   template <typename Container>
-  std::vector<State> states(const Container &container) const {  // TODO implement this as a generator
-    std::vector<State> states;
+  std::vector<State<GraphCursor>> states(const Container &container) const {  // TODO implement this as a generator
+    std::vector<State<GraphCursor>> states;
     for (const auto &cursor : container) {
       auto it = this->find(cursor);
       assert(it != this->cend());
