@@ -23,6 +23,7 @@
 
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/configs/aligner_config.hpp"
+#include "pipeline/graphio.hpp"
 
 #include "projects/spades/hybrid_aligning.hpp"
 #include "projects/spades/hybrid_gap_closer.hpp"

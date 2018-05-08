@@ -343,7 +343,7 @@ public:
         }
 
         //trying to split vertices into equal chunks, leftovers put into first chunk
-        vector<const_vertex_iterator> answer;
+        std::vector<const_vertex_iterator> answer;
         size_t vertex_cnt = g_.size();
         size_t chunk_size = vertex_cnt / chunk_cnt;
         auto it = g_.begin();
@@ -397,7 +397,7 @@ public:
             return {begin(), end()};
         }
 
-        vector<omnigraph::GraphEdgeIterator<Graph>> answer;
+        std::vector<omnigraph::GraphEdgeIterator<Graph>> answer;
 
         for (auto v_it : IterationHelper<Graph, VertexId>(g_).Chunks(chunk_cnt)) {
             answer.push_back(omnigraph::GraphEdgeIterator<Graph>(g_, v_it));

@@ -474,7 +474,7 @@ std::pair<typename ObservableGraph<DataMaster>::EdgeId, typename ObservableGraph
     FireAddEdge(new_edge1);
     FireAddEdge(new_edge2);
     base::HiddenDeleteEdge(edge);
-    return make_pair(new_edge1, new_edge2);
+    return std::make_pair(new_edge1, new_edge2);
 }
 
 template<class DataMaster>
