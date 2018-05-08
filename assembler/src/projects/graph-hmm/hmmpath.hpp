@@ -112,8 +112,8 @@ struct ScoredPLink {
 
 template <typename GraphCursor>
 struct State {
-  GraphCursor cursor;
-  PathLinkRef<GraphCursor> plink;
+  const GraphCursor &cursor;
+  const PathLinkRef<GraphCursor> &plink;
   score_t score;
 };
 
