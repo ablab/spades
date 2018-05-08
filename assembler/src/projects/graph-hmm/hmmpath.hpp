@@ -62,6 +62,45 @@ class FilterMapMixin {
   const Map *crtp_this() const { return static_cast<const Map *>(this); }
 };
 
+template <typename Map>
+class ScoresFilterMapMixin : public FilterMapMixin<Map> {
+ public:
+  std::vector<score_t> scores() const {
+    std::vector<score_t> scores;
+    scores.reserve(crtp_this()->size());
+    for (auto &kv : *crtp_this()) {
+      scores.push_back(Map::score_fnc(kv));
+    }
+
+    return scores;
+  }
+
+  size_t score_filter(size_t n, score_t score) {
+    n = std::min(n, crtp_this()->size());
+    if (n == 0) {
+      crtp_this()->clear();
+      return 0;
+    }
+
+    {
+      auto scores = crtp_this()->scores();
+      std::nth_element(scores.begin(), scores.begin() + n - 1, scores.end());
+      score = std::min(score, scores[n - 1]);
+    }
+
+    auto pred = [score](const auto &kv) -> bool {
+      return Map::score_fnc(kv) > score;
+    };
+
+    return crtp_this()->filter_key_value(pred);
+  }
+
+ private:
+  Map *crtp_this() { return static_cast<Map *>(this); }
+  const Map *crtp_this() const { return static_cast<const Map *>(this); }
+};
+
+
 template <typename GraphCursor>
 struct ScoredPLink {
   PathLinkRef<GraphCursor> plink;
@@ -75,21 +114,48 @@ struct State {
   score_t score;
 };
 
-template <typename GraphCursor>
-class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<GraphCursor>>,
-                         public FilterMapMixin<DeletionStateSet<GraphCursor>> {
+template <typename Map>
+class StateMap : public ScoresFilterMapMixin<Map> {
  public:
-  std::vector<State<GraphCursor>> states() const {  // TODO implement this as a generator
+  auto states() const {  // TODO implement this as a generator
+    using GraphCursor = typename Map::key_type;
     std::vector<State<GraphCursor>> states;
-    for (const auto &kv : *this) {
-      const auto &cursor = kv.first;
-      const auto &score = kv.second.score;
-      const auto &plink = kv.second.plink;
-
-      states.push_back({cursor, plink, score});
+    for (const auto &kv : *crtp_this()) {
+      states.push_back(Map::kv2state(kv));
     }
 
     return states;
+  }
+
+  template <typename Container>
+  auto states(const Container &container) const {  // TODO implement this as a generator
+    using GraphCursor = typename Map::key_type;
+    std::vector<State<GraphCursor>> states;
+    for (const auto &cursor : container) {
+      auto it = crtp_this()->find(cursor);
+      assert(it != crtp_this()->cend());
+      states.push_back(Map::kv2state(*it));
+    }
+
+    return states;
+  }
+
+ private:
+  Map *crtp_this() { return static_cast<Map *>(this); }
+  const Map *crtp_this() const { return static_cast<const Map *>(this); }
+};
+
+template <typename GraphCursor>
+class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<GraphCursor>>,
+                         public StateMap<DeletionStateSet<GraphCursor>> {
+ public:
+  template <typename KV>
+  static State<GraphCursor> kv2state(const KV &kv) {
+    const auto &cursor = kv.first;
+    const auto &score = kv.second.score;
+    const auto &plink = kv.second.plink;
+
+    return {cursor, plink, score};
   }
 
   bool update(const GraphCursor &cursor,
@@ -128,67 +194,23 @@ class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<Grap
     }
   }
 
-  auto scores() {
-    std::vector<double> scores;
-    scores.reserve(this->size());
-    for (auto it = this->begin(); it != this->end(); ++it) {
-      scores.push_back(it->second.score);
-    }
-
-    return scores;
-  }
-
-  size_t filter(size_t n, double score) {
-    n = std::min(n, this->size());
-    if (n == 0) {
-      this->clear();
-      return 0;
-    }
-
-    {
-      auto scores = this->scores();
-      std::nth_element(scores.begin(), scores.begin() + n - 1, scores.end());
-      score = std::min(score, scores[n - 1]);
-    }
-
-    auto pred = [score](const auto &kv) {
-      return kv.second.score > score;
-    };
-
-    return this->filter_key_value(pred);
+  template <typename KV>  // TODO Use exact type here instof duck typing
+  static score_t score_fnc(const KV &kv) {
+    return kv.second.score;
   }
 };
 
 template <typename GraphCursor>
 class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>>,
-                 public FilterMapMixin<StateSet<GraphCursor>> {
+                 public StateMap<StateSet<GraphCursor>> {
  public:
-  std::vector<State<GraphCursor>> states() const {  // TODO implement this as a generator
-    std::vector<State<GraphCursor>> states;
-    for (const auto &kv : *this) {
-      const auto &cursor = kv.first;
-      const auto &score = kv.second->score();
-      const auto &plink = kv.second;
+  template <typename KV>
+  static State<GraphCursor> kv2state(const KV &kv) {
+    const auto &cursor = kv.first;
+    const auto &score = kv.second->score();
+    const auto &plink = kv.second;
 
-      states.push_back({cursor, plink, score});
-    }
-
-    return states;
-  }
-
-  template <typename Container>
-  std::vector<State<GraphCursor>> states(const Container &container) const {  // TODO implement this as a generator
-    std::vector<State<GraphCursor>> states;
-    for (const auto &cursor : container) {
-      auto it = this->find(cursor);
-      assert(it != this->cend());
-      const auto &score = it->second->score();
-      const auto &plink = it->second;
-
-      states.push_back({cursor, plink, score});
-    }
-
-    return states;
+    return {cursor, plink, score};
   }
 
   void set_event(size_t m, EventType type) {
@@ -197,24 +219,6 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
         kv.second->event = {static_cast<unsigned int>(m), type};
       }
     }
-  }
-
-  bool check_events() const {
-    for (const auto &kv : *this) {
-      if (!kv.first.is_empty() && kv.second->event.type == EventType::NONE) {
-        ERROR("None event on position " << kv.first);
-        return false;
-      }
-      if (kv.first.is_empty() && kv.second->event.type != EventType::NONE) {
-        ERROR("Nontrivial event on empty cursor position " << kv.first);
-        return false;
-      }
-    }
-    return true;
-  }
-
-  const PathLinkRef<GraphCursor> &get_or_create(const GraphCursor &key) {
-    return this->insert({key, new PathLink<GraphCursor>()}).first->second;
   }
 
   StateSet clone() const {
@@ -226,46 +230,22 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
     return copy;
   }
 
-  bool update(const GraphCursor &key, double score, GraphCursor from,
-              const PathLinkRef<GraphCursor> &traj) {
-    auto it_fl = this->insert({key, new PathLink<GraphCursor>()});
-    double prev = it_fl.second ? std::numeric_limits<double>::infinity() : it_fl.first->second->score();
-    // double prev = it_fl.first->second->score();
-    it_fl.first->second->update(from, score, traj);
+  bool update(const GraphCursor &cursor,
+              score_t score,
+              const GraphCursor &from,
+              const PathLinkRef<GraphCursor> &plink) {
+    auto it_fl = this->insert({cursor, new PathLink<GraphCursor>()});
+    auto it = it_fl.first;
+    bool inserted = it_fl.second;
+
+    score_t prev = inserted ? std::numeric_limits<score_t>::infinity() : it->second->score();
+    it->second->update(from, score, plink);
     return prev > score;
   }
 
-  // TODO implement method detecting upd of any kind
-  //
-
-  auto scores() {
-    std::vector<double> scores;
-    scores.reserve(this->size());
-    for (auto it = this->begin(); it != this->end(); ++it) {
-      scores.push_back(it->second->score());
-    }
-
-    return scores;
-  }
-
-  size_t filter(size_t n, double score) {
-    n = std::min(n, this->size());
-    if (n == 0) {
-      this->clear();
-      return 0;
-    }
-
-    {
-      auto scores = this->scores();
-      std::nth_element(scores.begin(), scores.begin() + n - 1, scores.end());
-      score = std::min(score, scores[n - 1]);
-    }
-
-    auto pred = [score](const auto &kv) {
-      return kv.second->score() > score;
-    };
-
-    return this->filter_key_value(pred);
+  template <typename KV>  // TODO Use exact type here instof duck typing
+  static score_t score_fnc(const KV &kv) {
+    return kv.second->score();
   }
 
 };
@@ -520,9 +500,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     I.set_event(m, EventType::INSERTION);
     M.set_event(m, EventType::MATCH);
 
-    I.filter(top, absolute_threshold);
-    M.filter(top, absolute_threshold);
-    D.filter(top, absolute_threshold);
+    I.score_filter(top, absolute_threshold);
+    M.score_filter(top, absolute_threshold);
+    D.score_filter(top, absolute_threshold);
 
     size_t depth_filtered = 0;
     depth_filtered += I.filter_key(depth_filter_cursor);
@@ -551,7 +531,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   PathSet<GraphCursor> result;
   auto &terminal = result.pathlink();
-  terminal.update(empty, std::numeric_limits<double>::infinity(), base);
+  terminal.update(empty, std::numeric_limits<score_t>::infinity(), base);
   auto upd_terminal = [&terminal](const auto &S, double fee) {
     for (const auto &state : S.states()) {
       terminal.update(state.cursor, state.score + fee, state.plink);
