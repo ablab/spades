@@ -24,7 +24,43 @@ namespace impl {
 using pathtree::PathLink;
 using pathtree::PathLinkRef;
 
+template <typename Map>
+class FilterMapMixin {
+ public:
+  template <typename Predicate>
+  size_t filter_key(const Predicate &predicate) {
+    size_t count = 0;
+    for (auto it = crtp_this()->begin(); it != crtp_this()->end();) {
+      if (predicate(it->first)) {
+        it = crtp_this()->erase(it);
+        ++count;
+      } else {
+        ++it;
+      }
+    }
 
+    return count;
+  }
+
+  template <typename Predicate>
+  size_t filter_key_value(const Predicate &predicate) {
+    size_t count = 0;
+    for (auto it = crtp_this()->begin(); it != crtp_this()->end();) {
+      if (predicate(*it)) {
+        it = crtp_this()->erase(it);
+        ++count;
+      } else {
+        ++it;
+      }
+    }
+
+    return count;
+  }
+
+ private:
+  Map *crtp_this() { return static_cast<Map *>(this); }
+  const Map *crtp_this() const { return static_cast<const Map *>(this); }
+};
 
 template <typename GraphCursor>
 struct ScoredPLink {
@@ -39,9 +75,9 @@ struct State {
   score_t score;
 };
 
-
 template <typename GraphCursor>
-class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<GraphCursor>> {
+class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<GraphCursor>>,
+                         public FilterMapMixin<DeletionStateSet<GraphCursor>> {
  public:
   std::vector<State<GraphCursor>> states() const {  // TODO implement this as a generator
     std::vector<State<GraphCursor>> states;
@@ -92,22 +128,6 @@ class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<Grap
     }
   }
 
-  template <typename Predicate>
-  size_t filter(const Predicate &predicate) {
-    size_t count = 0;
-    for (auto it = this->begin(); it != this->end();) {
-      if (predicate(*it)) {
-        it = this->erase(it);
-        ++count;
-      } else {
-        ++it;
-      }
-    }
-
-    return count;
-  }
-
-  // TODO refactor it, make general code instof copy-paste
   auto scores() {
     std::vector<double> scores;
     scores.reserve(this->size());
@@ -117,7 +137,6 @@ class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<Grap
 
     return scores;
   }
-
 
   size_t filter(size_t n, double score) {
     n = std::min(n, this->size());
@@ -136,13 +155,13 @@ class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<Grap
       return kv.second.score > score;
     };
 
-    return this->filter(pred);
+    return this->filter_key_value(pred);
   }
 };
 
-
 template <typename GraphCursor>
-class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>> {
+class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>>,
+                 public FilterMapMixin<StateSet<GraphCursor>> {
  public:
   std::vector<State<GraphCursor>> states() const {  // TODO implement this as a generator
     std::vector<State<GraphCursor>> states;
@@ -229,21 +248,6 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
     return scores;
   }
 
-  template <typename Predicate>
-  size_t filter(const Predicate &predicate) {
-    size_t count = 0;
-    for (auto it = this->begin(); it != this->end();) {
-      if (predicate(*it)) {
-        it = this->erase(it);
-        ++count;
-      } else {
-        ++it;
-      }
-    }
-
-    return count;
-  }
-
   size_t filter(size_t n, double score) {
     n = std::min(n, this->size());
     if (n == 0) {
@@ -261,7 +265,7 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
       return kv.second->score() > score;
     };
 
-    return this->filter(pred);
+    return this->filter_key_value(pred);
   }
 
 };
@@ -459,10 +463,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
   auto neighbourhood_filter_cursor = [&](const GraphCursor &cursor) -> bool {
     return !cursor.is_empty() && !neighbourhood.count(cursor);  // TODO Add empty() to neighbourhood set
   };
-  auto neighbourhood_filter_pair = [&](const auto &kv) -> bool {
-    const GraphCursor &cursor = kv.first;
-    return neighbourhood_filter_cursor(cursor);
-  };
 
   INFO("Original (before filtering) initial set size: " << initial_original.size());
   std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
@@ -492,11 +492,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
   size_t n = 1;
   for (size_t m = 1; m <= fees.M; ++m) {
     positions_left = fees.M - m;
-
-    auto depth_filter_pair = [&](const auto &kv) -> bool {
-      const GraphCursor &cursor = kv.first;
-      return depth_filter_cursor(cursor);
-    };
 
     dm_new(D, M, I, m);
     I.clear();
@@ -530,14 +525,14 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     D.filter(top, absolute_threshold);
 
     size_t depth_filtered = 0;
-    depth_filtered += I.filter(depth_filter_pair);
-    depth_filtered += M.filter(depth_filter_pair);
-    depth_filtered += D.filter(depth_filter_pair);
+    depth_filtered += I.filter_key(depth_filter_cursor);
+    depth_filtered += M.filter_key(depth_filter_cursor);
+    depth_filtered += D.filter_key(depth_filter_cursor);
 
     size_t neighbourhood_filtered = 0;
-    neighbourhood_filtered += I.filter(neighbourhood_filter_pair);
-    neighbourhood_filtered += M.filter(neighbourhood_filter_pair);
-    neighbourhood_filtered += D.filter(neighbourhood_filter_pair);
+    neighbourhood_filtered += I.filter_key(neighbourhood_filter_cursor);
+    neighbourhood_filtered += M.filter_key(neighbourhood_filter_cursor);
+    neighbourhood_filtered += D.filter_key(neighbourhood_filter_cursor);
 
 
     if (m >= n) {
