@@ -73,7 +73,7 @@ simp
     ; final tip clipper:
     final_tc
     {
-        condition               "{ lb 850, rctc 0.2 }"
+        condition               "{ lb 500, rctc 0.4 } { lb 850, rctc 0.2 }"
     }
 
     ; final bulge remover:
