@@ -8,12 +8,14 @@
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
+#include "modules/alignment/bwa_index.hpp"
 
 #include "visualization/visualization.hpp"
 #include "pipeline/graphio.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/osequencestream.hpp"
+#include "io/reads/file_reader.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/log_writers.hpp"
@@ -431,6 +433,19 @@ std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
     return hmms;
 }
 
+std::vector<std::pair<std::string, std::string>> ParseFASTAFile(const std::string &filename) {
+    io::FileReadStream is(filename);
+
+    std::vector<std::pair<std::string, std::string>> seqs;
+    io::SingleRead r;
+    while (!is.eof()) {
+        is >> r;
+        seqs.push_back({r.name(), r.GetSequenceString()});
+    }
+
+    return seqs;
+}
+
 template <typename Container>
 auto EdgesToSequences(const Container &entries,
                       const debruijn_graph::ConjugateDeBruijnGraph &graph) {
@@ -688,6 +703,41 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
 }
 
+void TraceSeq(const std::pair<std::string, std::string> &seq_with_name,
+              const alignment::BWAIndex &index,
+              const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
+              const cfg &cfg,
+              std::vector<HMMPathInfo> &results) {
+    const std::string &seq = seq_with_name.second;
+    auto path = index.AlignSequence(Sequence(seq));
+    INFO("" << path);
+}
+
+void seq_main(const cfg &cfg,
+              const debruijn_graph::ConjugateDeBruijnGraph &graph,
+              const std::vector<EdgeId> &edges,
+              std::unordered_set<std::vector<EdgeId>> &to_rescore,
+              std::set<std::pair<std::string, std::vector<EdgeId>>> &gfa_paths) {
+    // Outer loop: over each query sequence in <fafile>.
+    auto seqs = ParseFASTAFile(cfg.hmmfile);
+
+    INFO("Building BWA index");
+    alignment::BWAIndex index(graph);
+
+    INFO("Looking for seeds");
+    omp_set_num_threads(cfg.threads);
+    #pragma omp parallel for
+    for (size_t _i = 0; _i < seqs.size(); ++_i) {
+        const auto &seq = seqs[_i];
+
+        std::vector<HMMPathInfo> results;
+
+        TraceSeq(seq, index, graph, edges, cfg, results);
+
+        std::sort(results.begin(), results.end());
+    }
+}
+
 void hmm_main(const cfg &cfg,
               const debruijn_graph::ConjugateDeBruijnGraph &graph,
               const std::vector<EdgeId> &edges,
@@ -777,7 +827,9 @@ int main(int argc, char* argv[]) {
 
     if (ends_with(cfg.hmmfile, ".fa")) {
         // Match sequence
+        seq_main(cfg, graph, edges, to_rescore, gfa_paths);
     } else {
+        // Match HMM
         hmm_main(cfg, graph, edges, to_rescore, gfa_paths);
     }
 
