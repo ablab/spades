@@ -70,15 +70,23 @@ class DummyDepthAtLeast {
 template <typename GraphCursor>
 class DepthAtLeast {
   struct Estimation {
-    double value;
+    size_t value;
     bool exact;
   };
 
  public:
-  const size_t STACK_LIMIT = 50000;
+  static const size_t STACK_LIMIT = 50000;
+  static const size_t INF = std::numeric_limits<size_t>::max();
 
   bool depth_at_least(const GraphCursor &cursor, double d) {
     if (d <= 0) {
+      return true;
+    }
+    return depth_at_least(cursor, static_cast<size_t>(d));
+  }
+
+  bool depth_at_least(const GraphCursor &cursor, size_t d) {
+    if (d == 0) {
       return true;
     }
 
@@ -91,9 +99,8 @@ class DepthAtLeast {
       }
     }
 
-    const double coef = 2.0;
-    size_t stack_limit = static_cast<size_t>(coef * d);
-    stack_limit = std::max<size_t>(stack_limit, 10);
+    const size_t coef = 2;
+    size_t stack_limit = std::max<size_t>(coef * d, 10);
 
     assert(stack_limit >= d);
     assert(stack_limit <= STACK_LIMIT);
@@ -114,7 +121,7 @@ class DepthAtLeast {
 
   Estimation get_depth_(const GraphCursor &cursor, std::unordered_set<GraphCursor> &stack, size_t stack_limit) {
     if (cursor.is_empty()) {
-      return depth_[cursor] = {std::numeric_limits<double>::infinity(), true};
+      return depth_[cursor] = {INF, true};
     }
 
     if (cursor.letter() == '*' || cursor.letter() == 'X') {
@@ -122,7 +129,7 @@ class DepthAtLeast {
     }
 
     if (stack.count(cursor)) {
-      return depth_[cursor] = {std::numeric_limits<double>::infinity(), true};
+      return depth_[cursor] = {INF, true};
     }
 
     if (stack.size() > stack_limit) {
@@ -132,7 +139,7 @@ class DepthAtLeast {
     auto nexts = cursor.next();
     stack.insert(cursor);
     max_stack_size_ = std::max(max_stack_size_, stack.size());
-    double max_child = 0;
+    size_t max_child = 0;
     bool exact = true;
     for (const GraphCursor &n : nexts) {
       auto result = get_depth_(n, stack, stack_limit);
@@ -140,14 +147,14 @@ class DepthAtLeast {
       exact = exact && result.exact;
     }
 
-    // Infinity is always "exact"
-    if (std::isinf(max_child)) {
-      exact = true;
-    }
-
     stack.erase(cursor);
 
-    return depth_[cursor] = {1 + max_child, exact};
+    if (max_child == INF) {
+      // Infinity is always "exact"
+      return depth_[cursor] = {INF, true};
+    } else {
+      return depth_[cursor] = {1 + max_child, exact};
+    }
   }
 };
 
