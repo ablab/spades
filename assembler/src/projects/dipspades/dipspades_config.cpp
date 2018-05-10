@@ -21,10 +21,7 @@ void load(dipspades_config::base_params &bp,
     load(bp.max_threads            , pt,     "max_threads"            );
     load(bp.read_buffer_size     , pt,     "read_buffer_size"        );
 
-    // Fix number of threads according to OMP capabilities.
-    bp.max_threads = std::min(bp.max_threads, (size_t) omp_get_max_threads());
-    // Inform OpenMP runtime about this :)
-    omp_set_num_threads((int) bp.max_threads);
+    bp.max_threads = spades_set_omp_threads(bp.max_threads);
 }
 
 void load(dipspades_config::io_params &io,

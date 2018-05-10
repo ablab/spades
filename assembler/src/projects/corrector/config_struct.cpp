@@ -71,9 +71,6 @@ void load(corrector_config& cfg, const std::string &filename) {
     if (yin.error())
         throw(std::string("Failed to load config file ") + filename);
 
-    // Fix number of threads according to OMP capabilities.
-    cfg.max_nthreads = std::min(cfg.max_nthreads, (unsigned)omp_get_max_threads());
-    // Inform OpenMP runtime about this :)
-    omp_set_num_threads(cfg.max_nthreads);
+    cfg.max_nthreads = spades_set_omp_threads(cfg.max_nthreads);
 }
 }

@@ -514,7 +514,7 @@ struct debruijn_config {
 
     bool main_iteration;
 
-    size_t max_threads;
+    unsigned max_threads;
     size_t max_memory;
 
     resolving_mode rm;

@@ -296,6 +296,7 @@ int main(int argc, char** argv) {
          ", git revision " SPADES_GIT_SHA1);
     INFO("Loading config from " << config_file.c_str());
     cfg::create_instance(config_file);
+    INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg::get().max_nthreads);
 
     // hard memory limit
     const size_t GB = 1 << 30;

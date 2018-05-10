@@ -681,10 +681,7 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
         cfg.temp_bin_reads_dir += '/';
 
     load(cfg.max_threads, pt, "max_threads");
-    // Fix number of threads according to OMP capabilities.
-    cfg.max_threads = std::min(cfg.max_threads, (size_t) omp_get_max_threads());
-    // Inform OpenMP runtime about this :)
-    omp_set_num_threads((int) cfg.max_threads);
+    cfg.max_threads = spades_set_omp_threads(cfg.max_threads);
 
     load(cfg.max_memory, pt, "max_memory");
 

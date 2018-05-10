@@ -87,6 +87,7 @@ int main(int argc, char **argv) {
                      SPADES_GIT_SHA1);
         INFO("Maximum k-mer length: " << runtime_k::MAX_K);
         INFO("Assembling dataset (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
+        INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg::get().max_threads);
 
         spades::assemble_genome();
 

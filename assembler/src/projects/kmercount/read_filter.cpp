@@ -92,14 +92,13 @@ int main(int argc, char* argv[]) {
 
         create_console_logger();
 
+        nthreads = spades_set_omp_threads(nthreads);
+
         INFO("Starting kmer count based read filtering, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
 
         INFO("K-mer length set to " << k);
         INFO("# of threads to use: " << nthreads);
-
-        nthreads = std::min(nthreads, (unsigned) omp_get_max_threads());
-        // Inform OpenMP runtime about this :)
-        omp_set_num_threads((int) nthreads);
+        INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << nthreads);
 
         io::DataSet<debruijn_graph::config::LibraryData> dataset;
         dataset.load(dataset_desc);
@@ -121,7 +120,7 @@ int main(int argc, char* argv[]) {
         INFO("Filling kmer coverage");
         utils::FillCoverageHistogram(cqf, k, hasher, single_readers, thr + 1);
         INFO("Kmer coverage filled");
-        
+
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
             INFO("Filtering library " << i);
             if (dataset[i].has_paired()) {

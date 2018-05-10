@@ -86,6 +86,8 @@ int main(int /*argc*/, char** argv) {
 
     INFO("Starting dipSPAdes, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
     INFO("Assembling dataset (" << dsp_cfg::get().io.dataset_name << ") with K=" << dsp_cfg::get().bp.K);
+    INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << dsp_cfg::get().bp.max_threads);
+
     dipspades::run_dipspades();
 //    link_output("latest_success");
   } catch (std::bad_alloc const& e) {

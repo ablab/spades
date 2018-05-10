@@ -106,6 +106,7 @@ int main(int argc, char* argv[]) {
         if (k % 2 == 0)
             FATAL_ERROR("k-mer size must be odd");
 
+
         INFO("K-mer length set to " << k);
         switch (cfg.mode) {
             case output_type::unitigs:
@@ -119,11 +120,8 @@ int main(int argc, char* argv[]) {
                 break;
         }
 
-        nthreads = std::min(nthreads, (unsigned) omp_get_max_threads());
-        // Inform OpenMP runtime about this :)
-        omp_set_num_threads((int) nthreads);
-
-        INFO("# of threads to use: " << nthreads);
+        nthreads = spades_set_omp_threads(nthreads);
+        INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << nthreads);
 
         fs::make_dir(tmpdir);
         auto workdir = fs::tmp::make_temp_dir(tmpdir, "construction");

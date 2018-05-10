@@ -79,8 +79,5 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
   cfg.input_qvoffset_opt = pt.get_optional<int>("input_qvoffset");
   load(cfg.output_dir, pt, "output_dir");
 
-  // Fix number of threads according to OMP capabilities.
-  cfg.general_max_nthreads = std::min(cfg.general_max_nthreads, (unsigned)omp_get_max_threads());
-  // Inform OpenMP runtime about this :)
-  omp_set_num_threads(cfg.general_max_nthreads);
+  cfg.general_max_nthreads = spades_set_omp_threads(cfg.general_max_nthreads);
 }

@@ -8,6 +8,8 @@
 #ifndef __OMP_WRAPPER_H__
 #define __OMP_WRAPPER_H__
 
+#include <cstdlib>
+
 #ifdef _OPENMP
 # include <omp.h>
 #else
@@ -22,5 +24,19 @@
 # define omp_set_lock(x)         ((void)(x))
 # define omp_unset_lock(x)       ((void)(x))
 #endif
+
+static inline unsigned spades_set_omp_threads(unsigned max_threads) {
+    // Fix number of threads according to OMP capabilities.
+    unsigned omp_threads = (unsigned)omp_get_max_threads();
+    if (max_threads > omp_threads)
+        max_threads = omp_threads;
+
+    // Inform OpenMP runtime about this :)
+    omp_set_num_threads((int) max_threads);
+
+    return max_threads;
+}
+
+
 
 #endif /* __OMP_WRAPPER_H__ */
