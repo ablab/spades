@@ -532,8 +532,9 @@ public:
 //        VerifyIndex();
     
 //        INFO("Handling deletion " << e.int_id() <<" "<< Remove(e));
-        if (e == this->graph().conjugate(e)) 
-            INFO("removing self-conj");
+        if (e == this->graph().conjugate(e)) {
+            DEBUG("removing self-conj");
+        }
         DEBUG("Deleted:" << e << " " << omp_get_thread_num());
         Remove(e);
     }
