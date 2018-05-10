@@ -61,6 +61,13 @@ class Depth {
 };
 
 template <typename GraphCursor>
+class DummyDepthAtLeast {
+  bool depth_at_least(const GraphCursor &, double) {
+    return true;
+  }
+};
+
+template <typename GraphCursor>
 class DepthAtLeast {
   struct Estimation {
     double value;
@@ -190,3 +197,5 @@ std::vector<GraphCursor> depth_subset(const GraphCursor& cursor, size_t depth, b
 }
 
 }  // namespace impl
+
+// vim: set ts=2 sw=2 et :
