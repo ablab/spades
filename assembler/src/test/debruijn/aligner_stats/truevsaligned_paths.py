@@ -347,6 +347,7 @@ truepaths = load_truepaths(sys.argv[2])
 aligned_files = sys.argv[3].strip().split(",")
 K = int(sys.argv[4])
 html_name = sys.argv[5]
+aligned_onref = load_reads(sys.argv[6])
 res = {}
 for fl in aligned_files:
     alignedpaths = load_alignments(fl)
@@ -363,6 +364,7 @@ for fl in aligned_files:
 
     
     row_names = ["Total number of reads", \
+                 "Read aligned to ref (#reads)",\
                  "Read aligned to ref and corresponding ref subseq to graph (#reads)",\
                  "Mapped with GAligner (#reads)",\
                  "Path is not equal to true path (#reads)",\
@@ -373,6 +375,7 @@ for fl in aligned_files:
                  "Median length(in nucs) of skipped prefix/suffix/both"
                  ]
     res[fl] = {"Total number of reads" : len(reads), \
+                 "Read aligned to ref (#reads)": len(reads) - cnt_badideal(reads, aligned_onref),\
                  "Read aligned to ref and corresponding ref subseq to graph (#reads)": len(reads) - cnt_badideal(reads, truepaths),\
                  "Mapped with GAligner (#reads)" : len(reads) - cnt_badideal(reads, truepaths) - cnt_notmapped(reads, truepaths, alignedpaths),\
                  "Path is not equal to true path (#reads)": path_problems,\
