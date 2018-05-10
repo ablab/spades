@@ -1027,16 +1027,24 @@ public:
         EdgeId last_edge = path.Back();
         VertexId last_vertex = g_.EdgeEnd(last_edge);
         VertexId first_vertex = g_.EdgeStart(last_edge);
+        DEBUG("Looking for two loop structure");
         auto between = g_.GetEdgesBetween(last_vertex, first_vertex);
         if (between.size() != 2 || g_.OutgoingEdgeCount(last_vertex) != 2 || g_.IncomingEdgeCount(first_vertex) != 2
             || g_.IncomingEdgeCount(last_vertex) != 1 || g_.OutgoingEdgeCount(first_vertex) != 1 ) {
             return false;
         }
+        DEBUG("two glued cycles!");
         if (path.Size() >= 3 && path[path.Size()-3] == last_edge) {
+            if (path.Size() >= 5 && path.Front() == last_edge){
+                path.Conjugate().PopBack();
+                DEBUG("removing extra");
+            }
+            DEBUG("already traversed");
             return false;
         }
 //FIXME: constants
         if (g_.coverage(between[0]) > 1.3 *g_.coverage(between[1]) || g_.coverage(between[1]) > 1.3 *g_.coverage(between[0])) {
+            DEBUG("coverage not close");
             return false;
         }
         if (path.Size() == 1) {
@@ -1044,6 +1052,7 @@ public:
             path.PushBack(last_edge);
             path.PushBack(between[1]);
         } else {
+            DEBUG("Resolved two edge-cycle, adding two edges");
             path.PushBack(between[0] == path[path.Size() - 2]? between[1] : between[0]);
             path.PushBack(last_edge);
         }
