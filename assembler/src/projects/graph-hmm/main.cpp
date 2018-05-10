@@ -37,6 +37,12 @@
 #include "aa.hpp"
 #include "depth_filter.hpp"
 
+extern "C" {
+    #include "easel.h"
+    #include "esl_sqio.h"
+    #include "esl_vectorops.h"
+}
+
 void create_console_logger() {
     using namespace logging;
 
@@ -433,17 +439,52 @@ std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
     return hmms;
 }
 
-std::vector<std::pair<std::string, std::string>> ParseFASTAFile(const std::string &filename) {
-    io::FileReadStream is(filename);
 
-    std::vector<std::pair<std::string, std::string>> seqs;
-    io::SingleRead r;
-    while (!is.eof()) {
-        is >> r;
-        seqs.push_back({r.name(), r.GetSequenceString()});
+std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename) {
+    std::vector<hmmer::HMM> res;
+
+    ESL_ALPHABET   *abc  = esl_alphabet_Create(eslDNA);
+    P7_BG          *bg   = p7_bg_Create(abc);
+    P7_BUILDER     *bld  = p7_builder_Create(NULL, abc);
+    ESL_SQ         *qsq  = esl_sq_CreateDigital(abc);
+    ESL_SQFILE     *qfp  = NULL;
+    P7_HMM         *hmm  = NULL;
+    char            errbuf[eslERRBUFSIZE];
+    int             status;
+    const char *qfile = filename.c_str();
+
+    status = p7_builder_LoadScoreSystem(bld, "DNA1", 0.1, 0.4, bg);
+    if (status != eslOK) p7_Fail("Failed to set single query seq score system:\n%s\n", bld->errbuf);
+
+    // Open the query sequence file in FASTA format
+    status = esl_sqfile_Open(qfile, eslSQFILE_FASTA, NULL, &qfp);
+    if      (status == eslENOTFOUND) esl_fatal("No such file %s.", qfile);
+    else if (status == eslEFORMAT)   esl_fatal("Format of %s unrecognized.", qfile);
+    else if (status == eslEINVAL)    esl_fatal("Can't autodetect stdin or .gz.");
+    else if (status != eslOK)        esl_fatal("Open of %s failed, code %d.", qfile, status);
+
+    // For each sequence, build a model and save it.
+    while ((status = esl_sqio_Read(qfp, qsq)) == eslOK) {
+        fprintf(stderr, "%s %u\n", qsq->name, qsq->n);
+        p7_SingleBuilder(bld, qsq, bg, &hmm, NULL, NULL, NULL);
+
+        if (p7_hmm_Validate(hmm, errbuf, 1e-5f) != eslOK) esl_fatal("HMM validation failed: %s\n", errbuf);
+
+        ESL_ALPHABET *labc = esl_alphabet_Create(eslDNA);
+        hmm->abc = labc;
+
+        res.emplace_back(hmm, labc);
+        esl_sq_Reuse(qsq);
     }
+    if (status != eslEOF) esl_fatal("Unexpected error %d reading sequence file %s", status, qfp->filename);
 
-    return seqs;
+    p7_builder_Destroy(bld);
+    esl_sq_Destroy(qsq);
+    esl_sqfile_Close(qfp);
+    p7_bg_Destroy(bg);
+    esl_alphabet_Destroy(abc);
+
+    return res;
 }
 
 template <typename Container>
@@ -703,39 +744,51 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
 }
 
-void TraceSeq(const std::pair<std::string, std::string> &seq_with_name,
-              const alignment::BWAIndex &index,
-              const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
-              const cfg &cfg,
-              std::vector<HMMPathInfo> &results) {
-    const std::string &seq = seq_with_name.second;
-    auto path = index.AlignSequence(Sequence(seq));
-    INFO("" << path);
-}
-
 void seq_main(const cfg &cfg,
               const debruijn_graph::ConjugateDeBruijnGraph &graph,
               const std::vector<EdgeId> &edges,
               std::unordered_set<std::vector<EdgeId>> &to_rescore,
               std::set<std::pair<std::string, std::vector<EdgeId>>> &gfa_paths) {
     // Outer loop: over each query sequence in <fafile>.
-    auto seqs = ParseFASTAFile(cfg.hmmfile);
+    auto hmms = ParseFASTAFile(cfg.hmmfile);
 
-    INFO("Building BWA index");
-    alignment::BWAIndex index(graph);
-
-    INFO("Looking for seeds");
     omp_set_num_threads(cfg.threads);
     #pragma omp parallel for
-    for (size_t _i = 0; _i < seqs.size(); ++_i) {
-        const auto &seq = seqs[_i];
+    for (size_t _i = 0; _i < hmms.size(); ++_i) {
+        const auto &hmm = hmms[_i];
 
         std::vector<HMMPathInfo> results;
 
-        TraceSeq(seq, index, graph, edges, cfg, results);
+        TraceHMM(hmm, graph, edges, cfg, results);
 
         std::sort(results.begin(), results.end());
-    }
+        SaveResults(hmm, graph, cfg, results);
+
+        if (cfg.annotate_graph) {
+            std::unordered_set<std::vector<EdgeId>> unique_paths;
+            for (const auto &result : results)
+                unique_paths.insert(result.path);
+
+            size_t idx = 0;
+            for (const auto &path : unique_paths) {
+                #pragma omp critical
+                {
+                    gfa_paths.insert({ std::string(hmm.get()->name) + "_" + std::to_string(idx++) + "_length_" + std::to_string(path.size()), path });
+                }
+            }
+        }
+
+        if (cfg.rescore) {
+            Rescore(hmm, graph, cfg, results);
+
+            for (const auto &result : results) {
+                #pragma omp critical
+                {
+                    to_rescore.insert(result.path);
+                }
+            }
+        }
+    } // end outer loop over query HMMs
 }
 
 void hmm_main(const cfg &cfg,
@@ -825,7 +878,7 @@ int main(int argc, char* argv[]) {
     std::unordered_set<std::vector<EdgeId>> to_rescore;
     std::set<std::pair<std::string, std::vector<EdgeId>>> gfa_paths;
 
-    if (ends_with(cfg.hmmfile, ".fa")) {
+    if (ends_with(cfg.hmmfile, ".fa") || ends_with(cfg.hmmfile, ".fasta")) {
         // Match sequence
         seq_main(cfg, graph, edges, to_rescore, gfa_paths);
     } else {
