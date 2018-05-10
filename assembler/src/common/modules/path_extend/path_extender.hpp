@@ -979,29 +979,6 @@ protected:
         return is_detector_.CheckCycledNonIS(temp_path);
     }
 
-    bool TryToResolveTwoLoops(BidirectionalPath& path) {
-        EdgeId last_edge = path.Back();
-        VertexId last_vertex = g_.EdgeEnd(last_edge);
-        VertexId first_vertex = g_.EdgeStart(last_edge);
-        auto between = g_.GetEdgesBetween(last_vertex, first_vertex);
-        if (between.size() != 2 || g_.OutgoingEdgeCount(last_vertex) != 2 || g_.IncomingEdgeCount(first_vertex) != 2
-            || g_.IncomingEdgeCount(last_vertex) != 1 || g_.OutgoingEdgeCount(first_vertex) != 1 ) {
-            return false;
-        }
-//FIXME: constants
-        if (g_.coverage(between[0]) > 1.3 *g_.coverage(between[1]) || g_.coverage(between[1]) > 1.3 *g_.coverage(between[0])) {
-            return false;
-        }
-        if (path.Size() == 1) {
-            path.PushBack(between[0]);
-            path.PushBack(last_edge);
-            path.PushBack(between[1]);
-        } else {
-            path.PushBack(between[0] == path[path.Size() - 2]? between[1] : between[0]);
-            path.PushBack(last_edge);
-        }
-        return true;
-    }
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* paths_storage = nullptr) = 0;
 
     virtual bool ResolveShortLoopByCov(BidirectionalPath& path) {
@@ -1046,6 +1023,29 @@ public:
 
     }
 
+    bool TryToResolveTwoLoops(BidirectionalPath& path) {
+        EdgeId last_edge = path.Back();
+        VertexId last_vertex = g_.EdgeEnd(last_edge);
+        VertexId first_vertex = g_.EdgeStart(last_edge);
+        auto between = g_.GetEdgesBetween(last_vertex, first_vertex);
+        if (between.size() != 2 || g_.OutgoingEdgeCount(last_vertex) != 2 || g_.IncomingEdgeCount(first_vertex) != 2
+            || g_.IncomingEdgeCount(last_vertex) != 1 || g_.OutgoingEdgeCount(first_vertex) != 1 ) {
+            return false;
+        }
+//FIXME: constants
+        if (g_.coverage(between[0]) > 1.3 *g_.coverage(between[1]) || g_.coverage(between[1]) > 1.3 *g_.coverage(between[0])) {
+            return false;
+        }
+        if (path.Size() == 1) {
+            path.PushBack(between[0]);
+            path.PushBack(last_edge);
+            path.PushBack(between[1]);
+        } else {
+            path.PushBack(between[0] == path[path.Size() - 2]? between[1] : between[0]);
+            path.PushBack(last_edge);
+        }
+        return true;
+    }
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
         if (is_detector_.InExistingLoop(path)) {
@@ -1057,6 +1057,8 @@ public:
         LoopDetector loop_detector(&path, cov_map_);
         if (DetectCycle(path)) {
             result = false;
+        } else if TryToResolveTwoLoops(path) {
+            return true;
         } else if (path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back()) && use_short_loop_cov_resolver_) {
             DEBUG("edge in short loop");
             result = ResolveShortLoop(path);
