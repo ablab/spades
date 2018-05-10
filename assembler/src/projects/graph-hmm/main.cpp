@@ -35,6 +35,7 @@
 
 #include "aa.hpp"
 #include "depth_filter.hpp"
+#include "cursor_conn_comps.hpp"
 
 extern "C" {
     #include "easel.h"
@@ -513,7 +514,6 @@ void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string 
 
 struct HMMPathInfo {
     std::string hmmname;
-    EdgeId leader;
     unsigned priority;
     double score;
     std::string seq;
@@ -524,8 +524,8 @@ struct HMMPathInfo {
         return score < that.score;
     }
 
-    HMMPathInfo(std::string name, EdgeId e, unsigned prio, double sc, std::string s, std::vector<EdgeId> p, std::string alignment)
-            : hmmname(std::move(name)), leader(e), priority(prio), score(sc),
+    HMMPathInfo(std::string name, unsigned prio, double sc, std::string s, std::vector<EdgeId> p, std::string alignment)
+            : hmmname(std::move(name)), priority(prio), score(sc),
               seq(std::move(s)), path(std::move(p)), alignment(std::move(alignment)) {}
 };
 
@@ -549,23 +549,23 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
                 }
             }
 
-            {
-                std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".fa", std::ios::out);
-                for (const auto &result : results) {
-                    o << ">" << result.leader << "_" << result.priority;
-                    if (result.seq.size() == 0)
-                        o << " (whole edge)";
-                    o << '\n';
-                    if (result.seq.size() == 0) {
-                        io::WriteWrapped(graph.EdgeNucls(result.leader).str(), o);
-                    } else {
-                        io::WriteWrapped(result.seq, o);
-                    }
-                    if (cfg.rescore && result.path.size() > 0) {
-                        to_rescore_local.insert(result.path);
-                    }
-                }
-            }
+            // {
+            //     std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".fa", std::ios::out);
+            //     for (const auto &result : results) {
+            //         o << ">" << result.leader << "_" << result.priority;
+            //         if (result.seq.size() == 0)
+            //             o << " (whole edge)";
+            //         o << '\n';
+            //         if (result.seq.size() == 0) {
+            //             io::WriteWrapped(graph.EdgeNucls(result.leader).str(), o);
+            //         } else {
+            //             io::WriteWrapped(result.seq, o);
+            //         }
+            //         if (cfg.rescore && result.path.size() > 0) {
+            //             to_rescore_local.insert(result.path);
+            //         }
+            //     }
+            // }
         }
     }
 }
@@ -614,16 +614,47 @@ void TraceHMM(const hmmer::HMM &hmm,
     // Collect the neighbourhood of the matched edges
     EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);  // hhmer is thread-safe
     bool hmm_in_aas = hmm.abc()->K == 20;
-    Neighbourhoods neighbourhoods = ExtractNeighbourhoods(matched_edges, graph, (hmm_in_aas ? 6 : 2));
 
-    // See, whether we could join some components
-    INFO("Joining components");
-    neighbourhoods = join_components(neighbourhoods, matched_edges, graph);
-    INFO("Total unique neighbourhoods extracted " << neighbourhoods.size());
+    using GraphCursor = std::decay_t<decltype(all(graph)[0])>;
+    std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
+    std::unordered_set<GraphCursor> cursors;
+    for (const auto &kv : matched_edges) {
+        EdgeId e = kv.first;
+        int coef = hmm_in_aas ? 3 : 1;
+        int loverhang = (matched_edges[e].first + 10) * coef; // TODO unify overhangs processing
+        int roverhang = (matched_edges[e].second + 10) * coef;
+
+        using GraphCursor = std::decay_t<decltype(all(graph)[0])>;
+        std::vector<GraphCursor> neib_cursors;
+        if (loverhang > 0) {
+            GraphCursor start = get_cursor(graph, e, 0);
+            left_queries.push_back({start, loverhang * 2});
+        }
+
+        size_t len = graph.length(e) + graph.k();
+        INFO("Edge length: " << len);
+        INFO("Edge overhangs: " << loverhang << " " << roverhang);
+        if (roverhang > 0) {
+            GraphCursor end = get_cursor(graph, e, len - 1);
+            right_queries.push_back({end, roverhang * 2});
+        }
+
+        for (size_t i = std::max(0, -loverhang); i < len - std::max(0, -roverhang); ++i) {
+            cursors.insert(get_cursor(graph, e, i));
+        }
+    }
+
+    auto left_cursors = impl::depth_subset(left_queries, false);
+    auto right_cursors = impl::depth_subset(right_queries, true);
+    cursors.insert(left_cursors.cbegin(), left_cursors.cend());
+    cursors.insert(right_cursors.cbegin(), right_cursors.cend());
+
+    std::vector<GraphCursor> cursors_vector(cursors.cbegin(), cursors.cend());
+    auto cursor_conn_comps = cursor_connected_components(cursors_vector);
 
     auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
 
-    auto run_search = [&](const auto &initial, EdgeId e, size_t top,
+    auto run_search = [&](const auto &initial, size_t top,
                           std::vector<HMMPathInfo> &local_results) {
         auto result = find_best_path(fees, initial);
 
@@ -642,7 +673,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             if (edge_path.size() == 0)  // TODO just do not extract empty paths, fix extraction method in pathtree.hpp. Remove this if{} when fixed
                 continue;
 
-            local_results.emplace_back(p7hmm->name, e, idx++, annotated_path.score, seq, std::move(edge_path), std::move(alignment));
+            local_results.emplace_back(p7hmm->name, idx++, annotated_path.score, seq, std::move(edge_path), std::move(alignment));
         }
     };
 
@@ -650,59 +681,15 @@ void TraceHMM(const hmmer::HMM &hmm,
     for (const auto &entry : matched_edges)
         match_edges.push_back(entry.first);
 
-    for (const auto &kv : neighbourhoods) {
-        EdgeId e = kv.first;
-
-        INFO("Looking HMM path around " << e);
-        auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromVertices(graph,
-                                                                                         kv.second.begin(), kv.second.end(),
-                                                                                         true);
-        INFO("Neighbourhood vertices: " << component.v_size() << ", edges: " << component.e_size());
-
-        if (component.e_size()/2 > cfg.max_size) {
-            WARN("Component is too large (" << component.e_size() / 2 << " vs " << cfg.max_size << "), skipping");
-            continue;
-        }
-
-        if (cfg.draw) {
-            INFO("Writing component around edge " << e);
-            DrawComponent(component, graph, cfg.output_dir + "/" + std::to_string(graph.int_id(e)), match_edges);
-        }
-
-        int coef = hmm_in_aas ? 3 : 1;
-        int loverhang = (matched_edges[e].first + 10) * coef; // TODO unify overhangs processing
-        int roverhang = (matched_edges[e].second + 10) * coef;
-
-        using GraphCursor = std::decay_t<decltype(all(component)[0])>;
-        std::vector<GraphCursor> neib_cursors;
-        if (loverhang > 0) {
-            GraphCursor start = get_cursor(component, e, 0);
-            auto left_cursors = impl::depth_subset(start, loverhang * 2, false);
-            neib_cursors.insert(neib_cursors.end(), left_cursors.cbegin(), left_cursors.cend());
-        }
-
-        size_t len = component.g().length(e) + component.g().k();
-        INFO("Edge length: " << len);
-        INFO("Edge overhangs: " << loverhang << " " << roverhang);
-        if (roverhang > 0) {
-            GraphCursor end = get_cursor(component, e, len - 1);
-            auto right_cursors = impl::depth_subset(end, roverhang * 2, true);
-            neib_cursors.insert(neib_cursors.end(), right_cursors.cbegin(), right_cursors.cend());
-        }
-
-        for (size_t i = std::max(0, -loverhang); i < len - std::max(0, -roverhang); ++i) {
-            neib_cursors.push_back(get_cursor(component, e, i));
-        }
-
-        // neib_cursors = all(component);
-
+    for (const auto &component_cursors : cursor_conn_comps) {
+        INFO("Component size " << component_cursors.size());
         INFO("Running path search");
         std::vector<HMMPathInfo> local_results;
 
         if (hmm_in_aas) {
-            run_search(make_aa_cursors(neib_cursors), e, cfg.top, local_results);
+            run_search(make_aa_cursors(component_cursors), cfg.top, local_results);
         } else {
-            run_search(neib_cursors, e, cfg.top, local_results);
+            run_search(component_cursors, cfg.top, local_results);
         }
 
         results.insert(results.end(), local_results.begin(), local_results.end());
@@ -711,20 +698,6 @@ void TraceHMM(const hmmer::HMM &hmm,
         for (const auto& entry : local_results)
             paths.insert(entry.path);
         INFO("Total " << paths.size() << " unique edge paths extracted");
-
-        {
-            size_t idx = 0;
-            for (const auto &path : paths) {
-                INFO("Path length : " << path.size() << " edges");
-                for (EdgeId e : path)
-                    INFO("" << e.int_id());
-                if (cfg.draw) {
-                    INFO("Writing component around path");
-                    DrawComponent(component, graph, cfg.output_dir + "/" + std::to_string(graph.int_id(e)) + "_" + std::to_string(idx), path);
-                }
-                idx += 1;
-            }
-        }
     }
 }
 
