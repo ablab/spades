@@ -6,13 +6,13 @@
 //***************************************************************************
 
 #include "dataset_processor.hpp"
-#include "pipeline/config_struct.hpp"
 
 #include "utils/logger/log_writers.hpp"
-#include "config_struct.hpp"
 #include "utils/segfault_handler.hpp"
 
 #include "version.hpp"
+
+#include "config_struct.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
             fs::make_dir(corr_cfg::get().work_dir);
 
         INFO("Starting MismatchCorrector, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
-        INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg::get().max_threads);
+        INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << corr_cfg::get().max_nthreads);
 
         corrector::DatasetProcessor dp(contig_name, corr_cfg::get().work_dir, corr_cfg::get().output_dir, corr_cfg::get().max_nthreads);
         dp.ProcessDataset();
