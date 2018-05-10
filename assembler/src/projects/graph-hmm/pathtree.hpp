@@ -10,6 +10,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "object_counter.hpp"
+
 enum class EventType { NONE, MATCH, INSERTION };
 using score_t = double;
 
@@ -21,41 +23,8 @@ struct Event {
   EventType type;
 };
 
-template <class T>
-class ObjectCounter {
- public:
-  static size_t object_count_max() { return object_count_max_; }
-  static size_t object_count_current() { return object_count_current_; }
-  static size_t object_count_constructed() { return object_count_constructed_; }
-
-  ObjectCounter() noexcept { object_count_construct_(); }
-  ObjectCounter(const ObjectCounter &) noexcept { object_count_construct_(); }
-  ObjectCounter(ObjectCounter &&) noexcept { object_count_construct_(); }
-  ~ObjectCounter() { --object_count_current_; }
-
- private:
-  static size_t object_count_max_;
-  static size_t object_count_current_;
-  static size_t object_count_constructed_;
-
-  static void object_count_construct_() {
-    ++object_count_constructed_;
-    ++object_count_current_;
-    object_count_max_ = std::max(object_count_max_, object_count_current_);
-  }
-};
-
-template <class T>
-size_t ObjectCounter<T>::object_count_max_ = 0;
-
-template <class T>
-size_t ObjectCounter<T>::object_count_current_ = 0;
-
-template <class T>
-size_t ObjectCounter<T>::object_count_constructed_ = 0;
-
 template <typename T>
-class Node : public ObjectCounter<Node<T>>, public llvm::RefCountedBase<Node<T>> {
+class Node : public AtomicObjectCounter<Node<T>>, public llvm::RefCountedBase<Node<T>> {
   using This = Node<T>;
   using ThisRef = llvm::IntrusiveRefCntPtr<This>;
 
@@ -92,7 +61,7 @@ NodeRef<T> make_child(const T &payload, const NodeRef<T> &parent = nullptr) {
 
 template <typename GraphCursor>
 class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
-                 public ObjectCounter<PathLink<GraphCursor>> {
+                 public AtomicObjectCounter<PathLink<GraphCursor>> {
   using This = PathLink<GraphCursor>;
   using ThisRef = llvm::IntrusiveRefCntPtr<This>;
 
