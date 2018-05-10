@@ -232,6 +232,10 @@ inline bool GetLoopAndExit(const Graph& g, EdgeId forward_cycle_edge, EdgeId& ba
     auto edges = g.OutgoingEdges(loop_end);
     EdgeId edge1 = *edges.begin();
     EdgeId edge2 = *(++edges.begin());
+    if (g.EdgeEnd(edge1) == g.EdgeEnd(edge2)) {
+//Patologic situation, two glued loops
+        return false;
+    }
     if (g.EdgeEnd(edge1) == g.EdgeStart(forward_cycle_edge)) {
         back_cycle_edge = edge1;
         loop_outgoing = edge2;
