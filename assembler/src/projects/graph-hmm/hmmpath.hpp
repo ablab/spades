@@ -141,7 +141,7 @@ class StateIterator : public llvm::iterator_facade_base<StateIterator<Map, Itera
 };
 
 template <typename Map, typename Iterator>
-auto make_state_iterator(const Map &map, const Iterator &it) {
+auto make_state_iterator(const Map &, const Iterator &it) {
   return StateIterator<Map, Iterator>(it);
 }
 
