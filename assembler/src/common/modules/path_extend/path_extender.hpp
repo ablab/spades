@@ -1032,6 +1032,9 @@ public:
             || g_.IncomingEdgeCount(last_vertex) != 1 || g_.OutgoingEdgeCount(first_vertex) != 1 ) {
             return false;
         }
+        if (path.Size() >= 3 && path[path.Size()-3] == last_edge) {
+            return false;
+        }
 //FIXME: constants
         if (g_.coverage(between[0]) > 1.3 *g_.coverage(between[1]) || g_.coverage(between[1]) > 1.3 *g_.coverage(between[0])) {
             return false;
@@ -1057,8 +1060,8 @@ public:
         LoopDetector loop_detector(&path, cov_map_);
         if (DetectCycle(path)) {
             result = false;
-        } else if TryToResolveTwoLoops(path) {
-            return true;
+        } else if (TryToResolveTwoLoops(path)) {
+            result = true;
         } else if (path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back()) && use_short_loop_cov_resolver_) {
             DEBUG("edge in short loop");
             result = ResolveShortLoop(path);
