@@ -8,7 +8,6 @@
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
-#include "modules/alignment/bwa_index.hpp"
 
 #include "visualization/visualization.hpp"
 #include "pipeline/graphio.hpp"
@@ -465,7 +464,7 @@ std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename) {
 
     // For each sequence, build a model and save it.
     while ((status = esl_sqio_Read(qfp, qsq)) == eslOK) {
-        fprintf(stderr, "%s %u\n", qsq->name, qsq->n);
+        fprintf(stderr, "%s %lld\n", qsq->name, qsq->n);
         p7_SingleBuilder(bld, qsq, bg, &hmm, NULL, NULL, NULL);
 
         if (p7_hmm_Validate(hmm, errbuf, 1e-5f) != eslOK) esl_fatal("HMM validation failed: %s\n", errbuf);
