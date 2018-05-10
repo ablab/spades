@@ -61,8 +61,7 @@ std::vector<DebruijnComponentCursor> DebruijnComponentCursor::prev() const {
     // Case 2: move backwards possibly going inside the terminal vertex of a
     // tip
     if (position_ != g.k() ||
-        (g.IncomingEdgeCount(g.EdgeStart(e_)) == 0 ||
-         c_->IsBorder(g.EdgeStart(e_)))) {
+        (g.IncomingEdgeCount(g.EdgeStart(e_)) == 0)) {
         return { DebruijnComponentCursor(c_, e_, position_ - 1) };
     }
 
@@ -70,8 +69,11 @@ std::vector<DebruijnComponentCursor> DebruijnComponentCursor::prev() const {
     assert(position_ == g.k());
     assert(g.IncomingEdgeCount(g.EdgeStart(e_)) && !c_->IsBorder(g.EdgeStart(e_)));
     std::vector<DebruijnComponentCursor> result;
-    for (EdgeId in : g.IncomingEdges(g.EdgeStart(e_)))
+    for (EdgeId in : g.IncomingEdges(g.EdgeStart(e_))) {
+        if (!c_->contains(in))
+            continue; // We need to stay in component
         result.emplace_back(c_, in, g.length(in) - 1);
+    }
 
     return result;
 }
@@ -84,16 +86,15 @@ inline std::vector<DebruijnComponentCursor> DebruijnComponentCursor::next() cons
     if (position_ + 1 < g.length(e_) + g.k())
         return { DebruijnComponentCursor(c_, e_, position_ + 1) };
 
-    // If we're in the border vertex, then no extension is possible
-    if (c_->IsBorder(g.EdgeEnd(e_)))
-        return { };
-
     // Otherwise we're inside the vertex and need to go out of it
     assert(position_ + 1 == g.length(e_) + g.k());
     std::vector<DebruijnComponentCursor> result;
     result.reserve(4);
-    for (EdgeId out : g.OutgoingEdges(g.EdgeEnd(e_)))
+    for (EdgeId out : g.OutgoingEdges(g.EdgeEnd(e_))) {
+        if (!c_->contains(out))
+            continue; // We need to stay in component
         result.emplace_back(c_, out, g.k());  // Vertices are k-mers
+    }
 
     return result;
 }
@@ -148,4 +149,3 @@ find_best_path(const hmm::Fees &fees,
                const std::vector<AAGraphCursor<DebruijnComponentCursor>> &initial) {
   return impl::find_best_path(fees, initial);
 }
-
