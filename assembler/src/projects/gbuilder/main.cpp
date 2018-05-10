@@ -19,6 +19,7 @@
 #include "io/reads/osequencestream.hpp"
 
 #include "assembly_graph/construction/debruijn_graph_constructor.hpp"
+#include "common/pipeline/graphio.hpp"
 
 #include "version.hpp"
 
@@ -38,7 +39,7 @@ void create_console_logger() {
 }
 
 enum class output_type {
-    unitigs, fastg, gfa
+    unitigs, fastg, gfa, spades
 };
 
 struct gcfg {
@@ -70,7 +71,8 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-b") & integer("value", cfg.buff_size)) % "sorting buffer size, per thread",
       one_of(option("-unitigs").set(cfg.mode, output_type::unitigs) % "produce unitigs (default)",
              option("-fastg").set(cfg.mode, output_type::fastg) % "produce graph in FASTG format",
-             option("-gfa").set(cfg.mode, output_type::gfa) % "produce graph in GFA1 format")
+             option("-gfa").set(cfg.mode, output_type::gfa) % "produce graph in GFA1 format",
+             option("-spades").set(cfg.mode, output_type::spades) % "produce graph in SPAdes internal format")
   );
 
   auto result = parse(argc, argv, cli);
@@ -117,6 +119,9 @@ int main(int argc, char* argv[]) {
                 break;
             case output_type::gfa:
                 INFO("Producing graph in GFA1 format");
+                break;
+            case output_type::spades:
+                INFO("Producing graph in SPAdes internal format");
                 break;
         }
 
@@ -178,6 +183,9 @@ int main(int argc, char* argv[]) {
             } else if (cfg.mode == output_type::fastg) {
                 io::FastgWriter fastg_writer(g, cfg.outfile);
                 fastg_writer.WriteSegmentsAndLinks();
+            } else if (cfg.mode == output_type::spades) {
+                debruijn_graph::graphio::ConjugateDataPrinter<debruijn_graph::DeBruijnGraph> printer(g);
+                debruijn_graph::graphio::PrintBasicGraph(cfg.outfile, printer);
             } else
                 FATAL_ERROR("Invalid mode");
         }

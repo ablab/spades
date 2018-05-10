@@ -655,14 +655,14 @@ inline std::string MakeSingleReadsFileName(const std::string& file_name,
 // todo think how to organize them in the most natural way
 
 template<class Graph>
-void PrintBasicGraph(const string& file_name, DataPrinter<Graph>& printer) {
+void PrintBasicGraph(const std::string& file_name, DataPrinter<Graph>& printer) {
     printer.SaveGraph(file_name);
     printer.SaveEdgeSequences(file_name);
     printer.SaveCoverage(file_name);
 }
 
 template<class graph_pack>
-void PrintGraphPack(const string& file_name,
+void PrintGraphPack(const std::string& file_name,
                     DataPrinter<typename graph_pack::graph_t>& printer,
                     const graph_pack& gp) {
     PrintBasicGraph(file_name, printer);
