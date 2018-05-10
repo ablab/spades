@@ -78,21 +78,21 @@ class DepthAtLeast {
   static const size_t STACK_LIMIT = 50000;
   static const size_t INF = std::numeric_limits<size_t>::max();
 
-  bool depth_at_least(const GraphCursor &cursor, double d) {
-    if (d <= 0) {
+  bool depth_at_least(const GraphCursor &cursor, double depth) {
+    if (depth <= 0) {
       return true;
     }
-    return depth_at_least(cursor, static_cast<size_t>(d));
+    return depth_at_least(cursor, static_cast<size_t>(depth));
   }
 
-  bool depth_at_least(const GraphCursor &cursor, size_t d) {
-    if (d == 0) {
+  bool depth_at_least(const GraphCursor &cursor, size_t depth) {
+    if (depth == 0) {
       return true;
     }
 
     if (depth_.count(cursor)) {
       const auto &cached = depth_.find(cursor)->second;
-      if (cached.value >= d) {
+      if (cached.value >= depth) {
         return true;
       } else if (cached.exact) {
         return false;
@@ -100,9 +100,9 @@ class DepthAtLeast {
     }
 
     const size_t coef = 2;
-    size_t stack_limit = std::max<size_t>(coef * d, 10);
+    size_t stack_limit = std::max<size_t>(coef * depth, 10);
 
-    assert(stack_limit >= d);
+    assert(stack_limit >= depth);
     assert(stack_limit <= STACK_LIMIT);
 
     std::unordered_set<GraphCursor> stack;
@@ -110,7 +110,7 @@ class DepthAtLeast {
     assert(stack.empty());
 
     assert(depth_.count(cursor));
-    return depth_at_least(cursor, d);
+    return depth_at_least(cursor, depth);
   }
 
   size_t max_stack_size() const { return max_stack_size_; }
