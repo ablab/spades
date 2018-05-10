@@ -9,7 +9,7 @@
 
 using namespace debruijn_graph;
 
-inline std::vector<DebruijnGraphCursor> DebruijnGraphCursor::prev() const {
+std::vector<DebruijnGraphCursor> DebruijnGraphCursor::prev() const {
     // Case 1: edge is a tip and we're inside the terminal vertex
     if (position_ == 0) {
         // assert(pg_->ingoing_[edge_id_].size() == 0);
@@ -147,5 +147,11 @@ find_best_path_rev(const hmm::Fees &fees,
 PathSet<AAGraphCursor<DebruijnComponentCursor>>
 find_best_path(const hmm::Fees &fees,
                const std::vector<AAGraphCursor<DebruijnComponentCursor>> &initial) {
+  return impl::find_best_path(fees, initial);
+}
+
+PathSet<AAGraphCursor<DebruijnGraphCursor>>
+find_best_path(const hmm::Fees &fees,
+               const std::vector<AAGraphCursor<DebruijnGraphCursor>> &initial) {
   return impl::find_best_path(fees, initial);
 }
