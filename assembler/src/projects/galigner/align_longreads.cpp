@@ -26,7 +26,7 @@
 #include "io/reads/multifile_reader.hpp"
 #include "mapping_printer.hpp"
 
-#include "io/gfa/gfa_reader.hpp"
+#include "io/graph/gfa_reader.hpp"
 
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
@@ -56,7 +56,7 @@ struct GAlignerConfig {
     string output_format; // default: tsv and gpa without CIGAR
     
     //path construction
-    config::debruijn_config::pacbio_processor pb;
+    debruijn_graph::config::pacbio_processor pb;
     pacbio::GapClosingConfig gap_cfg;
 };
 
@@ -113,7 +113,7 @@ private:
 public:
     BWASeedsAligner(const ConjugateDeBruijnGraph &g, 
                  const alignment::BWAIndex::AlignmentMode mode,
-                 const config::debruijn_config::pacbio_processor &pb,
+                 const debruijn_graph::config::pacbio_processor &pb,
                  const pacbio::GapClosingConfig gap_cfg,
                  const string output_file,
                  const string formats):

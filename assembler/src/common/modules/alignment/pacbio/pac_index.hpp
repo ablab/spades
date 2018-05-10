@@ -135,7 +135,7 @@ public:
     ClustersSet GetBWAClusters(const io::SingleRead &read) const {
         DEBUG("BWA started")
         ClustersSet res;
-        Sequence s = read.sequence()
+        Sequence s = read.sequence();
         if (s.size() < g_.k())
             return res;
         omnigraph::MappingPath<EdgeId> mapped_path = FilterSpuriousAlignments(bwa_mapper_.MapSequence(s), s.size());
