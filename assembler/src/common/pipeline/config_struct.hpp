@@ -485,7 +485,6 @@ struct debruijn_config {
 
     boost::optional<scaffold_correction> sc_cor;
     truseq_analysis tsa;
-    std::string load_from;
 
     std::string entry_point;
 

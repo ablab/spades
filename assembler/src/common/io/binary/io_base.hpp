@@ -22,7 +22,6 @@ public:
     template<typename T>
     SaveFile &operator<<(const T &value) {
         io::binary::BinWrite(str_, value);
-        //VERIFY(!str.fail());
         return *this;
     }
 
@@ -66,7 +65,7 @@ public:
         return !str_;
     }
 
-    std::istream &str() { //TODO: get rid of this hack
+    std::istream &stream() {
         return str_;
     }
 
@@ -78,7 +77,7 @@ template<typename T>
 class IOBase {
 public:
     virtual void Save(const std::string &basename, const T &value) = 0;
-    virtual void Load(const std::string &basename, T &value) = 0;
+    virtual bool Load(const std::string &basename, T &value) = 0;
 };
 
 template <typename T>
@@ -92,12 +91,14 @@ public:
         this->SaveImpl(file, value);
     }
 
-    void Load(const std::string &basename, T &value) override {
+    bool Load(const std::string &basename, T &value) override {
         std::string filename = basename + ext_;
         LoadFile file(filename);
         DEBUG("Loading " << name_ << " from " << filename);
-        VERIFY(file);
+        if (!file)
+            return false;
         this->LoadImpl(file, value);
+        return true;
     }
 
 protected:
@@ -127,10 +128,12 @@ public:
         }
     }
 
-    void Load(const std::string &basename, T &value) override {
+    bool Load(const std::string &basename, T &value) override {
+        bool res = true;
         for (size_t i = 0; i < value.size(); ++i) {
-            io_->Load(basename + "_" + std::to_string(i), value[i]);
+            res &= io_->Load(basename + "_" + std::to_string(i), value[i]);
         }
+        return res;
     }
 
 private:

@@ -26,7 +26,7 @@ private:
     }
 
     void LoadImpl(LoadFile &file, Index &index) override {
-        index.BinRead(file.str(), mapper_);
+        index.BinRead(file.stream(), mapper_);
     }
 
     const Mapper &mapper_;

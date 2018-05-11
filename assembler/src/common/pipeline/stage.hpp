@@ -150,16 +150,28 @@ private:
 
 class StageManager {
 public:
-    struct SavesPolicy {
-        bool make_saves_;
-        std::string load_from_;
-        std::string save_to_;
+    class SavesPolicy {
+    public:
+        enum Saves {
+            None,
+            Last,
+            All
+        };
 
         SavesPolicy()
-                : make_saves_(false), load_from_(""), save_to_("") { }
+                : enabled_saves_(None), saves_path_("") {
+        }
 
-        SavesPolicy(bool make_saves, const std::string &load_from, const std::string &save_to)
-                : make_saves_(make_saves), load_from_(load_from), save_to_(save_to) { }
+        SavesPolicy(Saves saves, const std::string &saves_path)
+                : enabled_saves_(saves), saves_path_(saves_path) {
+        }
+
+        Saves EnabledSaves()     const { return enabled_saves_; }
+        const std::string & SavesPath() const { return saves_path_; }
+
+    private:
+        Saves enabled_saves_;
+        std::string saves_path_;
     };
 
     StageManager(SavesPolicy policy = SavesPolicy())

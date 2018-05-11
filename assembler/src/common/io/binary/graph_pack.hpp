@@ -56,31 +56,43 @@ public:
         }
     }
 
-    void Load(const std::string &basename, Type &gp) override {
+    bool Load(const std::string &basename, Type &gp) override {
         //Load basic graph
-        graph_io_.Load(basename, gp.g);
+        VERIFY(graph_io_.Load(basename, gp.g));
         const auto &mapper = graph_io_.GetEdgeMapper();
 
         //Load coverage
-        CoverageIO<CoverageIndex<Graph>>(mapper)
-                .Load(basename, gp.g.coverage_index());
+        VERIFY(CoverageIO<CoverageIndex<Graph>>(mapper)
+                .Load(basename, gp.g.coverage_index()));
 
         //Load edge positions
-        EdgePositionsIO<Graph>(mapper)
-                .Load(basename, gp.edge_pos);
+        VERIFY(!gp.edge_pos.IsAttached());
+        gp.edge_pos.Attach();
+        VERIFY(EdgePositionsIO<Graph>(mapper)
+                .Load(basename, gp.edge_pos));
 
         //Load kmer edge index
-        EdgeIndexIO<Graph>()
-                .Load(basename, gp.index);
+        if (!EdgeIndexIO<Graph>()
+                .Load(basename, gp.index)) {
+            WARN("Cannot load edge index, kmer coverages will be missed");
+            gp.index.Refill();
+        }
 
         if (gp.kmer_mapper.IsAttached()) { //Load kmer mapper
-            KmerMapperIO<Graph>()
-                    .Load(basename, gp.kmer_mapper);
+            if (!KmerMapperIO<Graph>()
+                    .Load(basename, gp.kmer_mapper)) {
+                WARN("Cannot load kmer_mapper, information on projected kmers will be missed");
+            }
         }
 
         //Load flanking coverage
-        CoverageIO<FlankingCoverage<Graph>>(mapper)
-                .Load(basename, gp.flanking_cov);
+        if (!CoverageIO<FlankingCoverage<Graph>>(mapper)
+                .Load(basename, gp.flanking_cov)) {
+            WARN("Cannot load flanking coverage, flanking coverage will be recovered from index");
+            gp.flanking_cov.Fill(gp.index.inner_index());
+        }
+
+        return true;
     }
 
 protected:
@@ -114,9 +126,9 @@ public:
         gp.ginfo.Save(basename + ".ginfo");
     }
 
-    void Load(const std::string &basename, Type &gp) override {
+    bool Load(const std::string &basename, Type &gp) override {
         //Load basic graph
-        base::Load(basename, gp);
+        VERIFY(base::Load(basename, gp));
         const auto &mapper = this->graph_io_.GetEdgeMapper();
 
         //Load paired indices
@@ -134,6 +146,8 @@ public:
         }
 
         gp.ginfo.Load(basename + ".ginfo");
+
+        return true;
     }
 };
 
