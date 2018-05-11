@@ -6,11 +6,16 @@
 
 template <class GraphCursor>
 std::string traverse(GraphCursor cursor) {
+  if (cursor.is_empty()) {
+    return "";
+  }
+
   std::string result;
-  while (!cursor.is_empty()) {
+
+  while (true) {
     result += cursor.letter();
     auto nexts = cursor.next();
-    if (nexts.size() == 0) {
+    if (nexts.empty()) {
       break;
     }
     cursor = nexts[0];
@@ -53,3 +58,5 @@ TEST(StopCodons, TRANSLATION) {
 //
 //   return 0;
 // }
+
+// vim: set ts=2 sw=2 et :
