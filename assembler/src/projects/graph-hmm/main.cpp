@@ -692,6 +692,9 @@ void TraceHMM(const hmmer::HMM &hmm,
 
     for (const auto &component_cursors : cursor_conn_comps) {
         INFO("Component size " << component_cursors.size());
+        for (const auto &cursor : component_cursors) {
+            assert(check_cursor_symmetry(cursor));
+        }
         INFO("Running path search");
         std::vector<HMMPathInfo> local_results;
 
