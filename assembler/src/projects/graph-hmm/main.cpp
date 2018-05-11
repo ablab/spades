@@ -450,37 +450,31 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
     INFO("Total " << results.size() << " resultant paths extracted");
 
-    std::unordered_set<std::vector<EdgeId>> to_rescore_local;
-    if (cfg.save) {
-        if (results.size()) {
-            {
-                std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".seqs.fa", std::ios::out);
-                for (const auto &result : results) {
-                    if (result.seq.size() == 0)
-                        continue;
-                    o << ">Score=" << result.score << "|Edges=" << join(result.path) << "|Alignment=" << result.alignment << '\n';
-                    io::WriteWrapped(result.seq, o);
-                }
+    if (cfg.save && !results.empty()) {
+        {
+            std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".seqs.fa", std::ios::out);
+            for (const auto &result : results) {
+                if (result.seq.size() == 0)
+                    continue;
+                o << ">Score=" << result.score << "|Edges=" << join(result.path) << "|Alignment=" << result.alignment << '\n';
+                io::WriteWrapped(result.seq, o);
             }
-
-            // {
-            //     std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".fa", std::ios::out);
-            //     for (const auto &result : results) {
-            //         o << ">" << result.leader << "_" << result.priority;
-            //         if (result.seq.size() == 0)
-            //             o << " (whole edge)";
-            //         o << '\n';
-            //         if (result.seq.size() == 0) {
-            //             io::WriteWrapped(graph.EdgeNucls(result.leader).str(), o);
-            //         } else {
-            //             io::WriteWrapped(result.seq, o);
-            //         }
-            //         if (cfg.rescore && result.path.size() > 0) {
-            //             to_rescore_local.insert(result.path);
-            //         }
-            //     }
-            // }
         }
+
+        // {
+        //     std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".fa", std::ios::out);
+        //     for (const auto &result : results) {
+        //         o << ">" << result.leader << "_" << result.priority;
+        //         if (result.seq.size() == 0)
+        //             o << " (whole edge)";
+        //         o << '\n';
+        //         if (result.seq.size() == 0) {
+        //             io::WriteWrapped(graph.EdgeNucls(result.leader).str(), o);
+        //         } else {
+        //             io::WriteWrapped(result.seq, o);
+        //         }
+        //     }
+        // }
     }
 }
 
@@ -610,7 +604,10 @@ void TraceHMM(const hmmer::HMM &hmm,
         match_edges.push_back(entry.first);
 
     for (const auto &component_cursors : cursor_conn_comps) {
+        assert(!component_cursors.empty());
         INFO("Component size " << component_cursors.size());
+        // TODO use max_size as a limit for the number of cursors in a component
+
         for (const auto &cursor : component_cursors) {
             DEBUG_ASSERT(check_cursor_symmetry(cursor), main_assert{}, debug_assert::level<2>{});
         }
@@ -621,14 +618,12 @@ void TraceHMM(const hmmer::HMM &hmm,
         for (const auto& cursor : component_cursors) {
             edges.insert(cursor.edge());
         }
-        auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromEdges(graph, edges, true, component_name);
-        INFO("Neighbourhood vertices: " << component.v_size() << ", edges: " << component.e_size());
 
-        // TODO use max_size as a limit for the number of cursors in a component
-        // if (component.e_size()/2 > cfg.max_size) {
-        //     WARN("Component is too large (" << component.e_size() / 2 << " vs " << cfg.max_size << "), skipping");
-        //     continue;
-        // }
+        // EdgeId leader = std::max_element(edges_count.cbegin(), edges_count.cend(),
+        //                                  [](const auto &kv1, const auto &kv2) { return kv1.second < kv2.second; })->first;
+        // INFO("Leader (mostly supported among matched) edge: " << leader << " supported by " << edges_count[leader] << " cursors");
+
+        auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromEdges(graph, edges, true, component_name);
 
         if (cfg.draw) {
             INFO("Writing component " << component_name);
