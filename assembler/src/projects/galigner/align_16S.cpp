@@ -19,9 +19,8 @@
 #include "io/reads/io_helper.hpp"
 #include "common/assembly_graph/core/coverage.hpp"
 
-//#include "modules/alignment/pacbio/gap_dijkstra.hpp"
+#include "modules/alignment/pacbio/gap_dijkstra.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
-#include "modules/alignment/short_read_mapper.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "io/reads/multifile_reader.hpp"
@@ -104,7 +103,7 @@ private:
     const conj_graph_pack &gp_;
     //const pacbio::PacBioMappingIndex<Graph> pac_index_;
     const string &output_file_;
-    const config::debruijn_config::pacbio_processor &pb_config_;
+    const debruijn_graph::config::pacbio_processor &pb_config_;
     int ed_threshold_;
     int res_ed_threshold_;
     int min_length_;
@@ -116,8 +115,7 @@ private:
 
 public:
     SequenceAligner(const conj_graph_pack &gp, 
-                 const alignment::BWAIndex::AlignmentMode mode,
-                 const config::debruijn_config::pacbio_processor &pb,
+                 const debruijn_graph::config::pacbio_processor &pb,
                  const string &output_file,
                  int ed_threshold, int res_ed_threshold, int min_length, int primer_threshold, int graph_threshold):
       gp_(gp), output_file_(output_file), pb_config_(pb)
@@ -617,8 +615,8 @@ public:
     }
 };
 
-config::debruijn_config::pacbio_processor InitializePacBioProcessor() {
-    config::debruijn_config::pacbio_processor pb;  
+debruijn_graph::config::pacbio_processor InitializePacBioProcessor() {
+    debruijn_graph::config::pacbio_processor pb;  
     pb.bwa_length_cutoff = 0; //500
     pb.compression_cutoff = 0.6; // 0.6 
     pb.path_limit_stretching = 1.3; //1.3
@@ -656,25 +654,14 @@ void Launch(size_t K, const string &saves_path, const string &primer_fasta, cons
     LoadReads(primer_fasta, wrappedprimers);
         
     LoadReads(sequence_fasta, wrappedreads);
-    
-    alignment::BWAIndex::AlignmentMode mode;
-    if (mapper_type == "pacbio"){
-        mode = alignment::BWAIndex::AlignmentMode::PacBio;
-    } else if (mapper_type == "nanopore"){
-        mode = alignment::BWAIndex::AlignmentMode::Ont2D;
-    } else if (mapper_type == "16S"){
-        mode = alignment::BWAIndex::AlignmentMode::Rna16S;
-    } else {
-        mode = alignment::BWAIndex::AlignmentMode::Default;
-    }
 
-    config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
+    debruijn_graph::config::pacbio_processor pb = InitializePacBioProcessor();
     int ed_threshold = 40;
     int res_ed_threshold = 100;
     int min_length = 1400;
     int primer_threshold = 1;
     int graph_threshold = 3;
-    SequenceAligner aligner(gp, mode, pb, output_file, ed_threshold, res_ed_threshold, min_length, primer_threshold, graph_threshold); 
+    SequenceAligner aligner(gp, pb, output_file, ed_threshold, res_ed_threshold, min_length, primer_threshold, graph_threshold); 
     INFO("SequenceAligner created");
 
     ofstream myfile;
