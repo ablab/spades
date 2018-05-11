@@ -67,7 +67,7 @@ def load_alignments(filename):
             seq_ends.append(x.split("[")[1].split(",")[1])
         #if int(seq_end) - int(seq_start) > 1000:
         res[cur_read] = { "len": rlen, "path": path, "bwa_path": bwa_path, "edgelen": edgelen.split(",")[:-1], "edge_tag": edge_tag, \
-                            "mapped_s":int(seq_start), "mapped_e":int(seq_end), "seq": seq , "seq_end": seq_ends, "empty": empty }
+                            "mapped_s":int(seq_start), "mapped_e":int(seq_end), "seq": seq , "seq_end": seq_ends, "empty": empty - 1}
     fin.close()
     print "Number of edges detected by bwa:", bwa_num
     return res

@@ -95,7 +95,8 @@ public:
                 string to_add = tmp.substr(mapping_start, mapping_end - mapping_start);
                 cur_str += to_add;
             }
-            cur_str_sum += cur_str + ";";
+            cur_str_sum += cur_str;
+            cur_path_sum += ";";
             if (seq_end - seq_start > max_len) {
                 max_len = seq_end - seq_start;
                 edlib::EdlibAlignResult result = edlib::edlibAlign(cur_str.c_str(), (int) cur_str.size(), read.sequence().str().c_str(), (int) read.sequence().size()
