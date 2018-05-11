@@ -7,10 +7,17 @@
 ############################################################################
 
 # reads options (you probably need to change it!)
-sc="--sc"  # left empty if multicell
-reads_base_dir=/Johnny/data/input/Bacteria/E.coli/K12/ucsd_lane_1/
-left=$reads_base_dir/ecoli_mda_lane1_left.fastq
-right=$reads_base_dir/ecoli_mda_lane1_right.fastq
+sc=""  # left empty if multicell
+reads_base_dir=/Nancy/data/input/Bacteria/E.coli/K12/is220
+left=$reads_base_dir/s_6_1.fastq.gz
+right=$reads_base_dir/s_6_2.fastq.gz
+
+# reads options (you probably need to change it!)
+#sc="--sc"  # left empty if multicell
+#reads_base_dir=/Nancy/data/input/Bacteria/E.coli/K12/ucsd_lane_1
+#left=$reads_base_dir/ecoli_mda_lane1_left.fastq
+#right=$reads_base_dir/ecoli_mda_lane1_right.fastq
+
 
 # or you can set reads via command line arguments ("left right --sc" or "left right")
 if [[ -f $1 && -f $2 ]]; then
@@ -35,7 +42,7 @@ rm -fr $spades_output_dir
 touch $stopper_fname
 echo "ERROR CORRECTION"
 $res_counter_dir/mem_checker.py $spades_output_dir &
-$res_counter_dir/run.pl $spades_dir/spades.py -o $spades_output_dir $other_spades_py_params $sc -1 $left -2 $right --stop-after ec 
+$res_counter_dir/run.pl $spades_dir/spades.py -o $spades_output_dir $other_spades_py_params $sc -1 $left -2 $right --stop-after ec
 rm $stopper_fname
 sleep $timeout
 $res_counter_dir/result_saver.sh $save_results_here/ec_stats
@@ -47,7 +54,7 @@ previous_stage_size=`du -hs $spades_output_dir | cut -f1`
 touch $stopper_fname
 echo "ASSEMBLING"
 $res_counter_dir/mem_checker.py $spades_output_dir  &
-$res_counter_dir/run.pl $spades_dir/spades.py -o $spades_output_dir --continue --stop-after as
+$res_counter_dir/run.pl $spades_dir/spades.py -o $spades_output_dir --restart-from last --stop-after as
 rm $stopper_fname
 sleep $timeout
 $res_counter_dir/result_saver.sh $save_results_here/as_stats
@@ -60,7 +67,7 @@ previous_stage_size=`du -hs $spades_output_dir | cut -f1`
 touch $stopper_fname
 echo "MISMATCH CORRECTOR"
 $res_counter_dir/mem_checker.py $spades_output_dir  &
-$res_counter_dir/run.pl $spades_dir/spades.py -o $spades_output_dir --continue
+$res_counter_dir/run.pl $spades_dir/spades.py -o $spades_output_dir --restart-from last --stop-after mc
 rm $stopper_fname
 sleep $timeout
 $res_counter_dir/result_saver.sh $save_results_here/mc_stats
@@ -76,7 +83,7 @@ echo "Error correction: " >> $final_stats
 cat $save_results_here/ec_stats/rc_stats.txt >> $final_stats
 echo "" >> $final_stats
 echo "Assembling: " >> $final_stats
-cat $save_results_here/as_stats/rc_stats.txt >> $final_stats 
+cat $save_results_here/as_stats/rc_stats.txt >> $final_stats
 echo "" >> $final_stats
 echo "Mismatch corrector: " >> $final_stats
 cat $save_results_here/mc_stats/rc_stats.txt >> $final_stats

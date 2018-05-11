@@ -12,11 +12,12 @@ set(CPACK_PACKAGE_NAME "SPAdes")
 set(CPACK_PACKAGE_VENDOR "Saint Petersburg State University")
 set(CPACK_PACKAGE_DESCRIPTION_FILE "${SPADES_MAIN_SRC_DIR}/../README")
 set(CPACK_RESOURCE_FILE_LICENSE "${SPADES_MAIN_SRC_DIR}/../LICENSE")
-set(CPACK_PACKAGE_VERSION "3.12.0-dev")
+set(CPACK_PACKAGE_VERSION "3.12.0")
 set(CPACK_PACKAGE_VERSION_MAJOR "3")
 set(CPACK_PACKAGE_VERSION_MINOR "12")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
-set(CPACK_STRIP_FILES bin/spades bin/hammer bin/ionhammer bin/dipspades bin/spades-bwa bin/corrector bin/scaffold_correction)
+set(CPACK_STRIP_FILES bin/spades-bwa bin/spades-core bin/spades-corrector-core bin/spades-dipspades-core bin/spades-gbuilder bin/spades-gmapper bin/spades-hammer bin/spades-ionhammer bin/spades-kmercount bin/spades-truseq-scfcorrection)
+
 
 # Source stuff
 set(CPACK_SOURCE_GENERATOR "TBZ2")

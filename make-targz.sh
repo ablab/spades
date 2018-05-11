@@ -37,6 +37,7 @@ cp assembler/truspades.py $TARGET_DIR/
 cp assembler/spades_compile.sh $TARGET_DIR/
 cp assembler/spades_init.py $TARGET_DIR/
 cp assembler/manual.html $TARGET_DIR/
+cp assembler/manual.md $TARGET_DIR/
 cp assembler/dipspades_manual.html $TARGET_DIR/
 cp assembler/truspades_manual.html $TARGET_DIR/
 cp assembler/rnaspades_manual.html $TARGET_DIR/

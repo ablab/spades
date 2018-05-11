@@ -18,13 +18,17 @@
     3.5. [SPAdes output](#sec3.5)</br>
     3.6. [plasmidSPAdes output](#sec3.6)</br>
     3.7. [Assembly evaluation](#sec3.7)</br>
-4. [Citation](#sec4)</br>
-5. [Feedback and bug reports](#sec5)</br>
+4. [Stand-alone binaries released within SPAdes package](#sec4)</br>
+    4.1. [k-mer counting](#sec4.1)</br>
+    4.2. [Graph construction](#sec4.2)</br>
+    4.3. [Long read to graph aligner](#sec4.3)</br>
+5. [Citation](#sec5)</br>
+6. [Feedback and bug reports](#sec6)</br>
 
 <a name="sec1"></a>
 # About SPAdes
 
-SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.12.0 was released under GPLv2 on October 1, 2017 and can be downloaded from <http://cab.spbu.ru/software/spades/>. []()
+SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.12.0 was released under GPLv2 on May 14, 2018 and can be downloaded from <http://cab.spbu.ru/software/spades/>. []()
 
 <a name="sec1.1"></a>
 ## Supported data types
@@ -35,11 +39,13 @@ Version 3.12.0 of SPAdes supports paired-end reads, mate-pairs and unpaired read
 
 SPAdes 3.12.0 includes the following additional pipelines:
 
--   dipSPAdes – a module for assembling highly polymorphic diploid genomes (see [dipSPAdes manual](dipspades_manual.html)).
 -   metaSPAdes – a pipeline for metagenomic data sets (see [metaSPAdes options](#meta)).
 -   plasmidSPAdes – a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmidSPAdes options](#plasmid)).
 -   rnaSPAdes – a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](rnaspades_manual.html)).
 -   truSPAdes – a module for TruSeq barcode assembly (see [truSPAdes manual](truspades_manual.html)).
+-   dipSPAdes – a module for assembling highly polymorphic diploid genomes (deprecated, see [dipSPAdes manual](dipspades_manual.html)).
+
+In addition, we provide several stand-alone binaries with relatively simple command-line interface: [k-mer counting](#sec4.1) (`spades-kmercounter`), [assembly graph construction](#sec4.2) (`spades-gbuilder`) and [long read to graph aligner](#sec4.3) (`spades-gmapper`). To learn options of these tools you can either run them without any parameters or read [this section](#sec4).
 
 []()
 
@@ -63,9 +69,9 @@ In this section we give approximate data about SPAdes' performance on two data s
 -   [Standard isolate *E. coli*](http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_mc/); 6.2Gb, 28M reads, 2x100bp, insert size ~ 215bp
 -   [MDA single-cell *E. coli*](http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/); 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp
 
-We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors and SSD hard drive. BayesHammer runs in approximately half an hour and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 10 minutes for the *E. coli* isolate data set and 20 minutes for the *E. coli* single-cell data set. Both data sets require about 8Gb of RAM (see notes below). MismatchCorrector runs for about 15 minutes on both data sets, and requires less than 2Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.
+We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately half an hour and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 10 minutes for the *E. coli* isolate data set and 20 minutes for the *E. coli* single-cell data set. Both data sets require about 8Gb of RAM (see notes below). MismatchCorrector runs for about 15 minutes on both data sets, and requires less than 2Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.
 
-<table border="0" cellpadding="4" cellspacing="0">
+<table border="1" cellpadding="4" cellspacing="0">
 <tr>
 <td align="right"> Data set &nbsp; </td>
 <td colspan="3" align="center"> <i>E. coli</i> isolate </td> 
@@ -84,42 +90,42 @@ We ran SPAdes with default parameters using 16 threads on a server with Intel Xe
 
 <tr>
 <td> BayesHammer </td>
-<td align="center"> 26m </td>
-<td align="center"> 7.1 </td>
-<td align="center"> 11 </td>
-<td align="center"> 31m </td>
-<td align="center"> 6.9 </td>
-<td align="center"> 11.3 </td>
+<td align="center"> 24m </td>
+<td align="center"> 7.8 </td>
+<td align="center"> 8.5 </td>
+<td align="center"> 25m </td>
+<td align="center"> 7.7 </td>
+<td align="center"> 8.6 </td>
 </tr>
 
 <tr>
 <td> SPAdes </td>
 <td align="center"> 8m </td>
-<td align="center"> 8.1 </td>
-<td align="center"> 1.5 </td>
-<td align="center"> 12m </td>
-<td align="center"> 7.9 </td>
-<td align="center"> 2.6 </td>
+<td align="center"> 8.4 </td>
+<td align="center"> 1.4 </td>
+<td align="center"> 10m </td>
+<td align="center"> 8.3 </td>
+<td align="center"> 2.1 </td>
 </tr>
 
 <tr>
 <td> MismatchCorrector </td>
-<td align="center"> 20m </td>
+<td align="center"> 10m </td>
+<td align="center"> 1.7 </td>
+<td align="center"> 21.4 </td>
+<td align="center"> 12m </td>
 <td align="center"> 1.8 </td>
-<td align="center"> 27.7 </td>
-<td align="center"> 25m </td>
-<td align="center"> 1.8 </td>
-<td align="center"> 28.3 </td>
+<td align="center"> 22.4 </td>
 </tr>
 
 <tr>
 <td> Whole pipeline </td>
-<td align="center"> 54m </td>
-<td align="center"> 8.1 </td>
-<td align="center"> 30.2 </td>
-<td align="center"> 1h 8m </td>
-<td align="center"> 7.9 </td>
-<td align="center"> 31.1 </td>
+<td align="center"> 42m </td>
+<td align="center"> 8.4 </td>
+<td align="center"> 23.9 </td>
+<td align="center"> 47m </td>
+<td align="center"> 8.3 </td>
+<td align="center"> 25.1 </td>
 </tr>
 </table>
 
@@ -136,6 +142,25 @@ Notes:
 
 SPAdes requires a 64-bit Linux system or Mac OS and Python (supported versions are Python2: 2.4–2.7, and Python3: 3.2 and higher) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself. []()
 
+In case of successful installation the following files will be placed in the `bin` directory:
+
+-   `spades.py` (main executable script)
+-   `metaspades.py` (main executable script for [metaSPAdes](#meta))
+-   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
+-   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
+-   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
+-   `dipspades.py` (deprecated; main executable script for [dipSPAdes](dipspades_manual.html))
+-   `spades-core`  (assembly module)
+-   `spades-gbuilder`  (standalone graph builder application)
+-   `spades-gmapper`  (standalone long read to graph aligner)
+-   `spades-kmercount`  (standalone k-mer counting application)
+-   `spades-hammer`  (read error correcting module for Illumina reads)
+-   `spades-ionhammer`  (read error correcting module for IonTorrent reads)
+-   `spades-bwa`  ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
+-   `spades-corrector-core`  (mismatch correction module)
+-   `spades-truseq-scfcorrection`  (executable used in truSPAdes pipeline)
+-   `spades-dipspades-core`  (deprecated; assembly module for highly polymorphic diploid genomes)
+
 <a name="sec2.1"></a>
 ## Downloading SPAdes Linux binaries
 
@@ -148,23 +173,7 @@ To download [SPAdes Linux binaries](http://cab.spbu.ru/files/release3.12.0/SPAde
     cd SPAdes-3.12.0-Linux/bin/
 ```
 
-In this case you do not need to run any installation scripts – SPAdes is ready to use. The following files will be placed in the `bin` directory:
-
--   `spades.py` (main executable script)
--   `dipspades.py` (main executable script for [dipSPAdes](dipspades_manual.html))
--   `metaspades.py` (main executable script for [metaSPAdes](#meta))
--   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
--   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
--   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
--   `hammer` (read error correcting module for Illumina reads)
--   `ionhammer` (read error correcting module for IonTorrent reads)
--   `spades` (assembly module)
--   `bwa-spades` ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
--   `corrector` (mismatch correction module)
--   `dipspades` (assembly module for highly polymorphic diploid genomes)
--   `scaffold_correction` (executable used in truSPAdes pipeline)
-
-We also suggest adding SPAdes installation directory to the `PATH` variable. []()
+In this case you do not need to run any installation scripts – SPAdes is ready to use. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
 
 <a name="sec2.2"></a>
 ## Downloading SPAdes binaries for Mac
@@ -178,23 +187,7 @@ To obtain [SPAdes binaries for Mac](http://cab.spbu.ru/files/release3.12.0/SPAde
     cd SPAdes-3.12.0-Darwin/bin/
 ```
 
-Just as in Linux, SPAdes is ready to use and no further installation steps are required. You will get the same files in the `bin` directory:
-
--   `spades.py` (main executable script)
--   `dipspades.py` (main executable script for [dipSPAdes](dipspades_manual.html))
--   `metaspades.py` (main executable script for [metaSPAdes](#meta))
--   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
--   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
--   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
--   `hammer` (read error correcting module for Illumina reads)
--   `ionhammer` (read error correcting module for IonTorrent reads)
--   `spades` (assembly module)
--   `bwa-spades` ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
--   `corrector` (mismatch correction module)
--   `dipspades` (assembly module for highly polymorphic diploid genomes)
--   `scaffold_correction` (executable used in truSPAdes pipeline)
-
-We also suggest adding SPAdes installation directory to the `PATH` variable. []()
+Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
 
 <a name="sec2.3"></a>
 ## Downloading and compiling SPAdes source code
@@ -238,23 +231,7 @@ for example:
 
 which will install SPAdes into `/usr/local/bin`.
 
-After installation you will get the same files in `./bin` (or `<destination_dir>/bin` if you specified PREFIX) directory:
-
--   `spades.py` (main executable script)
--   `dipspades.py` (main executable script for [dipSPAdes](dipspades_manual.html))
--   `metaspades.py` (main executable script for [metaSPAdes](#meta))
--   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
--   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
--   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
--   `hammer` (read error correcting module for Illumina reads)
--   `ionhammer` (read error correcting module for IonTorrent reads)
--   `spades` (assembly module)
--   `bwa-spades` ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
--   `corrector` (mismatch correction module)
--   `dipspades` (assembly module for highly polymorphic diploid genomes)
--   `scaffold_correction` (executable used in truSPAdes pipeline)
-
-We also suggest adding SPAdes installation directory to the `PATH` variable. []()
+After installation you will get the same files (listed above) in `./bin` directory (or `<destination_dir>/bin` if you specified PREFIX). We also suggest adding SPAdes installation directory to the `PATH` variable. []()
 
 <a name="sec2.4"></a>
 ## Verifying your installation
@@ -413,7 +390,7 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 
 <a name="meta"></a>
 `--meta `   (same as `metaspades.py`)
-    This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see [paper](https://arxiv.org/abs/1604.03071) for more details). Currently metaSPAdes supports only a **_single_** library which has to be **_paired-end_** (we hope to remove this restriction soon). It does not support [careful mode](#correctoropt) (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
+    This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see [paper](https://genome.cshlp.org/content/27/5/824.short) for more details). Currently metaSPAdes supports only a **_single_** short-read library which has to be **_paired-end_** (we hope to remove this restriction soon). In addition, you can provide long reads (e.g. using `--pacbio` or `--nanopore` options), but hybrid assembly for metagenomes remains an experimental pipeline and optimal performance is not guaranteed. It does not support [careful mode](#correctoropt) (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
 
 []()
 
@@ -642,38 +619,38 @@ YAML file should look like this:
 
     [
       {
-        orientation: "fr",
-        type: "paired-end",
-        right reads: [
-          "/FULL_PATH_TO_DATASET/lib_pe1_right_1.fastq",
-          "/FULL_PATH_TO_DATASET/lib_pe1_right_2.fastq" 
-        ],
-        left reads: [
-          "/FULL_PATH_TO_DATASET/lib_pe1_left_1.fastq",
-          "/FULL_PATH_TO_DATASET/lib_pe1_left_2.fastq" 
-        ]
+orientation: "fr",
+type: "paired-end",
+right reads: [
+  "/FULL_PATH_TO_DATASET/lib_pe1_right_1.fastq",
+  "/FULL_PATH_TO_DATASET/lib_pe1_right_2.fastq" 
+],
+left reads: [
+  "/FULL_PATH_TO_DATASET/lib_pe1_left_1.fastq",
+  "/FULL_PATH_TO_DATASET/lib_pe1_left_2.fastq" 
+]
       },
       {
-        orientation: "rf",
-        type: "mate-pairs",
-        right reads: [
-          "/FULL_PATH_TO_DATASET/lib_mp1_right.fastq" 
-        ],
-        left reads: [
-          "/FULL_PATH_TO_DATASET/lib_mp1_left.fastq"
-        ]
+orientation: "rf",
+type: "mate-pairs",
+right reads: [
+  "/FULL_PATH_TO_DATASET/lib_mp1_right.fastq" 
+],
+left reads: [
+  "/FULL_PATH_TO_DATASET/lib_mp1_left.fastq"
+]
       },
       {
-        type: "single",
-        single reads: [
-          "/FULL_PATH_TO_DATASET/pacbio_ccs.fastq" 
-        ]
+type: "single",
+single reads: [
+  "/FULL_PATH_TO_DATASET/pacbio_ccs.fastq" 
+]
       },
       {
-        type: "pacbio",
-        single reads: [
-          "/FULL_PATH_TO_DATASET/pacbio_clr.fastq" 
-        ]
+type: "pacbio",
+single reads: [
+  "/FULL_PATH_TO_DATASET/pacbio_clr.fastq" 
+]
       }
     ]
 ```
@@ -930,18 +907,18 @@ Let the contig with the name `NODE_5_length_100000_cov_215.651_ID_5` consist of 
 
 Then, `contigs.paths` will contain the following record:
 
-        
-        NODE_5_length_100000_cov_215.651_ID_5
-        2+,5-,3+,5-,4+
-        
+
+NODE_5_length_100000_cov_215.651_ID_5
+2+,5-,3+,5-,4+
+
 
 Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are splitted by semicolon at the gap positions. For example, the following record
 
-        
-        NODE_3_length_237403_cov_243.207_ID_45
-        21-,17-,15+,17-,16+;
-        31+,23-,22+,23-,4-
-        
+
+NODE_3_length_237403_cov_243.207_ID_45
+21-,17-,15+,17-,16+;
+31+,23-,22+,23-,4-
+
 
 states that `NODE_3_length_237403_cov_243.207_ID_45` corresponds to the path with 10 edges, but jumps over a gap between edges `EDGE_16_length_21503_cov_482.709` and `EDGE_31_length_140767_cov_220.239`.
 
@@ -973,13 +950,96 @@ SPAdes will overwrite these files and directories if they exist in the specified
 
 plasmidSPAdes outputs only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see [previous](#sec3.5) section), with the following difference. For all contig names in `contigs.fasta`, `scaffolds.fasta` and `assembly_graph.fastg` we append suffix `_component_X`, where `X` is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. []()
 
-<a name="sec4.7"></a>
+<a name="sec3.7"></a>
 ## Assembly evaluation
 
 [QUAST](http://cab.spbu.ru/software/quast/) may be used to generate summary statistics (N50, maximum contig length, GC %, \# genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).
 []()
 
+
 <a name="sec4"></a>
+# Stand-alone binaries released within SPAdes package
+
+<a name="sec4.1"></a>
+## k-mer counting
+
+To provide input data to SPAdes k-mer counting tool `spades-kmercounter ` you may just specify files in [SPAdes-supported formats](#sec3.1) without any flags (after all options) or provide dataset description file in [YAML format](#yaml).
+
+Synopsis: `spades-kmercount [OPTION...] <input files>`
+
+The options are:
+
+`-d, --dataset file <file name> `
+    dataset description (in YAML format), input files ignored
+
+`-k, --kmer <int> `
+    k-mer length (default: 21)
+
+`-t, --threads <int> `
+    number of threads to use (default: number of CPUs)
+
+`-w, --workdir dir <dir name> `
+    working directory to use (default: current directory)
+
+`-b, --bufsize <int> `
+    sorting buffer size in bytes, per thread (default 536870912)
+
+`-h, --help `
+    print help message
+
+
+<a name="sec4.2"></a>
+## Graph construction
+Graph construction tool `spades-gbuilder ` has two mandatory options: dataset description file in [YAML format](#yaml) and an output file name.
+
+Synopsis: `spades-gbuilder <dataset description (in YAML)> <output filename> [-k <value>] [-t <value>] [-tmpdir <dir>] [-b <value>] [-unitigs|-fastg|-gfa|-spades]`
+
+Additional options are:
+
+`-k <int> `
+    k-mer length used for construction (must be odd)
+
+`-t <int> `
+    number of threads
+
+`-tmpdir <dir_name>  `
+    scratch directory to use
+
+`-b <int> `
+    sorting buffer size (per thread, in bytes)
+
+`-unitigs `
+    k-mer length used for construction (must be odd)
+
+`-fastg `
+    output graph in FASTG format
+
+`-gfa `
+    output graph in GFA1 format
+
+`-spades `
+    output graph in SPAdes internal format
+
+
+<a name="sec4.3"></a>
+## Long read to graph aligner
+A tool for aligning long reads to the graph `spades-gmapper ` has three mandatory options: dataset description file in [YAML format](#yaml), graph file in GFA format and an output file name.
+
+Synopsis: `spades-gmapper <dataset description (in YAML)> <graph (in GFA)> <output filename> [-k <value>] [-t <value>] [-tmpdir <dir>]`
+
+Additional options are:
+
+`-k <int> `
+    k-mer length that was used for graph construction
+
+`-t <int> `
+    number of threads
+
+`-tmpdir <dir_name>  `
+    scratch directory to use
+
+
+<a name="sec5"></a>
 # Citation
 
 If you use SPAdes in your research, please include [Nurk, Bankevich et al., 2013](http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13) in your reference list. You may also add [Bankevich, Nurk et al., 2012](http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021) instead.
@@ -991,7 +1051,7 @@ For the information about dipSPAdes and truSPAdes papers see [dipSPAdes manual](
 In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <spades.support@cab.spbu.ru>.
 []()
 
-<a name="sec5"></a>
+<a name="sec6"></a>
 # Feedback and bug reports
 
 Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes. If you have any troubles running SPAdes, please send us `params.txt` and `spades.log` from the directory `<output_dir>`.
