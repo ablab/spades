@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cursor.hpp>
-#include "aa.hpp"
+#include "sequence/aa.hpp"
 
 template <typename T>
 std::vector<std::vector<T>> expand(const std::vector<std::vector<T>> &vv) {
@@ -32,7 +32,7 @@ class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
   using This = AAGraphCursor<GraphCursor>;
 
  public:
-  char letter() const { return to_one_letter(to_aa(c0_.letter(), c1_.letter(), c2_.letter())); }
+  char letter() const { return to_one_letter(aa::to_aa(c0_.letter(), c1_.letter(), c2_.letter())); }
 
   AAGraphCursor() = default;
   AAGraphCursor(const GraphCursor &c0, const GraphCursor &c1, const GraphCursor &c2) : c0_{c0}, c1_{c1}, c2_{c2} {}
