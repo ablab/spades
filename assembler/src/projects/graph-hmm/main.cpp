@@ -177,13 +177,7 @@ template<class GraphCursor>
 std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<GraphCursor> &cpath) {
     std::vector<typename GraphCursor::EdgeId> path;
 
-    auto it = cpath.begin();
-    for (; it != cpath.end() && it->is_empty(); ++it) {}
-
-    for (; it != cpath.end(); ++it) {
-        if (it->is_empty())
-            continue;
-
+    for (auto it = cpath.begin(); it != cpath.end(); ++it) {
         if (path.size() == 0 || it->edge() != path.back()) {
             path.push_back(it->edge());
         } else {
@@ -678,7 +672,9 @@ void TraceHMM(const hmmer::HMM &hmm,
         for (const auto& annotated_path : top_paths) {
             auto seq = top_paths.str(annotated_path.path);
             auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, p7hmm->M));
-            auto edge_path = to_path(annotated_path.path);
+            auto nucl_path = to_nucl_path(annotated_path.path);
+            assert(check_path_continuity(nucl_path));
+            auto edge_path = to_path(nucl_path);
             if (edge_path.size() == 0)  // TODO just do not extract empty paths, fix extraction method in pathtree.hpp. Remove this if{} when fixed
                 continue;
 

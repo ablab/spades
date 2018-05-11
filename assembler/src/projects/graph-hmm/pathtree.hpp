@@ -391,6 +391,9 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       std::vector<Event> events;
 
       for (const auto &tpl : tail->collect()) {
+        if (tpl.gp.is_empty()) {
+          continue;  // TODO Think about a better way to exclude empty cursors
+        }
         path.push_back(tpl.gp);
         events.push_back(tpl.p->event);
       }
@@ -551,7 +554,7 @@ class PathSet {
     static std::string str(const std::vector<GraphCursor> &path) {
       std::string s;
       for (size_t i = 0; i < path.size(); ++i) {
-        if (path[i].is_empty()) continue;
+        assert(!path[i].is_empty());
 
         s += path[i].letter();
       }
@@ -589,10 +592,7 @@ class PathSet {
       size_t prev_position = 0;
       assert(apath.path.size() == apath.events.size());
       for (size_t i = 0; i < apath.path.size(); ++i) {
-        if (apath.path[i].is_empty()) {
-          // assert(apath.events[i].type == EventType::NONE);
-          continue;
-        };
+        assert(!apath.path[i].is_empty());
 
         if (apath.events[i].type == EventType::NONE) {
           ERROR("Position: " << i);
