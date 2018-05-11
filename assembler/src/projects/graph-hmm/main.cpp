@@ -441,22 +441,16 @@ std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
 
 std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename) {
     std::vector<hmmer::HMM> res;
+    hmmer::HMMSequenceBuilder builder(hmmer::Alphabet::DNA,
+                                      hmmer::ScoreSystem::Default);
 
     ESL_ALPHABET   *abc  = esl_alphabet_Create(eslDNA);
-    P7_BG          *bg   = p7_bg_Create(abc);
-    P7_BUILDER     *bld  = p7_builder_Create(NULL, abc);
     ESL_SQ         *qsq  = esl_sq_CreateDigital(abc);
     ESL_SQFILE     *qfp  = NULL;
-    P7_HMM         *hmm  = NULL;
-    char            errbuf[eslERRBUFSIZE];
-    int             status;
     const char *qfile = filename.c_str();
 
-    status = p7_builder_LoadScoreSystem(bld, "DNA1", 0.1, 0.4, bg);
-    if (status != eslOK) p7_Fail("Failed to set single query seq score system:\n%s\n", bld->errbuf);
-
     // Open the query sequence file in FASTA format
-    status = esl_sqfile_Open(qfile, eslSQFILE_FASTA, NULL, &qfp);
+    int status = esl_sqfile_Open(qfile, eslSQFILE_FASTA, NULL, &qfp);
     if      (status == eslENOTFOUND) esl_fatal("No such file %s.", qfile);
     else if (status == eslEFORMAT)   esl_fatal("Format of %s unrecognized.", qfile);
     else if (status == eslEINVAL)    esl_fatal("Can't autodetect stdin or .gz.");
@@ -464,23 +458,14 @@ std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename) {
 
     // For each sequence, build a model and save it.
     while ((status = esl_sqio_Read(qfp, qsq)) == eslOK) {
-        fprintf(stderr, "%s %lld\n", qsq->name, qsq->n);
-        p7_SingleBuilder(bld, qsq, bg, &hmm, NULL, NULL, NULL);
-
-        if (p7_hmm_Validate(hmm, errbuf, 1e-5f) != eslOK) esl_fatal("HMM validation failed: %s\n", errbuf);
-
-        ESL_ALPHABET *labc = esl_alphabet_Create(eslDNA);
-        hmm->abc = labc;
-
-        res.emplace_back(hmm, labc);
+        INFO("Converting " << qsq->name << ", len: " << qsq->n);
+        res.push_back(builder.from_string(qsq));
         esl_sq_Reuse(qsq);
     }
     if (status != eslEOF) esl_fatal("Unexpected error %d reading sequence file %s", status, qfp->filename);
 
-    p7_builder_Destroy(bld);
     esl_sq_Destroy(qsq);
     esl_sqfile_Close(qfp);
-    p7_bg_Destroy(bg);
     esl_alphabet_Destroy(abc);
 
     return res;
