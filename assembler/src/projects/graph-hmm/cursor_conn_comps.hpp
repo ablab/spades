@@ -43,24 +43,59 @@ std::vector<std::vector<GraphCursor>> cursor_connected_components(const std::vec
   return result;
 }
 
+template <typename T>
+bool in_vector(const T &val, const std::vector<T> &vec) {
+  return std::find(vec.cbegin(), vec.cend(), val) != vec.cend();
+}
+
 template <typename GraphCursor>
 bool check_cursor_symmetry(const GraphCursor &cursor) {
   for (const auto &next_cursor : cursor.next()) {
     auto prevs = next_cursor.prev();
-    if (std::find(prevs.cbegin(), prevs.cend(), cursor) == prevs.cend()) {
+    if (!in_vector(cursor, prevs)) {
       ERROR(cursor << ", next: " << next_cursor << ", prevs: " << prevs);
       return false;
     }
   }
   for (const auto &prev_cursor : cursor.prev()) {
     auto nexts = prev_cursor.next();
-    if (std::find(nexts.cbegin(), nexts.cend(), cursor) == nexts.cend()) {
+    if (!in_vector(cursor, nexts)) {
       ERROR(cursor << ", prev " << prev_cursor << ", nexts" << nexts);
       return false;
     }
   }
 
   return true;
+}
+
+template <typename GraphCursor>
+bool check_path_continuity(const std::vector<GraphCursor> &path) {
+  for (size_t i = 1; i < path.size(); ++i) {
+    auto nexts = path[i - 1].next();
+    auto prevs = path[i].prev();
+    if (!in_vector(path[i], nexts) || !in_vector(path[i - 1], prevs)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
+template <typename GraphCursor>
+std::vector<GraphCursor> to_nucl_path(const std::vector<GraphCursor> &path) {
+  return path;
+}
+
+template <typename GraphCursor>
+std::vector<GraphCursor> to_nucl_path(const std::vector<AAGraphCursor<GraphCursor>> &path) {
+  std::vector<GraphCursor> result;
+  for (const auto aa_cursor : path) {
+    for (const GraphCursor &cursor : aa_cursor.nucl_cursors()) {
+      result.push_back(cursor);
+    }
+  }
+  return result;
 }
 
 // vim: set ts=2 sw=2 et :

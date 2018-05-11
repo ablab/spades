@@ -56,6 +56,8 @@ class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
 
   std::vector<This> next() const { return from_bases(c2_.next()); }
 
+  std::vector<GraphCursor> nucl_cursors() const { return {c0_, c1_, c2_}; }
+
  private:
   GraphCursor c0_, c1_, c2_;
   friend struct std::hash<This>;
