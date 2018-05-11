@@ -64,27 +64,21 @@ std::string join(const std::vector<T> &v, const std::string &sep = "_") {
 }
 
 struct cfg {
-    std::string load_from;
-    std::string hmmfile;
+    std::string load_from = "";
+    std::string hmmfile = "";
     std::string output_dir = "";
-    size_t k;
+    size_t k = 0;
     int threads = 4;
-    size_t top;
-    uint64_t int_id;
-    unsigned max_size;
-    bool debug;
-    bool draw;
-    bool save;
-    bool rescore;
-    bool annotate_graph;
+    size_t top = 10;
+    uint64_t int_id = 0;
+    unsigned max_size = 1000;  // TODO Use this parameter
+    bool debug = false;
+    bool draw = false;
+    bool save = true;
+    bool rescore = true;
+    bool annotate_graph = true;
 
     hmmer::hmmer_cfg hcfg;
-    cfg()
-            : load_from(""), hmmfile(""), k(0), top(10),
-              int_id(0), max_size(1000),
-              debug(false), draw(false),
-              save(true), rescore(true), annotate_graph(true)
-    {}
 };
 
 extern "C" {
