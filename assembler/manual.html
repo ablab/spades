@@ -35,7 +35,7 @@
 <h2>1. About SPAdes</h2>
 <p>
     SPAdes &ndash; St. Petersburg genome assembler &ndash; is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. 
-SPAdes version 3.12.0 was released under GPLv2 on October 1, 2017 and can be downloaded from  <a href="http://cab.spbu.ru/software/spades/" target="_blank">http://cab.spbu.ru/software/spades/</a>.
+SPAdes version 3.12.0 was released under GPLv2 on May 14, 2018 and can be downloaded from  <a href="http://cab.spbu.ru/software/spades/" target="_blank">http://cab.spbu.ru/software/spades/</a>.
 
 <a name="sec1.1"></a>
 <h3>1.1 Supported data types</h3>
@@ -150,9 +150,28 @@ SPAdes comes in several separate modules:
 
 <a name="sec2"></a>
 <h2>2. Installation</h2>
-<p>
+<p>   SPAdes requires a 64-bit Linux system or Mac OS and Python (supported versions are Python2: 2.4&ndash;2.7, and Python3: 3.2 and higher) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself.
 
-    SPAdes requires a 64-bit Linux system or Mac OS and Python (supported versions are Python2: 2.4&ndash;2.7, and Python3: 3.2 and higher) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself.
+<p>
+    In case of successful installation the following files will be placed in the <code>bin</code> directory:
+    <ul>
+        <li><code>spades.py</code>  (main executable script)</li>
+        <li><code>metaspades.py</code>  (main executable script for <a href="#meta">metaSPAdes</a>)</li>
+        <li><code>plasmidspades.py</code>  (main executable script for <a href="#plasmid">plasmidSPAdes</a>)</li>
+        <li><code>rnaspades.py</code>  (main executable script for <a href="rnaspades_manual.html" target="_blank">rnaSPAdes</a>)</li>
+        <li><code>truspades.py</code>  (main executable script for <a href="truspades_manual.html" target="_blank">truSPAdes</a>)</li>
+        <li><code>dipspades.py</code>  (deprecated; main executable script for <a href="dipspades_manual.html" target="_blank">dipSPAdes</a>)</li>
+        <li><code>spades-core</code>  (assembly module)</li>
+        <li><code>spades-gbuilder</code>  (standalone graph builder application)</li>
+        <li><code>spades-gmapper</code>  (standalone long read to graph aligner)</li>
+        <li><code>spades-kmercount</code>  (standalone k-mer counting application)</li>
+        <li><code>spades-hammer</code>  (read error correcting module for Illumina reads)</li>
+        <li><code>spades-ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
+        <li><code>spades-bwa</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
+        <li><code>spades-corrector-core</code>  (mismatch correction module)</li>
+        <li><code>spades-truseq-scfcorrection</code>  (executable used in truSPAdes pipeline)</li>
+        <li><code>spades-dipspades-core</code>  (deprecated; assembly module for highly polymorphic diploid genomes)</li>
+    </ul>
 
 <a name="sec2.1"></a>
 <h3>2.1 Downloading SPAdes Linux binaries</h3>
@@ -169,25 +188,7 @@ SPAdes comes in several separate modules:
 </pre>
 
 <p>
-    In this case you do not need to run any installation scripts &ndash; SPAdes is ready to use. The following files will be placed in the <code>bin</code> directory:
-    <ul>
-        <li><code>spades.py</code>  (main executable script)</li>
-        <li><code>dipspades.py</code>  (main executable script for <a href="dipspades_manual.html" target="_blank">dipSPAdes</a>)</li>
-        <li><code>metaspades.py</code>  (main executable script for <a href="#meta">metaSPAdes</a>)</li>
-        <li><code>plasmidspades.py</code>  (main executable script for <a href="#plasmid">plasmidSPAdes</a>)</li>
-        <li><code>rnaspades.py</code>  (main executable script for <a href="rnaspades_manual.html" target="_blank">rnaSPAdes</a>)</li>
-        <li><code>truspades.py</code>  (main executable script for <a href="truspades_manual.html" target="_blank">truSPAdes</a>)</li>
-        <li><code>hammer</code>  (read error correcting module for Illumina reads)</li>
-        <li><code>ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
-        <li><code>spades</code>  (assembly module)</li>
-        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
-        <li><code>corrector</code>  (mismatch correction module)</li>
-        <li><code>dipspades</code>  (assembly module for highly polymorphic diploid genomes)</li>
-        <li><code>scaffold_correction</code>  (executable used in truSPAdes pipeline)</li>
-    </ul>
-
-<p>
-    We also suggest adding SPAdes installation directory to the <code>PATH</code> variable.
+    SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the <code>PATH</code> variable.
  
 <a name="sec2.2"></a>
 <h3>2.2 Downloading SPAdes binaries for Mac</h3>
@@ -204,25 +205,7 @@ SPAdes comes in several separate modules:
 </pre>
 
 <p>
-    Just as in Linux, SPAdes is ready to use and no further installation steps are required. You will get the same files in the <code>bin</code> directory:
-    <ul>
-        <li><code>spades.py</code>  (main executable script)</li>
-        <li><code>dipspades.py</code>  (main executable script for <a href="dipspades_manual.html" target="_blank">dipSPAdes</a>)</li>
-        <li><code>metaspades.py</code>  (main executable script for <a href="#meta">metaSPAdes</a>)</li>
-        <li><code>plasmidspades.py</code>  (main executable script for <a href="#plasmid">plasmidSPAdes</a>)</li>
-        <li><code>rnaspades.py</code>  (main executable script for <a href="rnaspades_manual.html" target="_blank">rnaSPAdes</a>)</li>
-        <li><code>truspades.py</code>  (main executable script for <a href="truspades_manual.html" target="_blank">truSPAdes</a>)</li>
-        <li><code>hammer</code>  (read error correcting module for Illumina reads)</li>
-        <li><code>ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
-        <li><code>spades</code>  (assembly module)</li>
-        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
-        <li><code>corrector</code>  (mismatch correction module)</li>
-        <li><code>dipspades</code>  (assembly module for highly polymorphic diploid genomes)</li>
-        <li><code>scaffold_correction</code>  (executable used in truSPAdes pipeline)</li>
-    </ul>
-
-<p>
-    We also suggest adding SPAdes installation directory to the <code>PATH</code> variable.
+    Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the <code>PATH</code> variable.
  
 
 <a name="sec2.3"></a>
@@ -278,24 +261,7 @@ SPAdes comes in several separate modules:
    which will install SPAdes into <code>/usr/local/bin</code>.
     
 <p>
-    After installation you will get the same files in <code>./bin</code> (or <code>&lt;destination_dir>/bin</code> if you specified PREFIX) directory:
-    <ul>
-        <li><code>spades.py</code>  (main executable script)</li>
-        <li><code>dipspades.py</code>  (main executable script for <a href="dipspades_manual.html" target="_blank">dipSPAdes</a>)</li>
-        <li><code>metaspades.py</code>  (main executable script for <a href="#meta">metaSPAdes</a>)</li>
-        <li><code>plasmidspades.py</code>  (main executable script for <a href="#plasmid">plasmidSPAdes</a>)</li>
-        <li><code>rnaspades.py</code>  (main executable script for <a href="rnaspades_manual.html" target="_blank">rnaSPAdes</a>)</li>
-        <li><code>truspades.py</code>  (main executable script for <a href="truspades_manual.html" target="_blank">truSPAdes</a>)</li>
-        <li><code>hammer</code>  (read error correcting module for Illumina reads)</li>
-        <li><code>ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
-        <li><code>spades</code>  (assembly module)</li>
-        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
-        <li><code>corrector</code>  (mismatch correction module)</li>
-        <li><code>dipspades</code>  (assembly module for highly polymorphic diploid genomes)</li>
-        <li><code>scaffold_correction</code>  (executable used in truSPAdes pipeline)</li>
-    </ul>
-
-<p>
+    After the installation you will get the same files (listed above) in <code>./bin</code> directory (or <code>&lt;destination_dir>/bin</code> if you specified PREFIX).
     We also suggest adding SPAdes installation directory to the <code>PATH</code> variable.
 
 <a name="sec2.4"></a>

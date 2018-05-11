@@ -24,7 +24,7 @@
 <a name="sec1"></a>
 # About SPAdes
 
-SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.12.0 was released under GPLv2 on October 1, 2017 and can be downloaded from <http://cab.spbu.ru/software/spades/>. []()
+SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.12.0 was released under GPLv2 on May 14, 2018 and can be downloaded from <http://cab.spbu.ru/software/spades/>. []()
 
 <a name="sec1.1"></a>
 ## Supported data types
@@ -136,6 +136,25 @@ Notes:
 
 SPAdes requires a 64-bit Linux system or Mac OS and Python (supported versions are Python2: 2.4–2.7, and Python3: 3.2 and higher) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself. []()
 
+In case of successful installation the following files will be placed in the `bin` directory:
+
+-   `spades.py` (main executable script)
+-   `metaspades.py` (main executable script for [metaSPAdes](#meta))
+-   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
+-   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
+-   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
+-   `dipspades.py` (deprecated; main executable script for [dipSPAdes](dipspades_manual.html))
+-   `spades-core`  (assembly module)
+-   `spades-gbuilder`  (standalone graph builder application)
+-   `spades-gmapper`  (standalone long read to graph aligner)
+-   `spades-kmercount`  (standalone k-mer counting application)
+-   `spades-hammer`  (read error correcting module for Illumina reads)
+-   `spades-ionhammer`  (read error correcting module for IonTorrent reads)
+-   `spades-bwa`  ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
+-   `spades-corrector-core`  (mismatch correction module)
+-   `spades-truseq-scfcorrection`  (executable used in truSPAdes pipeline)
+-   `spades-dipspades-core`  (deprecated; assembly module for highly polymorphic diploid genomes)
+
 <a name="sec2.1"></a>
 ## Downloading SPAdes Linux binaries
 
@@ -148,23 +167,7 @@ To download [SPAdes Linux binaries](http://cab.spbu.ru/files/release3.12.0/SPAde
     cd SPAdes-3.12.0-Linux/bin/
 ```
 
-In this case you do not need to run any installation scripts – SPAdes is ready to use. The following files will be placed in the `bin` directory:
-
--   `spades.py` (main executable script)
--   `dipspades.py` (main executable script for [dipSPAdes](dipspades_manual.html))
--   `metaspades.py` (main executable script for [metaSPAdes](#meta))
--   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
--   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
--   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
--   `hammer` (read error correcting module for Illumina reads)
--   `ionhammer` (read error correcting module for IonTorrent reads)
--   `spades` (assembly module)
--   `bwa-spades` ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
--   `corrector` (mismatch correction module)
--   `dipspades` (assembly module for highly polymorphic diploid genomes)
--   `scaffold_correction` (executable used in truSPAdes pipeline)
-
-We also suggest adding SPAdes installation directory to the `PATH` variable. []()
+In this case you do not need to run any installation scripts – SPAdes is ready to use. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
 
 <a name="sec2.2"></a>
 ## Downloading SPAdes binaries for Mac
@@ -178,23 +181,7 @@ To obtain [SPAdes binaries for Mac](http://cab.spbu.ru/files/release3.12.0/SPAde
     cd SPAdes-3.12.0-Darwin/bin/
 ```
 
-Just as in Linux, SPAdes is ready to use and no further installation steps are required. You will get the same files in the `bin` directory:
-
--   `spades.py` (main executable script)
--   `dipspades.py` (main executable script for [dipSPAdes](dipspades_manual.html))
--   `metaspades.py` (main executable script for [metaSPAdes](#meta))
--   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
--   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
--   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
--   `hammer` (read error correcting module for Illumina reads)
--   `ionhammer` (read error correcting module for IonTorrent reads)
--   `spades` (assembly module)
--   `bwa-spades` ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
--   `corrector` (mismatch correction module)
--   `dipspades` (assembly module for highly polymorphic diploid genomes)
--   `scaffold_correction` (executable used in truSPAdes pipeline)
-
-We also suggest adding SPAdes installation directory to the `PATH` variable. []()
+Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
 
 <a name="sec2.3"></a>
 ## Downloading and compiling SPAdes source code
@@ -238,23 +225,7 @@ for example:
 
 which will install SPAdes into `/usr/local/bin`.
 
-After installation you will get the same files in `./bin` (or `<destination_dir>/bin` if you specified PREFIX) directory:
-
--   `spades.py` (main executable script)
--   `dipspades.py` (main executable script for [dipSPAdes](dipspades_manual.html))
--   `metaspades.py` (main executable script for [metaSPAdes](#meta))
--   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
--   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
--   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
--   `hammer` (read error correcting module for Illumina reads)
--   `ionhammer` (read error correcting module for IonTorrent reads)
--   `spades` (assembly module)
--   `bwa-spades` ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
--   `corrector` (mismatch correction module)
--   `dipspades` (assembly module for highly polymorphic diploid genomes)
--   `scaffold_correction` (executable used in truSPAdes pipeline)
-
-We also suggest adding SPAdes installation directory to the `PATH` variable. []()
+After installation you will get the same files (listed above) in `./bin` directory (or `<destination_dir>/bin` if you specified PREFIX). We also suggest adding SPAdes installation directory to the `PATH` variable. []()
 
 <a name="sec2.4"></a>
 ## Verifying your installation
@@ -642,38 +613,38 @@ YAML file should look like this:
 
     [
       {
-        orientation: "fr",
-        type: "paired-end",
-        right reads: [
-          "/FULL_PATH_TO_DATASET/lib_pe1_right_1.fastq",
-          "/FULL_PATH_TO_DATASET/lib_pe1_right_2.fastq" 
-        ],
-        left reads: [
-          "/FULL_PATH_TO_DATASET/lib_pe1_left_1.fastq",
-          "/FULL_PATH_TO_DATASET/lib_pe1_left_2.fastq" 
-        ]
+orientation: "fr",
+type: "paired-end",
+right reads: [
+  "/FULL_PATH_TO_DATASET/lib_pe1_right_1.fastq",
+  "/FULL_PATH_TO_DATASET/lib_pe1_right_2.fastq" 
+],
+left reads: [
+  "/FULL_PATH_TO_DATASET/lib_pe1_left_1.fastq",
+  "/FULL_PATH_TO_DATASET/lib_pe1_left_2.fastq" 
+]
       },
       {
-        orientation: "rf",
-        type: "mate-pairs",
-        right reads: [
-          "/FULL_PATH_TO_DATASET/lib_mp1_right.fastq" 
-        ],
-        left reads: [
-          "/FULL_PATH_TO_DATASET/lib_mp1_left.fastq"
-        ]
+orientation: "rf",
+type: "mate-pairs",
+right reads: [
+  "/FULL_PATH_TO_DATASET/lib_mp1_right.fastq" 
+],
+left reads: [
+  "/FULL_PATH_TO_DATASET/lib_mp1_left.fastq"
+]
       },
       {
-        type: "single",
-        single reads: [
-          "/FULL_PATH_TO_DATASET/pacbio_ccs.fastq" 
-        ]
+type: "single",
+single reads: [
+  "/FULL_PATH_TO_DATASET/pacbio_ccs.fastq" 
+]
       },
       {
-        type: "pacbio",
-        single reads: [
-          "/FULL_PATH_TO_DATASET/pacbio_clr.fastq" 
-        ]
+type: "pacbio",
+single reads: [
+  "/FULL_PATH_TO_DATASET/pacbio_clr.fastq" 
+]
       }
     ]
 ```
@@ -930,18 +901,18 @@ Let the contig with the name `NODE_5_length_100000_cov_215.651_ID_5` consist of 
 
 Then, `contigs.paths` will contain the following record:
 
-        
-        NODE_5_length_100000_cov_215.651_ID_5
-        2+,5-,3+,5-,4+
-        
+
+NODE_5_length_100000_cov_215.651_ID_5
+2+,5-,3+,5-,4+
+
 
 Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are splitted by semicolon at the gap positions. For example, the following record
 
-        
-        NODE_3_length_237403_cov_243.207_ID_45
-        21-,17-,15+,17-,16+;
-        31+,23-,22+,23-,4-
-        
+
+NODE_3_length_237403_cov_243.207_ID_45
+21-,17-,15+,17-,16+;
+31+,23-,22+,23-,4-
+
 
 states that `NODE_3_length_237403_cov_243.207_ID_45` corresponds to the path with 10 edges, but jumps over a gap between edges `EDGE_16_length_21503_cov_482.709` and `EDGE_31_length_140767_cov_220.239`.
 
