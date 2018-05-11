@@ -40,7 +40,7 @@ inline std::vector<DebruijnGraphCursor> DebruijnGraphCursor::next() const {
         return { DebruijnGraphCursor(g_, e_, position_ + 1) };
 
     // Otherwise we're inside the vertex and need to go out of it
-    assert(position_ + 1 == g_->length(e_) + g_->k() + 1);
+    assert(position_ + 1 == g_->length(e_) + g_->k());
     std::vector<DebruijnGraphCursor> result;
     result.reserve(4);
     for (EdgeId out : g_->OutgoingEdges(g_->EdgeEnd(e_)))
