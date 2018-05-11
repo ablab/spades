@@ -590,9 +590,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             auto nucl_path = to_nucl_path(annotated_path.path);
             assert(check_path_continuity(nucl_path));
             auto edge_path = to_path(nucl_path);
-            if (edge_path.size() == 0)  // TODO just do not extract empty paths, fix extraction method in pathtree.hpp. Remove this if{} when fixed
-                continue;
-
+            assert(!edge_path.empty());
             local_results.emplace_back(p7hmm->name, idx++, annotated_path.score, seq, std::move(edge_path), std::move(alignment));
         }
     };
