@@ -38,8 +38,10 @@ bool CheckUsedPath(const path_extend::BidirectionalPath* path, set<EdgeId> &used
 
 path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage, set<EdgeId> &used_paths) {
     path_extend::PathContainer res;
+    INFO("banned " << used_paths.size() <<" edges");
     for (auto it = sc_storage.begin(); it != sc_storage.end(); it++) {
-        if (CheckCircularPath(it->first) && !CheckUsedPath(it->first, used_paths)) {
+//FIXME: constant
+        if (CheckCircularPath(it->first) && !CheckUsedPath(it->first, used_paths) && it->first->Length() >= 500) {
             path_extend::BidirectionalPath *p = new path_extend::BidirectionalPath(*it->first);
             path_extend::BidirectionalPath *cp = new path_extend::BidirectionalPath(p->Conjugate());
             res.AddPair(p, cp);
