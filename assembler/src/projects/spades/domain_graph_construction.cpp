@@ -5,20 +5,14 @@
 
 #include "modules/path_extend/pe_utils.hpp"
 
+#include "hmm/hmmfile.hpp"
+#include "hmm/hmmmatcher.hpp"
+
 #include "sequence/aa.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/reads/wrapper_collection.hpp"
 
 #include "domain_graph.hpp"
-
-extern "C" {
-#include "p7_config.h"
-
-#include <stdlib.h>
-#include <string.h>
-
-#include "hmmer.h"
-}
 
 namespace debruijn_graph {
 
@@ -411,8 +405,8 @@ std::vector<std::string> DomainMatcher::getFileVector(const std::string &hmm_fil
     return result;
 }
 
-
-void DomainMatcher::match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::BidirectionalPath* path, const string &path_string, P7_HMM *p7hmm, ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
+void DomainMatcher::match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::BidirectionalPath* path,
+                                           const std::string &path_string, const hmmer::HMM &hmm, ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
     for (size_t shift = 0; shift < 3; ++shift) {
         std::string ref_shift = std::to_string(path->GetId()) + "_" + std::to_string(shift);
         std::string seq_aas = aa::translate(path_string.c_str() + shift);
@@ -431,7 +425,7 @@ void DomainMatcher::match_contigs_internal(hmmer::HMMMatcher &matcher, path_exte
             INFO("First - " << seqpos2.first << ", second - " << seqpos2.second);
             INFO("First - " << seqpos.first << ", second - " << seqpos.second);
 
-            if (seqpos.second - seqpos.first < p7hmm->M / 2) {
+            if (seqpos.second - seqpos.first < hmm.length() / 2) {
                 continue;
             }
 
@@ -449,27 +443,25 @@ void DomainMatcher::match_contigs_internal(hmmer::HMMMatcher &matcher, path_exte
 
 
 ContigAlnInfo DomainMatcher::match_contigs(const path_extend::PathContainer &contig_paths,
-                          const ErrorOr<hmmer::HMM> &hmmw, const hmmer::hmmer_cfg &cfg,
-                          const path_extend::ScaffoldSequenceMaker &scaffold_maker, io::OFastaReadStream &oss_contig) {
-    const hmmer::HMM &hmm = hmmw.get();
+                                           const hmmer::HMM &hmm, const hmmer::hmmer_cfg &cfg,
+                                           const path_extend::ScaffoldSequenceMaker &scaffold_maker, io::OFastaReadStream &oss_contig) {
     ContigAlnInfo res;
     INFO(contig_paths.size());
 
-    P7_HMM *p7hmm = hmmw->get();
-    INFO("Model length - " << p7hmm->M);
+    INFO("Model length - " << hmm.length());
     for (auto iter = contig_paths.begin(); iter != contig_paths.end(); ++iter) {
         hmmer::HMMMatcher matcher(hmm, cfg);
         path_extend::BidirectionalPath* path = iter.get();
         if (path->Length() <= 0)
             continue;
         string path_string = scaffold_maker.MakeSequence(*path);
-        match_contigs_internal(matcher, path, path_string, p7hmm, res, oss_contig);
+        match_contigs_internal(matcher, path, path_string, hmm, res, oss_contig);
 
         path_extend::BidirectionalPath* conj_path = path->GetConjPath();
         if (conj_path->Length() <= 0)
             continue;
         string path_string_conj = scaffold_maker.MakeSequence(*conj_path);
-        match_contigs_internal(matcher, conj_path, path_string_conj, p7hmm, res, oss_contig);
+        match_contigs_internal(matcher, conj_path, path_string_conj, hmm, res, oss_contig);
     }
 
     return res;
@@ -503,7 +495,7 @@ void DomainMatcher::MatchDomains(conj_graph_pack &gp, std::vector<std::string> &
         FATAL_ERROR("Error opening HMM file "<< file);
         auto hmmw = hmmfile.read();
         INFO("Matching contigs with " << file);
-        auto res = match_contigs(gp.contig_paths, hmmw, hcfg, scaffold_maker, oss_contig);
+        auto res = match_contigs(gp.contig_paths, hmmw.get(), hcfg, scaffold_maker, oss_contig);
         bool exists = false;
         for (auto domain : res) {
             exists = true;

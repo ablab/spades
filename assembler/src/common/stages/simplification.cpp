@@ -241,7 +241,7 @@ public:
                     "Topology tip clipper");
         }
 
-        auto lambda_func = [this](EdgeId e, const vector<EdgeId>& path){
+        auto restricted_check = [this](EdgeId e, const std::vector<EdgeId>&){
             return restricted_edges_.count(e) > 0;
         };
         algo.AddAlgo(
@@ -280,12 +280,12 @@ public:
 
         algo.AddAlgo(
                 BRInstance(g_, simplif_cfg_.br,
-                           info_container_, lambda_func, removal_handler_),
+                           info_container_, restricted_check, removal_handler_),
                 "Bulge remover");
 
         algo.AddAlgo(
                 BRInstance(g_, simplif_cfg_.final_br,
-                                   info_container_, lambda_func, removal_handler_),
+                                   info_container_, restricted_check, removal_handler_),
                 "Final bulge remover");
 
         //TODO need better configuration
@@ -367,7 +367,7 @@ public:
         INFO("Graph simplification started");
         printer_(info_printer_pos::before_simplification);
 
-        auto lambda_func = [this](EdgeId e, const vector<EdgeId>& path){
+        auto restricted_check = [this](EdgeId e, const std::vector<EdgeId>&) {
             return restricted_edges_.count(e) > 0;
         };
 
@@ -382,7 +382,7 @@ public:
                             "Tip clipper");
         algo_tc_br->AddAlgo(DeadEndInstance(g_, simplif_cfg_.dead_end, info_container_, removal_handler_),
                             "Dead end clipper");
-        algo_tc_br->AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, lambda_func, removal_handler_),
+        algo_tc_br->AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, restricted_check, removal_handler_),
                             "Bulge remover");
 
 //        algo.AddAlgo(
@@ -409,9 +409,8 @@ public:
     }
 
     std::vector<EdgeId> FillRestrictedEdges() {
-        if(!fs::check_existence(cfg::get().output_dir + "temp_anti/restricted_edges.fasta")) {
+        if (!fs::check_existence(cfg::get().output_dir + "temp_anti/restricted_edges.fasta"))
             return std::vector<EdgeId>();
-        }
 
         auto mapper = MapperInstance(gp_);
         auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(cfg::get().output_dir + "temp_anti/restricted_edges.fasta"));
@@ -421,14 +420,13 @@ public:
             io::SingleRead read;
             (*reader) >> read;
             std::vector<EdgeId> edges = mapper->MapSequence(read.sequence()).simple_path();
-            for(auto edge : edges) {
+            for (auto edge : edges) {
                 a_domain_edges.push_back(edge);
                 a_domain_edges.push_back(g_.conjugate(edge));
             }
         }
         return a_domain_edges;
     }
-
 };
 
 std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultGPColorer(
