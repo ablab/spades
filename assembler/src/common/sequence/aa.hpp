@@ -101,7 +101,3 @@ inline std::string translate(const std::string &nts) {
 }
 
 }  // namespace aa
-
-using aa::to_aa;
-using aa::translate;
-using aa::to_one_letter;
