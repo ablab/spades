@@ -84,7 +84,7 @@
  * future.  (21 Nov 09 xref J5/114)
  *    
  */
-typedef struct {
+typedef struct esl_sq_s {
   /*::cexcerpt::sq_sq::begin::*/
   char    *name;           /* name; one word, no whitespace ("\0" if no name)  */
   char    *acc;            /* optional accession (1 word) ("\0" if none)       */
