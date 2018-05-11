@@ -27,6 +27,13 @@ HMM::HMM(P7_HMM *hmm, ESL_ALPHABET *abc)
           abc_(abc, esl_alphabet_Destroy)
 {}
 
+unsigned HMM::length() const {
+    if (hmm_)
+        return hmm_->M;
+
+    return 0;
+}
+
 static ReadErrc to_ReadErrc(int err) {
     switch (err) {
         case eslOK:
