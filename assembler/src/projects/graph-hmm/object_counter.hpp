@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <cstdlib>
 
 namespace impl {
 template <typename T>
