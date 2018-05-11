@@ -37,6 +37,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
+#include <regex>
 
 extern "C" {
     #include "easel.h"
@@ -623,51 +624,9 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
 }
 
-void seq_main(const cfg &cfg,
-              const debruijn_graph::ConjugateDeBruijnGraph &graph,
-              const std::vector<EdgeId> &edges,
-              std::unordered_set<std::vector<EdgeId>> &to_rescore,
-              std::set<std::pair<std::string, std::vector<EdgeId>>> &gfa_paths) {
-    // Outer loop: over each query sequence in <fafile>.
-    auto hmms = ParseFASTAFile(cfg.hmmfile);
-
-    omp_set_num_threads(cfg.threads);
-    #pragma omp parallel for
-    for (size_t _i = 0; _i < hmms.size(); ++_i) {
-        const auto &hmm = hmms[_i];
-
-        std::vector<HMMPathInfo> results;
-
-        TraceHMM(hmm, graph, edges, cfg, results);
-
-        std::sort(results.begin(), results.end());
-        SaveResults(hmm, graph, cfg, results);
-
-        if (cfg.annotate_graph) {
-            std::unordered_set<std::vector<EdgeId>> unique_paths;
-            for (const auto &result : results)
-                unique_paths.insert(result.path);
-
-            size_t idx = 0;
-            for (const auto &path : unique_paths) {
-                #pragma omp critical
-                {
-                    gfa_paths.insert({ std::string(hmm.get()->name) + "_" + std::to_string(idx++) + "_length_" + std::to_string(path.size()), path });
-                }
-            }
-        }
-
-        if (cfg.rescore) {
-            Rescore(hmm, graph, cfg, results);
-
-            for (const auto &result : results) {
-                #pragma omp critical
-                {
-                    to_rescore.insert(result.path);
-                }
-            }
-        }
-    } // end outer loop over query HMMs
+bool is_sequence_filename(const std::string &filename) {
+    std::regex re(".*\\.f(ast)?(a|q)(\\.gz|\\.bz2)?");
+    return std::regex_match(filename.c_str(), re);
 }
 
 void hmm_main(const cfg &cfg,
@@ -675,8 +634,9 @@ void hmm_main(const cfg &cfg,
               const std::vector<EdgeId> &edges,
               std::unordered_set<std::vector<EdgeId>> &to_rescore,
               std::set<std::pair<std::string, std::vector<EdgeId>>> &gfa_paths) {
+    auto hmms = is_sequence_filename(cfg.hmmfile) ? ParseFASTAFile(cfg.hmmfile) : ParseHMMFile(cfg.hmmfile);
+
     // Outer loop: over each query HMM in <hmmfile>.
-    auto hmms = ParseHMMFile(cfg.hmmfile);
     omp_set_num_threads(cfg.threads);
     #pragma omp parallel for
     for (size_t _i = 0; _i < hmms.size(); ++_i) {
@@ -757,13 +717,7 @@ int main(int argc, char* argv[]) {
     std::unordered_set<std::vector<EdgeId>> to_rescore;
     std::set<std::pair<std::string, std::vector<EdgeId>>> gfa_paths;
 
-    if (ends_with(cfg.hmmfile, ".fa") || ends_with(cfg.hmmfile, ".fasta")) {
-        // Match sequence
-        seq_main(cfg, graph, edges, to_rescore, gfa_paths);
-    } else {
-        // Match HMM
-        hmm_main(cfg, graph, edges, to_rescore, gfa_paths);
-    }
+    hmm_main(cfg, graph, edges, to_rescore, gfa_paths);
 
     if (cfg.rescore) {
         INFO("Total " << to_rescore.size() << " paths to rescore");
