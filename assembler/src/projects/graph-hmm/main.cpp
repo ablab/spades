@@ -16,14 +16,15 @@
 #include "io/reads/osequencestream.hpp"
 #include "io/reads/file_reader.hpp"
 
+#include "hmm/hmmfile.hpp"
+#include "hmm/hmmmatcher.hpp"
+
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 
 #include "version.hpp"
 
-#include "hmmfile.hpp"
-#include "hmmmatcher.hpp"
 #include "fees.hpp"
 #include "omnigraph_wrapper.hpp"
 

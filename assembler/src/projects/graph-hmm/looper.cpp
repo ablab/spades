@@ -18,8 +18,8 @@ extern "C" {
 }
 
 #include <clipp/clipp.h>
-#include "hmmfile.hpp"
-#include "hmmmatcher.hpp"
+#include "hmm/hmmfile.hpp"
+#include "hmm/hmmmatcher.hpp"
 
 #include <cstdio>
 #include <iostream>

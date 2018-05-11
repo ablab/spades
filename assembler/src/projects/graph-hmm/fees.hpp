@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hmmer_fwd.h"
+#include "common/hmm/hmmer_fwd.h"
 
 #include <string>
 #include <iostream>
