@@ -172,15 +172,15 @@ template<class GraphCursor>
 std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<GraphCursor> &cpath) {
     std::vector<typename GraphCursor::EdgeId> path;
 
+    size_t count = 0;
     for (auto it = cpath.begin(); it != cpath.end(); ++it) {
-        if (path.size() == 0 || it->edge() != path.back()) {
-            path.push_back(it->edge());
-        } else {
-            for (auto e : it->edges())
-                if (e != path.back())
-                    path.push_back(e);
-        }
-
+        for (auto e : it->edges())
+            if (path.empty() || e != path.back()) {
+                path.push_back(e);
+                count = 1;
+            } else {
+                ++count;
+            }
     }
 
     return path;

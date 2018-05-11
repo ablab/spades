@@ -46,10 +46,8 @@ class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
 
   bool is_empty() const { return c0_.is_empty() || c1_.is_empty() || c2_.is_empty(); }
 
-  using EdgeId = decltype(GraphCursor().edge());
-  EdgeId edge() const {
-    return c0_.edge();  // FIXME during edge path reconstruction we miss edges of two last nucleotides
-  }
+  using EdgeId = std::decay_t<decltype(GraphCursor().edge())>;
+
   std::vector<EdgeId> edges() const { return { c0_.edge(), c1_.edge(), c2_.edge() }; }
 
   std::vector<This> prev() const;  // TODO implement it
