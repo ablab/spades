@@ -18,6 +18,7 @@ add_subdirectory(utils)
 add_subdirectory(io)
 add_subdirectory(utils/kmer_mph)
 add_subdirectory(modules/coverage_model)
+add_subdirectory(hmm)
 
 add_library(common_modules INTERFACE)
 
