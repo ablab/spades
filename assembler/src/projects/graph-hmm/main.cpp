@@ -614,6 +614,27 @@ void TraceHMM(const hmmer::HMM &hmm,
         for (const auto &cursor : component_cursors) {
             DEBUG_ASSERT(check_cursor_symmetry(cursor), main_assert{}, debug_assert::level<2>{});
         }
+
+        auto component_name = int_to_hex(hash_value(component_cursors));
+        INFO("Construct component " << component_name);
+        std::unordered_set<EdgeId> edges;
+        for (const auto& cursor : component_cursors) {
+            edges.insert(cursor.edge());
+        }
+        auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromEdges(graph, edges, true, component_name);
+        INFO("Neighbourhood vertices: " << component.v_size() << ", edges: " << component.e_size());
+
+        // TODO use max_size as a limit for the number of cursors in a component
+        // if (component.e_size()/2 > cfg.max_size) {
+        //     WARN("Component is too large (" << component.e_size() / 2 << " vs " << cfg.max_size << "), skipping");
+        //     continue;
+        // }
+
+        if (cfg.draw) {
+            INFO("Writing component " << component_name);
+            DrawComponent(component, graph, cfg.output_dir + "/" + component_name, match_edges);
+        }
+
         INFO("Running path search");
         std::vector<HMMPathInfo> local_results;
 
@@ -629,6 +650,23 @@ void TraceHMM(const hmmer::HMM &hmm,
         for (const auto& entry : local_results)
             paths.insert(entry.path);
         INFO("Total " << paths.size() << " unique edge paths extracted");
+
+        {
+            size_t idx = 0;
+            for (const auto &path : paths) {
+                std::vector<size_t> int_ids;
+                for (EdgeId e : path) {
+                    int_ids.push_back(e.int_id());
+                }
+                INFO("Path length : " << path.size() << " edges " << int_ids);
+
+                if (cfg.draw) {
+                    INFO("Writing component around path");
+                    DrawComponent(component, graph, cfg.output_dir + "/" + component_name + "_" + std::to_string(idx), path);
+                }
+                idx += 1;
+            }
+        }
     }
 }
 

@@ -1,6 +1,8 @@
 #pragma once
 #include <algorithm>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -43,6 +45,18 @@ void remove_duplicates(std::vector<T> &v) {
 inline size_t hash_size_t_pair(size_t s0, size_t s1) {
   s1 ^= s1 << 23;  // a
   return (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26)) + s0;
+}
+
+template <typename T>
+auto hash_value(const T& v) {
+    return std::hash<T>{}(v);
+}
+
+template <typename T>
+std::string int_to_hex(const T &i) {
+  std::stringstream ss;
+  ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << i;
+  return ss.str();
 }
 
 namespace std {
