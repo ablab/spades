@@ -4,6 +4,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "fees.hpp"
+#include "omnigraph_wrapper.hpp"
+#include "depth_filter.hpp"
+#include "cursor_conn_comps.hpp"
+
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/components/graph_component.hpp"
@@ -25,14 +30,10 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 
-#include "fees.hpp"
-#include "omnigraph_wrapper.hpp"
-#include "depth_filter.hpp"
-#include "cursor_conn_comps.hpp"
-
 #include "version.hpp"
 
 #include <clipp/clipp.h>
+#include <debug_assert/debug_assert.hpp>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -44,6 +45,9 @@ extern "C" {
     #include "esl_sqio.h"
     #include "esl_vectorops.h"
 }
+
+struct main_assert : debug_assert::default_handler,
+                     debug_assert::set_level<1> {};
 
 void create_console_logger() {
     using namespace logging;
@@ -588,15 +592,15 @@ void TraceHMM(const hmmer::HMM &hmm,
             auto seq = top_paths.str(annotated_path.path);
             auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, p7hmm->M));
             auto nucl_path = to_nucl_path(annotated_path.path);
-            assert(check_path_continuity(nucl_path));
+            DEBUG_ASSERT(check_path_continuity(nucl_path), main_assert{}, debug_assert::level<2>{});
             auto edge_path = to_path(nucl_path);
-            assert(!edge_path.empty());
+            DEBUG_ASSERT(!edge_path.empty(), main_assert{});
             auto edge_path_aas = to_path(annotated_path.path);
             if (edge_path != edge_path_aas) {
                 ERROR("NT: " << edge_path);
                 ERROR("AA: " << edge_path_aas);
             }
-            assert(edge_path == edge_path_aas);
+            DEBUG_ASSERT(edge_path == edge_path_aas, main_assert{}, debug_assert::level<2>{});
             local_results.emplace_back(p7hmm->name, idx++, annotated_path.score, seq, std::move(edge_path), std::move(alignment));
         }
     };
@@ -608,7 +612,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     for (const auto &component_cursors : cursor_conn_comps) {
         INFO("Component size " << component_cursors.size());
         for (const auto &cursor : component_cursors) {
-            assert(check_cursor_symmetry(cursor));
+            DEBUG_ASSERT(check_cursor_symmetry(cursor), main_assert{}, debug_assert::level<2>{});
         }
         INFO("Running path search");
         std::vector<HMMPathInfo> local_results;

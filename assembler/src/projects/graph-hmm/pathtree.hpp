@@ -1,8 +1,11 @@
 #pragma once
 
+#include "object_counter.hpp"
+
 #include "utils/logger/logger.hpp"
 
-#include "llvm/ADT/IntrusiveRefCntPtr.h"
+#include <llvm/ADT/IntrusiveRefCntPtr.h>
+#include <debug_assert/debug_assert.hpp>
 
 #include <memory>
 #include <queue>
@@ -10,11 +13,11 @@
 #include <unordered_set>
 #include <vector>
 
-#include "object_counter.hpp"
-
 enum class EventType { NONE, MATCH, INSERTION };
 using score_t = double;
 
+struct pathtree_assert : debug_assert::default_handler,
+                         debug_assert::set_level<1> {};
 
 namespace pathtree {
 
@@ -75,7 +78,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
   }
 
   auto best_ancestor() const {
-    assert(scores_.size());
+    DEBUG_ASSERT(scores_.size(), pathtree_assert{});
     return std::min_element(scores_.cbegin(), scores_.cend(),
                             [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
   }
@@ -88,14 +91,14 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       const auto &it = it_fl.first;
       if (it->second.first > score) {
         it->second = std::move(val);
-        assert(scores_.size());
+        DEBUG_ASSERT(scores_.size(), pathtree_assert{});
         return true;
       } else {
-        assert(scores_.size());
+        DEBUG_ASSERT(scores_.size(), pathtree_assert{});
         return false;
       }
     } else {
-      assert(scores_.size());
+      DEBUG_ASSERT(scores_.size(), pathtree_assert{});
       return true;
     }
   }
@@ -244,7 +247,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
 
       apply(fnc);
     }
-    assert(check_all_states_have_children());
+    DEBUG_ASSERT(check_all_states_have_children(), pathtree_assert{}, debug_assert::level<2>{});
 
     auto bs_fwd = best_scores();
     auto bs = bs_fwd.first;
@@ -268,8 +271,8 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       // while iterating through the container)
       for (auto it = current->scores_.begin(); it != current->scores_.end();) {
         const This *p = it->second.second.get();
-        assert(p);
-        assert(bs.count(p));
+        DEBUG_ASSERT(p, pathtree_assert{});
+        DEBUG_ASSERT(bs.count(p), pathtree_assert{}, debug_assert::level<2>{});
 
         if ((current == this && bs[p].ancestor != this) || (current != this && bs[p].ancestor == this)) {
           it = current->scores_.erase(it);
@@ -296,7 +299,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       }
     }
 
-    assert(q.empty());
+    DEBUG_ASSERT(q.empty(), pathtree_assert{});
     // Remove collapsed states recursively
     for (This *p : collapsed) {
       for (This *pp : forward[p]) {
@@ -310,7 +313,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
 
       for (auto it = current->scores_.begin(); it != current->scores_.end();) {
         This *p = it->second.second.get();
-        assert(p);
+        DEBUG_ASSERT(p, pathtree_assert{});
 
         if (collapsed.count(p)) {
           it = current->scores_.erase(it);
@@ -328,9 +331,9 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
         }
       }
     }
-    assert(q.empty());
-    assert(check_all_states_have_children());
-    assert(!collapsed.count(this));
+    DEBUG_ASSERT(q.empty(), pathtree_assert{});
+    DEBUG_ASSERT(check_all_states_have_children(), pathtree_assert{}, debug_assert::level<2>{});
+    DEBUG_ASSERT(!collapsed.count(this), pathtree_assert{});
 
     INFO(collapsed.size() << " states collapsed");
   }
@@ -343,7 +346,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
     bool empty() const { return path.empty(); }
 
     size_t size() const {
-      assert(path.size() == events.size());
+      DEBUG_ASSERT(path.size() == events.size(), pathtree_assert{});
       return path.size();
     }
   };
@@ -364,7 +367,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
     };
     std::priority_queue<SPT, std::vector<SPT>, Comp> q;
     auto extract_path = [&q]() -> AnnotatedPath {
-      assert(!q.empty());
+      DEBUG_ASSERT(!q.empty(), pathtree_assert{});
       SPT tail = q.top();
       q.pop();
       // GraphCursor gp;
@@ -379,7 +382,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
         for (auto it = p->scores_.cbegin(); it != p->scores_.cend(); ++it) {
           double delta = it->second.first - best->second.first;
           auto spt = make_child<Payload>({it->first, cost + delta, const_cast<const This *>(it->second.second.get())}, tail);
-          assert(spt->payload().gp.is_empty() == (spt->payload().p->event.type == EventType::NONE));
+          DEBUG_ASSERT(spt->payload().gp.is_empty() == (spt->payload().p->event.type == EventType::NONE), pathtree_assert{});
           if (it != best) {
             q.push(spt);
           } else {
@@ -566,7 +569,7 @@ class PathSet {
     static std::string str(const std::vector<GraphCursor> &path) {
       std::string s;
       for (size_t i = 0; i < path.size(); ++i) {
-        assert(!path[i].is_empty());
+        DEBUG_ASSERT(!path[i].is_empty(), pathtree_assert{});
 
         s += path[i].letter();
       }
@@ -602,16 +605,16 @@ class PathSet {
     static std::string alignment(const AnnotatedPath &apath, size_t m) {
       std::string s;
       size_t prev_position = 0;
-      assert(apath.path.size() == apath.events.size());
+      DEBUG_ASSERT(apath.path.size() == apath.events.size(), pathtree_assert{});
       for (size_t i = 0; i < apath.path.size(); ++i) {
-        assert(!apath.path[i].is_empty());
+        DEBUG_ASSERT(!apath.path[i].is_empty(), pathtree_assert{});
 
         if (apath.events[i].type == EventType::NONE) {
           ERROR("Position: " << i);
           ERROR("Path: " << str(apath.path));
           ERROR("Alignment:" << s);
         }
-        assert(apath.events[i].type != EventType::NONE);
+        DEBUG_ASSERT(apath.events[i].type != EventType::NONE, pathtree_assert{});
         for (size_t j = prev_position + 1; j < apath.events[i].m; ++j) {
           s += '-';
         }

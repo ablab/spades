@@ -4,10 +4,15 @@
 #include "hmmpath.hpp"
 #include "utils.hpp"
 
+#include "debug_assert/debug_assert.hpp"
+
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 
 using namespace debruijn_graph;
+
+struct omnigraph_assert : debug_assert::default_handler,
+                          debug_assert::set_level<1> {};
 
 std::vector<DebruijnGraphCursor> DebruijnGraphCursor::prev() const {
     // Case 1: edge is a tip and we're inside the terminal vertex
@@ -24,8 +29,8 @@ std::vector<DebruijnGraphCursor> DebruijnGraphCursor::prev() const {
     }
 
     // Case 3: go into incoming edges
-    assert(position_ == g_->k());
-    assert(g_->IncomingEdgeCount(g_->EdgeStart(e_)));
+    DEBUG_ASSERT(position_ == g_->k(), omnigraph_assert{});
+    DEBUG_ASSERT(g_->IncomingEdgeCount(g_->EdgeStart(e_)), omnigraph_assert{});
     std::vector<DebruijnGraphCursor> result;
     for (EdgeId in : g_->IncomingEdges(g_->EdgeStart(e_)))
         result.emplace_back(g_, in, g_->length(in) + g_->k() - 1);
@@ -40,7 +45,7 @@ inline std::vector<DebruijnGraphCursor> DebruijnGraphCursor::next() const {
         return { DebruijnGraphCursor(g_, e_, position_ + 1) };
 
     // Otherwise we're inside the vertex and need to go out of it
-    assert(position_ + 1 == g_->length(e_) + g_->k());
+    DEBUG_ASSERT(position_ + 1 == g_->length(e_) + g_->k(), omnigraph_assert{});
     std::vector<DebruijnGraphCursor> result;
     result.reserve(4);
     for (EdgeId out : g_->OutgoingEdges(g_->EdgeEnd(e_)))
@@ -66,8 +71,8 @@ std::vector<DebruijnComponentCursor> DebruijnComponentCursor::prev() const {
     }
 
     // Case 3: go into incoming edges
-    assert(position_ == g.k());
-    assert(g.IncomingEdgeCount(g.EdgeStart(e_)) && !c_->IsBorder(g.EdgeStart(e_)));
+    DEBUG_ASSERT(position_ == g.k(), omnigraph_assert{});
+    DEBUG_ASSERT(g.IncomingEdgeCount(g.EdgeStart(e_)), omnigraph_assert{});
     std::vector<DebruijnComponentCursor> result;
     for (EdgeId in : g.IncomingEdges(g.EdgeStart(e_))) {
         if (!c_->contains(in))
@@ -87,7 +92,7 @@ inline std::vector<DebruijnComponentCursor> DebruijnComponentCursor::next() cons
         return { DebruijnComponentCursor(c_, e_, position_ + 1) };
 
     // Otherwise we're inside the vertex and need to go out of it
-    assert(position_ + 1 == g.length(e_) + g.k());
+    DEBUG_ASSERT(position_ + 1 == g.length(e_) + g.k(), omnigraph_assert{});
     std::vector<DebruijnComponentCursor> result;
     result.reserve(4);
     for (EdgeId out : g.OutgoingEdges(g.EdgeEnd(e_))) {
