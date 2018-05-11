@@ -16,11 +16,13 @@ std::vector<std::vector<GraphCursor>> cursor_connected_components(const std::vec
   for (const auto &kv : cursor2id) {
     const GraphCursor &cursor = kv.first;
     const size_t &id = kv.second;
-    for (const GraphCursor &next_cursor : cursor.next()) {
-      auto it = cursor2id.find(next_cursor);
-      if (it != cursor2id.cend()) {
-        size_t &next_id = it->second;
-        dsu.unite(id, next_id);
+    for (const auto &adj : {cursor.next(), cursor.prev()}) {
+      for (const GraphCursor &adj_cursor : adj) {
+        auto it = cursor2id.find(adj_cursor);
+        if (it != cursor2id.cend()) {
+          size_t &adj_id = it->second;
+          dsu.unite(id, adj_id);
+        }
       }
     }
   }
