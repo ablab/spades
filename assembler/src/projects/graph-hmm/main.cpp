@@ -9,6 +9,8 @@
 #include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
+#include "sequence/aa.hpp"
+
 #include "visualization/visualization.hpp"
 #include "pipeline/graphio.hpp"
 #include "io/graph/gfa_reader.hpp"
@@ -23,20 +25,18 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 
-#include "version.hpp"
-
 #include "fees.hpp"
 #include "omnigraph_wrapper.hpp"
+#include "depth_filter.hpp"
+#include "cursor_conn_comps.hpp"
+
+#include "version.hpp"
 
 #include <clipp/clipp.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
-
-#include "aa.hpp"
-#include "depth_filter.hpp"
-#include "cursor_conn_comps.hpp"
 
 extern "C" {
     #include "easel.h"
@@ -222,7 +222,7 @@ auto ScoreSequences(const std::vector<std::string> &seqs,
         } else {
             for (size_t shift = 0; shift < 3; ++shift) {
                 std::string ref_shift = ref + "/" + std::to_string(shift);
-                std::string seq_aas = translate(seqs[i].c_str() + shift);
+                std::string seq_aas = aa::translate(seqs[i].c_str() + shift);
                 matcher.match(ref_shift.c_str(), seq_aas.c_str());
             }
         }
