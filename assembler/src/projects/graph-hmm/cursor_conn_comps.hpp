@@ -43,4 +43,24 @@ std::vector<std::vector<GraphCursor>> cursor_connected_components(const std::vec
   return result;
 }
 
+template <typename GraphCursor>
+bool check_cursor_symmetry(const GraphCursor &cursor) {
+  for (const auto &next_cursor : cursor.next()) {
+    auto prevs = next_cursor.prev();
+    if (std::find(prevs.cbegin(), prevs.cend(), cursor) == prevs.cend()) {
+      ERROR(cursor << ", next: " << next_cursor << ", prevs: " << prevs);
+      return false;
+    }
+  }
+  for (const auto &prev_cursor : cursor.prev()) {
+    auto nexts = prev_cursor.next();
+    if (std::find(nexts.cbegin(), nexts.cend(), cursor) == nexts.cend()) {
+      ERROR(cursor << ", prev " << prev_cursor << ", nexts" << nexts);
+      return false;
+    }
+  }
+
+  return true;
+}
+
 // vim: set ts=2 sw=2 et :

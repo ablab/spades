@@ -28,7 +28,7 @@ std::vector<DebruijnGraphCursor> DebruijnGraphCursor::prev() const {
     assert(g_->IncomingEdgeCount(g_->EdgeStart(e_)));
     std::vector<DebruijnGraphCursor> result;
     for (EdgeId in : g_->IncomingEdges(g_->EdgeStart(e_)))
-        result.emplace_back(g_, in, g_->length(in) - 1);
+        result.emplace_back(g_, in, g_->length(in) + g_->k() - 1);
 
     return result;
 }
@@ -72,7 +72,7 @@ std::vector<DebruijnComponentCursor> DebruijnComponentCursor::prev() const {
     for (EdgeId in : g.IncomingEdges(g.EdgeStart(e_))) {
         if (!c_->contains(in))
             continue; // We need to stay in component
-        result.emplace_back(c_, in, g.length(in) - 1);
+        result.emplace_back(c_, in, g.length(in) + g.k() - 1);
     }
 
     return result;
