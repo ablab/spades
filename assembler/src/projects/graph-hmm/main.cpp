@@ -632,8 +632,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
 
         size_t len = graph.length(e) + graph.k();
-        INFO("Edge length: " << len);
-        INFO("Edge overhangs: " << loverhang << " " << roverhang);
+        INFO("Edge length: " << len <<"; edge overhangs: " << loverhang << " " << roverhang);
         if (roverhang > 0) {
             GraphCursor end = get_cursor(graph, e, len - 1);
             right_queries.push_back({end, roverhang * 2});
@@ -651,6 +650,15 @@ void TraceHMM(const hmmer::HMM &hmm,
 
     std::vector<GraphCursor> cursors_vector(cursors.cbegin(), cursors.cend());
     auto cursor_conn_comps = cursor_connected_components(cursors_vector);
+    std::stable_sort(cursor_conn_comps.begin(), cursor_conn_comps.end(),
+                     [](const auto &c1, const auto &c2) { return c1.size() > c2.size(); });
+
+    INFO("The number of connected components: " << cursor_conn_comps.size());
+    std::vector<size_t> cursor_conn_comps_sizes;
+    for (const auto &comp : cursor_conn_comps) {
+        cursor_conn_comps_sizes.push_back(comp.size());
+    }
+    INFO("Connected component sizes: " << cursor_conn_comps_sizes);
 
     auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
 
