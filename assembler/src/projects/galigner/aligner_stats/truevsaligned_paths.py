@@ -47,6 +47,8 @@ def load_alignments(filename):
         bwa_path = []
         seq = []
         seq_ends = []
+        empty = path_dirty.count(";")
+        path_dirty = path_dirty.replace(";", "")
         for x in path_dirty.split("]")[:-1]:
             if x.startswith(","):
                 path.append(x.split()[1])
@@ -65,7 +67,7 @@ def load_alignments(filename):
             seq_ends.append(x.split("[")[1].split(",")[1])
         #if int(seq_end) - int(seq_start) > 1000:
         res[cur_read] = { "len": rlen, "path": path, "bwa_path": bwa_path, "edgelen": edgelen.split(",")[:-1], "edge_tag": edge_tag, \
-                            "mapped_s":int(seq_start), "mapped_e":int(seq_end), "seq": seq , "seq_end": seq_ends }
+                            "mapped_s":int(seq_start), "mapped_e":int(seq_end), "seq": seq , "seq_end": seq_ends, "empty": empty }
     fin.close()
     print "Number of edges detected by bwa:", bwa_num
     return res
@@ -189,16 +191,12 @@ def is_wrong_end(truepath, path, true_ind, ind, edgelen, K):
             empty = True
         return [True, empty]
 
-def is_wrong_gap(truepath, path, true_ind, ind):
-    empty = False
-    has_wrong_gap = False
+def is_wrong_gap(truepath, path, empty, true_ind, ind):
+    wrong_gap = 0
     for j in xrange(2, len(true_ind) - 1):
         if truepath[true_ind[j - 1]: true_ind[j]] != path[ind[j - 1]: ind[j]]:
-            if len(path[ind[j - 1]: ind[j]]) == 1:
-                empty = True
-            else:
-                has_wrong_gap = True
-    return [has_wrong_gap, empty]
+            wrong_gap += 1
+    return wrong_gap - empty > 0
 
 
 def is_wrong_path(truepath, path):
@@ -233,17 +231,11 @@ def cnt_wronglyclosedgaps(truepaths, alignedpaths, K):
                     res_end_empty += 1
                 else:
                     res_end += 1
-            has_wrong_gap, empty = is_wrong_gap(truepaths[r]["path"], alignedpaths[r]["path"], true_ind, aligned_ind)
+            has_wrong_gap = is_wrong_gap(truepaths[r]["path"], alignedpaths[r]["path"], alignedpaths[r]["empty"], true_ind, aligned_ind)
             if has_wrong_gap:
                 res += 1
-            if empty:
+            if alignedpaths[r]["empty"] > 0:
                 res_empty += 1
-            # has_good_path = is_wrong_path(truepaths[r]["path"], alignedpaths[r]["path"])
-            # if not has_good_path:
-            #     print r
-            #     print truepaths[r]["path"]
-            #     print alignedpaths[r]["path"]
-            #     res_good += 1
     return [res, res_empty, res_start, res_start_empty, res_end, res_end_empty, unknown]
 
 def is_wrong_start2(truepath, path, true_ind, ind, edgelen):

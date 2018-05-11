@@ -1,10 +1,10 @@
 k: 77
-path_to_graphfile: /Sid/tdvorkina/gralign/E.coli_synth/graph/saves/simplification
-path_to_sequences: /Sid/tdvorkina/gralign/E.coli_synth/reads/real_pacbio/filtered_subreads.fasta
+path_to_graphfile: 
+path_to_sequences: 
 workdir: ./tmp3
-data_type: pacbio
-output_format: tsv,gpa
-run_dijkstra: true
+data_type: 
+output_format: tsv
+run_dijkstra: 
 restore_ends: false
 
 pb.bwa_length_cutoff: 0
@@ -19,8 +19,8 @@ pb.contigs_min_gap_quantity: 1
 pb.max_contigs_gap_length: 10000
 
 gap_dijkstra.max_vertex_in_gap: 100000
-gap_dijkstra.max_gap_length: 2000
 gap_dijkstra.queue_limit: 1000000
 gap_dijkstra.iteration_limit: 1000000
 gap_dijkstra.find_shortest_path: false
 gap_dijkstra.restore_mapping: false
+gap_dijkstra.penalty_interval: 20

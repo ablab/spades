@@ -88,11 +88,11 @@ template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
         io.mapRequired("pb.max_contigs_gap_length", cfg.pb.max_contigs_gap_length);
 
         io.mapRequired("gap_dijkstra.max_vertex_in_gap", cfg.gap_cfg.max_vertex_in_gap);
-        io.mapRequired("gap_dijkstra.max_gap_length", cfg.gap_cfg.max_gap_length);
         io.mapRequired("gap_dijkstra.queue_limit", cfg.gap_cfg.queue_limit);
         io.mapRequired("gap_dijkstra.iteration_limit", cfg.gap_cfg.iteration_limit);
         io.mapRequired("gap_dijkstra.find_shortest_path", cfg.gap_cfg.find_shortest_path);
         io.mapRequired("gap_dijkstra.restore_mapping", cfg.gap_cfg.restore_mapping);
+        io.mapRequired("gap_dijkstra.penalty_interval", cfg.gap_cfg.penalty_interval);
         
     }
 };

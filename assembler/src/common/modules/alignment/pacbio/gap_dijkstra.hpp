@@ -13,21 +13,21 @@ struct GapClosingConfig {
     bool restore_ends; // default: false
     // dijkstra
     size_t max_vertex_in_gap;
-    size_t max_gap_length;
     size_t queue_limit;
     size_t iteration_limit;
     bool find_shortest_path; // default: false
     bool restore_mapping; // default: false
+    int penalty_interval;
 
     GapClosingConfig()
         :run_dijkstra(false), 
          restore_ends(false),
          max_vertex_in_gap(0),
-         max_gap_length(0),
          queue_limit(0),
          iteration_limit(0), 
          find_shortest_path(false), 
-         restore_mapping(false) {}
+         restore_mapping(false),
+         penalty_interval(20) {}
 };
 
 
@@ -109,7 +109,7 @@ protected:
             }
             VERIFY(seq_ind < (int) ss_.size())
             VERIFY(seq_ind >= 0)
-            if (best_ed_[seq_ind] + 20 >= ed) {
+            if (best_ed_[seq_ind] + gap_cfg_.penalty_interval >= ed) {
                 if (seq_ind != (int) ss_.size() - 1) {
                     best_ed_[seq_ind] = min(best_ed_[seq_ind], ed);
                 }  
@@ -141,45 +141,32 @@ protected:
 
         void AddNewEdge(const GraphState &gs, const QueueState &prev_state, int ed)
         {
-            utils::perf_counter perf0;
             string tmp = g_.EdgeNucls(gs.e).str();
             string edge_str = tmp.substr(gs.start_pos, gs.end_pos - gs.start_pos);
-            DEBUG("TIME.Substrs=" << perf0.time())
             if ( 0 == (int) edge_str.size()) {
-                utils::perf_counter perf1;
                 QueueState state(gs, prev_state.i);
                 Update(state, prev_state,  ed);
-                DEBUG("TIME.QueueUpdate=" << perf1.time())
                 return;
             }
-            utils::perf_counter perf2;
             int len = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, (int) ss_.size() - (prev_state.i + 1) );
             string seq_str = ss_.substr(prev_state.i + 1, len);
-            DEBUG("TIME.Substrs=" << perf2.time())
             vector<int> positions;
             vector<int> scores;
             if (path_max_length_ - ed >= 0) {
                 if (path_max_length_ - ed >= (int) edge_str.size()) {
-                    utils::perf_counter perf3;
                     QueueState state(gs, prev_state.i);
                     Update(state, prev_state,  ed + (int) edge_str.size());
-                    DEBUG("TIME.QueueUpdate=" << perf3.time())
                 }
                 if (ss_.size() - (prev_state.i + 1) > 0) {
-                    utils::perf_counter perf4;
                     SHWDistance(seq_str, edge_str, path_max_length_ - ed, positions, scores);
-                    DEBUG("TIME.SHWDistance=" << perf4.time())
-                    utils::perf_counter perf5;
                     for (size_t i = 0; i < positions.size(); ++ i) {
                         if (positions[i] >= 0 && scores[i] >= 0) {
                             QueueState state(gs, prev_state.i + 1 + positions[i]);
                             Update(state, prev_state, ed + scores[i]);
                         }
                     }
-                    DEBUG("TIME.QueueUpdate=" << perf5.time())
                 }
             }
-            //INFO("Add edge: eid=" << gs.e.int_id() << " " << gs.start_pos << " " << gs.end_pos << " " << seq_str.size() << " " << q_.size() << " " << path_max_length_)
         }
 
 
@@ -205,27 +192,21 @@ public:
         void CloseGap() {
             bool found_path = false;
             size_t i = 0;
-            //utils::perf_counter perf;
             while (q_.size() > 0) {
                 QueueState cur_state = q_.begin()->second;
                 int ed = visited_[cur_state];
-                //INFO("Queue edge=" << cur_state.gs.e.int_id() << " ed=" << ed);
                 if (q_.size() > queue_limit_ || i > iter_limit_) {
-                    //INFO("EdgeDijkstra: queue size is too big ed=" << ed << " q_.size=" << q_.size() << " i=" << i << " s_len=" << ss_.size() << " time=" << perf.time() )
                     if (visited_.count(end_qstate_) > 0){
                         found_path = true;
                         min_score_ = visited_[end_qstate_];
                     }
                     break;
                 }
-                //int tid = omp_get_thread_num();
-                //INFO("TID=" << tid << " Queue edge=" << cur_state.gs.e.int_id() <<  " " << cur_state.gs.start_pos <<  " " << cur_state.gs.end_pos << " " << cur_state.i  << " ed=" << ed << " pml=" << path_max_length_ );
                 if (IsEndPosition(cur_state)) {
                     found_path = true;
                     break;   
                 }
                 if (ed > path_max_length_) {
-                    //INFO("EdgeDijkstra: path not found ed=" << ed << " path_max_length=" << path_max_length_ << " q_.size=" << q_.size() << " i=" << i << " s_len=" << ss_.size() << " time=" << perf.time()  )
                     break;
                 }
                 i ++;
@@ -236,12 +217,10 @@ public:
                 }
                 if (!gap_cfg_.find_shortest_path && found_path) break;
             }
-            //INFO("TIME.Dijkstra=" << perf.time())
             if (found_path) {
                 QueueState state = end_qstate_;
                 while (!state.empty()) {
                     gap_path_.push_back(state.gs.e);
-                    //int tid = omp_get_thread_num();
                     int start_edge = (int) max(0, (int) prev_states_[state].i);
                     int end_edge = max(0, (int) state.i);
                     mapping_path_.push_back(state.gs.e, omnigraph::MappingRange(Range(start_edge, end_edge), 
@@ -254,24 +233,24 @@ public:
             return;
         }
 
-        vector<debruijn_graph::EdgeId> GetPath() {
+        vector<debruijn_graph::EdgeId> GetPath() const {
            return gap_path_;
         }
 
-        omnigraph::MappingPath<debruijn_graph::EdgeId> GetMappingPath() {
+        omnigraph::MappingPath<debruijn_graph::EdgeId> GetMappingPath() const {
            return mapping_path_;
         }
 
-        int GetEditDistance() {
+        int GetEditDistance() const {
             return min_score_;
         }       
 
-        int GetPathEndPosition() {
+        int GetPathEndPosition() const {
             DEBUG("End position edge=" << end_qstate_.gs.e.int_id() << " end_pos=" << end_qstate_.gs.end_pos << " seq_pos=" << end_qstate_.i << " s_len=" << ss_.size())
             return end_qstate_.gs.end_pos;
         }  
 
-        int GetSeqEndPosition() {
+        int GetSeqEndPosition() const {
             DEBUG("End position edge=" << end_qstate_.gs.e.int_id() << " end_pos=" << end_qstate_.gs.end_pos << " seq_pos=" << end_qstate_.i << " s_len=" << ss_.size())
             return end_qstate_.i;
         }    
@@ -316,26 +295,16 @@ private:
                     AddNewEdge(next_state, cur_state, ed);
                 }
                 if (e == end_e_ && path_max_length_ - ed >= 0 && cur_state.i + 1 < (int) ss_.size()){
-                    utils::perf_counter perf0;
-                    string seq_str = ss_.substr(cur_state.i + 1, ss_.size() - (cur_state.i + 1));
+                    string seq_str = ss_.substr(cur_state.i + 1);
                     string tmp = g_.EdgeNucls(e).str();
                     string edge_str = tmp.substr(0, end_p_);
-                    DEBUG("TIME.Substrs=" << perf0.time())
-                    utils::perf_counter perf1;
                     int score = NWDistance(seq_str, edge_str, path_max_length_ - ed);
-                    DEBUG("TIME.NWDistance=" << perf1.time())
                     if (score != -1) {
-                        if (ed +  score < path_max_length_) {
-                            //INFO("Update max_path_len2=" << ed + score);
-                        }
-                        utils::perf_counter perf2;
                         path_max_length_ = min(path_max_length_, ed + score);
                         QueueState state(GraphState(e, 0, end_p_), (int)ss_.size() - 1);
                         Update(state, cur_state, ed + score);
-                        DEBUG("TIME.QueueUpdate=" << perf2.time())
                         if (ed + score == path_max_length_) {
                              min_score_ = ed + score;
-                             //INFO("++=Final ed2=" << ed + score<< " q_.size=" << q_.size() << " i=" << ind << " s_len=" << ss_.size() << " time=" << perf.time() )
                              found_path = true;
                         }
                     }
@@ -366,16 +335,11 @@ public:
                 string edge_str = tmp.substr(start_p_, end_p_ - start_p_);
                 int score = NWDistance(seq_str, edge_str, path_max_length_);
                 if (score != -1) {
-                    if (score < path_max_length_) {
-                        //INFO("Update max_path_len=" << score);
-                    }
                     path_max_length_ = min(path_max_length_, score);
                     QueueState state(GraphState(start_e_, start_p_, end_p_), (int) ss_.size() - 1);
                     Update(state, QueueState(), score);
                     if (score == path_max_length_) {
                          min_score_ = score;
-                         //INFO("++=Final ed=" << score<< " q_.size=" << q_.size() << " s_len=" << ss_.size())
-                         //found_path = true;
                          end_qstate_ = state;
                     }
                 }
@@ -395,19 +359,15 @@ class DijkstraEndsReconstructor: public DijkstraGraphSequenceBase {
 private:
         virtual bool AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed) {
             bool found_path = false;
-            //DEBUG("end_pos=" << cur_state.gs.end_pos - (int) g_.length(cur_state.gs.e))
             GraphState next_state(e, 0, (int) g_.length(e));
             AddNewEdge(next_state, cur_state, ed);
             int remaining = (int) ss_.size() - cur_state.i;
             if ((int) g_.length(e) + (int) g_.k() + path_max_length_ - ed > remaining && path_max_length_ - ed >= 0 && cur_state.i + 1 < (int) ss_.size()){
-                string seq_str = ss_.substr(cur_state.i + 1, ss_.size() - (cur_state.i + 1) );
+                string seq_str = ss_.substr(cur_state.i + 1);
                 string tmp = g_.EdgeNucls(e).str();
                 int position = -1;
                 int score = SHWDistance2(seq_str, tmp, path_max_length_ - ed, position);
                 if (score >= 0) {
-                    if (ed +  score < path_max_length_) {
-                        DEBUG("Update max_path_len=" << ed + score);
-                    }
                     path_max_length_ = min(path_max_length_, ed + score);
                     QueueState state(GraphState(e, 0, position + 1), (int) ss_.size() - 1);
                     Update(state, cur_state, ed + score);
@@ -436,13 +396,10 @@ public:
             if (g_.length(start_e_) + g_.k() - start_p_ + path_max_length_ > ss_.size()){
                 string seq_str = ss_;
                 string tmp = g_.EdgeNucls(start_e_).str();
-                string edge_str = tmp.substr(start_p_, g_.length(start_e_) + g_.k() - start_p_);
+                string edge_str = tmp.substr(start_p_);
                 int position = -1;
                 int score = SHWDistance2(seq_str, edge_str, path_max_length_, position);
                 if (score != -1) {
-                    if (score < path_max_length_) {
-                        DEBUG("Update max_path_len=" << score);
-                    }
                     path_max_length_ = min(path_max_length_, score);
                     QueueState state(GraphState(start_e_, start_p_, start_p_ + position + 1), (int) ss_.size() - 1);
                     Update(state, QueueState(), score);
@@ -450,7 +407,6 @@ public:
                          min_score_ = score;
                          DEBUG("++=Final2 ed=" << score);
                          DEBUG("EdgeDijkstra2: path was found ed=" << score << " q_.size=" << q_.size() << " s_len=" << ss_.size() )
-                         //found_path = true;
                          end_qstate_ = state;
                     }
                 }

@@ -223,7 +223,7 @@ public:
 
         int s_len = int(ss.size());
         int score = max(20, s_len/4);
-        if (s_len > (int) gap_cfg_.max_gap_length) {
+        if (s_len > (int) pb_config_.max_contigs_gap_length) {
             DEBUG("EdgeDijkstra: sequence is too long " << s_len)
             return;
         }
@@ -291,28 +291,11 @@ public:
                         prev_edge = EdgeId();
                         continue;
                     }
-                    int score1 = STRING_DIST_INF;
-                    // int score2 = STRING_DIST_INF;
-
-                    utils::perf_counter perf1;
-
+                    int score = STRING_DIST_INF;
                     vector<EdgeId> intermediate_path = BestScoredPath(s, prev_edge, cur_edge, prev_last_index.edge_position, cur_first_index.edge_position, 
-                                                                                    start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, gap_cfg_.run_dijkstra, score1);
+                                                                                    start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, score);
 
 
-                    // utils::perf_counter perf2;
-                    // vector<EdgeId> intermediate_path_bf = BestScoredPath(s, prev_edge, cur_edge, prev_last_index.edge_position, cur_first_index.edge_position, 
-                    //                                                                 start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, false, score2);
-
-                    // if (score1 != score2) {
-                    //     if (score1 > score2 && score1 != STRING_DIST_INF){
-                    //         DEBUG("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
-                    //     } else {
-                    //         DEBUG("Dijkstra score=" << score1 << " BF score=" << score2 << " WOW2! len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
-                    //     }
-                    // } else {
-                    //     DEBUG("Dijkstra score=" << score1 << " BF score=" << score2 << " len=" << seq_end - seq_start << " time=" << perf1.time() << " time2=" << perf2.time() << " eid=" << prev_edge.int_id());
-                    // }
                     if (intermediate_path.size() == 0) {
                         DEBUG(DebugEmptyBestScoredPath(start_v, end_v, prev_edge, cur_edge,
                                       prev_last_index.edge_position, cur_first_index.edge_position, seq_end - seq_start));
@@ -653,9 +636,11 @@ public:
         return res;
     }
 
-    vector<EdgeId> BestScoredPathDijkstra(const Sequence &s, VertexId start_v, VertexId end_v, EdgeId start_e, EdgeId end_e,
-                                  const int start_p, const int end_p,
-                                  int start_pos, int end_pos, int path_max_length, int &score) const {
+    std::vector<EdgeId> BestScoredPathDijkstra(const Sequence &s, 
+                                  VertexId start_v, VertexId end_v, 
+                                  EdgeId start_e, EdgeId end_e,
+                                  const int edge_start_pos, const int edge_end_pos,
+                                  const int seq_start_pos, const int seq_end_pos, int path_max_length, int &score) const {
 
         auto path_searcher_b = omnigraph::DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(g_, path_max_length);
         path_searcher_b.Run(end_v);
@@ -670,23 +655,20 @@ public:
                         vertex_pathlen[*j_iter] = path_searcher_b.GetDistance(*j_iter);
                 }
         }
-        if (end_pos < start_pos) {
-            DEBUG ("modifying limits because of some bullshit magic, seq length 0")
-            end_pos = start_pos;
-        }
 
-        Sequence ss = s.Subseq(start_pos, min(end_pos + 1, int(s.size()) ));
+        Sequence ss = s.Subseq(seq_start_pos, min(seq_end_pos + 1, int(s.size()) ));
         int s_len = int(ss.size());
         path_max_length = score;
         if (score == STRING_DIST_INF){
             path_max_length = max(s_len/3, 20);
         } 
-        DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len << " max-len " << path_max_length << " start_p=" << start_p << " end_p=" << end_p << " eid=" << start_e.int_id());
-        if ( ((size_t) s_len) > gap_cfg_.max_gap_length || vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap){
+        DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len << " max-len " << path_max_length << " start_p=" << edge_start_pos << " end_p=" << edge_end_pos << " eid=" << start_e.int_id());
+        if ( ((size_t) s_len) > pb_config_.max_contigs_gap_length || vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap){
             DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
+            score = STRING_DIST_INF;
             return vector<EdgeId>(0);
         }
-        DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, gap_cfg_, ss.str(), start_e, end_e, start_p, end_p, path_max_length, vertex_pathlen);
+        DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, gap_cfg_, ss.str(), start_e, end_e, edge_start_pos, edge_end_pos, path_max_length, vertex_pathlen);
         gap_filler.CloseGap();
         score = gap_filler.GetEditDistance();
         if (score == -1){
@@ -699,17 +681,17 @@ public:
         return ans;
     }
 
-    vector<EdgeId> BestScoredPathBruteForce(const Sequence &s, VertexId start_v, VertexId end_v,
+    std::vector<EdgeId> BestScoredPathBruteForce(const Sequence &s, VertexId start_v, VertexId end_v,
                                   int path_min_length, int path_max_length,
-                                  int start_pos, int end_pos, 
-                                  const std::string &s_add, const std::string &e_add, int &score) const {
+                                  int &start_pos, int &end_pos, 
+                                  const std::string &s_add, const std::string &e_add, int &score, int &return_code) const {
         TRACE(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
         omnigraph::PathStorageCallback<Graph> callback(g_);
-        int pres = ProcessPaths(g_,
+        return_code = ProcessPaths(g_,
                                 path_min_length, path_max_length,
                                 start_v, end_v,
                                 callback);
-        DEBUG("PathProcessor result: " << pres << " limits " << path_min_length << " " << path_max_length);
+        DEBUG("PathProcessor result: " << return_code << " limits " << path_min_length << " " << path_max_length);
         std::vector<std::vector<EdgeId> > paths = callback.paths();
         TRACE("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
         int s_len = int(s.size());
@@ -766,72 +748,42 @@ public:
             DEBUG (paths.size() << " paths available");
             return std::vector<EdgeId>(0);
         }
-        // else {
-        //     string cur_string = s_add + PathToString(paths[best_path_ind]) + e_add;
-        //     DEBUG("cur_string: " << cur_string <<"\n seq_string " << seq_string);
-        //     string str = "";
-        //     for (const EdgeId &e: paths[best_path_ind]) {
-        //         str += std::to_string(e.int_id()) + ",";
-        //     }
-        //     DEBUG("edges: " << str);
-        // }
         if (additional_debug) {
             TRACE("best score found! Path " <<best_path_ind <<" score "<< best_score);
         }
         return paths[best_path_ind];
     }
 
-    vector<EdgeId> BestScoredPath(const Sequence &s, EdgeId start_e, EdgeId end_e,
-                                  const int start_p, const int end_p,
+    std::vector<EdgeId> BestScoredPath(const Sequence &s, EdgeId start_e, EdgeId end_e,
+                                  const int edge_start_pos, const int edge_end_pos,
                                   VertexId start_v, VertexId end_v,
                                   int path_min_length, int path_max_length,
-                                  int start_pos, int end_pos, const string &s_add,
-                                  const string &e_add, bool dijkstra, int &score) const {
+                                  int seq_start_pos, int seq_end_pos, 
+                                  const std::string &s_add, const std::string &e_add, int &score) const {
 
         DEBUG(" All Params " << start_e.int_id() << " " << end_e.int_id() << " " << path_max_length << " s_add=" <<   s_add << " e_add=" << e_add 
-                            << " start_pos=" << start_pos << " end_pos=" << end_pos);
-
-        auto pathSearcher = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, path_max_length);
-
-        DEBUG("Constructed PathSearcher ");
-        pathSearcher.Run(start_v);
-
-        DEBUG("Run pathSearcher");
-
-        auto reachedVertices = pathSearcher.ProcessedVertices();
-
-        DEBUG("Get vertices num=" << reachedVertices.size());
-        if (end_pos < start_pos) {
-            DEBUG ("modifying limits because of some bullshit magic, seq length 0")
-            end_pos = start_pos;
-        }
-        int s_len = int(s.size());
-        string seq_string = s.Subseq(start_pos, min(end_pos + 1, s_len)).str();
-        if (seq_string.length() > pb_config_.max_contigs_gap_length || seq_string.size() == 0) {
-            DEBUG("Gap is too large");
-            return vector<EdgeId>(0);
-        }
-        if (reachedVertices.count(end_v) > 0){
-            DEBUG("PathSearcher Found Path from start_v=" << start_v.int_id() << " end_v=" << end_v.int_id());
-        }
-        if (reachedVertices.count(end_v) > 0){
-            DEBUG("Run search");
-            if (dijkstra){
-               BestScoredPathBruteForce(s, start_v, end_v, path_min_length, path_max_length, start_pos, end_pos, s_add, e_add, score);
-               std::vector<EdgeId> path = BestScoredPathDijkstra(s, start_v, end_v, start_e, end_e, start_p, end_p, start_pos, end_pos, path_max_length, score);
-               if (path.size() > 1) {
-                    std::vector<EdgeId> short_path(path.begin() + 1, path.end() - 1);
-                    return short_path;
-               } else {
-                   return std::vector<EdgeId>();
-               }
+                            << " start_pos=" << seq_start_pos << " end_pos=" << seq_end_pos);
+        int return_code = -1;
+        score = STRING_DIST_INF;
+        std::vector<EdgeId> path = BestScoredPathBruteForce(s, start_v, end_v, 
+                                                               path_min_length, path_max_length,
+                                                               seq_start_pos, seq_end_pos, s_add, e_add, score, return_code);
+        INFO("BruteForce run: return_code=" << return_code << " len=" << seq_end_pos - seq_start_pos << " score=" << score)
+        int score_bf = score;
+        if (gap_cfg_.run_dijkstra && return_code == 0){
+            std::vector<EdgeId> path = BestScoredPathDijkstra(s, start_v, end_v, 
+                                                                start_e, end_e, edge_start_pos, edge_end_pos, 
+                                                                seq_start_pos, seq_end_pos, 
+                                                                path_max_length, score);
+            INFO("Dijsktra score=" << score << " BF score=" << score_bf)
+            if (path.size() > 1) {
+                std::vector<EdgeId> short_path(path.begin() + 1, path.end() - 1);
+                return short_path;
             } else {
-               return BestScoredPathBruteForce(s, start_v, end_v, path_min_length, path_max_length, start_pos, end_pos, s_add, e_add, score);
+                return std::vector<EdgeId>();
             }
-        }else{
-            return std::vector<EdgeId>();
-        }
-        
+        } 
+        return path;
     }
 
 };
