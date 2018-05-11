@@ -3,8 +3,13 @@
 #include "cursor.hpp"
 #include "fees.hpp"
 #include "pathtree.hpp"
+#include "depth_filter.hpp"
 
 #include "utils/logger/logger.hpp"
+
+#include <llvm/ADT/iterator.h>
+#include <llvm/ADT/iterator_range.h>
+#include <debug_assert/debug_assert.hpp>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -13,16 +18,15 @@
 #include <vector>
 #include <limits>
 
-#include "depth_filter.hpp"
-
-#include <llvm/ADT/iterator.h>
-#include <llvm/ADT/iterator_range.h>
 
 extern "C" {
 #include "hmmer.h"
 }
 
 namespace impl {
+
+struct hmmpath_assert : debug_assert::default_handler,
+                        debug_assert::set_level<1> {};
 
 using pathtree::PathLink;
 using pathtree::PathLinkRef;
@@ -351,7 +355,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   auto transfer = [&code, &initial](StateSet &to, const auto &from, double transfer_fee,
                                     const std::vector<double> &emission_fees) {
-    assert((void*)(&to) != (void*)(&from));
+    DEBUG_ASSERT((void*)(&to) != (void*)(&from), hmmpath_assert{});
     for (const auto &state : from.states()) {
       for (const auto &next : (state.cursor.is_empty() ? initial : state.cursor.next())) {
         double cost = state.score + transfer_fee + emission_fees[code(next.letter())];
@@ -363,7 +367,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
   auto transfer_upd = [&code, &initial](StateSet &to, const StateSet &from, double transfer_fee,
                                         const std::vector<double> &emission_fees, const std::string &,
                                         const std::unordered_set<GraphCursor> &keys) {
-    assert(&to != &from);
+    DEBUG_ASSERT(&to != &from, hmmpath_assert{});
     std::unordered_set<GraphCursor> updated;
     for (const auto &state : from.states(keys)) {
       const auto &cur = state.cursor;
