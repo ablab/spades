@@ -339,6 +339,13 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
     std::vector<GraphCursor> path;
     double score;
     std::vector<Event> events;
+
+    bool empty() const { return path.empty(); }
+
+    size_t size() const {
+      assert(path.size() == events.size());
+      return path.size();
+    }
   };
 
   std::vector<AnnotatedPath> top_k(size_t k) const {
@@ -412,9 +419,14 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
     auto initial = make_child<Payload>({GraphCursor(), best_score, this});
     q.push(initial);
 
-    for (size_t i = 0; i < k && !q.empty(); ++i) {
-      result.push_back(extract_path());
-      TRACE((i + 1) << " top paths extracted");
+    for (size_t i = 0; i < k && !q.empty();) {
+      auto annotated_path = extract_path();
+      if (annotated_path.empty()) {
+        continue;
+      }
+      result.push_back(annotated_path);
+      ++i;
+      TRACE(i << " top paths extracted");
       TRACE(Node::object_count_current() << " current # of best path tree nodes");
       TRACE(Node::object_count_max() << " max # of best path tree nodes");
       TRACE(Node::object_count_constructed() << " overall best path tree nodes constructed");
