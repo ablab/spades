@@ -1,6 +1,6 @@
 #include "fees.hpp"
 
-#include "hmmfile.hpp"
+#include "common/hmm/hmmfile.hpp"
 
 #include <algorithm>
 

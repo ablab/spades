@@ -8,14 +8,6 @@ project(graph-hmm CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_subdirectory(googletest)
-add_library(gtest_main_segfault_handler gtest_main.cpp)
-target_link_libraries(gtest_main_segfault_handler gtest input utils ${COMMON_LIBRARIES})
-
-add_library(hmmercpp STATIC
-            hmmfile.cpp hmmmatcher.cpp)
-target_link_libraries(hmmercpp easel hmmer)
-
 add_executable(pathracer
                omnigraph_wrapper.cpp fees.cpp
                main.cpp)
