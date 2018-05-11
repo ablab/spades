@@ -591,6 +591,12 @@ void TraceHMM(const hmmer::HMM &hmm,
             assert(check_path_continuity(nucl_path));
             auto edge_path = to_path(nucl_path);
             assert(!edge_path.empty());
+            auto edge_path_aas = to_path(annotated_path.path);
+            if (edge_path != edge_path_aas) {
+                ERROR("NT: " << edge_path);
+                ERROR("AA: " << edge_path_aas);
+            }
+            assert(edge_path == edge_path_aas);
             local_results.emplace_back(p7hmm->name, idx++, annotated_path.score, seq, std::move(edge_path), std::move(alignment));
         }
     };
