@@ -33,16 +33,15 @@ cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
 
 
 # run hmm
-#os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
-
-#os.system (hmmscan + " --noali   -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
-#os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$5<0.001 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
+os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+os.system (hmmscan + " --noali   -o "+name+"_out_pfam -E 0.01 --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$5<0.001 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 # run cbar
-#os.system(cbar + " " + sys.argv[1] + " " + name + "_cbar.txt")
+os.system(cbar + " " + sys.argv[1] + " " + name + "_cbar.txt")
 
 # run blast
-#os.system ("blastn -query " + sys.argv[1] + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
+os.system ("blastn -query " + sys.argv[1] + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
 
 
 # parse hmms
@@ -171,7 +170,7 @@ with open(name+"_plasmid.names", "r") as pl_infile:
          plasmids=pl_infile.readlines()
 plasmids_list=[]
 for i in plasmids:
-    if i[:4] == "NODE":
+    if i[:4] == "NODE" or i[:6] == "CUTOFF":
         plasmids_list.append(i)
 
 plasmids_list = [i.strip() for i in plasmids_list] 
@@ -181,7 +180,7 @@ with open(name+"_plasmids_bad.names", "r") as pl_infile:
           plasmids_bad=pl_infile.readlines()
 plasmids_bad_list=[]
 for i in plasmids_bad:
-    if i[:4] == "NODE":
+    if i[:4] == "NODE"  or i[:6] == "CUTOFF":
         plasmids_bad_list.append(i)
 
 plasmids_bad_list = [i.strip() for i in plasmids_bad_list] 
@@ -191,7 +190,7 @@ with open(name+"_unclassified.names", "r") as pl_infile:
            unclass=pl_infile.readlines()
 unclass_list=[]
 for i in unclass:
-    if i[:4] == "NODE":
+    if i[:4] == "NODE" or i[:6] == "CUTOFF":
          unclass_list.append(i)  
 
 unclass_list = [i.strip() for i in unclass_list] 
@@ -201,7 +200,7 @@ with open(name+"_chromosome.names", "r") as pl_infile:
            chroms=pl_infile.readlines()
 chrom_list=[]
 for i in chroms:
-     if i[:4] == "NODE":
+     if i[:4] == "NODE"  or i[:6] == "CUTOFF":
          chrom_list.append(i)
 chrom_list = [i.strip() for i in chrom_list] 
 
@@ -210,7 +209,7 @@ with open(name+"_no_significant.names", "r") as pl_infile:
            no_sign=pl_infile.readlines()
 no_sig_list=[]
 for i in no_sign:
-     if i[:4] == "NODE":
+     if i[:4] == "NODE"  or i[:6] == "CUTOFF":
          no_sig_list.append(i)
 no_sig_list = [i.strip() for i in no_sig_list] 
 
@@ -220,7 +219,7 @@ with open(name+"_viruses.names", "r") as pl_infile:
            viruses=pl_infile.readlines()
 viruses_list=[]
 for i in viruses:
-     if i[:4] == "NODE":
+     if i[:4] == "NODE"  or i[:6] == "CUTOFF":
          viruses_list.append(i)
 viruses_list = [i.strip() for i in viruses_list] 
 
@@ -232,17 +231,17 @@ viruses_list = [i.strip() for i in viruses_list]
 # add to table
 for i in table:
   if i[0] in plasmids_list:
-    i.append( "Plasmid") #+ plasmids[plasmids_list.index(i[0])+1])
+    i.append( "Plasmid " + plasmids[plasmids_list.index(i[0])+1])
   elif  i[0] in plasmids_bad_list:
-    i.append("Plasmid_bad") # + plasmids_bad[plasmids_bad_list.index(i[0])+1])
+    i.append("Plasmid_bad "  + plasmids_bad[plasmids_bad_list.index(i[0])+1])
   elif i[0] in unclass_list:
-     i.append("Unclassified")
+     i.append("Unclassified" + unclass[unclass_list.index(i[0])+1])
   elif  i[0] in chrom_list:
-     i.append("Chromosome")
+     i.append("Chromosome " + chroms[chrom_list.index(i[0])+1])
   elif  i[0] in no_sig_list:
      i.append("Non-significant")
   elif  i[0] in viruses_list:
-     i.append("Virus")
+     i.append("Virus " + viruses[viruses_list.index(i[0])+1])
   else: 
      i.append("-")
 
@@ -250,14 +249,6 @@ for i in table:
 
 # Output
 
-#for i in table:
- #   print ('\t'.join(i))
-
-#print (table[:3])
-
 with open(name + "_result_table.tsv", "w") as outfile:
     for i in table:
-#        print('\t'.join(i))
          outfile.write('\t'.join(i)+"\n")
-#         outfile.write(""i)
-

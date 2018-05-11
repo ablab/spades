@@ -48,12 +48,7 @@ def naive_bayes(input_list):
     chrom=0
     for i in input_list:
         for j in table:
-            #print (j[0])
             if i==j[0]:
-            	#print
-                print ("log prob Chrom ", log(j[3])) 
-                #print ("plasm")
-                print ("log prob Plasm", log(j[4]))
                 chrom=chrom+log(j[3])
                 plasm=plasm+log(j[4])
                 
@@ -64,7 +59,7 @@ def naive_bayes(input_list):
 
 def create_vector_pfams(hmms): # list of hmm lists
 
-    with open("pfam_names.list", "r") as infile:
+    with open("/Nancy/mrayko/algorithmic-biology/assembler/src/plasmid_utils/scikit_classifier/pfam_names.list", "r") as infile:
         pfam_list=infile.readlines()
     pfam_list = [i.strip() for i in pfam_list] 
 
@@ -81,15 +76,16 @@ def create_vector_pfams(hmms): # list of hmm lists
 def scikit_multNB (input_list):
     import pickle
     # load it again
-    with open('my_dumped_classifier.pkl', 'rb') as fid:
+    with open('/Nancy/mrayko/chromosomal_removal_test/verification_test/my_dumped_classifier.pkl', 'rb') as fid:
         clf = pickle.load(fid)
 
     a=create_vector_pfams([input_list])
 #    print (clf.predict(a))
- #   print (clf.predict_proba(a))
+ #
+#     print (clf.predict_proba(a))
 
 #    return str(clf.predict(a)), str(clf.predict_proba(a))
-    return clf.predict(a)[0] + " " + " ".join(map(str,clf.predict_log_proba(a)[0])) 
+    return clf.predict(a)[0] + "\t" +  "\t".join(map(str,clf.predict_log_proba(a)[0])) 
 #print(clf.predict(a))
 #print(clf.predict_proba(a))
 

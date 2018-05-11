@@ -50,7 +50,8 @@ def parser(f, out_dir):
     for item in records:
         print (item.query)
 	### We are taking query length from contig name provided by SPAdes. Weird, huh?
-        pl_len = (int) ((item.query).split('_')[3])
+#        pl_len = (int) ((item.query).split('_')[3])
+        pl_len = item.query_length
 	###### No alignment - put in non-significant
         if len(item.alignments) == 0:
             print ("No Significant")

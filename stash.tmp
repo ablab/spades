@@ -1,0 +1,319 @@
+diff --git a/assembler/src/plasmid_utils/classifier.py b/assembler/src/plasmid_utils/classifier.py
+index 25ac7e261..15e7870c0 100644
+--- a/assembler/src/plasmid_utils/classifier.py
++++ b/assembler/src/plasmid_utils/classifier.py
+@@ -51,9 +51,9 @@ def naive_bayes(input_list):
+             #print (j[0])
+             if i==j[0]:
+             	#print
+-                print ("log prob Chrom ", log(j[3])) 
++#                print ("log prob Chrom ", log(j[3])) 
+                 #print ("plasm")
+-                print ("log prob Plasm", log(j[4]))
++ #               print ("log prob Plasm", log(j[4]))
+                 chrom=chrom+log(j[3])
+                 plasm=plasm+log(j[4])
+                 
+@@ -64,7 +64,7 @@ def naive_bayes(input_list):
+ 
+ def create_vector_pfams(hmms): # list of hmm lists
+ 
+-    with open("pfam_names.list", "r") as infile:
++    with open("/Nancy/mrayko/algorithmic-biology/assembler/src/plasmid_utils/scikit_classifier/pfam_names.list", "r") as infile:
+         pfam_list=infile.readlines()
+     pfam_list = [i.strip() for i in pfam_list] 
+ 
+@@ -81,15 +81,16 @@ def create_vector_pfams(hmms): # list of hmm lists
+ def scikit_multNB (input_list):
+     import pickle
+     # load it again
+-    with open('my_dumped_classifier.pkl', 'rb') as fid:
++    with open('/Nancy/mrayko/chromosomal_removal_test/verification_test/my_dumped_classifier.pkl', 'rb') as fid:
+         clf = pickle.load(fid)
+ 
+     a=create_vector_pfams([input_list])
+ #    print (clf.predict(a))
+- #   print (clf.predict_proba(a))
++ #
++#     print (clf.predict_proba(a))
+ 
+ #    return str(clf.predict(a)), str(clf.predict_proba(a))
+-    return clf.predict(a)[0] + " " + " ".join(map(str,clf.predict_log_proba(a)[0])) 
++    return clf.predict(a)[0] + "\t" +  "\t".join(map(str,clf.predict_log_proba(a)[0])) 
+ #print(clf.predict(a))
+ #print(clf.predict_proba(a))
+ 
+diff --git a/assembler/src/plasmid_utils/my_dumped_classifier.pkl b/assembler/src/plasmid_utils/my_dumped_classifier.pkl
+index 2734498ef..7cc5b7bb0 100644
+Binary files a/assembler/src/plasmid_utils/my_dumped_classifier.pkl and b/assembler/src/plasmid_utils/my_dumped_classifier.pkl differ
+diff --git a/assembler/src/plasmid_utils/parse_blast_xml.py b/assembler/src/plasmid_utils/parse_blast_xml.py
+index d4d6a9672..178e8f074 100644
+--- a/assembler/src/plasmid_utils/parse_blast_xml.py
++++ b/assembler/src/plasmid_utils/parse_blast_xml.py
+@@ -50,7 +50,8 @@ def parser(f, out_dir):
+     for item in records:
+         print (item.query)
+ 	### We are taking query length from contig name provided by SPAdes. Weird, huh?
+-        pl_len = (int) ((item.query).split('_')[3])
++#        pl_len = (int) ((item.query).split('_')[3])
++        pl_len = item.query_length
+ 	###### No alignment - put in non-significant
+         if len(item.alignments) == 0:
+             print ("No Significant")
+diff --git a/assembler/src/plasmid_utils/scikit_classifier/scikit_test.py b/assembler/src/plasmid_utils/scikit_classifier/scikit_test.py
+index 514bd2cbc..693440330 100644
+--- a/assembler/src/plasmid_utils/scikit_classifier/scikit_test.py
++++ b/assembler/src/plasmid_utils/scikit_classifier/scikit_test.py
+@@ -4,8 +4,8 @@ from sklearn.naive_bayes import MultinomialNB
+ from sklearn.model_selection import train_test_split
+ import collections
+ 
+-#plasmid_file =  "plasmids_1000.tblout" # "all_refseq_plasmids_PfamA_001_tblout"   #sys.argv[1] "plasmids_1000.tblout" 
+-#chromosome_file =  "chromosomes_10000.tblout" #  "total_filtered.fna_tblout"  #sys.argv[2]  "chromosomes_1000.tblout"
++plasmid_file =  "/Nancy/mrayko/plasmid_prediction_test/HMM_refseq/all_refseq_plasmids_PfamA_tabs_tblout"   #sys.argv[1] "plasmids_1000.tblout" 
++chromosome_file =  "/Nancy/mrayko/plasmid_prediction_test/downsampling_20perc/chrom_10percen/total_filtered.fna_tblout"  #sys.argv[2]  "chromosomes_1000.tblout"
+ 
+ with open("pfam_names.list", "r") as infile:
+         pfam_list=infile.readlines()
+@@ -36,12 +36,13 @@ def get_annot_from_tblout(tblout_pfam):
+ 
+ 
+ def create_vector_pfams(hmms): # list of hmm lists
+-   vector=[len(pfam_list)*[0]]*len(hmms)
+-   for i in range(0,len(hmms)): # take each hit
+-       for j in hmms[i]:
++   vector=len(pfam_list)*[0]#*len(hmms)
++#   print(vector)
++   for i in hmms: # take each hit
++       #for j in hmms[i]:
+        	#print (j)
+-        hit_index = pfam_list.index(j)
+-        vector[i][hit_index]+=1
++        hit_index = pfam_list.index(i)
++        vector[hit_index]+=1
+    return vector
+ 
+ 
+@@ -49,24 +50,24 @@ def create_vector_pfams(hmms): # list of hmm lists
+ print ("Extracting hmms from tblout file...")
+ 
+ 
+-#plasmid_train = get_annot_from_tblout(plasmid_file)
+-#chromosome_train = get_annot_from_tblout(chromosome_file)
++plasmid_train = get_annot_from_tblout(plasmid_file)
++chromosome_train = get_annot_from_tblout(chromosome_file)
+ 
+ #print (chromosome_train)
+ 
+ 
+ #input_list=(t.split(" "))
+ 
+-p1="Resolvase Sulfate_transp Usp KAP_NTPase HTH_Tnp_1 Resolvase AlbA_2 MobA_MobL TraC DUF3847 RepA_N DUF536 G_glu_transpept YitT_membrane Resolvase Resolvase"
+-p2="DUF334 HTH_3 Resolvase"
+-p3="Mob_Pre MFS_1 Rep_trans Mob_Pre"
+-p4="DUF536 Pkinase ABC_membrane PadR DUF1700 DUF4969 Resolvase Beta-lactamase2 Peptidase_M56 Penicillinase_R Resolvase rve AAA_22 ACP_syn_III HTH_11 Gram_pos_anchor DUF536 RepA_N Acetyltransf_10"
+-c1="Spore-coat_CotZ DUF1360 Spore-coat_CotZ" 
+-c2="GTP_EFTU_D3 Hexapep SecE NusG Ribosomal_L11_N Ribosomal_L1 Ribosomal_L10 Ribosomal_L12 RNA_pol_Rpb2_6 RNA_pol_Rpb1_1 EamA Ribosom_S12_S23 Ribosomal_S7 GTP_EFTU GTP_EFTU"
+-c3="Imm40 Cys_rich_CPCC MafB"
++#p1="Resolvase Sulfate_transp Usp KAP_NTPase HTH_Tnp_1 Resolvase AlbA_2 MobA_MobL TraC DUF3847 RepA_N DUF536 G_glu_transpept YitT_membrane Resolvase Resolvase"
++#p2="DUF334 HTH_3 Resolvase"
++#p3="Mob_Pre MFS_1 Rep_trans Mob_Pre"
++#p4="DUF536 Pkinase ABC_membrane PadR DUF1700 DUF4969 Resolvase Beta-lactamase2 Peptidase_M56 Penicillinase_R Resolvase rve AAA_22 ACP_syn_III HTH_11 Gram_pos_anchor DUF536 RepA_N Acetyltransf_10"
++#c1="Spore-coat_CotZ DUF1360 Spore-coat_CotZ" 
++#c2="GTP_EFTU_D3 Hexapep SecE NusG Ribosomal_L11_N Ribosomal_L1 Ribosomal_L10 Ribosomal_L12 RNA_pol_Rpb2_6 RNA_pol_Rpb1_1 EamA Ribosom_S12_S23 Ribosomal_S7 GTP_EFTU GTP_EFTU"
++#c3="Imm40 Cys_rich_CPCC MafB"
+ # d = OrderedDict({'a':1, 'b':2}),
+-plasmid_train = collections.OrderedDict({"1p":p1.split(" "), "2p": p2.split(" "), "3p":p3.split(" "), "4p":p4.split(" ")})
+-chromosome_train = collections.OrderedDict({"1c":c1.split(" "), "2c":c2.split(" "), "3c":c3.split(" ")})
++#plasmid_train = collections.OrderedDict({"1p":p1.split(" "), "2p": p2.split(" "), "3p":p3.split(" "), "4p":p4.split(" ")})
++#chromosome_train = collections.OrderedDict({"1c":c1.split(" "), "2c":c2.split(" "), "3c":c3.split(" ")})
+ #plasmid_train = collections.OrderedDict(plasmid_dataset.items()[:7000])
+ #chromosome_train = collections.OrderedDict(chromosome_dataset.items()[:150])
+ 
+@@ -115,23 +116,34 @@ print (len(chromosome_train))
+ 
+ train=collections.OrderedDict(plasmid_train, **chromosome_train)
+ 
+-print(train)
++#print(train)
+ 
+-print ("Initializing matrix...")
++#print ("Initializing matrix...")
+ 
+ 
+-X=[len(pfam_list)*[0]]*len(train)  # initialize matirx of n rows of zeroes, len = num of pfams
++#X=[len(pfam_list)*[0]]*len(train)  # initialize matirx of n rows of zeroes, len = num of pfams
+ 
+-print ("Populating matrix...")
++#print ("Populating matrix...")
+ 
+-counter=0
+-for key, value in train.items(): # take each sample  key, value in d.items():
++#counter=0
++#for key, value in train.items(): # take each sample  key, value in d.items():
+ #	print (key)
+ #	print (value)
+-	for j in value: # take each hit
+-	    hit_index = pfam_list.index(j)  # int(str([x for x in range(len(pfam_list)) if pfam_list[x]==j]))   #int(i for i,x in enumerate(pfam_list) if x == j) # pfam_list.index(j)  
+-	    X[counter][hit_index]+=1
+-	counter+=1
++#	for j in value: # take each hit
++#	    hit_index = pfam_list.index(j)  # int(str([x for x in range(len(pfam_list)) if pfam_list[x]==j]))   #int(i for i,x in enumerate(pfam_list) if x == j) # pfam_list.index(j)  
++#	    X[counter][hit_index]+=1
++#	counter+=1
++#	print (counter)
++
++X=[]
++for key, value in train.items():
++#	print (value)
++	X.append(create_vector_pfams(value)) # turn list of hmms to list of 0 and 1.
++
++
++#for i in X:
++#	if i == X[0]:
++#		print ("!")
+ 
+ y=["Plasmid"]*len(plasmid_train)+["Chromosome"]*len(chromosome_train)
+ 
+@@ -166,13 +178,18 @@ clf.fit(X, y)
+ 
+ #a=create_vector_pfams([input_list])
+ 
+-print(clf.predict(X))
+-print(clf.predict_log_proba(X))
++#print(clf.predict(X))
++#print(clf.predict_log_proba(X))
+ #print(clf.get_params())
+ 
+-print (y)
++#print (y)
+ 
+-#import pickle
++import pickle
+ # save the classifier
+-#with open('my_dumped_classifier.pkl', 'wb') as fid:
+- #   pickle.dump(clf, fid)    
++with open('my_dumped_classifier.pkl', 'wb') as fid:
++    pickle.dump(clf, fid)    
++
++
++#for i in X:
++#	if i == X[0]:
++#		print ("!")
+diff --git a/assembler/src/plasmid_utils/verification.py b/assembler/src/plasmid_utils/verification.py
+index 2e1dbb5b1..a8287a406 100644
+--- a/assembler/src/plasmid_utils/verification.py
++++ b/assembler/src/plasmid_utils/verification.py
+@@ -33,16 +33,15 @@ cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
+ 
+ 
+ # run hmm
+-#os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+-
+-#os.system (hmmscan + " --noali   -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+-#os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$5<0.001 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
++os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
++os.system (hmmscan + " --noali   -o "+name+"_out_pfam -E 0.01 --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
++os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$5<0.001 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
+ 
+ # run cbar
+-#os.system(cbar + " " + sys.argv[1] + " " + name + "_cbar.txt")
++os.system(cbar + " " + sys.argv[1] + " " + name + "_cbar.txt")
+ 
+ # run blast
+-#os.system ("blastn -query " + sys.argv[1] + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
++os.system ("blastn -query " + sys.argv[1] + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
+ 
+ 
+ # parse hmms
+@@ -171,7 +170,7 @@ with open(name+"_plasmid.names", "r") as pl_infile:
+          plasmids=pl_infile.readlines()
+ plasmids_list=[]
+ for i in plasmids:
+-    if i[:4] == "NODE":
++    if i[:4] == "NODE" or i[:6] == "CUTOFF":
+         plasmids_list.append(i)
+ 
+ plasmids_list = [i.strip() for i in plasmids_list] 
+@@ -181,7 +180,7 @@ with open(name+"_plasmids_bad.names", "r") as pl_infile:
+           plasmids_bad=pl_infile.readlines()
+ plasmids_bad_list=[]
+ for i in plasmids_bad:
+-    if i[:4] == "NODE":
++    if i[:4] == "NODE"  or i[:6] == "CUTOFF":
+         plasmids_bad_list.append(i)
+ 
+ plasmids_bad_list = [i.strip() for i in plasmids_bad_list] 
+@@ -191,7 +190,7 @@ with open(name+"_unclassified.names", "r") as pl_infile:
+            unclass=pl_infile.readlines()
+ unclass_list=[]
+ for i in unclass:
+-    if i[:4] == "NODE":
++    if i[:4] == "NODE" or i[:6] == "CUTOFF":
+          unclass_list.append(i)  
+ 
+ unclass_list = [i.strip() for i in unclass_list] 
+@@ -201,7 +200,7 @@ with open(name+"_chromosome.names", "r") as pl_infile:
+            chroms=pl_infile.readlines()
+ chrom_list=[]
+ for i in chroms:
+-     if i[:4] == "NODE":
++     if i[:4] == "NODE"  or i[:6] == "CUTOFF":
+          chrom_list.append(i)
+ chrom_list = [i.strip() for i in chrom_list] 
+ 
+@@ -210,7 +209,7 @@ with open(name+"_no_significant.names", "r") as pl_infile:
+            no_sign=pl_infile.readlines()
+ no_sig_list=[]
+ for i in no_sign:
+-     if i[:4] == "NODE":
++     if i[:4] == "NODE"  or i[:6] == "CUTOFF":
+          no_sig_list.append(i)
+ no_sig_list = [i.strip() for i in no_sig_list] 
+ 
+@@ -220,7 +219,7 @@ with open(name+"_viruses.names", "r") as pl_infile:
+            viruses=pl_infile.readlines()
+ viruses_list=[]
+ for i in viruses:
+-     if i[:4] == "NODE":
++     if i[:4] == "NODE"  or i[:6] == "CUTOFF":
+          viruses_list.append(i)
+ viruses_list = [i.strip() for i in viruses_list] 
+ 
+@@ -232,17 +231,17 @@ viruses_list = [i.strip() for i in viruses_list]
+ # add to table
+ for i in table:
+   if i[0] in plasmids_list:
+-    i.append( "Plasmid") #+ plasmids[plasmids_list.index(i[0])+1])
++    i.append( "Plasmid " + plasmids[plasmids_list.index(i[0])+1])
+   elif  i[0] in plasmids_bad_list:
+-    i.append("Plasmid_bad") # + plasmids_bad[plasmids_bad_list.index(i[0])+1])
++    i.append("Plasmid_bad "  + plasmids_bad[plasmids_bad_list.index(i[0])+1])
+   elif i[0] in unclass_list:
+-     i.append("Unclassified")
++     i.append("Unclassified" + unclass[unclass_list.index(i[0])+1])
+   elif  i[0] in chrom_list:
+-     i.append("Chromosome")
++     i.append("Chromosome " + chroms[chrom_list.index(i[0])+1])
+   elif  i[0] in no_sig_list:
+      i.append("Non-significant")
+   elif  i[0] in viruses_list:
+-     i.append("Virus")
++     i.append("Virus " + viruses[viruses_list.index(i[0])+1])
+   else: 
+      i.append("-")
+ 
+@@ -255,8 +254,13 @@ for i in table:
+ 
+ #print (table[:3])
+ 
++k=[]
++k1=[]
++
+ with open(name + "_result_table.tsv", "w") as outfile:
+     for i in table:
++#         k = i.append(i.pop(1))
++ #        k1 = k.append(k.pop(1))
+ #        print('\t'.join(i))
+          outfile.write('\t'.join(i)+"\n")
+ #         outfile.write(""i)
