@@ -552,21 +552,20 @@ class DBGraph {
 
     std::string turns;
     for (size_t i = 1; i < s.length(); ++i) {
-      auto next_pairs = cur.next_pairs();
+      auto nexts = cur.next();
       bool flag = false;
-      for (const auto &gp_l : next_pairs) {
-        if (gp_l.second == s[i]) {
-          if (next_pairs.size() > 1) {
+      for (const auto &next_cur : nexts) {
+        if (next_cur.letter() == s[i]) {
+          if (nexts.size() > 1) {
             // divergence
-            turns += gp_l.second;
+            turns += s[i];
           }
-          cur = gp_l.first;
+          cur = next_cur;
           flag = true;
           break;
         }
       }
       if (!flag) {
-          //ERROR(next_pairs);
         ERROR("Required letter: " << s[i]);
         ERROR(i << " " << s);
         return {begin, turns + "?", GraphCursor()};
@@ -865,15 +864,15 @@ std::string restore_path(const GraphCursor &begin, const GraphCursor &end, const
       break;
     }
 
-    auto next_pairs = cur.next_pairs();
-    assert(next_pairs.size());
+    auto nexts = cur.next();
+    assert(nexts.size());
 
-    if (next_pairs.size() > 1) {
+    if (nexts.size() > 1) {
       bool flag = false;
-      for (const auto &gp_l : next_pairs) {
+      for (const auto &next_cur : nexts) {
         assert(i < turns.size());
-        if (gp_l.second == turns[i]) {
-          cur = gp_l.first;
+        if (next_cur.letter() == turns[i]) {
+          cur = next_cur;
           ++i;
           flag = true;
           break;
@@ -882,11 +881,11 @@ std::string restore_path(const GraphCursor &begin, const GraphCursor &end, const
       if (!flag) {
         ERROR(path);
         ERROR("LETTER " << turns[i] << " not found");
-        // ERROR(next_pairs);
+        // ERROR(nexts);
       }
       assert(flag);
     } else {
-      cur = next_pairs[0].first;
+      cur = nexts[0];
     }
   }
 
