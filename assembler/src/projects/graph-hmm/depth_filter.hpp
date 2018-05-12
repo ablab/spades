@@ -178,6 +178,12 @@ class DepthAtLeast {
       return depth_[cursor] = {INF, true};
     }
 
+    if (depth_.count(cursor)) {
+      if (depth_[cursor].exact || depth_[cursor].value > stack_limit) {
+        return depth_[cursor];
+      }
+    }
+
     if (cursor.letter() == '*' || cursor.letter() == 'X') {
       return depth_[cursor] = {0, true};
     }
@@ -186,7 +192,7 @@ class DepthAtLeast {
       return depth_[cursor] = {INF, true};
     }
 
-    if (stack.size() > stack_limit) {
+    if (!stack_limit) {
       return depth_[cursor] = {1, false};
     }
 
@@ -196,7 +202,7 @@ class DepthAtLeast {
     size_t max_child = 0;
     bool exact = true;
     for (const GraphCursor &n : nexts) {
-      auto result = get_depth_(n, stack, stack_limit);
+      auto result = get_depth_(n, stack, stack_limit - 1);
       max_child = std::max(max_child, result.value);
       exact = exact && result.exact;
     }
