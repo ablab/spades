@@ -64,18 +64,19 @@ class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
 
   static std::vector<This> from_bases(const std::vector<GraphCursor> &cursors) {
     std::vector<std::vector<GraphCursor>> nexts;
+    nexts.reserve(16);
     for (const auto &cursor : cursors) {
       nexts.push_back({cursor});
     }
 
-    for (size_t i = 0; i < 2; ++i) {
-      nexts = expand(nexts);
-    }
+    nexts = expand(nexts);
 
     std::vector<This> result;
     for (const auto &n : nexts) {
-      assert(n.size() == 3);
-      result.emplace_back(n[0], n[1], n[2]);
+      assert(n.size() == 2);
+      for (const auto &n2 : n.back().next()) {
+        result.emplace_back(n[0], n[1], n2);
+      }
     }
 
     return result;
