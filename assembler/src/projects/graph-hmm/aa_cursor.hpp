@@ -1,22 +1,8 @@
 #pragma once
 
-#include <cursor.hpp>
+#include "cursor.hpp"
+
 #include "sequence/aa.hpp"
-
-template <typename T>
-std::vector<std::vector<T>> expand(const std::vector<std::vector<T>> &vv) {
-  std::vector<std::vector<T>> result;
-
-  for (const auto &v : vv) {
-    for (const auto &n : v.back().next()) {
-      auto nw = v;
-      nw.push_back(n);
-      result.push_back(nw);
-    }
-  }
-
-  return result;
-}
 
 template <class GraphCursor>
 class AAGraphCursor;
@@ -65,13 +51,15 @@ class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
   static std::vector<This> from_bases(const std::vector<GraphCursor> &cursors) {
     std::vector<std::vector<GraphCursor>> nexts;
     nexts.reserve(16);
+
     for (const auto &cursor : cursors) {
-      nexts.push_back({cursor});
+      for (const auto &n : cursor.next()) {
+        nexts.push_back({ cursor, n });
+      }
     }
 
-    nexts = expand(nexts);
-
     std::vector<This> result;
+    result.reserve(64);
     for (const auto &n : nexts) {
       assert(n.size() == 2);
       for (const auto &n2 : n.back().next()) {
