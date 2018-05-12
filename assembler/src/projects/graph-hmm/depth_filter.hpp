@@ -61,6 +61,60 @@ class Depth {
 };
 
 template <typename GraphCursor>
+class DepthInt {
+ public:
+  bool depth_at_least(const GraphCursor &cursor, size_t d) {
+    return depth(cursor) >= d;
+  }
+
+  size_t depth(const GraphCursor &cursor) {
+    std::unordered_set<GraphCursor> stack;  // TODO do not construct stack in case of using cached value
+    assert(stack.size() == 0);
+    auto result = get_depth_(cursor, stack);
+    assert(stack.size() == 0);
+    return result;
+  }
+
+  size_t max_stack_size() const { return max_stack_size_; }
+  static const size_t INF = std::numeric_limits<size_t>::max();
+
+ private:
+  std::unordered_map<GraphCursor, size_t> depth_;
+  size_t max_stack_size_ = 0;
+
+  size_t get_depth_(const GraphCursor &cursor, std::unordered_set<GraphCursor> &stack) {
+    if (depth_.count(cursor)) {
+      return depth_[cursor];
+    }
+
+    if (cursor.is_empty()) {
+      return depth_[cursor] = INF;
+    }
+
+    if (cursor.letter() == '*' || cursor.letter() == 'X') {
+      // INFO("Empty depth " << cursor);
+      return depth_[cursor] = 0;
+    }
+
+    if (stack.count(cursor)) {
+      return depth_[cursor] = INF;
+    }
+
+    auto nexts = cursor.next();
+    stack.insert(cursor);
+    max_stack_size_ = std::max(max_stack_size_, stack.size());
+    size_t max_child = 0;
+    for (const GraphCursor &n : nexts) {
+      max_child = std::max(max_child, get_depth_(n, stack));
+    }
+    stack.erase(cursor);
+
+    return depth_[cursor] = (max_child == INF) ? INF : 1 + max_child;
+  }
+};
+
+
+template <typename GraphCursor>
 class DummyDepthAtLeast {
   bool depth_at_least(const GraphCursor &, double) {
     return true;
