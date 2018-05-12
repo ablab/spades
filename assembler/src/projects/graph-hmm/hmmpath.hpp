@@ -310,7 +310,7 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
               score_t score,
               const GraphCursor &from,
               const PathLinkRef<GraphCursor> &plink) {
-    auto it_fl = this->insert({cursor, new PathLink<GraphCursor>()});
+    auto it_fl = this->insert({cursor, PathLink<GraphCursor>::create()});
     auto it = it_fl.first;
     bool inserted = it_fl.second;
 

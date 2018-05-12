@@ -68,6 +68,10 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
   using This = PathLink<GraphCursor>;
   using ThisRef = llvm::IntrusiveRefCntPtr<This>;
 
+  void* operator new (size_t sz) {
+      return ::operator new(sz);
+  }
+
  public:
   double score() const {
     if (scores_.size() == 0) {
@@ -103,8 +107,11 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
     }
   }
 
+  static ThisRef create() { return new This(); }
+  ThisRef clone() const { return new This(*this); }
+
   static ThisRef master_source() {
-    auto result(new This());
+    ThisRef result = create();
     result->scores_[GraphCursor()] = std::make_pair(0, nullptr);  // master_source score should be 0
     return result;
   }
@@ -540,8 +547,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
 
     return count;
   }
-
-  ThisRef clone() const { return new This(*this); }
 
   Event event;
  private:
