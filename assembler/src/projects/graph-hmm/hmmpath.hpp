@@ -373,10 +373,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
       const auto &cur = state.cursor;
       const auto &fee = state.score;
       const auto &id = state.plink;
-      auto next_pairs = cur.next_pairs();
-      for (size_t i = 0; i < next_pairs.size(); ++i) {
-        const auto &next = next_pairs[i].first;
-        char letter = next_pairs[i].second;
+      for (const auto &next : cur.next()) {
+        char letter = next.letter();
         double cost = fee + transfer_fee + emission_fees[code(letter)];
         if (to.update(next, cost, cur, id)) {
           updated.insert(next);
@@ -460,13 +458,11 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
       I.update(elt.current_cursor, elt.score, elt.source_cursor, elt.source_state);  // TODO return iterator to inserted/updated elt
       const auto &id = I[elt.current_cursor];
-      auto next_pairs = elt.current_cursor.next_pairs();
-      for (size_t i = 0; i < next_pairs.size(); ++i) {
-        const auto &next = next_pairs[i].first;
+      for (const auto &next : elt.current_cursor.next()) {
         if (processed.count(next)) {
           continue;
         }
-        char letter = next_pairs[i].second;
+        char letter = next.letter();
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
         if (!filter(next)) {
           q.push({next, cost, elt.current_cursor, id});
