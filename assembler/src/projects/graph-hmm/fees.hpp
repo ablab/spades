@@ -29,6 +29,7 @@ struct Fees {
   std::vector<std::vector<double>> mat;
   std::vector<std::vector<double>> ins;
   DigitalCodind code;
+  std::string consensus;
 
   bool check_i_loop(size_t i) const;
   bool is_i_loop_non_negative(size_t i) const { return check_i_loop(i); }

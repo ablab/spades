@@ -67,6 +67,7 @@ bool Fees::check_i_negative_loops() const {
  *      M->E and D->E end transitions. t[M][TDM] must be 1.0, therefore.
  */
 void Fees::reverse() {
+  std::reverse(consensus.begin(), consensus.end());
   std::reverse(ins.begin(), ins.end());
   std::reverse(mat.begin() + 1, mat.end());
   for (size_t i = 0, j = M; i < j; ++i, --j) {
@@ -89,6 +90,7 @@ void Fees::reverse() {
 Fees levenshtein_fees(const std::string &s, double mismatch, double gap_open, double gap_ext) {
   size_t M = s.size();
   Fees fees;
+  fees.consensus = s;
   fees.M = M;
   fees.k = 4;
   DigitalCodind encode;
@@ -140,6 +142,7 @@ Fees levenshtein_fees(const std::string &s, double mismatch, double gap_open, do
 Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc, double lambda) {
   size_t M = hmm->M;
   Fees fees;
+  fees.consensus = hmm->consensus;
   fees.code = DigitalCodind(abc);
   fees.M = M;
 
