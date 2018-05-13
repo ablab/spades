@@ -16,7 +16,7 @@ template <class GraphCursor>
 inline std::ostream &operator<<(std::ostream &os, const AAGraphCursor<GraphCursor> &cursor);
 
 template <class GraphCursor>
-class AAGraphCursor : public AbstractGraphCursor<AAGraphCursor<GraphCursor>> {
+class AAGraphCursor {
   using This = AAGraphCursor<GraphCursor>;
 
  public:

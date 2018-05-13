@@ -24,7 +24,7 @@
 
 class Graph {
  public:
-  class GraphCursor : public AbstractGraphCursor<Graph::GraphCursor> {
+  class GraphCursor {
    public:
     GraphCursor() : pgraph_{nullptr}, edge_id_(-1), position_(-1) {
       // INFO("Empty GP constructed");
@@ -357,7 +357,7 @@ class Graph {
 
 class DBGraph {
  public:
-  class GraphCursor : public AbstractGraphCursor<DBGraph::GraphCursor> {
+  class GraphCursor {
    public:
     GraphCursor() : pgraph_{nullptr}, edge_id_(-1), position_(-1) {
       // INFO("Empty GP constructed");
