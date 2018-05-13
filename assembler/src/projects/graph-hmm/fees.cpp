@@ -18,6 +18,10 @@ extern "C" {
 
 namespace hmm {
 
+static void to_upper_case(std::string &s) {
+  for (char &c: s) c = std::toupper(c);
+}
+
 DigitalCodind::DigitalCodind(const ESL_ALPHABET *abc)
     : inmap_(abc->inmap, abc->inmap + 128), k_(abc->K) {
   if (k_ == 20) {
@@ -91,6 +95,7 @@ Fees levenshtein_fees(const std::string &s, double mismatch, double gap_open, do
   size_t M = s.size();
   Fees fees;
   fees.consensus = s;
+  to_upper_case(fees.consensus);
   fees.M = M;
   fees.k = 4;
   DigitalCodind encode;
@@ -142,7 +147,8 @@ Fees levenshtein_fees(const std::string &s, double mismatch, double gap_open, do
 Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc, double lambda) {
   size_t M = hmm->M;
   Fees fees;
-  fees.consensus = hmm->consensus;
+  fees.consensus = hmm->consensus + 1;  // consensus residue line        1..M    (p7H_CONS)       */ /* String; 0=' ', M+1='\0'
+  to_upper_case(fees.consensus);
   fees.code = DigitalCodind(abc);
   fees.M = M;
 

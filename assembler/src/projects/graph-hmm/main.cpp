@@ -569,6 +569,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     INFO("Connected component sizes: " << cursor_conn_comps_sizes);
 
     auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
+    INFO("HMM consensus: " << fees.consensus);
 
     auto run_search = [&](const auto &initial, size_t top,
                           std::vector<HMMPathInfo> &local_results) {
@@ -584,7 +585,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         size_t idx = 0;
         for (const auto& annotated_path : top_paths) {
             auto seq = top_paths.str(annotated_path.path);
-            auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, p7hmm->M));
+            auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, fees));
             auto nucl_path = to_nucl_path(annotated_path.path);
             DEBUG_ASSERT(check_path_continuity(nucl_path), main_assert{}, debug_assert::level<2>{});
             auto edge_path = to_path(nucl_path);
