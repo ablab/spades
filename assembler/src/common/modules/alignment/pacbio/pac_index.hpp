@@ -172,7 +172,7 @@ public:
         DEBUG("BWA started")
         ClustersSet res;
         Sequence s = read.sequence();
-        if (s.size() < g_.k())
+        if (s.size() < g_.k()) {
             return res;
         }
         omnigraph::MappingPath<EdgeId> m_path = FilterSpuriousAlignments(bwa_mapper_.MapSequence(s), s.size());

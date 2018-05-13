@@ -8,14 +8,14 @@ if len(sys.argv) < 4:
     print "Usage: run_experiment.py <exe-file> <gap_algo: bf/dijkstra> <datasets list: E.coli_synth,C.elegans,Rumen,Smarr>"
     exit(-1)
 run_file = sys.argv[1]
-gap_mode = sys.argv[2]
+yaml_template = sys.argv[2]
 datasets = sys.argv[3].split(",")
 feature_name = run_file.split("/")[-3]
 exe_name = run_file.split("/")[-1]
 
 resultsdir = "/home/tdvorkina/results/"
 datasets_info = "/Sid/tdvorkina/gralign/readme.txt"
-yaml_template = "/home/tdvorkina/tmp/algorithmic-biology/assembler/src/projects/galigner/galigner.yaml"
+#yaml_template = "/home/tdvorkina/tmp/algorithmic-biology/assembler/src/projects/galigner/galigner.yaml"
 
 run_dir = resultsdir + "/" + feature_name
 run_prefix = run_dir + "/" + exe_name
