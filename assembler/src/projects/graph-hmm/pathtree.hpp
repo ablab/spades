@@ -593,9 +593,7 @@ class PathSet {
           ++count;
         } else {
           if (prev_c != '\0') {
-            if (count > 1) {
-              result += std::to_string(count);
-            }
+            result += std::to_string(count);
             if (prev_c == '-') {
               prev_c = 'D';
             }
