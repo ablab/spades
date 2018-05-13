@@ -104,6 +104,15 @@ def get_read_length(output_dir, K, ext_python_modules_home, log):
 
 def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):
     if options_storage.auto_K_allowed():
+        if options_storage.plasmid:
+            if RL >= 150:
+                if not silent:
+                    log.info("Default k-mer sizes were set to %s because estimated read length (%d) is equal to or greater than 150" % (str(options_storage.K_MERS_250), RL))
+                return options_storage.K_MERS_PLASMID_LONG
+            else:
+                if not silent:
+                    log.info("Default k-mer sizes were set to %s because estimated read length (%d) is less than 150" % (str(options_storage.K_MERS_250), RL))
+                return options_storage.K_MERS_PLASMID_100
         if RL >= 250:
             if not silent:
                 log.info("Default k-mer sizes were set to %s because estimated "

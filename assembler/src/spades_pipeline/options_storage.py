@@ -55,7 +55,8 @@ K_MERS_RNA = [33,49]
 K_MERS_SHORT = [21,33,55]
 K_MERS_150 = [21,33,55,77]
 K_MERS_250 = [21,33,55,77,99,127]
-
+K_MERS_PLASMID_100 = [21,33,55,77]
+K_MERS_PLASMID_LONG = [21,33,55,77,99,127]
 ITERATIONS = 1
 TMP_DIR = "tmp"
 
@@ -352,7 +353,7 @@ def usage(spades_version, show_hidden=False, mode=None):
 
 
 def auto_K_allowed():
-    return not k_mers and not single_cell and not iontorrent and not rna and not meta
+    return not k_mers and not single_cell and not iontorrent and not rna and not (meta and not plasmid)
     # kmers were set by default, not SC, not IonTorrent data and not rna and temporary not meta
 
 
