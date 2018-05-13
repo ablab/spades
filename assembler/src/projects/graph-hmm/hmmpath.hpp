@@ -533,7 +533,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     dm_new(D, M, I, m);
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
-    i_loop_processing(I, m, depth_filter_cursor);
+    i_loop_processing(I, m, depth_and_neib_filter_cursor);
 
     size_t n_of_states = D.size() + I.size() + M.size();
 
