@@ -33,8 +33,14 @@ class ReversalGraphCursor : public GraphCursor {
 template <class GraphCursor>
 class RestrictedGraphCursor : public GraphCursor {
  public:
-  RestrictedGraphCursor(const GraphCursor &other, const std::unordered_set<GraphCursor> &space) : GraphCursor(other), space_{space} {}
-  RestrictedGraphCursor(GraphCursor &&other, const std::unordered_set<GraphCursor> &space) : GraphCursor(std::move(other)), space_{space} {}
+  RestrictedGraphCursor() = default;
+  RestrictedGraphCursor(const RestrictedGraphCursor&) = default;
+  RestrictedGraphCursor(RestrictedGraphCursor&&) = default;
+  RestrictedGraphCursor& operator=(const RestrictedGraphCursor&) = default;
+  RestrictedGraphCursor& operator=(RestrictedGraphCursor&&) = default;
+
+  RestrictedGraphCursor(const GraphCursor &other, const std::unordered_set<GraphCursor> &space) : GraphCursor(other), pspace_{&space} {}
+  RestrictedGraphCursor(GraphCursor &&other, const std::unordered_set<GraphCursor> &space) : GraphCursor(std::move(other)), pspace_{&space} {}
 
   std::vector<RestrictedGraphCursor> next() const {
     return filter_(GraphCursor::next());
@@ -45,22 +51,29 @@ class RestrictedGraphCursor : public GraphCursor {
   }
 
  private:
-  const std::unordered_set<GraphCursor> space_;
+  const std::unordered_set<GraphCursor> *pspace_;
 
-  using GraphCursor::GraphCursor;
-  RestrictedGraphCursor(GraphCursor &&other) : GraphCursor(std::move(other)) {}
-
-  std::vector<RestrictedGraphCursor> filter_(std::vector<GraphCursor> v) {
+  std::vector<RestrictedGraphCursor> filter_(std::vector<GraphCursor> v) const {
     std::vector<RestrictedGraphCursor> result;
     for (auto &&cursor : v) {
-      if (space_.count(cursor)) {
-        result.emplace_back(std::move(cursor));
+      if (pspace_->count(cursor)) {
+        result.emplace_back(std::move(cursor), *pspace_);
       }
     }
 
     return result;
   }
 };
+
+template <class GraphCursor>
+auto make_restricted_cursors(const std::vector<GraphCursor> &cursors, const std::unordered_set<GraphCursor> &space) {
+  std::vector<RestrictedGraphCursor<GraphCursor>> result;
+  for (const auto &cursor : cursors) {
+    result.emplace_back(cursor, space);
+  }
+
+  return result;
+}
 
 namespace std {
 template <typename GraphCursor>

@@ -131,6 +131,12 @@ find_best_path(const hmm::Fees &fees,
   return impl::find_best_path(fees, initial);
 }
 
+PathSet<RestrictedGraphCursor<DebruijnGraphCursor>>
+find_best_path(const hmm::Fees &fees,
+               const std::vector<RestrictedGraphCursor<DebruijnGraphCursor>> &initial) {
+  return impl::find_best_path(fees, initial);
+}
+
 PathSet<DebruijnComponentCursor>
 find_best_path(const hmm::Fees &fees,
                const std::vector<DebruijnComponentCursor> &initial) {
@@ -158,5 +164,11 @@ find_best_path(const hmm::Fees &fees,
 PathSet<AAGraphCursor<DebruijnGraphCursor>>
 find_best_path(const hmm::Fees &fees,
                const std::vector<AAGraphCursor<DebruijnGraphCursor>> &initial) {
+  return impl::find_best_path(fees, initial);
+}
+
+PathSet<AAGraphCursor<RestrictedGraphCursor<DebruijnGraphCursor>>>
+find_best_path(const hmm::Fees &fees,
+               const std::vector<AAGraphCursor<RestrictedGraphCursor<DebruijnGraphCursor>>> &initial) {
   return impl::find_best_path(fees, initial);
 }

@@ -632,11 +632,12 @@ void TraceHMM(const hmmer::HMM &hmm,
 
         INFO("Running path search");
         std::vector<HMMPathInfo> local_results;
-
+        std::unordered_set<GraphCursor> component_set(component_cursors.cbegin(), component_cursors.cend());
+        auto restricted_component_cursors = make_restricted_cursors(component_cursors, component_set);
         if (hmm_in_aas) {
-            run_search(make_aa_cursors(component_cursors), cfg.top, local_results);
+            run_search(make_aa_cursors(restricted_component_cursors), cfg.top, local_results);
         } else {
-            run_search(component_cursors, cfg.top, local_results);
+            run_search(restricted_component_cursors, cfg.top, local_results);
         }
 
         results.insert(results.end(), local_results.begin(), local_results.end());
