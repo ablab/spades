@@ -13,6 +13,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "fees.hpp"
+
 enum class EventType { NONE, MATCH, INSERTION };
 using score_t = double;
 
@@ -607,7 +609,8 @@ class PathSet {
       return result;
     }
 
-    static std::string alignment(const AnnotatedPath &apath, size_t m) {
+    static std::string alignment(const AnnotatedPath &apath, const hmm::Fees &fees) {
+      size_t m = fees.M;
       std::string s;
       size_t prev_position = 0;
       DEBUG_ASSERT(apath.path.size() == apath.events.size(), pathtree_assert{});
@@ -624,7 +627,7 @@ class PathSet {
           s += '-';
         }
         prev_position = apath.events[i].m;
-        s += apath.events[i].type == EventType::MATCH ? 'M' : 'I';
+        s += apath.events[i].type == EventType::MATCH ? (fees.consensus[apath.events[i].m - 1] == apath.path[i].letter() ? 'M' : 'X') : 'I';
       }
 
       // Add trailing gaps (-)
@@ -635,7 +638,7 @@ class PathSet {
     }
 
     std::string str(size_t n) const { return str(paths_[n].path); }
-    std::string alignment(size_t n, size_t m = 0) const { return alignment(paths_[n], m); }
+    std::string alignment(size_t n, const hmm::Fees &fees) const { return alignment(paths_[n], fees); }
 
    private:
     std::vector<AnnotatedPath> paths_;
