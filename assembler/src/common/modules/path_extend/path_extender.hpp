@@ -1036,8 +1036,9 @@ public:
         DEBUG("two glued cycles!");
         if (path.Size() >= 3 && path[path.Size()-3] == last_edge) {
             if (path.Size() >= 5 && path.Front() == last_edge){
-                path.Conjugate().PopBack();
+                path.GetConjPath()->PopBack();
                 DEBUG("removing extra");
+                path.PrintDEBUG();
             }
             DEBUG("already traversed");
             return false;
