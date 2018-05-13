@@ -47,7 +47,7 @@ class RestrictedGraphCursor : public GraphCursor {
   }
 
   std::vector<RestrictedGraphCursor> prev() const {
-    return filter_(GraphCursor::prev ());
+    return filter_(GraphCursor::prev());
   }
 
  private:
