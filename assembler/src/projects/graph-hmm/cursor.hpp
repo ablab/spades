@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <utility>
+#include <unordered_set>
 
 template <class GraphCursor>
 class ReversalGraphCursor : public GraphCursor {
@@ -29,9 +30,44 @@ class ReversalGraphCursor : public GraphCursor {
   }
 };
 
+template <class GraphCursor>
+class RestrictedGraphCursor : public GraphCursor {
+ public:
+  RestrictedGraphCursor(const GraphCursor &other, const std::unordered_set<GraphCursor> &space) : GraphCursor(other), space_{space} {}
+  RestrictedGraphCursor(GraphCursor &&other, const std::unordered_set<GraphCursor> &space) : GraphCursor(std::move(other)), space_{space} {}
+
+  std::vector<RestrictedGraphCursor> next() const {
+    return filter_(GraphCursor::next());
+  }
+
+  std::vector<RestrictedGraphCursor> prev() const {
+    return filter_(GraphCursor::prev ());
+  }
+
+ private:
+  const std::unordered_set<GraphCursor> space_;
+
+  using GraphCursor::GraphCursor;
+  RestrictedGraphCursor(GraphCursor &&other) : GraphCursor(std::move(other)) {}
+
+  std::vector<RestrictedGraphCursor> filter_(std::vector<GraphCursor> v) {
+    std::vector<RestrictedGraphCursor> result;
+    for (auto &&cursor : v) {
+      if (space_.count(cursor)) {
+        result.emplace_back(std::move(cursor));
+      }
+    }
+
+    return result;
+  }
+};
+
 namespace std {
 template <typename GraphCursor>
 struct hash<ReversalGraphCursor<GraphCursor>> : public hash<GraphCursor> {};
+
+template <typename GraphCursor>
+struct hash<RestrictedGraphCursor<GraphCursor>> : public hash<GraphCursor> {};
 }  // namespace std
 
 // vim: set ts=2 sw=2 et :
