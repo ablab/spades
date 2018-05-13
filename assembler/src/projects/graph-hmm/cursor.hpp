@@ -33,3 +33,5 @@ namespace std {
 template <typename GraphCursor>
 struct hash<ReversalGraphCursor<GraphCursor>> : public hash<GraphCursor> {};
 }  // namespace std
+
+// vim: set ts=2 sw=2 et :
