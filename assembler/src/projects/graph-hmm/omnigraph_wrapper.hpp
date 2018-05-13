@@ -10,7 +10,7 @@
 
 #include <vector>
 
-class DebruijnGraphCursor : public AbstractGraphCursor<DebruijnGraphCursor> {
+class DebruijnGraphCursor {
   public:
     DebruijnGraphCursor()
             : g_{nullptr}, e_(), position_(-1) {}
@@ -72,7 +72,7 @@ class DebruijnGraphCursor : public AbstractGraphCursor<DebruijnGraphCursor> {
     size_t position_;
 };
 
-class DebruijnComponentCursor : public AbstractGraphCursor<DebruijnComponentCursor> {
+class DebruijnComponentCursor {
   public:
     DebruijnComponentCursor()
             : c_{nullptr}, e_(), position_(-1) {}
