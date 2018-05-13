@@ -168,7 +168,7 @@ Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc, double lambda) {
 
   std::vector<float> prior_frequences(k);
   if (k == 4) {
-    std::fill(prior_frequences.begin(), prior_frequences.end(), 1. / static_cast<double>(k));
+    std::fill(prior_frequences.begin(), prior_frequences.end(), 1. / static_cast<float>(k));
   } else {
     p7_AminoFrequencies(prior_frequences.data());
   }
