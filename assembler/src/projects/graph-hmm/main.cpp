@@ -575,12 +575,13 @@ void TraceHMM(const hmmer::HMM &hmm,
                           std::vector<HMMPathInfo> &local_results) {
         auto result = find_best_path(fees, initial);
 
-        INFO("Best score: " << result.best_score());
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
         if (!top_paths.empty()) {
-          INFO("Best sequence in the current component");
-          INFO(top_paths.str(0));
+            INFO("Best score in the current component: " << result.best_score());
+            INFO("Best sequence in the current component");
+            INFO(top_paths.str(0));
+            INFO(top_paths.alignment(0, fees));
         }
         size_t idx = 0;
         for (const auto& annotated_path : top_paths) {
