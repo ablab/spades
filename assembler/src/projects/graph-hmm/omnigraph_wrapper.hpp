@@ -200,3 +200,7 @@ PathSet<ReversalGraphCursor<DebruijnComponentCursor>> find_best_path_rev(const h
 PathSet<AAGraphCursor<DebruijnComponentCursor>> find_best_path(const hmm::Fees &fees,
                                                                const std::vector<AAGraphCursor<DebruijnComponentCursor>> &initial);
 PathSet<AAGraphCursor<DebruijnGraphCursor>> find_best_path(const hmm::Fees &fees, const std::vector<AAGraphCursor<DebruijnGraphCursor>> &initial);
+PathSet<AAGraphCursor<RestrictedGraphCursor<DebruijnGraphCursor>>> find_best_path(const hmm::Fees &fees,
+                                                                                  const std::vector<AAGraphCursor<RestrictedGraphCursor<DebruijnGraphCursor>>> &initial);
+PathSet<RestrictedGraphCursor<DebruijnGraphCursor>> find_best_path(const hmm::Fees &fees,
+                                                                   const std::vector<ReversalGraphCursor<DebruijnGraphCursor>> &initial);
