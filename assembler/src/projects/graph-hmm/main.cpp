@@ -519,6 +519,9 @@ void TraceHMM(const hmmer::HMM &hmm,
     if (p7hmm->acc)  { if (fprintf(stdout, "Accession:   %s\n", p7hmm->acc)  < 0) FATAL_ERROR("write failed"); }
     if (p7hmm->desc) { if (fprintf(stdout, "Description: %s\n", p7hmm->desc) < 0) FATAL_ERROR("write failed"); }
 
+    auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
+    INFO("HMM consensus: " << fees.consensus);
+
     // Collect the neighbourhood of the matched edges
     EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);  // hhmer is thread-safe
     bool hmm_in_aas = hmm.abc()->K == 20;
@@ -567,9 +570,6 @@ void TraceHMM(const hmmer::HMM &hmm,
         cursor_conn_comps_sizes.push_back(comp.size());
     }
     INFO("Connected component sizes: " << cursor_conn_comps_sizes);
-
-    auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
-    INFO("HMM consensus: " << fees.consensus);
 
     auto run_search = [&](const auto &initial, size_t top,
                           std::vector<HMMPathInfo> &local_results) {
