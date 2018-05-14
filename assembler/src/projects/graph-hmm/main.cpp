@@ -213,7 +213,7 @@ std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<AAGraphCurso
 using debruijn_graph::EdgeId;
 using debruijn_graph::VertexId;
 using debruijn_graph::ConjugateDeBruijnGraph;
-using EdgeAlnInfo = std::unordered_map<EdgeId, std::pair<int, int>>;
+using EdgeAlnInfo = std::vector<std::pair<EdgeId, std::pair<int, int>>>;
 
 
 auto ScoreSequences(const std::vector<std::string> &seqs,
@@ -265,19 +265,7 @@ EdgeAlnInfo get_matched_edges(const std::vector<EdgeId> &edges,
             int roverhang = static_cast<int>(domain.M() - hmmpos.second) - static_cast<int>(domain.L() - seqpos.second);
             int loverhang = static_cast<int>(hmmpos.first) - static_cast<int>(seqpos.first);
 
-            if (!match_edges.count(e)) {
-                match_edges[e] = {loverhang, roverhang};
-            } else {
-                auto &entry = match_edges[e];
-                if (entry.first < loverhang) {
-                    entry.first = loverhang;
-                }
-                if (entry.second < roverhang) {
-                    entry.second = roverhang;
-                }
-            }
-
-            INFO("" << e << ":" << match_edges[e]);
+            match_edges.push_back({e, std::make_pair(loverhang, roverhang)});
         }
     }
     INFO("Total matched edges: " << match_edges.size());
@@ -568,8 +556,8 @@ void TraceHMM(const hmmer::HMM &hmm,
     for (const auto &kv : matched_edges) {
         EdgeId e = kv.first;
         int aa_coef = hmm_in_aas ? 3 : 1;
-        int loverhang = (matched_edges[e].first + 10) * aa_coef; // TODO unify overhangs processing
-        int roverhang = (matched_edges[e].second + 10) * aa_coef;
+        int loverhang = (kv.second.first + 10) * aa_coef; // TODO unify overhangs processing
+        int roverhang = (kv.second.second + 10) * aa_coef;
 
         std::vector<GraphCursor> neib_cursors;
         if (loverhang > 0) {
@@ -641,8 +629,10 @@ void TraceHMM(const hmmer::HMM &hmm,
     };
 
     std::vector<EdgeId> match_edges;
-    for (const auto &entry : matched_edges)
+    for (const auto &entry : matched_edges) {
         match_edges.push_back(entry.first);
+    }
+    remove_duplicates(match_edges);
 
     for (const auto &component_cursors : cursor_conn_comps) {
         assert(!component_cursors.empty());
