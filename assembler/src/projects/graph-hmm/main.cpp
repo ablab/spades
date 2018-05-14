@@ -316,7 +316,7 @@ void OutputMatches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, cons
 std::string PathToString(const std::vector<EdgeId>& path,
                          const ConjugateDeBruijnGraph &graph) {
     std::string res = "";
-    for (auto e : path)
+    for (const auto &e : path)
         res = res + graph.EdgeNucls(e).First(graph.length(e)).str();
     return res;
 }
