@@ -65,7 +65,7 @@ In this section we give approximate data about SPAdes' performance on two data s
 
 We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately half an hour and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 10 minutes for the *E. coli* isolate data set and 20 minutes for the *E. coli* single-cell data set. Both data sets require about 8Gb of RAM (see notes below). MismatchCorrector runs for about 15 minutes on both data sets, and requires less than 2Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.
 
-<table border="0" cellpadding="4" cellspacing="0">
+<table border="1" cellpadding="4" cellspacing="0">
 <tr>
 <td align="right"> Data set &nbsp; </td>
 <td colspan="3" align="center"> <i>E. coli</i> isolate </td> 
@@ -84,42 +84,42 @@ We ran SPAdes with default parameters using 16 threads on a server with Intel Xe
 
 <tr>
 <td> BayesHammer </td>
-<td align="center"> 26m </td>
-<td align="center"> 7.1 </td>
-<td align="center"> 11 </td>
-<td align="center"> 31m </td>
-<td align="center"> 6.9 </td>
-<td align="center"> 11.3 </td>
+<td align="center"> 24m </td>
+<td align="center"> 7.8 </td>
+<td align="center"> 8.5 </td>
+<td align="center"> 25m </td>
+<td align="center"> 7.7 </td>
+<td align="center"> 8.6 </td>
 </tr>
 
 <tr>
 <td> SPAdes </td>
 <td align="center"> 8m </td>
-<td align="center"> 8.1 </td>
-<td align="center"> 1.5 </td>
-<td align="center"> 12m </td>
-<td align="center"> 7.9 </td>
-<td align="center"> 2.6 </td>
+<td align="center"> 8.4 </td>
+<td align="center"> 1.4 </td>
+<td align="center"> 10m </td>
+<td align="center"> 8.3 </td>
+<td align="center"> 2.1 </td>
 </tr>
 
 <tr>
 <td> MismatchCorrector </td>
-<td align="center"> 20m </td>
+<td align="center"> 10m </td>
+<td align="center"> 1.7 </td>
+<td align="center"> 21.4 </td>
+<td align="center"> 12m </td>
 <td align="center"> 1.8 </td>
-<td align="center"> 27.7 </td>
-<td align="center"> 25m </td>
-<td align="center"> 1.8 </td>
-<td align="center"> 28.3 </td>
+<td align="center"> 22.4 </td>
 </tr>
 
 <tr>
 <td> Whole pipeline </td>
-<td align="center"> 54m </td>
-<td align="center"> 8.1 </td>
-<td align="center"> 30.2 </td>
-<td align="center"> 1h 8m </td>
-<td align="center"> 7.9 </td>
-<td align="center"> 31.1 </td>
+<td align="center"> 42m </td>
+<td align="center"> 8.4 </td>
+<td align="center"> 23.9 </td>
+<td align="center"> 47m </td>
+<td align="center"> 8.3 </td>
+<td align="center"> 25.1 </td>
 </tr>
 </table>
 
