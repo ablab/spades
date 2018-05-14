@@ -17,9 +17,7 @@ class DebruijnGraphCursor {
 
     DebruijnGraphCursor(const debruijn_graph::ConjugateDeBruijnGraph *graph,
                         debruijn_graph::EdgeId e, size_t position)
-            : g_(graph), e_(e), position_(position) {
-        normalize_prefix_to_suffix();
-    }
+            : g_(graph), e_(e), position_(position) {}
 
     DebruijnGraphCursor(const DebruijnGraphCursor &) = default;
     DebruijnGraphCursor(DebruijnGraphCursor &&) = default;
@@ -55,6 +53,14 @@ class DebruijnGraphCursor {
     std::vector<DebruijnGraphCursor> prev() const;
     std::vector<DebruijnGraphCursor> next() const;
 
+    static DebruijnGraphCursor get_cursor(const debruijn_graph::ConjugateDeBruijnGraph &g, const debruijn_graph::EdgeId &e, size_t pos) {
+        DebruijnGraphCursor cursor{&g, e, pos};
+        cursor.normalize_prefix_to_suffix();
+        return cursor;
+    }
+
+    static std::vector<DebruijnGraphCursor> all(const debruijn_graph::ConjugateDeBruijnGraph &g);
+
   private:
     void normalize_prefix_to_suffix() {
         while (position_ < g_->k() && g_->IncomingEdgeCount(g_->EdgeStart(e_)) > 0) {
@@ -78,9 +84,7 @@ class DebruijnComponentCursor {
 
     DebruijnComponentCursor(const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> *component,
                             debruijn_graph::EdgeId e, size_t position)
-            : c_(component), e_(e), position_(position) {
-        normalize_prefix_to_suffix();
-    }
+            : c_(component), e_(e), position_(position) {}
 
     DebruijnComponentCursor(const DebruijnComponentCursor &) = default;
     DebruijnComponentCursor(DebruijnComponentCursor &&) = default;
@@ -116,6 +120,15 @@ class DebruijnComponentCursor {
 
     std::vector<DebruijnComponentCursor> prev() const;
     std::vector<DebruijnComponentCursor> next() const;
+
+    static DebruijnComponentCursor get_cursor(omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &c,
+                                              const debruijn_graph::EdgeId &e, size_t pos) {
+        DebruijnComponentCursor cursor{&c, e, pos};
+        cursor.normalize_prefix_to_suffix();
+        return cursor;
+    }
+
+    static std::vector<DebruijnComponentCursor> all(const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &c);
 
   private:
     void normalize_prefix_to_suffix() {
@@ -167,20 +180,6 @@ inline std::ostream &operator<<(std::ostream &os, const DebruijnComponentCursor 
   } else {
     return os << "(" << p.e_ << ", " << p.position_ << ")";
   }
-}
-
-std::vector<DebruijnGraphCursor> all(const debruijn_graph::ConjugateDeBruijnGraph &g);
-std::vector<DebruijnComponentCursor> all(const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &c);
-
-inline
-DebruijnGraphCursor get_cursor(const debruijn_graph::ConjugateDeBruijnGraph &g, const debruijn_graph::EdgeId &e, size_t pos) {
-    return {&g, e, pos};
-}
-
-inline
-DebruijnComponentCursor get_cursor(omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &g,
-                                   const debruijn_graph::EdgeId &e, size_t pos) {
-    return {&g, e, pos};
 }
 
 namespace hmm {
