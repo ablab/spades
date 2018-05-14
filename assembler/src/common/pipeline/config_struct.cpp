@@ -416,6 +416,7 @@ void load(pacbio_processor& pb,
   using config_common::load;
 
   load(pb.bwa_length_cutoff, pt, "bwa_length_cutoff");
+  load(pb.internal_length_cutoff, pt, "internal_length_cutoff");
   load(pb.compression_cutoff, pt, "compression_cutoff");
   load(pb.path_limit_stretching, pt, "path_limit_stretching");
   load(pb.path_limit_pressing, pt, "path_limit_pressing");

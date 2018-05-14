@@ -77,6 +77,7 @@ template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
         io.mapRequired("restore_ends", cfg.gap_cfg.restore_ends);
 
         io.mapRequired("pb.bwa_length_cutoff", cfg.pb.bwa_length_cutoff);
+        io.mapRequired("pb.internal_length_cutoff", cfg.pb.internal_length_cutoff);
         io.mapRequired("pb.compression_cutoff", cfg.pb.compression_cutoff);
         io.mapRequired("pb.path_limit_stretching", cfg.pb.path_limit_stretching);
         io.mapRequired("pb.path_limit_pressing", cfg.pb.path_limit_pressing);

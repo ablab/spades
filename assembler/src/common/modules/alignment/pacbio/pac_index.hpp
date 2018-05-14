@@ -100,7 +100,7 @@ public:
 
     typename omnigraph::MappingPath<EdgeId> FilterShortAlignments(typename omnigraph::MappingPath<EdgeId> mapped_path) const {
         omnigraph::MappingPath<EdgeId> res;
-        size_t length_cutoff = 200;
+        size_t length_cutoff = pb_config_.internal_length_cutoff;
         for (size_t i = 0; i < mapped_path.size(); i++) {
             size_t rlen = mapped_path[i].second.initial_range.size();
             if (rlen > length_cutoff || i == 0 || i == mapped_path.size() - 1) {
@@ -650,9 +650,9 @@ public:
             return true;
         } else {
 //FIXME: reconsider this condition! i.e only one large range? That may allow to decrease the bwa length cutoff
-            if (a.size > LONG_ALIGNMENT_OVERLAP && b.size > LONG_ALIGNMENT_OVERLAP &&
-                 - a.sorted_positions[1].edge_position +  (int)result + b.sorted_positions[0].edge_position  <=
-                        b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * int(g_.k())) {
+            if (- a.sorted_positions[1].edge_position +  (int)result + b.sorted_positions[0].edge_position  <=
+                        b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * int(g_.k())
+                        && (pb_config_.bwa_length_cutoff > 2*g_.k() || pb_config_.internal_length_cutoff > 2*g_.k()) ) {
                 DEBUG("overlapping range magic worked, " << - a.sorted_positions[1].edge_position +
                                                            (int)result + b.sorted_positions[0].edge_position
                       << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k());
