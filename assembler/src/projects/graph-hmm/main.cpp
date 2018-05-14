@@ -567,9 +567,9 @@ void TraceHMM(const hmmer::HMM &hmm,
     std::unordered_set<GraphCursor> cursors;
     for (const auto &kv : matched_edges) {
         EdgeId e = kv.first;
-        int coef = hmm_in_aas ? 3 : 1;
-        int loverhang = (matched_edges[e].first + 10) * coef; // TODO unify overhangs processing
-        int roverhang = (matched_edges[e].second + 10) * coef;
+        int aa_coef = hmm_in_aas ? 3 : 1;
+        int loverhang = (matched_edges[e].first + 10) * aa_coef; // TODO unify overhangs processing
+        int roverhang = (matched_edges[e].second + 10) * aa_coef;
 
         std::vector<GraphCursor> neib_cursors;
         if (loverhang > 0) {
