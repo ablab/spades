@@ -190,7 +190,6 @@ struct has_edge_method<T, void_t<decltype(T{}.edge())>> : std::true_type {};
 
 template<class GraphCursor>
 std::enable_if_t<has_edge_method<GraphCursor>::value, std::vector<typename GraphCursor::EdgeId>> to_path(const std::vector<GraphCursor> &cpath) {
-    static_assert(has_edge_method<GraphCursor>::value);
     std::vector<typename GraphCursor::EdgeId> path;
 
     size_t count = 0;
