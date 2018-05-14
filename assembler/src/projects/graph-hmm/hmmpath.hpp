@@ -496,11 +496,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   DepthAtLeast<GraphCursor> depth;
 
-  std::unordered_set<GraphCursor> neighbourhood(initial_original.cbegin(), initial_original.cend());
-  auto neighbourhood_filter_cursor = [&](const GraphCursor &cursor) -> bool {
-    return !cursor.is_empty() && !neighbourhood.count(cursor);  // TODO Add empty() to neighbourhood set
-  };
-
   INFO("Original (before filtering) initial set size: " << initial_original.size());
   std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
                [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, static_cast<double>(fees.M) / 3 - 10); });  // FIXME Correct this condition for local-local matching
@@ -519,12 +514,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     return !depth.depth_at_least(cursor, static_cast<double>(positions_left) / 3 - 10);
   };
 
-  auto depth_and_neib_filter_cursor = [&](const GraphCursor &cursor) -> bool {
-    return depth_filter_cursor(cursor) || neighbourhood_filter_cursor(cursor);
-  };
-
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
-  i_loop_processing(I, 0, depth_and_neib_filter_cursor);  // Do we really need I at the beginning???
+  i_loop_processing(I, 0, depth_filter_cursor);  // Do we really need I at the beginning???
   I.set_event(0, EventType::INSERTION);
   size_t n = 1;
   for (size_t m = 1; m <= fees.M; ++m) {
@@ -533,7 +524,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     dm_new(D, M, I, m);
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
-    i_loop_processing(I, m, depth_and_neib_filter_cursor);
+    i_loop_processing(I, m, depth_filter_cursor);
 
     size_t n_of_states = D.size() + I.size() + M.size();
 
@@ -566,15 +557,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     depth_filtered += M.filter_key(depth_filter_cursor);
     depth_filtered += D.filter_key(depth_filter_cursor);
 
-    size_t neighbourhood_filtered = 0;
-    neighbourhood_filtered += I.filter_key(neighbourhood_filter_cursor);
-    neighbourhood_filtered += M.filter_key(neighbourhood_filter_cursor);
-    neighbourhood_filtered += D.filter_key(neighbourhood_filter_cursor);
-
 
     if (m >= n) {
       INFO("depth-filtered " << depth_filtered << ", positions left = " << positions_left << " states m = " << m);
-      INFO("neighbourhood-filtered " << neighbourhood_filtered);
       INFO("I = " << I.size() << " M = " << M.size() << " D = " << D.size());
       auto scores = M.scores();
       std::sort(scores.begin(), scores.end());
