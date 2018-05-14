@@ -115,6 +115,7 @@ std::vector<DebruijnGraphCursor> DebruijnGraphCursor::all(const ConjugateDeBruij
             result.push_back(std::move(cursor));
         }
     }
+    // TODO Filter duplicates
     return result;
 }
 
@@ -128,6 +129,7 @@ std::vector<DebruijnComponentCursor> DebruijnComponentCursor::all(const omnigrap
             result.push_back(std::move(cursor));
         }
     }
+    // TODO Filter duplicates
     return result;
 }
 
