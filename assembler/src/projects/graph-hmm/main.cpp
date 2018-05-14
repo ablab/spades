@@ -192,15 +192,14 @@ template<class GraphCursor>
 std::enable_if_t<has_edge_method<GraphCursor>::value, std::vector<typename GraphCursor::EdgeId>> to_path(const std::vector<GraphCursor> &cpath) {
     std::vector<typename GraphCursor::EdgeId> path;
 
-    size_t count = 0;
+    size_t prev_position = 0;
     for (auto cursor : cpath) {
         const auto e = cursor.edge();
-        if (path.empty() || e != path.back()) {
+        size_t position = cursor.position();
+        if (path.empty() || e != path.back() || prev_position >= position) {
             path.push_back(e);
-            count = 1;
-        } else {
-            ++count;
         }
+        prev_position = position;
     }
 
     return path;
