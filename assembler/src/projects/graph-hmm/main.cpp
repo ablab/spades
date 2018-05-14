@@ -40,6 +40,8 @@
 #include <string>
 #include <regex>
 
+#include <llvm/ADT/iterator_range.h>
+
 extern "C" {
     #include "easel.h"
     #include "esl_sqio.h"
@@ -57,12 +59,16 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
-template <typename T>
-std::string join(const std::vector<T> &v, const std::string &sep = "_") {
+template <typename Range, typename Sep>
+std::string join(const Range &range, const Sep &sep) {
     std::stringstream ss;
-    for (size_t i = 0; i < v.size(); ++i) {
-        ss << v[i];
-        if (i != v.size() - 1) ss << sep;
+    size_t inserted = 0;
+    for (const auto &e : range) {
+        if (inserted > 0) {
+            ss << sep;
+        }
+        ss << e;
+        ++inserted;
     }
 
     return ss.str();
@@ -391,7 +397,7 @@ auto EdgesToSequences(const Container &entries,
                       const debruijn_graph::ConjugateDeBruijnGraph &graph) {
     std::vector<std::pair<std::string, std::string>> ids_n_seqs;
     for (const auto &entry : entries) {
-        std::string id = join(entry);
+        std::string id = join(entry, "_");
         std::string seq = MergeSequences(graph, entry).str();
         ids_n_seqs.push_back({id, seq});
     }
@@ -456,7 +462,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
             for (const auto &result : results) {
                 if (result.seq.size() == 0)
                     continue;
-                o << ">Score=" << result.score << "|Edges=" << join(result.path) << "|Alignment=" << result.alignment << '\n';
+                o << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << '\n';
                 io::WriteWrapped(result.seq, o);
             }
         }
@@ -748,6 +754,8 @@ int main(int argc, char* argv[]) {
     }
 
     INFO("Starting Graph HMM aligning engine, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
+    std::string cmd_line = join(llvm::make_range(argv, argv + argc), " ");
+    INFO("Command line: " << cmd_line);
 
     using namespace debruijn_graph;
 
