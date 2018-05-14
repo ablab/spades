@@ -562,7 +562,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);  // hhmer is thread-safe
     bool hmm_in_aas = hmm.abc()->K == 20;
 
-    using GraphCursor = std::decay_t<decltype(all(graph)[0])>;
+    using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
     std::unordered_set<GraphCursor> cursors;
     for (const auto &kv : matched_edges) {
@@ -571,22 +571,21 @@ void TraceHMM(const hmmer::HMM &hmm,
         int loverhang = (matched_edges[e].first + 10) * coef; // TODO unify overhangs processing
         int roverhang = (matched_edges[e].second + 10) * coef;
 
-        using GraphCursor = std::decay_t<decltype(all(graph)[0])>;
         std::vector<GraphCursor> neib_cursors;
         if (loverhang > 0) {
-            GraphCursor start = get_cursor(graph, e, 0);
+            GraphCursor start = GraphCursor::get_cursor(graph, e, 0);
             left_queries.push_back({start, loverhang * 2});
         }
 
         size_t len = graph.length(e) + graph.k();
         INFO("Edge length: " << len <<"; edge overhangs: " << loverhang << " " << roverhang);
         if (roverhang > 0) {
-            GraphCursor end = get_cursor(graph, e, len - 1);
+            GraphCursor end = GraphCursor::get_cursor(graph, e, len - 1);
             right_queries.push_back({end, roverhang * 2});
         }
 
         for (size_t i = std::max(0, -loverhang); i < len - std::max(0, -roverhang); ++i) {
-            cursors.insert(get_cursor(graph, e, i));
+            cursors.insert(GraphCursor::get_cursor(graph, e, i));
         }
     }
 

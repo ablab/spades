@@ -105,22 +105,28 @@ inline std::vector<DebruijnComponentCursor> DebruijnComponentCursor::next() cons
 }
 
 
-std::vector<DebruijnGraphCursor> all(const ConjugateDeBruijnGraph &g) {
+std::vector<DebruijnGraphCursor> DebruijnGraphCursor::all(const ConjugateDeBruijnGraph &g) {
     std::vector<DebruijnGraphCursor> result;
     for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         EdgeId e = *it;
-        for (size_t pos = 0; pos < g.length(e) + g.k(); ++pos)
-            result.emplace_back(&g, e, pos);
+        for (size_t pos = 0; pos < g.length(e) + g.k(); ++pos) {
+            DebruijnGraphCursor cursor{&g, e, pos};
+            cursor.normalize_prefix_to_suffix();
+            result.push_back(std::move(cursor));
+        }
     }
     return result;
 }
 
-std::vector<DebruijnComponentCursor> all(const omnigraph::GraphComponent<ConjugateDeBruijnGraph> &c) {
+std::vector<DebruijnComponentCursor> DebruijnComponentCursor::all(const omnigraph::GraphComponent<ConjugateDeBruijnGraph> &c) {
     std::vector<DebruijnComponentCursor> result;
     for (auto it = c.e_begin(); it != c.e_end(); ++it) {
         EdgeId e = *it;
-        for (size_t pos = 0; pos < c.g().length(e) + c.g().k(); ++pos)
-            result.emplace_back(&c, e, pos);
+        for (size_t pos = 0; pos < c.g().length(e) + c.g().k(); ++pos) {
+            DebruijnComponentCursor cursor{&c, e, pos};
+            cursor.normalize_prefix_to_suffix();
+            result.push_back(std::move(cursor));
+        }
     }
     return result;
 }
