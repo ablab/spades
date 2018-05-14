@@ -36,8 +36,6 @@ class AAGraphCursor {
 
   using EdgeId = std::decay_t<decltype(GraphCursor().edge())>;
 
-  std::vector<EdgeId> edges() const { return { c0_.edge(), c1_.edge(), c2_.edge() }; }
-
   std::vector<This> prev() const;  // TODO implement it
 
   std::vector<This> next() const { return from_bases(c2_.next()); }

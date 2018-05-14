@@ -33,7 +33,6 @@ class DebruijnGraphCursor {
 
     using EdgeId = debruijn_graph::EdgeId;
     EdgeId edge() const { return e_; }
-    std::vector<EdgeId> edges() const { return { e_ }; }
 
     size_t position() const { return position_; }
 
@@ -95,7 +94,6 @@ class DebruijnComponentCursor {
 
     using EdgeId = debruijn_graph::EdgeId;
     EdgeId edge() const { return e_; }
-    std::vector<EdgeId> edges() const { return { e_ }; }
     size_t position() const { return position_; }
 
     bool is_empty() const { return e_.get() == nullptr; }
