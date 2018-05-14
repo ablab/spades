@@ -95,7 +95,7 @@ def cnt_problempaths(truepaths, alignedpaths):
     for r in alignedpaths.keys():
         if r not in truepaths.keys():
             continue
-        if truepaths[r]["path"] != alignedpaths[r]["path"]:
+        if truepaths[r]["path"] != alignedpaths[r]["path"] or alignedpaths[r]["empty"] > 0:
             res += 1
     return res
 
