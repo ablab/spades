@@ -316,7 +316,7 @@ def cnt_median_alignment_length(tpaths, apaths, K, edges = True, use_edges_len =
 
 def make_table(results, row_names, caption, name):
     html = """<html><table border="1"><caption>{}</caption><tr><th></th>""".format(name)
-    for run_name in sorted(results.keys()):
+    for run_name in sorted(results.keys(), key= lambda x: x[::-1]):
         html += """<th><div style="width: 200px; height: 50px; overflow: auto">{}</div></th>""".format(run_name)
     html += "</tr>"
     for stat in row_names:
@@ -334,16 +334,28 @@ def save_html(s, fl):
     with open(fl, "w") as fout:
         fout.write(s)
 
+def load_tsv_files(filename):
+    res = []
+    with open(filename, "r") as fin:
+        res = [ln.strip() for ln in fin.readlines()]
+
+    res = sorted(res, key= lambda x: x[::-1])
+    return res
+
+
 reads = load_reads(sys.argv[1])
 truepaths = load_truepaths(sys.argv[2])
-aligned_files = sys.argv[3].strip().split(",")
+aligned_files = load_tsv_files(sys.argv[3])
+print "\n".join(aligned_files)
 K = int(sys.argv[4])
 html_name = sys.argv[5]
-aligned_onref = load_reads(sys.argv[6])
+#aligned_onref = load_reads(sys.argv[6])
 res = {}
 for fl in aligned_files:
     alignedpaths = load_alignments(fl)
     print "Total=", len(reads), " ideal=", len(reads) - cnt_badideal(reads, truepaths),  " notmapped=", cnt_notmapped(reads, truepaths, alignedpaths) 
+    badideal = cnt_badideal(reads, truepaths)
+    notmapped = cnt_notmapped(reads, truepaths, alignedpaths)
     path_problems = cnt_problempaths(truepaths, alignedpaths)
     print "Paths with problems ", path_problems
     bwa_problems = cnt_problembwa(truepaths, alignedpaths)
@@ -355,8 +367,8 @@ for fl in aligned_files:
     print "Median proportion of length of alignment between two fathest bwa hits to read length", med_prefix, med_suffix, med_sum 
 
     
-    row_names = ["Total number of reads", \
-                 "Read aligned to ref (#reads)",\
+    row_names = [#"Total number of reads", \
+                 #"Read aligned to ref (#reads)",\
                  "Read aligned to ref and corresponding ref subseq to graph (#reads)",\
                  "Mapped with GAligner (#reads)",\
                  "Path is not equal to true path (#reads)",\
@@ -366,15 +378,15 @@ for fl in aligned_files:
                  "Incorrect prefix/suffix (#reads)" , \
                  "Median length(in nucs) of skipped prefix/suffix/both"
                  ]
-    res[fl] = {"Total number of reads" : len(reads), \
-                 "Read aligned to ref (#reads)": len(reads) - cnt_badideal(reads, aligned_onref),\
-                 "Read aligned to ref and corresponding ref subseq to graph (#reads)": len(reads) - cnt_badideal(reads, truepaths),\
-                 "Mapped with GAligner (#reads)" : len(reads) - cnt_badideal(reads, truepaths) - cnt_notmapped(reads, truepaths, alignedpaths),\
-                 "Path is not equal to true path (#reads)": path_problems,\
-                 "Path is wrong. BWA hits uncertainty (#reads)": unknown - bwa_problems,\
-                 "Resulting BWA hits failure (#reads)": bwa_problems, \
-                 "Gap stage failure (#reads)": str(wrong_gaps) + " + " + str(wrong_gap_empty) + "(didn't closed)", \
-                 "Incorrect prefix/suffix (#reads)" : str(wrong_start + wrong_start_empty) + "/" + str(wrong_end + wrong_end_empty), \
+    res[fl.split("/")[-1]] = {#"Total number of reads" : len(reads), \
+                 #"Read aligned to ref (#reads)": len(reads) - cnt_badideal(reads, aligned_onref),\
+                 "Read aligned to ref and corresponding ref subseq to graph (#reads)": str(len(reads) - badideal)+ " (100%)",\
+                 "Mapped with GAligner (#reads)" : str(len(reads) - badideal - notmapped) + " (" + str( (len(reads) - badideal - notmapped)*100/(len(reads) - badideal) ) + "%)" ,\
+                 "Path is not equal to true path (#reads)": str(path_problems) + " (" + str(path_problems*100/(len(reads) - badideal)) + "%)",\
+                 "Path is wrong. BWA hits uncertainty (#reads)": str(unknown - bwa_problems) + " (" + str((unknown - bwa_problems)*100/(len(reads) - badideal)) + "%)" ,\
+                 "Resulting BWA hits failure (#reads)": str(bwa_problems) + " (" + str(bwa_problems*100/(len(reads) - badideal)) + "%)", \
+                 "Gap stage failure (#reads)": str(wrong_gaps) + " + " + str(wrong_gap_empty) + "(didn't closed)" + " (" + str((wrong_gaps +  wrong_gap_empty)*100/(len(reads) - badideal)) + "%)", \
+                 "Incorrect prefix/suffix (#reads)" : str(wrong_start + wrong_start_empty) + "/" + str(wrong_end + wrong_end_empty) + " (" + str((wrong_start + wrong_start_empty + wrong_end + wrong_end_empty)*100/(len(reads) - badideal)) + "%)", \
                  "Median length(in nucs) of skipped prefix/suffix/both" : \
                  str(med_prefix) + "/" + str(med_suffix) + "/" + str(med_sum)}
 

@@ -71,7 +71,7 @@ def load_ideal_reads(reads_bam, reference_fasta, reads):
     for it in mp_edlib.keys():
         lst_edlib.append(mp_edlib[it])
     plt.hist(lst_edlib, bins=100)
-    plt.savefig("error_rate_pacbio.png")
+    plt.savefig("error_rate_pacbio_celegans.png")
     print("Number of mapped items > 80%: " + str(len(mp)))
     print("Number of mapped items: " + str(cnt))
     return mp
@@ -87,22 +87,22 @@ def run_bwamem(reads_fasta, reference_fasta, type, build_index = False):
     print("> Load reads from fasta")
     reads = load_fasta(reads_fasta)
     reads_bam = reads_fasta[:-len(".fasta")] + "_origin.bam"
-    # print("> Run bwa mem to align reads on reference and save result to " + reads_bam)
-    # #if build_index:
+    print("> Run bwa mem to align reads on reference and save result to " + reads_bam)
+    #if build_index:
     # print("> Build index")
     # subprocess.call(["bwa index " + reference_fasta], shell=True)
     # subprocess.call(["samtools faidx " + reference_fasta], shell=True)
-    # if type == "pacbio":
-    #     t = "pacbio"
-    # elif type == "nanopore":
-    #     t = "ont2d"
-    # print("bwa mem -x " + t +  " -t 33 " + reference_fasta + " " + reads_fasta + " | samtools view -bS - > " + reads_bam)
-    # subprocess.call(["bwa mem -x " + t + " -t 33 " + reference_fasta + " " + reads_fasta + " | samtools view -bS - > " + reads_bam], shell=True)
+    if type == "pacbio":
+        t = "pacbio"
+    elif type == "nanopore":
+        t = "ont2d"
+    print("bwa mem -x " + t +  " -t 33 " + reference_fasta + " " + reads_fasta + " | samtools view -bS - > " + reads_bam)
+    subprocess.call(["bwa mem -x " + t + " -t 33 " + reference_fasta + " " + reads_fasta + " | samtools view -bS - > " + reads_bam], shell=True)
     print("> Load mappings from bam (longest mapping for each read name and not less 20% length)")
     refseq = load_ideal_reads(reads_bam, reference_fasta, reads)
     refseq_fasta =  "/".join(reads_fasta.split("/")[:-1] + [ "refseq_bwamem_" + reads_fasta.split("/")[-1]])
-    #print("> Save into " + refseq_fasta)
-    #save(refseq_fasta, refseq)
+    print("> Save into " + refseq_fasta)
+    save(refseq_fasta, refseq)
     return refseq_fasta
 
 def run_minimap2(reads_fasta, reference_fasta, type, build_index = False):
@@ -134,6 +134,6 @@ def run_idealreads_aligner(refseq_fasta):
 
 
 refseq_fasta = run_bwamem(reads_fasta, reference_fasta, type)
-#run_idealreads_aligner(refseq_fasta)
+run_idealreads_aligner(refseq_fasta)
 
 
