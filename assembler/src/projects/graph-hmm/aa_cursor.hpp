@@ -4,8 +4,6 @@
 
 #include "sequence/aa.hpp"
 
-#include <llvm/ADT/SmallVector.h>
-
 template <class GraphCursor>
 class AAGraphCursor;
 
@@ -49,21 +47,19 @@ class AAGraphCursor {
   friend std::ostream &operator<<<GraphCursor>(std::ostream &os, const AAGraphCursor<GraphCursor> &cursor);
 
   static std::vector<This> from_bases(const std::vector<GraphCursor> &cursors) {
-    llvm::SmallVector<llvm::SmallVector<GraphCursor, 2>, 16> nexts;
-    // nexts.reserve(16);
+    std::vector<std::pair<GraphCursor, GraphCursor>> nexts;
+    nexts.reserve(cursors.size() * 4);
 
     for (const auto &cursor : cursors) {
       for (const auto &n : cursor.next()) {
-        nexts.push_back({ cursor, n });
+        nexts.emplace_back(cursor, n);
       }
     }
 
     std::vector<This> result;
-    result.reserve(64);
     for (const auto &n : nexts) {
-      assert(n.size() == 2);
-      for (const auto &n2 : n.back().next()) {
-        result.emplace_back(n[0], n[1], n2);
+      for (const auto &n2 : n.second.next()) {
+        result.emplace_back(n.first, n.second, n2);
       }
     }
 
