@@ -183,7 +183,8 @@ void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
                 gp.paired_indices[i].clear();
             }
         }
-        
+//Clearing used edges for plasmids
+    gp.used_edges.clear();
 }
 
 }
