@@ -573,7 +573,8 @@ class PathSet {
     bool empty() const { return paths_.empty(); }
     auto operator[](size_t n) const { return paths_[n]; }
 
-    static std::string str(const std::vector<GraphCursor> &path) {
+    template <class Cursor>
+    static std::string str(const std::vector<Cursor> &path) {
       std::string s;
       for (size_t i = 0; i < path.size(); ++i) {
         DEBUG_ASSERT(!path[i].is_empty(), pathtree_assert{});
