@@ -585,7 +585,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             INFO("Best score in the current component: " << result.best_score());
             INFO("Best sequence in the current component");
             INFO(top_paths.str(0));
-            INFO(top_paths.alignment(0, fees));
+            INFO("Alignment: " << top_paths.compress_alignment(top_paths.alignment(0, fees)));
         }
         size_t idx = 0;
         for (const auto& annotated_path : top_paths) {
