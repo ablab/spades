@@ -280,9 +280,9 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
         int textw = 120;
         #pragma omp critical(console)
         {
-            p7_tophits_Targets(stdout, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-            p7_tophits_Domains(stdout, matcher.top_hits(), matcher.pipeline(), textw); if (fprintf(stderr, "\n\n") < 0) FATAL_ERROR("write failed");
-            p7_pli_Statistics(stdout, matcher.pipeline(), nullptr); if (fprintf(stderr, "//\n") < 0) FATAL_ERROR("write failed");
+            p7_tophits_Targets(stdout, matcher.top_hits(), matcher.pipeline(), textw);
+            p7_tophits_Domains(stdout, matcher.top_hits(), matcher.pipeline(), textw);
+            p7_pli_Statistics(stdout, matcher.pipeline(), nullptr);
         }
     }
 
@@ -513,11 +513,15 @@ void TraceHMM(const hmmer::HMM &hmm,
               const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
               const cfg &cfg,
               std::vector<HMMPathInfo> &results) {
-    P7_HMM *p7hmm = hmm.get();
+    const P7_HMM *p7hmm = hmm.get();
 
-    if (fprintf(stdout, "Query:       %s  [M=%d]\n", p7hmm->name, p7hmm->M) < 0) FATAL_ERROR("write failed");
-    if (p7hmm->acc)  { if (fprintf(stdout, "Accession:   %s\n", p7hmm->acc)  < 0) FATAL_ERROR("write failed"); }
-    if (p7hmm->desc) { if (fprintf(stdout, "Description: %s\n", p7hmm->desc) < 0) FATAL_ERROR("write failed"); }
+    INFO("Query:         " << p7hmm->name << "  [M=" << p7hmm->M << "]");
+    if (p7hmm->acc) {
+        INFO("Accession:     " << p7hmm->acc);
+    }
+    if (p7hmm->desc) {
+        INFO("Description:   " << p7hmm->desc);
+    }
 
     auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
     INFO("HMM consensus: " << fees.consensus);
