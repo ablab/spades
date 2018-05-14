@@ -695,7 +695,6 @@ public:
                         vertex_pathlen[*j_iter] = path_searcher_b.GetDistance(*j_iter);
                 }
         }
-
         Sequence ss = s.Subseq(seq_start_pos, min(seq_end_pos + 1, int(s.size()) ));
         int s_len = int(ss.size());
         path_max_length = score;
@@ -703,7 +702,7 @@ public:
             path_max_length = max(s_len/3, 20);
         } 
         DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len << " max-len " << path_max_length << " start_p=" << edge_start_pos << " end_p=" << edge_end_pos << " eid=" << start_e.int_id());
-        if ( ((size_t) s_len) > pb_config_.max_contigs_gap_length || vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap){
+        if (vertex_pathlen.size() == 0 || ((size_t) s_len) > pb_config_.max_contigs_gap_length || vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap){
             DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
             score = STRING_DIST_INF;
             return vector<EdgeId>(0);
@@ -810,7 +809,7 @@ public:
                                                                seq_start_pos, seq_end_pos, s_add, e_add, score, return_code);
         INFO("BruteForce run: return_code=" << return_code << " len=" << seq_end_pos - seq_start_pos << " score=" << score)
         int score_bf = score;
-        if (gap_cfg_.run_dijkstra && return_code == 0){
+        if (gap_cfg_.run_dijkstra){
             std::vector<EdgeId> path = BestScoredPathDijkstra(s, start_v, end_v, 
                                                                 start_e, end_e, edge_start_pos, edge_end_pos, 
                                                                 seq_start_pos, seq_end_pos, 
