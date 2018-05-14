@@ -5,7 +5,7 @@ import sys
 
 
 if len(sys.argv) < 4:
-    print "Usage: run_experiment.py <exe-file> <gap_algo: bf/dijkstra> <datasets list: E.coli_synth,C.elegans,Rumen,Smarr>"
+    print "Usage: run_experiment.py <exe-file> <yaml-template> <datasets list: E.coli_synth,C.elegans,Rumen,Smarr>"
     exit(-1)
 run_file = sys.argv[1]
 yaml_template = sys.argv[2]
@@ -15,7 +15,7 @@ exe_name = run_file.split("/")[-1]
 
 resultsdir = "/home/tdvorkina/results/"
 datasets_info = "/Sid/tdvorkina/gralign/readme.txt"
-#yaml_template = "/home/tdvorkina/tmp/algorithmic-biology/assembler/src/projects/galigner/galigner.yaml"
+yaml_name = yaml_template.split("/")[-1][:-5]
 
 run_dir = resultsdir + "/" + feature_name
 run_prefix = run_dir + "/" + exe_name
@@ -39,8 +39,8 @@ def extract_params(name, fl):
     res = {"path_to_sequences": reads, "path_to_graphfile": saves, "k": K, "data_type": tp}
     return res
 
-def prepare_cfg(yaml_template, params, prefix, gap_mode):
-    tmp_cfg = prefix + "_" + gap_mode + "_cfg.yaml"
+def prepare_cfg(yaml_template, params, prefix, yaml_name):
+    tmp_cfg = prefix + "_" + yaml_name + "_cfg.yaml"
     with open(tmp_cfg, "w") as fout:
         with open(yaml_template, "r") as fin:
             for ln in fin.readlines():
@@ -49,27 +49,22 @@ def prepare_cfg(yaml_template, params, prefix, gap_mode):
                     if ln.startswith(p):
                         print_ln = p + ": " + params[p] + "\n"
                         break
-                if ln.startswith("run_dijkstra"):
-                    if gap_mode == "bf":
-                        print_ln = "run_dijkstra: false\n"
-                    else:
-                        print_ln = "run_dijkstra: true\n"
                 fout.write(print_ln)
     return tmp_cfg
 
 
-def run(exe, params, prefix, gap_mode):
-    cfg = prepare_cfg(yaml_template, params, prefix, gap_mode)
+def run(exe, params, prefix, yaml_name):
+    cfg = prepare_cfg(yaml_template, params, prefix, yaml_name)
     cmd = exe
-    print "Run " + cmd + " " + cfg  + " -o " + prefix + "_" + gap_mode + " > " + prefix + "_" + gap_mode + ".log"
-    process = subprocess.Popen(cmd + " " + cfg + " -o " + prefix  + "_" + gap_mode + " > " + prefix + "_" + gap_mode + ".log", shell=True, stderr = subprocess.PIPE)#, stdout=subprocess.PIPE, stderr = subprocess.PIPE)
+    print "Run " + cmd + " " + cfg  + " -o " + prefix + "_" + yaml_name + " > " + prefix + "_" + yaml_name + ".log"
+    process = subprocess.Popen(cmd + " " + cfg + " -o " + prefix  + "_" + yaml_name + " > " + prefix + "_" + yaml_name + ".log", shell=True, stderr = subprocess.PIPE)#, stdout=subprocess.PIPE, stderr = subprocess.PIPE)
     process.wait()
     output, error = process.communicate()
     if process.returncode:
         print error
         return
-    fout = open(prefix + "_" + gap_mode + ".log", "a+")
-    fout.write(cmd + " " + cfg + " -o " + prefix  + "_" + gap_mode)
+    fout = open(prefix + "_" + yaml_name + ".log", "a+")
+    fout.write(cmd + " " + cfg + " -o " + prefix  + "_" + yaml_name)
     fout.close()
 
 params = {}
@@ -80,5 +75,5 @@ if not os.path.exists(resultsdir + "/" + feature_name):
     os.makedirs(resultsdir + "/" + feature_name)
 for d in datasets:
     print "Dataset: ", d
-    run(run_file, params[d], run_prefix + "_" + d, gap_mode)
+    run(run_file, params[d], run_prefix + "_" + d, yaml_name)
 
