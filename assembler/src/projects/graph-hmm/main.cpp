@@ -82,7 +82,7 @@ struct cfg {
     int threads = 4;
     size_t top = 10;
     uint64_t int_id = 0;
-    unsigned max_size = 1000;  // TODO Use this parameter
+    unsigned max_size = 10000000;
     bool debug = false;
     bool draw = false;
     bool save = true;
@@ -116,7 +116,7 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       (option("--top") & integer("x", cfg.top)) % "extract top x paths",
       (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
       (option("--edge_id") & integer("value", cfg.int_id)) % "match around edge",
-      (option("--max_size") & integer("value", cfg.max_size)) % "maximal component size to consider (default: 1000)",
+      (option("--max_size") & integer("value", cfg.max_size)) % "maximal component size to consider (default: 10000000)",
       // Control of output
       cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
       cfg.hcfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
@@ -618,7 +618,10 @@ void TraceHMM(const hmmer::HMM &hmm,
     for (const auto &component_cursors : cursor_conn_comps) {
         assert(!component_cursors.empty());
         INFO("Component size " << component_cursors.size());
-        // TODO use max_size as a limit for the number of cursors in a component
+        if (component_cursors.size() > cfg.max_size) {
+            WARN("The component is too large, skipping");
+            continue;
+        }
 
         for (const auto &cursor : component_cursors) {
             DEBUG_ASSERT(check_cursor_symmetry(cursor), main_assert{}, debug_assert::level<2>{});
