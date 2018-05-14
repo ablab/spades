@@ -573,19 +573,22 @@ void TraceHMM(const hmmer::HMM &hmm,
 
         std::vector<GraphCursor> neib_cursors;
         if (loverhang > 0) {
-            GraphCursor start = GraphCursor::get_cursor(graph, e, 0);
-            left_queries.push_back({start, loverhang * 2});
+            for (const auto &start : GraphCursor::get_cursors(graph, e, 0)) {
+                left_queries.push_back({start, loverhang * 2});
+            }
         }
 
         size_t len = graph.length(e) + graph.k();
         INFO("Edge length: " << len <<"; edge overhangs: " << loverhang << " " << roverhang);
         if (roverhang > 0) {
-            GraphCursor end = GraphCursor::get_cursor(graph, e, len - 1);
-            right_queries.push_back({end, roverhang * 2});
+            for (const auto &end : GraphCursor::get_cursors(graph, e, len - 1)) {
+                right_queries.push_back({end, roverhang * 2});
+            }
         }
 
         for (size_t i = std::max(0, -loverhang); i < len - std::max(0, -roverhang); ++i) {
-            cursors.insert(GraphCursor::get_cursor(graph, e, i));
+            auto position_cursors = GraphCursor::get_cursors(graph, e, i);
+            cursors.insert(std::make_move_iterator(position_cursors.begin()), std::make_move_iterator(position_cursors.end()));
         }
     }
 

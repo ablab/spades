@@ -53,19 +53,38 @@ class DebruijnGraphCursor {
     std::vector<DebruijnGraphCursor> prev() const;
     std::vector<DebruijnGraphCursor> next() const;
 
-    static DebruijnGraphCursor get_cursor(const debruijn_graph::ConjugateDeBruijnGraph &g, const debruijn_graph::EdgeId &e, size_t pos) {
+    static std::vector<DebruijnGraphCursor> get_cursors(const debruijn_graph::ConjugateDeBruijnGraph &g, const debruijn_graph::EdgeId &e, size_t pos) {
+        // Unfortunately, several different cursors (actually different, having different prev's) may have the same edge & position
+        // Therefore, it's impossible to design a correct get_cursor() method, we have to implement get_cursorS()
         DebruijnGraphCursor cursor{&g, e, pos};
-        cursor.normalize_prefix_to_suffix();
-        return cursor;
+        std::vector<DebruijnGraphCursor> result;
+        cursor.generate_normalized_cursors(result);
+        return result;
     }
 
     static std::vector<DebruijnGraphCursor> all(const debruijn_graph::ConjugateDeBruijnGraph &g);
 
   private:
     void normalize_prefix_to_suffix() {
+        // This method is used ONLY in all() generators for duplicates merging
+        // normalization is not one-valued, but for duplicates deletion it's sufficient to normalize to any of normal variants
+        // Also please not that in terms of next() all normalized versions are equivalent
+        // Thus, for initial cursors we can (and should!) perform even more aggressive normalization "to brother":
+        // if we are in vertex, replace the edge with the edge having the least id among all ingoing edges.
         while (position_ < g_->k() && g_->IncomingEdgeCount(g_->EdgeStart(e_)) > 0) {
             e_ = *g_->in_begin(g_->EdgeStart(e_));
             position_ = g_->length(e_) + position_;
+        }
+    }
+
+    void generate_normalized_cursors(std::vector<DebruijnGraphCursor> &out) const {
+        if (position_ < g_->k() && g_->IncomingEdgeCount(g_->EdgeStart(e_)) > 0) {
+            EdgeId new_e = *g_->in_begin(g_->EdgeStart(e_));
+            size_t new_position = g_->length(e_) + position_;
+            DebruijnGraphCursor cursor{g_, new_e, new_position};
+            cursor.generate_normalized_cursors(out);
+        } else {
+            out.push_back(*this);
         }
     }
 
