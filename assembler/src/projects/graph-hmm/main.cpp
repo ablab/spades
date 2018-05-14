@@ -41,6 +41,7 @@
 #include <regex>
 
 #include <llvm/ADT/iterator_range.h>
+#include <type_traits>
 
 extern "C" {
     #include "easel.h"
@@ -178,22 +179,37 @@ void DrawComponent(const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBr
                    labeler);
 }
 
+
+template <typename... Ts> using void_t = void;
+
+template <typename T, typename = void>
+struct has_edge_method : std::false_type {};
+
+template <typename T>
+struct has_edge_method<T, void_t<decltype(T{}.edge())>> : std::true_type {};
+
 template<class GraphCursor>
-std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<GraphCursor> &cpath) {
+std::enable_if_t<has_edge_method<GraphCursor>::value, std::vector<typename GraphCursor::EdgeId>> to_path(const std::vector<GraphCursor> &cpath) {
+    static_assert(has_edge_method<GraphCursor>::value);
     std::vector<typename GraphCursor::EdgeId> path;
 
     size_t count = 0;
-    for (auto it = cpath.begin(); it != cpath.end(); ++it) {
-        for (auto e : it->edges())
-            if (path.empty() || e != path.back()) {
-                path.push_back(e);
-                count = 1;
-            } else {
-                ++count;
-            }
+    for (auto cursor : cpath) {
+        const auto e = cursor.edge();
+        if (path.empty() || e != path.back()) {
+            path.push_back(e);
+            count = 1;
+        } else {
+            ++count;
+        }
     }
 
     return path;
+}
+
+template<class GraphCursor>
+std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<AAGraphCursor<GraphCursor>> &cpath) {
+    return to_path(to_nucl_path(cpath));
 }
 
 using debruijn_graph::EdgeId;
