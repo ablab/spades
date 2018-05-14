@@ -437,6 +437,7 @@ struct HMMPathInfo {
     unsigned priority;
     double score;
     std::string seq;
+    std::string nuc_seq;
     std::vector<EdgeId> path;
     std::string alignment;
 
@@ -444,9 +445,10 @@ struct HMMPathInfo {
         return score < that.score;
     }
 
-    HMMPathInfo(std::string name, unsigned prio, double sc, std::string s, std::vector<EdgeId> p, std::string alignment)
+    HMMPathInfo(std::string name, unsigned prio, double sc, std::string s, std::string nuc_s, std::vector<EdgeId> p, std::string alignment)
             : hmmname(std::move(name)), priority(prio), score(sc),
-              seq(std::move(s)), path(std::move(p)), alignment(std::move(alignment)) {}
+              seq(std::move(s)), nuc_seq{std::move(nuc_s)},
+              path(std::move(p)), alignment(std::move(alignment)) {}
 };
 
 void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
@@ -467,6 +469,16 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
             }
         }
 
+        // TODO merge these blocks
+        {
+            std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".nucs.fa", std::ios::out);
+            for (const auto &result : results) {
+                if (result.seq.size() == 0)
+                    continue;
+                o << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << '\n';
+                io::WriteWrapped(result.nuc_seq, o);
+            }
+        }
         // {
         //     std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".fa", std::ios::out);
         //     for (const auto &result : results) {
@@ -598,6 +610,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             auto seq = top_paths.str(annotated_path.path);
             auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, fees));
             auto nucl_path = to_nucl_path(annotated_path.path);
+            std::string nucl_seq = top_paths.str(nucl_path);
             DEBUG_ASSERT(check_path_continuity(nucl_path), main_assert{}, debug_assert::level<2>{});
             auto edge_path = to_path(nucl_path);
             DEBUG_ASSERT(!edge_path.empty(), main_assert{});
@@ -607,7 +620,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                 ERROR("AA: " << edge_path_aas);
             }
             DEBUG_ASSERT(edge_path == edge_path_aas, main_assert{}, debug_assert::level<2>{});
-            local_results.emplace_back(p7hmm->name, idx++, annotated_path.score, seq, std::move(edge_path), std::move(alignment));
+            local_results.emplace_back(p7hmm->name, idx++, annotated_path.score, seq, nucl_seq, std::move(edge_path), std::move(alignment));
         }
     };
 
