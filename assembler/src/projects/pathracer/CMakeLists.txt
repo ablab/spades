@@ -4,7 +4,7 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(graph-hmm CXX)
+project(pathracer CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
