@@ -38,7 +38,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
-#include <regex>
 
 #include <llvm/ADT/iterator_range.h>
 #include <type_traits>
@@ -78,10 +77,17 @@ std::string join(const Range &range, const Sep &sep) {
     return ss.str();
 }
 
+enum class mode {
+    hmm,
+    nucl,
+    aa
+};
+
 struct cfg {
     std::string load_from = "";
     std::string hmmfile = "";
     std::string output_dir = "";
+    mode mode = mode::hmm;
     size_t k = 0;
     int threads = 4;
     size_t top = 100;
@@ -113,10 +119,13 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
   using namespace clipp;
 
   auto cli = (
-      cfg.hmmfile    << value("hmm file"),
+      cfg.hmmfile    << value("input file (HMM or sequence)"),
       cfg.load_from  << value("load from"),
       cfg.k          << integer("k-mer size"),
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
+      one_of(option("-hmm").set(cfg.mode, mode::hmm) % "match against HMM(s)",
+             option("-nucl").set(cfg.mode, mode::nucl) % "match against nucleotide string(s)",
+             option("-aa").set(cfg.mode, mode::aa) % "match agains amino acid string(s)"),
       (option("--top") & integer("x", cfg.top)) % "extract top x paths (default: 100)",
       (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
       (option("--edge_id") & integer("value", cfg.int_id)) % "match around edge",
@@ -365,22 +374,27 @@ std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
 }
 
 
-std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename) {
+std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, mode mode) {
     std::vector<hmmer::HMM> res;
-    hmmer::HMMSequenceBuilder builder(hmmer::Alphabet::DNA,
+    hmmer::HMMSequenceBuilder builder(mode == mode::nucl ? hmmer::Alphabet::DNA : hmmer::Alphabet::AMINO,
                                       hmmer::ScoreSystem::Default);
 
-    ESL_ALPHABET   *abc  = esl_alphabet_Create(eslDNA);
+    ESL_ALPHABET   *abc  = esl_alphabet_Create(mode == mode::nucl ? eslDNA : eslAMINO);
     ESL_SQ         *qsq  = esl_sq_CreateDigital(abc);
     ESL_SQFILE     *qfp  = NULL;
     const char *qfile = filename.c_str();
 
     // Open the query sequence file in FASTA format
     int status = esl_sqfile_Open(qfile, eslSQFILE_FASTA, NULL, &qfp);
-    if      (status == eslENOTFOUND) esl_fatal("No such file %s.", qfile);
-    else if (status == eslEFORMAT)   esl_fatal("Format of %s unrecognized.", qfile);
-    else if (status == eslEINVAL)    esl_fatal("Can't autodetect stdin or .gz.");
-    else if (status != eslOK)        esl_fatal("Open of %s failed, code %d.", qfile, status);
+    if      (status == eslENOTFOUND) {
+        FATAL_ERROR("No such file " << filename);
+    } else if (status == eslEFORMAT) {
+        FATAL_ERROR("Format of " << filename << " unrecognized.");
+    } else if (status == eslEINVAL) {
+        FATAL_ERROR("Can't autodetect stdin or .gz.");
+    } else if (status != eslOK) {
+        FATAL_ERROR("Open of " << filename << " failed, code " << status);
+    }
 
     // For each sequence, build a model and save it.
     while ((status = esl_sqio_Read(qfp, qsq)) == eslOK) {
@@ -388,7 +402,9 @@ std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename) {
         res.push_back(builder.from_string(qsq));
         esl_sq_Reuse(qsq);
     }
-    if (status != eslEOF) esl_fatal("Unexpected error %d reading sequence file %s", status, qfp->filename);
+    if (status != eslEOF) {
+        FATAL_ERROR("Unexpected error " << status << " reading sequence file " << filename);
+    }
 
     esl_sq_Destroy(qsq);
     esl_sqfile_Close(qfp);
@@ -702,18 +718,16 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
 }
 
-bool is_sequence_filename(const std::string &filename) {
-    using namespace std::regex_constants;
-    std::regex re(".*\\.f(ast)?(a|q)(\\.gz|\\.bz2)?", icase);
-    return std::regex_match(filename.c_str(), re);
-}
-
 void hmm_main(const cfg &cfg,
               const debruijn_graph::ConjugateDeBruijnGraph &graph,
               const std::vector<EdgeId> &edges,
               std::unordered_set<std::vector<EdgeId>> &to_rescore,
               std::set<std::pair<std::string, std::vector<EdgeId>>> &gfa_paths) {
-    auto hmms = is_sequence_filename(cfg.hmmfile) ? ParseFASTAFile(cfg.hmmfile) : ParseHMMFile(cfg.hmmfile);
+    std::vector<hmmer::HMM> hmms;
+    if (cfg.mode == mode::hmm)
+        hmms = ParseHMMFile(cfg.hmmfile);
+    else
+        hmms = ParseFASTAFile(cfg.hmmfile, cfg.mode);
 
     // Outer loop: over each query HMM in <hmmfile>.
     omp_set_num_threads(cfg.threads);
