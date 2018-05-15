@@ -703,7 +703,8 @@ void TraceHMM(const hmmer::HMM &hmm,
 }
 
 bool is_sequence_filename(const std::string &filename) {
-    std::regex re(".*\\.f(ast)?(a|q)(\\.gz|\\.bz2)?");
+    using namespace std::regex_constants;
+    std::regex re(".*\\.f(ast)?(a|q)(\\.gz|\\.bz2)?", icase);
     return std::regex_match(filename.c_str(), re);
 }
 
