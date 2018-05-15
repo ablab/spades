@@ -22,8 +22,9 @@ except OSError as e:
 
 name=os.path.join(outdir, name_file)
 
-hmm= "/Nancy/mrayko/db/pfam/Pfam-A.hmm"
-list378="/Nancy/mrayko/jgi_10k/plasmid_hmm_list.txt"
+#hmm= "/Nancy/mrayko/db/pfam/Pfam-A.hmm"
+hmm= "/Nancy/mrayko/db/plasmid_specific_pfam/378_10fold_plasmid_HMMs.hmm"
+list378="/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/378_hmms.txt" 
 blastdb=" /Bmo/ncbi_nt_database/nt"
 
 
