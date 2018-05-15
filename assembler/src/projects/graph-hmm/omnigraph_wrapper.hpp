@@ -79,10 +79,11 @@ class DebruijnGraphCursor {
 
     void generate_normalized_cursors(std::vector<DebruijnGraphCursor> &out) const {
         if (position_ < g_->k() && g_->IncomingEdgeCount(g_->EdgeStart(e_)) > 0) {
-            EdgeId new_e = *g_->in_begin(g_->EdgeStart(e_));
-            size_t new_position = g_->length(e_) + position_;
-            DebruijnGraphCursor cursor{g_, new_e, new_position};
-            cursor.generate_normalized_cursors(out);
+            for (EdgeId new_e : g_->IncomingEdges(g_->EdgeStart(e_))) {
+                size_t new_position = g_->length(new_e) + position_;
+                DebruijnGraphCursor cursor{g_, new_e, new_position};
+                cursor.generate_normalized_cursors(out);
+            }
         } else {
             out.push_back(*this);
         }
