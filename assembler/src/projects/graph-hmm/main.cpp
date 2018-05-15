@@ -84,7 +84,7 @@ struct cfg {
     std::string output_dir = "";
     size_t k = 0;
     int threads = 4;
-    size_t top = 10;
+    size_t top = 100;
     uint64_t int_id = 0;
     unsigned max_size = 10000000;
     bool debug = false;
@@ -117,7 +117,7 @@ void process_cmdline(int argc, char **argv, cfg &cfg) {
       cfg.load_from  << value("load from"),
       cfg.k          << integer("k-mer size"),
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
-      (option("--top") & integer("x", cfg.top)) % "extract top x paths",
+      (option("--top") & integer("x", cfg.top)) % "extract top x paths (default: 100)",
       (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
       (option("--edge_id") & integer("value", cfg.int_id)) % "match around edge",
       (option("--max_size") & integer("value", cfg.max_size)) % "maximal component size to consider (default: 10000000)",
