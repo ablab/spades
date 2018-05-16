@@ -67,12 +67,12 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       cfg.outfile << value("output filename"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("-tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
+      (option("-tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
       (option("-b") & integer("value", cfg.buff_size)) % "sorting buffer size, per thread",
-      one_of(option("-unitigs").set(cfg.mode, output_type::unitigs) % "produce unitigs (default)",
-             option("-fastg").set(cfg.mode, output_type::fastg) % "produce graph in FASTG format",
-             option("-gfa").set(cfg.mode, output_type::gfa) % "produce graph in GFA1 format",
-             option("-spades").set(cfg.mode, output_type::spades) % "produce graph in SPAdes internal format")
+      one_of(option("--unitigs").set(cfg.mode, output_type::unitigs) % "produce unitigs (default)",
+             option("--fastg").set(cfg.mode, output_type::fastg) % "produce graph in FASTG format",
+             option("--gfa").set(cfg.mode, output_type::gfa) % "produce graph in GFA1 format",
+             option("--spades").set(cfg.mode, output_type::spades) % "produce graph in SPAdes internal format")
   );
 
   auto result = parse(argc, argv, cli);
