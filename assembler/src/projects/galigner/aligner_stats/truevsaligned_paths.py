@@ -116,15 +116,14 @@ def cnt_problembwa(truepaths, alignedpaths):
             continue
         j = 0
         total_path += 1
-        for e in truepaths[r]["path"]:
-            if j < len(alignedpaths[r]["bwa_path"]) and e == alignedpaths[r]["bwa_path"][j]:
+        # for e in truepaths[r]["path"]:
+        #     if j < len(alignedpaths[r]["bwa_path"]) and e == alignedpaths[r]["bwa_path"][j]:
+        #         j += 1
+        for e in alignedpaths[r]["bwa_path"]:
+            if e in truepaths[r]["path"]:
                 j += 1
-        if j < len(alignedpaths[r]["bwa_path"]):
+        if j < len(alignedpaths[r]["bwa_path"]) :
             res += 1
-            # print r
-            # print truepaths[r]["path"]
-            # print alignedpaths[r]["bwa_path"] 
-            # print alignedpaths[r]["path"]
     return res
 
 def get_bwa_inds(path, bwapath):
@@ -157,36 +156,43 @@ def is_unique(path, subpath):
     return True
 
 
-def is_wrong_start(truepath, path, true_ind, ind, edgelen, K):
+def is_wrong_start(truepath, path, true_ind, ind, edgelen, aedgelen, K):
     empty = False
     if truepath[true_ind[0]: true_ind[1]] == path[ind[0]: ind[1]] :
         return [False, empty]
     else:
-        # s = 0
-        # for j in xrange(true_ind[0], true_ind[1] + 1):
-        #     if truepath[j: true_ind[1]] == path[ind[0]: ind[1]] and s < K + 1:
-        #         return [False, empty]
-        #     if j < len(edgelen):
-        #         s += edgelen[j]
+        i = ind[1]
+        j = true_ind[1]
+        while i >=0 and j >=0 and path[i] == truepath[j]:
+            i -= 1
+            j -= 1
+        if len(edgelen[:j]) == 0:
+            if sum([int(x) for x in aedgelen[i:]]) < K:    
+                return [False, empty]
         if len(path[ind[0]: ind[1]]) == 0:
             empty = True
         return [True, empty]
 
-def is_wrong_end(truepath, path, true_ind, ind, edgelen, K):
+def is_wrong_end(r, truepath, path, true_ind, ind, edgelen, aedgelen, K):
     empty = False
-    if truepath[true_ind[-2]: true_ind[-1]] == path[ind[-2]: ind[-1]] :
+    if truepath[true_ind[-2]: true_ind[-1]] == path[ind[-2]: ind[-1]] or set(truepath[true_ind[-2]: true_ind[-1]]) == set(path[ind[-2]: ind[-1]]) :
         return [False, empty]
     else:
-        # for j in xrange(true_ind[-2] + 1, true_ind[-1] + 1):
-        #     s = 0
-        #     for it in edgelen[j:]:
-        #         s += it
-        #     if truepath[true_ind[-2]: j] == path[ind[-2]: ind[-1]] and s < K + 1:
-        #         print "Found wrong end"
-        #         print truepath[true_ind[-2]: true_ind[-1]]
-        #         print path[ind[-2]: ind[-1]] 
-        #         return [False, empty]
-
+        i = ind[-2]
+        j = true_ind[-2]
+        while i < len(path) and j < len(truepath) and path[i] == truepath[j]:
+            i += 1
+            j += 1
+        
+        if len(edgelen[j:]) == 0:
+            print r
+            print truepath[j:]
+            print  aedgelen[i:], sum([int(x) for x in aedgelen[i:]])
+            print truepath[true_ind[-2]: true_ind[-1]], path[ind[-2]: ind[-1]]
+            print ""
+            if sum([int(x) for x in aedgelen[i:]]) < K:  
+                print "WOW" 
+                return [False, empty]
         if len(path[ind[-2]: ind[-1]]) == 1:
             empty = True
         return [True, empty]
@@ -218,14 +224,14 @@ def cnt_wronglyclosedgaps(truepaths, alignedpaths, K):
         else:
             true_ind = get_bwa_inds(truepaths[r]["path"], alignedpaths[r]["bwa_path"])
             aligned_ind = get_bwa_inds_aligned(alignedpaths[r]["edge_tag"])
-            has_wrong_start, empty = is_wrong_start(truepaths[r]["path"], alignedpaths[r]["path"], true_ind, aligned_ind, truepaths[r]["edgelen"], K)
+            has_wrong_start, empty = is_wrong_start(truepaths[r]["path"], alignedpaths[r]["path"], true_ind, aligned_ind, truepaths[r]["edgelen"], alignedpaths[r]["edgelen"], K)
             if has_wrong_start:
                 if empty:
                     res_start_empty += 1
                 else:
                     res_start += 1
 
-            has_wrong_end, empty = is_wrong_end(truepaths[r]["path"], alignedpaths[r]["path"], true_ind, aligned_ind, truepaths[r]["edgelen"], K)
+            has_wrong_end, empty = is_wrong_end(r, truepaths[r]["path"], alignedpaths[r]["path"], true_ind, aligned_ind, truepaths[r]["edgelen"], alignedpaths[r]["edgelen"], K)
             if has_wrong_end:
                 if empty:
                     res_end_empty += 1
@@ -386,7 +392,7 @@ for fl in aligned_files:
                  "Path is wrong. BWA hits uncertainty (#reads)": str(unknown - bwa_problems) + " (" + str((unknown - bwa_problems)*100/(len(reads) - badideal)) + "%)" ,\
                  "Resulting BWA hits failure (#reads)": str(bwa_problems) + " (" + str(bwa_problems*100/(len(reads) - badideal)) + "%)", \
                  "Gap stage failure (#reads)": str(wrong_gaps) + " + " + str(wrong_gap_empty) + "(didn't closed)" + " (" + str((wrong_gaps +  wrong_gap_empty)*100/(len(reads) - badideal)) + "%)", \
-                 "Incorrect prefix/suffix (#reads)" : str(wrong_start + wrong_start_empty) + "/" + str(wrong_end + wrong_end_empty) + " (" + str((wrong_start + wrong_start_empty + wrong_end + wrong_end_empty)*100/(len(reads) - badideal)) + "%)", \
+                 "Incorrect prefix/suffix (#reads)" : str(str(wrong_start) + "+" + str(wrong_start_empty)) + " / " + str(str(wrong_end) + "+" + str(wrong_end_empty)) + " (" + str((wrong_start + wrong_start_empty + wrong_end + wrong_end_empty)*100/(len(reads) - badideal)) + "%)", \
                  "Median length(in nucs) of skipped prefix/suffix/both" : \
                  str(med_prefix) + "/" + str(med_suffix) + "/" + str(med_sum)}
 
