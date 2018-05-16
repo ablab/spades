@@ -183,7 +183,8 @@ public:
                    , start_p_(start_p)
                    , path_max_length_(path_max_length)
                    , queue_limit_(gap_cfg_.queue_limit)
-                   , iter_limit_(gap_cfg_.iteration_limit){
+                   , iter_limit_(gap_cfg_.iteration_limit)
+                   , return_code_(0){
             best_ed_.resize(ss_.size(), path_max_length_);
             AddNewEdge(GraphState(start_e_, start_p_, (int) g_.length(start_e_)), QueueState(), 0);
             min_score_ = -1;
@@ -196,6 +197,12 @@ public:
                 QueueState cur_state = q_.begin()->second;
                 int ed = visited_[cur_state];
                 if (q_.size() > queue_limit_ || i > iter_limit_) {
+                    if (q_.size() > queue_limit_) {
+                        return_code_ += 8;
+                    }
+                    if (i > iter_limit_) {
+                        return_code_ += 16;
+                    }
                     if (visited_.count(end_qstate_) > 0){
                         found_path = true;
                         min_score_ = visited_[end_qstate_];
@@ -216,6 +223,9 @@ public:
                     if (!gap_cfg_.find_shortest_path && found_path) break;
                 }
                 if (!gap_cfg_.find_shortest_path && found_path) break;
+            }
+            if (!found_path) {
+                return_code_ += 32;
             }
             if (found_path) {
                 QueueState state = end_qstate_;
@@ -243,6 +253,10 @@ public:
 
         int GetEditDistance() const {
             return min_score_;
+        }       
+
+        int GetReturnCode() const {
+            return return_code_;
         }       
 
         int GetPathEndPosition() const {
@@ -274,6 +288,7 @@ protected:
         int path_max_length_;
         int min_score_;
         QueueState end_qstate_;
+        int return_code_;
 
         const size_t queue_limit_;
         const size_t iter_limit_;

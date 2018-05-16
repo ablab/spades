@@ -680,7 +680,7 @@ public:
                                   VertexId start_v, VertexId end_v, 
                                   EdgeId start_e, EdgeId end_e,
                                   const int edge_start_pos, const int edge_end_pos,
-                                  const int seq_start_pos, const int seq_end_pos, int path_max_length, int &score) const {
+                                  const int seq_start_pos, const int seq_end_pos, int path_max_length, int &score, int &return_code_dijkstra) const {
 
         auto path_searcher_b = omnigraph::DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(g_, path_max_length);
         path_searcher_b.Run(end_v);
@@ -705,11 +705,21 @@ public:
         if (vertex_pathlen.size() == 0 || ((size_t) s_len) > pb_config_.max_contigs_gap_length || vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap){
             DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
             score = STRING_DIST_INF;
+            if (vertex_pathlen.size() == 0) {
+                return_code_dijkstra = 1;
+            }
+            if (((size_t) s_len) > pb_config_.max_contigs_gap_length) {
+                return_code_dijkstra += 2;
+            }
+            if (vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap) {
+                return_code_dijkstra += 4;
+            }
             return vector<EdgeId>(0);
         }
         DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, gap_cfg_, ss.str(), start_e, end_e, edge_start_pos, edge_end_pos, path_max_length, vertex_pathlen);
         gap_filler.CloseGap();
         score = gap_filler.GetEditDistance();
+        return_code_dijkstra += gap_filler.GetReturnCode();
         if (score == -1){
             DEBUG("Dijkstra didn't find anything")
             score = STRING_DIST_INF;
@@ -807,19 +817,21 @@ public:
         std::vector<EdgeId> path = BestScoredPathBruteForce(s, start_v, end_v, 
                                                                path_min_length, path_max_length,
                                                                seq_start_pos, seq_end_pos, s_add, e_add, score, return_code);
-        INFO("BruteForce run: return_code=" << return_code << " len=" << seq_end_pos - seq_start_pos << " score=" << score)
         int score_bf = score;
         if (gap_cfg_.run_dijkstra){
-            std::vector<EdgeId> path = BestScoredPathDijkstra(s, start_v, end_v, 
+            int return_code_dijkstra = 0;
+            std::vector<EdgeId> path_dijkstra = BestScoredPathDijkstra(s, start_v, end_v, 
                                                                 start_e, end_e, edge_start_pos, edge_end_pos, 
                                                                 seq_start_pos, seq_end_pos, 
-                                                                path_max_length, score);
-            INFO("Dijsktra score=" << score << " BF score=" << score_bf)
-            if (path.size() > 1) {
-                std::vector<EdgeId> short_path(path.begin() + 1, path.end() - 1);
+                                                                path_max_length, score, return_code_dijkstra);
+            INFO("BruteForce run: return_code=" << return_code << " score=" << score_bf 
+                 << "\nDijkstra run: return_code=" << return_code_dijkstra << " score=" << score <<"\nlen=" << seq_end_pos - seq_start_pos << "\n")
+            if (path_dijkstra.size() > 1) {
+                std::vector<EdgeId> short_path(path_dijkstra.begin() + 1, path_dijkstra.end() - 1);
                 return short_path;
             } else {
-                return std::vector<EdgeId>();
+                score = score_bf;
+                return path;
             }
         } 
         return path;
