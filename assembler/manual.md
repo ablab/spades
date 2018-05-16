@@ -976,7 +976,7 @@ The options are:
     k-mer length (default: 21)
 
 `-t, --threads <int> `
-    number of threads to use (default: 120)
+    number of threads to use (default: number of CPUs)
 
 `-w, --workdir dir <dir name> `
     working directory to use (default: current directory)
