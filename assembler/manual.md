@@ -960,7 +960,6 @@ plasmidSPAdes outputs only DNA sequences from putative plasmids. Output file nam
 <a name="sec4">
 # Stand-alone binaries released within SPAdes package
 
-
 <a name="sec4.1"></a>
 ## k-mer counting
 
@@ -993,9 +992,7 @@ The options are:
 ## Graph construction
 Graph construction tool `spades-gbuilder ` has two mandatory options: dataset description file in [YAML format](#yaml) and an output file name.
 
-Synopsis: ```
- spades-gbuilder <dataset description (in YAML)> <output filename> [-k <value>] [-t <value>] [-tmpdir <dir>] [-b <value>] [-unitigs|-fastg|-gfa|-spades]
-```
+Synopsis: `spades-gbuilder <dataset description (in YAML)> <output filename> [-k <value>] [-t <value>] [-tmpdir <dir>] [-b <value>] [-unitigs|-fastg|-gfa|-spades]`
 
 Additional options are:
 
