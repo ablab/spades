@@ -87,7 +87,7 @@ struct cfg {
     std::string load_from = "";
     std::string hmmfile = "";
     std::string output_dir = "";
-    mode mode = mode::hmm;
+    enum mode mode = mode::hmm;
     size_t k = 0;
     int threads = 4;
     size_t top = 100;
@@ -374,7 +374,7 @@ std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
 }
 
 
-std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, mode mode) {
+std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, enum mode mode) {
     std::vector<hmmer::HMM> res;
     hmmer::HMMSequenceBuilder builder(mode == mode::nucl ? hmmer::Alphabet::DNA : hmmer::Alphabet::AMINO,
                                       hmmer::ScoreSystem::Default);
