@@ -56,6 +56,10 @@ struct GraphState {
         return (this->e < state.e || (this->e == state.e && this->start_pos < state.start_pos) 
                                   || (this->e == state.e && this->start_pos == state.start_pos && this->end_pos < state.end_pos));
     }
+
+    string str() const {
+        return "edge_id=" + std::to_string(e.int_id()) + " " + std::to_string(start_pos) + "-" + std::to_string(end_pos);
+    }
 };
 
 
@@ -91,9 +95,12 @@ struct QueueState {
         return (this->i < state.i || (this->i == state.i && this->gs < state.gs) );
     }
 
-    bool empty()
-    {
+    bool empty() const {
         return *this == QueueState();
+    }
+
+    string str() const {
+        return gs.str() + " seq_ind=" + std::to_string(i);
     }
 };
 
@@ -104,7 +111,7 @@ protected:
         bool ShouldUpdateQueue(int seq_ind, int ed)
         {
             //return true;
-            if (seq_ind == -1){
+            if (seq_ind == -1 || (seq_ind == ss_.size() && ed <= path_max_length_)){
                 return true;
             }
             VERIFY(seq_ind < (int) ss_.size())
@@ -157,7 +164,7 @@ protected:
                     QueueState state(gs, prev_state.i);
                     Update(state, prev_state,  ed + (int) edge_str.size());
                 }
-                if (ss_.size() - (prev_state.i + 1) > 0) {
+                //if (ss_.size() - (prev_state.i + 1) > 0) {
                     SHWDistance(seq_str, edge_str, path_max_length_ - ed, positions, scores);
                     for (size_t i = 0; i < positions.size(); ++ i) {
                         if (positions[i] >= 0 && scores[i] >= 0) {
@@ -165,7 +172,7 @@ protected:
                             Update(state, prev_state, ed + scores[i]);
                         }
                     }
-                }
+                //}
             }
         }
 
@@ -309,7 +316,7 @@ private:
                     GraphState next_state(e, 0, (int) g_.length(e) );
                     AddNewEdge(next_state, cur_state, ed);
                 }
-                if (e == end_e_ && path_max_length_ - ed >= 0 && cur_state.i + 1 < (int) ss_.size()){
+                if (e == end_e_ && path_max_length_ - ed >= 0 && cur_state.i < (int) ss_.size()){
                     string seq_str = ss_.substr(cur_state.i + 1);
                     string tmp = g_.EdgeNucls(e).str();
                     string edge_str = tmp.substr(0, end_p_);

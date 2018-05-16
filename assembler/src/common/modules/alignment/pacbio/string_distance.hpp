@@ -47,7 +47,14 @@ inline void SHWDistance(string &target, string &query, int max_score, vector<int
             positions.push_back(i);
             scores.push_back(i + 1);
         }
-       return;
+        return;
+    }
+    if (target.size() == 0){
+        if (query.size() <= max_score) {
+		positions.push_back(0);
+        	scores.push_back(query.size());
+        }
+        return;
     }
     VERIFY(target.size() > 0)
     edlib::EdlibEqualityPair additionalEqualities[36] = {{'U', 'T'}
