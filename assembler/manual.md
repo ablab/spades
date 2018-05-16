@@ -957,7 +957,7 @@ plasmidSPAdes outputs only DNA sequences from putative plasmids. Output file nam
 []()
 
 
-<a name="sec4">
+<a name="sec4"></a>
 # Stand-alone binaries released within SPAdes package
 
 <a name="sec4.1"></a>
