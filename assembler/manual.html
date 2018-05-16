@@ -1193,7 +1193,9 @@ we append suffix <code>_component_X</code>, where <code>X</code> is the id of th
 
 To provide input data to SPAdes k-mer counting tool <code>spades-kmercounter</code> you may just specify files in <a href="#sec3.1">SPAdes-supported formats</a> without any flags (after all options) or provide dataset description file in <a href="#yaml">YAML format</a>.
 
-The options are:
+<p> Synopsis: <code>spades-kmercount [OPTION...] &lt;input files></code>
+
+<p>The options are:
 
 <p>
     <code>-d, --dataset file &lt;file name></code><br>
@@ -1209,7 +1211,7 @@ The options are:
 </p>
 <p>
     <code>-w, --workdir dir &lt;dir name></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;working directory to use (default: .)
+    &nbsp;&nbsp;&nbsp;&nbsp;working directory to use (default: current directory)
 
 </p>
 <p>
@@ -1226,6 +1228,8 @@ The options are:
 <a name="sec4.2">
 <h3>4.2 Graph construction</h3>
 <p> Graph construction tool <code>spades-gbuilder</code> has two mandatory options: dataset description file in <a href="#yaml">YAML format</a> and an output file name.
+
+<p> Synopsis: <code>spades-gbuilder &lt;dataset description (in YAML)> &lt;output filename> [-k &lt;value>] [-t &lt;value>] [-tmpdir &lt;dir>] [-b &lt;value>] [-unitigs|-fastg|-gfa|-spades]</code>
 
 <p> Additional options are:
 <p>
@@ -1272,6 +1276,8 @@ The options are:
 <a name="sec4.3">
 <h3>4.3 Long read to graph aligner</h3>
 <p> A tool for aligning long reads to the graph <code>spades-gmapper</code> has three mandatory options: dataset description file in <a href="#yaml">YAML format</a>, graph file in GFA format and an output file name.
+
+<p>Synopsis: <code>spades-gmapper &lt;dataset description (in YAML)> &lt;graph (in GFA)> &lt;output filename> [-k &lt;value>] [-t &lt;value>] [-tmpdir &lt;dir>]</code>
 
 <p> Additional options are:
 <p>
