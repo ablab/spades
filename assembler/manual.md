@@ -18,8 +18,12 @@
     3.5. [SPAdes output](#sec3.5)</br>
     3.6. [plasmidSPAdes output](#sec3.6)</br>
     3.7. [Assembly evaluation](#sec3.7)</br>
-4. [Citation](#sec4)</br>
-5. [Feedback and bug reports](#sec5)</br>
+4. [Stand-alone binaries released within SPAdes package](#sec4)</br>
+    4.1. [k-mer counting](#sec4.1)</br>
+    4.2. [Graph construction](#sec4.2)</br>
+    4.3. [Long read to graph aligner](#sec4.3)</br>
+5. [Citation](#sec5)</br>
+6. [Feedback and bug reports](#sec6)</br>
 
 <a name="sec1"></a>
 # About SPAdes
@@ -35,11 +39,13 @@ Version 3.12.0 of SPAdes supports paired-end reads, mate-pairs and unpaired read
 
 SPAdes 3.12.0 includes the following additional pipelines:
 
--   dipSPAdes – a module for assembling highly polymorphic diploid genomes (see [dipSPAdes manual](dipspades_manual.html)).
 -   metaSPAdes – a pipeline for metagenomic data sets (see [metaSPAdes options](#meta)).
 -   plasmidSPAdes – a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmidSPAdes options](#plasmid)).
 -   rnaSPAdes – a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](rnaspades_manual.html)).
 -   truSPAdes – a module for TruSeq barcode assembly (see [truSPAdes manual](truspades_manual.html)).
+-   dipSPAdes – a module for assembling highly polymorphic diploid genomes (deprecated, see [dipSPAdes manual](dipspades_manual.html)).
+
+In addition, we provide several stand-alone binaries with relatively simple command-line interface: [k-mer counting](#sec4.1) (`spades-kmercounter`), [assembly graph construction](#sec4.2) (`spades-gbuilder`) and [long read to graph aligner](#sec4.3) (`spades-gmapper`). To learn options of these tools you can either run them without any parameters or read [this section](#sec4).
 
 []()
 
@@ -384,7 +390,7 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 
 <a name="meta"></a>
 `--meta `   (same as `metaspades.py`)
-    This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see [paper](https://arxiv.org/abs/1604.03071) for more details). Currently metaSPAdes supports only a **_single_** library which has to be **_paired-end_** (we hope to remove this restriction soon). It does not support [careful mode](#correctoropt) (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
+    This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see [paper](https://genome.cshlp.org/content/27/5/824.short) for more details). Currently metaSPAdes supports only a **_single_** library which has to be **_paired-end_** (we hope to remove this restriction soon). In addition, you can provide long reads (e.g. using `--pacbio` or `--nanopore` options), but hybrid assembly for metagenomes remains an experimental pipeline and optimal performance is not guaranteed. It does not support [careful mode](#correctoropt) (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
 
 []()
 
@@ -944,13 +950,91 @@ SPAdes will overwrite these files and directories if they exist in the specified
 
 plasmidSPAdes outputs only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see [previous](#sec3.5) section), with the following difference. For all contig names in `contigs.fasta`, `scaffolds.fasta` and `assembly_graph.fastg` we append suffix `_component_X`, where `X` is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. []()
 
-<a name="sec4.7"></a>
+<a name="sec3.7"></a>
 ## Assembly evaluation
 
 [QUAST](http://cab.spbu.ru/software/quast/) may be used to generate summary statistics (N50, maximum contig length, GC %, \# genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).
 []()
 
-<a name="sec4"></a>
+
+<a name="sec4">
+#Stand-alone binaries released within SPAdes package
+
+
+<a name="sec4.1"></a>
+##k-mer counting
+
+To provide input data to SPAdes k-mer counting tool `spades-kmercounter ` you may just specify files in [SPAdes-supported formats](#sec3.1) without any flags (after all options) or provide dataset description file in [YAML format](#yaml).
+
+The options are:
+
+`-d, --dataset file <file name> `
+    dataset description (in YAML format), input files ignored
+
+`-k, --kmer <int> `
+    k-mer length (default: 21)
+
+`-t, --threads <int> `
+    number of threads to use (default: 120)
+
+`-w, --workdir dir <dir name> `
+    working directory to use (default: .)
+
+`-b, --bufsize <int> `
+    sorting buffer size in bytes, per thread (default 536870912)
+
+`-h, --help `
+    print help message
+
+
+<a name="sec4.2"></a>
+##Graph construction
+Graph construction tool `spades-gbuilder ` has two mandatory options: dataset description file in [YAML format](#yaml) and an output file name.
+
+Additional options are:
+
+`-k <int> `
+    k-mer length used for construction (must be odd)
+
+`-t <int> `
+    number of threads
+
+`-tmpdir <dir_name>  `
+    scratch directory to use
+
+`-b <int> `
+    sorting buffer size (per thread, in bytes)
+
+`-unitigs `
+    k-mer length used for construction (must be odd)
+
+`-fastg `
+    output graph in FASTG format
+
+`-gfa `
+    output graph in GFA1 format
+
+`-spades `
+    output graph in SPAdes internal format
+
+
+<a name="sec4.3"></a>
+##Long read to graph aligner
+A tool for aligning long reads to the graph `spades-gmapper ` has three mandatory options: dataset description file in [YAML format](#yaml), graph file in GFA format and an output file name.
+
+Additional options are:
+
+`-k <int> `
+    k-mer length that was used for graph construction
+
+`-t <int> `
+    number of threads
+
+`-tmpdir <dir_name>  `
+    scratch directory to use
+
+
+<a name="sec5"></a>
 # Citation
 
 If you use SPAdes in your research, please include [Nurk, Bankevich et al., 2013](http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13) in your reference list. You may also add [Bankevich, Nurk et al., 2012](http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021) instead.
@@ -962,7 +1046,7 @@ For the information about dipSPAdes and truSPAdes papers see [dipSPAdes manual](
 In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <spades.support@cab.spbu.ru>.
 []()
 
-<a name="sec5"></a>
+<a name="sec6"></a>
 # Feedback and bug reports
 
 Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes. If you have any troubles running SPAdes, please send us `params.txt` and `spades.log` from the directory `<output_dir>`.

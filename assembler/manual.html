@@ -27,8 +27,12 @@
 &nbsp;&nbsp;&nbsp;&nbsp;3.5. <a href="#sec3.5">SPAdes output</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;3.6. <a href="#sec3.6">plasmidSPAdes output</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;3.7. <a href="#sec3.7">Assembly evaluation</a><br>
-4. <a href="#sec4">Citation</a><br>
-5. <a href="#sec5">Feedback and bug reports</a><br>
+4. <a href="#sec4">Stand-alone binaries released within SPAdes package</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;4.1 <a href="#sec4.1">k-mer counting</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;4.2 <a href="#sec4.2">Graph construction</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;4.3 <a href="#sec4.3">Long read to graph aligner</a><br>
+5. <a href="#sec5">Citation</a><br>
+6. <a href="#sec6">Feedback and bug reports</a><br>
 <br>
 
 <a name="sec1"></a>
@@ -47,12 +51,14 @@ SPAdes version 3.12.0 was released under GPLv2 on May 14, 2018 and can be downlo
 <p>
     SPAdes 3.12.0 includes the following additional pipelines:
     <ul>
-        <li>dipSPAdes &ndash; a module for assembling highly polymorphic diploid genomes (see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a>).</li>
         <li>metaSPAdes &ndash; a pipeline for metagenomic data sets (see <a href="#meta">metaSPAdes options</a>). </li>
         <li>plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see <a href="#plasmid">plasmidSPAdes options</a>).</li>
         <li>rnaSPAdes &ndash; a <i>de novo</i> transcriptome assembler from RNA-Seq data (see <a href="rnaspades_manual.html" target="_blank">rnaSPAdes manual</a>).</li>
         <li>truSPAdes &ndash; a module for TruSeq barcode assembly (see <a href="truspades_manual.html" target="_blank">truSPAdes manual</a>). </li>
+        <li>dipSPAdes &ndash; a module for assembling highly polymorphic diploid genomes (deprecated, see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a>).</li>
     </ul>
+
+<p>In addition, we provide several stand-alone binaries with relatively simple command-line interface: <a href="#sec4.1">k-mer counting</a> (<code>spades-kmercounter</code>), <a href="#sec4.2">assembly graph construction</a> (<code>spades-gbuilder</code>) and <a href="#sec4.3">long read to graph aligner</a> (<code>spades-gmapper</code>). To learn options of these tools you can either run them without any parameters or read <a href="#sec4">this section</a>.
 
 <a name="sec1.2"></a>
 <h3>1.2 SPAdes pipeline</h3>
@@ -447,7 +453,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 <a name="meta"></a>
 <p>
     <code>--meta </code> &nbsp; (same as <code>metaspades.py</code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see <a href="https://arxiv.org/abs/1604.03071">paper</a> for more details). Currently metaSPAdes supports only a <b>single</b> library which has to be <b>paired-end</b> (we hope to remove this restriction soon). It does not support <a href="#correctoropt">careful mode</a> (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
+    &nbsp;&nbsp;&nbsp;&nbsp;This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see <a href="https://genome.cshlp.org/content/27/5/824.short">paper</a> for more details). Currently metaSPAdes supports only a <b>single</b> library which has to be <b>paired-end</b> (we hope to remove this restriction soon). In addition, you can provide long reads (e.g. using <code>--pacbio</code> or <code>--nanopore</code> options), but hybrid assembly for metagenomes remains an experimental pipeline and optimal performance is not guaranteed. It does not support <a href="#correctoropt">careful mode</a> (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
 </p>
 
 <a name="plasmid"></a>
@@ -1179,9 +1185,112 @@ we append suffix <code>_component_X</code>, where <code>X</code> is the id of th
 <br>
 
 
-
 <a name="sec4">
-<h2>4. Citation</h2>
+<h2>4. Stand-alone binaries released within SPAdes package</h2>
+
+<a name="sec4.1">
+<h3>4.1 k-mer counting</h3>
+
+To provide input data to SPAdes k-mer counting tool <code>spades-kmercounter</code> you may just specify files in <a href="#sec3.1">SPAdes-supported formats</a> without any flags (after all options) or provide dataset description file in <a href="#yaml">YAML format</a>.
+
+The options are:
+
+<p>
+    <code>-d, --dataset file &lt;file name></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;dataset description (in YAML format), input files ignored
+</p>
+<p>
+    <code>-k, --kmer &lt;int></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;k-mer length (default: 21)
+</p>
+<p>
+    <code>-t, --threads &lt;int></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;number of threads to use (default: 120)
+</p>
+<p>
+    <code>-w, --workdir dir &lt;dir name></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;working directory to use (default: .)
+
+</p>
+<p>
+    <code>-b, --bufsize &lt;int></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;sorting buffer size in bytes, per thread (default 536870912)
+</p>
+
+<p>
+    <code>-h, --help</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;print help message
+</p>
+
+
+<a name="sec4.2">
+<h3>4.2 Graph construction</h3>
+<p> Graph construction tool <code>spades-gbuilder</code> has two mandatory options: dataset description file in <a href="#yaml">YAML format</a> and an output file name.
+
+<p> Additional options are:
+<p>
+    <code>-k &lt;int></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;k-mer length used for construction (must be odd)
+</p>
+
+<p>
+    <code>-t &lt;int></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;number of threads
+</p>
+
+<p>
+    <code>-tmpdir &lt;dir_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;scratch directory to use
+</p>
+
+<p>
+    <code>-b &lt;int></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;sorting buffer size (per thread, in bytes)
+</p>
+
+<p>
+    <code>-unitigs</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;k-mer length used for construction (must be odd)
+</p>
+
+<p>
+    <code>-fastg</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;output graph in FASTG format
+</p>
+
+<p>
+    <code>-gfa</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;output graph in GFA1 format
+</p>
+
+<p>
+    <code>-spades</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;output graph in SPAdes internal format
+</p>
+
+
+<a name="sec4.3">
+<h3>4.3 Long read to graph aligner</h3>
+<p> A tool for aligning long reads to the graph <code>spades-gmapper</code> has three mandatory options: dataset description file in <a href="#yaml">YAML format</a>, graph file in GFA format and an output file name.
+
+<p> Additional options are:
+<p>
+    <code>-k &lt;int></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;k-mer length that was used for graph construction
+</p>
+
+<p>
+    <code>-t &lt;int></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;number of threads
+</p>
+
+<p>
+    <code>-tmpdir &lt;dir_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;scratch directory to use
+</p>
+
+<a name="sec5">
+<h2>5. Citation</h2>
 <p>
     If you use SPAdes in your research, please include <a href="http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13" target="_blank">Nurk, Bankevich et al., 2013</a> in your reference list. You may also add <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" target="_blank">Bankevich, Nurk et al., 2012</a> instead.
 
@@ -1196,8 +1305,8 @@ we append suffix <code>_component_X</code>, where <code>X</code> is the id of th
 <br>
 
 
-<a name="sec5">
-<h2>5. Feedback and bug reports</h2>
+<a name="sec6">
+<h2>6. Feedback and bug reports</h2>
 <p>
     Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes. If you have any troubles running SPAdes, please send us <code>params.txt</code> and <code>spades.log</code> from the directory <code>&lt;output_dir></code>. 
 
