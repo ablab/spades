@@ -1106,7 +1106,7 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
     </ul>
 
 <p>
-   Contigs/scaffolds names in SPAdes output FASTA files have the following format: <br><code>>NODE_3_length_237403_cov_243.207_ID_45</code><br> Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is the sequence length in nucleotides and <code>243.207</code> is the k-mer coverage for the last (largest) k value used. Note that the k-mer coverage is always lower than the read (per-base) coverage. 
+   Contigs/scaffolds names in SPAdes output FASTA files have the following format: <br><code>>NODE_3_length_237403_cov_243.207</code><br> Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is the sequence length in nucleotides and <code>243.207</code> is the k-mer coverage for the last (largest) k value used. Note that the k-mer coverage is always lower than the read (per-base) coverage. 
 
 <p> 
     In general, SPAdes uses two techniques for joining contigs into scaffolds. First one relies on read pairs and tries to estimate the size of the gap separating contigs. The second one relies on the assembly graph: e.g. if two contigs are separated by a complex tandem repeat, that cannot be resolved exactly, contigs are joined into scaffold with a fixed gap size of 100 bp. Contigs produced by SPAdes do not contain N symbols. 
@@ -1114,7 +1114,7 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
 <p>
    To view FASTG and GFA files we recommend to use <a href="http://rrwick.github.io/Bandage/" target="_blank">Bandage visualization tool</a>. Note that sequences stored in <code>assembly_graph.fastg</code> correspond to contigs before repeat resolution (edges of the assembly graph). Paths corresponding to contigs after repeat resolution (scaffolding) are stored in <code>contigs.paths</code> (<code>scaffolds.paths</code>) in the format accepted by Bandage (see <a href="https://github.com/rrwick/Bandage/wiki/Graph-paths" target="_blank">Bandage wiki</a> for details). The example is given below.
 
-<p> Let the contig with the name <code>NODE_5_length_100000_cov_215.651_ID_5</code> consist of the following edges of the assembly graph:
+<p> Let the contig with the name <code>NODE_5_length_100000_cov_215.651</code> consist of the following edges of the assembly graph:
 <pre>
     <code>
     >EDGE_<b>2</b>_length_33280_cov_199.702
@@ -1128,7 +1128,7 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
 Then, <code>contigs.paths</code> will contain the following record:
 <pre>
     <code>
-    NODE_5_length_100000_cov_215.651_ID_5
+    NODE_5_length_100000_cov_215.651
     2+,5-,3+,5-,4+
     </code>
 </pre>
@@ -1137,12 +1137,12 @@ Then, <code>contigs.paths</code> will contain the following record:
 Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are splitted by semicolon at the gap positions. For example, the following record
 <pre>
     <code>
-    NODE_3_length_237403_cov_243.207_ID_45
+    NODE_3_length_237403_cov_243.207
     21-,17-,15+,17-,16+;
     31+,23-,22+,23-,4-
     </code>
 </pre>
-states that <code>NODE_3_length_237403_cov_243.207_ID_45</code> corresponds to the path with 10 edges, but jumps over a gap between edges <code>EDGE_16_length_21503_cov_482.709</code> and <code>EDGE_31_length_140767_cov_220.239</code>.
+states that <code>NODE_3_length_237403_cov_243.207</code> corresponds to the path with 10 edges, but jumps over a gap between edges <code>EDGE_16_length_21503_cov_482.709</code> and <code>EDGE_31_length_140767_cov_220.239</code>.
 
 <p>
 The full list of <code>&lt;output_dir></code> content is presented below: 
@@ -1210,7 +1210,7 @@ To provide input data to SPAdes k-mer counting tool <code>spades-kmercounter</co
     &nbsp;&nbsp;&nbsp;&nbsp;number of threads to use (default: 120)
 </p>
 <p>
-    <code>-w, --workdir dir &lt;dir name></code><br>
+    <code>-w, --workdir &lt;dir name></code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;working directory to use (default: current directory)
 
 </p>

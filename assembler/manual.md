@@ -888,14 +888,14 @@ SPAdes stores all output files in `<output_dir> `, which is set by the user.
 -   `<output_dir>/scaffolds.paths` contains paths in the assembly graph corresponding to scaffolds.fasta (see details below)
 
 Contigs/scaffolds names in SPAdes output FASTA files have the following format:
-`>NODE_3_length_237403_cov_243.207_ID_45`
+`>NODE_3_length_237403_cov_243.207`
 Here `3` is the number of the contig/scaffold, `237403` is the sequence length in nucleotides and `243.207` is the k-mer coverage for the last (largest) k value used. Note that the k-mer coverage is always lower than the read (per-base) coverage.
 
 In general, SPAdes uses two techniques for joining contigs into scaffolds. First one relies on read pairs and tries to estimate the size of the gap separating contigs. The second one relies on the assembly graph: e.g. if two contigs are separated by a complex tandem repeat, that cannot be resolved exactly, contigs are joined into scaffold with a fixed gap size of 100 bp. Contigs produced by SPAdes do not contain N symbols.
 
 To view FASTG and GFA files we recommend to use [Bandage visualization tool](http://rrwick.github.io/Bandage/). Note that sequences stored in `assembly_graph.fastg` correspond to contigs before repeat resolution (edges of the assembly graph). Paths corresponding to contigs after repeat resolution (scaffolding) are stored in `contigs.paths` (`scaffolds.paths`) in the format accepted by Bandage (see [Bandage wiki](https://github.com/rrwick/Bandage/wiki/Graph-paths) for details). The example is given below.
 
-Let the contig with the name `NODE_5_length_100000_cov_215.651_ID_5` consist of the following edges of the assembly graph:
+Let the contig with the name `NODE_5_length_100000_cov_215.651` consist of the following edges of the assembly graph:
 
 ``` plain
     >EDGE_2_length_33280_cov_199.702
@@ -907,20 +907,21 @@ Let the contig with the name `NODE_5_length_100000_cov_215.651_ID_5` consist of 
 
 Then, `contigs.paths` will contain the following record:
 
-
-NODE_5_length_100000_cov_215.651_ID_5
-2+,5-,3+,5-,4+
+``` plain
+    NODE_5_length_100000_cov_215.651
+    2+,5-,3+,5-,4+
+```
 
 
 Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are splitted by semicolon at the gap positions. For example, the following record
 
+``` plain
+    NODE_3_length_237403_cov_243.207
+    21-,17-,15+,17-,16+;
+    31+,23-,22+,23-,4-
+```
 
-NODE_3_length_237403_cov_243.207_ID_45
-21-,17-,15+,17-,16+;
-31+,23-,22+,23-,4-
-
-
-states that `NODE_3_length_237403_cov_243.207_ID_45` corresponds to the path with 10 edges, but jumps over a gap between edges `EDGE_16_length_21503_cov_482.709` and `EDGE_31_length_140767_cov_220.239`.
+states that `NODE_3_length_237403_cov_243.207` corresponds to the path with 10 edges, but jumps over a gap between edges `EDGE_16_length_21503_cov_482.709` and `EDGE_31_length_140767_cov_220.239`.
 
 The full list of `<output_dir>` content is presented below:
 
@@ -978,7 +979,7 @@ The options are:
 `-t, --threads <int> `
     number of threads to use (default: number of CPUs)
 
-`-w, --workdir dir <dir name> `
+`-w, --workdir <dir name> `
     working directory to use (default: current directory)
 
 `-b, --bufsize <int> `
