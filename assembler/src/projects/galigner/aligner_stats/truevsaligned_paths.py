@@ -167,7 +167,7 @@ def is_wrong_start(truepath, path, true_ind, ind, edgelen, aedgelen, K):
             i -= 1
             j -= 1
         if len(edgelen[:j]) == 0:
-            if sum([int(x) for x in aedgelen[i:]]) < K:    
+            if sum([int(x) for x in aedgelen[i:]]) <= K:    
                 return [False, empty]
         if len(path[ind[0]: ind[1]]) == 0:
             empty = True
@@ -190,7 +190,7 @@ def is_wrong_end(r, truepath, path, true_ind, ind, edgelen, aedgelen, K):
             print  aedgelen[i:], sum([int(x) for x in aedgelen[i:]])
             print truepath[true_ind[-2]: true_ind[-1]], path[ind[-2]: ind[-1]]
             print ""
-            if sum([int(x) for x in aedgelen[i:]]) < K:  
+            if sum([int(x) for x in aedgelen[i:]]) <= K:  
                 print "WOW" 
                 return [False, empty]
         if len(path[ind[-2]: ind[-1]]) == 1:

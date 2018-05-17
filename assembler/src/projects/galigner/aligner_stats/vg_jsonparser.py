@@ -46,6 +46,8 @@ def make_edit(cur_mp, ideal_seq_offset, graph_seq, ideal_seq):
         graph_seq += cur_mp["sequence"]
     elif cur_mp["from_length"] > 0 and cur_mp["to_length"] == 0 and len(cur_mp["sequence"]) != 0:
         graph_seq += cur_mp["sequence"]
+    elif cur_mp["from_length"] > 0 and cur_mp["to_length"] == 0:
+        print "HAPPENED"
     ideal_seq_offset += int(cur_mp["to_length"])
     return ideal_seq_offset, graph_seq
 
@@ -55,99 +57,67 @@ def make_c(s):
     return res
 
 
-filename = "/home/tdvorkina/soft/vg/vg_results_ecoli_new2/sd_0001.json"
-gfa_filename = "/home/tdvorkina/soft/vg/vg_results_ecoli_new2/ecoli_graph.split.gfa"
+filename = "/home/tdvorkina/soft/vg/ecoli_real/sd_0001_mapped_10k.fasta.json"
+gfa_filename = "/home/tdvorkina/soft/vg/ecoli_real/assembly_graph_with_scaffolds.split.gfa"
 
-reads = load_reads("/Sid/tdvorkina/gralign/E.coli_synth/reads/pacbio/sd_0001.fasta")
+reads = load_reads("/home/tdvorkina/soft/vg/ecoli_real/sd_0001_mapped_10k.fasta")
 edges = load_edges(gfa_filename)
 
-alignments = {}
-for k in reads.keys():
-    alignments[reads[k]] = {"name": k, "paths": []}
-
 json_file = open(filename, "r")
+vg_ed = {}
 for ln in json_file.readlines():
     json_data = json.loads(ln)
     ideal_seq = json_data["sequence"]
-    if True: #"path" in json_data.keys():
-        print ideal_seq
-        graph_seq = ""
-        graph_seq_all = ""
-        ideal_seq_offset = 0
-        prev_offset = 0
-        prev_node_id = -1
-        start_pos = 0
-        end_pos = 0
-        subpaths = []
-        prev_edge = ""
-        was_reverse = False
-        for item in json_data["path"]["mapping"]:
-            if len(item["position"]) != 0:
-                #print item["position"]
-                node_id, offset = item["position"]["node_id"], 0
-                if "offset" in item["position"]:
-                    offset = int(item["position"]["offset"]) 
-                
-                if prev_node_id == -1:
-                    start_pos = offset
-                elif prev_node_id != node_id:
-                    #print prev_node_id, node_id
-                    if was_reverse:
-                        graph_seq_all += make_c(prev_edge[start_pos:])
-                    else:
-                        graph_seq_all += prev_edge[start_pos:]
-                    subpaths.append(str(prev_node_id))
-                    start_pos = 0
-		#else:
-		    #print offset - prev_offset 
-                for edit in item["edit"]:
-                    cur_mp = {"to_length": 0, "from_length": 0, "sequence": ""}
-                    for k in cur_mp.keys():
-                        if k in edit:
-                            cur_mp[k] = edit[k]
-                    cur_mp["to_length"] = int(cur_mp["to_length"])
-                    cur_mp["from_length"] = int(cur_mp["from_length"])
-                    ideal_seq_offset, graph_seq = make_edit(cur_mp, ideal_seq_offset, graph_seq, ideal_seq) 
-                    offset += int(cur_mp["from_length"])
-                prev_offset = offset
-                prev_node_id = node_id
-                end_pos = offset
-                cur_edge = edges[node_id]
-                if "is_reverse" in item["position"]:
-                    was_reverse = True
-                prev_edge = cur_edge
-            else:
-                graph_seq = ""
-                break 
-            
-        if graph_seq != "":
-            if was_reverse:
-                graph_seq_all += make_c(prev_edge[start_pos:end_pos])
-            else:
-                graph_seq_all += prev_edge[start_pos:end_pos]
-            subpaths.append(str(prev_node_id))
-            
-            alignments[ideal_seq]["paths"].append({"len": len(graph_seq), "ed": edist([ideal_seq, graph_seq]), "ed2": edist([ideal_seq, graph_seq_all])})
-            #print len(ideal_seq), edist([ideal_seq, graph_seq]), len(json_data["path"]["mapping"])
-            # if alignments[ideal_seq]["name"] == "S1_1582":
-            #     print ",".join(subpaths)
-            #     print graph_seq_all
-            #     print ""
-            #     print ideal_seq
-            #     print ""
-            #     print graph_seq
-            #     print edist([ideal_seq, graph_seq]), edist([ideal_seq, graph_seq_all]) 
-            #     r = alignments[ideal_seq]
-            #     print r["name"], len(r["paths"]), len(ideal_seq), len(json_data["path"]["mapping"])
-            #print " ".join([str(x["len"]) + ":" + str(x["ed"]) for x in r["paths"]] ) 
-            #break
+    ideal_name = json_data["name"]
+    ideal_seq_offset = 0
+    graph_seq = ""
+    edge_offset_f = -1
+    nodes = []
+    for it in json_data["path"]["mapping"]:
+        node_id = int(it["position"]["node_id"])
+        edge_offset = int(it["position"]["offset"]) if "offset" in it["position"].keys() else 0
+        node_seq = edges[node_id] if "is_reverse" not in it["position"].keys() else make_c(edges[node_id])
+        edge_offset_f = edge_offset
+        ideal_seq_offset_s = ideal_seq_offset
+        for mp in it["edit"]:
+            cur_mp = {}
+            ks = ["from_length", "to_length"]
+            for k in ks:
+                cur_mp[k] = mp[k] if k in mp.keys() else "0"
+            cur_mp["sequence"] = mp["sequence"] if "sequence" in mp.keys() else ""
+            edge_offset_f += int(cur_mp["from_length"])
+            ideal_seq_offset, graph_seq = make_edit(cur_mp, ideal_seq_offset, graph_seq, ideal_seq)
+        if len(nodes) == 0 or nodes[-1]["node_id"] != node_id:
+            nodes.append({"node_id": node_id, "path": [{"start": edge_offset, "end": edge_offset_f}], "seq": [{"start": ideal_seq_offset_s, "end": ideal_seq_offset}], "nucs": node_seq})
+        else:
+            nodes[-1]["path"].append({"start": edge_offset, "end": edge_offset_f})
+            nodes[-1]["seq"].append({"start": ideal_seq_offset_s, "end": ideal_seq_offset})
 
+    graph_seq_full = ""
+#    print len(ideal_seq), ideal_seq_offset
+    for i in xrange(len(nodes)):
+        node = nodes[i]
+#        print "edge_id=", node["node_id"], "  path=", "; ".join(str(x["start"]) + "-" + str(x["end"]) for x in node["path"])
+        edge_offset_s = 0
+        edge_offset_f = len(node["nucs"])
+        if i == 0:
+            edge_offset_s = node["path"][0]["start"]
+        if i == len(nodes) - 1:
+            edge_offset_f = node["path"][-1]["end"]
+        graph_seq_full += node["nucs"][edge_offset_s: edge_offset_f + 1]
 
-mapped = 0
-for r in alignments:
-    print r["name"], len(r["paths"])
-    if len(r["paths"]) != 0:
-        mapped += 1
-    print " ".join([str(x["len"]) + ":" + str(x["ed"]) for x in r["paths"]] ) 
+    vg_ed[ideal_name] = edist([ideal_seq, graph_seq_full])*100/len(ideal_seq)
+    if edist([ideal_seq, graph_seq])*100/len(ideal_seq) < edist([ideal_seq, graph_seq_full])*100/len(ideal_seq):
+        print edist([ideal_seq, graph_seq])*100/len(ideal_seq), edist([ideal_seq, graph_seq_full])*100/len(ideal_seq),  " identity=", json_data["identity"], " score=", json_data["score"] 
+#    break
 
-print "Total mapped=", mapped
+galigner_tsv = "/home/tdvorkina/results/gap_closing_test/master_filtering_new_if2_2018-05-16_12-10-04_E.coli_synth_dijkstra_bwa200.tsv"
+
+galigner_ed = {}
+with open(galigner_tsv, "r") as fin:
+    for ln in fin.readlines():
+        cur_read, seq_start, seq_end, rlen, path_dirty, edgelen, ss, ed = ln.strip().split("\t")
+        galigner_ed[cur_read] = ed
+
+print "Mapped num galigner=", len(galigner_ed), " vg=", len(vg_ed)
+print "Median ed galigner=", sorted([galigner_ed[x] for x in galigner_ed.keys()])[len(galigner_ed)/2], " vg=", sorted([vg_ed[x] for x in vg_ed.keys()])[len(vg_ed)/2]
