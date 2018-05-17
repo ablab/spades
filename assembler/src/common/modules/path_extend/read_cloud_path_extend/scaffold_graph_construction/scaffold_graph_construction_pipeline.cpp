@@ -9,15 +9,6 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParamsFromCfg(s
     size_t length_threshold = min_length;
     size_t tail_threshold = min_length;
     size_t count_threshold = cfg::get().ts_res.scaff_con.count_threshold;
-
-    size_t upper_bound = cfg::get().ts_res.long_edge_length_upper_bound;
-
-    //fixme change to linear
-    const double LENGTH_NORMALIZER_EXPONENT = 0.66;
-    double length_normalizer = std::pow(static_cast<double>(upper_bound) / static_cast<double>(min_length),
-                                        LENGTH_NORMALIZER_EXPONENT);
-    double vertex_multiplier = cfg::get().ts_res.scaff_con.vertex_multiplier * length_normalizer;
-
     double score_threshold = cfg::get().ts_res.scaff_con.score_threshold;
     double connection_score_threshold = cfg::get().ts_res.scaff_con.connection_score_threshold;
     double relative_coverage_threshold = cfg::get().ts_res.scaff_con.relative_coverage_threshold;
@@ -28,7 +19,7 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParamsFromCfg(s
 
     size_t transitive_distance_threshold = cfg::get().ts_res.scaff_con.transitive_distance_threshold;
     size_t min_length_for_barcode_collection = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
-    ScaffolderParams result(length_threshold, tail_threshold, count_threshold, vertex_multiplier, score_threshold,
+    ScaffolderParams result(length_threshold, tail_threshold, count_threshold, score_threshold,
                             connection_score_threshold, relative_coverage_threshold,
                             connection_length_threshold, connection_count_threshold,
                             initial_distance, split_procedure_strictness, transitive_distance_threshold,
@@ -191,7 +182,8 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffoldGraphPip
 
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
 
-    iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, scaffold_index_extractor,
+    iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, barcode_extractor_,
+                                                                                       scaffold_index_extractor,
                                                                                        max_threads_));
     iterative_constructor_callers.push_back(
         make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_, scaffold_index_extractor,

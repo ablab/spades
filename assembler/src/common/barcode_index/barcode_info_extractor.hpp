@@ -482,7 +482,7 @@ namespace barcode_index {
                 size_t left_pos = it->second.GetLeftMost() *  bin_length;
                 size_t right_pos = it->second.GetRightMost() * bin_length;
                 size_t reads = it->second.GetCount();
-                if (left_pos >= left and right_pos <= right and reads >= count_threshold) {
+                if (left_pos <= right and right_pos >= left and reads >= count_threshold) {
                     barcodes.push_back(barcode);
                 }
             }
