@@ -609,7 +609,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
     const size_t reliable_edge_length = 200;
     const size_t tail_threshold = 6000;
     const size_t distance_bound = 6000;
-    const size_t seed_edge_length = cfg::get().ts_res.long_edge_length_lower_bound;
+    const size_t seed_edge_length = 2000;
     const double extender_score_threshold = 0.04;
     const double relative_coverage_threshold = 1.5;
 

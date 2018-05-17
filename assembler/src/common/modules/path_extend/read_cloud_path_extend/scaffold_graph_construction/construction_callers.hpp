@@ -8,7 +8,6 @@ struct ScaffolderParams {
   size_t length_threshold_;
   size_t tail_threshold_;
   size_t count_threshold_;
-  double vertex_multiplier_;
   double score_threshold_;
   double connection_score_threshold_;
   double relative_coverage_threshold_;
@@ -22,7 +21,6 @@ struct ScaffolderParams {
   ScaffolderParams(size_t length_threshold_,
                    size_t tail_threshold_,
                    size_t count_threshold_,
-                   double vertex_multiplier_,
                    double score_threshold_,
                    double connection_barcode_threshold_,
                    double relative_coverage_threshold_,
@@ -50,17 +48,19 @@ class IterativeScaffoldGraphConstructorCaller {
 
     virtual ~IterativeScaffoldGraphConstructorCaller() = default;
 };
-/** ConstructorCaller that removes edges from scaffold graph based on containtment index between
+/** ConstructorCaller that removes edges from scaffold graph based on containment index between
  * sets of barcodes of two long edges
  */
 class BarcodeScoreConstructorCaller : public IterativeScaffoldGraphConstructorCaller {
     using IterativeScaffoldGraphConstructorCaller::ScaffoldGraph;
     const Graph& g_;
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> raw_barcode_extractor_;
     shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_;
     size_t max_threads_;
 
  public:
     BarcodeScoreConstructorCaller(const Graph& g_,
+                                  shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> raw_barcode_extractor,
                                   shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                   size_t max_threads_);
     shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const path_extend::ScaffolderParams& params,
