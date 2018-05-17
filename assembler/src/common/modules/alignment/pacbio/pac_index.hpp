@@ -300,9 +300,20 @@ public:
                 MappingInstance prev_last_index = (*prev_iter)->sorted_positions[(*prev_iter)->last_trustable_index];
                 double read_gap_len = (double) (cur_first_index.read_position - prev_last_index.read_position);
 //FIXME:: is g_.k() relevant
-                double stretched_graph_len = (double) (cur_first_index.edge_position + g_.k()) +
-                        ((int) g_.length(prev_edge) - prev_last_index.edge_position) * pb_config_.path_limit_stretching;
-                if (start_v != end_v || (start_v == end_v && read_gap_len > stretched_graph_len)) {
+                double stretched_graph_len = (prev_edge.int_id() != cur_edge.int_id()) ? 
+                                            (double) (cur_first_index.edge_position + g_.k()) +
+                                            ((int) g_.length(prev_edge) - prev_last_index.edge_position) * pb_config_.path_limit_stretching
+                                            : ((int) cur_first_index.edge_position - (int) prev_last_index.edge_position) * pb_config_.path_limit_stretching;
+                if (prev_edge.int_id() == cur_edge.int_id()) {
+                    INFO("EQUAL EDGES eid=" << prev_edge.int_id() << " pos1=" << prev_last_index.edge_position << " pos2=" << cur_first_index.edge_position 
+                         << " gap_len=" <<  stretched_graph_len << " seq_len=" << read_gap_len);
+                }
+                if ((start_v != end_v || (start_v == end_v && read_gap_len > stretched_graph_len)) 
+                    && (prev_edge.int_id() != cur_edge.int_id() || (prev_edge.int_id() == cur_edge.int_id() && stretched_graph_len < 0) ||
+                        (prev_edge.int_id() == cur_edge.int_id() && stretched_graph_len > 0 && read_gap_len > stretched_graph_len))) {
+                    if (prev_edge.int_id() == cur_edge.int_id()) {
+                        INFO("Run!")
+                    }
                     if (start_v == end_v) {
                         DEBUG("looking for path from vertex to itself, read pos"
                               << cur_first_index.read_position << " " << prev_last_index.read_position
@@ -695,7 +706,7 @@ public:
                         vertex_pathlen[*j_iter] = path_searcher_b.GetDistance(*j_iter);
                 }
         }
-        Sequence ss = s.Subseq(seq_start_pos, min(seq_end_pos + 1, int(s.size()) ));
+        Sequence ss = s.Subseq(seq_start_pos, min(seq_end_pos, int(s.size()) ));
         int s_len = int(ss.size());
         path_max_length = score;
         if (score == STRING_DIST_INF){
@@ -748,7 +759,6 @@ public:
             DEBUG ("modifying limits because of some bullshit magic, seq length 0")
             end_pos = start_pos;
         }
-        std::string seq_string = s.Subseq(start_pos, std::min(end_pos + 1, s_len)).str();
         size_t best_path_ind = paths.size();
         int best_score = std::numeric_limits<int>::max();
         if (paths.size() == 0) {
@@ -810,13 +820,19 @@ public:
                                   int seq_start_pos, int seq_end_pos, 
                                   const std::string &s_add, const std::string &e_add, int &score) const {
 
-        DEBUG(" All Params " << start_e.int_id() << " " << end_e.int_id() << " " << path_max_length << " s_add=" <<   s_add << " e_add=" << e_add 
+        INFO(" All Params " << start_e.int_id() << " " << end_e.int_id() << " " << path_max_length << " s_add=" <<   s_add << " e_add=" << e_add 
                             << " start_pos=" << seq_start_pos << " end_pos=" << seq_end_pos);
+        if (start_e.int_id() == end_e.int_id()) {
+            INFO("AAAAAAA!!! " << start_e.int_id() << " start_pos=" << seq_start_pos << " end_pos=" << seq_end_pos )
+        }
         int return_code = -1;
         score = STRING_DIST_INF;
+        utils::perf_counter pc;
         std::vector<EdgeId> path = BestScoredPathBruteForce(s, start_v, end_v, 
                                                                path_min_length, path_max_length,
                                                                seq_start_pos, seq_end_pos, s_add, e_add, score, return_code);
+        double tm1 = pc.time();
+        pc.reset();
         int score_bf = score;
         if (gap_cfg_.run_dijkstra){
             int return_code_dijkstra = 0;
@@ -824,8 +840,13 @@ public:
                                                                 start_e, end_e, edge_start_pos, edge_end_pos, 
                                                                 seq_start_pos, seq_end_pos, 
                                                                 path_max_length, score, return_code_dijkstra);
-            INFO("BruteForce run: return_code=" << return_code << " score=" << score_bf 
-                 << "\nDijkstra run: return_code=" << return_code_dijkstra << " score=" << score <<"\nlen=" << seq_end_pos - seq_start_pos << "\n")
+            if (return_code == 0 && score_bf != score){
+                INFO("BruteForce run: return_code=" << return_code << " score=" << score_bf << " time1=" << tm1
+                     << " Dijkstra run: return_code=" << return_code_dijkstra << " score=" << score << " time2=" << pc.time() <<" len=" << seq_end_pos - seq_start_pos << " WBW\n")
+            } else {
+                INFO("BruteForce run: return_code=" << return_code << " score=" << score_bf << " time1=" << tm1
+                     << " Dijkstra run: return_code=" << return_code_dijkstra << " score=" << score << " time2=" << pc.time() <<" len=" << seq_end_pos - seq_start_pos << "\n")
+            }
             if (path_dijkstra.size() > 1) {
                 std::vector<EdgeId> short_path(path_dijkstra.begin() + 1, path_dijkstra.end() - 1);
                 return short_path;

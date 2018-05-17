@@ -66,21 +66,22 @@ struct GraphState {
 struct QueueState {
     GraphState gs;
     int i;
+    bool is_empty;
 
     QueueState()
-            : gs(debruijn_graph::EdgeId(), -1, -1), i(-1)
-    {}
+            : gs(debruijn_graph::EdgeId(), 0, 0), i(0), is_empty(true)
+    {INFO(this->str())}
 
     QueueState(debruijn_graph::EdgeId &e_, int start_pos_, int end_pos_, int i_)
-                : gs(e_, start_pos_, end_pos_), i(i_)
+                : gs(e_, start_pos_, end_pos_), i(i_), is_empty(false)
     {}
 
     QueueState(GraphState gs_, int i_)
-                : gs(gs_), i(i_)
+                : gs(gs_), i(i_), is_empty(false)
     {}
 
     QueueState(const QueueState &state):
-                gs(state.gs), i(state.i)
+                gs(state.gs), i(state.i), is_empty(state.is_empty)
     {}
 
     bool operator == (const QueueState &state) const {
@@ -96,11 +97,11 @@ struct QueueState {
     }
 
     bool empty() const {
-        return *this == QueueState();
+        return is_empty;
     }
 
     string str() const {
-        return gs.str() + " seq_ind=" + std::to_string(i);
+        return gs.str() + " seq_ind=" + std::to_string(i) + " empty=" + std::to_string(is_empty);
     }
 };
 
@@ -111,15 +112,17 @@ protected:
         bool ShouldUpdateQueue(int seq_ind, int ed)
         {
             //return true;
-            if (seq_ind == -1 || (seq_ind == ss_.size() && ed <= path_max_length_)){
-                return true;
+            if (seq_ind == ss_.size() ){
+                if (ed <= path_max_length_) {
+                    return true;
+                } else {
+                    return false;
+                }
             }
             VERIFY(seq_ind < (int) ss_.size())
             VERIFY(seq_ind >= 0)
             if (best_ed_[seq_ind] + gap_cfg_.penalty_interval >= ed) {
-                if (seq_ind != (int) ss_.size() - 1) {
-                    best_ed_[seq_ind] = min(best_ed_[seq_ind], ed);
-                }  
+                best_ed_[seq_ind] = min(best_ed_[seq_ind], ed);  
                 return true; 
             } else {
                 return false;
@@ -155,25 +158,29 @@ protected:
                 Update(state, prev_state,  ed);
                 return;
             }
-            int len = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, (int) ss_.size() - (prev_state.i + 1) );
-            string seq_str = ss_.substr(prev_state.i + 1, len);
-            vector<int> positions;
-            vector<int> scores;
-            if (path_max_length_ - ed >= 0) {
+	        if (path_max_length_ - ed >= 0) {
                 if (path_max_length_ - ed >= (int) edge_str.size()) {
                     QueueState state(gs, prev_state.i);
                     Update(state, prev_state,  ed + (int) edge_str.size());
                 }
-                //if (ss_.size() - (prev_state.i + 1) > 0) {
-                    SHWDistance(seq_str, edge_str, path_max_length_ - ed, positions, scores);
-                    for (size_t i = 0; i < positions.size(); ++ i) {
-                        if (positions[i] >= 0 && scores[i] >= 0) {
-                            QueueState state(gs, prev_state.i + 1 + positions[i]);
-                            Update(state, prev_state, ed + scores[i]);
-                        }
-                    }
-                //}
             }
+            if (ss_.size() - prev_state.i > 0) {
+                int len = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, (int) ss_.size() - prev_state.i  );
+                string seq_str = ss_.substr(prev_state.i, len);
+                //INFO("  AddNewEdge seq_str=" << seq_str << " edge_str=" << edge_str)
+                vector<int> positions;
+                vector<int> scores;
+                if (path_max_length_ - ed >= 0) {
+                   SHWDistance(seq_str, edge_str, path_max_length_ - ed, positions, scores);
+                   for (size_t i = 0; i < positions.size(); ++ i) {
+                       if (positions[i] >= 0 && scores[i] >= 0) {
+                           //INFO(" state=" << prev_state.i + positions[i] + 1 << " score=" << ed + scores[i])
+                           QueueState state(gs, prev_state.i + positions[i] + 1);
+                           Update(state, prev_state, ed + scores[i]);
+                       }
+                   }
+                }
+             }
         }
 
 
@@ -235,11 +242,12 @@ public:
                 return_code_ += 32;
             }
             if (found_path) {
-                QueueState state = end_qstate_;
+                QueueState state(end_qstate_);
                 while (!state.empty()) {
+                    //INFO(" print state: " << state.str() << " " << prev_states_[state].str())
                     gap_path_.push_back(state.gs.e);
-                    int start_edge = (int) max(0, (int) prev_states_[state].i);
-                    int end_edge = max(0, (int) state.i);
+                    int start_edge = prev_states_[state].i;
+                    int end_edge =  state.i;
                     mapping_path_.push_back(state.gs.e, omnigraph::MappingRange(Range(start_edge, end_edge), 
                                                                                 Range(state.gs.start_pos, state.gs.end_pos) ));
                     state = prev_states_[state];
@@ -256,6 +264,14 @@ public:
 
         omnigraph::MappingPath<debruijn_graph::EdgeId> GetMappingPath() const {
            return mapping_path_;
+        }
+
+        string GetPathStr() const {
+            string result = "";
+            for (EdgeId e: gap_path_) {
+                result += std::to_string(e.int_id()) + ",";
+            }
+            return result;
         }
 
         int GetEditDistance() const {
@@ -316,14 +332,15 @@ private:
                     GraphState next_state(e, 0, (int) g_.length(e) );
                     AddNewEdge(next_state, cur_state, ed);
                 }
-                if (e == end_e_ && path_max_length_ - ed >= 0 && cur_state.i < (int) ss_.size()){
-                    string seq_str = ss_.substr(cur_state.i + 1);
+                if (e == end_e_ && path_max_length_ - ed >= 0){
+                    INFO("  final stage")
+                    string seq_str = ss_.substr(cur_state.i);
                     string tmp = g_.EdgeNucls(e).str();
                     string edge_str = tmp.substr(0, end_p_);
                     int score = NWDistance(seq_str, edge_str, path_max_length_ - ed);
                     if (score != -1) {
                         path_max_length_ = min(path_max_length_, ed + score);
-                        QueueState state(GraphState(e, 0, end_p_), (int)ss_.size() - 1);
+                        QueueState state(GraphState(e, 0, end_p_), (int)ss_.size());
                         Update(state, cur_state, ed + score);
                         if (ed + score == path_max_length_) {
                              min_score_ = ed + score;
@@ -336,7 +353,7 @@ private:
         }
 
         virtual bool IsEndPosition(const QueueState &cur_state) {
-            if (cur_state.i == end_qstate_.i && cur_state.gs.e == end_qstate_.gs.e && cur_state.gs.end_pos == end_qstate_.gs.end_pos) {
+            if (cur_state.i == ss_.size() && cur_state.gs.e == end_qstate_.gs.e && cur_state.gs.end_pos == end_qstate_.gs.end_pos) {
                 return true;   
             }
             return false;
@@ -350,7 +367,7 @@ public:
                    , end_e_(end_e) , end_p_(end_p)
                    , reachable_vertex_(reachable_vertex){
             GraphState end_gstate(end_e_, 0, end_p_);
-            end_qstate_ = QueueState(end_gstate, (int) ss_.size() - 1);
+            end_qstate_ = QueueState(end_gstate, (int) ss_.size());
             if (start_e_ == end_e_ && end_p_ - start_p_ > 0){
                 string seq_str = ss_;
                 string tmp = g_.EdgeNucls(start_e_).str();
@@ -358,7 +375,7 @@ public:
                 int score = NWDistance(seq_str, edge_str, path_max_length_);
                 if (score != -1) {
                     path_max_length_ = min(path_max_length_, score);
-                    QueueState state(GraphState(start_e_, start_p_, end_p_), (int) ss_.size() - 1);
+                    QueueState state(GraphState(start_e_, start_p_, end_p_), (int) ss_.size());
                     Update(state, QueueState(), score);
                     if (score == path_max_length_) {
                          min_score_ = score;

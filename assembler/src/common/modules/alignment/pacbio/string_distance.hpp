@@ -9,7 +9,8 @@ inline int StringDistance(const string &a, const string &b) {
     int d = min(a_len / 3, b_len / 3);
     d = max(d, 10);
     if (a_len == 0 || b_len == 0) {
-        if (d > 10) {
+        d = max(a_len, b_len);
+        if (d > 20) {
             INFO ("zero length path , lengths " << a_len << " and " << b_len);
             return STRING_DIST_INF;
         } else {
