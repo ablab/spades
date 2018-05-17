@@ -191,7 +191,8 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffoldGraphPip
 
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
 
-    iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, scaffold_index_extractor,
+    iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, barcode_extractor_,
+                                                                                       scaffold_index_extractor,
                                                                                        max_threads_));
     iterative_constructor_callers.push_back(
         make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_, scaffold_index_extractor,

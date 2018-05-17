@@ -34,19 +34,26 @@ path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_, size_t
     min_length_for_barcode_collection_(min_length_for_barcode_collection) {}
 
 BarcodeScoreConstructorCaller::BarcodeScoreConstructorCaller(const Graph &g_,
+                                                             shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> raw_barcode_extractor,
                                                              shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                                              std::size_t max_threads_)
-    : g_(g_), barcode_extractor_(barcode_extractor_), max_threads_(max_threads_) {}
+    : g_(g_), raw_barcode_extractor_(raw_barcode_extractor), barcode_extractor_(barcode_extractor_), max_threads_(max_threads_) {}
 shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> BarcodeScoreConstructorCaller::GetScaffoldGraphConstuctor(
     const path_extend::ScaffolderParams &params,
     const ScaffoldGraph &scaffold_graph) const {
     auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(g_, barcode_extractor_);
     vector<ScaffoldGraph::ScaffoldGraphVertex> scaffold_vertices;
     copy(scaffold_graph.vbegin(), scaffold_graph.vend(), back_inserter(scaffold_vertices));
-//    ScoreDistributionBasedThresholdFinder
-//        threshold_finder(g_, scaffold_vertices, score_function, params.vertex_multiplier_);
-//    double score_threshold = threshold_finder.GetThreshold();
-    double score_threshold = params.score_threshold_;
+
+    const size_t MIN_DISTANCE = 1000;
+    const size_t MAX_DISTANCE = 5000;
+    const size_t EDGE_LENGTH_THRESHOLD = 50000;
+    const double SCORE_PERCENTILE = 0.05;
+    LabeledDistributionThresholdFinder threshold_finder(g_, raw_barcode_extractor_, EDGE_LENGTH_THRESHOLD,
+                                                        params.length_threshold_, MIN_DISTANCE, MAX_DISTANCE,
+                                                        SCORE_PERCENTILE, max_threads_);
+    double score_threshold = threshold_finder.GetThreshold();
+//    double score_threshold = params.score_threshold_;
     INFO("Setting containment index threshold to " << score_threshold);
     auto constructor = make_shared<path_extend::scaffold_graph::ScoreFunctionScaffoldGraphFilter>(g_, scaffold_graph,
                                                                                                   score_function,

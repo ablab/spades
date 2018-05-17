@@ -40,7 +40,7 @@ class Cluster {
 
             size_t GetSpan() const {
                 VERIFY(right_pos_ >= left_pos_);
-                return right_pos_ - left_pos_;
+                return right_pos_ - left_pos_ + 1;
             }
 
             size_t GetReads() const {
@@ -195,6 +195,10 @@ class ClusterStorage {
         clusters_.insert({cluster.GetId(), cluster});
         ++current_id;
         return cluster.GetId();
+    }
+
+    void Clear() {
+        clusters_.clear();
     }
 
     const Cluster Get(size_t cluster_id) const {
@@ -428,7 +432,7 @@ class ClusterMerger {
         : g_(g) {}
 
  private:
-    struct TakeKey {
+    struct TakeFirst {
       typedef BarcodeId result_type;
 
 
@@ -446,12 +450,12 @@ class ClusterMerger {
         auto barcode_storage_first = edge_cluster_storage.GetTailBarcodeStorage(first);
         auto barcode_storage_second = edge_cluster_storage.GetHeadBarcodeStorage(second);
         vector<BarcodeId> intersection;
-        TakeKey take_key;
-        typedef boost::transform_iterator<TakeKey, BarcodeClusterStorage::const_iterator> key_iterator;
-        key_iterator head_iterator_begin(barcode_storage_first.begin(), take_key);
-        key_iterator head_iterator_end(barcode_storage_first.end(), take_key);
-        key_iterator tail_iterator_begin(barcode_storage_second.begin(), take_key);
-        key_iterator tail_iterator_end(barcode_storage_second.end(), take_key);
+        TakeFirst take_first;
+        typedef boost::transform_iterator<TakeFirst, BarcodeClusterStorage::const_iterator> first_iterator;
+        first_iterator head_iterator_begin(barcode_storage_first.begin(), take_first);
+        first_iterator head_iterator_end(barcode_storage_first.end(), take_first);
+        first_iterator tail_iterator_begin(barcode_storage_second.begin(), take_first);
+        first_iterator tail_iterator_end(barcode_storage_second.end(), take_first);
         std::set_intersection(head_iterator_begin, head_iterator_end,
                               tail_iterator_begin, tail_iterator_end,
                               std::back_inserter(intersection));

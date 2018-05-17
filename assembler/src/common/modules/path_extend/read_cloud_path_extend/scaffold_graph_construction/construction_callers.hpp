@@ -56,11 +56,13 @@ class IterativeScaffoldGraphConstructorCaller {
 class BarcodeScoreConstructorCaller : public IterativeScaffoldGraphConstructorCaller {
     using IterativeScaffoldGraphConstructorCaller::ScaffoldGraph;
     const Graph& g_;
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> raw_barcode_extractor_;
     shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_;
     size_t max_threads_;
 
  public:
     BarcodeScoreConstructorCaller(const Graph& g_,
+                                  shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> raw_barcode_extractor,
                                   shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                   size_t max_threads_);
     shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const path_extend::ScaffolderParams& params,

@@ -5,8 +5,22 @@
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/fragment_model/distribution_extractor_helper.hpp"
 
 void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
+
+    //fixme cut redundancies
+    string cluster_stats_output_path = fs::append_path(cfg::get().output_dir, "cluster_statistics");
+    size_t min_edge_length = 50000;
+    size_t min_read_threshold = 5;
+    path_extend::cluster_model::ClusterDistributionAnalyzer distribution_analyzer(graph_pack,
+                                                                                  min_read_threshold,
+                                                                                  min_edge_length,
+                                                                                  cfg::get().max_threads);
+
+    const bool serialize_distributions = true;
+    auto statistics = distribution_analyzer.AnalyzeDistributions(cluster_stats_output_path, serialize_distributions);
+    distribution_analyzer.PrintStatistics(statistics, cluster_stats_output_path);
 
     const size_t reliable_edge_length = 200;
     const size_t tail_threshold = 3000;
