@@ -14,23 +14,35 @@ typedef double ClusterCoverage;
 template<class T>
 class SimpleDistribution {
     vector<T> distribution_;
+    bool is_sorted_;
 
  public:
-    void Add(const boost::optional<T> &value) {
+    SimpleDistribution()
+        : distribution_(), is_sorted_(false) {}
+    SimpleDistribution(const vector<T> &distribution_)
+        : distribution_(distribution_), is_sorted_(false) {}
+
+    void add(const boost::optional<T> &value) {
         if (value.is_initialized()) {
             distribution_.push_back(value.get());
         }
+        is_sorted_ = false;
     }
 
-    void Sort() {
+    void sort() {
         std::sort(distribution_.begin(), distribution_.end());
+        is_sorted_ = true;
     }
 
-    T At(size_t index) const {
+    bool is_sorted() const {
+        return is_sorted_;
+    };
+
+    T at(size_t index) const {
         return distribution_.at(index);
     }
 
-    size_t Size() const {
+    size_t size() const {
         return distribution_.size();
     }
 
@@ -71,7 +83,7 @@ class SimpleDistributionExtractor {
         SimpleDistribution<ClusterStatType> result;
         for (const auto &entry: cluster_storage) {
             const cluster_storage::Cluster cluster = entry.second;
-            result.Add(extractor_from_cluster(cluster));
+            result.add(extractor_from_cluster(cluster));
         }
         return result;
     }

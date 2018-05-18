@@ -36,7 +36,31 @@ struct StatisticsPack {
 
 typedef std::map<size_t, StatisticsPack> StatisticsContainer;
 
-class ClusterDistributionAnalyzer {
+class StatisticsSerializer {
+
+ public:
+    void PrintDistributions(const string& path, const DistributionPack& distributions) {
+        auto length_stream = std::ofstream(fs::append_path(path, "length"));
+        auto coverage_stream = std::ofstream(fs::append_path(path, "coverage"));
+        length_stream << distributions.length_distribution_;
+        coverage_stream << distributions.coverage_distribution_;
+    }
+
+
+    void PrintStatistics(const StatisticsContainer& statistics, const string& output_path) {
+        auto stats_stream = ofstream(fs::append_path(output_path, "statistics"));
+        for (const auto& entry: statistics) {
+            stats_stream << "Distance " << entry.first << ':' << std::endl;
+            stats_stream << "Length" << std::endl;
+            stats_stream << entry.second.length_statistics_ << std::endl;
+            stats_stream << "Coverage" << std::endl;
+            stats_stream << entry.second.coverage_statistics_;
+            stats_stream << std::endl << "------------" << std::endl;
+        }
+    }
+};
+
+class ClusterDistributionExtractor {
  private:
     const conj_graph_pack& gp_;
     size_t min_read_threshold_;
@@ -44,7 +68,7 @@ class ClusterDistributionAnalyzer {
     size_t min_cluster_offset_;
     size_t max_threads_;
  public:
-    ClusterDistributionAnalyzer(const conj_graph_pack &gp_,
+    ClusterDistributionExtractor(const conj_graph_pack &gp_,
                                 size_t min_read_threshold_,
                                 size_t min_edge_length_,
                                 size_t max_threads_)
@@ -99,43 +123,27 @@ class ClusterDistributionAnalyzer {
         return result;
     }
 
-    //fixme change method name or move serializing functionality elsewhere
-    StatisticsContainer AnalyzeDistributions(const string& output_path, bool serialize_distributions=true) {
-        fs::make_dir(output_path);
+    DistributionPack GetClusterDistributions() {
         const size_t min_distance = 1000;
-        const size_t max_distance = 25000;
-        const size_t distance_step = 4000;
+        const size_t max_distance = 41000;
+        const size_t distance_step = 5000;
         vector<size_t> distances;
         for (size_t distance = min_distance; distance <= max_distance; distance += distance_step) {
             distances.push_back(distance);
         }
-        StatisticsContainer result;
+        StatisticsContainer statistics_container;
         for (size_t distance: distances) {
             INFO("Getting distributions for distance " << distance);
             auto distributions = GetDistributionsForDistance(distance);
-            if (serialize_distributions) {
-                string distance_path = fs::append_path(output_path, std::to_string(distance));
-                fs::make_dir(distance_path);
-                PrintDistributions(distance_path, distributions);
-            }
             auto length_statistics = GetDistributionStatistics(distributions.length_distribution_);
             auto coverage_statistics = GetDistributionStatistics(distributions.coverage_distribution_);
             StatisticsPack statistics(length_statistics, coverage_statistics);
-            result.insert({distance, statistics});
+            statistics_container.insert({distance, statistics});
         }
-        return result;
-    }
 
-    void PrintStatistics(const StatisticsContainer& statistics, const string& output_path) {
-        auto stats_stream = ofstream(fs::append_path(output_path, "statistics"));
-        for (const auto& entry: statistics) {
-            stats_stream << "Distance " << entry.first << ':' << std::endl;
-            stats_stream << "Length" << std::endl;
-            stats_stream << entry.second.length_statistics_ << std::endl;
-            stats_stream << "Coverage" << std::endl;
-            stats_stream << entry.second.coverage_statistics_;
-            stats_stream << std::endl << "------------" << std::endl;
-        }
+        size_t optimal_distance = EstimateDistance(statistics_container);
+        INFO("Estimated gap within cluster: " << optimal_distance);
+        return GetDistributionsForDistance(optimal_distance);
     }
 
  private:
@@ -144,14 +152,16 @@ class ClusterDistributionAnalyzer {
         T min_element = std::numeric_limits<T>::max();
         T max_element = 0;
         T element_sum = 0;
-        distribution.Sort();
+        if (not distribution.is_sorted()) {
+            distribution.sort();
+        }
         for (const T& element: distribution) {
             min_element = std::min(min_element, element);
             max_element = std::max(max_element, element);
             element_sum += element;
         }
-        T mean = element_sum / static_cast<T>(distribution.Size());
-        T median = distribution.At(distribution.Size() / 2);
+        T mean = element_sum / static_cast<T>(distribution.size());
+        T median = distribution.at(distribution.size() / 2);
 
         DistributionStatistics<T> result(min_element, max_element, mean, median);
         return result;
@@ -174,15 +184,42 @@ class ClusterDistributionAnalyzer {
         return initial_cluster_storage.get_cluster_storage();
     }
 
-
-    void PrintDistributions(const string& path, const DistributionPack& distributions) {
-        auto length_stream = std::ofstream(fs::append_path(path, "length"));
-        auto coverage_stream = std::ofstream(fs::append_path(path, "coverage"));
-        length_stream << distributions.length_distribution_;
-        coverage_stream << distributions.coverage_distribution_;
+    size_t EstimateDistance(const StatisticsContainer& statistics) const {
+        const size_t median_growth_threshold = 1000;
+        size_t prev_median = 0;
+        size_t current_distance = 0;
+        VERIFY(statistics.size() > 0);
+        for (const auto& entry: statistics) {
+            size_t current_distance = entry.first;
+            size_t current_length_median = entry.second.length_statistics_.median_;
+            if (prev_median != 0 and current_length_median <= prev_median + median_growth_threshold) {
+                return current_distance;
+            }
+            prev_median = current_length_median;
+        }
+        return current_distance;
     }
 
     DECL_LOGGER("ClusterDistributionAnalyzer");
+
+    class PrimaryParametersExtractor {
+        DistributionPack cluster_distributions_;
+
+     public:
+        size_t GetLengthPercentile(double percent) {
+            return GetPercentile(cluster_distributions_.length_distribution_, percent);
+        }
+
+     private:
+        template<class T>
+        T GetPercentile(SimpleDistribution<T>& distribution, double percent) {
+            if (not distribution.is_sorted()) {
+                distribution.sort();
+            }
+            size_t index = static_cast<size_t>(static_cast<double>(distribution.size()) * percent);
+            return distribution.at(index);
+        }
+    };
 };
 }
 }
