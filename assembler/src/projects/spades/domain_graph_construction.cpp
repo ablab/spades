@@ -180,30 +180,20 @@ private:
     };
 
     std::pair<int,int> SearchForSubvector(path_extend::BidirectionalPath *scaffold, MappingPath<EdgeId> &domain) {
-        std::pair<int,int> answer;
-        bool found = false;
-        if (domain.size() > scaffold->Size()) {
-            return std::make_pair<int,int>(-1,-1);
-        }
+        if (domain.size() > scaffold->Size())
+            return { -1, -1 };
+
         for (size_t i = 0; i < scaffold->Size() - domain.size() + 1; ++i) {
-            if (found)
-                break;
             for (size_t j = 0; j < domain.size(); ++j) {
-                if ((*scaffold)[i + j] != domain[j].first) {
+                if ((*scaffold)[i + j] != domain[j].first)
                     break;
-                }
-                if (j == domain.size() - 1) {
-                    found = true;
-                    answer.first = (int)i;
-                    answer.second = (int)i+j;
-                }
+
+                if (j == domain.size() - 1)
+                    return { int(i), int(i+j) };
             }
         }
-        if (!found) {
-            return std::make_pair<int,int>(-1,-1);
-        } else {
-            return answer;
-        }
+
+        return { -1,-1 };
     }
 
     std::pair<int,int> FindMappingToPath(path_extend::BidirectionalPath *scaffold, MappingPath<EdgeId> &domain, std::vector<EdgeId> &edges) {
