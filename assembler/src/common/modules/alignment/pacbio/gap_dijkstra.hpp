@@ -333,7 +333,7 @@ private:
                     AddNewEdge(next_state, cur_state, ed);
                 }
                 if (e == end_e_ && path_max_length_ - ed >= 0){
-                    INFO("  final stage")
+                    //INFO("  final stage")
                     string seq_str = ss_.substr(cur_state.i);
                     string tmp = g_.EdgeNucls(e).str();
                     string edge_str = tmp.substr(0, end_p_);

@@ -421,6 +421,7 @@ public:
         std::vector<size_t> prev(len);
 
         int cur_color = 0;
+        int num_colors = 0;
         while (true) {
             for (size_t i = 0; i < len; ++i) {
                 max_size[i] = 0;
@@ -448,6 +449,7 @@ public:
             if (maxi == -1) {
                 break;
             }
+            num_colors ++;
             cur_color = maxi;
             colors[maxi] = cur_color;
             int real_maxi = maxi, min_i = maxi;
@@ -464,6 +466,7 @@ public:
                 real_maxi--;
             }
         }
+        INFO("Num hits clusters=" << num_colors);
         return colors;
     }
 
@@ -502,6 +505,7 @@ public:
                 }
             }
         }
+        INFO("Resulting hits num=" << sorted_edges.size());
         return OneReadMapping(sorted_edges, illumina_gaps);
     }
 
@@ -724,6 +728,7 @@ public:
             }
             if (vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap) {
                 return_code_dijkstra += 4;
+                INFO(" vertex_len=" << vertex_pathlen.size())
             }
             return vector<EdgeId>(0);
         }
@@ -736,8 +741,8 @@ public:
             score = STRING_DIST_INF;
             return vector<EdgeId>(0);
         }
-        std::vector<EdgeId> ans = gap_filler.GetPath();        
-
+        std::vector<EdgeId> ans = gap_filler.GetPath();
+        INFO("PathStr=" << gap_filler.GetPathStr());
         return ans;
     }
 
@@ -798,7 +803,7 @@ public:
         }
         TRACE(best_score);
         score = best_score;
-        if (best_score == std::numeric_limits<int>::max()) {
+        if (best_score == STRING_DIST_INF) {
             if (paths.size() < 10) {
                 for (size_t i = 0; i < paths.size(); i++) {
                     DEBUG ("failed with strings " << seq_string << " " << s_add + PathToString(paths[i]) + e_add);
