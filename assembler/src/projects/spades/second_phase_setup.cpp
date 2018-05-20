@@ -12,17 +12,10 @@
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "pair_info_count.hpp"
 #include "second_phase_setup.hpp"
-#include "domain_graph_construction.hpp"
-
-#include <unordered_set>
-
 
 namespace debruijn_graph {
 
 void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
-    if(cfg::get().biosynthetic_mode)
-        loaddomains(gp);
-
     INFO("Preparing second phase");
     gp.ClearRRIndices();
     gp.ClearPaths();
@@ -48,14 +41,6 @@ void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
     VERIFY(!cfg::get().use_single_reads);
     INFO("Ready to run second phase");
 
-}
-
-void SecondPhaseSetup::loaddomains(conj_graph_pack &gp) {
-    DomainMatcher matcher;
-    std::vector<std::string> domain_filenames;
-    matcher.MatchDomains(gp, domain_filenames);
-    //std::string command = "$HMMER_SCRIPTS/extract_domains.sh " + cfg::get().output_dir + "first_pe_contigs.fasta " + cfg::get().output_dir + "/temp_anti/";
-    //std::system(command.c_str());
 }
 
 }

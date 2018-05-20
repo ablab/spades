@@ -412,13 +412,12 @@ void DomainMatcher::match_contigs_internal(hmmer::HMMMatcher &matcher, path_exte
         std::string seq_aas = aa::translate(path_string.c_str() + shift);
         matcher.match(ref_shift.c_str(), seq_aas.c_str());
     }
-
     matcher.summarize();
-
 
     for (const auto &hit : matcher.hits()) {
         if (!hit.reported() || !hit.included())
             continue;
+
         for (const auto &domain : hit.domains()) {
             std::pair<int, int> seqpos = domain.seqpos();
             std::pair<int, int> seqpos2 = domain.hmmpos();
@@ -473,23 +472,18 @@ void DomainMatcher::MatchDomains(conj_graph_pack &gp, std::vector<std::string> &
         fs::remove_dir(cfg::get().output_dir + "/temp_anti/");
     fs::make_dirs(cfg::get().output_dir + "/temp_anti/");
     fs::make_dirs(cfg::get().output_dir + "/bgc_in_gfa/");
+
     hmmer::hmmer_cfg hcfg;
     auto file_vector = getFileVector(cfg::get().hmm_set);
     path_extend::ScaffoldSequenceMaker scaffold_maker(gp.g);
 
-
-
-    std::string output_filename_contigs = cfg::get().output_dir + "/temp_anti/restricted_edges.fasta";
-    io::OFastaReadStream oss_contig(output_filename_contigs);
-    INFO(file_vector);
+    io::OFastaReadStream oss_contig(cfg::get().output_dir + "/temp_anti/restricted_edges.fasta");
     for (const auto &file : file_vector) {
-        std::string output_filename_domain = cfg::get().output_dir + "/temp_anti/" +  getFilename(file) + ".fasta";
+        std::string output_filename_domain = cfg::get().output_dir + "/temp_anti/" + getFilename(file) + ".fasta";
         INFO(output_filename_domain);
 
         io::OFastaReadStream oss_domain(output_filename_domain);
 
-
-        INFO("Here0");
         hmmer::HMMFile hmmfile(file);
         if (!hmmfile.valid())
         FATAL_ERROR("Error opening HMM file "<< file);
@@ -508,8 +502,6 @@ void DomainMatcher::MatchDomains(conj_graph_pack &gp, std::vector<std::string> &
 }
 
 void DomainGraphConstruction::run(conj_graph_pack &gp, const char*) {
-
-
     std::vector<std::string> domain_filenames;
 
     DomainMatcher matcher;

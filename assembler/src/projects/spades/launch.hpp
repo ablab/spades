@@ -26,6 +26,7 @@
 #include "series_analysis.hpp"
 #include "pipeline/stage.hpp"
 #include "contig_output_stage.hpp"
+#include "extract_domains.hpp"
 #include "domain_graph_construction.hpp"
 
 namespace spades {
@@ -128,10 +129,14 @@ void assemble_genome() {
             SPAdes.add<debruijn_graph::GapClosing>("prelim_gapcloser");
         if (cfg::get().use_intermediate_contigs) {
             SPAdes.add<debruijn_graph::PairInfoCount>(true)
-                    .add<debruijn_graph::DistanceEstimation>(true)
-                    .add<debruijn_graph::RepeatResolution>(true)
-                    .add<debruijn_graph::ContigOutput>(true)
-                    .add<debruijn_graph::SecondPhaseSetup>();
+                  .add<debruijn_graph::DistanceEstimation>(true)
+                  .add<debruijn_graph::RepeatResolution>(true);
+
+            if (cfg::get().biosynthetic_mode)
+                SPAdes.add<debruijn_graph::ExtractDomains>();
+
+            SPAdes.add<debruijn_graph::ContigOutput>()
+                  .add<debruijn_graph::SecondPhaseSetup>();
         }
     }
 
@@ -175,7 +180,7 @@ void assemble_genome() {
 
     SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
 
-    if(cfg::get().biosynthetic_mode && cfg::get().rr_enable)
+    if (cfg::get().biosynthetic_mode && cfg::get().rr_enable)
         SPAdes.add(new debruijn_graph::DomainGraphConstruction());
 
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
