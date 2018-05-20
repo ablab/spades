@@ -157,9 +157,9 @@ private:
 
     void ConstructWeakEdges() {
         std::set<std::vector<EdgeId>> forbidden_edges;
-        for (const auto &mapping : mappings) {
+        for (const auto &mapping : mappings)
             forbidden_edges.insert(mapping.second.simple_path());
-        }
+
         SetOfForbiddenEdgesPathChooser<Graph> chooser(gp_.g, forbidden_edges);
         for (auto v1 : graph.getNodeSet()) {
             if (!graph.HasStrongEdge(v1) && (v1->near_to_the_end_of_contig_)) {
@@ -172,17 +172,15 @@ private:
         }
     }
 
-    class PairComparator
-    {
-        public:
-            int operator()(const std::pair<int,int> &lhs, const std::pair<int,int> &rhs) const
-            {
-                return lhs.first < rhs.first;
-            }
+    class PairComparator {
+      public:
+        int operator()(const std::pair<int,int> &lhs, const std::pair<int,int> &rhs) const {
+            return lhs.first < rhs.first;
+        }
     };
 
-    pair<int,int> SearchForSubvector(path_extend::BidirectionalPath *scaffold, MappingPath<EdgeId> &domain) {
-        pair<int,int> answer;
+    std::pair<int,int> SearchForSubvector(path_extend::BidirectionalPath *scaffold, MappingPath<EdgeId> &domain) {
+        std::pair<int,int> answer;
         bool found = false;
         if (domain.size() > scaffold->Size()) {
             return std::make_pair<int,int>(-1,-1);
@@ -208,7 +206,7 @@ private:
         }
     }
 
-    pair<int,int> FindMappingToPath(path_extend::BidirectionalPath *scaffold, MappingPath<EdgeId> &domain, std::vector<EdgeId> &edges) {
+    std::pair<int,int> FindMappingToPath(path_extend::BidirectionalPath *scaffold, MappingPath<EdgeId> &domain, std::vector<EdgeId> &edges) {
         auto res = SearchForSubvector(scaffold, domain);
         if (res.first == -1) {
             return std::make_pair<int,int>(-1,-1);
@@ -326,13 +324,14 @@ private:
 
     //TODO: try some good coverage strategy
     bool IsInsideRepeat(std::shared_ptr<nrps::Vertex> v) {
-        if (v->domain_edges_in_row_.size() > 1) {
+        if (v->domain_edges_in_row_.size() > 1)
             return false;
-        }
+
         EdgeId e = v->domain_edges_in_row_[0];
-        if (gp_.g.IncomingEdgeCount(gp_.g.EdgeStart(e)) > 1 ||  gp_.g.OutgoingEdgeCount(gp_.g.EdgeEnd(e)) > 1) {
+        if (gp_.g.IncomingEdgeCount(gp_.g.EdgeStart(e)) > 1 ||
+            gp_.g.OutgoingEdgeCount(gp_.g.EdgeEnd(e)) > 1)
             return true;
-        }
+
         return false;
     }
 
@@ -375,21 +374,6 @@ private:
     std::map<std::string, MappingPath<EdgeId>> mappings;
     DECL_LOGGER("AGraph");
 };
-
-static std::vector<std::string> getFileVector(const std::string &hmm_files) {
-    std::string s = hmm_files;
-    std::vector<std::string> result;
-    std::string delimiter = ",";
-    size_t pos = 0;
-    std::string token;
-    while ((pos = s.find(delimiter)) != std::string::npos) {
-        token = s.substr(0, pos);
-        result.push_back(token);
-        s.erase(0, pos + delimiter.length());
-    }
-    result.push_back(s);
-    return result;
-}
 
 static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::BidirectionalPath* path,
                                    const std::string &path_string,
@@ -455,11 +439,12 @@ ContigAlnInfo DomainMatcher::MatchDomains(conj_graph_pack &gp) {
 
     ContigAlnInfo res;
     hmmer::hmmer_cfg hcfg;
-    auto file_vector = getFileVector(cfg::get().hmm_set);
+    std::vector<std::string> hmms;
+    boost::split(hmms, cfg::get().hmm_set, boost::is_any_of(",;"), boost::token_compress_on);
     path_extend::ScaffoldSequenceMaker scaffold_maker(gp.g);
 
     io::OFastaReadStream oss_contig(cfg::get().output_dir + "/temp_anti/restricted_edges.fasta");
-    for (const auto &file : file_vector) {
+    for (const auto &file : hmms) {
         hmmer::HMMFile hmmfile(file);
         if (!hmmfile.valid())
         FATAL_ERROR("Error opening HMM file "<< file);
