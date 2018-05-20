@@ -86,8 +86,9 @@ public:
     DomainGraph() { iteration_number_ = 0; }
 
     std::shared_ptr<Vertex> getNode(const std::string &name) const {
-        if (node_map_.find(name) != node_map_.end())
-            return node_map_.at(name);
+        auto entry = node_map_.find(name);
+        if (entry != node_map_.end())
+            return entry->second;
 
         return nullptr;
     }
@@ -154,11 +155,7 @@ public:
     }
 
     bool isExistingNode(std::shared_ptr<Vertex> v) const {
-        return getNodeSet().find(v) != getNodeSet().end();
-    }
-
-    Edge *addEdge(Edge *e) {
-        return addEdgeInternal(e);
+        return nodes_.count(v);
     }
 
     std::shared_ptr<Vertex> addVertex(const std::string &name,
@@ -166,19 +163,20 @@ public:
                                       size_t start_coord, size_t end_coord, std::string type) {
         std::set<EdgeId> unique_edges;
         for (auto edge : a_edges) {
-            if (a_edges_map_.find(edge) == a_edges_map_.end()) {
+            if (!a_edges_map_.count(edge))
                 unique_edges.insert(edge);
-            }
-            if (std::find(a_edges_map_[edge].begin(), a_edges_map_[edge].end(),
-                          name) == a_edges_map_[edge].end()) {
-                a_edges_map_[edge].push_back(name);
-            }
+
+            auto &nodes = a_edges_map_[edge];
+            if (std::find(nodes.begin(), nodes.end(), name) == nodes.end())
+                nodes.push_back(name);
         }
         return addVertexInternal(name, unique_edges, a_edges, start_coord,
                                  end_coord, type);
   }
 
     std::shared_ptr<Vertex> addVertex(std::shared_ptr<Vertex> v) { return addVertexInternal(v); }
+    Edge *addEdge(Edge *e) { return addEdgeInternal(e); }
+
     const std::set<Edge *> &getEdgeSet(std::shared_ptr<Vertex> v) const { return v->edges_; }
     std::shared_ptr<Vertex> getVertex(const std::string &name) const { return node_map_.at(name); }
     const std::set<std::shared_ptr<Vertex>> &getVertexSet() const { return nodes_; }
@@ -204,8 +202,8 @@ private:
                       const std::set<debruijn_graph::EdgeId> &unique_edges,
                       const std::vector<debruijn_graph::EdgeId> &edges,
                       size_t start_coord, size_t end_coord, std::string type) {
-        std::shared_ptr<Vertex> node = std::make_shared<Vertex>(
-            unique_edges, edges, start_coord, end_coord, type);
+        std::shared_ptr<Vertex> node =
+                std::make_shared<Vertex>(unique_edges, edges, start_coord, end_coord, type);
         node->name_ = name;
         return addVertexInternal(node);
     }
