@@ -92,7 +92,9 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::conj_graph_pack &gp,
     std::vector<std::string> hmms;
     boost::split(hmms, hmm_set, boost::is_any_of(",;"), boost::token_compress_on);
     path_extend::ScaffoldSequenceMaker scaffold_maker(gp.g);
-
+    path_extend::PathContainer broken_scaffolds;
+    path_extend::ScaffoldBreaker(int(gp.g.k())).Break(gp.contig_paths, broken_scaffolds);
+    
     io::OFastaReadStream oss_contig(output_dir + "/temp_anti/restricted_edges.fasta");
     for (const auto &file : hmms) {
         hmmer::HMMFile hmmfile(file);
@@ -100,7 +102,7 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::conj_graph_pack &gp,
         FATAL_ERROR("Error opening HMM file "<< file);
         auto hmmw = hmmfile.read();
         INFO("Matching contigs with " << file);
-        match_contigs(gp.contig_paths, scaffold_maker,
+        match_contigs(broken_scaffolds, scaffold_maker,
                       fs::basename(file), hmmw.get(), hcfg,
                       res, oss_contig);
     }
