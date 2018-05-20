@@ -64,8 +64,8 @@ void DomainGraph::FindBasicStatistic(std::ofstream &stat_stream) {
 }
 
 void DomainGraph::FindDomainOrderings(debruijn_graph::conj_graph_pack &gp,
-                                      std::string output_filename) {
-    std::ofstream stat_stream(cfg::get().output_dir + "/bgc_statistics.txt");
+                                      const std::string &output_filename, const std::string &output_dir) {
+    std::ofstream stat_stream(output_dir + "/bgc_statistics.txt");
     FindBasicStatistic(stat_stream);
     path_extend::ContigWriter writer(gp.g, path_extend::MakeContigNameGenerator(cfg::get().mode, gp));
     std::set<std::shared_ptr<Vertex>> nodes_with_incoming;
@@ -79,7 +79,7 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::conj_graph_pack &gp,
             start_nodes.insert(v);
         }
     }
-    io::osequencestream_bgc oss(output_filename);
+    io::osequencestream_bgc oss(output_dir + "/" + output_filename);
     path_extend::ScaffoldSequenceMaker seq_maker(gp.g);
     std::vector<std::vector<std::shared_ptr<Vertex>>> answer;
     int ordering_id = 1;
@@ -111,7 +111,7 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::conj_graph_pack &gp,
 }
 
 void DomainGraph::ExportPaths(debruijn_graph::conj_graph_pack &gp,
-                              std::string output_dir) {
+                              const std::string &output_dir) {
     auto name_generator =
             path_extend::MakeContigNameGenerator(cfg::get().mode, gp);
     path_extend::ContigWriter writer(gp.g, name_generator);

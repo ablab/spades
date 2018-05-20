@@ -360,16 +360,14 @@ private:
 };
 
 void DomainGraphConstruction::run(conj_graph_pack &gp, const char*) {
-    std::vector<std::string> domain_filenames;
-
     auto res = nrps::DomainMatcher().MatchDomains(gp, cfg::get().hmm_set, cfg::get().output_dir);
 
     DomainGraphConstructor constructor(gp);
     auto &graph = constructor.ConstructGraph(res);
 
-    graph.FindDomainOrderings(gp, cfg::get().output_dir + "/gene_clusters.fasta");
+    graph.FindDomainOrderings(gp, "gene_clusters.fasta", cfg::get().output_dir);
     graph.ExportToDot(cfg::get().output_dir + "/domain_graph.dot");
-    INFO("Go to export paths");
+    INFO("Export paths");
     graph.ExportPaths(gp, cfg::get().output_dir);
 }
 

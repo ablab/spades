@@ -93,7 +93,7 @@ public:
     }
 
     Edge *getArc(std::shared_ptr<Vertex> v1, std::shared_ptr<Vertex> v2) const {
-        for (Edge *edge : this->getEdgeSet(v1)) {
+        for (Edge *edge : getEdgeSet(v1)) {
             if (edge->end_ == v2) {
                 return edge;
             }
@@ -103,7 +103,7 @@ public:
     }
 
     Edge *getEdge(std::shared_ptr<Vertex> v1, std::shared_ptr<Vertex> v2) const {
-        return this->getArc(v1, v2);
+        return getArc(v1, v2);
     }
 
     bool HasStrongEdge(std::shared_ptr<nrps::Vertex> v) const {
@@ -128,7 +128,7 @@ public:
     Edge *addEdge(const std::string &v1, const std::string &v2, bool strong,
                   size_t length = 0,
                   const vector<EdgeId> &edges = vector<EdgeId>()) {
-        return this->addEdge(getVertex(v1), getVertex(v2), strong, length, edges);
+        return addEdge(getVertex(v1), getVertex(v2), strong, length, edges);
     }
 
     Edge *addEdge(std::shared_ptr<Vertex> v1, std::shared_ptr<Vertex> v2,
@@ -154,18 +154,16 @@ public:
     }
 
     bool isExistingNode(std::shared_ptr<Vertex> v) const {
-        return this->getNodeSet().find(v) != this->getNodeSet().end();
+        return getNodeSet().find(v) != getNodeSet().end();
     }
 
     Edge *addEdge(Edge *e) {
-        Edge *result = this->addEdgeInternal(e);
-        return result;
+        return addEdgeInternal(e);
     }
 
-    std::shared_ptr<Vertex>
-    addVertex(const std::string &name,
-              const std::vector<debruijn_graph::EdgeId> &a_edges,
-              size_t start_coord, size_t end_coord, std::string type) {
+    std::shared_ptr<Vertex> addVertex(const std::string &name,
+                                      const std::vector<debruijn_graph::EdgeId> &a_edges,
+                                      size_t start_coord, size_t end_coord, std::string type) {
         std::set<EdgeId> unique_edges;
         for (auto edge : a_edges) {
             if (a_edges_map_.find(edge) == a_edges_map_.end()) {
@@ -176,26 +174,14 @@ public:
                 a_edges_map_[edge].push_back(name);
             }
         }
-        return this->addVertexInternal(name, unique_edges, a_edges, start_coord,
-                                       end_coord, type);
+        return addVertexInternal(name, unique_edges, a_edges, start_coord,
+                                 end_coord, type);
   }
 
-    std::shared_ptr<Vertex> addVertex(std::shared_ptr<Vertex> v) {
-        return this->addVertexInternal(v);
-    }
-
-    const std::set<Edge *> &getEdgeSet(std::shared_ptr<Vertex> v) const {
-        return v->edges_;
-    }
-
-    std::shared_ptr<Vertex> getVertex(const std::string &name) const {
-        return node_map_.at(name);
-    }
-
-    const std::set<std::shared_ptr<Vertex>> &getVertexSet() const {
-        return nodes_;
-    }
-
+    std::shared_ptr<Vertex> addVertex(std::shared_ptr<Vertex> v) { return addVertexInternal(v); }
+    const std::set<Edge *> &getEdgeSet(std::shared_ptr<Vertex> v) const { return v->edges_; }
+    std::shared_ptr<Vertex> getVertex(const std::string &name) const { return node_map_.at(name); }
+    const std::set<std::shared_ptr<Vertex>> &getVertexSet() const { return nodes_; }
     std::set<std::shared_ptr<Vertex>> const &getNodeSet() const { return nodes_; }
 
     void ExportToDot(const std::string &output_path) const;
@@ -207,11 +193,10 @@ public:
     }
 
     void FindBasicStatistic(std::ofstream &stat_stream);
-
     void FindDomainOrderings(debruijn_graph::conj_graph_pack &gp,
-                             std::string output_filename);
+                             const std::string &output_filename, const std::string &output_dir);
     void ExportPaths(debruijn_graph::conj_graph_pack &gp,
-                     std::string output_dir);
+                     const std::string &output_dir);
 
 private:
     std::shared_ptr<Vertex>
