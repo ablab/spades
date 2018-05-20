@@ -56,57 +56,11 @@ public:
               max_visited_(1) {}
 
     Vertex(const std::string &name = "") : name_(name) {}
-
-    Vertex(const Vertex &other)
-            : name_(other.name_), edges_(other.edges_),
-              unique_domain_edges_(other.unique_domain_edges_),
-              domain_edges_in_row_(other.domain_edges_in_row_),
-              start_coord_(other.start_coord_), end_coord_(other.end_coord_),
-              rc_(other.rc_), v_type_(other.v_type_),
-              near_to_the_end_of_contig_(other.near_to_the_end_of_contig_),
-              near_to_the_start_of_contig_(other.near_to_the_start_of_contig_),
-              visited_(other.visited_), visited_times_(other.visited_times_),
-              max_visited_(other.max_visited_) {}
-
     ~Vertex() {}
 
-    /*
-     * Copy assignment operator (rule of three).
-     */
-    Vertex &operator=(const Vertex &other) {
-        name_ = other.name_;
-        edges_ = other.edges_;
-        unique_domain_edges_ = other.unique_domain_edges_;
-        domain_edges_in_row_ = other.domain_edges_in_row_;
-        start_coord_ = other.start_coord_;
-        end_coord_ = other.end_coord_;
-        near_to_the_end_of_contig_ = other.near_to_the_end_of_contig_;
-        near_to_the_start_of_contig_ = other.near_to_the_start_of_contig_;
-        v_type_ = other.v_type_;
-        max_visited_ = other.max_visited_;
-        visited_times_ = other.visited_times_;
-        visited_ = other.visited_;
-        return *this;
-    }
-
-    /*
-     * Move assignment operator (rule of three).
-     */
-    Vertex &operator=(Vertex &&other) {
-        name_ = other.name_;
-        edges_ = other.edges_;
-        unique_domain_edges_ = other.unique_domain_edges_;
-        domain_edges_in_row_ = other.domain_edges_in_row_;
-        start_coord_ = other.start_coord_;
-        end_coord_ = other.end_coord_;
-        near_to_the_end_of_contig_ = other.near_to_the_end_of_contig_;
-        near_to_the_start_of_contig_ = other.near_to_the_start_of_contig_;
-        v_type_ = other.v_type_;
-        max_visited_ = other.max_visited_;
-        visited_times_ = other.visited_times_;
-        visited_ = other.visited_;
-        return *this;
-    }
+    Vertex(const Vertex &other) = default;
+    Vertex &operator=(const Vertex &other) = default;
+    Vertex &operator=(Vertex &&other) = default;
 };
 
 struct Edge {
@@ -124,27 +78,10 @@ public:
          bool isstrong = false)
             : start_(start), end_(end), visited_(false), strong_(isstrong),
               length_(0), edges_(edges_on_graph) {}
-
     ~Edge() {}
 
-    Edge &operator=(const Edge &other) {
-        start_ = other.start_;
-        end_ = other.end_;
-        visited_ = other.visited_;
-        strong_ = other.strong_;
-        length_ = other.length_;
-        edges_ = other.edges_;
-        return *this;
-    }
-
-    Edge &operator=(Edge &&other) {
-        start_ = other.start_;
-        end_ = other.end_;
-        strong_ = other.strong_;
-        visited_ = other.visited_;
-        length_ = other.length_;
-        return *this;
-    }
+    Edge &operator=(const Edge &other) = default;
+    Edge &operator=(Edge &&other) = default;
 };
 
 class DomainGraph {
