@@ -17,7 +17,7 @@ add_library(spades-stages STATIC
             contig_output_stage.cpp
             hybrid_aligning.cpp
             chromosome_removal.cpp
-            extract_domains.cpp domain_graph_construction.cpp)
+            extract_domains.cpp domain_matcher.cpp domain_graph_construction.cpp)
 target_link_libraries(spades-stages ConsensusCore)
           
 add_executable(spades-core 

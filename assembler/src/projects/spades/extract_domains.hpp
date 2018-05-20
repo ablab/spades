@@ -6,17 +6,16 @@
 
 #pragma once
 
-#include "common/pipeline/stage.hpp"
+#include "pipeline/stage.hpp"
 
 namespace debruijn_graph {
 
-//todo rename
-class DomainGraphConstruction : public spades::AssemblyStage {
-  public:
-    DomainGraphConstruction()
-        : AssemblyStage("Domain Graph Construction", "domain_graph_construction") {}
+class ExtractDomains : public spades::AssemblyStage {
+public:
+    ExtractDomains()
+            : AssemblyStage("Extract Domains", "extract_domains") { }
 
-    void run(conj_graph_pack &gp, const char*);
+    void run(conj_graph_pack &gp, const char *);
 };
 
 }

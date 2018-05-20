@@ -5,14 +5,8 @@
 
 #include "modules/path_extend/pe_utils.hpp"
 
-#include "hmm/hmmfile.hpp"
-#include "hmm/hmmmatcher.hpp"
-
-#include "sequence/aa.hpp"
-#include "io/reads/file_reader.hpp"
-#include "io/reads/wrapper_collection.hpp"
-
 #include "domain_graph.hpp"
+#include "domain_matcher.hpp"
 
 namespace debruijn_graph {
 
@@ -111,7 +105,7 @@ public:
     DomainGraphConstructor(conj_graph_pack &gp)
             : gp_(gp) {}
 
-    nrps::DomainGraph& ConstructGraph(const ContigAlnInfo &info) {
+    nrps::DomainGraph& ConstructGraph(const nrps::ContigAlnInfo &info) {
         gp_.EnsureIndex();
         INFO("A-domain graph construction started");
         ConstructNodes(info);
@@ -325,7 +319,7 @@ private:
         return false;
     }
 
-    void ConstructNodes(const ContigAlnInfo &info) {
+    void ConstructNodes(const nrps::ContigAlnInfo &info) {
         auto mapper = MapperInstance(gp_);
 
         unsigned id = 1;
@@ -365,93 +359,10 @@ private:
     DECL_LOGGER("AGraph");
 };
 
-static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::BidirectionalPath* path,
-                                   const std::string &path_string,
-                                   const std::string &type, const hmmer::HMM &hmm, ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
-    for (size_t shift = 0; shift < 3; ++shift) {
-        std::string ref_shift = std::to_string(path->GetId()) + "_" + std::to_string(shift);
-        std::string seq_aas = aa::translate(path_string.c_str() + shift);
-        matcher.match(ref_shift.c_str(), seq_aas.c_str());
-    }
-    matcher.summarize();
-
-    for (const auto &hit : matcher.hits()) {
-        if (!hit.reported() || !hit.included())
-            continue;
-
-        for (const auto &domain : hit.domains()) {
-            std::pair<int, int> seqpos = domain.seqpos();
-            std::pair<int, int> seqpos2 = domain.hmmpos();
-            INFO("First - " << seqpos2.first << ", second - " << seqpos2.second);
-            INFO("First - " << seqpos.first << ", second - " << seqpos.second);
-
-            if (seqpos.second - seqpos.first < hmm.length() / 2)
-                continue;
-
-            int shift = hit.name()[strlen(hit.name()) - 1] - '0';
-            seqpos.first = seqpos.first * 3  + shift;
-            seqpos.second = seqpos.second * 3  + shift;
-            std::string name(hit.name());
-            oss_contig << io::SingleRead(name, path_string);
-            INFO(name);
-            INFO("First - " << seqpos.first << ", second - " << seqpos.second);
-            res.push_back({type, name, unsigned(seqpos.first), unsigned(seqpos.second), path_string.substr(seqpos.first, seqpos.second - seqpos.first)});
-        }
-    }
-}
-
-void match_contigs(const path_extend::PathContainer &contig_paths, const path_extend::ScaffoldSequenceMaker &scaffold_maker,
-                   const std::string &type, const hmmer::HMM &hmm, const hmmer::hmmer_cfg &cfg,
-                   ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
-    INFO("Total contigs: " << contig_paths.size());
-    INFO("Model length - " << hmm.length());
-    for (auto iter = contig_paths.begin(); iter != contig_paths.end(); ++iter) {
-        hmmer::HMMMatcher matcher(hmm, cfg);
-        path_extend::BidirectionalPath* path = iter.get();
-        if (path->Length() <= 0)
-            continue;
-        std::string path_string = scaffold_maker.MakeSequence(*path);
-        match_contigs_internal(matcher, path, path_string, type, hmm, res, oss_contig);
-
-        path_extend::BidirectionalPath* conj_path = path->GetConjPath();
-        if (conj_path->Length() <= 0)
-            continue;
-        std::string path_string_conj = scaffold_maker.MakeSequence(*conj_path);
-        match_contigs_internal(matcher, conj_path, path_string_conj, type, hmm, res, oss_contig);
-    }
-}
-
-ContigAlnInfo DomainMatcher::MatchDomains(conj_graph_pack &gp) {
-    if (fs::check_existence(cfg::get().output_dir + "/temp_anti/"))
-        fs::remove_dir(cfg::get().output_dir + "/temp_anti/");
-    fs::make_dirs(cfg::get().output_dir + "/temp_anti/");
-    fs::make_dirs(cfg::get().output_dir + "/bgc_in_gfa/");
-
-    ContigAlnInfo res;
-    hmmer::hmmer_cfg hcfg;
-    std::vector<std::string> hmms;
-    boost::split(hmms, cfg::get().hmm_set, boost::is_any_of(",;"), boost::token_compress_on);
-    path_extend::ScaffoldSequenceMaker scaffold_maker(gp.g);
-
-    io::OFastaReadStream oss_contig(cfg::get().output_dir + "/temp_anti/restricted_edges.fasta");
-    for (const auto &file : hmms) {
-        hmmer::HMMFile hmmfile(file);
-        if (!hmmfile.valid())
-        FATAL_ERROR("Error opening HMM file "<< file);
-        auto hmmw = hmmfile.read();
-        INFO("Matching contigs with " << file);
-        match_contigs(gp.contig_paths, scaffold_maker,
-                      fs::basename(file), hmmw.get(), hcfg,
-                      res, oss_contig);
-    }
-
-    return res;
-}
-
 void DomainGraphConstruction::run(conj_graph_pack &gp, const char*) {
     std::vector<std::string> domain_filenames;
 
-    auto res = DomainMatcher().MatchDomains(gp);
+    auto res = nrps::DomainMatcher().MatchDomains(gp, cfg::get().hmm_set, cfg::get().output_dir);
 
     DomainGraphConstructor constructor(gp);
     auto &graph = constructor.ConstructGraph(res);
