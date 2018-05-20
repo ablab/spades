@@ -16,18 +16,6 @@
 
 namespace debruijn_graph {
 
-//We should have file with .hmm or .hmm.gz extension
-static std::string getFilename (const std::string &filename) {
-    size_t found = filename.find_last_of("/");
-    if (filename.substr(filename.size() - 3) == ".gz") {
-        return filename.substr(found + 1, filename.size() - found - 8);
-    } else if (filename.substr(filename.size() - 6) == ".fasta") {
-        return filename.substr(found + 1, filename.size() - found - 7);
-    } else {
-        return filename.substr(found + 1, filename.size() - found - 5);
-    }
-}
-
 template<class Graph>
 class SetOfForbiddenEdgesPathChooser : public PathProcessor<Graph>::Callback {
     typedef typename Graph::EdgeId EdgeId;
@@ -478,7 +466,7 @@ ContigAlnInfo DomainMatcher::MatchDomains(conj_graph_pack &gp) {
         auto hmmw = hmmfile.read();
         INFO("Matching contigs with " << file);
         match_contigs(gp.contig_paths, scaffold_maker,
-                      getFilename(file), hmmw.get(), hcfg,
+                      fs::basename(file), hmmw.get(), hcfg,
                       res, oss_contig);
     }
 
