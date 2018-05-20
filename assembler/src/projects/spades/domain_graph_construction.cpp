@@ -390,7 +390,7 @@ private:
 };
 
 
-std::vector<std::string> DomainMatcher::getFileVector(const std::string &hmm_files) {
+static std::vector<std::string> getFileVector(const std::string &hmm_files) {
     std::string s = hmm_files;
     std::vector<std::string> result;
     std::string delimiter = ",";
@@ -405,8 +405,8 @@ std::vector<std::string> DomainMatcher::getFileVector(const std::string &hmm_fil
     return result;
 }
 
-void DomainMatcher::match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::BidirectionalPath* path,
-                                           const std::string &path_string, const hmmer::HMM &hmm, ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
+static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::BidirectionalPath* path,
+                                   const std::string &path_string, const hmmer::HMM &hmm, ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
     for (size_t shift = 0; shift < 3; ++shift) {
         std::string ref_shift = std::to_string(path->GetId()) + "_" + std::to_string(shift);
         std::string seq_aas = aa::translate(path_string.c_str() + shift);
@@ -441,9 +441,9 @@ void DomainMatcher::match_contigs_internal(hmmer::HMMMatcher &matcher, path_exte
 }
 
 
-ContigAlnInfo DomainMatcher::match_contigs(const path_extend::PathContainer &contig_paths,
-                                           const hmmer::HMM &hmm, const hmmer::hmmer_cfg &cfg,
-                                           const path_extend::ScaffoldSequenceMaker &scaffold_maker, io::OFastaReadStream &oss_contig) {
+ContigAlnInfo match_contigs(const path_extend::PathContainer &contig_paths,
+                            const hmmer::HMM &hmm, const hmmer::hmmer_cfg &cfg,
+                            const path_extend::ScaffoldSequenceMaker &scaffold_maker, io::OFastaReadStream &oss_contig) {
     ContigAlnInfo res;
     INFO(contig_paths.size());
 
@@ -453,13 +453,13 @@ ContigAlnInfo DomainMatcher::match_contigs(const path_extend::PathContainer &con
         path_extend::BidirectionalPath* path = iter.get();
         if (path->Length() <= 0)
             continue;
-        string path_string = scaffold_maker.MakeSequence(*path);
+        std::string path_string = scaffold_maker.MakeSequence(*path);
         match_contigs_internal(matcher, path, path_string, hmm, res, oss_contig);
 
         path_extend::BidirectionalPath* conj_path = path->GetConjPath();
         if (conj_path->Length() <= 0)
             continue;
-        string path_string_conj = scaffold_maker.MakeSequence(*conj_path);
+        std::string path_string_conj = scaffold_maker.MakeSequence(*conj_path);
         match_contigs_internal(matcher, conj_path, path_string_conj, hmm, res, oss_contig);
     }
 
