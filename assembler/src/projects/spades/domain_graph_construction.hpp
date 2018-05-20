@@ -19,10 +19,18 @@ class DomainGraphConstruction : public spades::AssemblyStage {
     void run(conj_graph_pack &gp, const char*);
 };
 
-using ContigAlnInfo = std::unordered_map<std::string, std::string>;
+struct AlnInfo {
+    std::string type;
+    std::string name;
+    unsigned posl, posr;
+    std::string seq;
+};
+
+using ContigAlnInfo = std::vector<AlnInfo>;
+
 class DomainMatcher {
 public:
-    void MatchDomains(conj_graph_pack &gp, std::vector<std::string> &domain_filenames);
+    ContigAlnInfo MatchDomains(conj_graph_pack &gp);
 };
 
 }
