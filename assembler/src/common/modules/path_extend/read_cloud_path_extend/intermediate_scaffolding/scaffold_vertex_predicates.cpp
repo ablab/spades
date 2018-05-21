@@ -14,37 +14,27 @@ bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVer
         DEBUG("Edge is too high-covered");
         return true;
     }
-
-    //fixme wow such magic
-    double score_normalizer = vertex_coverage * average_coverage * static_cast<double>(vertex_length) / 2000000;
-
     DEBUG("Length: " << vertex_length);
     DEBUG("Coverage: " << vertex_coverage);
     DEBUG("Id: " << vertex.int_id());
     DEBUG("Length threshold: " << params_.edge_length_threshold_);
-//    if (vertex_length < params_.edge_length_threshold_) {
-//        DEBUG("Edge is too short");
-//        return true;
-//    }
-    const double score_normalizer_threshold = 0.01;
-    if (math::le(score_normalizer, score_normalizer_threshold)) {
-        DEBUG("Edge is too short or low-covered");
+
+    if (math::le(vertex_length, params_.edge_length_threshold_)) {
+        DEBUG("Edge is too short");
         return true;
     }
-
     double middle_barcodes = static_cast<double>(barcode_extractor_->GetHeadSize(vertex));
     if (math::eq(middle_barcodes, 0.0)) {
         DEBUG("No barcodes on edge " << vertex.int_id() << ", " << middle_barcodes);
         return true;
     }
+
     double raw_score_threshold = params_.raw_score_threshold_;
-    bool threshold_passed = pair_entry_processor_->CheckMiddleEdge(vertex, raw_score_threshold * score_normalizer);
+    bool threshold_passed = pair_entry_processor_->CheckMiddleEdge(vertex, raw_score_threshold);
 
     TRACE("Threshold passed: " << (threshold_passed ? "True" : "False"));
     DEBUG("Edge: " << vertex.int_id());
     DEBUG("Raw threshold: " << params_.raw_score_threshold_);
-    DEBUG("New threshold: " << raw_score_threshold * score_normalizer);
-    DEBUG("Normalizer: " << score_normalizer);
     DEBUG("Middle barcodes: " << barcode_extractor_->GetHeadSize(vertex));
     DEBUG("Vertex length: " << vertex_length);
     DEBUG("Vertex coverage: " << vertex_coverage);
@@ -105,15 +95,11 @@ IntersectionBasedPairEntryProcessor::IntersectionBasedPairEntryProcessor(
     : intersection_(intersection_), barcode_extractor_(barcode_extractor_) {}
 
 bool TwoSetsBasedPairEntryProcessor::CheckWithEntry(const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &middle_vertex,
-                                                    const barcode_index::SimpleVertexEntry long_entry,
+                                                    const barcode_index::SimpleVertexEntry &long_entry,
                                                     double score_threshold) const {
-    size_t intersection_size = barcode_extractor_->GetIntersectionSize(middle_vertex, long_entry);
-//    size_t min_size = std::min(long_entry.size(), barcode_extractor_->GetHeadSize(middle_vertex));
-//    double containment_index = static_cast<double>(intersection_size) / static_cast<double>(min_size);
-    bool threshold_passed = math::ge(static_cast<double>(intersection_size), score_threshold);
-    DEBUG("Score: " << intersection_size);
-//    DEBUG("Intersection: " << intersection_size);
-    return threshold_passed;
+    double score = score_function_->GetScore(middle_vertex, long_entry);
+    DEBUG("Score: " << score);
+    return math::ge(score, score_threshold);
 }
 bool TwoSetsBasedPairEntryProcessor::CheckMiddleEdge(const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &vertex,
                                                      double score_threshold) {
@@ -122,10 +108,10 @@ bool TwoSetsBasedPairEntryProcessor::CheckMiddleEdge(const scaffold_graph::Scaff
     return first_passed and second_passed;
 }
 TwoSetsBasedPairEntryProcessor::TwoSetsBasedPairEntryProcessor(
-        const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &first_,
-        const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &second_,
-        const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> &barcode_extractor_)
-            : first_(first_), second_(second_), barcode_extractor_(barcode_extractor_) {}
+        const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &first,
+        const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &second,
+        const shared_ptr<VertexEntryScoreFunction> score_function)
+            : first_(first), second_(second), score_function_(score_function) {}
 
 RecordingPairEntryProcessor::RecordingPairEntryProcessor(
         const RecordingPairEntryProcessor::SimpleVertexEntry &first_,
@@ -143,4 +129,21 @@ bool RecordingPairEntryProcessor::CheckMiddleEdge(const ScaffoldVertex &vertex, 
     }
     return (*result_it).second;
 }
+double RepetitiveVertexEntryScoreFunction::GetScore(const scaffold_graph::ScaffoldVertex &vertex,
+                                                    const barcode_index::SimpleVertexEntry &entry) const {
+    size_t unique_entry_size = entry.size();
+    size_t intersection_size = barcode_extractor_->GetIntersectionSize(vertex, entry);
+    if (unique_entry_size == 0) {
+        return 0;
+    } else {
+        return static_cast<double>(intersection_size) / static_cast<double>(unique_entry_size);
+    }
+}
+RepetitiveVertexEntryScoreFunction::RepetitiveVertexEntryScoreFunction(
+        shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_)
+    : VertexEntryScoreFunction(barcode_extractor_) {}
+
+VertexEntryScoreFunction::VertexEntryScoreFunction(
+        shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_)
+    : barcode_extractor_(barcode_extractor_) {}
 }
