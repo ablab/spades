@@ -42,10 +42,6 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::Bidi
             std::pair<int, int> seqpos2 = domain.hmmpos();
             INFO("First - " << seqpos2.first << ", second - " << seqpos2.second);
             INFO("First - " << seqpos.first << ", second - " << seqpos.second);
-
-            if (seqpos.second - seqpos.first < hmm.length() / 2)
-                continue;
-
             int shift = hit.name()[strlen(hit.name()) - 1] - '0';
             seqpos.first = seqpos.first * 3  + shift;
             seqpos.second = seqpos.second * 3  + shift;
