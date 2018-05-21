@@ -5,31 +5,37 @@
 namespace path_extend {
 
 struct ScaffolderParams {
+  struct ScoreEstimationParams {
+    double score_percentile_;
+    size_t max_distance_;
+    size_t training_edge_length_threshold_;
+
+    ScoreEstimationParams(double score_percentile_, size_t max_distance_, size_t training_edge_length_threshold_);
+  };
+
   size_t length_threshold_;
   size_t tail_threshold_;
   size_t count_threshold_;
-  double score_threshold_;
   double connection_score_threshold_;
-  double relative_coverage_threshold_;
   size_t connection_length_threshold_;
   size_t connection_count_threshold_;
   size_t initial_distance_;
   double split_procedure_strictness_;
   size_t transitive_distance_threshold_;
   size_t min_length_for_barcode_collection_;
+  ScoreEstimationParams score_estimation_params_;
 
   ScaffolderParams(size_t length_threshold_,
                    size_t tail_threshold_,
                    size_t count_threshold_,
-                   double score_threshold_,
-                   double connection_barcode_threshold_,
-                   double relative_coverage_threshold_,
+                   double connection_score_threshold_,
                    size_t connection_length_threshold_,
                    size_t connection_count_threshold_,
                    size_t initial_distance_,
                    double split_procedure_strictness_,
                    size_t transitive_distance_threshold_,
-                   size_t min_length_for_barcode_collection);
+                   size_t min_length_for_barcode_collection,
+                   const ScoreEstimationParams& score_estimation_params);
 };
 
 /** Interface for scaffold graph factory. Implementations use initial scaffold graph to construct new one.
@@ -74,7 +80,7 @@ class BarcodeConnectionConstructorCaller: public IterativeScaffoldGraphConstruct
     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor_;
     shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
     const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
-    size_t max_threads;
+    size_t max_threads_;
 
  public:
     BarcodeConnectionConstructorCaller(const Graph& g_,

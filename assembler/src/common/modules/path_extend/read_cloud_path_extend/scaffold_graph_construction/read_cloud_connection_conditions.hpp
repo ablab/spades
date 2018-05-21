@@ -22,7 +22,7 @@ namespace path_extend {
         bool IsLast() const override;
     };
 
-    class ScaffoldEdgePredicate: public func::AbstractPredicate<const path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge&> {
+    class ScaffoldEdgePredicate: public func::AbstractPredicate<const scaffold_graph::ScaffoldGraph::ScaffoldEdge&> {
      public:
         typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
         typedef scaffold_graph::ScaffoldGraph::ScaffoldEdge ScaffoldEdge;

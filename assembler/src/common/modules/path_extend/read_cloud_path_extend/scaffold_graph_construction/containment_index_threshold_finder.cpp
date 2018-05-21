@@ -204,7 +204,10 @@ LabeledDistributionThresholdEstimator::LabeledDistributionThresholdEstimator(
       score_percentile_(score_percentile),
       max_threads_(max_threads) {}
 double LabeledDistributionThresholdEstimator::GetThreshold() const {
-    INFO("Estimating containment index threshold");
+    INFO("Estimating score threshold");
+    INFO("Left block length: " << left_block_length_);
+    INFO("Right block length: " << right_block_length_);
+    INFO("Max distance: " << max_distance_);
     const double STEP = 0.001;
     const double MIN = 0.0;
     const double MAX = 1.0;
@@ -226,7 +229,7 @@ double LabeledDistributionThresholdEstimator::GetThreshold() const {
         DEBUG(i << " percentile value: " << percentile_getter.GetPercentile(score_histogram, i));
     }
     double result = percentile_getter.GetPercentile(score_histogram, score_percentile_);
-    INFO("Estimated containment index threshold: " << result);
+    INFO("Estimated score threshold: " << result);
     return result;
 }
 

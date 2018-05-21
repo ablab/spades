@@ -296,7 +296,9 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
 
     const auto& start_entry = long_edge_extractor_->GetTailEntry(start);
     const auto& end_entry = long_edge_extractor_->GetHeadEntry(end);
-    auto pair_entry_processor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(start_entry, end_entry, short_edge_extractor_);
+    auto short_edge_score_function = make_shared<RepetitiveVertexEntryScoreFunction>(short_edge_extractor_);
+    auto pair_entry_processor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(start_entry, end_entry,
+                                                                                         short_edge_score_function);
     auto scaffold_vertex_predicate = ConstructScaffoldVertexPredicate(start, end, pair_entry_processor);
 
 //    auto recording_pair_entry_processor = make_shared<path_extend::RecordingPairEntryProcessor>(start_entry, end_entry,
