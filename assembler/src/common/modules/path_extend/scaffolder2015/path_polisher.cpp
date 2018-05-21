@@ -397,8 +397,9 @@ shared_ptr<LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::
     DEBUG("Prefix length: " << prefix->Length());
     DEBUG("Suffix length: " << suffix->Length());
     auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, main_extractor_);
+    auto short_edge_score_function = make_shared<RepetitiveVertexEntryScoreFunction>(short_edge_extractor);
     auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
-    prefix_entry, suffix_entry, short_edge_extractor);
+    prefix_entry, suffix_entry, short_edge_score_function);
     auto predicate = make_shared<LongEdgePairGapCloserPredicate>(g_, short_edge_extractor, params,
                                                                  prefix, suffix, pair_entry_extractor);
     return predicate;
