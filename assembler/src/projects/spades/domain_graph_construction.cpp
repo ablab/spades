@@ -280,6 +280,7 @@ private:
                 }
             }
         }
+        std::set<std::string> removed_vertices;
         for (auto p : mappings_for_path) {
             DEBUG("Processing path " << p.first);
             std::pair<std::pair<int, int>, std::pair<std::string, vector<EdgeId>>> prev(make_pair(-1, -1), make_pair("", std::vector<EdgeId>()));
@@ -287,17 +288,28 @@ private:
                 DEBUG("Processing mapping " << maps.second.first);
                 DEBUG("Mapping start: " << maps.first.first << ". Mapping end: " << maps.first.second);
 
+                if (removed_vertices.count(maps.second.first)) {
+                    DEBUG("Already deleted");
+                    continue;
+                }
+
                 if (prev.first.first == -1) {
                     prev = maps;
                     continue;
                 }
                 if (prev.first.second > maps.first.first) {
                     DEBUG("Mapping intersects with other, skipping");
-                    graph.removeVertex(maps.second.first);
+                    if (!removed_vertices.count(maps.second.first)) {
+                        DEBUG("Inserting " << graph.getVertex(maps.second.first)->rc_->name_);
+                        DEBUG("Inserting " << maps.second.first);
+                        removed_vertices.insert(graph.getVertex(maps.second.first)->rc_->name_);
+                        removed_vertices.insert(maps.second.first);
+                        graph.removeVertex(maps.second.first);
+                    }
                     continue;
                 }
 
-                if (prev.first.second < maps.first.first && maps.first.first - prev.first.second < 20000) {
+                if (prev.first.second < maps.first.first && maps.first.first - prev.first.second < 20000 && !removed_vertices.count(maps.second.first) && !removed_vertices.count(prev.second.first)) {
                     DEBUG("Connecting " << prev.second << " and " << maps.second);
                     graph.addEdge(prev.second.first, maps.second.first, true, maps.first.first - prev.first.second, FindEdgesBetweenMappings(prev.first.second, maps.first.first, from_id_to_path[p.first]));
                 }

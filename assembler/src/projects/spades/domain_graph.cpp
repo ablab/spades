@@ -71,7 +71,6 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::conj_graph_pack &gp,
     std::set<std::shared_ptr<Vertex>> nodes_with_incoming;
     for (auto e : arcs_)
         nodes_with_incoming.insert(e->end_);
-
     std::set<std::shared_ptr<Vertex>> start_nodes;
     for (auto v : nodes_) {
         if (nodes_with_incoming.find(v) == nodes_with_incoming.end() &&

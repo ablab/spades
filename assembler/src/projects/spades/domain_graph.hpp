@@ -141,17 +141,45 @@ public:
     }
 
     void removeVertex(const std::string &vertex_name) {
+        auto vertex = getVertex(vertex_name);
+        auto vertex_rc = getVertex(vertex_name)->rc_;
+        for (auto e : vertex->edges_) {
+        }
         for (auto v : nodes_) {
-            if (v->name_ == vertex_name) {
+            if (v->name_ == vertex_name || v->name_ == vertex_rc->name_) {
                 nodes_.erase(v);
-                break;
             }
         }
+
         auto it = node_map_.find(vertex_name);
         for (auto edge : it->second->edges_) {
-            delete edge;
+            removeEdge(edge);
+        }
+
+        auto it2 = node_map_.find(vertex_rc->name_);
+        for (auto edge : it2->second->edges_) {
+            removeEdge(edge);
         }
         node_map_.erase(it);
+        node_map_.erase(it2);
+    }
+
+    void removeEdge(Edge *edge) {
+        for (auto e : arcs_) {
+            if (e->start_ == edge->start_ && e->end_ == edge->end_ ) {
+                auto v_rc = edge->end_->rc_;
+                for (auto e2 : v_rc->edges_) {
+                    if (e2->end_ == e->start_->rc_) {
+                        v_rc->edges_.erase(e2);
+                        break;
+                    }
+                }
+                v_rc->edges_.erase(e);
+                arcs_.erase(e);
+            }
+        }
+        arcs_.erase(edge);
+        delete edge;
     }
 
     bool isExistingNode(std::shared_ptr<Vertex> v) const {
