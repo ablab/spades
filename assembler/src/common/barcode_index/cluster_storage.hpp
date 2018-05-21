@@ -574,7 +574,7 @@ class EdgeInitialClusterStorageBuilder: public InitialClusterStorageBuilder {
         vector<ScaffoldVertex> target_edges_vector;
         std::copy(target_edges_.begin(), target_edges_.end(), std::back_inserter(target_edges_vector));
         size_t block_size = target_edges_vector.size() / 10;
-        INFO("Block size: " << block_size);
+        DEBUG("Block size: " << block_size);
         size_t processed_edges = 0;
 #pragma omp parallel for num_threads(max_threads_)
         for (size_t i = 0; i < target_edges_vector.size(); ++i) {
@@ -594,7 +594,7 @@ class EdgeInitialClusterStorageBuilder: public InitialClusterStorageBuilder {
                 }
                 processed_edges++;
                 if (processed_edges % block_size == 0) {
-                    INFO("Processed " << processed_edges << " out of " << target_edges_vector.size());
+                    DEBUG("Processed " << processed_edges << " out of " << target_edges_vector.size());
                 }
             }
         }

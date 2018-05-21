@@ -51,8 +51,11 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
                                                     params_.small_length_threshold_, true);
     auto start = edge.getStart();
     auto end = edge.getEnd();
-    auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
-        scaff_vertex_extractor_->GetTailEntry(start), scaff_vertex_extractor_->GetHeadEntry(end), scaff_vertex_extractor_);
+//    auto start_entry = scaff_vertex_extractor_->GetTailEntry(start);
+//    auto end_entry = scaff_vertex_extractor_-> GetHeadEntry(end);
+    auto intersection_entry = scaff_vertex_extractor_->GetIntersection(start, end);
+    auto pair_entry_extractor = make_shared<path_extend::IntersectionBasedPairEntryProcessor>(intersection_entry,
+                                                                                              scaff_vertex_extractor_);
     auto gap_closer_predicate = make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_,
                                                                                          scaff_vertex_extractor_,
                                                                                          params, start, end,

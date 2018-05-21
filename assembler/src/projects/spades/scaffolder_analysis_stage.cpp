@@ -9,15 +9,6 @@
 
 void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
 
-    //fixme cut redundancies
-    string cluster_stats_output_path = fs::append_path(cfg::get().output_dir, "cluster_statistics");
-    size_t min_edge_length = 50000;
-    size_t min_read_threshold = 5;
-    path_extend::cluster_model::ClusterDistributionExtractor distribution_analyzer(graph_pack,
-                                                                                  min_read_threshold,
-                                                                                  min_edge_length,
-                                                                                  cfg::get().max_threads);
-
     const size_t reliable_edge_length = 200;
     const size_t tail_threshold = 3000;
     const size_t distance_bound = 8000;

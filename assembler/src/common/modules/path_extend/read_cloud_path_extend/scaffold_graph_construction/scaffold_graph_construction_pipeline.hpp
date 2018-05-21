@@ -4,6 +4,7 @@
 #include "modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
 #include "read_cloud_connection_conditions.hpp"
 #include "construction_callers.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_model/distribution_extractor_helper.hpp"
 
 namespace path_extend {
 
@@ -17,9 +18,15 @@ enum Type {
 
 class ScaffolderParamsConstructor {
  public:
-    ScaffolderParams ConstructScaffolderParamsFromCfg(size_t length_threshold) const;
+    ScaffolderParams ConstructScaffolderParamsFromCfg(size_t length_threshold,
+                                                      cluster_model::PrimaryParametersExtractor primary_extractor) const;
 
-    LongEdgePairGapCloserParams ConstructGapCloserParamsFromCfg(bool normalize_using_cov) const;
+    LongEdgePairGapCloserParams ConstructGapCloserParamsFromMainParams(
+            const ScaffolderParams& params, const Graph& g,
+            shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+            size_t unique_edge_length,
+            size_t max_threads) const;
+
 };
 
 
@@ -61,6 +68,8 @@ class ScaffoldGraphPipelineConstructor {
                                                                  BarcodeIndexPtr barcode_extractor,
                                                                  const ScaffolderParams& params,
                                                                  size_t max_threads) const;
+
+    cluster_model::PrimaryParametersExtractor ConstructPrimaryParametersExtractor() const;
 };
 
 class BasicScaffoldGraphPipelineConstructor: public ScaffoldGraphPipelineConstructor {

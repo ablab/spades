@@ -193,10 +193,11 @@ class ReadCloudDijkstraHelper {
                                   const path_extend::scaffold_graph::ScaffoldVertex& start,
                                   const path_extend::scaffold_graph::ScaffoldVertex& end,
                                   const path_extend::LongEdgePairGapCloserParams& params) {
+        auto score_function = make_shared<path_extend::RepetitiveVertexEntryScoreFunction>(short_edge_extractor);
         auto pair_entry_processor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
             long_edge_extractor->GetTailEntry(start),
             long_edge_extractor->GetHeadEntry(end),
-            short_edge_extractor);
+            score_function);
 //    auto pair_entry_processor = make_shared<path_extend::IntersectionBasedPairEntryProcessor>(barcode_intersection,
 //                                                                                              short_edge_extractor);
         auto barcode_put_checker = make_shared<BarcodedPathPutChecker<Graph>>(g, short_edge_extractor, pair_entry_processor,
