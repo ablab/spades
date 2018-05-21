@@ -89,6 +89,8 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::conj_graph_pack &gp,
 
     ContigAlnInfo res;
     hmmer::hmmer_cfg hcfg;
+    hcfg.E = 1.0e-9;
+    hcfg.domE = 1.0e-9;
     std::vector<std::string> hmms;
     boost::split(hmms, hmm_set, boost::is_any_of(",;"), boost::token_compress_on);
     path_extend::ScaffoldSequenceMaker scaffold_maker(gp.g);
