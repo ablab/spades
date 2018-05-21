@@ -62,7 +62,7 @@ class PairEntryProcessor {
     virtual bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) = 0;
 };
 
-class LongEdgePairGapCloserPredicate : public ScaffoldVertexPredicate {
+class LongEdgePairGapCloserPredicate: public ScaffoldVertexPredicate {
  public:
     using ScaffoldVertexPredicate::ScaffoldGraph;
  private:
@@ -102,6 +102,43 @@ class IntersectionBasedPairEntryProcessor: public PairEntryProcessor {
 
 };
 
+class VertexEntryScoreFunction {
+ protected:
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
+
+    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_;
+ public:
+    VertexEntryScoreFunction(shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_);
+
+    virtual double GetScore(const ScaffoldVertex& vertex, const SimpleVertexEntry& entry) const = 0;
+};
+
+//short edge vs entry from unique edge
+class RepetitiveVertexEntryScoreFunction: public VertexEntryScoreFunction {
+ protected:
+    typedef barcode_index::SimpleIntersectingScaffoldVertexExtractor SimpleIntersectingScaffoldVertexExtractor;
+    using VertexEntryScoreFunction::ScaffoldVertex;
+    using VertexEntryScoreFunction::SimpleVertexEntry;
+
+    using VertexEntryScoreFunction::barcode_extractor_;
+ public:
+    RepetitiveVertexEntryScoreFunction(shared_ptr<SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_);
+
+    double GetScore(const ScaffoldVertex &vertex, const SimpleVertexEntry &entry) const override;
+};
+
+//entry from unique edge vs unique edge
+//class UniqueVertexEntryScoreFunction: VertexEntryScoreFunction {
+// protected:
+//    using VertexEntryScoreFunction::ScaffoldVertex;
+//    using VertexEntryScoreFunction::SimpleVertexEntry;
+//    using VertexEntryScoreFunction::barcode_extractor_;
+// public:
+// private:
+//    double GetScore(const ScaffoldVertex &vertex, const SimpleVertexEntry &entry) const override;
+//};
+
 class TwoSetsBasedPairEntryProcessor: public PairEntryProcessor {
  private:
     using PairEntryProcessor::ScaffoldGraph;
@@ -109,18 +146,18 @@ class TwoSetsBasedPairEntryProcessor: public PairEntryProcessor {
 
     const SimpleVertexEntry first_;
     const SimpleVertexEntry second_;
-    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_;
+    shared_ptr<VertexEntryScoreFunction> score_function_;
 
  public:
-    TwoSetsBasedPairEntryProcessor(const SimpleVertexEntry &first_,
-                                   const SimpleVertexEntry &second_,
-                                   const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> &barcode_extractor_);
+    TwoSetsBasedPairEntryProcessor(const SimpleVertexEntry &first,
+                                   const SimpleVertexEntry &second,
+                                   shared_ptr<VertexEntryScoreFunction> score_function);
 
     bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) override;
 
  private:
-    bool CheckWithEntry(const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &vertex,
-                        const SimpleVertexEntry long_entry, double score_threshold) const;
+    bool CheckWithEntry(const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex& vertex,
+                        const SimpleVertexEntry& long_entry, double score_threshold) const;
 
     DECL_LOGGER("TwoSetsBasedPairEntryProcessor")
 };

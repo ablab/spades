@@ -69,12 +69,14 @@ class ClusterDistributionExtractor {
     size_t max_threads_;
  public:
     ClusterDistributionExtractor(const conj_graph_pack &gp_,
-                                size_t min_read_threshold_,
-                                size_t min_edge_length_,
-                                size_t max_threads_)
+                                 size_t min_read_threshold_,
+                                 size_t min_edge_length_,
+                                 size_t min_cluster_offset_,
+                                 size_t max_threads_)
         : gp_(gp_),
           min_read_threshold_(min_read_threshold_),
           min_edge_length_(min_edge_length_),
+          min_cluster_offset_(min_cluster_offset_),
           max_threads_(max_threads_) {}
 
     DistributionPack GetDistributionsForDistance(size_t distance_threshold) {
@@ -201,25 +203,32 @@ class ClusterDistributionExtractor {
     }
 
     DECL_LOGGER("ClusterDistributionAnalyzer");
+};
 
-    class PrimaryParametersExtractor {
-        DistributionPack cluster_distributions_;
+class PrimaryParametersExtractor {
+    shared_ptr<DistributionPack> cluster_distributions_;
 
-     public:
-        size_t GetLengthPercentile(double percent) {
-            return GetPercentile(cluster_distributions_.length_distribution_, percent);
+ public:
+    explicit PrimaryParametersExtractor(shared_ptr<DistributionPack> cluster_distributions) :
+        cluster_distributions_(cluster_distributions) {}
+
+    size_t GetLengthPercentile(double percent) {
+        return GetPercentile(cluster_distributions_->length_distribution_, percent);
+    }
+
+    double GetCoveragePercentile(double percent) {
+        return GetPercentile(cluster_distributions_->coverage_distribution_, percent);
+    }
+
+ private:
+    template<class T>
+    T GetPercentile(SimpleDistribution<T>& distribution, double percent) {
+        if (not distribution.is_sorted()) {
+            distribution.sort();
         }
-
-     private:
-        template<class T>
-        T GetPercentile(SimpleDistribution<T>& distribution, double percent) {
-            if (not distribution.is_sorted()) {
-                distribution.sort();
-            }
-            size_t index = static_cast<size_t>(static_cast<double>(distribution.size()) * percent);
-            return distribution.at(index);
-        }
-    };
+        size_t index = static_cast<size_t>(static_cast<double>(distribution.size()) * percent);
+        return distribution.at(index);
+    }
 };
 }
 }

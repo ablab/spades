@@ -513,10 +513,32 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             auto barcode_extractor_ptr =
                 std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
             path_extend::ScaffolderParamsConstructor params_constructor;
-            auto read_cloud_gap_closer_params = params_constructor.ConstructGapCloserParamsFromCfg(true);
-            read_cloud_gap_closer_params.raw_score_threshold_ = cfg::get().ts_res.gap_closer_connection_score_threshold;
-            read_cloud_gap_closer_params.relative_coverage_threshold_ = cfg::get().ts_res.gap_closer_relative_coverage_threshold;
-            read_cloud_gap_closer_params.edge_length_threshold_ = cfg::get().ts_res.gap_closer_connection_length_threshold;
+
+            const size_t min_training_length = 50000;
+            const size_t min_cluster_offset = 10000;
+            const size_t min_read_threshold = 5;
+
+            size_t max_threads = cfg::get().max_threads;
+
+            path_extend::cluster_model::ClusterDistributionExtractor distribution_analyzer(gp_,
+                                                                                           min_read_threshold,
+                                                                                           min_training_length,
+                                                                                           min_cluster_offset,
+                                                                                           max_threads);
+            auto cluster_distribution_pack =
+                make_shared<cluster_model::DistributionPack>(distribution_analyzer.GetClusterDistributions());
+            cluster_model::PrimaryParametersExtractor primary_parameters_extractor(cluster_distribution_pack);
+
+            //fixme configs
+            const size_t unique_length = 2000;
+
+            auto scaffolder_params =
+                params_constructor.ConstructScaffolderParamsFromCfg(unique_length, primary_parameters_extractor);
+            auto read_cloud_gap_closer_params = params_constructor.ConstructGapCloserParamsFromMainParams(scaffolder_params,
+                                                                                                          gp_.g,
+                                                                                                          barcode_extractor_ptr,
+                                                                                                          unique_length,
+                                                                                                          max_threads);
             size_t tail_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_tail_threshold;
             size_t count_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_count_threshold;
             size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;

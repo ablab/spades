@@ -142,7 +142,7 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
             pipeline_constructor = make_shared<MergingScaffoldGraphPipelineConstructor>(gp_, unique_storage,
                                                                                         barcode_extractor_,
                                                                                         max_threads_, min_length);
-            INFO("Constructing scaffold graph in gap closer mode");
+            INFO("Constructing scaffold graph in scaffolding mode");
             break;
         }
         case scaffold_graph_construction_pipeline_type::Binning: {
