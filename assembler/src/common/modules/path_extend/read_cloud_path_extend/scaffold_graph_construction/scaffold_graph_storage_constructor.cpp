@@ -4,13 +4,14 @@
 
 namespace path_extend {
 
-ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorageFromGraph() const {
+ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorage() const {
     const size_t num_threads = cfg::get().max_threads;
     auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     CloudScaffoldGraphConstructor constructor(num_threads, gp_, extractor);
     scaffold_graph_construction_pipeline_type::Type type = scaffold_graph_construction_pipeline_type::Basic;
     ScaffoldGraphStorage storage(constructor.ConstructScaffoldGraphFromMinLength(large_length_threshold_, type),
-                                 constructor.ConstructScaffoldGraphFromMinLength(small_length_threshold_, type));
+                                 constructor.ConstructScaffoldGraphFromMinLength(small_length_threshold_, type),
+                                 large_length_threshold_, small_length_threshold_);
 
     return storage;
 }
@@ -28,18 +29,21 @@ ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorageFromPaths(
     ScaffoldGraphStorage storage(constructor.ConstructScaffoldGraphFromPathContainer(paths, large_length_threshold_,
                                                                                      scaffolding_mode),
                                  constructor.ConstructScaffoldGraphFromPathContainer(paths, small_length_threshold_,
-                                                                                     scaffolding_mode));
+                                                                                     scaffolding_mode),
+                                 large_length_threshold_,
+                                 small_length_threshold_);
     return storage;
 }
 
 ScaffoldGraphPolisherLauncher::ScaffoldGraphPolisherLauncher(const conj_graph_pack &gp_) : gp_(gp_) {}
 
-void ScaffoldGraphPolisherLauncher::GetGraphStorageReferenceInfo(const path_extend::scaffold_graph::ScaffoldGraph &small_scaffold_graph,
-                                                         const path_extend::scaffold_graph::ScaffoldGraph &large_scaffold_graph,
-                                                         const debruijn_graph::conj_graph_pack &graph_pack) const {
-    const size_t large_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
-    const size_t small_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
+void ScaffoldGraphPolisherLauncher::GetGraphStorageReferenceInfo(const ScaffoldGraphStorage& storage,
+                                                                 const debruijn_graph::conj_graph_pack &graph_pack) const {
+    const size_t large_length_threshold = storage.GetLargeLengthThreshold();
+    const size_t small_length_threshold = storage.GetSmallLengthThreshold();
 
+    const auto& large_scaffold_graph = storage.GetLargeScaffoldGraph();
+    const auto& small_scaffold_graph = storage.GetSmallScaffoldGraph();
     INFO("Large scaffold graph stats");
     PrintScaffoldGraphReferenceInfo(large_scaffold_graph, graph_pack, large_length_threshold);
     INFO("Small scaffold graph stats");
@@ -58,8 +62,8 @@ void ScaffoldGraphPolisherLauncher::PrintScaffoldGraphReferenceInfo(const path_e
     auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
     stats.Serialize(std::cout);
 }
-ScaffoldGraphPolisherLauncher::ScaffoldGraph ScaffoldGraphPolisherLauncher::GetScaffoldGraphFromStorage(const ScaffoldGraphStorage &storage,
-                                                                                        bool path_scaffolding) const {
+ScaffoldGraphPolisherLauncher::ScaffoldGraph ScaffoldGraphPolisherLauncher::GetScaffoldGraphFromStorage(
+        const ScaffoldGraphStorage &storage, bool path_scaffolding) const {
     const auto& large_scaffold_graph = storage.GetLargeScaffoldGraph();
     const auto& small_scaffold_graph = storage.GetSmallScaffoldGraph();
     INFO(large_scaffold_graph.VertexCount() << " vertices and " << large_scaffold_graph.EdgeCount()
@@ -69,7 +73,7 @@ ScaffoldGraphPolisherLauncher::ScaffoldGraph ScaffoldGraphPolisherLauncher::GetS
 
     bool validate_using_reference = cfg::get().ts_res.debug_mode;
     if (validate_using_reference) {
-        GetGraphStorageReferenceInfo(small_scaffold_graph, large_scaffold_graph, gp_);
+        GetGraphStorageReferenceInfo(storage, gp_);
     }
 
     path_extend::ScaffoldGraphGapCloserLauncher gap_closer_launcher;
