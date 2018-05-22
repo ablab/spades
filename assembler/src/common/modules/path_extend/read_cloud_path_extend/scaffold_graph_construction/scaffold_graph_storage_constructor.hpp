@@ -17,7 +17,7 @@ class ScaffoldGraphStorageConstructor {
                                     size_t large_length_threshold_,
                                     const conj_graph_pack &gp_);
 
-    ScaffoldGraphStorage ConstructStorageFromGraph() const;
+    ScaffoldGraphStorage ConstructStorage() const;
 
     ScaffoldGraphStorage ConstructStorageFromPaths(const PathContainer &paths, bool scaffolding_mode) const;
 };
@@ -33,8 +33,7 @@ class ScaffoldGraphPolisherLauncher {
     ScaffoldGraph GetScaffoldGraphFromStorage(const ScaffoldGraphStorage &storage, bool path_scaffolding) const;
 
  private:
-    void GetGraphStorageReferenceInfo(const path_extend::scaffold_graph::ScaffoldGraph &small_scaffold_graph,
-                                      const path_extend::scaffold_graph::ScaffoldGraph &large_scaffold_graph,
+    void GetGraphStorageReferenceInfo(const ScaffoldGraphStorage &storage,
                                       const debruijn_graph::conj_graph_pack &graph_pack) const;
 
     void PrintScaffoldGraphReferenceInfo(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,

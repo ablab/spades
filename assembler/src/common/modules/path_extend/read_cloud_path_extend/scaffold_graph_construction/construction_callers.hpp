@@ -7,7 +7,7 @@ namespace path_extend {
 struct ScaffolderParams {
   struct ScoreEstimationParams {
     double score_percentile_;
-    size_t max_distance_;
+    size_t max_cluster_gap_;
     size_t training_edge_length_threshold_;
 
     ScoreEstimationParams(double score_percentile_, size_t max_distance_, size_t training_edge_length_threshold_);
@@ -16,7 +16,6 @@ struct ScaffolderParams {
   size_t length_threshold_;
   size_t tail_threshold_;
   size_t count_threshold_;
-  double connection_score_threshold_;
   size_t connection_length_threshold_;
   size_t connection_count_threshold_;
   size_t initial_distance_;
@@ -28,7 +27,6 @@ struct ScaffolderParams {
   ScaffolderParams(size_t length_threshold_,
                    size_t tail_threshold_,
                    size_t count_threshold_,
-                   double connection_score_threshold_,
                    size_t connection_length_threshold_,
                    size_t connection_count_threshold_,
                    size_t initial_distance_,

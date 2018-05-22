@@ -457,18 +457,6 @@ void load(debruijn_config::truseq_analysis& tsa,
   load(tsa.genome_file, pt, "genome_file");
 }
 
-void load(debruijn_config::read_cloud_resolver::tenx_resolver& tenx,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
-    using config_common::load;
-    load(tenx.internal_gap_threshold, pt, "internal_gap_threshold");
-    load(tenx.tail_threshold, pt, "tail_threshold");
-    load(tenx.max_initial_candidates, pt, "max_initial_candidates");
-    load(tenx.absolute_barcode_threshold, pt, "absolute_barcode_threshold");
-    load(tenx.initial_coverage_threshold, pt, "initial_abundancy_threshold");
-    load(tenx.middle_coverage_threshold, pt, "middle_abundancy_threshold");
-    load(tenx.topology_filter_on, pt, "topology_filter_on");
-}
-
 void load(debruijn_config::read_cloud_resolver::stats& statistics,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
@@ -492,47 +480,32 @@ void load(debruijn_config::read_cloud_resolver::scaffold_graph_construction& sca
           boost::property_tree::ptree const &pt, bool /*complete*/) {
     using config_common::load;
     load(scaff_con.count_threshold, pt, "count_threshold");
-    load(scaff_con.vertex_multiplier, pt, "vertex_multiplier");
-    load(scaff_con.score_threshold, pt, "score_threshold");
-    load(scaff_con.connection_score_threshold, pt, "connection_score_threshold");
     load(scaff_con.relative_coverage_threshold, pt, "relative_coverage_threshold");
     load(scaff_con.connection_length_threshold, pt, "connection_length_threshold");
     load(scaff_con.connection_count_threshold, pt, "connection_count_threshold");
-    load(scaff_con.initial_distance, pt, "initial_distance");
     load(scaff_con.split_procedure_strictness, pt, "split_strictness");
     load(scaff_con.transitive_distance_threshold, pt, "transitive_distance_threshold");
     load(scaff_con.path_scaffolder_tail_threshold, pt, "path_scaffolder_tail_threshold");
     load(scaff_con.path_scaffolder_count_threshold, pt, "path_scaffolder_count_threshold");
     load(scaff_con.min_edge_length_for_barcode_collection, pt, "min_edge_length_for_barcode_collection");
-    load(scaff_con.full_pipeline_length, pt, "full_pipeline_length");
 }
 
 void load(debruijn_config::read_cloud_resolver& ts_res,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
-    load(ts_res.read_cloud_dataset, pt, "read_cloud_dataset");
-    load(ts_res.library_type, pt, "library_type");
+    load(ts_res.tslr_dataset, pt, "tslr_dataset");
     load(ts_res.edge_length_threshold, pt, "edge_length_threshold");
-    load(ts_res.trimming_threshold, pt, "trimming_threshold");
-    load(ts_res.distance_bound, pt, "distance_bound");
-    load(ts_res.diff_threshold, pt, "diff_threshold");
-    load(ts_res.gap_threshold, pt, "gap_threshold");
-    load(ts_res.barcode_number_threshold, pt, "barcode_number_threshold");
-    load(ts_res.distance, pt, "distance");
-    load(ts_res.topsort_bound, pt, "topsort_bound");
     load(ts_res.edge_tail_len, pt, "edge_tail_len");
     load(ts_res.frame_size, pt, "frame_size");
-    load(ts_res.fragment_len, pt, "fragment_len");
     load(ts_res.read_cloud_resolution_on, pt, "read_cloud_resolution_on");
-    load(ts_res.tenx, pt, "tenx_resolver");
     load(ts_res.scaff_pol, pt, "scaffold_polisher");
     load(ts_res.scaff_con, pt, "scaffold_graph_construction");
-    load(ts_res.long_edge_length_upper_bound, pt, "long_edge_length_upper_bound");
+    load(ts_res.long_edge_length_min_upper_bound, pt, "long_edge_length_min_upper_bound");
+    load(ts_res.long_edge_length_max_upper_bound, pt, "long_edge_length_max_upper_bound");
     load(ts_res.long_edge_length_lower_bound, pt, "long_edge_length_lower_bound");
     load(ts_res.statistics, pt, "statistics");
     load(ts_res.path_scaffolding_on, pt, "path_scaffolding_on");
     load(ts_res.debug_mode, pt, "debug_mode");
-    load(ts_res.save_initial_scaffold_graph, pt, "save_initial_graph");
     load(ts_res.gap_closer_connection_score_threshold, pt, "gap_closer_connection_score_threshold");
     load(ts_res.gap_closer_relative_coverage_threshold, pt, "gap_closer_relative_coverage_threshold");
     load(ts_res.gap_closer_connection_length_threshold, pt, "gap_closer_connection_length_threshold");

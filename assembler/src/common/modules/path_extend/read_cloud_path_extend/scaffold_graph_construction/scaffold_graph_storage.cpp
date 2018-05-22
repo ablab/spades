@@ -2,8 +2,10 @@
 
 namespace path_extend {
 ScaffoldGraphStorage::ScaffoldGraphStorage(ScaffoldGraphStorage::ScaffoldGraph&& large_scaffold_graph,
-                                           ScaffoldGraphStorage::ScaffoldGraph&& small_scaffold_graph)
-    : large_scaffold_graph_(large_scaffold_graph), small_scaffold_graph_(small_scaffold_graph) {}
+                                           ScaffoldGraphStorage::ScaffoldGraph&& small_scaffold_graph,
+                                           size_t large_length_threshold, size_t small_length_threshold)
+    : large_scaffold_graph_(large_scaffold_graph), small_scaffold_graph_(small_scaffold_graph),
+      large_length_threshold_(large_length_threshold), small_length_threshold_(small_length_threshold) {}
 
 const ScaffoldGraphStorage::ScaffoldGraph& ScaffoldGraphStorage::GetLargeScaffoldGraph() const {
     return large_scaffold_graph_;
@@ -21,7 +23,8 @@ void ScaffoldGraphStorage::SetLargeScaffoldGraph(const ScaffoldGraph& large_scaf
     ReplaceScaffoldGraph(large_scaffold_graph, large_scaffold_graph_);
 }
 
-ScaffoldGraphStorage::ScaffoldGraphStorage(const debruijn_graph::Graph& g) : large_scaffold_graph_(g), small_scaffold_graph_(g) {}
+ScaffoldGraphStorage::ScaffoldGraphStorage(const debruijn_graph::Graph& g) :
+    large_scaffold_graph_(g), small_scaffold_graph_(g), large_length_threshold_(0), small_length_threshold_(0) {}
 
 void ScaffoldGraphStorage::ReplaceScaffoldGraph(const ScaffoldGraphStorage::ScaffoldGraph &from, ScaffoldGraph &to) {
     to = from;
@@ -33,16 +36,32 @@ void ScaffoldGraphStorage::ReplaceScaffoldGraph(const ScaffoldGraphStorage::Scaf
 void ScaffoldGraphStorage::Load(const string& path, const std::map<size_t, debruijn_graph::EdgeId>& edge_map) {
     ifstream fin(path);
     ScaffoldGraphSerializer loader;
+    fin >> small_length_threshold_ >> large_length_threshold_;
     loader.LoadScaffoldGraph(fin, large_scaffold_graph_, edge_map);
     loader.LoadScaffoldGraph(fin, small_scaffold_graph_, edge_map);
 }
 void ScaffoldGraphStorage::Save(const string& path) const {
     ofstream fout(path);
     ScaffoldGraphSerializer saver;
+    fout << small_length_threshold_ << " " << large_length_threshold_ << std::endl;
     saver.SaveScaffoldGraph(fout, large_scaffold_graph_);
     saver.SaveScaffoldGraph(fout, small_scaffold_graph_);
 }
-void ScaffoldGraphSerializer::SaveScaffoldGraph(ofstream &fout, const ScaffoldGraphSerializer::ScaffoldGraph &graph) const {
+ScaffoldGraphStorage& ScaffoldGraphStorage::operator=(const ScaffoldGraphStorage &other) {
+    SetSmallScaffoldGraph(other.small_scaffold_graph_);
+    small_length_threshold_ = other.small_length_threshold_;
+    SetLargeScaffoldGraph(other.large_scaffold_graph_);
+    large_length_threshold_ = other.large_length_threshold_;
+    return *this;
+}
+size_t ScaffoldGraphStorage::GetLargeLengthThreshold() const {
+    return large_length_threshold_;
+}
+size_t ScaffoldGraphStorage::GetSmallLengthThreshold() const {
+    return small_length_threshold_;
+}
+void ScaffoldGraphSerializer::SaveScaffoldGraph(ofstream &fout,
+                                                const ScaffoldGraphSerializer::ScaffoldGraph &graph) const {
     fout << graph.VertexCount() << std::endl;
     for (const ScaffoldGraph::ScaffoldGraphVertex& vertex: graph.vertices()) {
         fout << vertex.int_id() << std::endl;

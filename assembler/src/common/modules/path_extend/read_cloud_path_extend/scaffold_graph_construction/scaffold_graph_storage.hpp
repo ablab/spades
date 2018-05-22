@@ -13,13 +13,24 @@ namespace path_extend {
         ScaffoldGraph large_scaffold_graph_;
         ScaffoldGraph small_scaffold_graph_;
 
+        size_t large_length_threshold_;
+        size_t small_length_threshold_;
+
      public:
-        explicit ScaffoldGraphStorage(const debruijn_graph::Graph& g);
-        ScaffoldGraphStorage(ScaffoldGraph&& large_scaffold_graph, ScaffoldGraph&& small_scaffold_graph);
+        ScaffoldGraphStorage(const debruijn_graph::Graph& g);
+
+        ScaffoldGraphStorage(ScaffoldGraph&& large_scaffold_graph, ScaffoldGraph&& small_scaffold_graph,
+                             size_t large_length_threshold, size_t small_length_threshold);
+
+        ScaffoldGraphStorage& operator= (const ScaffoldGraphStorage &other);
 
         const ScaffoldGraph& GetLargeScaffoldGraph() const;
 
         const ScaffoldGraph& GetSmallScaffoldGraph() const;
+
+        size_t GetLargeLengthThreshold() const;
+
+        size_t GetSmallLengthThreshold() const;
 
         void SetLargeScaffoldGraph(const ScaffoldGraph& large_scaffold_graph);
 

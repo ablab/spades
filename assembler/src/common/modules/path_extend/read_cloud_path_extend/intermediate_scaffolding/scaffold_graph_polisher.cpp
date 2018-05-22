@@ -647,7 +647,8 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
     const auto& small_scaffold_graph = scaffold_graph_storage.GetSmallScaffoldGraph();
 
     ScaffoldGraphGapCloserParamsConstructor params_constructor;
-    auto subgraph_extractor_params = params_constructor.ConstructSubgraphExtractorParamsFromConfig();
+    auto subgraph_extractor_params =
+        params_constructor.ConstructSubgraphExtractorParamsFromConfig(scaffold_graph_storage.GetLargeLengthThreshold());
     auto path_extractor_params = params_constructor.ConstructPathClusterPredicateParamsFromConfig();
 
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
@@ -683,8 +684,9 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
         gap_closer.CleanSmallGraphUsingLargeGraph(large_scaffold_graph, small_scaffold_graph);
     return new_small_scaffold_graph;
 }
-CloudSubgraphExtractorParams ScaffoldGraphGapCloserParamsConstructor::ConstructSubgraphExtractorParamsFromConfig() {
-    const size_t large_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
+CloudSubgraphExtractorParams ScaffoldGraphGapCloserParamsConstructor::ConstructSubgraphExtractorParamsFromConfig(
+        size_t length_upper_bound) {
+    const size_t large_length_threshold = length_upper_bound;
     const size_t small_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
     const size_t distance_threshold = cfg::get().ts_res.scaff_pol.max_scaffold_dijkstra_distance;
     const double share_threshold = cfg::get().ts_res.scaff_pol.share_threshold;
@@ -733,16 +735,16 @@ shared_ptr<GapCloserScoreFunctionBuilder> PathExtractionPartsConstructor::Constr
     return ConstructScoreFunctionFromBuilder(cluster_storage_builder, linkage_distance);
 }
 
-shared_ptr<GapCloserPredicateBuilder> PathExtractionPartsConstructor::ConstructPEPredicate() const {
-    ScaffoldGraphGapCloserParamsConstructor params_constructor;
-    auto subgraph_extractor_params = params_constructor.ConstructSubgraphExtractorParamsFromConfig();
-    size_t small_length_threshold = subgraph_extractor_params.small_length_threshold_;
-    path_extend::SimplePEPredicateHelper pe_score_helper;
-    auto pe_score_predicate = make_shared<path_extend::SimplePEPredicate>(pe_score_helper.GetSimplePEPredicateExtractor(
-        gp_, cfg::get().ts_res.statistics.base_contigs_path, small_length_threshold));
-    auto paired_end_predicate_builder = make_shared<path_extend::FromPositivePredicateBuilder>(pe_score_predicate);
-    return paired_end_predicate_builder;
-}
+//shared_ptr<GapCloserPredicateBuilder> PathExtractionPartsConstructor::ConstructPEPredicate() const {
+//    ScaffoldGraphGapCloserParamsConstructor params_constructor;
+//    auto subgraph_extractor_params = params_constructor.ConstructSubgraphExtractorParamsFromConfig();
+//    size_t small_length_threshold = subgraph_extractor_params.small_length_threshold_;
+//    path_extend::SimplePEPredicateHelper pe_score_helper;
+//    auto pe_score_predicate = make_shared<path_extend::SimplePEPredicate>(pe_score_helper.GetSimplePEPredicateExtractor(
+//        gp_, cfg::get().ts_res.statistics.base_contigs_path, small_length_threshold));
+//    auto paired_end_predicate_builder = make_shared<path_extend::FromPositivePredicateBuilder>(pe_score_predicate);
+//    return paired_end_predicate_builder;
+//}
 vector<shared_ptr<GapCloserPredicateBuilder>> PathExtractionPartsConstructor::ConstructPredicateBuilders() const {
     vector<shared_ptr<GapCloserPredicateBuilder>> predicate_builders;
 //    auto paired_end_predicate_builder = ConstructPEPredicate();
