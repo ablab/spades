@@ -134,8 +134,8 @@ void DomainGraph::OutputComponent(debruijn_graph::conj_graph_pack &gp,
     std::ofstream os(cfg::get().output_dir + "/bgc_in_gfa/" +
                      std::to_string(component_id) + "_" + std::to_string(ordering_id) +
                      ".gfa");
-    path_extend::GFAWriter<Graph> writer(gp.g, os);
-    writer.Write(comp);
+    gfa::GFAComponentWriter writer(comp, os);
+    writer.WriteSegmentsAndLinks();
 }
 
 std::string DomainGraph::PathToSequence(path_extend::BidirectionalPath *p,

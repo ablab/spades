@@ -143,8 +143,6 @@ public:
     void removeVertex(const std::string &vertex_name) {
         auto vertex = getVertex(vertex_name);
         auto vertex_rc = getVertex(vertex_name)->rc_;
-        for (auto e : vertex->edges_) {
-        }
         for (auto v : nodes_) {
             if (v->name_ == vertex_name || v->name_ == vertex_rc->name_) {
                 nodes_.erase(v);

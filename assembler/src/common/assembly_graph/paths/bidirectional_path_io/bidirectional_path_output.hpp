@@ -107,12 +107,6 @@ public:
             WritePath(scaffold_info.name, segment_id, segmented_path, "");
         }
     }
-
-    void Write(const GraphComponent<Graph>& component) {
-        WriteSegments(component);
-        WriteLinks(component);
-    }
-
 };
 
 typedef std::function<void (const ScaffoldStorage&)> PathsWriterT;

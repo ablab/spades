@@ -52,6 +52,7 @@ void GFAWriter::WriteLinks() {
     }
 }
 
+
 void GFAWriter::WriteSegments(const Component &gc) {
     for (EdgeId e : gc.edges()) {
         if (e <= graph_.conjugate(e)) {
@@ -69,6 +70,33 @@ void GFAWriter::WriteLinks(const Component &gc) {
                 for (auto out_edge : graph_.OutgoingEdges(v)) {
                     WriteLink(inc_edge, out_edge, graph_.k(),
                               os_, edge_namer_);
+
+                }
+            }
+        }
+    }
+}
+
+                    void GFAComponentWriter::WriteSegments() {
+    for (auto e : component_.edges()) {
+        WriteSegment(edge_namer_.EdgeString(e), component_.g().EdgeNucls(e),
+                     component_.g().coverage(e) * double(component_.g().length(e)),
+                     os_);
+    }
+}
+
+void GFAComponentWriter::WriteLinks() {
+    //TODO switch to constant vertex iterator
+    for (auto v : component_.vertices()) {
+        if (v.int_id() > component_.g().conjugate(v).int_id())
+            continue;
+        for (auto inc_edge : component_.g().IncomingEdges(v)) {
+            if (component_.contains(inc_edge)) {
+                for (auto out_edge : component_.g().OutgoingEdges(v)) {
+                    if (component_.contains(out_edge)) {
+                        WriteLink(inc_edge, out_edge, component_.g().k(),
+                                  os_, edge_namer_);
+                    }
                 }
             }
         }
