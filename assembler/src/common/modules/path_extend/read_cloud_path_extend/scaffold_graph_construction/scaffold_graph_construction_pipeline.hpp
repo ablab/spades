@@ -18,8 +18,8 @@ enum Type {
 
 class ScaffolderParamsConstructor {
  public:
-    ScaffolderParams ConstructScaffolderParamsFromCfg(size_t length_threshold,
-                                                      cluster_model::PrimaryParametersExtractor primary_extractor) const;
+    ScaffolderParams ConstructScaffolderParams(const Graph& g, size_t length_threshold,
+                                               cluster_model::PrimaryParametersExtractor primary_extractor) const;
 
     LongEdgePairGapCloserParams ConstructGapCloserParamsFromMainParams(
             const ScaffolderParams& params, const Graph& g,

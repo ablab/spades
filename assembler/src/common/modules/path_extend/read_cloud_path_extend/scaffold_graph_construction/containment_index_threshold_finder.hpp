@@ -2,6 +2,7 @@
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 #include "read_cloud_connection_conditions.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/fragment_model/distribution_extractor.hpp"
 
 namespace path_extend {
     class ContainmentIndexThresholdFinder {
@@ -41,9 +42,10 @@ namespace path_extend {
     };
 
     class AbstractScoreHistogramConstructor {
-        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
-
      protected:
+        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+        typedef cluster_model::SimpleDistribution<double> ScoreDistribution;
+
         const double step_;
         const double min_score_;
         const double max_score_;
@@ -59,38 +61,10 @@ namespace path_extend {
 
         virtual ~AbstractScoreHistogramConstructor() {}
 
-        virtual ScoreHistogram ConstructScoreHistogram() const = 0;
+        virtual ScoreDistribution ConstructScoreDistribution() const = 0;
 
      protected:
-        ScoreHistogram ConstructScoreHistogramFromMultiset(const std::multiset<double>& scores) const;
-
-    };
-
-    class EdgePairScoreHistogramConstructor: public AbstractScoreHistogramConstructor {
-        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
-
-     protected:
-        using AbstractScoreHistogramConstructor::step_;
-        using AbstractScoreHistogramConstructor::min_score_;
-        using AbstractScoreHistogramConstructor::max_score_;
-        using AbstractScoreHistogramConstructor::g_;
-
-        shared_ptr<path_extend::ScaffoldEdgeScoreFunction> score_function_;
-        const vector<ScaffoldVertex> scaffold_vertices_;
-
-     public:
-        EdgePairScoreHistogramConstructor(const double tick_step_,
-                                          const double min_score_,
-                                          const double max_score_,
-                                          const Graph &g_,
-                                          shared_ptr<path_extend::ScaffoldEdgeScoreFunction> score_function,
-                                          const vector<ScaffoldVertex>& scaffold_vertices)
-            : AbstractScoreHistogramConstructor(tick_step_, min_score_, max_score_, g_),
-              score_function_(score_function),
-              scaffold_vertices_(scaffold_vertices) {}
-
-     public:
-        ScoreHistogram ConstructScoreHistogram() const override;
+        ScoreDistribution ConstructScoreDistributionFromMultiset(const std::multiset<double> &scores) const;
 
     };
 
@@ -116,6 +90,8 @@ namespace path_extend {
                                                          size_t left_end,
                                                          size_t right_start,
                                                          size_t right_end) const override;
+
+        DECL_LOGGER("ContainmentIndexFunction");
     };
 
     class ShortEdgeScoreFunction final: public SegmentBarcodeScoreFunction {
@@ -158,16 +134,18 @@ namespace path_extend {
                                           size_t max_distance,
                                           size_t max_threads);
 
-        ScoreHistogram ConstructScoreHistogram() const override;
+        ScoreDistribution ConstructScoreDistribution() const override;
 
      private:
         vector<size_t> ConstructDistanceDistribution(size_t min_distance, size_t max_distance) const;
+
+        DECL_LOGGER("LongEdgeScoreHistogramConstructor");
     };
 
     class PercentileGetter {
      public:
 
-        double GetPercentile (const ScoreHistogram& histogram, double percent);
+        double GetPercentile (cluster_model::SimpleDistribution<double> distribution, double percent);
     };
 
     class LabeledDistributionThresholdEstimator: public ContainmentIndexThresholdFinder {
@@ -195,28 +173,6 @@ namespace path_extend {
         double GetThreshold() const override;
 
         DECL_LOGGER("LabeledDistributionThresholdFinder");
-    };
-
-    class UnlabeledDistributionThresholdEstimator: public ContainmentIndexThresholdFinder {
-        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
-
-        const Graph& g_;
-        const vector<ScaffoldVertex> scaffold_vertices_;
-        shared_ptr<path_extend::ScaffoldEdgeScoreFunction> score_function_;
-        const double vertex_multiplier_;
-
-     public:
-        UnlabeledDistributionThresholdEstimator(const Graph &g_,
-                                              const vector<ScaffoldVertex> &scaffold_vertices,
-                                              const shared_ptr<ScaffoldEdgeScoreFunction> &score_function_,
-                                              double vertex_multiplier);
-
-        double GetThreshold() const override;
-
-     private:
-        double FindFirstLocalMin(const ScoreHistogram& histogram) const;
-
-        double FindPercentile(const ScoreHistogram &histogram, const vector<ScaffoldVertex>& scaffold_vertices) const;
     };
 
     class LongEdgeScoreThresholdEstimatorFactory {

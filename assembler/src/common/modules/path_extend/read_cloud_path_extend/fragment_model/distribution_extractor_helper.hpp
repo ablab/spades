@@ -5,6 +5,49 @@
 namespace path_extend {
 namespace cluster_model {
 
+class MinTrainingLengthEstimator {
+    const Graph& g_;
+    size_t min_total_length_;
+    size_t min_edges_;
+
+ public:
+    MinTrainingLengthEstimator(const Graph &g, size_t min_total_length, size_t min_edges)
+        : g_(g), min_total_length_(min_total_length), min_edges_(min_edges) {}
+
+    size_t EstimateTrainingLength() const {
+        size_t min_length = 5000;
+        vector<size_t> edge_length_initial_list;
+        omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(g_);
+        for (const auto& edge: edge_it_helper) {
+            if (g_.length(edge) >= min_length) {
+                edge_length_initial_list.push_back(g_.length(edge));
+            }
+        }
+        VERIFY(edge_length_initial_list.size() >= min_edges_);
+        //fixme return false if estimated value is too low
+        vector<std::pair<size_t, size_t>> length_rev_cumulative_list;
+        std::sort(edge_length_initial_list.begin(), edge_length_initial_list.end(), std::greater<size_t>());
+        size_t current_sum = 0;
+        for (const auto& length: edge_length_initial_list) {
+            current_sum += length;
+            length_rev_cumulative_list.emplace_back(length, current_sum);
+        }
+        size_t total_length = current_sum;
+        size_t result = length_rev_cumulative_list.back().first;
+        INFO("Total length: " << total_length);
+        VERIFY(total_length >= min_total_length_);
+        auto it = length_rev_cumulative_list.begin();
+        current_sum = 0;
+        while (current_sum <= min_total_length_ and it != length_rev_cumulative_list.end()) {
+            result = (*it).first;
+            current_sum = (*it).second;
+            ++it;
+        }
+        INFO("Estimated training length: " << result);
+        return result;
+    }
+};
+
 template<class ClusterStatType>
 struct DistributionStatistics {
   ClusterStatType min_;
@@ -141,6 +184,10 @@ class ClusterDistributionExtractor {
             auto coverage_statistics = GetDistributionStatistics(distributions.coverage_distribution_);
             StatisticsPack statistics(length_statistics, coverage_statistics);
             statistics_container.insert({distance, statistics});
+            INFO("Length mean: " << length_statistics.mean_);
+            INFO("Length median: " << length_statistics.median_);
+            INFO("Coverage mean: " << coverage_statistics.mean_);
+            INFO("Coverage median: " << coverage_statistics.median_);
         }
 
         size_t optimal_distance = EstimateDistance(statistics_container);
@@ -187,17 +234,19 @@ class ClusterDistributionExtractor {
     }
 
     size_t EstimateDistance(const StatisticsContainer& statistics) const {
-        const size_t median_growth_threshold = 1000;
-        size_t prev_median = 0;
+        const double mean_growth_relative_threshold = 1.1;
+        size_t prev_mean = 0;
         size_t current_distance = 0;
         VERIFY(statistics.size() > 0);
         for (const auto& entry: statistics) {
             size_t current_distance = entry.first;
-            size_t current_length_median = entry.second.length_statistics_.median_;
-            if (prev_median != 0 and current_length_median <= prev_median + median_growth_threshold) {
+            size_t current_length_mean = entry.second.length_statistics_.mean_;
+            size_t length_mean_threshold = static_cast<size_t>(static_cast<double>(prev_mean) * mean_growth_relative_threshold);
+            if (prev_mean != 0 and current_length_mean <= length_mean_threshold) {
+                INFO("Estimated fragment length median: " << current_length_mean);
                 return current_distance;
             }
-            prev_median = current_length_median;
+            prev_mean = current_length_mean;
         }
         return current_distance;
     }

@@ -5,16 +5,22 @@
 
 namespace path_extend {
 
-ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParamsFromCfg(
-        size_t min_length, cluster_model::PrimaryParametersExtractor primary_extractor) const {
+ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParams(
+        const Graph& g, size_t min_length, cluster_model::PrimaryParametersExtractor primary_extractor) const {
     size_t length_threshold = min_length;
     size_t tail_threshold = min_length;
     size_t count_threshold = cfg::get().ts_res.scaff_con.count_threshold;
     double split_procedure_strictness = cfg::get().ts_res.scaff_con.split_procedure_strictness;
     size_t transitive_distance_threshold = cfg::get().ts_res.scaff_con.transitive_distance_threshold;
 
-    double score_percentile = 0.05;
-    size_t training_edge_length_threshold = 50000;
+    double score_percentile = 0.01;
+
+    size_t min_training_edge_number = 50;
+    size_t min_training_total_length = 10000000;
+//    size_t optimal_training_total_length = 3 * min_training_total_length;
+    cluster_model::MinTrainingLengthEstimator training_length_estimator(g, min_training_total_length,
+                                                                        min_training_edge_number);
+    size_t training_edge_length_threshold = training_length_estimator.EstimateTrainingLength();
     const double training_cluster_length_percentile = 0.95;
     size_t max_training_distance = primary_extractor.GetLengthPercentile(training_cluster_length_percentile);
     ScaffolderParams::ScoreEstimationParams score_estimation_params(score_percentile, max_training_distance,
@@ -134,7 +140,7 @@ CloudScaffoldGraphConstructionPipeline BasicScaffoldGraphPipelineConstructor::Co
     path_extend::ScaffolderParamsConstructor params_constructor;
 
     auto primary_parameters_extractor = ConstructPrimaryParametersExtractor();
-    auto params = params_constructor.ConstructScaffolderParamsFromCfg(min_length_, primary_parameters_extractor);
+    auto params = params_constructor.ConstructScaffolderParams(gp_.g, min_length_, primary_parameters_extractor);
     auto initial_constructor =
         make_shared<path_extend::scaffold_graph::UniqueScaffoldGraphConstructor>(gp_.g,
                                                                                  unique_storage_,
@@ -166,7 +172,7 @@ CloudScaffoldGraphConstructionPipeline GapScaffoldGraphPipelineConstructor::Cons
     INFO("Constructing scaffold graph with length threshold " << min_length_);
     path_extend::ScaffolderParamsConstructor params_constructor;
     auto primary_parameters_extractor = ConstructPrimaryParametersExtractor();
-    auto params = params_constructor.ConstructScaffolderParamsFromCfg(min_length_, primary_parameters_extractor);
+    auto params = params_constructor.ConstructScaffolderParams(gp_.g, min_length_, primary_parameters_extractor);
     auto initial_constructor = GetInitialConstructor(params, scaffold_vertices);
     auto iterative_constructor_callers = ConstructStages(params, scaffold_vertices);
     INFO("Created " << iterative_constructor_callers.size() << " stages");
@@ -222,10 +228,10 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffoldGraphPip
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     const size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
     const size_t count_threshold = params.count_threshold_;
+    INFO("Tail threshold: " << params.tail_threshold_);
     auto scaffold_index_extractor = ConstructSimpleEdgeIndex(scaffold_vertices, barcode_extractor_, params, max_threads_);
 
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
-
     iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, barcode_extractor_,
                                                                                        scaffold_index_extractor,
                                                                                        max_threads_));

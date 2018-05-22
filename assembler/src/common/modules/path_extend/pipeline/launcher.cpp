@@ -502,7 +502,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             const size_t unique_length = 2000;
 
             auto scaffolder_params =
-                params_constructor.ConstructScaffolderParamsFromCfg(unique_length, primary_parameters_extractor);
+                params_constructor.ConstructScaffolderParams(gp_.g, unique_length, primary_parameters_extractor);
             auto read_cloud_gap_closer_params = params_constructor.ConstructGapCloserParamsFromMainParams(scaffolder_params,
                                                                                                           gp_.g,
                                                                                                           barcode_extractor_ptr,
