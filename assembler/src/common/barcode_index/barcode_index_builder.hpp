@@ -41,7 +41,7 @@ namespace barcode_index {
 
         void FillMapFromDemultiplexedDataset(const Index &index, const KmerSubs &kmer_mapper) {
             //fixme move to command line
-            std::string tslr_dataset = cfg::get().ts_res.read_cloud_dataset;
+            std::string tslr_dataset = cfg::get().ts_res.tslr_dataset;
 
             auto lib_vec = GetLibrary(tslr_dataset);
             auto mapper = std::make_shared < debruijn_graph::BasicSequenceMapper < Graph, Index> >
@@ -76,7 +76,7 @@ namespace barcode_index {
 
         void FillMapUsingKmerMultisetParallel(const Index &index, const KmerSubs &kmer_mapper, size_t n_threads) {
             //fixme move to command line
-            std::string tslr_dataset = cfg::get().ts_res.read_cloud_dataset;
+            std::string tslr_dataset = cfg::get().ts_res.tslr_dataset;
 
             const auto &lib_vec = GetLibrary(tslr_dataset);
             auto mapper = std::make_shared < debruijn_graph::BasicSequenceMapper < Graph, Index> >

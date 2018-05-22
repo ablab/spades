@@ -124,7 +124,7 @@ namespace path_extend {
         const SimpleTransitionGraph& graph_;
 
      public:
-        ReachabilityChecker(const SimpleTransitionGraph& graph_);
+        explicit ReachabilityChecker(const SimpleTransitionGraph& graph_);
         virtual ~ReachabilityChecker();
         void Run(const VertexT& start, const VertexT& target);
         unordered_set<VertexT> GetPassedVertices();
@@ -142,7 +142,7 @@ namespace path_extend {
         using ReachabilityChecker::graph_;
         using ReachabilityChecker::SimpleTransitionGraph;
      public:
-        ForwardReachabilityChecker(const SimpleTransitionGraph& graph_);
+        explicit ForwardReachabilityChecker(const SimpleTransitionGraph& graph_);
      private:
         SimpleTransitionGraph::const_iterator GetBeginIterator(
             const VertexT& vertex) const override;
@@ -256,7 +256,7 @@ namespace path_extend {
 
     class ScaffoldGraphGapCloserParamsConstructor {
      public:
-        CloudSubgraphExtractorParams ConstructSubgraphExtractorParamsFromConfig();
+        CloudSubgraphExtractorParams ConstructSubgraphExtractorParamsFromConfig(size_t length_upper_bound);
         PathClusterPredicateParams ConstructPathClusterPredicateParamsFromConfig();
     };
 
@@ -270,7 +270,7 @@ namespace path_extend {
         shared_ptr<GapCloserScoreFunctionBuilder> ConstructPathClusterScoreFunction(const PathClusterPredicateParams& params,
                                                                                     const ScaffoldGraph& scaffold_graph,
                                                                                     bool path_scaffolding) const;
-        shared_ptr<GapCloserPredicateBuilder> ConstructPEPredicate() const;
+//        shared_ptr<GapCloserPredicateBuilder> ConstructPEPredicate() const;
 
      private:
         shared_ptr<GapCloserScoreFunctionBuilder> ConstructScoreFunctionFromBuilder(shared_ptr<InitialClusterStorageBuilder> builder,

@@ -460,38 +460,17 @@ struct debruijn_config {
     contig_output co;
 
     struct read_cloud_resolver {
-        std::string read_cloud_dataset;
-        std::string library_type;
+        std::string tslr_dataset;
 
         size_t edge_tail_len;
         size_t frame_size;
 
-        size_t gap_threshold;
-        size_t trimming_threshold;
-
-        double diff_threshold;
-        double barcode_number_threshold;
-        size_t distance_bound;
         size_t edge_length_threshold;
-        size_t distance;
-        size_t fragment_len;
-        size_t topsort_bound;
 
         bool read_cloud_resolution_on;
 
-        struct tenx_resolver {
-            size_t tail_threshold;
-            size_t max_initial_candidates;
-            size_t internal_gap_threshold;
-            size_t absolute_barcode_threshold;
-            size_t initial_coverage_threshold;
-            size_t middle_coverage_threshold;
-            bool topology_filter_on;
-        };
-
-        tenx_resolver tenx;
-
-        size_t long_edge_length_upper_bound;
+        size_t long_edge_length_min_upper_bound;
+        size_t long_edge_length_max_upper_bound;
         size_t long_edge_length_lower_bound;
 
         double gap_closer_connection_score_threshold;
@@ -500,19 +479,14 @@ struct debruijn_config {
 
         struct scaffold_graph_construction {
           size_t count_threshold;
-          double vertex_multiplier;
-          double score_threshold;
-          double connection_score_threshold;
           double relative_coverage_threshold;
           size_t connection_length_threshold;
           size_t connection_count_threshold;
-          size_t initial_distance;
           double split_procedure_strictness;
           size_t transitive_distance_threshold;
           size_t path_scaffolder_tail_threshold;
           size_t path_scaffolder_count_threshold;
           size_t min_edge_length_for_barcode_collection;
-          size_t full_pipeline_length;
         };
 
         scaffold_graph_construction scaff_con;
@@ -538,7 +512,6 @@ struct debruijn_config {
 
         bool path_scaffolding_on;
         bool debug_mode;
-        bool save_initial_scaffold_graph;
     };
 
     read_cloud_resolver ts_res;

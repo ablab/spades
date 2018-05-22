@@ -99,7 +99,7 @@ class ScaffoldSubgraphConstructor: public BaseScaffoldGraphConstructor {
 };
 
 //todo refactor connection conditions to avoid code duplication
-class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
+class   UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
     const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
     const std::set<ScaffoldVertex> scaffold_vertices_;
     const size_t distance_;
