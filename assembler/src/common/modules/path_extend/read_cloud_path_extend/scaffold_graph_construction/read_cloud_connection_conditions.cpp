@@ -40,11 +40,9 @@ bool AssemblyGraphUniqueConnectionCondition::IsLast() const {
 double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge) const {
     auto first = edge.getStart();
     auto second = edge.getEnd();
-    DEBUG("Checking edge " << edge.getStart().int_id() << " -> " << edge.getEnd().int_id());
+//    DEBUG("Checking edge " << edge.getStart().int_id() << " -> " << edge.getEnd().int_id());
     size_t first_length = first.getLengthFromGraph(graph_);
     size_t second_length = second.getLengthFromGraph(graph_);
-    DEBUG("First length: " << first_length);
-    DEBUG("Second length: " << second_length);
     size_t first_size = barcode_extractor_->GetTailSize(first);
     size_t second_size = barcode_extractor_->GetHeadSize(second);
     if (first_size == 0 or second_size == 0) {
@@ -52,12 +50,16 @@ double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGr
         return 0.0;
     }
     size_t shared_count = barcode_extractor_->GetIntersectionSize(first, second);
-    DEBUG("First size: " << first_size);
-    DEBUG("Second size: " << second_size);
-    DEBUG("Intersection: " << shared_count);
     size_t min_size = std::min(first_size, second_size);
     double containment_index = static_cast<double>(shared_count) / static_cast<double>(min_size);
-    DEBUG("Score: " << containment_index);
+    if (math::ge(containment_index, 0.05)) {
+        DEBUG("First length: " << first_length);
+        DEBUG("Second length: " << second_length);
+        DEBUG("First size: " << first_size);
+        DEBUG("Second size: " << second_size);
+        DEBUG("Intersection: " << shared_count);
+        DEBUG("Score: " << containment_index);
+    }
     VERIFY(math::ge(1.0, containment_index));
 //    double first_coverage = first.getCoverageFromGraph(graph_);
 //    double second_coverage = second.getCoverageFromGraph(graph_);

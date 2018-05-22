@@ -18,14 +18,20 @@ enum Type {
 
 class ScaffolderParamsConstructor {
  public:
-    ScaffolderParams ConstructScaffolderParamsFromCfg(size_t length_threshold,
-                                                      cluster_model::PrimaryParametersExtractor primary_extractor) const;
+    ScaffolderParams ConstructScaffolderParams(const Graph& g, size_t length_threshold,
+                                               cluster_model::ClusterStatisticsExtractor primary_extractor) const;
 
     LongEdgePairGapCloserParams ConstructGapCloserParamsFromMainParams(
             const ScaffolderParams& params, const Graph& g,
             shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
             size_t unique_edge_length,
             size_t max_threads) const;
+
+ private:
+    ScaffolderParams::ScoreEstimationParams GetScoreEstimationParams(
+        const Graph& g,
+        cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor,
+        double score_percentile) const;
 
 };
 
@@ -68,8 +74,6 @@ class ScaffoldGraphPipelineConstructor {
                                                                  BarcodeIndexPtr barcode_extractor,
                                                                  const ScaffolderParams& params,
                                                                  size_t max_threads) const;
-
-    cluster_model::PrimaryParametersExtractor ConstructPrimaryParametersExtractor() const;
 };
 
 class BasicScaffoldGraphPipelineConstructor: public ScaffoldGraphPipelineConstructor {
