@@ -6,25 +6,19 @@
 //***************************************************************************
 #pragma once
 
-#include <variant>
-
-#include "config_singl.hpp"
-
-#include "library/library.hpp"
-#include "library/library_data.hpp"
-#include "configs/aligner_config.hpp"
-#include "configs/distance_estimation.hpp"
-#include "configs/pe_config_struct.hpp"
-#include "math/xmath.h"
 #include "utils/verify.hpp"
-#include "utils/logger/logger.hpp"
+#include "pipeline/config_singl.hpp"
+#include "modules/path_extend/pe_config_struct.hpp"
+#include "pipeline/library.hpp"
+
+#include <boost/optional.hpp>
+#include "math/xmath.h"
 
 namespace debruijn_graph {
 namespace config {
 
 enum class info_printer_pos : char {
     default_pos = 0,
-    before_raw_simplification,
     before_first_gap_closer,
     before_simplification,
     before_post_simplification,
@@ -43,23 +37,34 @@ enum class pipeline_type : char {
     mda,
     meta,
     moleculo,
+    diploid,
     rna,
     plasmid,
     large_genome,
-    metaextrachromosomal,
-    rnaviral,
+
     total
 };
 
-class PipelineHelper {
-public:
-    static bool IsPlasmidPipeline(const pipeline_type pipeline);
-    static bool IsMetagenomicPipeline(const pipeline_type pipeline);
-    static bool IsRNAPipeline(const pipeline_type pipeline);
+std::vector<std::string> PipelineTypeNames();
+
+enum class construction_mode : char {
+    old = 0,
+    extention,
+
+    total
 };
 
+std::vector<std::string> ConstructionModeNames();
 
-std::vector<std::string> PipelineTypeNames();
+enum class estimation_mode : char {
+    simple = 0,
+    weighted,
+    smoothing,
+
+    total
+};
+
+std::vector<std::string> EstimationModeNames();
 
 enum class resolving_mode : char {
     none = 0,
@@ -86,35 +91,67 @@ enum class output_broken_scaffolds: char {
     total
 };
 
-enum class Checkpoints : char {
-    None = 0,
-    Last,
-    All
-};
-
 std::vector<std::string> SingleReadResolveModeNames();
 
 template<typename mode_t>
 mode_t ModeByName(const std::string& name, const std::vector<std::string>& names) {
     auto it = std::find(names.begin(), names.end(), name);
-    CHECK_FATAL_ERROR(it != names.end(), "Unrecognized mode name: " << name);
+    VERIFY_MSG(it != names.end(), "Unrecognized mode name");
     return mode_t(it - names.begin());
 }
 
 template<typename mode_t>
 std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) {
-    auto mode_id = static_cast<size_t>(mode);
-    CHECK_FATAL_ERROR(mode_id < names.size(), "Unrecognized mode id: " << mode_id);
-    return names[mode_id];
+    VERIFY_MSG(size_t(mode) < names.size(), "Unrecognized mode id");
+    return names[size_t(mode)];
 }
 
-template<typename mode_t>
-std::variant<mode_t, std::string> ModeByNameOrName(const std::string& name, const std::vector<std::string>& names) {
-    auto it = std::find(names.begin(), names.end(), name);
-    if (it == names.end())
-        return name;
-    return mode_t(it - names.begin());
-}
+struct LibraryData {
+    size_t unmerged_read_length;
+    size_t merged_read_length;
+    double mean_insert_size;
+    double insert_size_deviation;
+    double insert_size_left_quantile;
+    double insert_size_right_quantile;
+    double median_insert_size;
+    double insert_size_mad;
+    std::map<int, size_t> insert_size_distribution;
+
+    size_t lib_index;
+    bool single_reads_mapped;
+    uint64_t total_nucls;
+    size_t read_count;
+
+    double pi_threshold;
+
+    struct BinaryReadsInfo {
+        BinaryReadsInfo(): binary_converted(false), chunk_num(0), buffer_size(0) {}
+
+        bool binary_converted;
+        std::string bin_reads_info_file;
+        std::string paired_read_prefix;
+        std::string merged_read_prefix;
+        std::string single_read_prefix;
+        size_t chunk_num;
+        size_t buffer_size;
+    } binary_reads_info;
+
+
+    LibraryData(): unmerged_read_length(0),
+                   merged_read_length(0),
+                   mean_insert_size(0.0),
+                   insert_size_deviation(0.0),
+                   insert_size_left_quantile(0.0),
+                   insert_size_right_quantile(0.0),
+                   median_insert_size(0.0),
+                   insert_size_mad(0.0),
+                   lib_index(0),
+                   single_reads_mapped(false),
+                   total_nucls(0),
+                   read_count(0),
+                   pi_threshold(0.0),
+                   binary_reads_info() {}
+};
 
 struct dataset {
     typedef io::DataSet<LibraryData>::Library Library;
@@ -135,6 +172,7 @@ struct dataset {
 
 // struct for debruijn project's configuration file
 struct debruijn_config {
+
     pipeline_type mode;
     bool uneven_depth;
 
@@ -182,7 +220,6 @@ struct debruijn_config {
             size_t buff_size;
             double buff_cov_diff;
             double buff_cov_rel_diff;
-            double min_identity;
         };
 
         struct erroneous_connections_remover {
@@ -234,7 +271,6 @@ struct debruijn_config {
             double max_coverage;
             bool use_rl_for_max_length_any_cov;
             size_t max_length_any_cov;
-            size_t rl_threshold_increase; // add this value to read length if used, i.e. flags above are set
         };
 
         struct complex_bulge_remover {
@@ -254,7 +290,6 @@ struct debruijn_config {
             bool enabled;
             double diff_mult;
             size_t edge_sum;
-            double unconditional_diff_mult;
         };
 
         struct relative_coverage_comp_remover {
@@ -280,6 +315,7 @@ struct debruijn_config {
 
         size_t cycle_iter_count;
 
+        bool post_simplif_enabled;
         bool topology_simplif_enabled;
         tip_clipper tc;
         dead_end_clipper dead_end;
@@ -289,7 +325,7 @@ struct debruijn_config {
         erroneous_connections_remover ec;
         relative_coverage_ec_remover rcec;
         relative_coverage_comp_remover rcc;
-        relative_coverage_edge_disconnector red;
+        relative_coverage_edge_disconnector relative_ed;
         topology_based_ec_remover tec;
         tr_based_ec_remover trec;
         interstrand_ec_remover isec;
@@ -300,38 +336,55 @@ struct debruijn_config {
         low_covered_edge_remover lcer;
         tip_clipper final_tc;
         bulge_remover final_br;
-        bulge_remover subspecies_br;
+
         init_cleaning init_clean;
     };
 
     struct construction {
         struct early_tip_clipper {
             bool enable;
-            std::optional<size_t> length_bound;
+            boost::optional<size_t> length_bound;
             early_tip_clipper() : enable(false) {}
         };
 
+        construction_mode con_mode;
         early_tip_clipper early_tc;
         bool keep_perfect_loops;
         unsigned read_cov_threshold;
         size_t read_buffer_size;
         construction() :
+                con_mode(construction_mode::extention),
                 keep_perfect_loops(true),
                 read_cov_threshold(0),
                 read_buffer_size(0) {}
     };
 
     simplification simp;
-    std::optional<simplification> preliminary_simp;
+    boost::optional<simplification> preliminary_simp;
 
-    struct hybrid_aligner {
-        struct trusted_aligner {
-            size_t long_read_threshold = 1000;
-            double long_read_fuzzy_coverage = 0.95;
-            double short_read_fuzzy_coverage = 0.90;
-        };
+    struct sensitive_mapper {
+        size_t k;
+    };
 
-        trusted_aligner trusted_aligner_config;
+    struct distance_estimator {
+        double linkage_distance_coeff;
+        double max_distance_coeff;
+        double max_distance_coeff_scaff;
+        double clustered_filter_threshold;
+        unsigned raw_filter_threshold;
+        double rounding_thr;
+        double rounding_coeff;
+    };
+
+    struct smoothing_distance_estimator {
+        size_t threshold;
+        double range_coeff;
+        double delta_coeff;
+        double percentage;
+        size_t cutoff;
+        size_t min_peak_points;
+        double inv_density;
+        double derivative_threshold;
     };
 
     struct ambiguous_distance_estimator {
@@ -349,15 +402,24 @@ struct debruijn_config {
         double small_component_relative_coverage;
         size_t min_component_length;
         size_t min_isolated_length;
-        std::string reference_removal;
-//settings for iterative removal;
-        bool iterative_coverage_elimination;
-        size_t additive_step; //5
-        double relative_step; //1.3
-        size_t max_length; //1000000
-        bool output_linear; //false
-        size_t min_circular_length; //500
-        size_t min_linear_length; //1000
+    };
+
+    struct pacbio_processor {
+  //align and traverse.
+      size_t  pacbio_k; //13
+      bool additional_debug_info; //false
+      double compression_cutoff;// 0.6
+      double domination_cutoff; //1.5
+      double path_limit_stretching; //1.3
+      double path_limit_pressing;//0.7
+      bool ignore_middle_alignment; //true; false for stats and mate_pairs;
+      size_t max_path_in_dijkstra; //15000
+      size_t max_vertex_in_dijkstra; //2000
+  //gap_closer
+      size_t long_seq_limit; //400
+      size_t pacbio_min_gap_quantity; //2
+      size_t contigs_min_gap_quantity; //1
+      size_t max_contigs_gap_length; // 10000
     };
 
     struct position_handler {
@@ -371,20 +433,10 @@ struct debruijn_config {
 
     struct gap_closer {
         int minimal_intersection;
-        bool before_raw_simplify;
         bool before_simplify;
+        bool in_simplify;
         bool after_simplify;
         double weight_threshold;
-        int max_dist_to_tip;
-    };
-
-    struct ss_coverage_splitter_t {
-        bool enabled;
-        size_t bin_size;
-        size_t min_edge_len;
-        double min_edge_coverage;
-        double coverage_margin;
-        double min_flanking_coverage;
     };
 
     struct info_printer {
@@ -404,6 +456,12 @@ struct debruijn_config {
         bool write_full_nc_graph;
     };
 
+    struct graph_read_corr_cfg {
+        bool enable;
+        std::string output_dir;
+        bool binary;
+    };
+
     struct kmer_coverage_model {
         double probability_threshold;
         double strong_probability_threshold;
@@ -411,21 +469,23 @@ struct debruijn_config {
         bool use_coverage_threshold;
     };
 
-    struct time_tracing {
-        bool enable;
-        unsigned granularity;
+    struct bwa_aligner {
+        bool bwa_enable;
+        bool debug;
+        std::string path_to_bwa;
+        size_t min_contig_len;
     };
 
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
-    std::filesystem::path dataset_file;
-    std::filesystem::path input_dir;
-    std::filesystem::path output_base;
-    std::filesystem::path output_dir;
-    std::filesystem::path tmp_dir;
-    std::variant<Checkpoints, std::string> checkpoints;
-    std::filesystem::path output_saves;
-    std::filesystem::path log_filename;
+    std::string dataset_file;
+    std::string project_name;
+    std::string input_dir;
+    std::string output_base;
+    std::string output_dir;
+    std::string tmp_dir;
+    std::string output_saves;
+    std::string log_filename;
     std::string series_analysis;
 
     bool output_pictures;
@@ -434,6 +494,18 @@ struct debruijn_config {
 
     bool use_additional_contigs;
     std::string additional_contigs;
+
+    struct scaffold_correction {
+        std::string scaffolds_file;
+        bool output_unfilled;
+        size_t max_insert;
+        size_t max_cut_length;
+    };
+
+    struct truseq_analysis {
+        std::string scaffolds_file;
+        std::string genome_file;
+    };
 
     struct contig_output {
         std::string contigs_name;
@@ -444,13 +516,6 @@ struct debruijn_config {
     struct strand_specificity {
         bool ss_enabled;
         bool antisense;
-    };
-
-    struct hmm_matching {
-        std::string hmm_set;
-        size_t component_size_part;
-        bool start_only_from_tips;
-        bool set_copynumber;
     };
 
     contig_output co;
@@ -483,6 +548,7 @@ struct debruijn_config {
           size_t path_scaffolder_tail_threshold;
           size_t path_scaffolder_count_threshold;
           size_t min_edge_length_for_barcode_collection;
+          size_t full_pipeline_length;
         };
 
         scaffold_graph_construction scaff_con;
@@ -510,27 +576,31 @@ struct debruijn_config {
         bool debug_mode;
     };
 
+    boost::optional<scaffold_correction> sc_cor;
+    truseq_analysis tsa;
     read_cloud_resolver ts_res;
-    std::filesystem::path load_from;
+    std::string load_from;
+
     std::string entry_point;
 
     bool rr_enable;
     bool two_step_rr;
     bool use_intermediate_contigs;
-    size_t min_edge_length_for_is_count;
-    bool gfa11;
 
     single_read_resolving_mode single_reads_rr;
     bool use_single_reads;
 
     bool correct_mismatches;
+    bool paired_info_statistics;
+    bool paired_info_scaffolder;
     bool gap_closer_enable;
 
     size_t max_repeat_length;
 
-    // Conversion options
-    std::filesystem::path temp_bin_reads_dir;
-    std::filesystem::path temp_bin_reads_path;
+    //Convertion options
+    size_t buffer_size;
+    std::string temp_bin_reads_dir;
+    std::string temp_bin_reads_path;
     std::string paired_read_prefix;
     std::string single_read_prefix;
 
@@ -538,17 +608,18 @@ struct debruijn_config {
 
     bool main_iteration;
 
-    unsigned max_threads;
+    size_t max_threads;
     size_t max_memory;
 
+    estimation_mode est_mode;
     resolving_mode rm;
     path_extend::pe_config::MainPEParamsT pe_params;
-    std::optional<path_extend::pe_config::MainPEParamsT> prelim_pe_params;
+    boost::optional<path_extend::pe_config::MainPEParamsT> prelim_pe_params;
     bool avoid_rc_connections;
 
     construction con;
+    sensitive_mapper sensitive_map;
     distance_estimator de;
-    hybrid_aligner ha;
     smoothing_distance_estimator ade;
     ambiguous_distance_estimator amb_de;
     pacbio_processor pb;
@@ -556,17 +627,15 @@ struct debruijn_config {
     dataset ds;
     position_handler pos;
     gap_closer gc;
-    ss_coverage_splitter_t ss_coverage_splitter;
+    graph_read_corr_cfg graph_read_corr;
     info_printers_t info_printers;
     kmer_coverage_model kcm;
     bwa_aligner bwa;
-    std::optional<plasmid> pd;
-    std::optional<hmm_matching> hm;
+    boost::optional<plasmid> pd;
     size_t flanking_range;
 
     bool calculate_coverage_for_each_lib;
     strand_specificity ss;
-    time_tracing tt;
 
     bool need_mapping;
 
@@ -576,14 +645,13 @@ struct debruijn_config {
     }
 };
 
+
 void init_libs(io::DataSet<LibraryData> &dataset, size_t max_threads,
-               const std::filesystem::path &temp_bin_reads_path);
-void load(debruijn_config& cfg, const std::vector<std::filesystem::path> &filenames);
-void load(debruijn_config& cfg, const std::filesystem::path &filename);
+               size_t buffer_size, const std::string &temp_bin_reads_path);
+void load(debruijn_config& cfg, const std::vector<std::string> &filenames);
+void load(debruijn_config& cfg, const std::string &filename);
 void load_lib_data(const std::string& prefix);
-void load_lib_data(std::istream& is);
 void write_lib_data(const std::string& prefix);
-void write_lib_data(std::ostream& os);
 
 } // config
 } // debruijn_graph

@@ -4,6 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "read_cloud_path_extend/fragment_model/secondary_stats_estimators.hpp"
 #include "launcher.hpp"
 
 #include "alignment/long_read_storage.hpp"
@@ -527,13 +528,13 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
                                                                                            max_threads);
             auto cluster_distribution_pack =
                 make_shared<cluster_model::DistributionPack>(distribution_analyzer.GetClusterDistributions());
-            cluster_model::PrimaryParametersExtractor primary_parameters_extractor(cluster_distribution_pack);
+            cluster_model::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
 
             //fixme configs
             const size_t unique_length = 2000;
 
             auto scaffolder_params =
-                params_constructor.ConstructScaffolderParamsFromCfg(unique_length, primary_parameters_extractor);
+                params_constructor.ConstructScaffolderParams(gp_.g, unique_length, primary_parameters_extractor);
             auto read_cloud_gap_closer_params = params_constructor.ConstructGapCloserParamsFromMainParams(scaffolder_params,
                                                                                                           gp_.g,
                                                                                                           barcode_extractor_ptr,
@@ -754,11 +755,14 @@ void PathExtendLauncher::Launch() {
     //todo discuss
     if (cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
         const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
-        const size_t large_path_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
+        cluster_model::ClusterStatisticsExtractorHelper cluster_extractor_helper(gp_, cfg::get().max_threads);
+        auto cluster_statistics_extractor = cluster_extractor_helper.GetStatisticsExtractor();
+        cluster_model::UpperLengthBoundEstimator length_bound_estimator;
+        size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor);
 
         PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_,
                                        small_path_length_threshold,
-                                       large_path_length_threshold);
+                                       length_upper_bound);
         path_scaffolder.MergePaths(polished_paths);
 
         PolishPaths(polished_paths, contig_paths, polished_map);
