@@ -59,7 +59,7 @@ def naive_bayes(input_list):
 
 def create_vector_pfams(hmms): # list of hmm lists
 
-    with open("/Nancy/mrayko/algorithmic-biology/assembler/src/plasmid_utils/scikit_classifier/pfam_names.list", "r") as infile:
+    with open("/Nancy/mrayko/chromosomal_removal_test/verification_test/pfam_names.list", "r") as infile:
         pfam_list=infile.readlines()
     pfam_list = [i.strip() for i in pfam_list] 
 
@@ -76,7 +76,7 @@ def create_vector_pfams(hmms): # list of hmm lists
 def scikit_multNB (input_list):
     import pickle
     # load it again
-    with open('/Nancy/mrayko/chromosomal_removal_test/verification_test/my_dumped_classifier.pkl', 'rb') as fid:
+    with open('/Nancy/mrayko/PlasmidVerify/scikit_nbc/plasmids_and_chunks/my_dumped_classifier_chunks.pkl', 'rb') as fid:
         clf = pickle.load(fid)
 
     a=create_vector_pfams([input_list])

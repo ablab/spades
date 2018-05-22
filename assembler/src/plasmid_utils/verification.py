@@ -35,8 +35,8 @@ cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
 
 # run hmm
 os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
-os.system (hmmscan + " --noali   -o "+name+"_out_pfam -E 0.01 --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
-os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$5<0.001 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
+os.system (hmmscan + " --noali  -o "+name+"_out_pfam -E 0.01 --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$5<0.01 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 # run cbar
 os.system(cbar + " " + sys.argv[1] + " " + name + "_cbar.txt")
@@ -232,17 +232,17 @@ viruses_list = [i.strip() for i in viruses_list]
 # add to table
 for i in table:
   if i[0] in plasmids_list:
-    i.append( "Plasmid " + plasmids[plasmids_list.index(i[0])+1])
+    i.append( "Plasmid " + plasmids[plasmids.index(i[0])+1])
   elif  i[0] in plasmids_bad_list:
-    i.append("Plasmid_bad "  + plasmids_bad[plasmids_bad_list.index(i[0])+1])
+    i.append("Plasmid_bad "  + plasmids_bad[plasmids_bad.index(i[0])+1])
   elif i[0] in unclass_list:
-     i.append("Unclassified" + unclass[unclass_list.index(i[0])+1])
+     i.append("Unclassified "  + unclass[unclass.index(i[0])+1])
   elif  i[0] in chrom_list:
-     i.append("Chromosome " + chroms[chrom_list.index(i[0])+1])
+     i.append("Chromosome " + chroms[chrom.index(i[0])+1])
   elif  i[0] in no_sig_list:
      i.append("Non-significant")
   elif  i[0] in viruses_list:
-     i.append("Virus " + viruses[viruses_list.index(i[0])+1])
+     i.append("Virus " + viruses[viruses.index(i[0])+1])
   else: 
      i.append("-")
 

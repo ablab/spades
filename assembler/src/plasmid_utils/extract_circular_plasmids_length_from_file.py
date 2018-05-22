@@ -35,6 +35,7 @@ if __name__ == "__main__":
                 length = float (arr[3])
                 print str(comp_id) + " " + str(count[comp_id])
                 if (count[comp_id]) == 1 and length > 500:
+              â      print fullname
 		    
                     fastaparser.write_fasta_to_file((os.path.splitext(fullname)[0] + "_circular.fasta"), [contig])
 
