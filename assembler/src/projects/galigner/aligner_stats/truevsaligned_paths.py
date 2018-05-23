@@ -141,6 +141,31 @@ class GeneralStatisticsCounter:
                 res += 1
         return res
 
+    def divide_paths(self):
+        alignedsubpath = {}
+        badlyaligned = {}
+        for r in self.alignedpaths.keys():
+            if r not in self.truepaths.keys():
+                continue
+            if self.truepaths[r]["path"] != self.alignedpaths[r]["path"] or self.alignedpaths[r]["empty"] > 0:
+                if ",".join(self.alignedpaths[r]["path"]) in ",".join(self.truepaths[r]["path"]) and self.alignedpaths[r]["empty"] == 0:
+                    alignedsubpath[r] = self.alignedpaths[r]
+                elif self.truepaths[r]["path"] != self.alignedpaths[r]["path"] or self.alignedpaths[r]["empty"] > 0:
+                    badlyaligned[r] = self.alignedpaths[r]
+                if ",".join(self.alignedpaths[r]["path"]) in ",".join(self.truepaths[r]["path"]) and self.alignedpaths[r]["empty"] > 0:
+                    print "Ranges_failure readname=",r 
+        return [alignedsubpath, badlyaligned]
+
+
+# class SubpathStatisticsGenerator:
+    
+#     def __init__(self, reads, truepaths, alignedpaths):
+#         self.reads = reads
+#         self.truepaths = truepaths
+#         self.alignedpaths = alignedpaths
+
+#     def 
+
 class BWAhitsMapper:
 
     def __init__(self, reads, truepaths, alignedpaths):
@@ -487,8 +512,11 @@ for fl in aligned_files:
     badideal = general_stats.cnt_badideal()
     notmapped = general_stats.cnt_notmapped() 
     path_problems = general_stats.cnt_problempaths()
+    alignedsubpath, badlyaligned = general_stats.divide_paths()
 
-    bwahits_mapper = BWAhitsMapper(reads, truepaths, alignedpaths)
+    print len(alignedsubpath), len(badlyaligned)
+
+    bwahits_mapper = BWAhitsMapper(reads, truepaths, badlyaligned)
     bwa_problems = bwahits_mapper.cnt_problembwa(cfg["print_bwa_hits_failure"])
 
     gaps_statistics = GapsStatistics(bwahits_mapper, edges, K, cfg["print_gaps_failure"])
@@ -513,6 +541,8 @@ for fl in aligned_files:
                  "Total number of reads": str(len(reads) - badideal)+ " (100%)",\
                  "Mapped with GAligner (#reads)" : make_str(len(reads) - badideal - notmapped, len(reads) - badideal),\
                  "Path is not equal to true path (#reads)": make_str(path_problems, len(reads) - badideal),\
+                 "Path is subpath of true path (#reads)": make_str(len(alignedsubpath), len(reads) - badideal),\
+                 "Path with BWA/Gap problems (#reads)": make_str(len(badlyaligned), len(reads) - badideal),\
                  "Path is wrong. BWA hits uncertainty (#reads)": make_str(gaps_cnt_stats["unknown_num"] - bwa_problems, len(reads) - badideal) ,\
                  "Resulting BWA hits failure (#reads)": make_str(bwa_problems, len(reads) - badideal), \
                  "Gap stage failure (#reads)": make_str2(gaps_cnt_stats["wrong_filled_gaps"], gaps_cnt_stats["empty_gaps"], len(reads) - badideal), \
@@ -525,6 +555,8 @@ row_names = [
                  "Total number of reads",\
                  "Mapped with GAligner (#reads)",\
                  "Path is not equal to true path (#reads)",\
+                 "Path is subpath of true path (#reads)",\
+                 "Path with BWA/Gap problems (#reads)",\
                  "Path is wrong. BWA hits uncertainty (#reads)",\
                  "Resulting BWA hits failure (#reads)", \
                  "Gap stage failure (#reads)", \
