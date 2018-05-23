@@ -1,0 +1,8 @@
+reads_path: /Sid/tdvorkina/gralign/C.elegans/reads/simulated/refseq_bwamem_sd_20k_mapped_10k.fasta
+edges: /Sid/tdvorkina/gralign/C.elegans_synth/graph_idealreads/K55/saves/construction.sqn
+truepaths_tsv: /Sid/tdvorkina/gralign/C.elegans/reads/simulated/refseq_bwamem_sd_20k.fasta_mapping.tsv
+galigner_out: lst_celegans_sim_pacbio.txt
+k: 55
+print_html: celegans_sim_pacbio.html
+print_bwa_hits_failure: no
+print_gaps_failure: no

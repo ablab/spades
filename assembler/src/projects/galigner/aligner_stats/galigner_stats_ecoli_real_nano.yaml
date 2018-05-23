@@ -1,0 +1,8 @@
+reads_path: /Sid/tdvorkina/gralign/E.coli_synth/reads/nanopore/R9/nanopore_R9_mapped_10k.fasta
+edges: /Sid/tdvorkina/gralign/E.coli_synth/graph/saves/simplification.sqn
+truepaths_tsv: /Sid/tdvorkina/gralign/E.coli_synth/reads/nanopore/R9/refseq_bwamem_nanopore_R9.fasta_mapping.tsv
+galigner_out: lst_ecoli_real_nano.txt
+k: 77
+print_html: ecoli_real_nanopore.html
+print_bwa_hits_failure: no
+print_gaps_failure: no
