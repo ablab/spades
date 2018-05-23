@@ -68,8 +68,8 @@ size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
         long_vertex_component_[g_.EdgeStart(edge)] = ans;
         long_vertex_component_[g_.EdgeEnd(edge)] = ans;
         deadends_count_[edge] = deadend_count;
-        component_list_.push_back(std::vector<EdgeId>(used.begin(), used.end()));
     }
+    component_list_.push_back(std::vector<EdgeId>(used.begin(), used.end()));
     return ans;
 }
 double ChromosomeRemoval::RemoveEdgesByList( conj_graph_pack &gp , std::string &s) {
@@ -442,9 +442,9 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
 
     double chromosome_coverage;
     if (cfg::get().pd->meta_mode) {
+        /*
         INFO("Prefiltering with cutoff " << cfg::get().pd->absolute_coverage_cutoff <<", before " << gp.g.size() << " vertices ");
         CoverageFilter(gp, cfg::get().pd->absolute_coverage_cutoff);
-        OutputEdgesByID(gp.g, cfg::get().output_dir + "chromosome_removal_only_prefilter");
         INFO("After prefiltering" << gp.g.size() << " vertices ");
         if (cfg::get().pd->HMM_filtration == "do"){
             RunHMMDetectionScript(gp);
@@ -456,13 +456,16 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
         if (use_chromosomal_list)
             chromosome_coverage = RemoveEdgesByList(gp, additional_list);
         else
-            chromosome_coverage = -1;
+            chromosome_coverage = -1; */
         if (cfg::get().pd->iterative_coverage_elimination) {
             OutputSuspiciousComponents (gp, ext_limit_);
+            string tmp = std::to_string(ext_limit_);
+            while (tmp.length() < 4) tmp = "_" + tmp;
+            OutputEdgesByID(gp.g, cfg::get().output_dir + "edges_before" + tmp + ".fasta");
             RemoveNearlyEverythingByCoverage(gp, ext_limit_);
+        }  else {
+            VERIFY(false);
         }
-        else
-            MetaChromosomeRemoval(gp);
     }
     else
         chromosome_coverage = RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length,
