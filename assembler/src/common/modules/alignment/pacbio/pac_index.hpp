@@ -241,11 +241,13 @@ public:
             omnigraph::MappingRange mapping = path.mapping_at(path.size() - 1);
             start_pos = (int) mapping.mapped_range.end_pos;
             ss = s.Subseq(mapping.initial_range.end_pos, (int) s.size() );
+            INFO("Forward e=" << start_e.int_id() << " sp=" << start_pos << " seq_sz" << ss.size())
         } else {
             start_e = g_.conjugate(path.edge_at(0));
             omnigraph::MappingRange mapping = path.mapping_at(0);
             start_pos = min((int) g_.length(start_e), (int) g_.length(start_e) + (int) g_.k() - (int) mapping.mapped_range.start_pos);
             ss = !s.Subseq(0, mapping.initial_range.start_pos);
+            INFO("Backward e=" << start_e.int_id() << " sp=" << start_pos << " seq_sz" << ss.size())
         }
     }
 
@@ -276,32 +278,36 @@ public:
         }
     }
 
-    void GrowEnds(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, const Sequence &s, bool forward) const {
+    void GrowEnds(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, const Sequence &s, bool forward, int &return_code) const {
         VERIFY(path.size() > 0);
         Sequence ss; 
         int start_pos = -1;
+        return_code = 0;
         EdgeId start_e = EdgeId();
         PrepareInitialState(path, s, forward, ss, start_e, start_pos);
 
         int s_len = int(ss.size());
         int score = max(20, s_len/4);
         if (s_len > (int) pb_config_.max_contigs_gap_length) {
-            DEBUG("EdgeDijkstra: sequence is too long " << s_len)
+            INFO("EdgeDijkstra: sequence is too long " << s_len)
+            return_code += 1;
             return;
         }
-        if (s_len < (int) g_.length(start_e) + (int) g_.k() - start_pos) {
-            DEBUG("EdgeDijkstra: sequence is too small " << s_len)
+        if (s_len < max((int) g_.length(start_e) + (int) g_.k() - start_pos, (int) g_.k())) {
+            INFO("EdgeDijkstra: sequence is too small " << s_len)
+            return_code += 2;
             return;
         }
         DijkstraEndsReconstructor algo = DijkstraEndsReconstructor(g_, gap_cfg_, ss.str(), start_e, start_pos, score);
         algo.CloseGap();
         score = algo.GetEditDistance();
+        return_code += algo.GetReturnCode();
         if (score == -1){
-            DEBUG("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
+            INFO("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
             score = STRING_DIST_INF;
             return;
         }
-
+        INFO("PathStr=" << algo.GetPathStr());
         std::vector<EdgeId> ans = algo.GetPath();
         int end_pos = algo.GetPathEndPosition();
         UpdatePath(path, ans, end_pos, forward);
@@ -395,8 +401,11 @@ public:
         }
         if (gap_cfg_.restore_ends && res.size() > 0){
             bool forward = true;
-            GrowEnds(res[0], s, !forward);
-            GrowEnds(res[res.size() - 1], s, forward);
+            int return_code = 0;
+            GrowEnds(res[0], s, !forward, return_code);
+            INFO("Backward return_code_ends=" << return_code)
+            GrowEnds(res[res.size() - 1], s, forward, return_code);
+            INFO("Forward return_code_ends=" << return_code)
         }
         return res;
     }

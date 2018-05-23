@@ -224,8 +224,10 @@ public:
                     break;
                 }
                 if (IsEndPosition(cur_state)) {
+                    INFO("is End position: " << cur_state.str() << " " <<min_score_);
+                    end_qstate_ = cur_state;
                     found_path = true;
-                    break;   
+                    break;
                 }
                 if (ed > path_max_length_) {
                     break;
@@ -333,7 +335,6 @@ private:
                     AddNewEdge(next_state, cur_state, ed);
                 }
                 if (e == end_e_ && path_max_length_ - ed >= 0){
-                    //INFO("  final stage")
                     string seq_str = ss_.substr(cur_state.i);
                     string tmp = g_.EdgeNucls(e).str();
                     string edge_str = tmp.substr(0, end_p_);
@@ -354,7 +355,7 @@ private:
 
         virtual bool IsEndPosition(const QueueState &cur_state) {
             if (cur_state.i == ss_.size() && cur_state.gs.e == end_qstate_.gs.e && cur_state.gs.end_pos == end_qstate_.gs.end_pos) {
-                return true;   
+                return true;
             }
             return false;
         }
@@ -398,33 +399,36 @@ class DijkstraEndsReconstructor: public DijkstraGraphSequenceBase {
 private:
         virtual bool AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed) {
             bool found_path = false;
+            if (!IsEndPosition(cur_state)) {
             GraphState next_state(e, 0, (int) g_.length(e));
             AddNewEdge(next_state, cur_state, ed);
             int remaining = (int) ss_.size() - cur_state.i;
-            if ((int) g_.length(e) + (int) g_.k() + path_max_length_ - ed > remaining && path_max_length_ - ed >= 0 && cur_state.i + 1 < (int) ss_.size()){
-                string seq_str = ss_.substr(cur_state.i + 1);
+            if ((int) g_.length(e) + (int) g_.k() + path_max_length_ - ed > remaining && path_max_length_ - ed >= 0){
+                string seq_str = ss_.substr(cur_state.i);
                 string tmp = g_.EdgeNucls(e).str();
                 int position = -1;
                 int score = SHWDistance2(seq_str, tmp, path_max_length_ - ed, position);
                 if (score >= 0) {
+                    INFO("End pos score=" << score);
                     path_max_length_ = min(path_max_length_, ed + score);
-                    QueueState state(GraphState(e, 0, position + 1), (int) ss_.size() - 1);
+                    QueueState state(GraphState(e, 0, position + 1), (int) ss_.size());
                     Update(state, cur_state, ed + score);
                     if (ed + score == path_max_length_) {
                          min_score_ = ed + score;
-                         DEBUG("++=Final ed1=" << ed + score);
-                         DEBUG("EdgeDijkstra1: path was found ed=" << ed + score << " q_.size=" << q_.size() << " s_len=" << ss_.size() )
+                         INFO("++=Final ed1=" << ed + score);
+                         INFO("EdgeDijkstra1: path was found ed=" << ed + score << " q_.size=" << q_.size() << " s_len=" << ss_.size() )
                          found_path = true;
                          end_qstate_ = state;
                     }
                 }
             }
+            }
             return found_path;
         }
 
         virtual bool IsEndPosition(const QueueState &cur_state) {
-            if (cur_state.i == end_qstate_.i) {
-                return true;   
+            if (cur_state.i == ss_.size()) {
+                return true;
             }
             return false;
         }
@@ -440,18 +444,18 @@ public:
                 int score = SHWDistance2(seq_str, edge_str, path_max_length_, position);
                 if (score != -1) {
                     path_max_length_ = min(path_max_length_, score);
-                    QueueState state(GraphState(start_e_, start_p_, start_p_ + position + 1), (int) ss_.size() - 1);
+                    QueueState state(GraphState(start_e_, start_p_, start_p_ + position + 1), (int) ss_.size() );
                     Update(state, QueueState(), score);
                     if (score == path_max_length_) {
                          min_score_ = score;
-                         DEBUG("++=Final2 ed=" << score);
-                         DEBUG("EdgeDijkstra2: path was found ed=" << score << " q_.size=" << q_.size() << " s_len=" << ss_.size() )
+                         INFO("++=Final2 ed=" << score);
+                         INFO("EdgeDijkstra2: path was found ed=" << score << " q_.size=" << q_.size() << " s_len=" << ss_.size() )
                          end_qstate_ = state;
                     }
                 }
             }
 
-        }    
+        }
 };
 
 }
