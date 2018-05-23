@@ -1,6 +1,11 @@
 import json
 import edlib
 
+import matplotlib
+# Force matplotlib to not use any Xwindows backend.
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 
 def edist(lst):
     #return editdistance.eval(lst[0], lst[1])
@@ -57,14 +62,16 @@ def make_c(s):
     return res
 
 
-filename = "/home/tdvorkina/soft/vg/ecoli_real/sd_0001_mapped_10k.fasta.json"
+filename = "/home/tdvorkina/soft/vg/ecoli_real/filtered_subreads_mapped_10k.fasta.json"
 gfa_filename = "/home/tdvorkina/soft/vg/ecoli_real/assembly_graph_with_scaffolds.split.gfa"
 
-reads = load_reads("/home/tdvorkina/soft/vg/ecoli_real/sd_0001_mapped_10k.fasta")
+reads = load_reads("/home/tdvorkina/soft/vg/ecoli_real/filtered_subreads_mapped_10k.fasta")
 edges = load_edges(gfa_filename)
 
 json_file = open(filename, "r")
 vg_ed = {}
+vg_ed_lst = []
+vg_ed_per_lst = []
 for ln in json_file.readlines():
     json_data = json.loads(ln)
     ideal_seq = json_data["sequence"]
@@ -107,17 +114,37 @@ for ln in json_file.readlines():
         graph_seq_full += node["nucs"][edge_offset_s: edge_offset_f + 1]
 
     vg_ed[ideal_name] = edist([ideal_seq, graph_seq_full])*100/len(ideal_seq)
-    if edist([ideal_seq, graph_seq])*100/len(ideal_seq) < edist([ideal_seq, graph_seq_full])*100/len(ideal_seq):
-        print edist([ideal_seq, graph_seq])*100/len(ideal_seq), edist([ideal_seq, graph_seq_full])*100/len(ideal_seq),  " identity=", json_data["identity"], " score=", json_data["score"] 
+    vg_ed_lst.append(edist([ideal_seq, graph_seq_full]))
+    vg_ed_per_lst.append(edist([ideal_seq, graph_seq_full])*100/len(ideal_seq))
+    # if edist([ideal_seq, graph_seq])*100/len(ideal_seq) < edist([ideal_seq, graph_seq_full])*100/len(ideal_seq):
+    #     print edist([ideal_seq, graph_seq])*100/len(ideal_seq), edist([ideal_seq, graph_seq_full])*100/len(ideal_seq),  " identity=", json_data["identity"], " score=", json_data["score"] 
 #    break
 
-galigner_tsv = "/home/tdvorkina/results/gap_closing_test/master_filtering_new_if2_2018-05-16_12-10-04_E.coli_synth_dijkstra_bwa200.tsv"
+galigner_tsv = "/home/tdvorkina/results//vg_comparison/master_2018-05-18_11-48-24_E.coli_real_synth_dijkstra_bwa200.tsv"
 
 galigner_ed = {}
+galigner_ed_lst = []
+galigner_ed_per_lst = []
 with open(galigner_tsv, "r") as fin:
     for ln in fin.readlines():
         cur_read, seq_start, seq_end, rlen, path_dirty, edgelen, ss, ed = ln.strip().split("\t")
-        galigner_ed[cur_read] = ed
+        ed = edist([reads[cur_read], ss])
+        galigner_ed[cur_read] = int(ed)*100/int(rlen)
+        galigner_ed_lst.append(int(ed))
+        galigner_ed_per_lst.append(int(ed)*100/int(rlen))
 
 print "Mapped num galigner=", len(galigner_ed), " vg=", len(vg_ed)
 print "Median ed galigner=", sorted([galigner_ed[x] for x in galigner_ed.keys()])[len(galigner_ed)/2], " vg=", sorted([vg_ed[x] for x in vg_ed.keys()])[len(vg_ed)/2]
+
+plt.hist(vg_ed_lst, alpha=0.5, label="vg", bins=100)
+plt.hist(galigner_ed_lst, alpha=0.5, label="galigner", bins=100)
+plt.legend(loc='upper right')
+plt.title("Edit distance")
+plt.savefig("vg_ga_ed_real_ecoli.png")
+
+plt.figure()
+plt.hist(vg_ed_per_lst, alpha=0.5, label="vg", bins=100)
+plt.hist(galigner_ed_per_lst, alpha=0.5, label="galigner", bins=100)
+plt.legend(loc='upper right')
+plt.title("Edit distance / read length (%)")
+plt.savefig("vg_ga_ed_per_real_ecoli.png")
