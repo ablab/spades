@@ -101,6 +101,7 @@ public:
     typename omnigraph::MappingPath<EdgeId> FilterShortAlignments(typename omnigraph::MappingPath<EdgeId> mapped_path) const {
         omnigraph::MappingPath<EdgeId> res;
         size_t length_cutoff = pb_config_.internal_length_cutoff;
+        /*
         size_t maxx = 0;
         size_t minn = std::numeric_limits<size_t>::max();
         size_t mini = 0;
@@ -115,12 +116,12 @@ public:
                 maxx = pos;
                 maxi = i;
             }
-        }
+        } */
         for (size_t i = 0; i < mapped_path.size(); i++) {
             size_t rlen = mapped_path[i].second.initial_range.size();
 //left and right ends of ranges;
 //TODO:: think whether it is right condition
-            if (rlen > length_cutoff || (rlen > g_.k() && (i == mini || i == maxi))){
+            if (rlen > length_cutoff/* || (rlen > g_.k() && (i == mini || i == maxi))*/){
                 vector<pair<size_t, int> > range_limits;
                 for (size_t j = 0; j < mapped_path.size(); j++) {
                     if (i != j) {
