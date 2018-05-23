@@ -7,7 +7,7 @@
 #include "string_distance.hpp"
 
 namespace pacbio {
-
+using debruijn_graph::EdgeId;
 struct GapClosingConfig {
     bool run_dijkstra; // default: true
     bool restore_ends; // default: false
