@@ -57,15 +57,13 @@ class DataLoader:
             cur_read, rlen, pathsz, path_dirty, edgelen, edgelen2, mapped_seq = ln.strip().split("\t")
             cur_read = cur_read.split(" ")[0]
             path = []
-            seq = []
             for x in path_dirty.split("]")[:-1]:
                 if x.startswith(","):
                     path.append(x.split()[1])
                 else:
                     path.append(x.split()[0])
-                seq.append(x.split("[")[1].split(",")[0])
 
-            res[cur_read] = { "len": rlen, "path": path, "edgelen": [int(x) for x in edgelen.split(",")[:-1]], "mapped": mapped_seq, "seq": seq }
+            res[cur_read] = { "len": rlen, "path": path, "edgelen": [int(x) for x in edgelen.split(",")[:-1]], "mapped": mapped_seq }
         fin.close()
         return res
 
@@ -80,10 +78,12 @@ class DataLoader:
             path = []
             edge_tag = []
             bwa_path = []
-            seq = []
-            seq_ends = []
+            edgelen_lst =[int(x) for x in edgelen.split(",")[:-1]]
             empty = path_dirty.count(";")
             path_dirty = path_dirty.replace(";", "")
+            ranges = []
+            edge_ranges = []
+            ind = 0
             for x in path_dirty.split("]")[:-1]:
                 if x.startswith(","):
                     path.append(x.split()[1])
@@ -98,11 +98,17 @@ class DataLoader:
                         bwa_path.append(x.split()[1])
                     else:
                         bwa_path.append(x.split()[0])
-                seq.append(x.split("[")[1].split(",")[0])
-                seq_ends.append(x.split("[")[1].split(",")[1])
+                if int(x.split("[")[1].split(",")[0]) == 0 and int(x.split("[")[1].split(",")[1]) == 0:
+                    ranges.append({"start": 0, "end": 0})
+                else:
+                    ranges.append({"start": int(x.split("[")[1].split(",")[0]), "end": int(x.split("[")[1].split(",")[1])})
+                #print x, ranges[-1]
+                edge_ranges.append({"start": int(x.split("(")[1].split(",")[0]), "end": int(x.split("(")[1].split(",")[1].split(")")[0])})
+                #print x, edge_ranges[-1]
+                ind += 1
             #if int(seq_end) - int(seq_start) > 1000:
             res[cur_read] = { "len": rlen, "path": path, "bwa_path": bwa_path, "edgelen": edgelen.split(",")[:-1], "edge_tag": edge_tag, \
-                                "mapped_s":int(seq_start), "mapped_e":int(seq_end), "seq": seq , "seq_end": seq_ends, "empty": empty - 1}
+                                "mapped_s":int(seq_start), "mapped_e":int(seq_end), "seq_ranges": ranges, "edge_ranges": edge_ranges, "empty": empty - 1}
         fin.close()
         print "Number of edges detected by bwa:", bwa_num
         return res
@@ -492,88 +498,102 @@ def save_html(s, fl):
         fout.write(s)
 
 
-with open(sys.argv[1], 'r') as ymlfile:
-    cfg = yaml.load(ymlfile)
+if __name__ == "__main__":
 
-data_loader = DataLoader()
-reads = data_loader.load(cfg["reads_path"], "fasta")
-edges = data_loader.load(cfg["edges"], "fasta")
-truepaths = data_loader.load(cfg["truepaths_tsv"], "true_paths")
-aligned_files = data_loader.load(cfg["galigner_out"], "txt")
-print "\n".join(aligned_files)
-K = int(cfg["k"])
-html_name = cfg["print_html"]
+    with open(sys.argv[1], 'r') as ymlfile:
+        cfg = yaml.load(ymlfile)
 
-res = {}
-for fl in aligned_files:
-    alignedpaths = data_loader.load(fl, "galigner_paths")
+    data_loader = DataLoader()
+    reads = data_loader.load(cfg["reads_path"], "fasta")
+    edges = data_loader.load(cfg["edges"], "fasta")
+    truepaths = data_loader.load(cfg["truepaths_tsv"], "true_paths")
+    aligned_files = data_loader.load(cfg["galigner_out"], "txt")
+    print "\n".join(aligned_files)
+    K = int(cfg["k"])
+    html_name = cfg["print_html"]
 
-    general_stats = GeneralStatisticsCounter(reads, truepaths, alignedpaths)
-    badideal = general_stats.cnt_badideal()
-    notmapped = general_stats.cnt_notmapped() 
-    path_problems = general_stats.cnt_problempaths()
-    alignedsubpath, badlyaligned = general_stats.divide_paths()
+    res = {}
+    for fl in aligned_files:
+        alignedpaths = data_loader.load(fl, "galigner_paths")
 
-    print len(alignedsubpath), len(badlyaligned)
+        general_stats = GeneralStatisticsCounter(reads, truepaths, alignedpaths)
+        badideal = general_stats.cnt_badideal()
+        notmapped = general_stats.cnt_notmapped() 
+        path_problems = general_stats.cnt_problempaths()
+        alignedsubpath, badlyaligned = general_stats.divide_paths()
 
-    bwahits_mapper = BWAhitsMapper(reads, truepaths, badlyaligned)
-    bwa_problems = bwahits_mapper.cnt_problembwa(cfg["print_bwa_hits_failure"])
+        print "Total=", len(reads), " ideal=", len(reads) - badideal,  " notmapped=", notmapped
+        print "Paths with problems ", path_problems
+        print len(alignedsubpath), len(badlyaligned)
 
-    gaps_statistics = GapsStatistics(bwahits_mapper, edges, K, cfg["print_gaps_failure"])
-    gaps_cnt_stats = gaps_statistics.cnt_wronglyclosedgaps() 
-    
-    gaps_stat_len = GapsLengthStatistics(bwahits_mapper, K)
-    gaps_len_stats = gaps_stat_len.cnt_median_alignment_length()
-     
-    print "Total=", len(reads), " ideal=", len(reads) - badideal,  " notmapped=", notmapped
-    print "Paths with problems ", path_problems
-    print "BWA fail ", bwa_problems
-    print "Gaps stage problems (in, prefix, suffix, unknown) ", gaps_cnt_stats
-    print "Median proportion of length of alignment between two fathest bwa hits to read length", gaps_len_stats
+        bwahits_mapper = BWAhitsMapper(reads, truepaths, badlyaligned)
+        bwa_problems = bwahits_mapper.cnt_problembwa(cfg["print_bwa_hits_failure"])
 
-    def make_str(cnt, total):
-        return str(cnt) + " (" + str(cnt*100/total) + "%)"
+        gaps_statistics = GapsStatistics(bwahits_mapper, edges, K, cfg["print_gaps_failure"])
+        gaps_cnt_stats = gaps_statistics.cnt_wronglyclosedgaps() 
+        
+        gaps_stat_len = GapsLengthStatistics(bwahits_mapper, K)
+        gaps_len_stats = gaps_stat_len.cnt_median_alignment_length()
 
-    def make_str2(cnt, cnt_empty, total):
-        return str(cnt) + " + " + str(cnt_empty) + " (" + str((cnt + cnt_empty)*100/total) + "%)"
+        bwahits_mapper = BWAhitsMapper(reads, truepaths, alignedsubpath)
+        gaps_statistics = GapsStatistics(bwahits_mapper, edges, K, cfg["print_gaps_failure"])
+        gaps_cnt_stats_subpath = gaps_statistics.cnt_wronglyclosedgaps() 
+        gaps_stat_len = GapsLengthStatistics(bwahits_mapper, K)
+        gaps_len_stats_subpath = gaps_stat_len.cnt_median_alignment_length()
+         
+        print "BWA fail ", bwa_problems
+        print "Gaps stage problems (in, prefix, suffix, unknown) ", gaps_cnt_stats
+        print "Median proportion of length of alignment between two fathest bwa hits to read length", gaps_len_stats
 
-    res[fl.split("/")[-1]] = {
-                 "Total number of reads": str(len(reads) - badideal)+ " (100%)",\
-                 "Mapped with GAligner (#reads)" : make_str(len(reads) - badideal - notmapped, len(reads) - badideal),\
-                 "Path is not equal to true path (#reads)": make_str(path_problems, len(reads) - badideal),\
-                 "Path is subpath of true path (#reads)": make_str(len(alignedsubpath), len(reads) - badideal),\
-                 "Path with BWA/Gap problems (#reads)": make_str(len(badlyaligned), len(reads) - badideal),\
-                 "Path is wrong. BWA hits uncertainty (#reads)": make_str(gaps_cnt_stats["unknown_num"] - bwa_problems, len(reads) - badideal) ,\
-                 "Resulting BWA hits failure (#reads)": make_str(bwa_problems, len(reads) - badideal), \
-                 "Gap stage failure (#reads)": make_str2(gaps_cnt_stats["wrong_filled_gaps"], gaps_cnt_stats["empty_gaps"], len(reads) - badideal), \
-                 "Incorrect prefix/suffix (#reads)" : make_str2(gaps_cnt_stats["wrong_filled_start"], gaps_cnt_stats["empty_start"], len(reads) - badideal) + " / " +\
-                                                      make_str2(gaps_cnt_stats["wrong_filled_end"], gaps_cnt_stats["empty_end"], len(reads) - badideal), \
-                 "Median length(in nucs) of skipped prefix/suffix/both" : \
-                 str(gaps_len_stats["prefix_len"]) + "/" + str(gaps_len_stats["suffix_len"]) + "/" + str(gaps_len_stats["sum_len"])}
+        def make_str(cnt, total):
+            return str(cnt) + " (" + str(cnt*100/total) + "%)"
 
-row_names = [
-                 "Total number of reads",\
-                 "Mapped with GAligner (#reads)",\
-                 "Path is not equal to true path (#reads)",\
-                 "Path is subpath of true path (#reads)",\
-                 "Path with BWA/Gap problems (#reads)",\
-                 "Path is wrong. BWA hits uncertainty (#reads)",\
-                 "Resulting BWA hits failure (#reads)", \
-                 "Gap stage failure (#reads)", \
-                 "Incorrect prefix/suffix (#reads)" , \
-                 "Median length(in nucs) of skipped prefix/suffix/both"
-                 ]
+        def make_str2(cnt, cnt_empty, total):
+            return str(cnt) + " + " + str(cnt_empty) + " (" + str((cnt + cnt_empty)*100/total) + "%)"
 
-caption_below = ["Read aligned to ref and corresponding ref subseq to graph -- read aligned to reference by BWA MEM and alignment length > 0.8*(read length). After ref subseq mapped to graph -- the result of it is a true path.",\
-                 "True path -- path produced by MapRead(), aligning sequence from reference that represents read",\
-                 "Resulting BWA hits -- BWA hits after filtering, sorting etc., just before Gap closing stage", \
-                 "Resulting BWA hits failure -- BWA hits are on edges that are not in true path or not in correct order",\
-                 "Gap stage failure -- gap between two neibouring BWA hits wasn't closed by correct list of edges",\
-                 "Prefix -- subpath of edges before first BWA hit edge in the path",\
-                 "Suffix -- subpath of edges after last BWA hit edge in the path"]
+        res[get_name(fl)] = {
+                     "Total number of reads": str(len(reads) - badideal)+ " (100%)",\
+                     "Mapped with GAligner (#reads)" : make_str(len(reads) - badideal - notmapped, len(reads) - badideal),\
+                     "Path is not equal to true path (#reads)": make_str(path_problems, len(reads) - badideal),\
+                     "Path with BWA/Gap problems (#reads)": make_str(len(badlyaligned), len(reads) - badideal),\
+                     "Path is wrong. BWA hits uncertainty (#reads)": make_str(gaps_cnt_stats["unknown_num"] - bwa_problems, len(reads) - badideal) ,\
+                     "Resulting BWA hits failure (#reads)": make_str(bwa_problems, len(reads) - badideal), \
+                     "Gap stage failure (#reads)": make_str2(gaps_cnt_stats["wrong_filled_gaps"], gaps_cnt_stats["empty_gaps"], len(reads) - badideal), \
+                     "Incorrect prefix/suffix in paths with BWA/Gap fail (#reads)" : make_str2(gaps_cnt_stats["wrong_filled_start"], gaps_cnt_stats["empty_start"], len(reads) - badideal) + " / " +\
+                                                          make_str2(gaps_cnt_stats["wrong_filled_end"], gaps_cnt_stats["empty_end"], len(reads) - badideal), \
+                     "Median length(in nucs) of skipped prefix/suffix/sum in paths with BWA/Gap fail" : \
+                     str(gaps_len_stats["prefix_len"]) + "/" + str(gaps_len_stats["suffix_len"]) + "/" + str(gaps_len_stats["sum_len"]),\
+                     "Path is subpath of true path (#reads)": make_str(len(alignedsubpath), len(reads) - badideal),\
+                     "Incorrect prefix/suffix (#reads) in paths that is subpath" : make_str2(gaps_cnt_stats_subpath["wrong_filled_start"], gaps_cnt_stats_subpath["empty_start"], len(reads) - badideal) + " / " +\
+                                                          make_str2(gaps_cnt_stats_subpath["wrong_filled_end"], gaps_cnt_stats_subpath["empty_end"], len(reads) - badideal), \
+                     "Median length(in nucs) of skipped prefix/suffix/sum in paths that is subpath" : \
+                     str(gaps_len_stats_subpath["prefix_len"]) + "/" + str(gaps_len_stats_subpath["suffix_len"]) + "/" + str(gaps_len_stats_subpath["sum_len"])}
 
-table = make_table(res, row_names, caption_below, html_name[:-5])
-save_html(table, "path_statistics_" + html_name)
+    row_names = [
+                     "Total number of reads",\
+                     "Mapped with GAligner (#reads)",\
+                     "Path is not equal to true path (#reads)",\
+                     "Path with BWA/Gap problems (#reads)",\
+                     "Path is wrong. BWA hits uncertainty (#reads)",\
+                     "Resulting BWA hits failure (#reads)", \
+                     "Gap stage failure (#reads)", \
+                     "Incorrect prefix/suffix in paths with BWA/Gap fail (#reads)",\
+                     "Median length(in nucs) of skipped prefix/suffix/sum in paths with BWA/Gap fail",\
+                     "Path is subpath of true path (#reads)",\
+                     "Incorrect prefix/suffix (#reads) in paths that is subpath",\
+                     "Median length(in nucs) of skipped prefix/suffix/sum in paths that is subpath"
+                     ]
+
+    caption_below = ["Read aligned to ref and corresponding ref subseq to graph -- read aligned to reference by BWA MEM and alignment length > 0.8*(read length). After ref subseq mapped to graph -- the result of it is a true path.",\
+                     "True path -- path produced by MapRead(), aligning sequence from reference that represents read",\
+                     "Resulting BWA hits -- BWA hits after filtering, sorting etc., just before Gap closing stage", \
+                     "Resulting BWA hits failure -- BWA hits are on edges that are not in true path or not in correct order",\
+                     "Gap stage failure -- gap between two neibouring BWA hits wasn't closed by correct list of edges",\
+                     "Prefix -- subpath of edges before first BWA hit edge in the path",\
+                     "Suffix -- subpath of edges after last BWA hit edge in the path"]
+
+    table = make_table(res, row_names, caption_below, html_name[:-5])
+    save_html(table, "path_statistics_" + html_name)
 
 
 

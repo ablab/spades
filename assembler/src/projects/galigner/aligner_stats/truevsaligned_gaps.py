@@ -1,198 +1,81 @@
-import edlib
+import yaml
 import sys
+from truevsaligned_paths import DataLoader
+from truevsaligned_paths import GeneralStatisticsCounter
+from truevsaligned_paths import BWAhitsMapper
+from truevsaligned_paths import GapsStatistics
+from truevsaligned_paths import GapsLengthStatistics
+import edlib
 
-def load_reads(filename):
-    res = {}
-    cur_read = ""
-    fin = open(filename, "r")
-    for ln in fin.readlines():
-        if ln.startswith(">"):
-            cur_read = ln.strip()[1:].split(" ")[0]
-            res[cur_read] = ""
-        else:
-            res[cur_read] += ln.strip()
-    fin.close()
-    return res
+def edist(lst):
+    if len(lst[0]) == 0:
+        return len(lst[1])
+    if len(lst[1]) == 0:
+        return len(lst[0])
+    result = edlib.align(str(lst[0]), str(lst[1]), mode="NW", additionalEqualities=[('U', 'T')
+                                                , ('R', 'A'), ('R', 'G')
+                                                , ('Y', 'C'), ('Y', 'T'), ('Y', 'U')
+                                                , ('K', 'G'), ('K', 'T'), ('K', 'U')
+                                                , ('M', 'A'), ('M', 'C')
+                                                , ('S', 'C'), ('S', 'G')
+                                                , ('W', 'A'), ('W', 'T'), ('W', 'U')
+                                                , ('B', 'C'), ('B', 'G'), ('B', 'T'), ('B', 'U')
+                                                , ('D', 'A'), ('D', 'G'), ('D', 'T'), ('D', 'U')
+                                                , ('H', 'A'), ('H', 'C'), ('H', 'T'), ('H', 'U')
+                                                , ('V', 'A'), ('V', 'C'), ('V', 'G')
+                                                , ('N', 'C'), ('N', 'C'), ('N', 'G'), ('N', 'T'), ('N', 'U')] )
+    return result["editDistance"]
 
-def load_edges(file):
-    res = {}
-    name = ""
-    with open(file, "r") as fin:
-        for ln in fin.readlines():
-            if ln.startswith(">"):
-                name = ln.strip()[1:]
-                res[name] = ""
-            else:
-                res[name] += ln.strip()
-    return res
 
-def load_alignments(filename):
-    res = {}
-    fin = open(filename, "r")
-    bwa_num = 0
-    for ln in fin.readlines():
-        cur_read, seq_start, seq_end, rlen, path_dirty, edgelen = ln.strip().split("\t")
-        cur_read = cur_read.split(" ")[0]
-        p_lst = []
-        for p in path_dirty.split("]")[:-1]:
-
-            lst = p.split(" ")
-            if p.startswith(","):
-                edgeid = lst[1]
-                lst.pop(0)
-            else:
-                edgeid = lst[0]
-            e_start, e_end, r_start, r_end = int(lst[1].split(",")[0][1:]), int(lst[1].split(",")[1][:-1]), int(lst[2].split(",")[0][1:]), int(lst[2].split(",")[1])
-            
-            p_lst.append({"name": edgeid, "e_start": e_start, "e_end": e_end, "r_start": r_start, "r_end": r_end})
-        path = []
-        edge_tag = []
-        bwa_path = []
-        for x in path_dirty.split("]")[:-1]:
-            if x.startswith(","):
-                path.append(x.split()[1])
-            else:
-                path.append(x.split()[0])
-            if "[0,0" in x:
-                edge_tag.append("in")
-            else:
-                edge_tag.append("bwa")
-                bwa_num += 1
-                if x.startswith(","):
-                    bwa_path.append(x.split()[1])
-                else:
-                    bwa_path.append(x.split()[0])
-        res[cur_read] = {"path_with_ends": p_lst, "path": path, "edge_tag": edge_tag, "bwa_path": bwa_path}
-    fin.close()
-    return res
-
-def load_truealignments(filename, reads):
-    res = {}
-    fin = open(filename, "r")
-    bwa_num = 0
-    for ln in fin.readlines():
-        cur_read, rlen, pathsz, path_dirty, edgelen, edgelen2, mapped_seq = ln.strip().split("\t")
-        cur_read = cur_read.split(" ")[0]
-        if cur_read in reads:
-            p_lst = []
-            for p in path_dirty.split("]")[:-1]:
-                lst = p.split(" ")
-                if p.startswith(","):
-                    edgeid = lst[1]
-                    lst.pop(0)
-                else:
-                    edgeid = lst[0]
-                e_start, e_end, r_start, r_end = int(lst[1].split(",")[0][1:]), int(lst[1].split(",")[1][:-1]), int(lst[2].split(",")[0][1:]), int(lst[2].split(",")[1])
-                p_lst.append({"name": edgeid, "e_start": e_start, "e_end": e_end, "r_start": r_start, "r_end": r_end})
-            path = []
-            edge_tag = []
-            bwa_path = []
-            for x in path_dirty.split("]")[:-1]:
-                if x.startswith(","):
-                    path.append(x.split()[1])
-                else:
-                    path.append(x.split()[0])
-                if "[0,0" in x:
-                    edge_tag.append("in")
-                else:
-                    edge_tag.append("bwa")
-                    bwa_num += 1
-                    if x.startswith(","):
-                        bwa_path.append(x.split()[1])
-                    else:
-                        bwa_path.append(x.split()[0])
-            res[cur_read] = {"path_with_ends": p_lst, "path": path, "edge_tag": edge_tag, "bwa_path": bwa_path}
-    fin.close()
+def extract_subpath(subpath, range1, range2, edges, K):
+    res = edges[subpath[0]][range1["end"]: len(edges[subpath[0]]) - K]
+    if range1["end"] > len(edges[subpath[0]]) - K:
+        print "WARNING"
+    for ind in xrange(1, len(subpath) - 1):
+        res += edges[subpath[ind]][: len(edges[subpath[ind]]) - K]
+    res += edges[subpath[len(subpath) - 1]][ : range2["start"]]
     return res
 
 
-def get_bwa_inds(path, bwapath):
-    ind = []
-    j = 0
-    for i in xrange(len(path)):
-        if j < len(bwapath) and path[i] == bwapath[j]:
-            j += 1
-            ind.append(i)
-    ind.insert(0, 0)
-    ind.append(len(path))
-    return ind
+def extract_subseq(seq, range1, range2):
+    return seq[range1["end"]: range2["start"]]
 
-def get_bwa_inds_aligned(path):
-    ind = []
-    for i in xrange(len(path)):
-        if path[i] == "bwa":
-            ind.append(i)
-    ind.insert(0, 0)
-    ind.append(len(path))
-    return ind
+if __name__ == "__main__":
 
-def is_unique(path, subpath):
-    ind = get_bwa_inds(path, subpath)
-    if len(ind) < len(subpath) + 2:
-        return False
-    for j in xrange(1, len(subpath) + 1):
-        if subpath[j - 1] in path[ind[j - 1]: ind[j]] or subpath[j - 1] in path[ind[j] + 1: ind[j + 1]]:
-            return False
-    return True
+    with open(sys.argv[1], 'r') as ymlfile:
+        cfg = yaml.load(ymlfile)
 
-def extract_seq(path, edges):
-    res = ""
+    data_loader = DataLoader()
+    reads = data_loader.load(cfg["reads_path"], "fasta")
+    edges = data_loader.load(cfg["edges"], "fasta")
+    truepaths = data_loader.load(cfg["truepaths_tsv"], "true_paths")
+    aligned_files = data_loader.load(cfg["galigner_out"], "txt")
+    print "\n".join(aligned_files)
+    K = int(cfg["k"])
 
-    for e in path:
-        res += edges[e["name"]][e["e_start"]: e["e_end"]]
-    return res, path[0]["r_start"], path[-1]["r_end"] 
+    res = {}
+    for fl in aligned_files:
+        alignedpaths = data_loader.load(fl, "galigner_paths")
+        
+        bwahits_mapper = BWAhitsMapper(reads, truepaths, alignedpaths)
+        for r in alignedpaths.keys():
+                if r not in truepaths:
+                    continue
+                if bwahits_mapper.is_unique(r):
+                    true_ind = bwahits_mapper.get_bwa_inds_true(r)
+                    aligned_ind = bwahits_mapper.get_bwa_inds_aligned(r)
+                    for j in xrange(2, len(true_ind) - 1):
+                        if truepaths[r]["path"][true_ind[j - 1]: true_ind[j]] != alignedpaths[r]["path"][aligned_ind[j - 1]: aligned_ind[j]]:
+                            galigner_seq = extract_subpath(alignedpaths[r]["path"][aligned_ind[j - 1]: aligned_ind[j] + 1],\
+                                                        alignedpaths[r]["edge_ranges"][aligned_ind[j - 1]], alignedpaths[r]["edge_ranges"][aligned_ind[j]], edges, K)
+                            true_seq = extract_subpath(truepaths[r]["path"][true_ind[j - 1]: true_ind[j]],\
+                                                        alignedpaths[r]["edge_ranges"][aligned_ind[j - 1]], alignedpaths[r]["edge_ranges"][aligned_ind[j]], edges, K)
+                            read_seq = extract_subseq(reads[r], alignedpaths[r]["seq_ranges"][aligned_ind[j - 1]], alignedpaths[r]["seq_ranges"][aligned_ind[j]])
+                            if edist([read_seq, true_seq]) < edist([read_seq, galigner_seq]): 
+                                print r, edist([read_seq, true_seq]), edist([read_seq, galigner_seq]), edist([galigner_seq, true_seq]),len(read_seq)
+                                print truepaths[r]["path"][true_ind[j - 1]: true_ind[j] + 1]
+                                print truepaths[r]["edgelen"][true_ind[j - 1]: true_ind[j] + 1]
+                                print alignedpaths[r]["path"][aligned_ind[j - 1]: aligned_ind[j]+1]
+                
 
-
-def count_gaps_ed(trueinfo, info, true_ind, ind, read, edges, is_real_reads):
-    truepath = trueinfo["path"]
-    path = info["path"]
-    strange_ed = 0
-    normal = 0
-    for j in xrange(2, len(true_ind) - 1):
-        if truepath[true_ind[j - 1]: true_ind[j]] != path[ind[j - 1]: ind[j]]:
-            if len(path[ind[j - 1]: ind[j]]) > 1:
-                true_seq, true_start, true_end = extract_seq(trueinfo["path_with_ends"][true_ind[j - 1]: true_ind[j] + 1], edges) 
-                seq, start, end = extract_seq(info["path_with_ends"][ind[j - 1]: ind[j] + 1], edges) 
-                #print true_start, true_end
-                #print start, end
-                if is_real_reads:
-                    read_seq = read[start: end]
-                else:
-                    read_seq = read[true_start: true_end]
-
-                true_ed = edlib.align(read_seq, true_seq, mode="NW" )['editDistance']
-                aligned_ed = edlib.align(read_seq, seq, mode="NW" )['editDistance']
-                #print "  ED ", true_ed, aligned_ed, len(path[ind[j - 1]: ind[j]])
-                if true_ed > aligned_ed:
-                    strange_ed += 1
-                else:
-                    normal += 1
-    return strange_ed, normal
-
-
-def count_gaps_ed_all(truepaths, alignedpaths, edges, reads, is_real_reads):
-    unknown = 0
-    strange_ed = 0
-    normal = 0
-    for r in alignedpaths.keys():
-        if r not in truepaths:
-            continue
-        if not is_unique(truepaths[r]["path"], alignedpaths[r]["bwa_path"]):
-            unknown += 1
-        else:
-            true_ind = get_bwa_inds(truepaths[r]["path"], alignedpaths[r]["bwa_path"])
-            aligned_ind = get_bwa_inds_aligned(alignedpaths[r]["edge_tag"])
-            strange_ed_cur, normal_cur= count_gaps_ed(truepaths[r], alignedpaths[r], true_ind, aligned_ind, reads[r], edges, is_real_reads)
-            strange_ed += strange_ed_cur
-            normal += normal_cur
-    return [strange_ed, normal, unknown]
-
-ideal_reads = load_reads(sys.argv[1])
-reads = load_reads(sys.argv[2])
-edges = load_edges(sys.argv[3])
-truepaths = load_truealignments(sys.argv[4], reads)
-alignedpaths = load_alignments(sys.argv[5])
-
-print count_gaps_ed_all(truepaths, alignedpaths, edges, reads, True)
-print count_gaps_ed_all(truepaths, alignedpaths, edges, ideal_reads, False)
 
