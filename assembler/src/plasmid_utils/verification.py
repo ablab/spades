@@ -167,8 +167,11 @@ for i in table:   # print (i)
 parser(name+".xml", outdir)
 
 
-with open(name+"_plasmid.names", "r") as pl_infile:
-         plasmids=pl_infile.readlines()
+#with open(name+"_plasmid.names", "r") as pl_infile:
+ #        plasmids=pl_infile.readlines()
+
+plasmids= [line.rstrip() for line in open(name+"_plasmid.names")]
+
 plasmids_list=[]
 for i in plasmids:
     if i[:4] == "NODE" or i[:6] == "CUTOFF":
@@ -177,8 +180,10 @@ for i in plasmids:
 plasmids_list = [i.strip() for i in plasmids_list] 
 
 
-with open(name+"_plasmids_bad.names", "r") as pl_infile:
-          plasmids_bad=pl_infile.readlines()
+#with open(name+"_plasmids_bad.names", "r") as pl_infile:
+ #         plasmids_bad=pl_infile.readlines()
+plasmids_bad= [line.rstrip() for line in open(name+"_plasmids_bad.names")]
+
 plasmids_bad_list=[]
 for i in plasmids_bad:
     if i[:4] == "NODE"  or i[:6] == "CUTOFF":
@@ -187,8 +192,11 @@ for i in plasmids_bad:
 plasmids_bad_list = [i.strip() for i in plasmids_bad_list] 
 
 
-with open(name+"_unclassified.names", "r") as pl_infile:
-           unclass=pl_infile.readlines()
+#with open(name+"_unclassified.names", "r") as pl_infile:
+ #          unclass=pl_infile.readlines()
+unclass= [line.rstrip() for line in open(name+"_unclassified.names")]
+
+
 unclass_list=[]
 for i in unclass:
     if i[:4] == "NODE" or i[:6] == "CUTOFF":
@@ -197,8 +205,11 @@ for i in unclass:
 unclass_list = [i.strip() for i in unclass_list] 
 
 
-with open(name+"_chromosome.names", "r") as pl_infile:
-           chroms=pl_infile.readlines()
+#with open(name+"_chromosome.names", "r") as pl_infile:
+ #          chroms=pl_infile.readlines()
+
+chroms= [line.rstrip() for line in open(name+"_chromosome.names")]
+
 chrom_list=[]
 for i in chroms:
      if i[:4] == "NODE"  or i[:6] == "CUTOFF":
@@ -206,8 +217,11 @@ for i in chroms:
 chrom_list = [i.strip() for i in chrom_list] 
 
 
-with open(name+"_no_significant.names", "r") as pl_infile:
-           no_sign=pl_infile.readlines()
+#with open(name+"_no_significant.names", "r") as pl_infile:
+ #          no_sign=pl_infile.readlines()
+
+no_sign= [line.rstrip() for line in open(name+"_no_significant.names")]
+
 no_sig_list=[]
 for i in no_sign:
      if i[:4] == "NODE"  or i[:6] == "CUTOFF":
@@ -216,8 +230,11 @@ no_sig_list = [i.strip() for i in no_sig_list]
 
 
 
-with open(name+"_viruses.names", "r") as pl_infile:
-           viruses=pl_infile.readlines()
+#with open(name+"_viruses.names", "r") as pl_infile:
+ #          viruses=pl_infile.readlines()
+
+viruses = [line.rstrip() for line in open(name+"_viruses.names")]
+
 viruses_list=[]
 for i in viruses:
      if i[:4] == "NODE"  or i[:6] == "CUTOFF":
@@ -225,7 +242,7 @@ for i in viruses:
 viruses_list = [i.strip() for i in viruses_list] 
 
 
-
+print(unclass)
 
 
   
@@ -238,7 +255,7 @@ for i in table:
   elif i[0] in unclass_list:
      i.append("Unclassified "  + unclass[unclass.index(i[0])+1])
   elif  i[0] in chrom_list:
-     i.append("Chromosome " + chroms[chrom.index(i[0])+1])
+     i.append("Chromosome " + chroms[chroms.index(i[0])+1])
   elif  i[0] in no_sig_list:
      i.append("Non-significant")
   elif  i[0] in viruses_list:
