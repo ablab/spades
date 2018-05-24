@@ -68,14 +68,10 @@ if __name__ == "__main__":
                         if truepaths[r]["path"][true_ind[j - 1]: true_ind[j]] != alignedpaths[r]["path"][aligned_ind[j - 1]: aligned_ind[j]]:
                             galigner_seq = extract_subpath(alignedpaths[r]["path"][aligned_ind[j - 1]: aligned_ind[j] + 1],\
                                                         alignedpaths[r]["edge_ranges"][aligned_ind[j - 1]], alignedpaths[r]["edge_ranges"][aligned_ind[j]], edges, K)
-                            true_seq = extract_subpath(truepaths[r]["path"][true_ind[j - 1]: true_ind[j]],\
+                            true_seq = extract_subpath(truepaths[r]["path"][true_ind[j - 1]: true_ind[j] + 1],\
                                                         alignedpaths[r]["edge_ranges"][aligned_ind[j - 1]], alignedpaths[r]["edge_ranges"][aligned_ind[j]], edges, K)
                             read_seq = extract_subseq(reads[r], alignedpaths[r]["seq_ranges"][aligned_ind[j - 1]], alignedpaths[r]["seq_ranges"][aligned_ind[j]])
-                            if edist([read_seq, true_seq]) < edist([read_seq, galigner_seq]): 
+                            if edist([read_seq, true_seq]) < edist([read_seq, galigner_seq]) and len(alignedpaths[r]["path"][aligned_ind[j - 1]: aligned_ind[j]+1]) > 2: 
                                 print r, edist([read_seq, true_seq]), edist([read_seq, galigner_seq]), edist([galigner_seq, true_seq]),len(read_seq)
                                 print truepaths[r]["path"][true_ind[j - 1]: true_ind[j] + 1]
-                                print truepaths[r]["edgelen"][true_ind[j - 1]: true_ind[j] + 1]
-                                print alignedpaths[r]["path"][aligned_ind[j - 1]: aligned_ind[j]+1]
-                
-
-
+                                print alignedpaths[r]["path"][aligned_ind[j - 1]: aligned_ind[j] + 1]
