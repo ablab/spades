@@ -40,10 +40,10 @@ os.system (hmmsearch + " --noali  -o "+name+"_out_pfam -E 0.01 --tblout "+name+"
 os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$6>20 {print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 # run cbar
-os.system(cbar + " " + sys.argv[1] + " " + name + "_cbar.txt")
+#os.system(cbar + " " + sys.argv[1] + " " + name + "_cbar.txt")
 
 # run blast
-os.system ("blastn -query " + sys.argv[1] + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
+#os.system ("blastn -query " + sys.argv[1] + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
 
 
 # parse hmms
@@ -78,7 +78,7 @@ for i in ids:
 
 
 tblout_pfam = [i.split() for i in tblout_pfam] 
-
+dpr = set(pr)
 # add list of domains
 for item in table: # In table - add new field, and for each row
     item.append([])
@@ -104,8 +104,9 @@ for item in table: # In table - add new field, and for each row
 
      # add number of total predicted proteins
     counter=0
-    for i in pr: 
-        if item[0] in i: counter+=1
+#    for i in pr: 
+    if item[0] in dpr:
+        counter+=1
  
     item.append (str(counter))
      # add number of pfam hits
@@ -141,7 +142,7 @@ for i in table:
     i.append("cbar+")
   else:
     i.append("cbar-")
-
+'''
 
 # Add classifier
 
@@ -161,10 +162,10 @@ for i in table:   # print (i)
     else:
          i.append ("Scikit_NBC_Unknown")
 
-
+'''
 
 # add blast results
-
+'''
 parser(name+".xml", outdir)
 
 
@@ -264,7 +265,7 @@ for i in table:
   else: 
      i.append("-")
 
-
+'''
 
 # Output
 
