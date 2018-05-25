@@ -390,10 +390,11 @@ void ChromosomeRemoval::OutputSuspiciousComponents (conj_graph_pack &gp, size_t 
                 size_t count = 1;
                 for (auto edge: comp) {
                     if (edge <= gp.g.conjugate(edge)) {
-                        is << ">CUTOFF_" << ext_limit_ <<"_COMPONENT_" << component_count << "_EDGE_" << count <<"_cov_" << gp.g.coverage(edge)  << endl;
+                        is << ">CUTOFF_" << ext_limit_ <<"_COMPONENT_" << component_count << "_EDGE_" << count <<
+                           "_length_"<< gp.g.length(edge) <<"_cov_" << gp.g.coverage(edge) << "_id_" <<edge.int_id() << endl;
                         is << gp.g.EdgeNucls(edge) << endl;
                         count++;
-                        gp.g.DeleteEdge(edge);
+//                        gp.g.DeleteEdge(edge);
                     }
                 }
 
