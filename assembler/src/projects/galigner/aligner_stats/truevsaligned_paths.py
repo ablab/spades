@@ -457,7 +457,18 @@ class GapsLengthStatistics:
                 if has_wrong_end or has_wrong_start:
                     res_plus.append(m)
 
-        return {"prefix_len": sorted(res_prefix)[len(res_prefix)/2], "suffix_len": sorted(res_suffix)[len(res_suffix)/2], "sum_len": sorted(res_plus)[len(res_plus)/2] }
+        med_prefix = 0
+        if len(res_prefix) > 0:
+            med_prefix = sorted(res_prefix)[len(res_prefix)/2]
+
+        med_suffix = 0
+        if len(res_suffix) > 0:
+            med_suffix = sorted(res_suffix)[len(res_suffix)/2]
+
+        med_plus = 0
+        if len(res_plus) > 0:
+            med_plus = sorted(res_plus)[len(res_plus)/2]
+        return {"prefix_len": med_prefix, "suffix_len": med_suffix, "sum_len": med_plus }
 
 def make_table(results, row_names, caption, name):
     html = """<html><table border="1"><caption>{}</caption><tr><th></th>""".format(name)
@@ -478,20 +489,20 @@ def make_table(results, row_names, caption, name):
 def get_name(path):
     name = path.split("/")[-1]
     res = ""
-    if name.startswith("dima_filtering"):
-        res = "branch: new_weights; "
-    else:
-        res = "branch: master; "
-    if "_bf_" in name:
-        res += "brute_force; "
-    else:
-        res += "dijkstra; "
-    if "_ends" in name:
-        res += "restore_ends; "
-    if "_ideal_" in name:
-        res += "ideal_reads; "
+    # if name.startswith("dima_filtering"):
+    #     res = "branch: new_weights; "
+    # else:
+    #     res = "branch: master; "
+    # if "_bf_" in name:
+    #     res += "brute_force; "
+    # else:
+    #     res += "dijkstra; "
+    # if "_ends" in name:
+    #     res += "restore_ends; "
+    # if "_ideal_" in name:
+    #     res += "ideal_reads; "
 
-    return res
+    return name
 
 def save_html(s, fl):
     with open(fl, "w") as fout:
@@ -525,6 +536,12 @@ if __name__ == "__main__":
         print "Total=", len(reads), " ideal=", len(reads) - badideal,  " notmapped=", notmapped
         print "Paths with problems ", path_problems
         print len(alignedsubpath), len(badlyaligned)
+
+        cnt = 0
+        for r in alignedsubpath.keys():
+            p = alignedsubpath[r]
+            if (p["mapped_e"] - p["mapped_s"])*100/len(reads[r]) > 80:
+                cnt += 1
 
         bwahits_mapper = BWAhitsMapper(reads, truepaths, badlyaligned)
         bwa_problems = bwahits_mapper.cnt_problembwa(cfg["print_bwa_hits_failure"])
@@ -564,6 +581,7 @@ if __name__ == "__main__":
                      "Median length(in nucs) of skipped prefix/suffix/sum in paths with BWA/Gap fail" : \
                      str(gaps_len_stats["prefix_len"]) + "/" + str(gaps_len_stats["suffix_len"]) + "/" + str(gaps_len_stats["sum_len"]),\
                      "Path is subpath of true path (#reads)": make_str(len(alignedsubpath), len(reads) - badideal),\
+                     "Path is 80% of true path (#reads)": make_str(cnt, len(reads) - badideal),\
                      "Incorrect prefix/suffix (#reads) in paths that is subpath" : make_str2(gaps_cnt_stats_subpath["wrong_filled_start"], gaps_cnt_stats_subpath["empty_start"], len(reads) - badideal) + " / " +\
                                                           make_str2(gaps_cnt_stats_subpath["wrong_filled_end"], gaps_cnt_stats_subpath["empty_end"], len(reads) - badideal), \
                      "Median length(in nucs) of skipped prefix/suffix/sum in paths that is subpath" : \
@@ -580,6 +598,7 @@ if __name__ == "__main__":
                      "Incorrect prefix/suffix in paths with BWA/Gap fail (#reads)",\
                      "Median length(in nucs) of skipped prefix/suffix/sum in paths with BWA/Gap fail",\
                      "Path is subpath of true path (#reads)",\
+                     "Path is 80% of true path (#reads)",\
                      "Incorrect prefix/suffix (#reads) in paths that is subpath",\
                      "Median length(in nucs) of skipped prefix/suffix/sum in paths that is subpath"
                      ]
