@@ -27,7 +27,13 @@ inline const std::string Complement(const std::string &s) {
 }
 
 //Uses edlib; returns std::numeric_limits<int>::max() for too distant string
-int StringDistance(const std::string &a, const std::string &b);
+int StringDistance(const std::string &a, const std::string &b, int max_score = -1);
+
+void SHWDistanceFull(string &target, string &query, int max_score, vector<int> &positions, vector<int> &scores);
+
+int SHWDistance(const string &a, const string &b, int max_score, int &end_pos);
+
+
 
 inline const Sequence MergeOverlappingSequences(const std::vector<Sequence>& ss,
         size_t overlap, bool safe_merging = true) {

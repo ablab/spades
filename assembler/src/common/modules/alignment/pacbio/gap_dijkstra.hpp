@@ -3,8 +3,9 @@
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
+#include "sequence/sequence_tools.hpp"
+
 #include "utils/perf/perfcounter.hpp"
-#include "string_distance.hpp"
 
 namespace pacbio {
 using debruijn_graph::EdgeId;
@@ -171,7 +172,7 @@ protected:
                 vector<int> positions;
                 vector<int> scores;
                 if (path_max_length_ - ed >= 0) {
-                   SHWDistance(seq_str, edge_str, path_max_length_ - ed, positions, scores);
+                   SHWDistanceFull(seq_str, edge_str, path_max_length_ - ed, positions, scores);
                    for (size_t i = 0; i < positions.size(); ++ i) {
                        if (positions[i] >= 0 && scores[i] >= 0) {
                            //INFO(" state=" << prev_state.i + positions[i] + 1 << " score=" << ed + scores[i])
@@ -201,7 +202,7 @@ public:
                    , return_code_(0){
             best_ed_.resize(ss_.size(), path_max_length_);
             AddNewEdge(GraphState(start_e_, start_p_, (int) g_.length(start_e_)), QueueState(), 0);
-            min_score_ = -1;
+            min_score_ = std::numeric_limits<int>::max();
         }
 
         void CloseGap() {
@@ -338,8 +339,8 @@ private:
                     string seq_str = ss_.substr(cur_state.i);
                     string tmp = g_.EdgeNucls(e).str();
                     string edge_str = tmp.substr(0, end_p_);
-                    int score = NWDistance(seq_str, edge_str, path_max_length_ - ed);
-                    if (score != -1) {
+                    int score = StringDistance(seq_str, edge_str, path_max_length_ - ed);
+                    if (score != std::numeric_limits<int>::max()) {
                         path_max_length_ = min(path_max_length_, ed + score);
                         QueueState state(GraphState(e, 0, end_p_), (int)ss_.size());
                         Update(state, cur_state, ed + score);
@@ -373,8 +374,8 @@ public:
                 string seq_str = ss_;
                 string tmp = g_.EdgeNucls(start_e_).str();
                 string edge_str = tmp.substr(start_p_, end_p_ - start_p_);
-                int score = NWDistance(seq_str, edge_str, path_max_length_);
-                if (score != -1) {
+                int score = StringDistance(seq_str, edge_str, path_max_length_);
+                if (score != std::numeric_limits<int>::max()) {
                     path_max_length_ = min(path_max_length_, score);
                     QueueState state(GraphState(start_e_, start_p_, end_p_), (int) ss_.size());
                     Update(state, QueueState(), score);
@@ -407,7 +408,7 @@ private:
                 string seq_str = ss_.substr(cur_state.i);
                 string tmp = g_.EdgeNucls(e).str();
                 int position = -1;
-                int score = SHWDistance2(seq_str, tmp, path_max_length_ - ed, position);
+                int score = SHWDistance(seq_str, tmp, path_max_length_ - ed, position);
                 if (score >= 0) {
                     INFO("End pos score=" << score);
                     path_max_length_ = min(path_max_length_, ed + score);
@@ -441,8 +442,8 @@ public:
                 string tmp = g_.EdgeNucls(start_e_).str();
                 string edge_str = tmp.substr(start_p_);
                 int position = -1;
-                int score = SHWDistance2(seq_str, edge_str, path_max_length_, position);
-                if (score != -1) {
+                int score = SHWDistance(seq_str, edge_str, path_max_length_, position);
+                if (score != std::numeric_limits<int>::max()) {
                     path_max_length_ = min(path_max_length_, score);
                     QueueState state(GraphState(start_e_, start_p_, start_p_ + position + 1), (int) ss_.size() );
                     Update(state, QueueState(), score);

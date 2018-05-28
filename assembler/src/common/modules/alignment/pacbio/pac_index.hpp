@@ -20,8 +20,6 @@
 
 #include "pipeline/configs/aligner_config.hpp"
 
-#include "sequence/sequence_tools.hpp"
-
 #include "pacbio_read_structures.hpp"
 #include "gap_dijkstra.hpp"
 
@@ -302,9 +300,8 @@ public:
         algo.CloseGap();
         score = algo.GetEditDistance();
         return_code += algo.GetReturnCode();
-        if (score == -1){
+        if (score == std::numeric_limits<int>::max()){
             INFO("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
-            score = STRING_DIST_INF;
             return;
         }
         INFO("PathStr=" << algo.GetPathStr());
@@ -370,7 +367,7 @@ public:
                         prev_edge = EdgeId();
                         continue;
                     }
-                    int score = STRING_DIST_INF;
+                    int score = std::numeric_limits<int>::max();
                     vector<EdgeId> intermediate_path = BestScoredPath(s, prev_edge, cur_edge, prev_last_index.edge_position, cur_first_index.edge_position, 
                                                                                     start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, score);
 
@@ -746,13 +743,13 @@ public:
         Sequence ss = s.Subseq(seq_start_pos, min(seq_end_pos, int(s.size()) ));
         int s_len = int(ss.size());
         path_max_length = score;
-        if (score == STRING_DIST_INF){
+        if (score == std::numeric_limits<int>::max()){
             path_max_length = max(s_len/3, 20);
         } 
         DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len << " max-len " << path_max_length << " start_p=" << edge_start_pos << " end_p=" << edge_end_pos << " eid=" << start_e.int_id());
         if (vertex_pathlen.size() == 0 || ((size_t) s_len) > pb_config_.max_contigs_gap_length || vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap){
             DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
-            score = STRING_DIST_INF;
+            score = std::numeric_limits<int>::max();
             if (vertex_pathlen.size() == 0) {
                 return_code_dijkstra = 1;
             }
@@ -771,7 +768,7 @@ public:
         return_code_dijkstra += gap_filler.GetReturnCode();
         if (score == -1){
             DEBUG("Dijkstra didn't find anything")
-            score = STRING_DIST_INF;
+            score = std::numeric_limits<int>::max();
             return vector<EdgeId>(0);
         }
         std::vector<EdgeId> ans = gap_filler.GetPath();
@@ -836,7 +833,7 @@ public:
         }
         TRACE(best_score);
         score = best_score;
-        if (best_score == STRING_DIST_INF) {
+        if (best_score == std::numeric_limits<int>::max()) {
             if (paths.size() < 10) {
                 for (size_t i = 0; i < paths.size(); i++) {
                     DEBUG ("failed with strings " << seq_string << " " << s_add + PathToString(paths[i]) + e_add);
@@ -864,7 +861,7 @@ public:
             INFO("AAAAAAA!!! " << start_e.int_id() << " start_pos=" << seq_start_pos << " end_pos=" << seq_end_pos )
         }
         int return_code = -1;
-        score = STRING_DIST_INF;
+        score = std::numeric_limits<int>::max();
         utils::perf_counter pc;
         std::vector<EdgeId> path = BestScoredPathBruteForce(s, start_v, end_v, 
                                                                path_min_length, path_max_length,

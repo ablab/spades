@@ -156,7 +156,7 @@ public:
                                            , edlib::edlibNewAlignConfig(d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_PATH,
                                                                  NULL, 0));
         cigar = "";
-        score = pacbio::STRING_DIST_INF;
+        score = std::numeric_limits<int>::max();
         if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
             score = result.editDistance;
             cigar = edlib::edlibAlignmentToCigar(result.alignment, result.alignmentLength, edlib::EDLIB_CIGAR_EXTENDED);
