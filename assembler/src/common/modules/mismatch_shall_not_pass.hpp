@@ -76,9 +76,8 @@ private:
     map<EdgeId, MismatchEdgeInfo> statistics_;
 
     template<class graph_pack>
-    void CollectPotensialMismatches(const graph_pack &gp) {
-        const auto &kmer_mapper = gp.kmer_mapper;
-        for (auto it = kmer_mapper.begin(); it != kmer_mapper.end(); ++it) {
+    void CollectPotentialMismatches(const graph_pack &gp) {
+        for (auto it = gp.kmer_mapper.begin(); it != gp.kmer_mapper.end(); ++it) {
             // Kmer mapper iterator dereferences to pair (KMer, KMer), not to the reference!
             const auto mentry = *it;
             const RtSeq &from = mentry.first;
@@ -99,9 +98,12 @@ private:
                 cnt_arr[3] <= from.size() / 6) {
                 for (size_t i = 0; i < from.size(); i++) {
                     if (from[i] != to[i] && gp.index.contains(to)) {
-                        pair<EdgeId, size_t> position = gp.index.get(to);
-                        //FIXME add only canonical edges?
-                        statistics_[position.first].AddPosition(position.second + i);
+                        EdgeId e;
+                        size_t position;
+                        std::tie(e, position) = gp.index.get(to);
+                        //Adding info on canonical edges only
+                        if (e <= gp.g.conjugate(e))
+                            statistics_[e].AddPosition(position + i);
                     }
                 }
             }
@@ -116,7 +118,7 @@ private:
 
 public:
     MismatchStatistics(const conj_graph_pack &gp) {
-        CollectPotensialMismatches(gp);
+        CollectPotentialMismatches(gp);
     }
 
     const_iterator begin() const {
@@ -190,6 +192,7 @@ public:
         for (size_t i = 0; i < statistics.size(); i++) {
             Merge(statistics[i]);
         }
+        INFO("Stats merged");
     }
 };
 
@@ -266,17 +269,9 @@ private:
     }
 
     size_t CorrectAllEdges(const MismatchStatistics<EdgeId> &statistics) {
+        INFO("Correcting edges");
         size_t res = 0;
-        set<EdgeId> conjugate_fix;
-        //FIXME after checking saves replace with
-        //for (auto it = g_.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
-
-        for (auto it = gp_.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (conjugate_fix.find(gp_.g.conjugate(*it)) == conjugate_fix.end()) {
-                conjugate_fix.insert(*it);
-            }
-        }
-        for (auto it = conjugate_fix.begin(); it != conjugate_fix.end(); ++it) {
+        for (auto it = g_.SmartEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             DEBUG("processing edge" << g_.int_id(e));
 
@@ -289,13 +284,6 @@ private:
         }
         INFO("All edges processed");
         return res;
-    }
-
-    template<class SingleReadStream>
-    size_t StopMismatchIteration(SingleReadStream &stream) {
-        MismatchStatistics<EdgeId> statistics(gp_);
-        statistics.Count(stream, gp_);
-        return CorrectAllEdges(statistics);
     }
 
     template<class SingleReadStreamList>
@@ -312,20 +300,6 @@ public:
             k_(gp.g.k()),
             relative_threshold_(relative_threshold) {
         VERIFY(relative_threshold >= 1);
-    }
-
-
-    template<class SingleReadStream>
-    size_t StopAllMismatches(SingleReadStream &stream, size_t max_iterations = 1) {
-        size_t res = 0;
-        while (max_iterations > 0) {
-            size_t last = StopMismatchIteration(stream);
-            res += last;
-            if (last == 0)
-                break;
-            max_iterations--;
-        }
-        return res;
     }
 
     template<class SingleReadStreamList>
