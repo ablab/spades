@@ -40,10 +40,10 @@ os.system (hmmsearch + " --noali  -o "+name+"_out_pfam -E 0.01 --tblout "+name+"
 os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$6>20 {print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 # run cbar
-#os.system(cbar + " " + sys.argv[1] + " " + name + "_cbar.txt")
+os.system(cbar + " " + sys.argv[1] + " " + name + "_cbar.txt")
 
 # run blast
-#os.system ("blastn -query " + sys.argv[1] + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
+os.system ("blastn -query " + sys.argv[1] + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
 
 
 # parse hmms
@@ -86,7 +86,7 @@ for item in table: # In table - add new field, and for each row
     for j in tblout_pfam[3:-10]:  #check tblout (last 10 - service strings)
         if j[0] and item[0]: # if there is a protein in tblout and SRR in table
 #            if j[2] not in pr_list: #  if we didn't see this protein yet
-                if item[0] in j[0]  and float(j[5]) > 20  : # if there's the SRR in protein ID and bitscore > 20
+                if item[0] == j[0].rsplit('_', 1)[0]  and float(j[5]) > 20  : # if there's the SRR in protein ID and bitscore > 20
                     pr_list.append(j[0]) # add this protein to the list for given SRR
                     item[-1].append(str(j[2])) # add to this new field
     # add our list378
