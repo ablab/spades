@@ -34,9 +34,9 @@
 #include "bwa/bntseq.h"
 #include "bwa/bwa.h"
 #include "bwa/bwt.h"
+#include "bwa/rope.h"
 #include "bwa/utils.h"
-#include "rle.h"
-#include "rope.h"
+#include "bwa/rle.h"
 
 #ifdef _DIVBWT
 #include "divsufsort.h"
