@@ -148,7 +148,7 @@ namespace barcode_index {
         shared_ptr<ScaffoldVertexIndex<EdgeEntryT>> GetConstructedIndex(const ContainerT& vertex_container) {
 
             //todo make parallel using iterator chunks
-            INFO("Constructing long edge index in " << max_threads_ << " threads");
+            DEBUG("Constructing long edge index in " << max_threads_ << " threads");
 //            size_t counter = 0;
 //            size_t block_size = vertex_container.size() / 10;
             for (const auto& vertex: vertex_container)
@@ -163,7 +163,7 @@ namespace barcode_index {
 //                    INFO("Processed " << counter << " edges out of " << vertex_container.size());
 //                }
             }
-            INFO("Constructed long edge index");
+            DEBUG("Constructed long edge index");
             return index_;
         }
     };
@@ -180,9 +180,9 @@ namespace barcode_index {
                                                                            size_t length_threshold,
                                                                            size_t max_threads,
                                                                            const ContainerT& vertex_container) {
-            INFO("Building simple long edge barcode index with parameters");
-            INFO("Count threshold: " << count_threshold);
-            INFO("Length threshold: " << length_threshold);
+            DEBUG("Building simple long edge barcode index with parameters");
+            DEBUG("Count threshold: " << count_threshold);
+            DEBUG("Length threshold: " << length_threshold);
             auto entry_extractor = make_shared<ScaffoldVertexSimpleEntryExtractor>(g_, extractor, tail_threshold_getter,
                                                                                        count_threshold, length_threshold);
             ScaffoldVertexIndexBuilder<SimpleVertexEntry> builder(g_, entry_extractor, max_threads);
