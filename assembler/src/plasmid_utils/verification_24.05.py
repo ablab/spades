@@ -36,7 +36,7 @@ cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
 
 # run hmm
 os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
-os.system (hmmsearch + " --noali  -o "+name+"_out_pfam -E 0.01 --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+os.system (hmmsearch + " --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
 os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$6>20 {print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 # run cbar
@@ -142,7 +142,7 @@ for i in table:
     i.append("cbar+")
   else:
     i.append("cbar-")
-'''
+
 
 # Add classifier
 
@@ -162,10 +162,10 @@ for i in table:   # print (i)
     else:
          i.append ("Scikit_NBC_Unknown")
 
-'''
+
 
 # add blast results
-'''
+
 parser(name+".xml", outdir)
 
 
@@ -176,7 +176,7 @@ plasmids= [line.rstrip() for line in open(name+"_plasmid.names")]
 
 plasmids_list=[]
 for i in plasmids:
-    if i[:4] == "NODE" or i[:6] == "CUTOFF":
+    if i[:4] == "NODE" or i[:6] == "CUTOFF" or len(i.split("_"))==10 and i.split("_")[2] == "NODE":
         plasmids_list.append(i)
 
 plasmids_list = [i.strip() for i in plasmids_list] 
@@ -188,7 +188,7 @@ plasmids_bad= [line.rstrip() for line in open(name+"_plasmids_bad.names")]
 
 plasmids_bad_list=[]
 for i in plasmids_bad:
-    if i[:4] == "NODE"  or i[:6] == "CUTOFF":
+    if i[:4] == "NODE"  or i[:6] == "CUTOFF" or (len(i.split("_"))==10 and i.split("_")[2] == "NODE"):
         plasmids_bad_list.append(i)
 
 plasmids_bad_list = [i.strip() for i in plasmids_bad_list] 
@@ -201,7 +201,7 @@ unclass= [line.rstrip() for line in open(name+"_unclassified.names")]
 
 unclass_list=[]
 for i in unclass:
-    if i[:4] == "NODE" or i[:6] == "CUTOFF":
+    if i[:4] == "NODE" or i[:6] == "CUTOFF" or len(i.split("_"))==10 and i.split("_")[2] == "NODE":
          unclass_list.append(i)  
 
 unclass_list = [i.strip() for i in unclass_list] 
@@ -214,7 +214,7 @@ chroms= [line.rstrip() for line in open(name+"_chromosome.names")]
 
 chrom_list=[]
 for i in chroms:
-     if i[:4] == "NODE"  or i[:6] == "CUTOFF":
+     if i[:4] == "NODE"  or i[:6] == "CUTOFF" or len(i.split("_"))==10 and i.split("_")[2] == "NODE":
          chrom_list.append(i)
 chrom_list = [i.strip() for i in chrom_list] 
 
@@ -226,7 +226,7 @@ no_sign= [line.rstrip() for line in open(name+"_no_significant.names")]
 
 no_sig_list=[]
 for i in no_sign:
-     if i[:4] == "NODE"  or i[:6] == "CUTOFF":
+     if i[:4] == "NODE"  or i[:6] == "CUTOFF" or len(i.split("_"))==10 and i.split("_")[2] == "NODE":
          no_sig_list.append(i)
 no_sig_list = [i.strip() for i in no_sig_list] 
 
@@ -239,12 +239,12 @@ viruses = [line.rstrip() for line in open(name+"_viruses.names")]
 
 viruses_list=[]
 for i in viruses:
-     if i[:4] == "NODE"  or i[:6] == "CUTOFF":
+     if i[:4] == "NODE"  or i[:6] == "CUTOFF" or len(i.split("_"))==10 and i.split("_")[2] == "NODE":
          viruses_list.append(i)
 viruses_list = [i.strip() for i in viruses_list] 
 
 
-print(unclass)
+#print(unclass)
 
 
   
@@ -264,8 +264,6 @@ for i in table:
      i.append("Virus " + viruses[viruses.index(i[0])+1])
   else: 
      i.append("-")
-
-'''
 
 # Output
 
