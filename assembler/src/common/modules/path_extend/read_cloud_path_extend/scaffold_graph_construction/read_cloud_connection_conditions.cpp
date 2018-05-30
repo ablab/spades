@@ -516,7 +516,7 @@ bool CompositeConnectionPredicate::SearchTargetUsingExtenders(QueueContainer& pa
             }
             ++path_processing_iterations;
             if (current_iterations >= max_path_growing_iterations) {
-                WARN("Stopped path growing because of too many steps");
+                WARN("Stopped path growing because of too many iterations");
                 continue;
             }
             const auto &reached_vertices = extender->GetReachedVertices();
@@ -527,7 +527,7 @@ bool CompositeConnectionPredicate::SearchTargetUsingExtenders(QueueContainer& pa
         }
     }
     if (path_processing_iterations >= max_paths_to_process) {
-        WARN("Had to process too many paths, returning");
+        DEBUG("Had to process too many paths, returning");
         return true;
     }
     return false;

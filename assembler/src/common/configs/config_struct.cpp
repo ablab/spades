@@ -492,15 +492,18 @@ void load(debruijn_config::read_cloud_resolver& ts_res,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
     load(ts_res.tslr_dataset, pt, "tslr_dataset");
-    load(ts_res.edge_length_threshold, pt, "edge_length_threshold");
     load(ts_res.edge_tail_len, pt, "edge_tail_len");
     load(ts_res.frame_size, pt, "frame_size");
+    load(ts_res.read_cloud_gap_closer_on, pt, "read_cloud_gap_closer_on");
     load(ts_res.read_cloud_resolution_on, pt, "read_cloud_resolution_on");
     load(ts_res.scaff_pol, pt, "scaffold_polisher");
     load(ts_res.scaff_con, pt, "scaffold_graph_construction");
     load(ts_res.long_edge_length_min_upper_bound, pt, "long_edge_length_min_upper_bound");
     load(ts_res.long_edge_length_max_upper_bound, pt, "long_edge_length_max_upper_bound");
     load(ts_res.long_edge_length_lower_bound, pt, "long_edge_length_lower_bound");
+    load(ts_res.min_training_edges, pt, "min_training_edges");
+    load(ts_res.min_training_total_length, pt, "min_training_total_length");
+    load(ts_res.optimal_training_total_length, pt, "optimal_training_total_length");
     load(ts_res.statistics, pt, "statistics");
     load(ts_res.path_scaffolding_on, pt, "path_scaffolding_on");
     load(ts_res.debug_mode, pt, "debug_mode");

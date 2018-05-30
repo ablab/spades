@@ -461,8 +461,7 @@ struct debruijn_config {
         size_t edge_tail_len;
         size_t frame_size;
 
-        size_t edge_length_threshold;
-
+        bool read_cloud_gap_closer_on;
         bool read_cloud_resolution_on;
 
         size_t long_edge_length_min_upper_bound;
@@ -472,6 +471,10 @@ struct debruijn_config {
         double gap_closer_connection_score_threshold;
         double gap_closer_relative_coverage_threshold;
         size_t gap_closer_connection_length_threshold;
+
+        size_t min_training_edges;
+        size_t min_training_total_length;
+        size_t optimal_training_total_length;
 
         struct scaffold_graph_construction {
           size_t count_threshold;

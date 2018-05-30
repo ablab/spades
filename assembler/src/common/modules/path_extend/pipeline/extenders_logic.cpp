@@ -612,6 +612,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
     const size_t seed_edge_length = 2000;
     const double extender_score_threshold = 0.04;
     const double relative_coverage_threshold = 1.5;
+    const size_t barcode_threshold = 1;
 
     auto barcode_extractor =
         std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
@@ -636,6 +637,11 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
 //    //to avoid unique check
 //    UsedUniqueStorage *empty_used_storage = new UsedUniqueStorage(*empty_unique_storage);
 //    INFO("Unique check: " << empty_used_storage->UniqueCheckEnabled());
+
+    auto barcode_extractor_wrapper =
+        std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, barcode_extractor);
+
+
     auto read_cloud_extender = make_shared<ReadCloudExtender>(gp_,
                                                               cover_map_,
                                                               used_unique_storage_,
@@ -644,6 +650,9 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
                                                               investigate_short_loops,
                                                               use_short_loops_cov_resolver,
                                                               weight_threshold,
+                                                              entry_collector,
+                                                              barcode_extractor_wrapper,
+                                                              barcode_threshold,
                                                               reliable_edge_length,
                                                               tail_threshold,
                                                               distance_bound);
