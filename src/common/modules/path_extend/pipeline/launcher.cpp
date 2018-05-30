@@ -427,7 +427,7 @@ void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
 }
 
 void PathExtendLauncher::FillReadCloudUniqueEdgeStorage() {
-    const size_t unique_edge_length = cfg::get().ts_res.edge_length_threshold;
+    const size_t unique_edge_length = cfg::get().ts_res.long_edge_length_lower_bound;
     INFO("Unique edge length: " << unique_edge_length);
     ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp_, unique_edge_length, unique_data_.unique_variation_);
     read_cloud_unique_edge_analyzer.FillUniqueEdgeStorage(unique_data_.unique_read_cloud_storage_);
@@ -506,9 +506,9 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             gap_closers.push_back(std::make_shared<MatePairGapCloser>(graph_, params_.max_polisher_gap, paired_lib,
                                                                       unique_data_.main_unique_storage_));
         }
-        if (lib.type() == io::LibraryType::Clouds10x
-                and cfg::get().ts_res.read_cloud_resolution_on
-                and params_.pset.sm != sm_old) {
+        bool read_cloud_polishing = cfg::get().ts_res.read_cloud_resolution_on and
+                                    cfg::get().ts_res.read_cloud_gap_closer_on;
+        if (lib.type() == io::LibraryType::Clouds10x and read_cloud_polishing and params_.pset.sm != sm_old) {
             INFO("Using read cloud path polisher");
             auto barcode_extractor_ptr =
                 std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);

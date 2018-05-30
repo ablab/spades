@@ -66,6 +66,8 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
 
     auto barcode_extractor =
         std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+    auto barcode_extractor_wrapper =
+        std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, barcode_extractor);
     auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor, reliable_edge_length,
                                                                          seed_edge_length, tail_threshold,
                                                                          relative_coverage_threshold);
@@ -83,6 +85,7 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
     bool use_short_loops_cov_resolver = false;
 
     INFO("Unique check enabled: " << used_unique_storage->UniqueCheckEnabled());
+    const size_t barcode_threshold = 1;
     auto read_cloud_extender = make_shared<ReadCloudExtender>(gp_,
                                                               *cover_map,
                                                               *used_unique_storage,
@@ -91,6 +94,9 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
                                                               investigate_short_loops,
                                                               use_short_loops_cov_resolver,
                                                               weight_threshold,
+                                                              entry_collector,
+                                                              barcode_extractor_wrapper,
+                                                              barcode_threshold,
                                                               reliable_edge_length,
                                                               tail_threshold,
                                                               distance_bound);

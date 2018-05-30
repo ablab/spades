@@ -5,7 +5,7 @@
 #include "common/modules/path_extend/read_cloud_path_extend/fragment_model/distribution_extractor.hpp"
 
 namespace path_extend {
-    class ContainmentIndexThresholdFinder {
+    class ReadCloudScoreFunctionThresholdEstimator {
      public:
         virtual double GetThreshold() const = 0;
     };
@@ -148,7 +148,7 @@ namespace path_extend {
         double GetPercentile (cluster_model::SimpleDistribution<double> distribution, double percent);
     };
 
-    class LabeledDistributionThresholdEstimator: public ContainmentIndexThresholdFinder {
+    class LabeledDistributionThresholdEstimator: public ReadCloudScoreFunctionThresholdEstimator {
         const Graph& g_;
         shared_ptr<SegmentBarcodeScoreFunction> segment_score_function_;
         size_t edge_length_threshold_;

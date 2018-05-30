@@ -181,8 +181,6 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
     vector<ScaffoldVertex> vertices_copy;
     std::copy(scaffold_vertices_.begin(), scaffold_vertices_.end(), std::back_inserter(vertices_copy));
 
-    INFO(vertices_copy.size() << " vertices");
-
     auto is_unique = [this](const EdgeId& edge) {
       return unique_storage_.IsUnique(edge);
     };

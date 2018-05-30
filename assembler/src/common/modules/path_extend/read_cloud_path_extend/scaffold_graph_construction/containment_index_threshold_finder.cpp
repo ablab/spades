@@ -55,7 +55,7 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
             }
         }
         if (block_size != 0 and i % block_size == 0) {
-            INFO("Processed " << i << " out of " << interesting_edges_.size() << " interesting edges");
+            DEBUG("Processed " << i << " out of " << interesting_edges_.size() << " interesting edges");
         }
     }
     INFO(scores.size() << " score samples");

@@ -563,7 +563,7 @@ class EdgeInitialClusterStorageBuilder: public InitialClusterStorageBuilder {
         ClusterStorage cluster_storage;
         InternalEdgeClusterStorage edge_cluster_storage;
         ConstructClusterStorageFromUnique(cluster_storage, edge_cluster_storage);
-        INFO("Cluster storage construction finished");
+        DEBUG("Cluster storage construction finished");
         InitialClusterStorage result(std::move(cluster_storage), std::move(edge_cluster_storage));
         return result;
     }
@@ -1098,6 +1098,7 @@ class ClusterStorageHelper {
                                                      min_read_threshold_, num_threads_);
         GraphClusterStorageBuilder graph_builder(g_, barcode_extractor_ptr_, distance_threshold_);
 
+        INFO("Constructing initial cluster storage");
         InitialClusterStorage initial_cluster_storage = initial_builder.ConstructInitialClusterStorage();
         INFO("Initial cluster storage size: " << initial_cluster_storage.get_cluster_storage().Size());
         return graph_builder.ConstructClusterStorage(initial_cluster_storage, BuildSimpleGraphFromScaffoldGraph(scaffold_graph));

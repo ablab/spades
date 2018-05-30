@@ -3,10 +3,7 @@ ts_res
 	;Dataset configs
 
 		;TSLR leftover
-		read_cloud_dataset  ""
-
-		;remove this
-		library_type tenx
+		tslr_dataset  ""
 
 	;Barcode index construction configs
 
@@ -18,49 +15,14 @@ ts_res
 	;Filtering configs
 
 		;edges with less than trimming_threshold barcodes will be deleted
-		trimming_threshold 10
+		;trimming_threshold 1
 
 		;clouds further than gap_threshold from the end\beginning of the edge will be deleted
-		gap_threshold 100000000
-
-	;General repeat resolution configs
-
-		;threshold on (intersection) / (number of barcodes on second edge)
-		;edge should pass this threshold to become candidate
-		diff_threshold 0.75
-
-		;threshold on barcode coverage difference
-		;first_barcodes / second_barcodes > barcode_number_threshold and
-		;second_barcodes / first_barcodes > barcode_number_threshold
-		barcode_number_threshold 0.2
-
-		;Any candidate edge should be no further in graph. 
-		;In other words, that is the maximum size of resolvable repeat.
-		distance_bound  30000
-
-		;length threshold for reliable edges
-		edge_length_threshold  3000
-
-		;Read cloud clustering threshold
-		distance 5000
-
-		;Average length of read cloud fragment
-		fragment_len 50000
-
-		topsort_bound 5000
+		;gap_threshold 100000000
 
 	;Configs for 10X repeat resolution
 		read_cloud_resolution_on true
-	tenx_resolver
-	{
-		tail_threshold 25000
-		max_initial_candidates 10
-		internal_gap_threshold 6000
-		absolute_barcode_threshold 1
-		initial_abundancy_threshold 3
-		middle_abundancy_threshold 2
-		topology_filter_on true
-	}
+		read_cloud_gap_closer_on true
 
 	statistics
 	{
@@ -74,8 +36,13 @@ ts_res
 		cloud_contigs_path ""
 	}
 
-	long_edge_length_upper_bound 5000
+	long_edge_length_max_upper_bound 20000
+	long_edge_length_min_upper_bound 5000
 	long_edge_length_lower_bound 3000
+
+	min_training_edges 20
+	min_training_total_length 5000000
+	optimal_training_total_length 20000000
 
 	gap_closer_connection_score_threshold 0.5
 	gap_closer_relative_coverage_threshold 50.0
@@ -92,11 +59,8 @@ ts_res
 
 	scaffold_graph_construction {
 		count_threshold 1
-		vertex_multiplier 50.0
-		score_threshold 0.1
-		connection_score_threshold 0.1
 	    relative_coverage_threshold 4.0
-	    connection_length_threshold 100
+	    connection_length_threshold 50
 	    connection_count_threshold 1
 	    initial_distance 15000
 	    split_strictness 0.95
@@ -104,10 +68,8 @@ ts_res
 	    path_scaffolder_tail_threshold 20000
 	    path_scaffolder_count_threshold 1
 	    min_edge_length_for_barcode_collection 1000
-	    full_pipeline_length 2500
 	}
 
 	path_scaffolding_on true
-	debug_mode true
-	save_initial_graph true
+	debug_mode false
 }
