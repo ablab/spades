@@ -32,10 +32,10 @@ class MinTrainingLengthEstimator {
             current_sum += length;
             length_rev_cumulative_list.emplace_back(length, current_sum);
         }
-        size_t total_length = current_sum;
+        size_t total_long_length = current_sum;
         size_t result = length_rev_cumulative_list.back().first;
-        INFO("Total length: " << total_length);
-        VERIFY(total_length >= min_total_length_);
+        INFO("Total length of long edges: " << total_long_length);
+        VERIFY(total_long_length >= min_total_length_);
         auto it = length_rev_cumulative_list.begin();
         current_sum = 0;
         while (current_sum <= min_total_length_ and it != length_rev_cumulative_list.end()) {
@@ -169,7 +169,7 @@ class ClusterDistributionExtractor {
     }
 
     DistributionPack GetClusterDistributions() {
-        const size_t min_distance = 1000;
+        const size_t min_distance = 5000;
         const size_t max_distance = 41000;
         const size_t distance_step = 5000;
         vector<size_t> distances;
@@ -239,7 +239,7 @@ class ClusterDistributionExtractor {
         size_t current_distance = 0;
         VERIFY(statistics.size() > 0);
         for (const auto& entry: statistics) {
-            size_t current_distance = entry.first;
+            current_distance = entry.first;
             size_t current_length_mean = entry.second.length_statistics_.mean_;
             size_t length_mean_threshold = static_cast<size_t>(static_cast<double>(prev_mean) * mean_growth_relative_threshold);
             if (prev_mean != 0 and current_length_mean <= length_mean_threshold) {
@@ -254,11 +254,11 @@ class ClusterDistributionExtractor {
     DECL_LOGGER("ClusterDistributionAnalyzer");
 };
 
-class PrimaryParametersExtractor {
+class ClusterStatisticsExtractor {
     shared_ptr<DistributionPack> cluster_distributions_;
 
  public:
-    explicit PrimaryParametersExtractor(shared_ptr<DistributionPack> cluster_distributions) :
+    explicit ClusterStatisticsExtractor(shared_ptr<DistributionPack> cluster_distributions) :
         cluster_distributions_(cluster_distributions) {}
 
     size_t GetLengthPercentile(double percent) {
@@ -277,6 +277,31 @@ class PrimaryParametersExtractor {
         }
         size_t index = static_cast<size_t>(static_cast<double>(distribution.size()) * percent);
         return distribution.at(index);
+    }
+};
+
+class ClusterStatisticsExtractorHelper {
+    const conj_graph_pack& gp_;
+    const size_t max_threads_;
+
+ public:
+    ClusterStatisticsExtractorHelper(const conj_graph_pack &gp, size_t max_threads)
+        : gp_(gp), max_threads_(max_threads) {}
+
+    ClusterStatisticsExtractor GetStatisticsExtractor() const {
+        const size_t min_training_length = 50000;
+        const size_t min_cluster_offset = 10000;
+        const size_t min_read_threshold = 5;
+
+        path_extend::cluster_model::ClusterDistributionExtractor distribution_analyzer(gp_,
+                                                                                       min_read_threshold,
+                                                                                       min_training_length,
+                                                                                       min_cluster_offset,
+                                                                                       cfg::get().max_threads);
+        auto cluster_distribution_pack =
+            make_shared<cluster_model::DistributionPack>(distribution_analyzer.GetClusterDistributions());
+        cluster_model::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
+        return primary_parameters_extractor;
     }
 };
 }

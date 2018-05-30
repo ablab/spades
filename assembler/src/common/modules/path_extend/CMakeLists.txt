@@ -47,7 +47,7 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.cpp
                     read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.hpp
                     read_cloud_path_extend/scaffold_graph_gap_closer/scaffold_graph_gap_closer.cpp
-        read_cloud_path_extend/fragment_model/distribution_extractor.hpp read_cloud_path_extend/fragment_model/distribution_extractor_helper.hpp)
+        read_cloud_path_extend/fragment_model/distribution_extractor.hpp read_cloud_path_extend/fragment_model/distribution_extractor_helper.hpp read_cloud_path_extend/fragment_model/secondary_stats_estimators.cpp read_cloud_path_extend/fragment_model/secondary_stats_estimators.hpp)
 
 target_link_libraries(path_extend assembly_graph ssw)
 

@@ -12,7 +12,6 @@ namespace path_extend {
 path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_,
                                                 size_t tail_threshold_,
                                                 size_t count_threshold_,
-                                                double connection_score_threshold,
                                                 size_t connection_length_threshold_,
                                                 size_t connection_count_threshold,
                                                 size_t initial_distance_,
@@ -23,7 +22,6 @@ path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_,
     length_threshold_(length_threshold_),
     tail_threshold_(tail_threshold_),
     count_threshold_(count_threshold_),
-    connection_score_threshold_(connection_score_threshold),
     connection_length_threshold_(connection_length_threshold_),
     connection_count_threshold_(connection_count_threshold),
     initial_distance_(initial_distance_),
@@ -49,7 +47,7 @@ shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> BarcodeScoreCo
     LongEdgeScoreThresholdEstimatorFactory threshold_estimator_factory(g_, raw_barcode_extractor_,
                                                                        threshold_estimator_params.training_edge_length_threshold_,
                                                                        params.length_threshold_,
-                                                                       threshold_estimator_params.max_distance_,
+                                                                       threshold_estimator_params.max_cluster_gap_,
                                                                        threshold_estimator_params.score_percentile_,
                                                                        max_threads_);
 
@@ -122,7 +120,6 @@ shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> CompositeConne
     INFO("Long edge pair gap closer params:");
     INFO("Count threshold: " << params.connection_count_threshold_);
     INFO("Tail threshold: " << params.tail_threshold_);
-    INFO("Score threshold: " << params.connection_score_threshold_);
     INFO("Length threshold: " << params.connection_length_threshold_);
 
     auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, main_extractor_);
@@ -188,6 +185,6 @@ ScaffolderParams::ScoreEstimationParams::ScoreEstimationParams(double score_perc
                                                                        size_t max_distance_,
                                                                        size_t training_edge_length_threshold_)
     : score_percentile_(score_percentile_),
-      max_distance_(max_distance_),
+      max_cluster_gap_(max_distance_),
       training_edge_length_threshold_(training_edge_length_threshold_) {}
 } //path_extend

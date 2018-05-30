@@ -34,9 +34,10 @@ ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorageFromPaths(
 
 ScaffoldGraphPolisherLauncher::ScaffoldGraphPolisherLauncher(const conj_graph_pack &gp_) : gp_(gp_) {}
 
-void ScaffoldGraphPolisherLauncher::GetGraphStorageReferenceInfo(const path_extend::scaffold_graph::ScaffoldGraph &small_scaffold_graph,
-                                                         const path_extend::scaffold_graph::ScaffoldGraph &large_scaffold_graph,
-                                                         const debruijn_graph::conj_graph_pack &graph_pack) const {
+void ScaffoldGraphPolisherLauncher::GetGraphStorageReferenceInfo(
+        const path_extend::scaffold_graph::ScaffoldGraph &small_scaffold_graph,
+        const path_extend::scaffold_graph::ScaffoldGraph &large_scaffold_graph,
+        const debruijn_graph::conj_graph_pack &graph_pack) const {
     const size_t large_length_threshold = cfg::get().ts_res.long_edge_length_upper_bound;
     const size_t small_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
 

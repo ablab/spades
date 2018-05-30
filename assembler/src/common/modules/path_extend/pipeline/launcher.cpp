@@ -496,7 +496,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
                                                                                            max_threads);
             auto cluster_distribution_pack =
                 make_shared<cluster_model::DistributionPack>(distribution_analyzer.GetClusterDistributions());
-            cluster_model::PrimaryParametersExtractor primary_parameters_extractor(cluster_distribution_pack);
+            cluster_model::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
 
             //fixme configs
             const size_t unique_length = 2000;
