@@ -68,6 +68,7 @@ extern unsigned char nst_nt4_table[256];
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 	void bns_dump(const bntseq_t *bns, const char *prefix);
 	bntseq_t *bns_restore(const char *prefix);
 	bntseq_t *bns_restore_core(const char *ann_filename, const char* amb_filename, const char* pac_filename);

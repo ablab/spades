@@ -19,6 +19,7 @@ typedef struct __smem_i smem_i;
 #define MEM_F_REF_HDR	0x100
 #define MEM_F_SOFTCLIP  0x200
 #define MEM_F_SMARTPE   0x400
+#define MEM_F_PRIMARY5  0x800
 
 typedef struct mem_opt_s {
 	int a, b;               // match score and mismatch penalty
@@ -106,6 +107,8 @@ extern "C" {
 
 	mem_opt_t *mem_opt_init(void);
 	void mem_fill_scmat(int a, int b, int8_t mat[25]);
+
+	extern void (*mem_fmt_fnc)(const mem_opt_t*, const bntseq_t*, struct __kstring_t*, bseq1_t*, int, const mem_aln_t*, int, const mem_aln_t*, const mem_aln_t*);
 
 	/**
 	 * Align a batch of sequences and generate the alignments in the SAM format

@@ -809,25 +809,9 @@ static inline int get_rlen(int n_cigar, const uint32_t *cigar)
 	return l;
 }
 
-void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq1_t *s, int n, const mem_aln_t *list, int which, const mem_aln_t *m_)
-{
-	int i, l_name;
-	mem_aln_t ptmp = list[which], *p = &ptmp, mtmp, *m = 0; // make a copy of the alignment to convert
-
-	if (m_) mtmp = *m_, m = &mtmp;
-	// set flag
-	p->flag |= m? 0x1 : 0; // is paired in sequencing
-	p->flag |= p->rid < 0? 0x4 : 0; // is mapped
-	p->flag |= m && m->rid < 0? 0x8 : 0; // is mate mapped
-	if (p->rid < 0 && m && m->rid >= 0) // copy mate to alignment
-		p->rid = m->rid, p->pos = m->pos, p->is_rev = m->is_rev, p->n_cigar = 0;
-	if (m && m->rid < 0 && p->rid >= 0) // copy alignment to mate
-		m->rid = p->rid, m->pos = p->pos, m->is_rev = p->is_rev, m->n_cigar = 0;
-	p->flag |= p->is_rev? 0x10 : 0; // is on the reverse strand
-	p->flag |= m && m->is_rev? 0x20 : 0; // is mate on the reverse strand
-
+void mem_fmt_sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq1_t *s, int n, const mem_aln_t *list, int which, const mem_aln_t *p, const mem_aln_t *m) {
 	// print up to CIGAR
-	l_name = strlen(s->name);
+	int i, l_name = strlen(s->name);
 	ks_resize(str, str->l + s->l_seq + l_name + (s->qual? s->l_seq : 0) + 20);
 	kputsn(s->name, l_name, str); kputc('\t', str); // QNAME
 	kputw((p->flag&0xffff) | (p->flag&0x10000? 0x100 : 0), str); kputc('\t', str); // FLAG
@@ -843,7 +827,7 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
 				kputw(p->cigar[i]>>4, str); kputc("MIDSH"[c], str);
 			}
 		} else kputc('*', str); // having a coordinate but unaligned (e.g. when copy_mate is true)
-	} else kputsn("*\t0\t0\t*", 7, str); // without coordinte
+	} else kputsn("*\t0\t0\t*", 7, str); // without coordinate
 	kputc('\t', str);
 
 	// print the mate position if applicable
@@ -938,6 +922,27 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
 	kputc('\n', str);
 }
 
+void (*mem_fmt_fnc)(const mem_opt_t*, const bntseq_t*, kstring_t*, bseq1_t*, int, const mem_aln_t*, int, const mem_aln_t*, const mem_aln_t*) = &mem_fmt_sam;
+
+void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq1_t *s, int n, const mem_aln_t *list, int which, const mem_aln_t *m_)
+{
+	mem_aln_t ptmp = list[which], *p = &ptmp, mtmp, *m = 0; // make a copy of the alignment to convert
+
+	if (m_) mtmp = *m_, m = &mtmp;
+	// set flag
+	p->flag |= m? 0x1 : 0; // is paired in sequencing
+	p->flag |= p->rid < 0? 0x4 : 0; // is mapped
+	p->flag |= m && m->rid < 0? 0x8 : 0; // is mate mapped
+	if (p->rid < 0 && m && m->rid >= 0) // copy mate to alignment
+		p->rid = m->rid, p->pos = m->pos, p->is_rev = m->is_rev, p->n_cigar = 0;
+	if (m && m->rid < 0 && p->rid >= 0) // copy alignment to mate
+		m->rid = p->rid, m->pos = p->pos, m->is_rev = p->is_rev, m->n_cigar = 0;
+	p->flag |= p->is_rev? 0x10 : 0; // is on the reverse strand
+	p->flag |= m && m->is_rev? 0x20 : 0; // is mate on the reverse strand
+
+	(*mem_fmt_fnc)(opt, bns, str, s, n, list, which, p, m);
+}
+
 /************************
  * Integrated interface *
  ************************/
@@ -966,6 +971,30 @@ int mem_approx_mapq_se(const mem_opt_t *opt, const mem_alnreg_t *a)
 	if (mapq < 0) mapq = 0;
 	mapq = (int)(mapq * (1. - a->frac_rep) + .499);
 	return mapq;
+}
+
+void mem_reorder_primary5(int T, mem_alnreg_v *a)
+{
+	int k, n_pri = 0, left_st = INT_MAX, left_k = -1;
+	mem_alnreg_t t;
+	for (k = 0; k < a->n; ++k)
+		if (a->a[k].secondary < 0 && !a->a[k].is_alt && a->a[k].score >= T) ++n_pri;
+	if (n_pri <= 1) return; // only one alignment
+	for (k = 0; k < a->n; ++k) {
+		mem_alnreg_t *p = &a->a[k];
+		if (p->secondary >= 0 || p->is_alt || p->score < T) continue;
+		if (p->qb < left_st) left_st = p->qb, left_k = k;
+	}
+	assert(a->a[0].secondary < 0);
+	if (left_k == 0) return; // no need to reorder
+	t = a->a[0], a->a[0] = a->a[left_k], a->a[left_k] = t;
+	for (k = 1; k < a->n; ++k) { // update secondary and secondary_all
+		mem_alnreg_t *p = &a->a[k];
+		if (p->secondary == 0) p->secondary = left_k;
+		else if (p->secondary == left_k) p->secondary = 0;
+		if (p->secondary_all == 0) p->secondary_all = left_k;
+		else if (p->secondary_all == left_k) p->secondary_all = 0;
+	}
 }
 
 // TODO (future plan): group hits into a uint64_t[] array. This will be cleaner and more flexible
@@ -1160,6 +1189,7 @@ static void worker2(void *data, int i, int tid)
 	if (!(w->opt->flag&MEM_F_PE)) {
 		if (bwa_verbose >= 4) printf("=====> Finalizing read '%s' <=====\n", w->seqs[i].name);
 		mem_mark_primary_se(w->opt, w->regs[i].n, w->regs[i].a, w->n_processed + i);
+		if (w->opt->flag & MEM_F_PRIMARY5) mem_reorder_primary5(w->opt->T, &w->regs[i]);
 		mem_reg2sam(w->opt, w->bns, w->pac, &w->seqs[i], &w->regs[i], 0, 0);
 		free(w->regs[i].a);
 	} else {
