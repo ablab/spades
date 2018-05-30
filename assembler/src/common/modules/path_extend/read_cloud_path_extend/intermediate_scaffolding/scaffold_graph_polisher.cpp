@@ -755,7 +755,8 @@ PathExtractionPartsConstructor::PathExtractionPartsConstructor(const conj_graph_
 shared_ptr<GapCloserScoreFunctionBuilder> PathExtractionPartsConstructor::ConstructScoreFunctionFromBuilder(
         shared_ptr<InitialClusterStorageBuilder> cluster_storage_builder, size_t linkage_distance) const {
     INFO("Constructing initial cluster storage");
-    auto initial_cluster_storage = make_shared<cluster_storage::InitialClusterStorage>(cluster_storage_builder->ConstructInitialClusterStorage());
+    auto initial_cluster_storage =
+        make_shared<cluster_storage::InitialClusterStorage>(cluster_storage_builder->ConstructInitialClusterStorage());
     INFO("Initial cluster storage size: " << initial_cluster_storage->get_cluster_storage().Size());
     auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     auto cluster_score_builder = make_shared<path_extend::PathClusterScoreFunctionBuilder>(gp_.g,

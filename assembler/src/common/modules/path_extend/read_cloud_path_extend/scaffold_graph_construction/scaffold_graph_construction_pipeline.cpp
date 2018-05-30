@@ -46,7 +46,9 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
                                                                         threshold_estimator_params.score_percentile_,
                                                                         max_threads);
     auto score_threshold_estimator = threshold_estimator_factory.GetThresholdEstimator();
-    auto connection_score_threshold = score_threshold_estimator->GetThreshold();
+    //fixme magic
+    auto connection_score_threshold = score_threshold_estimator->GetThreshold() * 0.7;
+    
     double relative_coverage_threshold = cfg::get().ts_res.scaff_con.relative_coverage_threshold;
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
     size_t connection_count_threshold = cfg::get().ts_res.scaff_con.connection_count_threshold;
@@ -59,16 +61,15 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
 ScaffolderParams::ScoreEstimationParams ScaffolderParamsConstructor::GetScoreEstimationParams(
         const Graph &g, cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor,
         double score_percentile) const {
-    //fixme move to configs
-    size_t min_training_edge_number = 50;
-    size_t min_training_total_length = 10000000;
+    cluster_model::MinTrainingLengthEstimatorHelper length_estimator_helper;
+    auto min_training_length_result = length_estimator_helper.EstimateTrainingLength(g);
+    VERIFY(min_training_length_result.is_initialized());
+    size_t min_training_length = min_training_length_result.get();
+
     const double training_cluster_length_percentile = 0.95;
-    cluster_model::MinTrainingLengthEstimator training_length_estimator(g, min_training_total_length,
-                                                                        min_training_edge_number);
-    size_t training_edge_length_threshold = training_length_estimator.EstimateTrainingLength();
     size_t max_training_gap = cluster_statistics_extractor.GetLengthPercentile(training_cluster_length_percentile);
     ScaffolderParams::ScoreEstimationParams score_estimation_params(score_percentile, max_training_gap,
-                                                                    training_edge_length_threshold);
+                                                                    min_training_length);
     return score_estimation_params;
 }
 
