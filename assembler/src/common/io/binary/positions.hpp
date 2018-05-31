@@ -37,8 +37,6 @@ private:
     }
 
     void LoadImpl(LoadFile &file, Type &edge_pos) override {
-        VERIFY(!edge_pos.IsAttached());
-        edge_pos.Attach();
         size_t e;
         while (file >> e) { //Read until the end
             auto eid = mapper_[e];

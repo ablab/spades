@@ -40,7 +40,7 @@ void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
     debruijn_graph::graphio::PrintAll(p, gp);
     debruijn_graph::config::write_lib_data(p);
 
-    std::ofstream checkpoint(CHECKPOINT_FILE);
+    std::ofstream checkpoint(fs::append_path(save_to, CHECKPOINT_FILE));
     checkpoint << prefix;
 }
 
@@ -130,7 +130,7 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
     if (start_from) {
         //TODO: refactor
         if (strcmp(start_from, "last") == 0) {
-            std::ifstream checkpoint(CHECKPOINT_FILE);
+            std::ifstream checkpoint(fs::append_path(saves_policy_.SavesPath(), CHECKPOINT_FILE));
             if (checkpoint) {
                 std::string last_name;
                 checkpoint >> last_name;

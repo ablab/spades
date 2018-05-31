@@ -32,7 +32,7 @@ public:
         const auto &mapper = graph_io_.GetEdgeMapper(); //TODO: get rid of this unused parameter
 
         //Save coverage
-        CoverageIO<CoverageIndex<Graph>>(mapper)
+        CoverageIO<Graph>(mapper)
                 .Save(basename, gp.g.coverage_index());
 
         if (gp.edge_pos.IsAttached()) { //Save edge positions
@@ -51,25 +51,29 @@ public:
         }
 
         if (gp.flanking_cov.IsAttached()) { //Save flanking coverage
-            CoverageIO<FlankingCoverage<Graph>>(mapper)
+            FlankingCoverageIO<Graph>(mapper)
                     .Save(basename, gp.flanking_cov);
         }
     }
 
     bool Load(const std::string &basename, Type &gp) override {
         //Load basic graph
-        VERIFY(graph_io_.Load(basename, gp.g));
+        bool loaded = graph_io_.Load(basename, gp.g);
+        VERIFY(loaded);
         const auto &mapper = graph_io_.GetEdgeMapper();
 
         //Load coverage
-        VERIFY(CoverageIO<CoverageIndex<Graph>>(mapper)
-                .Load(basename, gp.g.coverage_index()));
+        loaded = CoverageIO<Graph>(mapper)
+                .Load(basename, gp.g.coverage_index());
+        VERIFY(loaded);
 
         //Load edge positions
         VERIFY(!gp.edge_pos.IsAttached());
         gp.edge_pos.Attach();
-        VERIFY(EdgePositionsIO<Graph>(mapper)
-                .Load(basename, gp.edge_pos));
+        if (!EdgePositionsIO<Graph>(mapper)
+                .Load(basename, gp.edge_pos)) {
+            INFO("No saved positions");
+        }
 
         //Load kmer edge index
         if (!EdgeIndexIO<Graph>()
@@ -86,7 +90,7 @@ public:
         }
 
         //Load flanking coverage
-        if (!CoverageIO<FlankingCoverage<Graph>>(mapper)
+        if (!FlankingCoverageIO<Graph>(mapper)
                 .Load(basename, gp.flanking_cov)) {
             WARN("Cannot load flanking coverage, flanking coverage will be recovered from index");
             gp.flanking_cov.Fill(gp.index.inner_index());
@@ -128,7 +132,8 @@ public:
 
     bool Load(const std::string &basename, Type &gp) override {
         //Load basic graph
-        VERIFY(base::Load(basename, gp));
+        bool loaded = base::Load(basename, gp);
+        VERIFY(loaded);
         const auto &mapper = this->graph_io_.GetEdgeMapper();
 
         //Load paired indices

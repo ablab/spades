@@ -104,7 +104,7 @@ bool LoadEdgeIndex(const std::string& file_name,
     file.read((char *) &k_, sizeof(uint32_t));
     VERIFY_MSG(k_ == index.k(), "Cannot read edge index, different Ks:");
 
-    index.BinRead(file, file_name + ".kmidx");
+    index.BinRead(file);
 
     file.close();
 

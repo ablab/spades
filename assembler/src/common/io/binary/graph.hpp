@@ -50,7 +50,7 @@ private:
     void LoadImpl(LoadFile &file, Graph &graph) override {
         size_t max_id;
         file >> max_id;
-        auto id_storage = graph.GetGraphIdDistributor().ReserveUpTo(max_id);
+        auto id_storage = graph.GetGraphIdDistributor().Reserve(max_id, /*force_zero_shift*/true);
 
         auto TryAddVertex = [&](size_t ids[2]) {
             if (vertex_mapper_.count(ids[0]))
@@ -74,7 +74,7 @@ private:
                               << end_ids[0] << " l = " << seq.size() << " ~ " << edge_ids[1]);
                 TryAddVertex(end_ids);
 
-                VERIFY(!edge_mapper_.count(edge_ids[0]));
+                VERIFY_MSG(!edge_mapper_.count(edge_ids[0]), edge_ids[0] << " is not unique");
                 auto id_distributor = id_storage.GetSegmentIdDistributor(edge_ids, edge_ids + 2);
                 auto new_id = graph.AddEdge(vertex_mapper_[start_ids[0]], vertex_mapper_[end_ids[0]], seq, id_distributor);
                 edge_mapper_[edge_ids[0]] = new_id;

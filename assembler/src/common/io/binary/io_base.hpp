@@ -111,6 +111,8 @@ protected:
 private:
     virtual void SaveImpl(SaveFile &file, const T &value) = 0;
     virtual void LoadImpl(LoadFile &file, T &value) = 0;
+
+    DECL_LOGGER("BinaryIO");
 };
 
 template<typename T>

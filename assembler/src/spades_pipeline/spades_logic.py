@@ -168,6 +168,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     dst_configs = os.path.join(data_dir, "configs")
 
     if options_storage.continue_mode:
+        stage = "last"
         if os.path.isfile(os.path.join(data_dir, "final_contigs.fasta")) and not (options_storage.restart_from and
             (options_storage.restart_from == ("k%d" % K) or options_storage.restart_from.startswith("k%d:" % K))):
             log.info("\n== Skipping assembler: " + ("K%d" % K) + " (already processed)")

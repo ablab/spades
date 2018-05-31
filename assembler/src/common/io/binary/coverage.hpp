@@ -8,15 +8,17 @@
 
 #include "io_base.hpp"
 #include "io/id_mapper.hpp"
+#include "assembly_graph/core/coverage.hpp"
+#include "assembly_graph/graph_support/detail_coverage.hpp"
 
 namespace io {
 
 template<typename Index>
-class CoverageIO : public IOSingle<Index> {
+class BaseCoverageIO : public IOSingle<Index> {
 public:
     typedef IdMapper<typename Index::EdgeId> Mapper;
-    CoverageIO(const Mapper &mapper):
-            IOSingle<Index>("coverage", ".cvr"), mapper_(mapper) {}
+    BaseCoverageIO(const Mapper &mapper, const char *name, const char *ext):
+            IOSingle<Index>(name, ext), mapper_(mapper) {}
 private:
     void SaveImpl(SaveFile &file, const Index &index) {
         for (auto it = index.g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
@@ -35,6 +37,22 @@ private:
     }
 
     const Mapper &mapper_;
+};
+
+template<typename Graph>
+class CoverageIO : public BaseCoverageIO<omnigraph::CoverageIndex<Graph>> {
+public:
+    typedef BaseCoverageIO<omnigraph::CoverageIndex<Graph>> base;
+    CoverageIO(const typename base::Mapper &mapper):
+            base(mapper, "coverage", ".cvr") {}
+};
+
+template<typename Graph>
+class FlankingCoverageIO : public BaseCoverageIO<omnigraph::FlankingCoverage<Graph>> {
+public:
+    typedef BaseCoverageIO<omnigraph::FlankingCoverage<Graph>> base;
+    FlankingCoverageIO(const typename base::Mapper &mapper):
+            base(mapper, "flanking coverage", ".flcvr") {}
 };
 
 }
