@@ -13,7 +13,7 @@ public:
                 :g_(g), output_file_(output_file)
     {}
 
-    virtual void SaveMapping(const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &aligned_mappings, const io::SingleRead &read) = 0;
+    virtual void SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read) = 0;
 
     virtual ~MappingPrinter (){};
 
@@ -32,97 +32,41 @@ public:
         tsv_file.close();
     }
 
-    virtual void SaveMapping(const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &aligned_mappings, const io::SingleRead &read) {
-        string pathStr = "";
-        for (const auto &mappingpath : aligned_mappings){
-            for (const auto &edgeid: mappingpath.simple_path()) {
-                VertexId v1 = g_.EdgeStart(edgeid);
-                VertexId v2 = g_.EdgeEnd(edgeid);
-                pathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(v1.int_id()) + "," + std::to_string(v2.int_id()) + ") ";
+    virtual void SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
+        string path_str = "";
+        string path_len_str = "";
+        for (const auto &mappingpath : aligned_mappings.main_storage){
+            for (size_t i = 0; i < mappingpath.size(); ++ i) {
+                size_t mapping_start = i == 0? aligned_mappings.read_range.mapped_range.start_pos : 0;
+                size_t mapping_end = i == mappingpath.size() - 1?  aligned_mappings.read_range.mapped_range.end_pos - aligned_mappings.read_range.mapped_range.start_pos :g_.length(mappingpath[i]);
+                path_str += std::to_string(mappingpath[i].int_id()) + ",";
+                path_len_str += std::to_string(mapping_end - mapping_start) + ",";
             }
-            pathStr += "\n";
+            path_str += ";";
+            path_len_str += ";";
         }
-        DEBUG("Paths: " << pathStr);
-        string sum_str = "";
-        string max_str = "";
-        int max_len = 0;
-
-        string cur_path_sum = "";
-        string cur_path_len_sum = "";
-        string cur_str_sum = "";
-        int seq_start_sum = -1;
-        int seq_end_sum = 0;
-
-        for (const auto &path : aligned_mappings){
-            size_t mapping_start = 0;
-            size_t mapping_end = 0;
-            string cur_str = "";
-            string cur_path = "";
-            string cur_path_len = "";
-            int seq_start = -1;
-            int seq_end = 0;
+        DEBUG("Paths: " << path_str);
+        string bwa_path_str = "";
+        for (const auto &path : aligned_mappings.bwa_paths){
             for (size_t i = 0; i < path.size(); ++ i) {
                 EdgeId edgeid = path.edge_at(i);
                 omnigraph::MappingRange mapping = path.mapping_at(i);
-                mapping_start = mapping.mapped_range.start_pos;
-                mapping_end = mapping.mapped_range.end_pos + g_.k();
-                //initial_start = mapping.initial_range.start_pos;
-                ///initial_end = mapping.initial_range.end_pos + g_.k();
-                if (i > 0){
-                    mapping_start = 0;
-                }
-                if (i < path.size() - 1) {
-                    mapping_end = g_.length(edgeid);
-                    //initial_end = mapping.initial_range.end_pos;
-                }
-                cur_path += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
+                bwa_path_str += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping.mapped_range.start_pos) + "," + std::to_string(mapping.mapped_range.end_pos) + ") ["
                            + std::to_string(mapping.initial_range.start_pos) + "," + std::to_string(mapping.initial_range.end_pos) + "], ";
-                cur_path_len += std::to_string(mapping_end - mapping_start) + ",";
-                if (seq_start < 0){
-                    seq_start = (int) mapping.initial_range.start_pos;
-                }
-                seq_end = (int) mapping.initial_range.end_pos;
-
-                cur_path_sum += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
-                           + std::to_string(mapping.initial_range.start_pos) + "," + std::to_string(mapping.initial_range.end_pos) + "], ";
-                cur_path_len_sum += std::to_string(mapping_end - mapping_start) + ",";
-                if (seq_start_sum < 0){
-                    seq_start_sum = (int) mapping.initial_range.start_pos;
-                }
-                seq_end_sum = (int) mapping.initial_range.end_pos;
-
-                string tmp = g_.EdgeNucls(edgeid).str();
-                string to_add = tmp.substr(mapping_start, mapping_end - mapping_start);
-                cur_str += to_add;
             }
-            cur_str_sum += cur_str;
-            cur_path_sum += ";";
-            if (seq_end - seq_start > max_len) {
-                max_len = seq_end - seq_start;
-                edlib::EdlibAlignResult result = edlib::edlibAlign(cur_str.c_str(), (int) cur_str.size(), read.sequence().str().c_str(), (int) read.sequence().size()
-                                                   , edlib::edlibNewAlignConfig(-1, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
-                                                                         NULL, 0));
-                //if (result.editDistance >= 0 && max_len >= 1200) {
-                    max_str = read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t" 
-                                                     + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\t" + cur_str + "\t" 
-                                                     + std::to_string(result.editDistance) + "\n";
-                //}
-                edlib::edlibFreeAlignResult(result);
-            }
+            bwa_path_str += ";";
         }
-        sum_str = read.name() + "\t" + std::to_string(seq_start_sum) + "\t" + std::to_string(seq_end_sum) + "\t" 
-                                             + std::to_string(read.sequence().size())+  "\t" + cur_path_sum + "\t" + cur_path_len_sum + "\t" + cur_str_sum + "\n";
+        string str = read.name() + "\t" + std::to_string(aligned_mappings.read_range.initial_range.start_pos) + "\t" 
+                                 + std::to_string(aligned_mappings.read_range.initial_range.end_pos) + "\t" 
+                                 + std::to_string(read.sequence().size())+  "\t" + path_str + "\t" + path_len_str + "\t" + bwa_path_str + "\n";
         DEBUG("Read " << read.name() << " aligned and length=" << read.sequence().size());
-        DEBUG("Read " << read.name() << ". Paths with ends: " << cur_path_sum );
-        //DEBUG("Seq subs: " << subStr);
+        DEBUG("Read " << read.name() << ". Paths with ends: " << path_str );
 #pragma omp critical
         {
-            //if (max_len >= 1200) {
-                ofstream myfile;
-                myfile.open(output_file_ + ".tsv", std::ofstream::out | std::ofstream::app);
-                myfile << sum_str;
-                myfile.close();
-            //}
+            ofstream myfile;
+            myfile.open(output_file_ + ".tsv", std::ofstream::out | std::ofstream::app);
+            myfile << str;
+            myfile.close();
         }
     }
     
@@ -278,10 +222,10 @@ public:
         return readStr.substr(start, end - start);
     }
 
-    virtual void SaveMapping(const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &aligned_mappings, const io::SingleRead &read) {
+    virtual void SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
         int nameIndex = 0;
         std::string res = "";
-        for (const auto &mappingpath : aligned_mappings){
+        for (const auto &mappingpath : aligned_mappings.bwa_paths){
             string prev = "";
             string subread = getSubRead(mappingpath, read);
             string alignment;
@@ -368,7 +312,7 @@ public:
         }
     }
 
-    void SaveMapping(const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &aligned_mappings, const io::SingleRead &read) {
+    void SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
         for (auto printer: mapping_printers_) {
             printer->SaveMapping(aligned_mappings, read);
         }

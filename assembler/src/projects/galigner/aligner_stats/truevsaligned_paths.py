@@ -72,42 +72,24 @@ class DataLoader:
         fin = open(filename, "r")
         bwa_num = 0
         for ln in fin.readlines():
-            cur_read, seq_start, seq_end, rlen, path_dirty, edgelen, ed = ln.strip().split("\t")
-            #cur_read, seq_start, seq_end, rlen, path_dirty, edgelen, ss, ed = ln.strip().split("\t")
+            cur_read, seq_start, seq_end, rlen, path, edgelen, bwa_path_dirty = ln.strip().split("\t")
             cur_read = cur_read.split(" ")[0]
-            path = []
-            edge_tag = []
             bwa_path = []
-            edgelen_lst =[int(x) for x in edgelen.split(",")[:-1]]
-            empty = path_dirty.count(";")
-            path_dirty = path_dirty.replace(";", "")
+            edgelen_lst =[int(x) for x in edgelen.replace(";", "").split(",")[:-1]]
+            empty = path.count(";")
+            bwa_path_dirty = bwa_path_dirty.replace(";", "")
+            path = path.replace(";", "")
             ranges = []
             edge_ranges = []
-            ind = 0
-            for x in path_dirty.split("]")[:-1]:
+            for x in bwa_path_dirty.split("]")[:-1]:
+                bwa_num += 1
                 if x.startswith(","):
-                    path.append(x.split()[1])
+                    bwa_path.append(x.split()[1])
                 else:
-                    path.append(x.split()[0])
-                if "[0,0" in x:
-                    edge_tag.append("in")
-                else:
-                    edge_tag.append("bwa")
-                    bwa_num += 1
-                    if x.startswith(","):
-                        bwa_path.append(x.split()[1])
-                    else:
-                        bwa_path.append(x.split()[0])
-                if int(x.split("[")[1].split(",")[0]) == 0 and int(x.split("[")[1].split(",")[1]) == 0:
-                    ranges.append({"start": 0, "end": 0})
-                else:
-                    ranges.append({"start": int(x.split("[")[1].split(",")[0]), "end": int(x.split("[")[1].split(",")[1])})
-                #print x, ranges[-1]
+                    bwa_path.append(x.split()[0])
+                ranges.append({"start": int(x.split("[")[1].split(",")[0]), "end": int(x.split("[")[1].split(",")[1])})
                 edge_ranges.append({"start": int(x.split("(")[1].split(",")[0]), "end": int(x.split("(")[1].split(",")[1].split(")")[0])})
-                #print x, edge_ranges[-1]
-                ind += 1
-            #if int(seq_end) - int(seq_start) > 1000:
-            res[cur_read] = { "len": rlen, "path": path, "bwa_path": bwa_path, "edgelen": edgelen.split(",")[:-1], "edge_tag": edge_tag, \
+            res[cur_read] = { "len": rlen, "path": path.split(",")[:-1], "bwa_path": bwa_path, "edgelen": edgelen.split(",")[:-1], \
                                 "mapped_s":int(seq_start), "mapped_e":int(seq_end), "seq_ranges": ranges, "edge_ranges": edge_ranges, "empty": empty - 1}
         fin.close()
         print "Number of edges detected by bwa:", bwa_num
@@ -162,16 +144,6 @@ class GeneralStatisticsCounter:
                     print "Ranges_failure readname=",r 
         return [alignedsubpath, badlyaligned]
 
-
-# class SubpathStatisticsGenerator:
-    
-#     def __init__(self, reads, truepaths, alignedpaths):
-#         self.reads = reads
-#         self.truepaths = truepaths
-#         self.alignedpaths = alignedpaths
-
-#     def 
-
 class BWAhitsMapper:
 
     def __init__(self, reads, truepaths, alignedpaths):
@@ -216,10 +188,13 @@ class BWAhitsMapper:
         return ind
 
     def get_bwa_inds_aligned(self, r):
-        path = self.alignedpaths[r]["edge_tag"]
+        path = self.alignedpaths[r]["path"]
+        bwapath = self.alignedpaths[r]["bwa_path"]
         ind = []
+        j = 0
         for i in xrange(len(path)):
-            if path[i] == "bwa":
+            if j < len(bwapath) and path[i] == bwapath[j]:
+                j += 1
                 ind.append(i)
         ind.insert(0, 0)
         ind.append(len(path))
@@ -287,6 +262,7 @@ class GapsStatistics:
                 print "Wrong_end readname=", r
                 print ",".join(truepath[true_ind[-2]: true_ind[-1]]), ",".join([str(x) for x in edgelen[true_ind[-2]: true_ind[-1]]])
                 print ",".join(path[ind[-2]: ind[-1]]), ",".join(aedgelen[ind[-2]: ind[-1]])
+                print ",".join(self.alignedpaths[r]["bwa_path"])
                 print ""
             i = ind[-2]
             j = true_ind[-2]
@@ -472,7 +448,7 @@ class GapsLengthStatistics:
 
 def make_table(results, row_names, caption, name):
     html = """<html><table border="1"><caption>{}</caption><tr><th></th>""".format(name)
-    for run_name in sorted(results.keys(), key= lambda x: x[::-1]):
+    for run_name in sorted(results.keys()):
         html += """<th><div style="width: 200px; height: 50px; overflow: auto">{}</div></th>""".format(run_name)
     html += "</tr>"
     for stat in row_names:
@@ -522,7 +498,6 @@ if __name__ == "__main__":
     print "\n".join(aligned_files)
     K = int(cfg["k"])
     html_name = cfg["print_html"]
-
     res = {}
     for fl in aligned_files:
         alignedpaths = data_loader.load(fl, "galigner_paths")
