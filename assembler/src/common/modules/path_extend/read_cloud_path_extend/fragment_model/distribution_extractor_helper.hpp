@@ -211,7 +211,7 @@ class ClusterDistributionExtractor {
         auto statistics = statistics_container.at(optimal_distance);
         INFO("Estimated mean cluster length: " << statistics.length_statistics_.mean_);
         INFO("Estimated median cluster length: " << statistics.length_statistics_.median_);
-        INFO("Estimated mean cluster coverage: " << statistics.coverage_statistics_.mean_)
+        INFO("Estimated median cluster coverage: " << statistics.coverage_statistics_.median_)
         return GetDistributionsForDistance(optimal_distance);
     }
 

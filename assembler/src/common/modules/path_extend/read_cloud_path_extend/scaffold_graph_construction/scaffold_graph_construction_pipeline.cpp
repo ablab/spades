@@ -46,7 +46,9 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
                                                                         threshold_estimator_params.score_percentile_,
                                                                         max_threads);
     auto score_threshold_estimator = threshold_estimator_factory.GetThresholdEstimator();
+    //fixme magic
     auto connection_score_threshold = score_threshold_estimator->GetThreshold() * 0.7;
+    
     double relative_coverage_threshold = cfg::get().ts_res.scaff_con.relative_coverage_threshold;
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
     size_t connection_count_threshold = cfg::get().ts_res.scaff_con.connection_count_threshold;
