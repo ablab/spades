@@ -10,6 +10,8 @@ import os.path
 from struct import Struct
 import sys
 
+from Bio.Seq import Seq
+
 def read_int(file, size=None, signed=False):
     if size:
         bytes = file.read(size)
@@ -32,27 +34,48 @@ def read_int(file, size=None, signed=False):
 def read_struct(file, struct):
     return struct.unpack(file.read(struct.size))
 
+ST_SIZE = 8
+ST_NUC = ST_SIZE * 4
+
+def read_seq(file):
+    def unpack_seq(bytes, length):
+        nucs = ['A', 'C', 'G', 'T']
+        for byte in bytes:
+            tmp = byte
+            for _ in range(min(4, length)):
+                yield nucs[tmp & 3]
+                tmp = tmp >> 2
+            length -= 4
+    length = read_int(file, 8)
+    seq = "".join(unpack_seq(file.read((length + ST_NUC - 1) // ST_NUC * ST_SIZE), length))
+    return Seq(seq)
+
 #---- De Bruijn graph ----------------------------------------------------------
-def show_grp(file):
-    vertex_count = read_int(file)
-    edge_count = read_int(file)
-    print(vertex_count, edge_count)
-    vertex = Struct("qq")
-    for _ in range(vertex_count):
-        id = read_int(file)
-        conj_id = read_int(file)
-        #id, conj_id = read_struct(file, vertex)
-        print("Vertex", id, "~", conj_id, ".")
-    print()
-    edge = Struct("qqqqq")
-    for _ in range(edge_count):
-        id = read_int(file)
-        conj_id = read_int(file)
-        start = read_int(file)
-        end = read_int(file)
-        length = read_int(file)
-        #id, conj_id, start, end, length = read_struct(file, edge)
-        print("Edge", id, ":", start, "->", end, ", l =", length, "~", conj_id, ".")
+def show_grp(file, show_seq=False):
+    _ = read_int(file) #max_id
+    while True:
+        try:
+            start = read_int(file)
+        except EOFError:
+            break
+        start_conj = read_int(file)
+        count = read_int(file)
+        for _ in range(count):
+            edge = read_int(file)
+            edge_conj = read_int(file)
+            end = read_int(file)
+            end_conj = read_int(file)
+            seq = read_seq(file)
+
+            if show_seq:
+                print(">", edge, sep="")
+                print(seq)
+                if edge != edge_conj:
+                    print(">", edge_conj, sep="")
+                    print(seq.reverse_complement())
+            else:
+                print("Edge", edge, ":", start, "->", end, ", l =", len(seq), "~", edge_conj, ".")
+                print("Edge", edge_conj, ":", end_conj, "->", start_conj, ", l =", len(seq), "~", edge, ".")
 
 #---- Paired info --------------------------------------------------------------
 def show_prd(file, clustered=False):
@@ -69,31 +92,21 @@ def show_prd(file, clustered=False):
                 print(e1, e2, *p, ".")
 
 #---- Edge sequences -----------------------------------------------------------
-ST_SIZE = 8
-ST_NUC = ST_SIZE * 4
-
-def unpack_seq(bytes, length):
-    nucs = ['A', 'C', 'G', 'T']
-    for byte in bytes:
-        tmp = byte
-        for _ in range(min(4, length)):
-            yield nucs[tmp & 3]
-            tmp = tmp >> 2
-        length -= 4
+def show_sqn_old(file):
+    while True:
+        seq = read_seq(file)
+        print(">", seq.id, "_length_", seq.length, sep="")
+        print(seq.seq)
 
 def show_sqn(file):
-    while True:
-        try:
-            id = read_int(file)
-        except EOFError:
-            break
-        length = read_int(file, 8)
-        print(">", id, "_length_", length, sep="")
-        print("".join(unpack_seq(file.read((length + ST_NUC - 1) // ST_NUC * ST_SIZE), length)))
+    show_grp(file, True)
 
 #-------------------------------------------------------------------------------
 showers = {".grp": show_grp, ".prd": show_prd, ".sqn": show_sqn}
 
-filename = sys.argv[1]
-with open(filename, "rb") as file:
-    showers[os.path.splitext(filename)[1]](file)
+basename, ext = os.path.splitext(sys.argv[1])
+target = ext
+if ext == ".sqn":
+    target = ".grp"
+with open(basename + target, "rb") as file:
+    showers[ext](file)
