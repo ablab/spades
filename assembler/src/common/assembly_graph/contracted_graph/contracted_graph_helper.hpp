@@ -1,6 +1,8 @@
 #pragma once
 
 #include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
+#include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
+
 
 namespace contracted_graph {
 

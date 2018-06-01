@@ -362,7 +362,7 @@ shared_ptr<path_extend::ExtensionChooser> CompositeConnectionPredicate::Construc
         iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length);
     } else {
         double lib_cov = support.EstimateLibCoverage(lib_index);
-        INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
+        DEBUG("Estimated coverage of library #" << lib_index << " is " << lib_cov);
         iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length, lib_cov);
     }
 
