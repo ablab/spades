@@ -1578,6 +1578,7 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
                                                                  scan_bound_(scan_bound_) {}
 
     virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
+        const size_t GAP_UPPER_BOUND = 10000;
         DEBUG("Filter started");
         EdgeContainer result;
         const EdgeId last_unique = FindLastUniqueInPath(path);
@@ -1590,9 +1591,10 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
         if (last_unique.int_id() == 0 or end_.int_id() == 0) {
             return result;
         }
-
         auto is_edge_supported_by_clouds = [this](const EdgeWithDistance& edge) {
-          return IsSupportedByClouds(edge.e_);
+          return not unique_storage_.IsUnique(edge.e_)
+              and IsSupportedByClouds(edge.e_)
+              and IsTargetReachable(edge.e_, end_, GAP_UPPER_BOUND);
         };
         std::copy_if(edges.begin(), edges.end(), std::back_inserter(result), is_edge_supported_by_clouds);
         if (result.size() > 0) {
@@ -1604,7 +1606,9 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
         }
 
         auto are_supported_by_clouds_reachable = [this](const EdgeWithDistance& edge) {
-          return not unique_storage_.IsUnique(edge.e_) and AreSupportedByCloudsReachable(edge.e_, scan_bound_);
+          return not unique_storage_.IsUnique(edge.e_)
+              and AreSupportedByCloudsReachable(edge.e_, scan_bound_)
+              and IsTargetReachable(edge.e_, end_, GAP_UPPER_BOUND);
         };
         std::copy_if(edges.begin(), edges.end(), std::back_inserter(result), are_supported_by_clouds_reachable);
         if (result.size() > 0) {
@@ -1616,10 +1620,6 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
         for (const auto& edge: result) {
             DEBUG(edge.e_.int_id());
         }
-        auto is_target_unreachable = [this](const EdgeWithDistance& edge) {
-          return not IsTargetReachable(edge.e_, end_, scan_bound_);
-        };
-        std::remove_if(result.begin(), result.end(), is_target_unreachable);
         DEBUG("Final result size: " << result.size());
         DEBUG("Filter finished")
         return result;
@@ -1672,7 +1672,7 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
 
     bool IsSupportedByClouds(const EdgeId& edge) const {
         size_t min_edge_length = cloud_predicate_->GetParams().edge_length_threshold_;
-        return not unique_storage_.IsUnique(edge) and g_.length(edge) > min_edge_length and cloud_predicate_->Check(edge);
+        return g_.length(edge) > min_edge_length and cloud_predicate_->Check(edge);
     }
 
     EdgeId FindLastUniqueInPath(const BidirectionalPath& path) const {

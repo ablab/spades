@@ -522,18 +522,18 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             INFO("Connection length threshold: " << read_cloud_gap_closer_params.edge_length_threshold_);
             auto cloud_chooser_factory =
                 std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g,
-                                                                   unique_data_.main_unique_storage_,
-                                                                   barcode_extractor_ptr,
-                                                                   tail_threshold, count_threshold,
-                                                                   length_threshold,
-                                                                   read_cloud_gap_closer_params,
-                                                                   scan_bound);
+                                                                      unique_data_.main_unique_storage_,
+                                                                      barcode_extractor_ptr,
+                                                                      tail_threshold, count_threshold,
+                                                                      length_threshold,
+                                                                      read_cloud_gap_closer_params,
+                                                                      scan_bound);
             auto simple_chooser = generator.MakeSimpleExtensionChooser(i);
             auto simple_chooser_factory = std::make_shared<SameChooserFactory>(gp_.g, simple_chooser);
             auto composite_chooser_factory = std::make_shared<CompositeChooserFactory>(gp_.g, simple_chooser_factory,
                                                                                        cloud_chooser_factory);
             auto cloud_extender_factory = std::make_shared<SimpleExtenderFactory>(gp_, cover_map, used_unique_storage,
-                                                                                  composite_chooser_factory);
+                                                                                  cloud_chooser_factory);
             gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, cloud_extender_factory));
         }
     }
@@ -623,7 +623,6 @@ void PathExtendLauncher::Launch() {
         DebugOutputPaths(gp_.contig_paths, "merged_polished_paths");
 
         GraphCoverageMap merged_polished_map(gp_.g,gp_.contig_paths, true);
-        DebugOutputPaths(gp_.contig_paths, "polished_paths");
 
         TraverseLoops(gp_.contig_paths, polished_map);
         DebugOutputPaths(gp_.contig_paths, "loop_traveresed");

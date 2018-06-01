@@ -16,7 +16,7 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
     auto distance_values = ConstructDistanceDistribution(min_distance_, max_distance_);
     size_t left_block_start_offset = max_distance_ + left_block_length_ + right_block_length_;
     size_t block_size = interesting_edges_.size() / 10;
-    const size_t TOTAL_SAMPLE_SIZE = 200;
+    const size_t TOTAL_SAMPLE_SIZE = 500;
     //why constant?
     const size_t edge_sample_size = TOTAL_SAMPLE_SIZE / interesting_edges_.size();
     std::random_device rd;
@@ -211,11 +211,14 @@ optional<double> ShortEdgeScoreFunction::GetScoreFromTwoFragments(EdgeId edge,
 }
 shared_ptr<LabeledDistributionThresholdEstimator> LongEdgeScoreThresholdEstimatorFactory::GetThresholdEstimator() const {
     auto segment_score_function = make_shared<ContainmentIndexFunction>(barcode_extractor_);
-    const size_t MIN_DISTANCE = max_distance_ / 2;
+    size_t block_sum = 2 * block_length_ + 1000;
+    size_t max_distance = std::min(max_distance_, edge_length_threshold_ - block_sum);
+    size_t min_distance = max_distance / 2;
+    INFO("Effective max distance: " << max_distance);
     auto threshold_estimator = make_shared<LabeledDistributionThresholdEstimator>(g_, segment_score_function,
                                                                                   edge_length_threshold_,
                                                                                   block_length_, block_length_,
-                                                                                  MIN_DISTANCE, max_distance_,
+                                                                                  min_distance, max_distance,
                                                                                   score_percentile_, max_threads_);
     return threshold_estimator;
 }
@@ -251,11 +254,13 @@ ShortEdgeScoreThresholdEstimatorFactory::ShortEdgeScoreThresholdEstimatorFactory
       max_threads_(max_threads) {}
 shared_ptr<LabeledDistributionThresholdEstimator> ShortEdgeScoreThresholdEstimatorFactory::GetThresholdEstimator() const {
     auto segment_score_function = make_shared<ShortEdgeScoreFunction>(barcode_extractor_);
-    const size_t MIN_DISTANCE = max_distance_ / 2;
+    size_t block_sum = block_length_ + 1000;
+    size_t max_distance = std::min(max_distance_, edge_length_threshold_ - block_sum);
+    size_t min_distance = max_distance / 2;
     auto threshold_estimator = make_shared<LabeledDistributionThresholdEstimator>(g_, segment_score_function,
                                                                                   edge_length_threshold_,
                                                                                   block_length_, 1,
-                                                                                  MIN_DISTANCE, max_distance_,
+                                                                                  min_distance, max_distance,
                                                                                   score_percentile_, max_threads_);
     return threshold_estimator;
 }
