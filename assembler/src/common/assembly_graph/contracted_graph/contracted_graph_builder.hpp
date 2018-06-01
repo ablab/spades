@@ -3,7 +3,6 @@
 #include "common/assembly_graph/contracted_graph/contracted_graph.hpp"
 #include "adt/concurrent_dsu.hpp"
 #include <common/barcode_index/cluster_storage.hpp>
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 
 namespace contracted_graph {
 
