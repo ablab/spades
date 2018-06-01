@@ -12,6 +12,7 @@
 #include "extenders_logic.hpp"
 #include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.hpp"
+#include "read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 
 namespace path_extend {
 
@@ -597,6 +598,20 @@ shared_ptr<ExtensionChooser> ExtendersGenerator::MakeSimpleExtensionChooser(size
 }
 shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender() const {
     const auto &scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
+    bool validate_using_reference = cfg::get().ts_res.debug_mode;
+    if (validate_using_reference) {
+        INFO("Resulting scaffold graph stats");
+        const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
+        DEBUG("Path to reference: " << path_to_reference);
+        DEBUG("Path exists: " << fs::check_existence(path_to_reference));
+        validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
+        validation::FilteredReferencePathHelper path_helper(gp_);
+        size_t length_threshold = gp_.scaffold_graph_storage.GetSmallLengthThreshold();
+        auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
+
+        auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
+        stats.Serialize(std::cout);
+    }
     INFO(scaffold_graph.VertexCount() << "vertices and " << scaffold_graph.EdgeCount()
                                      << "edges in scaffold graph");
 
@@ -620,49 +635,39 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
     const double extender_score_threshold = 0.04;
     const double relative_coverage_threshold = 1.5;
     const size_t barcode_threshold = 1;
+    const size_t score_function_tail_threshold = 1000;
 
     auto barcode_extractor =
         std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor, reliable_edge_length,
                                                                          seed_edge_length, tail_threshold,
                                                                          relative_coverage_threshold);
+    auto edge_selector_factory = std::make_shared<SimpleReachableEdgesSelectorFactory>(gp_.g, barcode_extractor,
+                                                                                       barcode_threshold,
+                                                                                       reliable_edge_length,
+                                                                                       distance_bound);
     auto read_cloud_extension_chooser = make_shared<ReadCloudExtensionChooser>(gp_.g,
                                                                                weight_counter,
                                                                                weight_threshold,
                                                                                barcode_extractor,
                                                                                entry_collector,
-                                                                               extender_score_threshold);
-    auto composite_chooser =
-        make_shared<CompositeExtensionChooser>(gp_.g, pe_extension_chooser, read_cloud_extension_chooser);
-
+                                                                               edge_selector_factory,
+                                                                               extender_score_threshold,
+                                                                               score_function_tail_threshold);
     size_t insert_size = paired_lib->GetISMax();
     bool investigate_short_loops = false;
     bool use_short_loops_cov_resolver = true;
-
-//    fixme empty storage leak
-//    ScaffoldingUniqueEdgeStorage *empty_unique_storage = new ScaffoldingUniqueEdgeStorage;
-//    //to avoid unique check
-//    UsedUniqueStorage *empty_used_storage = new UsedUniqueStorage(*empty_unique_storage);
-//    INFO("Unique check: " << empty_used_storage->UniqueCheckEnabled());
-
-    auto barcode_extractor_wrapper =
-        std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, barcode_extractor);
-
-
     auto read_cloud_extender = make_shared<ReadCloudExtender>(gp_,
                                                               cover_map_,
                                                               used_unique_storage_,
-                                                              composite_chooser,
+                                                              read_cloud_extension_chooser,
                                                               insert_size,
                                                               investigate_short_loops,
                                                               use_short_loops_cov_resolver,
                                                               weight_threshold,
                                                               entry_collector,
-                                                              barcode_extractor_wrapper,
-                                                              barcode_threshold,
-                                                              reliable_edge_length,
-                                                              tail_threshold,
-                                                              distance_bound);
+                                                              edge_selector_factory,
+                                                              seed_edge_length);
     return read_cloud_extender;
 }
 

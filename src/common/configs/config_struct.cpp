@@ -479,6 +479,8 @@ void load(debruijn_config::read_cloud_resolver::scaffold_polisher& scaff_pol,
 void load(debruijn_config::read_cloud_resolver::scaffold_graph_construction& scaff_con,
           boost::property_tree::ptree const &pt, bool /*complete*/) {
     using config_common::load;
+    load(scaff_con.score_percentile, pt, "score_percentile");
+    load(scaff_con.cluster_length_percentile, pt, "cluster_length_percentile");
     load(scaff_con.count_threshold, pt, "count_threshold");
     load(scaff_con.relative_coverage_threshold, pt, "relative_coverage_threshold");
     load(scaff_con.connection_length_threshold, pt, "connection_length_threshold");
