@@ -63,6 +63,8 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
     const size_t distance_bound = params_.distance_bound_;
     const double score_threshold = params_.extender_score_threshold_;
     const double relative_coverage_threshold = params_.relative_coverage_threshold_;
+    const size_t barcode_threshold = 1;
+    const size_t score_function_tail_threshold = 1000;
 
     auto barcode_extractor =
         std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
@@ -71,12 +73,18 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
     auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor, reliable_edge_length,
                                                                          seed_edge_length, tail_threshold,
                                                                          relative_coverage_threshold);
+    auto edge_selector_factory = std::make_shared<SimpleReachableEdgesSelectorFactory>(gp_.g, barcode_extractor,
+                                                                                       barcode_threshold,
+                                                                                       reliable_edge_length,
+                                                                                       distance_bound);
     auto read_cloud_extension_chooser = make_shared<ReadCloudExtensionChooser>(gp_.g,
                                                                                weight_counter,
                                                                                weight_threshold,
                                                                                barcode_extractor,
                                                                                entry_collector,
-                                                                               score_threshold);
+                                                                               edge_selector_factory,
+                                                                               score_threshold,
+                                                                               score_function_tail_threshold);
     auto composite_chooser =
         make_shared<CompositeExtensionChooser>(gp_.g, pe_extension_chooser, read_cloud_extension_chooser);
 
@@ -85,7 +93,6 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
     bool use_short_loops_cov_resolver = false;
 
     INFO("Unique check enabled: " << used_unique_storage->UniqueCheckEnabled());
-    const size_t barcode_threshold = 1;
     auto read_cloud_extender = make_shared<ReadCloudExtender>(gp_,
                                                               *cover_map,
                                                               *used_unique_storage,
@@ -95,11 +102,8 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
                                                               use_short_loops_cov_resolver,
                                                               weight_threshold,
                                                               entry_collector,
-                                                              barcode_extractor_wrapper,
-                                                              barcode_threshold,
-                                                              reliable_edge_length,
-                                                              tail_threshold,
-                                                              distance_bound);
+                                                              edge_selector_factory,
+                                                              tail_threshold);
     return read_cloud_extender;
 }
 ReadCloudScaffoldGraphGapCloserConstructor::ReadCloudScaffoldGraphGapCloserConstructor(const conj_graph_pack &gp_,

@@ -62,6 +62,8 @@ void PathScaffolder::ExtendPathAlongConnections(const PathScaffolder::ScaffoldVe
                                                 const unordered_map<PathScaffolder::ScaffoldVertex,
                                                                     PathScaffolder::ScaffoldVertex> &merge_connections,
                                                 const unordered_map<ScaffoldVertex, size_t> &start_to_distance) const {
+    //fixme use some sort of distance estimation
+    const size_t DEFAULT_GAP = 1000;
     scaffold_graph::PathGetter path_getter;
     auto current = start;
     bool next_found = merge_connections.find(current) != merge_connections.end();
@@ -78,7 +80,11 @@ void PathScaffolder::ExtendPathAlongConnections(const PathScaffolder::ScaffoldVe
                              << start_path->GetConjPath()->Length());
         DEBUG("Second conj: " << next_path->GetConjPath()->GetId() << ", length: " << next_path->GetConjPath()->Length());
         DEBUG("Got paths")
-        Gap path_distance_gap(static_cast<int>(start_to_distance.at(current)));
+        int gap_length = static_cast<int>(start_to_distance.at(current));
+        if (gap_length == 0) {
+            gap_length = DEFAULT_GAP;
+        }
+        Gap path_distance_gap(gap_length);
         DEBUG("Push back")
         start_path->PushBack(*next_path, path_distance_gap);
         DEBUG("Clear");
