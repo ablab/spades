@@ -147,33 +147,40 @@ private:
     std::unique_ptr<Storage> storage_;
 };
 
+class SavesPolicy {
+public:
+    typedef debruijn_graph::config::Checkpoints Checkpoints;
+
+    SavesPolicy()
+            : checkpoints_(Checkpoints::None), saves_path_("") {
+    }
+
+    SavesPolicy(Checkpoints checkpoints, const std::string &saves_path)
+            : checkpoints_(checkpoints), saves_path_(saves_path) {
+    }
+
+    Checkpoints EnabledCheckpoints() const { return checkpoints_; }
+    const std::string & SavesPath() const { return saves_path_; }
+
+    std::string GetLastCheckpoint() const {
+        std::string res;
+        std::ifstream(fs::append_path(saves_path_, CHECKPOINT_FILE)) >> res;
+        return res;
+    }
+
+    void UpdateCheckpoint(const char *name) const {
+        std::ofstream(fs::append_path(saves_path_, CHECKPOINT_FILE)) << name;
+    }
+
+private:
+    static const char * const CHECKPOINT_FILE;
+
+    Checkpoints checkpoints_;
+    std::string saves_path_;
+};
 
 class StageManager {
 public:
-    class SavesPolicy {
-    public:
-        enum Saves {
-            None,
-            Last,
-            All
-        };
-
-        SavesPolicy()
-                : enabled_saves_(None), saves_path_("") {
-        }
-
-        SavesPolicy(Saves saves, const std::string &saves_path)
-                : enabled_saves_(saves), saves_path_(saves_path) {
-        }
-
-        Saves EnabledSaves()     const { return enabled_saves_; }
-        const std::string & SavesPath() const { return saves_path_; }
-
-    private:
-        Saves enabled_saves_;
-        std::string saves_path_;
-    };
-
     StageManager(SavesPolicy policy = SavesPolicy())
             : saves_policy_(policy) { }
 

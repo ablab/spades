@@ -18,7 +18,7 @@ template<typename Graph>
 class GraphIO : public IOSingle<Graph> {
 public:
     GraphIO()
-            : IOSingle<Graph>("debruijn graph", ".grp") {
+            : IOSingle<Graph>("debruijn graph", ".grseq") {
     }
 
     const IdMapper<typename Graph::EdgeId> &GetEdgeMapper() {

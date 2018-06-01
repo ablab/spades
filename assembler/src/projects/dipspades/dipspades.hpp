@@ -248,9 +248,12 @@ void run_dipspades() {
 
     conj_gp.kmer_mapper.Attach();
 
-    StageManager DS_Manager ( {dsp_cfg::get().rp.developer_mode,
-                               dsp_cfg::get().io.saves,
-                               dsp_cfg::get().io.output_saves} );
+    auto enabled_saves = SavesPolicy::Checkpoints::None;
+    if (dsp_cfg::get().rp.developer_mode)
+        enabled_saves = SavesPolicy::Checkpoints::All;
+    //TODO: implement SavesPolicy::Last
+
+    StageManager DS_Manager (SavesPolicy(enabled_saves, dsp_cfg::get().io.output_saves));
     DipSPAdes *ds_phase = new DipSPAdes();
     ds_phase->add<ContigGraphConstructionStage>()
             .add<PolymorphicBulgeRemoverStage>()
