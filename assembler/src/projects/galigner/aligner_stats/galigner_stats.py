@@ -74,7 +74,7 @@ class DataLoader:
         fin = open(filename, "r")
         bwa_num = 0
         for ln in fin.readlines():
-            cur_read, seq_start, seq_end, rlen, path, edgelen, bwa_path_dirty = ln.strip().split("\t")
+            cur_read, seq_start, seq_end, e_start, e_end, rlen, path, edgelen, bwa_path_dirty = ln.strip().split("\t")
             cur_read = cur_read.split(" ")[0]
             bwa_path = []
             edgelen_lst =[int(x) for x in edgelen.replace(";", "").split(",")[:-1]]
@@ -92,7 +92,8 @@ class DataLoader:
                 ranges.append({"start": int(x.split("[")[1].split(",")[0]), "end": int(x.split("[")[1].split(",")[1])})
                 edge_ranges.append({"start": int(x.split("(")[1].split(",")[0]), "end": int(x.split("(")[1].split(",")[1].split(")")[0])})
             res[cur_read] = { "len": rlen, "path": path.split(",")[:-1], "bwa_path": bwa_path, "edgelen": edgelen.split(",")[:-1], \
-                                "mapped_s":int(seq_start), "mapped_e":int(seq_end), "seq_ranges": ranges, "edge_ranges": edge_ranges, "empty": empty - 1}
+                                "initial_s":int(seq_start), "initial_e":int(seq_end), 
+                                "mapped_s":int(e_start), "mapped_e":int(e_end), "seq_ranges": ranges, "edge_ranges": edge_ranges, "empty": empty - 1}
         fin.close()
         print "Number of edges detected by bwa:", bwa_num
         return res
@@ -358,7 +359,7 @@ class GapsLengthStatistics:
         path = self.alignedpaths[r]["path"]
         edgelen = self.truepaths[r]["edgelen"]
         aedgelen = self.alignedpaths[r]["edgelen"]
-        ln = -1
+        ln = 0
         if truepath[true_ind[0]: true_ind[1]] == path[ind[0]: ind[1]] :
             return [False, empty, ln]
         else:
@@ -384,7 +385,7 @@ class GapsLengthStatistics:
         path = self.alignedpaths[r]["path"]
         edgelen = self.truepaths[r]["edgelen"]
         aedgelen = self.alignedpaths[r]["edgelen"]
-        ln = -1
+        ln = 0
         if truepath[true_ind[-2]: true_ind[-1]] == path[ind[-2]: ind[-1]] :
             return [False, empty, ln]
         else:

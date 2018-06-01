@@ -57,7 +57,9 @@ public:
             bwa_path_str += ";";
         }
         string str = read.name() + "\t" + std::to_string(aligned_mappings.read_range.initial_range.start_pos) + "\t" 
-                                 + std::to_string(aligned_mappings.read_range.initial_range.end_pos) + "\t" 
+                                 + std::to_string(aligned_mappings.read_range.initial_range.end_pos) + "\t"
+                                 + std::to_string(aligned_mappings.read_range.mapped_range.start_pos) + "\t" 
+                                 + std::to_string(aligned_mappings.read_range.mapped_range.end_pos - aligned_mappings.read_range.mapped_range.start_pos) + "\t" 
                                  + std::to_string(read.sequence().size())+  "\t" + path_str + "\t" + path_len_str + "\t" + bwa_path_str + "\n";
         DEBUG("Read " << read.name() << " aligned and length=" << read.sequence().size());
         DEBUG("Read " << read.name() << ". Paths with ends: " << path_str );

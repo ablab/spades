@@ -36,12 +36,12 @@ enum {
 struct OneReadMapping {
     std::vector<vector<debruijn_graph::EdgeId>> main_storage;
     std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> bwa_paths;
-    MappingRange read_range;
+    omnigraph::MappingRange read_range;
     std::vector<GapDescription> gaps;
     OneReadMapping(const std::vector<vector<debruijn_graph::EdgeId>> &main_storage_,
                    const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> &bwa_paths_,
                    const std::vector<GapDescription>& gaps_,
-                   const MappingRange &read_range_) :
+                   const omnigraph::MappingRange &read_range_) :
             main_storage(main_storage_), bwa_paths(bwa_paths_), gaps(gaps_), read_range(read_range_){}
 };
 
@@ -418,8 +418,8 @@ public:
         }
         omnigraph::MappingRange cur_range = omnigraph::MappingRange(Range(bwa_hits[0].mapping_at(0).initial_range.start_pos, 
                                                                           bwa_hits[bwa_hits.size() - 1].mapping_at(bwa_hits[bwa_hits.size() - 1].size() - 1).initial_range.end_pos), 
-                                                                    Range(bwa_hits[0].mapping_at(0).initial_range.start_pos, 
-                                                                          bwa_hits[0].mapping_at(0).initial_range.start_pos + 
+                                                                    Range(bwa_hits[0].mapping_at(0).mapped_range.start_pos, 
+                                                                          bwa_hits[0].mapping_at(0).mapped_range.start_pos + 
                                                                           bwa_hits[bwa_hits.size() - 1].mapping_at(bwa_hits[bwa_hits.size() - 1].size() - 1).mapped_range.end_pos) );
         if (gap_cfg_.restore_ends && edges.size() > 0 && restore_ends){
             bool forward = true;
@@ -434,7 +434,7 @@ public:
         }
         if (read_range.initial_range.start_pos > cur_range.initial_range.start_pos ) {
             read_range = omnigraph::MappingRange(Range(cur_range.initial_range.start_pos, read_range.initial_range.end_pos),
-                                                 Range(cur_range.mapped_range.start_pos, cur_range.mapped_range.start_pos + (read_range.initial_range.end_pos - read_range.initial_range.start_pos) ));
+                                                 Range(cur_range.mapped_range.start_pos, cur_range.mapped_range.start_pos + (read_range.mapped_range.end_pos - read_range.mapped_range.start_pos) ));
         }   
         if (read_range.initial_range.end_pos < cur_range.initial_range.end_pos ) {
             read_range = omnigraph::MappingRange(Range(read_range.initial_range.start_pos, cur_range.initial_range.end_pos),
@@ -472,7 +472,7 @@ public:
         return cons_table;
     }
 
-    std::vector<int> GetWeightedColors(const ClustersSet &mapping_descr) const {
+    std::vector<int> GetWeightedColors(const ClustersSet &mapping_descr, int &num_colors) const {
         size_t len = mapping_descr.size();
         std::vector<int> colors(len, UNDEF_COLOR);
         std::vector<double> cluster_size(len);
@@ -486,7 +486,7 @@ public:
         std::vector<size_t> prev(len);
 
         int cur_color = 0;
-        int num_colors = 0;
+        num_colors = 0;
         while (true) {
             for (size_t i = 0; i < len; ++i) {
                 max_size[i] = 0;
@@ -539,7 +539,7 @@ public:
                                       const std::vector<typename ClustersSet::iterator> &end_clusters,
                                       const std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
                                       const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                                      const MappingRange &read_range,
+                                      const omnigraph::MappingRange &read_range,
                                       const Sequence &s,
                                       const std::vector<bool> &block_gap_closer) const {
         DEBUG("adding gaps between subreads");
@@ -583,7 +583,7 @@ public:
                         std::vector<typename ClustersSet::iterator> &end_clusters,
                         std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
                         std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                        MappingRange &read_range,
+                        omnigraph::MappingRange &read_range,
                         std::vector<bool> &block_gap_closer,
                         bool restore_ends) const {
         std::sort(cur_cluster.begin(), cur_cluster.end(),
@@ -636,11 +636,12 @@ public:
     OneReadMapping GetReadAlignment(const io::SingleRead &read) const {
         Sequence s = read.sequence();
         ClustersSet mapping_descr = GetBWAClusters(read); //GetOrderClusters(s);
-        vector<int> colors = GetWeightedColors(mapping_descr);
+        int num_colors = 0;
+        vector<int> colors = GetWeightedColors(mapping_descr, num_colors);
         size_t len =  mapping_descr.size();
         std::vector<vector<debruijn_graph::EdgeId> > sorted_edges;
         vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> sorted_bwa_hits;
-        MappingRange read_range;
+        omnigraph::MappingRange read_range;
         vector<bool> block_gap_closer;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
         vector<int> used(len);
@@ -650,6 +651,7 @@ public:
             DEBUG(colors[i] <<" " << iter->str(g_));
         }
         //FIXME ferther code is AWFUL
+        bool restore_ends = num_colors == 1 ? true: false;
         for (size_t i = 0; i < len; i++) {
             int cur_color = colors[i];
             if (!used[i] && cur_color != DELETED_COLOR) {
@@ -663,7 +665,6 @@ public:
                         used[j] = 1;
                     }
                 }
-                bool restore_ends = len == 1 ? true: false;
                 ProcessCluster(s, cur_cluster, start_clusters, end_clusters, sorted_edges, sorted_bwa_hits, read_range, block_gap_closer, restore_ends);
             }
         }

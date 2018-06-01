@@ -409,7 +409,7 @@ private:
                 string tmp = g_.EdgeNucls(e).str();
                 int position = -1;
                 int score = SHWDistance(seq_str, tmp, path_max_length_ - ed, position);
-                if (score >= 0) {
+                if (score != std::numeric_limits<int>::max()) {
                     INFO("End pos score=" << score);
                     path_max_length_ = min(path_max_length_, ed + score);
                     QueueState state(GraphState(e, 0, position + 1), (int) ss_.size());
