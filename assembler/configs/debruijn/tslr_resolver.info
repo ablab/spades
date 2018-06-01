@@ -44,7 +44,7 @@ ts_res
 	min_training_total_length 5000000
 	optimal_training_total_length 20000000
 
-	gap_closer_connection_score_threshold 0.5
+	gap_closer_connection_score_threshold 0.05
 	gap_closer_relative_coverage_threshold 50.0
 	gap_closer_connection_length_threshold 100
 
@@ -58,6 +58,8 @@ ts_res
 	}
 
 	scaffold_graph_construction {
+		score_percentile 0.001
+		cluster_length_percentile 0.9
 		count_threshold 1
 	    relative_coverage_threshold 4.0
 	    connection_length_threshold 50

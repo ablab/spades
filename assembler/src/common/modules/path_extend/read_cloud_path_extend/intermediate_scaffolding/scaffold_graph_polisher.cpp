@@ -41,6 +41,11 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
         const CloudScaffoldSubgraphExtractor::ScaffoldGraph& scaffold_graph,
         const CloudScaffoldSubgraphExtractor::ScaffoldVertex& first,
         const CloudScaffoldSubgraphExtractor::ScaffoldVertex& second) const {
+    DEBUG("Extracting scaffold subgraph");
+    DEBUG("First: " << first.int_id());
+    DEBUG("Second: " << second.int_id());
+    DEBUG("First length: " << first.getLengthFromGraph(g_));
+    DEBUG("Second length: " << second.getLengthFromGraph(g_));
     SimpleGraph result;
     unordered_set<ScaffoldVertex> forward_vertices;
     unordered_set<ScaffoldVertex> backward_vertices;
@@ -53,13 +58,17 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
     auto end = edge.getEnd();
 //    auto start_entry = scaff_vertex_extractor_->GetTailEntry(start);
 //    auto end_entry = scaff_vertex_extractor_-> GetHeadEntry(end);
+    DEBUG("Getting intersection");
     auto intersection_entry = scaff_vertex_extractor_->GetIntersection(start, end);
+    DEBUG("Got intersection");
     auto pair_entry_extractor = make_shared<path_extend::IntersectionBasedPairEntryProcessor>(intersection_entry,
                                                                                               scaff_vertex_extractor_);
+    DEBUG("Got extractor");
     auto gap_closer_predicate = make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_,
                                                                                          scaff_vertex_extractor_,
                                                                                          params, start, end,
                                                                                          pair_entry_extractor);
+    DEBUG("Constructed predicates");
     omnigraph::ScaffoldDijkstraHelper helper;
     auto forward_dijkstra = helper.CreateForwardBoundedScaffoldDijkstra(scaffold_graph, first, second,
                                                                             params_.distance_threshold_, gap_closer_predicate);
@@ -68,8 +77,7 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
                                                                           second,
                                                                           params_.distance_threshold_,
                                                                           gap_closer_predicate);
-    DEBUG("First: " << first.int_id());
-    DEBUG("Second: " << second.int_id());
+    DEBUG("Running dijkstra")
     forward_dijkstra.Run(first);
     //fixme avoid copying
     for (const auto& vertex: forward_dijkstra.ReachedVertices()) {
@@ -172,9 +180,6 @@ IterationResult ScaffoldGraphPolisher::LaunchGapClosingIteration(
         const vector<ScaffoldGraphPolisher::ScaffoldEdge>& univocal_edges) const {
     DEBUG("Cleaning graph using cut vertices");
     DEBUG(input_graph.VertexCount() << " vertices and " << input_graph.EdgeCount() << " edges in cut vertex graph");
-//    auto current_graph = CleanGraphUsingCutVertices(input_graph, univocal_edges);
-//    DEBUG(current_graph.VertexCount() << " vertices and " << current_graph.EdgeCount() << " edges in cut vertex graph");
-
     DEBUG("Getting inserted path connections");
     auto inserted_vertices_data = GetInsertedConnections(univocal_edges, input_graph);
     std::unordered_map<ScaffoldVertex, ScaffoldVertex> inserted_vertices_map = inserted_vertices_data.GetInsertedConnectionsMap();
@@ -679,6 +684,18 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
 //    auto new_large_scaffold_graph = gap_closer.CloseGapsInLargeGraph(large_scaffold_graph, small_scaffold_graph);
 //    INFO(new_large_scaffold_graph.VertexCount() << " vertices and "
 //                                                << new_large_scaffold_graph.EdgeCount() << " edges in new large scaffold graph");
+    set<ScaffoldVertex> small_graph_vertices;
+    for (const auto& vertex: small_scaffold_graph.vertices()) {
+        small_graph_vertices.insert(vertex);
+    }
+//    for (const auto& vertex: large_scaffold_graph.vertices()) {
+//        INFO(vertex.int_id());
+//        INFO("Length: " << vertex.getLengthFromGraph(graph_pack.g));
+//        INFO("Coverage: " << vertex.getCoverageFromGraph(graph_pack.g));
+//        INFO("Present in small graph: " << (small_graph_vertices.find(vertex) != small_graph_vertices.end()));
+//        INFO(scaffold_vertex_index->GetHeadEntry(vertex).size());
+//        INFO(scaffold_vertex_index->GetTailEntry(vertex).size());
+//    }
 
     auto new_small_scaffold_graph =
         gap_closer.CleanSmallGraphUsingLargeGraph(large_scaffold_graph, small_scaffold_graph);
@@ -711,7 +728,7 @@ shared_ptr<GapCloserScoreFunctionBuilder> PathExtractionPartsConstructor::Constr
     const size_t min_read_threshold = path_cluster_predicate_params.min_read_threshold_;
     std::set<path_extend::scaffold_graph::ScaffoldVertex> target_edges;
     std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(target_edges, target_edges.begin()));
-    INFO(target_edges.size() << " target edges.");
+    DEBUG(target_edges.size() << " target edges.");
     auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     size_t cluster_storage_builder_threads = cfg::get().max_threads;
     if (not path_scaffolding) {

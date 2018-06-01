@@ -310,7 +310,7 @@ namespace path_extend {
                                                     const ScaffoldGraph& current_graph) const;
 
 //        ScaffoldGraph CleanGraphUsingCutVertices(const ScaffoldGraph& input_graph, const vector<ScaffoldEdge>& univocal_edges) const;
-        DECL_LOGGER("ScaffoldGraphGapCloser");
+        DECL_LOGGER("ScaffoldGraphPolisher");
     };
 
     class ScaffoldGraphGapCloserLauncher {

@@ -41,16 +41,23 @@ struct ScaffolderParams {
 class IterativeScaffoldGraphConstructorCaller {
  protected:
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+
+ private:
+    string name_;
  public:
+    IterativeScaffoldGraphConstructorCaller(const string &name);
     /**
     * @param params Scaffold graph construction configs
     * @param scaffold_graph Original scaffold graph which is used to construct new one.
      * Most constructors remove subset of edges of original graph based on a predicate.
     */
-    virtual shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const path_extend::ScaffolderParams& params,
-                                                                                                         const ScaffoldGraph& scaffold_graph) const = 0;
+    virtual shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+        const path_extend::ScaffolderParams& params,
+        const ScaffoldGraph& scaffold_graph) const = 0;
 
     virtual ~IterativeScaffoldGraphConstructorCaller() = default;
+
+    string getName() const;
 };
 /** ConstructorCaller that removes edges from scaffold graph based on containment index between
  * sets of barcodes of two long edges
@@ -67,8 +74,9 @@ class BarcodeScoreConstructorCaller : public IterativeScaffoldGraphConstructorCa
                                   shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> raw_barcode_extractor,
                                   shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                   size_t max_threads_);
-    shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const path_extend::ScaffolderParams& params,
-                                                                                                 const ScaffoldGraph& scaffold_graph) const override;
+    shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+        const path_extend::ScaffolderParams& params,
+        const ScaffoldGraph& scaffold_graph) const override;
 };
 /** ConstructorCaller that ascertains existence of cloud-supported path between two long edges
  */
@@ -87,8 +95,9 @@ class BarcodeConnectionConstructorCaller: public IterativeScaffoldGraphConstruct
                                        const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_,
                                        size_t max_threads);
 
-    shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const path_extend::ScaffolderParams& params,
-                                                                                                 const ScaffoldGraph& scaffold_graph) const override;
+    shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+        const path_extend::ScaffolderParams& params,
+        const ScaffoldGraph& scaffold_graph) const override;
 };
 /** ConstructorCaller that ascertains existence of path between two edges that is supported by clouds and paired info
  */
@@ -108,8 +117,9 @@ class CompositeConnectionConstructorCaller: public IterativeScaffoldGraphConstru
                                          const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_,
                                          const size_t max_threads_, bool scaffolding_mode);
 
-    shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const path_extend::ScaffolderParams& params,
-                                                                                                 const ScaffoldGraph& scaffold_graph) const override;
+    shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+        const path_extend::ScaffolderParams& params,
+        const ScaffoldGraph& scaffold_graph) const override;
 };
 /** ConstructorCaller that filters conjugate connections by selecting best orientation of two edges in connection.
  */
@@ -124,8 +134,9 @@ class EdgeSplitConstructorCaller: public IterativeScaffoldGraphConstructorCaller
                                shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                std::size_t max_threads_);
 
-    shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const path_extend::ScaffolderParams& params,
-                                                                                                 const ScaffoldGraph& scaffold_graph) const override;
+    shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+        const path_extend::ScaffolderParams& params,
+        const ScaffoldGraph& scaffold_graph) const override;
 };
 /** ConstructorCaller that filters transitive connections.
  */
@@ -138,7 +149,8 @@ class TransitiveConstructorCaller: public IterativeScaffoldGraphConstructorCalle
     TransitiveConstructorCaller(const Graph& g_,
                                 std::size_t max_threads_);
 
-    shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const path_extend::ScaffolderParams& params,
-                                                                                                 const ScaffoldGraph& scaffold_graph) const override;
+    shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+        const path_extend::ScaffolderParams& params,
+        const ScaffoldGraph& scaffold_graph) const override;
 };
 } //path_extend

@@ -481,6 +481,8 @@ struct debruijn_config {
         size_t optimal_training_total_length;
 
         struct scaffold_graph_construction {
+          double score_percentile;
+          double cluster_length_percentile;
           size_t count_threshold;
           double relative_coverage_threshold;
           size_t connection_length_threshold;

@@ -8,12 +8,6 @@ bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVer
     double vertex_coverage = vertex.getCoverageFromGraph(g_);
     double start_coverage = start_.getCoverageFromGraph(g_);
     double end_coverage = end_.getCoverageFromGraph(g_);
-    double average_coverage = (start_coverage + end_coverage) / 2;
-    const double relative_coverage_threshold = params_.relative_coverage_threshold_;
-    if (math::ge(vertex_coverage, relative_coverage_threshold * average_coverage)) {
-        DEBUG("Edge is too high-covered");
-        return true;
-    }
     DEBUG("Length: " << vertex_length);
     DEBUG("Coverage: " << vertex_coverage);
     DEBUG("Id: " << vertex.int_id());
