@@ -20,6 +20,8 @@
 #include "read_cloud_path_extend/read_cloud_dijkstra.hpp"
 
 #include <cmath>
+#include "read_cloud_path_extend/extender_support/entry_collectors.hpp"
+#include "read_cloud_path_extend/extender_support/candidate_selectors.hpp"
 
 namespace path_extend {
 
@@ -843,13 +845,9 @@ class ScaffoldingSearchingMultiExtender: public SearchingMultiExtender, public S
 class ReadCloudExtender : public SimpleExtender { //Traverse forward to find long edges
 using SimpleExtender::g_;
 protected:
-    shared_ptr<BarcodeEntryCollector> barcode_entry_collector_;
-    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_;
-
-    const size_t barcode_threshold_;
-    const size_t edge_length_threshold_;
-    const size_t min_length_;
-    const size_t distance_bound_;
+    shared_ptr<BarcodeEntryCollector> entry_collector_;
+    shared_ptr<CloudReachableEdgesSelectorFactory> edge_selector_factory_;
+    size_t min_path_length_;
  public:
     ReadCloudExtender(const conj_graph_pack &gp,
                       const GraphCoverageMap &cov_map,
@@ -859,55 +857,28 @@ protected:
                       bool investigate_short_loops,
                       bool use_short_loop_cov_resolver,
                       double weight_threshold,
-                      shared_ptr<BarcodeEntryCollector> barcode_entry_collector,
-                      shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor,
-                      size_t barcode_threshold,
-                      size_t edge_length_threshold,
-                      size_t min_length,
-                      size_t distance_bound) :
+                      shared_ptr<BarcodeEntryCollector> entry_collector,
+                      shared_ptr<CloudReachableEdgesSelectorFactory> edge_selector_factory,
+                      size_t min_path_length) :
         SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops,
                        use_short_loop_cov_resolver, weight_threshold),
-        barcode_entry_collector_(barcode_entry_collector),
-        barcode_extractor_(barcode_extractor),
-        barcode_threshold_(barcode_threshold),
-        edge_length_threshold_(edge_length_threshold),
-        min_length_(min_length),
-        distance_bound_(distance_bound) {}
+        entry_collector_(entry_collector),
+        edge_selector_factory_(edge_selector_factory),
+        min_path_length_(min_path_length) {}
  protected:
     void FindFollowingEdges(BidirectionalPath &path, ExtensionChooser::EdgeContainer *result) override {
         ExtensionChooser::EdgeContainer candidates;
         result->clear();
-//        INFO("Launching read cloud extender")
-        if (path.Length() < min_length_) {
+        if (path.Length() < min_path_length_) {
             return;
         }
         vector<EdgeId> initial_candidates;
-        auto path_barcodes = barcode_entry_collector_->CollectEntry(path);
+        auto path_barcodes = entry_collector_->CollectEntry(path);
         DEBUG("Creating dijkstra");
-//        DijkstraHelper<Graph> helper;
-//        auto dij = helper.CreateLengthBoundedDijkstra(g_, edge_length_threshold_, distance_bound_);
-        ReadCloudDijkstraHelper helper;
-        auto dij = helper.CreateSimpleCloudBoundedDijkstra(g_, barcode_extractor_, path_barcodes,
-                                                           edge_length_threshold_, distance_bound_, barcode_threshold_);
-        DEBUG("dijkstra started");
-        dij.Run(g_.EdgeEnd(path.Back()));
-        DEBUG("Dijkstra finished");
-
-        size_t max_distance = 0;
-        for (auto v: dij.ReachedVertices()) {
-            size_t distance = dij.GetDistance(v);
-            if (distance > max_distance) {
-                max_distance = distance;
-            }
-            if (distance < distance_bound_) {
-                for (auto connected: g_.OutgoingEdges(v)) {
-                    if (g_.length(connected) >= edge_length_threshold_) {
-                        EdgeWithDistance candidate(connected, distance);
-                        result->push_back(candidate);
-                    }
-                }
-
-            }
+        auto edge_selector = edge_selector_factory_->ConstructReachableEdgesSelector(path_barcodes);
+        auto reached_edges = edge_selector->SelectReachableEdges(path.Back());
+        for (const auto& edge: reached_edges) {
+            result->push_back(edge);
         }
         DEBUG(result->size() << " reached edges");
     }
@@ -954,6 +925,12 @@ class ScaffoldGraphExtender: public PathExtender {
                 return false;
             }
             ScaffoldEdge connection = outgoing_edges.back();
+            ScaffoldVertex target = connection.getEnd();
+            auto incoming_edges = scaffold_graph_.IncomingEdges(target);
+            if (incoming_edges.size() != 1) {
+                DEBUG("Non-univocal connection, stop extending");
+                return false;
+            }
             Gap gap(static_cast<int>(connection.getLength()));
             ScaffoldVertex next_vertex = connection.getEnd();
             scaffold_graph::ScaffoldVertexT type = next_vertex.getType();
@@ -988,7 +965,7 @@ class ScaffoldGraphExtender: public PathExtender {
         bool success = used_storage_.TryUseEdge(path, e, gap);
         if (success) {
             DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
-                                          << gap.gap << ", trash length: " << gap.trash_previous << "-" << gap.trash_current);
+                                          << gap.gap << ", trash length: " << gap.trash.previous << "-" << gap.trash.current);
             DEBUG("Added edge " << e.int_id());
         }
         return success;

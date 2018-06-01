@@ -514,24 +514,11 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             auto barcode_extractor_ptr =
                 std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
             path_extend::ScaffolderParamsConstructor params_constructor;
-
-            const size_t min_training_length = 50000;
-            const size_t min_cluster_offset = 10000;
-            const size_t min_read_threshold = 5;
-
             size_t max_threads = cfg::get().max_threads;
-
-            path_extend::cluster_model::ClusterDistributionExtractor distribution_analyzer(gp_,
-                                                                                           min_read_threshold,
-                                                                                           min_training_length,
-                                                                                           min_cluster_offset,
-                                                                                           max_threads);
-            auto cluster_distribution_pack =
-                make_shared<cluster_model::DistributionPack>(distribution_analyzer.GetClusterDistributions());
+            auto cluster_distribution_pack = gp_.read_cloud_distribution_pack;
             cluster_model::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
 
-            //fixme configs
-            const size_t unique_length = 2000;
+            const size_t unique_length = cfg::get().ts_res.long_edge_length_lower_bound;
 
             auto scaffolder_params =
                 params_constructor.ConstructScaffolderParams(gp_.g, unique_length, primary_parameters_extractor);
@@ -543,6 +530,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             size_t tail_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_tail_threshold;
             size_t count_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_count_threshold;
             size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
+
             //fixme move to configs
             const size_t scan_bound = 150;
             INFO("Tail threshold: " << tail_threshold);
@@ -553,18 +541,18 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             INFO("Connection length threshold: " << read_cloud_gap_closer_params.edge_length_threshold_);
             auto cloud_chooser_factory =
                 std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g,
-                                                                   unique_data_.main_unique_storage_,
-                                                                   barcode_extractor_ptr,
-                                                                   tail_threshold, count_threshold,
-                                                                   length_threshold,
-                                                                   read_cloud_gap_closer_params,
-                                                                   scan_bound);
+                                                                      unique_data_.main_unique_storage_,
+                                                                      barcode_extractor_ptr,
+                                                                      tail_threshold, count_threshold,
+                                                                      length_threshold,
+                                                                      read_cloud_gap_closer_params,
+                                                                      scan_bound);
             auto simple_chooser = generator.MakeSimpleExtensionChooser(i);
             auto simple_chooser_factory = std::make_shared<SameChooserFactory>(gp_.g, simple_chooser);
             auto composite_chooser_factory = std::make_shared<CompositeChooserFactory>(gp_.g, simple_chooser_factory,
                                                                                        cloud_chooser_factory);
             auto cloud_extender_factory = std::make_shared<SimpleExtenderFactory>(gp_, cover_map, used_unique_storage,
-                                                                                  composite_chooser_factory);
+                                                                                  cloud_chooser_factory);
             gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, cloud_extender_factory));
         }
     }
@@ -756,12 +744,13 @@ void PathExtendLauncher::Launch() {
     DebugOutputPaths(polished_paths, "overlap_removed");
 
     //todo discuss
-    if (cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
+    if (support_.HasReadClouds() and cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
         const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
-        cluster_model::ClusterStatisticsExtractorHelper cluster_extractor_helper(gp_, cfg::get().max_threads);
-        auto cluster_statistics_extractor = cluster_extractor_helper.GetStatisticsExtractor();
+        cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor(gp_.read_cloud_distribution_pack);
         cluster_model::UpperLengthBoundEstimator length_bound_estimator;
-        size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor);
+        const double cluster_length_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
+        size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
+                                                                              cluster_length_percentile);
 
         PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_,
                                        small_path_length_threshold,
