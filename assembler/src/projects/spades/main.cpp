@@ -30,7 +30,7 @@ void load_config(const vector<string>& cfg_fns) {
     make_dir(cfg::get().output_dir);
     make_dir(cfg::get().tmp_dir);
 
-    if (cfg::get().developer_mode)
+    if (cfg::get().checkpoints != debruijn_graph::config::Checkpoints::None)
         make_dir(cfg::get().output_saves);
 
     make_dir(cfg::get().temp_bin_reads_path);

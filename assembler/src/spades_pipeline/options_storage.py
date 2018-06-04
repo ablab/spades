@@ -77,6 +77,7 @@ careful = None
 diploid_mode = False
 
 # advanced options
+checkpoints = None
 continue_mode = False
 developer_mode = None
 dataset_yaml_filename = None
@@ -145,7 +146,7 @@ long_options = "12= merged= threads= memory= tmp-dir= iterations= phred-offset= 
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false save-gp save-gp:false "\
                "continue restart-from= diploid truseq cov-cutoff= hidden-cov-cutoff= read-cov-threshold= " \
-               "configs-dir= stop-after=".split()
+               "checkpoints= configs-dir= stop-after=".split()
 short_options = "o:1:2:s:k:t:m:i:hv"
 
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
@@ -288,6 +289,7 @@ def usage(spades_version, show_hidden=False, mode=None):
     if mode != "dip":
         if mode not in ["rna", "meta"]:
             sys.stderr.write("--careful\t\ttries to reduce number of mismatches and short indels" + "\n")
+        sys.stderr.write("--checkpoints\t\tsave intermediate check-points ('last', 'all')" + "\n")
         sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
         if mode == "rna":
             sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'last')" + "\n")
@@ -335,7 +337,7 @@ def usage(spades_version, show_hidden=False, mode=None):
     if show_hidden:
         sys.stderr.write("" + "\n")
         sys.stderr.write("HIDDEN options:" + "\n")
-        sys.stderr.write("--debug\t\t\t\truns SPAdes in debug mode (keeps intermediate output)" + "\n")
+        sys.stderr.write("--debug\t\t\t\truns SPAdes in debug mode" + "\n")
         sys.stderr.write("--stop-after\t<cp>\truns SPAdes until the specified check-point ('ec', 'as', 'k<int>', 'mc') inclusive" + "\n")
         sys.stderr.write("--truseq\t\t\truns SPAdes in TruSeq mode\n")
         sys.stderr.write("--mismatch-correction\t\truns post processing correction"\

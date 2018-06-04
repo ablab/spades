@@ -21,10 +21,11 @@ void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
                          const std::string &load_from,
                          const char* prefix) {
     if (!prefix) prefix = id_;
-    std::string p = fs::append_path(load_from, prefix);
-    INFO("Loading current state from " << p);
+    auto dir = fs::append_path(load_from, prefix);
+    INFO("Loading current state from " << dir);
 
-    debruijn_graph::graphio::ScanAll(fs::append_path(p, "graph_pack"), gp);
+    auto p = fs::append_path(dir, "graph_pack");
+    debruijn_graph::graphio::ScanAll(p, gp);
     debruijn_graph::config::load_lib_data(p);
 }
 
@@ -32,11 +33,12 @@ void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
                          const std::string &save_to,
                          const char* prefix) const {
     if (!prefix) prefix = id_;
-    std::string p = fs::append_path(save_to, prefix);
-    INFO("Saving current state to " << p);
-    fs::make_dir(p);
+    auto dir = fs::append_path(save_to, prefix);
+    INFO("Saving current state to " << dir);
+    fs::make_dir(dir);
 
-    debruijn_graph::graphio::PrintAll(fs::append_path(p, "graph_pack"), gp);
+    auto p = fs::append_path(dir, "graph_pack");
+    debruijn_graph::graphio::PrintAll(p, gp);
     debruijn_graph::config::write_lib_data(p);
 }
 
@@ -158,7 +160,7 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
             stage->save(g, saves_policy_.SavesPath());
             saves_policy_.UpdateCheckpoint(stage->id());
             if (!prev_saves.empty() && saves_policy_.EnabledCheckpoints() == SavesPolicy::Checkpoints::Last) {
-                fs::remove_dir(fs::append_path(saves_policy_.SavesPath(), prev_saves));
+                fs::remove_if_exists(fs::append_path(saves_policy_.SavesPath(), prev_saves));
             }
         }
     }

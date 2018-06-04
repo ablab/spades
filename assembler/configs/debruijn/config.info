@@ -39,6 +39,7 @@ entry_point construction
 ;entry_point distance_estimation
 ;entry_point repeat_resolving
 
+checkpoints none
 developer_mode true
 scaffold_correction_mode false
 

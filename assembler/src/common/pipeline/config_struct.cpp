@@ -659,9 +659,9 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
         cfg.compute_paths_number = false;
     }
 
-    load(cfg.output_saves, pt, "load_from");
-    if (cfg.output_saves[0] != '/') { // relative path
-        cfg.output_saves = cfg.output_dir + cfg.output_saves;
+    load(cfg.load_from, pt, "load_from");
+    if (cfg.load_from[0] != '/') { // relative path
+        cfg.load_from = cfg.output_dir + cfg.load_from;
     }
 
     load(cfg.tmp_dir, pt, "tmp_dir");
@@ -835,6 +835,8 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
                        || cfg.gap_closer_enable || cfg.rr_enable;
 
     cfg.output_dir = cfg.output_base + "/K" + std::to_string(cfg.K) + "/";
+
+    cfg.output_saves = cfg.output_dir + "saves/";
 
     if (cfg.tmp_dir[0] != '/') { // relative path
         cfg.tmp_dir = cfg.output_dir + cfg.tmp_dir;
