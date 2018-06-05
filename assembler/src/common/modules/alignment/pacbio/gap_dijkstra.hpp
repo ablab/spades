@@ -94,7 +94,7 @@ struct QueueState {
     }
 
     bool operator < (const QueueState &state) const {
-        return (this->i < state.i || (this->i == state.i && this->gs < state.gs) );
+        return (this->gs < state.gs || (this->gs == state.gs && this->i < state.i) );
     }
 
     bool empty() const {
