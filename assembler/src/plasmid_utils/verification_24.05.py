@@ -86,7 +86,7 @@ for item in table: # In table - add new field, and for each row
     for j in tblout_pfam[3:-10]:  #check tblout (last 10 - service strings)
         if j[0] and item[0]: # if there is a protein in tblout and SRR in table
 #            if j[2] not in pr_list: #  if we didn't see this protein yet
-                if item[0] == j[0].rsplit('_', 1)[0]  and float(j[5]) > 20  : # if there's the SRR in protein ID and bitscore > 20
+                if item[0] == j[0].rsplit('_', 1)[0]: # if there's the SRR in protein ID 
                     pr_list.append(j[0]) # add this protein to the list for given SRR
                     item[-1].append(str(j[2])) # add to this new field
     # add our list378
