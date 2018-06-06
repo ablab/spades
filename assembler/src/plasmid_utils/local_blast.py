@@ -14,7 +14,7 @@ def parse_args(args):
     ###### Command Line Argument Parser
     parser = argparse.ArgumentParser(description="Check the help flag")
     parser.add_argument('--b', help='Path to blast database')
-    parser.add_argument('--f', help='Path to folder with SPAdes outputs')   
+    parser.add_argument('--f', help='Path to  SPAdes outputs')   
     return parser.parse_args()
 
 
@@ -23,13 +23,13 @@ def main():
 
 # get the files
 
-	scaffold_files = glob(str(args.f)+"/*/scaffolds.fasta")
+	scaffold_files = glob(str(args.f))
 	print (scaffold_files)
 
 # for each scaffolds file - blast, save as xml
 	blastn_args_list = []
 	for i in scaffold_files:
-		blastn_args_list.append(["blastn","-query", i.strip(), "-db", args.b, "-evalue", "0.001", "-outfmt", "5", "-out",str(i.split("/")[-2])+".xml", "-num_alignments","20"])
+		blastn_args_list.append(["blastn","-query", i.strip(), "-db", args.b, "-evalue", "0.001", "-outfmt", "5", "-out",str(i.split("/")[-2])+".xml", "-num_alignments","10"])
 		print (blastn_args_list[-1])
 	Parallel(n_jobs=30)(delayed(subprocess.call) (args) for args in blastn_args_list)
 		
