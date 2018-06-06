@@ -74,24 +74,6 @@ public:
             std::string pathlenStr = "";
             std::string edgelenStr = "";
             std::string str = "";
-            // EdgeId last_edge= EdgeId();
-            // omnigraph::MappingRange last_range;
-            // for (const auto &edge_mapping: current_mapping) {
-            //     EdgeId edgeid = edge_mapping.first;
-            //     omnigraph::MappingRange range= edge_mapping.second;
-            //     last_edge = edgeid;
-            //     last_range = range;
-            //     pathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(range.mapped_range.start_pos) + "," + std::to_string(range.mapped_range.end_pos) + ") ["
-            //                    + std::to_string(range.initial_range.start_pos) + "," + std::to_string(range.initial_range.end_pos) + "], ";
-            //     //pathStr += std::to_string(edgeid.int_id()) + ",";
-            //     pathlenStr += std::to_string(range.mapped_range.end_pos - range.mapped_range.start_pos) + ",";
-            //     edgelenStr += std::to_string(gp_.g.length(edgeid)) + ",";
-            //     string tmp = gp_.g.EdgeNucls(edgeid).str();
-            //     string to_add = tmp.substr(range.mapped_range.start_pos, range.mapped_range.end_pos - range.mapped_range.start_pos);
-            //     str += to_add;
-            // }
-            // string tmp = gp_.g.EdgeNucls(last_edge).str();
-            // str += tmp.substr(last_range.mapped_range.end_pos, gp_.g.k());
             for (const auto &edge_mapping: current_mapping) {
                 EdgeId edgeid = edge_mapping.first;
                 omnigraph::MappingRange range= edge_mapping.second;
@@ -111,6 +93,14 @@ public:
             int j = 0;
             int len_before = -1;
             for (int i = 0; i < read_mapping.size(); ++ i) {
+                if (i > 0) {
+                    VertexId v1 = gp_.g.EdgeEnd(read_mapping[i - 1]);
+                    VertexId v2 = gp_.g.EdgeStart(read_mapping[i]);
+                    if (v1 != v2) {
+                        INFO("Not a connected path!")
+                        return;
+                    }
+                }
                 EdgeId edgeid = read_mapping[i];
                 if (j < current_mapping.size() && current_mapping[j].first == edgeid){
                     omnigraph::MappingRange range= current_mapping[j].second;
