@@ -220,12 +220,11 @@ public:
                     }
                     if (visited_.count(end_qstate_) > 0){
                         found_path = true;
-                        min_score_ = visited_[end_qstate_];
                     }
                     break;
                 }
                 if (IsEndPosition(cur_state)) {
-                    INFO("is End position: " << cur_state.str() << " " <<min_score_);
+                    INFO("is End position: " << cur_state.str());
                     end_qstate_ = cur_state;
                     found_path = true;
                     break;
@@ -249,6 +248,7 @@ public:
                 while (!state.empty()) {
                     //INFO(" print state: " << state.str() << " " << prev_states_[state].str())
                     gap_path_.push_back(state.gs.e);
+                    min_score_ = visited_[end_qstate_];
                     int start_edge = prev_states_[state].i;
                     int end_edge =  state.i;
                     mapping_path_.push_back(state.gs.e, omnigraph::MappingRange(Range(start_edge, end_edge), 
@@ -345,7 +345,6 @@ private:
                         QueueState state(GraphState(e, 0, end_p_), (int)ss_.size());
                         Update(state, cur_state, ed + score);
                         if (ed + score == path_max_length_) {
-                             min_score_ = ed + score;
                              found_path = true;
                         }
                     }
@@ -380,7 +379,6 @@ public:
                     QueueState state(GraphState(start_e_, start_p_, end_p_), (int) ss_.size());
                     Update(state, QueueState(), score);
                     if (score == path_max_length_) {
-                         min_score_ = score;
                          end_qstate_ = state;
                     }
                 }
@@ -415,7 +413,6 @@ private:
                     QueueState state(GraphState(e, 0, position + 1), (int) ss_.size());
                     Update(state, cur_state, ed + score);
                     if (ed + score == path_max_length_) {
-                         min_score_ = ed + score;
                          INFO("++=Final ed1=" << ed + score);
                          INFO("EdgeDijkstra1: path was found ed=" << ed + score << " q_.size=" << q_.size() << " s_len=" << ss_.size() )
                          found_path = true;
@@ -448,7 +445,6 @@ public:
                     QueueState state(GraphState(start_e_, start_p_, start_p_ + position + 1), (int) ss_.size() );
                     Update(state, QueueState(), score);
                     if (score == path_max_length_) {
-                         min_score_ = score;
                          INFO("++=Final2 ed=" << score);
                          INFO("EdgeDijkstra2: path was found ed=" << score << " q_.size=" << q_.size() << " s_len=" << ss_.size() )
                          end_qstate_ = state;
