@@ -24,6 +24,7 @@ except OSError as e:
 name=os.path.join(outdir, name_file)
 
 #hmm= "/Nancy/mrayko/db/pfam/Pfam-A.hmm"
+#hmm="/Nancy/mrayko/db/plasmid_specific_pfam/1641_hmm_list.hmm" # up to k=1
 hmm= "/Nancy/mrayko/db/plasmid_specific_pfam/378_10fold_plasmid_HMMs.hmm"
 list378="/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/378_hmms.txt" 
 blastdb=" /Bmo/ncbi_nt_database/nt"
@@ -37,7 +38,7 @@ cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
 # run hmm
 os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
 os.system (hmmsearch + " --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
-os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '$6>20 {print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
+os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 
 # parse hmms
