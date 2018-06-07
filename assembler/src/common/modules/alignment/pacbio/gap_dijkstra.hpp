@@ -106,6 +106,18 @@ struct QueueState {
     }
 };
 
+struct StateHasher {
+  std::size_t operator()(const QueueState& k) const
+  {
+    using std::hash;
+
+    return ((hash<int>()(k.gs.e.int_id())
+             ^ (hash<int>()(k.gs.start_pos) << 1)) >> 1)
+             ^ (hash<int>()(k.gs.end_pos) << 1)
+             ^ (hash<int>()(k.i) << 17);
+  }
+};
+
 
 class DijkstraGraphSequenceBase {
 
@@ -297,8 +309,8 @@ public:
 
 protected:
         set<pair<int, QueueState> > q_;
-        map<QueueState, int> visited_;
-        map<QueueState, QueueState> prev_states_;
+        unordered_map<QueueState, int, StateHasher> visited_;
+        unordered_map<QueueState, QueueState, StateHasher> prev_states_;
 
         vector<debruijn_graph::EdgeId> gap_path_;
 
