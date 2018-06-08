@@ -1,4 +1,3 @@
-
 import sys
 from operator import itemgetter
 
@@ -26,37 +25,23 @@ with open(t1) as f1:
 
 
 hmms = [i.split("\t") for i in hmms]
-#print (hmms[:3])
-
 
 pl_list=[]
 for i in hmms:
-	#if i[0]=="DUF1392": print (i)
-#	print (*i, sep="\t")
 	pl_list.append(i[0])
 
 
 tblout_pfam = [i.split() for i in tblout_pfam] 
-#print ("Len tblout =" + str(len(tblout_pfam)))
-#print ("Len hmms = " + str(len(hmms)))
 
 def get_plasmids_number(pl_hmm_list):
   plasmids=set()
   pls=set(pl_hmm_list)
-  for i in tblout_pfam[3:-10]: #check for tblout structure
+  for i in tblout_pfam[3:-10]: #watch out for tblout structure
     if float (i[5]) >= float(hmm_nc[i[2]]):
     	if i[2] in pls:
     	    plasmids.add(i[0].rsplit('_', 1)[0])
-#  print (plasmids)
   return len(plasmids)
 
 
-#print (pl_list[:0])
 for i in range (377,379):   #len(pl_list),500):
 	print ("hmms: " + str(i) +  " Plasmids: " + str(get_plasmids_number(pl_list[:i])) + " K: " +str(float(hmms[i-1][3])/float(hmms[i-1][4]))  + " K1: "+str(float(hmms[i-1][4])/float(hmms[i-1][3])))
-#    if int(get_plasmids_number(pl_list[:i]))==99
-
-#print (str(get_plasmids_number(pl_list[:377])))
-#print (str(get_plasmids_number(pl_list[:378])))
-#print (str(get_plasmids_number(pl_list[:379])))
-
