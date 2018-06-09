@@ -818,7 +818,7 @@ public:
         gap_filler.CloseGap();
         score = gap_filler.GetEditDistance();
         return_code_dijkstra += gap_filler.GetReturnCode();
-        if (score == -1){
+        if (score == std::numeric_limits<int>::max()){
             DEBUG("Dijkstra didn't find anything")
             score = std::numeric_limits<int>::max();
             return vector<EdgeId>(0);
