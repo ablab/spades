@@ -40,15 +40,15 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::Bidi
         for (const auto &domain : hit.domains()) {
             std::pair<int, int> seqpos = domain.seqpos();
             std::pair<int, int> seqpos2 = domain.hmmpos();
-            INFO("First - " << seqpos2.first << ", second - " << seqpos2.second);
-            INFO("First - " << seqpos.first << ", second - " << seqpos.second);
+            DEBUG("First - " << seqpos2.first << ", second - " << seqpos2.second);
+            DEBUG("First - " << seqpos.first << ", second - " << seqpos.second);
             int shift = hit.name()[strlen(hit.name()) - 1] - '0';
             seqpos.first = seqpos.first * 3  + shift;
             seqpos.second = seqpos.second * 3  + shift;
             std::string name(hit.name());
             oss_contig << io::SingleRead(name, path_string);
-            INFO(name);
-            INFO("First - " << seqpos.first << ", second - " << seqpos.second);
+            DEBUG(name);
+            DEBUG("First - " << seqpos.first << ", second - " << seqpos.second);
             res.push_back({type, name, unsigned(seqpos.first), unsigned(seqpos.second), path_string.substr(seqpos.first, seqpos.second - seqpos.first)});
         }
     }
@@ -57,8 +57,8 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::Bidi
 static void match_contigs(const path_extend::PathContainer &contig_paths, const path_extend::ScaffoldSequenceMaker &scaffold_maker,
                           const std::string &type, const hmmer::HMM &hmm, const hmmer::hmmer_cfg &cfg,
                           ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
-    INFO("Total contigs: " << contig_paths.size());
-    INFO("Model length - " << hmm.length());
+    DEBUG("Total contigs: " << contig_paths.size());
+    DEBUG("Model length - " << hmm.length());
     for (auto iter = contig_paths.begin(); iter != contig_paths.end(); ++iter) {
         hmmer::HMMMatcher matcher(hmm, cfg);
         path_extend::BidirectionalPath* path = iter.get();
