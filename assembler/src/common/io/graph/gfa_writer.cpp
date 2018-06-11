@@ -79,6 +79,8 @@ void GFAWriter::WriteLinks(const Component &gc) {
 
                     void GFAComponentWriter::WriteSegments() {
     for (auto e : component_.edges()) {
+        if (e.int_id() > component_.g().conjugate(e).int_id())
+            continue;
         WriteSegment(edge_namer_.EdgeString(e), component_.g().EdgeNucls(e),
                      component_.g().coverage(e) * double(component_.g().length(e)),
                      os_);
