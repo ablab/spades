@@ -23,22 +23,19 @@ except OSError as e:
 
 name=os.path.join(outdir, name_file)
 
-hmm= "/Nancy/mrayko/db/pfam/Pfam-A.hmm"
-#hmm="/Nancy/mrayko/db/plasmid_specific_pfam/1641_hmm_list.hmm" # up to k=1
-#hmm= "/Nancy/mrayko/db/plasmid_specific_pfam/378_10fold_plasmid_HMMs.hmm"
-list378="/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/378_hmms.txt" 
-blastdb=" /Bmo/ncbi_nt_database/nt"
+hmm= "hmms/378_10fold_plasmid_HMMs.hmm"
+list378="hmms/378_hmms.txt" 
 
 
-hmmsearch=" /Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmsearch"
-prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
-cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
+#hmmsearch="/Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmsearch"
+#prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
+#cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
 
 
 # run hmm
-#os.system (prodigal + " -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
-#os.system (hmmsearch + " --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
-#os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
+os.system ("prodigal -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+os.system ("hmmsearch --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 
 # parse hmms
@@ -78,15 +75,11 @@ for i in tblout_pfam[3:-10]:
         plasmid_hits.setdefault(i[0].rsplit('_', 1)[0],[]).append(i[2]) 
 
 
-
 # Add genes for each contig
 for item in table: 
-    #print (plasmid_hits[item[0]])
     genes=list(plasmid_hits.get(item[0], ""))
     hits=[]
-    #print (genes)
     for i in genes:
-#        print (i)
         if i in set378:
             hits.append(i)
 
@@ -101,11 +94,6 @@ for item in table:
         item.append ("hmm+")
     else: 
         item.append ("hmm-")
-
-
-    #item[-1]=' '.join(item[-1]) # turn list of genes into the string
-    #item[-2]=' '.join(item[-2])
-
 
 # Output
 

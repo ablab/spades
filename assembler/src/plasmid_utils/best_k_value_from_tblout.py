@@ -23,13 +23,11 @@ with open(t1) as f1:
     hmms = f1.read().splitlines()
 
 
-
 hmms = [i.split("\t") for i in hmms]
 
 pl_list=[]
 for i in hmms:
 	pl_list.append(i[0])
-
 
 tblout_pfam = [i.split() for i in tblout_pfam] 
 
@@ -43,5 +41,16 @@ def get_plasmids_number(pl_hmm_list):
   return len(plasmids)
 
 
-for i in range (377,379):   #len(pl_list),500):
-	print ("hmms: " + str(i) +  " Plasmids: " + str(get_plasmids_number(pl_list[:i])) + " K: " +str(float(hmms[i-1][3])/float(hmms[i-1][4]))  + " K1: "+str(float(hmms[i-1][4])/float(hmms[i-1][3])))
+#print (get_plasmids_number(pl_list[:377]))
+#print (get_plasmids_number(pl_list[:378]))
+#print (get_plasmids_number(pl_list[:379]))
+
+k=[154, 276, 378, 496, 570, 698]
+
+
+for i in k: #range (0, 1641, 10):   #len(pl_list),500):
+
+	print ("hmms: " + str(i) +  " Plasmids: " + str(get_plasmids_number(pl_list[:i])) +  " K: "+str(hmms[i-1][5]))
+
+
+
