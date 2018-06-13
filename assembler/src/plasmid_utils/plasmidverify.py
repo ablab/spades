@@ -1,19 +1,30 @@
 import os, errno
 import sys
-import ntpath
 import argparse
-import subprocess
-from joblib import Parallel, delayed
-from glob import glob
 from Bio import SeqIO
-from parse_blast_xml import parser
-from classifier import naive_bayes
-from classifier import scikit_multNB
 
-base = os.path.basename(sys.argv[1])
+
+def parse_args(args):
+###### Command Line Argument Parser
+    parser = argparse.ArgumentParser(description="HMM-based plasmid verification script")
+    if len(sys.argv)==1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+    parser.add_argument('--f', help='Input fasta file')
+    parser.add_argument('--o', help='Output directory')
+    return parser.parse_args()
+
+
+
+args = parse_args(sys.argv[1:])
+
+
+
+base = os.path.basename(args.f)
 name_file = os.path.splitext(base)[0]
+dirname = os.path.dirname(__file__)
 
-outdir = sys.argv[2]
+outdir = args.o
 
 try:
     os.makedirs(outdir)
@@ -21,15 +32,10 @@ except OSError as e:
     if e.errno != errno.EEXIST:
         raise
 
-name=os.path.join(outdir, name_file)
+name = os.path.join(outdir, name_file)
 
-hmm= "hmms/378_10fold_plasmid_HMMs.hmm"
-list378="hmms/378_hmms.txt" 
-
-
-#hmmsearch="/Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmsearch"
-#prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
-#cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
+hmm = os.path.join(dirname, "hmms/378_10fold_plasmid_HMMs.hmm")
+list378 = os.path.join(dirname, "hmms/378_hmms.txt") 
 
 
 # run hmm
@@ -56,7 +62,7 @@ for i in tblout_pfam:
 table =[]
 
 ids=[]
-records = list(SeqIO.parse(sys.argv[1], "fasta"))
+records = list(SeqIO.parse(args.f, "fasta"))
 for i in records: 
     ids.append(i.id)  # take all fasta ids and append to table
 
@@ -65,9 +71,8 @@ for i in ids:
 
 
 
-# read file one time, create dict - plasmid and all genes that fit.
+# Collect all plasmid genes for each contig.
 tblout_pfam = [i.split() for i in tblout_pfam] 
-
 plasmid_hits={}
 
 for i in tblout_pfam[3:-10]:
@@ -89,7 +94,6 @@ for item in table:
         genes="-"
 
     item.append(' '.join(hits))
-    item.append(' '.join(genes))
     if hits!="-":
         item.append ("hmm+")
     else: 
