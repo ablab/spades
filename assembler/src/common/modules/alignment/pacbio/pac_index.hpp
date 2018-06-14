@@ -33,16 +33,24 @@ enum {
     DELETED_COLOR = -2
 };
 
+struct PathRange {
+    size_t seq_start;
+    size_t seq_end;
+
+    size_t edge_start;
+    size_t edge_end;  
+};
+
 struct OneReadMapping {
     std::vector<vector<debruijn_graph::EdgeId>> main_storage;
     std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> bwa_paths;
-    omnigraph::MappingRange read_range;
+    std::vector<PathRange> read_ranges;
     std::vector<GapDescription> gaps;
     OneReadMapping(const std::vector<vector<debruijn_graph::EdgeId>> &main_storage_,
                    const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> &bwa_paths_,
                    const std::vector<GapDescription>& gaps_,
-                   const omnigraph::MappingRange &read_range_) :
-            main_storage(main_storage_), bwa_paths(bwa_paths_), gaps(gaps_), read_range(read_range_){}
+                   const std::vector<PathRange> &read_ranges_) :
+            main_storage(main_storage_), bwa_paths(bwa_paths_), gaps(gaps_), read_ranges(read_ranges_){}
 };
 
 template<class Graph>
@@ -249,7 +257,7 @@ public:
         }
     }
 
-    void UpdatePath(vector<debruijn_graph::EdgeId> &path, std::vector<EdgeId> &ans, int end_pos, int end_pos_seq, omnigraph::MappingRange &range, bool forward) const {
+    void UpdatePath(vector<debruijn_graph::EdgeId> &path, std::vector<EdgeId> &ans, int end_pos, int end_pos_seq, PathRange &range, bool forward) const {
         if (forward) {
             if (end_pos < g_.k()) {
                 ans.pop_back();
@@ -259,8 +267,8 @@ public:
                 path.push_back(ans[i]);
             }
             path.push_back(ans[ans.size() - 1]);
-            range = omnigraph::MappingRange(Range(range.initial_range.start_pos, end_pos_seq), 
-                                            Range(range.mapped_range.start_pos, range.mapped_range.start_pos + end_pos) );
+            range.seq_end = end_pos_seq;
+            range.edge_end = end_pos;
         } else {
             vector<debruijn_graph::EdgeId> cur_sorted;
             int start = (int) g_.length(ans[ans.size() - 1]) + (int) g_.k() - end_pos;
@@ -279,12 +287,12 @@ public:
                 cur_sorted.push_back(path[i]);
             }
             path = cur_sorted;
-            range = omnigraph::MappingRange(Range(0, range.initial_range.end_pos), 
-                                            Range(start, start + (range.mapped_range.end_pos - range.mapped_range.start_pos)) );
+            range.seq_start = 0;
+            range.edge_start = start;
         }
     }
 
-    void GrowEnds(omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits, vector<debruijn_graph::EdgeId> &path, const Sequence &s, bool forward, omnigraph::MappingRange &range, int &return_code) const {
+    void GrowEnds(omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits, vector<debruijn_graph::EdgeId> &path, const Sequence &s, bool forward, PathRange &range, int &return_code) const {
         VERIFY(path.size() > 0);
         Sequence ss; 
         int start_pos = -1;
@@ -323,9 +331,7 @@ public:
     void FillGapsInCluster(const vector<typename ClustersSet::iterator> &cur_cluster,
                            const Sequence &s, 
                            std::vector<vector<debruijn_graph::EdgeId> > &edges,
-                           std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &bwa_hits,
-                           omnigraph::MappingRange &read_range,
-                           bool restore_ends) const {
+                           std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &bwa_hits) const {
         omnigraph::MappingPath<debruijn_graph::EdgeId> cur_sorted_hits;
         vector<debruijn_graph::EdgeId> cur_sorted_edges;
         EdgeId prev_edge = EdgeId();
@@ -415,30 +421,6 @@ public:
         if (cur_sorted_edges.size() > 0) {
             edges.push_back(cur_sorted_edges);
             bwa_hits.push_back(cur_sorted_hits);
-        }
-        omnigraph::MappingRange cur_range = omnigraph::MappingRange(Range(bwa_hits[0].mapping_at(0).initial_range.start_pos, 
-                                                                          bwa_hits[bwa_hits.size() - 1].mapping_at(bwa_hits[bwa_hits.size() - 1].size() - 1).initial_range.end_pos), 
-                                                                    Range(bwa_hits[0].mapping_at(0).mapped_range.start_pos, 
-                                                                          bwa_hits[0].mapping_at(0).mapped_range.start_pos + 
-                                                                          bwa_hits[bwa_hits.size() - 1].mapping_at(bwa_hits[bwa_hits.size() - 1].size() - 1).mapped_range.end_pos) );
-        if (gap_cfg_.restore_ends && edges.size() > 0 && restore_ends){
-            bool forward = true;
-            int return_code = 0;
-            GrowEnds(bwa_hits[0], edges[0], s, !forward, cur_range, return_code);
-            INFO("Backward return_code_ends=" << return_code)
-            GrowEnds(bwa_hits[bwa_hits.size() - 1], edges[edges.size() - 1], s, forward, cur_range, return_code);
-            INFO("Forward return_code_ends=" << return_code)
-        }
-        if (read_range.empty()) {
-            read_range = cur_range;
-        }
-        if (read_range.initial_range.start_pos > cur_range.initial_range.start_pos ) {
-            read_range = omnigraph::MappingRange(Range(cur_range.initial_range.start_pos, read_range.initial_range.end_pos),
-                                                 Range(cur_range.mapped_range.start_pos, cur_range.mapped_range.start_pos + (read_range.mapped_range.end_pos - read_range.mapped_range.start_pos) ));
-        }   
-        if (read_range.initial_range.end_pos < cur_range.initial_range.end_pos ) {
-            read_range = omnigraph::MappingRange(Range(read_range.initial_range.start_pos, cur_range.initial_range.end_pos),
-                                                 Range(read_range.mapped_range.start_pos, read_range.mapped_range.start_pos + (cur_range.mapped_range.end_pos - cur_range.mapped_range.start_pos )));
         }
     }
 
@@ -539,7 +521,7 @@ public:
                                       const std::vector<typename ClustersSet::iterator> &end_clusters,
                                       const std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
                                       const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                                      const omnigraph::MappingRange &read_range,
+                                      const std::vector<PathRange> &read_ranges,
                                       const Sequence &s,
                                       const std::vector<bool> &block_gap_closer) const {
         DEBUG("adding gaps between subreads");
@@ -574,7 +556,7 @@ public:
             }
         }
         INFO("Resulting hits num=" << sorted_edges.size());
-        return OneReadMapping(sorted_edges, sorted_bwa_hits, illumina_gaps, read_range);
+        return OneReadMapping(sorted_edges, sorted_bwa_hits, illumina_gaps, read_ranges);
     }
 
     void ProcessCluster(const Sequence &s,
@@ -583,9 +565,7 @@ public:
                         std::vector<typename ClustersSet::iterator> &end_clusters,
                         std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
                         std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                        omnigraph::MappingRange &read_range,
-                        std::vector<bool> &block_gap_closer,
-                        bool restore_ends) const {
+                        std::vector<bool> &block_gap_closer) const {
         std::sort(cur_cluster.begin(), cur_cluster.end(),
                   [](const typename ClustersSet::iterator& a, const typename ClustersSet::iterator& b) {
                       return (a->average_read_position < b->average_read_position);
@@ -603,7 +583,7 @@ public:
                 vector<typename ClustersSet::iterator> splitted_cluster(cur_cluster_start, next_iter);
                 std::vector<vector<debruijn_graph::EdgeId> > edges;
                 std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > bwa_hits;
-                FillGapsInCluster(splitted_cluster, s, edges, bwa_hits, read_range, restore_ends);
+                FillGapsInCluster(splitted_cluster, s, edges, bwa_hits);
                 for (auto &cur_sorted: edges) {
                     DEBUG("Adding " <<edges.size() << " subreads, cur alignments " << cur_sorted.size());
                     if (cur_sorted.size() > 0) {
@@ -665,10 +645,34 @@ public:
                         used[j] = 1;
                     }
                 }
-                ProcessCluster(s, cur_cluster, start_clusters, end_clusters, sorted_edges, sorted_bwa_hits, read_range, block_gap_closer, restore_ends);
+                ProcessCluster(s, cur_cluster, start_clusters, end_clusters, sorted_edges, sorted_bwa_hits, block_gap_closer);
             }
         }
-        return AddGapDescriptions(start_clusters, end_clusters, sorted_edges, sorted_bwa_hits, read_range, s, block_gap_closer);
+        std::vector<PathRange> read_ranges;
+        if (sorted_edges.size() == 1 && gap_cfg_.restore_ends) {
+            bool forward = true;
+            int return_code = 0;
+            PathRange cur_range;
+            cur_range.seq_start = sorted_bwa_hits[0].mapping_at(0).initial_range.start_pos;
+            cur_range.seq_end = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).initial_range.end_pos;
+            cur_range.edge_start = sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos;
+            cur_range.edge_end = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).mapped_range.end_pos;
+            GrowEnds(sorted_bwa_hits[0], sorted_edges[0], s, !forward, cur_range, return_code);
+            INFO("Backward return_code_ends=" << return_code)
+            GrowEnds(sorted_bwa_hits[0], sorted_edges[0], s, forward, cur_range, return_code);
+            INFO("Forward return_code_ends=" << return_code)
+            read_ranges.push_back(cur_range);
+        } else {
+            for (auto hits: sorted_bwa_hits){
+                PathRange cur_range;
+                cur_range.seq_start = hits.mapping_at(0).initial_range.start_pos;
+                cur_range.seq_end = hits.mapping_at(hits.size() - 1).initial_range.end_pos;
+                cur_range.edge_start = hits.mapping_at(0).mapped_range.start_pos;
+                cur_range.edge_end = hits.mapping_at(hits.size() - 1).mapped_range.end_pos;
+                read_ranges.push_back(cur_range);
+            }
+        }
+        return AddGapDescriptions(start_clusters, end_clusters, sorted_edges, sorted_bwa_hits, read_ranges, s, block_gap_closer);
     }
 
     std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a,

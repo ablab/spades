@@ -35,13 +35,24 @@ public:
     virtual void SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
         string path_str = "";
         string path_len_str = "";
-        for (const auto &mappingpath : aligned_mappings.main_storage){
+        string seq_starts = "";
+        string seq_ends = "";
+        string edge_starts = "";
+        string edge_ends = "";
+        for (size_t j = 0; j < aligned_mappings.main_storage.size(); ++ j){
+            auto &mappingpath = aligned_mappings.main_storage[j];
             for (size_t i = 0; i < mappingpath.size(); ++ i) {
-                size_t mapping_start = i == 0? aligned_mappings.read_range.mapped_range.start_pos : 0;
-                size_t mapping_end = i == mappingpath.size() - 1?  aligned_mappings.read_range.mapped_range.end_pos - aligned_mappings.read_range.mapped_range.start_pos :g_.length(mappingpath[i]);
+                size_t mapping_start = i == 0? aligned_mappings.read_ranges[j].edge_start : 0;
+                size_t mapping_end = i == mappingpath.size() - 1?  aligned_mappings.read_ranges[j].edge_end :g_.length(mappingpath[i]);
                 path_str += std::to_string(mappingpath[i].int_id()) + ",";
+                //INFO("Edge mapping: " << mapping_start << " " << mapping_end)
+                //VERIFY(mapping_end > mapping_start);
                 path_len_str += std::to_string(mapping_end - mapping_start) + ",";
             }
+            seq_starts += std::to_string(aligned_mappings.read_ranges[j].seq_start) + ",";
+            seq_ends += std::to_string(aligned_mappings.read_ranges[j].seq_end) + ",";
+            edge_starts += std::to_string(aligned_mappings.read_ranges[j].edge_start) + ",";
+            edge_ends += std::to_string(aligned_mappings.read_ranges[j].edge_end) + ",";
             path_str += ";";
             path_len_str += ";";
         }
@@ -56,10 +67,10 @@ public:
             }
             bwa_path_str += ";";
         }
-        string str = read.name() + "\t" + std::to_string(aligned_mappings.read_range.initial_range.start_pos) + "\t" 
-                                 + std::to_string(aligned_mappings.read_range.initial_range.end_pos) + "\t"
-                                 + std::to_string(aligned_mappings.read_range.mapped_range.start_pos) + "\t" 
-                                 + std::to_string(aligned_mappings.read_range.mapped_range.end_pos - aligned_mappings.read_range.mapped_range.start_pos) + "\t" 
+        string str = read.name() + "\t" + seq_starts + "\t" 
+                                 + seq_ends + "\t"
+                                 + edge_starts + "\t" 
+                                 + edge_ends + "\t" 
                                  + std::to_string(read.sequence().size())+  "\t" + path_str + "\t" + path_len_str + "\t" + bwa_path_str + "\n";
         DEBUG("Read " << read.name() << " aligned and length=" << read.sequence().size());
         DEBUG("Read " << read.name() << ". Paths with ends: " << path_str );
