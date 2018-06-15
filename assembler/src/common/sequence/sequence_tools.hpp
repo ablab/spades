@@ -29,7 +29,7 @@ inline const std::string Complement(const std::string &s) {
 //Uses edlib; returns std::numeric_limits<int>::max() for too distant string
 int StringDistance(const std::string &a, const std::string &b, int max_score = -1);
 
-void SHWDistanceFull(string &target, string &query, int max_score, vector<int> &positions, vector<int> &scores);
+void SHWDistanceFull(const string &target, const string &query, int max_score, vector<int> &positions, vector<int> &scores);
 
 int SHWDistance(const string &a, const string &b, int max_score, int &end_pos);
 
@@ -69,7 +69,7 @@ inline bool Relax(int& val, int new_val) {
 inline std::pair<size_t, size_t> LocalSimilarity(const Sequence& s1, const Sequence& s2) {
     size_t m = s1.size();
     size_t n = s2.size();
-  std::vector<std::vector<int>> a(m + 1);
+    std::vector<std::vector<int>> a(m + 1);
     for (size_t i = 0; i <= m; ++i) {
         a[i].resize(n + 1);
     }
@@ -109,14 +109,14 @@ inline std::pair<size_t, size_t> LocalSimilarity(const Sequence& s1, const Seque
     while (a[i][j] > 0) {
         if (a[i][j] == a[i][j - 1] - 1) {
             j--;
-        } else if (a[i][j] == a[i-1][j] - 1) {
+        } else if (a[i][j] == a[i - 1][j] - 1) {
             i--;
-        } else if (a[i][j] == a[i-1][j-1] + 1) {
-            VERIFY(s1[i-1] == s2[j-1]);
+        } else if (a[i][j] == a[i - 1][j - 1] + 1) {
+            VERIFY(s1[i - 1] == s2[j - 1]);
             i--;
             j--;
         } else {
-            VERIFY(a[i-1][j-1] - 1 == a[i][j] && s1[i-1] != s2[j-1]);
+            VERIFY(a[i - 1][j - 1] - 1 == a[i][j] && s1[i - 1] != s2[j - 1]);
             i--;
             j--;
         }
@@ -136,16 +136,16 @@ private:
     size_t lower_length_;
 public:
     UniformPositionAligner(size_t upper_length, size_t lower_length) :
-            upper_length_(upper_length), lower_length_(lower_length) {
+        upper_length_(upper_length), lower_length_(lower_length) {
     }
 
     size_t GetPosition(size_t upper_position) {
         if (upper_position * 2 + 1 >= upper_length_)
             return (2 * upper_position + 1) * lower_length_
-                    / (2 * upper_length_);
+                   / (2 * upper_length_);
         else
             return lower_length_ - 1
-                    - GetPosition(upper_length_ - 1 - upper_position);
+                   - GetPosition(upper_length_ - 1 - upper_position);
     }
 };
 
@@ -163,7 +163,7 @@ public:
         if (lower_length_ == 1)
             return 1;
         return (2 * upper_position * lower_length_ + upper_length_)
-            / (2 * upper_length_);
+               / (2 * upper_length_);
     }
 };
 

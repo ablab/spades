@@ -782,9 +782,9 @@ public:
         auto reached_vertices = path_searcher.ProcessedVertices();
 
         std::map<VertexId, size_t> vertex_pathlen;
-        for (auto j_iter = reached_vertices_b.begin(); j_iter != reached_vertices_b.end(); ++j_iter) {
-                if (reached_vertices.count(*j_iter) > 0){
-                        vertex_pathlen[*j_iter] = path_searcher_b.GetDistance(*j_iter);
+        for (auto v: reached_vertices_b) {
+                if (reached_vertices.count(v) > 0){
+                        vertex_pathlen[v] = path_searcher_b.GetDistance(v);
                 }
         }
         Sequence ss = s.Subseq(seq_start_pos, min(seq_end_pos, int(s.size()) ));

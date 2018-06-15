@@ -1,6 +1,20 @@
 #include "edlib/edlib.h"
 #include "sequence_tools.hpp"
 
+static edlib::EdlibEqualityPair additionalEqualities[36] = {{'U', 'T'}
+    , {'R', 'A'}, {'R', 'G'}
+    , {'Y', 'C'}, {'Y', 'T'}, {'Y', 'U'}
+    , {'K', 'G'}, {'K', 'T'}, {'K', 'U'}
+    , {'M', 'A'}, {'M', 'C'}
+    , {'S', 'C'}, {'S', 'G'}
+    , {'W', 'A'}, {'W', 'T'}, {'W', 'U'}
+    , {'B', 'C'}, {'B', 'G'}, {'B', 'T'}, {'B', 'U'}
+    , {'D', 'A'}, {'D', 'G'}, {'D', 'T'}, {'D', 'U'}
+    , {'H', 'A'}, {'H', 'C'}, {'H', 'T'}, {'H', 'U'}
+    , {'V', 'A'}, {'V', 'C'}, {'V', 'G'}
+    , {'N', 'A'}, {'N', 'C'}, {'N', 'G'}, {'N', 'T'}, {'N', 'U'}
+};
+
 int StringDistance(const std::string &a, const std::string &b, int max_score) {
     int a_len = (int) a.length();
     int b_len = (int) b.length();
@@ -15,25 +29,14 @@ int StringDistance(const std::string &a, const std::string &b, int max_score) {
         }
     }
     if (max_score == -1) {
-        max_score = 2*d;
+        max_score = 2 * d;
     }
     // DEBUG(a_len << " " << b_len << " " << d);
-    edlib::EdlibEqualityPair additionalEqualities[36] = {{'U', 'T'}
-                                                , {'R', 'A'}, {'R', 'G'}
-                                                , {'Y', 'C'}, {'Y', 'T'}, {'Y', 'U'}
-                                                , {'K', 'G'}, {'K', 'T'}, {'K', 'U'}
-                                                , {'M', 'A'}, {'M', 'C'}
-                                                , {'S', 'C'}, {'S', 'G'}
-                                                , {'W', 'A'}, {'W', 'T'}, {'W', 'U'}
-                                                , {'B', 'C'}, {'B', 'G'}, {'B', 'T'}, {'B', 'U'}
-                                                , {'D', 'A'}, {'D', 'G'}, {'D', 'T'}, {'D', 'U'}
-                                                , {'H', 'A'}, {'H', 'C'}, {'H', 'T'}, {'H', 'U'}
-                                                , {'V', 'A'}, {'V', 'C'}, {'V', 'G'}
-                                                , {'N', 'A'}, {'N', 'C'}, {'N', 'G'}, {'N', 'T'}, {'N', 'U'} };
+
     edlib::EdlibAlignResult result = edlib::edlibAlign(a.c_str(), a_len,
-                                                       b.c_str(), b_len,
-                                                       edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
-                                                                                  additionalEqualities, 36));
+                                     b.c_str(), b_len,
+                                     edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
+                                             additionalEqualities, 36));
     int score = std::numeric_limits<int>::max();
     if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
         score = result.editDistance;
@@ -43,37 +46,25 @@ int StringDistance(const std::string &a, const std::string &b, int max_score) {
 }
 
 
-void SHWDistanceFull(string &target, string &query, int max_score, vector<int> &positions, vector<int> &scores) {
-    if (query.size() == 0){
+void SHWDistanceFull(const string &target, const string &query, int max_score, vector<int> &positions, vector<int> &scores) {
+    if (query.size() == 0) {
         for (int i = 0; i < min(max_score, (int) target.size()); ++ i) {
             positions.push_back(i);
             scores.push_back(i + 1);
         }
         return;
     }
-    if (target.size() == 0){
+    if (target.size() == 0) {
         if (query.size() <= max_score) {
-        positions.push_back(0);
+            positions.push_back(0);
             scores.push_back(query.size());
         }
         return;
     }
     VERIFY(target.size() > 0)
-    edlib::EdlibEqualityPair additionalEqualities[36] = {{'U', 'T'}
-                                        , {'R', 'A'}, {'R', 'G'}
-                                        , {'Y', 'C'}, {'Y', 'T'}, {'Y', 'U'}
-                                        , {'K', 'G'}, {'K', 'T'}, {'K', 'U'}
-                                        , {'M', 'A'}, {'M', 'C'}
-                                        , {'S', 'C'}, {'S', 'G'}
-                                        , {'W', 'A'}, {'W', 'T'}, {'W', 'U'}
-                                        , {'B', 'C'}, {'B', 'G'}, {'B', 'T'}, {'B', 'U'}
-                                        , {'D', 'A'}, {'D', 'G'}, {'D', 'T'}, {'D', 'U'}
-                                        , {'H', 'A'}, {'H', 'C'}, {'H', 'T'}, {'H', 'U'}
-                                        , {'V', 'A'}, {'V', 'C'}, {'V', 'G'}
-                                        , {'N', 'A'}, {'N', 'C'}, {'N', 'G'}, {'N', 'T'}, {'N', 'U'} };
     edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), (int) query.size(), target.c_str(), (int) target.size()
-                                                   , edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_SHW_FULL, edlib::EDLIB_TASK_DISTANCE,
-                                                                         additionalEqualities, 36));
+                                     , edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_SHW_FULL, edlib::EDLIB_TASK_DISTANCE,
+                                             additionalEqualities, 36));
     if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
         positions.reserve(result.numLocations);
         scores.reserve(result.numLocations);
@@ -93,21 +84,9 @@ int SHWDistance(const string &a, const string &b, int max_score, int &end_pos) {
     int b_len = (int) b.length();
     VERIFY(a_len > 0);
     VERIFY(b_len > 0);
-    edlib::EdlibEqualityPair additionalEqualities[36] = {{'U', 'T'}
-                                            , {'R', 'A'}, {'R', 'G'}
-                                            , {'Y', 'C'}, {'Y', 'T'}, {'Y', 'U'}
-                                            , {'K', 'G'}, {'K', 'T'}, {'K', 'U'}
-                                            , {'M', 'A'}, {'M', 'C'}
-                                            , {'S', 'C'}, {'S', 'G'}
-                                            , {'W', 'A'}, {'W', 'T'}, {'W', 'U'}
-                                            , {'B', 'C'}, {'B', 'G'}, {'B', 'T'}, {'B', 'U'}
-                                            , {'D', 'A'}, {'D', 'G'}, {'D', 'T'}, {'D', 'U'}
-                                            , {'H', 'A'}, {'H', 'C'}, {'H', 'T'}, {'H', 'U'}
-                                            , {'V', 'A'}, {'V', 'C'}, {'V', 'G'}
-                                            , {'N', 'A'}, {'N', 'C'}, {'N', 'G'}, {'N', 'T'}, {'N', 'U'} };
     edlib::EdlibAlignResult result = edlib::edlibAlign(a.c_str(), a_len, b.c_str(), b_len
-                                                   , edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_SHW, edlib::EDLIB_TASK_DISTANCE,
-                                                                         additionalEqualities, 36));
+                                     , edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_SHW, edlib::EDLIB_TASK_DISTANCE,
+                                             additionalEqualities, 36));
     int score = std::numeric_limits<int>::max();
     if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
         if (result.numLocations > 0) {
