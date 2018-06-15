@@ -73,8 +73,9 @@ class DataLoader:
         res = {}
         fin = open(filename, "r")
         bwa_num = 0
+        cnt_empty = 0
         for ln in fin.readlines():
-            cur_read, seq_start, seq_end, e_start, e_end, rlen, path, edgelen, bwa_path_dirty = ln.strip().split("\t")
+            cur_read, seq_starts, seq_ends, e_starts, e_ends, rlen, path, edgelen, bwa_path_dirty = ln.strip().split("\t")
             cur_read = cur_read.split(" ")[0]
             bwa_path = []
             edgelen_lst =[int(x) for x in edgelen.replace(";", "").split(",")[:-1]]
@@ -91,11 +92,23 @@ class DataLoader:
                     bwa_path.append(x.split()[0])
                 ranges.append({"start": int(x.split("[")[1].split(",")[0]), "end": int(x.split("[")[1].split(",")[1])})
                 edge_ranges.append({"start": int(x.split("(")[1].split(",")[0]), "end": int(x.split("(")[1].split(",")[1].split(")")[0])})
+            initial_s = [int(x) for x in seq_starts.split(",")[:-1]] if "," in seq_starts else [int(seq_starts)]
+            initial_e = [int(x) for x in seq_ends.split(",")[:-1]] if "," in seq_ends else [int(seq_ends)]
+            mapped_s = [int(x) for x in e_starts.split(",")[:-1]] if "," in e_starts else [int(e_starts)]
+            mapped_e = [int(x) for x in e_ends.split(",")[:-1]] if "," in e_ends else [int(e_ends)]
+            mapped_len = 0
+            for i in xrange(len(initial_s)):
+                mapped_len += initial_e[i] - initial_s[i]
             res[cur_read] = { "len": rlen, "path": path.split(",")[:-1], "bwa_path": bwa_path, "edgelen": edgelen.split(",")[:-1], \
-                                "initial_s":int(seq_start), "initial_e":int(seq_end), 
-                                "mapped_s":int(e_start), "mapped_e":int(e_end), "seq_ranges": ranges, "edge_ranges": edge_ranges, "empty": empty - 1}
+                                "initial_s": initial_s, "initial_e": initial_e, 
+                                "mapped_s": mapped_s, "mapped_e": mapped_e, 
+                                "mapped_len": mapped_len, 
+                                "seq_ranges": ranges, "edge_ranges": edge_ranges, "empty": empty - 1}
+            if empty - 1 > 0:
+                cnt_empty += 1
         fin.close()
         print "Number of edges detected by bwa:", bwa_num
+        print "gapped=", cnt_empty
         return res
 
 

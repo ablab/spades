@@ -54,8 +54,17 @@ class TableValuesCounter:
         cnt = 0
         for r in alignedsubpath.keys():
             p = alignedsubpath[r]
-            if (p["mapped_e"] - p["mapped_s"])*100/len(reads[r]) > 80:
+            if (p["mapped_len"])*100/len(reads[r]) > 80:
                 cnt += 1
+        return self.make_str(cnt,self.total)
+
+    def get_gapped_cnt(self, alignedpaths):
+        cnt = 0
+        for r in alignedpaths.keys():
+            p = alignedpaths[r]
+            if p["empty"] > 0:
+                cnt += 1
+        print cnt
         return self.make_str(cnt,self.total)
 
 
@@ -67,6 +76,7 @@ def count_table_values(reads, alignedpaths, badideal, notmapped, path_problems, 
     res = OrderedDict([
                  ("Total number of reads", tc.get_total_num()),\
                  ("Mapped with GAligner (#reads)", tc.get_mapped_num(notmapped)),\
+                 ("Mapping isn't continiousq (#reads)", tc.get_gapped_cnt(alignedpaths)),\
                  ("Path is not equal to true path (#reads)", tc.get_badly_mapped_num(path_problems)),\
                  ("Path with BWA/Gap problems (#reads)", tc.get_bwagap_problems_num(len(badlyaligned))),\
                  ("Path is wrong. BWA hits uncertainty (#reads)", tc.bwa_hits_uncertanity(gaps_cnt_stats["unknown_num"] - bwa_problems)),\
@@ -114,7 +124,7 @@ def get_name(path):
         res += "restore_ends; "
     if "_ideal_" in name:
         res += "ideal_reads; "
-    return res
+    return name
 
 def save_html(s, fl):
     with open(fl, "w") as fout:
