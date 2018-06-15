@@ -113,7 +113,7 @@ void PredicateScaffoldGraphFilter::ConstructFromGraphAndPredicate(const Scaffold
             }
             ++counter;
             if (block_size != 0 and counter % block_size == 0) {
-                INFO("Processed " << counter << " edges out of " << scaffold_edges.size());
+                DEBUG("Processed " << counter << " edges out of " << scaffold_edges.size());
             }
         }
     }
@@ -160,7 +160,7 @@ void ScoreFunctionScaffoldGraphFilter::ConstructFromGraphAndScore(const Scaffold
             TRACE("Edge added");
             ++counter;
             if (counter % block_size == 0) {
-                INFO("Processed " << counter << " edges out of " << scaffold_edges.size());
+                DEBUG("Processed " << counter << " edges out of " << scaffold_edges.size());
             }
         }
     }
@@ -224,7 +224,7 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
             }
             ++counter;
             if (counter % block_size == 0) {
-                INFO("Processed " << counter << " vertices out of " << vertices_copy.size());
+                DEBUG("Processed " << counter << " vertices out of " << vertices_copy.size());
             }
         }
     }

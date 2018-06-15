@@ -18,8 +18,8 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParams(
     size_t min_length_for_barcode_collection = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
 
     //fixme move to configs
-    const double initial_distance_percentile = 0.99;
-    const double score_percentile = 0.01;
+    const double initial_distance_percentile = 0.85;
+    const double score_percentile = 0.002;
 
     size_t initial_distance = primary_extractor.GetLengthPercentile(initial_distance_percentile);
     auto score_estimation_params = GetScoreEstimationParams(g, primary_extractor, score_percentile);
@@ -39,15 +39,17 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
         size_t unique_edge_length,
         size_t max_threads) const {
     auto threshold_estimator_params = params.score_estimation_params_;
+    const size_t min_training_length = 4 * unique_edge_length + threshold_estimator_params.max_cluster_gap_;
+    INFO("Setting min training length: " << min_training_length);
     ShortEdgeScoreThresholdEstimatorFactory threshold_estimator_factory(g, barcode_extractor,
-                                                                        threshold_estimator_params.training_edge_length_threshold_,
+                                                                        min_training_length,
                                                                         unique_edge_length,
                                                                         threshold_estimator_params.max_cluster_gap_,
                                                                         threshold_estimator_params.score_percentile_,
                                                                         max_threads);
     auto score_threshold_estimator = threshold_estimator_factory.GetThresholdEstimator();
     //fixme magic
-    auto connection_score_threshold = score_threshold_estimator->GetThreshold() * 0.7;
+    auto connection_score_threshold = score_threshold_estimator->GetThreshold() * 0.5;
     
     double relative_coverage_threshold = cfg::get().ts_res.scaff_con.relative_coverage_threshold;
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
@@ -127,8 +129,7 @@ CloudScaffoldGraphConstructionPipeline BasicScaffoldGraphPipelineConstructor::Co
     INFO("Constructing scaffold graph with length threshold " << min_length_);
     path_extend::ScaffolderParamsConstructor params_constructor;
 
-    cluster_model::ClusterStatisticsExtractorHelper extractor_helper(gp_, max_threads_);
-    auto cluster_statistics_extractor = extractor_helper.GetStatisticsExtractor();
+    path_extend::cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor(gp_.read_cloud_distribution_pack);
     auto params = params_constructor.ConstructScaffolderParams(gp_.g, min_length_, cluster_statistics_extractor);
     auto initial_constructor =
         make_shared<path_extend::scaffold_graph::UniqueScaffoldGraphConstructor>(gp_.g,
@@ -160,8 +161,7 @@ CloudScaffoldGraphConstructionPipeline GapScaffoldGraphPipelineConstructor::Cons
         const set<ScaffoldGraphPipelineConstructor::ScaffoldVertex> &scaffold_vertices) const {
     INFO("Constructing scaffold graph with length threshold " << min_length_);
     path_extend::ScaffolderParamsConstructor params_constructor;
-    cluster_model::ClusterStatisticsExtractorHelper extractor_helper(gp_, max_threads_);
-    auto cluster_statistics_extractor = extractor_helper.GetStatisticsExtractor();
+    path_extend::cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor(gp_.read_cloud_distribution_pack);
     auto params = params_constructor.ConstructScaffolderParams(gp_.g, min_length_, cluster_statistics_extractor);
     auto initial_constructor = GetInitialConstructor(params, scaffold_vertices);
     auto iterative_constructor_callers = ConstructStages(params, scaffold_vertices);

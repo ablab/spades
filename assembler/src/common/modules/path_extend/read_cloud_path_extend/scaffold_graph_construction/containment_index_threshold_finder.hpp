@@ -157,18 +157,20 @@ namespace path_extend {
         size_t min_distance_;
         size_t max_distance_;
         double score_percentile_;
+        double default_threshold_;
         size_t max_threads_;
 
      public:
         LabeledDistributionThresholdEstimator(const Graph &g_,
-                                           shared_ptr<SegmentBarcodeScoreFunction> segment_score_function_,
-                                           size_t edge_length_threshold_,
-                                           size_t left_block_length,
-                                           size_t right_block_length,
-                                           size_t min_distance_,
-                                           size_t max_distance_,
-                                           double score_percentile,
-                                           size_t max_threads);
+                                              shared_ptr<SegmentBarcodeScoreFunction> segment_score_function_,
+                                              size_t edge_length_threshold_,
+                                              size_t left_block_length,
+                                              size_t right_block_length,
+                                              size_t min_distance_,
+                                              size_t max_distance_,
+                                              double score_percentile,
+                                              double default_threshold,
+                                              size_t max_threads);
 
         double GetThreshold() const override;
 

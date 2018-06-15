@@ -3,7 +3,6 @@
 #include "barcode_info_extractor.hpp"
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/utility/result_of.hpp>
-#include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/simple_graph.hpp"
 #include "common/barcode_index/scaffold_vertex_index.hpp"
@@ -1063,58 +1062,58 @@ class GraphClusterStorageBuilder {
     DECL_LOGGER("GraphClusterStorageBuilder");
 };
 
-class ClusterStorageHelper {
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
-    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
-
-    const Graph &g_;
-    shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
-    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
-    const uint64_t distance_threshold_;
-    const size_t min_read_threshold_;
-    const size_t num_threads_;
-
- public:
-    ClusterStorageHelper(const Graph& g_,
-                         const shared_ptr<FrameBarcodeIndexInfoExtractor>& barcode_extractor_ptr_,
-                         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_,
-                         const uint64_t distance_threshold_,
-                         const size_t min_read_threshold_,
-                         const size_t num_threads_)
-        : g_(g_),
-          barcode_extractor_ptr_(barcode_extractor_ptr_),
-          unique_storage_(unique_storage_),
-          distance_threshold_(distance_threshold_),
-          min_read_threshold_(min_read_threshold_),
-          num_threads_(num_threads_) {}
-
-    ClusterStorage ConstructClusterStorage(const ScaffoldGraph& scaffold_graph) {
-        std::set<ScaffoldVertex> target_vertices;
-        for (const EdgeId& edge: unique_storage_.unique_edges()) {
-            ScaffoldVertex vertex(edge);
-            target_vertices.insert(vertex);
-        }
-        EdgeInitialClusterStorageBuilder initial_builder(g_, barcode_extractor_ptr_, target_vertices, distance_threshold_,
-                                                     min_read_threshold_, num_threads_);
-        GraphClusterStorageBuilder graph_builder(g_, barcode_extractor_ptr_, distance_threshold_);
-
-        INFO("Constructing initial cluster storage");
-        InitialClusterStorage initial_cluster_storage = initial_builder.ConstructInitialClusterStorage();
-        INFO("Initial cluster storage size: " << initial_cluster_storage.get_cluster_storage().Size());
-        return graph_builder.ConstructClusterStorage(initial_cluster_storage, BuildSimpleGraphFromScaffoldGraph(scaffold_graph));
-    }
-
-    path_extend::SimpleGraph<ScaffoldVertex> BuildSimpleGraphFromScaffoldGraph(const ScaffoldGraph& scaffold_graph) {
-        path_extend::SimpleGraph<ScaffoldVertex> result;
-        for (const auto& vertex: scaffold_graph.vertices()) {
-            result.AddVertex(vertex);
-        }
-        for (const ScaffoldGraph::ScaffoldEdge& edge: scaffold_graph.edges()) {
-            result.AddEdge(edge.getStart(), edge.getEnd());
-        }
-        return result;
-    }
-};
+//class ClusterStorageHelper {
+//    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+//    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+//
+//    const Graph &g_;
+//    shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
+//    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
+//    const uint64_t distance_threshold_;
+//    const size_t min_read_threshold_;
+//    const size_t num_threads_;
+//
+// public:
+//    ClusterStorageHelper(const Graph& g_,
+//                         const shared_ptr<FrameBarcodeIndexInfoExtractor>& barcode_extractor_ptr_,
+//                         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_,
+//                         const uint64_t distance_threshold_,
+//                         const size_t min_read_threshold_,
+//                         const size_t num_threads_)
+//        : g_(g_),
+//          barcode_extractor_ptr_(barcode_extractor_ptr_),
+//          unique_storage_(unique_storage_),
+//          distance_threshold_(distance_threshold_),
+//          min_read_threshold_(min_read_threshold_),
+//          num_threads_(num_threads_) {}
+//
+//    ClusterStorage ConstructClusterStorage(const ScaffoldGraph& scaffold_graph) {
+//        std::set<ScaffoldVertex> target_vertices;
+//        for (const EdgeId& edge: unique_storage_.unique_edges()) {
+//            ScaffoldVertex vertex(edge);
+//            target_vertices.insert(vertex);
+//        }
+//        EdgeInitialClusterStorageBuilder initial_builder(g_, barcode_extractor_ptr_, target_vertices, distance_threshold_,
+//                                                     min_read_threshold_, num_threads_);
+//        GraphClusterStorageBuilder graph_builder(g_, barcode_extractor_ptr_, distance_threshold_);
+//
+//        INFO("Constructing initial cluster storage");
+//        InitialClusterStorage initial_cluster_storage = initial_builder.ConstructInitialClusterStorage();
+//        INFO("Initial cluster storage size: " << initial_cluster_storage.get_cluster_storage().Size());
+//        return graph_builder.ConstructClusterStorage(initial_cluster_storage, BuildSimpleGraphFromScaffoldGraph(scaffold_graph));
+//    }
+//
+//    path_extend::SimpleGraph<ScaffoldVertex> BuildSimpleGraphFromScaffoldGraph(const ScaffoldGraph& scaffold_graph) {
+//        path_extend::SimpleGraph<ScaffoldVertex> result;
+//        for (const auto& vertex: scaffold_graph.vertices()) {
+//            result.AddVertex(vertex);
+//        }
+//        for (const ScaffoldGraph::ScaffoldEdge& edge: scaffold_graph.edges()) {
+//            result.AddEdge(edge.getStart(), edge.getEnd());
+//        }
+//        return result;
+//    }
+//};
 
 }
 

@@ -28,6 +28,7 @@
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "common/modules/alignment/rna/ss_coverage.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/fragment_model/distribution_extractor.hpp"
 
 namespace debruijn_graph {
 
@@ -59,6 +60,8 @@ struct graph_pack: private boost::noncopyable {
 
     std::shared_ptr <BMapper> barcode_mapper_ptr;
     path_extend::ScaffoldGraphStorage scaffold_graph_storage;
+  //todo merge it with LibData
+    path_extend::cluster_model::DistributionPack read_cloud_distribution_pack;
 
     GenomeStorage genome;
     EdgeQuality<Graph> edge_qual;
@@ -84,6 +87,7 @@ struct graph_pack: private boost::noncopyable {
               ss_coverage(lib_count, SSCoverageStorage(g)),
               barcode_mapper_ptr(),
               scaffold_graph_storage(g),
+              read_cloud_distribution_pack(),
               genome(genome),
               edge_qual(g),
               edge_pos(g, max_mapping_gap + k, max_gap_diff),

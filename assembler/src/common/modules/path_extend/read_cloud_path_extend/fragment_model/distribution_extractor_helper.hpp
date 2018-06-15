@@ -1,6 +1,7 @@
 #pragma once
 
 #include "distribution_extractor.hpp"
+#include "common/pipeline/graph_pack.hpp"
 
 namespace path_extend {
 namespace cluster_model {
@@ -275,18 +276,22 @@ class ClusterDistributionExtractor {
 };
 
 class ClusterStatisticsExtractor {
-    shared_ptr<DistributionPack> cluster_distributions_;
+    DistributionPack cluster_distributions_;
 
  public:
-    explicit ClusterStatisticsExtractor(shared_ptr<DistributionPack> cluster_distributions) :
+    explicit ClusterStatisticsExtractor(const DistributionPack &cluster_distributions) :
         cluster_distributions_(cluster_distributions) {}
 
+    DistributionPack GetDistributionPack() {
+        return cluster_distributions_;
+    }
+
     size_t GetLengthPercentile(double percent) {
-        return GetPercentile(cluster_distributions_->length_distribution_, percent);
+        return GetPercentile(cluster_distributions_.length_distribution_, percent);
     }
 
     double GetCoveragePercentile(double percent) {
-        return GetPercentile(cluster_distributions_->coverage_distribution_, percent);
+        return GetPercentile(cluster_distributions_.coverage_distribution_, percent);
     }
 
  private:
@@ -325,8 +330,7 @@ class ClusterStatisticsExtractorHelper {
                                                                                        min_training_length,
                                                                                        min_cluster_offset,
                                                                                        cfg::get().max_threads);
-        auto cluster_distribution_pack =
-            make_shared<cluster_model::DistributionPack>(distribution_analyzer.GetClusterDistributions());
+        auto cluster_distribution_pack = distribution_analyzer.GetClusterDistributions();
         cluster_model::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
         return primary_parameters_extractor;
     }

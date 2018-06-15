@@ -43,6 +43,8 @@ shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> BarcodeScoreCo
     copy(scaffold_graph.vbegin(), scaffold_graph.vend(), back_inserter(scaffold_vertices));
 
     auto threshold_estimator_params = params.score_estimation_params_;
+    size_t min_training_length = 4 * params.length_threshold_ + threshold_estimator_params.max_cluster_gap_;
+    INFO("Min training length: " << min_training_length);
 
     LongEdgeScoreThresholdEstimatorFactory threshold_estimator_factory(g_, raw_barcode_extractor_,
                                                                        threshold_estimator_params.training_edge_length_threshold_,

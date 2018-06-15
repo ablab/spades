@@ -294,7 +294,7 @@ FilteredReferencePathHelper::FilteredReferencePathHelper(const conj_graph_pack& 
 vector<vector<EdgeWithMapping>> FilteredReferencePathHelper::GetFilteredReferencePathsFromLength(const string& path_to_reference,
                                                                                                  size_t length_threshold) {
     path_extend::ScaffoldingUniqueEdgeStorage unique_storage;
-    path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, length_threshold, 100);
+    path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, length_threshold, 1000);
     unique_edge_analyzer.FillUniqueEdgeStorage(unique_storage);
     path_extend::validation::ContigPathBuilder contig_path_builder(gp_);
 

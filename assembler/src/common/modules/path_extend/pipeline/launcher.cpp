@@ -483,20 +483,8 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             auto barcode_extractor_ptr =
                 std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
             path_extend::ScaffolderParamsConstructor params_constructor;
-
-            const size_t min_training_length = 50000;
-            const size_t min_cluster_offset = 10000;
-            const size_t min_read_threshold = 5;
-
             size_t max_threads = cfg::get().max_threads;
-
-            path_extend::cluster_model::ClusterDistributionExtractor distribution_analyzer(gp_,
-                                                                                           min_read_threshold,
-                                                                                           min_training_length,
-                                                                                           min_cluster_offset,
-                                                                                           max_threads);
-            auto cluster_distribution_pack =
-                make_shared<cluster_model::DistributionPack>(distribution_analyzer.GetClusterDistributions());
+            auto cluster_distribution_pack = gp_.read_cloud_distribution_pack;
             cluster_model::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
 
             //fixme configs
@@ -609,8 +597,7 @@ void PathExtendLauncher::Launch() {
     //todo discuss
     if (cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
         const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
-        cluster_model::ClusterStatisticsExtractorHelper cluster_extractor_helper(gp_, cfg::get().max_threads);
-        auto cluster_statistics_extractor = cluster_extractor_helper.GetStatisticsExtractor();
+        cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor(gp_.read_cloud_distribution_pack);
         cluster_model::UpperLengthBoundEstimator length_bound_estimator;
         size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor);
 

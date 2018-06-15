@@ -1704,6 +1704,12 @@ class ScaffoldGraphExtender: public PathExtender {
                 return false;
             }
             ScaffoldEdge connection = outgoing_edges.back();
+            ScaffoldVertex target = connection.getEnd();
+            auto incoming_edges = scaffold_graph_.IncomingEdges(target);
+            if (incoming_edges.size() != 1) {
+                DEBUG("Non-univocal connection, stop extending");
+                return false;
+            }
             Gap gap(static_cast<int>(connection.getLength()));
             ScaffoldVertex next_vertex = connection.getEnd();
             scaffold_graph::ScaffoldVertexT type = next_vertex.getType();

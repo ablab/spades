@@ -10,7 +10,7 @@ class ScaffoldGraphConstructionStage : public spades::AssemblyStage {
     }
 
     void run(debruijn_graph::conj_graph_pack &graph_pack, const char *);
-    DECL_LOGGER("ReadCloudStatisticsStage")
+    DECL_LOGGER("ScaffoldGraphConstructionStage")
 };
 
 } //debruijn_graph

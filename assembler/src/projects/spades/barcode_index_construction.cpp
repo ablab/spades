@@ -1,7 +1,7 @@
 #include "barcode_index_construction.hpp"
 #include <vector>
 #include <common/barcode_index/barcode_info_extractor.hpp>
-
+#include "common/modules/path_extend/read_cloud_path_extend/fragment_model/distribution_extractor_helper.hpp"
 namespace debruijn_graph {
     //todo remove from here!
 
@@ -40,5 +40,11 @@ namespace debruijn_graph {
         INFO("Barcode index construction finished.");
         FrameBarcodeIndexInfoExtractor extractor(graph_pack.barcode_mapper_ptr, graph_pack.g);
         INFO("Average barcode coverage: " + std::to_string(extractor.AverageBarcodeCoverage()));
+        INFO("Estimating read cloud statistics using long edges");
+        path_extend::cluster_model::ClusterStatisticsExtractorHelper cluster_extractor_helper(graph_pack,
+                                                                                              cfg::get().max_threads);
+        auto cluster_statistics_extractor = cluster_extractor_helper.GetStatisticsExtractor();
+        auto distribution_pack = cluster_statistics_extractor.GetDistributionPack();
+        graph_pack.read_cloud_distribution_pack = distribution_pack;
     }
 }

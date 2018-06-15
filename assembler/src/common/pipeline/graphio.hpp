@@ -29,6 +29,7 @@
 #include <cstdio>
 #include "common/barcode_index/barcode_index_builder.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/fragment_model/distribution_extractor.hpp"
 
 namespace debruijn_graph {
 
@@ -855,6 +856,13 @@ void PrintScaffoldGraphStorage(const string& file_name, DataPrinter<typename gra
     printer.SaveScaffoldGraphStorage(file_name, gp.scaffold_graph_storage);
 }
 
+template <class graph_pack>
+void PrintReadCloudDistributions(const string& file_name, const graph_pack& gp) {
+    const string full_name = file_name + ".cldist";
+    ofstream fout(full_name);
+    fout << gp.read_cloud_distribution_pack;
+}
+
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp) {
     ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g, gp.g.begin(), gp.g.end());
@@ -865,6 +873,7 @@ void PrintAll(const string& file_name, const graph_pack& gp) {
     PrintSingleLongReads(file_name, gp.single_long_reads);
     PrintBarcodeIndex(file_name, gp.barcode_mapper_ptr, gp.g);
     PrintScaffoldGraphStorage(file_name, printer, gp);
+    PrintReadCloudDistributions(file_name, gp);
     gp.ginfo.Save(file_name + ".ginfo");
 }
 
@@ -1008,9 +1017,22 @@ void ScanScaffoldGraphStorage(const string& file_name, DataScanner<Graph>& scann
 
 template <class Graph>
 void ScanBarcodeIndex(const string& file_name, DataScanner<Graph>& scanner, const Graph& g,
-                      std::shared_ptr<barcode_index::AbstractBarcodeIndex>& barcode_mapper_ptr,
-                      bool force_exists = true) {
+                      std::shared_ptr<barcode_index::AbstractBarcodeIndex>& barcode_mapper_ptr) {
     scanner.LoadBarcodeIndex(file_name, barcode_mapper_ptr, g);
+}
+
+template <class Graph>
+void ScanReadCloudDistributions(const string& file_name, path_extend::cluster_model::DistributionPack &distribution_pack,
+                                const Graph& g, bool force_exists = true) {
+    const string full_file_name = file_name + ".cldist";
+    bool file_exists = fs::check_existence(full_file_name);
+    if (force_exists) {
+        VERIFY(file_exists);
+    } else if (not file_exists) {
+        WARN(file_name << " was not found, skipping");
+    }
+    ifstream fin(full_file_name);
+    fin >> distribution_pack;
 }
 
 template<class Graph>
@@ -1116,8 +1138,9 @@ void ScanAll(const std::string& file_name, graph_pack& gp,
     ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);
     ScanScaffoldingIndices(file_name, scanner, gp.scaffolding_indices, force_exists);
     ScanSingleLongReads(file_name,  gp.single_long_reads);
+    ScanBarcodeIndex(file_name, scanner, gp.g, gp.barcode_mapper_ptr);
     ScanScaffoldGraphStorage(file_name, scanner, gp.scaffold_graph_storage, force_exists);
-    ScanBarcodeIndex(file_name, scanner, gp.g, gp.barcode_mapper_ptr, force_exists);
+    ScanReadCloudDistributions(file_name, gp.read_cloud_distribution_pack, gp.g, force_exists);
     gp.ginfo.Load(file_name + ".ginfo");
 }
 }

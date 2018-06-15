@@ -1399,7 +1399,7 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
         DEBUG("Applying top sort criteria");
         auto top_min_candidates = SelectTopMin(candidates_with_good_score, path_barcodes);
         DEBUG("Top min candidates: " << top_min_candidates.size());
-        if (top_min_candidates.size() == 1) {
+        if (top_min_candidates.size() == 1 or top_min_candidates.size() == 0) {
             return top_min_candidates;
         }
         auto top_min_scores = UpdateCandidateToScore(top_min_candidates, candidate_to_score);

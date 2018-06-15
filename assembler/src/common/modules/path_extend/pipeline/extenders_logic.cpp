@@ -5,6 +5,7 @@
 #include "extenders_logic.hpp"
 #include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.hpp"
+#include "read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 
 namespace path_extend {
 
@@ -519,6 +520,20 @@ shared_ptr<ExtensionChooser> ExtendersGenerator::MakeSimpleExtensionChooser(size
 }
 shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender() const {
     const auto &scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
+    bool validate_using_reference = cfg::get().ts_res.debug_mode;
+    if (validate_using_reference) {
+        INFO("Resulting scaffold graph stats");
+        const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
+        DEBUG("Path to reference: " << path_to_reference);
+        DEBUG("Path exists: " << fs::check_existence(path_to_reference));
+        validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
+        validation::FilteredReferencePathHelper path_helper(gp_);
+        size_t length_threshold = gp_.scaffold_graph_storage.GetSmallLengthThreshold();
+        auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
+
+        auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
+        stats.Serialize(std::cout);
+    }
     INFO(scaffold_graph.VertexCount() << "vertices and " << scaffold_graph.EdgeCount()
                                      << "edges in scaffold graph");
 

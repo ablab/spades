@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/barcode_index/cluster_storage_extractor.hpp"
 #include "common/barcode_index/barcode_info_extractor.hpp"
+#include "common/barcode_index/cluster_storage.hpp"
 
 using namespace debruijn_graph;
 
@@ -53,9 +53,21 @@ class SimpleDistribution {
         return distribution_.end();
     }
 
-    friend std::ostream& operator<< (std::ostream& stream, const SimpleDistribution<T>& distribution) {
+    friend std::ostream& operator<< (std::ostream& stream, const SimpleDistribution<T> &distribution) {
+        stream << distribution.size() << '\n';
         for (const auto& element: distribution) {
             stream << element << '\t';
+        }
+        return stream;
+    }
+
+    friend std::istream& operator>> (std::istream& stream, SimpleDistribution<T> &distribution) {
+        size_t distribution_size;
+        stream >> distribution_size;
+        for (size_t i = 0; i < distribution_size; ++i) {
+            T element;
+            stream >> element;
+            distribution.add(element);
         }
         return stream;
     }
@@ -68,10 +80,28 @@ struct DistributionPack {
   ClusterLengthDistribution length_distribution_;
   ClusterCoverageDistribution coverage_distribution_;
 
+  DistributionPack() :
+    length_distribution_(), coverage_distribution_() {}
+
   DistributionPack(const ClusterLengthDistribution &length_distribution_,
                    const ClusterCoverageDistribution &coverage_distribution_) :
       length_distribution_(length_distribution_),
       coverage_distribution_(coverage_distribution_) {}
+
+  friend std::ostream& operator<< (std::ostream& stream, const DistributionPack &distribution_pack) {
+      stream << distribution_pack.length_distribution_ << "\n" << distribution_pack.coverage_distribution_;
+      return stream;
+  }
+
+  friend std::istream& operator>> (std::istream& stream, DistributionPack &distribution_pack) {
+      ClusterLengthDistribution length_distribution;
+      stream >> length_distribution;
+      ClusterCoverageDistribution coverage_distribution;
+      stream >> coverage_distribution;
+      distribution_pack.length_distribution_ = length_distribution;
+      distribution_pack.coverage_distribution_ = coverage_distribution;
+      return stream;
+  }
 };
 
 class SimpleDistributionExtractor {
