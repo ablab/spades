@@ -7,6 +7,10 @@
 
 #pragma once
 
+#include <algorithm>
+#include <vector>
+#include <set>
+
 #include "assembly_graph/index/edge_multi_index.hpp"
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
@@ -20,12 +24,8 @@
 
 #include "pipeline/configs/aligner_config.hpp"
 
-#include "pacbio_read_structures.hpp"
-#include "gap_dijkstra.hpp"
-
-#include <algorithm>
-#include <vector>
-#include <set>
+#include "modules/alignment/pacbio/pacbio_read_structures.hpp"
+#include "modules/alignment/pacbio/gap_dijkstra.hpp"
 
 namespace pacbio {
 enum {
@@ -73,14 +73,14 @@ private:
 
     alignment::BWAReadMapper<Graph> bwa_mapper_;
 
-    GapClosingConfig gap_cfg_;
+    gap_dijkstra::GapClosingConfig gap_cfg_;
 
 public:
 
     PacBioMappingIndex(const Graph &g,
                         debruijn_graph::config::pacbio_processor pb_config, 
                         alignment::BWAIndex::AlignmentMode mode, 
-                        GapClosingConfig gap_cfg=GapClosingConfig())
+                        gap_dijkstra::GapClosingConfig gap_cfg = gap_dijkstra::GapClosingConfig())
             : g_(g),
               pb_config_(pb_config),
               bwa_mapper_(g, mode, pb_config.bwa_length_cutoff),
@@ -313,7 +313,7 @@ public:
             return_code += 2;
             return;
         }
-        DijkstraEndsReconstructor algo = DijkstraEndsReconstructor(g_, gap_cfg_, ss.str(), start_e, start_pos, score);
+        gap_dijkstra::DijkstraEndsReconstructor algo = gap_dijkstra::DijkstraEndsReconstructor(g_, gap_cfg_, ss.str(), start_e, start_pos, score);
         algo.CloseGap();
         score = algo.GetEditDistance();
         return_code += algo.GetReturnCode();
@@ -818,7 +818,7 @@ public:
             }
             return vector<EdgeId>(0);
         }
-        DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, gap_cfg_, ss.str(), start_e, end_e, edge_start_pos, edge_end_pos, path_max_length, vertex_pathlen);
+        gap_dijkstra::DijkstraGapFiller gap_filler = gap_dijkstra::DijkstraGapFiller(g_, gap_cfg_, ss.str(), start_e, end_e, edge_start_pos, edge_end_pos, path_max_length, vertex_pathlen);
         gap_filler.CloseGap();
         score = gap_filler.GetEditDistance();
         return_code_dijkstra += gap_filler.GetReturnCode();

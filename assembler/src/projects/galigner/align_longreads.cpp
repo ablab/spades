@@ -57,7 +57,7 @@ struct GAlignerConfig {
     
     //path construction
     debruijn_graph::config::pacbio_processor pb;
-    pacbio::GapClosingConfig gap_cfg;
+    gap_dijkstra::GapClosingConfig gap_cfg;
 };
 
 }
@@ -115,7 +115,7 @@ public:
     BWASeedsAligner(const ConjugateDeBruijnGraph &g, 
                  const alignment::BWAIndex::AlignmentMode mode,
                  const debruijn_graph::config::pacbio_processor &pb,
-                 const pacbio::GapClosingConfig gap_cfg,
+                 const gap_dijkstra::GapClosingConfig gap_cfg,
                  const string output_file,
                  const string formats):
       g_(g),pac_index_(g_, pb, mode, gap_cfg), mapping_printer_hub_(g_, output_file, formats){
@@ -125,6 +125,7 @@ public:
 
     void AlignRead(const io::SingleRead &read){
         INFO("Read " << read.name() <<". Current Read")
+        utils::perf_counter pc;
         auto current_read_mapping = pac_index_.GetReadAlignment(read);
         const auto& aligned_mappings = current_read_mapping.main_storage;
     
@@ -142,6 +143,7 @@ public:
         {
             processed_reads ++;
         }
+        INFO("Read " << read.name() << " read_time=" << pc.time())
         return;
     } 
 
