@@ -5,9 +5,14 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/standard_base.hpp"
-#include "utils/stl_utils.hpp"
-#include "utils/logger/log_writers.hpp"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <iostream>
+#include <fstream>
+
+#include "llvm/Support/YAMLParser.h"
+#include "llvm/Support/YAMLTraits.h"
+#include <cxxopts/cxxopts.hpp>
 
 #include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
@@ -24,18 +29,14 @@
 #include "io/reads/wrapper_collection.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "io/reads/multifile_reader.hpp"
-#include "mapping_printer.hpp"
-
 #include "io/graph/gfa_reader.hpp"
 
-#include "llvm/Support/YAMLParser.h"
-#include "llvm/Support/YAMLTraits.h"
-#include <cxxopts/cxxopts.hpp>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <iostream>
-#include <fstream>
+#include "mapping_printer.hpp"
+
+#include "utils/stl_utils.hpp"
+#include "utils/logger/log_writers.hpp"
+
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
@@ -49,12 +50,11 @@ struct GAlignerConfig {
     // general
     int K;
     string path_to_graphfile;
-    string path_to_sequences; 
-    string workdir;
+    string path_to_sequences;
     string data_type; // pacbio, nanopore, 16S
-    
+
     string output_format; // default: tsv and gpa without CIGAR
-    
+
     //path construction
     debruijn_graph::config::pacbio_processor pb;
     gap_dijkstra::GapClosingConfig gap_cfg;
@@ -63,14 +63,14 @@ struct GAlignerConfig {
 }
 
 
-namespace llvm { namespace yaml {
+namespace llvm {
+namespace yaml {
 
 template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
     static void mapping(IO& io, debruijn_graph::GAlignerConfig& cfg) {
         io.mapRequired("k", cfg.K);
         io.mapRequired("path_to_graphfile", cfg.path_to_graphfile);
         io.mapRequired("path_to_sequences", cfg.path_to_sequences);
-        io.mapRequired("workdir", cfg.workdir);
         io.mapRequired("data_type", cfg.data_type);
         io.mapRequired("output_format", cfg.output_format);
         io.mapRequired("run_dijkstra", cfg.gap_cfg.run_dijkstra);
@@ -94,136 +94,139 @@ template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
         io.mapRequired("gap_dijkstra.find_shortest_path", cfg.gap_cfg.find_shortest_path);
         io.mapRequired("gap_dijkstra.restore_mapping", cfg.gap_cfg.restore_mapping);
         io.mapRequired("gap_dijkstra.penalty_interval", cfg.gap_cfg.penalty_interval);
-        
+
     }
 };
 
-} }
+}
+}
 
 namespace debruijn_graph {
 
-class BWASeedsAligner {
-private:    
+class LongReadsAligner {
+private:
     const ConjugateDeBruijnGraph &g_;
     const pacbio::PacBioMappingIndex<Graph> pac_index_;
     MappingPrinterHub mapping_printer_hub_;
 
-    int aligned_reads;
-    int processed_reads;
+    int aligned_reads_;
+    int processed_reads_;
 
 public:
-    BWASeedsAligner(const ConjugateDeBruijnGraph &g, 
-                 const alignment::BWAIndex::AlignmentMode mode,
-                 const debruijn_graph::config::pacbio_processor &pb,
-                 const gap_dijkstra::GapClosingConfig gap_cfg,
-                 const string output_file,
-                 const string formats):
-      g_(g),pac_index_(g_, pb, mode, gap_cfg), mapping_printer_hub_(g_, output_file, formats){
-        aligned_reads = 0;
-        processed_reads = 0;
-      }
+    LongReadsAligner(const ConjugateDeBruijnGraph &g,
+                     const alignment::BWAIndex::AlignmentMode mode,
+                     const debruijn_graph::config::pacbio_processor &pb,
+                     const gap_dijkstra::GapClosingConfig gap_cfg,
+                     const string output_file,
+                     const string formats):
+        g_(g), pac_index_(g_, pb, mode, gap_cfg), mapping_printer_hub_(g_, output_file, formats) {
+        aligned_reads_ = 0;
+        processed_reads_ = 0;
+    }
 
-    void AlignRead(const io::SingleRead &read){
-        DEBUG("Read " << read.name() <<". Current Read")
+    void AlignRead(const io::SingleRead &read) {
+        DEBUG("Read " << read.name() << ". Current Read")
         utils::perf_counter pc;
         auto current_read_mapping = pac_index_.GetReadAlignment(read);
         const auto& aligned_mappings = current_read_mapping.main_storage;
-    
-        if (aligned_mappings.size() > 0){
+
+        if (aligned_mappings.size() > 0) {
             mapping_printer_hub_.SaveMapping(current_read_mapping, read);
-            DEBUG("Read " << read.name() <<" is aligned");
-#pragma omp critical(align_read)
+            DEBUG("Read " << read.name() << " is aligned");
+            #pragma omp critical(align_read)
             {
-                aligned_reads ++;
+                aligned_reads_ ++;
             }
         }  else {
             DEBUG("Read " << read.name() << " wasn't aligned and length=" << read.sequence().size());
         }
-#pragma omp critical(align_read)
+        #pragma omp critical(align_read)
         {
-            processed_reads ++;
+            processed_reads_ ++;
         }
         DEBUG("Read " << read.name() << " read_time=" << pc.time())
         return;
-    } 
+    }
 
     void RunAligner(std::vector<io::SingleRead> &wrappedreads, int threads) {
         size_t step = 10;
-#pragma omp parallel num_threads(threads)
-#pragma omp for
-        for (size_t i =0 ; i < wrappedreads.size(); ++i) {
+        processed_reads_ = 0;
+        aligned_reads_ = 0;
+        #pragma omp parallel num_threads(threads)
+        #pragma omp for
+        for (size_t i = 0 ; i < wrappedreads.size(); ++i) {
             AlignRead(wrappedreads[i]);
-#pragma omp critical(aligner)
+            #pragma omp critical(aligner)
             {
-                if (processed_reads*100/wrappedreads.size() >= step) {
-                    INFO("Processed \% reads: " << processed_reads*100/wrappedreads.size() << 
-                         "\%, Aligned reads: " << aligned_reads*100/processed_reads << 
-                         "\% (" << aligned_reads << " out of " << processed_reads << ")")
+                if (processed_reads_ * 100 / wrappedreads.size() >= step) {
+                    INFO("Processed \% reads: " << processed_reads_ * 100 / wrappedreads.size() <<
+                         "\%, Aligned reads: " << aligned_reads_ * 100 / processed_reads_ <<
+                         "\% (" << aligned_reads_ << " out of " << processed_reads_ << ")")
                     step += 10;
                 }
-            } 
+            }
         }
-    } 
+    }
 };
 
-const ConjugateDeBruijnGraph& LoadGraph(const string saves_path, const string workdir, int K){
-        if (saves_path.find(".gfa") != std::string::npos) {
-            DEBUG("Load gfa")
-            struct stat sb;
-            VERIFY_MSG(stat(saves_path.c_str(), &sb) == 0 and S_ISREG(sb.st_mode), "GFA-file " + saves_path + " doesn't exist");   
-            static ConjugateDeBruijnGraph g(K);
-            gfa::GFAReader gfa(saves_path);
-            DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-            gfa.to_graph(g, true);
-            return g;
-        } else {
-            DEBUG("Load from saves")
-            struct stat sb;
-            if (stat(workdir.c_str(), &sb) != 0 or !S_ISDIR(sb.st_mode))
-            {
-                int status = mkdir(workdir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-                VERIFY_MSG(status == 0, "Failed to create workdir " + workdir);   
-            }
-            static conj_graph_pack gp(K, workdir, 0);
-            graphio::ScanGraphPack(saves_path, gp);
-            return gp.g;
-        }
+const ConjugateDeBruijnGraph& LoadGraph(const string &saves_path, const string &tmpdir, int K) {
+    if (fs::extension(saves_path) == "gfa") {
+        DEBUG("Load gfa")
+        VERIFY_MSG(fs::is_regular_file(saves_path), "GFA-file " + saves_path + " doesn't exist");
+        static ConjugateDeBruijnGraph g(K);
+        gfa::GFAReader gfa(saves_path);
+        DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+        gfa.to_graph(g, true);
+        return g;
+    } else {
+        DEBUG("Load from saves")
+        static conj_graph_pack gp(K, tmpdir, 0);
+        graphio::ScanGraphPack(saves_path, gp);
+        return gp.g;
+    }
 }
 
 void Launch(debruijn_graph::GAlignerConfig &cfg, const string output_file, int threads) {
-    const ConjugateDeBruijnGraph &g = LoadGraph(cfg.path_to_graphfile, cfg.workdir, cfg.K);
+    string tmpdir = fs::make_temp_dir(fs::current_dir(), "tmp");
+    const ConjugateDeBruijnGraph &g = LoadGraph(cfg.path_to_graphfile, tmpdir, cfg.K);
     INFO("Loaded graph with " << g.size() << " vertices");
-    io::ReadStreamList<io::SingleRead> streams;
-    streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(cfg.path_to_sequences)));
-    
-    // TODO - wrapped?
-    io::SingleStreamPtr sstream = io::MultifileWrap(streams); 
-    std::vector<io::SingleRead> wrappedreads; 
-    while (!sstream->eof()) {
-        io::SingleRead read;
-        *sstream >> read;
-        wrappedreads.push_back(std::move(read));
-    }
-    INFO("Loaded sequences from " << cfg.path_to_sequences);
-    
     alignment::BWAIndex::AlignmentMode mode;
-    if (cfg.data_type == "pacbio"){
+    if (cfg.data_type == "pacbio") {
         mode = alignment::BWAIndex::AlignmentMode::PacBio;
-    } else if (cfg.data_type == "nanopore"){
+    } else if (cfg.data_type == "nanopore") {
         mode = alignment::BWAIndex::AlignmentMode::Ont2D;
-    } else if (cfg.data_type == "16S"){
+    } else if (cfg.data_type == "16S") {
         mode = alignment::BWAIndex::AlignmentMode::Rna16S;
     } else {
         INFO("No appropriate mode")
         exit(-1);
     }
-    
-    BWASeedsAligner aligner(g, mode, cfg.pb, cfg.gap_cfg, output_file, cfg.output_format); 
-    INFO("BWASeedsAligner created");
 
-    INFO("Processing " << wrappedreads.size() << " reads..")
-    aligner.RunAligner(wrappedreads, threads);
+    LongReadsAligner aligner(g, mode, cfg.pb, cfg.gap_cfg, output_file, cfg.output_format);
+    INFO("LongReadsAligner created");
+
+    io::ReadStreamList<io::SingleRead> streams;
+    streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(cfg.path_to_sequences)));
+    io::SingleStreamPtr read_stream = io::MultifileWrap(streams);
+    size_t n = 0;
+    size_t buffer_no = 0;
+    size_t read_buffer_size = 500;
+    while (!read_stream->eof()) {
+        std::vector<io::SingleRead> read_buffer;
+        read_buffer.reserve(read_buffer_size);
+        io::SingleRead read;
+        for (size_t buf_size = 0; buf_size < read_buffer_size && !read_stream->eof(); ++buf_size) {
+            *read_stream >> read;
+            read_buffer.push_back(std::move(read));
+        }
+        INFO("Prepared batch " << buffer_no << " of " << read_buffer.size() << " reads.");
+        aligner.RunAligner(read_buffer, threads);
+        ++buffer_no;
+        n += read_buffer.size();
+        INFO("Processed " << n << " reads");
+    }
     INFO("Finished")
+    fs::remove_dir(tmpdir);
 }
 }
 
@@ -234,12 +237,12 @@ int main(int argc, char **argv) {
 
     cxxopts::Options options(argv[0], " <YAML-config sequences and graph description> - Tool for sequence alignment on graph");
     options.add_options()
-            ("o,outfile", "Output file prefix", cxxopts::value<std::string>(output_file)->default_value("./galigner_output"), "prefix")
-            ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(min(omp_get_max_threads(), 16))), "num")
-            ("h,help", "Print help");
+    ("o,outfile", "Output file prefix", cxxopts::value<std::string>(output_file)->default_value("./galigner_output"), "prefix")
+    ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(min(omp_get_max_threads(), 16))), "num")
+    ("h,help", "Print help");
 
     options.add_options("Input")
-                ("positional", "", cxxopts::value<std::string>(cfg));
+    ("positional", "", cxxopts::value<std::string>(cfg));
 
     options.parse_positional("positional");
     options.parse(argc, argv);
