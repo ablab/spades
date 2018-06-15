@@ -45,8 +45,6 @@ public:
                 size_t mapping_start = i == 0? aligned_mappings.read_ranges[j].edge_start : 0;
                 size_t mapping_end = i == mappingpath.size() - 1?  aligned_mappings.read_ranges[j].edge_end :g_.length(mappingpath[i]);
                 path_str += std::to_string(mappingpath[i].int_id()) + ",";
-                //INFO("Edge mapping: " << mapping_start << " " << mapping_end)
-                //VERIFY(mapping_end > mapping_start);
                 path_len_str += std::to_string(mapping_end - mapping_start) + ",";
             }
             seq_starts += std::to_string(aligned_mappings.read_ranges[j].seq_start) + ",";

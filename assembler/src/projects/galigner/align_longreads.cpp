@@ -124,7 +124,7 @@ public:
       }
 
     void AlignRead(const io::SingleRead &read){
-        INFO("Read " << read.name() <<". Current Read")
+        DEBUG("Read " << read.name() <<". Current Read")
         utils::perf_counter pc;
         auto current_read_mapping = pac_index_.GetReadAlignment(read);
         const auto& aligned_mappings = current_read_mapping.main_storage;
@@ -143,7 +143,7 @@ public:
         {
             processed_reads ++;
         }
-        INFO("Read " << read.name() << " read_time=" << pc.time())
+        DEBUG("Read " << read.name() << " read_time=" << pc.time())
         return;
     } 
 

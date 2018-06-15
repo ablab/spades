@@ -246,14 +246,14 @@ public:
             start_pos = (int) mapping.mapped_range.end_pos;
             start_pos_seq = mapping.initial_range.end_pos;
             ss = s.Subseq(mapping.initial_range.end_pos, (int) s.size() );
-            INFO("Forward e=" << start_e.int_id() << " sp=" << start_pos << " seq_sz" << ss.size())
+            DEBUG("Forward e=" << start_e.int_id() << " sp=" << start_pos << " seq_sz" << ss.size())
         } else {
             start_e = g_.conjugate(path.edge_at(0));
             omnigraph::MappingRange mapping = path.mapping_at(0);
             start_pos = min((int) g_.length(start_e), (int) g_.length(start_e) + (int) g_.k() - (int) mapping.mapped_range.start_pos);
             start_pos_seq = 0;
             ss = !s.Subseq(0, mapping.initial_range.start_pos);
-            INFO("Backward e=" << start_e.int_id() << " sp=" << start_pos << " seq_sz" << ss.size())
+            DEBUG("Backward e=" << start_e.int_id() << " sp=" << start_pos << " seq_sz" << ss.size())
         }
     }
 
@@ -304,12 +304,12 @@ public:
         int s_len = int(ss.size());
         int score = max(10, s_len/5);
         if (s_len > (int) pb_config_.max_contigs_gap_length) {
-            INFO("EdgeDijkstra: sequence is too long " << s_len)
+            DEBUG("EdgeDijkstra: sequence is too long " << s_len)
             return_code += 1;
             return;
         }
         if (s_len < max((int) g_.length(start_e) + (int) g_.k() - start_pos, (int) g_.k())) {
-            INFO("EdgeDijkstra: sequence is too small " << s_len)
+            DEBUG("EdgeDijkstra: sequence is too small " << s_len)
             return_code += 2;
             return;
         }
@@ -318,10 +318,9 @@ public:
         score = algo.GetEditDistance();
         return_code += algo.GetReturnCode();
         if (score == std::numeric_limits<int>::max()){
-            INFO("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
+            DEBUG("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
             return;
         }
-        INFO("PathStr=" << algo.GetPathStr());
         std::vector<EdgeId> ans = algo.GetPath();
         int end_pos = algo.GetPathEndPosition();
         int end_pos_seq = forward? algo.GetSeqEndPosition() + start_pos_seq: 0;
@@ -351,16 +350,9 @@ public:
                                             (double) (cur_first_index.edge_position + g_.k()) +
                                             ((int) g_.length(prev_edge) - prev_last_index.edge_position) * pb_config_.path_limit_stretching
                                             : ((int) cur_first_index.edge_position - (int) prev_last_index.edge_position) * pb_config_.path_limit_stretching;
-                if (prev_edge.int_id() == cur_edge.int_id()) {
-                    INFO("EQUAL EDGES eid=" << prev_edge.int_id() << " pos1=" << prev_last_index.edge_position << " pos2=" << cur_first_index.edge_position 
-                         << " gap_len=" <<  stretched_graph_len << " seq_len=" << read_gap_len);
-                }
                 if ((start_v != end_v || (start_v == end_v && read_gap_len > stretched_graph_len)) 
                     && (prev_edge.int_id() != cur_edge.int_id() || (prev_edge.int_id() == cur_edge.int_id() && stretched_graph_len < 0) ||
                         (prev_edge.int_id() == cur_edge.int_id() && stretched_graph_len > 0 && read_gap_len > stretched_graph_len))) {
-                    if (prev_edge.int_id() == cur_edge.int_id()) {
-                        INFO("Run!")
-                    }
                     if (start_v == end_v) {
                         DEBUG("looking for path from vertex to itself, read pos"
                               << cur_first_index.read_position << " " << prev_last_index.read_position
@@ -513,7 +505,7 @@ public:
                 real_maxi--;
             }
         }
-        INFO("Num hits clusters=" << num_colors);
+        DEBUG("Num hits clusters=" << num_colors);
         return colors;
     }
 
@@ -555,7 +547,7 @@ public:
                 }
             }
         }
-        INFO("Resulting hits num=" << sorted_edges.size());
+        DEBUG("Resulting hits num=" << sorted_edges.size());
         return OneReadMapping(sorted_edges, sorted_bwa_hits, illumina_gaps, read_ranges);
     }
 
@@ -631,7 +623,6 @@ public:
             DEBUG(colors[i] <<" " << iter->str(g_));
         }
         //FIXME ferther code is AWFUL
-        bool restore_ends = num_colors == 1 ? true: false;
         for (size_t i = 0; i < len; i++) {
             int cur_color = colors[i];
             if (!used[i] && cur_color != DELETED_COLOR) {
@@ -658,9 +649,9 @@ public:
             cur_range.edge_start = sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos;
             cur_range.edge_end = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).mapped_range.end_pos;
             GrowEnds(sorted_bwa_hits[0], sorted_edges[0], s, !forward, cur_range, return_code);
-            INFO("Backward return_code_ends=" << return_code)
+            DEBUG("Backward return_code_ends=" << return_code)
             GrowEnds(sorted_bwa_hits[0], sorted_edges[0], s, forward, cur_range, return_code);
-            INFO("Forward return_code_ends=" << return_code)
+            DEBUG("Forward return_code_ends=" << return_code)
             read_ranges.push_back(cur_range);
         } else {
             for (auto hits: sorted_bwa_hits){
@@ -814,7 +805,6 @@ public:
             }
             if (vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap) {
                 return_code_dijkstra += 4;
-                INFO(" vertex_len=" << vertex_pathlen.size())
             }
             return vector<EdgeId>(0);
         }
@@ -828,7 +818,6 @@ public:
             return vector<EdgeId>(0);
         }
         std::vector<EdgeId> ans = gap_filler.GetPath();
-        INFO("PathStr=" << gap_filler.GetPathStr());
         return ans;
     }
 
@@ -911,11 +900,8 @@ public:
                                   int seq_start_pos, int seq_end_pos, 
                                   const std::string &s_add, const std::string &e_add, int &score) const {
 
-        INFO(" All Params " << start_e.int_id() << " " << end_e.int_id() << " " << path_max_length << " s_add=" <<   s_add << " e_add=" << e_add 
+        DEBUG("Fill Gap: " << start_e.int_id() << " " << end_e.int_id() << " " << path_max_length << " s_add=" <<   s_add.size() << " e_add=" << e_add.size() 
                             << " start_pos=" << seq_start_pos << " end_pos=" << seq_end_pos);
-        if (start_e.int_id() == end_e.int_id()) {
-            INFO("AAAAAAA!!! " << start_e.int_id() << " start_pos=" << seq_start_pos << " end_pos=" << seq_end_pos )
-        }
         int return_code = -1;
         score = std::numeric_limits<int>::max();
         utils::perf_counter pc;
@@ -932,10 +918,10 @@ public:
                                                                 seq_start_pos, seq_end_pos, 
                                                                 path_max_length, score, return_code_dijkstra);
             if (return_code == 0 && score_bf != score){
-                INFO("BruteForce run: return_code=" << return_code << " score=" << score_bf << " time1=" << tm1
+                DEBUG("BruteForce run: return_code=" << return_code << " score=" << score_bf << " time1=" << tm1
                      << " Dijkstra run: return_code=" << return_code_dijkstra << " score=" << score << " time2=" << pc.time() <<" len=" << seq_end_pos - seq_start_pos << " WBW\n")
             } else {
-                INFO("BruteForce run: return_code=" << return_code << " score=" << score_bf << " time1=" << tm1
+                DEBUG("BruteForce run: return_code=" << return_code << " score=" << score_bf << " time1=" << tm1
                      << " Dijkstra run: return_code=" << return_code_dijkstra << " score=" << score << " time2=" << pc.time() <<" len=" << seq_end_pos - seq_start_pos << "\n")
             }
             if (path_dijkstra.size() > 1) {
