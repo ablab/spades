@@ -10,6 +10,7 @@ project(modules CXX)
 add_library(modules STATIC
             genome_consistance_checker.cpp
             alignment/gap_info.cpp
-            alignment/bwa_index.cpp)
+            alignment/bwa_index.cpp
+            alignment/pacbio/gap_dijkstra.cpp)
 
 target_link_libraries(modules bwa)
