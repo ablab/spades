@@ -1,5 +1,5 @@
 //***************************************************************************
-//* Copyright (c) 2015 Saint Petersburg State University
+//* Copyright (c) 2015-2018 Saint Petersburg State University
 //* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
@@ -24,6 +24,7 @@
 #include "io/reads/wrapper_collection.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "io/reads/multifile_reader.hpp"
+#include "edlib/edlib.h"
 
 #include <iostream>
 #include <fstream>
@@ -82,7 +83,7 @@ struct ReadMapping {
 
 struct Mapping {
 
-    Mapping(const EdgeId &e, const MappingRange &range): last_edge_(e), last_mapping_(range), score_(-1){}
+    Mapping(const EdgeId &e, const MappingRange &range): last_edge_(e), last_mapping_(range), score_(std::numeric_limits<int>::max()){}
 
     Mapping(const EdgeId &e, const MappingRange &range, int score): last_edge_(e), last_mapping_(range), score_(score){}
 
@@ -110,6 +111,8 @@ private:
     int primer_threshold_;
     int graph_threshold_;
 
+    pacbio::GapClosingConfig gap_cfg;
+
     std::vector<ReadMapping> primers_;
     std::map<VertexId, std::set<VertexId> > dist_;
 
@@ -121,7 +124,15 @@ public:
       gp_(gp), output_file_(output_file), pb_config_(pb)
       , ed_threshold_(ed_threshold), res_ed_threshold_(res_ed_threshold)
       , min_length_(min_length), primer_threshold_(primer_threshold)
-      , graph_threshold_(graph_threshold) {}
+      , graph_threshold_(graph_threshold) {
+
+        gap_cfg.max_vertex_in_gap = 300000;
+        gap_cfg.queue_limit = 1000000;
+        gap_cfg.iteration_limit = 1000000;
+        gap_cfg.find_shortest_path = true;
+        gap_cfg.restore_mapping = false;
+        gap_cfg.penalty_interval = 2000;
+      }
 
     
     bool IsCanonical(EdgeId e) const {
@@ -335,7 +346,7 @@ public:
             return 0;
         }
         DEBUG(" EdgeDijkstra: String length " << s_len << " max-len " << score << " start_pos=" << start_pos << " start_e=" << start_e.int_id() << " e_len=" << gp_.g.length(start_e) + gp_.g.k() );
-        pacbio::DijkstraEndsReconstructor algo = pacbio::DijkstraEndsReconstructor(gp_.g, ss, start_e, start_pos, score);
+        pacbio::DijkstraEndsReconstructor algo = pacbio::DijkstraEndsReconstructor(gp_.g, gap_cfg, ss, start_e, start_pos, score);
         algo.CloseGap();
         score = algo.GetEditDistance();
         if (score == -1){
@@ -395,7 +406,7 @@ public:
     Mapping FillGap(const EdgeId &a_e, const MappingRange &a_range, const EdgeId &b_e, const MappingRange &b_range, const string &s) {
         std::map<VertexId, size_t> vertex_pathlen;
         if (!Consistent(a_e, a_range, b_e, b_range, vertex_pathlen)) {
-            //INFO("Not consistent");
+            INFO("Not consistent");
             return Mapping();
         }
 
@@ -405,23 +416,22 @@ public:
         int s_len = int(ss.size());
         int path_max_length = ed_threshold_;
         int tid = omp_get_thread_num();
-        //INFO("TID=" << tid << ". Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_pos=" <<a_range.initial_range.start_pos << " end_pos=" << b_range.initial_range.start_pos << " start_pos_g=" <<a_range.mapped_range.start_pos << " end_pos_g=" << b_range.mapped_range.start_pos);
+        INFO("TID=" << tid << ". Dijkstra: String length " << s_len << " max-len " << path_max_length << " start_pos=" <<a_range.initial_range.start_pos << " end_pos=" << b_range.initial_range.start_pos << " start_pos_g=" <<a_range.mapped_range.start_pos << " end_pos_g=" << b_range.mapped_range.start_pos);
         if (s_len > 2000 && vertex_pathlen.size() > 100000){
             DEBUG("Dijkstra on't run: Too big gap or too many paths");
             return Mapping();
         }
         utils::perf_counter perf;
-
-        pacbio::DijkstraGapFiller gap_filler = pacbio::DijkstraGapFiller(gp_.g, ss, a_e, b_e, a_range.mapped_range.start_pos, b_range.mapped_range.start_pos, path_max_length, vertex_pathlen);
+        pacbio::DijkstraGapFiller gap_filler = pacbio::DijkstraGapFiller(gp_.g, gap_cfg, ss, a_e, b_e, a_range.mapped_range.start_pos, b_range.mapped_range.start_pos, path_max_length, vertex_pathlen);
         gap_filler.CloseGap();
         int score = gap_filler.GetEditDistance();
         VertexId start_v = gp_.g.EdgeEnd(a_e);
         VertexId end_v = gp_.g.EdgeStart(b_e);
         
-        if (score == -1){
+        if (score == std::numeric_limits<int>::max()){
             //INFO("TID=" << tid << ". Dijkstra didn't find anything")
             INFO("TIME.NO=" << perf.time() << " " << s_len << " " << score << " " << gp_.g.int_id(start_v) << " " << gp_.g.int_id(end_v) << " tid=" << tid);
-            score = -1;
+            score = std::numeric_limits<int>::max();
             return Mapping();
         } else {
             //INFO("TID=" << tid << ". Dijkstra score=" << score << " ssize=" << s_len);
@@ -447,12 +457,14 @@ public:
     vector<Mapping> FillGapsBetweenPrimers(const std::vector<ReadMapping> &mappings, const io::SingleRead &read) {
             vector<Mapping> resulting_paths;
             vector<Mapping> working_paths;
+            VERIFY(mappings[0].e_.size() > 0)
             for (size_t i = 0; i < mappings[0].e_.size(); ++ i){
                 working_paths.push_back(Mapping(mappings[0].e_.at(i), mappings[0].range_.at(i), 0));
             }
+            INFO("Start merging")
             utils::perf_counter perf;
             for (size_t i = 1; i < mappings.size(); ++ i){
-                //INFO("Iter=" << i << " " << mappings[i].e_.size());
+                INFO("Iter=" << i << " " << mappings[i].e_.size());
                 vector<Mapping> new_working_paths;
                 vector<bool> used_working_paths(working_paths.size());
                 for (size_t j = 0; j < mappings[i].e_.size(); ++ j) {
@@ -464,22 +476,8 @@ public:
                         const EdgeId &a_e = working_paths[k].last_edge_;
                         const EdgeId &b_e = mappings[i].e_.at(j);
                         Mapping intermediate_path = FillGap(a_e, a_range, b_e, b_range, read.GetSequenceString());
-                        // if (a_e.int_id() == 19108181|| b_e.int_id() == 2669802) {
-                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << best_path.score_ << " " << intermediate_path.score_  << " " << working_paths[k].score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
-                        // }
-                        // if (a_e.int_id() == 2669802 || b_e.int_id() == 19108181) {
-                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << best_path.score_ << " " << intermediate_path.score_  << " " << working_paths[k].score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
-                        // }
 
-                        // if (a_e.int_id() == 19226365 || b_e.int_id() == 19226365) {
-                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << best_path.score_ << " " << intermediate_path.score_  << " " << working_paths[k].score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
-                        // }
-
-                        // if (a_e.int_id() == 3001321 || b_e.int_id() == 3001321) {
-                        //     INFO( "a_e=" << a_e.int_id() << " b_e=" << b_e.int_id() << " " << best_path.score_ << " " << intermediate_path.score_  << " " << working_paths[k].score_ << " " << a_range.mapped_range.start_pos << " " << a_range.mapped_range.end_pos << " " << b_range.mapped_range.start_pos << " " << b_range.mapped_range.end_pos  )
-                        // }
-
-                        if (intermediate_path.score_ != -1 && (best_path.score_ == -1 || best_path.score_ > intermediate_path.score_ + working_paths[k].score_)) {
+                        if (intermediate_path.score_ != std::numeric_limits<int>::max() && (best_path.score_ == std::numeric_limits<int>::max() || best_path.score_ > intermediate_path.score_ + working_paths[k].score_)) {
                             best_path.path_ = working_paths[k].path_;
                             for (size_t z = 0; z < intermediate_path.path_.size(); ++ z) {
                                 best_path.path_.push_back(intermediate_path.path_.edge_at(z), intermediate_path.path_.mapping_at(z));
@@ -492,7 +490,7 @@ public:
                         }
                     }
     
-                    if (best_path.score_ != -1 && best_path.score_ < ed_threshold_) {
+                    if (best_path.score_ != std::numeric_limits<int>::max() && best_path.score_ < ed_threshold_) {
                         used_working_paths[best_used] = true;
                         new_working_paths.push_back(best_path);
                     }
