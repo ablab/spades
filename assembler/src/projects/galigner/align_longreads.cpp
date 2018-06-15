@@ -51,8 +51,7 @@ struct GAlignerConfig {
     int K;
     string path_to_graphfile;
     string path_to_sequences;
-    string data_type; // pacbio, nanopore, 16S
-
+    alignment::BWAIndex::AlignmentMode data_type; // pacbio, nanopore, 16S
     string output_format; // default: tsv and gpa without CIGAR
 
     //path construction
@@ -66,6 +65,44 @@ struct GAlignerConfig {
 namespace llvm {
 namespace yaml {
 
+template<> struct MappingTraits<debruijn_graph::config::pacbio_processor> {
+    static void mapping(IO& io, debruijn_graph::config::pacbio_processor& cfg) {
+
+        io.mapRequired("bwa_length_cutoff", cfg.bwa_length_cutoff);
+        io.mapRequired("internal_length_cutoff", cfg.internal_length_cutoff);
+        io.mapRequired("compression_cutoff", cfg.compression_cutoff);
+        io.mapRequired("path_limit_stretching", cfg.path_limit_stretching);
+        io.mapRequired("path_limit_pressing", cfg.path_limit_pressing);
+        io.mapRequired("max_path_in_dijkstra", cfg.max_path_in_dijkstra);
+        io.mapRequired("max_vertex_in_dijkstra", cfg.max_vertex_in_dijkstra);
+        io.mapRequired("long_seq_limit", cfg.long_seq_limit);
+        io.mapRequired("pacbio_min_gap_quantity", cfg.pacbio_min_gap_quantity);
+        io.mapRequired("contigs_min_gap_quantity", cfg.contigs_min_gap_quantity);
+        io.mapRequired("max_contigs_gap_length", cfg.max_contigs_gap_length);
+    }
+};
+
+template<> struct MappingTraits<gap_dijkstra::GapClosingConfig> {
+    static void mapping(IO& io, gap_dijkstra::GapClosingConfig& cfg) {
+        io.mapRequired("max_vertex_in_gap", cfg.max_vertex_in_gap);
+        io.mapRequired("queue_limit", cfg.queue_limit);
+        io.mapRequired("iteration_limit", cfg.iteration_limit);
+        io.mapRequired("find_shortest_path", cfg.find_shortest_path);
+        io.mapRequired("restore_mapping", cfg.restore_mapping);
+        io.mapRequired("penalty_interval", cfg.penalty_interval);
+    }
+};
+
+
+template <>
+struct ScalarEnumerationTraits<alignment::BWAIndex::AlignmentMode> {
+    static void enumeration(IO &io, alignment::BWAIndex::AlignmentMode &value) {
+        io.enumCase(value, "pacbio",  alignment::BWAIndex::AlignmentMode::PacBio);
+        io.enumCase(value, "nanopore", alignment::BWAIndex::AlignmentMode::Ont2D);
+        io.enumCase(value, "16S", alignment::BWAIndex::AlignmentMode::Rna16S);
+    }
+};
+
 template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
     static void mapping(IO& io, debruijn_graph::GAlignerConfig& cfg) {
         io.mapRequired("k", cfg.K);
@@ -76,24 +113,8 @@ template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
         io.mapRequired("run_dijkstra", cfg.gap_cfg.run_dijkstra);
         io.mapRequired("restore_ends", cfg.gap_cfg.restore_ends);
 
-        io.mapRequired("pb.bwa_length_cutoff", cfg.pb.bwa_length_cutoff);
-        io.mapRequired("pb.internal_length_cutoff", cfg.pb.internal_length_cutoff);
-        io.mapRequired("pb.compression_cutoff", cfg.pb.compression_cutoff);
-        io.mapRequired("pb.path_limit_stretching", cfg.pb.path_limit_stretching);
-        io.mapRequired("pb.path_limit_pressing", cfg.pb.path_limit_pressing);
-        io.mapRequired("pb.max_path_in_dijkstra", cfg.pb.max_path_in_dijkstra);
-        io.mapRequired("pb.max_vertex_in_dijkstra", cfg.pb.max_vertex_in_dijkstra);
-        io.mapRequired("pb.long_seq_limit", cfg.pb.long_seq_limit);
-        io.mapRequired("pb.pacbio_min_gap_quantity", cfg.pb.pacbio_min_gap_quantity);
-        io.mapRequired("pb.contigs_min_gap_quantity", cfg.pb.contigs_min_gap_quantity);
-        io.mapRequired("pb.max_contigs_gap_length", cfg.pb.max_contigs_gap_length);
-
-        io.mapRequired("gap_dijkstra.max_vertex_in_gap", cfg.gap_cfg.max_vertex_in_gap);
-        io.mapRequired("gap_dijkstra.queue_limit", cfg.gap_cfg.queue_limit);
-        io.mapRequired("gap_dijkstra.iteration_limit", cfg.gap_cfg.iteration_limit);
-        io.mapRequired("gap_dijkstra.find_shortest_path", cfg.gap_cfg.find_shortest_path);
-        io.mapRequired("gap_dijkstra.restore_mapping", cfg.gap_cfg.restore_mapping);
-        io.mapRequired("gap_dijkstra.penalty_interval", cfg.gap_cfg.penalty_interval);
+        io.mapRequired("pb", cfg.pb);
+        io.mapRequired("gap_closing", cfg.gap_cfg);
 
     }
 };
@@ -190,19 +211,8 @@ void Launch(debruijn_graph::GAlignerConfig &cfg, const string output_file, int t
     string tmpdir = fs::make_temp_dir(fs::current_dir(), "tmp");
     const ConjugateDeBruijnGraph &g = LoadGraph(cfg.path_to_graphfile, tmpdir, cfg.K);
     INFO("Loaded graph with " << g.size() << " vertices");
-    alignment::BWAIndex::AlignmentMode mode;
-    if (cfg.data_type == "pacbio") {
-        mode = alignment::BWAIndex::AlignmentMode::PacBio;
-    } else if (cfg.data_type == "nanopore") {
-        mode = alignment::BWAIndex::AlignmentMode::Ont2D;
-    } else if (cfg.data_type == "16S") {
-        mode = alignment::BWAIndex::AlignmentMode::Rna16S;
-    } else {
-        INFO("No appropriate mode")
-        exit(-1);
-    }
 
-    LongReadsAligner aligner(g, mode, cfg.pb, cfg.gap_cfg, output_file, cfg.output_format);
+    LongReadsAligner aligner(g, cfg.data_type, cfg.pb, cfg.gap_cfg, output_file, cfg.output_format);
     INFO("LongReadsAligner created");
 
     io::ReadStreamList<io::SingleRead> streams;
@@ -210,7 +220,7 @@ void Launch(debruijn_graph::GAlignerConfig &cfg, const string output_file, int t
     io::SingleStreamPtr read_stream = io::MultifileWrap(streams);
     size_t n = 0;
     size_t buffer_no = 0;
-    size_t read_buffer_size = 500;
+    size_t read_buffer_size = 50000;
     while (!read_stream->eof()) {
         std::vector<io::SingleRead> read_buffer;
         read_buffer.reserve(read_buffer_size);
