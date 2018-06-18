@@ -17,5 +17,5 @@ d["length"] = d.apply(lambda row: contig_length(row["name"]), axis=1)
 del d["name"]
 info = d.groupby(["bin", "group"], as_index=False).sum()
 info = info.groupby("bin", as_index=False)["length"].max()
-info = info[info["length"] > min_len]
+info = info[info["length"] > min_len].sort_values("length", ascending=False)
 info.to_csv(sys.stdout, sep="\t", header=False, index=False)

@@ -35,19 +35,23 @@ parser.add_argument("--reuse-from", type=str, help="Directory with another assem
 parser.add_argument("--no-stats", "-S", action="store_true", help="Skip the stats section (overrides the config value)")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
 parser.add_argument("--dryrun", action="store_true", help="Show tasks, do not execute them")
+parser.add_argument("--unlock", "-u", action="store_true", help="Unlock the directory")
 
 args = parser.parse_args()
 
 exec_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 LOCAL_DIR = os.path.realpath(os.path.join(exec_dir, "../../../"))
 
-base_params = ["snakemake", "--directory", os.path.realpath(args.dir), "--cores", str(args.threads), "--config", "LOCAL_DIR" + "=" + LOCAL_DIR]
+base_params = ["snakemake", "--directory", os.path.realpath(args.dir), "--cores", str(args.threads), "--config", "LOCAL_DIR" + "=" + LOCAL_DIR, "--latency-wait", "120"]
 
 if args.verbose:
     base_params.extend(["-p", "--verbose"])
 
 if args.dryrun:
     base_params.extend(["--dryrun"])
+
+if args.unlock:
+    base_params.extend(["--unlock"])
 
 if not os.path.exists(args.dir):
     os.makedirs(args.dir)
