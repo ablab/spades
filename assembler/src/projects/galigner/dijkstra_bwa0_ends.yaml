@@ -1,27 +1,28 @@
 k: 
 path_to_graphfile: 
 path_to_sequences: 
-workdir: ./tmp3
 data_type: 
 output_format: tsv
 run_dijkstra: true 
 restore_ends: true
 
-pb.bwa_length_cutoff: 0
-pb.compression_cutoff: 0.6
-pb.internal_length_cutoff: 200
-pb.path_limit_stretching: 1.3
-pb.path_limit_pressing: 0.7
-pb.max_path_in_dijkstra: 15000
-pb.max_vertex_in_dijkstra: 5000
-pb.long_seq_limit: 400
-pb.pacbio_min_gap_quantity: 2
-pb.contigs_min_gap_quantity: 1
-pb.max_contigs_gap_length: 10000
 
-gap_dijkstra.max_vertex_in_gap: 150000
-gap_dijkstra.queue_limit: 1000000
-gap_dijkstra.iteration_limit: 1000000
-gap_dijkstra.find_shortest_path: true
-gap_dijkstra.restore_mapping: false
-gap_dijkstra.penalty_interval: 2000
+pb:
+  bwa_length_cutoff: 0
+  compression_cutoff: 0.6
+  path_limit_stretching: 1.3
+  path_limit_pressing: 0.7
+  max_path_in_dijkstra: 15000
+  max_vertex_in_dijkstra: 5000
+  long_seq_limit: 400
+  pacbio_min_gap_quantity: 2
+  contigs_min_gap_quantity: 1
+  max_contigs_gap_length: 100
+
+gap_closing:
+  max_vertex_in_gap: 150000
+  queue_limit: 1000000
+  iteration_limit: 1000000
+  find_shortest_path: true
+  restore_mapping: false
+  penalty_interval: 2000
