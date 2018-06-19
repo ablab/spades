@@ -82,10 +82,10 @@ void DijkstraGraphSequenceBase::CloseGap() {
         int ed = visited_[cur_state];
         if (q_.size() > queue_limit_ || i > iter_limit_) {
             if (q_.size() > queue_limit_) {
-                return_code_ += 8;
+                return_code_ += DijkstraReturnCode::QUEUE_LIMIT;
             }
             if (i > iter_limit_) {
-                return_code_ += 16;
+                return_code_ += DijkstraReturnCode::ITERATION_LIMIT;
             }
             if (visited_.count(end_qstate_) > 0) {
                 found_path = true;
@@ -109,7 +109,7 @@ void DijkstraGraphSequenceBase::CloseGap() {
         if (!gap_cfg_.find_shortest_path && found_path) break;
     }
     if (!found_path) {
-        return_code_ += 32;
+        return_code_ += DijkstraReturnCode::NO_PATH;
     }
     if (found_path) {
         QueueState state(end_qstate_);

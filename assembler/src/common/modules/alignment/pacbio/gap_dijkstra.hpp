@@ -10,15 +10,19 @@
 namespace gap_dijkstra {
 using debruijn_graph::EdgeId;
 
-// enum DijkstraReturnCode {
-//     OK = 0;
-//     NOT_CONNECTED = 1; 
-//     TOO_LONG_GAP = 2;
-//     TOO_MANY_VERTICES = 4;
-//     QUEUE_LIMIT = 8;
-//     ITERATION_LIMIT = 16;
-//     NO_PATH = 32;
-// }
+enum DijkstraReturnCode {
+    OK = 0,
+    NOT_CONNECTED = 1,
+    TOO_LONG_GAP = 2,
+    TOO_MANY_VERTICES = 4,
+    NOT_CONNECTED_TOO_LONG_GAP = NOT_CONNECTED +  TOO_LONG_GAP,
+    TOO_LONG_GAP_TOO_MANY_VERTICES = TOO_LONG_GAP + TOO_MANY_VERTICES,
+    QUEUE_LIMIT = 8,
+    ITERATION_LIMIT = 16,
+    NO_PATH = 32,
+    NO_PATH_QUEUE_LIMIT = QUEUE_LIMIT + NO_PATH,
+    NO_PATH_ITERATION_LIMIT = ITERATION_LIMIT + NO_PATH
+};
 
 struct GapClosingConfig {
     bool run_dijkstra = false;

@@ -798,13 +798,13 @@ public:
             DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
             score = std::numeric_limits<int>::max();
             if (vertex_pathlen.size() == 0) {
-                return_code_dijkstra = 1;
+                return_code_dijkstra = gap_dijkstra::DijkstraReturnCode::NOT_CONNECTED;
             }
             if (((size_t) s_len) > pb_config_.max_contigs_gap_length) {
-                return_code_dijkstra += 2;
+                return_code_dijkstra += gap_dijkstra::DijkstraReturnCode::TOO_LONG_GAP;
             }
             if (vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap) {
-                return_code_dijkstra += 4;
+                return_code_dijkstra += gap_dijkstra::DijkstraReturnCode::TOO_MANY_VERTICES;
             }
             return vector<EdgeId>(0);
         }
