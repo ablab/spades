@@ -911,7 +911,7 @@ public:
         double tm1 = pc.time();
         pc.reset();
         int score_bf = score;
-        if (gap_cfg_.run_dijkstra){
+        if (gap_cfg_.run_dijkstra && return_code != 0){
             int return_code_dijkstra = 0;
             std::vector<EdgeId> path_dijkstra = BestScoredPathDijkstra(s, start_v, end_v, 
                                                                 start_e, end_e, edge_start_pos, edge_end_pos, 
