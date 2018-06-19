@@ -74,40 +74,47 @@ void DijkstraGraphSequenceBase::AddNewEdge(const GraphState &gs, const QueueStat
     }
 }
 
-void DijkstraGraphSequenceBase::CloseGap() {
+bool DijkstraGraphSequenceBase::QueueLimitsExceeded(size_t iter) {
+    if (q_.size() > queue_limit_) {
+        return_code_ += DijkstraReturnCode::QUEUE_LIMIT;
+    }
+    if (iter > iter_limit_) {
+        return_code_ += DijkstraReturnCode::ITERATION_LIMIT;
+    }
+    return q_.size() > queue_limit_ || iter > iter_limit_;
+}
+
+bool DijkstraGraphSequenceBase::RunDijkstra() {
     bool found_path = false;
-    size_t i = 0;
-    while (q_.size() > 0) {
-        QueueState cur_state = q_.begin()->second;
-        int ed = visited_[cur_state];
-        if (q_.size() > queue_limit_ || i > iter_limit_) {
-            if (q_.size() > queue_limit_) {
-                return_code_ += DijkstraReturnCode::QUEUE_LIMIT;
-            }
-            if (i > iter_limit_) {
-                return_code_ += DijkstraReturnCode::ITERATION_LIMIT;
-            }
-            if (visited_.count(end_qstate_) > 0) {
-                found_path = true;
-            }
-            break;
+    size_t iter = 0;
+    QueueState cur_state;
+    int ed = 0;
+    while (q_.size() > 0 
+           && !QueueLimitsExceeded(iter)
+           && ed <= path_max_length_) 
+    {
+        cur_state = q_.begin()->second;
+        ed = visited_[cur_state];
+        ++ iter;
+        q_.erase(q_.begin());
+        if (visited_.count(end_qstate_) > 0) {
+            found_path = true;
         }
         if (IsEndPosition(cur_state)) {
             end_qstate_ = cur_state;
-            found_path = true;
-            break;
+            return true;
         }
-        if (ed > path_max_length_) {
-            break;
-        }
-        i ++;
-        q_.erase(q_.begin());
         for (const debruijn_graph::EdgeId &e : g_.OutgoingEdges(g_.EdgeEnd(cur_state.gs.e))) {
             found_path = AddState(cur_state, e, ed);
-            if (!gap_cfg_.find_shortest_path && found_path) break;
+            if (!gap_cfg_.find_shortest_path && found_path) return true;
         }
-        if (!gap_cfg_.find_shortest_path && found_path) break;
+        if (!gap_cfg_.find_shortest_path && found_path) return true;
     }
+    return found_path;
+}
+
+void DijkstraGraphSequenceBase::CloseGap() {
+    bool found_path = RunDijkstra();
     if (!found_path) {
         return_code_ += DijkstraReturnCode::NO_PATH;
     }

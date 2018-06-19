@@ -15,13 +15,9 @@ enum DijkstraReturnCode {
     NOT_CONNECTED = 1,
     TOO_LONG_GAP = 2,
     TOO_MANY_VERTICES = 4,
-    NOT_CONNECTED_TOO_LONG_GAP = NOT_CONNECTED +  TOO_LONG_GAP,
-    TOO_LONG_GAP_TOO_MANY_VERTICES = TOO_LONG_GAP + TOO_MANY_VERTICES,
     QUEUE_LIMIT = 8,
     ITERATION_LIMIT = 16,
-    NO_PATH = 32,
-    NO_PATH_QUEUE_LIMIT = QUEUE_LIMIT + NO_PATH,
-    NO_PATH_ITERATION_LIMIT = ITERATION_LIMIT + NO_PATH
+    NO_PATH = 32
 };
 
 struct GapClosingConfig {
@@ -135,6 +131,10 @@ protected:
     void Update(const QueueState &state, const QueueState &prev_state, int score);
 
     void AddNewEdge(const GraphState &gs, const QueueState &prev_state, int ed);
+
+    bool QueueLimitsExceeded(size_t iter);
+
+    bool RunDijkstra();
 
     virtual bool AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed) = 0;
 
