@@ -10,10 +10,6 @@ void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
     auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     ScaffoldGraphStorageConstructor storage_constructor(small_path_length_threshold_, large_path_length_threshold_, gp_);
     bool scaffolding_mode = true;
-
-    INFO(small_path_length_threshold_);
-    AnalyzePaths(old_paths, small_path_length_threshold_);
-
     size_t num_threads = cfg::get().max_threads;
     auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     CloudScaffoldGraphConstructor constructor(num_threads, gp_, extractor);
