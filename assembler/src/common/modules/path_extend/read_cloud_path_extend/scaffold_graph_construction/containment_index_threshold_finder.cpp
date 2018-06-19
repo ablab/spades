@@ -266,8 +266,7 @@ ShortEdgeScoreThresholdEstimatorFactory::ShortEdgeScoreThresholdEstimatorFactory
       max_threads_(max_threads) {}
 shared_ptr<LabeledDistributionThresholdEstimator> ShortEdgeScoreThresholdEstimatorFactory::GetThresholdEstimator() const {
     auto segment_score_function = make_shared<ShortEdgeScoreFunction>(barcode_extractor_);
-//    size_t block_sum = block_length_ + 1000;
-    size_t min_distance = max_distance_ / 10;
+    size_t min_distance = max_distance_ / 2;
     INFO("Edge length threshold: " << edge_length_threshold_);
     //fixme move from here
     const double DEFAULT_THRESHOLD = 0.05;

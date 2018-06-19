@@ -576,9 +576,6 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
                                                                                edge_selector_factory,
                                                                                extender_score_threshold,
                                                                                score_function_tail_threshold);
-//    auto composite_chooser =
-//        make_shared<CompositeExtensionChooser>(gp_.g, pe_extension_chooser, read_cloud_extension_chooser);
-
     size_t insert_size = paired_lib->GetISMax();
     bool investigate_short_loops = false;
     bool use_short_loops_cov_resolver = true;

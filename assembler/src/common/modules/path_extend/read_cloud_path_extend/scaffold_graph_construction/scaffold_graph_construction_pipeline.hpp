@@ -31,7 +31,7 @@ class ScaffolderParamsConstructor {
     ScaffolderParams::ScoreEstimationParams GetScoreEstimationParams(
         const Graph& g,
         cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor,
-        double score_percentile) const;
+        double score_percentile, double cluster_length_percentile) const;
 
 };
 

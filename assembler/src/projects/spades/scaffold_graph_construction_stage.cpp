@@ -16,7 +16,9 @@ void debruijn_graph::ScaffoldGraphConstructionStage::run(debruijn_graph::conj_gr
 //    graph_pack.read_cloud_distribution_pack = distribution_pack;
 
     path_extend::cluster_model::UpperLengthBoundEstimator length_bound_estimator;
-    size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor);
+    const double cluster_length_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
+    size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
+                                                                          cluster_length_percentile);
     INFO("Max edge length bound: " << length_upper_bound);
 
     auto barcode_info_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(graph_pack.barcode_mapper_ptr, graph_pack.g);

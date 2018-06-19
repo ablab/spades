@@ -487,8 +487,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             auto cluster_distribution_pack = gp_.read_cloud_distribution_pack;
             cluster_model::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
 
-            //fixme configs
-            const size_t unique_length = 2000;
+            const size_t unique_length = cfg::get().ts_res.long_edge_length_lower_bound;
 
             auto scaffolder_params =
                 params_constructor.ConstructScaffolderParams(gp_.g, unique_length, primary_parameters_extractor);
@@ -599,7 +598,9 @@ void PathExtendLauncher::Launch() {
         const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
         cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor(gp_.read_cloud_distribution_pack);
         cluster_model::UpperLengthBoundEstimator length_bound_estimator;
-        size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor);
+        const double cluster_length_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
+        size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
+                                                                              cluster_length_percentile);
 
         PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_,
                                        small_path_length_threshold,
