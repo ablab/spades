@@ -18,3 +18,5 @@ endif()
 
 # Add format library
 set(COMMON_LIBRARIES format ${COMMON_LIBRARIES})
+# Add version
+set(COMMON_LIBRARIES version ${COMMON_LIBRARIES})

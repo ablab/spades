@@ -82,9 +82,9 @@ int main(int argc, char **argv) {
 
         // assemble it!
         INFO("Starting SPAdes, built from "
-                     SPADES_GIT_REFSPEC
-                     ", git revision "
-                     SPADES_GIT_SHA1);
+             << version::refspec()
+             << ", git revision "
+             << version::gitrev());
         INFO("Maximum k-mer length: " << runtime_k::MAX_K);
         INFO("Assembling dataset (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
         INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg::get().max_threads);

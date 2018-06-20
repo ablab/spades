@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
 
         create_console_logger();
 
-        INFO("Starting SPAdes k-mer counting engine, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
+        INFO("Starting SPAdes k-mer counting engine, built from " << version::refspec() << ", git revision " << version::gitrev());
 
         INFO("K-mer length set to " << K);
         INFO("# of threads to use: " << nthreads);

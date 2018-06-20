@@ -165,7 +165,7 @@ int main(int argc, char* argv[]) {
     process_cmdline(argc, argv, cfg);
 
     create_console_logger();
-    INFO("Starting GFA reader, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
+    INFO("Starting SPAdes sequence-to-graph mapper, built from " << version::refspec() << ", git revision " << version::gitrev());
 
     try {
         unsigned nthreads = cfg.nthreads;

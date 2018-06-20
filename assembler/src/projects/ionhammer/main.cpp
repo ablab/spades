@@ -292,8 +292,8 @@ int main(int argc, char** argv) {
     create_console_logger();
     std::string config_file = "hammer-it.cfg";
     if (argc > 1) config_file = argv[1];
-    INFO("Starting IonHammer, built from " SPADES_GIT_REFSPEC
-         ", git revision " SPADES_GIT_SHA1);
+    INFO("Starting IonHammer, built from " << version::refspec() <<
+         ", git revision " << version::gitrev());
     INFO("Loading config from " << config_file.c_str());
     cfg::create_instance(config_file);
     INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg::get().max_nthreads);

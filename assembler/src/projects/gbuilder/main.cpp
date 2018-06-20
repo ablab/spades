@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
 
         create_console_logger();
 
-        INFO("Starting SPAdes standalone graph builder, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
+        INFO("Starting SPAdes standalone graph builder, built from " << version::refspec() << ", git revision " << version::gitrev());
 
         if (k < runtime_k::MIN_K)
             FATAL_ERROR("k-mer size " << k << " is too low");

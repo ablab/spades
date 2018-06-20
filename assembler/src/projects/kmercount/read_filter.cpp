@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
 
         nthreads = spades_set_omp_threads(nthreads);
 
-        INFO("Starting kmer count based read filtering, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
+        INFO("Starting kmer count based read filtering, built from " << version::refspec() << ", git revision " << version::gitrev());
 
         INFO("K-mer length set to " << k);
         INFO("# of threads to use: " << nthreads);

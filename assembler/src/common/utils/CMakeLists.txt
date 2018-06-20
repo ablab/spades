@@ -20,3 +20,6 @@ endif()
 
 add_library(utils STATIC
             ${utils_src})
+
+add_library(version STATIC
+            version.cpp)
