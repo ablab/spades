@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
 
         create_console_logger();
 
-        INFO("Starting SPAdes standalone graph builder, built from " << version::refspec() << ", git revision " << version::gitrev());
+        START_BANNER("SPAdes standalone graph builder");
 
         if (k < runtime_k::MIN_K)
             FATAL_ERROR("k-mer size " << k << " is too low");

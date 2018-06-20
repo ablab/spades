@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
         if (!fs::check_existence(corr_cfg::get().work_dir))
             fs::make_dir(corr_cfg::get().work_dir);
 
-        INFO("Starting MismatchCorrector, built from " << version::refspec() << ", git revision " << version::gitrev());
+        START_BANNER("mismatch corrector");
         INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << corr_cfg::get().max_nthreads);
 
         corrector::DatasetProcessor dp(contig_name, corr_cfg::get().work_dir, corr_cfg::get().output_dir, corr_cfg::get().max_nthreads);

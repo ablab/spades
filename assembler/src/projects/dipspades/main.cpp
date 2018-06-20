@@ -84,7 +84,7 @@ int main(int /*argc*/, char** argv) {
 
     utils::limit_memory(dsp_cfg::get().bp.max_memory * GB);
 
-    INFO("Starting dipSPAdes, built from " << version::refspec() << ", git revision " << version::gitrev());
+    START_BANNER("dipSPAdes");
     INFO("Assembling dataset (" << dsp_cfg::get().io.dataset_name << ") with K=" << dsp_cfg::get().bp.K);
     INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << dsp_cfg::get().bp.max_threads);
 

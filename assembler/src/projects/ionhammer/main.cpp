@@ -290,10 +290,11 @@ int main(int argc, char** argv) {
 
   try {
     create_console_logger();
+
+    START_BANNER("IonHammer");
+
     std::string config_file = "hammer-it.cfg";
     if (argc > 1) config_file = argv[1];
-    INFO("Starting IonHammer, built from " << version::refspec() <<
-         ", git revision " << version::gitrev());
     INFO("Loading config from " << config_file.c_str());
     cfg::create_instance(config_file);
     INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg::get().max_nthreads);

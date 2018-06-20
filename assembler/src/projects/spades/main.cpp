@@ -81,10 +81,7 @@ int main(int argc, char **argv) {
         utils::limit_memory(cfg::get().max_memory * GB);
 
         // assemble it!
-        INFO("Starting SPAdes, built from "
-             << version::refspec()
-             << ", git revision "
-             << version::gitrev());
+        START_BANNER("SPAdes");
         INFO("Maximum k-mer length: " << runtime_k::MAX_K);
         INFO("Assembling dataset (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
         INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg::get().max_threads);

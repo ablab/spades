@@ -165,7 +165,8 @@ int main(int argc, char* argv[]) {
     process_cmdline(argc, argv, cfg);
 
     create_console_logger();
-    INFO("Starting SPAdes sequence-to-graph mapper, built from " << version::refspec() << ", git revision " << version::gitrev());
+
+    START_BANNER("SPAdes sequence-to-graph mapper");
 
     try {
         unsigned nthreads = cfg.nthreads;

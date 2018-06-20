@@ -7,6 +7,7 @@
 
 #pragma once
 #include "utils/perf/perfcounter.hpp"
+#include "version.hpp"
 
 #include <vector>
 #include <unordered_map>
@@ -135,6 +136,13 @@ inline const char* __scope_source_name() {
 # define TRACE(message)                      /* No trace */
 #endif
 #define INFO(message)                       LOG_MSG(logging::L_INFO , message)
+#define START_BANNER(description)                                       \
+    do {                                                                \
+        INFO("Starting " description  " , built from "                  \
+             << version::refspec()                                      \
+             << ", git revision "                                       \
+             << version::gitrev());                                     \
+    } while (0)
 #define VERBOSE_T(n, T, message)            {size_t n_copy = (n); if (n_copy % (T) == 0 && n_copy > 0) INFO(n_copy << message)}
 #define VERBOSE(n, message)                 VERBOSE_T((n), 10000, message)
 #define VERBOSE_POWER_T(n, T, message)      {size_t n_copy = (n); if ((n_copy & (n_copy - 1)) == 0 && (n_copy > T)) INFO(n_copy << message)}

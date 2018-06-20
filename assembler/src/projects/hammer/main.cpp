@@ -72,7 +72,7 @@ int main(int argc, char * argv[]) {
 
     std::string config_file = CONFIG_FILENAME;
     if (argc > 1) config_file = argv[1];
-    INFO("Starting BayesHammer, built from " << version::refspec() << ", git revision " << version::gitrev());
+    START_BANNER("BayesHammer");
     INFO("Loading config from " << config_file.c_str());
     cfg::create_instance(config_file);
     INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg::get().general_max_nthreads);
