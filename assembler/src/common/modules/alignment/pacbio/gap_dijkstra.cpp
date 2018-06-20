@@ -1,6 +1,6 @@
 #include "modules/alignment/pacbio/gap_dijkstra.hpp"
 
-namespace gap_dijkstra {
+namespace graph_aligner {
 
 
 bool DijkstraGraphSequenceBase::ShouldUpdateQueue(int seq_ind, int ed)
@@ -141,7 +141,6 @@ void DijkstraGraphSequenceBase::CloseGap() {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool DijkstraGapFiller::AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed) {
-    bool found_path = false;
     if (reachable_vertex_.size() == 0 || reachable_vertex_.count(g_.EdgeEnd(cur_state.gs.e)) > 0) {
         if (reachable_vertex_.size() == 0 || reachable_vertex_.count(g_.EdgeEnd(e)) > 0) {
             GraphState next_state(e, 0, (int) g_.length(e) );
@@ -157,12 +156,12 @@ bool DijkstraGapFiller::AddState(const QueueState &cur_state, debruijn_graph::Ed
                 QueueState state(GraphState(e, 0, end_p_), (int)ss_.size());
                 Update(state, cur_state, ed + score);
                 if (ed + score == path_max_length_) {
-                    found_path = true;
+                    return true;
                 }
             }
         }
     }
-    return found_path;
+    return false;
 }
 
 bool DijkstraGapFiller::IsEndPosition(const QueueState &cur_state) {
@@ -175,7 +174,6 @@ bool DijkstraGapFiller::IsEndPosition(const QueueState &cur_state) {
 
 
 bool DijkstraEndsReconstructor::AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed) {
-    bool found_path = false;
     if (!IsEndPosition(cur_state)) {
         GraphState next_state(e, 0, (int) g_.length(e));
         AddNewEdge(next_state, cur_state, ed);
@@ -190,13 +188,13 @@ bool DijkstraEndsReconstructor::AddState(const QueueState &cur_state, debruijn_g
                 QueueState state(GraphState(e, 0, position + 1), (int) ss_.size());
                 Update(state, cur_state, ed + score);
                 if (ed + score == path_max_length_) {
-                    found_path = true;
                     end_qstate_ = state;
+                    return true;
                 }
             }
         }
     }
-    return found_path;
+    return false;
 }
 
 bool DijkstraEndsReconstructor::IsEndPosition(const QueueState &cur_state) {
@@ -206,4 +204,4 @@ bool DijkstraEndsReconstructor::IsEndPosition(const QueueState &cur_state) {
     return false;
 }
 
-} // namespace gap_dijsktra
+} // namespace graph_aligner

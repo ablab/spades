@@ -24,7 +24,6 @@
 #include "io/reads/io_helper.hpp"
 #include "common/assembly_graph/core/coverage.hpp"
 
-#include "modules/alignment/pacbio/pac_index.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
@@ -44,7 +43,8 @@ void create_console_logger() {
     logging::attach_logger(log);
 }
 
-namespace debruijn_graph {
+
+namespace graph_aligner {
 
 struct GAlignerConfig {
     // general
@@ -56,11 +56,10 @@ struct GAlignerConfig {
 
     //path construction
     debruijn_graph::config::pacbio_processor pb;
-    gap_dijkstra::GapClosingConfig gap_cfg;
+    GapClosingConfig gap_cfg;
 };
 
 }
-
 
 namespace llvm {
 namespace yaml {
@@ -82,8 +81,8 @@ template<> struct MappingTraits<debruijn_graph::config::pacbio_processor> {
     }
 };
 
-template<> struct MappingTraits<gap_dijkstra::GapClosingConfig> {
-    static void mapping(IO& io, gap_dijkstra::GapClosingConfig& cfg) {
+template<> struct MappingTraits<graph_aligner::GapClosingConfig> {
+    static void mapping(IO& io, graph_aligner::GapClosingConfig& cfg) {
         io.mapRequired("max_vertex_in_gap", cfg.max_vertex_in_gap);
         io.mapRequired("queue_limit", cfg.queue_limit);
         io.mapRequired("iteration_limit", cfg.iteration_limit);
@@ -103,8 +102,8 @@ struct ScalarEnumerationTraits<alignment::BWAIndex::AlignmentMode> {
     }
 };
 
-template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
-    static void mapping(IO& io, debruijn_graph::GAlignerConfig& cfg) {
+template<> struct MappingTraits<graph_aligner::GAlignerConfig> {
+    static void mapping(IO& io, graph_aligner::GAlignerConfig& cfg) {
         io.mapRequired("k", cfg.K);
         io.mapRequired("path_to_graphfile", cfg.path_to_graphfile);
         io.mapRequired("path_to_sequences", cfg.path_to_sequences);
@@ -122,11 +121,11 @@ template<> struct MappingTraits<debruijn_graph::GAlignerConfig> {
 }
 }
 
-namespace debruijn_graph {
+namespace graph_aligner {
 
 class LongReadsAligner {
 private:
-    const ConjugateDeBruijnGraph &g_;
+    const debruijn_graph::ConjugateDeBruijnGraph &g_;
     const pacbio::PacBioMappingIndex<Graph> pac_index_;
     MappingPrinterHub mapping_printer_hub_;
 
@@ -134,10 +133,10 @@ private:
     int processed_reads_;
 
 public:
-    LongReadsAligner(const ConjugateDeBruijnGraph &g,
+    LongReadsAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
                      const alignment::BWAIndex::AlignmentMode mode,
                      const debruijn_graph::config::pacbio_processor &pb,
-                     const gap_dijkstra::GapClosingConfig gap_cfg,
+                     const GapClosingConfig gap_cfg,
                      const string output_file,
                      const string formats):
         g_(g), pac_index_(g_, pb, mode, gap_cfg), mapping_printer_hub_(g_, output_file, formats) {
@@ -190,26 +189,26 @@ public:
     }
 };
 
-const ConjugateDeBruijnGraph& LoadGraph(const string &saves_path, const string &tmpdir, int K) {
+const debruijn_graph::ConjugateDeBruijnGraph& LoadGraph(const string &saves_path, const string &tmpdir, int K) {
     if (fs::extension(saves_path) == "gfa") {
         DEBUG("Load gfa")
         VERIFY_MSG(fs::is_regular_file(saves_path), "GFA-file " + saves_path + " doesn't exist");
-        static ConjugateDeBruijnGraph g(K);
+        static debruijn_graph::ConjugateDeBruijnGraph g(K);
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(g, true);
         return g;
     } else {
         DEBUG("Load from saves")
-        static conj_graph_pack gp(K, tmpdir, 0);
-        graphio::ScanGraphPack(saves_path, gp);
+        static debruijn_graph::conj_graph_pack gp(K, tmpdir, 0);
+        debruijn_graph::graphio::ScanGraphPack(saves_path, gp);
         return gp.g;
     }
 }
 
-void Launch(debruijn_graph::GAlignerConfig &cfg, const string output_file, int threads) {
+void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
     string tmpdir = fs::make_temp_dir(fs::current_dir(), "tmp");
-    const ConjugateDeBruijnGraph &g = LoadGraph(cfg.path_to_graphfile, tmpdir, cfg.K);
+    const debruijn_graph::ConjugateDeBruijnGraph &g = LoadGraph(cfg.path_to_graphfile, tmpdir, cfg.K);
     INFO("Loaded graph with " << g.size() << " vertices");
 
     LongReadsAligner aligner(g, cfg.data_type, cfg.pb, cfg.gap_cfg, output_file, cfg.output_format);
@@ -238,7 +237,7 @@ void Launch(debruijn_graph::GAlignerConfig &cfg, const string output_file, int t
     INFO("Finished")
     fs::remove_dir(tmpdir);
 }
-}
+} // namespace graph_aligner
 
 int main(int argc, char **argv) {
 
@@ -270,10 +269,10 @@ int main(int argc, char **argv) {
     auto buf = llvm::MemoryBuffer::getFile(cfg);
     VERIFY_MSG(buf, "Failed to load config file " + cfg);
     llvm::yaml::Input yin(*buf.get());
-    debruijn_graph::GAlignerConfig config;
+    graph_aligner::GAlignerConfig config;
     yin >> config;
     omp_set_num_threads(nthreads);
 
-    debruijn_graph::Launch(config, output_file, nthreads);
+    graph_aligner::Launch(config, output_file, nthreads);
     return 0;
 }

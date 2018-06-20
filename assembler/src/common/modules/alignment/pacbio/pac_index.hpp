@@ -67,14 +67,14 @@ private:
 
     alignment::BWAReadMapper<Graph> bwa_mapper_;
 
-    gap_dijkstra::GapClosingConfig gap_cfg_;
+    graph_aligner::GapClosingConfig gap_cfg_;
 
 public:
 
     PacBioMappingIndex(const Graph &g,
                         debruijn_graph::config::pacbio_processor pb_config, 
                         alignment::BWAIndex::AlignmentMode mode, 
-                        gap_dijkstra::GapClosingConfig gap_cfg = gap_dijkstra::GapClosingConfig())
+                        graph_aligner::GapClosingConfig gap_cfg = graph_aligner::GapClosingConfig())
             : g_(g),
               pb_config_(pb_config),
               bwa_mapper_(g, mode, pb_config.bwa_length_cutoff),
@@ -307,7 +307,7 @@ public:
             return_code += 2;
             return;
         }
-        gap_dijkstra::DijkstraEndsReconstructor algo = gap_dijkstra::DijkstraEndsReconstructor(g_, gap_cfg_, ss.str(), start_e, start_pos, score);
+        graph_aligner::DijkstraEndsReconstructor algo = graph_aligner::DijkstraEndsReconstructor(g_, gap_cfg_, ss.str(), start_e, start_pos, score);
         algo.CloseGap();
         score = algo.GetEditDistance();
         return_code += algo.GetReturnCode();
@@ -384,9 +384,9 @@ public:
                     }
                     DEBUG("taking subseq" << seq_start <<" "<< end_pos <<" " << s.size());
                     std::string seq_string = s.Subseq(seq_start, min(end_pos, s_len)).str();
-                    gap_filler::GapFiller gap_filler(g_, pb_config_, gap_cfg_);
-                    gap_filler::GapFillerResult res = gap_filler.Run(seq_string, gap_filler::GraphPosition(prev_edge, prev_last_index.edge_position)
-                                                                               , gap_filler::GraphPosition(cur_edge, cur_first_index.edge_position)
+                    graph_aligner::GapFiller gap_filler(g_, pb_config_, gap_cfg_);
+                    graph_aligner::GapFillerResult res = gap_filler.Run(seq_string, graph_aligner::GraphPosition(prev_edge, prev_last_index.edge_position)
+                                                                               , graph_aligner::GraphPosition(cur_edge, cur_first_index.edge_position)
                                                                                , limits.first, limits.second);
                     vector<EdgeId> intermediate_path = res.intermediate_path;
                     if (intermediate_path.size() == 0) {

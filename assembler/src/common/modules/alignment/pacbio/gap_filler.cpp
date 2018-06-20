@@ -1,6 +1,6 @@
 #include "modules/alignment/pacbio/gap_filler.hpp"
 
-namespace gap_filler {
+namespace graph_aligner {
 
 
 std::string GapFiller::PathToString(const vector<EdgeId>& path) const {
@@ -14,8 +14,8 @@ std::string GapFiller::PathToString(const vector<EdgeId>& path) const {
 }
 
 GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
-        const gap_filler::GraphPosition &start_pos,
-        const gap_filler::GraphPosition &end_pos,
+        const GraphPosition &start_pos,
+        const GraphPosition &end_pos,
         int path_max_length, int score) const {
     VertexId start_v = g_.EdgeEnd(start_pos.edgeid);
     VertexId end_v = g_.EdgeStart(end_pos.edgeid);
@@ -40,23 +40,23 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len << " max-len " <<
           ed_limit << " start_p=" << start_pos.position <<
           " end_p=" << end_pos.position);
-    gap_filler::GapFillerResult dijkstra_res;
+    GapFillerResult dijkstra_res;
     if (vertex_pathlen.size() == 0 ||
             ((size_t) s_len) > pb_config_.max_contigs_gap_length ||
             vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap) {
         DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
         if (vertex_pathlen.size() == 0) {
-            dijkstra_res.return_code = gap_dijkstra::DijkstraReturnCode::NOT_CONNECTED;
+            dijkstra_res.return_code = DijkstraReturnCode::NOT_CONNECTED;
         }
         if (((size_t) s_len) > pb_config_.max_contigs_gap_length) {
-            dijkstra_res.return_code += gap_dijkstra::DijkstraReturnCode::TOO_LONG_GAP;
+            dijkstra_res.return_code += DijkstraReturnCode::TOO_LONG_GAP;
         }
         if (vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap) {
-            dijkstra_res.return_code += gap_dijkstra::DijkstraReturnCode::TOO_MANY_VERTICES;
+            dijkstra_res.return_code += DijkstraReturnCode::TOO_MANY_VERTICES;
         }
         return dijkstra_res;
     }
-    gap_dijkstra::DijkstraGapFiller gap_filler = gap_dijkstra::DijkstraGapFiller(g_, gap_cfg_, s,
+    DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, gap_cfg_, s,
             start_pos.edgeid, end_pos.edgeid,
             start_pos.position, end_pos.position,
             ed_limit, vertex_pathlen);
@@ -74,14 +74,14 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
 }
 
 GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
-        const gap_filler::GraphPosition &start_pos,
-        const gap_filler::GraphPosition &end_pos,
+        const GraphPosition &start_pos,
+        const GraphPosition &end_pos,
         int path_min_length, int path_max_length) const {
     VertexId start_v = g_.EdgeEnd(start_pos.edgeid);
     VertexId end_v = g_.EdgeStart(end_pos.edgeid);
     TRACE(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) << " " << g_.int_id(end_v));
     omnigraph::PathStorageCallback<debruijn_graph::Graph> callback(g_);
-    gap_filler::GapFillerResult bf_res;
+    GapFillerResult bf_res;
     bf_res.return_code = ProcessPaths(g_,
                                       path_min_length, path_max_length,
                                       start_v, end_v,
@@ -146,8 +146,8 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
 }
 
 GapFillerResult GapFiller::Run(const string &s,
-                               const gap_filler::GraphPosition &start_pos,
-                               const gap_filler::GraphPosition &end_pos,
+                               const GraphPosition &start_pos,
+                               const GraphPosition &end_pos,
                                int path_min_length, int path_max_length) {
     utils::perf_counter pc;
     auto bf_res = BestScoredPathBruteForce(s, start_pos, end_pos, path_min_length, path_max_length);
@@ -164,11 +164,11 @@ GapFillerResult GapFiller::Run(const string &s,
         }
     }
     if (bf_res.score == std::numeric_limits<int>::max()) {
-        bf_res.return_code = gap_dijkstra::DijkstraReturnCode::NO_PATH;
+        bf_res.return_code = DijkstraReturnCode::NO_PATH;
     }
     return bf_res;
 
 }
 
 
-}
+} // namespace graph_aligner

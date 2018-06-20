@@ -3,12 +3,12 @@
 #include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/pacbio/pac_index.hpp"
 
-namespace debruijn_graph {
+namespace graph_aligner {
 
 class MappingPrinter {
 public:
 
-    MappingPrinter(const ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
+    MappingPrinter(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
         : g_(g), output_file_prefix_(output_file_prefix)
     {}
 
@@ -17,14 +17,14 @@ public:
     virtual ~MappingPrinter () {};
 
 protected:
-    const ConjugateDeBruijnGraph &g_;
+    const debruijn_graph::ConjugateDeBruijnGraph &g_;
     std::string output_file_prefix_;
     ofstream output_file_;
 };
 
 class MappingPrinterTSV: public MappingPrinter {
 public:
-    MappingPrinterTSV(const ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
+    MappingPrinterTSV(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
         : MappingPrinter(g, output_file_prefix)
     {
         output_file_.open(output_file_prefix_ + ".tsv", std::ofstream::out);
@@ -40,7 +40,7 @@ public:
 
 class MappingPrinterGPA : public MappingPrinter {
 public:
-    MappingPrinterGPA(const ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
+    MappingPrinterGPA(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
         : MappingPrinter(g, output_file_prefix)
     {
         output_file_.open(output_file_prefix_ + ".gpa", std::ofstream::out);
@@ -72,7 +72,7 @@ public:
 
 class MappingPrinterHub {
 public:
-    MappingPrinterHub(const ConjugateDeBruijnGraph &g, const std::string &output_file_prefix, const std::string formats) {
+    MappingPrinterHub(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix, const std::string formats) {
         if (formats.find("tsv") != std::string::npos) {
             mapping_printers_.push_back(new MappingPrinterTSV(g, output_file_prefix));
         }
@@ -98,4 +98,4 @@ private:
     vector<MappingPrinter*> mapping_printers_;
 };
 
-}
+} // namespace graph_aligner

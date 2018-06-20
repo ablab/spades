@@ -4,7 +4,7 @@
 
 #include "mapping_printer.hpp"
 
-namespace debruijn_graph {
+namespace graph_aligner {
 
 void MappingPrinterTSV::SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
     string path_str = "";
@@ -263,4 +263,4 @@ void MappingPrinterGPA::SaveMapping(const pacbio::OneReadMapping &aligned_mappin
     }
 }
 
-}
+} // namespace graph_aligner

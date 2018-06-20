@@ -1,5 +1,4 @@
-#ifndef COMMON_MODULES_ALIGNMENT_PACBIO_GAP_DIJKSTRA_H_
-#define COMMON_MODULES_ALIGNMENT_PACBIO_GAP_DIJKSTRA_H_
+#pragma once
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
@@ -7,7 +6,7 @@
 #include "sequence/sequence_tools.hpp"
 #include "utils/perf/perfcounter.hpp"
 
-namespace gap_dijkstra {
+namespace graph_aligner {
 using debruijn_graph::EdgeId;
 
 enum DijkstraReturnCode {
@@ -211,7 +210,7 @@ protected:
     const debruijn_graph::Graph &g_;
     const GapClosingConfig &gap_cfg_;
     const string ss_;
-    debruijn_graph::EdgeId start_e_;
+    const debruijn_graph::EdgeId start_e_;
     const int start_p_;
     int path_max_length_;
     int min_score_;
@@ -298,6 +297,4 @@ public:
     }
 };
 
-} // namespace gap_dijsktra
-
-#endif //COMMON_MODULES_ALIGNMENT_PACBIO_GAP_DIJKSTRA_H_
+} // namespace graph_aligner
