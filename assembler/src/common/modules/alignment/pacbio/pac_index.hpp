@@ -13,19 +13,13 @@
 
 #include "assembly_graph/index/edge_multi_index.hpp"
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
-#include "assembly_graph/paths/path_utils.hpp"
-#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
-#include "assembly_graph/paths/mapping_path.hpp"
-#include "assembly_graph/paths/path_processor.hpp"
 
 #include "modules/alignment/edge_index_refiller.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "modules/alignment/gap_info.hpp"
 
-#include "pipeline/configs/aligner_config.hpp"
-
 #include "modules/alignment/pacbio/pacbio_read_structures.hpp"
-#include "modules/alignment/pacbio/gap_dijkstra.hpp"
+#include "modules/alignment/pacbio/gap_filler.hpp"
 
 namespace pacbio {
 enum {
@@ -381,11 +375,20 @@ public:
                         prev_edge = EdgeId();
                         continue;
                     }
-                    int score = std::numeric_limits<int>::max();
-                    vector<EdgeId> intermediate_path = BestScoredPath(s, prev_edge, cur_edge, prev_last_index.edge_position, cur_first_index.edge_position, 
-                                                                                    start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add, score);
 
-
+                    int s_len = int(s.size());
+                    int end_pos = seq_end;
+                    if (seq_end < seq_start) {
+                        DEBUG ("modifying limits because of some bullshit magic, seq length 0")
+                        end_pos = seq_start;
+                    }
+                    DEBUG("taking subseq" << seq_start <<" "<< end_pos <<" " << s.size());
+                    std::string seq_string = s.Subseq(seq_start, min(end_pos, s_len)).str();
+                    gap_filler::GapFiller gap_filler(g_, pb_config_, gap_cfg_);
+                    gap_filler::GapFillerResult res = gap_filler.Run(seq_string, gap_filler::GraphPosition(prev_edge, prev_last_index.edge_position)
+                                                                               , gap_filler::GraphPosition(cur_edge, cur_first_index.edge_position)
+                                                                               , limits.first, limits.second);
+                    vector<EdgeId> intermediate_path = res.intermediate_path;
                     if (intermediate_path.size() == 0) {
                         DEBUG(DebugEmptyBestScoredPath(start_v, end_v, prev_edge, cur_edge,
                                       prev_last_index.edge_position, cur_first_index.edge_position, seq_end - seq_start));
@@ -756,183 +759,6 @@ public:
                 return false;
             }
         }
-    }
-
-    std::string PathToString(const std::vector<EdgeId> &path) const {
-        std::string res = "";
-        for (auto iter = path.begin(); iter != path.end(); iter++) {
-            size_t len = g_.length(*iter);
-            std::string tmp = g_.EdgeNucls(*iter).First(len).str();
-            res = res + tmp;
-        }
-        return res;
-    }
-
-    std::vector<EdgeId> BestScoredPathDijkstra(const Sequence &s, 
-                                  VertexId start_v, VertexId end_v, 
-                                  EdgeId start_e, EdgeId end_e,
-                                  const int edge_start_pos, const int edge_end_pos,
-                                  const int seq_start_pos, const int seq_end_pos, int path_max_length, int &score, int &return_code_dijkstra) const {
-
-        auto path_searcher_b = omnigraph::DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(g_, path_max_length);
-        path_searcher_b.Run(end_v);
-        auto path_searcher = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, path_max_length);
-        path_searcher.Run(start_v);
-        auto reached_vertices_b = path_searcher_b.ProcessedVertices();
-        auto reached_vertices = path_searcher.ProcessedVertices();
-
-        std::map<VertexId, size_t> vertex_pathlen;
-        for (auto v: reached_vertices_b) {
-                if (reached_vertices.count(v) > 0){
-                        vertex_pathlen[v] = path_searcher_b.GetDistance(v);
-                }
-        }
-        Sequence ss = s.Subseq(seq_start_pos, min(seq_end_pos, int(s.size()) ));
-        int s_len = int(ss.size());
-        path_max_length = score;
-        if (score == std::numeric_limits<int>::max()){
-            path_max_length = max(s_len/3, 20);
-        } 
-        DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len << " max-len " << path_max_length << " start_p=" << edge_start_pos << " end_p=" << edge_end_pos << " eid=" << start_e.int_id());
-        if (vertex_pathlen.size() == 0 || ((size_t) s_len) > pb_config_.max_contigs_gap_length || vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap){
-            DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
-            score = std::numeric_limits<int>::max();
-            if (vertex_pathlen.size() == 0) {
-                return_code_dijkstra = gap_dijkstra::DijkstraReturnCode::NOT_CONNECTED;
-            }
-            if (((size_t) s_len) > pb_config_.max_contigs_gap_length) {
-                return_code_dijkstra += gap_dijkstra::DijkstraReturnCode::TOO_LONG_GAP;
-            }
-            if (vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap) {
-                return_code_dijkstra += gap_dijkstra::DijkstraReturnCode::TOO_MANY_VERTICES;
-            }
-            return vector<EdgeId>(0);
-        }
-        gap_dijkstra::DijkstraGapFiller gap_filler = gap_dijkstra::DijkstraGapFiller(g_, gap_cfg_, ss.str(), start_e, end_e, edge_start_pos, edge_end_pos, path_max_length, vertex_pathlen);
-        gap_filler.CloseGap();
-        score = gap_filler.GetEditDistance();
-        return_code_dijkstra += gap_filler.GetReturnCode();
-        if (score == std::numeric_limits<int>::max()){
-            DEBUG("Dijkstra didn't find anything")
-            score = std::numeric_limits<int>::max();
-            return vector<EdgeId>(0);
-        }
-        std::vector<EdgeId> ans = gap_filler.GetPath();
-        return ans;
-    }
-
-    std::vector<EdgeId> BestScoredPathBruteForce(const Sequence &s, VertexId start_v, VertexId end_v,
-                                  int path_min_length, int path_max_length,
-                                  int &start_pos, int &end_pos, 
-                                  const std::string &s_add, const std::string &e_add, int &score, int &return_code) const {
-        TRACE(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
-        omnigraph::PathStorageCallback<Graph> callback(g_);
-        return_code = ProcessPaths(g_,
-                                path_min_length, path_max_length,
-                                start_v, end_v,
-                                callback);
-        DEBUG("PathProcessor result: " << return_code << " limits " << path_min_length << " " << path_max_length);
-        std::vector<std::vector<EdgeId> > paths = callback.paths();
-        TRACE("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
-        int s_len = int(s.size());
-        if (end_pos < start_pos) {
-            DEBUG ("modifying limits because of some bullshit magic, seq length 0")
-            end_pos = start_pos;
-        }
-        size_t best_path_ind = paths.size();
-        int best_score = std::numeric_limits<int>::max();
-        if (paths.size() == 0) {
-            DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
-            DEBUG ("no paths");
-            return {};
-        }
-        if (seq_string.length() > pb_config_.max_contigs_gap_length) {
-            DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
-            DEBUG("Gap is too large");
-            return {};
-        }
-        bool additional_debug = (paths.size() > 1 && paths.size() < 10);
-        for (size_t i = 0; i < paths.size(); i++) {
-            DEBUG("path len "<< paths[i].size());
-            if (paths[i].size() == 0) {
-                DEBUG ("Pathprocessor returns path with size = 0")
-            }
-            std::string cur_string = s_add + PathToString(paths[i]) + e_add;
-            TRACE("cur_string: " << cur_string <<"\n seq_string " << seq_string);
-            int cur_score = StringDistance(cur_string, seq_string);
-            //DEBUG only
-            if (additional_debug) {
-                TRACE("candidate path number "<< i << " , len " << cur_string.length());
-                TRACE("graph candidate: " << cur_string);
-                TRACE("in pacbio read: " << seq_string);
-                for (auto j_iter = paths[i].begin(); j_iter != paths[i].end();
-                        ++j_iter) {
-                    DEBUG(g_.int_id(*j_iter));
-                }
-                DEBUG("score: "<< cur_score);
-            }
-            if (cur_score < best_score) {
-                best_score = cur_score;
-                best_path_ind = i;
-            }
-        }
-        TRACE(best_score);
-        score = best_score;
-        if (best_score == std::numeric_limits<int>::max()) {
-            if (paths.size() < 10) {
-                for (size_t i = 0; i < paths.size(); i++) {
-                    DEBUG ("failed with strings " << seq_string << " " << s_add + PathToString(paths[i]) + e_add);
-                }
-            }
-            DEBUG (paths.size() << " paths available");
-            return std::vector<EdgeId>(0);
-        }
-        if (additional_debug) {
-            TRACE("best score found! Path " <<best_path_ind <<" score "<< best_score);
-        }
-        return paths[best_path_ind];
-    }
-
-    std::vector<EdgeId> BestScoredPath(const Sequence &s, EdgeId start_e, EdgeId end_e,
-                                  const int edge_start_pos, const int edge_end_pos,
-                                  VertexId start_v, VertexId end_v,
-                                  int path_min_length, int path_max_length,
-                                  int seq_start_pos, int seq_end_pos, 
-                                  const std::string &s_add, const std::string &e_add, int &score) const {
-
-        DEBUG("Fill Gap: " << start_e.int_id() << " " << end_e.int_id() << " " << path_max_length << " s_add=" <<   s_add.size() << " e_add=" << e_add.size() 
-                            << " start_pos=" << seq_start_pos << " end_pos=" << seq_end_pos);
-        int return_code = -1;
-        score = std::numeric_limits<int>::max();
-        utils::perf_counter pc;
-        std::vector<EdgeId> path = BestScoredPathBruteForce(s, start_v, end_v, 
-                                                               path_min_length, path_max_length,
-                                                               seq_start_pos, seq_end_pos, s_add, e_add, score, return_code);
-        double tm1 = pc.time();
-        pc.reset();
-        int score_bf = score;
-        if (gap_cfg_.run_dijkstra && return_code != 0){
-            int return_code_dijkstra = 0;
-            std::vector<EdgeId> path_dijkstra = BestScoredPathDijkstra(s, start_v, end_v, 
-                                                                start_e, end_e, edge_start_pos, edge_end_pos, 
-                                                                seq_start_pos, seq_end_pos, 
-                                                                path_max_length, score, return_code_dijkstra);
-            if (return_code == 0 && score_bf != score){
-                DEBUG("BruteForce run: return_code=" << return_code << " score=" << score_bf << " time1=" << tm1
-                     << " Dijkstra run: return_code=" << return_code_dijkstra << " score=" << score << " time2=" << pc.time() <<" len=" << seq_end_pos - seq_start_pos << " WBW\n")
-            } else {
-                DEBUG("BruteForce run: return_code=" << return_code << " score=" << score_bf << " time1=" << tm1
-                     << " Dijkstra run: return_code=" << return_code_dijkstra << " score=" << score << " time2=" << pc.time() <<" len=" << seq_end_pos - seq_start_pos << "\n")
-            }
-            if (path_dijkstra.size() > 1) {
-                std::vector<EdgeId> short_path(path_dijkstra.begin() + 1, path_dijkstra.end() - 1);
-                return short_path;
-            } else {
-                score = score_bf;
-                return path;
-            }
-        } 
-        return path;
     }
 
 };
