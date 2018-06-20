@@ -58,7 +58,9 @@ void DijkstraGraphSequenceBase::AddNewEdge(const GraphState &gs, const QueueStat
         }
     }
     if (ss_.size() - prev_state.i > 0) {
-        int len = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, (int) ss_.size() - prev_state.i  );
+        // len - is a maximum length of substring to align on current edge
+        int len = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, // length of current edge + maximum insertion size  
+                       (int) ss_.size() - prev_state.i  ); // length of suffix left
         string seq_str = ss_.substr(prev_state.i, len);
         vector<int> positions;
         vector<int> scores;

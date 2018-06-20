@@ -1,5 +1,5 @@
-#ifndef COMMON_MODULES_ALIGNMENT_PACBIO_H_
-#define COMMON_MODULES_ALIGNMENT_PACBIO_H_
+#ifndef COMMON_MODULES_ALIGNMENT_PACBIO_GAP_DIJKSTRA_H_
+#define COMMON_MODULES_ALIGNMENT_PACBIO_GAP_DIJKSTRA_H_
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
@@ -151,9 +151,9 @@ public:
         , start_e_(start_e)
         , start_p_(start_p)
         , path_max_length_(path_max_length)
+        , return_code_(0)
         , queue_limit_(gap_cfg_.queue_limit)
-        , iter_limit_(gap_cfg_.iteration_limit)
-        , return_code_(0) {
+        , iter_limit_(gap_cfg_.iteration_limit) {
         best_ed_.resize(ss_.size(), path_max_length_);
         AddNewEdge(GraphState(start_e_, start_p_, (int) g_.length(start_e_)), QueueState(), 0);
         min_score_ = std::numeric_limits<int>::max();
@@ -300,4 +300,4 @@ public:
 
 } // namespace gap_dijsktra
 
-#endif //COMMON_MODULES_ALIGNMENT_PACBIO_H_
+#endif //COMMON_MODULES_ALIGNMENT_PACBIO_GAP_DIJKSTRA_H_
