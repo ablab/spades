@@ -110,10 +110,10 @@ Profile<Abundance> MeanVector(const CovVecs& cov_vecs) {
 }
 
 template<class AbVector>
-std::string PrintVector(const AbVector& mpl_vector) {
+std::string PrintVector(const AbVector& mpl_vector, const string &delim = " ") {
     stringstream ss;
     copy(mpl_vector.begin(), mpl_vector.end(),
-         ostream_iterator<typename AbVector::value_type>(ss, " "));
+         ostream_iterator<typename AbVector::value_type>(ss, delim.c_str()));
     return ss.str();
 }
 

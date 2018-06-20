@@ -74,7 +74,7 @@ class EdgeProfileStorage {
 
             for (const auto &e_mr: mapper.MapSequence(read.sequence())) {
                 // FIXME: should initial_range be used instead?
-                profiles_[e_mr.first][stream_id] += double(e_mr.second.mapped_range.size());
+                profiles_[e_mr.first][stream_id] += float(e_mr.second.mapped_range.size());
             }
         }
     };
@@ -149,7 +149,7 @@ void Run(const std::string &graph_path, const std::string &dataset_desc, size_t 
     std::ofstream os(profiles_fn);
     for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
         EdgeId e = *it;
-        os << gp.g.int_id(e) << '\t' << PrintVector(profile_storage.profile(e)) << std::endl;
+        os << gp.g.int_id(e) << '\t' << PrintVector(profile_storage.profile(e), "\t") << '\n';
     }
 }
 
