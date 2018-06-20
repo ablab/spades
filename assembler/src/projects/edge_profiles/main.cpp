@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
     process_cmdline(argc, argv, cfg);
 
     create_console_logger();
-    INFO("Built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
+    START_BANNER("EdgeProfileCounter");
 
     try {
         unsigned nthreads = cfg.nthreads;
