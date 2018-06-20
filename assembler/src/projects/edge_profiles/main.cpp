@@ -43,15 +43,24 @@ static bool ends_with(const std::string &s, const std::string &p) {
     return (s.compare(s.size() - p.size(), p.size(), p) == 0);
 }
 
-void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename) {
+void GraphInfo(debruijn_graph::Graph &g) {
+    size_t sz = 0;
+    for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it)
+        sz += 1;
+
+    INFO("Graph loaded. Total vertices: " << g.size() << " Total edges: " << sz);
+}
+
+void LoadGraph(debruijn_graph::conj_graph_pack &gp, const std::string &filename) {
     using namespace debruijn_graph;
     if (ends_with(filename, ".gfa")) {
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(graph);
+        gfa.to_graph(gp.g);
     } else {
-        graphio::ScanBasicGraph(filename, graph);
+        graphio::ScanGraphPack(filename, gp);
     }
+    GraphInfo(gp.g);
 }
 
 using namespace debruijn_graph;
@@ -120,27 +129,21 @@ void Run(const std::string &graph_path, const std::string &dataset_desc, size_t 
     debruijn_graph::conj_graph_pack gp(K, tmpdir, dataset.lib_count());
 
     INFO("Loading de Bruijn graph from " << graph_path);
-    LoadGraph(gp.g, graph_path);
-    {
-        size_t sz = 0;
-        for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it)
-            sz += 1;
+    gp.kmer_mapper.Attach();
 
-        INFO("Graph loaded. Total vertices: " << gp.g.size() << " Total edges: " << sz);
-    }
+    LoadGraph(gp, graph_path);
 
     // FIXME: Get rid of this "/" junk
     debruijn_graph::config::init_libs(dataset, nthreads, 512ULL << 20, tmpdir + "/");
 
-    gp.kmer_mapper.Attach();
     gp.EnsureBasicMapping();
 
     std::vector<size_t> libs(dataset.lib_count());
     std::iota(libs.begin(), libs.end(), 0);
 
-    io::BinarySingleStreams single_readers =
-            io::single_binary_readers_for_libs(dataset, libs,
-                                               /*followed by rc*/true, /*including paired*/true);
+    auto single_readers = io::single_easy_readers_for_libs(dataset, libs,
+                                                           /*followed by rc*/true, /*including paired*/true);
+
     size_t sample_cnt = dataset.lib_count();
     EdgeProfileStorage profile_storage(gp.g, sample_cnt);
 

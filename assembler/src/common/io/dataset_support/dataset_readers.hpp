@@ -59,6 +59,23 @@ SingleStreamPtr single_easy_reader(const SequencingLibrary<debruijn_graph::confi
            single_easy_readers(lib, followed_by_rc, including_paired_reads, handle_Ns, offset_type));
 }
 
+inline ReadStreamList<SingleRead>
+single_easy_readers_for_libs(DataSet<debruijn_graph::config::LibraryData>& dataset_info,
+        const std::vector<size_t>& libs,
+        bool followed_by_rc = true,
+        bool including_paired_reads = true,
+        bool handle_Ns = true,
+        OffsetType offset_type = PhredOffset) {
+    VERIFY(!libs.empty());
+    ReadStreamList<SingleRead> streams;
+    for (auto l_id : libs) {
+        streams.push_back(single_easy_reader(dataset_info[l_id],
+                    followed_by_rc,
+                    including_paired_reads, handle_Ns, offset_type));
+    }
+    return streams;
+}
+
 inline
 ReadStreamList<SingleRead> merged_easy_readers(const SequencingLibrary<debruijn_graph::config::LibraryData> &lib,
                                                bool followed_by_rc,
