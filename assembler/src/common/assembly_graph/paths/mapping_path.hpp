@@ -10,6 +10,8 @@
 #include "sequence/sequence.hpp"
 #include "sequence/range.hpp"
 #include <boost/iterator/iterator_facade.hpp>
+#include <vector>
+#include <utility>
 
 namespace omnigraph {
 
@@ -22,9 +24,9 @@ class Path {
     size_t start_pos_;
     size_t end_pos_;
  public:
-    typedef typename vector<ElementId>::const_iterator iterator;
+    typedef typename std::vector<ElementId>::const_iterator iterator;
 
-    Path(const vector<ElementId>& sequence, size_t start_pos, size_t end_pos)
+    Path(const std::vector<ElementId>& sequence, size_t start_pos, size_t end_pos)
             : sequence_(sequence), start_pos_(start_pos),  end_pos_( end_pos) {
     }
 
@@ -168,7 +170,7 @@ class MappingPath {
             : edges_(edges),
               range_mappings_(range_mappings) {}
 
-    MappingPath(const std::vector<pair<ElementId, MappingRange>>& edge_mappings) {
+    MappingPath(const std::vector<std::pair<ElementId, MappingRange>>& edge_mappings) {
         edges_.reserve(edge_mappings.size());
         range_mappings_.reserve(edge_mappings.size());
         for (const auto &em : edge_mappings) {

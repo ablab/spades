@@ -1,22 +1,17 @@
 //***************************************************************************
-//* Copyright (c) 2015 Saint Petersburg State University
+//* Copyright (c) 2018 Saint Petersburg State University
 //* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "modules/alignment/sequence_mapper.hpp"
+#include "io/utils/edge_namer.hpp"
+#include "pipeline/graphio.hpp"
+#include "pipeline/graph_pack.hpp"
+
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
-
-#include "io/dataset_support/read_converter.hpp"
-#include "io/reads/osequencestream.hpp"
-#include "utils/kmer_counting.hpp"
-#include "io/reads/coverage_filtering_read_wrapper.hpp"
-
-#include "pipeline/graphio.hpp"
-#include "assembly_graph/stats/picture_dump.hpp"
-#include "projects/spades/series_analysis.hpp"
-#include "io/utils/edge_namer.hpp"
 
 #include <cxxopts/cxxopts.hpp>
 
@@ -36,7 +31,6 @@ void Run(size_t K, const string &saves_path, const string &contigs_file,
     fs::make_dir(tmp_dir);
 
     conj_graph_pack gp(K, tmp_dir, 0);
-    omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
     gp.kmer_mapper.Attach();
     graphio::ScanGraphPack(saves_path, gp);
 
@@ -48,7 +42,7 @@ void Run(size_t K, const string &saves_path, const string &contigs_file,
     io::FileReadStream reader(contigs_file);
     io::CanonicalEdgeHelper<Graph> canonical_helper(gp.g);
     std::ofstream os(out_paths_fn);
-    multimap<EdgeId, std::string> edge_usage;
+    std::multimap<EdgeId, std::string> edge_usage;
     io::SingleRead read;
     while (!reader.eof()) {
         reader >> read;
