@@ -443,7 +443,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         #if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
         #    support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
     if options_storage.meta and not options_storage.only_error_correction:
-        if len(support.get_lib_ids_by_type(dataset_data, "paired-end")) != 1 or \
+        if len(support.get_lib_ids_by_type(dataset_data, ["paired-end", "clouds10x"])) != 1 or \
            len(dataset_data) - min(1, len(support.get_lib_ids_by_type(dataset_data, ["tslr", "pacbio", "nanopore"]))) > 1:
             support.error('you cannot specify any data types except a single paired-end library '
                           '(optionally accompanied by a single library of '
