@@ -14,4 +14,4 @@ add_library(modules STATIC
             alignment/pacbio/gap_filler.cpp
             alignment/pacbio/gap_dijkstra.cpp)
 
-target_link_libraries(modules bwa)
+target_link_libraries(modules sequence bwa)
