@@ -4,29 +4,24 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "io/dataset_support/read_converter.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/graph/gfa_reader.hpp"
 
 #include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
-
 #include "projects/mts/contig_abundance.hpp"
-#include "projects/spades/series_analysis.hpp"
 
-#include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 
-#include <clipp/clipp.h>
+#include "version.hpp"
 
+#include <clipp/clipp.h>
+#include <unordered_map>
 #include <string>
 #include <numeric>
-
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#include "version.hpp"
 
 void create_console_logger() {
     using namespace logging;
@@ -71,7 +66,7 @@ class EdgeProfileStorage {
 
     const ConjugateDeBruijnGraph &g_;
     size_t sample_cnt_;
-    std::map<EdgeId, AbundanceVector> profiles_;
+    std::unordered_map<EdgeId, AbundanceVector> profiles_;
 
     // FIXME self-conjugate edge coverage?!
     template<class SingleStream, class Mapper>
@@ -196,7 +191,7 @@ int main(int argc, char** argv) {
     process_cmdline(argc, argv, cfg);
 
     create_console_logger();
-    START_BANNER("EdgeProfileCounter");
+    START_BANNER("edge profile counter");
 
     try {
         unsigned nthreads = cfg.nthreads;
@@ -206,11 +201,11 @@ int main(int argc, char** argv) {
         fs::make_dir(tmpdir);
 
         INFO("K-mer length set to " << k);
-        INFO("# of threads to use: " << nthreads);
 
         nthreads = std::min(nthreads, (unsigned) omp_get_max_threads());
         // Inform OpenMP runtime about this :)
         omp_set_num_threads((int) nthreads);
+        INFO("# of threads to use: " << nthreads);
 
         Run(cfg.graph, cfg.file, k, cfg.outfile, nthreads, tmpdir);
     } catch (const std::string &s) {
