@@ -26,6 +26,7 @@ void DijkstraGraphSequenceBase::Update(const QueueState &state, const QueueState
 {
     if (visited_.count(state) > 0) {
         if (visited_[state] >= score) {
+            ++ updates_;
             q_.erase(make_pair(visited_[state], state));
             visited_[state] = score;
             prev_states_[state] = prev_state;
@@ -35,6 +36,7 @@ void DijkstraGraphSequenceBase::Update(const QueueState &state, const QueueState
         }
     } else {
         if (ShouldUpdateQueue(state.i, score)) {
+            ++ updates_;
             visited_.insert(make_pair(state, score));
             prev_states_.insert(make_pair(state, prev_state));
             q_.insert(make_pair(score, state));
@@ -66,10 +68,17 @@ void DijkstraGraphSequenceBase::AddNewEdge(const GraphState &gs, const QueueStat
         vector<int> scores;
         if (path_max_length_ - ed >= 0) {
             SHWDistanceFull(seq_str, edge_str, path_max_length_ - ed, positions, scores);
+            int prev_score = std::numeric_limits<int>::max();
             for (size_t i = 0; i < positions.size(); ++ i) {
                 if (positions[i] >= 0 && scores[i] >= 0) {
-                    QueueState state(gs, prev_state.i + positions[i] + 1);
-                    Update(state, prev_state, ed + scores[i]);
+                    int next_score = i + 1 >= positions.size() || positions[i + 1] < 0 ? std::numeric_limits<int>::max() : positions[i + 1];
+                    if (scores[i] <= prev_score && scores[i] <= next_score) {
+                        QueueState state(gs, prev_state.i + positions[i] + 1);
+                        Update(state, prev_state, ed + scores[i]);
+                    }
+                    prev_score = scores[i];
+                } else {
+                    prev_score = std::numeric_limits<int>::max();
                 }
             }
         }

@@ -152,7 +152,8 @@ public:
         , path_max_length_(path_max_length)
         , return_code_(0)
         , queue_limit_(gap_cfg_.queue_limit)
-        , iter_limit_(gap_cfg_.iteration_limit) {
+        , iter_limit_(gap_cfg_.iteration_limit)
+        , updates_(0) {
         best_ed_.resize(ss_.size(), path_max_length_);
         AddNewEdge(GraphState(start_e_, start_p_, (int) g_.length(start_e_)), QueueState(), 0);
         min_score_ = std::numeric_limits<int>::max();
@@ -196,6 +197,10 @@ public:
         return end_qstate_.i;
     }
 
+    ~DijkstraGraphSequenceBase(){
+        DEBUG("updates=" << updates_)
+    }
+
 protected:
     set<pair<int, QueueState> > q_;
     unordered_map<QueueState, int, StateHasher> visited_;
@@ -219,6 +224,7 @@ protected:
 
     const size_t queue_limit_;
     const size_t iter_limit_;
+    int updates_;
 };
 
 
