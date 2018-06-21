@@ -32,6 +32,17 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 //    INFO(small_scaffold_graph.VertexCount() << " vertices and " << small_scaffold_graph.EdgeCount()
 //                                            << " edges in new small scaffold graph");
 
+    bool read_cloud_lib_present = false;
+    //fixme build scaffold graph for every 10x lib
+    for (const auto lib: cfg::get().ds.reads) {
+        if (lib.type() == io::LibraryType::Clouds10x) {
+            read_cloud_lib_present = true;
+        }
+    }
+    if (not read_cloud_lib_present) {
+        return;
+    }
+
     path_extend::ScaffoldGraphPolisherLauncher scaffold_graph_polisher(graph_pack);
     bool path_scaffolding = false;
     auto final_scaffold_graph = scaffold_graph_polisher.GetScaffoldGraphFromStorage(graph_pack.scaffold_graph_storage,

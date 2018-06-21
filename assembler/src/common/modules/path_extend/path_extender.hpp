@@ -1744,7 +1744,7 @@ class ScaffoldGraphExtender: public PathExtender {
         bool success = used_storage_.TryUseEdge(path, e, gap);
         if (success) {
             DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
-                                          << gap.gap << ", trash length: " << gap.trash_previous << "-" << gap.trash_current);
+                                          << gap.gap << ", trash length: " << gap.trash.previous << "-" << gap.trash.current);
             DEBUG("Added edge " << e.int_id());
         }
         return success;

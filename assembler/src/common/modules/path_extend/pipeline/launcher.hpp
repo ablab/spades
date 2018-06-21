@@ -80,8 +80,6 @@ class PathExtendLauncher {
     Extenders ConstructReadCloudExtender(const ExtendersGenerator &generator);
 
     void FilterPaths();
-
-
 public:
 
     PathExtendLauncher(const config::dataset& dataset_info,
