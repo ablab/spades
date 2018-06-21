@@ -125,7 +125,7 @@ struct StateHasher {
 class DijkstraGraphSequenceBase {
 
 protected:
-    bool ShouldUpdateQueue(int seq_ind, int ed);
+    bool IsBetter(int seq_ind, int ed);
 
     void Update(const QueueState &state, const QueueState &prev_state, int score);
 
@@ -161,15 +161,15 @@ public:
 
     void CloseGap();
 
-    vector<debruijn_graph::EdgeId> GetPath() const {
+    vector<debruijn_graph::EdgeId> path() const {
         return gap_path_;
     }
 
-    omnigraph::MappingPath<debruijn_graph::EdgeId> GetMappingPath() const {
+    omnigraph::MappingPath<debruijn_graph::EdgeId> mapping_path() const {
         return mapping_path_;
     }
 
-    string GetPathStr() const {
+    string path_str() const {
         string result = "";
         for (EdgeId e : gap_path_) {
             result += std::to_string(e.int_id()) + ",";
@@ -177,27 +177,27 @@ public:
         return result;
     }
 
-    int GetEditDistance() const {
+    int edit_distance() const {
         return min_score_;
     }
 
-    int GetReturnCode() const {
+    int return_code() const {
         return return_code_;
     }
 
-    int GetPathEndPosition() const {
+    int path_end_position() const {
         DEBUG("End position edge=" << end_qstate_.gs.e.int_id() << " end_pos=" << end_qstate_.gs.end_pos
               << " seq_pos=" << end_qstate_.i << " s_len=" << ss_.size())
         return end_qstate_.gs.end_pos;
     }
 
-    int GetSeqEndPosition() const {
+    int seq_end_position() const {
         DEBUG("End position edge=" << end_qstate_.gs.e.int_id() << " end_pos=" << end_qstate_.gs.end_pos
               << " seq_pos=" << end_qstate_.i << " s_len=" << ss_.size())
         return end_qstate_.i;
     }
 
-    ~DijkstraGraphSequenceBase(){
+    ~DijkstraGraphSequenceBase() {
         DEBUG("updates=" << updates_)
     }
 

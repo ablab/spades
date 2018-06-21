@@ -3,7 +3,7 @@
 namespace graph_aligner {
 
 
-bool DijkstraGraphSequenceBase::ShouldUpdateQueue(int seq_ind, int ed)
+bool DijkstraGraphSequenceBase::IsBetter(int seq_ind, int ed)
 {
     if (seq_ind == ss_.size() ) {
         if (ed <= path_max_length_) {
@@ -30,12 +30,12 @@ void DijkstraGraphSequenceBase::Update(const QueueState &state, const QueueState
             q_.erase(make_pair(visited_[state], state));
             visited_[state] = score;
             prev_states_[state] = prev_state;
-            if (ShouldUpdateQueue(state.i, score)) {
+            if (IsBetter(state.i, score)) {
                 q_.insert(make_pair(score, state));
             }
         }
     } else {
-        if (ShouldUpdateQueue(state.i, score)) {
+        if (IsBetter(state.i, score)) {
             ++ updates_;
             visited_.insert(make_pair(state, score));
             prev_states_.insert(make_pair(state, prev_state));
@@ -61,7 +61,7 @@ void DijkstraGraphSequenceBase::AddNewEdge(const GraphState &gs, const QueueStat
     }
     if (ss_.size() - prev_state.i > 0) {
         // len - is a maximum length of substring to align on current edge
-        int len = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, // length of current edge + maximum insertion size  
+        int len = min( (int) g_.length(gs.e) - gs.start_pos + path_max_length_, // length of current edge + maximum insertion size
                        (int) ss_.size() - prev_state.i  ); // length of suffix left
         string seq_str = ss_.substr(prev_state.i, len);
         vector<int> positions;
@@ -100,9 +100,9 @@ bool DijkstraGraphSequenceBase::RunDijkstra() {
     size_t iter = 0;
     QueueState cur_state;
     int ed = 0;
-    while (q_.size() > 0 
-           && !QueueLimitsExceeded(iter)
-           && ed <= path_max_length_) 
+    while (q_.size() > 0
+            && !QueueLimitsExceeded(iter)
+            && ed <= path_max_length_)
     {
         cur_state = q_.begin()->second;
         ed = visited_[cur_state];
