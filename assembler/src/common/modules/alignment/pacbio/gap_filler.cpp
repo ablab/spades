@@ -38,7 +38,7 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
         ed_limit = max(s_len / 3, 20);
     }
     DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len <<
-         " max-len " << ed_limit << " vertex_num=" << vertex_pathlen.size());
+          " max-len " << ed_limit << " vertex_num=" << vertex_pathlen.size());
     GapFillerResult dijkstra_res;
     if (vertex_pathlen.size() == 0 ||
             ((size_t) s_len) > pb_config_.max_contigs_gap_length ||
@@ -55,10 +55,10 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
         }
         return dijkstra_res;
     }
-    DijkstraGapFiller gap_filler = DijkstraGapFiller(g_, gap_cfg_, s,
-                                   start_pos.edgeid, end_pos.edgeid,
-                                   start_pos.position, end_pos.position,
-                                   ed_limit, vertex_pathlen);
+    DijkstraGapFiller gap_filler(g_, gap_cfg_, s,
+                                 start_pos.edgeid, end_pos.edgeid,
+                                 start_pos.position, end_pos.position,
+                                 ed_limit, vertex_pathlen);
     gap_filler.CloseGap();
     dijkstra_res.score = gap_filler.edit_distance();
     dijkstra_res.return_code = gap_filler.return_code();
@@ -253,12 +253,13 @@ void EndsFiller::Run(omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits,
         return_code += 2;
         return;
     }
-    DijkstraEndsReconstructor algo = DijkstraEndsReconstructor(g_, gap_cfg_, ss.str(), start_e, start_pos, score);
+    DijkstraEndsReconstructor algo(g_, gap_cfg_, ss.str(), start_e, start_pos, score);
     algo.CloseGap();
     score = algo.edit_distance();
     return_code += algo.return_code();
     if (score == std::numeric_limits<int>::max()) {
-        DEBUG("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
+        DEBUG("EdgeDijkstra didn't find anything edge=" << start_e.int_id()
+              << " s_start=" << start_pos << " seq_len=" << ss.size())
         return;
     }
     std::vector<EdgeId> ans = algo.path();

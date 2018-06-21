@@ -8,18 +8,16 @@ bool DijkstraGraphSequenceBase::IsBetter(int seq_ind, int ed)
     if (seq_ind == ss_.size() ) {
         if (ed <= path_max_length_) {
             return true;
-        } else {
-            return false;
-        }
+        } 
+        return false;
     }
     VERIFY(seq_ind < (int) ss_.size())
     VERIFY(seq_ind >= 0)
     if (best_ed_[seq_ind] + gap_cfg_.penalty_interval >= ed) {
         best_ed_[seq_ind] = min(best_ed_[seq_ind], ed);
         return true;
-    } else {
-        return false;
-    }
+    } 
+    return false;
 }
 
 void DijkstraGraphSequenceBase::Update(const QueueState &state, const QueueState &prev_state, int score)
@@ -46,8 +44,7 @@ void DijkstraGraphSequenceBase::Update(const QueueState &state, const QueueState
 
 void DijkstraGraphSequenceBase::AddNewEdge(const GraphState &gs, const QueueState &prev_state, int ed)
 {
-    string tmp = g_.EdgeNucls(gs.e).str();
-    string edge_str = tmp.substr(gs.start_pos, gs.end_pos - gs.start_pos);
+    string edge_str = g_.EdgeNucls(gs.e).Subseq(gs.start_pos, gs.end_pos).str();
     if ( 0 == (int) edge_str.size()) {
         QueueState state(gs, prev_state.i);
         Update(state, prev_state,  ed);
@@ -71,7 +68,8 @@ void DijkstraGraphSequenceBase::AddNewEdge(const GraphState &gs, const QueueStat
             int prev_score = std::numeric_limits<int>::max();
             for (size_t i = 0; i < positions.size(); ++ i) {
                 if (positions[i] >= 0 && scores[i] >= 0) {
-                    int next_score = i + 1 >= positions.size() || positions[i + 1] < 0 ? std::numeric_limits<int>::max() : positions[i + 1];
+                    int next_score = i + 1 >= positions.size() || positions[i + 1] < 0 ?
+                                     std::numeric_limits<int>::max() : positions[i + 1];
                     if (scores[i] <= prev_score && scores[i] <= next_score) {
                         QueueState state(gs, prev_state.i + positions[i] + 1);
                         Update(state, prev_state, ed + scores[i]);
@@ -135,8 +133,9 @@ void DijkstraGraphSequenceBase::CloseGap() {
             min_score_ = visited_[end_qstate_];
             int start_edge = prev_states_[state].i;
             int end_edge =  state.i;
-            mapping_path_.push_back(state.gs.e, omnigraph::MappingRange(Range(start_edge, end_edge),
-                                    Range(state.gs.start_pos, state.gs.end_pos) ));
+            mapping_path_.push_back(state.gs.e,
+                                    omnigraph::MappingRange(Range(start_edge, end_edge),
+                                            Range(state.gs.start_pos, state.gs.end_pos) ));
             state = prev_states_[state];
         }
         mapping_path_.reverse();
@@ -155,8 +154,7 @@ bool DijkstraGapFiller::AddState(const QueueState &cur_state, debruijn_graph::Ed
         }
         if (e == end_e_ && path_max_length_ - ed >= 0) {
             string seq_str = ss_.substr(cur_state.i);
-            string tmp = g_.EdgeNucls(e).str();
-            string edge_str = tmp.substr(0, end_p_);
+            string edge_str = g_.EdgeNucls(e).Subseq(0, end_p_).str();
             int score = StringDistance(seq_str, edge_str, path_max_length_ - ed);
             if (score != std::numeric_limits<int>::max()) {
                 path_max_length_ = min(path_max_length_, ed + score);
@@ -172,7 +170,9 @@ bool DijkstraGapFiller::AddState(const QueueState &cur_state, debruijn_graph::Ed
 }
 
 bool DijkstraGapFiller::IsEndPosition(const QueueState &cur_state) {
-    if (cur_state.i == ss_.size() && cur_state.gs.e == end_qstate_.gs.e && cur_state.gs.end_pos == end_qstate_.gs.end_pos) {
+    if (cur_state.i == ss_.size() &&
+            cur_state.gs.e == end_qstate_.gs.e &&
+            cur_state.gs.end_pos == end_qstate_.gs.end_pos) {
         return true;
     }
     return false;
@@ -187,9 +187,9 @@ bool DijkstraEndsReconstructor::AddState(const QueueState &cur_state, debruijn_g
         int remaining = (int) ss_.size() - cur_state.i;
         if ((int) g_.length(e) + (int) g_.k() + path_max_length_ - ed > remaining && path_max_length_ - ed >= 0) {
             string seq_str = ss_.substr(cur_state.i);
-            string tmp = g_.EdgeNucls(e).str();
+            string edge_str = g_.EdgeNucls(e).str();
             int position = -1;
-            int score = SHWDistance(seq_str, tmp, path_max_length_ - ed, position);
+            int score = SHWDistance(seq_str, edge_str, path_max_length_ - ed, position);
             if (score != std::numeric_limits<int>::max()) {
                 path_max_length_ = min(path_max_length_, ed + score);
                 QueueState state(GraphState(e, 0, position + 1), (int) ss_.size());
