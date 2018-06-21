@@ -28,10 +28,10 @@ void DijkstraGraphSequenceBase::Update(const QueueState &state, const QueueState
         if (visited_[state] >= score) {
             ++ updates_;
             q_.erase(make_pair(visited_[state], state));
-            visited_[state] = score;
-            prev_states_[state] = prev_state;
             if (IsBetter(state.i, score)) {
                 q_.insert(make_pair(score, state));
+                visited_[state] = score;
+                prev_states_[state] = prev_state;
             }
         }
     } else {
@@ -132,7 +132,6 @@ void DijkstraGraphSequenceBase::CloseGap() {
     if (found_path) {
         QueueState state(end_qstate_);
         while (!state.empty()) {
-            gap_path_.push_back(state.gs.e);
             min_score_ = visited_[end_qstate_];
             int start_edge = prev_states_[state].i;
             int end_edge =  state.i;
@@ -140,7 +139,6 @@ void DijkstraGraphSequenceBase::CloseGap() {
                                     Range(state.gs.start_pos, state.gs.end_pos) ));
             state = prev_states_[state];
         }
-        reverse(gap_path_.begin(), gap_path_.end());
         mapping_path_.reverse();
     }
     return;

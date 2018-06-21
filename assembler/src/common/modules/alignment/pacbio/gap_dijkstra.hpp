@@ -162,7 +162,7 @@ public:
     void CloseGap();
 
     vector<debruijn_graph::EdgeId> path() const {
-        return gap_path_;
+        return mapping_path_.simple_path();
     }
 
     omnigraph::MappingPath<debruijn_graph::EdgeId> mapping_path() const {
@@ -171,7 +171,8 @@ public:
 
     string path_str() const {
         string result = "";
-        for (EdgeId e : gap_path_) {
+        auto gap_path = mapping_path_.simple_path();
+        for (EdgeId e : gap_path) {
             result += std::to_string(e.int_id()) + ",";
         }
         return result;
@@ -205,8 +206,6 @@ protected:
     set<pair<int, QueueState> > q_;
     unordered_map<QueueState, int, StateHasher> visited_;
     unordered_map<QueueState, QueueState, StateHasher> prev_states_;
-
-    vector<debruijn_graph::EdgeId> gap_path_;
 
     omnigraph::MappingPath<debruijn_graph::EdgeId> mapping_path_;
 
