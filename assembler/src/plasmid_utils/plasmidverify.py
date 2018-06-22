@@ -35,21 +35,21 @@ except OSError as e:
 
 name = os.path.join(outdir, name_file)
 
-#hmm = os.path.join(dirname, "hmms/378_10fold_plasmid_HMMs.hmm")
-hmm = ("/Nancy/mrayko/db/plasmid_specific_pfam/rat_cecum_hmms.hmm")
+hmm = os.path.join(dirname, "hmms/378_10fold_plasmid_HMMs.hmm")
+#hmm = ("/Nancy/mrayko/db/plasmid_specific_pfam/rat_cecum_hmms.hmm")
 
 list378 = os.path.join(dirname, "hmms/378_hmms.txt") 
 
 
-hmmsearch=" /Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmsearch"
-prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
-cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
-blastdb="/Bmo/ncbi_nt_database/nt"
+#hmmsearch="/Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmsearch"
+#prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
+#cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
+#blastdb="/Bmo/ncbi_nt_database/nt"
 
 
 # run hmm
-#os.system (prodigal + " -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
-os.system (hmmsearch + " --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+os.system ("prodigal +  -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+os.system ("hmmsearch +  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
 os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 
