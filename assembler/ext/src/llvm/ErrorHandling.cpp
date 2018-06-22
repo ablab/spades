@@ -17,32 +17,55 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/Errc.h"
-#include "llvm/Support/Mutex.h"
-#include "llvm/Support/MutexGuard.h"
+#include "llvm/Support/Error.h"
 #include "llvm/Support/Signals.h"
+#include "llvm/Support/Threading.h"
+#include "llvm/Support/WindowsError.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
 #include <cstdlib>
+#include <mutex>
+#include <new>
 
 #include <unistd.h>
+
+#if defined(_MSC_VER)
+# include <io.h>
+# include <fcntl.h>
+#endif
 
 using namespace llvm;
 
 static fatal_error_handler_t ErrorHandler = nullptr;
 static void *ErrorHandlerUserData = nullptr;
 
-static sys::Mutex ErrorHandlerMutex;
+static fatal_error_handler_t BadAllocErrorHandler = nullptr;
+static void *BadAllocErrorHandlerUserData = nullptr;
+
+// Mutexes to synchronize installing error handlers and calling error handlers.
+// Do not use ManagedStatic, or that may allocate memory while attempting to
+// report an OOM.
+//
+// This usage of std::mutex has to be conditionalized behind ifdefs because
+// of this script:
+//   compiler-rt/lib/sanitizer_common/symbolizer/scripts/build_symbolizer.sh
+// That script attempts to statically link the LLVM symbolizer library with the
+// STL and hide all of its symbols with 'opt -internalize'. To reduce size, it
+// cuts out the threading portions of the hermetic copy of libc++ that it
+// builds. We can remove these ifdefs if that script goes away.
+static std::mutex ErrorHandlerMutex;
+static std::mutex BadAllocErrorHandlerMutex;
 
 void llvm::install_fatal_error_handler(fatal_error_handler_t handler,
                                        void *user_data) {
-  llvm::MutexGuard Lock(ErrorHandlerMutex);
+  std::lock_guard<std::mutex> Lock(ErrorHandlerMutex);
   assert(!ErrorHandler && "Error handler already registered!\n");
   ErrorHandler = handler;
   ErrorHandlerUserData = user_data;
 }
 
 void llvm::remove_fatal_error_handler() {
-  llvm::MutexGuard Lock(ErrorHandlerMutex);
+  std::lock_guard<std::mutex> Lock(ErrorHandlerMutex);
   ErrorHandler = nullptr;
   ErrorHandlerUserData = nullptr;
 }
@@ -65,7 +88,7 @@ void llvm::report_fatal_error(const Twine &Reason, bool GenCrashDiag) {
   {
     // Only acquire the mutex while reading the handler, so as not to invoke a
     // user-supplied callback under a lock.
-    llvm::MutexGuard Lock(ErrorHandlerMutex);
+    std::lock_guard<std::mutex> Lock(ErrorHandlerMutex);
     handler = ErrorHandler;
     handlerData = ErrorHandlerUserData;
   }
@@ -92,17 +115,96 @@ void llvm::report_fatal_error(const Twine &Reason, bool GenCrashDiag) {
   exit(1);
 }
 
+void llvm::install_bad_alloc_error_handler(fatal_error_handler_t handler,
+                                           void *user_data) {
+  std::lock_guard<std::mutex> Lock(BadAllocErrorHandlerMutex);
+  assert(!ErrorHandler && "Bad alloc error handler already registered!\n");
+  BadAllocErrorHandler = handler;
+  BadAllocErrorHandlerUserData = user_data;
+}
+
+void llvm::remove_bad_alloc_error_handler() {
+  std::lock_guard<std::mutex> Lock(BadAllocErrorHandlerMutex);
+  BadAllocErrorHandler = nullptr;
+  BadAllocErrorHandlerUserData = nullptr;
+}
+
+void llvm::report_bad_alloc_error(const char *Reason, bool GenCrashDiag) {
+  fatal_error_handler_t Handler = nullptr;
+  void *HandlerData = nullptr;
+  {
+    // Only acquire the mutex while reading the handler, so as not to invoke a
+    // user-supplied callback under a lock.
+    std::lock_guard<std::mutex> Lock(BadAllocErrorHandlerMutex);
+    Handler = BadAllocErrorHandler;
+    HandlerData = BadAllocErrorHandlerUserData;
+  }
+
+  if (Handler) {
+    Handler(HandlerData, Reason, GenCrashDiag);
+    llvm_unreachable("bad alloc handler should not return");
+  }
+
+#ifdef LLVM_ENABLE_EXCEPTIONS
+  // If exceptions are enabled, make OOM in malloc look like OOM in new.
+  throw std::bad_alloc();
+#else
+  // Don't call the normal error handler. It may allocate memory. Directly write
+  // an OOM to stderr and abort.
+  char OOMMessage[] = "LLVM ERROR: out of memory\n";
+  ssize_t written = ::write(2, OOMMessage, strlen(OOMMessage));
+  (void)written;
+  abort();
+#endif
+}
+
+#ifdef LLVM_ENABLE_EXCEPTIONS
+// Do not set custom new handler if exceptions are enabled. In this case OOM
+// errors are handled by throwing 'std::bad_alloc'.
+void llvm::install_out_of_memory_new_handler() {
+}
+#else
+// Causes crash on allocation failure. It is called prior to the handler set by
+// 'install_bad_alloc_error_handler'.
+static void out_of_memory_new_handler() {
+  llvm::report_bad_alloc_error("Allocation failed");
+}
+
+// Installs new handler that causes crash on allocation failure. It does not
+// need to be called explicitly, if this file is linked to application, because
+// in this case it is called during construction of 'new_handler_installer'.
+void llvm::install_out_of_memory_new_handler() {
+  static bool out_of_memory_new_handler_installed = false;
+  if (!out_of_memory_new_handler_installed) {
+    std::set_new_handler(out_of_memory_new_handler);
+    out_of_memory_new_handler_installed = true;
+  }
+}
+
+// Static object that causes installation of 'out_of_memory_new_handler' before
+// execution of 'main'.
+static class NewHandlerInstaller {
+public:
+  NewHandlerInstaller() {
+    install_out_of_memory_new_handler();
+  }
+} new_handler_installer;
+#endif
+
 void llvm::llvm_unreachable_internal(const char *msg, const char *file,
                                      unsigned line) {
   // This code intentionally doesn't call the ErrorHandler callback, because
   // llvm_unreachable is intended to be used to indicate "impossible"
   // situations, and not legitimate runtime errors.
   if (msg)
-    errs() << msg << "\n";
-  errs() << "UNREACHABLE executed";
+    fprintf(stderr, "%s\n", msg);
+  
+  fprintf(stderr, "UNREACHABLE executed");
   if (file)
-    errs() << " at " << file << ":" << line;
-  errs() << "!\n";
+    fprintf(stderr, " at %s:%d", file, line);
+
+  fprintf(stderr, "\n");
+  fflush(stderr);
   abort();
 #ifdef LLVM_BUILTIN_UNREACHABLE
   // Windows systems and possibly others don't declare abort() to be noreturn,
@@ -110,3 +212,70 @@ void llvm::llvm_unreachable_internal(const char *msg, const char *file,
   LLVM_BUILTIN_UNREACHABLE;
 #endif
 }
+
+#ifdef _WIN32
+
+#include <winerror.h>
+
+// I'd rather not double the line count of the following.
+#define MAP_ERR_TO_COND(x, y)                                                  \
+  case x:                                                                      \
+    return make_error_code(errc::y)
+
+std::error_code llvm::mapWindowsError(unsigned EV) {
+  switch (EV) {
+    MAP_ERR_TO_COND(ERROR_ACCESS_DENIED, permission_denied);
+    MAP_ERR_TO_COND(ERROR_ALREADY_EXISTS, file_exists);
+    MAP_ERR_TO_COND(ERROR_BAD_UNIT, no_such_device);
+    MAP_ERR_TO_COND(ERROR_BUFFER_OVERFLOW, filename_too_long);
+    MAP_ERR_TO_COND(ERROR_BUSY, device_or_resource_busy);
+    MAP_ERR_TO_COND(ERROR_BUSY_DRIVE, device_or_resource_busy);
+    MAP_ERR_TO_COND(ERROR_CANNOT_MAKE, permission_denied);
+    MAP_ERR_TO_COND(ERROR_CANTOPEN, io_error);
+    MAP_ERR_TO_COND(ERROR_CANTREAD, io_error);
+    MAP_ERR_TO_COND(ERROR_CANTWRITE, io_error);
+    MAP_ERR_TO_COND(ERROR_CURRENT_DIRECTORY, permission_denied);
+    MAP_ERR_TO_COND(ERROR_DEV_NOT_EXIST, no_such_device);
+    MAP_ERR_TO_COND(ERROR_DEVICE_IN_USE, device_or_resource_busy);
+    MAP_ERR_TO_COND(ERROR_DIR_NOT_EMPTY, directory_not_empty);
+    MAP_ERR_TO_COND(ERROR_DIRECTORY, invalid_argument);
+    MAP_ERR_TO_COND(ERROR_DISK_FULL, no_space_on_device);
+    MAP_ERR_TO_COND(ERROR_FILE_EXISTS, file_exists);
+    MAP_ERR_TO_COND(ERROR_FILE_NOT_FOUND, no_such_file_or_directory);
+    MAP_ERR_TO_COND(ERROR_HANDLE_DISK_FULL, no_space_on_device);
+    MAP_ERR_TO_COND(ERROR_INVALID_ACCESS, permission_denied);
+    MAP_ERR_TO_COND(ERROR_INVALID_DRIVE, no_such_device);
+    MAP_ERR_TO_COND(ERROR_INVALID_FUNCTION, function_not_supported);
+    MAP_ERR_TO_COND(ERROR_INVALID_HANDLE, invalid_argument);
+    MAP_ERR_TO_COND(ERROR_INVALID_NAME, invalid_argument);
+    MAP_ERR_TO_COND(ERROR_LOCK_VIOLATION, no_lock_available);
+    MAP_ERR_TO_COND(ERROR_LOCKED, no_lock_available);
+    MAP_ERR_TO_COND(ERROR_NEGATIVE_SEEK, invalid_argument);
+    MAP_ERR_TO_COND(ERROR_NOACCESS, permission_denied);
+    MAP_ERR_TO_COND(ERROR_NOT_ENOUGH_MEMORY, not_enough_memory);
+    MAP_ERR_TO_COND(ERROR_NOT_READY, resource_unavailable_try_again);
+    MAP_ERR_TO_COND(ERROR_OPEN_FAILED, io_error);
+    MAP_ERR_TO_COND(ERROR_OPEN_FILES, device_or_resource_busy);
+    MAP_ERR_TO_COND(ERROR_OUTOFMEMORY, not_enough_memory);
+    MAP_ERR_TO_COND(ERROR_PATH_NOT_FOUND, no_such_file_or_directory);
+    MAP_ERR_TO_COND(ERROR_BAD_NETPATH, no_such_file_or_directory);
+    MAP_ERR_TO_COND(ERROR_READ_FAULT, io_error);
+    MAP_ERR_TO_COND(ERROR_RETRY, resource_unavailable_try_again);
+    MAP_ERR_TO_COND(ERROR_SEEK, io_error);
+    MAP_ERR_TO_COND(ERROR_SHARING_VIOLATION, permission_denied);
+    MAP_ERR_TO_COND(ERROR_TOO_MANY_OPEN_FILES, too_many_files_open);
+    MAP_ERR_TO_COND(ERROR_WRITE_FAULT, io_error);
+    MAP_ERR_TO_COND(ERROR_WRITE_PROTECT, permission_denied);
+    MAP_ERR_TO_COND(WSAEACCES, permission_denied);
+    MAP_ERR_TO_COND(WSAEBADF, bad_file_descriptor);
+    MAP_ERR_TO_COND(WSAEFAULT, bad_address);
+    MAP_ERR_TO_COND(WSAEINTR, interrupted);
+    MAP_ERR_TO_COND(WSAEINVAL, invalid_argument);
+    MAP_ERR_TO_COND(WSAEMFILE, too_many_files_open);
+    MAP_ERR_TO_COND(WSAENAMETOOLONG, filename_too_long);
+  default:
+    return std::error_code(EV, std::system_category());
+  }
+}
+
+#endif

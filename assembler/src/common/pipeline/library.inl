@@ -51,7 +51,8 @@ void io::SequencingLibrary<Data>::validate(llvm::yaml::IO &io, llvm::StringRef &
 
 template<class Data>
 void io::DataSet<Data>::yamlize(yaml::IO &io) {
-    llvm::yaml::yamlize(io, libraries_, true);
+    yaml::EmptyContext Ctx;
+    llvm::yaml::yamlize(io, libraries_, true, Ctx);
 }
 
 template<class Data>
