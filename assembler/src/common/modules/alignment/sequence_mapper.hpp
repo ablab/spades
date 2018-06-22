@@ -225,58 +225,41 @@ private:
 
 template<class Graph>
 class ReadPathFinder {
-private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
+
     const Graph& g_;
-    typedef MappingPathFixer<Graph> GraphMappingPathFixer;
-    const GraphMappingPathFixer path_fixer_;
+    const MappingPathFixer<Graph> path_fixer_;
     const bool skip_unfixed_;
+
 public:
     ReadPathFinder(const Graph& g, bool skip_unfixed = true) :
         g_(g), path_fixer_(g), skip_unfixed_(skip_unfixed)
     {}
 
     vector<EdgeId> FindReadPath(const MappingPath<EdgeId>& mapping_path) const {
-          if (!IsMappingPathValid(mapping_path)) {
-              TRACE("read unmapped");
+          if (mapping_path.size() == 0) {
+              TRACE("Read unmapped");
               return vector<EdgeId>();
           }
-          vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
-                  mapping_path.simple_path());
-          PrintPathInfo(corrected_path);
-          if(corrected_path.size() != mapping_path.simple_path().size()) {
-              DEBUG("Some edges were deleted");
+
+          auto fixed_path = path_fixer_.DeleteSameEdges(mapping_path.simple_path());
+          if (fixed_path.size() != mapping_path.size()) {
+              TRACE("Some edges were deleted");
           }
-          vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
+
+          fixed_path = path_fixer_.TryFixPath(fixed_path);
+
           if (!path_fixer_.CheckContiguous(fixed_path)) {
-              TRACE("read unmapped");
-              std::stringstream debug_stream;
-              for (size_t i = 0; i < fixed_path.size(); ++i) {
-                  debug_stream << g_.int_id(fixed_path[i]) << " ";
-              }
-              TRACE(debug_stream.str());
+              TRACE("Could not fix the path!")
               if (skip_unfixed_) {
+                  TRACE("Read unmapped");
                   return vector<EdgeId>();
               } else {
                   WARN("Could not fix the path!")
               }
-          } else {
-              DEBUG("Path fix works");
-          }
+          } 
           return fixed_path;
-      }
-
-private:
-
-      bool IsMappingPathValid(const MappingPath<EdgeId>& path) const {
-          return path.size() != 0;
-      }
-
-      void PrintPathInfo(vector<EdgeId>& corrected_path) const {
-          for(size_t i = 0; i < corrected_path.size(); ++i) {
-              DEBUG(i + 1 << "-th edge is " << corrected_path[i].int_id());
-          }
       }
 };
 
