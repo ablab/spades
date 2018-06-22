@@ -2,6 +2,7 @@ import os, errno
 import sys
 import argparse
 from Bio import SeqIO
+from parse_blast_xml import parser
 
 
 def parse_args(args):
@@ -34,13 +35,21 @@ except OSError as e:
 
 name = os.path.join(outdir, name_file)
 
-hmm = os.path.join(dirname, "hmms/378_10fold_plasmid_HMMs.hmm")
+#hmm = os.path.join(dirname, "hmms/378_10fold_plasmid_HMMs.hmm")
+hmm = ("/Nancy/mrayko/db/plasmid_specific_pfam/rat_cecum_hmms.hmm")
+
 list378 = os.path.join(dirname, "hmms/378_hmms.txt") 
 
 
+hmmsearch=" /Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmsearch"
+prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
+cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
+blastdb="/Bmo/ncbi_nt_database/nt"
+
+
 # run hmm
-os.system ("prodigal -p meta -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
-os.system ("hmmsearch --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+#os.system (prodigal + " -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+os.system (hmmsearch + " --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
 os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 
@@ -56,6 +65,11 @@ set378 = set(list378)
 
 for i in tblout_pfam:
     i=[x for x in i if x]
+
+
+# run blast
+#os.system ("blastn  -query " + args.f + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
+#parser(name+".xml", outdir)
 
 
 # Create table backbone.
@@ -85,7 +99,7 @@ for item in table:
     genes=list(plasmid_hits.get(item[0], ""))
     hits=[]
     for i in genes:
-        if i in set378:
+#        if i in set378:
             hits.append(i)
 
     if len(hits)==0: 
@@ -98,6 +112,31 @@ for item in table:
         item.append ("hmm+")
     else: 
         item.append ("hmm-")
+
+
+# Add blast results
+
+#with open(name + "_span_identity.txt", 'r') as infile:
+ #     span_identity=infile.readlines()
+  #    span_identity = [i.split("\t") for i in span_identity] 
+
+#span = {}
+#for i in span_identity:
+#    span[i[0]]=i[1:]
+
+
+
+#for item in table:
+   # for i in span_identity:
+
+#    print (item[0])
+ #   print (i[0]
+#     if item[0] in span:
+ #           i=span[item[0]]
+  #          item+=[i[3],i[5],i[6].strip(),i[0].strip()]
+   #  else:
+    #        item.append("-")
+
 
 # Output
 

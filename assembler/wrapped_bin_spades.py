@@ -33,7 +33,8 @@ for file in os.listdir(dir):
         continue
     cov = arr[-1]
 
-    for line in open(os.path.join(dir,file), "r"):
+  #  for line in open(os.path.join(dir,file), "r"):
+    for line in open(file, "r"):
         line = line.strip()
         if len(line) > 0 and line[0] == ">":
             line += "_cutoff_" + cov
