@@ -68,8 +68,8 @@ void DijkstraGraphSequenceBase::AddNewEdge(const GraphState &gs, const QueueStat
             int prev_score = std::numeric_limits<int>::max();
             for (size_t i = 0; i < positions.size(); ++ i) {
                 if (positions[i] >= 0 && scores[i] >= 0) {
-                    int next_score = i + 1 >= positions.size() || positions[i + 1] < 0 ?
-                                     std::numeric_limits<int>::max() : positions[i + 1];
+                    int next_score = i + 1 >= positions.size() || positions[i + 1] < 0 || scores[i + 1] < 0 ?
+                                     std::numeric_limits<int>::max() : scores[i + 1];
                     if (scores[i] <= prev_score && scores[i] <= next_score) {
                         QueueState state(gs, prev_state.i + positions[i] + 1);
                         Update(state, prev_state, ed + scores[i]);
