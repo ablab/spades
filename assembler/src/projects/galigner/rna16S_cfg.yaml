@@ -1,0 +1,19 @@
+path_to_sequences: /Sid/tdvorkina/gralign/16S/SILVA_128_SSURef_Nr99_tax_silva.fasta
+path_to_primers: /Sid/tdvorkina/gralign/16S/primers.fasta
+
+path_limit_stretching: 1.3
+gap_min_ed: 40
+res_min_ed: 100
+position_diff: 100
+alignment_min_length: 1400
+primer_max_ed: 1
+graph_max_ed: 3
+
+
+gap_closing:
+  max_vertex_in_gap: 150000
+  queue_limit: 1000000
+  iteration_limit: 1000000
+  find_shortest_path: true
+  restore_mapping: false
+  penalty_interval: 20000
