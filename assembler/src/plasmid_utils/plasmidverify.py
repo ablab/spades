@@ -22,6 +22,8 @@ args = parse_args(sys.argv[1:])
 
 
 base = os.path.basename(args.f)
+
+
 name_file = os.path.splitext(base)[0]
 dirname = os.path.dirname(__file__)
 
