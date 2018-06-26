@@ -422,7 +422,7 @@ If you have merged some of the reads from your paired-end (not mate-pair or high
 
 <h4>10X Genomics Chromium reads</h4>
 <p>
-    SPAdes can take a 10x Genomics Chromium paired-end reads as an input. Chromium reads are provided with `--gemcode` option. Reads should be in FASTQ format with barcodes attached as BC:Z or BX:Z tags. 
+    SPAdes can take a 10x Genomics Chromium paired-end reads as an input. Chromium reads are provided with <code>--gemcode</code> option. Reads should be in FASTQ format with barcodes attached as BC:Z or BX:Z tags. 
 
 <h4>Unpaired (single-read) libraries</h4>
 <p>
@@ -673,12 +673,6 @@ In contrast to the <code>--continue</code> option, you can change some of the op
 <p>
     <code>--gemcode<b>&lt;#></b>-2 &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for 10x Genomics Chromium library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
-</p>
-<p>
-    <code>--mp<b>&lt;#></b>-<b>&lt;or></b> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
-    &nbsp;&nbsp;&nbsp;&nbsp;The default orientation for mate-pair libraries is reverse-forward. For example, to specify forward-forward orientation for the first mate-pair library, you should use the flag:
-    <code>--mp1-ff </code><br>
 </p>
 
 <li><b>&nbsp;Mate-pair libraries</b></li>
