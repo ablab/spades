@@ -174,6 +174,14 @@ class Cluster {
     const_iterator end() const {
         return mappings_.end();
     }
+
+    std::set<ScaffoldVertex> GetVertexSet() const {
+        std::set<ScaffoldVertex> result;
+        for (const auto &mapping: mappings_) {
+            result.insert(mapping.first);
+        }
+        return result;
+    }
 };
 
 class ClusterStorage {
@@ -1033,7 +1041,8 @@ class GraphClusterStorageBuilder {
         DEBUG("Building clusters");
         SubstorageExtractor substorage_extractor;
         DEBUG("Extracting substorage");
-        InitialClusterStorage initial_substorage = substorage_extractor.ExtractClusterSubstorage(initial_storage, transition_graph);
+        InitialClusterStorage initial_substorage = substorage_extractor.ExtractClusterSubstorage(initial_storage,
+                                                                                                 transition_graph);
         //fixme this copying can be avoided
         DEBUG("Copying substorages");
         ClusterStorage cluster_storage = initial_substorage.get_cluster_storage();
@@ -1054,7 +1063,8 @@ class GraphClusterStorageBuilder {
                 ScaffoldVertex tail = *next;
                 const uint64_t distance = 0;
                 DEBUG("Merging clusters using transition edge " << head.int_id() << " -> " << tail.int_id());
-                cluster_merger_.MergeClustersOnEdges(head, tail, cluster_storage, edge_cluster_storage, distance_threshold_, distance);
+                cluster_merger_.MergeClustersOnEdges(head, tail, cluster_storage, edge_cluster_storage,
+                                                     distance_threshold_, distance);
             }
         }
     }

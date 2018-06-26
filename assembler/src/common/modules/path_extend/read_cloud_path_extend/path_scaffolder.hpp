@@ -34,12 +34,6 @@ class PathScaffolder {
                                     const std::unordered_map<ScaffoldVertex, ScaffoldVertex> &merge_connections,
                                     const std::unordered_map<ScaffoldVertex, size_t> &start_to_length) const;
 
-    //fixme get rid of it or move somewhere else
-    void AnalyzePaths(const PathContainer &paths, size_t min_length) const;
-
-    //fixme code duplication
-    shared_ptr<GapAnalyzer> MakeGapAnalyzer(double is_variation) const;
-
     DECL_LOGGER("PathScaffolder");
 };
 

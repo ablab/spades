@@ -291,7 +291,7 @@ vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::Extra
     return result;
 }
 FilteredReferencePathHelper::FilteredReferencePathHelper(const conj_graph_pack& gp_) : gp_(gp_) {}
-vector<vector<EdgeWithMapping>> FilteredReferencePathHelper::GetFilteredReferencePathsFromLength(const string& path_to_reference,
+vector<vector<EdgeWithMapping>> FilteredReferencePathHelper:: GetFilteredReferencePathsFromLength(const string& path_to_reference,
                                                                                                  size_t length_threshold) {
     path_extend::ScaffoldingUniqueEdgeStorage unique_storage;
     path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, length_threshold, 1000);

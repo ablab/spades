@@ -131,7 +131,7 @@ optional<EdgeId> PathVertex::getFirstEdgeWithPredicate(const func::TypedPredicat
     }
     return result;
 }
-BidirectionalPath PathVertex::getPath(const debruijn_graph::Graph &g) const {
+BidirectionalPath PathVertex::getPath(const debruijn_graph::Graph &/*g*/) const {
     BidirectionalPath result(*path_);
     return result;
 }

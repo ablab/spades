@@ -23,8 +23,8 @@ void debruijn_graph::ScaffoldGraphConstructionStage::run(debruijn_graph::conj_gr
     size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
                                                                           cluster_length_percentile);
 
-    auto barcode_info_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(graph_pack.barcode_mapper_ptr, graph_pack.g);
-    path_extend::ScaffoldGraphStorageConstructor storage_constructor(unique_length_threshold, length_upper_bound, graph_pack);
+    path_extend::ScaffoldGraphStorageConstructor storage_constructor(unique_length_threshold, length_upper_bound,
+                                                                     graph_pack);
     auto storage = storage_constructor.ConstructStorage();
     graph_pack.scaffold_graph_storage = storage;
 }

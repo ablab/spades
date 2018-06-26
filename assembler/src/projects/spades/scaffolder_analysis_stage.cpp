@@ -6,31 +6,9 @@
 #include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/fragment_model/distribution_extractor_helper.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/statistics/path_cluster_statistics.hpp"
 
 void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
-
-//    const size_t reliable_edge_length = 200;
-//    const size_t tail_threshold = 3000;
-//    const size_t distance_bound = 8000;
-//    const double extender_score_threshold = 0.05;
-//    const double tip_score_threshold = 0.05;
-//    const double relative_coverage_threshold = 2.0;
-//
-//    path_extend::ScaffoldGraphGapCloserParams params(reliable_edge_length, tail_threshold, distance_bound,
-//                                                     extender_score_threshold, tip_score_threshold,
-//                                                     relative_coverage_threshold);
-//    path_extend::ReadCloudScaffoldGraphGapCloserConstructor gap_closer_constructor(graph_pack, params);
-//
-//    auto small_scaffold_graph = graph_pack.scaffold_graph_storage.GetSmallScaffoldGraph();
-//    INFO(small_scaffold_graph.VertexCount() << " vertices and " << small_scaffold_graph.EdgeCount()
-//                                            << " edges in small scaffold graph");
-//    size_t length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
-//    auto graph_gap_closer = gap_closer_constructor.ConstructGraphBasedGapCloser(small_scaffold_graph, length_threshold);
-//    graph_gap_closer->CloseGaps(small_scaffold_graph);
-//    auto barcode_gap_closer = gap_closer_constructor.ConstructCloudBasedGapCloser(small_scaffold_graph, length_threshold);
-//    barcode_gap_closer->CloseGaps(small_scaffold_graph);
-//    INFO(small_scaffold_graph.VertexCount() << " vertices and " << small_scaffold_graph.EdgeCount()
-//                                            << " edges in new small scaffold graph");
 
     bool read_cloud_lib_present = false;
     //fixme build scaffold graph for every 10x lib
@@ -42,6 +20,11 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
     if (not read_cloud_lib_present) {
         return;
     }
+
+    path_extend::PathClusterStatisticsExtractor path_cluster_extractor(graph_pack);
+    auto subgraph_infos = path_cluster_extractor.GetAllSubgraphInfo(graph_pack.scaffold_graph_storage);
+    path_extend::SubgraphInfoPrinter printer;
+    printer.PrintSubgraphInfo(subgraph_infos, cfg::get().output_dir);
 
     path_extend::ScaffoldGraphPolisherLauncher scaffold_graph_polisher(graph_pack);
     bool path_scaffolding = false;
