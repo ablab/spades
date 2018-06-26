@@ -499,11 +499,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             size_t tail_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_tail_threshold;
             size_t count_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_count_threshold;
             size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
-
-            //todo is this obsolete?
-            read_cloud_gap_closer_params.raw_score_threshold_ = cfg::get().ts_res.gap_closer_connection_score_threshold;
-            read_cloud_gap_closer_params.relative_coverage_threshold_ = cfg::get().ts_res.gap_closer_relative_coverage_threshold;
-            read_cloud_gap_closer_params.edge_length_threshold_ = cfg::get().ts_res.gap_closer_connection_length_threshold;
+            
             //fixme move to configs
             const size_t scan_bound = 150;
             INFO("Tail threshold: " << tail_threshold);
