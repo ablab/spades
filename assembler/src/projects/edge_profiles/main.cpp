@@ -23,7 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-void create_console_logger() {
+static void create_console_logger() {
     using namespace logging;
 
     logger *lg = create_logger("");
@@ -38,7 +38,7 @@ static bool ends_with(const std::string &s, const std::string &p) {
     return (s.compare(s.size() - p.size(), p.size(), p) == 0);
 }
 
-void GraphInfo(debruijn_graph::Graph &g) {
+static void PrintGraphInfo(debruijn_graph::Graph &g) {
     size_t sz = 0;
     for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it)
         sz += 1;
@@ -46,7 +46,7 @@ void GraphInfo(debruijn_graph::Graph &g) {
     INFO("Graph loaded. Total vertices: " << g.size() << " Total edges: " << sz);
 }
 
-void LoadGraph(debruijn_graph::conj_graph_pack &gp, const std::string &filename) {
+static void LoadGraph(debruijn_graph::conj_graph_pack &gp, const std::string &filename) {
     using namespace debruijn_graph;
     if (ends_with(filename, ".gfa")) {
         gfa::GFAReader gfa(filename);
@@ -55,7 +55,7 @@ void LoadGraph(debruijn_graph::conj_graph_pack &gp, const std::string &filename)
     } else {
         graphio::ScanGraphPack(filename, gp);
     }
-    GraphInfo(gp.g);
+    PrintGraphInfo(gp.g);
 }
 
 using namespace debruijn_graph;
@@ -116,7 +116,7 @@ public:
 typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;
 typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> SequencingLib;
 
-void Run(const std::string &graph_path, const std::string &dataset_desc, size_t K,
+static void Run(const std::string &graph_path, const std::string &dataset_desc, size_t K,
          const std::string &profiles_fn, size_t nthreads, const std::string &tmpdir) {
     DataSet dataset;
     dataset.load(dataset_desc);
@@ -165,7 +165,7 @@ struct gcfg {
     unsigned nthreads;
 };
 
-void process_cmdline(int argc, char **argv, gcfg &cfg) {
+static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
   auto cli = (

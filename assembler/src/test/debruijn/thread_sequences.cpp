@@ -1,6 +1,5 @@
 //***************************************************************************
 //* Copyright (c) 2018 Saint Petersburg State University
-//* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
@@ -15,7 +14,7 @@
 
 #include <cxxopts/cxxopts.hpp>
 
-void create_console_logger() {
+static void create_console_logger() {
     using namespace logging;
 
     logger *lg = create_logger("");
@@ -25,7 +24,7 @@ void create_console_logger() {
 
 namespace debruijn_graph {
 
-void Run(size_t K, const string &saves_path, const string &contigs_file,
+static void Run(size_t K, const string &saves_path, const string &contigs_file,
          const string& out_paths_fn, const string& out_edge_info_fn,
          const string &tmp_dir) {
     fs::make_dir(tmp_dir);

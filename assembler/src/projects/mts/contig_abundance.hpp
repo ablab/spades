@@ -1,6 +1,5 @@
 #pragma once
 
-#include "pipeline/graph_pack.hpp"
 #include "utils/ph_map/perfect_hash_map_builder.hpp"
 #include "io/kmers/mmapped_reader.hpp"
 
@@ -27,9 +26,9 @@ template<typename T> using Profile = std::vector<T>;
 class KmerProfileIndex {
 private:
     typedef typename utils::InvertableStoring::trivial_inverter<Offset> InverterT;
-    typedef utils::KeyStoringMap<conj_graph_pack::seq_t,
+    typedef utils::KeyStoringMap<RtSeq,
         Offset,
-        utils::kmer_index_traits<conj_graph_pack::seq_t>,
+        utils::kmer_index_traits<RtSeq>,
         utils::InvertableStoring> IndexT;
 
     static size_t sample_cnt_;
@@ -110,7 +109,7 @@ Profile<Abundance> MeanVector(const CovVecs& cov_vecs) {
 }
 
 template<class AbVector>
-std::string PrintVector(const AbVector& mpl_vector, const string &delim = " ") {
+std::string PrintVector(const AbVector& mpl_vector, const std::string &delim = " ") {
     stringstream ss;
     copy(mpl_vector.begin(), mpl_vector.end(),
          ostream_iterator<typename AbVector::value_type>(ss, delim.c_str()));
