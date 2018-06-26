@@ -239,6 +239,12 @@ def usage(spades_version, show_hidden=False, mode=None):
                          " for paired-end library number <#> (<#> = %s; <or> = fr, rf, ff)" % allowed_lib_ids + "\n")
     sys.stderr.write("--s<#>\t\t<filename>\tfile with unpaired reads"\
                      " for single reads library number <#> (<#> = %s)" % allowed_lib_ids + "\n")
+    sys.stderr.write("--gemcode<#>-12\t<filename>\tfile with interlaced"\
+                         " reads for 10x Genomics Chromium library number <#> (<#> = %s)" % allowed_lib_ids + "\n")
+    sys.stderr.write("--gemcode<#>-1\t<filename>\tfile with forward reads"\
+                         " for 10x Genomics Chromium library number <#> (<#> = %s)" % allowed_lib_ids + "\n")
+    sys.stderr.write("--gemcode<#>-2\t<filename>\tfile with reverse reads"\
+                         " for 10x Genomics Chromium library number <#> (<#> = %s)" % allowed_lib_ids + "\n")
     if mode not in ["rna", "meta"]:
         sys.stderr.write("--mp<#>-12\t<filename>\tfile with interlaced"\
                              " reads for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
@@ -264,6 +270,7 @@ def usage(spades_version, show_hidden=False, mode=None):
                              " for Lucigen NxMate library number <#> (<#> = 1,2,..,9)" + "\n")
         sys.stderr.write("--nxmate<#>-2\t<filename>\tfile with reverse reads"\
                              " for Lucigen NxMate library number <#> (<#> = 1,2,..,9)" + "\n")
+
         sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
     if not mode == "rna":
         sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
