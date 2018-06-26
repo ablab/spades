@@ -60,7 +60,7 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
             DEBUG("Processed " << i << " out of " << interesting_edges_.size() << " interesting edges");
         }
     }
-    INFO(scores.size() << " score samples");
+    DEBUG(scores.size() << " score samples");
     return ConstructScoreDistributionFromMultiset(scores);
 }
 LongEdgeScoreHistogramConstructor::LongEdgeScoreHistogramConstructor(
@@ -126,10 +126,10 @@ LabeledDistributionThresholdEstimator::LabeledDistributionThresholdEstimator(
       default_threshold_(default_threshold),
       max_threads_(max_threads) {}
 double LabeledDistributionThresholdEstimator::GetThreshold() const {
-    INFO("Estimating score threshold");
-    INFO("Left block length: " << left_block_length_);
-    INFO("Right block length: " << right_block_length_);
-    INFO("Max distance: " << max_distance_);
+    DEBUG("Estimating score threshold");
+    DEBUG("Left block length: " << left_block_length_);
+    DEBUG("Right block length: " << right_block_length_);
+    DEBUG("Max distance: " << max_distance_);
     const double STEP = 0.001;
     const double MIN = 0.0;
     const double MAX = 1.0;
@@ -223,7 +223,7 @@ optional<double> ShortEdgeScoreFunction::GetScoreFromTwoFragments(EdgeId edge,
 shared_ptr<LabeledDistributionThresholdEstimator> LongEdgeScoreThresholdEstimatorFactory::GetThresholdEstimator() const {
     auto segment_score_function = make_shared<ContainmentIndexFunction>(barcode_extractor_);
     size_t min_distance = max_distance_ / 10;
-    INFO("Effective max distance: " << max_distance_);
+    DEBUG("Effective max distance: " << max_distance_);
     //fixme move from here
     const double DEFAULT_THRESHOLD = 0.1;
     auto threshold_estimator = make_shared<LabeledDistributionThresholdEstimator>(g_, segment_score_function,

@@ -69,7 +69,7 @@ ScaffoldGraphPolisherLauncher::ScaffoldGraph ScaffoldGraphPolisherLauncher::GetS
     INFO(large_scaffold_graph.VertexCount() << " vertices and " << large_scaffold_graph.EdgeCount()
                                             << " edges in large scaffold graph.");
     INFO("Large scaffold graph length threshold: " << storage.GetLargeLengthThreshold());
-    INFO(small_scaffold_graph.VertexCount() << "vertices and " << small_scaffold_graph.EdgeCount()
+    INFO(small_scaffold_graph.VertexCount() << " vertices and " << small_scaffold_graph.EdgeCount()
                                             << " edges in small scaffold graph");
     INFO("Small scaffold graph length threshold: " << storage.GetSmallLengthThreshold());
 
@@ -80,8 +80,8 @@ ScaffoldGraphPolisherLauncher::ScaffoldGraph ScaffoldGraphPolisherLauncher::GetS
 
     path_extend::ScaffoldGraphGapCloserLauncher gap_closer_launcher;
     auto final_scaffold_graph = gap_closer_launcher.GetFinalScaffoldGraph(gp_, storage, path_scaffolding);
-    INFO(final_scaffold_graph.VertexCount() << "vertices and " << final_scaffold_graph.EdgeCount()
-                                            << "edges in new small scaffold graph");
+    INFO(final_scaffold_graph.VertexCount() << " vertices and " << final_scaffold_graph.EdgeCount()
+                                            << " edges in new small scaffold graph");
     if (validate_using_reference) {
         INFO("Resulting scaffold graph stats");
         PrintScaffoldGraphReferenceInfo(final_scaffold_graph, gp_, cfg::get().ts_res.long_edge_length_lower_bound);

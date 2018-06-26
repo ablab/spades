@@ -688,14 +688,14 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
     for (const auto& vertex: small_scaffold_graph.vertices()) {
         small_graph_vertices.insert(vertex);
     }
-    for (const auto& vertex: large_scaffold_graph.vertices()) {
+//    for (const auto& vertex: large_scaffold_graph.vertices()) {
 //        INFO(vertex.int_id());
 //        INFO("Length: " << vertex.getLengthFromGraph(graph_pack.g));
 //        INFO("Coverage: " << vertex.getCoverageFromGraph(graph_pack.g));
 //        INFO("Present in small graph: " << (small_graph_vertices.find(vertex) != small_graph_vertices.end()));
 //        INFO(scaffold_vertex_index->GetHeadEntry(vertex).size());
 //        INFO(scaffold_vertex_index->GetTailEntry(vertex).size());
-    }
+//    }
 
     auto new_small_scaffold_graph =
         gap_closer.CleanSmallGraphUsingLargeGraph(large_scaffold_graph, small_scaffold_graph);
@@ -728,7 +728,7 @@ shared_ptr<GapCloserScoreFunctionBuilder> PathExtractionPartsConstructor::Constr
     const size_t min_read_threshold = path_cluster_predicate_params.min_read_threshold_;
     std::set<path_extend::scaffold_graph::ScaffoldVertex> target_edges;
     std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(target_edges, target_edges.begin()));
-    INFO(target_edges.size() << " target edges.");
+    DEBUG(target_edges.size() << " target edges.");
     auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     size_t cluster_storage_builder_threads = cfg::get().max_threads;
     if (not path_scaffolding) {

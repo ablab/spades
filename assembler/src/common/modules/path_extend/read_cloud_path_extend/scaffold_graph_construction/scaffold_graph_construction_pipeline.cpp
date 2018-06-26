@@ -94,6 +94,7 @@ void CloudScaffoldGraphConstructionPipeline::Run() {
                                           << " edges in initial graph");
     intermediate_results_.push_back(initial_graph_ptr);
     for (const auto &stage: construction_stages_) {
+        INFO("Starting " << stage->getName());
         auto constructor = stage->GetScaffoldGraphConstuctor(params_, *(intermediate_results_.back()));
         auto next_graph = constructor->Construct();
         intermediate_results_.push_back(next_graph);
@@ -220,7 +221,6 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffoldGraphPip
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     const size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
     const size_t count_threshold = params.count_threshold_;
-    INFO("Tail threshold: " << params.tail_threshold_);
     auto scaffold_index_extractor = ConstructSimpleEdgeIndex(scaffold_vertices, barcode_extractor_, params, max_threads_);
 
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
@@ -291,7 +291,6 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> MergingScaffoldGraph
     //fixme works only with 2 graphs pipeline
 //    const size_t min_pipeline_length = cfg::get().ts_res.long_edge_length_lower_bound;
 //    bool launch_full_pipeline = min_length_ > min_pipeline_length;
-    bool launch_full_pipeline = true;
 
     INFO("Min scaffold vertex length: " << min_length_);
     const double EDGE_LENGTH_FRACTION = 0.5;

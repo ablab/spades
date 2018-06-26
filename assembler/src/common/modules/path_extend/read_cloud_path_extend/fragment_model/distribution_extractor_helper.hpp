@@ -36,7 +36,6 @@ class MinTrainingLengthEstimator {
         }
         size_t total_long_length = current_sum;
         size_t result = length_rev_cumulative_list.back().first;
-        INFO("Total length of long edges: " << total_long_length);
         VERIFY(total_long_length >= min_total_length_);
         auto it = length_rev_cumulative_list.begin();
         current_sum = 0;
