@@ -128,7 +128,7 @@ class ScaffoldVertex {
     bool operator>=(const ScaffoldVertex &rhs) const;
 };
 
-//fixme tmp solution to redundant EdgeId-based scaffolder algorithms, should be removed
+//fixme tmp solution to EdgeId-based scaffolder algorithms, should be removed
 class EdgeGetter {
  public:
 
