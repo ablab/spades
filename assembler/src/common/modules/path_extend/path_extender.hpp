@@ -931,7 +931,7 @@ class ScaffoldGraphExtender: public PathExtender {
                 DEBUG("Non-univocal connection, stop extending");
                 return false;
             }
-            Gap gap(static_cast<int>(connection.getLength()));
+            Gap gap(static_cast<int>(connection.getLength()), {0, 0}, false);
             ScaffoldVertex next_vertex = connection.getEnd();
             scaffold_graph::ScaffoldVertexT type = next_vertex.getType();
             switch (type) {

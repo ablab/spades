@@ -86,10 +86,10 @@
 </tr>
 <tr>
 <td> Stage </td>
-<td align="center" width="110">  Time  </td> 
+<td align="center" width="110">  Time  </td>
 <td align="center" width="110">  Peak RAM <br> usage (Gb)  </td>
 <td align="center" width="110">  Additional <br> disk space (Gb)  </td>
-<td align="center" width="110">  Time </td> 
+<td align="center" width="110">  Time </td>
 <td align="center" width="110">  Peak RAM <br> usage (Gb)  </td>
 <td align="center" width="110">  Additional <br> disk space (Gb) </td>
 </tr>
@@ -425,6 +425,24 @@ File with right reads for mate-pair library number <code class="notranslate">&lt
 Orientation of reads for mate-pair library number <code class="notranslate">&lt;#&gt;</code> (<code class="notranslate">&lt;#&gt;</code> = 1,2,..,9; <code class="notranslate">&lt;or&gt;</code> = "fr","rf","ff").<br>
 The default orientation for mate-pair libraries is reverse-forward (<code class="notranslate">&lt;-- --&gt;</code>). For example, to specify forward-forward orientation for the first mate-pair library, you should use the flag: <code class="notranslate">--mp1-ff </code></p>
 <p dir="auto"><a name="hqmp"></a><br>
+<p><strong><em>10x Genomics Chromium libraries</em>></strong></p>
+<p><code>--gemcode&lt;&gt;-12 &lt;file_name>&gt; </code><br>
+    File with interlaced reads for 10x Genomics Chromium library number <code>&lt;#&gt;></code> ((<code>&lt;#&gt;</code> = 1,2,..,9).</p>
+<p><code>--mp&lt;#&gt;-1 &lt;file_name&gt; </code><br>
+    File with left reads for 10x Genomics Chromium library number <code>&lt;#&gt;</code> (<code>&lt;#&gt;</code> = 1,2,..,9).</p>
+<p><code>--mp&lt;#&gt;-2 &lt;file_name&gt; </code><br>
+    File with right reads for 10x Genomics Chromium library number <code>&lt;#&gt;</code> (<code>&lt;#&gt;</code> = 1,2,..,9).</p>
+<p><strong><em>Mate-pair libraries</em></strong></p>
+<p><code>--mp&lt;#&gt;-12 &lt;file_name&gt; </code><br>
+File with interlaced reads for mate-pair library number <code>&lt;#&gt;</code> (<code>&lt;#&gt;</code> = 1,2,..,9).</p>
+<p><code>--mp&lt;#&gt;-1 &lt;file_name&gt; </code><br>
+File with left reads for mate-pair library number <code>&lt;#&gt;</code> (<code>&lt;#&gt;</code> = 1,2,..,9).</p>
+<p><code>--mp&lt;#&gt;-2 &lt;file_name&gt; </code><br>
+File with right reads for mate-pair library number <code>&lt;#&gt;</code> (<code>&lt;#&gt;</code> = 1,2,..,9).</p>
+<p><code>--mp&lt;#&gt;-&lt;or&gt; </code><br>
+Orientation of reads for mate-pair library number <code>&lt;#&gt;</code> (<code>&lt;#&gt;</code> = 1,2,..,9; <code>&lt;or&gt;</code> = "fr","rf","ff").<br>
+The default orientation for mate-pair libraries is reverse-forward (<code>&lt;-- --&gt;</code>). For example, to specify forward-forward orientation for the first mate-pair library, you should use the flag: <code>--mp1-ff </code></p>
+<p><a name="hqmp"></a><br>
 <strong><em>High-quality mate-pair libraries</em></strong> (can be used for mate-pair only assembly)</p>
 <p dir="auto"><code class="notranslate">--hqmp&lt;#&gt;-12 &lt;file_name&gt; </code><br>
 File with interlaced reads for high-quality mate-pair library number <code class="notranslate">&lt;#&gt;</code> (<code class="notranslate">&lt;#&gt;</code> = 1,2,..,9).</p>
@@ -484,18 +502,18 @@ File with assembly graph. Could only be used in plasmid, metaplasmid, metaviral 
         type: <span class="pl-s"><span class="pl-pds">"</span>paired-end<span class="pl-pds">"</span></span>,
         right reads: [
           <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_right_1.fastq<span class="pl-pds">"</span></span>,
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_right_2.fastq<span class="pl-pds">"</span></span> 
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_right_2.fastq<span class="pl-pds">"</span></span>
         ],
         left reads: [
           <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_left_1.fastq<span class="pl-pds">"</span></span>,
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_left_2.fastq<span class="pl-pds">"</span></span> 
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_left_2.fastq<span class="pl-pds">"</span></span>
         ]
       },
       {
         orientation: <span class="pl-s"><span class="pl-pds">"</span>rf<span class="pl-pds">"</span></span>,
         type: <span class="pl-s"><span class="pl-pds">"</span>mate-pairs<span class="pl-pds">"</span></span>,
         right reads: [
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_mp1_right.fastq<span class="pl-pds">"</span></span> 
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_mp1_right.fastq<span class="pl-pds">"</span></span>
         ],
         left reads: [
           <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_mp1_left.fastq<span class="pl-pds">"</span></span>
@@ -504,13 +522,13 @@ File with assembly graph. Could only be used in plasmid, metaplasmid, metaviral 
       {
         type: <span class="pl-s"><span class="pl-pds">"</span>single<span class="pl-pds">"</span></span>,
         single reads: [
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_ccs.fastq<span class="pl-pds">"</span></span> 
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_ccs.fastq<span class="pl-pds">"</span></span>
         ]
       },
       {
         type: <span class="pl-s"><span class="pl-pds">"</span>pacbio<span class="pl-pds">"</span></span>,
         single reads: [
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_clr.fastq<span class="pl-pds">"</span></span> 
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_clr.fastq<span class="pl-pds">"</span></span>
         ]
       }
     ]</pre></div>
@@ -768,7 +786,7 @@ h nucleotide is coded with 2 bits: 00 - A, 01 - C, 10 - G, 11 - T.</p>
 <pre class="notranslate"><code class="notranslate">    For kmer: AGCTCT
     Memory: 6 bits * 2 = 12, 64 bits (8 bytes)
     Let’s describe bytes:
-    data[0] = AGCT -&gt; 11 01 10 00 -&gt; 0xd8                                
+    data[0] = AGCT -&gt; 11 01 10 00 -&gt; 0xd8
     data[1] = CT00 -&gt; 00 00 11 01 -&gt; 0x0d
     data[2] = 0000 -&gt; 00 00 00 00 -&gt; 0x00
     data[3] = 0000 -&gt; 00 00 00 00 -&gt; 0x00

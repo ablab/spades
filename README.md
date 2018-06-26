@@ -358,6 +358,10 @@ Single librairies are assumed to have high quality and a reasonable coverage. Fo
 
 Note, that you should not specify PacBio CLR, Sanger reads or additional contigs as single-read libraries, each of them has a separate [option](#inputdata). []()
 
+### 10X Genomics Chromium reads
+
+SPAdes can take a 10x Genomics Chromium paired-end reads as an input. Chromium reads are provided with `--gemcode` option. Reads should be in FASTQ format with barcodes attached as BC:Z or BX:Z tags.
+
 <a name="input:longreads"></a>
 ### PacBio and Oxford Nanopore reads
 
@@ -573,6 +577,17 @@ Note:
     Orientation of reads for paired-end library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
     The default orientation for paired-end libraries is forward-reverse (`--> <--`). For example, to specify reverse-forward orientation for the second paired-end library, you should use the flag: `--pe2-rf `
     Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <a href="assembler/rnaspades_manual.html#sec2.3" target="_blank">rnaSPAdes manual</a>). 
+
+**_10x Genomics Chromium libraries_**
+
+`--gemcode<#>-12 <file_name> `
+File with interlaced reads for 10x Genomics Chromium library number `<#>` (`<#>` = 1,2,..,9). 
+
+`--gemcode<#>-1 <file_name> `
+File with left reads for 10x Genomics Chromium library number `<#>` (`<#>` = 1,2,..,9).
+
+`--gemcode<#>-2 <file_name> `
+File with right reads for 10x Genomics Chromium library number `<#>` (`<#>` = 1,2,..,9).
 
 <a name="inputdata:matepairs"></a>
 **_Mate-pair libraries_**
