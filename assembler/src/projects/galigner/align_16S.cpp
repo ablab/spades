@@ -5,6 +5,9 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include <iostream>
+#include <fstream>
+
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
 #include <cxxopts/cxxopts.hpp>
@@ -12,9 +15,6 @@
 #include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/config_struct.hpp"
-
-#include "assembly_graph/core/graph.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
 
 #include "io/reads/io_helper.hpp"
 #include "common/assembly_graph/core/coverage.hpp"
@@ -28,38 +28,16 @@
 #include "io/reads/wrapper_collection.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "io/reads/multifile_reader.hpp"
+
+#include "modules/alignment/sequence_mapper.hpp"
 #include "edlib/edlib.h"
 
-#include <iostream>
-#include <fstream>
+#include "primer_aligner.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
     log->add_writer(std::make_shared<logging::console_writer>());
     logging::attach_logger(log);
-}
-
-
-namespace rna16S_mapping {
-
-struct RnaAlignerConfig {
-    // general
-    int K;
-    string path_to_graphfile;
-    string path_to_sequences;
-    string path_to_primers;
-
-    double path_limit_stretching;
-    int gap_min_ed;
-    int res_min_ed;
-    int position_diff;
-    int alignment_min_length;
-    int primer_max_ed;
-    int graph_max_ed;
-
-    graph_aligner::GapClosingConfig gap_cfg;
-};
-
 }
 
 namespace llvm {
@@ -98,51 +76,6 @@ template<> struct MappingTraits<rna16S_mapping::RnaAlignerConfig> {
 }
 
 namespace rna16S_mapping {
-
-struct ReadMapping {
-
-    void ExtractPositions() {
-        start_pos_ = -1;
-        end_pos_ = -1;
-        string name = read_;
-        int open_bracket_ind = -1;
-        int close_bracket_ind = -1;
-        int comma_ind = -1;
-        for (int i = 0; i < name.size(); ++ i) {
-            if (name[i] == '[') {
-                open_bracket_ind = i;
-            }
-            if (name[i] == ']') {
-                close_bracket_ind = i;
-            }
-            if (name[i] == ',') {
-                comma_ind = i;
-            }
-        }
-        start_pos_ = std::stoi(name.substr(open_bracket_ind + 1, comma_ind - open_bracket_ind));
-        end_pos_ = std::stoi(name.substr(comma_ind + 1, close_bracket_ind - comma_ind));
-        INFO("Name=" << name << " start_pos_=" << start_pos_ << " end_pos_=" << end_pos_);
-    }
-
-    ReadMapping(const std::string &read, const std::string &read_seq, const int &v, const std::vector<EdgeId> &e, const std::vector<MappingRange> &range)
-        : read_(read), read_seq_(read_seq), v_(v), e_(e), range_(range) {
-        ExtractPositions();
-    }
-
-    bool operator < (const ReadMapping &mapping) const {
-        return (this->start_pos_ < mapping.start_pos_ || (this->start_pos_ == mapping.start_pos_ && this->end_pos_ < mapping.start_pos_) );
-    }
-
-    std::string read_;
-    std::string read_seq_;
-    int v_;
-    std::vector<EdgeId> e_;
-    std::vector<MappingRange> range_;
-    int start_pos_;
-    int end_pos_;
-};
-
-
 struct Mapping {
 
     Mapping(const EdgeId &e, const MappingRange &range): last_edge_(e), last_mapping_(range), score_(std::numeric_limits<int>::max()) {}
@@ -160,15 +93,11 @@ struct Mapping {
     int score_;
 };
 
-
 class SequenceAligner {
 private:
     const debruijn_graph::conj_graph_pack &gp_;
     const rna16S_mapping::RnaAlignerConfig cfg_;
     const string &output_file_;
-
-    std::vector<ReadMapping> primers_;
-    std::map<VertexId, std::set<VertexId> > dist_;
 
 public:
     SequenceAligner(const debruijn_graph::conj_graph_pack &gp,
@@ -183,108 +112,6 @@ public:
 
     EdgeId Canonical(EdgeId e) const {
         return IsCanonical(e) ? e : gp_.g.conjugate(e);
-    }
-
-    int EditDistance(const string &a, const string &b, int &start_pos, int &end_pos) {
-        //INFO("Before ed")
-        int a_len = (int) a.length();
-        int b_len = (int) b.length();
-        VERIFY(a_len > 0);
-        VERIFY(b_len > 0);
-        edlib::EdlibEqualityPair additionalEqualities[36] = {{'U', 'T'}
-            , {'R', 'A'}, {'R', 'G'}
-            , {'Y', 'C'}, {'Y', 'T'}, {'Y', 'U'}
-            , {'K', 'G'}, {'K', 'T'}, {'K', 'U'}
-            , {'M', 'A'}, {'M', 'C'}
-            , {'S', 'C'}, {'S', 'G'}
-            , {'W', 'A'}, {'W', 'T'}, {'W', 'U'}
-            , {'B', 'C'}, {'B', 'G'}, {'B', 'T'}, {'B', 'U'}
-            , {'D', 'A'}, {'D', 'G'}, {'D', 'T'}, {'D', 'U'}
-            , {'H', 'A'}, {'H', 'C'}, {'H', 'T'}, {'H', 'U'}
-            , {'V', 'A'}, {'V', 'C'}, {'V', 'G'}
-            , {'N', 'A'}, {'N', 'C'}, {'N', 'G'}, {'N', 'T'}, {'N', 'U'}
-        };
-        edlib::EdlibAlignResult result = edlib::edlibAlign(a.c_str(), a_len, b.c_str(), b_len
-                                         , edlib::edlibNewAlignConfig(a_len, edlib::EDLIB_MODE_HW, edlib::EDLIB_TASK_LOC,
-                                                 additionalEqualities, 36));
-        int score = -1;
-        if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
-            if (result.numLocations > 0) {
-                score = result.editDistance;
-                start_pos = result.startLocations[0];
-                end_pos = result.endLocations[0];
-            } else {
-                WARN("EditDistance: something wrong with edlib result");
-            }
-        }
-        edlib::edlibFreeAlignResult(result);
-        return score;
-    }
-
-    void AlignPrimer(const io::SingleRead &read, int &v, std::vector<EdgeId> &e, std::vector<MappingRange> &range) {
-        v = cfg_.graph_max_ed;
-        int k = 10;
-        for (auto it = gp_.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            EdgeId eid = *it;
-            std::string edge_str = gp_.g.EdgeNucls(eid).str();
-            int start_pos = 0;
-            int end_pos = 1;
-            int dist = EditDistance(read.GetSequenceString(), edge_str, start_pos, end_pos);
-            if (dist == -1) continue;
-            if (v >= dist && start_pos < gp_.g.length(eid)) {
-                e.push_back(eid);
-                range.push_back(MappingRange(Range(0, read.size()), Range(start_pos, end_pos + 1)) );
-            }
-        }
-
-        std::string ans = " dist=" +  std::to_string(v) + " num=" +  std::to_string(e.size());
-        // for (EdgeId eid: e) {
-        //     ans += " " + std::to_string(eid.int_id()) + ",";
-        // }
-        // ans += "\n";
-        // for (MappingRange r: range) {
-        //     ans += " " + std::to_string(r.mapped_range.start_pos) + "-" + std::to_string(r.mapped_range.end_pos) + ",";
-        // }
-        INFO("Primer name=" << read.name() << " seq=" << read.GetSequenceString() << " " << ans);
-    }
-
-    void FormDistanceMatrix() {
-        for (size_t i = 0; i < primers_.size(); ++ i) {
-            for (auto e : primers_[i].e_) {
-                VertexId end_v = gp_.g.EdgeEnd(e);
-                if (dist_.count(end_v) == 0) {
-                    auto path_searcher = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(gp_.g, 1500);
-                    path_searcher.Run(end_v);
-                    auto reached_vertices = path_searcher.ProcessedVertices();
-                    dist_.insert(std::pair<VertexId, std::set<VertexId> > (end_v, std::set<VertexId>()));
-                    for (auto j_iter = reached_vertices.begin(); j_iter != reached_vertices.end(); ++j_iter) {
-                        dist_[end_v].insert(*j_iter);
-                    }
-                }
-            }
-        }
-    }
-
-    void PreparePrimers(std::vector<io::SingleRead> &wrappedprimers, int threads) {
-        #pragma omp parallel num_threads(threads)
-        #pragma omp for
-        for (size_t i = 0 ; i < wrappedprimers.size(); ++i) {
-            int v = 0;
-            std::vector<EdgeId> e;
-            std::vector<MappingRange> range;
-            AlignPrimer(wrappedprimers[i], v, e, range);
-            const std::string &name = wrappedprimers[i].name();
-            const std::string &seq = wrappedprimers[i].GetSequenceString();
-            INFO("i=" << i)
-            #pragma omp critical
-            {
-                if (e.size() > 0) {
-                    primers_.push_back(ReadMapping(name, seq, v, e, range));
-                }
-            }
-        }
-        std::sort(primers_.begin(), primers_.end());
-        FormDistanceMatrix();
     }
 
     void PrepareInitialState(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, const string &s, bool forward, string &ss, EdgeId &start_e, int &start_pos, int &seq_start_pos) const {
@@ -453,8 +280,8 @@ public:
         return true;
     }
 
-    Mapping FillGap(const EdgeId &a_e, const MappingRange &a_range, 
-                    const EdgeId &b_e, const MappingRange &b_range, 
+    Mapping FillGap(const EdgeId &a_e, const MappingRange &a_range,
+                    const EdgeId &b_e, const MappingRange &b_range,
                     const string &s) {
         std::map<VertexId, size_t> vertex_pathlen;
         if (!Consistent(a_e, a_range, b_e, b_range, vertex_pathlen)) {
@@ -474,11 +301,11 @@ public:
             return Mapping();
         }
         utils::perf_counter perf;
-        graph_aligner::DijkstraGapFiller gap_filler(gp_.g, cfg_.gap_cfg, 
-                                                    ss, a_e, b_e, 
-                                                    a_range.mapped_range.start_pos, 
-                                                    b_range.mapped_range.start_pos, 
-                                                    path_max_length, vertex_pathlen, true);
+        graph_aligner::DijkstraGapFiller gap_filler(gp_.g, cfg_.gap_cfg,
+                ss, a_e, b_e,
+                a_range.mapped_range.start_pos,
+                b_range.mapped_range.start_pos,
+                path_max_length, vertex_pathlen, true);
         gap_filler.CloseGap();
         int score = gap_filler.edit_distance();
         VertexId start_v = gp_.g.EdgeEnd(a_e);
@@ -587,8 +414,8 @@ public:
                 // }
                 // INFO("path_sz=" << path.path_.size() << " last_e=" <<path.last_edge_.int_id() << " last_range s=" << path.last_mapping_.initial_range.start_pos << " " << path.last_mapping_.initial_range.end_pos)
                 if (path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos -
-                    path.path_.mapping_at(0).initial_range.start_pos > cfg_.alignment_min_length 
-                    && ed > path.score_) {
+                        path.path_.mapping_at(0).initial_range.start_pos > cfg_.alignment_min_length
+                        && ed > path.score_) {
                     len_max = path.path_.mapping_at(path.path_.size() - 1).initial_range.end_pos - path.path_.mapping_at(0).initial_range.start_pos;
                     ed = path.score_;
                     best_ind = i;
@@ -672,6 +499,22 @@ public:
     }
 };
 
+class Rna16SMapper {
+public:
+    Rna16SMapper(const debruijn_graph::conj_graph_pack &gp,
+                 const rna16S_mapping::RnaAlignerConfig &cfg,
+                 const string &output_file):
+        gp_(gp), cfg_(cfg), output_file_(output_file) {}
+
+private:
+    const debruijn_graph::conj_graph_pack &gp_;
+    const rna16S_mapping::RnaAlignerConfig cfg_;
+    const string &output_file_;
+    
+    PrimerAligner primer_aligner;
+    SequenceAligner sequence_aligner;
+};
+
 void LoadSequences(const string &sequence_fasta, std::vector<io::SingleRead> &wrappedreads) {
     io::ReadStreamList<io::SingleRead> streams;
     streams.push_back(make_shared<io::FileReadStream>(sequence_fasta)); //make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(sequence_fasta)));
@@ -696,15 +539,14 @@ void Launch(RnaAlignerConfig cfg, const string &output_file, int threads) {
     LoadSequences(cfg.path_to_primers, wrappedprimers);
     LoadSequences(cfg.path_to_sequences, wrappedreads);
 
-    SequenceAligner aligner(gp, cfg, output_file);
-
     ofstream myfile;
     myfile.open(output_file + ".gpa", std::ofstream::out | std::ofstream::app);
     myfile << "H\n";
     myfile.close();
 
-    aligner.PreparePrimers(wrappedprimers, threads);
+    aligner.AnalyzePrimers(wrappedprimers, threads);
 
+    SequenceAligner aligner(gp, cfg, output_file);
     #pragma omp parallel num_threads(threads)
     #pragma omp for
     for (size_t i = 0 ; i < wrappedreads.size(); ++i) {
