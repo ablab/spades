@@ -166,7 +166,7 @@ Gap PathExtenderGapCloser::CloseGap(const BidirectionalPath &original_path,
     DEBUG("Original gap: " << orig_gap.gap << " , added " << (int) added);
 //    VERIFY(orig_gap.NoTrash());
     return Gap((g_.EdgeEnd(path.Back()) == target_vertex) ? 0 :
-               std::max(orig_gap.gap - (int) added, int(g_.k() + 10)), Gap::Trash(0, orig_gap.trash.current));
+               std::max(orig_gap.gap - (int) added, int(g_.k() + 10)), {0, orig_gap.trash.current}, false);
 }
 
 Gap DijkstraGapCloser::FillWithBridge(const Gap &orig_gap,

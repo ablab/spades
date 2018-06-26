@@ -655,19 +655,11 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
     auto subgraph_extractor_params =
         params_constructor.ConstructSubgraphExtractorParamsFromConfig(scaffold_graph_storage.GetLargeLengthThreshold());
     auto path_extractor_params = params_constructor.ConstructPathClusterPredicateParamsFromConfig();
+    ScaffoldIndexInfoExtractorHelper scaffold_index_helper;
+    auto scaffold_index_extractor = scaffold_index_helper.ConstructIndexExtractorFromParams(small_scaffold_graph,
+                                                                                            graph_pack,
+                                                                                            subgraph_extractor_params);
 
-    barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
-    const size_t tail_threshold = subgraph_extractor_params.large_length_threshold_;
-
-    const size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
-    const size_t count_threshold = subgraph_extractor_params.count_threshold_;
-
-    auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(graph_pack.barcode_mapper_ptr, graph_pack.g);
-    auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
-    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(graph_pack.g, *barcode_extractor, tail_threshold_getter,
-                                                                     count_threshold, length_threshold, cfg::get().max_threads,
-                                                                     small_scaffold_graph.vertices());
-    auto scaffold_index_extractor = std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
     PathExtractionPartsConstructor predicate_constructor(graph_pack);
     vector<shared_ptr<GapCloserPredicateBuilder>> predicate_builders = predicate_constructor.ConstructPredicateBuilders();
 
@@ -681,21 +673,10 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
     INFO(large_scaffold_graph.VertexCount() << " vertices and "
                                             << large_scaffold_graph.EdgeCount() << " edges in old large scaffold graph");
 
-//    auto new_large_scaffold_graph = gap_closer.CloseGapsInLargeGraph(large_scaffold_graph, small_scaffold_graph);
-//    INFO(new_large_scaffold_graph.VertexCount() << " vertices and "
-//                                                << new_large_scaffold_graph.EdgeCount() << " edges in new large scaffold graph");
     set<ScaffoldVertex> small_graph_vertices;
     for (const auto& vertex: small_scaffold_graph.vertices()) {
         small_graph_vertices.insert(vertex);
     }
-//    for (const auto& vertex: large_scaffold_graph.vertices()) {
-//        INFO(vertex.int_id());
-//        INFO("Length: " << vertex.getLengthFromGraph(graph_pack.g));
-//        INFO("Coverage: " << vertex.getCoverageFromGraph(graph_pack.g));
-//        INFO("Present in small graph: " << (small_graph_vertices.find(vertex) != small_graph_vertices.end()));
-//        INFO(scaffold_vertex_index->GetHeadEntry(vertex).size());
-//        INFO(scaffold_vertex_index->GetTailEntry(vertex).size());
-//    }
 
     auto new_small_scaffold_graph =
         gap_closer.CleanSmallGraphUsingLargeGraph(large_scaffold_graph, small_scaffold_graph);
@@ -910,4 +891,22 @@ vector<CutVerticesExtractor::ScaffoldVertex> CutVerticesExtractor::GetCutVertice
 }
 CutVerticesExtractor::CutVerticesExtractor(const CutVerticesExtractor::SimpleTransitionGraph &graph_)
     : graph_(graph_) {}
+shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> ScaffoldIndexInfoExtractorHelper::ConstructIndexExtractorFromParams(
+        const scaffold_graph::ScaffoldGraph scaffold_graph,
+        const conj_graph_pack &gp,
+        const CloudSubgraphExtractorParams &subgraph_extractor_params) const {
+    barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
+    const size_t tail_threshold = subgraph_extractor_params.large_length_threshold_;
+
+    const size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
+    const size_t count_threshold = subgraph_extractor_params.count_threshold_;
+
+    auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp.barcode_mapper_ptr, gp.g);
+    auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
+    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp.g, *barcode_extractor, tail_threshold_getter,
+                                                                     count_threshold, length_threshold, cfg::get().max_threads,
+                                                                     scaffold_graph.vertices());
+    auto scaffold_index_extractor = std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
+    return scaffold_index_extractor;
+}
 }
