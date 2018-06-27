@@ -26,3 +26,7 @@ gap_closing:
   find_shortest_path: true
   restore_mapping: false
   penalty_interval: 2000
+  max_ed_proportion: 3 # max_ed = min(ed_upper_bound, max(sequence_length/max_ed_proportion, ed_lower_bound))
+  ed_lower_bound: 200 
+  ed_upper_bound: 1000
+  max_restorable_end_length: 3000

@@ -35,7 +35,7 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     int s_len = int(s.size());
     int ed_limit = score;
     if (score == std::numeric_limits<int>::max()) {
-        ed_limit = max(s_len / 3, 20);
+        ed_limit = min(max(gap_cfg_.ed_lower_bound, s_len / gap_cfg_.max_ed_proportion), gap_cfg_.ed_upper_bound);
     }
     DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len <<
           " max-len " << ed_limit << " vertex_num=" << vertex_pathlen.size());
@@ -241,8 +241,8 @@ void EndsFiller::Run(omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits,
     PrepareInitialState(bwa_hits, s, forward, ss, start_e, start_pos, start_pos_seq);
 
     int s_len = int(ss.size());
-    int score = min(max(200, s_len / 3), 1000);
-    if (s_len > (int) pb_config_.max_contigs_gap_length) {
+    int score = min(max(gap_cfg_.ed_lower_bound, s_len / gap_cfg_.max_ed_proportion), gap_cfg_.ed_upper_bound);
+    if (s_len > (int) gap_cfg_.max_restorable_end_length) {
         DEBUG("EdgeDijkstra: sequence is too long " << s_len)
         return_code += 1;
         return;
