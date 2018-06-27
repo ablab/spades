@@ -9,6 +9,7 @@ namespace graph_aligner {
 void MappingPrinterTSV::SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
     string path_str = "";
     string path_len_str = "";
+    string path_seq_str = "";
     string seq_starts = "";
     string seq_ends = "";
     string edge_starts = "";
@@ -20,6 +21,7 @@ void MappingPrinterTSV::SaveMapping(const pacbio::OneReadMapping &aligned_mappin
             size_t mapping_end = i == mappingpath.size() - 1 ?  aligned_mappings.read_ranges[j].edge_end : g_.length(mappingpath[i]);
             path_str += std::to_string(mappingpath[i].int_id()) + ",";
             path_len_str += std::to_string(mapping_end - mapping_start) + ",";
+            path_seq_str += g_.EdgeNucls(mappingpath[i]).Subseq(mapping_start, mapping_end).str();
         }
         seq_starts += std::to_string(aligned_mappings.read_ranges[j].seq_start) + ",";
         seq_ends += std::to_string(aligned_mappings.read_ranges[j].seq_end) + ",";
@@ -27,6 +29,7 @@ void MappingPrinterTSV::SaveMapping(const pacbio::OneReadMapping &aligned_mappin
         edge_ends += std::to_string(aligned_mappings.read_ranges[j].edge_end) + ",";
         path_str += ";";
         path_len_str += ";";
+        path_seq_str += ";";
     }
     DEBUG("Paths: " << path_str);
     string bwa_path_str = "";
@@ -45,7 +48,8 @@ void MappingPrinterTSV::SaveMapping(const pacbio::OneReadMapping &aligned_mappin
                  + seq_ends + "\t"
                  + edge_starts + "\t"
                  + edge_ends + "\t"
-                 + std::to_string(read.sequence().size()) +  "\t" + path_str + "\t" + path_len_str + "\t" + bwa_path_str + "\n";
+                 + std::to_string(read.sequence().size()) +  "\t" 
+                 + path_str + "\t" + path_len_str + "\t" + bwa_path_str + "\t" + path_seq_str + "\n";
     DEBUG("Read " << read.name() << " aligned and length=" << read.sequence().size());
     DEBUG("Read " << read.name() << ". Paths with ends: " << path_str );
     #pragma omp critical
