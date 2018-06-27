@@ -197,14 +197,13 @@ void EndsFiller::UpdatePath(vector<debruijn_graph::EdgeId> &path,
                             std::vector<EdgeId> &ans,
                             int end_pos, int end_pos_seq, PathRange &range, bool forward) const {
     if (forward) {
-        if (end_pos < g_.k()) {
+        while (end_pos < g_.k() && ans.size() > 0) {
             ans.pop_back();
-            end_pos = g_.length(ans[ans.size() - 1]);
+            end_pos += g_.length(ans[ans.size() - 1]);
         }
-        for (int i = 1; i < (int) ans.size() - 1; ++i) {
+        for (int i = 1; i < (int) ans.size(); ++i) {
             path.push_back(ans[i]);
         }
-        path.push_back(ans[ans.size() - 1]);
         range.seq_end = end_pos_seq;
         range.edge_end = end_pos;
     } else {
@@ -242,13 +241,13 @@ void EndsFiller::Run(omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits,
     PrepareInitialState(bwa_hits, s, forward, ss, start_e, start_pos, start_pos_seq);
 
     int s_len = int(ss.size());
-    int score = max(10, s_len / 5);
+    int score = min(max(200, s_len / 3), 1000);
     if (s_len > (int) pb_config_.max_contigs_gap_length) {
         DEBUG("EdgeDijkstra: sequence is too long " << s_len)
         return_code += 1;
         return;
     }
-    if (s_len < max((int) g_.length(start_e) + (int) g_.k() - start_pos, (int) g_.k())) {
+    if (s_len < 1) {
         DEBUG("EdgeDijkstra: sequence is too small " << s_len)
         return_code += 2;
         return;
