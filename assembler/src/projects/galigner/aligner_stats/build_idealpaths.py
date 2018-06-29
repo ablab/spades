@@ -8,24 +8,6 @@ import matplotlib.pyplot as plt
 
 from Bio import SeqIO
 
-import edlib
-
-def edist(lst):
-    #return editdistance.eval(lst[0], lst[1])
-    result = edlib.align(str(lst[0]), str(lst[1]), mode="NW", additionalEqualities=[('U', 'T')
-                                                , ('R', 'A'), ('R', 'G')
-                                                , ('Y', 'C'), ('Y', 'T'), ('Y', 'U')
-                                                , ('K', 'G'), ('K', 'T'), ('K', 'U')
-                                                , ('M', 'A'), ('M', 'C')
-                                                , ('S', 'C'), ('S', 'G')
-                                                , ('W', 'A'), ('W', 'T'), ('W', 'U')
-                                                , ('B', 'C'), ('B', 'G'), ('B', 'T'), ('B', 'U')
-                                                , ('D', 'A'), ('D', 'G'), ('D', 'T'), ('D', 'U')
-                                                , ('H', 'A'), ('H', 'C'), ('H', 'T'), ('H', 'U')
-                                                , ('V', 'A'), ('V', 'C'), ('V', 'G')
-                                                , ('N', 'A'), ('N', 'C'), ('N', 'G'), ('N', 'T'), ('N', 'U')] )
-    return result["editDistance"]
-
 reads_fasta = sys.argv[1]
 reference_fasta = sys.argv[2]
 grap_path = sys.argv[3]
@@ -50,6 +32,7 @@ def load_ideal_reads(reads_bam, reference_fasta, reads):
     reffasta = pysam.FastaFile(reference_fasta)
 
     mp = {}
+    mp_real = {}
     mp_edlib = {}
     cnt = 0
     for r in readssam:
@@ -59,22 +42,19 @@ def load_ideal_reads(reads_bam, reference_fasta, reads):
         if start == -1 or end is None:
             continue
         sequence = reffasta.fetch(r.reference_name, start, end)
+        aligned_sequence = r.query_alignment_sequence
         cnt += 1
         if (name not in mp or len(mp[name]) < len(sequence)) and len(sequence) > 0.8*len(reads[name].seq):
             if r.is_reverse:
                 sequence = make_rc(sequence)
-            mp_edlib[name] = edist([sequence, reads[name].seq])*100/len(reads[name].seq)
+                aligned_sequence = make_rc(aligned_sequence)
             mp[name] = sequence
+            mp_real[name] = aligned_sequence
     readssam.close()
     reffasta.close()
-    lst_edlib = []
-    for it in mp_edlib.keys():
-        lst_edlib.append(mp_edlib[it])
-    plt.hist(lst_edlib, bins=100)
-    plt.savefig("error_rate_pacbio_celegans.png")
     print("Number of mapped items > 80%: " + str(len(mp)))
     print("Number of mapped items: " + str(cnt))
-    return mp
+    return [mp, mp_real]
 
 
 def save(refseq_fasta, seq):
@@ -99,10 +79,15 @@ def run_bwamem(reads_fasta, reference_fasta, type, build_index = False):
     print("bwa mem -x " + t +  " -t 33 " + reference_fasta + " " + reads_fasta + " | samtools view -bS - > " + reads_bam)
     subprocess.call(["bwa mem -x " + t + " -t 33 " + reference_fasta + " " + reads_fasta + " | samtools view -bS - > " + reads_bam], shell=True)
     print("> Load mappings from bam (longest mapping for each read name and not less 20% length)")
-    refseq = load_ideal_reads(reads_bam, reference_fasta, reads)
+    [refseq, realseq] = load_ideal_reads(reads_bam, reference_fasta, reads)
     refseq_fasta =  "/".join(reads_fasta.split("/")[:-1] + [ "refseq_bwamem_" + reads_fasta.split("/")[-1]])
     print("> Save into " + refseq_fasta)
     save(refseq_fasta, refseq)
+
+    realseq_fasta =  "/".join(reads_fasta.split("/")[:-1] + [ "realseq_bwamem_" + reads_fasta.split("/")[-1]])
+    print("> Save into " + realseq_fasta)
+    save(realseq_fasta, realseq)
+
     return refseq_fasta
 
 def run_minimap2(reads_fasta, reference_fasta, type, build_index = False):
