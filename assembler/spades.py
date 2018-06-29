@@ -190,7 +190,11 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     if secondary_filling or not options_storage.will_rerun(options):
         mode = options_storage.get_mode()
         if mode is not None:
-            options.append(('--' + mode, ''))
+            if mode != "metaplasmid":
+                options.append(('--' + mode, ''))
+            else:
+                options.append(('--meta',''))
+                options.append(('--plasmid', ''))
 
     # for parsing options from "previous run command"
     options_storage.continue_mode = False

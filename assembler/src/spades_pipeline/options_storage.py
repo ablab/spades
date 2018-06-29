@@ -177,6 +177,8 @@ def get_mode():
         mode = 'plasmid'
     elif basename(sys.argv[0]) == "metaspades.py":
         mode = 'meta'
+    elif basename(sys.argv[0]) == "metaplasmidspades.py":
+        mode = 'metaplasmid'
     return mode
 
 

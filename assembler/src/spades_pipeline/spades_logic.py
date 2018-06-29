@@ -16,6 +16,7 @@ from process_cfg import bool_to_str
 from site import addsitedir
 from distutils import dir_util
 import options_storage
+import plasmid_glue_contigs
 
 BASE_STAGE = "construction"
 READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
@@ -348,6 +349,9 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
                     used_K.append(K)
                     prev_K = K
                     if last_one:
+                        if options_storage.plasmid and options_storage.meta:
+                            plasmid_glue_contigs.glue_contigs(os.path.join(cfg.output_dir, "K%d" % K))
+                            log.info("=== MetaplasmidSPAdes contigs are avalable in " + os.path.join(cfg.output_dir, "K%d" % K) + "/final_metaplasmid.fasta")
                         break
                     if options_storage.stop_after == "k%d" % K:
                         finished_on_stop_after = True
