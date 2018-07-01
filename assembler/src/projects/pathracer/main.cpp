@@ -792,7 +792,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    INFO("Starting Graph HMM aligning engine, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
+    START_BANNER("Graph HMM aligning engine");
     std::string cmd_line = join(llvm::make_range(argv, argv + argc), " ");
     INFO("Command line: " << cmd_line);
 
