@@ -194,7 +194,7 @@ public:
 };
 
 const debruijn_graph::ConjugateDeBruijnGraph& LoadGraph(const string &saves_path, const string &tmpdir, int K) {
-    if (fs::extension(saves_path) == "gfa") {
+    if (fs::extension(saves_path) == ".gfa") {
         DEBUG("Load gfa")
         VERIFY_MSG(fs::is_regular_file(saves_path), "GFA-file " + saves_path + " doesn't exist");
         static debruijn_graph::ConjugateDeBruijnGraph g(K);
