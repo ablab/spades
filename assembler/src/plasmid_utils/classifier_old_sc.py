@@ -77,7 +77,7 @@ def scikit_multNB (input_list):
     import pickle
     # load it again
 #    with open('/Nancy/mrayko/PlasmidVerify/scikit_nbc/plasmids_and_chunks/my_dumped_classifier_chunks.pkl', 'rb') as fid:
-    with open('/Nancy/mrayko/PlasmidVerify/scikit_nbc/plasmids_and_chunks/retrain_02.07/my_dumped_classifier_chunks.pkl', 'rb') as fid:
+    with open('/Nancy/mrayko/PlasmidVerify/scikit_nbc/plasmids_and_chunks/my_dumped_classifier_chunks.pkl', 'rb') as fid:
         clf = pickle.load(fid)
 
     a=create_vector_pfams([input_list])
