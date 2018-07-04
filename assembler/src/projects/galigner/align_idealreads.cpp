@@ -80,6 +80,8 @@ class IdealAligner {
                     j++;
                     len_before = range.initial_range.end_pos;
                 } else {
+                    INFO("len_before: "<< len_before << " start=" << range.initial_range.start_pos 
+                            << " end=" << range.initial_range.end_pos << " e_sz=" << gp_.g.length(edgeid))
                     len_before += gp_.g.length(edgeid);    
                 }
             } else {
@@ -139,6 +141,10 @@ class IdealAligner {
             }
             INFO("Path: " << path_str);
             INFO("Read " << read.name() << " length=" << seq.size() << "; path_len=" << current_mapping.size()  << "; aligned: " << path_str);
+            if (str.size() != seq.size()) {
+                INFO("Read " << read.name() << " wasn't fully aligned");
+                return;
+            }
             #pragma omp critical
             {
                 myfile_ << read.name() << "\t" << seq.size() << "\t" << current_mapping.size()
@@ -182,7 +188,7 @@ void Launch(size_t K, const string &saves_path, const string &reads_fasta, const
 }
 
 int main(int argc, char **argv) {
-    omp_set_num_threads(16);
+    omp_set_num_threads(1);
     if (argc < 5) {
         cout << "Usage: idealreads_aligner <K>"
              << " <saves path> <long reads file (fasta)> <ouput-prefix>" << endl;
