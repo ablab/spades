@@ -157,13 +157,13 @@ inline std::shared_ptr<ContigNameGenerator> MakeContigNameGenerator(config::pipe
 class ScaffoldBreaker {
 private:
 
-    int min_gap_;
+    int min_overlap_;
 
     void SplitPath(const BidirectionalPath& path, PathContainer &result) const;
 
 public:
 
-    ScaffoldBreaker(int min_gap): min_gap_(min_gap) {}
+    ScaffoldBreaker(int min_overlap): min_overlap_(min_overlap) {}
 
     void Break(const PathContainer &paths, PathContainer &result) const;
 };

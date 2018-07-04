@@ -130,7 +130,7 @@ void path_extend::ScaffoldBreaker::SplitPath(const BidirectionalPath &path, Path
         BidirectionalPath *p = new BidirectionalPath(path.graph(), path[i]);
         ++i;
 
-        while (i < path.Size() && path.GapAt(i).gap <= min_gap_) {
+        while (i < path.Size() && path.GapAt(i).overlap_after_trim(path.graph().k()) >= min_overlap_) {
             p->PushBack(path[i], path.GapAt(i));
             ++i;
         }

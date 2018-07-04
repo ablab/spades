@@ -67,16 +67,16 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
             cfg::get().co.obs_mode != config::output_broken_scaffolds::none;
 
         if (output_broken_scaffolds) {
-            int min_gap = 0;
+            int min_overlap = int(gp.g.k());
             if (cfg::get().co.obs_mode == config::output_broken_scaffolds::break_all) {
-                min_gap = 1;
+                min_overlap = int(gp.g.k());
             } else if (cfg::get().co.obs_mode == config::output_broken_scaffolds::break_gaps) {
-                min_gap = int(gp.g.k());
+                min_overlap = 0;
             } else {
                 WARN("Unsupported contig output mode");
             }
 
-            ScaffoldBreaker breaker(min_gap);
+            ScaffoldBreaker breaker(min_overlap);
             PathContainer broken_scaffolds;
             breaker.Break(gp.contig_paths, broken_scaffolds);
 
