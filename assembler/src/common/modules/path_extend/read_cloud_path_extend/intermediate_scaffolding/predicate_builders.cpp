@@ -11,9 +11,10 @@ bool SetBasedPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge&
 SetBasedPredicate::SetBasedPredicate(const unordered_set<transitions::Transition>& passed_edges_) : passed_edges_(
     passed_edges_) {}
 
-shared_ptr<ScaffoldEdgePredicate> FromPositivePredicateBuilder::GetPredicate(const FromPositivePredicateBuilder::SimpleTransitionGraph& graph,
-                                                                             const ScaffoldVertex&,
-                                                                             const ScaffoldVertex&) const {
+shared_ptr<ScaffoldEdgePredicate> FromPositivePredicateBuilder::GetPredicate(
+        const FromPositivePredicateBuilder::SimpleTransitionGraph& graph,
+        const ScaffoldVertex&,
+        const ScaffoldVertex&) const {
     DEBUG("Creating negative predicate");
     unordered_set<ScaffoldVertex> passed_starts;
     unordered_set<ScaffoldVertex> passed_ends;
@@ -57,8 +58,10 @@ shared_ptr<ScaffoldEdgePredicate> PathClusterPredicateBuilder::GetPredicate(cons
     cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_ptr_, linkage_distance_);
     DEBUG("Constructing cluster storage");
     auto cluster_storage = cluster_storage_builder.ConstructClusterStorage(*initial_cluster_storage_, graph);
-    path_extend::PathClusterTransitionStorageHelper transition_storage_helper(cluster_storage, g_);
-    auto cluster_transition_storage = transition_storage_helper.GetPathClusterTransitionStorage();
+    path_extend::PathClusterExtractorHelper path_cluster_extractor_helper(g_, initial_cluster_storage_,
+                                                                          barcode_extractor_ptr_, linkage_distance_);
+    path_extend::PathClusterTransitionStorageHelper transition_storage_helper(g_, path_cluster_extractor_helper);
+    auto cluster_transition_storage = transition_storage_helper.GetPathClusterTransitionStorage(graph);
     auto result = make_shared<PathClusterPredicate>(g_, cluster_transition_storage, path_cluster_score_threshold_);
     DEBUG("Printing graph with path cluster weights");
     for (const auto& vertex: graph) {
@@ -121,8 +124,10 @@ shared_ptr<ScaffoldEdgeScoreFunction> PathClusterScoreFunctionBuilder::GetScoreF
     cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_ptr_, linkage_distance_);
     DEBUG("Constructing cluster storage");
     auto cluster_storage = cluster_storage_builder.ConstructClusterStorage(*initial_cluster_storage_, graph);
-    path_extend::PathClusterTransitionStorageHelper transition_storage_helper(cluster_storage, g_);
-    auto cluster_transition_storage = transition_storage_helper.GetPathClusterTransitionStorage();
+    path_extend::PathClusterExtractorHelper path_cluster_extractor_helper(g_, initial_cluster_storage_,
+                                                                          barcode_extractor_ptr_, linkage_distance_);
+    path_extend::PathClusterTransitionStorageHelper transition_storage_helper(g_, path_cluster_extractor_helper);
+    auto cluster_transition_storage = transition_storage_helper.GetPathClusterTransitionStorage(graph);
     auto result = make_shared<PathClusterScoreFunction>(g_, cluster_transition_storage);
     TRACE("Printing graph with path cluster weights");
     for (const auto& vertex: graph) {
@@ -149,9 +154,10 @@ PathClusterScoreFunctionBuilder::PathClusterScoreFunctionBuilder(
 double TrivialScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &/*edge*/) const {
     return 0.0;
 }
-shared_ptr<ScaffoldEdgeScoreFunction> TrivialScoreFunctionBuilder::GetScoreFunction(const GapCloserScoreFunctionBuilder::SimpleTransitionGraph &/*graph*/,
-                                                                                    const GapCloserScoreFunctionBuilder::ScaffoldVertex &/*source*/,
-                                                                                    const GapCloserScoreFunctionBuilder::ScaffoldVertex &/*sink*/) const {
+shared_ptr<ScaffoldEdgeScoreFunction> TrivialScoreFunctionBuilder::GetScoreFunction(
+        const GapCloserScoreFunctionBuilder::SimpleTransitionGraph &/*graph*/,
+        const GapCloserScoreFunctionBuilder::ScaffoldVertex &/*source*/,
+        const GapCloserScoreFunctionBuilder::ScaffoldVertex &/*sink*/) const {
     return make_shared<TrivialScoreFunction>();
 }
 }

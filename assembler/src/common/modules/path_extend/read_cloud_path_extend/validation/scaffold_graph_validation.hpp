@@ -87,23 +87,23 @@ class ScaffoldGraphValidator {
  public:
     ScaffoldGraphValidator(const Graph &g_);
 
-    ScaffoldGraphStats GetScaffoldGraphStats(const path_extend::scaffold_graph::ScaffoldGraph& scaffold_graph,
-                                             const vector <vector<EdgeWithMapping>>& reference_paths);
+    ScaffoldGraphStats GetScaffoldGraphStats(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
+                                             const vector <vector<EdgeWithMapping>> &reference_paths);
 
  private:
 
-    ScaffoldGraphStats GetScaffoldGraphStatsFromTransitions(const path_extend::scaffold_graph::ScaffoldGraph& graph,
-                                                            const ContigTransitionStorage& reference_transitions,
-                                                            const ContigTransitionStorage& reverse_transitions,
-                                                            const ContigTransitionStorage& conjugate_transitions,
-                                                            const ContigTransitionStorage& near_in_both_strands_transitions,
-                                                            const ContigTransitionStorage& forward_neighbouring_transitions);
+    ScaffoldGraphStats GetScaffoldGraphStatsFromTransitions(const path_extend::scaffold_graph::ScaffoldGraph &graph,
+                                                            const ContigTransitionStorage &reference_transitions,
+                                                            const ContigTransitionStorage &reverse_transitions,
+                                                            const ContigTransitionStorage &conjugate_transitions,
+                                                            const ContigTransitionStorage &near_in_both_strands_transitions,
+                                                            const ContigTransitionStorage &forward_neighbouring_transitions);
 
-    ReferencePathIndex BuildReferenceIndex(const vector <vector<EdgeWithMapping>>& reference_paths);
+    ReferencePathIndex BuildReferenceIndex(const vector <vector<EdgeWithMapping>> &reference_paths);
 
-    size_t CountStatsUsingTransitions(const ScaffoldGraph& graph, const ContigTransitionStorage& transitions);
+    size_t CountStatsUsingTransitions(const ScaffoldGraph &graph, const ContigTransitionStorage &transitions);
 
-    size_t CountFalsePositive(const ScaffoldGraph& graph, const ContigTransitionStorage& reference_transtions);
+    size_t CountFalsePositive(const ScaffoldGraph &graph, const ContigTransitionStorage &reference_transtions);
 
     set <transitions::Transition> GetFalseNegativeTransitions(const ScaffoldGraphValidator::ScaffoldGraph &graph,
                                                               const ContigTransitionStorage &transitions) const;

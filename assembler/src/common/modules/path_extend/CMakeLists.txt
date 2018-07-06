@@ -29,7 +29,6 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     read_cloud_path_extend/scaffold_graph_dijkstra.hpp
                     read_cloud_path_extend/transitions/transitions.cpp
                     read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.cpp
-                    read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp
                     read_cloud_path_extend/path_cluster_helper.cpp
                     read_cloud_path_extend/intermediate_scaffolding/pe_extraction.cpp
                     read_cloud_path_extend/simple_graph.hpp
@@ -38,16 +37,15 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     read_cloud_path_extend/path_scaffolder.cpp
                     read_cloud_path_extend/scaffold_graph_construction/containment_index_threshold_finder.cpp
                     read_cloud_path_extend/read_cloud_polisher_support.cpp
-                    read_cloud_path_extend/read_cloud_polisher_support.hpp
                     read_cloud_path_extend/scaffold_graph_construction/construction_callers.cpp
-                    read_cloud_path_extend/scaffold_graph_construction/construction_callers.hpp
                     read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.cpp
-                    read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp
-                    read_cloud_path_extend/scaffold_graph_gap_closer/scaffold_graph_gap_closer.hpp
                     read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.cpp
-                    read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.hpp
                     read_cloud_path_extend/scaffold_graph_gap_closer/scaffold_graph_gap_closer.cpp
-        read_cloud_path_extend/fragment_model/distribution_extractor.hpp read_cloud_path_extend/fragment_model/distribution_extractor_helper.hpp read_cloud_path_extend/fragment_model/secondary_stats_estimators.cpp read_cloud_path_extend/fragment_model/secondary_stats_estimators.hpp read_cloud_path_extend/extender_support/candidate_selectors.cpp read_cloud_path_extend/extender_support/candidate_selectors.hpp read_cloud_path_extend/extender_support/entry_collectors.cpp read_cloud_path_extend/extender_support/entry_collectors.hpp)
+                    read_cloud_path_extend/fragment_model/secondary_stats_estimators.cpp
+                    read_cloud_path_extend/extender_support/candidate_selectors.cpp
+                    read_cloud_path_extend/extender_support/entry_collectors.cpp
+                    read_cloud_path_extend/statistics/path_cluster_statistics.cpp
+                    read_cloud_path_extend/validation/transition_subgraph_validation.cpp)
 
 target_link_libraries(path_extend assembly_graph ssw)
 

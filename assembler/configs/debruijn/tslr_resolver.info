@@ -49,7 +49,7 @@ ts_res
 	gap_closer_connection_length_threshold 100
 
 	scaffold_polisher {
-		share_threshold 2.0
+		share_threshold 0.05
 		read_count_threshold 2
 		max_scaffold_distance 4
 		path_cluster_linkage_distance 2500

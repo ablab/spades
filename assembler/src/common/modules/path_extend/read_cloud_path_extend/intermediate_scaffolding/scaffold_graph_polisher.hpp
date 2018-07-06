@@ -277,6 +277,14 @@ namespace path_extend {
                                                                                     size_t linkage_distance) const;
     };
 
+    class ScaffoldIndexInfoExtractorHelper {
+     public:
+        shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> ConstructIndexExtractorFromParams(
+            const scaffold_graph::ScaffoldGraph scaffold_graph,
+            const conj_graph_pack &gp,
+            const CloudSubgraphExtractorParams& subgraph_extractor_params) const;
+    };
+
     class ScaffoldGraphPolisher {
      public:
         typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;

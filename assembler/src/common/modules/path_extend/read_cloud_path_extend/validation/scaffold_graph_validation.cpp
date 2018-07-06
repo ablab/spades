@@ -5,8 +5,9 @@
 namespace path_extend {
 namespace validation {
 
-ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStats(const path_extend::scaffold_graph::ScaffoldGraph& scaffold_graph,
-                                                                 const vector<vector<EdgeWithMapping>>& reference_paths) {
+ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStats(
+        const path_extend::scaffold_graph::ScaffoldGraph& scaffold_graph,
+        const vector<vector<EdgeWithMapping>>& reference_paths) {
     GeneralTransitionStorageBuilder reference_transition_builder(g_, 1, false, false);
     ReverseTransitionStorageBuilder reverse_transition_builder;
     ConjugateTransitionStorageBuilder conjugate_transition_builder(g_);
@@ -44,12 +45,13 @@ set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransitions
     return result;
 }
 
-ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(const path_extend::scaffold_graph::ScaffoldGraph& graph,
-                                                                                const ContigTransitionStorage& reference_transitions,
-                                                                                const ContigTransitionStorage& reverse_transitions,
-                                                                                const ContigTransitionStorage& conjugate_transitions,
-                                                                                const ContigTransitionStorage& near_in_both_strands_transitions,
-                                                                                const ContigTransitionStorage& forward_neighbouring_transitions) {
+ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
+        const path_extend::scaffold_graph::ScaffoldGraph &graph,
+        const ContigTransitionStorage &reference_transitions,
+        const ContigTransitionStorage &reverse_transitions,
+        const ContigTransitionStorage &conjugate_transitions,
+        const ContigTransitionStorage &near_in_both_strands_transitions,
+        const ContigTransitionStorage &forward_neighbouring_transitions) {
     ScaffoldGraphStats stats;
     DEBUG("True positive");
     stats.true_positive_ = CountStatsUsingTransitions(graph, reference_transitions);

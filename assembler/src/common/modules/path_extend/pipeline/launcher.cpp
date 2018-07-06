@@ -274,9 +274,11 @@ void PathExtendLauncher::CleanPaths(PathContainer &paths, const pe_config::Param
     if (path_filtration.enabled) {
         paths.FilterPaths(LengthPathCondition(GetLengthCutoff(path_filtration.min_length, path_filtration.rel_cutoff)));
         paths.FilterPaths(func::And(CoveragePathCondition(gp_.g, path_filtration.min_coverage),
-                                    LengthPathCondition(GetLengthCutoff(path_filtration.min_length_for_low_covered, path_filtration.rel_low_covered_cutoff))));
+                                    LengthPathCondition(GetLengthCutoff(path_filtration.min_length_for_low_covered,
+                                                                        path_filtration.rel_low_covered_cutoff))));
         paths.FilterPaths(func::And(IsolatedPathCondition(gp_.g),
-                                    func::And(LengthPathCondition(GetLengthCutoff(path_filtration.isolated_min_length, path_filtration.rel_isolated_cutoff)),
+                                    func::And(LengthPathCondition(GetLengthCutoff(path_filtration.isolated_min_length,
+                                                                                  path_filtration.rel_isolated_cutoff)),
                                               CoveragePathCondition(gp_.g, path_filtration.isolated_min_cov))));
     }
 
@@ -491,11 +493,10 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 
             auto scaffolder_params =
                 params_constructor.ConstructScaffolderParams(gp_.g, unique_length, primary_parameters_extractor);
-            auto read_cloud_gap_closer_params = params_constructor.ConstructGapCloserParamsFromMainParams(scaffolder_params,
-                                                                                                          gp_.g,
-                                                                                                          barcode_extractor_ptr,
-                                                                                                          unique_length,
-                                                                                                          max_threads);
+            auto read_cloud_gap_closer_params =
+                params_constructor.ConstructGapCloserParamsFromMainParams(scaffolder_params, gp_.g,
+                                                                          barcode_extractor_ptr,
+                                                                          unique_length, max_threads);
             size_t tail_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_tail_threshold;
             size_t count_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_count_threshold;
             size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
@@ -522,7 +523,8 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
                                                                                        cloud_chooser_factory);
             auto cloud_extender_factory = std::make_shared<SimpleExtenderFactory>(gp_, cover_map, used_unique_storage,
                                                                                   cloud_chooser_factory);
-            gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, cloud_extender_factory));
+            gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap,
+                                                                     cloud_extender_factory));
         }
     }
 
