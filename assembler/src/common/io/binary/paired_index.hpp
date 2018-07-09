@@ -36,7 +36,8 @@ template<typename Index>
 class PairedIndicesIO : public IOCollection<omnigraph::de::PairedIndices<Index>> {
 public:
     PairedIndicesIO(const typename PairedIndexIO<Index>::Mapper &mapper)
-            : IOCollection<omnigraph::de::PairedIndices<Index>>(std::unique_ptr<IOBase<Index>>(new PairedIndexIO<Index>(mapper))) {
+            : IOCollection<omnigraph::de::PairedIndices<Index>>(
+                    std::unique_ptr<IOBase<Index>>(new PairedIndexIO<Index>(mapper))) {
     }
 };
 

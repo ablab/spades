@@ -12,6 +12,7 @@
 #include <map>
 #include <set>
 #include <algorithm>
+#include "common/io/binary.hpp"
 
 namespace debruijn_graph {
 
@@ -162,6 +163,41 @@ public:
     void DumpToFile(const std::string& filename) const{
         std::map<EdgeId, EdgeId> auxilary;
         DumpToFile(filename, auxilary);
+    }
+
+    void BinWrite(std::ostream &str) const {
+        using io::binary::BinWrite;
+        BinWrite(str, inner_index_.size());
+        for (const auto &i : inner_index_) {
+            BinWrite(str, (size_t)i.second.size());
+            for (const auto &j : i.second) {
+                BinWrite(str, j.weight());
+                BinWrite(str, j.path().size());
+                for (const auto &p : j.path()) {
+                    BinWrite(str, g_.int_id(p));
+                }
+            }
+        }
+    }
+
+    void BinRead(std::istream &str, const io::IdMapper<EdgeId> &mapper) {
+        using io::binary::BinRead;
+
+        auto size = BinRead<size_t>(str);
+        while (size--) {
+            auto count = BinRead<size_t>(str);
+            while (count--) {
+                auto weight = BinRead<size_t>(str);
+                auto length = BinRead<size_t>(str);
+                std::vector<EdgeId> path;
+                path.reserve(length);
+                while (length--) {
+                    auto saved_id = BinRead<size_t>(str);
+                    path.push_back(mapper[saved_id]);
+                }
+                AddPath(path, weight);
+            }
+        }
     }
 
     void DumpToFile(const std::string& filename, const std::map<EdgeId, EdgeId>& replacement,

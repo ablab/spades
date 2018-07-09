@@ -14,6 +14,7 @@
 #include "coverage.hpp"
 #include "edge_index.hpp"
 #include "kmer_mapper.hpp"
+#include "long_reads.hpp"
 #include "paired_index.hpp"
 #include "positions.hpp"
 #include "pipeline/graph_pack.hpp"
@@ -124,8 +125,8 @@ public:
             io.Save(basename + "_scf", gp.scaffolding_indices);
         }
 
-        { //Save long reads
-        }
+        //Save long reads
+        LongReadsIO<Graph>(mapper).Save(basename, gp.single_long_reads);
 
         gp.ginfo.Save(basename + ".ginfo");
     }
@@ -147,8 +148,8 @@ public:
             io.Load(basename + "_scf", gp.scaffolding_indices);
         }
 
-        { //Load long reads
-        }
+        //Load long reads
+        LongReadsIO<Graph>(mapper).Load(basename, gp.single_long_reads);
 
         gp.ginfo.Load(basename + ".ginfo");
 
