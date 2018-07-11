@@ -18,6 +18,11 @@
 namespace pacbio {
 typedef omnigraph::GapDescription<debruijn_graph::Graph> GapDescription;
 
+enum {
+    UNDEF_COLOR = -1,
+    DELETED_COLOR = - 2
+};
+
 struct MappingInstance {
     //both positions g_.k() based
     int edge_position;
@@ -55,9 +60,9 @@ struct ReadPositionComparator {
         return (a.read_position < b.read_position || (a.read_position == b.read_position && a.edge_position < b.edge_position));
     }
 };
-
+//TODO:: remove template, change internal structure to inherit from MappingRange
 template<class Graph>
-struct KmerCluster {
+struct QualityRange {
     typedef typename Graph::EdgeId EdgeId;
     int last_trustable_index;
     int first_trustable_index;
@@ -68,7 +73,7 @@ struct KmerCluster {
     int size;
     double quality;
 
-    KmerCluster(EdgeId e, size_t edge_start_pos, size_t edge_end_pos, size_t read_start_pos, size_t read_end_pos, double quality):quality(quality) {
+    QualityRange(EdgeId e, size_t edge_start_pos, size_t edge_end_pos, size_t read_start_pos, size_t read_end_pos, double quality):quality(quality) {
         last_trustable_index = 1;
         first_trustable_index = 0;
         sorted_positions.push_back(MappingInstance((int)edge_start_pos, (int)read_start_pos, 1));
@@ -80,12 +85,12 @@ struct KmerCluster {
         edgeId = e;
     }
 
-    bool operator <(const KmerCluster & b) const {
+    bool operator <(const QualityRange & b) const {
         return (average_read_position < b.average_read_position || (average_read_position == b.average_read_position && edgeId < b.edgeId) ||
                 (average_read_position == b.average_read_position && edgeId == b.edgeId && sorted_positions < b.sorted_positions));
     }
 
-    bool CanFollow(const KmerCluster &b) const {
+    bool CanFollow(const QualityRange &b) const {
         return (b.sorted_positions[b.last_trustable_index].read_position < sorted_positions[first_trustable_index].read_position);
     }
 
@@ -99,7 +104,7 @@ struct KmerCluster {
         return s.str();
     }
 private:
-    DECL_LOGGER("KmerCluster");
+    DECL_LOGGER("QualityRange");
 };
 
 class StatsCounter {

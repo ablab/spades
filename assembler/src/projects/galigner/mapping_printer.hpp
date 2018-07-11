@@ -1,7 +1,7 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
-#include "modules/alignment/pacbio/pac_index.hpp"
+#include "modules/alignment/pacbio/g_aligner.hpp"
 
 namespace graph_aligner {
 

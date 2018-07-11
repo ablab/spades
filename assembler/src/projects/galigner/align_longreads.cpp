@@ -130,7 +130,7 @@ namespace graph_aligner {
 class LongReadsAligner {
 private:
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
-    const pacbio::PacBioMappingIndex<Graph> pac_index_;
+    const pacbio::GAligner galigner_;
     MappingPrinterHub mapping_printer_hub_;
 
     int aligned_reads_;
@@ -143,7 +143,7 @@ public:
                      const GapClosingConfig gap_cfg,
                      const string output_file,
                      const string formats):
-        g_(g), pac_index_(g_, pb, mode, gap_cfg), mapping_printer_hub_(g_, output_file, formats) {
+        g_(g), galigner_(g_, pb, mode, gap_cfg), mapping_printer_hub_(g_, output_file, formats) {
         aligned_reads_ = 0;
         processed_reads_ = 0;
     }
@@ -151,7 +151,7 @@ public:
     void AlignRead(const io::SingleRead &read) {
         DEBUG("Read " << read.name() << ". Current Read")
         utils::perf_counter pc;
-        auto current_read_mapping = pac_index_.GetReadAlignment(read);
+        auto current_read_mapping = galigner_.GetReadAlignment(read);
         const auto& aligned_mappings = current_read_mapping.main_storage;
 
         if (aligned_mappings.size() > 0) {
