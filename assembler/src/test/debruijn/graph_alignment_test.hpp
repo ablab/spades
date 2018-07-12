@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE( TrivialTest ) {
     io::SingleRead r("read", s);
     config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
     alignment::BWAIndex::AlignmentMode mode = alignment::BWAIndex::AlignmentMode::PacBio;
-    sensitive_aligner::PacBioMappingIndex<Graph> pac_index(g, pb, mode, true);
+    sensitive_aligner::PacBioMappingIndex pac_index(g, pb, mode);
     auto current_read_mapping = pac_index.GetReadAlignment(r);
     const auto& aligned_edges = current_read_mapping.main_storage;
     std::string pathStr = "";

@@ -60,10 +60,11 @@ struct ReadPositionComparator {
         return (a.read_position < b.read_position || (a.read_position == b.read_position && a.edge_position < b.edge_position));
     }
 };
-//TODO:: remove template, change internal structure to inherit from MappingRange
-template<class Graph>
+//TODO::  to inherit from MappingRange
+//Former KmerCluster
 struct QualityRange {
-    typedef typename Graph::EdgeId EdgeId;
+    typedef typename debruijn_graph::Graph Graph;
+    typedef typename debruijn_graph::EdgeId EdgeId;
     int last_trustable_index;
     int first_trustable_index;
     size_t average_read_position;

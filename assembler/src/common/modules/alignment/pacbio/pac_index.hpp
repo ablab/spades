@@ -23,29 +23,29 @@
 
 namespace sensitive_aligner {
 
-
-template<class Graph>
+//TODO:: invent appropriate name, move code to .cpp
 class PacBioMappingIndex {
 public:
-    typedef std::set<QualityRange<Graph>> RangeSet;
-    typedef std::pair<QualityRange<Graph>, int> ColoredRange;
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
+    typedef std::set<QualityRange> RangeSet;
+    typedef std::pair<QualityRange, int> ColoredRange;
+
+    typedef debruijn_graph::Graph Graph;
+    typedef debruijn_graph::VertexId VertexId;
+    typedef debruijn_graph::EdgeId EdgeId;
+
 
 private:
     DECL_LOGGER("PacIndex")
 
     const Graph &g_;
 
-    static const int LONG_ALIGNMENT_OVERLAP = 300;
     static const size_t SHORT_SPURIOUS_LENGTH = 500;
+    //presumably separate class for this and GetDistance
     mutable std::map<std::pair<VertexId, VertexId>, size_t> distance_cashed_;
     size_t read_count_;
     debruijn_graph::config::pacbio_processor pb_config_;
 
     alignment::BWAReadMapper<Graph> bwa_mapper_;
-
-    sensitive_aligner::GapClosingConfig gap_cfg_;
 
     bool similar_in_graph(const MappingInstance &a, const MappingInstance &b,
                           int shift = 0) const {
@@ -57,6 +57,39 @@ private:
 //3 to allow small deletion in read on the consecutive edges
             return ((b.edge_position + shift - a.edge_position) * pb_config_.compression_cutoff <= max((b.read_position - a.read_position), 3));
         }
+    }
+
+    RangeSet GetBWAClusters(const io::SingleRead &read) const {
+        DEBUG("BWA started")
+        RangeSet res;
+        Sequence s = read.sequence();
+        if (s.size() < g_.k()) {
+            return res;
+        }
+
+        omnigraph::MappingPath<EdgeId> mapped_path = FilterShortAlignments(FilterSpuriousAlignments(bwa_mapper_.MapSequence(s), s.size()));
+
+        TRACE(read_count_ << " read_count_");
+        TRACE("BWA ended")
+        DEBUG(mapped_path.size() <<"  clusters");
+        for (const auto &e_mr : mapped_path) {
+            EdgeId e = e_mr.first;
+            omnigraph::MappingRange mr = e_mr.second;
+            DEBUG("ReadName=" << read.name() << " BWA loading edge=" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" << mr.mapped_range.end_pos
+                              << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos << " qual " << mr.quality <<" len "<< g_.length(e) );
+            size_t cut = 0;
+            size_t edge_start_pos = mr.mapped_range.start_pos;
+            size_t edge_end_pos = mr.mapped_range.end_pos;
+            size_t read_start_pos = mr.initial_range.start_pos + cut;
+            size_t read_end_pos = mr.initial_range.end_pos;
+            if (edge_start_pos >= edge_end_pos || read_start_pos >= read_end_pos) {
+                DEBUG ("skipping extra-short alignment");
+                continue;
+            }
+            res.insert(QualityRange(e, edge_start_pos, edge_end_pos, read_start_pos, read_end_pos, mr.quality));
+        }
+        DEBUG("Ended loading bwa")
+        return res;
     }
 
     typename omnigraph::MappingPath<EdgeId> FilterShortAlignments(typename omnigraph::MappingPath<EdgeId> mapped_path) const {
@@ -161,66 +194,33 @@ private:
     }
 
 
-public:
-    PacBioMappingIndex(const Graph &g,
-                        debruijn_graph::config::pacbio_processor pb_config, 
-                        alignment::BWAIndex::AlignmentMode mode, 
-                        sensitive_aligner::GapClosingConfig gap_cfg = sensitive_aligner::GapClosingConfig())
-            : g_(g),
-              pb_config_(pb_config),
-              bwa_mapper_(g, mode, pb_config.bwa_length_cutoff),
-              gap_cfg_(gap_cfg){
-        DEBUG("PB Mapping Index construction started");
-        DEBUG("Index constructed");
-        read_count_ = 0;
-    }
-
-    RangeSet GetBWAClusters(const io::SingleRead &read) const {
-        DEBUG("BWA started")
-        RangeSet res;
-        Sequence s = read.sequence();
-        if (s.size() < g_.k()) {
-            return res;
-        }
-        omnigraph::MappingPath<EdgeId> m_path = FilterSpuriousAlignments(bwa_mapper_.MapSequence(s), s.size());
-        omnigraph::MappingPath<EdgeId> mapped_path = FilterShortAlignments(m_path);
-
-        TRACE(read_count_ << " read_count_");
-        TRACE("BWA ended")
-        DEBUG(mapped_path.size() <<"  clusters");
-        for (const auto &e_mr : mapped_path) {
-            EdgeId e = e_mr.first;
-            omnigraph::MappingRange mr = e_mr.second;
-            DEBUG("ReadName=" << read.name() << " BWA loading edge=" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" << mr.mapped_range.end_pos 
-                                                                    << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos << " qual " << mr.quality <<" len "<< g_.length(e) );
-            size_t cut = 0;
-            size_t edge_start_pos = mr.mapped_range.start_pos;
-            size_t edge_end_pos = mr.mapped_range.end_pos;
-            size_t read_start_pos = mr.initial_range.start_pos + cut;
-            size_t read_end_pos = mr.initial_range.end_pos;
-            if (edge_start_pos >= edge_end_pos || read_start_pos >= read_end_pos) {
-                DEBUG ("skipping extra-short alignment");
-                continue;
-            }
-            res.insert(QualityRange<Graph>(e, edge_start_pos, edge_end_pos, read_start_pos, read_end_pos, mr.quality));
-        }
-        DEBUG("Ended loading bwa")
-        return res;
-    }
-
+//Currently unused but useful for debug purposes
     std::string DebugEmptyBestScoredPath(VertexId start_v, VertexId end_v, EdgeId prev_edge, EdgeId cur_edge,
                                          size_t prev_last_edge_position, size_t cur_first_edge_position, int seq_len) const {
         size_t result = GetDistance(start_v, end_v, /*update cache*/false);
         std::ostringstream ss;
         ss << "Tangled region between edges " << g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) <<  " is not closed, additions from edges: "
-            << int(g_.length(prev_edge)) - int(prev_last_edge_position) <<" " << int(cur_first_edge_position)
-            << " and seq "<< seq_len << " and shortest path " << result;
+           << int(g_.length(prev_edge)) - int(prev_last_edge_position) <<" " << int(cur_first_edge_position)
+           << " and seq "<< seq_len << " and shortest path " << result;
         return ss.str();
     }
 
+public:
+    PacBioMappingIndex(const Graph &g,
+                        debruijn_graph::config::pacbio_processor pb_config, 
+                        alignment::BWAIndex::AlignmentMode mode)
+            : g_(g),
+              pb_config_(pb_config),
+              bwa_mapper_(g, mode, pb_config.bwa_length_cutoff) {
+        DEBUG("PB Mapping Index construction started");
+        DEBUG("Index constructed");
+        read_count_ = 0;
+    }
+
+//former GetWeightedColors
     std::vector<ColoredRange> GetRangedColors(const io::SingleRead &read) const {
         Sequence s = read.sequence();
-        RangeSet mapping_descr = GetBWAClusters(read); //GetOrderClusters(s);
+        RangeSet mapping_descr = GetBWAClusters(read);
 
         size_t len = mapping_descr.size();
         std::vector<int> colors(len, UNDEF_COLOR);
@@ -289,75 +289,8 @@ public:
         return res;
     }
 
-
-<<<<<<< HEAD
-    OneReadMapping GetReadAlignment(const io::SingleRead &read) const {
-        Sequence s = read.sequence();
-        ClustersSet mapping_descr = GetBWAClusters(read); //GetOrderClusters(s);
-        int num_colors = 0;
-        vector<int> colors = GetWeightedColors(mapping_descr, num_colors);
-        size_t len =  mapping_descr.size();
-        std::vector<vector<debruijn_graph::EdgeId> > sorted_edges;
-        vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> sorted_bwa_hits;
-        omnigraph::MappingRange read_range;
-        vector<bool> block_gap_closer;
-        vector<typename ClustersSet::iterator> start_clusters, end_clusters;
-        vector<int> used(len);
-        auto iter = mapping_descr.begin();
-        for (size_t i = 0; i < len; i++, iter ++) {
-            used[i] = 0;
-            DEBUG(colors[i] <<" " << iter->str(g_));
-        }
-        //FIXME ferther code is AWFUL
-        for (size_t i = 0; i < len; i++) {
-            int cur_color = colors[i];
-            if (!used[i] && cur_color != DELETED_COLOR) {
-                DEBUG("starting new subread");
-                std::vector<typename ClustersSet::iterator> cur_cluster;
-                used[i] = 1;
-                int j = 0;
-                for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end(); ++i_iter, ++j) {
-                    if (colors[j] == cur_color) {
-                        cur_cluster.push_back(i_iter);
-                        used[j] = 1;
-                    }
-                }
-                ProcessCluster(s, cur_cluster, start_clusters, end_clusters, sorted_edges, sorted_bwa_hits, block_gap_closer);
-            }
-        }
-        std::vector<graph_aligner::PathRange> read_ranges;
-        if (sorted_edges.size() == 1 && gap_cfg_.restore_ends) {
-            bool forward = true;
-            int return_code = 0;
-            graph_aligner::PathRange cur_range;
-            cur_range.seq_start = sorted_bwa_hits[0].mapping_at(0).initial_range.start_pos;
-            cur_range.seq_end = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).initial_range.end_pos;
-            cur_range.edge_start = sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos;
-            cur_range.edge_end = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).mapped_range.end_pos;
-            graph_aligner::EndsFiller ends_filler(g_, pb_config_, gap_cfg_);
-            ends_filler.Run(sorted_bwa_hits[0], sorted_edges[0], s, !forward, cur_range, return_code);
-            DEBUG("Backward return_code_ends=" << return_code)
-            ends_filler.Run(sorted_bwa_hits[0], sorted_edges[0], s, forward, cur_range, return_code);
-            DEBUG("Forward return_code_ends=" << return_code)
-            read_ranges.push_back(cur_range);
-        } else {
-            for (auto hits: sorted_bwa_hits){
-                graph_aligner::PathRange cur_range;
-                cur_range.seq_start = hits.mapping_at(0).initial_range.start_pos;
-                cur_range.seq_end = hits.mapping_at(hits.size() - 1).initial_range.end_pos;
-                cur_range.edge_start = hits.mapping_at(0).mapped_range.start_pos;
-                cur_range.edge_end = hits.mapping_at(hits.size() - 1).mapped_range.end_pos;
-                read_ranges.push_back(cur_range);
-            }
-        }
-        return AddGapDescriptions(start_clusters, end_clusters, sorted_edges, sorted_bwa_hits, read_ranges, s, block_gap_closer);
-    }
-=======
->>>>>>> pac_index splitted and simplified
-
-
-    std::pair<int, int> GetPathLimits(const QualityRange<Graph> &a,
-                                      const QualityRange<Graph> &b,
+    std::pair<int, int> GetPathLimits(const QualityRange &a,
+                                      const QualityRange &b,
                                       int s_add_len, int e_add_len) const {
         int start_pos = a.sorted_positions[a.last_trustable_index].read_position;
         int end_pos = b.sorted_positions[b.first_trustable_index].read_position;
@@ -409,8 +342,8 @@ public:
         return result;
     }
 
-    bool IsConsistent(const QualityRange<Graph> &a,
-                      const QualityRange<Graph> &b) const {
+    bool IsConsistent(const QualityRange &a,
+                      const QualityRange &b) const {
         EdgeId a_edge = a.edgeId;
         EdgeId b_edge = b.edgeId;
         DEBUG("Checking consistency: " << g_.int_id(a_edge) << " and " << g_.int_id(b_edge));
