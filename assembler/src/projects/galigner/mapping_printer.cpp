@@ -4,9 +4,9 @@
 
 #include "mapping_printer.hpp"
 
-namespace graph_aligner {
+namespace sensitive_aligner {
 
-void MappingPrinterTSV::SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
+void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
     string path_str = "";
     string path_len_str = "";
     string path_seq_str = "";
@@ -199,7 +199,7 @@ std::string MappingPrinterGPA::SubRead(const omnigraph::MappingPath<debruijn_gra
     return readStr.substr(start, end - start);
 }
 
-void MappingPrinterGPA::SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
+void MappingPrinterGPA::SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
     int nameIndex = 0;
     std::string res = "";
     for (const auto &mappingpath : aligned_mappings.bwa_paths) {
@@ -267,4 +267,4 @@ void MappingPrinterGPA::SaveMapping(const pacbio::OneReadMapping &aligned_mappin
     }
 }
 
-} // namespace graph_aligner
+} // namespace sensitive_aligner

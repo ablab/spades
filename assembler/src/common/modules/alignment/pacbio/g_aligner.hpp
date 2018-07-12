@@ -10,17 +10,17 @@
 #include "modules/alignment/pacbio/gap_filler.hpp"
 #include "modules/alignment/pacbio/pac_index.hpp"
 
-namespace pacbio {
+namespace sensitive_aligner {
 
 struct OneReadMapping {
     std::vector<vector<debruijn_graph::EdgeId>> main_storage;
     std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> bwa_paths;
-    std::vector<pacbio::GapDescription> gaps;
-    std::vector<graph_aligner::PathRange> read_ranges;
+    std::vector<sensitive_aligner::GapDescription> gaps;
+    std::vector<sensitive_aligner::PathRange> read_ranges;
     OneReadMapping(const std::vector<vector<debruijn_graph::EdgeId>> &main_storage_,
                    const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> &bwa_paths_,
-                   const std::vector<pacbio::GapDescription>& gaps_,
-                   const std::vector<graph_aligner::PathRange> &read_ranges_) :
+                   const std::vector<sensitive_aligner::GapDescription>& gaps_,
+                   const std::vector<sensitive_aligner::PathRange> &read_ranges_) :
             main_storage(main_storage_), bwa_paths(bwa_paths_), gaps(gaps_), read_ranges(read_ranges_){}
 };
 
@@ -31,7 +31,7 @@ class GAligner {
     PacBioMappingIndex<debruijn_graph::Graph> pac_index_;
     const debruijn_graph::Graph &g_;
     debruijn_graph::config::pacbio_processor pb_config_;
-    graph_aligner::GapClosingConfig gap_cfg_;
+    sensitive_aligner::GapClosingConfig gap_cfg_;
 
     void ProcessCluster(const Sequence &s,
                              std::vector<QualityRangeG> &cur_cluster,
@@ -50,7 +50,7 @@ class GAligner {
                                   const std::vector<QualityRangeG> &end_clusters,
                                   const std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
                                   const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                                  const std::vector<graph_aligner::PathRange> &read_ranges,
+                                  const std::vector<sensitive_aligner::PathRange> &read_ranges,
                                   const Sequence &s,
                                   const std::vector<bool> &block_gap_closer) const;
 public:
@@ -58,7 +58,7 @@ public:
     GAligner(const debruijn_graph::Graph &g,
              debruijn_graph::config::pacbio_processor pb_config,
              alignment::BWAIndex::AlignmentMode mode,
-             graph_aligner::GapClosingConfig gap_cfg = graph_aligner::GapClosingConfig())
+             sensitive_aligner::GapClosingConfig gap_cfg = sensitive_aligner::GapClosingConfig())
             : pac_index_(g, pb_config, mode, gap_cfg), g_(g), pb_config_(pb_config), gap_cfg_(gap_cfg){}
 
 

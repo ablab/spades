@@ -6,7 +6,7 @@
 #include "sequence/sequence_tools.hpp"
 #include "utils/perf/perfcounter.hpp"
 
-namespace graph_aligner {
+namespace sensitive_aligner {
 using debruijn_graph::EdgeId;
 
 enum DijkstraReturnCode {
@@ -307,4 +307,4 @@ public:
     }
 };
 
-} // namespace graph_aligner
+} // namespace sensitive_aligner

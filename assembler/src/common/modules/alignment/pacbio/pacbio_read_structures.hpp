@@ -15,7 +15,7 @@
 #include <map>
 #include <set>
 
-namespace pacbio {
+namespace sensitive_aligner {
 typedef omnigraph::GapDescription<debruijn_graph::Graph> GapDescription;
 
 enum {

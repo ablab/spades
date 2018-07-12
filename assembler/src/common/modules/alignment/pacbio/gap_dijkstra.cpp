@@ -1,6 +1,6 @@
 #include "modules/alignment/pacbio/gap_dijkstra.hpp"
 
-namespace graph_aligner {
+namespace sensitive_aligner {
 
 
 bool DijkstraGraphSequenceBase::IsBetter(int seq_ind, int ed)
@@ -211,4 +211,4 @@ bool DijkstraEndsReconstructor::IsEndPosition(const QueueState &cur_state) {
     return false;
 }
 
-} // namespace graph_aligner
+} // namespace sensitive_aligner

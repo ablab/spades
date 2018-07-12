@@ -8,7 +8,7 @@
 
 #include "modules/alignment/pacbio/gap_dijkstra.hpp"
 
-namespace graph_aligner {
+namespace sensitive_aligner {
 using debruijn_graph::EdgeId;
 using debruijn_graph::VertexId;
 
@@ -94,5 +94,5 @@ private:
 };
 
 
-} // namespace graph_aligner
+} // namespace sensitive_aligner
 

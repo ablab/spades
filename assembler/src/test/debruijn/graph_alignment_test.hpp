@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE( TrivialTest ) {
     io::SingleRead r("read", s);
     config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
     alignment::BWAIndex::AlignmentMode mode = alignment::BWAIndex::AlignmentMode::PacBio;
-    pacbio::PacBioMappingIndex<Graph> pac_index(g, pb, mode, true);
+    sensitive_aligner::PacBioMappingIndex<Graph> pac_index(g, pb, mode, true);
     auto current_read_mapping = pac_index.GetReadAlignment(r);
     const auto& aligned_edges = current_read_mapping.main_storage;
     std::string pathStr = "";
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE( DijkstraOneEdgeTest ) {
             break;
         }
     }
-    pacbio::DijkstraGapFiller gap_filler = pacbio::DijkstraGapFiller(g, s, eid, eid, 0, s.size(), path_maxlen, vertex_pathlen);
+    sensitive_aligner::DijkstraGapFiller gap_filler = sensitive_aligner::DijkstraGapFiller(g, s, eid, eid, 0, s.size(), path_maxlen, vertex_pathlen);
     gap_filler.CloseGap();
     int score = gap_filler.GetEditDistance();
     BOOST_CHECK_EQUAL(ideal_score, score);
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE( DijkstraGrowEndsTest ) {
             break;
         }
     }
-    pacbio::DijkstraEndsReconstructor ends_filler = pacbio::DijkstraEndsReconstructor(g, s, eid, 0, path_maxlen);
+    sensitive_aligner::DijkstraEndsReconstructor ends_filler = sensitive_aligner::DijkstraEndsReconstructor(g, s, eid, 0, path_maxlen);
     ends_filler.CloseGap();
     int score = ends_filler.GetEditDistance();
     BOOST_CHECK_EQUAL(ideal_score, score);

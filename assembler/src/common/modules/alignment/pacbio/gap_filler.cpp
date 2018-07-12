@@ -1,6 +1,6 @@
 #include "modules/alignment/pacbio/gap_filler.hpp"
 
-namespace graph_aligner {
+namespace sensitive_aligner {
 
 
 std::string GapFiller::PathToString(const vector<EdgeId>& path) const {
@@ -268,4 +268,4 @@ void EndsFiller::Run(omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits,
 }
 
 
-} // namespace graph_aligner
+} // namespace sensitive_aligner

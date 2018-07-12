@@ -3,7 +3,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/pacbio/g_aligner.hpp"
 
-namespace graph_aligner {
+namespace sensitive_aligner {
 
 class MappingPrinter {
 public:
@@ -12,7 +12,7 @@ public:
         : g_(g), output_file_prefix_(output_file_prefix)
     {}
 
-    virtual void SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read) = 0;
+    virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) = 0;
 
     virtual ~MappingPrinter () {};
 
@@ -31,7 +31,7 @@ public:
         //tsv_file << "read\tstart_pos\tend_pos\tread_length\tgraph_path\tedges_lengths\tmapping\ted\n";
     }
 
-    virtual void SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read);
+    virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
 
     ~MappingPrinterTSV() {
         output_file_.close();
@@ -62,7 +62,7 @@ public:
 
     std::string SubRead(const omnigraph::MappingPath<debruijn_graph::EdgeId> &mappingpath, const io::SingleRead &read);
 
-    virtual void SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read);
+    virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
 
     ~MappingPrinterGPA() {
         output_file_.close();
@@ -81,7 +81,7 @@ public:
         }
     }
 
-    void SaveMapping(const pacbio::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
+    void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
         for (auto printer : mapping_printers_) {
             printer->SaveMapping(aligned_mappings, read);
         }
@@ -98,4 +98,4 @@ private:
     vector<MappingPrinter*> mapping_printers_;
 };
 
-} // namespace graph_aligner
+} // namespace sensitive_aligner

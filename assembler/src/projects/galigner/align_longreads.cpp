@@ -44,7 +44,7 @@ void create_console_logger() {
 }
 
 
-namespace graph_aligner {
+namespace sensitive_aligner {
 
 struct GAlignerConfig {
     // general
@@ -81,8 +81,8 @@ template<> struct MappingTraits<debruijn_graph::config::pacbio_processor> {
     }
 };
 
-template<> struct MappingTraits<graph_aligner::GapClosingConfig> {
-    static void mapping(IO& io, graph_aligner::GapClosingConfig& cfg) {
+template<> struct MappingTraits<sensitive_aligner::GapClosingConfig> {
+    static void mapping(IO& io, sensitive_aligner::GapClosingConfig& cfg) {
         io.mapRequired("max_vertex_in_gap", cfg.max_vertex_in_gap);
         io.mapRequired("queue_limit", cfg.queue_limit);
         io.mapRequired("iteration_limit", cfg.iteration_limit);
@@ -106,8 +106,8 @@ struct ScalarEnumerationTraits<alignment::BWAIndex::AlignmentMode> {
     }
 };
 
-template<> struct MappingTraits<graph_aligner::GAlignerConfig> {
-    static void mapping(IO& io, graph_aligner::GAlignerConfig& cfg) {
+template<> struct MappingTraits<sensitive_aligner::GAlignerConfig> {
+    static void mapping(IO& io, sensitive_aligner::GAlignerConfig& cfg) {
         io.mapRequired("k", cfg.K);
         io.mapRequired("path_to_graphfile", cfg.path_to_graphfile);
         io.mapRequired("path_to_sequences", cfg.path_to_sequences);
@@ -125,12 +125,12 @@ template<> struct MappingTraits<graph_aligner::GAlignerConfig> {
 }
 }
 
-namespace graph_aligner {
+namespace sensitive_aligner {
 
 class LongReadsAligner {
 private:
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
-    const pacbio::GAligner galigner_;
+    const sensitive_aligner::GAligner galigner_;
     MappingPrinterHub mapping_printer_hub_;
 
     int aligned_reads_;
@@ -241,7 +241,7 @@ void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
     INFO("Finished")
     fs::remove_dir(tmpdir);
 }
-} // namespace graph_aligner
+} // namespace sensitive_aligner
 
 int main(int argc, char **argv) {
 
@@ -273,10 +273,10 @@ int main(int argc, char **argv) {
     auto buf = llvm::MemoryBuffer::getFile(cfg);
     VERIFY_MSG(buf, "Failed to load config file " + cfg);
     llvm::yaml::Input yin(*buf.get());
-    graph_aligner::GAlignerConfig config;
+    sensitive_aligner::GAlignerConfig config;
     yin >> config;
     omp_set_num_threads(nthreads);
 
-    graph_aligner::Launch(config, output_file, nthreads);
+    sensitive_aligner::Launch(config, output_file, nthreads);
     return 0;
 }

@@ -183,10 +183,10 @@ io::SingleStreamPtr GetReadsStream(const io::SequencingLibrary<config::LibraryDa
 }
 
 class PacbioAligner {
-    const pacbio::GAligner& galigner_;
+    const sensitive_aligner::GAligner& galigner_;
     PathStorage<Graph>& path_storage_;
     gap_closing::GapStorage& gap_storage_;
-    pacbio::StatsCounter stats_;
+    sensitive_aligner::StatsCounter stats_;
     const PathStorage<Graph> empty_path_storage_;
     const gap_closing::GapStorage empty_gap_storage_;
     const size_t read_buffer_size_;
@@ -196,7 +196,7 @@ class PacbioAligner {
                                                              empty_path_storage_);
         std::vector<gap_closing::GapStorage> gaps_by_thread(thread_cnt,
                                                             empty_gap_storage_);
-        std::vector<pacbio::StatsCounter> stats_by_thread(thread_cnt);
+        std::vector<sensitive_aligner::StatsCounter> stats_by_thread(thread_cnt);
 
         size_t longer_500 = 0;
         size_t aligned = 0;
@@ -243,7 +243,7 @@ class PacbioAligner {
     }
 
 public:
-    PacbioAligner(const pacbio::GAligner& galigner,
+    PacbioAligner(const sensitive_aligner::GAligner& galigner,
                   PathStorage<Graph>& path_storage,
                   gap_closing::GapStorage& gap_storage,
                   size_t read_buffer_size = 50000) :
@@ -277,7 +277,7 @@ public:
         }
     }
 
-    const pacbio::StatsCounter& stats() const {
+    const sensitive_aligner::StatsCounter& stats() const {
         return stats_;
     }
 };
@@ -295,7 +295,7 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
              alignment::BWAIndex::AlignmentMode::PacBio : alignment::BWAIndex::AlignmentMode::Ont2D);
 
     // Initialize index
-    pacbio::GAligner galigner(gp.g, pb, mode);
+    sensitive_aligner::GAligner galigner(gp.g, pb, mode);
 
     PacbioAligner aligner(galigner, path_storage, gap_storage);
 

@@ -21,7 +21,7 @@
 #include "modules/alignment/pacbio/pacbio_read_structures.hpp"
 #include "modules/alignment/pacbio/gap_filler.hpp"
 
-namespace pacbio {
+namespace sensitive_aligner {
 
 
 template<class Graph>
@@ -45,7 +45,7 @@ private:
 
     alignment::BWAReadMapper<Graph> bwa_mapper_;
 
-    graph_aligner::GapClosingConfig gap_cfg_;
+    sensitive_aligner::GapClosingConfig gap_cfg_;
 
     bool similar_in_graph(const MappingInstance &a, const MappingInstance &b,
                           int shift = 0) const {
@@ -165,7 +165,7 @@ public:
     PacBioMappingIndex(const Graph &g,
                         debruijn_graph::config::pacbio_processor pb_config, 
                         alignment::BWAIndex::AlignmentMode mode, 
-                        graph_aligner::GapClosingConfig gap_cfg = graph_aligner::GapClosingConfig())
+                        sensitive_aligner::GapClosingConfig gap_cfg = sensitive_aligner::GapClosingConfig())
             : g_(g),
               pb_config_(pb_config),
               bwa_mapper_(g, mode, pb_config.bwa_length_cutoff),

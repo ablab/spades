@@ -2,7 +2,7 @@
 #include "modules/alignment/pacbio/gap_filler.hpp"
 #include "modules/alignment/pacbio/pacbio_read_structures.hpp"
 
-namespace pacbio {
+namespace sensitive_aligner {
 
     using debruijn_graph::EdgeId;
     using debruijn_graph::VertexId;
@@ -78,11 +78,11 @@ namespace pacbio {
                     }
                     DEBUG("taking subseq" << seq_start << " " << end_pos << " " << s.size());
                     std::string seq_string = s.Subseq(seq_start, min(end_pos, s_len)).str();
-                    graph_aligner::GapFiller gap_filler(g_, pb_config_, gap_cfg_);
-                    graph_aligner::GapFillerResult res = gap_filler.Run(seq_string,
-                                                                        graph_aligner::GraphPosition(prev_edge,
+                    sensitive_aligner::GapFiller gap_filler(g_, pb_config_, gap_cfg_);
+                    sensitive_aligner::GapFillerResult res = gap_filler.Run(seq_string,
+                                                                        sensitive_aligner::GraphPosition(prev_edge,
                                                                                                      prev_last_index.edge_position),
-                                                                        graph_aligner::GraphPosition(cur_edge,
+                                                                        sensitive_aligner::GraphPosition(cur_edge,
                                                                                                      cur_first_index.edge_position),
                                                                         limits.first, limits.second);
                     vector<EdgeId> intermediate_path = res.intermediate_path;
@@ -158,16 +158,16 @@ namespace pacbio {
                                block_gap_closer);
             }
         }
-        std::vector<graph_aligner::PathRange> read_ranges;
+        std::vector<sensitive_aligner::PathRange> read_ranges;
         if (sorted_edges.size() == 1 && gap_cfg_.restore_ends) {
             bool forward = true;
             int return_code = 0;
-            graph_aligner::PathRange cur_range;
+            sensitive_aligner::PathRange cur_range;
             cur_range.seq_start = sorted_bwa_hits[0].mapping_at(0).initial_range.start_pos;
             cur_range.seq_end = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).initial_range.end_pos;
             cur_range.edge_start = sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos;
             cur_range.edge_end = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).mapped_range.end_pos;
-            graph_aligner::EndsFiller ends_filler(g_, pb_config_, gap_cfg_);
+            sensitive_aligner::EndsFiller ends_filler(g_, pb_config_, gap_cfg_);
             ends_filler.Run(sorted_bwa_hits[0], sorted_edges[0], s, !forward, cur_range, return_code);
             DEBUG("Backward return_code_ends=" << return_code)
             ends_filler.Run(sorted_bwa_hits[0], sorted_edges[0], s, forward, cur_range, return_code);
@@ -175,7 +175,7 @@ namespace pacbio {
             read_ranges.push_back(cur_range);
         } else {
             for (auto hits: sorted_bwa_hits) {
-                graph_aligner::PathRange cur_range;
+                sensitive_aligner::PathRange cur_range;
                 cur_range.seq_start = hits.mapping_at(0).initial_range.start_pos;
                 cur_range.seq_end = hits.mapping_at(hits.size() - 1).initial_range.end_pos;
                 cur_range.edge_start = hits.mapping_at(0).mapped_range.start_pos;
@@ -245,7 +245,7 @@ namespace pacbio {
                                                 const std::vector<QualityRangeG> &end_clusters,
                                                 const std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
                                                 const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                                                const std::vector<graph_aligner::PathRange> &read_ranges,
+                                                const std::vector<sensitive_aligner::PathRange> &read_ranges,
                                                 const Sequence &s,
                                                 const std::vector<bool> &block_gap_closer) const {
         DEBUG("adding gaps between subreads");
