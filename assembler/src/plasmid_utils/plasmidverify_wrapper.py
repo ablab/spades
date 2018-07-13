@@ -38,7 +38,6 @@ def parse_args(args):
 args = parse_args(sys.argv[1:])
 
 
-
 base = os.path.basename(args.f)
 name_file = os.path.splitext(base)[0]
 dirname = os.path.dirname(__file__)
@@ -65,28 +64,41 @@ else:
     blastdb = ("/Bmo/ncbi_nt_database/nt")
 
 
-hmmsearch="/Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmsearch"
-prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
-cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
-list378="/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/378.sorted" 
-
+hmmsearch = "/Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmsearch"
+prodigal = "/Nancy/mrayko/Libs/Prodigal/prodigal"
+cbar = "/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
+hmm_list_ps01 = "/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/new_table_w_nc/plasmid_hmms_table_ps01.txt"
+#list378="/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/378.sorted" 
+#list378="/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/378.sorted
 
 # run hmm
-#os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
-#os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
-#os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
+os.system ("prodigal  -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log")
+os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 
 # parse hmms
-with open(list378, "r") as infile1:
-        list378=infile1.readlines()
+#with open(hmm_list, "r") as infile1:
+ #       hmm_list=infile1.readlines()
+        
+hmm_list = [line.split("\t") for line in open(hmm_list_ps01)]
+
 
 with open(name + "_tblout", "r") as infile2:
         tblout_pfam=infile2.readlines()
 
-list378 = [i.strip() for i in list378[:int(args.K)]]
-#print (list378) 
-set378 = set(list378)
+
+
+K = 10
+if args.K:
+  K = int(args.K)
+
+pl_hmms = []
+for i in hmm_list:
+  if float(i[-1].strip()) >= K:
+      pl_hmms.append(i[0])
+
+set378 = set(pl_hmms)
 
 
 for i in tblout_pfam:
