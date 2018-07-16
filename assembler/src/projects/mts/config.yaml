@@ -1,24 +1,63 @@
+##A data directory with samples must contain consecutively named subdirectories sample1, sample2, etc.
+##Each sample directory must contain two files with paired reads (fasta/fastq, optionally gzipped).
 data: "path/to/samples/directory"
-soft: "path/to/canopy/etc"
+soft: "path/to/software/directory" #Directory with kmc, binners, CheckM, etc.
 #bin: "/path/to/mts/binaries" #Derived from the current dir by default
 #scripts: "/path/to/scripts/directory" #Derived from the current dir by default
+#threads: 8 #Maximum number of threads for a task to use
 #assembly:
     #assembler: spades
     #dir: "/path/to/assembler/directory" #Derived from the current dir by default
     #k: 55
-    #groups: []
+    ##Samples can be combined into groups. A group is a list of sample names or their numbers:
+    #groups: [[1,2,3], ["sample4","sample5"], [6,7]]
+    ##By default, each of samples not used in any group form a trivial group.
+    #groups: [] #So, this enables the default trivial "one sample - one group" strategy.
+    ##Otherwise, the last group may be the "*" wildcard which combines all unused samples.
+    #groups: ["*"] #So, this will enable the full co-assembly.
 #profile:
+    ##Supported profilers: mts (kmer counting-based), jgi (read alignment-based).
+    ##"jgi" is the jgi_summarize_bam_contig_depth tool from the MetaBAT package (must be in "soft").
+    #profiler: mts
+    #split: 10000 #Length of contig splits
+    #var: false #Add abundance variance to profiles; default is "true" when "binner: metabat"
+    ##Next parameters are only for the "mts" profiler
     #k: 21
-    #split: 10000
+    #min_mult: 2
+    #max_mult: 65535
+    #min_samples: 2 #Minimum number of non-zero values in kmer profile
 #binning:
+    ##Supported binners: canopy, concoct, gattaca, maxbin, metabat
+    ##maxbin is only supported with the full co-assembly.
     #binner: canopy
-    #min_nonzeroes: 3
-    #min_length: 2000
+    #min_length: 2000 #Minimal contig length to be considered for binning
+    #bin_length: 500000 #Minimal total bin length (in some single sample)
+    #max_clusters: 400 #Only for CONCOCT
 #propagation:
     #enabled: true
 #reassembly:
     #enabled: true
 #stats:
-    #stage: ["gf", "summary", "pca", "tsne", "checkm"] #stage can be binning, propagation, reassembly, or all
-    #quast: "python2 /path/to/QUAST" #Default is global
-    #refs: "path/to/refs/directory/or/list/of/them"
+    ##To gather some stats for a stage, specify them in a list.
+    ##Currently supported stats for different stages:
+    #assembly: [summary]
+    #binning: [f1, pca, tsne, group, checkm, summary]
+    ##In case of a full co-assembly, "nga" is also supported.
+    #propagation: same as binning
+    #reassembly: same as binning + "nga"
+
+    ##You may also require some stats for "all" stages, or "all" stats for any target.
+    ##(unsupported stats will be skipped)
+    #all: all #So, this will gather everything possible
+
+    ##"last" may be used instead of a name of the final stage.
+
+    ##Additional non-stage stats:
+    #misc: [ref_profiles]
+
+    ##Ref-based stats require QUAST and references.
+    #quast: "python2 /path/to/metaQUAST/directory" #Default is from $PATH
+    #quast_params: "--additional-parameters" #For example, "--fragmented"
+    #refs: "path/to/refs/directory/or/fasta"
+    ##or
+    #refs: ["path1", "path2", ...]

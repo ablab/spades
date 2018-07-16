@@ -47,10 +47,10 @@ print(subtotal, file=output)
 if frac < 1:
     print("Subsampling reads to reduce ", total, " to ", subtotal, "(", frac, "x)", sep="")
 
-    filenames = tuple(os.path.join(args.output, basename + ".fq.gz") for name in ("left", "right"))
+    filenames = tuple(os.path.join(args.output, name + ".fq.gz") for name in ("left", "right"))
 
     def open_gzipped(filename):
-        return subprocess.Popen(["gzip"], stdin=subprocess.PIPE, stdout=open(fullpath, "wb"))
+        return subprocess.Popen(["gzip"], stdin=subprocess.PIPE, stdout=open(filename, "wb"))
 
     left_gz, right_gz = [open_gzipped(name) for name in filenames]
 

@@ -20,7 +20,7 @@ rule concoct:
     threads: THREADS
     log:     "binning/concoct.log"
     message: "Running CONCOCT clustering"
-    shell:   "set +u; source activate py27; set -u\n"
+    shell:   "set +u; source activate mts27; set -u\n"
              "concoct -c {MAX_CLUSTERS} --composition_file {input.contigs}"
              " --coverage_file {input.profiles} --length_threshold {MIN_CONTIG_LENGTH}"
              " -b {params.out} >{log} 2>&1 && "

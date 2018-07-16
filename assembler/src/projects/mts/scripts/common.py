@@ -9,7 +9,7 @@ import os.path
 import re
 
 default_values = {
-    "threads":     16,
+    "threads":     8,
     "assembly":    {"assembler": "spades", "k": 55, "groups": []},
     "profile":     {"profiler": "mts", "k": 21, "split": 10000, "min_mult": 2, "max_mult": 65535, "min_samples": 2},
     "binning":     {"binner": "canopy", "contig_length": 2000, "min_samples": 2, "bin_length": 500000, "max_clusters": 400},

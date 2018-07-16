@@ -7,16 +7,25 @@ In case you have to install Python 3 yourself, we recommend to use the Miniconda
 With Miniconda installed, you can issue
 > conda install -c bioconda snakemake
 
-2. Running MTS
-To assemble a dataset, you need to prepare a config.yaml. Use the provided template, it's mostly self-descriptive. Then run
-> ./mts.py -c <config> -t XX --directory <output directory>
+2. Installing pre-requisites
+MTS requires some Python packages which may be installed via Conda:
+> conda install biopython
+> conda install pandas
+Additional software that requires Python 2.x (CONCOCT, CheckM etc.) must be installed in a dedicated conda environment:
+> conda create -n mts27 python=2.7
+> conda activate mts27
+> <software-specific installation>
 
-3. Gathering stats
-To enable stats for some stage(s), add the section to the config:
-stats:
-    stage: [stat1, stat2]
-"gf" stats require references provided with "refs" parameter:
-    refs: path
-or
-    refs: [path1, path2, ...]
-where path can be either a single reference or a folder with references.
+3. Building MTS
+MTS binaries are built as a SPAdes subproject:
+> cd assembler
+> make -C build/release/project/mts
+
+4. Running MTS
+To assemble a dataset, you need to prepare a config.yaml. Use the provided template, it's mostly descriptive. Then run
+> ./mts.py -c <config> -t XX <output directory>
+You may also put config.yaml in the output directory and omit the -c parameter.
+For all arguments, run ./mts.py -h
+
+5. Examining results
+Resulting bins are placed in binning/bins output subdirectory, reassembled ones in reassembly/bins. Stats (if enabled) are placed in stats/summary.
