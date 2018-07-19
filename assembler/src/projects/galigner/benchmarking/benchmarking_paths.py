@@ -71,7 +71,7 @@ class DataLoader:
             for i in xrange(1, len(initial_s)):
                 if initial_e[max_ind] - initial_s[max_ind] < initial_e[i] - initial_s[i]:
                     max_ind = i
-            if initial_e[max_ind] - initial_s[max_ind] + 1 > 0.8*len(reads[cur_read]):
+            if initial_e[max_ind] - initial_s[max_ind] + 1 > 0.*len(reads[cur_read]):
                 res.append({"r_name": cur_read, "mapping_len": initial_e[max_ind] - initial_s[max_ind] + 1, \
                                 "path": path.split(";")[max_ind][:-1],
                                 "s_start": initial_s[max_ind], "s_end": initial_e[max_ind], \
@@ -100,7 +100,7 @@ def check_path(seq, x):
     tpath = x["true_path"]
     gapath = x["path"]
     s, e = x["s_start"], x["s_end"]
-    if tpath == gapath and s == 0 and e == len(seq):
+    if tpath == gapath: # and s == 0 and e == len(seq):
         return True
     return False
 
@@ -120,13 +120,37 @@ def print_stats(reads, ppaths, gapaths):
 
 
 if __name__ == "__main__":
-    reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/sim_pacbio/realseq_bwamem_sim_pacbio_mapped_10000.fasta"
-    galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_simpb_dijkstra_bwa0_ends_inf.tsv"
-    perfectpath_res_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/sim_pacbio/refseq_bwamem_sim_pacbio.fasta_mapping.tsv"
+    # reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/sim_pacbio/realseq_bwamem_sim_pacbio_mapped_10000.fasta"
+    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_simpb_dijkstra_bwa0_ends_inf.tsv"
+    # perfectpath_res_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/sim_pacbio/refseq_bwamem_sim_pacbio.fasta_mapping.tsv"
+
+    # reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/real_pacbio/realseq_bwamem_real_pacbio_mapped_10000.fasta"
+    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_realpb_dijkstra_bwa0_ends_inf.tsv"
+    # perfectpath_res_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/real_pacbio/refseq_bwamem_real_pacbio.fasta_mapping.tsv"
 
     # reads_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/sim_pacbio/realseq_bwamem_sim_pacbio_mapped_10000.fasta"
     # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_C.elegans_simpb_dijkstra_bwa0_ends_inf.tsv"
     # perfectpath_res_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/sim_pacbio/refseq_bwamem_sim_pacbio_100000.fasta_mapping.tsv"
+    
+    # reads_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/real_pacbio/realseq_bwamem_real_pacbio_mapped_10000.fasta"
+    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_C.elegans_realpb_dijkstra_bwa0_ends_inf.tsv"
+    # perfectpath_res_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/real_pacbio/refseq_bwamem_real_pacbio.fasta_mapping.tsv"
+
+    # reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/sim_nanopore/realseq_bwamem_sim_nanopore_mapped_10000.fasta"
+    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_simnp_dijkstra_bwa0_ends_inf.tsv"
+    # perfectpath_res_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/sim_nanopore/refseq_bwamem_simulated_reads.fasta_mapping.tsv"
+
+    # reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/real_nanopore/realseq_bwamem_real_nanopore_mapped_10000.fasta"
+    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_realnp_dijkstra_bwa0_ends_inf_extended.tsv"
+    # perfectpath_res_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/real_nanopore/refseq_bwamem_nanopore_R9.fasta_mapping.tsv"
+
+    # reads_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/sim_nanopore/realseq_bwamem_sim_nanopore_mapped_10000.fasta"
+    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_C.elegans_simnp_dijkstra_bwa0_ends_inf.tsv"
+    # perfectpath_res_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/sim_nanopore/refseq_bwamem_simulated_reads.fasta_mapping.tsv"
+    
+    reads_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/real_nanopore/realseq_bwamem_real_nanopore_mapped_10000.fasta"
+    galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_C.elegans_realnp_dijkstra_bwa0_ends_inf_extended.tsv"
+    perfectpath_res_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/real_nanopore/refseq_bwamem_real_nanopore.fasta_mapping.tsv"
     
     dl = DataLoader()
     reads = dl.load_reads(reads_file)

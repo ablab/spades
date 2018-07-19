@@ -76,8 +76,8 @@ def count_table_values(reads, alignedpaths, badideal, notmapped, path_problems, 
     res = OrderedDict([
                  ("Total number of reads", tc.get_total_num()),\
                  ("Mapped with GAligner (#reads)", tc.get_mapped_num(notmapped)),\
-                 ("Mapping isn't continiousq (#reads)", tc.get_gapped_cnt(alignedpaths)),\
-                 ("Path is not equal to true path (#reads)", tc.get_badly_mapped_num(path_problems)),\
+                 ("Mapping isn't continious (#reads)", tc.get_gapped_cnt(alignedpaths)),\
+                 ("Path is worse or not equal to true path (#reads)", tc.get_badly_mapped_num(path_problems)),\
                  ("Path with BWA/Gap problems (#reads)", tc.get_bwagap_problems_num(len(badlyaligned))),\
                  ("Path is wrong. BWA hits uncertainty (#reads)", tc.bwa_hits_uncertanity(gaps_cnt_stats["unknown_num"] - bwa_problems)),\
                  ("Resulting BWA hits failure (#reads)", tc.bwa_hits_failure(bwa_problems)), \
@@ -148,11 +148,11 @@ if __name__ == "__main__":
     for fl in aligned_files:
         alignedpaths = data_loader.load(fl, "galigner_paths")
 
-        general_stats = GeneralStatisticsCounter(reads, truepaths, alignedpaths)
+        general_stats = GeneralStatisticsCounter(reads, truepaths, alignedpaths, edges, K)
         badideal = general_stats.cnt_badideal()
         notmapped = general_stats.cnt_notmapped() 
-        path_problems = general_stats.cnt_problempaths()
-        alignedsubpath, badlyaligned = general_stats.divide_paths()
+        [path_problems, problempaths] = general_stats.cnt_problempaths()
+        alignedsubpath, badlyaligned = general_stats.divide_paths(problempaths)
 
         print "Total=", len(reads), " ideal=", len(reads) - badideal,  " notmapped=", notmapped
         print "Paths with problems ", path_problems

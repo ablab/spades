@@ -75,7 +75,7 @@ class DataLoader:
         bwa_num = 0
         cnt_empty = 0
         for ln in fin.readlines():
-            cur_read, seq_starts, seq_ends, e_starts, e_ends, rlen, path, edgelen, bwa_path_dirty = ln.strip().split("\t")
+            cur_read, seq_starts, seq_ends, e_starts, e_ends, rlen, path, edgelen, bwa_path_dirty, seqs = ln.strip().split("\t")
             cur_read = cur_read.split(" ")[0]
             bwa_path = []
             edgelen_lst =[int(x) for x in edgelen.replace(";", "").split(",")[:-1]]
@@ -103,7 +103,7 @@ class DataLoader:
                                 "initial_s": initial_s, "initial_e": initial_e, 
                                 "mapped_s": mapped_s, "mapped_e": mapped_e, 
                                 "mapped_len": mapped_len, 
-                                "seq_ranges": ranges, "edge_ranges": edge_ranges, "empty": empty - 1}
+                                "seq_ranges": ranges, "edge_ranges": edge_ranges, "empty": empty - 1, "alignments": seqs.split(";")[-1]}
             if empty - 1 > 0:
                 cnt_empty += 1
         fin.close()
@@ -114,10 +114,12 @@ class DataLoader:
 
 class GeneralStatisticsCounter:
 
-    def __init__(self, reads, truepaths, alignedpaths):
+    def __init__(self, reads, truepaths, alignedpaths, edges, K):
         self.reads = reads
         self.truepaths = truepaths
         self.alignedpaths = alignedpaths
+        self.edges = edges
+        self.K = K
 
     def cnt_badideal(self):
         res = 0
@@ -136,28 +138,71 @@ class GeneralStatisticsCounter:
                 res += 1
         return res
 
-    def cnt_problempaths(self):
-        res = 0
-        for r in self.alignedpaths.keys():
-            if r not in self.truepaths.keys():
-                continue
-            if self.truepaths[r]["path"] != self.alignedpaths[r]["path"] or self.alignedpaths[r]["empty"] > 0:
-                res += 1
+    def extract_subpath(self, subpath, start, end):
+        if len(subpath) == 1:
+            res = self.edges[subpath[0]][start: end]  
+        else:  
+            res = self.edges[subpath[0]][start: len(self.edges[subpath[0]]) - self.K]
+            if start > len(self.edges[subpath[0]]) - self.K:
+                print "WARNING"
+            for ind in xrange(1, len(subpath) - 1):
+                res += self.edges[subpath[ind]][: len(self.edges[subpath[ind]]) - self.K]
+            res += self.edges[subpath[len(subpath) - 1]][ : end]
         return res
 
-    def divide_paths(self):
-        alignedsubpath = {}
-        badlyaligned = {}
+    def cnt_problempaths(self):
+        res = 0
+        res_strange = 0
+        res_total = 0
+        res_strange_good = 0
+        withproblems = {}
         for r in self.alignedpaths.keys():
             if r not in self.truepaths.keys():
                 continue
-            if self.truepaths[r]["path"] != self.alignedpaths[r]["path"] or self.alignedpaths[r]["empty"] > 0:
-                if ",".join(self.alignedpaths[r]["path"]) in ",".join(self.truepaths[r]["path"]) and self.alignedpaths[r]["empty"] == 0:
-                    alignedsubpath[r] = self.alignedpaths[r]
-                elif self.truepaths[r]["path"] != self.alignedpaths[r]["path"] or self.alignedpaths[r]["empty"] > 0:
-                    badlyaligned[r] = self.alignedpaths[r]
-                if ",".join(self.alignedpaths[r]["path"]) in ",".join(self.truepaths[r]["path"]) and self.alignedpaths[r]["empty"] > 0:
-                    print "Ranges_failure readname=",r 
+            galigner_seq = self.extract_subpath(self.alignedpaths[r]["path"], int(self.alignedpaths[r]["mapped_s"][0]), int(self.alignedpaths[r]["mapped_e"][0]))
+            true_seq = self.truepaths[r]["mapped"]
+            read_seq = self.reads[r]
+            if self.alignedpaths[r]["initial_s"][0] == 0 and self.alignedpaths[r]["initial_e"][0] == len(read_seq) and self.alignedpaths[r]["empty"] == 0:
+                if edist([galigner_seq, read_seq]) > edist([true_seq, read_seq]):
+                    # print " "
+                    # print r
+                    # print self.alignedpaths[r]["path"]
+                    # print sum(int(x) for x in self.alignedpaths[r]["edgelen"])
+                    # print len(galigner_seq), len(read_seq)
+                    # print len(true_seq), len(read_seq)
+                    # print edist([galigner_seq, read_seq]), edist([true_seq, read_seq]), len(read_seq)
+                    res += 1
+                    res_total += 1
+                    withproblems[r] = self.alignedpaths[r]    
+                elif self.truepaths[r]["path"] != self.alignedpaths[r]["path"]:
+                    res_strange_good += 1
+            else:
+                if self.truepaths[r]["path"] == self.alignedpaths[r]["path"] and self.alignedpaths[r]["empty"] == 0:
+                    res_strange += 1
+                    print " "
+                    print r
+                    print len(self.reads[r])
+                    print self.alignedpaths[r]["path"]
+                    print self.alignedpaths[r]["initial_s"][0], self.alignedpaths[r]["initial_e"][0]
+                res += 1
+                withproblems[r] = self.alignedpaths[r]
+        print "Not mapped though path is right:", res_strange, res_strange_good
+        print "Res total: ", res_total
+        return [res, withproblems]
+
+    def divide_paths(self, problempaths):
+        alignedsubpath = {}
+        badlyaligned = {}
+        for r in problempaths.keys():
+            if r not in self.truepaths.keys():
+                continue
+            #if self.truepaths[r]["path"] != self.alignedpaths[r]["path"] or self.alignedpaths[r]["empty"] > 0:
+            if ",".join(self.alignedpaths[r]["path"]) in ",".join(self.truepaths[r]["path"]) and self.alignedpaths[r]["empty"] == 0:
+                alignedsubpath[r] = self.alignedpaths[r]
+            elif self.truepaths[r]["path"] != self.alignedpaths[r]["path"] or self.alignedpaths[r]["empty"] > 0:
+                badlyaligned[r] = self.alignedpaths[r]
+            if ",".join(self.alignedpaths[r]["path"]) in ",".join(self.truepaths[r]["path"]) and self.alignedpaths[r]["empty"] > 0:
+                print "Ranges_failure readname=",r 
         return [alignedsubpath, badlyaligned]
 
 
@@ -344,6 +389,12 @@ class GapsStatistics:
                         res_start_empty += 1
                     else:
                         res_start += 1
+                        # print r
+                        # print self.truepaths[r]["path"][:true_ind[1] + 1]
+                        # print sum([int(x) for x in self.truepaths[r]["edgelen"][:true_ind[1] + 1]])
+                        # print self.alignedpaths[r]["path"][:aligned_ind[1] + 1]
+                        # print ""
+
                 has_wrong_end, empty = self.is_wrong_end(r, true_ind, aligned_ind)
                 if has_wrong_end:
                     if empty:
