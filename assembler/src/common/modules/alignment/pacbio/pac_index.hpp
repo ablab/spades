@@ -289,6 +289,39 @@ public:
         return res;
     }
 
+    std::vector<std::vector<QualityRange>> GetChainingPaths(const io::SingleRead &read) const{
+        std::vector<ColoredRange> ranged_colors = GetRangedColors(read);
+        size_t len = ranged_colors.size();
+        std::vector<std::vector<QualityRange>> res;
+        for (size_t i = 0; i < len; i++) {
+            if (ranged_colors[i].second != DELETED_COLOR) {
+                std::vector<QualityRange> path;
+                int cur_color = ranged_colors[i].second;
+                for (size_t j = 0; j < len; j++) {
+                    if (ranged_colors[j].second == cur_color) {
+                        path.push_back(ranged_colors[j].first);
+                        ranged_colors[j].second = DELETED_COLOR;
+                    }
+                }
+                auto prev_iter = path.begin();
+                for (auto iter = path.begin(); iter != path.end(); ++iter) {
+                    auto next_iter = iter + 1;
+                    if (next_iter == path.end() || !IsConsistent(*iter, *next_iter)) {
+                        if (next_iter != path.end()) {
+                            DEBUG("clusters splitted:");
+                            DEBUG("on " << iter->str(g_));
+                            DEBUG("and " << next_iter->str(g_));
+                        }
+                        res.push_back(std::vector<QualityRange>(prev_iter, next_iter));
+                        prev_iter = next_iter;
+                    }
+                }
+
+            }
+        }
+        return res;
+    }
+
     std::pair<int, int> GetPathLimits(const QualityRange &a,
                                       const QualityRange &b,
                                       int s_add_len, int e_add_len) const {

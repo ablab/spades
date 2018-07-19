@@ -126,8 +126,8 @@ namespace sensitive_aligner {
 
 
     OneReadMapping GAligner::GetReadAlignment(const io::SingleRead &read) const {
-        std::vector<ColoredRange> colors = pac_index_.GetRangedColors(read);
-        size_t len = colors.size();
+        auto paths  = pac_index_.GetChainingPaths(read);
+        size_t len = paths.size();
         std::vector<vector<debruijn_graph::EdgeId> > sorted_edges;
         vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> sorted_bwa_hits;
         Sequence s = read.sequence();
@@ -136,25 +136,9 @@ namespace sensitive_aligner {
         vector<QualityRange> start_clusters, end_clusters;
         vector<int> used(len);
         for (size_t i = 0; i < len; i++) {
-            used[i] = 0;
-            DEBUG(colors[i].second << " " << colors[i].first.str(g_));
-        }
-        //FIXME ferther code is AWFUL
-        for (size_t i = 0; i < len; i++) {
-            int cur_color = colors[i].second;
-            if (!used[i] && cur_color != DELETED_COLOR) {
-                DEBUG("starting new subread");
-                vector<QualityRange> cur_cluster;
-                used[i] = 1;
-                for (size_t j = 0; j < len; j++) {
-                    if (colors[j].second == cur_color) {
-                        cur_cluster.push_back(colors[j].first);
-                        used[j] = 1;
-                    }
-                }
-                ProcessCluster(s, cur_cluster, start_clusters, end_clusters, sorted_edges, sorted_bwa_hits,
+                ProcessCluster(s, paths[i], start_clusters, end_clusters, sorted_edges, sorted_bwa_hits,
                                block_gap_closer);
-            }
+
         }
         std::vector<PathRange> read_ranges;
         if (sorted_edges.size() == 1 && gap_cfg_.restore_ends) {
@@ -198,45 +182,32 @@ namespace sensitive_aligner {
                   });
         VERIFY(cur_cluster.size() > 0);
         auto cur_cluster_start = cur_cluster.begin();
-        for (auto iter = cur_cluster.begin(); iter != cur_cluster.end(); ++iter) {
-            auto next_iter = iter + 1;
-            if (next_iter == cur_cluster.end() || !pac_index_.IsConsistent(*iter, *next_iter)) {
-                if (next_iter != cur_cluster.end()) {
-                    DEBUG("clusters splitted:");
-                    DEBUG("on " << iter->str(g_));
-                    DEBUG("and " << next_iter->str(g_));
+        auto cur_cluster_end = cur_cluster.end() - 1;
+        std::vector<vector<debruijn_graph::EdgeId> > edges;
+        std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > bwa_hits;
+        FillGapsInCluster(cur_cluster, s, edges, bwa_hits);
+        for (auto &cur_sorted: edges) {
+            DEBUG("Adding " << edges.size() << " subreads, cur alignments " << cur_sorted.size());
+            if (cur_sorted.size() > 0) {
+                for (EdgeId eee: cur_sorted) {
+                    DEBUG (g_.int_id(eee));
                 }
-                vector<QualityRange> splitted_cluster(cur_cluster_start, next_iter);
-                std::vector<vector<debruijn_graph::EdgeId> > edges;
-                std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > bwa_hits;
-                FillGapsInCluster(splitted_cluster, s, edges, bwa_hits);
-                for (auto &cur_sorted: edges) {
-                    DEBUG("Adding " << edges.size() << " subreads, cur alignments " << cur_sorted.size());
-                    if (cur_sorted.size() > 0) {
-                        for (EdgeId eee: cur_sorted) {
-                            DEBUG (g_.int_id(eee));
-                        }
-                        start_clusters.push_back(*cur_cluster_start);
-                        end_clusters.push_back(*iter);
-                        sorted_edges.push_back(cur_sorted);
-                        //Blocking gap closing inside clusters;
-                        block_gap_closer.push_back(true);
-                    }
-                }
-                for (auto &cur_sorted: bwa_hits) {
-                    if (cur_sorted.size() > 0) {
-                        sorted_bwa_hits.push_back(cur_sorted);
-                    }
-                }
-                if (block_gap_closer.size() > 0)
-                    block_gap_closer[block_gap_closer.size() - 1] = false;
-                cur_cluster_start = next_iter;
-            } else {
-                DEBUG("connected consecutive clusters:");
-                DEBUG("on " << iter->str(g_));
-                DEBUG("and " << next_iter->str(g_));
+                start_clusters.push_back(*cur_cluster_start);
+                end_clusters.push_back(*cur_cluster_end);
+                sorted_edges.push_back(cur_sorted);
+                //Blocking gap closing inside clusters;
+                block_gap_closer.push_back(true);
             }
         }
+        for (auto &cur_sorted: bwa_hits) {
+            if (cur_sorted.size() > 0) {
+                sorted_bwa_hits.push_back(cur_sorted);
+            }
+        }
+        //quite strange if bwa hits were not connected because of consistency check failed
+        if (block_gap_closer.size() > 0)
+            block_gap_closer[block_gap_closer.size() - 1] = false;
+
     }
 
     OneReadMapping GAligner::AddGapDescriptions(const std::vector<QualityRange> &start_clusters,
