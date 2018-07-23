@@ -32,6 +32,7 @@ class GAligner {
     debruijn_graph::config::pacbio_processor pb_config_;
 //TODO:: shouldn't it be somewhere in debruijn_graph::config?
     GapClosingConfig gap_cfg_;
+    GapFiller gap_filler_;
 
     void ProcessCluster(const Sequence &s,
                              std::vector<QualityRange> &cur_cluster,
@@ -59,7 +60,7 @@ public:
              debruijn_graph::config::pacbio_processor pb_config,
              alignment::BWAIndex::AlignmentMode mode,
              GapClosingConfig gap_cfg = GapClosingConfig())
-            : pac_index_(g, pb_config, mode), g_(g), pb_config_(pb_config), gap_cfg_(gap_cfg){}
+            : pac_index_(g, pb_config, mode), g_(g), pb_config_(pb_config), gap_cfg_(gap_cfg), gap_filler_(g, pb_config, gap_cfg){}
 
 
 

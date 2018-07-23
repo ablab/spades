@@ -17,16 +17,16 @@ void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &ali
     for (size_t j = 0; j < aligned_mappings.main_storage.size(); ++ j) {
         auto &mappingpath = aligned_mappings.main_storage[j];
         for (size_t i = 0; i < mappingpath.size(); ++ i) {
-            size_t mapping_start = i == 0 ? aligned_mappings.read_ranges[j].edge_start : 0;
-            size_t mapping_end = i == mappingpath.size() - 1 ?  aligned_mappings.read_ranges[j].edge_end : g_.length(mappingpath[i]);
+            size_t mapping_start = i == 0 ? aligned_mappings.read_ranges[j].path_start.edge_pos : 0;
+            size_t mapping_end = i == mappingpath.size() - 1 ?  aligned_mappings.read_ranges[j].path_end.edge_pos : g_.length(mappingpath[i]);
             path_str += std::to_string(mappingpath[i].int_id()) + ",";
             path_len_str += std::to_string(mapping_end - mapping_start) + ",";
             path_seq_str += g_.EdgeNucls(mappingpath[i]).Subseq(mapping_start, mapping_end).str();
         }
-        seq_starts += std::to_string(aligned_mappings.read_ranges[j].seq_start) + ",";
-        seq_ends += std::to_string(aligned_mappings.read_ranges[j].seq_end) + ",";
-        edge_starts += std::to_string(aligned_mappings.read_ranges[j].edge_start) + ",";
-        edge_ends += std::to_string(aligned_mappings.read_ranges[j].edge_end) + ",";
+        seq_starts += std::to_string(aligned_mappings.read_ranges[j].path_start.seq_pos) + ",";
+        seq_ends += std::to_string(aligned_mappings.read_ranges[j].path_end.seq_pos) + ",";
+        edge_starts += std::to_string(aligned_mappings.read_ranges[j].path_start.edge_pos) + ",";
+        edge_ends += std::to_string(aligned_mappings.read_ranges[j].path_end.edge_pos) + ",";
         path_str += ";";
         path_len_str += ";";
         path_seq_str += ";";

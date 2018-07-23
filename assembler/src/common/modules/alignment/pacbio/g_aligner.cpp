@@ -78,8 +78,7 @@ namespace sensitive_aligner {
                     }
                     DEBUG("taking subseq" << seq_start << " " << end_pos << " " << s.size());
                     std::string seq_string = s.Subseq(seq_start, min(end_pos, s_len)).str();
-                    GapFiller gap_filler(g_, pb_config_, gap_cfg_);
-                    GapFillerResult res = gap_filler.Run(seq_string,
+                    GapFillerResult res = gap_filler_.Run(seq_string,
                                                          GraphPosition(prev_edge, prev_last_index.edge_position),
                                                          GraphPosition(cur_edge, cur_first_index.edge_position),
                                                          limits.first, limits.second);
@@ -145,23 +144,22 @@ namespace sensitive_aligner {
             bool forward = true;
             int return_code = 0;
             PathRange cur_range;
-            cur_range.seq_start = sorted_bwa_hits[0].mapping_at(0).initial_range.start_pos;
-            cur_range.seq_end = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).initial_range.end_pos;
-            cur_range.edge_start = sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos;
-            cur_range.edge_end = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).mapped_range.end_pos;
-            EndsFiller ends_filler(g_, pb_config_, gap_cfg_);
-            ends_filler.Run(sorted_bwa_hits[0], sorted_edges[0], s, !forward, cur_range, return_code);
+            cur_range.path_start.seq_pos = sorted_bwa_hits[0].mapping_at(0).initial_range.start_pos;
+            cur_range.path_start.edge_pos = sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos;
+            gap_filler_.Run(sorted_bwa_hits[0], sorted_edges[0], s, !forward, cur_range, return_code);
             DEBUG("Backward return_code_ends=" << return_code)
-            ends_filler.Run(sorted_bwa_hits[0], sorted_edges[0], s, forward, cur_range, return_code);
+            cur_range.path_end.seq_pos = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).initial_range.end_pos;
+            cur_range.path_end.edge_pos = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).mapped_range.end_pos;
+            gap_filler_.Run(sorted_bwa_hits[0], sorted_edges[0], s, forward, cur_range, return_code);
             DEBUG("Forward return_code_ends=" << return_code)
             read_ranges.push_back(cur_range);
         } else {
             for (auto hits: sorted_bwa_hits) {
                 PathRange cur_range;
-                cur_range.seq_start = hits.mapping_at(0).initial_range.start_pos;
-                cur_range.seq_end = hits.mapping_at(hits.size() - 1).initial_range.end_pos;
-                cur_range.edge_start = hits.mapping_at(0).mapped_range.start_pos;
-                cur_range.edge_end = hits.mapping_at(hits.size() - 1).mapped_range.end_pos;
+                cur_range.path_start.seq_pos = hits.mapping_at(0).initial_range.start_pos;
+                cur_range.path_end.seq_pos = hits.mapping_at(hits.size() - 1).initial_range.end_pos;
+                cur_range.path_start.edge_pos = hits.mapping_at(0).mapped_range.start_pos;
+                cur_range.path_end.edge_pos = hits.mapping_at(hits.size() - 1).mapped_range.end_pos;
                 read_ranges.push_back(cur_range);
             }
         }
