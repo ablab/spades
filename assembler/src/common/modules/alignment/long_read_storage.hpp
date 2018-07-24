@@ -12,7 +12,8 @@
 #include <map>
 #include <set>
 #include <algorithm>
-#include "common/io/binary.hpp"
+#include "io/binary.hpp"
+#include "io/id_mapper.hpp"
 
 namespace debruijn_graph {
 

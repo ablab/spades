@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "io/id_mapper.hpp"
 #include "io_base.hpp"
+#include "io/id_mapper.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 
 namespace io {
@@ -17,12 +17,12 @@ inline SaveFile &operator<<(SaveFile &file, const Range &range) {
 }
 
 template<typename Graph>
-class EdgePositionsIO : public IOSingle<typename omnigraph::EdgesPositionHandler<Graph>> {
+class EdgePositionsIO : public IOSingle<typename omnigraph::EdgesPositionHandler<Graph>, EdgeMapper<Graph>> {
 public:
     typedef omnigraph::EdgesPositionHandler<Graph> Type;
-    typedef IdMapper<typename Graph::EdgeId> Mapper;
-    EdgePositionsIO(const Mapper &mapper)
-            : IOSingle<Type>("edge positions", ".pos"), mapper_(mapper) {
+    typedef EdgeMapper<Graph> Mapper;
+    EdgePositionsIO()
+            : IOSingle<Type, Mapper>("edge positions", ".pos") {
     }
 
 private:
@@ -36,10 +36,10 @@ private:
         }
     }
 
-    void LoadImpl(LoadFile &file, Type &edge_pos) override {
+    void LoadImpl(LoadFile &file, Type &edge_pos, const Mapper &mapper) override {
         size_t e;
         while (file >> e) { //Read until the end
-            auto eid = mapper_[e];
+            auto eid = mapper[e];
             auto info_count = file.Read<size_t>();
             while (info_count--) {
                 auto contig = file.Read<std::string>();
@@ -49,8 +49,6 @@ private:
             }
         }
     };
-
-    const Mapper &mapper_;
 };
 
 }

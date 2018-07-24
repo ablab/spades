@@ -85,6 +85,8 @@ private:
 
     IdMapper<typename Graph::VertexId> vertex_mapper_;
     IdMapper<typename Graph::EdgeId> edge_mapper_;
+
+    DECL_LOGGER("GraphIO");
 };
 
 }

@@ -27,17 +27,17 @@ template<typename Graph>
 class GraphPackIO : public IOBase<debruijn_graph::graph_pack<Graph>> {
 public:
     typedef typename debruijn_graph::graph_pack<Graph> Type;
+
     void Save(const std::string &basename, const Type &gp) override {
         //Save basic graph
         graph_io_.Save(basename, gp.g);
-        const auto &mapper = graph_io_.GetEdgeMapper(); //TODO: get rid of this unused parameter
 
         //Save coverage
-        CoverageIO<Graph>(mapper)
+        CoverageIO<Graph>()
                 .Save(basename, gp.g.coverage_index());
 
         if (gp.edge_pos.IsAttached()) { //Save edge positions
-            EdgePositionsIO<Graph>(mapper)
+            EdgePositionsIO<Graph>()
                     .Save(basename, gp.edge_pos);
         }
 
@@ -52,7 +52,7 @@ public:
         }
 
         if (gp.flanking_cov.IsAttached()) { //Save flanking coverage
-            FlankingCoverageIO<Graph>(mapper)
+            FlankingCoverageIO<Graph>()
                     .Save(basename, gp.flanking_cov);
         }
     }
@@ -64,15 +64,15 @@ public:
         const auto &mapper = graph_io_.GetEdgeMapper();
 
         //Load coverage
-        loaded = CoverageIO<Graph>(mapper)
-                .Load(basename, gp.g.coverage_index());
+        loaded = CoverageIO<Graph>()
+                .Load(basename, gp.g.coverage_index(), mapper);
         VERIFY(loaded);
 
         //Load edge positions
         VERIFY(!gp.edge_pos.IsAttached());
         gp.edge_pos.Attach();
-        if (!EdgePositionsIO<Graph>(mapper)
-                .Load(basename, gp.edge_pos)) {
+        if (!EdgePositionsIO<Graph>()
+                .Load(basename, gp.edge_pos, mapper)) {
             INFO("No saved positions");
         }
 
@@ -91,8 +91,8 @@ public:
         }
 
         //Load flanking coverage
-        if (!FlankingCoverageIO<Graph>(mapper)
-                .Load(basename, gp.flanking_cov)) {
+        if (!FlankingCoverageIO<Graph>()
+                .Load(basename, gp.flanking_cov, mapper)) {
             WARN("Cannot load flanking coverage, flanking coverage will be recovered from index");
             gp.flanking_cov.Fill(gp.index.inner_index());
         }
@@ -112,21 +112,20 @@ public:
     void Save(const std::string &basename, const Type &gp) override {
         //Save basic graph
         base::Save(basename, gp);
-        const auto &mapper = this->graph_io_.GetEdgeMapper(); //TODO: get rid of this unused parameter
 
         //Save unclustered paired indices
         using namespace omnigraph::de;
-        PairedIndicesIO<UnclusteredPairedInfoIndexT<Graph>>(mapper)
+        PairedIndicesIO<UnclusteredPairedInfoIndexT<Graph>>()
                 .Save(basename, gp.paired_indices);
 
         { //Save clustered & scaffolding indices
-            PairedIndicesIO<PairedInfoIndexT<Graph>> io(mapper);
+            PairedIndicesIO<PairedInfoIndexT<Graph>> io;
             io.Save(basename + "_cl", gp.clustered_indices);
             io.Save(basename + "_scf", gp.scaffolding_indices);
         }
 
         //Save long reads
-        LongReadsIO<Graph>(mapper).Save(basename, gp.single_long_reads);
+        LongReadsIO<Graph>().Save(basename, gp.single_long_reads);
 
         gp.ginfo.Save(basename + ".ginfo");
     }
@@ -139,17 +138,17 @@ public:
 
         //Load paired indices
         using namespace omnigraph::de;
-        PairedIndicesIO<UnclusteredPairedInfoIndexT<Graph>>(mapper)
-                .Load(basename, gp.paired_indices);
+        PairedIndicesIO<UnclusteredPairedInfoIndexT<Graph>>()
+                .Load(basename, gp.paired_indices, mapper);
 
         { //Load clustered & scaffolding indices
-            PairedIndicesIO<PairedInfoIndexT<Graph>> io(mapper);
-            io.Load(basename + "_cl", gp.clustered_indices);
-            io.Load(basename + "_scf", gp.scaffolding_indices);
+            PairedIndicesIO<PairedInfoIndexT<Graph>> io;
+            io.Load(basename + "_cl", gp.clustered_indices, mapper);
+            io.Load(basename + "_scf", gp.scaffolding_indices, mapper);
         }
 
         //Load long reads
-        LongReadsIO<Graph>(mapper).Load(basename, gp.single_long_reads);
+        LongReadsIO<Graph>().Load(basename, gp.single_long_reads, mapper);
 
         gp.ginfo.Load(basename + ".ginfo");
 

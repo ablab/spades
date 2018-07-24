@@ -68,14 +68,14 @@ BOOST_AUTO_TEST_CASE(TestPairedInfoIO) {
     Index pi(graph);
     RandomPairedIndex<Index>(pi, 100).Generate(100);
 
+    PairedIndexIO<Index> io;
+    io.Save(file_name, pi);
+
     IdMapper<Graph::EdgeId> mapper;
     for (auto i = graph.SmartEdgeBegin(); !i.IsEnd(); ++i)
         mapper[(*i).int_id()] = *i;
-    PairedIndexIO<Index> io(mapper);
-    io.Save(file_name, pi);
-
     Index ni(graph);
-    io.Load(file_name, ni);
+    io.Load(file_name, ni, mapper);
 
     BOOST_CHECK_EQUAL(pi.size(), ni.size());
     for (auto pit = omnigraph::de::pair_begin(pi), nit = omnigraph::de::pair_begin(ni);

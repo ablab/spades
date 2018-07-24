@@ -7,19 +7,20 @@
 #pragma once
 
 #include "io_base.hpp"
+#include "io/id_mapper.hpp"
 #include "modules/alignment/long_read_storage.hpp"
 
 namespace io {
 
 template<typename Graph>
-class LongReadsIO : public IOSingle<debruijn_graph::LongReadContainer<Graph>> {
+class LongReadsIO : public IOSingle<debruijn_graph::LongReadContainer<Graph>, EdgeMapper<Graph>> {
 
 public:
     typedef typename debruijn_graph::LongReadContainer<Graph> Type;
-    typedef IdMapper<typename Graph::EdgeId> Mapper;
+    typedef EdgeMapper<Graph> Mapper;
 
-    LongReadsIO(const Mapper &mapper)
-            : IOSingle<Type>("long reads storage", ".mpr"), mapper_(mapper) {
+    LongReadsIO()
+            : IOSingle<Type, Mapper>("long reads storage", ".mpr") {
     }
 
 private:
@@ -28,13 +29,11 @@ private:
             file << container[i];
     }
 
-    void LoadImpl(LoadFile &file, Type &container) override {
+    void LoadImpl(LoadFile &file, Type &container, const Mapper &mapper) override {
         //TODO: why and how is the container size set before loading?
         for (size_t i = 0; i < container.size(); ++i)
-            container[i].BinRead(file.stream(), mapper_);
+            container[i].BinRead(file.stream(), mapper);
     }
-
-    const Mapper &mapper_;
 };
 
 }

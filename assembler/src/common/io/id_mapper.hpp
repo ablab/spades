@@ -15,7 +15,7 @@ public:
         return id_map_[id];
     }
 
-    IdType operator[](size_t id) const {
+    const IdType &operator[](size_t id) const {
         auto i = id_map_.find(id);
         VERIFY_MSG(i != id_map_.end(), "No mapped id for " << id);
         return i->second;
@@ -28,5 +28,8 @@ public:
 private:
     std::unordered_map <size_t, IdType> id_map_;
 };
+
+template<typename T>
+using EdgeMapper = IdMapper<typename T::EdgeId>;
 
 }

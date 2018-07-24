@@ -13,31 +13,30 @@
 namespace io {
 
 template<typename Index>
-class PairedIndexIO : public IOSingle<Index> {
+class PairedIndexIO : public IOSingle<Index, EdgeMapper<Index>> {
 public:
-    typedef IdMapper<typename Index::EdgeId> Mapper;
-    PairedIndexIO(const Mapper &mapper)
-            : IOSingle<Index>("paired index", ".prd"), mapper_(mapper) {
+    typedef EdgeMapper<Graph> Mapper;
+    PairedIndexIO()
+            : IOSingle<Index, Mapper>("paired index", ".prd") {
     }
 
-private:
+protected:
     void SaveImpl(SaveFile &file, const Index &index) override {
         file << index;
     }
 
-    void LoadImpl(LoadFile &file, Index &index) override {
-        index.BinRead(file.stream(), mapper_);
+    void LoadImpl(LoadFile &file, Index &index, const Mapper &mapper) override {
+        index.BinRead(file.stream(), mapper);
     }
-
-    const Mapper &mapper_;
 };
 
 template<typename Index>
-class PairedIndicesIO : public IOCollection<omnigraph::de::PairedIndices<Index>> {
+class PairedIndicesIO : public IOCollection<omnigraph::de::PairedIndices<Index>, EdgeMapper<Index>> {
 public:
-    PairedIndicesIO(const typename PairedIndexIO<Index>::Mapper &mapper)
-            : IOCollection<omnigraph::de::PairedIndices<Index>>(
-                    std::unique_ptr<IOBase<Index>>(new PairedIndexIO<Index>(mapper))) {
+    typedef EdgeMapper<Index> Mapper;
+    PairedIndicesIO()
+            : IOCollection<omnigraph::de::PairedIndices<Index>, Mapper>(
+                    std::unique_ptr<IOSingle<Index, Mapper>>(new PairedIndexIO<Index>())) {
     }
 };
 
