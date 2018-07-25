@@ -743,7 +743,8 @@ void PathExtendLauncher::Launch() {
     DebugOutputPaths(polished_paths, "overlap_removed");
 
     //todo discuss
-    if (support_.HasReadClouds() and cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
+    if (support_.HasReadClouds() and cfg::get().ts_res.read_cloud_resolution_on and
+            cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
         const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
         cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor(gp_.read_cloud_distribution_pack);
         cluster_model::UpperLengthBoundEstimator length_bound_estimator;

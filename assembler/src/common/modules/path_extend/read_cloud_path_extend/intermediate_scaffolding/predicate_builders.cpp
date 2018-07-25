@@ -1,5 +1,5 @@
 #include "predicate_builders.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/path_cluster_helper.hpp"
+#include "path_cluster_helper.hpp"
 
 namespace path_extend {
 bool SetBasedPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const {
