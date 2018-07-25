@@ -75,7 +75,5 @@ inline TmpFile make_temp_file(const std::string &prefix = "tmp", TmpDir parent =
     return new TmpFileImpl(prefix, parent);
 }
 
-};
-
-
-}
+}  // namespace tmp
+}  // namespace fs
