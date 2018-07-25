@@ -94,6 +94,14 @@ class SimpleGraph {
         return vertex_to_incoming_.at(vertex).size();
     }
 
+    unordered_set<Vertex> GetIncoming(const Vertex &vertex) const {
+        return vertex_to_incoming_.at(vertex);
+    }
+
+    unordered_set<Vertex> GetOutcoming(const Vertex &vertex) const {
+        return vertex_to_outcoming_.at(vertex);
+    }
+
     size_t size() const {
         return vertices_.size();
     }

@@ -645,7 +645,7 @@ CloudSubgraphExtractorParams::CloudSubgraphExtractorParams(
                                             small_length_threshold_(small_length_threshold_),
                                             large_length_threshold_(large_length_threshold_) {}
 
-ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_graph_pack &graph_pack,
+ScaffoldGraph ScaffoldGraphPolisherLauncher::GetFinalScaffoldGraph(const conj_graph_pack &graph_pack,
                                                                     const ScaffoldGraphStorage &scaffold_graph_storage,
                                                                     bool path_scaffolding) {
     const auto& large_scaffold_graph = scaffold_graph_storage.GetLargeScaffoldGraph();

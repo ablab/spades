@@ -4,7 +4,7 @@
 
 void debruijn_graph::ScaffoldGraphConstructionStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
     bool read_cloud_lib_present = false;
-    //fixme build scaffold graph for every 10x lib
+    //todo build scaffold graph for every 10x lib
     for (const auto lib: cfg::get().ds.reads) {
         if (lib.type() == io::LibraryType::Clouds10x) {
             read_cloud_lib_present = true;
@@ -22,7 +22,6 @@ void debruijn_graph::ScaffoldGraphConstructionStage::run(debruijn_graph::conj_gr
     const double cluster_length_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
     size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
                                                                           cluster_length_percentile);
-
     path_extend::ScaffoldGraphStorageConstructor storage_constructor(unique_length_threshold, length_upper_bound,
                                                                      graph_pack);
     auto storage = storage_constructor.ConstructStorage();

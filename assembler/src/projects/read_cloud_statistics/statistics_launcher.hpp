@@ -17,7 +17,7 @@
 #include "scaffolder_statistics/gap_closer_stats.hpp"
 #include "scaffolder_statistics/gap_closer_analyzer.hpp"
 #include "path_cluster_test.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/path_cluster_helper.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
 #include "scaffolder_statistics/non_reference_stats.hpp"
 
