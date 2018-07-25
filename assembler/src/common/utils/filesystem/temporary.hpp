@@ -33,7 +33,10 @@ class TmpDirImpl : public llvm::ThreadSafeRefCountedBase<TmpDirImpl> {
 
 class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl> {
   public:
+    // Create new tmp file
     TmpFileImpl(const std::string &prefix = "tmp", TmpDir parent = nullptr);
+    // Acquire existing file
+    TmpFileImpl(nullptr_t, const std::string &file, TmpDir parent = nullptr);
     ~TmpFileImpl();
 
     const std::string &file() const { return file_; }
@@ -73,6 +76,10 @@ inline TmpDir make_temp_dir(const std::string &prefix, const std::string &suffix
 
 inline TmpFile make_temp_file(const std::string &prefix = "tmp", TmpDir parent = nullptr) {
     return new TmpFileImpl(prefix, parent);
+}
+
+inline TmpFile acquire_temp_file(const std::string &file, TmpDir parent = nullptr) {
+    return new TmpFileImpl(nullptr, file, parent);
 }
 
 }  // namespace tmp
