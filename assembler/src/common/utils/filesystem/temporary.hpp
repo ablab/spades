@@ -8,6 +8,7 @@
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <string>
+#include <atomic>
 
 namespace fs {
 namespace impl {
@@ -49,11 +50,13 @@ class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl> {
     int fd() const { return fd_; }
     void close();
     DependentTmpFile CreateDep(const std::string &suffix);
+    const std::string &release();
 
   private:
     std::string file_;
     TmpDir parent_;
     int fd_;
+    std::atomic<bool> released_;
 };
 
 class DependentTmpFileImpl : public llvm::ThreadSafeRefCountedBase<DependentTmpFileImpl> {
@@ -64,10 +67,12 @@ class DependentTmpFileImpl : public llvm::ThreadSafeRefCountedBase<DependentTmpF
     const std::string &file() const { return file_; }
     const std::string &dir() const { return parent_->dir(); }
     operator std::string() const { return file_; }
+    const std::string &release();
 
   private:
     TmpFile parent_;
     std::string file_;
+    std::atomic<bool> released_;
 };
 
 inline TmpDir make_temp_dir(const std::string &prefix, const std::string &suffix) {

@@ -32,7 +32,7 @@ TmpFile TmpDirImpl::tmp_file(const std::string &prefix) {
 }
 
 TmpFileImpl::TmpFileImpl(const std::string &prefix, TmpDir parent)
-        : parent_(parent), fd_(-1) {
+        : parent_(parent), fd_(-1), released_(false) {
     std::string tprefix = prefix + "_XXXXXX";
     if (parent)
         tprefix = fs::append_path(parent->dir(), tprefix);
@@ -44,20 +44,27 @@ TmpFileImpl::TmpFileImpl(const std::string &prefix, TmpDir parent)
 }
 
 TmpFileImpl::TmpFileImpl(nullptr_t, const std::string &file, TmpDir parent)
-        : file_(file), parent_(parent), fd_(-1) {
+        : file_(file), parent_(parent), fd_(-1), released_(false) {
     fd_ = ::open(file_.c_str(), O_CREAT | O_RDWR, 0600);
     VERIFY_MSG(-1 != fd_, "Cannot open file");
     TRACE("Acquiring " << file_);
 }
 
 TmpFileImpl::~TmpFileImpl() {
-    TRACE("Removing " << file_);
     close();
-    ::unlink(file_.c_str());
+    if (!released_) {
+        TRACE("Removing " << file_);
+        ::unlink(file_.c_str());
+    }
 }
 
 void TmpFileImpl::close() {
     ::close(fd_);
+}
+
+const std::string &TmpFileImpl::release() {
+    VERIFY_MSG(!released_.exchange(true), "Temp file is already released");
+    return file_;
 }
 
 DependentTmpFile TmpFileImpl::CreateDep(const std::string &suffix) {
@@ -65,13 +72,20 @@ DependentTmpFile TmpFileImpl::CreateDep(const std::string &suffix) {
 }
 
 DependentTmpFileImpl::DependentTmpFileImpl(const std::string &suffix, TmpFile parent)
-        : parent_(parent), file_(parent_->file() + "." + suffix) {
+        : parent_(parent), file_(parent_->file() + "." + suffix), released_(false) {
     TRACE("Dependent: " << file_);
 }
 
 DependentTmpFileImpl::~DependentTmpFileImpl() {
-    TRACE("Removing " << file_);
-    ::unlink(file_.c_str());
+    if (!released_) {
+        TRACE("Removing " << file_);
+        ::unlink(file_.c_str());
+    }
+}
+
+const std::string &DependentTmpFileImpl::release() {
+    VERIFY_MSG(!released_.exchange(true), "Temp file is already released");
+    return file_;
 }
 
 }  // namespace impl
