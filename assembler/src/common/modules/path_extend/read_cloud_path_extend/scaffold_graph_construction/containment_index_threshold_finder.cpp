@@ -16,7 +16,7 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
     auto distance_values = ConstructDistanceDistribution(min_distance_, max_distance_);
     size_t left_block_start_offset = max_distance_ + left_block_length_ + right_block_length_;
     size_t block_size = interesting_edges_.size() / 10;
-    const size_t TOTAL_SAMPLE_SIZE = 20000;
+    const size_t TOTAL_SAMPLE_SIZE = 100000;
     //why constant?
     const size_t edge_sample_size = TOTAL_SAMPLE_SIZE / interesting_edges_.size();
     std::random_device rd;
@@ -134,7 +134,6 @@ double LabeledDistributionThresholdEstimator::GetThreshold() const {
     const double MIN = 0.0;
     const double MAX = 1.0;
     const size_t MIN_SAMPLE_SIZE = 100;
-    const double DEFAULT_THRESHOLD = 0.1;
     const double RELATIVE_CORRECTION = 1.0;
     vector<EdgeId> long_edges;
     omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(g_);
@@ -149,8 +148,8 @@ double LabeledDistributionThresholdEstimator::GetThreshold() const {
                                                             max_distance_, max_threads_);
     auto score_histogram = histogram_constructor.ConstructScoreDistribution();
     if (score_histogram.size() < MIN_SAMPLE_SIZE) {
-        WARN("Could not estimate score threshold using long edges, setting score threshold to " << DEFAULT_THRESHOLD);
-        return DEFAULT_THRESHOLD;
+        WARN("Could not estimate score threshold using long edges, setting score threshold to " << default_threshold_);
+        return default_threshold_;
     }
     PercentileGetter percentile_getter;
     const double debug_percentile_step = 0.1;
