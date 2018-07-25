@@ -10,6 +10,7 @@
 #include <string>
 
 namespace fs {
+namespace impl {
 class TmpDirImpl;
 class TmpFileImpl;
 class DependentTmpFileImpl;
@@ -69,7 +70,6 @@ class DependentTmpFileImpl : public llvm::ThreadSafeRefCountedBase<DependentTmpF
     std::string file_;
 };
 
-namespace tmp {
 inline TmpDir make_temp_dir(const std::string &prefix, const std::string &suffix) {
     return new TmpDirImpl(prefix, suffix);
 }
@@ -82,5 +82,15 @@ inline TmpFile acquire_temp_file(const std::string &file, TmpDir parent = nullpt
     return new TmpFileImpl(nullptr, file, parent);
 }
 
+}  // namespace impl
+
+using impl::DependentTmpFile;
+using impl::TmpDir;
+using impl::TmpFile;
+
+namespace tmp {
+using impl::acquire_temp_file;
+using impl::make_temp_dir;
+using impl::make_temp_file;
 }  // namespace tmp
 }  // namespace fs

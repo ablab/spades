@@ -16,6 +16,7 @@
 #include <fcntl.h>
 
 namespace fs {
+namespace impl {
 TmpDirImpl::TmpDirImpl(const std::string &prefix, const std::string &suffix)
         : dir_(fs::make_temp_dir(prefix, suffix)) {
     TRACE("Creating " << dir_);
@@ -73,4 +74,5 @@ DependentTmpFileImpl::~DependentTmpFileImpl() {
     ::unlink(file_.c_str());
 }
 
-}
+}  // namespace impl
+}  // namespace fs
