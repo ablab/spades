@@ -11,7 +11,7 @@
 void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
 
     bool read_cloud_lib_present = false;
-    //fixme build scaffold graph for every 10x lib
+    //todo build scaffold graph for every 10x lib
     for (const auto lib: cfg::get().ds.reads) {
         if (lib.type() == io::LibraryType::Clouds10x) {
             read_cloud_lib_present = true;
@@ -23,6 +23,7 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 
     path_extend::PathClusterStatisticsExtractor path_cluster_extractor(graph_pack);
     auto subgraph_infos = path_cluster_extractor.GetAllSubgraphInfo(graph_pack.scaffold_graph_storage);
+    INFO("Printing subgraph stats");
     path_extend::SubgraphInfoPrinter printer;
     printer.PrintSubgraphInfo(subgraph_infos, cfg::get().output_dir);
 

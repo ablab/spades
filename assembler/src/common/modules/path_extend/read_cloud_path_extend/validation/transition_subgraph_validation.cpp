@@ -15,8 +15,8 @@ boost::optional<vector<SimpleTransitionGraphValidator::ScaffoldVertex>> SimpleTr
     intermediate_result.push_back(current);
     set<ScaffoldVertex> visited;
     while (current != sink and visited.find(current) == visited.end()) {
+        visited.insert(current);
         for (auto it = graph.outcoming_begin(current); it != graph.outcoming_end(current); ++it) {
-            visited.insert(current);
             auto next = *it;
             VERIFY(graph.ContainsVertex(next));
             TRACE("Checking transition");
@@ -24,16 +24,19 @@ boost::optional<vector<SimpleTransitionGraphValidator::ScaffoldVertex>> SimpleTr
             TRACE("Checked transition");
             if (is_correct) {
                 intermediate_result.push_back(next);
+                TRACE("Current vertex: " << current.int_id());
+                TRACE("Next vertex: " << next.int_id())
+                current = next;
+                got_next = true;
+                break;
             }
-            TRACE("Current vertex: " << current.int_id());
-            TRACE("Next vertex: " << next.int_id())
-            current = next;
-            got_next = true;
-            break;
         }
         if (not got_next) {
             return result;
         }
+    }
+    if (not (current == sink)) {
+        return result;
     }
     result = intermediate_result;
     return result;
