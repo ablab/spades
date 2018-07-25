@@ -13,7 +13,7 @@ rule bowtie_index:
 rule bowtie_align:
     input:   left=left_sample_reads, right=right_sample_reads,
              index="profile/jgi/{frags}/{group}/index.done"
-    output:  "profile/jgi/{frags}/{group}/{sample}.bam"
+    output:  temp("profile/jgi/{frags}/{group}/{sample}.bam")
     params:  flag=lambda w: "-q" if is_fastq(w) else "-f",
              index="profile/jgi/{frags}/{group}/index"
     threads: THREADS
@@ -22,8 +22,15 @@ rule bowtie_align:
     shell:   "bowtie2 -x {params.index} {params.flag} -p {threads}"
              " -1 {input.left} -2 {input.right} 2>{log} | samtools view -bS - >{output}"
 
+rule bam_sort:
+    input:   "profile/jgi/{frags}/{group}/{sample}.bam"
+    output:  "profile/jgi/{frags}/{group}/{sample}.sorted.bam"
+    threads: THREADS
+    message: "Sorting {wildcards.group}/{wildcards.sample}.bam"
+    shell:   "samtools sort --threads {threads} {input} -o {output}"
+
 rule depth:
-    input:   expand("profile/jgi/{{frags}}/{{group}}/{sample}.bam", sample=SAMPLES)
+    input:   expand("profile/jgi/{{frags}}/{{group}}/{sample}.sorted.bam", sample=SAMPLES)
     output:  "profile/jgi/{frags}/{group}.{type,mpl|var}"
     params:  lambda w: "" if w.type == "var" else "--noIntraDepthVariance"
     log:     "profile/jgi/{frags}/{group}.log"
@@ -32,7 +39,7 @@ rule depth:
              " --outputDepth {output} {input} >{log} 2>&1"
 
 rule convert:
-    input:   expand("profile/jgi/{frags}/{group}.{type}", frags=FRAGS, group=GROUPS, type=PROF_TYPE)
+    input:   expand("profile/jgi/{frags}/{group}.{type}", frags=FRAGS, group=sorted(GROUPS), type=PROF_TYPE)
     output:  "binning/profiles.tsv"
     message: "Converting JGI profiles into unified format"
     run:

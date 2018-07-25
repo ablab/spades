@@ -41,9 +41,8 @@ rule metabat:
     log:     "binning/metabat.log"
     message: "Running MetaBAT clustering"
     shell:   "mkdir -p binning/bins\n"
-             "{SOFT}/metabat/metabat -t {threads} -m {MIN_CONTIG_LENGTH} "
-             " --minContigByCorr {MIN_CONTIG_LENGTH} --saveCls {params.flag}"
-             " -i {input.contigs} -a {input.profiles} -o {output} >{log}"
+             "{SOFT}/metabat/metabat2 -t {threads} -m {MIN_CONTIG_LENGTH} {params.flag}"
+             " --saveCls -i {input.contigs} -a {input.profiles} -o {output} >{log}"
 
 rule metabat_post:
     input:   "binning/metabat/binning.out"

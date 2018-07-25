@@ -127,7 +127,7 @@ def is_fastq(wildcards):
     return False
 
 rule combine_samples:
-    input:   expand("{{dir}}/{group}.fasta", group=GROUPS)
+    input:   expand("{{dir}}/{group}.fasta", group=sorted(GROUPS))
     output:  "{dir}/all.fasta"
     message: "Combine all contigs from {wildcards.dir}"
     shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"

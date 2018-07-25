@@ -107,7 +107,7 @@ rule all_stats:
 
 #---- Binning of full contigs based on majority of their splits ----------------
 rule binning_full:
-    input:   "assembly/{}/all.fasta".format(ASSEMBLER), "binning/binning.tsv"
+    input:   "assembly/full/all.fasta", "binning/binning.tsv"
     output:  expand("binning/full/{bin}.fasta", bin=BINS)
     log:     "binning/full.log"
     message: "Distributing full contigs between bins"
