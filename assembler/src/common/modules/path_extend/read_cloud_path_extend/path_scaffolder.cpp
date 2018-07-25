@@ -59,7 +59,7 @@ void PathScaffolder::ExtendPathAlongConnections(const PathScaffolder::ScaffoldVe
                                                                     PathScaffolder::ScaffoldVertex> &merge_connections,
                                                 const unordered_map<ScaffoldVertex, size_t> &start_to_distance) const {
     //fixme use some sort of distance estimation
-    const size_t DEFAULT_GAP = 1000;
+    const size_t DEFAULT_GAP = 500;
     scaffold_graph::PathGetter path_getter;
     auto current = start;
     bool next_found = merge_connections.find(current) != merge_connections.end();

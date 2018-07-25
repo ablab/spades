@@ -49,6 +49,8 @@ shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> BarcodeScoreCo
     size_t min_training_length = 4 * params.length_threshold_ + threshold_estimator_params.max_cluster_gap_;
     DEBUG("Min training length: " << min_training_length);
 
+    const double MIN_LONG_EDGE_THRESHOLD = 0.01;
+
     LongEdgeScoreThresholdEstimatorFactory threshold_estimator_factory(
         g_, raw_barcode_extractor_,
         threshold_estimator_params.training_edge_length_threshold_,
@@ -59,6 +61,10 @@ shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> BarcodeScoreCo
 
     auto threshold_estimator = threshold_estimator_factory.GetThresholdEstimator();
     double score_threshold = threshold_estimator->GetThreshold();
+    if (score_threshold < MIN_LONG_EDGE_THRESHOLD) {
+        WARN("Estimated score threshold " << score_threshold << " is too small, setting "
+                                          << MIN_LONG_EDGE_THRESHOLD << " as default threshold");
+    }
     auto constructor = make_shared<path_extend::scaffold_graph::ScoreFunctionScaffoldGraphFilter>(g_, scaffold_graph,
                                                                                                   score_function,
                                                                                                   score_threshold,
