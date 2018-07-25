@@ -20,7 +20,19 @@ typedef llvm::IntrusiveRefCntPtr<TmpDirImpl> TmpDir;
 typedef llvm::IntrusiveRefCntPtr<TmpFileImpl> TmpFile;
 typedef llvm::IntrusiveRefCntPtr<DependentTmpFileImpl> DependentTmpFile;
 
-class TmpDirImpl : public llvm::ThreadSafeRefCountedBase<TmpDirImpl> {
+class non_copy_move_assign_able {
+  protected:
+    non_copy_move_assign_able() = default;
+    ~non_copy_move_assign_able() = default;
+
+  private:
+    non_copy_move_assign_able(const non_copy_move_assign_able&) = delete;
+    non_copy_move_assign_able(non_copy_move_assign_able&&) = delete;
+    non_copy_move_assign_able &operator=(const non_copy_move_assign_able&) = delete;
+    non_copy_move_assign_able &operator=(non_copy_move_assign_able&&) = delete;
+};
+
+class TmpDirImpl : public llvm::ThreadSafeRefCountedBase<TmpDirImpl>, non_copy_move_assign_able {
   public:
     TmpDirImpl(const std::string &prefix, const std::string &suffix);
     ~TmpDirImpl();
@@ -33,7 +45,7 @@ class TmpDirImpl : public llvm::ThreadSafeRefCountedBase<TmpDirImpl> {
     std::string dir_;
 };
 
-class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl> {
+class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl>, non_copy_move_assign_able {
   public:
     // Create new tmp file
     TmpFileImpl(const std::string &prefix = "tmp", TmpDir parent = nullptr);
@@ -59,7 +71,7 @@ class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl> {
     std::atomic<bool> released_;
 };
 
-class DependentTmpFileImpl : public llvm::ThreadSafeRefCountedBase<DependentTmpFileImpl> {
+class DependentTmpFileImpl : public llvm::ThreadSafeRefCountedBase<DependentTmpFileImpl>, non_copy_move_assign_able {
   public:
     DependentTmpFileImpl(const std::string &suffix, TmpFile parent);
     ~DependentTmpFileImpl();
