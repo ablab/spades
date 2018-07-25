@@ -78,7 +78,7 @@ ScaffoldGraphPolisherLauncher::ScaffoldGraph ScaffoldGraphPolisherLauncher::GetS
         GetGraphStorageReferenceInfo(storage, gp_);
     }
 
-    path_extend::ScaffoldGraphGapCloserLauncher gap_closer_launcher;
+    path_extend::ScaffoldGraphPolisherLauncher gap_closer_launcher;
     auto final_scaffold_graph = gap_closer_launcher.GetFinalScaffoldGraph(gp_, storage, path_scaffolding);
     INFO(final_scaffold_graph.VertexCount() << " vertices and " << final_scaffold_graph.EdgeCount()
                                             << " edges in new small scaffold graph");
@@ -161,6 +161,27 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     }
     auto pipeline = pipeline_constructor->ConstructPipeline(scaffold_vertices);
     pipeline.Run();
+
+    //fixme move to statistics
+    if (cfg::get().ts_res.debug_mode) {
+        const auto intermediate_results = pipeline.GetIntermediateResults();
+        const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
+        DEBUG("Path to reference: " << path_to_reference);
+        DEBUG("Path exists: " << fs::check_existence(path_to_reference));
+        validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
+        validation::FilteredReferencePathHelper path_helper(gp_);
+        size_t length_threshold = min_length;
+        auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
+        for (const auto& result: intermediate_results) {
+            auto scaffold_graph = *(result.first);
+            string name = result.second;
+            auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
+            INFO("Stats for " << name);
+            stats.Serialize(std::cout);
+        }
+    }
+
+
     return *(pipeline.GetResult());
 }
 ScaffoldingUniqueEdgeStorage CloudScaffoldGraphConstructor::ConstructUniqueStorage(size_t min_length) const {

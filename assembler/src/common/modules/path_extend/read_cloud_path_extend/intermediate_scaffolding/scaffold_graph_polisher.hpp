@@ -321,7 +321,7 @@ namespace path_extend {
         DECL_LOGGER("ScaffoldGraphPolisher");
     };
 
-    class ScaffoldGraphGapCloserLauncher {
+    class ScaffoldGraphPolisherLauncher {
      public:
         typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
         typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;

@@ -29,9 +29,9 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     read_cloud_path_extend/scaffold_graph_dijkstra.hpp
                     read_cloud_path_extend/transitions/transitions.cpp
                     read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.cpp
-                    read_cloud_path_extend/path_cluster_helper.cpp
+        read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.cpp
                     read_cloud_path_extend/intermediate_scaffolding/pe_extraction.cpp
-                    read_cloud_path_extend/simple_graph.hpp
+        read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp
                     read_cloud_path_extend/intermediate_scaffolding/predicate_builders.cpp
                     read_cloud_path_extend/path_extend_dijkstras.hpp
                     read_cloud_path_extend/path_scaffolder.cpp

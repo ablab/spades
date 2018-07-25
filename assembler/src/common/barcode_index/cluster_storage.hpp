@@ -4,7 +4,7 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/utility/result_of.hpp>
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/simple_graph.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
 #include "common/barcode_index/scaffold_vertex_index.hpp"
 #define BOOST_RESULT_OF_USE_DECLTYPE
 

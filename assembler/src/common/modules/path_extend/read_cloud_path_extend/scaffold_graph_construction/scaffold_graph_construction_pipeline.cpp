@@ -38,7 +38,7 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
         size_t unique_edge_length,
         size_t max_threads) const {
-    const double MIN_SHORT_EDGE_THRESHOLD = 0.01;
+    const double MIN_SHORT_EDGE_THRESHOLD = 0.001;
     auto threshold_estimator_params = params.score_estimation_params_;
     const size_t min_training_length = 4 * unique_edge_length + threshold_estimator_params.max_cluster_gap_;
     INFO("Setting min training length: " << min_training_length);
@@ -92,12 +92,12 @@ void CloudScaffoldGraphConstructionPipeline::Run() {
     INFO("Constructed initial graph");
     INFO(initial_graph_ptr->VertexCount() << " vertices and " << initial_graph_ptr->EdgeCount()
                                           << " edges in initial graph");
-    intermediate_results_.push_back(initial_graph_ptr);
+    intermediate_results_.push_back({initial_graph_ptr, "Initial graph"});
     for (const auto &stage: construction_stages_) {
         INFO("Starting " << stage->getName());
-        auto constructor = stage->GetScaffoldGraphConstuctor(params_, *(intermediate_results_.back()));
+        auto constructor = stage->GetScaffoldGraphConstuctor(params_, *(intermediate_results_.back().first));
         auto next_graph = constructor->Construct();
-        intermediate_results_.push_back(next_graph);
+        intermediate_results_.push_back({next_graph, stage->getName()});
         INFO(next_graph->VertexCount() << " vertices and " << next_graph->EdgeCount() << " edges in current graph");
         path_extend::ScaffoldGraphExtractor extractor;
         auto univocal_edges = extractor.ExtractUnivocalEdges(*next_graph);
@@ -105,10 +105,13 @@ void CloudScaffoldGraphConstructionPipeline::Run() {
     }
 }
 shared_ptr<path_extend::scaffold_graph::ScaffoldGraph> CloudScaffoldGraphConstructionPipeline::GetResult() const {
-    return intermediate_results_.back();
+    return intermediate_results_.back().first;
 }
 void CloudScaffoldGraphConstructionPipeline::AddStage(shared_ptr<IterativeScaffoldGraphConstructorCaller> stage) {
     construction_stages_.push_back(stage);
+}
+vector<std::pair<shared_ptr<path_extend::scaffold_graph::ScaffoldGraph>, string>> CloudScaffoldGraphConstructionPipeline::GetIntermediateResults() const {
+    return intermediate_results_;
 }
 
 ScaffoldGraphPipelineConstructor::ScaffoldGraphPipelineConstructor(const conj_graph_pack &gp) : gp_(gp) {}
@@ -196,7 +199,7 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GapScaffoldGraphPipelineCon
     vector<ScaffoldVertex> scaff_vertex_vector;
     std::copy(scaffold_vertices.begin(), scaffold_vertices.end(), back_inserter(scaff_vertex_vector));
     //fixme move somewhere
-    const double score_threshold = 0.15;
+    const double score_threshold = 0.12;
     INFO("Setting containment index threshold to " << score_threshold);
 
     auto initial_constructor =

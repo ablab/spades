@@ -189,7 +189,7 @@ typedef Dijkstra<path_extend::scaffold_graph::ScaffoldGraph, PredicateBasedScaff
 
 typedef ComposedDijkstraSettings<path_extend::scaffold_graph::ScaffoldGraph,
                                  SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>,
-                                 BoundProcessChecker<path_extend::scaffold_graph::ScaffoldGraph>,
+                                 BoundedVertexTargetedProcessChecker<path_extend::scaffold_graph::ScaffoldGraph>,
                                  ScaffoldBarcodedPathPutChecker<path_extend::scaffold_graph::ScaffoldGraph>,
                                  ForwardNeighbourIteratorFactory<path_extend::scaffold_graph::ScaffoldGraph> >
     ForwardBoundedScaffoldDijkstraSettings;
@@ -200,7 +200,7 @@ typedef Dijkstra<path_extend::scaffold_graph::ScaffoldGraph, ForwardBoundedScaff
 
 typedef ComposedDijkstraSettings<path_extend::scaffold_graph::ScaffoldGraph,
                                  SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>,
-                                 BoundProcessChecker<path_extend::scaffold_graph::ScaffoldGraph>,
+                                 BoundedVertexTargetedProcessChecker<path_extend::scaffold_graph::ScaffoldGraph>,
                                  ScaffoldBarcodedPathPutChecker<path_extend::scaffold_graph::ScaffoldGraph>,
                                  BackwardNeighbourIteratorFactory<path_extend::scaffold_graph::ScaffoldGraph> >
     BackwardBoundedScaffoldDijkstraSettings;
@@ -219,7 +219,7 @@ class ScaffoldDijkstraHelper {
         size_t max_vertex_number = -1ul){
         return BackwardBoundedScaffoldDijkstra(graph, BackwardBoundedScaffoldDijkstraSettings(
             SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>(),
-            BoundProcessChecker<path_extend::scaffold_graph::ScaffoldGraph>(length_bound),
+            BoundedVertexTargetedProcessChecker<path_extend::scaffold_graph::ScaffoldGraph>(first, length_bound),
             ScaffoldBarcodedPathPutChecker<path_extend::scaffold_graph::ScaffoldGraph>(graph, first, second, predicate),
             BackwardNeighbourIteratorFactory<path_extend::scaffold_graph::ScaffoldGraph>(graph)),
                                                max_vertex_number);
@@ -234,7 +234,7 @@ class ScaffoldDijkstraHelper {
         size_t max_vertex_number = -1ul){
         return ForwardBoundedScaffoldDijkstra(graph, ForwardBoundedScaffoldDijkstraSettings(
             SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>(),
-            BoundProcessChecker<path_extend::scaffold_graph::ScaffoldGraph>(length_bound),
+            BoundedVertexTargetedProcessChecker<path_extend::scaffold_graph::ScaffoldGraph>(second, length_bound),
             ScaffoldBarcodedPathPutChecker<path_extend::scaffold_graph::ScaffoldGraph>(graph, first, second, predicate),
             ForwardNeighbourIteratorFactory<path_extend::scaffold_graph::ScaffoldGraph>(graph)),
                                               max_vertex_number);
