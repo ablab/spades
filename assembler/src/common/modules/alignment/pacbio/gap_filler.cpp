@@ -171,32 +171,20 @@ GapFillerResult GapFiller::Run(const string &s,
 
 //////////////////////////////////////////////////////////////////
 
-void GapFiller::PrepareInitialState(const omnigraph::MappingPath<debruijn_graph::EdgeId> &path,
-                                    const Sequence &s,
-                                    bool forward,
-                                    Sequence &ss,
-                                    EdgeId &start_e, int &start_pos, int &start_pos_seq) const {
-    if (forward) {
-        start_e = path.edge_at(path.size() - 1);
-        omnigraph::MappingRange mapping = path.mapping_at(path.size() - 1);
-        start_pos = (int) mapping.mapped_range.end_pos;
-        start_pos_seq = mapping.initial_range.end_pos;
-        ss = s.Subseq(mapping.initial_range.end_pos, (int) s.size() );
-        DEBUG("Forward e=" << start_e.int_id() << " sp=" << start_pos << " seq_sz" << ss.size())
-    } else {
-        start_e = g_.conjugate(path.edge_at(0));
-        omnigraph::MappingRange mapping = path.mapping_at(0);
-        start_pos = min((int) g_.length(start_e), (int) g_.length(start_e) + (int) g_.k() - (int) mapping.mapped_range.start_pos);
-        start_pos_seq = 0;
-        ss = !s.Subseq(0, mapping.initial_range.start_pos);
-        DEBUG("Backward e=" << start_e.int_id() << " sp=" << start_pos << " seq_sz" << ss.size())
-    }
+void GapFiller::Revert(Sequence &ss, GraphPosition &start_pos) const {
+    start_pos.edgeid = g_.conjugate(start_pos.edgeid);
+    start_pos.position = min((int) g_.length(start_pos.edgeid), 
+                             (int) g_.length(start_pos.edgeid) + (int) g_.k() - (int) start_pos.position);
+    ss = !ss;
+    DEBUG("Backward e=" << start_pos.edgeid.int_id() << " sp=" << start_pos.position << " seq_sz" << ss.size())
 }
 
 void GapFiller::UpdatePath(vector<debruijn_graph::EdgeId> &path,
                            std::vector<EdgeId> &ans,
-                           int end_pos, int end_pos_seq, PathRange &range, bool forward) const {
+                           MappingPoint p, PathRange &range, bool forward) const {
     if (forward) {
+        size_t end_pos = p.edge_pos;
+        size_t end_pos_seq = p.seq_pos;
         while (end_pos < g_.k() && ans.size() > 0) {
             ans.pop_back();
             end_pos += g_.length(ans[ans.size() - 1]);
@@ -208,6 +196,7 @@ void GapFiller::UpdatePath(vector<debruijn_graph::EdgeId> &path,
         range.path_end.edge_pos = end_pos;
     } else {
         vector<debruijn_graph::EdgeId> cur_sorted;
+        size_t end_pos = p.edge_pos;
         int start = (int) g_.length(ans[ans.size() - 1]) + (int) g_.k() - end_pos;
         int cur_ind = (int) ans.size() - 1;
         while (cur_ind >= 0 && start - (int) g_.length(ans[cur_ind]) > 0) {
@@ -229,46 +218,42 @@ void GapFiller::UpdatePath(vector<debruijn_graph::EdgeId> &path,
     }
 }
 
-GapFillerResult GapFiller::Run(const omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits,
-                               vector<debruijn_graph::EdgeId> &path,
-                               const Sequence &s,
+GapFillerResult GapFiller::Run(Sequence &s,
+                               GraphPosition &start_pos,
                                bool forward,
-                               PathRange &range,
-                               int &return_code) const {
+                               vector<debruijn_graph::EdgeId> &path,
+                               PathRange &range) const {
     VERIFY(path.size() > 0);
-    Sequence ss;
-    int start_pos = -1;
-    int start_pos_seq = -1;
-    return_code = 0;
-    EdgeId start_e = EdgeId();
-    PrepareInitialState(bwa_hits, s, forward, ss, start_e, start_pos, start_pos_seq);
-
-    int s_len = int(ss.size());
+    if (!forward) {
+        Revert(s, start_pos);
+    }
+    GapFillerResult res;
+    res.return_code = 0;
+    int s_len = int(s.size());
     int score = min(max(gap_cfg_.ed_lower_bound, s_len / gap_cfg_.max_ed_proportion), gap_cfg_.ed_upper_bound);
     if (s_len > (int) gap_cfg_.max_restorable_end_length) {
         DEBUG("EdgeDijkstra: sequence is too long " << s_len)
-        return_code += 1;
-        return GapFillerResult();
+        res.return_code += 1;
+        return res;
     }
     if (s_len < 1) {
         DEBUG("EdgeDijkstra: sequence is too small " << s_len)
-        return_code += 2;
-        return GapFillerResult();
+        res.return_code += 2;
+        return res;
     }
-    DijkstraEndsReconstructor algo(g_, gap_cfg_, ss.str(), start_e, start_pos, score);
+    DijkstraEndsReconstructor algo(g_, gap_cfg_, s.str(), start_pos.edgeid, start_pos.position, score);
     algo.CloseGap();
     score = algo.edit_distance();
-    return_code += algo.return_code();
+    res.return_code += algo.return_code();
     if (score == std::numeric_limits<int>::max()) {
-        DEBUG("EdgeDijkstra didn't find anything edge=" << start_e.int_id()
-              << " s_start=" << start_pos << " seq_len=" << ss.size())
-        return GapFillerResult();
+        DEBUG("EdgeDijkstra didn't find anything edge=" << start_pos.edgeid.int_id()
+              << " s_start=" << start_pos.position << " seq_len=" << s.size())
+        return res;
     }
     std::vector<EdgeId> ans = algo.path();
-    int end_pos = algo.path_end_position();
-    int end_pos_seq = forward ? algo.seq_end_position() + start_pos_seq : 0;
-    UpdatePath(path, ans, end_pos, end_pos_seq, range, forward);
-    return GapFillerResult();
+    MappingPoint p(forward ? algo.seq_end_position() + range.path_end.edge_pos : 0, algo.path_end_position());
+    UpdatePath(path, ans, p, range, forward);
+    return res;
 }
 
 

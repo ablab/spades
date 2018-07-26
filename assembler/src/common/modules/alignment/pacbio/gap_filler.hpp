@@ -27,9 +27,6 @@ struct MappingPoint {
     MappingPoint(size_t seq_pos_, size_t edge_pos_):
         seq_pos(seq_pos_), edge_pos(edge_pos_) {}
 
-    // MappingPoint(MappingPoint &a):
-    //           seq_pos(a.seq_pos), edge_pos(a.edge_pos) {}
-
 };
 
 struct PathRange {
@@ -44,9 +41,9 @@ struct PathRange {
 
 struct GraphPosition {
     EdgeId edgeid;
-    int position;
+    size_t position;
 
-    GraphPosition(EdgeId edgeid_, int position_):
+    GraphPosition(EdgeId edgeid_, size_t position_):
         edgeid(edgeid_), position(position_) {}
 };
 
@@ -63,15 +60,11 @@ class GapFiller {
             const GraphPosition &end_pos,
             int path_min_length, int path_max_length) const;
 
-    void PrepareInitialState(const omnigraph::MappingPath<debruijn_graph::EdgeId> &path,
-                             const Sequence &s,
-                             bool forward,
-                             Sequence &ss,
-                             EdgeId &start_e, int &start_pos, int &start_pos_seq) const;
+    void Revert(Sequence &ss, GraphPosition &start_pos) const;
 
     void UpdatePath(vector<debruijn_graph::EdgeId> &path,
                     std::vector<EdgeId> &ans,
-                    int end_pos, int end_pos_seq, PathRange &range, bool forward) const;
+                    MappingPoint p, PathRange &range, bool forward) const;
 
   public:
 
@@ -85,9 +78,11 @@ class GapFiller {
                         const GraphPosition &end_pos,
                         int path_min_length, int path_max_length) const;
 
-    GapFillerResult Run(const omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits,
-                        vector<debruijn_graph::EdgeId> &path,
-                        const Sequence &s, bool forward, PathRange &range, int &return_code) const;
+    GapFillerResult Run(Sequence &s,
+                        GraphPosition &start_pos,
+                        bool forward, 
+                        vector<debruijn_graph::EdgeId> &path, 
+                        PathRange &range) const;
 
   private:
     const debruijn_graph::Graph &g_;

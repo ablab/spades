@@ -322,26 +322,6 @@ public:
         return res;
     }
 
-    std::pair<int, int> GetPathLimits(const QualityRange &a,
-                                      const QualityRange &b,
-                                      int s_add_len, int e_add_len) const {
-        int start_pos = a.sorted_positions[a.last_trustable_index].read_position;
-        int end_pos = b.sorted_positions[b.first_trustable_index].read_position;
-        int seq_len = -start_pos + end_pos;
-        //int new_seq_len =
-//TODO::something more reasonable
-        int path_min_len = std::max(int(floor((seq_len - int(g_.k())) * pb_config_.path_limit_pressing)), 0);
-        int path_max_len = (int) ((double) (seq_len + g_.k() * 2) * pb_config_.path_limit_stretching);
-        if (seq_len < 0) {
-            DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
-            if (path_max_len < 0)
-            return std::make_pair(-1, -1);
-        }
-        path_min_len = std::max(path_min_len - int(s_add_len + e_add_len), 0);
-        path_max_len = std::max(path_max_len - int(s_add_len + e_add_len), 0);
-        return std::make_pair(path_min_len, path_max_len);
-    }
-
     size_t GetDistance(VertexId start_v, VertexId end_v,
                        bool update_cache = true) const {
         size_t result = size_t(-1);

@@ -174,15 +174,20 @@ namespace sensitive_aligner {
     }
 
     void GAligner::RestoreEnds(const Sequence &s,
-                     const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                     std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
-                     PathRange &cur_range) const {
+                             const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
+                             std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
+                             PathRange &cur_range) const {
         bool forward = true;
-        int return_code = 0;
-        gap_filler_.Run(sorted_bwa_hits[0], sorted_edges[0], s, !forward, cur_range, return_code);
-        DEBUG("Backward return_code_ends=" << return_code)
-        gap_filler_.Run(sorted_bwa_hits[0], sorted_edges[0], s, forward, cur_range, return_code);
-        DEBUG("Forward return_code_ends=" << return_code)
+        GraphPosition start_pos(sorted_bwa_hits[0].edge_at(0), sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos);
+        Sequence ss = s.Subseq(0, sorted_bwa_hits[0].mapping_at(0).initial_range.start_pos);
+        GapFillerResult res_backward = gap_filler_.Run(ss, start_pos, !forward, sorted_edges[0], cur_range);
+        DEBUG("Backward return_code_ends=" << res_backward.return_code)
+
+        GraphPosition end_pos(sorted_bwa_hits[0].edge_at(sorted_bwa_hits[0].size() - 1)
+                             , sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).mapped_range.end_pos);
+        ss = s.Subseq(sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).initial_range.end_pos, (int) s.size() );
+        GapFillerResult res_forward = gap_filler_.Run(ss, end_pos, forward, sorted_edges[0], cur_range);
+        DEBUG("Forward return_code_ends=" << res_forward.return_code)
     }
 
     void GAligner::ProcessCluster(const Sequence &s,
