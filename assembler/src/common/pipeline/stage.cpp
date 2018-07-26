@@ -115,7 +115,8 @@ void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
             composite_id += phase->id();
 
             phase->save(gp, parent_->saves_policy().SavesPath(), composite_id.c_str());
-            //TODO: erase the previous saves when SavesPolicy::Last
+            //TODO: currently no phases are writing saves.
+            //When they will, erase the previous saves when SavesPolicy::Last
         }
     }
 

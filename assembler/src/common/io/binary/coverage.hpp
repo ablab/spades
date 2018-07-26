@@ -13,6 +13,8 @@
 
 namespace io {
 
+namespace binary {
+
 template<typename Index>
 class BaseCoverageIO : public IOSingle<Index, EdgeMapper<Index>> {
 public:
@@ -23,14 +25,14 @@ public:
     }
 
 private:
-    void SaveImpl(SaveFile &file, const Index &index) override {
+    void SaveImpl(BinSaveFile &file, const Index &index) override {
         for (auto it = index.g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             auto e = *it;
             file << e.int_id() << index.RawCoverage(e);
         }
     }
 
-    void LoadImpl(LoadFile &file, Index &index, const Mapper &mapper) override {
+    void LoadImpl(BinLoadFile &file, Index &index, const Mapper &mapper) override {
         size_t e;
         while (file >> e) { //Read until the end
             auto eid = mapper[e];
@@ -56,4 +58,6 @@ public:
             base("flanking coverage", ".flcvr") {}
 };
 
-}
+} // namespace binary
+
+} //namespace io

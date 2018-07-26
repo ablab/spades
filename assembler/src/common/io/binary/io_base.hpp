@@ -13,14 +13,14 @@
 
 namespace io {
 
-class SaveFile {
+class BinSaveFile {
 public:
-    SaveFile(const std::string &filename)
+    BinSaveFile(const std::string &filename)
             : str_(filename, std::ios::binary) {
     }
 
     template<typename T>
-    SaveFile &operator<<(const T &value) {
+    BinSaveFile &operator<<(const T &value) {
         io::binary::BinWrite(str_, value);
         return *this;
     }
@@ -37,14 +37,14 @@ private:
     std::ofstream str_;
 };
 
-class LoadFile {
+class BinLoadFile {
 public:
-    LoadFile(const std::string &filename)
+    BinLoadFile(const std::string &filename)
             : str_(filename, std::ios::binary) {
     }
 
     template<typename T>
-    LoadFile &operator>>(T &value) {
+    BinLoadFile &operator>>(T &value) {
         io::binary::BinRead(str_, value);
         //VERIFY(!str.fail());
         return *this;
@@ -89,9 +89,11 @@ class IOBase {
 template<typename T, typename... Env>
 class IOSingle : public IOBase<T, Env...> {
 public:
+
+
     void Save(const std::string &basename, const T &value) override {
         std::string filename = basename + this->ext_;
-        SaveFile file(filename);
+        BinSaveFile file(filename);
         DEBUG("Saving " << this->name_ << " into " << filename);
         VERIFY(file);
         this->SaveImpl(file, value);
@@ -99,7 +101,7 @@ public:
 
     bool Load(const std::string &basename, T &value, const Env &... env) override {
         std::string filename = basename + this->ext_;
-        LoadFile file(filename);
+        BinLoadFile file(filename);
         DEBUG("Loading " << this->name_ << " from " << filename);
         if (!file)
             return false;
@@ -114,11 +116,31 @@ protected:
             : name_(name), ext_(ext) {
     }
 
-    virtual void SaveImpl(SaveFile &file, const T &value) = 0;
-    virtual void LoadImpl(LoadFile &file, T &value, const Env &... env) = 0;
+    virtual void SaveImpl(BinSaveFile &file, const T &value) = 0;
+    virtual void LoadImpl(BinLoadFile &file, T &value, const Env &... env) = 0;
 
 private:
     DECL_LOGGER("BinaryIO");
+};
+
+/**
+ * @brief  A default implementor of single-file binary saving/loading.
+ */
+template<typename T, typename... Env>
+class IOSingleDefault : public IOSingle<T, Env...> {
+public:
+    IOSingleDefault(const char *name, const char *ext)
+            : IOSingle<T, Env...>(name, ext) {
+    }
+
+protected:
+    void SaveImpl(BinSaveFile &file, const T &value) override {
+        file << value;
+    }
+
+    void LoadImpl(BinLoadFile &file, T &value, const Env &... env) override {
+        value.BinRead(file.stream(), env...);
+    }
 };
 
 /**

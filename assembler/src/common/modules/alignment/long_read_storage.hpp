@@ -356,6 +356,7 @@ class LongReadContainer {
     vector<PathStorage<Graph>> data_;
 
 public:
+    typedef PathStorage<Graph> value_type;
 
     LongReadContainer(Graph& g, size_t count = 0): g_(g) {
         for (size_t i = 0; i < count; ++i) {

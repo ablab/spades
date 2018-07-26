@@ -12,28 +12,20 @@
 
 namespace io {
 
+namespace binary {
+
 template<typename Graph>
-class LongReadsIO : public IOSingle<debruijn_graph::LongReadContainer<Graph>, EdgeMapper<Graph>> {
-
+class LongReadsIO : public IOCollection<debruijn_graph::LongReadContainer<Graph>, EdgeMapper<Graph>> {
 public:
-    typedef typename debruijn_graph::LongReadContainer<Graph> Type;
+    typedef debruijn_graph::LongReadContainer<Graph> Type;
+    typedef typename Type::value_type SingleType;
     typedef EdgeMapper<Graph> Mapper;
-
     LongReadsIO()
-            : IOSingle<Type, Mapper>("long reads storage", ".mpr") {
-    }
-
-private:
-    void SaveImpl(SaveFile &file, const Type &container) override {
-        for (size_t i = 0; i < container.size(); ++i)
-            file << container[i];
-    }
-
-    void LoadImpl(LoadFile &file, Type &container, const Mapper &mapper) override {
-        //TODO: why and how is the container size set before loading?
-        for (size_t i = 0; i < container.size(); ++i)
-            container[i].BinRead(file.stream(), mapper);
+            : IOCollection<Type, Mapper>(std::unique_ptr<IOSingle<SingleType, Mapper>>(
+                    new IOSingleDefault<SingleType, Mapper>("path storage", ".mpr"))) {
     }
 };
 
-}
+} // namespace binary
+
+} // namespace io

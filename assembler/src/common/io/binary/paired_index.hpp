@@ -12,21 +12,14 @@
 
 namespace io {
 
+namespace binary {
+
 template<typename Index>
-class PairedIndexIO : public IOSingle<Index, EdgeMapper<Index>> {
+class PairedIndexIO : public IOSingleDefault<Index, EdgeMapper<Index>> {
 public:
     typedef EdgeMapper<Graph> Mapper;
     PairedIndexIO()
-            : IOSingle<Index, Mapper>("paired index", ".prd") {
-    }
-
-protected:
-    void SaveImpl(SaveFile &file, const Index &index) override {
-        file << index;
-    }
-
-    void LoadImpl(LoadFile &file, Index &index, const Mapper &mapper) override {
-        index.BinRead(file.stream(), mapper);
+            : IOSingleDefault<Index, Mapper>("paired index", ".prd") {
     }
 };
 
@@ -40,4 +33,6 @@ public:
     }
 };
 
-}
+} // namespace binary
+
+} // namespace io

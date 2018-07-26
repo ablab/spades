@@ -4,8 +4,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-//TODO: move into 'pipeline'?
-
 #pragma once
 
 #include "graph_pack.hpp"
@@ -17,25 +15,25 @@ namespace graphio {
 
 template<typename Graph>
 void PrintGraphPack(const string &basename, const graph_pack<Graph> &gp) {
-    io::GraphPackIO<Graph> io;
+    io::binary::GraphPackIO<Graph> io;
     io.Save(basename, gp);
 }
 
 template<typename Graph>
 void PrintAll(const std::string &basename, const graph_pack<Graph> &gp) {
-    io::FullPackIO<Graph> io;
+    io::binary::FullPackIO<Graph> io;
     io.Save(basename, gp);
 }
 
 template<typename Graph>
 void ScanGraphPack(const string &basename, graph_pack<Graph> &gp) {
-    io::GraphPackIO<Graph> io;
+    io::binary::GraphPackIO<Graph> io;
     io.Load(basename, gp);
 }
 
 template<typename Graph>
 void ScanAll(const std::string &basename, graph_pack<Graph> &gp) {
-    io::FullPackIO<Graph> io;
+    io::binary::FullPackIO<Graph> io;
     io.Load(basename, gp);
 }
 

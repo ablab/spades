@@ -14,6 +14,8 @@
 
 namespace io {
 
+namespace binary {
+
 template<typename Graph>
 class GraphIO : public IOSingle<Graph> {
 public:
@@ -26,7 +28,7 @@ public:
     }
 
 private:
-    void SaveImpl(SaveFile &file, const Graph &graph) override {
+    void SaveImpl(BinSaveFile &file, const Graph &graph) override {
         file << graph.GetGraphIdDistributor().GetMax();
 
         //FIXME: check for self-conjugates!
@@ -47,7 +49,7 @@ private:
         }
     }
 
-    void LoadImpl(LoadFile &file, Graph &graph) override {
+    void LoadImpl(BinLoadFile &file, Graph &graph) override {
         size_t max_id;
         file >> max_id;
         auto id_storage = graph.GetGraphIdDistributor().Reserve(max_id, /*force_zero_shift*/true);
@@ -89,4 +91,6 @@ private:
     DECL_LOGGER("GraphIO");
 };
 
-}
+} // namespace binary
+
+} // namespace io

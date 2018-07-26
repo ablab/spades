@@ -11,6 +11,8 @@
 
 namespace io {
 
+namespace binary {
+
 template<typename Graph>
 class EdgeIndexIO : public IOSingle<debruijn_graph::EdgeIndex<Graph>> {
 public:
@@ -20,12 +22,12 @@ public:
     }
 
 private:
-    void SaveImpl(SaveFile &file, const Type &value) override {
+    void SaveImpl(BinSaveFile &file, const Type &value) override {
         const auto &index = value.inner_index();
         file << (uint32_t)index.k() << index;
     }
 
-    void LoadImpl(LoadFile &file, Type &value) override {
+    void LoadImpl(BinLoadFile &file, Type &value) override {
         auto &index = value.inner_index();
         uint32_t k_;
         file >> k_;
@@ -36,4 +38,6 @@ private:
     }
 };
 
-}
+} // namespace binary
+
+} // namespace io

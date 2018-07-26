@@ -12,8 +12,10 @@
 
 namespace io {
 
-inline SaveFile &operator<<(SaveFile &file, const Range &range) {
-    return (file << range.start_pos << range.end_pos);
+namespace binary {
+
+inline BinSaveFile &operator<<(BinSaveFile &file, const Range &range) {
+    return file << range.start_pos << range.end_pos;
 }
 
 template<typename Graph>
@@ -26,7 +28,7 @@ public:
     }
 
 private:
-    void SaveImpl(SaveFile &file, const Type &edge_pos) override {
+    void SaveImpl(BinSaveFile &file, const Type &edge_pos) override {
         for (auto it = edge_pos.g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             auto pos_it = edge_pos.GetEdgePositions(*it);
             file << (*it).int_id() << pos_it.size();
@@ -36,7 +38,7 @@ private:
         }
     }
 
-    void LoadImpl(LoadFile &file, Type &edge_pos, const Mapper &mapper) override {
+    void LoadImpl(BinLoadFile &file, Type &edge_pos, const Mapper &mapper) override {
         size_t e;
         while (file >> e) { //Read until the end
             auto eid = mapper[e];
@@ -51,4 +53,6 @@ private:
     };
 };
 
-}
+} // namespace binary
+
+} //namespace io

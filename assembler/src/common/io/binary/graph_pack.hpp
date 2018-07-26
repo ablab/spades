@@ -21,6 +21,8 @@
 
 namespace io {
 
+namespace binary {
+
 //TODO: get rid of ad-hoc component processing
 
 template<typename Graph>
@@ -156,4 +158,6 @@ public:
     }
 };
 
-}
+} // namespace binary
+
+} // namespace io

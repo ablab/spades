@@ -192,15 +192,11 @@ struct __attribute((aligned(sizeof(D) + sizeof(W)))) RawPointT {
     DEVariance variance() { return 0; } //TODO: remove
 
     void BinWrite(std::ostream &str) const {
-        //To be optimized
         str.write(reinterpret_cast<const char *>(this), sizeof(Self));
-        //VERIFY(str);
     }
 
     void BinRead(std::istream &str) {
-        //To be optimized
         str.read(reinterpret_cast<char *>(this), sizeof(Self));
-        //VERIFY(str);
     }
 };
 

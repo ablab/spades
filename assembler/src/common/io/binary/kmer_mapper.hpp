@@ -11,6 +11,8 @@
 
 namespace io {
 
+namespace binary {
+
 template<typename Graph>
 class KmerMapperIO : public IOSingle<debruijn_graph::KmerMapper<Graph>> {
 public:
@@ -20,11 +22,11 @@ public:
     }
 
 private:
-    void SaveImpl(SaveFile &file, const Type &mapper) override {
+    void SaveImpl(BinSaveFile &file, const Type &mapper) override {
         file << (uint32_t)mapper.k() << mapper;
     }
 
-    void LoadImpl(LoadFile &file, Type &mapper) override {
+    void LoadImpl(BinLoadFile &file, Type &mapper) override {
         uint32_t k_;
         file >> k_;
         VERIFY_MSG(k_ == mapper.k(), "Cannot read " << this->name_ << ", different Ks");
@@ -33,4 +35,6 @@ private:
     }
 };
 
-}
+} // namespace binary
+
+} // namespace io

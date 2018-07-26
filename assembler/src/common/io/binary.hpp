@@ -14,7 +14,7 @@ namespace io {
 
 namespace binary {
 
-enum EncodingType {
+enum class Encoding {
     Unknown,
     Raw,
     LEB128
@@ -23,31 +23,31 @@ enum EncodingType {
 static const char LEB_BUF_SIZE = 128 / 7 + 1;
 
 template<typename T>
-static constexpr EncodingType GetEncodingType() {
-    return std::is_unsigned<T>::value ? LEB128 :
-           (std::is_pod<T>::value && !std::is_array<T>::value) ? Raw :
-           Unknown;
+static constexpr Encoding GetEncoding() {
+    return (std::is_unsigned<T>::value || std::is_array<T>::value) ? Encoding::LEB128 :
+           std::is_pod<T>::value ? Encoding::Raw :
+           Encoding::Unknown;
 }
 
 template<typename T>
-typename std::enable_if<GetEncodingType<T>() == Raw>::type BinWrite(std::ostream &str, const T &value) {
-    str.write(reinterpret_cast<const char *>(&value), sizeof(T));
+typename std::enable_if_t<GetEncoding<T>() == Encoding::Raw> BinWrite(std::ostream &str, const T &value) {
+    str.write(static_cast<const char *>(&value), sizeof(T));
 }
 
 template<typename T>
-typename std::enable_if<GetEncodingType<T>() == Raw, T>::type BinRead(std::istream &str, T &value) {
-    str.read(reinterpret_cast<char *>(&value), sizeof(T));
+typename std::enable_if_t<GetEncoding<T>() == Encoding::Raw> BinRead(std::istream &str, T &value) {
+    str.read(static_cast<char *>(&value), sizeof(T));
 }
 
 template<typename T>
-typename std::enable_if<GetEncodingType<T>() == LEB128>::type BinWrite(std::ostream &str, const T &value) {
+typename std::enable_if_t<GetEncoding<T>() == Encoding::LEB128> BinWrite(std::ostream &str, const T &value) {
     uint8_t buf[LEB_BUF_SIZE];
     auto count = llvm::encodeULEB128(value, buf);
     str.write(reinterpret_cast<const char *>(buf), count);
 }
 
 template<typename T>
-typename std::enable_if<GetEncodingType<T>() == LEB128>::type BinRead(std::istream &str, T &value) {
+typename std::enable_if_t<GetEncoding<T>() == Encoding::LEB128> BinRead(std::istream &str, T &value) {
     uint8_t buf[LEB_BUF_SIZE];
     auto pos = reinterpret_cast<char *>(buf);
     char count = 0;
@@ -67,17 +67,6 @@ template<typename T>
 auto BinRead(std::istream &str, T &value) -> decltype(std::declval<T>().BinRead(str), void()) {
     value.BinRead(str);
 }
-
-//Specialization for sized containers
-/*
-template<typename T>
-decltype(std::declval<const T>().begin(), std::declval<const T>().end(), std::declval<const T>().size(), void())
-BinWrite(std::ostream &str, const T &value) {
-    BinWrite(str, (size_t)value.size());
-    for (const auto &i : value)
-        BinWrite(str, i);
-}
- */
 
 //Ad-hoc overloads
 template<typename T, size_t N>
@@ -100,11 +89,10 @@ inline void BinWrite(std::ostream &str, const std::string &value) {
 inline void BinRead(std::istream &str, std::string &value) {
     size_t size;
     BinRead(str, size);
-    value.reserve(size);
+    value.resize(size);
     str.read(const_cast<char *>(value.data()), value.length());
 }
 
-//
 template<typename T>
 T BinRead(std::istream &str) {
     T result;
@@ -112,6 +100,6 @@ T BinRead(std::istream &str) {
     return result;
 }
 
-}
+} // namespace binary
 
-}
+} // namespace io

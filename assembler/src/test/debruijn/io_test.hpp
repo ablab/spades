@@ -45,7 +45,7 @@ const Graph &CommonGraph() {
 
 BOOST_FIXTURE_TEST_SUITE(robust_order_tests, fs::TmpFolderFixture)
 
-using namespace io;
+using namespace io::binary;
 const char *file_name = "src/test/debruijn/graph_fragments/saves/test_save";
 
 BOOST_AUTO_TEST_CASE( OrderTest ) {
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(TestPairedInfoIO) {
     PairedIndexIO<Index> io;
     io.Save(file_name, pi);
 
-    IdMapper<Graph::EdgeId> mapper;
+    io::IdMapper<Graph::EdgeId> mapper;
     for (auto i = graph.SmartEdgeBegin(); !i.IsEnd(); ++i)
         mapper[(*i).int_id()] = *i;
     Index ni(graph);
