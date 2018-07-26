@@ -40,6 +40,10 @@ const Graph &CommonGraph() {
     static Graph graph(55);
     if (!graph.size())
         RandomGraph<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
+    //Add more self-conjugates
+    auto it = graph.SmartVertexBegin(true);
+    for (size_t i = 0; i < 5; ++i, ++it)
+        graph.AddEdge(*it, graph.conjugate(*it), RandomSequence(60));
     return graph;
 }
 
@@ -67,6 +71,11 @@ BOOST_AUTO_TEST_CASE(TestPairedInfoIO) {
 
     Index pi(graph);
     RandomPairedIndex<Index>(pi, 100).Generate(100);
+    //Add more self-conjugates
+    RawPoint p(0, 42);
+    auto it = graph.ConstEdgeBegin(true);
+    for (size_t i = 0; i < 5; ++i, ++it)
+        pi.Add(*it, graph.conjugate(*it), p);
 
     PairedIndexIO<Index> io;
     io.Save(file_name, pi);

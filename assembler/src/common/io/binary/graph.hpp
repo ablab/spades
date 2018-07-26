@@ -31,7 +31,6 @@ private:
     void SaveImpl(BinSaveFile &file, const Graph &graph) override {
         file << graph.GetGraphIdDistributor().GetMax();
 
-        //FIXME: check for self-conjugates!
         for (auto v1 : graph) {
             file << v1.int_id() << graph.conjugate(v1).int_id();
             std::unordered_set<EdgeId> to_write; //TODO: reserve bytes, then rewrite in the end?
