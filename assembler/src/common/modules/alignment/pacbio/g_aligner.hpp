@@ -41,19 +41,29 @@ class GAligner {
                              std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
                              std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
                              std::vector<bool> &block_gap_closer) const;
+    
     void FillGapsInCluster(const vector<QualityRange> &cur_cluster,
                       const Sequence &s,
                       std::vector<vector<debruijn_graph::EdgeId> > &edges,
                       std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &bwa_hits) const;
+
+    std::pair<int, int> GetPathLimits(const QualityRange &a,
+                                      const QualityRange &b,
+                                      int s_add_len, int e_add_len) const;
+
     bool TopologyGap(debruijn_graph::EdgeId first, debruijn_graph::EdgeId second, bool oriented) const;
 
-        OneReadMapping AddGapDescriptions(const std::vector<QualityRange> &start_clusters,
-                                  const std::vector<QualityRange> &end_clusters,
-                                  const std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
-                                  const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                                  const std::vector<PathRange> &read_ranges,
-                                  const Sequence &s,
-                                  const std::vector<bool> &block_gap_closer) const;
+    OneReadMapping AddGapDescriptions(const std::vector<QualityRange> &start_clusters,
+                              const std::vector<QualityRange> &end_clusters,
+                              const std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
+                              const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
+                              const std::vector<PathRange> &read_ranges,
+                              const Sequence &s,
+                              const std::vector<bool> &block_gap_closer) const;
+    void RestoreEnds(const Sequence &s,
+                     const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
+                     std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
+                     PathRange &cur_range) const;
 public:
     OneReadMapping GetReadAlignment(const io::SingleRead &read) const;
     GAligner(const debruijn_graph::Graph &g,

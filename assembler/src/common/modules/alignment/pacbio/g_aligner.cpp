@@ -49,17 +49,9 @@ namespace sensitive_aligner {
                     DEBUG(" traversing tangled hregion between " << g_.int_id(prev_edge) << " " << g_.int_id(cur_edge));
                     DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
                     DEBUG(" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
-                    string s_add = "";
-                    string e_add = "";
-                    int seq_end = cur_first_index.read_position;
-                    int seq_start = prev_last_index.read_position;
-                    string tmp = g_.EdgeNucls(prev_edge).str();
-                    s_add = tmp.substr(prev_last_index.edge_position,
-                                       g_.length(prev_edge) - prev_last_index.edge_position);
-                    tmp = g_.EdgeNucls(cur_edge).str();
-                    e_add = tmp.substr(0, cur_first_index.edge_position);
-                    pair<int, int> limits = pac_index_.GetPathLimits(*prev_iter, *iter, (int) s_add.length(),
-                                                          (int) e_add.length());
+                    pair<int, int> limits = GetPathLimits(*prev_iter, *iter, (int) cur_first_index.edge_position
+                                                          , g_.length(prev_edge) - prev_last_index.edge_position);
+
                     if (limits.first == -1) {
                         DEBUG ("Failed to find Path limits");
                         bwa_hits.push_back(cur_sorted_hits);
@@ -70,14 +62,14 @@ namespace sensitive_aligner {
                         continue;
                     }
 
-                    int s_len = int(s.size());
-                    int end_pos = seq_end;
+                    int seq_end = cur_first_index.read_position;
+                    int seq_start = prev_last_index.read_position;
                     if (seq_end < seq_start) {
                         DEBUG ("modifying limits because of some bullshit magic, seq length 0")
-                        end_pos = seq_start;
+                        seq_end = seq_start;
                     }
-                    DEBUG("taking subseq" << seq_start << " " << end_pos << " " << s.size());
-                    std::string seq_string = s.Subseq(seq_start, min(end_pos, s_len)).str();
+                    DEBUG("taking subseq" << seq_start << " " << seq_end << " " << s.size());
+                    std::string seq_string = s.Subseq(seq_start, min(seq_end, (int) s.size() )).str();
                     GapFillerResult res = gap_filler_.Run(seq_string,
                                                          GraphPosition(prev_edge, prev_last_index.edge_position),
                                                          GraphPosition(cur_edge, cur_first_index.edge_position),
@@ -115,6 +107,27 @@ namespace sensitive_aligner {
         }
     }
 
+
+    std::pair<int, int> GAligner::GetPathLimits(const QualityRange &a,
+                                      const QualityRange &b,
+                                      int s_add_len, int e_add_len) const {
+        int start_pos = a.sorted_positions[a.last_trustable_index].read_position;
+        int end_pos = b.sorted_positions[b.first_trustable_index].read_position;
+        int seq_len = -start_pos + end_pos;
+        //int new_seq_len =
+//TODO::something more reasonable
+        int path_min_len = max(int(floor((seq_len - int(g_.k())) * pb_config_.path_limit_pressing)), 0);
+        int path_max_len = (int) ((double) (seq_len + g_.k() * 2) * pb_config_.path_limit_stretching);
+        if (seq_len < 0) {
+            DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
+            if (path_max_len < 0)
+            return std::make_pair(-1, -1);
+        }
+        path_min_len = max(path_min_len - int(s_add_len + e_add_len), 0);
+        path_max_len = max(path_max_len - int(s_add_len + e_add_len), 0);
+        return std::make_pair(path_min_len, path_max_len);
+    }
+
     bool GAligner::TopologyGap(EdgeId first, EdgeId second, bool oriented) const {
         omnigraph::TerminalVertexCondition<Graph> condition(g_);
         bool res = condition.Check(g_.EdgeEnd(first)) && condition.Check(g_.EdgeStart(second));
@@ -141,30 +154,35 @@ namespace sensitive_aligner {
         }
         std::vector<PathRange> read_ranges;
         if (sorted_edges.size() == 1 && gap_cfg_.restore_ends) {
-            bool forward = true;
-            int return_code = 0;
-            PathRange cur_range;
-            cur_range.path_start.seq_pos = sorted_bwa_hits[0].mapping_at(0).initial_range.start_pos;
-            cur_range.path_start.edge_pos = sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos;
-            gap_filler_.Run(sorted_bwa_hits[0], sorted_edges[0], s, !forward, cur_range, return_code);
-            DEBUG("Backward return_code_ends=" << return_code)
-            cur_range.path_end.seq_pos = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).initial_range.end_pos;
-            cur_range.path_end.edge_pos = sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).mapped_range.end_pos;
-            gap_filler_.Run(sorted_bwa_hits[0], sorted_edges[0], s, forward, cur_range, return_code);
-            DEBUG("Forward return_code_ends=" << return_code)
+            PathRange cur_range(MappingPoint(sorted_bwa_hits[0].mapping_at(0).initial_range.start_pos
+                                            , sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos),
+                                MappingPoint(sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).initial_range.end_pos
+                                            , sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).mapped_range.end_pos));
+            RestoreEnds(s, sorted_bwa_hits, sorted_edges, cur_range);
             read_ranges.push_back(cur_range);
         } else {
             for (auto hits: sorted_bwa_hits) {
-                PathRange cur_range;
-                cur_range.path_start.seq_pos = hits.mapping_at(0).initial_range.start_pos;
-                cur_range.path_end.seq_pos = hits.mapping_at(hits.size() - 1).initial_range.end_pos;
-                cur_range.path_start.edge_pos = hits.mapping_at(0).mapped_range.start_pos;
-                cur_range.path_end.edge_pos = hits.mapping_at(hits.size() - 1).mapped_range.end_pos;
+                PathRange cur_range(MappingPoint(hits.mapping_at(0).initial_range.start_pos
+                                                , hits.mapping_at(0).mapped_range.start_pos),
+                                    MappingPoint(hits.mapping_at(hits.size() - 1).initial_range.end_pos
+                                                , hits.mapping_at(hits.size() - 1).mapped_range.end_pos));
                 read_ranges.push_back(cur_range);
             }
         }
         return AddGapDescriptions(start_clusters, end_clusters, sorted_edges, sorted_bwa_hits, read_ranges, s,
                                   block_gap_closer);
+    }
+
+    void GAligner::RestoreEnds(const Sequence &s,
+                     const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
+                     std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
+                     PathRange &cur_range) const {
+        bool forward = true;
+        int return_code = 0;
+        gap_filler_.Run(sorted_bwa_hits[0], sorted_edges[0], s, !forward, cur_range, return_code);
+        DEBUG("Backward return_code_ends=" << return_code)
+        gap_filler_.Run(sorted_bwa_hits[0], sorted_edges[0], s, forward, cur_range, return_code);
+        DEBUG("Forward return_code_ends=" << return_code)
     }
 
     void GAligner::ProcessCluster(const Sequence &s,

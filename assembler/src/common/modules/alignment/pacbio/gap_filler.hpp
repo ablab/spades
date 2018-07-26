@@ -21,11 +21,25 @@ struct GapFillerResult {
 struct MappingPoint {
     size_t seq_pos;
     size_t edge_pos;
+
+    MappingPoint(): seq_pos(0), edge_pos(0) {}
+
+    MappingPoint(size_t seq_pos_, size_t edge_pos_):
+        seq_pos(seq_pos_), edge_pos(edge_pos_) {}
+
+    // MappingPoint(MappingPoint &a):
+    //           seq_pos(a.seq_pos), edge_pos(a.edge_pos) {}
+
 };
 
 struct PathRange {
     MappingPoint path_start;
     MappingPoint path_end;
+
+    PathRange() {}
+
+    PathRange(MappingPoint a, MappingPoint b):
+        path_start(a), path_end(b) {}
 };
 
 struct GraphPosition {
@@ -49,7 +63,7 @@ class GapFiller {
             const GraphPosition &end_pos,
             int path_min_length, int path_max_length) const;
 
-    void PrepareInitialState(omnigraph::MappingPath<debruijn_graph::EdgeId> &path,
+    void PrepareInitialState(const omnigraph::MappingPath<debruijn_graph::EdgeId> &path,
                              const Sequence &s,
                              bool forward,
                              Sequence &ss,
@@ -71,7 +85,7 @@ class GapFiller {
                         const GraphPosition &end_pos,
                         int path_min_length, int path_max_length) const;
 
-    GapFillerResult Run(omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits,
+    GapFillerResult Run(const omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits,
                         vector<debruijn_graph::EdgeId> &path,
                         const Sequence &s, bool forward, PathRange &range, int &return_code) const;
 

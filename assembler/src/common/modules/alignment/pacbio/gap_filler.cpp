@@ -171,7 +171,7 @@ GapFillerResult GapFiller::Run(const string &s,
 
 //////////////////////////////////////////////////////////////////
 
-void GapFiller::PrepareInitialState(omnigraph::MappingPath<debruijn_graph::EdgeId> &path,
+void GapFiller::PrepareInitialState(const omnigraph::MappingPath<debruijn_graph::EdgeId> &path,
                                     const Sequence &s,
                                     bool forward,
                                     Sequence &ss,
@@ -229,7 +229,7 @@ void GapFiller::UpdatePath(vector<debruijn_graph::EdgeId> &path,
     }
 }
 
-GapFillerResult GapFiller::Run(omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits,
+GapFillerResult GapFiller::Run(const omnigraph::MappingPath<debruijn_graph::EdgeId> &bwa_hits,
                                vector<debruijn_graph::EdgeId> &path,
                                const Sequence &s,
                                bool forward,
