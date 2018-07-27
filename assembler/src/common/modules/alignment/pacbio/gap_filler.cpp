@@ -251,7 +251,7 @@ GapFillerResult GapFiller::Run(Sequence &s,
         return res;
     }
     std::vector<EdgeId> ans = algo.path();
-    MappingPoint p(forward ? algo.seq_end_position() + range.path_end.edge_pos : 0, algo.path_end_position());
+    MappingPoint p(forward ? algo.seq_end_position() + range.path_end.seq_pos : 0, algo.path_end_position());
     UpdatePath(path, ans, p, range, forward);
     return res;
 }
