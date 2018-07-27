@@ -193,26 +193,25 @@ public:
     }
 };
 
-const debruijn_graph::ConjugateDeBruijnGraph& LoadGraph(const string &saves_path, const string &tmpdir, int K) {
+void LoadGraph(const string &saves_path, debruijn_graph::ConjugateDeBruijnGraph &g) {
     if (fs::extension(saves_path) == ".gfa") {
         DEBUG("Load gfa")
         VERIFY_MSG(fs::is_regular_file(saves_path), "GFA-file " + saves_path + " doesn't exist");
-        static debruijn_graph::ConjugateDeBruijnGraph g(K);
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(g, true);
-        return g;
+        return;
     } else {
         DEBUG("Load from saves")
-        static debruijn_graph::conj_graph_pack gp(K, tmpdir, 0);
-        debruijn_graph::graphio::ScanGraphPack(saves_path, gp);
-        return gp.g;
+        debruijn_graph::graphio::ScanBasicGraph(saves_path, g);
+        return;
     }
 }
 
 void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
     string tmpdir = fs::make_temp_dir(fs::current_dir(), "tmp");
-    const debruijn_graph::ConjugateDeBruijnGraph &g = LoadGraph(cfg.path_to_graphfile, tmpdir, cfg.K);
+    debruijn_graph::ConjugateDeBruijnGraph g(cfg.K);
+    LoadGraph(cfg.path_to_graphfile, g);
     INFO("Loaded graph with " << g.size() << " vertices");
 
     LongReadsAligner aligner(g, cfg.data_type, cfg.pb, cfg.gap_cfg, output_file, cfg.output_format);
