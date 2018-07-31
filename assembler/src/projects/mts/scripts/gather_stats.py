@@ -89,7 +89,7 @@ if args.summary:
 
     # Prepare the summary table
     res_dict = OrderedDict()
-    for ref, bin in best_bin.iteritems():
+    for ref, bin in best_bin.items():
         if type(bin) is float:
             row = ["unknown", "-", "-", "-", "-"]
         else:
@@ -97,8 +97,7 @@ if args.summary:
             col = all_stats.get(bin)
             if col is None:
                 print("WRONG:", bin, ref)
-            purity = purity_table.get_value(ref, bin)
-            row = [bin, col["Genome fraction (%)"], purity, col["NGA50"], mis_table.loc[ref, bin]]
+            row = [bin, col["Genome fraction (%)"], purity_table.at[ref, bin], col["NGA50"], mis_table.at[ref, bin]]
         res_dict[ref] = row
     res_table = pandas.DataFrame.from_dict(res_dict, "index")
     res_table.columns = ["bin", "GF", "purity", "NGA50", "misassemblies"]
@@ -120,12 +119,9 @@ if args.plot:
             res = []
             for i in range(len(rows)):
                 row = rows[i]
-                all_options = [(col, table.get_value(row, col)) for col in unused_cols]
+                all_options = [(col, table.at[row, col]) for col in unused_cols]
                 all_options.sort(key=lambda x: x[1], reverse=True)
-                options = list(filter(lambda v: v[1] > 10, all_options)) # (table.loc[rows[i+1:], col] < 0.1).any()]
-                #if not options and all_options:
-                #    options = [all_options[0]]
-                new = [k for k, _ in options]
+                new = [k for k, v in all_options if v > 10]
                 res += new
                 unused_cols.difference_update(new)
             return res
@@ -147,7 +143,7 @@ if args.plot:
 
             #TODO: cell text
             table = plt.table(rowLabels=t1_aligned.index, colLabels=t1_aligned.columns,
-                              cellColours=colors_aligned.as_matrix(), loc="center",
+                              cellColours=colors_aligned.values, loc="center",
                               bbox=(0,0,1,1))
             table.auto_set_font_size(False)
             table.set_fontsize(12)
@@ -210,7 +206,7 @@ if args.problematic:
     with open(args.name + "_problems.txt", "w") as out_file:
         for ref in lost_refs:
             print(ref, "is missing completely", file=out_file)
-        for ref, gf in total_gf_ref.iteritems():
+        for ref, gf in total_gf_ref.items():
             if max_gf_ref[ref] < BAD_THRESHOLD:
                 if gf < BAD_THRESHOLD:
                     print(ref, "is underassembled: at least", 100 - gf, "% GF was lost", file=out_file)
@@ -223,7 +219,7 @@ if args.problematic:
             good_refs.append(ref)
         nonzeroes_cnt_bin = nonzeroes.sum(0)
         good_bins = list()
-        for bin, cnt in nonzeroes_cnt_bin.iteritems():
+        for bin, cnt in nonzeroes_cnt_bin.items():
             if cnt > 1:
                 print(bin, "is a mixture of", cnt, "references", file=out_file) #TODO: which ones?
             else:

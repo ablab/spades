@@ -2,6 +2,7 @@
 """Cut up fasta file in non-overlapping or overlapping parts of equal length.
 """
 from __future__ import print_function
+from builtins import range
 import argparse
 import sys
 from Bio import SeqIO
@@ -28,10 +29,10 @@ def chunks(l, n, o, merge_last):
     assert(n > o)
 
     if not merge_last:
-        for i in xrange(0, len(l), n - o):
+        for i in range(0, len(l), n - o):
             yield l[i:i + n]
     else:
-        for i in xrange(0, len(l) - n + 1, n - o):
+        for i in range(0, len(l) - n + 1, n - o):
             yield l[i:i + n] if i + n + n - o <= len(l) else l[i:]
 
 

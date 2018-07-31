@@ -20,14 +20,16 @@ rule bowtie_align:
     log:     "profile/jgi/{frags}/{group}/{sample}.log"
     message: "Aligning {wildcards.sample} onto {wildcards.group} with bowtie"
     shell:   "bowtie2 -x {params.index} {params.flag} -p {threads}"
-             " -1 {input.left} -2 {input.right} 2>{log} | samtools view -bS - >{output}"
+             " -1 {input.left} -2 {input.right} 2>{log}"
+             " | samtools view -bS 2>>{log} - >{output}"
 
 rule bam_sort:
     input:   "profile/jgi/{frags}/{group}/{sample}.bam"
     output:  "profile/jgi/{frags}/{group}/{sample}.sorted.bam"
     threads: THREADS
+    log:     "profile/jgi/{frags}/{group}_sort.log"
     message: "Sorting {wildcards.group}/{wildcards.sample}.bam"
-    shell:   "samtools sort --threads {threads} {input} -o {output}"
+    shell:   "samtools sort --threads {threads} {input} -o {output} &>{log}"
 
 rule depth:
     input:   expand("profile/jgi/{{frags}}/{{group}}/{sample}.sorted.bam", sample=SAMPLES)
@@ -36,7 +38,7 @@ rule depth:
     log:     "profile/jgi/{frags}/{group}.log"
     message: "Calculating depths for {wildcards.frags} contigs from {wildcards.group}"
     shell:   "{SOFT}/metabat/jgi_summarize_bam_contig_depths {params}"
-             " --outputDepth {output} {input} >{log} 2>&1"
+             " --outputDepth {output} {input} &>{log}"
 
 rule convert:
     input:   expand("profile/jgi/{frags}/{group}.{type}", frags=FRAGS, group=sorted(GROUPS), type=PROF_TYPE)
