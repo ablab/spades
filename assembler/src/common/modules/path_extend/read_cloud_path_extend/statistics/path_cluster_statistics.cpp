@@ -12,7 +12,7 @@ vector<SubgraphInfo> PathClusterStatisticsExtractor::GetAllSubgraphInfo(const Sc
     ScaffoldGraphGapCloserParamsConstructor params_constructor;
     auto subgraph_extractor_params =
         params_constructor.ConstructSubgraphExtractorParamsFromConfig(storage.GetLargeLengthThreshold());
-    auto path_extractor_params = params_constructor.ConstructPathClusterPredicateParamsFromConfig();
+    auto path_extractor_params = params_constructor.ConstructPathExtractorParamsFromConfig();
     ScaffoldIndexInfoExtractorHelper scaffold_index_helper;
     auto scaffold_index_extractor =
         scaffold_index_helper.ConstructIndexExtractorFromParams(storage.GetSmallScaffoldGraph(), gp_,
@@ -92,7 +92,7 @@ SubgraphInfo PathClusterStatisticsExtractor::GetSubgraphInfo(
     auto final_clusters = conflict_resolver.GetClusterSets(graph, cluster_to_weight);
     INFO("Resolved conflicts");
 
-    CorrectPathExtractor correct_path_extractor;
+    CloudPathExtractor correct_path_extractor;
     auto all_path_sets = correct_path_extractor.ExtractAllPaths(graph, source, sink);
     vector<vector<ScaffoldVertex>> all_paths;
     for (const auto& path_set: all_path_sets) {

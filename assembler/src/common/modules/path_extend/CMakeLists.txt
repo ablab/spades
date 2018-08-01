@@ -45,7 +45,7 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     read_cloud_path_extend/extender_support/candidate_selectors.cpp
                     read_cloud_path_extend/extender_support/entry_collectors.cpp
                     read_cloud_path_extend/statistics/path_cluster_statistics.cpp
-                    read_cloud_path_extend/validation/transition_subgraph_validation.cpp)
+                    read_cloud_path_extend/validation/transition_subgraph_validation.cpp read_cloud_path_extend/intermediate_scaffolding/scaffold_subgraph_extractor.cpp read_cloud_path_extend/intermediate_scaffolding/scaffold_subgraph_extractor.hpp read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_path_cleaner.cpp read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_path_cleaner.hpp)
 
 target_link_libraries(path_extend assembly_graph ssw)
 

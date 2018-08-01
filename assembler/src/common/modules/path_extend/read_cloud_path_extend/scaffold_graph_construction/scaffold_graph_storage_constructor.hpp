@@ -22,13 +22,13 @@ class ScaffoldGraphStorageConstructor {
     ScaffoldGraphStorage ConstructStorageFromPaths(const PathContainer &paths, bool scaffolding_mode) const;
 };
 
-class ScaffoldGraphPolisherLauncher {
+class ScaffoldGraphPolisherHelper {
  public:
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
  private:
     const conj_graph_pack &gp_;
  public:
-    ScaffoldGraphPolisherLauncher(const conj_graph_pack &gp_);
+    ScaffoldGraphPolisherHelper(const conj_graph_pack &gp_);
 
     ScaffoldGraph GetScaffoldGraphFromStorage(const ScaffoldGraphStorage &storage, bool path_scaffolding) const;
 

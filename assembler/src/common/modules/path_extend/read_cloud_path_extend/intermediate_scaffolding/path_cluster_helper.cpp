@@ -203,8 +203,8 @@ set<PathClusterConflictResolver::ScaffoldVertex> PathClusterConflictResolver::Co
     conflict_set.insert(second);
     return conflict_to_shared_.at(conflict_set);
 }
-vector<CorrectPathExtractor::InternalPathWithSet> CorrectPathExtractor::ExtractAllPaths(
-        const CorrectPathExtractor::SimpleTransitionGraph &graph,
+vector<CloudPathExtractor::InternalPathWithSet> CloudPathExtractor::ExtractAllPaths(
+        const CloudPathExtractor::SimpleTransitionGraph &graph,
         const ScaffoldVertex &source, const ScaffoldVertex &sink) const {
     DEBUG("Extracting all paths");
     TRACE(source.int_id() << " -> " << sink.int_id());
@@ -216,6 +216,7 @@ vector<CorrectPathExtractor::InternalPathWithSet> CorrectPathExtractor::ExtractA
     while (not current_paths.empty()) {
         auto last_path = current_paths.front();
         string last_path_string;
+        TRACE("Last path size: " << last_path.path_.size());
         for (const auto &vertex: last_path.path_) {
             last_path_string += std::to_string(vertex.int_id()) += " -> ";
             TRACE("Last path:");
@@ -223,6 +224,7 @@ vector<CorrectPathExtractor::InternalPathWithSet> CorrectPathExtractor::ExtractA
         }
         current_paths.pop();
         ScaffoldVertex last_vertex = last_path.path_.back();
+        TRACE("Last vertex in graph: " << graph.ContainsVertex(last_vertex));
         if (last_vertex == sink) {
             result.push_back(last_path);
             continue;
@@ -241,8 +243,8 @@ vector<CorrectPathExtractor::InternalPathWithSet> CorrectPathExtractor::ExtractA
     DEBUG("Extracted " << result.size() << " paths");
     return result;
 }
-bool CorrectPathExtractor::IsPathCorrect(const InternalPathWithSet &path,
-                                         const vector<CorrectPathExtractor::VertexSet> &clouds) const {
+bool CloudPathExtractor::IsPathCorrect(const InternalPathWithSet &path,
+                                       const vector<CloudPathExtractor::VertexSet> &clouds) const {
     DEBUG("Checking path");
     const auto vertex_path = path.path_;
     const auto &vertex_set = path.path_vertices_;
@@ -321,14 +323,19 @@ bool CorrectPathExtractor::IsPathCorrect(const InternalPathWithSet &path,
     }
     return true;
 }
-vector<vector<CorrectPathExtractor::ScaffoldVertex>> CorrectPathExtractor::ExtractCorrectPaths(
-        const CorrectPathExtractor::SimpleTransitionGraph &graph,
-        const CorrectPathExtractor::ScaffoldVertex &source,
-        const CorrectPathExtractor::ScaffoldVertex &sink,
-        const vector<CorrectPathExtractor::VertexSet> &clouds) const {
+vector<vector<CloudPathExtractor::ScaffoldVertex>> CloudPathExtractor::ExtractCorrectPaths(
+        const CloudPathExtractor::SimpleTransitionGraph &graph,
+        const CloudPathExtractor::ScaffoldVertex &source,
+        const CloudPathExtractor::ScaffoldVertex &sink,
+        const vector<CloudPathExtractor::VertexSet> &clouds) const {
     DEBUG("Extracting correct paths");
     const auto paths = ExtractAllPaths(graph, source, sink);
     vector<vector<ScaffoldVertex>> result;
+    if (paths.size() == 1) {
+        DEBUG("Single path");
+        result.push_back(paths[0].path_);
+        return result;
+    }
     for (const auto &path: paths) {
         if (IsPathCorrect(path, clouds)) {
             result.push_back(path.path_);
@@ -336,18 +343,18 @@ vector<vector<CorrectPathExtractor::ScaffoldVertex>> CorrectPathExtractor::Extra
     }
     return result;
 }
-void CorrectPathExtractor::InternalPathWithSet::AddVertex(const CorrectPathExtractor::ScaffoldVertex &vertex) {
+void CloudPathExtractor::InternalPathWithSet::AddVertex(const CloudPathExtractor::ScaffoldVertex &vertex) {
     VERIFY_DEV(not HasVertex(vertex));
     path_.push_back(vertex);
     path_vertices_.insert(vertex);
 }
-bool CorrectPathExtractor::InternalPathWithSet::HasVertex(const CorrectPathExtractor::ScaffoldVertex &vertex) const {
+bool CloudPathExtractor::InternalPathWithSet::HasVertex(const CloudPathExtractor::ScaffoldVertex &vertex) const {
     return path_vertices_.find(vertex) != path_vertices_.end();
 }
-vector<vector<ClusterBasedPathExtractor::ScaffoldVertex>> ClusterBasedPathExtractor::GetCorrectPaths(
-        const ClusterBasedPathExtractor::SimpleTransitionGraph &graph,
-        const ClusterBasedPathExtractor::ScaffoldVertex &source,
-        const ClusterBasedPathExtractor::ScaffoldVertex &sink) const {
+vector<vector<CloudBasedPathExtractor::ScaffoldVertex>> CloudBasedPathExtractor::GetCorrectPaths(
+        const CloudBasedPathExtractor::SimpleTransitionGraph &graph,
+        const CloudBasedPathExtractor::ScaffoldVertex &source,
+        const CloudBasedPathExtractor::ScaffoldVertex &sink) const {
     PathClusterExtractorHelper path_cluster_extractor(g_, initial_cluster_storage_,
                                                       barcode_extractor_, linkage_distance_);
     auto path_clusters = path_cluster_extractor.GetPathClusters(graph);
@@ -355,11 +362,13 @@ vector<vector<ClusterBasedPathExtractor::ScaffoldVertex>> ClusterBasedPathExtrac
     auto cluster_to_weight = path_cluster_normalizer.GetNormalizedStorage(path_clusters);
     PathClusterConflictResolver conflict_resolver(relative_cluster_threshold_);
     auto final_clusters = conflict_resolver.GetClusterSets(graph, cluster_to_weight);
-    CorrectPathExtractor correct_path_extractor;
-    auto resulting_paths = correct_path_extractor.ExtractCorrectPaths(graph, source, sink, final_clusters);
+    CloudPathExtractor cloud_path_extractor;
+    DEBUG("Extracting paths using final clusters");
+    auto resulting_paths = cloud_path_extractor.ExtractCorrectPaths(graph, source, sink, final_clusters);
+    DEBUG("Extracted paths");
     return resulting_paths;
 }
-ClusterBasedPathExtractor::ClusterBasedPathExtractor(
+CloudBasedPathExtractor::CloudBasedPathExtractor(
         const Graph &g,
         shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
