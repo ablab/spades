@@ -63,11 +63,10 @@ class osequencestream_cov: public osequencestream {
 protected:
     double coverage_;
 
-    virtual void write_header(const std::string& s) {
+    void write_header(const std::string& s) override {
         // Velvet format: NODE_1_length_24705_cov_358.255249
         ofstream_ << ">" << MakeContigId(id_++, s.size(), coverage_) << std::endl;
     }
-
 
 public:
     osequencestream_cov(const std::string& filename)
@@ -82,71 +81,72 @@ public:
 
 };
 
-class OFastaReadStream {
-    std::ofstream ofstream_;
-public:
-    typedef SingleRead ReadT;
-
-    OFastaReadStream(const std::string& filename):
-            ofstream_(filename) {
-    }
-
-    OFastaReadStream& operator<<(const SingleRead& read) {
-        ofstream_ << ">" << read.name() << "\n";
-        WriteWrapped(read.GetSequenceString(), ofstream_);
-        return *this;
+struct FastaWriter {
+    static void Write(std::ostream &stream, const SingleRead &read) {
+        stream << ">" << read.name() << "\n";
+        WriteWrapped(read.GetSequenceString(), stream);
     }
 };
 
-class OFastqReadStream {
-    std::ofstream os_;
+struct FastqWriter {
+    static void Write(std::ostream &stream, const SingleRead &read) {
+        stream << "@" << read.name() << std::endl
+               << read.GetSequenceString() << std::endl
+               << "+" << std::endl
+               << read.GetPhredQualityString() << std::endl;
+    }
+};
 
+template<typename Stream, typename Writer>
+class OReadStream {
 public:
     typedef SingleRead ReadT;
 
-    OFastqReadStream(const std::string& fn) :
-            os_(fn) {
+    OReadStream(const std::string &filename)
+            : stream_(filename) {
     }
 
-    OFastqReadStream& operator<<(const SingleRead& read) {
-        os_ << "@" << read.name() << std::endl;
-        os_ << read.GetSequenceString() << std::endl;
-        os_ << "+" << std::endl;
-        os_ << read.GetPhredQualityString() << std::endl;
+    OReadStream &operator<<(const SingleRead &read) {
+        Writer::Write(stream_, read);
         return *this;
     }
 
     void close() {
-        os_.close();
+        stream_.close();
     }
+
+private:
+    Stream stream_;
 };
 
-template<class SingleReadStream>
-class OPairedReadStream {
-    SingleReadStream l_os_;
-    SingleReadStream r_os_;
+typedef OReadStream<std::ofstream, FastaWriter> OFastaReadStream;
+typedef OReadStream<std::ofstream, FastqWriter> OFastqReadStream;
 
+template<typename Stream, typename Writer>
+class OPairedReadStream {
 public:
     typedef PairedRead ReadT;
 
-    OPairedReadStream(const std::string& l_fn,
-                            const std::string& r_fn) :
-            l_os_(l_fn), r_os_(r_fn) {
+    OPairedReadStream(const std::string &left_filename, const std::string &right_filename)
+            : left_stream_(left_filename), right_stream_(right_filename) {
     }
 
-    OPairedReadStream& operator<<(const PairedRead& read) {
-        l_os_ << read.first();
-        r_os_ << read.second();
+    OPairedReadStream &operator<<(const PairedRead &read) {
+        Writer::Write(left_stream_, read.first());
+        Writer::Write(right_stream_, read.second());
         return *this;
     }
 
     void close() {
-        l_os_.close();
-        r_os_.close();
+        left_stream_.close();
+        right_stream_.close();
     }
+
+private:
+    Stream left_stream_, right_stream_;
 };
 
-using OFastaPairedStream = OPairedReadStream<OFastaReadStream>;
-using OFastqPairedStream = OPairedReadStream<OFastqReadStream>;
+typedef OPairedReadStream<std::ofstream, FastaWriter> OFastaPairedStream;
+typedef OPairedReadStream<std::ofstream, FastqWriter> OFastqPairedStream;
 
 }
