@@ -6,6 +6,7 @@
 #include "common/barcode_index/barcode_info_extractor.hpp"
 #include "pe_extraction.hpp"
 #include "predicate_builders.hpp"
+#include "path_cluster_helper.hpp"
 
 namespace path_extend {
     struct CloudSubgraphExtractorParams {
@@ -23,22 +24,12 @@ namespace path_extend {
           size_t large_length_threshold_);
     };
 
-    struct PathClusterPredicateParams {
+    struct PathExtractionParams {
       const size_t linkage_distance_;
-      const double path_cluster_threshold_;
+      const double path_cluster_relative_threshold_;
       const size_t min_read_threshold_;
 
-      PathClusterPredicateParams(size_t linkage_distance_,
-                                 double path_cluster_threshold_,
-                                 size_t min_read_threshold_);
-    };
-
-    struct PathExtractorParts {
-      const vector<shared_ptr<GapCloserPredicateBuilder>>& predicate_builders_;
-      const shared_ptr<GapCloserScoreFunctionBuilder> score_builder_;
-
-      PathExtractorParts(const vector<shared_ptr<GapCloserPredicateBuilder>>& predicate_builders_,
-                          const shared_ptr<GapCloserScoreFunctionBuilder>& score_builder_);
+      PathExtractionParams(size_t linkage_distance, double path_cluster_relative_threshold, size_t min_read_threshold);
     };
 
     class ScaffoldSubgraphExtractor {
@@ -159,122 +150,10 @@ namespace path_extend {
         SimpleTransitionGraph::const_iterator GetEndIterator(const VertexT& vertex) const override;
     };
 
-    class SubgraphPathExtractor {
-     public:
-        typedef vector<shared_ptr<GapCloserPredicateBuilder>> p_builders_t;
-        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
-     private:
-        vector<shared_ptr<GapCloserPredicateBuilder>> predicate_builders_;
-        //todo multiple scores?
-        shared_ptr<GapCloserScoreFunctionBuilder> score_function_builder_;
-
-     public:
-        typedef SimpleGraph<path_extend::scaffold_graph::ScaffoldVertex> SimpleTransitionGraph;
-
-        SubgraphPathExtractor(const p_builders_t& predicate_builders,
-                              shared_ptr<GapCloserScoreFunctionBuilder> score_function_builder);
-
-        vector<ScaffoldVertex> ExtractPathFromSubgraph(const SimpleTransitionGraph& graph,
-                                                       const ScaffoldVertex& source,
-                                                       const ScaffoldVertex& sink) const;
-
-        vector<ScaffoldVertex> ExtractSimplePathFromSubgraph(const SimpleTransitionGraph& graph,
-                                                             const ScaffoldVertex& source,
-                                                             const ScaffoldVertex& sink) const;
-
-        vector<ScaffoldVertex> ExtractPathUsingScoreFunction(const SimpleTransitionGraph& graph, const ScaffoldVertex& source,
-                                                             const ScaffoldVertex& sink,
-                                                             shared_ptr<ScaffoldEdgeScoreFunction> score_function) const;
-
-     private:
-
-        std::pair<ScaffoldVertex, double> GetNextMaxEdge(const ScaffoldVertex& current,
-                                                         shared_ptr<ScaffoldEdgeScoreFunction> score_function,
-                                                         const SubgraphPathExtractor::SimpleTransitionGraph& graph) const;
-
-        std::pair<ScaffoldVertex, double> GetPrevMaxEdge(const ScaffoldVertex& current,
-                                                         shared_ptr<ScaffoldEdgeScoreFunction> score_function,
-                                                         const SubgraphPathExtractor::SimpleTransitionGraph& graph) const;
-
-        vector<ScaffoldVertex> GetSimplePath(const SimpleTransitionGraph& graph, const ScaffoldVertex& source, const ScaffoldVertex& sink) const;
-
-     public:
-        DECL_LOGGER("SubgraphPathExtractor");
-    };
-
-    class SubgraphEdgeChecker {
-        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
-        typedef SimpleGraph<ScaffoldVertex> SimpleTransitionGraph;
-        typedef vector<shared_ptr<GapCloserPredicateBuilder>> p_builders_t;
-
-
-     public:
-        SimpleTransitionGraph CleanGraphUsingPredicate(SimpleTransitionGraph& graph,
-                                                       shared_ptr<ScaffoldEdgePredicate> predicate_ptr) const;
-
-        SimpleTransitionGraph CleanGraphUsingPredicateBuilders(SimpleTransitionGraph& graph, const ScaffoldVertex& source,
-                                                               const ScaffoldVertex& sink,
-                                                               const p_builders_t& predicate_builders) const;
-    };
-
-    class InsertedVerticesData {
-        typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
-        typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
-
-        const std::unordered_map<ScaffoldVertex, ScaffoldVertex> inserted_connections_map_;
-        const size_t inserted_vertices_;
-        const set<ScaffoldGraph::ScaffoldEdge> closed_edges_;
-     public:
-        const unordered_map<ScaffoldVertex, ScaffoldVertex>& GetInsertedConnectionsMap() const;
-     public:
-        size_t GetInsertedVertices() const;
-
-        InsertedVerticesData(const unordered_map<ScaffoldVertex, ScaffoldVertex>& inserted_connections_map_,
-                             size_t inserted_vertices_, const std::set<ScaffoldGraph::ScaffoldEdge>& closed_edges);
-
-        set<ScaffoldGraph::ScaffoldEdge> GetClosedEdges() const;
-    };
-
-    class IterationResult {
-        typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
-        typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
-        typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
-
-        const ScaffoldGraph new_graph_;
-        const size_t inserted_vertices_;
-        const std::set<ScaffoldEdge> closed_edges_;
-
-     public:
-        IterationResult(const ScaffoldGraph& new_graph_,
-                        size_t inserted_vertices_,
-                        const std::set<ScaffoldEdge>& closed_edges_);
-
-        const ScaffoldGraph& GetNewGraph() const;
-        size_t GetInsertedVertices() const;
-        std::set<ScaffoldEdge> GetClosedEdges() const;
-    };
-
     class ScaffoldGraphGapCloserParamsConstructor {
      public:
         CloudSubgraphExtractorParams ConstructSubgraphExtractorParamsFromConfig(size_t length_upper_bound);
-        PathClusterPredicateParams ConstructPathClusterPredicateParamsFromConfig();
-    };
-
-    class PathExtractionPartsConstructor {
-        typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
-        typedef cluster_storage::InitialClusterStorageBuilder InitialClusterStorageBuilder;
-        const conj_graph_pack& gp_;
-     public:
-        explicit PathExtractionPartsConstructor(const conj_graph_pack& gp_);
-        vector<shared_ptr<GapCloserPredicateBuilder>> ConstructPredicateBuilders() const;
-        shared_ptr<GapCloserScoreFunctionBuilder> ConstructPathClusterScoreFunction(const PathClusterPredicateParams& params,
-                                                                                    const ScaffoldGraph& scaffold_graph,
-                                                                                    bool path_scaffolding) const;
-//        shared_ptr<GapCloserPredicateBuilder> ConstructPEPredicate() const;
-
-     private:
-        shared_ptr<GapCloserScoreFunctionBuilder> ConstructScoreFunctionFromBuilder(shared_ptr<InitialClusterStorageBuilder> builder,
-                                                                                    size_t linkage_distance) const;
+        PathExtractionParams ConstructPathExtractorParamsFromConfig();
     };
 
     class ScaffoldIndexInfoExtractorHelper {
@@ -292,30 +171,25 @@ namespace path_extend {
         typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
         typedef debruijn_graph::Graph Graph;
         typedef SimpleGraph<ScaffoldVertex> SimpleTransitionGraph;
+        typedef vector<vector<ScaffoldVertex>> InternalPaths;
 
      private:
-        const Graph& g_;
+        const Graph &g_;
         shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> scaff_vertex_extractor_;
-        const CloudSubgraphExtractorParams& subgraph_extractor_params_;
-        const PathExtractorParts& path_extractor_params_;
+        shared_ptr<CorrectPathExtractor> path_extractor_;
+        const CloudSubgraphExtractorParams &subgraph_extractor_params_;
 
      public:
-        ScaffoldGraphPolisher(const Graph& g_,
-                               shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> scaff_vertex_extractor,
-                               const CloudSubgraphExtractorParams& subgraph_extractor_params,
-                               const PathExtractorParts& path_extractor_params);
+        ScaffoldGraphPolisher(const Graph &g_,
+                              shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> scaff_vertex_extractor,
+                              shared_ptr<CorrectPathExtractor> path_extractor,
+                              const CloudSubgraphExtractorParams &subgraph_extractor_params);
 
         ScaffoldGraph CleanSmallGraphUsingLargeGraph(const ScaffoldGraph &large_scaffold_graph,
                                                      const ScaffoldGraph &small_scaffold_graph) const;
 
-        ScaffoldGraph CloseGapsInLargeGraph(const ScaffoldGraph& large_scaffold_graph,
-                                            const ScaffoldGraph& small_scaffold_graph) const;
-
-        IterationResult LaunchGapClosingIteration(const ScaffoldGraph& current_graph,
-                                                                   const vector<ScaffoldEdge>& univocal_edges) const;
-
-        InsertedVerticesData GetInsertedConnections(const vector<ScaffoldEdge>& univocal_edges,
-                                                    const ScaffoldGraph& current_graph) const;
+        InternalPaths ExtractPathsWithinUnivocal(const ScaffoldGraph &current_graph,
+                                                 const vector<ScaffoldEdge> &univocal_edges) const;
 
 //        ScaffoldGraph CleanGraphUsingCutVertices(const ScaffoldGraph& input_graph, const vector<ScaffoldEdge>& univocal_edges) const;
         DECL_LOGGER("ScaffoldGraphPolisher");
@@ -330,5 +204,11 @@ namespace path_extend {
      public:
         ScaffoldGraph GetFinalScaffoldGraph(const conj_graph_pack &graph_pack,
                                             const ScaffoldGraphStorage &scaffold_graph_storage, bool path_scaffolding);
+
+     private:
+        shared_ptr<cluster_storage::InitialClusterStorage> ConstructInitialStorage(const conj_graph_pack &gp,
+                                                                                   const ScaffoldGraph &scaffold_graph,
+                                                                                   const PathExtractionParams &params,
+                                                                                   bool path_scaffolding) const;
     };
 }

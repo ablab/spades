@@ -444,7 +444,7 @@ class GapCloserPathClusterAnalyzer: public read_cloud_statistics::StatisticProce
         const size_t linkage_distance = 1000;
         const double score_threshold = 20.0;
         const size_t min_reads = 1;
-        path_extend::PathClusterPredicateParams path_cluster_params(linkage_distance, score_threshold, min_reads);
+        path_extend::PathExtractionParams path_cluster_params(linkage_distance, score_threshold, min_reads);
         path_extend::PathExtractionPartsConstructor predicate_constructor(gp_);
         auto pe_predicate_builder = predicate_constructor.ConstructPEPredicate();
         auto path_cluster_score_builder =
