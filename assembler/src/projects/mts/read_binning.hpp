@@ -21,8 +21,8 @@ class ContigBinner {
     shared_ptr<SequenceMapper<Graph>> mapper_;
     std::set<std::string> bins_of_interest_;
 
-    typedef io::OPairedReadStream<ogzstream> Stream;
-    map<bin_id, std::shared_ptr<Stream>> out_streams_;
+    typedef io::OPairedReadStream<ogzstream, io::FastqWriter> Stream;
+    map<bin_id, Stream> out_streams_;
 
     set<bin_id> RelevantBins(const io::SingleRead& r) const;
 
