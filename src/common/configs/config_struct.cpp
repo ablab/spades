@@ -473,7 +473,7 @@ void load(debruijn_config::read_cloud_resolver::scaffold_polisher& scaff_pol,
     load(scaff_pol.max_scaffold_dijkstra_distance, pt, "max_scaffold_distance");
     load(scaff_pol.path_cluster_linkage_distance, pt, "path_cluster_linkage_distance");
     load(scaff_pol.path_cluster_min_reads, pt, "path_cluster_min_reads");
-    load(scaff_pol.path_cluster_score_threshold, pt, "path_cluster_score_threshold");
+    load(scaff_pol.path_cluster_relative_threshold, pt, "path_cluster_score_threshold");
 }
 
 void load(debruijn_config::read_cloud_resolver::scaffold_graph_construction& scaff_con,
