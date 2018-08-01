@@ -497,7 +497,7 @@ struct debruijn_config {
           double share_threshold;
           size_t read_count_threshold;
           size_t path_cluster_linkage_distance;
-          double path_cluster_score_threshold;
+          double path_cluster_relative_threshold;
           size_t path_cluster_min_reads;
         };
 

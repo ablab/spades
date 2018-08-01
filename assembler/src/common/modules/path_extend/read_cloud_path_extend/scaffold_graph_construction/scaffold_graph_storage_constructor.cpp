@@ -35,9 +35,9 @@ ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorageFromPaths(
     return storage;
 }
 
-ScaffoldGraphPolisherLauncher::ScaffoldGraphPolisherLauncher(const conj_graph_pack &gp_) : gp_(gp_) {}
+ScaffoldGraphPolisherHelper::ScaffoldGraphPolisherHelper(const conj_graph_pack &gp_) : gp_(gp_) {}
 
-void ScaffoldGraphPolisherLauncher::GetGraphStorageReferenceInfo(const ScaffoldGraphStorage& storage,
+void ScaffoldGraphPolisherHelper::GetGraphStorageReferenceInfo(const ScaffoldGraphStorage& storage,
                                                                  const debruijn_graph::conj_graph_pack &graph_pack) const {
     const size_t large_length_threshold = storage.GetLargeLengthThreshold();
     const size_t small_length_threshold = storage.GetSmallLengthThreshold();
@@ -49,7 +49,7 @@ void ScaffoldGraphPolisherLauncher::GetGraphStorageReferenceInfo(const ScaffoldG
     INFO("Small scaffold graph stats");
     PrintScaffoldGraphReferenceInfo(small_scaffold_graph, graph_pack, small_length_threshold);
 }
-void ScaffoldGraphPolisherLauncher::PrintScaffoldGraphReferenceInfo(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
+void ScaffoldGraphPolisherHelper::PrintScaffoldGraphReferenceInfo(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
                                                             const debruijn_graph::conj_graph_pack &graph_pack,
                                                             size_t length_threshold) const {
     const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
@@ -62,7 +62,7 @@ void ScaffoldGraphPolisherLauncher::PrintScaffoldGraphReferenceInfo(const path_e
     auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
     stats.Serialize(std::cout);
 }
-ScaffoldGraphPolisherLauncher::ScaffoldGraph ScaffoldGraphPolisherLauncher::GetScaffoldGraphFromStorage(
+ScaffoldGraphPolisherHelper::ScaffoldGraph ScaffoldGraphPolisherHelper::GetScaffoldGraphFromStorage(
         const ScaffoldGraphStorage &storage, bool path_scaffolding) const {
     const auto& large_scaffold_graph = storage.GetLargeScaffoldGraph();
     const auto& small_scaffold_graph = storage.GetSmallScaffoldGraph();

@@ -45,7 +45,7 @@ class CorrectPathExtractor {
                                                            const ScaffoldVertex &sink) const = 0;
 };
 
-class ClusterBasedPathExtractor : public CorrectPathExtractor {
+class CloudBasedPathExtractor : public CorrectPathExtractor {
     using CorrectPathExtractor::ScaffoldVertex;
     using CorrectPathExtractor::SimpleTransitionGraph;
 
@@ -56,13 +56,15 @@ class ClusterBasedPathExtractor : public CorrectPathExtractor {
     const double relative_cluster_threshold_;
 
  public:
-    ClusterBasedPathExtractor(const Graph &g,
+    CloudBasedPathExtractor(const Graph &g,
                               shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
                               shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
                               size_t linkage_distance, double relative_cluster_threshold);
 
     vector<vector<ScaffoldVertex>> GetCorrectPaths(const SimpleTransitionGraph &graph,
                                                    const ScaffoldVertex &source, const ScaffoldVertex &sink) const;
+
+    DECL_LOGGER("CloudBasedPathExtractor");
 };
 
 class PathClusterNormalizer {
@@ -115,7 +117,7 @@ class PathClusterConflictResolver {
     bool AreClustersConflicted(const VertexSet &first, const VertexSet &second, const ConflictIndex &conflicts) const;
 };
 
-class CorrectPathExtractor {
+class CloudPathExtractor {
  public:
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef std::set<ScaffoldVertex> VertexSet;
@@ -142,6 +144,8 @@ class CorrectPathExtractor {
     vector<InternalPathWithSet> ExtractAllPaths(const SimpleTransitionGraph &graph,
                                                 const ScaffoldVertex &source,
                                                 const ScaffoldVertex &sink) const;
+
+    DECL_LOGGER("CloudPathExtractor");
 };
 
 class PathClusterTransitionStorageHelper {

@@ -21,13 +21,13 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
         return;
     }
 
-    path_extend::PathClusterStatisticsExtractor path_cluster_extractor(graph_pack);
-    auto subgraph_infos = path_cluster_extractor.GetAllSubgraphInfo(graph_pack.scaffold_graph_storage);
-    INFO("Printing subgraph stats");
-    path_extend::SubgraphInfoPrinter printer;
-    printer.PrintSubgraphInfo(subgraph_infos, cfg::get().output_dir);
+//    path_extend::PathClusterStatisticsExtractor path_cluster_extractor(graph_pack);
+//    auto subgraph_infos = path_cluster_extractor.GetAllSubgraphInfo(graph_pack.scaffold_graph_storage);
+//    INFO("Printing subgraph stats");
+//    path_extend::SubgraphInfoPrinter printer;
+//    printer.PrintSubgraphInfo(subgraph_infos, cfg::get().output_dir);
 
-    path_extend::ScaffoldGraphPolisherLauncher scaffold_graph_polisher(graph_pack);
+    path_extend::ScaffoldGraphPolisherHelper scaffold_graph_polisher(graph_pack);
     bool path_scaffolding = false;
     auto final_scaffold_graph = scaffold_graph_polisher.GetScaffoldGraphFromStorage(graph_pack.scaffold_graph_storage,
                                                                                     path_scaffolding);
