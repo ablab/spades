@@ -50,7 +50,7 @@ class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl>, non_copy
     // Create new tmp file
     TmpFileImpl(const std::string &prefix = "tmp", TmpDir parent = nullptr);
     // Acquire existing file
-    TmpFileImpl(nullptr_t, const std::string &file, TmpDir parent = nullptr);
+    TmpFileImpl(std::nullptr_t, const std::string &file, TmpDir parent = nullptr);
     ~TmpFileImpl();
 
     const std::string &file() const { return file_; }

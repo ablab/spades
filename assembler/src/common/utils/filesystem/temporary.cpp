@@ -43,7 +43,7 @@ TmpFileImpl::TmpFileImpl(const std::string &prefix, TmpDir parent)
     TRACE("Creating " << file_);
 }
 
-TmpFileImpl::TmpFileImpl(nullptr_t, const std::string &file, TmpDir parent)
+TmpFileImpl::TmpFileImpl(std::nullptr_t, const std::string &file, TmpDir parent)
         : file_(file), parent_(parent), fd_(-1), released_(false) {
     fd_ = ::open(file_.c_str(), O_CREAT | O_RDWR, 0600);
     VERIFY_MSG(-1 != fd_, "Cannot open file");
