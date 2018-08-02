@@ -21,10 +21,10 @@ set<bin_id> ContigBinner::RelevantBins(const io::SingleRead& r) const {
 void ContigBinner::Init(bin_id bin) {
     string out_dir = out_root_ + "/" + bin + "/";
     fs::make_dirs(out_dir);
-    out_streams_.insert(make_pair(bin, ContigBinner::Stream(
+    out_streams_.emplace(bin, std::make_unique<ContigBinner::Stream>(
         out_dir + sample_name_ + "_1.fastq.gz",
         out_dir + sample_name_ + "_2.fastq.gz")
-    ));
+    );
 }
 
 void ContigBinner::Run(io::PairedStream& paired_reads) {
@@ -39,10 +39,10 @@ void ContigBinner::Run(io::PairedStream& paired_reads) {
                 INFO(bin << " was excluded from read binning");
                 continue;
             }
-            if (out_streams_.find(bin) == out_streams_.end()) {
+            if (!out_streams_.count(bin)) {
                 Init(bin);
             }
-            out_streams_[bin] << paired_read;
+            *out_streams_[bin] << paired_read;
         }
     }
 }
