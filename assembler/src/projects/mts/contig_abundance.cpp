@@ -1,4 +1,5 @@
 #include "contig_abundance.hpp"
+#include "utils/kmer_mph/kmer_splitters.hpp"
 
 namespace debruijn_graph {
 
@@ -39,10 +40,9 @@ AbVar SampleMedian(MplVector &&sample_mpls) {
 //------------------------------------------------------------------------------
 
 template<typename T>
-T WinsoredMean(std::vector<Mpl>& v);
+T WinsoredMean(MplVector &&v);
 
-template<>
-Abundance WinsoredMean(std::vector<Mpl>& v) {
+Abundance WinsoredMeanImpl(MplVector &v) {
     const float frac = 0.05f;
     size_t offset = (size_t)std::ceil(float(v.size()) * frac);
     //std::sort(v.begin(), v.end());
@@ -57,7 +57,12 @@ Abundance WinsoredMean(std::vector<Mpl>& v) {
     return (Abundance)sum / (Abundance)v.size();
 }
 
-Var Variance(const std::vector<Mpl>& v, Abundance mean) {
+template<>
+Abundance WinsoredMean(MplVector &&v) {
+    return WinsoredMeanImpl(v);
+}
+
+Var Variance(const MplVector &v, Abundance mean) {
     size_t sum = 0;
     for (Mpl i: v)
         sum += (i * i);
@@ -65,8 +70,8 @@ Var Variance(const std::vector<Mpl>& v, Abundance mean) {
 }
 
 template<>
-AbVar WinsoredMean(std::vector<Mpl>& v) {
-    Abundance mean = WinsoredMean<Abundance>(v);
+AbVar WinsoredMean(MplVector &&v) {
+    Abundance mean = WinsoredMeanImpl(v);
     Var var = Variance(v, mean);
     return {mean, var};
 }
@@ -95,7 +100,7 @@ Profile<T> CountProfile(const KmerProfiles& kmer_mpls, PointEstimator<T> point_e
 
 template<typename T>
 typename ClusterAnalyzer<T>::Result TrivialClusterAnalyzer<T>::operator()(const KmerProfiles& kmer_mpls) const {
-    return typename ClusterAnalyzer<T>::Result(CountProfile(kmer_mpls, PointEstimator<T>(SampleMedian<T>)));
+    return typename ClusterAnalyzer<T>::Result(CountProfile(kmer_mpls, PointEstimator<T>(WinsoredMean<T>)));
 }
 
 /*
