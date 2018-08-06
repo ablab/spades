@@ -33,18 +33,15 @@ private:
 
         for (auto v1 : graph) {
             file << v1.int_id() << graph.conjugate(v1).int_id();
-            std::unordered_set<EdgeId> to_write; //TODO: reserve bytes, then rewrite in the end?
-            for (auto e : graph.OutgoingEdges(v1)) {
-                if (e <= graph.conjugate(e))
-                    to_write.insert(e);
-            }
-            file << (size_t)to_write.size();
-            for (auto e1 : to_write) {
+            for (auto e1 : graph.OutgoingEdges(v1)) {
                 auto e2 = graph.conjugate(e1);
+                if (e2 < e1)
+                    continue;
                 file << e1.int_id() << e2.int_id()
                      << graph.EdgeEnd(e1).int_id() << graph.EdgeStart(e2).int_id()
                      << graph.EdgeNucls(e1);
             }
+            file << (size_t)0; //null-term
         }
     }
 
@@ -66,11 +63,15 @@ private:
         size_t start_ids[2];
         while (file >> start_ids) { //Read until the end
             TryAddVertex(start_ids);
-            auto count = file.Read<size_t>();
-            while (count--) {
-                size_t edge_ids[2], end_ids[2];
+            while (true) {
+                size_t edge_ids[2];
+                file >> edge_ids[0];
+                if (!edge_ids[0]) //null-term
+                    break;
+                file >> edge_ids[1];
+                size_t end_ids[2];
                 Sequence seq;
-                file >> edge_ids >> end_ids >> seq;
+                file >> end_ids >> seq;
                 TRACE("Edge " << edge_ids[0] << " : " << start_ids[0] << " -> "
                               << end_ids[0] << " l = " << seq.size() << " ~ " << edge_ids[1]);
                 TryAddVertex(end_ids);

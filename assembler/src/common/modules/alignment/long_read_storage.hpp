@@ -196,7 +196,7 @@ public:
                     auto saved_id = BinRead<size_t>(str);
                     path.push_back(mapper[saved_id]);
                 }
-                AddPath(path, weight);
+                AddPath(path, (int)weight);
             }
         }
     }

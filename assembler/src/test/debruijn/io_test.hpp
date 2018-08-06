@@ -47,7 +47,7 @@ const Graph &CommonGraph() {
     return graph;
 }
 
-BOOST_FIXTURE_TEST_SUITE(robust_order_tests, fs::TmpFolderFixture)
+BOOST_FIXTURE_TEST_SUITE(binary_io_tests, fs::TmpFolderFixture)
 
 using namespace io::binary;
 const char *file_name = "src/test/debruijn/graph_fragments/saves/test_save";

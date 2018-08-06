@@ -127,8 +127,8 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
                        const char* start_from) {
     auto start_stage = stages_.begin();
     if (start_from) {
-        //TODO: refactor
         if (strcmp(start_from, "last") == 0) {
+            //The starting stage is RIGHT AFTER the last saved one
             auto last_saves = saves_policy_.GetLastCheckpoint();
             if (!last_saves.empty()) {
                 auto last_stage = std::find_if(stages_.begin(), stages_.end(), StageIdComparator(last_saves.c_str()));
@@ -136,7 +136,7 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
                     WARN("Nothing to continue");
                     return;
                 }
-                start_stage = ++last_stage;
+                start_stage = std::next(last_stage);
             } else {
                 WARN("No saved checkpoint");
             }

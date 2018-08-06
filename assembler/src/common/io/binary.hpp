@@ -7,7 +7,7 @@
 #pragma once
 
 #include <type_traits>
-#include <iostream>
+#include <istream>
 #include "llvm/Support/LEB128.h"
 
 namespace io {
