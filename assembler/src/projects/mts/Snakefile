@@ -71,7 +71,7 @@ rule split_contigs:
 
 PROF_VAR = config["profile"].get("var", BINNER == "metabat")
 PROF_TYPE = "var" if PROF_VAR else "mpl"
-FRAGS = "full" if BINNER == "metabat" else "splits"
+FRAGS = "full" if not SPLIT_LENGTH else "splits"
 
 # Importing the specific profiler
 include: "profilers/{}.snake".format(PROFILER)
