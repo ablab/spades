@@ -91,7 +91,7 @@ void GenomicInfo::Save(const std::string &filename) const {
 
 void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
     if (cfg::get().uneven_depth) {
-        ErroneousConnectionThresholdFinder<decltype(gp.g)> finder(gp.g);
+        ErroneousConnectionThresholdFinder<conj_graph_pack::graph_t> finder(gp.g);
         std::map<size_t, size_t> hist = finder.ConstructHistogram();
         double avg = finder.AvgCoverage();
         double gthr = finder.FindThreshold(hist);

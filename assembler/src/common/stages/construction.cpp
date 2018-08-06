@@ -329,7 +329,7 @@ public:
     virtual ~CoverageFiller() = default;
 
     void run(debruijn_graph::conj_graph_pack &gp, const char*) override {
-        typedef typename decltype(gp.index)::InnerIndex InnerIndex;
+        typedef debruijn_graph::conj_graph_pack::index_t::InnerIndex InnerIndex;
         typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
         INFO("Filling coverage index");
         IndexBuilder().ParallelFillCoverage(gp.index.inner_index(), storage().read_streams);
