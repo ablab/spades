@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <cstring>
 
 namespace fs {
 
@@ -129,6 +130,14 @@ std::string parent_path(std::string const& path) {
     size_t slash_pos = cpath.find_last_of('/');
 
     return (slash_pos == 0 ? std::string("/") : cpath.substr(0, slash_pos));
+}
+
+size_t filesize(std::string const& filename) {
+    struct stat stat_buf;
+    int rc = stat(filename.c_str(), &stat_buf);
+    if (rc)
+        throw std::runtime_error("Cannot tell the size of file " + filename + ": " + std::strerror(rc));
+    return stat_buf.st_size;
 }
 
 bool check_existence(std::string const& path) {
