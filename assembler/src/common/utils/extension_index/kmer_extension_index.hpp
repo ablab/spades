@@ -329,7 +329,7 @@ public:
     ~DeBruijnExtensionIndex() { }
 
 private:
-   DECL_LOGGER("ExtentionIndex");
+   DECL_LOGGER("ExtensionIndex");
 };
 
 }
