@@ -162,6 +162,29 @@ public:
     size_t IncomingEdgeCount() const {
         return Count(incoming());
     }
+
+    // We pass rhs by value (not by reference) below since InOutMask is just one byte
+    InOutMask &operator|=(const InOutMask rhs) {
+        mask_ |= rhs.mask_;
+        return *this;
+    }
+
+    InOutMask &operator&=(const InOutMask rhs) {
+        mask_ &= rhs.mask_;
+        return *this;
+    }
+
+    InOutMask operator|(const InOutMask rhs) const {
+        InOutMask result(*this);
+        result |= rhs;
+        return result;
+    }
+
+    InOutMask operator&(const InOutMask rhs) const {
+        InOutMask result(*this);
+        result &= rhs;
+        return result;
+    }
 };
 
 template<class Stream>
