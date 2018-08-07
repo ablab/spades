@@ -69,7 +69,8 @@ class KmerMultiplicityCounter {
         return true;
     }
 
-    fs::TmpFile FilterCombinedKmers(fs::TmpDir workdir, const std::vector<string>& files, size_t all_min) {
+    fs::TmpFile FilterCombinedKmers(fs::TmpDir workdir, const std::vector<string>& files,
+                                    size_t all_min, size_t min_mult) {
         size_t n = files.size();
         vector<std::unique_ptr<ifstream>> infiles;
         infiles.reserve(n);
@@ -95,7 +96,7 @@ class KmerMultiplicityCounter {
         RtSeq::less3 kmer_less;
         while (true) {
             boost::optional<RtSeq> min_kmer;
-            size_t cnt_min = 0;
+            size_t cnt_min = 0, num_samples = 0;
             for (size_t i = 0; i < n; ++i) {
                 if (alive[i]) {
                     RtSeq& cur_kmer = top_kmer[i].first;
@@ -104,7 +105,7 @@ class KmerMultiplicityCounter {
                         cnt_min = 0;
                     }
                     if (cur_kmer == *min_kmer) {
-                        cnt_min++;
+                        ++cnt_min;
                     }
                 }
             }
@@ -113,15 +114,19 @@ class KmerMultiplicityCounter {
             }
             if (cnt_min >= all_min) {
                 std::vector<uint32> cnt_vector(n, 0);
-                min_kmer.get().BinWrite(output_kmer);
+                size_t total_cnt = 0;
                 for (size_t i = 0; i < n; ++i) {
                     if (alive[i] && top_kmer[i].first == *min_kmer) {
-                        cnt_vector[i] += top_kmer[i].second;
+                        auto cnt = top_kmer[i].second;
+                        cnt_vector[i] = cnt;
+                        total_cnt += cnt;
                     }
                 }
-
-                for (size_t mpl : cnt_vector) {
-                    mpl_file.write(reinterpret_cast<char *>(&mpl), sizeof(Mpl));
+                if (cnt_min > 1 || total_cnt > min_mult) {
+                    min_kmer.get().BinWrite(output_kmer);
+                    for (size_t mpl : cnt_vector) {
+                        mpl_file.write(reinterpret_cast<char *>(&mpl), sizeof(Mpl));
+                    }
                 }
             }
             for (size_t i = 0; i < n; ++i) {
@@ -178,9 +183,10 @@ public:
         k_(k), file_prefix_(std::move(file_prefix)) {
     }
 
-    void CombineMultiplicities(const vector<string>& input_files, size_t min_samples, const string& tmpdir, size_t nthreads = 1) {
+    void CombineMultiplicities(const vector<string>& input_files, size_t min_samples,
+                               size_t min_mult, const string& tmpdir, size_t nthreads = 1) {
         auto workdir = fs::tmp::make_temp_dir(tmpdir, "kmidx");
-        auto kmer_file = FilterCombinedKmers(workdir, input_files, min_samples);
+        auto kmer_file = FilterCombinedKmers(workdir, input_files, min_samples, min_mult);
         BuildKmerIndex(workdir, kmer_file, input_files.size(), nthreads);
     }
 private:
@@ -195,6 +201,7 @@ void PrintUsageInfo() {
     std::cout << "-o - output file prefix" << std::endl;
     std::cout << "-t - number of threads (default: 1)" << std::endl;
     std::cout << "-s - minimal number of samples to contain kmer" << std::endl;
+    std::cout << "-m - minimal multiplicity of single-sample kmers" << std::endl;
     std::cout << "files_dir must contain two files (.kmc_pre and .kmc_suf) with kmer multiplicities for each sample from 1 to n" << std::endl;
 }
 
@@ -202,7 +209,7 @@ int main(int argc, char *argv[]) {
     using namespace GetOpt;
     create_console_logger();
 
-    size_t k, sample_cnt, min_samples, nthreads;
+    size_t k, sample_cnt, min_samples, min_mult, nthreads;
     string output, work_dir;
 
     try {
@@ -210,6 +217,7 @@ int main(int argc, char *argv[]) {
         ops.exceptions_all();
         ops >> Option('k', k)
             >> Option('n', sample_cnt)
+            >> Option('m', "min-mult", min_mult, size_t(5))
             >> Option('s', min_samples)
             >> Option('o', output)
             >> Option('t', "threads", nthreads, size_t(1))
@@ -226,6 +234,6 @@ int main(int argc, char *argv[]) {
     }
 
     KmerMultiplicityCounter kmcounter(k, output);
-    kmcounter.CombineMultiplicities(input_files, min_samples, work_dir, nthreads);
+    kmcounter.CombineMultiplicities(input_files, min_samples, min_mult, work_dir, nthreads);
     return 0;
 }

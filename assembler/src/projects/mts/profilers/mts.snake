@@ -37,7 +37,7 @@ rule abundancies:
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
 rule combine_profiles:
-    input:   expand("profile/mts/{frags}/{group}.{type}", frags=FRAGS, group=GROUPS, type=PROF_TYPE)
+    input:   expand("profile/mts/{frags}/{group}.{type}", frags=FRAGS, group=sorted(GROUPS), type=PROF_TYPE)
     output:  "binning/profiles.tsv"
     message: "Combine all profiles"
     run:
