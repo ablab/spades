@@ -16,19 +16,21 @@ class StrongWeakPtr {
     typedef T* pointer;
 
     StrongWeakPtr() noexcept
-            : ptr_(pointer(), false) {}
+            : ptr_() {}
 
     StrongWeakPtr(std::nullptr_t) noexcept
-            : ptr_(pointer(), false) {}
+            : ptr_() {}
 
     StrongWeakPtr(pointer p, bool owning = true) noexcept
-            : ptr_(std::move(p), owning) { }
+            : ptr_(std::move(p), owning) {}
 
     StrongWeakPtr(StrongWeakPtr &&p) noexcept
-            : ptr_(p.release(), p.owning()) {}
+            : ptr_(p.ptr_) {
+        p.ptr_ = raw_type();
+    }
 
-    StrongWeakPtr& operator=(StrongWeakPtr &&p) noexcept {
-        reset(p.release(), p.owning());
+    StrongWeakPtr &operator=(StrongWeakPtr &&p) noexcept {
+        swap(p);
         return *this;
     }
 
@@ -68,10 +70,9 @@ class StrongWeakPtr {
     }
     
     void reset(pointer p = pointer(), bool own = true) {
-        pointer tmp = ptr_.getPointer(); bool is_owning = ptr_.getInt();
+        if (ptr_.getInt())
+            delete ptr_.getPointer();
         ptr_ = raw_type(p, own);
-        if (is_owning)
-            delete tmp;
     }
 
     void swap(StrongWeakPtr &p) noexcept {
@@ -80,7 +81,6 @@ class StrongWeakPtr {
     
   private:
     llvm::PointerIntPair<pointer, 1, bool> ptr_;
-  public:
     typedef decltype(ptr_) raw_type;
 };
 
