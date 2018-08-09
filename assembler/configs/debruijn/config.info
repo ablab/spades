@@ -11,9 +11,6 @@ K		55
 ;FIXME introduce isolate mode
 mode base
 
-;FIXME remove!
-run_mode false
-project_name    TOY_DATASET
 dataset         ./configs/debruijn/toy.info
 log_filename    log.properties
 

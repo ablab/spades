@@ -31,10 +31,6 @@ void load_config(const vector<string>& cfg_fns) {
 
     cfg::create_instance(cfg_fns);
 
-    if (!cfg::get().project_name.empty()) {
-        make_dir(cfg::get().output_base + cfg::get().project_name);
-    }
-
     make_dir(cfg::get().output_dir);
     make_dir(cfg::get().tmp_dir);
 

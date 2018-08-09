@@ -840,11 +840,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
         cfg.tmp_dir = cfg.output_dir + cfg.tmp_dir;
     }
 
-    cfg.temp_bin_reads_path =
-            cfg.project_name.empty() ?
-            (cfg.output_base + "/" + cfg.temp_bin_reads_dir) :
-            (cfg.output_base + cfg.project_name + "/"
-             + cfg.temp_bin_reads_dir);
+    cfg.temp_bin_reads_path = cfg.output_base + "/" + cfg.temp_bin_reads_dir;
     //cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
 
     init_libs(cfg.ds.reads, cfg.max_threads, cfg.buffer_size, cfg.temp_bin_reads_path);

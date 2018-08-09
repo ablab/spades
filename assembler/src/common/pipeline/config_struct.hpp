@@ -442,7 +442,6 @@ struct debruijn_config {
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
     std::string dataset_file;
-    std::string project_name;
     std::string input_dir;
     std::string output_base;
     std::string output_dir;
