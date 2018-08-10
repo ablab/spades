@@ -9,9 +9,9 @@
 #include <boost/test/unit_test.hpp>
 #include "paired_info/paired_info_helpers.hpp"
 
-namespace debruijn_graph {
+namespace omnigraph {
 
-using namespace omnigraph::de;
+namespace de {
 
 class MockGraph {
 
@@ -437,4 +437,6 @@ BOOST_AUTO_TEST_CASE(PairedInfoPairTraverse) {
 
 BOOST_AUTO_TEST_SUITE_END()
 
-}
+} // namespace de
+
+} // namespace omnigraph
