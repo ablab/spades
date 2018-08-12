@@ -24,8 +24,10 @@ IntegerType ilog2ceil(IntegerType x) {
 
 template<class It, class Cmp>
 class loser_tree {
+public:
     typedef typename std::iterator_traits<It>::value_type value_type;
 
+private:
     size_t log_k_;
     size_t k_;
     std::vector<size_t> entry_;
@@ -100,6 +102,48 @@ public:
         return (winner.begin() == winner.end());
     }
 
+    template<class It2>
+    size_t multi_merge_unique(It2 out, size_t amount = -1ULL) {
+        if (!amount) {
+            return 0;
+        }
+
+        size_t cnt = 0;
+        size_t winner_index = entry_[0];
+
+        const auto &winner = runs_[winner_index];
+        if (winner.begin() == winner.end()) {
+            return 0;
+        }
+
+        value_type prev = *winner.begin();
+        winner_index = replay(winner_index);
+
+        while (true) {
+            const auto &winner = runs_[winner_index];
+            if (winner.begin() == winner.end()) {
+                *out++ = std::move(prev);
+                ++cnt;
+                break;
+            }
+
+            if (!inner_cmp_(prev, *winner.begin())) {
+                winner_index = replay(winner_index);
+                continue;
+            }
+
+            *out++ = std::move(prev);
+            if (++cnt == amount) {
+                break;
+            }
+            prev = *winner.begin();
+            winner_index = replay(winner_index);
+        }
+
+        entry_[0] = winner_index;
+
+        return cnt;
+    }
 
     template<class It2>
     size_t multi_merge(It2 out, size_t amount = -1ULL) {
@@ -107,7 +151,7 @@ public:
         size_t winner_index = entry_[0];
 
         for (cnt = 0; cnt < amount; ++cnt) {
-            auto &winner = runs_[winner_index];
+            const auto &winner = runs_[winner_index];
             if (winner.begin() == winner.end())
                 break;
 
@@ -134,4 +178,26 @@ private:
     std::vector<adt::iterator_range<It>> runs_;
 };
 
-} //adt
+template <class Cmp, class It>
+loser_tree<It, Cmp> make_loser_tree(const std::vector<adt::iterator_range<It>> &runs) {
+    return loser_tree<It, Cmp>(runs);
+}
+
+template <class It>
+loser_tree<It, std::less<typename std::iterator_traits<It>::value_type>>
+make_loser_tree(const std::vector<adt::iterator_range<It>> &runs) {
+    return loser_tree<It, std::less<typename std::iterator_traits<It>::value_type>>(runs);
+}
+
+template <class Cmp, class It>
+loser_tree<It, Cmp> make_loser_tree(const std::initializer_list<adt::iterator_range<It>> &runs) {
+    return loser_tree<It, Cmp>(runs);
+}
+
+template <class It>
+loser_tree<It, std::less<typename std::iterator_traits<It>::value_type>>
+make_loser_tree(const std::initializer_list<adt::iterator_range<It>> &runs) {
+    return loser_tree<It, std::less<typename std::iterator_traits<It>::value_type>>(runs);
+}
+
+}  // namespace adt
