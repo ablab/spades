@@ -53,6 +53,20 @@ def make_edit(cur_mp, ideal_seq_offset, graph_seq, ideal_seq):
     ideal_seq_offset += int(cur_mp["to_length"])
     return ideal_seq_offset, graph_seq
 
+def make_ga_edit(cur_mp, ideal_seq_offset, graph_seq, ideal_seq):
+    if cur_mp["to_length"] == cur_mp["from_length"] and len(cur_mp["sequence"]) == 0:
+        graph_seq += ideal_seq[ideal_seq_offset: ideal_seq_offset + int(cur_mp["to_length"])]
+    elif cur_mp["to_length"] == cur_mp["from_length"] and len(cur_mp["sequence"]) != 0:
+        graph_seq += cur_mp["sequence"]
+    elif cur_mp["from_length"] > 0 and cur_mp["to_length"] == 0 and len(cur_mp["sequence"]) != 0:
+        graph_seq += cur_mp["sequence"]
+    elif cur_mp["from_length"] > 0 and cur_mp["to_length"] == 0:
+        print "HAPPENED"
+    elif cur_mp["to_length"] != cur_mp["from_length"]:
+        graph_seq += cur_mp["sequence"]
+    ideal_seq_offset += int(cur_mp["to_length"])
+    return ideal_seq_offset, graph_seq
+
 def make_c(s):
     mp = {"A":"T", "T":"A","C":"G", "G":"C"}
     res = "".join([mp[c] for c in list(s)][::-1])
@@ -77,6 +91,7 @@ class DataLoader:
     def load_vg_edges(self, gfa_filename):
         res = {}
         graph = {}
+        rev = {"+": "-", "-": "+"}
         with open(gfa_filename, "r") as fin:
             for ln in fin.readlines():
                 if ln.startswith("S"):
@@ -87,10 +102,12 @@ class DataLoader:
                     if not (node_id1 + pos1 in graph):
                         graph[node_id1 + pos1] = {} 
                     graph[node_id1+pos1][node_id2+pos2] = 1
-
+                    if not (node_id2 + rev[pos2] in graph):
+                        graph[node_id2 + rev[pos2]] = {} 
+                    graph[node_id2+rev[pos2]][node_id1+rev[pos1]] = 1
         return res, graph
 
-    def load_vg_paths(self, filename, edges, graph, reads):
+    def load_ga_paths(self, filename, edges, graph, reads):
         json_file = open(filename, "r")
         res = []
         res_mp = {}
@@ -98,7 +115,7 @@ class DataLoader:
             json_data = json.loads(ln)
             ideal_seq = json_data["sequence"]
             ideal_name = json_data["name"].replace(" ","")
-            ideal_seq_offset = 0
+            ideal_seq_offset = 0 if "query_position" not in json_data else int(json_data["query_position"])
             graph_seq = ""
             edge_offset_f = -1
             nodes = []
@@ -116,7 +133,9 @@ class DataLoader:
                             cur_mp[k] = mp[k] if k in mp.keys() else "0"
                         cur_mp["sequence"] = mp["sequence"] if "sequence" in mp.keys() else ""
                         edge_offset_f += int(cur_mp["from_length"])
-                        ideal_seq_offset, graph_seq = make_edit(cur_mp, ideal_seq_offset, graph_seq, ideal_seq)
+                        ideal_seq_offset, graph_seq = make_ga_edit(cur_mp, ideal_seq_offset, graph_seq, ideal_seq)
+                    if ideal_name == "S1_18156":
+                        print graph_seq
                     if len(nodes) == 0 or nodes[-1]["node_id"] != node_id:
                         nodes.append({"node_id": node_id, "node_id_str": str(node_id) + str("+" if "is_reverse" not in it["position"].keys() else "-"),\
                                       "path": [{"start": edge_offset, "end": edge_offset_f}], "seq": [{"start": ideal_seq_offset_s, "end": ideal_seq_offset}], "nucs": node_seq})
@@ -132,9 +151,6 @@ class DataLoader:
                 for node in nodes:
                     if prev_node != None:
                         if not prev_node["node_id_str"] in graph or not node["node_id_str"] in graph[prev_node["node_id_str"]]:
-                            if ideal_name == "S1_26776":
-                                print "Disconnected: ", ideal_name, cur_len, best_len
-                                print cur_nodes 
                             if cur_len > best_len:
                                 best_len = cur_len
                                 connected_nodes = cur_nodes
@@ -143,7 +159,6 @@ class DataLoader:
                     for p in node["seq"]:
                         cur_len += abs(p["end"] - p["start"])
                     cur_nodes.append(node)
-                    #print cur_len
                     prev_node = node
 
                 if cur_len > best_len:
@@ -151,8 +166,6 @@ class DataLoader:
                     connected_nodes = cur_nodes
                 graph_seq_full = ""
                 graph_seq = ""
-                #print ideal_name, best_len, len(ideal_seq), len(reads[ideal_name])
-                #print len(connected_nodes)
                 for i in xrange(len(connected_nodes)):
                     node = connected_nodes[i]
                     edge_offset_s = 0
@@ -163,16 +176,13 @@ class DataLoader:
                         edge_offset_f = node["path"][-1]["end"]
                     #graph_seq_full = edges[node["node_id"]] if node["node_id_str"].endswith("+") else make_c(edges[node["node_id"]])
                     graph_seq_full += node["nucs"][edge_offset_s: edge_offset_f + 1]
-                    #print edge_offset_s, edge_offset_f + 1, len(node["nucs"]), node["node_id_str"], len(edges[node["node_id"]])
                     # for p in node["seq"]:
                     #     graph_seq += node["nucs"][p["start"]:p["end"]]
 
                 start = connected_nodes[0]["seq"][0]["start"]
                 end = connected_nodes[-1]["seq"][-1]["end"]
-    
-                if end - start + 1 > 0.*len(reads[ideal_name]):
+                if end - start + 1 > 0.8*len(reads[ideal_name]):
                     if (ideal_name not in res_mp) or (end - start + 1) > res_mp[ideal_name]["mapping_len"]:
-                        #print ideal_name, end - start + 1, len(reads[ideal_name])
                         res_mp[ideal_name] = {"mapping_len": end + 1 - start, "s_start": start, "s_end": end + 1, "mapped_seq": graph_seq_full}
         json_file.close()
         for r in res_mp.keys():
@@ -198,9 +208,9 @@ class DataLoader:
                 res.append({"r_name": cur_read, "mapping_len": initial_e[max_ind] - initial_s[max_ind] + 1, \
                                 "s_start": initial_s[max_ind], "s_end": initial_e[max_ind], \
                                 "mapped_seq": seqs.split(";")[max_ind]})
-            else:
-                print cur_read
-                print initial_e[max_ind] - initial_s[max_ind], len(reads[cur_read])
+            # else:
+            #     print cur_read
+            #     print initial_e[max_ind] - initial_s[max_ind], len(reads[cur_read])
         fin.close()
         return res
 
@@ -240,12 +250,13 @@ if __name__ == "__main__":
     # edges_gfa = "/home/tdvorkina/soft/vg/celegans_sim_pacbio/assembly_graph_with_scaffolds_wp.split.gfa"
     # vg_res_file = "/home/tdvorkina/soft/vg/celegans_sim_pacbio/sim_pacbio_len500_100.json"
 
-    reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/sim_pacbio/sim_pacbio_len500_100.fasta"
-    galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_simpb100_dijkstra_bwa0_ends_inf.tsv"
+    org_path = "/Sid/tdvorkina/gralign/benchmarking/celegans/"
+    reads_file = org_path + "input/simpb.fasta"
+    galigner_res_file = org_path + "GAligner/output/aln_simpb.tsv"
     #edges_gfa = "/home/tdvorkina/soft/vg/ecoli_sim_pacbio/assembly_graph_with_scaffolds_wp.split.gfa"
     #vg_res_file = "/home/tdvorkina/soft/vg/ecoli_sim_pacbio/sim_pacbio_len500_100.json"
-    graphaligner_edges_gfa = "/home/tdvorkina/soft/GraphAligner/tmp/graph_idfix.gfa"
-    graphaligner_res_file = "/home/tdvorkina/soft/GraphAligner/output/aln_sim_pacbio_len500_100_graph_all.json"
+    graphaligner_edges_gfa = org_path + "GraphAligner/tmp/graph_idfix.gfa"
+    graphaligner_res_file = org_path + "GraphAligner/output/aln_simpb_selected.json"
 
     # reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/real_pacbio/real_pacbio_len500_100.fasta"
     # galigner_res_file =  "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_realpb100_dijkstra_bwa0_ends_inf.tsv"
@@ -263,13 +274,13 @@ if __name__ == "__main__":
     # [vg_edges, vg_graph] = dl.load_vg_edges(edges_gfa)
     # vg_res = dl.load_vg_paths(vg_res_file, vg_edges, vg_graph, reads)
     [graphaligner_edges, graphaligner_graph] = dl.load_vg_edges(graphaligner_edges_gfa)
-    graphaligner_res = dl.load_vg_paths(graphaligner_res_file, graphaligner_edges, graphaligner_graph, reads)
+    graphaligner_res = dl.load_ga_paths(graphaligner_res_file, graphaligner_edges, graphaligner_graph, reads)
     print_stats(reads, {"GAligner": galigner_res, "GraphAligner": graphaligner_res})
-    filename = "/".join(vg_res_file.split("/")[:-1]) + "/alignments.fasta"
-    print "Saving to", filename
-    save_fasta(vg_res, filename)
-    print "Draw reads len distribution.."
-    lens = [len(reads[k]) for k in reads.keys()]
-    plt.hist(lens)
-    plt.xlabel("Read length")
-    plt.savefig("./len_dist.png")
+    # filename = "/".join(vg_res_file.split("/")[:-1]) + "/alignments.fasta"
+    # print "Saving to", filename
+    # save_fasta(vg_res, filename)
+    # print "Draw reads len distribution.."
+    # lens = [len(reads[k]) for k in reads.keys()]
+    # plt.hist(lens)
+    # plt.xlabel("Read length")
+    # plt.savefig("./len_dist.png")
