@@ -1,0 +1,37 @@
+# Edit config.yaml to add the paths before running
+configfile: "config.yaml"
+DATAPATH = config["datapath"]
+GAPATH = config["gapath"]
+GACFG = config["gacfg"] 
+
+rule all:
+    input:
+        #expand(os.path.join(DATAPATH, "{org}/GAligner/output/aln_{reads}.tsv"), reads=["realnp", "simpb", "realpb"], org=["ecoli", "celegans"]),
+        expand(os.path.join(DATAPATH, "{org}/GAligner/output/aln_{reads}.log"), reads=["realnp", "simpb", "realpb"], org=["ecoli", "celegans"])
+
+
+rule prepare_cfg:
+    output:
+        "{DATAPATH}/{org}/GAligner/tmp/{reads}.yaml"
+    run:
+        print(wildcards.reads)
+        if wildcards.reads.endswith("pb"):
+           shell("python2 /home/tdvorkina/tmp/algorithmic-biology/assembler/src/projects/galigner/benchmarking/prepare_cfg.py {GACFG} {DATAPATH}/celegans/input/graph.gfa {DATAPATH}/celegans/input/{wildcards.reads}.fasta 77 pacbio > {output}")
+        else:
+           shell("python2 /home/tdvorkina/tmp/algorithmic-biology/assembler/src/projects/galigner/benchmarking/prepare_cfg.py {GACFG} {DATAPATH}/celegans/input/graph.gfa {DATAPATH}/celegans/input/{wildcards.reads}.fasta 77 nanopore > {output}")
+
+rule run_aligner:
+    input:
+        "{DATAPATH}/{org}/GAligner/tmp/{reads}.yaml"
+    output:
+        tsv = "{DATAPATH}/{org}/GAligner/output/aln_{reads}.tsv",
+        log = "{DATAPATH}/{org}/GAligner/output/aln_{reads}.log"
+    shell:
+        "{GAPATH} {input} -o {DATAPATH}/{wildcards.org}/GAligner/output/aln_{wildcards.reads} > {output.log}"
+
+
+
+
+
+
+

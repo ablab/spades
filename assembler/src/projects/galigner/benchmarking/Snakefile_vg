@@ -1,0 +1,86 @@
+# Edit config.yaml to add the paths before running
+configfile: "config.yaml"
+DATAPATH = config["datapath"]
+VGPATH = config["vgpath"]
+K = config["vg_k"]
+
+rule all:
+    input:
+        expand(os.path.join(DATAPATH, "{org}/vg/output/aln_{reads}.json"), reads=["realnp", "simpb"], org=["ecoli", "celegans"])
+
+######## vg ###########
+
+rule remove_paths:
+    input:
+        os.path.join(DATAPATH, "{org}/input/graph.gfa")
+    output:
+        os.path.join(DATAPATH, "{org}/vg/tmp/graph_wp.gfa")
+    shell:
+        "mkdir -p {DATAPATH}/{wildcards.org}/vg/tmp && sed '/^P/ d' {input} > {output}"
+
+rule convert_to_vg:
+    input:
+        os.path.join(DATAPATH, "{org}/vg/tmp/graph_wp.gfa")
+    output:
+        os.path.join(DATAPATH, "{org}/vg/tmp/graph.vg")
+    shell:
+        "{VGPATH}/vg view -vF {input} > {output}"
+
+rule split_graph:
+    input:
+        os.path.join(DATAPATH, "{org}/vg/tmp/graph.vg")
+    output:
+        os.path.join(DATAPATH, "{org}/vg/tmp/graph.split.vg")
+    run:
+        if wildcards.org == "celegans":
+            shell("{VGPATH}/vg mod -X 1024 -M 4 {input} > {output}")
+        else:
+            shell("{VGPATH}/vg mod -X 1024 {input} > {output}")
+
+rule prune_graph:
+    input:
+        os.path.join(DATAPATH, "celegans/vg/tmp/graph.split.vg")
+    output:
+        os.path.join(DATAPATH, "celegans/vg/tmp/graph.pruned.vg")
+    shell:
+        "{VGPATH}/vg prune -k 12 -e 2 -t 16 {input} > {output}"
+
+rule build_index_celegans:
+    input:
+        os.path.join(DATAPATH, "celegans/vg/tmp/graph.pruned.vg")
+    output:
+        xg = os.path.join(DATAPATH, "celegans/vg/tmp/graph.split.vg.xg"),
+        gcsa = os.path.join(DATAPATH, "celegans/vg/tmp/graph.split.vg.gcsa")
+    shell:
+        "{VGPATH}/vg index -p -t 16 {input} -x {output.xg} -g {output.gcsa} -k {K}"
+
+rule build_index_ecoli:
+    input:
+        os.path.join(DATAPATH, "ecoli/vg/tmp/graph.split.vg")
+    output:
+        xg = os.path.join(DATAPATH, "ecoli/vg/tmp/graph.split.vg.xg"),
+        gcsa = os.path.join(DATAPATH, "ecoli/vg/tmp/graph.split.vg.gcsa")
+    shell:
+        "{VGPATH}/vg index -p -t 16 {input} -x {output.xg} -g {output.gcsa} -k {K}"
+
+rule mapping:
+    input:
+        vg = os.path.join(DATAPATH, "{org}/vg/tmp/graph.split.vg"),
+        xg = os.path.join(DATAPATH, "{org}/vg/tmp/graph.split.vg.xg"),
+        gcsa = os.path.join(DATAPATH, "{org}/vg/tmp/graph.split.vg.gcsa")
+    output:
+        os.path.join(DATAPATH, "{org}/vg/output/aln_{reads}.gam")
+    params:
+        out = os.path.join(DATAPATH, "{org}/vg/output"),
+        fq =  os.path.join(DATAPATH, "{org}/input/{reads}.fastq")
+    shell:
+        "mkdir -p {params.out} && {VGPATH}/vg map -t 16 -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.fq} -M 1 -W 64 > {output}"
+
+
+rule convert_to_json:
+    input:
+        os.path.join(DATAPATH, "{org}/vg/output/aln_{reads}.gam")
+    output:
+        os.path.join(DATAPATH, "{org}/vg/output/aln_{reads}.json")
+    shell:
+        "{VGPATH}/vg view -aj {input} > {output}"
