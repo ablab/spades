@@ -34,15 +34,20 @@ class non_copy_move_assign_able {
 
 class TmpDirImpl : public llvm::ThreadSafeRefCountedBase<TmpDirImpl>, non_copy_move_assign_able {
   public:
+    // Create new tmp dir
     TmpDirImpl(const std::string &prefix, const std::string &suffix);
+    // Acquire existing tmp dir
+    TmpDirImpl(std::nullptr_t, const std::string &dir);
     ~TmpDirImpl();
 
     const std::string &dir() const { return dir_; }
     operator std::string() const { return dir_; }
     TmpFile tmp_file(const std::string &prefix = "tmp");
+    const std::string &release();
 
   private:
     std::string dir_;
+    std::atomic<bool> released_;
 };
 
 class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl>, non_copy_move_assign_able {
@@ -95,6 +100,10 @@ inline TmpFile make_temp_file(const std::string &prefix = "tmp", TmpDir parent =
     return new TmpFileImpl(prefix, parent);
 }
 
+inline TmpDir acquire_temp_dir(const std::string &dir) {
+    return new TmpDirImpl(nullptr, dir);
+}
+
 inline TmpFile acquire_temp_file(const std::string &file, TmpDir parent = nullptr) {
     return new TmpFileImpl(nullptr, file, parent);
 }
@@ -107,6 +116,7 @@ using impl::TmpFile;
 
 namespace tmp {
 using impl::acquire_temp_file;
+using impl::acquire_temp_dir;
 using impl::make_temp_dir;
 using impl::make_temp_file;
 }  // namespace tmp

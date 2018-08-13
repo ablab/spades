@@ -18,13 +18,26 @@
 namespace fs {
 namespace impl {
 TmpDirImpl::TmpDirImpl(const std::string &prefix, const std::string &suffix)
-        : dir_(fs::make_temp_dir(prefix, suffix)) {
+        : dir_(fs::make_temp_dir(prefix, suffix)), released_(false) {
     TRACE("Creating " << dir_);
 }
 
+TmpDirImpl::TmpDirImpl(nullptr_t, const std::string &dir)
+        : dir_(dir), released_(false) {
+    TRACE("Acquiring " << dir_);
+}
+
 TmpDirImpl::~TmpDirImpl() {
-    TRACE("Removing " << dir_);
-    fs::remove_dir(dir_);
+    if (!released_) {
+        TRACE("Removing " << dir_);
+        fs::remove_dir(dir_);
+    }
+}
+
+const std::string &TmpDirImpl::release() {
+    bool already_released = released_.exchange(true);
+    VERIFY_MSG(!already_released, "Temp dir is already released");
+    return dir_;
 }
 
 TmpFile TmpDirImpl::tmp_file(const std::string &prefix) {
@@ -84,7 +97,8 @@ DependentTmpFileImpl::~DependentTmpFileImpl() {
 }
 
 const std::string &DependentTmpFileImpl::release() {
-    VERIFY_MSG(!released_.exchange(true), "Temp file is already released");
+    bool already_released = released_.exchange(true);
+    VERIFY_MSG(!already_released, "Temp file is already released");
     return file_;
 }
 
