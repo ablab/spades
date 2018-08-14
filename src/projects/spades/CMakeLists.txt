@@ -52,6 +52,9 @@ if (MPI_FOUND)
   if (SPADES_STATIC_BUILD)
     set_target_properties(spades-hpc PROPERTIES LINK_SEARCH_END_STATIC 1)
   endif()
+  install(TARGETS spades-hpc
+          DESTINATION bin
+          COMPONENT runtime)
 endif()
 
 
