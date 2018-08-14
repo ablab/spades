@@ -6,7 +6,7 @@
 namespace sensitive_aligner {
 
 class MappingPrinter {
-public:
+  public:
 
     MappingPrinter(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
         : g_(g), output_file_prefix_(output_file_prefix)
@@ -16,17 +16,16 @@ public:
 
     virtual ~MappingPrinter () {};
 
-protected:
+  protected:
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
     std::string output_file_prefix_;
     ofstream output_file_;
 };
 
 class MappingPrinterTSV: public MappingPrinter {
-public:
+  public:
     MappingPrinterTSV(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
-        : MappingPrinter(g, output_file_prefix)
-    {
+        : MappingPrinter(g, output_file_prefix) {
         output_file_.open(output_file_prefix_ + ".tsv", std::ofstream::out);
         //tsv_file << "read\tstart_pos\tend_pos\tread_length\tgraph_path\tedges_lengths\tmapping\ted\n";
     }
@@ -39,10 +38,9 @@ public:
 };
 
 class MappingPrinterGPA : public MappingPrinter {
-public:
+  public:
     MappingPrinterGPA(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
-        : MappingPrinter(g, output_file_prefix)
-    {
+        : MappingPrinter(g, output_file_prefix) {
         output_file_.open(output_file_prefix_ + ".gpa", std::ofstream::out);
         output_file_ << "H\n";
     }
@@ -50,17 +48,22 @@ public:
     std::string Print(map<string, string> &line);
 
 
-    void CIGAR(std::string &read, std::string aligned, std::string &cigar, int &score);
+    string getCigar(const string &read, const string &aligned);
 
-    void DivideByEdgeCIGAR(string &read, string &aligned, std::vector<size_t> &edgeblocks, size_t start,
-                        std::vector<string> &edgecigar,
-                        std::vector<Range> &edge_initial_ranges, int &score);
+    void getEdgeCigar(const string &subread, const string &path_seq, const vector<size_t> &edgeblocks,
+                      vector<string> &edgecigar, vector<Range> &edgeranges);
 
-    void MappedString(const omnigraph::MappingPath<debruijn_graph::EdgeId> &mappingpath, string &aligned, std::vector<size_t> &edgeblocks);
+    void getPath(const vector<debruijn_graph::EdgeId> &path,
+                 const PathRange &path_range,
+                 string &aligned, std::vector<size_t> &edgeblocks);
 
-    void MappingOnRead(const omnigraph::MappingPath<debruijn_graph::EdgeId> &mappingpath, size_t &start, size_t &end);
+    string getSubread(const Sequence &read, const PathRange &path_range);
 
-    std::string SubRead(const omnigraph::MappingPath<debruijn_graph::EdgeId> &mappingpath, const io::SingleRead &read);
+    string formGPAOutput(const io::SingleRead &read,
+                         const vector<debruijn_graph::EdgeId> &path,
+                         const vector<string> &edgecigar,
+                         const vector<Range> &edgeranges,
+                         int &nameIndex, const PathRange &path_range);
 
     virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
 
@@ -71,7 +74,7 @@ public:
 };
 
 class MappingPrinterHub {
-public:
+  public:
     MappingPrinterHub(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix, const std::string formats) {
         if (formats.find("tsv") != std::string::npos) {
             mapping_printers_.push_back(new MappingPrinterTSV(g, output_file_prefix));
@@ -94,7 +97,7 @@ public:
         mapping_printers_.clear();
     }
 
-private:
+  private:
     vector<MappingPrinter*> mapping_printers_;
 };
 
