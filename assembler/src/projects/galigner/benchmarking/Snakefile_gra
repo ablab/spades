@@ -1,5 +1,5 @@
 # Edit config.yaml to add the paths before running
-configfile: "config.yaml"
+configfile: "config_gra.yaml"
 MUMMERPATH = config["mummerpath"]
 DATAPATH = config["datapath"]
 VGPATH = config["vgpath"]
@@ -16,6 +16,14 @@ rule all:
         expand(os.path.join(DATAPATH, "{org}/GraphAligner/output/aln_{reads}_full_length.json"), reads=["realpb", "realnp", "simpb"], org=["ecoli", "celegans"]),
         expand(os.path.join(DATAPATH, "{org}/GraphAligner/output/stats_{reads}.txt"), reads=["realpb", "realnp", "simpb"], org=["ecoli", "celegans"])
 
+
+rule remove_spaces:
+    input:
+        os.path.join(DATAPATH, "{org}/input/{reads}.fasta")
+    output:
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}.fasta")
+    shell:
+        "cut -d ' ' -f 1 < {input} > {output}"
 
 rule remove_paths:
     input:
@@ -61,7 +69,7 @@ rule make_graphreference:
 
 rule reverse_reads:
 	input:
-		os.path.join(DATAPATH, "{org}/input/{reads}.fasta")
+		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}.fasta")
 	output:
 		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}_reverse.fasta")
 	shell:
@@ -69,7 +77,7 @@ rule reverse_reads:
 
 rule mummer_pipe:
 	input:
-		os.path.join(DATAPATH, "{org}/input/{reads}.fasta"),
+		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}.fasta"),
 		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}_reverse.fasta"),
 		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_gfareference.fa"),
 		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_refnodes.txt")
@@ -77,12 +85,14 @@ rule mummer_pipe:
 		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/seeds_{reads}_picked.gam")
 	threads: 16
 	shell:
-		"{MUMMERPATH} -F -qthreads {threads} -l {SEEDSIZE} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_gfareference.fa {DATAPATH}/{wildcards.org}/input/{wildcards.reads}.fasta {DATAPATH}/{wildcards.org}/GraphAligner/tmp/{wildcards.reads}_reverse.fasta | {ALIGNERBINPATH}/PickMummerSeeds {output} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_gfareference.fa {MAXSEEDHITS} {DATAPATH}/{wildcards.org}/input/{wildcards.reads}.fasta"
+		"{MUMMERPATH} -F -qthreads {threads} -l {SEEDSIZE} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_gfareference.fa \
+                        {DATAPATH}/{wildcards.org}/GraphAligner/tmp/{wildcards.reads}.fasta {DATAPATH}/{wildcards.org}/GraphAligner/tmp/{wildcards.reads}_reverse.fasta \
+                         | {ALIGNERBINPATH}/PickMummerSeeds {output} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_gfareference.fa {MAXSEEDHITS} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/{wildcards.reads}.fasta"
 
 rule align:
 	input:
 		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_idfix.gfa"),
-		os.path.join(DATAPATH, "{org}/input/{reads}.fasta"),
+		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}.fasta"),
 		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/seeds_{reads}_picked.gam")
 	output:
 		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/aln_{reads}_raw.gam"),
@@ -90,14 +100,14 @@ rule align:
 		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/aligner_stderr_{reads}.txt")
 	threads: 16
 	shell:
-		"/usr/bin/time -v {ALIGNERBINPATH}/Aligner -g {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_idfix.gfa -f {DATAPATH}/{wildcards.org}/input/{wildcards.reads}.fasta -s {DATAPATH}/{wildcards.org}/GraphAligner/tmp/seeds_{wildcards.reads}_picked.gam -a {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aln_{wildcards.reads}_raw.gam -t {threads} {ALIGNERPARAMS} 1> {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aligner_stdout_{wildcards.reads}.txt 2> {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aligner_stderr_{wildcards.reads}.txt"
+		"/usr/bin/time -v {ALIGNERBINPATH}/Aligner -g {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_idfix.gfa -f {DATAPATH}/{wildcards.org}/GraphAligner/tmp/{wildcards.reads}.fasta -s {DATAPATH}/{wildcards.org}/GraphAligner/tmp/seeds_{wildcards.reads}_picked.gam -a {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aln_{wildcards.reads}_raw.gam -t {threads} {ALIGNERPARAMS} 1> {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aligner_stdout_{wildcards.reads}.txt 2> {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aligner_stderr_{wildcards.reads}.txt"
 
 rule postprocess:
 	input:
 		nodenames = "{DATAPATH}/{org}/GraphAligner/tmp/graph_nodemapping.txt",
 		seeds = "{DATAPATH}/{org}/GraphAligner/tmp/seeds_{reads}_picked.gam",
 		raw_alns = "{DATAPATH}/{org}/GraphAligner/tmp/aln_{reads}_raw.gam",
-		reads = "{DATAPATH}/{org}/input/{reads}.fasta"
+		reads = "{DATAPATH}/{org}/GraphAligner/tmp/{reads}.fasta"
 	output:
 		all_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_all.gam",
 		selected_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_selected.gam",
