@@ -1,3 +1,6 @@
+
+
+
 #!/usr/bin/env python
 
 import os, errno
@@ -5,7 +8,7 @@ import sys
 import argparse
 
 from Bio import SeqIO
-from parse_blast_xml import parser
+#from parse_blast_xml import parser
 
 
 def parse_args(args):
@@ -26,7 +29,6 @@ def parse_args(args):
 args = parse_args(sys.argv[1:])
 
 
-
 base = os.path.basename(args.f)
 name_file = os.path.splitext(base)[0]
 dirname = os.path.dirname(__file__)
@@ -45,7 +47,7 @@ name = os.path.join(outdir, name_file)
 if args.hmm:
     hmm = args.hmm
 else:
-    hmm = ("/Nancy/mrayko/db/plasmid_specific_pfam/378_10fold_plasmid_HMMs.hmm")
+    hmm = ("/Nancy/mrayko/db/pfam/Pfam-A.hmm")
 
 if args.db:
     blastdb = args.db
@@ -59,101 +61,186 @@ else:
 
 
 # run hmm
+print ("Gene prediction...")
 os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+print ("HMM domains prediction...")
 os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+print ("Parsing...")
 os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 
-# parse hmms
-#with open(list378, "r") as infile1:
- #       list378=infile1.readlines()
 
-with open(name + "_tblout", "r") as infile2:
-        tblout_pfam=infile2.readlines()
+#with open(name + "_tblout", "r") as infile2:
+ #       tblout_pfam=infile2.readlines()
 
-#list378 = [i.strip() for i in list378] 
-#set378 = set(list378)
-
-for i in tblout_pfam:
-    i=[x for x in i if x]
+#for i in tblout_pfam:
+ #   i=[x for x in i if x]
 
 
+from sklearn.naive_bayes import MultinomialNB
+import collections
+from math import log
+from math import exp
+import pickle
+import pandas as pd
+
+
+tblout_pfam= name + "_tblout"
+
+def get_table_from_tblout(tblout_pfam):
+    with open(tblout_pfam, "r") as infile:
+        tblout_pfam=infile.readlines()
+   
+    tblout_pfam = [i.split() for i in tblout_pfam[3:-10]] 
+    contigs = collections.OrderedDict()
+    for i in range (0, len(tblout_pfam)):     #(3,  len(tblout_pfam)-10):
+        name = tblout_pfam[i][0].rsplit("_", 1)[0]
+        if name not in contigs:
+         # if float(tblout_pfam[i][4]) <= 1e-06 :
+            contigs[name]=[tblout_pfam[i][2]]
+        else:
+         # if float(tblout_pfam[i][4]) <= 1e-06:
+            contigs[name].append(tblout_pfam[i][2])
+           # contigs[name].append(tblout_pfam[i][5])
+
+    out = []
+    for key, value in contigs.items():
+        #print (str(key) + " "  +  " ".join(value))
+        out+=[str(key) + " "  +  " ".join(value)]
+
+    return out
+
+
+def naive_bayes(input_list):
+    with open("/Nancy/mrayko/algorithmic-biology/assembler/src/plasmid_utils/plasmid_hmms_table_ps1_top_hit_e06.txt", 'r') as infile:
+        table=infile.readlines()
+        table = [i.split() for i in table]
+
+# hmm dictionary - for each HMM store plasmid and chromosomal frequency 
+    hmm_dict = {}
+    for i in table:
+      if float(i[5]) >= 10 or float(i[5]) <= 0.1:
+        hmm_dict[i[0]] = [float(i[3]),float(i[4])]
+ #   hmm_names=set()
+# Calculate probabilities for each element of input list
+    out_list=[]
+    for i in input_list:
+       # print (i)
+        chrom, plasm, chrom_log, plasm_log = 1, 1, 0, 0
+        for j in i.split():
+          if j in hmm_dict.keys(): 
+                plasm=plasm*hmm_dict[j][0]
+                plasm_log=plasm_log+log(hmm_dict[j][0])
+                chrom=chrom*hmm_dict[j][1]
+                chrom_log=chrom_log+log(hmm_dict[j][1])
+        if (plasm_log - chrom_log) > 2.44256181453: out_list.append(["Plasmid", plasm_log, chrom_log, chrom_log - plasm_log])
+        else: out_list.append(["Chromosome",  plasm_log, chrom_log, chrom_log - plasm_log])
+     
+    features = ['label','Plasm_log_prob', 'Chrom_log_prob', "Difference"]
+    df = pd.DataFrame.from_records(out_list, columns=features)
+    return df ###################.astype("float64")
+    #pd.Series(out_list, dtype='int64')
+
+
+
+feature_table = get_table_from_tblout(tblout_pfam) # "HMP_final_contigs.circular.all_cat_tblout")  #sys.argv[1])
+feature_table = [i.strip().split(' ', 1) for i in feature_table]
+
+#print (feature_table)
+# Turn into dataframe
+features = ['name' ,'genes']
+feature_table = pd.DataFrame.from_records(feature_table, columns=features)
+
+print ("Vectorization..")
+with open('/Nancy/mrayko/algorithmic-biology/assembler/src/plasmid_utils/vectorizer.pkl', 'rb') as fid:
+    vect = pickle.load(fid)
+
+feature_table_dtm = vect.transform(feature_table.genes)
+
+print ("Classification...")
+t=feature_table.genes.tolist()
+k = naive_bayes(t)
+k.insert(0, "Names", feature_table.name)
+#k["Names"] = feature_table.name
+k.sort_values(by = "Names").to_csv(name + "_result_table.csv", index=False)
+
+print ("Done!")
 
 # Create table backbone.
-table =[]
+#table =[]
 
-ids=[]
-records = list(SeqIO.parse(args.f, "fasta"))
-for i in records: 
-    ids.append(i.id)  # take all fasta ids and append to table
+#ids=[]
+#records = list(SeqIO.parse(args.f, "fasta"))
+#for i in records: 
+#    ids.append(i.id)  # take all fasta ids and append to table
 
-for i in ids:
-  table.append(i.split())
+#for i in ids:
+ # table.append(i.split())
 
 
 
 # Collect all plasmid genes for each contig.
-tblout_pfam = [i.split() for i in tblout_pfam] 
-plasmid_hits={}
+#tblout_pfam = [i.split() for i in tblout_pfam] 
+#plasmid_hits={}
 
-for i in tblout_pfam[3:-10]:
-    if i[0] and i[2]:
-        plasmid_hits.setdefault(i[0].rsplit('_', 1)[0],[]).append(i[2]) 
+#for i in tblout_pfam[3:-10]:
+ #   if i[0] and i[2]:
+  #      plasmid_hits.setdefault(i[0].rsplit('_', 1)[0],[]).append(i[2]) 
 
 
 # Add genes for each contig
-for item in table: 
-    genes=list(plasmid_hits.get(item[0], ""))
-    hits=[]
-    for i in genes:
+#for item in table: 
+ #   genes=list(plasmid_hits.get(item[0], ""))
+  #  hits=[]
+   # for i in genes:
 #        if i in set378:
-            hits.append(i)
+    #        hits.append(i)
 
-    if len(hits)==0: 
-        hits="-"
-    if len(genes)==0:
-        genes="-"
+   # if len(hits)==0: 
+    #    hits="-"
+  #  if len(genes)==0:
+   #     genes="-"
 
-    item.append(' '.join(hits))
-    if hits!="-":
-        item.append ("hmm+")
-    else: 
-        item.append ("hmm-")
+   # item.append(' '.join(hits))
+   # if hits!="-":
+  #     item.append ("hmm+")
+  #  else: 
+   #     item.append ("hmm-")
 
 
 
-if args.b:
+#if args.b:
     #run blast
-    os.system ("blastn  -query " + args.f + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
-    parser(name+".xml", outdir)
+ #   os.system ("blastn  -query " + args.f + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
+  #  parser(name+".xml", outdir)
      #    Add blast results
-    with open(name + "_span_identity.txt", 'r') as infile:
-         span_identity=infile.readlines()
-         span_identity = [i.split("\t") for i in span_identity] 
+   # with open(name + "_span_identity.txt", 'r') as infile:
+    #     span_identity=infile.readlines()
+     #    span_identity = [i.split("\t") for i in span_identity] 
     
-    span = {}
-    for i in span_identity:
-        span[i[0]]=i[1:]
+   # span = {}
+   # for i in span_identity:
+    #    span[i[0]]=i[1:]
 
-    for item in table:
+   # for item in table:
          #for i in span_identity:
           #   print (item[0])
         # print (i[0]
-        if item[0] in span:
-            i=span[item[0]]
-            item+=[i[3],i[5],i[6].strip(),i[0].strip()]
-        else:
-           item.append("-")
+    #    if item[0] in span:
+     #       i=span[item[0]]
+     #       item+=[i[3],i[5],i[6].strip(),i[0].strip()]
+     #   else:
+     #      item.append("-")
 
 
 # Output
 
-with open(name + "_result_table.tsv", "w") as outfile:
+#with open(name + "_result_table.tsv", "w") as outfile:
     
-    if args.b:
-        outfile.write('\t'.join(["Contig","Plasmid_hmm", "Status", "Span", "Identity", "Blast_category", "Best_hit"])+"\n")
-    else:
-        outfile.write('\t'.join(["Contig","Plasmid_hmm", "Status"])+"\n")
+ #   if args.b:
+  #      outfile.write('\t'.join(["Contig","Plasmid_hmm", "Status", "Span", "Identity", "Blast_category", "Best_hit"])+"\n")
+  #  else:
+   #     outfile.write('\t'.join(["Contig","Plasmid_hmm", "Status"])+"\n")
 
-    for i in table:
-         outfile.write('\t'.join(i)+"\n")
+   # for i in table:
+    #     outfile.write('\t'.join(i)+"\n")

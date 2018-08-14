@@ -67,14 +67,15 @@ else:
 hmmsearch = "/Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmsearch"
 prodigal = "/Nancy/mrayko/Libs/Prodigal/prodigal"
 cbar = "/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
-hmm_list_ps01 = "/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/new_table_w_nc/plasmid_hmms_table_ps01.txt"
+#hmm_list_ps01 = "/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/new_table_w_nc/plasmid_hmms_table_ps01.txt"
+hmm_list_ps01 = "/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/new_table_w_nc_top_hit/plasmid_hmms_table_ps01.txt"
 #list378="/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/378.sorted" 
 #list378="/Nancy/mrayko/PlasmidVerify/plasmid_specific_HMMs/378.sorted
 
 # run hmm
-os.system ("prodigal  -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log")
-os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
-os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
+#os.system ("prodigal  -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log")
+#os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+#os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
 
 
 # parse hmms

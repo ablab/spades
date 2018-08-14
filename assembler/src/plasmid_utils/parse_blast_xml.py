@@ -146,7 +146,7 @@ def parser(f, out_dir):
                     ambigous = i
                     break
             if ambigous != 0:
-                print "Ambiguous"
+                print ("Ambiguous")
                 amb_file.write(item.query + '\n')
                 amb_file.write (alignments[0][1] + '\t' + str(best_query_cov) + '\t' + alignments[ambigous][1] + '\t' + str(alignments[ambigous][0]) + '\n')
             else:
