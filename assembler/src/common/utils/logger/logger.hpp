@@ -138,7 +138,7 @@ inline const char* __scope_source_name() {
 #define INFO(message)                       LOG_MSG(logging::L_INFO , message)
 #define START_BANNER(description)                                       \
     do {                                                                \
-        INFO("Starting " description  " , built from "                  \
+        INFO("Starting " description ", built from "                    \
              << version::refspec()                                      \
              << ", git revision "                                       \
              << version::gitrev());                                     \
