@@ -7,13 +7,13 @@
 
 #pragma once
 
+#include "io/binary.hpp"
+#include "io/id_mapper.hpp"
 #include <string>
 #include <vector>
 #include <map>
 #include <set>
 #include <algorithm>
-#include "io/binary.hpp"
-#include "io/id_mapper.hpp"
 
 namespace debruijn_graph {
 

@@ -15,8 +15,6 @@
 
 namespace spades {
 
-const char * const SavesPolicy::CHECKPOINT_FILE = "checkpoint.dat";
-
 void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
                          const std::string &load_from,
                          const char* prefix) {

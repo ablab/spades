@@ -173,7 +173,7 @@ public:
     }
 
 private:
-    static const char * const CHECKPOINT_FILE;
+    static constexpr const char *CHECKPOINT_FILE = "checkpoint.dat";
 
     Checkpoints checkpoints_;
     std::string saves_path_;
@@ -182,7 +182,7 @@ private:
 class StageManager {
 public:
     StageManager(SavesPolicy policy = SavesPolicy())
-            : saves_policy_(policy) { }
+            : saves_policy_(std::move(policy)) { }
 
     StageManager &add(AssemblyStage *stage) {
         stages_.push_back(std::unique_ptr<AssemblyStage>(stage));

@@ -23,16 +23,16 @@
 namespace omnigraph {
 
 struct EdgePosition {
-    string contigId;
+    std::string contigId;
     MappingRange mr;
-    EdgePosition(string _contigId, MappingRange _mr) : contigId(_contigId), mr(_mr) {
+    EdgePosition(const std::string &_contigId, MappingRange _mr) : contigId(_contigId), mr(_mr) {
     }
 
     EdgePosition() {
     }
 };
 
-inline ostream& operator <<(ostream& os, const EdgePosition& ep) {
+inline std::ostream &operator<<(std::ostream &os, const EdgePosition &ep) {
     return os << ep.contigId << " " << ep.mr;
 }
 
@@ -40,18 +40,19 @@ template<class Graph>
 class EdgesPositionHandler: public GraphActionHandler<Graph> {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
+    typedef std::set<MappingRange> RangeSet;
 
     size_t max_mapping_gap_;
     size_t max_gap_diff_;
-    map<EdgeId, map<string, std::set<MappingRange>>> edges_positions_;
-    //TODO extract set<MappingRange> as a storage class
+    std::map<EdgeId, std::map<std::string, RangeSet>> edges_positions_;
+    //TODO extract RangeSet aka set<MappingRange> as a storage class
 
-    MappingRange EraseAndExtract(set<MappingRange> &ranges, set<MappingRange>::iterator &position, const MappingRange &new_pos) const {
+    MappingRange EraseAndExtract(RangeSet &ranges, RangeSet::iterator position, const MappingRange &new_pos) const {
         auto old_pos = *position;
-        if(old_pos.IntersectLeftOf(new_pos) || old_pos.StrictlyContinuesWith(new_pos, max_mapping_gap_, max_gap_diff_)) {
+        if (old_pos.IntersectLeftOf(new_pos) || old_pos.StrictlyContinuesWith(new_pos, max_mapping_gap_, max_gap_diff_)) {
             ranges.erase(position);
             return old_pos.Merge(new_pos);
-        } else if(new_pos.IntersectLeftOf(old_pos) || new_pos.StrictlyContinuesWith(old_pos, max_mapping_gap_, max_gap_diff_)) {
+        } else if (new_pos.IntersectLeftOf(old_pos) || new_pos.StrictlyContinuesWith(old_pos, max_mapping_gap_, max_gap_diff_)) {
             ranges.erase(position);
             return new_pos.Merge(old_pos);
         } else {
@@ -66,70 +67,70 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
     }
 
 public:
-    MappingRange EraseAndExtract(set<MappingRange> &ranges, MappingRange new_pos) const {
+    MappingRange EraseAndExtract(RangeSet &ranges, MappingRange new_pos) const {
         auto it = ranges.lower_bound(new_pos);
-        if(it != ranges.end()) {
+        if (it != ranges.end()) {
             new_pos = EraseAndExtract(ranges, it, new_pos);
             it = ranges.lower_bound(new_pos);
         }
-        if(it != ranges.begin()) {
-            new_pos = EraseAndExtract(ranges, --it, new_pos);
+        if (it != ranges.begin()) {
+            new_pos = EraseAndExtract(ranges, std::prev(it), new_pos);
         }
         return new_pos;
     }
 
-    set<MappingRange> GetEdgePositions(EdgeId edge, const string &contig_id) const {
+    RangeSet GetEdgePositions(EdgeId edge, const std::string &contig_id) const {
         VERIFY(this->IsAttached());
         auto edge_it = edges_positions_.find(edge);
-        if(edge_it == edges_positions_.end())
-            return set<MappingRange>();
-        const auto& positions = edge_it->second;
+        if (edge_it == edges_positions_.end())
+            return {};
+        const auto &positions = edge_it->second;
         auto it = positions.find(contig_id);
-        if(it == positions.end())
-            return set<MappingRange>();
+        if (it == positions.end())
+            return {};
         else
             return it->second;
     }
 
-    MappingRange GetUniqueEdgePosition(EdgeId edge, const string &contig_id) const {
+    MappingRange GetUniqueEdgePosition(EdgeId edge, const std::string &contig_id) const {
         auto poss = GetEdgePositions(edge, contig_id);
         VERIFY(poss.size() == 1);
         return *poss.begin();
     }
 
-    vector<EdgePosition> GetEdgePositions(EdgeId edge) const {
+    std::vector<EdgePosition> GetEdgePositions(EdgeId edge) const {
         VERIFY(this->IsAttached());
         auto edge_it = edges_positions_.find(edge);
-        if(edge_it == edges_positions_.end())
-            return vector<EdgePosition>();
-        vector<EdgePosition> result;
-        for(auto it = edge_it->second.begin(); it != edge_it->second.end(); ++it) {
-            for(auto pos_it = it->second.begin(); pos_it != it->second.end(); ++pos_it) {
-                result.push_back(EdgePosition(it->first, *pos_it));
+        if (edge_it == edges_positions_.end())
+            return {};
+        std::vector<EdgePosition> result;
+        for (const auto &i : edge_it->second) {
+            for (const auto &pos : i.second) {
+                result.push_back(EdgePosition(i.first, pos));
             }
         }
         return result;
     }
 
-    void AddEdgePosition(EdgeId edge, const string &contig_id, size_t start, size_t end, size_t m_start, size_t m_end) {
+    void AddEdgePosition(EdgeId edge, const std::string &contig_id, size_t start, size_t end, size_t m_start, size_t m_end) {
         VERIFY(this->IsAttached());
         AddEdgePosition(edge, contig_id, MappingRange(start, end, m_start, m_end));
     }
 
-    void AddEdgePosition(EdgeId edge, const string &contig_id, MappingRange new_pos) {
+    void AddEdgePosition(EdgeId edge, const std::string &contig_id, MappingRange new_pos) {
         VERIFY(this->IsAttached());
         if (new_pos.empty())
             return;
-        set<MappingRange> &new_set = edges_positions_[edge][contig_id];
+        auto &new_set = edges_positions_[edge][contig_id];
         new_pos = EraseAndExtract(new_set, new_pos);
         new_set.insert(new_pos);
     }
 
-    void AddAndShiftEdgePositions(EdgeId edge, const map<string, set<MappingRange>> &contig_map, int shift = 0) {
+    void AddAndShiftEdgePositions(EdgeId edge, const std::map<string, RangeSet> &contig_map, int shift = 0) {
         VERIFY(this->IsAttached());
-        for(auto contig_it = contig_map.begin(); contig_it != contig_map.end(); ++contig_it) {
-            for(auto it = contig_it->second.begin(); it != contig_it->second.end(); ++it) {
-                AddEdgePosition(edge, contig_it->first, it->Shift(shift).Fit(this->g().length(edge)));
+        for (const auto &contig : contig_map) {
+            for (const auto &e : contig.second) {
+                AddEdgePosition(edge, contig.first, e.Shift(shift).Fit(this->g().length(edge)));
             }
         }
     }
@@ -137,20 +138,20 @@ public:
     template<typename Iter>
     void AddEdgePositions(EdgeId edge, Iter begin, Iter end) {
         VERIFY(this->IsAttached());
-        for(auto it = begin; it != end; ++it) {
+        for (auto it = begin; it != end; ++it) {
             AddEdgePosition(edge, it->contigId, it->mr);
         }
     }
 
     std::string str(EdgeId edge) const {
         VERIFY(this->IsAttached());
-        std::stringstream ss;
-        vector<EdgePosition> positions = GetEdgePositions(edge);
+        std::vector<EdgePosition> positions = GetEdgePositions(edge);
         size_t counter = 0;
-        for (auto pos_it = positions.begin(), end = positions.end(); pos_it != end; ++pos_it) {
-            ss << "(" << pos_it->contigId << ": "
-               << RangeStr(pos_it->mr.initial_range) << " --> "
-               << RangeStr(pos_it->mr.mapped_range) << ")\\n";
+        std::stringstream ss;
+        for (const auto &pos : positions) {
+            ss << "(" << pos.contigId << ": "
+               << RangeStr(pos.mr.initial_range) << " --> "
+               << RangeStr(pos.mr.mapped_range) << ")\\n";
             counter++;
             if (counter > 30) {
                 ss << "and many more. Totally " << positions.size() << " positions.";
@@ -196,13 +197,13 @@ public:
         }
     }
 
-    virtual void HandleMerge(const vector<EdgeId>& oldEdges, EdgeId newEdge) {
+    virtual void HandleMerge(const std::vector<EdgeId> &oldEdges, EdgeId newEdge) {
         int shift = 0;
-        for(auto it = oldEdges.begin(); it != oldEdges.end(); ++it) {
-            if (edges_positions_.count(*it) != 0) {
-                AddAndShiftEdgePositions(newEdge, edges_positions_[*it], shift);
+        for (const auto &e : oldEdges) {
+            if (edges_positions_.count(e)) {
+                AddAndShiftEdgePositions(newEdge, edges_positions_[e], shift);
             }
-            shift += int(this->g().length(*it));
+            shift += int(this->g().length(e));
         }
     }
 
