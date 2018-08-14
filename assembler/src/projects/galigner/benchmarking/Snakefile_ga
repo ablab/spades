@@ -16,9 +16,9 @@ rule prepare_cfg:
     run:
         print(wildcards.reads)
         if wildcards.reads.endswith("pb"):
-           shell("python2 /home/tdvorkina/tmp/algorithmic-biology/assembler/src/projects/galigner/benchmarking/prepare_cfg.py {GACFG} {DATAPATH}/celegans/input/graph.gfa {DATAPATH}/celegans/input/{wildcards.reads}.fasta 77 pacbio > {output}")
+           shell("python2 /home/tdvorkina/tmp/algorithmic-biology/assembler/src/projects/galigner/benchmarking/prepare_cfg.py {GACFG} {DATAPATH}/{wildcards.org}/input/graph.gfa {DATAPATH}/{wildcards.org}/input/{wildcards.reads}.fasta 77 pacbio > {output}")
         else:
-           shell("python2 /home/tdvorkina/tmp/algorithmic-biology/assembler/src/projects/galigner/benchmarking/prepare_cfg.py {GACFG} {DATAPATH}/celegans/input/graph.gfa {DATAPATH}/celegans/input/{wildcards.reads}.fasta 77 nanopore > {output}")
+           shell("python2 /home/tdvorkina/tmp/algorithmic-biology/assembler/src/projects/galigner/benchmarking/prepare_cfg.py {GACFG} {DATAPATH}/{wildcards.org}/input/graph.gfa {DATAPATH}/{wildcards.org}/input/{wildcards.reads}.fasta 77 nanopore > {output}")
 
 rule run_aligner:
     input:
