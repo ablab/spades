@@ -278,7 +278,8 @@ public:
     virtual ~GraphCondenser() = default;
 
     void run(debruijn_graph::conj_graph_pack &gp, const char*) override {
-        VERIFY(!gp.index.IsAttached());
+        if (gp.index.IsAttached())
+            gp.index.Detach();
         DeBruijnGraphExtentionConstructor<Graph>(gp.g, storage().ext_index).ConstructGraph(storage().params.keep_perfect_loops);
     }
 

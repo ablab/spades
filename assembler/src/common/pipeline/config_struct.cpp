@@ -37,6 +37,18 @@ template<> struct MappingTraits<debruijn_graph::config::dataset> {
     }
 };
 
+template<> struct MappingTraits<debruijn_graph::config::LibraryData::BinaryReadsInfo> {
+    static void mapping(IO& io, debruijn_graph::config::LibraryData::BinaryReadsInfo &info) {
+        io.mapRequired("binary converted"    , info.binary_converted);
+        io.mapRequired("bin reads info file" , info.bin_reads_info_file);
+        io.mapRequired("paired read prefix"  , info.paired_read_prefix);
+        io.mapRequired("merged read prefix"  , info.merged_read_prefix);
+        io.mapRequired("single read prefix"  , info.single_read_prefix);
+        io.mapRequired("chunk num"           , info.chunk_num);
+        io.mapRequired("buffer size"         , info.buffer_size);
+    }
+};
+
 template<> struct MappingTraits<debruijn_graph::config::LibraryData> {
     static void mapping(IO& io, debruijn_graph::config::LibraryData& data) {
         io.mapRequired("unmerged read length"       , data.unmerged_read_length);
@@ -49,7 +61,7 @@ template<> struct MappingTraits<debruijn_graph::config::LibraryData> {
         io.mapRequired("insert size mad"            , data.insert_size_mad);
         io.mapRequired("insert size distribution"   , data.insert_size_distribution);
         io.mapRequired("pi threshold"               , data.pi_threshold);
-        io.mapRequired("binary converted"           , data.binary_reads_info.binary_converted);
+        io.mapRequired("binary reads info"          , data.binary_reads_info);
         io.mapRequired("single reads mapped"        , data.single_reads_mapped);
         io.mapRequired("library index"              , data.lib_index);
         io.mapRequired("number of reads"            , data.read_count);

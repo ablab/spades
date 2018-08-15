@@ -17,7 +17,7 @@ from site import addsitedir
 from distutils import dir_util
 import options_storage
 
-BASE_STAGE = "construction"
+BASE_STAGE = "read_conversion"
 READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
 READS_TYPES_USED_IN_RNA_SEQ = ["paired-end", "single", "trusted-contigs", "untrusted-contigs"]
 

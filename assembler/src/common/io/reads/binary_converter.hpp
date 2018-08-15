@@ -5,15 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * binary_io.hpp
- *
- *  Created on: Apr 12, 2012
- *      Author: andrey
- */
 #pragma once
-
-#include <fstream>
 
 #include "utils/verify.hpp"
 #include "ireader.hpp"
@@ -21,6 +13,8 @@
 #include "paired_read.hpp"
 #include "orientation.hpp"
 #include "pipeline/library.hpp"
+#include "utils/logger/logger.hpp"
+#include <fstream>
 
 namespace io {
 

@@ -7,12 +7,12 @@
 
 #pragma once
 
-#include <fstream>
-
 #include "utils/verify.hpp"
 #include "ireader.hpp"
 #include "single_read.hpp"
 #include "paired_read.hpp"
+
+#include <fstream>
 
 namespace io {
 

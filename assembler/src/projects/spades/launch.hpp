@@ -10,6 +10,7 @@
 #include "pipeline/config_struct.hpp"
 
 #include "pipeline/graph_pack.hpp"
+#include "stages/read_conversion.hpp"
 #include "stages/construction.hpp"
 #include "pipeline/genomic_info_filler.hpp"
 #include "gap_closer.hpp"
@@ -76,6 +77,7 @@ void assemble_genome() {
     }
 
     // Build the pipeline
+    SPAdes.add<ReadConversion>();
     SPAdes.add<debruijn_graph::Construction>();
 
     if (cfg::get().mode != debruijn_graph::config::pipeline_type::meta)

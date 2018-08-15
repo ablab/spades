@@ -28,6 +28,7 @@ class ReadConverter {
         return fs::FileExists(lib.data().binary_reads_info.bin_reads_info_file);
     }
 
+public:
     //todo change to yaml
     static bool LoadLibIfExists(SequencingLibraryT& lib) {
         auto& data = lib.data();
@@ -78,8 +79,8 @@ class ReadConverter {
         INFO("Converting reads to binary format for library #" << data.lib_index << " (takes a while)");
         INFO("Converting paired reads");
         BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix,
-                                          data.binary_reads_info.chunk_num,
-                                          data.binary_reads_info.buffer_size);
+                                      data.binary_reads_info.chunk_num,
+                                      data.binary_reads_info.buffer_size);
 
         PairedStreamPtr paired_reader = paired_easy_reader(lib, false, 0, false, PhredOffset);
         ReadStreamStat read_stat = paired_converter.ToBinary(*paired_reader, lib.orientation());
@@ -87,8 +88,8 @@ class ReadConverter {
 
         INFO("Converting single reads");
         BinaryWriter single_converter(data.binary_reads_info.single_read_prefix,
-                                          data.binary_reads_info.chunk_num,
-                                          data.binary_reads_info.buffer_size);
+                                      data.binary_reads_info.chunk_num,
+                                      data.binary_reads_info.buffer_size);
         SingleStreamPtr single_reader = single_easy_reader(lib, false, false);
         read_stat.merge(single_converter.ToBinary(*single_reader));
 
@@ -118,18 +119,6 @@ class ReadConverter {
         info.close();
         data.binary_reads_info.binary_converted = true;
     }
-
-public:
-    static void ConvertToBinaryIfNeeded(SequencingLibraryT& lib) {
-        if (lib.data().binary_reads_info.binary_converted && CheckBinaryReadsExist(lib))
-            return;
-
-        if (LoadLibIfExists(lib)) {
-            return;
-        }
-
-        ConvertToBinary(lib);
-    }
 };
 
 inline
@@ -137,7 +126,6 @@ BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
                                           bool followed_by_rc,
                                           size_t insert_size,
                                           bool include_merged) {
-    ReadConverter::ConvertToBinaryIfNeeded(lib);
     const auto& data = lib.data();
     CHECK_FATAL_ERROR(data.binary_reads_info.binary_converted, 
             "Lib was not converted to binary, cannot produce binary stream");
@@ -150,9 +138,9 @@ BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
                                                                                 i, insert_size);
         if (include_merged) {
             VERIFY(lib.data().unmerged_read_length != 0);
-            stream = MultifileWrap<PairedReadSeq>(stream,
-                                                  std::make_shared<BinaryUnmergingPairedStream>(data.binary_reads_info.merged_read_prefix,
-                                                                                                i, insert_size, lib.data().unmerged_read_length));
+            auto paired = std::make_shared<BinaryUnmergingPairedStream>(data.binary_reads_info.merged_read_prefix,
+                                                                        i, insert_size, lib.data().unmerged_read_length);
+            stream = MultifileWrap<PairedReadSeq>(stream, paired);
         }
 
         paired_streams.push_back(stream);
@@ -170,7 +158,6 @@ BinarySingleStreams single_binary_readers(SequencingLibraryT &lib,
                                           bool followed_by_rc,
                                           bool including_paired_and_merged) {
     const auto& data = lib.data();
-    ReadConverter::ConvertToBinaryIfNeeded(lib);
     CHECK_FATAL_ERROR(data.binary_reads_info.binary_converted,
                "Lib was not converted to binary, cannot produce binary stream");
 
