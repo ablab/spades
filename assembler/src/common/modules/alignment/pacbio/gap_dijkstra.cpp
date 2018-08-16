@@ -100,7 +100,8 @@ bool DijkstraGraphSequenceBase::RunDijkstra() {
     int ed = 0;
     while (q_.size() > 0
             && !QueueLimitsExceeded(iter)
-            && ed <= path_max_length_)
+            && ed <= path_max_length_
+            && updates_ < gap_cfg_.updates_limit)
     {
         cur_state = q_.begin()->second;
         ed = visited_[cur_state];

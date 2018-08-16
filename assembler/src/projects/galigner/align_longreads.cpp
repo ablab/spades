@@ -57,6 +57,7 @@ struct GAlignerConfig {
     //path construction
     debruijn_graph::config::pacbio_processor pb;
     GapClosingConfig gap_cfg;
+    EndsClosingConfig ends_cfg;
 };
 
 }
@@ -77,25 +78,38 @@ template<> struct MappingTraits<debruijn_graph::config::pacbio_processor> {
         io.mapRequired("long_seq_limit", cfg.long_seq_limit);
         io.mapRequired("pacbio_min_gap_quantity", cfg.pacbio_min_gap_quantity);
         io.mapRequired("contigs_min_gap_quantity", cfg.contigs_min_gap_quantity);
-        io.mapRequired("max_contigs_gap_length", cfg.max_contigs_gap_length);
     }
 };
 
 template<> struct MappingTraits<sensitive_aligner::GapClosingConfig> {
     static void mapping(IO& io, sensitive_aligner::GapClosingConfig& cfg) {
-        io.mapRequired("max_vertex_in_gap", cfg.max_vertex_in_gap);
         io.mapRequired("queue_limit", cfg.queue_limit);
         io.mapRequired("iteration_limit", cfg.iteration_limit);
+        io.mapRequired("updates_limit", cfg.updates_limit);
         io.mapRequired("find_shortest_path", cfg.find_shortest_path);
         io.mapRequired("restore_mapping", cfg.restore_mapping);
         io.mapRequired("penalty_interval", cfg.penalty_interval);
         io.mapRequired("max_ed_proportion", cfg.max_ed_proportion);
         io.mapRequired("ed_lower_bound", cfg.ed_lower_bound);
         io.mapRequired("ed_upper_bound", cfg.ed_upper_bound);
-        io.mapRequired("max_restorable_end_length", cfg.max_restorable_end_length);
+        io.mapRequired("max_gs_states", cfg.max_gs_states);
     }
 };
 
+template<> struct MappingTraits<sensitive_aligner::EndsClosingConfig> {
+    static void mapping(IO& io, sensitive_aligner::EndsClosingConfig& cfg) {
+        io.mapRequired("queue_limit", cfg.queue_limit);
+        io.mapRequired("iteration_limit", cfg.iteration_limit);
+        io.mapRequired("updates_limit", cfg.updates_limit);
+        io.mapRequired("find_shortest_path", cfg.find_shortest_path);
+        io.mapRequired("restore_mapping", cfg.restore_mapping);
+        io.mapRequired("penalty_interval", cfg.penalty_interval);
+        io.mapRequired("max_ed_proportion", cfg.max_ed_proportion);
+        io.mapRequired("ed_lower_bound", cfg.ed_lower_bound);
+        io.mapRequired("ed_upper_bound", cfg.ed_upper_bound);
+        io.mapRequired("max_restorable_length", cfg.max_restorable_length);
+    }
+};
 
 template <>
 struct ScalarEnumerationTraits<alignment::BWAIndex::AlignmentMode> {
@@ -114,11 +128,11 @@ template<> struct MappingTraits<sensitive_aligner::GAlignerConfig> {
         io.mapRequired("data_type", cfg.data_type);
         io.mapRequired("output_format", cfg.output_format);
         io.mapRequired("run_dijkstra", cfg.gap_cfg.run_dijkstra);
-        io.mapRequired("restore_ends", cfg.gap_cfg.restore_ends);
+        io.mapRequired("restore_ends", cfg.ends_cfg.restore_ends);
 
         io.mapRequired("pb", cfg.pb);
         io.mapRequired("gap_closing", cfg.gap_cfg);
-
+        io.mapRequired("ends_recovering", cfg.ends_cfg);
     }
 };
 
@@ -141,9 +155,10 @@ public:
                      const alignment::BWAIndex::AlignmentMode mode,
                      const debruijn_graph::config::pacbio_processor &pb,
                      const GapClosingConfig gap_cfg,
+                     const EndsClosingConfig ends_cfg,
                      const string output_file,
                      const string formats):
-        g_(g), galigner_(g_, pb, mode, gap_cfg), mapping_printer_hub_(g_, output_file, formats) {
+        g_(g), galigner_(g_, pb, mode, gap_cfg, ends_cfg), mapping_printer_hub_(g_, output_file, formats) {
         aligned_reads_ = 0;
         processed_reads_ = 0;
     }
@@ -214,7 +229,7 @@ void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
     LoadGraph(cfg.path_to_graphfile, g);
     INFO("Loaded graph with " << g.size() << " vertices");
 
-    LongReadsAligner aligner(g, cfg.data_type, cfg.pb, cfg.gap_cfg, output_file, cfg.output_format);
+    LongReadsAligner aligner(g, cfg.data_type, cfg.pb, cfg.gap_cfg, cfg.ends_cfg, output_file, cfg.output_format);
     INFO("LongReadsAligner created");
 
     io::ReadStreamList<io::SingleRead> streams;

@@ -153,7 +153,7 @@ namespace sensitive_aligner {
 
         }
         std::vector<PathRange> read_ranges;
-        if (sorted_edges.size() == 1 && gap_cfg_.restore_ends) {
+        if (sorted_edges.size() == 1 && ends_cfg_.restore_ends) {
             PathRange cur_range(MappingPoint(sorted_bwa_hits[0].mapping_at(0).initial_range.start_pos
                                             , sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos),
                                 MappingPoint(sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).initial_range.end_pos

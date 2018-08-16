@@ -70,8 +70,9 @@ class GapFiller {
 
     GapFiller(const debruijn_graph::Graph &g,
               const debruijn_graph::config::pacbio_processor &pb_config,
-              const GapClosingConfig &gap_cfg):
-        g_(g), pb_config_(pb_config), gap_cfg_(gap_cfg) {}
+              const GapClosingConfig &gap_cfg,
+              const EndsClosingConfig &ends_cfg):
+        g_(g), pb_config_(pb_config), gap_cfg_(gap_cfg), ends_cfg_(ends_cfg) {}
 
     GapFillerResult Run(const string &s,
                         const GraphPosition &start_pos,
@@ -88,6 +89,7 @@ class GapFiller {
     const debruijn_graph::Graph &g_;
     const debruijn_graph::config::pacbio_processor pb_config_;
     const GapClosingConfig gap_cfg_;
+    const EndsClosingConfig ends_cfg_;
 };
 
 

@@ -19,13 +19,10 @@ enum DijkstraReturnCode {
     NO_PATH = 32
 };
 
-struct GapClosingConfig {
-    bool run_dijkstra = false;
-    bool restore_ends = false;
-    // dijkstra run parameters
-    size_t max_vertex_in_gap = 0;
+struct DijkstraParams {
     size_t queue_limit = 0;
     size_t iteration_limit = 0;
+    size_t updates_limit = 0;
     bool find_shortest_path = false;
     bool restore_mapping = false;
     int penalty_interval = 200;
@@ -33,7 +30,16 @@ struct GapClosingConfig {
     int max_ed_proportion = 3;
     int ed_lower_bound = 200;
     int ed_upper_bound = 1000;
-    int max_restorable_end_length = 3000;
+};
+
+struct GapClosingConfig: public DijkstraParams {
+    bool run_dijkstra = false;
+    size_t max_gs_states = 120000000;
+};
+
+struct EndsClosingConfig: public DijkstraParams {
+    bool restore_ends = false;
+    int max_restorable_length = 0;
 };
 
 
@@ -146,7 +152,7 @@ protected:
 
 public:
     DijkstraGraphSequenceBase(const debruijn_graph::Graph &g,
-                              const GapClosingConfig &gap_cfg,
+                              const DijkstraParams &gap_cfg,
                               string ss,
                               debruijn_graph::EdgeId start_e, int start_p, int path_max_length)
         : g_(g)
@@ -217,7 +223,7 @@ protected:
     vector<int> best_ed_;
 
     const debruijn_graph::Graph &g_;
-    const GapClosingConfig gap_cfg_;
+    const DijkstraParams gap_cfg_;
     const string ss_;
     const debruijn_graph::EdgeId start_e_;
     const int start_p_;
@@ -284,7 +290,7 @@ private:
 
     virtual bool IsEndPosition(const QueueState &cur_state);
 public:
-    DijkstraEndsReconstructor(const debruijn_graph::Graph &g, const GapClosingConfig &gap_cfg, string ss,
+    DijkstraEndsReconstructor(const debruijn_graph::Graph &g, const EndsClosingConfig &gap_cfg, string ss,
                               debruijn_graph::EdgeId start_e, int start_p, int path_max_length)
         : DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length) {
         end_qstate_ = QueueState();

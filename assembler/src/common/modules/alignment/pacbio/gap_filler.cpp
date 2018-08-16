@@ -40,17 +40,12 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len <<
           " max-len " << ed_limit << " vertex_num=" << vertex_pathlen.size());
     GapFillerResult dijkstra_res;
-    if (vertex_pathlen.size() == 0 ||
-            ((size_t) s_len) > pb_config_.max_contigs_gap_length ||
-            vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap) {
+    if (vertex_pathlen.size() == 0 || ((size_t) s_len) * vertex_pathlen.size() > gap_cfg_.max_gs_states) {
         DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
         if (vertex_pathlen.size() == 0) {
             dijkstra_res.return_code = DijkstraReturnCode::NOT_CONNECTED;
-        }
-        if (((size_t) s_len) > pb_config_.max_contigs_gap_length) {
+        }else{
             dijkstra_res.return_code += DijkstraReturnCode::TOO_LONG_GAP;
-        }
-        if (vertex_pathlen.size() > gap_cfg_.max_vertex_in_gap) {
             dijkstra_res.return_code += DijkstraReturnCode::TOO_MANY_VERTICES;
         }
         return dijkstra_res;
@@ -230,8 +225,8 @@ GapFillerResult GapFiller::Run(Sequence &s,
     GapFillerResult res;
     res.return_code = 0;
     int s_len = int(s.size());
-    int score = min(max(gap_cfg_.ed_lower_bound, s_len / gap_cfg_.max_ed_proportion), gap_cfg_.ed_upper_bound);
-    if (s_len > (int) gap_cfg_.max_restorable_end_length) {
+    int score = min(max(ends_cfg_.ed_lower_bound, s_len / ends_cfg_.max_ed_proportion), ends_cfg_.ed_upper_bound);
+    if (s_len > (int) ends_cfg_.max_restorable_length) {
         DEBUG("EdgeDijkstra: sequence is too long " << s_len)
         res.return_code += 1;
         return res;
@@ -241,7 +236,8 @@ GapFillerResult GapFiller::Run(Sequence &s,
         res.return_code += 2;
         return res;
     }
-    DijkstraEndsReconstructor algo(g_, gap_cfg_, s.str(), start_pos.edgeid, start_pos.position, score);
+    utils::perf_counter pc;
+    DijkstraEndsReconstructor algo(g_, ends_cfg_, s.str(), start_pos.edgeid, start_pos.position, score);
     algo.CloseGap();
     score = algo.edit_distance();
     res.return_code += algo.return_code();
