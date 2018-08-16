@@ -76,7 +76,7 @@ void EarlyClipTips(const config::debruijn_config::construction& params, Extensio
 }
 
 template<class Graph, class Read, class Index>
-void ConstructGraphUsingExtentionIndex(const config::debruijn_config::construction &params,
+void ConstructGraphUsingExtensionIndex(const config::debruijn_config::construction &params,
                                        fs::TmpDir workdir,
                                        io::ReadStreamList<Read>& streams, Graph& g,
                                        Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
@@ -112,7 +112,7 @@ void ConstructGraph(const config::debruijn_config::construction &params,
                     fs::TmpDir workdir, Streams& streams, Graph& g,
                     Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     VERIFY(params.con_mode == config::construction_mode::extention);
-    ConstructGraphUsingExtentionIndex(params, workdir, streams, g, index, contigs_stream);
+    ConstructGraphUsingExtensionIndex(params, workdir, streams, g, index, contigs_stream);
 //  ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 }
 

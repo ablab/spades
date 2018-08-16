@@ -381,12 +381,16 @@ public:
 
     const MMappedRecordReader<T> &reader() const { return reader_; }
 
+    void operator+=(size_t n) {
+        good_ = reader_.good();
+        value_ = (good_ ? (T *) reader_.skip(array_size_ * n) : nullptr);
+    }
+
 private:
     friend class boost::iterator_core_access;
 
     void increment() {
-        good_ = reader_.good();
-        value_ = (good_ ? (T *) reader_.skip(array_size_) : NULL);
+        this->operator+=(1);
     }
 
     bool equal(const MMappedFileRecordArrayIterator &other) const {

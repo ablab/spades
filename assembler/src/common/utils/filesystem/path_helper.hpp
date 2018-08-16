@@ -37,6 +37,8 @@ std::string extension(std::string const &path);
 
 std::string parent_path(std::string const &path);
 
+size_t filesize(std::string const &path);
+
 bool check_existence(std::string const &path);
 
 void remove_if_exists(std::string const &path);
