@@ -22,7 +22,7 @@ typedef SequencingLibrary<LibraryData> SequencingLibraryT;
 
 class ReadConverter {
 
-    static const size_t BINARY_FORMAT_VERSION = 12;
+    static const size_t BINARY_FORMAT_VERSION = 13;
 
     static bool CheckBinaryReadsExist(SequencingLibraryT& lib) {
         return fs::FileExists(lib.data().binary_reads_info.bin_reads_info_file);
@@ -79,7 +79,6 @@ public:
         INFO("Converting reads to binary format for library #" << data.lib_index << " (takes a while)");
         INFO("Converting paired reads");
         BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix,
-                                      data.binary_reads_info.chunk_num,
                                       data.binary_reads_info.buffer_size);
 
         PairedStreamPtr paired_reader = paired_easy_reader(lib, false, 0, false, PhredOffset);
@@ -88,7 +87,6 @@ public:
 
         INFO("Converting single reads");
         BinaryWriter single_converter(data.binary_reads_info.single_read_prefix,
-                                      data.binary_reads_info.chunk_num,
                                       data.binary_reads_info.buffer_size);
         SingleStreamPtr single_reader = single_easy_reader(lib, false, false);
         read_stat.merge(single_converter.ToBinary(*single_reader));
@@ -96,7 +94,6 @@ public:
         data.unmerged_read_length = read_stat.max_len;
         INFO("Converting merged reads");
         BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix,
-                                      data.binary_reads_info.chunk_num,
                                       data.binary_reads_info.buffer_size);
         SingleStreamPtr merged_reader = merged_easy_reader(lib, false);
         auto merged_stats = merged_converter.ToBinary(*merged_reader);
@@ -135,11 +132,12 @@ BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
 
     for (size_t i = 0; i < n; ++i) {
         BinaryPairedStreamPtr stream = std::make_shared<BinaryFilePairedStream>(data.binary_reads_info.paired_read_prefix,
-                                                                                i, insert_size);
+                                                                                insert_size, n, i);
         if (include_merged) {
             VERIFY(lib.data().unmerged_read_length != 0);
             auto paired = std::make_shared<BinaryUnmergingPairedStream>(data.binary_reads_info.merged_read_prefix,
-                                                                        i, insert_size, lib.data().unmerged_read_length);
+                                                                        insert_size, lib.data().unmerged_read_length,
+                                                                        n, i);
             stream = MultifileWrap<PairedReadSeq>(stream, paired);
         }
 
@@ -165,19 +163,22 @@ BinarySingleStreams single_binary_readers(SequencingLibraryT &lib,
     const size_t n = data.binary_reads_info.chunk_num;
 
     for (size_t i = 0; i < n; ++i) {
-        single_streams.push_back(std::make_shared<BinaryFileSingleStream>(data.binary_reads_info.single_read_prefix, i));
+        single_streams.push_back(std::make_shared<BinaryFileSingleStream>(data.binary_reads_info.single_read_prefix,
+                                                                          n, i));
     }
 
     if (including_paired_and_merged) {
         BinarySingleStreams merged_streams;
         for (size_t i = 0; i < n; ++i) {
-            merged_streams.push_back(std::make_shared<BinaryFileSingleStream>(data.binary_reads_info.merged_read_prefix, i));
+            merged_streams.push_back(std::make_shared<BinaryFileSingleStream>(data.binary_reads_info.merged_read_prefix,
+                                                                              n, i));
         }
         single_streams = WrapPairsInMultifiles<SingleReadSeq>(single_streams, merged_streams);
 
         BinaryPairedStreams paired_streams;
         for (size_t i = 0; i < n; ++i) {
-            paired_streams.push_back(std::make_shared<BinaryFilePairedStream>(data.binary_reads_info.paired_read_prefix, i, 0));
+            paired_streams.push_back(std::make_shared<BinaryFilePairedStream>(data.binary_reads_info.paired_read_prefix,
+                                                                              0, n, i));
         }
         single_streams = WrapPairsInMultifiles<SingleReadSeq>(single_streams,
                                                               SquashingWrap<PairedReadSeq>(paired_streams));

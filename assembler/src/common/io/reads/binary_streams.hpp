@@ -11,30 +11,51 @@
 #include "ireader.hpp"
 #include "single_read.hpp"
 #include "paired_read.hpp"
+#include "binary_converter.hpp"
 
 #include <fstream>
 
 namespace io {
 
-class BinaryFileSingleStream: public ReadStream<SingleReadSeq> {
+template<typename SeqT>
+class BinaryFileStream: public ReadStream<SeqT> {
+
+protected:
     std::ifstream stream_;
-    ReadStreamStat read_stat_;
-    size_t current_;
+    size_t offset_, count_, current_;
 
     void Init() {
         stream_.clear();
-        stream_.seekg(0);
+        stream_.seekg(offset_);
         VERIFY(stream_.good());
-        read_stat_.read(stream_);
         current_ = 0;
     }
 
 public:
+    BinaryFileStream(const std::string& file_name_prefix, size_t total_num, size_t portion_num) {
+        INFO("Preparing binary stream #" << portion_num << "/" << total_num);
+        VERIFY(portion_num < total_num);
+        std::string fname = file_name_prefix + ".seq";
+        stream_.open(fname, std::ios_base::binary | std::ios_base::in);
+        ReadStreamStat stat;
+        stat.read(stream_);
 
-    BinaryFileSingleStream(const std::string& file_name_prefix, size_t file_num) {
-        std::string fname;
-        fname = file_name_prefix + "_" + std::to_string(file_num) + ".seq";
-        stream_.open(fname.c_str(), std::ios_base::binary | std::ios_base::in);
+        //Determining the number of N-read chunks and actual number of reads
+        std::string offset_name = file_name_prefix + ".off";
+        const size_t chunk_count = fs::filesize(offset_name) / sizeof(size_t);
+        const size_t chunk_num = chunk_count * portion_num / total_num;
+
+        //Calculating the absolute offset in the reads file
+        std::ifstream offset_stream(offset_name, std::ios_base::binary | std::ios_base::in);
+        offset_stream.seekg(chunk_num * sizeof(size_t));
+        offset_stream.read(reinterpret_cast<char *>(&offset_), sizeof(offset_));
+
+        //Calculating the size of our portion (be careful at the file end)
+        const size_t start_num = chunk_num * BinaryWriter::CHUNK;
+        const size_t start_next = chunk_count * (portion_num + 1) / total_num * BinaryWriter::CHUNK;
+        count_ = std::min(stat.read_count, start_next) - start_num;
+
+        INFO("Reads " << start_num << "-" << start_num + count_ << "/" << stat.read_count << " at 0x" << std::ios::hex << offset_);
 
         Init();
     }
@@ -44,15 +65,7 @@ public:
     }
 
     bool eof() override {
-        return current_ == read_stat_.read_count;
-    }
-
-    BinaryFileSingleStream& operator>>(SingleReadSeq& read) override {
-        read.BinRead(stream_);
-        VERIFY(current_ < read_stat_.read_count);
-
-        ++current_;
-        return *this;
+        return current_ >= count_;
     }
 
     void close() override {
@@ -60,10 +73,44 @@ public:
         stream_.close();
     }
 
+
     void reset() override {
         Init();
     }
 
+};
+
+class BinaryFileSingleStream : public BinaryFileStream<SingleReadSeq>  {
+
+public:
+    BinaryFileSingleStream(const std::string& file_name_prefix, size_t total_num, size_t portion_num)
+            : BinaryFileStream(file_name_prefix, total_num, portion_num) {
+    }
+
+    BinaryFileStream& operator>>(SingleReadSeq& read) override {
+        read.BinRead(stream_);
+        VERIFY(current_ < count_);
+
+        ++current_;
+        return *this;
+    }
+};
+
+class BinaryFilePairedStream: public BinaryFileStream<PairedReadSeq> {
+    size_t insert_size_;
+
+public:
+    BinaryFilePairedStream(const std::string& file_name_prefix, size_t insert_size, size_t total_num, size_t portion_num)
+            : BinaryFileStream(file_name_prefix, total_num, portion_num), insert_size_ (insert_size) {
+    }
+
+    BinaryFilePairedStream& operator>>(PairedReadSeq& read) override {
+        read.BinRead(stream_, insert_size_);
+        VERIFY(current_ < count_);
+
+        ++current_;
+        return *this;
+    }
 };
 
 //returns FF oriented paired reads
@@ -92,11 +139,9 @@ class BinaryUnmergingPairedStream: public ReadStream<PairedReadSeq> {
     }
 
 public:
-    BinaryUnmergingPairedStream(const std::string& file_name_prefix,
-                               size_t file_num,
-                               size_t insert_size,
-                               size_t read_length) :
-            stream_(file_name_prefix, file_num),
+    BinaryUnmergingPairedStream(const std::string& file_name_prefix, size_t insert_size, size_t read_length,
+                                size_t total_num, size_t portion_num) :
+            stream_(file_name_prefix, total_num, portion_num),
             insert_size_(insert_size),
             read_length_(read_length) {
     }
@@ -122,58 +167,6 @@ public:
 
     void reset() override {
         stream_.reset();
-    }
-
-};
-
-class BinaryFilePairedStream: public ReadStream<PairedReadSeq> {
-    std::ifstream stream_;
-    size_t insert_size_;
-    ReadStreamStat read_stat_;
-    size_t current_;
-
-    void Init() {
-        stream_.clear();
-        stream_.seekg(0);
-        VERIFY(stream_.good());
-        read_stat_.read(stream_);
-        current_ = 0;
-    }
-
-public:
-
-    BinaryFilePairedStream(const std::string& file_name_prefix, size_t file_num, size_t insert_szie): stream_(), insert_size_ (insert_szie) {
-        std::string fname;
-        fname = file_name_prefix + "_" + std::to_string(file_num) + ".seq";
-        stream_.open(fname.c_str(), std::ios_base::binary | std::ios_base::in);
-
-        Init();
-    }
-
-    bool is_open() override {
-        return stream_.is_open();
-    }
-
-    bool eof() override {
-        return current_ >= read_stat_.read_count;
-    }
-
-    BinaryFilePairedStream& operator>>(PairedReadSeq& read) override {
-        read.BinRead(stream_, insert_size_);
-        VERIFY(current_ < read_stat_.read_count);
-
-        ++current_;
-        return *this;
-    }
-
-    void close() override {
-        current_ = 0;
-        stream_.close();
-    }
-
-
-    void reset() override {
-        Init();
     }
 
 };
