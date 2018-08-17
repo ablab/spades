@@ -40,20 +40,16 @@ public:
         info.open(data.binary_reads_info.bin_reads_info_file.c_str(), std::ios_base::in);
         DEBUG("Reading binary information file " << data.binary_reads_info.bin_reads_info_file);
 
-        size_t chunk_num = 0;
         size_t format = 0;
         size_t lib_index = 0;
 
         info >> format;
-        if (!info.eof()) {
-            info >> chunk_num;
-        }
+
         if (!info.eof()) {
             info >> lib_index;
         }
 
-        if (chunk_num != data.binary_reads_info.chunk_num ||
-            format != BINARY_FORMAT_VERSION ||
+        if (format != BINARY_FORMAT_VERSION ||
             lib_index != data.lib_index) {
             return false;
         }
@@ -106,7 +102,6 @@ public:
         //todo use yaml or reuse same data!!!
         info.open(data.binary_reads_info.bin_reads_info_file.c_str(), std::ios_base::out);
         info << BINARY_FORMAT_VERSION << " " <<
-            data.binary_reads_info.chunk_num << " " <<
             data.lib_index << " " <<
             data.unmerged_read_length << " " <<
             data.merged_read_length << " " <<

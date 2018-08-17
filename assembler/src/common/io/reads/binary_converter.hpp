@@ -56,32 +56,28 @@ class BinaryWriter {
     ReadStreamStat ToBinary(const Writer &writer, io::ReadStream<Read> &stream) {
         std::vector<Read> buf;
         const size_t buf_reads = buf_size_ / (sizeof(Read) * 4);
-        INFO("Reserving a buffer for " << buf_reads << " reads");
+        DEBUG("Reserving a buffer for " << buf_reads << " reads");
         buf.reserve(buf_reads);
-        ReadStreamStat read_stats;
-        size_t read_count = 0;
 
+        //Reserve space for stats
+        ReadStreamStat read_stats;
         read_stats.write(*file_ds_);
 
-        size_t rest;
-        auto write_offset = [&]() {
-            auto offset = (size_t)file_ds_->tellp();
-            offset_ds_->write(reinterpret_cast<const char*>(&offset), sizeof(offset));
-            rest = CHUNK;
-        };
-
-        write_offset();
-
+        size_t rest = 1;
         auto flush_buffer = [&](){
             for (const Read &read : buf) {
                 if (!--rest) {
-                    write_offset();
+                    auto offset = (size_t)file_ds_->tellp();
+                    INFO("Offset at 0x" << std::ios_base::hex << offset);
+                    offset_ds_->write(reinterpret_cast<const char*>(&offset), sizeof(offset));
+                    rest = CHUNK;
                 }
                 writer.Write(*file_ds_, read);
             }
             buf.clear();
         };
 
+        size_t read_count = 0;
         Read read;
         while (!stream.eof()) {
             stream >> read;
@@ -95,6 +91,7 @@ class BinaryWriter {
         }
         flush_buffer(); //Write leftovers
 
+        //Rewrite the reserved space with actual stats
         file_ds_->seekp(0);
         read_stats.write(*file_ds_);
 
@@ -106,11 +103,10 @@ public:
     typedef size_t CountType;
     static const size_t CHUNK = 100;
 
-    BinaryWriter(const std::string &file_name_prefix, size_t buf_size):
-                file_name_prefix_(file_name_prefix),
-                buf_size_(buf_size),
-                file_ds_(new std::ofstream(file_name_prefix_ + ".seq", std::ios_base::binary)),
-                offset_ds_(new std::ofstream(file_name_prefix_ + ".off", std::ios_base::binary)) {
+    BinaryWriter(const std::string &file_name_prefix, size_t buf_size)
+            : file_name_prefix_(file_name_prefix), buf_size_(buf_size),
+              file_ds_(new std::ofstream(file_name_prefix_ + ".seq", std::ios_base::binary)),
+              offset_ds_(new std::ofstream(file_name_prefix_ + ".off", std::ios_base::binary)) {
     }
 
     ~BinaryWriter() = default;
