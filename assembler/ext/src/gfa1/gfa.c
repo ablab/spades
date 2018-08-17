@@ -401,9 +401,15 @@ static void gfa_fix_arc_len(gfa_t *g)
 		if (g->seg[v>>1].del || g->seg[w>>1].del) {
 			a->del = 1;
 		} else {
-			a->v_lv |= g->seg[v>>1].len - a->ov;
+			if (g->seg[v>>1].len < a->ov) {
+				fprintf(stderr, "[W] overlap of %u bp is larger than the segment size of %u bp for %s%c -> %s%c\n",
+						a->ov, g->seg[v>>1].len,
+						g->seg[v>>1].name, "+-"[v&1], g->seg[w>>1].name, "+-"[w&1]);
+				a->v_lv &= ~0xffffffffULL;
+			} else
+				a->v_lv |= g->seg[v>>1].len - a->ov;
 			if (a->ow != INT32_MAX)
-				a->lw = g->seg[w>>1].len - a->ow;
+				a->lw = g->seg[w>>1].len < a->ow ? 0 : g->seg[w>>1].len - a->ow;
 		}
 	}
 }
