@@ -50,109 +50,115 @@ rule convert_to_gfa:
         "{VGPATH}/vg view -g {input} > {output}"
 
 rule fix_graph_nodeids:
-	input:
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph.gfa")
-	output:
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_idfix.gfa"),
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_nodemapping.txt")
-	shell:
-		"python {SCRIPTPATH}/gfa_string_to_int.py {input} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_idfix.gfa {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_nodemapping.txt"
+    input:
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph.gfa")
+    output:
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_idfix.gfa"),
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_nodemapping.txt")
+    shell:
+        "python {SCRIPTPATH}/gfa_string_to_int.py {input} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_idfix.gfa {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_nodemapping.txt"
 
 rule make_graphreference:
-	input:
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{graph}_idfix.gfa")
-	output:
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{graph}_gfareference.fa"),
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{graph}_refnodes.txt")
-	shell:
-		"python {SCRIPTPATH}/makegfareference.py {input} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_refnodes.txt {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_gfareference.fa"
+    input:
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{graph}_idfix.gfa")
+    output:
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{graph}_gfareference.fa"),
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{graph}_refnodes.txt")
+    shell:
+        "python {SCRIPTPATH}/makegfareference.py {input} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_refnodes.txt {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_gfareference.fa"
 
 rule reverse_reads:
-	input:
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}.fasta")
-	output:
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}_reverse.fasta")
-	shell:
-		"{ALIGNERBINPATH}/ReverseReads {input} {output}"
+    input:
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}.fasta")
+    output:
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}_reverse.fasta")
+    shell:
+        "{ALIGNERBINPATH}/ReverseReads {input} {output}"
 
 rule mummer_pipe:
-	input:
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}.fasta"),
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}_reverse.fasta"),
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_gfareference.fa"),
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_refnodes.txt")
-	output:
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/seeds_{reads}_picked.gam")
-	threads: 16
-	shell:
-		"{MUMMERPATH} -F -qthreads {threads} -l {SEEDSIZE} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_gfareference.fa \
+    input:
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}.fasta"),
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}_reverse.fasta"),
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_gfareference.fa"),
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_refnodes.txt")
+    output:
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/seeds_{reads}_picked.gam")
+    benchmark:
+        repeat(os.path.join(DATAPATH, "{org}/GraphAligner/benchmark/mummer_pipe_{reads}.tsv"), 3)
+    threads: 16
+    shell:
+        "{MUMMERPATH} -F -qthreads {threads} -l {SEEDSIZE} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_gfareference.fa \
                         {DATAPATH}/{wildcards.org}/GraphAligner/tmp/{wildcards.reads}.fasta {DATAPATH}/{wildcards.org}/GraphAligner/tmp/{wildcards.reads}_reverse.fasta \
                          | {ALIGNERBINPATH}/PickMummerSeeds {output} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_gfareference.fa {MAXSEEDHITS} {DATAPATH}/{wildcards.org}/GraphAligner/tmp/{wildcards.reads}.fasta"
 
 rule align:
-	input:
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_idfix.gfa"),
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}.fasta"),
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/seeds_{reads}_picked.gam")
-	output:
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/aln_{reads}_raw.gam"),
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/aligner_stdout_{reads}.txt"),
-		os.path.join(DATAPATH, "{org}/GraphAligner/tmp/aligner_stderr_{reads}.txt")
-	threads: 16
-	shell:
-		"/usr/bin/time -v {ALIGNERBINPATH}/Aligner -g {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_idfix.gfa -f {DATAPATH}/{wildcards.org}/GraphAligner/tmp/{wildcards.reads}.fasta -s {DATAPATH}/{wildcards.org}/GraphAligner/tmp/seeds_{wildcards.reads}_picked.gam -a {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aln_{wildcards.reads}_raw.gam -t {threads} {ALIGNERPARAMS} 1> {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aligner_stdout_{wildcards.reads}.txt 2> {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aligner_stderr_{wildcards.reads}.txt"
+    input:
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_idfix.gfa"),
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/{reads}.fasta"),
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/seeds_{reads}_picked.gam")
+    output:
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/aln_{reads}_raw.gam"),
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/aligner_stdout_{reads}.txt"),
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/aligner_stderr_{reads}.txt")
+    benchmark:
+        repeat(os.path.join(DATAPATH, "{org}/GraphAligner/benchmark/align_{reads}.tsv"), 3)
+    threads: 16
+    shell:
+        "/usr/bin/time -v {ALIGNERBINPATH}/Aligner -g {DATAPATH}/{wildcards.org}/GraphAligner/tmp/graph_idfix.gfa -f {DATAPATH}/{wildcards.org}/GraphAligner/tmp/{wildcards.reads}.fasta -s {DATAPATH}/{wildcards.org}/GraphAligner/tmp/seeds_{wildcards.reads}_picked.gam -a {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aln_{wildcards.reads}_raw.gam -t {threads} {ALIGNERPARAMS} 1> {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aligner_stdout_{wildcards.reads}.txt 2> {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aligner_stderr_{wildcards.reads}.txt"
 
 rule postprocess:
-	input:
-		nodenames = "{DATAPATH}/{org}/GraphAligner/tmp/graph_nodemapping.txt",
-		seeds = "{DATAPATH}/{org}/GraphAligner/tmp/seeds_{reads}_picked.gam",
-		raw_alns = "{DATAPATH}/{org}/GraphAligner/tmp/aln_{reads}_raw.gam",
-		reads = "{DATAPATH}/{org}/GraphAligner/tmp/{reads}.fasta"
-	output:
-		all_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_all.gam",
-		selected_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_selected.gam",
-		full_len_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_full_length.gam",
-		summary = "{DATAPATH}/{org}/GraphAligner/tmp/run_{reads}_summary.txt",
-	shell:
-		"{ALIGNERBINPATH}/Postprocess {input.raw_alns} {input.reads} {input.nodenames} {input.seeds} {output.all_alns} {output.selected_alns} {output.full_len_alns} {output.summary}"
+    input:
+        nodenames = "{DATAPATH}/{org}/GraphAligner/tmp/graph_nodemapping.txt",
+        seeds = "{DATAPATH}/{org}/GraphAligner/tmp/seeds_{reads}_picked.gam",
+        raw_alns = "{DATAPATH}/{org}/GraphAligner/tmp/aln_{reads}_raw.gam",
+        reads = "{DATAPATH}/{org}/GraphAligner/tmp/{reads}.fasta"
+    output:
+        all_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_all.gam",
+        selected_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_selected.gam",
+        full_len_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_full_length.gam",
+        summary = "{DATAPATH}/{org}/GraphAligner/tmp/run_{reads}_summary.txt"
+    benchmark:
+        repeat("{DATAPATH}/{org}/{org}/GraphAligner/benchmark/posprocess_{reads}.tsv", 3)
+    shell:
+        "{ALIGNERBINPATH}/Postprocess {input.raw_alns} {input.reads} {input.nodenames} {input.seeds} {output.all_alns} {output.selected_alns} {output.full_len_alns} {output.summary}"
 
 rule output_statistics:
-	input:
-		summary = "{DATAPATH}/{org}/GraphAligner/tmp/run_{reads}_summary.txt",
-		stderr = "{DATAPATH}/{org}/GraphAligner/tmp/aligner_stderr_{reads}.txt"
-	output:
-		"{DATAPATH}/{org}/GraphAligner/output/stats_{reads}.txt"
-	run:
-		shell("touch {output}"),
-		shell("grep 'commit' {input.stderr} >> {output}")
-		shell("grep 'Command being timed:' {input.stderr} >> {output}"),
-		shell("grep 'User time (seconds):' {input.stderr} >> {output}"),
-		shell("grep 'System time (seconds):' {input.stderr} >> {output}"),
-		shell("grep 'Maximum resident set size (kbytes):' {input.stderr} >> {output}"),
-		shell("grep 'Percent of CPU this job got:' {input.stderr} >> {output}"),
-		shell("grep 'Elapsed (wall clock) time (h:mm:ss or m:ss):' {input.stderr} >> {output}"),
-		shell("echo 'Number of reads:' >> {output}"),
-		shell("grep 'number of reads' < {input.summary} | cut -f 1 >> {output}"),
-		shell("echo 'Number of picked seeds:' >> {output}"),
-		shell("grep 'number of seeds' < {input.summary} | cut -f 1 >> {output}"),
-		shell("echo 'Number of reads with a seed:' >> {output}"),
-		shell("grep 'reads with a seed' < {input.summary} | cut -f 1 >> {output}"),
-		shell("echo 'Number of raw alignments:' >> {output}"),
-		shell("grep 'number of all alignments' < {input.summary} | cut -f 1 >> {output}"),
-		shell("echo 'Number of selected alignments:' >> {output}"),
-		shell("grep 'number of selected alignments' < {input.summary} | cut -f 1 >> {output}"),
-		shell("echo 'Number of full length alignments:' >> {output}"),
-		shell("grep 'number of full length alignments' < {input.summary} | cut -f 1 >> {output}"),
-		shell("echo 'Number of reads with an alignment:' >> {output}"),
-		shell("grep 'reads with an alignment' < {input.summary} | cut -f 1 >> {output}"),
-		shell("echo 'Number of reads broken due to an assertion:' >> {output}"),
-		shell("(grep Assert < {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aligner_stderr_{wildcards.reads}.txt || true) | wc -l >> {output}"),
-		shell("echo 'Number of read BP in reads:' >> {output}")
-		shell("grep 'bp in reads' < {input.summary} | cut -f 1 >> {output}"),
-		shell("echo 'Number of read BP in selected alignments:' >> {output}")
-		shell("grep 'bp in selected alignments' < {input.summary} | cut -f 1 >> {output}"),
-		shell("echo 'Number of read BP in full length alignments:' >> {output}")
-		shell("grep 'bp in full length alignments' < {input.summary} | cut -f 1 >> {output}"),
+    input:
+        summary = "{DATAPATH}/{org}/GraphAligner/tmp/run_{reads}_summary.txt",
+        stderr = "{DATAPATH}/{org}/GraphAligner/tmp/aligner_stderr_{reads}.txt"
+    output:
+        "{DATAPATH}/{org}/GraphAligner/output/stats_{reads}.txt"
+    run:
+        shell("touch {output}"),
+        shell("grep 'commit' {input.stderr} >> {output}")
+        shell("grep 'Command being timed:' {input.stderr} >> {output}"),
+        shell("grep 'User time (seconds):' {input.stderr} >> {output}"),
+        shell("grep 'System time (seconds):' {input.stderr} >> {output}"),
+        shell("grep 'Maximum resident set size (kbytes):' {input.stderr} >> {output}"),
+        shell("grep 'Percent of CPU this job got:' {input.stderr} >> {output}"),
+        shell("grep 'Elapsed (wall clock) time (h:mm:ss or m:ss):' {input.stderr} >> {output}"),
+        shell("echo 'Number of reads:' >> {output}"),
+        shell("grep 'number of reads' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of picked seeds:' >> {output}"),
+        shell("grep 'number of seeds' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of reads with a seed:' >> {output}"),
+        shell("grep 'reads with a seed' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of raw alignments:' >> {output}"),
+        shell("grep 'number of all alignments' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of selected alignments:' >> {output}"),
+        shell("grep 'number of selected alignments' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of full length alignments:' >> {output}"),
+        shell("grep 'number of full length alignments' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of reads with an alignment:' >> {output}"),
+        shell("grep 'reads with an alignment' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of reads broken due to an assertion:' >> {output}"),
+        shell("(grep Assert < {DATAPATH}/{wildcards.org}/GraphAligner/tmp/aligner_stderr_{wildcards.reads}.txt || true) | wc -l >> {output}"),
+        shell("echo 'Number of read BP in reads:' >> {output}")
+        shell("grep 'bp in reads' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of read BP in selected alignments:' >> {output}")
+        shell("grep 'bp in selected alignments' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of read BP in full length alignments:' >> {output}")
+        shell("grep 'bp in full length alignments' < {input.summary} | cut -f 1 >> {output}"),
 
 
 rule convert_to_json:
@@ -161,8 +167,8 @@ rule convert_to_json:
         selected_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_selected.gam",
         full_len_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_full_length.gam",
     output:
-    	all_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_all.json",
-    	selected_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_selected.json",
-    	full_len_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_full_length.json",
+        all_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_all.json",
+        selected_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_selected.json",
+        full_len_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_full_length.json",
     shell:
         "{VGPATH}/vg view -aj {input.all_alns} > {output.all_alns} && {VGPATH}/vg view -aj {input.selected_alns} > {output.selected_alns} && {VGPATH}/vg view -aj {input.full_len_alns} > {output.full_len_alns}"

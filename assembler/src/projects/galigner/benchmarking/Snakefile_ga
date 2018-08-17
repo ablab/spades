@@ -26,6 +26,8 @@ rule run_aligner:
     output:
         tsv = "{DATAPATH}/{org}/GAligner/output/aln_{reads}.tsv",
         log = "{DATAPATH}/{org}/GAligner/output/aln_{reads}.log"
+    benchmark:
+        repeat("{DATAPATH}/{org}/GAligner/benchmark/align_{reads}.tsv", 3)
     shell:
         "{GAPATH} {input} -o {DATAPATH}/{wildcards.org}/GAligner/output/aln_{wildcards.reads} > {output.log}"
 
