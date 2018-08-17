@@ -3,5 +3,5 @@ datapath: /Sid/tdvorkina/gralign/benchmarking/
 vgpath: /home/tdvorkina/soft/vg/miglionico/
 vg_k: 15
 
-gapath: /home/tdvorkina/results/benchmarking_test/bin/run_galigner_ref8_2018-07-27_16-17-41
-gacfg: /home/tdvorkina/galigner_main_branch/algorithmic-biology//assembler/src/projects/galigner/dijkstra_bwa0_ends_inf.yaml
+gapath: /home/tdvorkina/results/benchmarking_test/bin/run_galigner_newcfg_2018-08-17_12-13-37
+gacfg: ./galigner_config_template.yaml
