@@ -75,12 +75,12 @@ private:
      * Thus tip vector contains only kmers to be removed while returned length value gives reasonable information of what happend.
      */
     size_t FindForward(KeyWithHash kh, vector<KeyWithHash> &tip) {
-        while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh)) {
+        while (tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh)) {
             tip.push_back(kh);
             kh = index_.GetUniqueOutgoing(kh);
         }
         tip.push_back(kh);
-        if(index_.CheckUniqueIncoming(kh) && index_.IsDeadEnd(kh)) {
+        if (index_.CheckUniqueIncoming(kh) && index_.IsDeadEnd(kh)) {
             return tip.size();
         }
         tip.clear();
@@ -88,12 +88,12 @@ private:
     }
 
     size_t FindBackward(KeyWithHash kh, vector<KeyWithHash> &tip) {
-        while(tip.size() < length_bound_ && index_.CheckUniqueOutgoing(kh) && index_.CheckUniqueIncoming(kh)) {
+        while (tip.size() < length_bound_ && index_.CheckUniqueOutgoing(kh) && index_.CheckUniqueIncoming(kh)) {
             tip.push_back(kh);
             kh = index_.GetUniqueIncoming(kh);
         }
         tip.push_back(kh);
-        if(index_.CheckUniqueOutgoing(kh) && index_.IsDeadStart(kh)) {
+        if (index_.CheckUniqueOutgoing(kh) && index_.IsDeadStart(kh)) {
             return tip.size();
         }
         tip.clear();
@@ -101,15 +101,14 @@ private:
     }
 
     size_t RemoveTip(const vector<KeyWithHash> &tip) {
-        for(size_t i = 0; i < tip.size(); i++)
-            index_.IsolateVertex(tip[i]);
+        for (size_t i = 0; i < tip.size(); i++) index_.IsolateVertex(tip[i]);
         return tip.size();
     }
 
     size_t RemoveTips(const std::array<vector<KeyWithHash>, 4> &tips, size_t max) {
         size_t result = 0;
-        for(char c = 0; c < 4; c++) {
-            if(tips[c].size() < max) {
+        for (char c = 0; c < 4; c++) {
+            if (tips[c].size() < max) {
                 result += RemoveTip(tips[c]);
             }
         }
@@ -119,12 +118,11 @@ private:
     size_t RemoveForward(KeyWithHash kh) {
         std::array<vector<KeyWithHash>, 4> tips;
         size_t max = 0;
-        for(char c = 0; c < 4; c++) {
-            if(index_.CheckOutgoing(kh, c)) {
+        for (char c = 0; c < 4; c++) {
+            if (index_.CheckOutgoing(kh, c)) {
                 KeyWithHash khc = index_.GetOutgoing(kh, c);
                 size_t len = FindForward(khc, tips[c]);
-                if(len > max)
-                    max = len;
+                if (len > max) max = len;
             }
         }
         return RemoveTips(tips, max);
@@ -133,12 +131,11 @@ private:
     size_t RemoveBackward(KeyWithHash kh) {
         std::array<vector<KeyWithHash>, 4> tips;
         size_t max = 0;
-        for(char c = 0; c < 4; c++) {
-            if(index_.CheckIncoming(kh, c)) {
+        for (char c = 0; c < 4; c++) {
+            if (index_.CheckIncoming(kh, c)) {
                 KeyWithHash khc = index_.GetIncoming(kh, c);
                 size_t len = FindBackward(khc, tips[c]);
-                if(len > max)
-                    max = len;
+                if (len > max) max = len;
             }
         }
         return RemoveTips(tips, max);
@@ -148,11 +145,11 @@ private:
     size_t RoughClipTips() {
         vector<Index::kmer_iterator> iters = index_.kmer_begin(10 * omp_get_max_threads());
         vector<size_t> result(iters.size());
-#   pragma omp parallel for schedule(guided)
-        for(size_t i = 0; i < iters.size(); i++) {
-            for(Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
+#pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < iters.size(); i++) {
+            for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
                 KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
-                if(kh.is_minimal()) {
+                if (kh.is_minimal()) {
                     if (index_.OutgoingEdgeCount(kh) >= 2) {
                         result[i] += RemoveForward(kh);
                     }
@@ -163,15 +160,12 @@ private:
             }
         }
         size_t sum = 0;
-        for(size_t i = 0; i < result.size(); i++)
-            sum += result[i];
+        for (size_t i = 0; i < result.size(); i++) sum += result[i];
         return sum;
     }
 
-
 public:
-    AlternativeEarlyTipClipper(Index &index, size_t length_bound) : index_(index), length_bound_(length_bound) {
-    }
+    AlternativeEarlyTipClipper(Index &index, size_t length_bound) : index_(index), length_bound_(length_bound) {}
 
     /*
      * Method returns the number of removed edges
@@ -180,11 +174,12 @@ public:
         INFO("Early tip clipping");
         size_t result = RoughClipTips();
         LinkCleaner(index_).CleanLinks();
-        INFO(result << " " << (index_.k()+1) <<"-mers were removed by early tip clipper");
+        INFO(result << " " << (index_.k() + 1) << "-mers were removed by early tip clipper");
         return result;
     }
+
 protected:
     DECL_LOGGER("Early tip clipping");
 };
 
-}
+}  // namespace debruijn_graph
