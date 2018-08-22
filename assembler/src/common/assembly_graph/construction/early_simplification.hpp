@@ -20,7 +20,7 @@ private:
     typedef Index::KeyWithHash KeyWithHash;
     Index &index_;
 
-    void CleanForwardLinks(KeyWithHash &kh, char ch) {
+    void CleanForwardLinks(const KeyWithHash &kh, char ch) {
         if (index_.CheckOutgoing(kh, ch)) {
             KeyWithHash next_kh = index_.GetOutgoing(kh, ch);
             if (!index_.CheckIncoming(next_kh, kh[0])) {
@@ -29,7 +29,7 @@ private:
         }
     }
 
-    void CleanBackwardLinks(KeyWithHash &kh, char ch) {
+    void CleanBackwardLinks(const KeyWithHash &kh, char ch) {
         if (index_.CheckIncoming(kh, ch)) {
             KeyWithHash prev_kh = index_.GetIncoming(kh, ch);
             if (!index_.CheckOutgoing(prev_kh, kh[index_.k() - 1])) {
@@ -47,9 +47,8 @@ public:
 #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < iters.size(); i++) {
             for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
-                KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
+                const KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
                 if (kh.is_minimal()) {
-                    KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
                     for (char ch = 0; ch < 4; ch++) {
                         CleanForwardLinks(kh, ch);
                         CleanBackwardLinks(kh, ch);
