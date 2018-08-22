@@ -14,7 +14,7 @@ using debruijn_graph::VertexId;
 
 struct GapFillerResult {
     int score = std::numeric_limits<int>::max();
-    vector<EdgeId> intermediate_path;
+    vector<EdgeId> full_intermediate_path;
     int return_code = -1;
 };
 

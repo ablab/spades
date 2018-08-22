@@ -17,6 +17,7 @@ namespace sensitive_aligner {
 
         for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();) {
             EdgeId cur_edge = iter->edgeId;
+            bool merge_hits = false;
             if (prev_edge != EdgeId()) {
 //Need to find sequence of edges between clusters
                 VertexId start_v = g_.EdgeEnd(prev_edge);
@@ -26,18 +27,10 @@ namespace sensitive_aligner {
                 MappingInstance prev_last_index = prev_iter->sorted_positions[prev_iter->last_trustable_index];
                 double read_gap_len = (double) (cur_first_index.read_position - prev_last_index.read_position);
 //FIXME:: is g_.k() relevant
-                double stretched_graph_len = (prev_edge.int_id() != cur_edge.int_id()) ?
-                                             (double) (cur_first_index.edge_position + g_.k()) +
+                double stretched_graph_len = (double) (cur_first_index.edge_position + g_.k()) +
                                              ((int) g_.length(prev_edge) - prev_last_index.edge_position) *
-                                             pb_config_.path_limit_stretching
-                                                                                       :
-                                             ((int) cur_first_index.edge_position -
-                                              (int) prev_last_index.edge_position) * pb_config_.path_limit_stretching;
-                if ((start_v != end_v || (start_v == end_v && read_gap_len > stretched_graph_len))
-                    && (prev_edge.int_id() != cur_edge.int_id() ||
-                        (prev_edge.int_id() == cur_edge.int_id() && stretched_graph_len < 0) ||
-                        (prev_edge.int_id() == cur_edge.int_id() && stretched_graph_len > 0 &&
-                         read_gap_len > stretched_graph_len))) {
+                                             pb_config_.path_limit_stretching;
+                if (start_v != end_v || (start_v == end_v && read_gap_len > stretched_graph_len)) {
                     if (start_v == end_v) {
                         DEBUG("looking for path from vertex to itself, read pos"
                                       << cur_first_index.read_position << " " << prev_last_index.read_position
@@ -74,8 +67,8 @@ namespace sensitive_aligner {
                                                          GraphPosition(prev_edge, prev_last_index.edge_position),
                                                          GraphPosition(cur_edge, cur_first_index.edge_position),
                                                          limits.first, limits.second);
-                    vector<EdgeId> intermediate_path = res.intermediate_path;
-                    if (intermediate_path.size() == 0) {
+                    vector<EdgeId> intermediate_path = res.full_intermediate_path;
+                    if (res.return_code != DijkstraReturnCode::OK) {
 //                        DEBUG(DebugEmptyBestScoredPath(start_v, end_v, prev_edge, cur_edge,
 //                                                       prev_last_index.edge_position, cur_first_index.edge_position,
 //                                                       seq_end - seq_start));
@@ -85,14 +78,26 @@ namespace sensitive_aligner {
                         cur_sorted_hits.clear();
                         prev_edge = EdgeId();
                         continue;
-                    }
-
-                    for (EdgeId edge: intermediate_path) {
-                        cur_sorted_edges.push_back(edge);
+                    } else {
+                        cur_sorted_edges.pop_back();
+                        for (EdgeId edge: intermediate_path) {
+                            cur_sorted_edges.push_back(edge);
+                        }
+                        cur_sorted_edges.pop_back();
+                        if (intermediate_path.size() == 1) {
+                            merge_hits = true;
+                            DEBUG("Merged e1=" << prev_edge.int_id() << " e2=" << cur_edge.int_id() 
+                                << " s=" << prev_last_index.edge_position  << " e=" << cur_first_index.edge_position);
+                        }
                     }
                 }
             }
             MappingInstance cur_first_index = iter->sorted_positions[iter->first_trustable_index];
+            // if (merge_hits) {
+            //     auto prev_iter = iter - 1;
+            //     cur_first_index = (*prev_iter)->sorted_positions[(*prev_iter)->first_trustable_index];
+            //     cur_sorted_hits.pop_back();
+            // }
             MappingInstance cur_last_index = iter->sorted_positions[iter->last_trustable_index];
             cur_sorted_edges.push_back(cur_edge);
             cur_sorted_hits.push_back(cur_edge, omnigraph::MappingRange(

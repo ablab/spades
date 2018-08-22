@@ -47,6 +47,20 @@ private:
 
     alignment::BWAReadMapper<Graph> bwa_mapper_;
 
+    bool similar(const MappingInstance &a, const MappingInstance &b, int a_len, int b_len) const {
+        if (b.read_position < a.read_position) {
+            return similar(b, a, b_len, a_len);
+        } else if (b.read_position == a.read_position) {
+            return (abs(int(b.edge_position) - int(a.edge_position)) < 2);
+        } else {
+            return ((b.edge_position - a.edge_position >= (b.read_position - a.read_position) * pb_config_.compression_cutoff) &&
+                ((b.edge_position - a.edge_position) * pb_config_.compression_cutoff <= (b.read_position - a.read_position)))
+                || (a_len > SHORT_SPURIOUS_LENGTH && b_len > SHORT_SPURIOUS_LENGTH 
+                    && (b.read_position - a.read_position) < a_len + b_len 
+                    && (b.edge_position - a.edge_position) < a_len + b_len );
+        }
+    }
+
     bool similar_in_graph(const MappingInstance &a, const MappingInstance &b,
                           int shift = 0) const {
         if (b.read_position + shift < a.read_position) {
@@ -359,7 +373,13 @@ public:
                       const QualityRange &b) const {
         EdgeId a_edge = a.edgeId;
         EdgeId b_edge = b.edgeId;
+        int a_len = a.sorted_positions[1].read_position - a.sorted_positions[0].read_position;
+        int b_len = b.sorted_positions[1].read_position - b.sorted_positions[0].read_position;
         DEBUG("Checking consistency: " << g_.int_id(a_edge) << " and " << g_.int_id(b_edge));
+        if (g_.int_id(a_edge) == g_.int_id(b_edge) && similar(a.sorted_positions[1], b.sorted_positions[0], a_len, b_len)) {
+            //INFO("Similar on edge ");
+            return true;
+        }
         //FIXME: Is this check useful?
         if (a.sorted_positions[a.last_trustable_index].read_position +
                     (int) pb_config_.max_path_in_dijkstra <
