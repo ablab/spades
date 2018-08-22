@@ -101,16 +101,14 @@ private:
     }
 
     size_t RemoveTip(const vector<KeyWithHash> &tip) {
-        for (size_t i = 0; i < tip.size(); i++) index_.IsolateVertex(tip[i]);
+        for (const auto &kh : tip) index_.IsolateVertex(kh);
         return tip.size();
     }
 
     size_t RemoveTips(const std::array<vector<KeyWithHash>, 4> &tips, size_t max) {
         size_t result = 0;
-        for (char c = 0; c < 4; c++) {
-            if (tips[c].size() < max) {
-                result += RemoveTip(tips[c]);
-            }
+        for (const auto &tip : tips) {
+            if (tip.size() < max) result += RemoveTip(tip);
         }
         return result;
     }
