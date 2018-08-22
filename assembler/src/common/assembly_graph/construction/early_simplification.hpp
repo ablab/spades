@@ -21,18 +21,18 @@ private:
     Index &index_;
 
     void CleanForwardLinks(KeyWithHash &kh, char i) {
-        if(index_.CheckOutgoing(kh, i)) {
+        if (index_.CheckOutgoing(kh, i)) {
             KeyWithHash next_kh = index_.GetOutgoing(kh, i);
-            if(!index_.CheckIncoming(next_kh, kh[0])) {
+            if (!index_.CheckIncoming(next_kh, kh[0])) {
                 index_.DeleteOutgoing(kh, i);
             }
         }
     }
 
     void CleanBackwardLinks(KeyWithHash &kh, char i) {
-        if(index_.CheckIncoming(kh, i)) {
+        if (index_.CheckIncoming(kh, i)) {
             KeyWithHash prev_kh = index_.GetIncoming(kh, i);
-            if(!index_.CheckOutgoing(prev_kh, kh[index_.k() - 1])) {
+            if (!index_.CheckOutgoing(prev_kh, kh[index_.k() - 1])) {
                 index_.DeleteIncoming(kh, i);
             }
         }
@@ -44,8 +44,8 @@ public:
     //TODO make parallel
     void CleanLinks() {
         vector<Index::kmer_iterator> iters = index_.kmer_begin(10 * omp_get_max_threads());
-#   pragma omp parallel for schedule(guided)
-        for(size_t i = 0; i < iters.size(); i++) {
+#pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < iters.size(); i++) {
             for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
                 KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
                 if (kh.is_minimal()) {
