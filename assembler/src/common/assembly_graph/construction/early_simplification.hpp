@@ -20,20 +20,20 @@ private:
     typedef Index::KeyWithHash KeyWithHash;
     Index &index_;
 
-    void CleanForwardLinks(KeyWithHash &kh, char i) {
-        if (index_.CheckOutgoing(kh, i)) {
-            KeyWithHash next_kh = index_.GetOutgoing(kh, i);
+    void CleanForwardLinks(KeyWithHash &kh, char ch) {
+        if (index_.CheckOutgoing(kh, ch)) {
+            KeyWithHash next_kh = index_.GetOutgoing(kh, ch);
             if (!index_.CheckIncoming(next_kh, kh[0])) {
-                index_.DeleteOutgoing(kh, i);
+                index_.DeleteOutgoing(kh, ch);
             }
         }
     }
 
-    void CleanBackwardLinks(KeyWithHash &kh, char i) {
-        if (index_.CheckIncoming(kh, i)) {
-            KeyWithHash prev_kh = index_.GetIncoming(kh, i);
+    void CleanBackwardLinks(KeyWithHash &kh, char ch) {
+        if (index_.CheckIncoming(kh, ch)) {
+            KeyWithHash prev_kh = index_.GetIncoming(kh, ch);
             if (!index_.CheckOutgoing(prev_kh, kh[index_.k() - 1])) {
-                index_.DeleteIncoming(kh, i);
+                index_.DeleteIncoming(kh, ch);
             }
         }
     }
@@ -50,9 +50,9 @@ public:
                 KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
                 if (kh.is_minimal()) {
                     KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
-                    for (char i = 0; i < 4; i++) {
-                        CleanForwardLinks(kh, i);
-                        CleanBackwardLinks(kh, i);
+                    for (char ch = 0; ch < 4; ch++) {
+                        CleanForwardLinks(kh, ch);
+                        CleanBackwardLinks(kh, ch);
                     }
                 }
             }
