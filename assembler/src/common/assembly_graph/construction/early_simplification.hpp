@@ -9,6 +9,7 @@
 
 #include "utils/ph_map/perfect_hash_map.hpp"
 #include "utils/kmer_mph/kmer_index.hpp"
+#include <array>
 
 namespace debruijn_graph {
 
@@ -99,13 +100,13 @@ private:
         return -1;
     }
 
-    size_t RemoveTip(const vector<KeyWithHash > &tip) {
+    size_t RemoveTip(const vector<KeyWithHash> &tip) {
         for(size_t i = 0; i < tip.size(); i++)
             index_.IsolateVertex(tip[i]);
         return tip.size();
     }
 
-    size_t RemoveTips(const vector<vector<KeyWithHash > > &tips, size_t max) {
+    size_t RemoveTips(const std::array<vector<KeyWithHash>, 4> &tips, size_t max) {
         size_t result = 0;
         for(char c = 0; c < 4; c++) {
             if(tips[c].size() < max) {
@@ -116,8 +117,7 @@ private:
     }
 
     size_t RemoveForward(KeyWithHash kh) {
-        vector<vector<KeyWithHash >> tips;
-        tips.resize(4);
+        std::array<vector<KeyWithHash>, 4> tips;
         size_t max = 0;
         for(char c = 0; c < 4; c++) {
             if(index_.CheckOutgoing(kh, c)) {
@@ -131,8 +131,7 @@ private:
     }
 
     size_t RemoveBackward(KeyWithHash kh) {
-        vector<vector<KeyWithHash >> tips;
-        tips.resize(4);
+        std::array<vector<KeyWithHash>, 4> tips;
         size_t max = 0;
         for(char c = 0; c < 4; c++) {
             if(index_.CheckIncoming(kh, c)) {
