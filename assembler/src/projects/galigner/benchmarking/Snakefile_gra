@@ -118,7 +118,7 @@ rule postprocess:
         full_len_alns = "{DATAPATH}/{org}/GraphAligner/output/aln_{reads}_full_length.gam",
         summary = "{DATAPATH}/{org}/GraphAligner/tmp/run_{reads}_summary.txt"
     benchmark:
-        repeat("{DATAPATH}/{org}/{org}/GraphAligner/benchmark/posprocess_{reads}.tsv", 3)
+        repeat("{DATAPATH}/{org}/GraphAligner/benchmark/posprocess_{reads}.tsv", 3)
     shell:
         "{ALIGNERBINPATH}/Postprocess {input.raw_alns} {input.reads} {input.nodenames} {input.seeds} {output.all_alns} {output.selected_alns} {output.full_len_alns} {output.summary}"
 

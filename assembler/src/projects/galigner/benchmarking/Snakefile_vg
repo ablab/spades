@@ -33,7 +33,7 @@ rule split_graph:
         os.path.join(DATAPATH, "{org}/vg/tmp/graph.split.vg")
     run:
         if wildcards.org == "celegans":
-            shell("{VGPATH}/vg mod -X 1024 -M 4 {input} > {output}")
+            shell("{VGPATH}/vg mod -X 1024 -M 8 {input} > {output}")
         else:
             shell("{VGPATH}/vg mod -X 1024 {input} > {output}")
 
@@ -43,7 +43,7 @@ rule prune_graph:
     output:
         os.path.join(DATAPATH, "celegans/vg/tmp/graph.pruned.vg")
     benchmark:
-        repeat("{DATAPATH}/celegans/vg/benchmarks/prune_graph.tsv", 3)
+        repeat(os.path.join(DATAPATH, "celegans/vg/benchmark/prune_graph.tsv"), 3)
     shell:
         "{VGPATH}/vg prune -k 12 -e 2 -t 16 {input} > {output}"
 
@@ -54,7 +54,7 @@ rule build_index_celegans:
         xg = os.path.join(DATAPATH, "celegans/vg/tmp/graph.split.vg.xg"),
         gcsa = os.path.join(DATAPATH, "celegans/vg/tmp/graph.split.vg.gcsa")
     benchmark:
-        repeat("{DATAPATH}/celegans/vg/benchmarks/build_index.tsv", 3)
+        repeat(os.path.join(DATAPATH, "celegans/vg/benchmark/build_index.tsv"), 3)
     shell:
         "{VGPATH}/vg index -p -t 16 {input} -x {output.xg} -g {output.gcsa} -k {K}"
 
@@ -65,7 +65,7 @@ rule build_index_ecoli:
         xg = os.path.join(DATAPATH, "ecoli/vg/tmp/graph.split.vg.xg"),
         gcsa = os.path.join(DATAPATH, "ecoli/vg/tmp/graph.split.vg.gcsa")
     benchmark:
-        repeat("{DATAPATH}/ecoli/vg/benchmarks/build_index.tsv", 3)
+        repeat(os.path.join(DATAPATH, "ecoli/vg/benchmark/build_index.tsv"), 3)
     shell:
         "{VGPATH}/vg index -p -t 16 {input} -x {output.xg} -g {output.gcsa} -k {K}"
 
@@ -80,7 +80,7 @@ rule mapping:
         out = os.path.join(DATAPATH, "{org}/vg/output"),
         fq =  os.path.join(DATAPATH, "{org}/input/{reads}.fastq")
     benchmark:
-        repeat("{DATAPATH}/{org}/vg/benchmarks/mapping.tsv", 3)
+        repeat(os.path.join(DATAPATH, "{org}/vg/benchmark/mapping_{reads}.tsv"), 3)
     shell:
         "mkdir -p {params.out} && {VGPATH}/vg map -t 16 -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.fq} -M 1 -W 64 > {output}"
 

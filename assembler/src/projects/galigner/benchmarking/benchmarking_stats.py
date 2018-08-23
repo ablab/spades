@@ -134,8 +134,6 @@ class DataLoader:
                         cur_mp["sequence"] = mp["sequence"] if "sequence" in mp.keys() else ""
                         edge_offset_f += int(cur_mp["from_length"])
                         ideal_seq_offset, graph_seq = make_ga_edit(cur_mp, ideal_seq_offset, graph_seq, ideal_seq)
-                    if ideal_name == "S1_18156":
-                        print graph_seq
                     if len(nodes) == 0 or nodes[-1]["node_id"] != node_id:
                         nodes.append({"node_id": node_id, "node_id_str": str(node_id) + str("+" if "is_reverse" not in it["position"].keys() else "-"),\
                                       "path": [{"start": edge_offset, "end": edge_offset_f}], "seq": [{"start": ideal_seq_offset_s, "end": ideal_seq_offset}], "nucs": node_seq})
@@ -232,6 +230,10 @@ def print_stats(reads, res_mp):
         print ""
         eds[name] = list(df["prop_ed"])
 
+    # set_ga = set(x["r_name"] for x in res_mp["GAligner"])
+    # set_gra = set(x["r_name"] for x in res_mp["GraphAligner"])
+    # print "\n".join(list(set_gra - set_ga))
+
     for k in eds.keys():
         plt.hist(eds[k], alpha=0.5, label=k, bins=20)
     plt.legend(loc='upper right')
@@ -251,12 +253,13 @@ if __name__ == "__main__":
     # vg_res_file = "/home/tdvorkina/soft/vg/celegans_sim_pacbio/sim_pacbio_len500_100.json"
 
     org_path = "/Sid/tdvorkina/gralign/benchmarking/celegans/"
-    reads_file = org_path + "input/simpb.fasta"
-    galigner_res_file = org_path + "GAligner/output/aln_simpb.tsv"
+    read_type = "realnp"
+    reads_file = org_path + "input/" + read_type + ".fasta"
+    galigner_res_file = org_path + "GAligner/output/aln_" + read_type + ".tsv"
     #edges_gfa = "/home/tdvorkina/soft/vg/ecoli_sim_pacbio/assembly_graph_with_scaffolds_wp.split.gfa"
     #vg_res_file = "/home/tdvorkina/soft/vg/ecoli_sim_pacbio/sim_pacbio_len500_100.json"
     graphaligner_edges_gfa = org_path + "GraphAligner/tmp/graph_idfix.gfa"
-    graphaligner_res_file = org_path + "GraphAligner/output/aln_simpb_selected.json"
+    graphaligner_res_file = org_path + "GraphAligner/output/aln_" + read_type + "_selected.json"
 
     # reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/real_pacbio/real_pacbio_len500_100.fasta"
     # galigner_res_file =  "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_realpb100_dijkstra_bwa0_ends_inf.tsv"
