@@ -48,22 +48,22 @@ private:
     size_t length_bound_;
 
     /*
-     * This method starts from the kmer that is second in the tip counting from junction vertex. It records all kmers of a tip into tip vector.
-     * The method returns length of a tip.
-     * In case it did not end as a tip or if it was too long tip vector is cleared and infinite length is returned.
-     * Thus tip vector contains only kmers to be removed while returned length value gives reasonable information of what happend.
+     * This method starts from the kmer that is second in the tip counting from the junction vertex
+     * It returns all kmers of a tip into tip vector
+     * In case it did not end as a tip or if it was too long tip the method returns empty vector
      */
-    size_t FindForward_(KeyWithHash kh, vector<KeyWithHash> &tip) {
+    std::vector<KeyWithHash> FindForward_(KeyWithHash kh) {
+        std::vector<KeyWithHash> tip;
         while (tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh)) {
             tip.push_back(kh);
             kh = index_.GetUniqueOutgoing(kh);
         }
         tip.push_back(kh);
         if (index_.CheckUniqueIncoming(kh) && index_.IsDeadEnd(kh)) {
-            return tip.size();
+            return tip;
+        } else {
+            return {};
         }
-        tip.clear();
-        return std::numeric_limits<size_t>::max();
     }
 
     size_t RemoveTip_(const vector<KeyWithHash> &tip) {
@@ -85,7 +85,8 @@ private:
         for (char c = 0; c < 4; c++) {
             if (index_.CheckOutgoing(kh, c)) {
                 KeyWithHash khc = index_.GetOutgoing(kh, c);
-                size_t len = FindForward_(khc, tips[c]);
+                tips[c] = FindForward_(khc);
+                size_t len = tips[c].empty() ? std::numeric_limits<size_t>::max() : tips[c].size();
                 if (len > max) max = len;
             }
         }
