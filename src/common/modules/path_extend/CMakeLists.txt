@@ -38,8 +38,8 @@ add_library(path_extend STATIC
             read_cloud_path_extend/intermediate_scaffolding/pe_extraction.cpp
             read_cloud_path_extend/intermediate_scaffolding/predicate_builders.cpp
             read_cloud_path_extend/intermediate_scaffolding/scaffold_subgraph_extractor.cpp
-        read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_path_cleaner.cpp
-        read_cloud_path_extend/path_scaffolder.cpp
+            read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_path_cleaner.cpp
+            read_cloud_path_extend/path_scaffolder.cpp
             read_cloud_path_extend/containment_index_threshold_finder.cpp
             read_cloud_path_extend/tip_connection_predicate.cpp
             read_cloud_path_extend/read_cloud_polisher_support.cpp
@@ -53,7 +53,11 @@ add_library(path_extend STATIC
             read_cloud_path_extend/fragment_model/distribution_extractor.cpp
             read_cloud_path_extend/extender_support/candidate_selectors.cpp
             read_cloud_path_extend/extender_support/entry_collectors.cpp
-            read_cloud_path_extend/statistics/path_cluster_statistics.cpp
+            read_cloud_path_extend/statistics/cloud_check_statistics.cpp
+            read_cloud_path_extend/statistics/component_validation.cpp
+            read_cloud_path_extend/statistics/long_edge_dataset.cpp
+            read_cloud_path_extend/validation/path_cluster_validation.cpp
+            read_cloud_path_extend/validation/reference_path_index.cpp
             read_cloud_path_extend/validation/transition_subgraph_validation.cpp)
 
 target_link_libraries(path_extend assembly_graph ssw configs)

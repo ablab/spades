@@ -2,7 +2,7 @@
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/conjugate_score_extractor.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
-#include "common/barcode_index/cluster_storage_extractor.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage_extractor.hpp"
 #include <random>
 #include <common/barcode_index/scaffold_vertex_index_builder.hpp>
 
