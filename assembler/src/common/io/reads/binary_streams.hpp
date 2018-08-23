@@ -38,7 +38,7 @@ private:
 public:
     BinaryFileStream(const std::string &file_name_prefix, size_t total_num, size_t portion_num)
             : offset_(sizeof(ReadStreamStat)) {
-        INFO("Preparing binary stream #" << portion_num << "/" << total_num);
+        DEBUG("Preparing binary stream #" << portion_num << "/" << total_num);
         VERIFY(portion_num < total_num);
         std::string fname = file_name_prefix + ".seq";
         stream_.open(fname, std::ios_base::binary | std::ios_base::in);
@@ -62,15 +62,16 @@ public:
         const size_t start_next = chunk_count * (portion_num + 1) / total_num * BinaryWriter::CHUNK;
         count_ = std::min(stat.read_count, start_next) - start_num;
 
-        INFO("Reads " << start_num << "-" << start_num + count_ << "/" << stat.read_count
+        DEBUG("Reads " << start_num << "-" << start_num + count_ << "/" << stat.read_count
                        << " at 0x" << std::ios_base::hex << offset_);
 
         Init();
     }
 
     BinaryFileStream<SeqT>& operator>>(SeqT &read) override {
-        VERIFY(current_++ < count_);
-        VERIFY(ReadImpl(read));
+        ReadImpl(read);
+        VERIFY(current_ < count_);
+        ++current_;
         return *this;
     }
 
