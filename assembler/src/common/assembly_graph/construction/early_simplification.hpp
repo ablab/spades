@@ -139,29 +139,57 @@ private:
     }
 
     size_t RoughClipTips(std::vector<Index::kmer_iterator> &iters) {
-        vector<size_t> result(iters.size());
+        std::vector<size_t> result(iters.size());
+        std::vector<std::vector<KeyWithHash>> tipped_junctions(iters.size());
 #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < iters.size(); i++) {
             for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
                 KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
-                if (kh.is_minimal()) {
-                    if (index_.OutgoingEdgeCount(kh) >= 2) {
-                        result[i] += RemoveForward(kh);
-                    }
-                    if (index_.IncomingEdgeCount(kh) >= 2) {
-                        result[i] += RemoveBackward(kh);
+                if (index_.OutgoingEdgeCount(kh) >= 2) {
+                    size_t removed = RemoveForward(kh);
+                    result[i] += removed;
+                    if (removed) {
+                        tipped_junctions[i].push_back(kh);
                     }
                 }
             }
         }
         size_t sum = 0;
         for (size_t i = 0; i < result.size(); i++) sum += result[i];
+
+        // Remove links leading to tips
+#pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < tipped_junctions.size(); i++) {
+            for (const KeyWithHash &kh : tipped_junctions[i]) {
+                CleanForwardLinks(kh);
+            }
+        }
+
         return sum;
     }
 
     size_t RoughClipTips(size_t n_chunks) {
         auto iters = index_.kmer_begin(n_chunks);
         return RoughClipTips(iters);
+    }
+
+    bool CleanForwardLinks(const KeyWithHash &kh, char ch) {
+        if (index_.CheckOutgoing(kh, ch)) {
+            KeyWithHash next_kh = index_.GetOutgoing(kh, ch);
+            if (!index_.CheckIncoming(next_kh, kh[0])) {
+                index_.DeleteOutgoing(kh, ch);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    size_t CleanForwardLinks(const KeyWithHash &kh) {
+        size_t count = 0;
+        for (char ch = 0; ch < 4; ++ch) {
+            count += CleanForwardLinks(kh, ch);
+        }
+        return count;
     }
 
 public:
@@ -191,7 +219,8 @@ public:
     }
 
     void CleanLinks() {
-        LinkCleaner(index_).CleanLinks();
+        // Do nothing
+        // LinkCleaner(index_).CleanLinks();
     }
 
 protected:
