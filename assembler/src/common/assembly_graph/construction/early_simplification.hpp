@@ -22,9 +22,7 @@ public:
 
     AlternativeEarlyTipClipper(Index &index, size_t length_bound) : index_(index), length_bound_(length_bound) {}
 
-    /*
-     * Method returns the number of removed edges
-     */
+    // Methods return the number of removed edges
     size_t ClipTips() {
         INFO("Early tip clipping");
         size_t result = RoughClipTips(10 * omp_get_max_threads());
@@ -32,6 +30,7 @@ public:
         return result;
     }
 
+    // This interface is for MPI version of EarlyTC stage
     size_t ClipTips(size_t n_chunks, const std::vector<size_t> &chunks) {
         std::vector<Index::kmer_iterator> all_iters = index_.kmer_begin(n_chunks);
         std::vector<Index::kmer_iterator> iters;
