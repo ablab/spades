@@ -11,6 +11,7 @@
 #include "io/reads/vector_reader.hpp"
 
 #include "modules/graph_construction.hpp"
+/* #include "assembly_graph/construction/early_simplification.hpp" TODO use it */
 #include "assembly_graph/stats/picture_dump.hpp"
 
 #include "utils/filesystem/temporary.hpp"
@@ -253,7 +254,7 @@ public:
             INFO("Early tip clipper length bound set as (RL - K)");
             storage().params.early_tc.length_bound.reset(cfg::get().ds.RL - gp.g.k());
         }
-        EarlyClipTips(storage().params, storage().ext_index);
+        AlternativeEarlyTipClipper(storage().ext_index, *storage().params.early_tc.length_bound).ClipTips();
     }
 
     void load(debruijn_graph::conj_graph_pack&,
