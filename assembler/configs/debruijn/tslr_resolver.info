@@ -58,7 +58,7 @@ ts_res
 	}
 
 	scaffold_graph_construction {
-		score_percentile 0.001
+		score_percentile 0.005
 		cluster_length_percentile 0.9
 		count_threshold 1
 	    relative_coverage_threshold 4.0

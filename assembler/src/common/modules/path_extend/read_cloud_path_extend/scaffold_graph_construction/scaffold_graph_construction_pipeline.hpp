@@ -31,12 +31,14 @@ class ScaffolderParamsConstructor {
     ScaffolderParams::ScoreEstimationParams GetScoreEstimationParams(
         const Graph& g,
         cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor,
-        double score_percentile, double cluster_length_percentile) const;
+        double score_percentile,
+        double cluster_length_percentile,
+        size_t block_length) const;
 
 };
 
 
-class CloudScaffoldGraphConstructionPipeline {
+class ScaffoldGraphConstructionPipeline {
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
 
     shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> initial_constructor_;
@@ -46,7 +48,7 @@ class CloudScaffoldGraphConstructionPipeline {
     const path_extend::ScaffolderParams params_;
 
  public:
-    CloudScaffoldGraphConstructionPipeline(shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> initial_constructor_,
+    ScaffoldGraphConstructionPipeline(shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> initial_constructor_,
                                            const Graph &g, const path_extend::ScaffolderParams &params);
 
     void AddStage(shared_ptr<IterativeScaffoldGraphConstructorCaller> stage);
@@ -69,7 +71,7 @@ class ScaffoldGraphPipelineConstructor {
  public:
     ScaffoldGraphPipelineConstructor(const conj_graph_pack &gp);
 
-    virtual CloudScaffoldGraphConstructionPipeline ConstructPipeline(const set<ScaffoldVertex> &scaffold_vertices) const = 0;
+    virtual ScaffoldGraphConstructionPipeline ConstructPipeline(const set<ScaffoldVertex> &scaffold_vertices) const = 0;
 
  protected:
     shared_ptr<ScaffoldVertexExtractor> ConstructSimpleEdgeIndex(const set<ScaffoldVertex> &scaffold_vertices,
@@ -96,7 +98,7 @@ class BasicScaffoldGraphPipelineConstructor: public ScaffoldGraphPipelineConstru
                                           size_t max_threads_,
                                           size_t min_length_);
 
-    CloudScaffoldGraphConstructionPipeline ConstructPipeline(const set<ScaffoldVertex> &scaffold_vertices) const override;
+    ScaffoldGraphConstructionPipeline ConstructPipeline(const set<ScaffoldVertex> &scaffold_vertices) const override;
  private:
     virtual vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(
             path_extend::ScaffolderParams params,
@@ -144,7 +146,7 @@ class GapScaffoldGraphPipelineConstructor: public ScaffoldGraphPipelineConstruct
                                         size_t max_threads_,
                                         size_t min_length_);
 
-    CloudScaffoldGraphConstructionPipeline ConstructPipeline(const set<ScaffoldVertex> &scaffold_vertices) const override;
+    ScaffoldGraphConstructionPipeline ConstructPipeline(const set<ScaffoldVertex> &scaffold_vertices) const override;
 
  protected:
     shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetInitialConstructor(path_extend::ScaffolderParams params,

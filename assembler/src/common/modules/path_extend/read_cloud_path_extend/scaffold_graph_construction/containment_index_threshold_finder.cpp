@@ -16,12 +16,12 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
     auto distance_values = ConstructDistanceDistribution(min_distance_, max_distance_);
     size_t left_block_start_offset = max_distance_ + left_block_length_ + right_block_length_;
     size_t block_size = interesting_edges_.size() / 10;
-    const size_t TOTAL_SAMPLE_SIZE = 100000;
-    //why constant?
-    const size_t edge_sample_size = TOTAL_SAMPLE_SIZE / interesting_edges_.size();
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<size_t> distance_distribution(0, distance_values.size() - 1);
+//    const size_t TOTAL_SAMPLE_SIZE = 20000;
+//    //todo why constant?
+//    const size_t edge_sample_size = TOTAL_SAMPLE_SIZE / interesting_edges_.size();
+//    std::random_device rd;
+//    std::mt19937 gen(rd());
+//    std::uniform_int_distribution<size_t> distance_distribution(0, distance_values.size() - 1);
     std::multiset<double> scores;
     for (size_t i = 0; i < interesting_edges_.size(); ++i) {
         EdgeId edge = interesting_edges_[i];
@@ -31,11 +31,14 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
             size_t max_left_block_start = g_.length(edge) - left_block_start_offset;
             std::uniform_int_distribution<size_t> left_start_distribution(0, max_left_block_start);
             vector<pair<size_t, size_t>> starts_and_distances;
-            for (size_t i = 0; i < edge_sample_size; ++i) {
-                size_t left_block_start = left_start_distribution(gen);
-                size_t distance = distance_values[distance_distribution(gen)];
-                starts_and_distances.emplace_back(left_block_start, distance);
-            }
+//            for (size_t i = 0; i < edge_sample_size; ++i) {
+//                size_t left_block_start = left_start_distribution(gen);
+//                size_t distance = distance_values[distance_distribution(gen)];
+//                starts_and_distances.emplace_back(left_block_start, distance);
+//            }
+              for (const size_t distance: distance_values) {
+                  starts_and_distances.emplace_back(0, distance);
+              }
 
 #pragma omp parallel for num_threads(max_threads_)
             for (size_t i = 0; i < starts_and_distances.size(); ++i) {
@@ -50,6 +53,8 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
 #pragma omp critical
                 {
                     if (score.is_initialized()) {
+                        DEBUG("[" << left_block_start << ", " << left_block_end << "], ["
+                                  << right_block_start << ", " << right_block_end << "]");
                         DEBUG("Inserting score: " << score.get());
                         scores.insert(score.get());
                     }
@@ -60,7 +65,7 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
             DEBUG("Processed " << i << " out of " << interesting_edges_.size() << " interesting edges");
         }
     }
-    DEBUG(scores.size() << " score samples");
+    INFO(scores.size() << " score samples");
     return ConstructScoreDistributionFromMultiset(scores);
 }
 LongEdgeScoreHistogramConstructor::LongEdgeScoreHistogramConstructor(
@@ -113,7 +118,6 @@ LabeledDistributionThresholdEstimator::LabeledDistributionThresholdEstimator(
         size_t min_distance,
         size_t max_distance,
         double score_percentile,
-        double default_threshold,
         size_t max_threads)
     : g_(g),
       segment_score_function_(segment_score_function),
@@ -123,7 +127,6 @@ LabeledDistributionThresholdEstimator::LabeledDistributionThresholdEstimator(
       min_distance_(min_distance),
       max_distance_(max_distance),
       score_percentile_(score_percentile),
-      default_threshold_(default_threshold),
       max_threads_(max_threads) {}
 double LabeledDistributionThresholdEstimator::GetThreshold() const {
     DEBUG("Estimating score threshold");
@@ -133,8 +136,6 @@ double LabeledDistributionThresholdEstimator::GetThreshold() const {
     const double STEP = 0.001;
     const double MIN = 0.0;
     const double MAX = 1.0;
-    const size_t MIN_SAMPLE_SIZE = 100;
-    const double RELATIVE_CORRECTION = 1.0;
     vector<EdgeId> long_edges;
     omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(g_);
     for (const auto& edge: edge_it_helper) {
@@ -142,21 +143,18 @@ double LabeledDistributionThresholdEstimator::GetThreshold() const {
             long_edges.push_back(edge);
         }
     }
+    INFO(long_edges.size() << " training edges.");
     LongEdgeScoreHistogramConstructor histogram_constructor(STEP, MIN, MAX, g_, segment_score_function_,
                                                             long_edges, left_block_length_,
                                                             right_block_length_, min_distance_,
                                                             max_distance_, max_threads_);
     auto score_histogram = histogram_constructor.ConstructScoreDistribution();
-    if (score_histogram.size() < MIN_SAMPLE_SIZE) {
-        WARN("Could not estimate score threshold using long edges, setting score threshold to " << default_threshold_);
-        return default_threshold_;
-    }
     PercentileGetter percentile_getter;
     const double debug_percentile_step = 0.1;
     for (double i = 0.0; math::le(i, 1.0); i += debug_percentile_step) {
         DEBUG(i << " percentile value: " << percentile_getter.GetPercentile(score_histogram, i));
     }
-    double result = percentile_getter.GetPercentile(score_histogram, score_percentile_) * RELATIVE_CORRECTION;
+    double result = percentile_getter.GetPercentile(score_histogram, score_percentile_);
     INFO("Estimated score threshold: " << result);
     return result;
 }
@@ -223,14 +221,11 @@ shared_ptr<LabeledDistributionThresholdEstimator> LongEdgeScoreThresholdEstimato
     auto segment_score_function = make_shared<ContainmentIndexFunction>(barcode_extractor_);
     size_t min_distance = max_distance_ / 10;
     DEBUG("Effective max distance: " << max_distance_);
-    //fixme move from here
-    const double DEFAULT_THRESHOLD = 0.1;
     auto threshold_estimator = make_shared<LabeledDistributionThresholdEstimator>(g_, segment_score_function,
                                                                                   edge_length_threshold_,
                                                                                   block_length_, block_length_,
                                                                                   min_distance, max_distance_,
-                                                                                  score_percentile_, DEFAULT_THRESHOLD,
-                                                                                  max_threads_);
+                                                                                  score_percentile_, max_threads_);
     return threshold_estimator;
 }
 LongEdgeScoreThresholdEstimatorFactory::LongEdgeScoreThresholdEstimatorFactory(
@@ -265,16 +260,12 @@ ShortEdgeScoreThresholdEstimatorFactory::ShortEdgeScoreThresholdEstimatorFactory
       max_threads_(max_threads) {}
 shared_ptr<LabeledDistributionThresholdEstimator> ShortEdgeScoreThresholdEstimatorFactory::GetThresholdEstimator() const {
     auto segment_score_function = make_shared<ShortEdgeScoreFunction>(barcode_extractor_);
-    size_t min_distance = max_distance_ / 2;
-    INFO("Edge length threshold: " << edge_length_threshold_);
-    //fixme move from here
-    const double DEFAULT_THRESHOLD = 0.05;
+    size_t min_distance = max_distance_ / 10;
     auto threshold_estimator = make_shared<LabeledDistributionThresholdEstimator>(g_, segment_score_function,
                                                                                   edge_length_threshold_,
                                                                                   block_length_, 1,
                                                                                   min_distance, max_distance_,
-                                                                                  score_percentile_, DEFAULT_THRESHOLD,
-                                                                                  max_threads_);
+                                                                                  score_percentile_, max_threads_);
     return threshold_estimator;
 }
 }

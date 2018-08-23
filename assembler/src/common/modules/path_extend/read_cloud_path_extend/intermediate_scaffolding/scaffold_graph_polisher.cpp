@@ -4,6 +4,7 @@
 #include "common/modules/path_extend/read_cloud_path_extend/path_extend_dijkstras.hpp"
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
 #include "scaffold_graph_path_cleaner.hpp"
+#include "common/barcode_index/cluster_storage/path_cluster_storage_builder.hpp"
 
 namespace path_extend {
 
@@ -325,8 +326,11 @@ shared_ptr<cluster_storage::InitialClusterStorage> ScaffoldGraphPolisherLauncher
     size_t linkage_distance = params.linkage_distance_;
     size_t min_read_threshold = params.min_read_threshold_;
     if (not path_scaffolding) {
+        auto edge_cluster_extractor =
+            make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp.g, barcode_extractor_ptr,
+                                                                       linkage_distance, min_read_threshold);
         auto storage_builder =
-            std::make_shared<cluster_storage::EdgeInitialClusterStorageBuilder>(gp.g, barcode_extractor_ptr,
+            std::make_shared<cluster_storage::EdgeInitialClusterStorageBuilder>(gp.g, edge_cluster_extractor,
                                                                                 target_edges, linkage_distance,
                                                                                 min_read_threshold,
                                                                                 cluster_storage_builder_threads);
@@ -336,8 +340,11 @@ shared_ptr<cluster_storage::InitialClusterStorage> ScaffoldGraphPolisherLauncher
     }
 
     size_t edge_length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
+    auto edge_cluster_extractor =
+        make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp.g, barcode_extractor_ptr,
+                                                                   linkage_distance, min_read_threshold);
     auto storage_builder =
-        std::make_shared<cluster_storage::PathInitialClusterStorageBuilder>(gp.g, barcode_extractor_ptr,
+        std::make_shared<cluster_storage::PathInitialClusterStorageBuilder>(gp.g, edge_cluster_extractor,
                                                                             target_edges, linkage_distance,
                                                                             min_read_threshold,
                                                                             cluster_storage_builder_threads,

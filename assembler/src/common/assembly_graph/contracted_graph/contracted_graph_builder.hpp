@@ -2,7 +2,7 @@
 
 #include "common/assembly_graph/contracted_graph/contracted_graph.hpp"
 #include "adt/concurrent_dsu.hpp"
-#include <common/barcode_index/cluster_storage.hpp>
+#include <common/barcode_index/cluster_storage/cluster_storage.hpp>
 
 namespace contracted_graph {
 

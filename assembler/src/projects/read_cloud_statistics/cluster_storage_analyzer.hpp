@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/barcode_index/cluster_storage.hpp"
-#include "common/barcode_index/cluster_storage_extractor.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 #include "scaffold_graph_utils.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
@@ -535,16 +535,16 @@ class PathClusterStorageBuilder {
             ClusterTransitionExtractor transition_extractor(ordering_analyzer_);
             INFO("Initial false: " << nonpath_cluster_preliminary_stats.false_transitions_);
             for (const auto& cluster: clusters) {
-                vector<ScaffoldVertex> ordering = ordering_analyzer_.GetOrderingFromCluster(cluster);
-                if (ordering.size() != 0) {
-                    auto transitions = transition_extractor.ExtractTransitionsFromOrdering(ordering);
-                    path_cluster_preliminary_stats.Update(transition_storage, transitions);
-                } else {
-                    auto all_transitions = transition_extractor.ExtractAllTransitionsFromNonPathCluster(cluster);
-                    nonpath_cluster_preliminary_stats.Update(transition_storage, all_transitions);
-                    auto filtered_transitions = transition_extractor.ExtractGoodTransitionsFromNonPathCluster(cluster);
-                    filtered_non_path_preliminary_stats.Update(transition_storage, filtered_transitions);
-                }
+//                vector<ScaffoldVertex> ordering = ordering_analyzer_.GetOrderingFromCluster(cluster);
+//                if (ordering.size() != 0) {
+//                    auto transitions = transition_extractor.ExtractTransitionsFromOrdering(ordering);
+//                    path_cluster_preliminary_stats.Update(transition_storage, transitions);
+//                } else {
+//                    auto all_transitions = transition_extractor.ExtractAllTransitionsFromNonPathCluster(cluster);
+//                    nonpath_cluster_preliminary_stats.Update(transition_storage, all_transitions);
+//                    auto filtered_transitions = transition_extractor.ExtractGoodTransitionsFromNonPathCluster(cluster);
+//                    filtered_non_path_preliminary_stats.Update(transition_storage, filtered_transitions);
+//                }
             }
             INFO("Path cluster stats")
             auto path_cluster_stats = GetClusterSetStatistics(path_cluster_preliminary_stats, transition_storage);

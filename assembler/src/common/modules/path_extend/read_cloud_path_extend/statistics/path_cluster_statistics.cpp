@@ -3,6 +3,7 @@
 #include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/transition_subgraph_validation.hpp"
+#include "common/barcode_index/cluster_storage/initial_cluster_storage_builder.hpp"
 
 namespace path_extend {
 
@@ -27,8 +28,11 @@ vector<SubgraphInfo> PathClusterStatisticsExtractor::GetAllSubgraphInfo(const Sc
     auto barcode_extractor_ptr =
         make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     size_t cluster_storage_builder_threads = cfg::get().max_threads;
+    auto edge_cluster_extractor =
+        make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp_.g, barcode_extractor_ptr,
+                                                                   linkage_distance, min_read_threshold);
     auto cluster_storage_builder =
-        std::make_shared<cluster_storage::EdgeInitialClusterStorageBuilder>(gp_.g, barcode_extractor_ptr,
+        std::make_shared<cluster_storage::EdgeInitialClusterStorageBuilder>(gp_.g, edge_cluster_extractor,
                                                                             target_edges, linkage_distance,
                                                                             min_read_threshold,
                                                                             cluster_storage_builder_threads);

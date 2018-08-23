@@ -3,7 +3,7 @@
 #include "common/pipeline/graph_pack.hpp"
 #include <common/modules/path_extend/extension_chooser.hpp>
 #include <common/modules/alignment/long_read_mapper.hpp>
-#include "common/barcode_index/cluster_storage_extractor.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
 
 namespace path_extend {
@@ -231,13 +231,6 @@ class ClusterTransitionExtractor {
     vector<Transition> ExtractAllTransitionsFromNonPathCluster(const cluster_storage::Cluster& cluster);
 
     vector<Transition> ExtractGoodTransitionsFromNonPathCluster(const cluster_storage::Cluster& cluster);
-
-    vector<Transition> ExtractTransitionsFromOrdering(const vector<ScaffoldVertex>& ordering);
-
-    vector<Transition> ExtractTransitionsFromPathCluster(const cluster_storage::Cluster& cluster) {
-        auto ordering = ordering_analyzer_.GetOrderingFromCluster(cluster);
-        return ExtractTransitionsFromOrdering(ordering);
-    }
 };
 
 }

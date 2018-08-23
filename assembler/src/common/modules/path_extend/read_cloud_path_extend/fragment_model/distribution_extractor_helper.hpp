@@ -2,6 +2,7 @@
 
 #include "distribution_extractor.hpp"
 #include "common/pipeline/graph_pack.hpp"
+#include "common/barcode_index/cluster_storage/initial_cluster_storage_builder.hpp"
 
 namespace path_extend {
 namespace cluster_model {
@@ -26,7 +27,7 @@ class MinTrainingLengthEstimator {
             }
         }
         VERIFY(edge_length_initial_list.size() >= min_edges_);
-        //fixme return false if estimated value is too low
+        //fixme return nothing if estimated value is too low
         vector<std::pair<size_t, size_t>> length_rev_cumulative_list;
         std::sort(edge_length_initial_list.begin(), edge_length_initial_list.end(), std::greater<size_t>());
         size_t current_sum = 0;
@@ -246,7 +247,10 @@ class ClusterDistributionExtractor {
             }
         }
         DEBUG("Found " << long_edges.size() << " long edges in the graph");
-        cluster_storage::EdgeInitialClusterStorageBuilder initial_builder(gp_.g, barcode_extractor, long_edges,
+        auto edge_cluster_extractor =
+            make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp_.g, barcode_extractor,
+                                                                       distance_threshold, min_read_threshold_);
+        cluster_storage::EdgeInitialClusterStorageBuilder initial_builder(gp_.g, edge_cluster_extractor, long_edges,
                                                                           distance_threshold, min_read_threshold_,
                                                                           max_threads_);
         auto initial_cluster_storage = initial_builder.ConstructInitialClusterStorage();

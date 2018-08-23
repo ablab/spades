@@ -19,8 +19,10 @@ void PartsBasedContractedFactory::ConstructFromParts(PartsBasedContractedFactory
         VertexId end_root = vertex_to_root.at(edge.getEndGraphVertex(g_));
         DEBUG("Inserting vertices and edges");
         this->graph_ptr_->InsertEdge(start_root, end_root, edge);
-        this->graph_ptr_->InsertCapacity(start_root, vertex_to_capacity.at(start_root));
-        this->graph_ptr_->InsertCapacity(end_root, vertex_to_capacity.at(end_root));
+
+    }
+    for (const auto& entry: parts.vertex_to_capacity_) {
+        this->graph_ptr_->InsertCapacity(entry.first, entry.second);
     }
 }
 void PartsBasedContractedFactory::Construct() {

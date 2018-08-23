@@ -153,7 +153,7 @@ class PredicateScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
 class ScoreFunctionScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
     typedef path_extend::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
  protected:
-    const ScaffoldGraph& old_graph_;
+    const ScaffoldGraph &old_graph_;
     const shared_ptr<EdgePairScoreFunction> score_function_;
     const double score_threshold_;
     const size_t num_threads_;
@@ -168,6 +168,26 @@ class ScoreFunctionScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
     void ConstructFromGraphAndScore(const ScaffoldGraph& graph, shared_ptr<EdgePairScoreFunction> score_function,
                                     double score_threshold, size_t threads);
     DECL_LOGGER("ScoreFunctionScaffoldGraphConstructor")
+};
+
+class InternalScoreScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
+    typedef path_extend::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
+    typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
+ protected:
+    const ScaffoldGraph &old_graph_;
+    shared_ptr<EdgePairScoreFunction> score_function_;
+    const double relative_threshold_;
+ public:
+    InternalScoreScaffoldGraphFilter(const Graph &assembly_graph,
+                                     const ScaffoldGraph &old_graph,
+                                     shared_ptr<EdgePairScoreFunction> score_function,
+                                     double relative_threshold);
+
+    shared_ptr<ScaffoldGraph> Construct() override;
+ private:
+    void ProcessEdges(vector<ScaffoldEdge> &edges);
+
+    boost::optional<ScaffoldEdge> GetWinnerVertex(vector<ScaffoldEdge> &edges) const;
 };
 
 class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
