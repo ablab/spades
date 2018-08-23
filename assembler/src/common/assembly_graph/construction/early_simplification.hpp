@@ -72,19 +72,6 @@ private:
         return -1;
     }
 
-    size_t FindBackward(KeyWithHash kh, vector<KeyWithHash> &tip) {
-        while (tip.size() < length_bound_ && index_.CheckUniqueOutgoing(kh) && index_.CheckUniqueIncoming(kh)) {
-            tip.push_back(kh);
-            kh = index_.GetUniqueIncoming(kh);
-        }
-        tip.push_back(kh);
-        if (index_.CheckUniqueOutgoing(kh) && index_.IsDeadStart(kh)) {
-            return tip.size();
-        }
-        tip.clear();
-        return -1;
-    }
-
     size_t RemoveTip(const vector<KeyWithHash> &tip) {
         for (const auto &kh : tip) index_.IsolateVertex(kh);
         return tip.size();
@@ -105,19 +92,6 @@ private:
             if (index_.CheckOutgoing(kh, c)) {
                 KeyWithHash khc = index_.GetOutgoing(kh, c);
                 size_t len = FindForward(khc, tips[c]);
-                if (len > max) max = len;
-            }
-        }
-        return RemoveTips(tips, max);
-    }
-
-    size_t RemoveBackward(KeyWithHash kh) {
-        std::array<vector<KeyWithHash>, 4> tips;
-        size_t max = 0;
-        for (char c = 0; c < 4; c++) {
-            if (index_.CheckIncoming(kh, c)) {
-                KeyWithHash khc = index_.GetIncoming(kh, c);
-                size_t len = FindBackward(khc, tips[c]);
                 if (len > max) max = len;
             }
         }
