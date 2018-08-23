@@ -4,7 +4,7 @@
 #include "common/modules/path_extend/read_cloud_path_extend/validation/transition_subgraph_validation.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
-#include "common/barcode_index/cluster_storage_extractor.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage_extractor.hpp"
 
 namespace path_extend {
 

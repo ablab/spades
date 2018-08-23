@@ -605,10 +605,9 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender() const {
         auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
         stats.Serialize(std::cout);
     }
-    INFO(scaffold_graph.VertexCount() << "vertices and " << scaffold_graph.EdgeCount()
-                                     << "edges in scaffold graph");
-
-    shared_ptr<ScaffoldGraphExtender> extender = make_shared<ScaffoldGraphExtender>(gp_.g, scaffold_graph, used_unique_storage_);
+    INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount()
+                                     << " edges in scaffold graph");
+    shared_ptr<ScaffoldGraphExtender> extender = make_shared<ScaffoldGraphExtender>(gp_.g, scaffold_graph);
     return extender;
 }
 shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_index) const {

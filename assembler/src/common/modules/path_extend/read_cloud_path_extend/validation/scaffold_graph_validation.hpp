@@ -2,6 +2,7 @@
 #include "common/assembly_graph/core/graph.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "transition_extractor.hpp"
+#include "reference_path_index.hpp"
 #include <fstream>
 #include <iostream>
 
@@ -11,26 +12,6 @@ namespace validation {
 using debruijn_graph::EdgeId;
 using debruijn_graph::Graph;
 
-class ReferencePathIndex {
-    struct EdgeInfo {
-      size_t pos_;
-      size_t rev_pos_;
-      size_t path_;
-
-      EdgeInfo(size_t pos_, size_t rev_pos, size_t path_) : pos_(pos_), rev_pos_(rev_pos), path_(path_) {}
-    };
-
-    std::unordered_map<EdgeId, EdgeInfo> edge_to_info_;
-
- public:
-    void Insert(EdgeId edge, size_t path, size_t pos, size_t rev_pos) {
-        EdgeInfo info(pos, rev_pos, path);
-        edge_to_info_.insert({edge, info});
-    }
-    EdgeInfo at(const EdgeId& edge) const {
-        return edge_to_info_.at(edge);
-    }
-};
 struct ScaffoldGraphStats {
   size_t true_positive_;
   size_t false_positive_;
@@ -98,8 +79,6 @@ class ScaffoldGraphValidator {
                                                             const ContigTransitionStorage &conjugate_transitions,
                                                             const ContigTransitionStorage &near_in_both_strands_transitions,
                                                             const ContigTransitionStorage &forward_neighbouring_transitions);
-
-    ReferencePathIndex BuildReferenceIndex(const vector <vector<EdgeWithMapping>> &reference_paths);
 
     size_t CountStatsUsingTransitions(const ScaffoldGraph &graph, const ContigTransitionStorage &transitions);
 

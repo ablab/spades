@@ -2,7 +2,7 @@
 #include "common/assembly_graph/core/graph.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
-#include "common/barcode_index/cluster_storage.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage.hpp"
 #include "common/barcode_index/barcode_info_extractor.hpp"
 #include "pe_extraction.hpp"
 #include "predicate_builders.hpp"
