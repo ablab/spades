@@ -72,7 +72,7 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
 
     auto false_negative_transitions = GetFalseNegativeTransitions(graph, reference_transitions);
     DEBUG(false_negative_transitions.size() << " false negative transitions:");
-    for (const auto& transition: false_negative_transitions) {
+    for (const auto &transition: false_negative_transitions) {
         DEBUG(transition.first_.int_id() << " -> " << transition.second_.int_id());
         size_t outdegree = graph.OutgoingEdgeCount(transition.first_);
         if (outdegree == 1) {
@@ -86,7 +86,7 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
     path_extend::ScaffoldGraphExtractor extractor;
     auto univocal_edges = extractor.ExtractUnivocalEdges(graph);
     stats.univocal_edges_ = univocal_edges.size();
-    for (const auto& edge: univocal_edges) {
+    for (const auto &edge: univocal_edges) {
         auto start = edge.getStart();
         auto end = edge.getEnd();
         bool start_covered = reference_transitions.IsEdgeCovered(start);
@@ -96,16 +96,6 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
         }
     }
     return stats;
-}
-ReferencePathIndex ScaffoldGraphValidator::BuildReferenceIndex(const vector<vector<EdgeWithMapping>>& reference_paths) {
-    ReferencePathIndex result;
-    for (size_t i = 0; i < reference_paths.size(); ++i) {
-        for (size_t j = 0; j < reference_paths[i].size(); ++j) {
-            size_t rev_pos = reference_paths[i].size() - j - 1;
-            result.Insert(reference_paths[i][j].edge_, i, j, rev_pos);
-        }
-    }
-    return result;
 }
 size_t ScaffoldGraphValidator::CountStatsUsingTransitions(const ScaffoldGraphValidator::ScaffoldGraph& graph,
                                                           const ContigTransitionStorage& transitions) {

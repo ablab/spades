@@ -157,7 +157,6 @@ namespace path_extend {
         size_t min_distance_;
         size_t max_distance_;
         double score_percentile_;
-        double default_threshold_;
         size_t max_threads_;
 
      public:
@@ -169,7 +168,6 @@ namespace path_extend {
                                               size_t min_distance_,
                                               size_t max_distance_,
                                               double score_percentile,
-                                              double default_threshold,
                                               size_t max_threads);
 
         double GetThreshold() const override;

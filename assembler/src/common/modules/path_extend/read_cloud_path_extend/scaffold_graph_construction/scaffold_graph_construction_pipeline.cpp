@@ -17,12 +17,15 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParams(
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
     size_t min_length_for_barcode_collection = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
 
+    //fixme move to configs
+    const size_t INITIAL_DISTANCE_MULTIPLIER = 2;
     const double initial_distance_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
     const double score_percentile = cfg::get().ts_res.scaff_con.score_percentile;
 
-    size_t initial_distance = primary_extractor.GetLengthPercentile(initial_distance_percentile);
-    auto score_estimation_params = GetScoreEstimationParams(g, primary_extractor,
-                                                            score_percentile, initial_distance_percentile);
+    size_t initial_distance =
+        INITIAL_DISTANCE_MULTIPLIER * primary_extractor.GetLengthPercentile(initial_distance_percentile);
+    auto score_estimation_params = GetScoreEstimationParams(g, primary_extractor, score_percentile,
+                                                            initial_distance_percentile, min_length);
 
     ScaffolderParams result(length_threshold, tail_threshold, count_threshold,
                             connection_length_threshold, connection_count_threshold,
@@ -38,23 +41,22 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
         size_t unique_edge_length,
         size_t max_threads) const {
-    const double MIN_SHORT_EDGE_THRESHOLD = 0.001;
-    auto threshold_estimator_params = params.score_estimation_params_;
-    const size_t min_training_length = 4 * unique_edge_length + threshold_estimator_params.max_cluster_gap_;
-    INFO("Setting min training length: " << min_training_length);
-    ShortEdgeScoreThresholdEstimatorFactory threshold_estimator_factory(g, barcode_extractor,
-                                                                        min_training_length,
-                                                                        unique_edge_length,
-                                                                        threshold_estimator_params.max_cluster_gap_,
-                                                                        threshold_estimator_params.score_percentile_,
-                                                                        max_threads);
-    auto score_threshold_estimator = threshold_estimator_factory.GetThresholdEstimator();
-    //fixme magic
-    auto connection_score_threshold = score_threshold_estimator->GetThreshold() * 0.5;
-    if (connection_score_threshold < MIN_SHORT_EDGE_THRESHOLD) {
-        INFO("Estimated threshold is too small, using " << MIN_SHORT_EDGE_THRESHOLD << " as default threshold");
-        connection_score_threshold = MIN_SHORT_EDGE_THRESHOLD;
-    }
+    const double SHORT_EDGE_THRESHOLD = 0.01;
+//    auto threshold_estimator_params = params.score_estimation_params_;
+//    ShortEdgeScoreThresholdEstimatorFactory threshold_estimator_factory(g, barcode_extractor,
+//                                                                        threshold_estimator_params.training_edge_length_threshold_,
+//                                                                        unique_edge_length,
+//                                                                        threshold_estimator_params.max_cluster_gap_,
+//                                                                        threshold_estimator_params.score_percentile_,
+//                                                                        max_threads);
+//    auto score_threshold_estimator = threshold_estimator_factory.GetThresholdEstimator();
+//    //fixme magic
+//    auto connection_score_threshold = score_threshold_estimator->GetThreshold() * 0.5;
+//    if (connection_score_threshold < MIN_SHORT_EDGE_THRESHOLD) {
+//        INFO("Estimated threshold is too small, using " << MIN_SHORT_EDGE_THRESHOLD << " as default threshold");
+//        connection_score_threshold = MIN_SHORT_EDGE_THRESHOLD;
+//    }
+    double connection_score_threshold = SHORT_EDGE_THRESHOLD;
     
     double relative_coverage_threshold = cfg::get().ts_res.scaff_con.relative_coverage_threshold;
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
@@ -67,25 +69,27 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
 }
 ScaffolderParams::ScoreEstimationParams ScaffolderParamsConstructor::GetScoreEstimationParams(
         const Graph &g, cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor,
-        double score_percentile, double cluster_length_percentile) const {
-    cluster_model::MinTrainingLengthEstimatorHelper length_estimator_helper;
-    auto min_training_length_result = length_estimator_helper.EstimateTrainingLength(g);
-    VERIFY(min_training_length_result.is_initialized());
-    size_t min_training_length = min_training_length_result.get();
-
+        double score_percentile, double cluster_length_percentile, size_t block_length) const {
     size_t max_training_gap = cluster_statistics_extractor.GetLengthPercentile(cluster_length_percentile);
+//    double length_normalizer = static_cast<double>(cfg::get().ts_res.long_edge_length_max_upper_bound);
+//    const double block_normalizer = 2.0 / 3.0;
+//    double distance_normalizer = (static_cast<double>(block_length) + length_normalizer * block_normalizer) / length_normalizer;
+//    max_training_gap = static_cast<size_t>(distance_normalizer * static_cast<double>(max_training_gap));
+    size_t min_training_length = 2 * block_length + max_training_gap;
+    INFO("Max training gap: " << max_training_gap);
+    INFO("Min training length: " << min_training_length);
     ScaffolderParams::ScoreEstimationParams score_estimation_params(score_percentile, max_training_gap,
                                                                     min_training_length);
     return score_estimation_params;
 }
 
-CloudScaffoldGraphConstructionPipeline::CloudScaffoldGraphConstructionPipeline(
+ScaffoldGraphConstructionPipeline::ScaffoldGraphConstructionPipeline(
     shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> initial_constructor_, const Graph &g,
     const path_extend::ScaffolderParams &params)
     : initial_constructor_(initial_constructor_), construction_stages_(),
       intermediate_results_(), g_(g), params_(params) {}
 
-void CloudScaffoldGraphConstructionPipeline::Run() {
+void ScaffoldGraphConstructionPipeline::Run() {
     auto initial_graph_ptr = make_shared<ScaffoldGraph>(g_);
     INFO("Constructing initial scaffold graph");
     initial_graph_ptr = initial_constructor_->Construct();
@@ -104,13 +108,13 @@ void CloudScaffoldGraphConstructionPipeline::Run() {
         INFO(univocal_edges.size() << " univocal edges in current graph");
     }
 }
-shared_ptr<path_extend::scaffold_graph::ScaffoldGraph> CloudScaffoldGraphConstructionPipeline::GetResult() const {
+shared_ptr<path_extend::scaffold_graph::ScaffoldGraph> ScaffoldGraphConstructionPipeline::GetResult() const {
     return intermediate_results_.back().first;
 }
-void CloudScaffoldGraphConstructionPipeline::AddStage(shared_ptr<IterativeScaffoldGraphConstructorCaller> stage) {
+void ScaffoldGraphConstructionPipeline::AddStage(shared_ptr<IterativeScaffoldGraphConstructorCaller> stage) {
     construction_stages_.push_back(stage);
 }
-vector<std::pair<shared_ptr<path_extend::scaffold_graph::ScaffoldGraph>, string>> CloudScaffoldGraphConstructionPipeline::GetIntermediateResults() const {
+vector<std::pair<shared_ptr<path_extend::scaffold_graph::ScaffoldGraph>, string>> ScaffoldGraphConstructionPipeline::GetIntermediateResults() const {
     return intermediate_results_;
 }
 
@@ -132,7 +136,7 @@ shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> ScaffoldGraphP
     return scaffold_index_extractor;
 }
 
-CloudScaffoldGraphConstructionPipeline BasicScaffoldGraphPipelineConstructor::ConstructPipeline(
+ScaffoldGraphConstructionPipeline BasicScaffoldGraphPipelineConstructor::ConstructPipeline(
         const set<ScaffoldGraphPipelineConstructor::ScaffoldVertex> &scaffold_vertices) const {
     INFO("Constructing scaffold graph with length threshold " << min_length_);
     path_extend::ScaffolderParamsConstructor params_constructor;
@@ -147,7 +151,7 @@ CloudScaffoldGraphConstructionPipeline BasicScaffoldGraphPipelineConstructor::Co
                                                                                  max_threads_);
     auto iterative_constructor_callers = ConstructStages(params, scaffold_vertices);
     INFO("Created " << iterative_constructor_callers.size() << " stages");
-    CloudScaffoldGraphConstructionPipeline pipeline(initial_constructor, gp_.g, params);
+    ScaffoldGraphConstructionPipeline pipeline(initial_constructor, gp_.g, params);
     for (const auto stage: iterative_constructor_callers) {
         pipeline.AddStage(stage);
     }
@@ -165,7 +169,7 @@ BasicScaffoldGraphPipelineConstructor::BasicScaffoldGraphPipelineConstructor(
       max_threads_(max_threads_),
       min_length_(min_length_) {}
 
-CloudScaffoldGraphConstructionPipeline GapScaffoldGraphPipelineConstructor::ConstructPipeline(
+ScaffoldGraphConstructionPipeline GapScaffoldGraphPipelineConstructor::ConstructPipeline(
         const set<ScaffoldGraphPipelineConstructor::ScaffoldVertex> &scaffold_vertices) const {
     INFO("Constructing scaffold graph with length threshold " << min_length_);
     path_extend::ScaffolderParamsConstructor params_constructor;
@@ -174,7 +178,7 @@ CloudScaffoldGraphConstructionPipeline GapScaffoldGraphPipelineConstructor::Cons
     auto initial_constructor = GetInitialConstructor(params, scaffold_vertices);
     auto iterative_constructor_callers = ConstructStages(params, scaffold_vertices);
     INFO("Created " << iterative_constructor_callers.size() << " stages");
-    CloudScaffoldGraphConstructionPipeline pipeline(initial_constructor, gp_.g, params);
+    ScaffoldGraphConstructionPipeline pipeline(initial_constructor, gp_.g, params);
     for (const auto& stage: iterative_constructor_callers) {
         pipeline.AddStage(stage);
     }

@@ -318,5 +318,52 @@ shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
     }
     return graph_;
 }
+shared_ptr<ScaffoldGraph> InternalScoreScaffoldGraphFilter::Construct() {
+    for (const auto& vertex: old_graph_.vertices()) {
+        graph_->AddVertex(vertex);
+    }
+    for (const ScaffoldVertex &vertex: old_graph_.vertices()) {
+        auto outgoing = old_graph_.OutgoingEdges(vertex);
+        auto incoming = old_graph_.IncomingEdges(vertex);
+        ProcessEdges(incoming);
+        ProcessEdges(outgoing);
+    }
+    return graph_;
+}
+boost::optional<ScaffoldGraph::ScaffoldEdge> InternalScoreScaffoldGraphFilter::GetWinnerVertex(
+        vector<ScaffoldGraph::ScaffoldEdge> &edges) const {
+    boost::optional<ScaffoldEdge> result;
+    if (edges.size() < 2) {
+        return result;
+    }
+    std::sort(edges.begin(), edges.end(), [this](const ScaffoldEdge &first, const ScaffoldEdge &second) {
+      return math::gr(score_function_->GetScore(first), score_function_->GetScore(second));
+    });
+    const double top_score = score_function_->GetScore(edges[0]);
+    const double second_score = score_function_->GetScore(edges[1]);
+    if (math::gr(top_score, relative_threshold_ * second_score)) {
+        return edges[0];
+    }
+    return result;
+}
+void InternalScoreScaffoldGraphFilter::ProcessEdges(vector<InternalScoreScaffoldGraphFilter::ScaffoldEdge> &edges) {
+    boost::optional<ScaffoldEdge> incoming_winner = GetWinnerVertex(edges);
+    if (incoming_winner.is_initialized()) {
+        graph_->AddEdge(incoming_winner.get());
+    } else {
+        for (const auto &edge: edges) {
+            graph_->AddEdge(edge);
+        }
+    }
+}
+InternalScoreScaffoldGraphFilter::InternalScoreScaffoldGraphFilter(
+        const Graph &assembly_graph,
+        const ScaffoldGraph &old_graph,
+        shared_ptr<InternalScoreScaffoldGraphFilter::EdgePairScoreFunction> score_function,
+        double relative_threshold)
+    : BaseScaffoldGraphConstructor(assembly_graph),
+      old_graph_(old_graph),
+      score_function_(score_function),
+      relative_threshold_(relative_threshold) {}
 } //scaffold_graph
 } //path_extend

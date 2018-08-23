@@ -896,17 +896,18 @@ class ScaffoldGraphExtender: public PathExtender {
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
  protected:
-    const ScaffoldGraph &scaffold_graph_;
+    ScaffoldGraph scaffold_graph_;
+    std::unordered_set<EdgeId> visited_;
     std::unordered_set<ScaffoldVertex> scaffold_graph_vertices_;
-    UsedUniqueStorage& used_storage_;
 
  public:
-    ScaffoldGraphExtender(const Graph &g, const ScaffoldGraph &scaffold_graph_, UsedUniqueStorage& used_storage)
-        : PathExtender(g), scaffold_graph_(scaffold_graph_), used_storage_(used_storage) {
+    ScaffoldGraphExtender(const Graph &g, const ScaffoldGraph &scaffold_graph_)
+        : PathExtender(g), scaffold_graph_(scaffold_graph_), visited_() {
         INFO("Constructing scaffold graph vertices");
         for (const ScaffoldVertex &vertex: scaffold_graph_.vertices()) {
             scaffold_graph_vertices_.insert(vertex);
         }
+        INFO("Scaffold graph vertices: " << scaffold_graph_vertices_.size());
     }
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
@@ -933,6 +934,9 @@ class ScaffoldGraphExtender: public PathExtender {
             }
             Gap gap(static_cast<int>(connection.getLength()), {0, 0}, false);
             ScaffoldVertex next_vertex = connection.getEnd();
+            DEBUG("Graph contains next vertex: " << scaffold_graph_.Exists(next_vertex));
+            DEBUG("Graph vertices contain vertex: "
+                      << (scaffold_graph_vertices_.find(next_vertex) != scaffold_graph_vertices_.end()));
             scaffold_graph::ScaffoldVertexT type = next_vertex.getType();
             switch (type) {
                 case scaffold_graph::Edge: {
@@ -960,10 +964,13 @@ class ScaffoldGraphExtender: public PathExtender {
         return result;
     }
 
-    //fixme code duplication with LoopDetectingPathExtender
+    //fixme logical duplication with LoopDetectingPathExtender
     bool TryUseEdge(BidirectionalPath &path, EdgeId e, const Gap &gap) {
-        bool success = used_storage_.TryUseEdge(path, e, gap);
+        bool success = scaffold_graph_vertices_.find(e) != scaffold_graph_vertices_.end() and
+            visited_.find(e) == visited_.end();
         if (success) {
+            visited_.insert(e);
+            path.PushBack(e, gap);
             DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
                                           << gap.gap << ", trash length: " << gap.trash.previous << "-" << gap.trash.current);
             DEBUG("Added edge " << e.int_id());

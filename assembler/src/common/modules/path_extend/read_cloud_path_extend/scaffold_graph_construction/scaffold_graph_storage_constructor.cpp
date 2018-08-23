@@ -1,6 +1,10 @@
+#include "read_cloud_path_extend/statistics/cloud_check_statistics.hpp"
 #include "scaffold_graph_storage_constructor.hpp"
 #include "read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
+#include "read_cloud_path_extend/validation/path_cluster_validation.hpp"
 #include "read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage_helper.hpp"
+
 
 namespace path_extend {
 
@@ -172,16 +176,21 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
         validation::FilteredReferencePathHelper path_helper(gp_);
         size_t length_threshold = min_length;
         auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
+
+//        PathClusterCheckerFactory path_cluster_checker_factory(gp_, barcode_extractor_, max_threads_);
+//        auto path_cluster_checker = path_cluster_checker_factory.ConstuctPathClusterChecker(scaffold_vertices, min_length);
+
         for (const auto& result: intermediate_results) {
             auto scaffold_graph = *(result.first);
             string name = result.second;
             auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
             INFO("Stats for " << name);
             stats.Serialize(std::cout);
+
+//            DEBUG("Cluster stats for " << name);
+//            path_cluster_checker->CheckPathClusters(scaffold_graph);
         }
     }
-
-
     return *(pipeline.GetResult());
 }
 ScaffoldingUniqueEdgeStorage CloudScaffoldGraphConstructor::ConstructUniqueStorage(size_t min_length) const {

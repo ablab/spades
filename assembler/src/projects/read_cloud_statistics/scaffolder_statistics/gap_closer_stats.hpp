@@ -280,13 +280,13 @@ class PathClusterScoreAnalyzer: public read_cloud_statistics::StatisticProcessor
             result.insert({transition, empty});
         }
         for (const auto& cluster: clusters) {
-            path_extend::transitions::PathClusterTransitionExtractor extractor(graph_analyzer_);
-            auto cluster_transitions = extractor.ExtractTransitions(cluster);
-            for (const auto& transition: cluster_transitions) {
-                if (result.find(transition) != result.end()) {
-                    result.at(transition).insert(cluster);
-                }
-            }
+//            path_extend::transitions::PathClusterTransitionExtractor extractor(graph_analyzer_);
+//            auto cluster_transitions = extractor.ExtractTransitions(cluster);
+//            for (const auto& transition: cluster_transitions) {
+//                if (result.find(transition) != result.end()) {
+//                    result.at(transition).insert(cluster);
+//                }
+//            }
         }
         return result;
     }
