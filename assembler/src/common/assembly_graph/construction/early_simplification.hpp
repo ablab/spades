@@ -138,9 +138,7 @@ private:
         return RemoveTips(tips, max);
     }
 
-    //TODO make parallel
-    size_t RoughClipTips() {
-        vector<Index::kmer_iterator> iters = index_.kmer_begin(10 * omp_get_max_threads());
+    size_t RoughClipTips(std::vector<Index::kmer_iterator> &iters) {
         vector<size_t> result(iters.size());
 #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < iters.size(); i++) {
@@ -161,6 +159,21 @@ private:
         return sum;
     }
 
+    size_t RoughClipTips(size_t n_chunks, const std::vector<size_t> &chunks) {
+        std::vector<Index::kmer_iterator> all_iters = index_.kmer_begin(n_chunks);
+        std::vector<Index::kmer_iterator> iters;
+        for (size_t chunk : chunks) {
+            iters.push_back(std::move(all_iters[chunk]));
+        }
+
+        return RoughClipTips(iters);
+    }
+
+    size_t RoughClipTips(size_t n_chunks) {
+        auto iters = index_.kmer_begin(n_chunks);
+        return RoughClipTips(iters);
+    }
+
 public:
     AlternativeEarlyTipClipper(Index &index, size_t length_bound) : index_(index), length_bound_(length_bound) {}
 
@@ -169,7 +182,7 @@ public:
      */
     size_t ClipTips() {
         INFO("Early tip clipping");
-        size_t result = RoughClipTips();
+        size_t result = RoughClipTips(10 * omp_get_max_threads());
         LinkCleaner(index_).CleanLinks();
         INFO(result << " " << (index_.k() + 1) << "-mers were removed by early tip clipper");
         return result;
