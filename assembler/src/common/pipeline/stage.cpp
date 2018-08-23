@@ -5,6 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "io/dataset_support/read_converter.hpp"
 #include "pipeline/stage.hpp"
 #include "io/binary/graph_pack.hpp"
 
@@ -21,6 +22,8 @@ void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
     if (!prefix) prefix = id_;
     auto dir = fs::append_path(load_from, prefix);
     INFO("Loading current state from " << dir);
+
+    io::ConvertIfNeeded(cfg::get_writable().ds.reads);
 
     auto p = fs::append_path(dir, "graph_pack");
     io::binary::FullPackIO<Graph>().Load(p, gp);

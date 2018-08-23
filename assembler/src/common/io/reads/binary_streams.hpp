@@ -62,8 +62,7 @@ public:
         const size_t start_next = chunk_count * (portion_num + 1) / total_num * BinaryWriter::CHUNK;
         count_ = std::min(stat.read_count, start_next) - start_num;
 
-        DEBUG("Reads " << start_num << "-" << start_num + count_ << "/" << stat.read_count
-                       << " at 0x" << std::ios_base::hex << offset_);
+        DEBUG("Reads " << start_num << "-" << start_num + count_ << "/" << stat.read_count << " from " << offset_);
 
         Init();
     }

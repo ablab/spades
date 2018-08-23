@@ -68,7 +68,6 @@ class BinaryWriter {
             for (const Read &read : buf) {
                 if (!--rest) {
                     auto offset = (size_t)file_ds_->tellp();
-                    INFO("Offset at 0x" << std::ios_base::hex << offset);
                     offset_ds_->write(reinterpret_cast<const char*>(&offset), sizeof(offset));
                     rest = CHUNK;
                 }

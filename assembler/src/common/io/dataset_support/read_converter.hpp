@@ -113,6 +113,13 @@ public:
     }
 };
 
+inline void ConvertIfNeeded(DataSet<LibraryData> &data) {
+    for (auto &lib : data) {
+        if (!ReadConverter::LoadLibIfExists(lib))
+            ReadConverter::ConvertToBinary(lib);
+    }
+}
+
 inline
 BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
                                           bool followed_by_rc,
