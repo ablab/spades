@@ -10,6 +10,7 @@
 #include "utils/ph_map/perfect_hash_map.hpp"
 #include "utils/kmer_mph/kmer_index.hpp"
 #include <array>
+#include <numeric>
 
 namespace debruijn_graph {
 
@@ -114,8 +115,12 @@ private:
                 }
             }
         }
-        size_t sum = 0;
-        for (size_t i = 0; i < result.size(); i++) sum += result[i];
+
+        size_t n_tipped_junctions = std::accumulate(tipped_junctions.cbegin(),
+                                                    tipped_junctions.cend(),
+                                                    size_t(0),
+                                                    [](size_t sum, const auto &v) { return sum + v.size(); });
+        INFO("#tipped junctions: " << n_tipped_junctions);
 
         // Remove links leading to tips
         size_t clipped_tips = 0;
@@ -125,7 +130,9 @@ private:
                 clipped_tips += CleanForwardLinks(kh);
             }
         }
+        INFO("Clipped tips: " << clipped_tips);
 
+        size_t sum = std::accumulate(result.cbegin(), result.cend(), size_t(0));
         return sum;
     }
 
