@@ -159,16 +159,6 @@ private:
         return sum;
     }
 
-    size_t RoughClipTips(size_t n_chunks, const std::vector<size_t> &chunks) {
-        std::vector<Index::kmer_iterator> all_iters = index_.kmer_begin(n_chunks);
-        std::vector<Index::kmer_iterator> iters;
-        for (size_t chunk : chunks) {
-            iters.push_back(std::move(all_iters[chunk]));
-        }
-
-        return RoughClipTips(iters);
-    }
-
     size_t RoughClipTips(size_t n_chunks) {
         auto iters = index_.kmer_begin(n_chunks);
         return RoughClipTips(iters);
@@ -183,9 +173,25 @@ public:
     size_t ClipTips() {
         INFO("Early tip clipping");
         size_t result = RoughClipTips(10 * omp_get_max_threads());
-        LinkCleaner(index_).CleanLinks();
+        CleanLinks();
         INFO(result << " " << (index_.k() + 1) << "-mers were removed by early tip clipper");
         return result;
+    }
+
+    size_t RoughClipTips(size_t n_chunks, const std::vector<size_t> &chunks) {
+        std::vector<Index::kmer_iterator> all_iters = index_.kmer_begin(n_chunks);
+        std::vector<Index::kmer_iterator> iters;
+        for (size_t chunk : chunks) {
+            if (chunk < all_iters.size()) {  // all_iters.size() could be less than required
+                iters.push_back(std::move(all_iters[chunk]));
+            }
+        }
+
+        return RoughClipTips(iters);
+    }
+
+    void CleanLinks() {
+        LinkCleaner(index_).CleanLinks();
     }
 
 protected:
