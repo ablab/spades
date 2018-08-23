@@ -79,7 +79,7 @@ private:
         return result;
     }
 
-    size_t RemoveForward_(KeyWithHash kh) {
+    size_t RemoveForward_(const KeyWithHash &kh) {
         std::array<vector<KeyWithHash>, 4> tips;
         size_t max = 0;
         for (char c = 0; c < 4; c++) {
