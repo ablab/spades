@@ -359,7 +359,7 @@ public:
             CalculateSequences(its[i], sequences[i]);
 
         size_t snum = std::accumulate(sequences.begin(), sequences.end(),
-                                      0,
+                                      0ULL,
                                       [](size_t val, const std::vector<Sequence> &s) {
                                           return val + s.size();
                                       });
