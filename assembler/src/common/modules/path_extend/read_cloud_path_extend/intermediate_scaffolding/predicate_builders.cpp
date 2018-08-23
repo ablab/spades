@@ -1,5 +1,6 @@
 #include "predicate_builders.hpp"
 #include "path_cluster_helper.hpp"
+#include "common/barcode_index/cluster_storage/graph_cluster_storage_builder.hpp"
 
 namespace path_extend {
 bool SetBasedPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const {

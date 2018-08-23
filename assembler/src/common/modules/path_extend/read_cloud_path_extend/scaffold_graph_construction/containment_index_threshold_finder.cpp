@@ -16,8 +16,8 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
     auto distance_values = ConstructDistanceDistribution(min_distance_, max_distance_);
     size_t left_block_start_offset = max_distance_ + left_block_length_ + right_block_length_;
     size_t block_size = interesting_edges_.size() / 10;
-    const size_t TOTAL_SAMPLE_SIZE = 100000;
-    //why constant?
+    const size_t TOTAL_SAMPLE_SIZE = 20000;
+    //todo why constant?
     const size_t edge_sample_size = TOTAL_SAMPLE_SIZE / interesting_edges_.size();
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -50,6 +50,8 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
 #pragma omp critical
                 {
                     if (score.is_initialized()) {
+                        DEBUG("[" << left_block_start << ", " << left_block_end << "], ["
+                                  << right_block_start << ", " << right_block_end << "]");
                         DEBUG("Inserting score: " << score.get());
                         scores.insert(score.get());
                     }
@@ -142,6 +144,7 @@ double LabeledDistributionThresholdEstimator::GetThreshold() const {
             long_edges.push_back(edge);
         }
     }
+    INFO(long_edges.size() << " training edges.");
     LongEdgeScoreHistogramConstructor histogram_constructor(STEP, MIN, MAX, g_, segment_score_function_,
                                                             long_edges, left_block_length_,
                                                             right_block_length_, min_distance_,

@@ -3,7 +3,7 @@
 #include "common/pipeline/graph_pack.hpp"
 #include <common/modules/path_extend/extension_chooser.hpp>
 #include <common/modules/alignment/long_read_mapper.hpp>
-#include "common/barcode_index/cluster_storage_extractor.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
 
 namespace path_extend {

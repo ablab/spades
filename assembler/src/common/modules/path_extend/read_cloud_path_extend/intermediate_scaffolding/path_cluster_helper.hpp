@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/barcode_index/cluster_storage.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 
 namespace path_extend {
@@ -161,5 +161,41 @@ class PathClusterTransitionStorageHelper {
     transitions::ClusterTransitionStorage GetPathClusterTransitionStorage(const SimpleTransitionGraph &graph) const;
 
     DECL_LOGGER("PathClusterTransitionStorageHelper");
+};
+
+class ScaffoldGraphPathClusterHelper {
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef SimpleGraph<ScaffoldVertex> TransitionGraph;
+    typedef cluster_storage::Cluster Cluster;
+
+    const Graph &g_;
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
+    shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage_;
+    size_t max_threads_;
+
+ public:
+    ScaffoldGraphPathClusterHelper(const Graph &g,
+                                   shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+                                   shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
+                                   size_t max_threads);
+
+    vector<Cluster> GetPathClusters(const scaffold_graph::ScaffoldGraph &graph) const;
+
+    vector<set<ScaffoldVertex>> GetFinalClusters(const scaffold_graph::ScaffoldGraph &graph) const;
+
+    vector<set<ScaffoldVertex>> GetFinalClusters(const TransitionGraph &graph) const;
+
+    vector<Cluster> GetPathClusters(const vector<Cluster> &clusters) const;
+
+    vector<Cluster> GetAllClusters(const scaffold_graph::ScaffoldGraph &graph) const;
+
+    vector<set<ScaffoldVertex>> GetCorrectedClusters(const vector<Cluster> &path_clusters,
+                                                     const scaffold_graph::ScaffoldGraph &graph) const;
+
+    vector<set<ScaffoldVertex>> GetCorrectedClusters(const vector<Cluster> &path_clusters,
+                                                     const TransitionGraph &graph) const;
+
+ private:
+    TransitionGraph ScaffoldToTransition(const scaffold_graph::ScaffoldGraph &graph) const;
 };
 }

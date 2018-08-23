@@ -69,5 +69,7 @@ class CloudScaffoldGraphConstructor {
 
  private:
     ScaffoldingUniqueEdgeStorage ConstructUniqueStorage(size_t min_length) const;
+
+    DECL_LOGGER("CloudScaffoldGraphConstructor");
 };
 }

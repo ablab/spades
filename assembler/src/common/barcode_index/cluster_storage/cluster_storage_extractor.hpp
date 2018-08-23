@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cluster_storage.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage.hpp"
 #include "common/assembly_graph/contracted_graph/contracted_graph_helper.hpp"
 
 namespace cluster_storage {
@@ -75,13 +75,6 @@ class CondensationAnalyzer {
                 GetExitTimeOrdering(vertex, graph, vertex_to_visited, ordering);
             }
         }
-
-//        TRACE("Ordering: ");
-//        string ordering_string;
-//        for (const auto& vertex: ordering) {
-//            ordering_string += (std::to_string(vertex.int_id()) + ", ");
-//        }
-//        TRACE(ordering_string)
 
         for (const auto &vertex: graph) {
             vertex_to_visited[vertex] = false;
@@ -162,9 +155,14 @@ class ClusterGraphAnalyzer {
     };
 
     bool IsPathCluster(const Cluster &cluster) const {
-        TRACE("Cluster id: " << cluster.GetId());
-        auto ordering = GetOrderingFromCluster(cluster);
-        return ordering.size() > 0;
+//        TRACE("Cluster id: " << cluster.GetId());
+//        auto ordering = GetOrderingFromCluster(cluster);
+//        return ordering.size() > 0;
+        const size_t cluster_size_threshold = 6;
+        if (cluster.Size() <= cluster_size_threshold) {
+            return IsHamiltonian(cluster.GetInternalGraph());
+        }
+        return IsEulerianCluster(cluster);
     }
 
     bool IsEulerianCluster(const Cluster& cluster) const {
@@ -197,6 +195,25 @@ class ClusterGraphAnalyzer {
     }
 
  private:
+    bool IsHamiltonian(const Cluster::InternalGraph &graph) const {
+        vector<ScaffoldVertex> vertices;
+        std::copy(graph.begin(), graph.end(), std::back_inserter(vertices));
+        std::sort(vertices.begin(), vertices.end());
+        do {
+            bool is_hamiltonian = true;
+            for (auto curr = vertices.begin(), next = std::next(curr); next != vertices.end(); ++curr, ++next) {
+                if (not graph.ContainsEdge(*curr, *next)) {
+                    is_hamiltonian = false;
+                    break;
+                }
+            }
+            if (is_hamiltonian) {
+                return true;
+            }
+        } while (std::next_permutation(vertices.begin(), vertices.end()));
+        return false;
+    }
+
     vector<ScaffoldVertex> GetOrdering(const Cluster::InternalGraph &graph) const {
         auto contracted_graph = contracted_builder_.ConstructFromInternalGraph(graph);
         vector<ScaffoldVertex> result;

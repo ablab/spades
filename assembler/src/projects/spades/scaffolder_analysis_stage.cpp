@@ -7,6 +7,7 @@
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/fragment_model/distribution_extractor_helper.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/statistics/path_cluster_statistics.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/statistics/cloud_check_statistics.hpp"
 
 void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
 
@@ -20,6 +21,9 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
     if (not read_cloud_lib_present) {
         return;
     }
+
+//    path_extend::PathClusterStorageChecker path_cluster_storage_checker(graph_pack, cfg::get().max_threads);
+//    path_cluster_storage_checker.CheckPathClusters(graph_pack.scaffold_graph_storage);
 
 //    path_extend::PathClusterStatisticsExtractor path_cluster_extractor(graph_pack);
 //    auto subgraph_infos = path_cluster_extractor.GetAllSubgraphInfo(graph_pack.scaffold_graph_storage);

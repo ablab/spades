@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/assembly_graph/core/graph.hpp"
-#include "common/barcode_index/cluster_storage_extractor.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage_extractor.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
 namespace path_extend {
 namespace transitions {

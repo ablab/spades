@@ -1,4 +1,4 @@
-#include "common/barcode_index/cluster_storage_extractor.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage_extractor.hpp"
 
 namespace read_cloud_statistics {
 class ClusterGraphAnalyzerTester {

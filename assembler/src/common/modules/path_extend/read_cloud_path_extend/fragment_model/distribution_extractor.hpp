@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/barcode_index/barcode_info_extractor.hpp"
-#include "common/barcode_index/cluster_storage.hpp"
+#include "common/barcode_index/cluster_storage/cluster_storage.hpp"
 
 using namespace debruijn_graph;
 
