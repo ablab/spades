@@ -190,10 +190,11 @@ private:
         for (size_t i = 0; i < result.size(); i++) sum += result[i];
 
         // Remove links leading to tips
-#pragma omp parallel for schedule(guided)
+        size_t clipped_tips = 0;
+#pragma omp parallel for schedule(guided) reduction(+:clipped_tips)
         for (size_t i = 0; i < tipped_junctions.size(); i++) {
             for (const KeyWithHash &kh : tipped_junctions[i]) {
-                CleanForwardLinks(kh);
+                clipped_tips += CleanForwardLinks(kh);
             }
         }
 
