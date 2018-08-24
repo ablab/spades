@@ -196,7 +196,7 @@ public:
             typedef typename InnerMap::const_iterator InnerIterator;
 
             void Skip() { //For a half iterator, skip conjugate pairs
-                while (half_ && iter_ != stop_ && index_.GreaterPair(edge_, iter_->first))
+                while (half_ && iter_ != stop_ && !index_.IsCanonical(edge_, iter_->first))
                     ++iter_;
             }
 
@@ -258,7 +258,7 @@ public:
         }
 
         HistProxy operator[](EdgeId e2) const {
-            if (half_ && index_.GreaterPair(edge_, e2))
+            if (half_ && !index_.IsCanonical(edge_, e2))
                 return HistProxy::empty_hist();
             return index_.Get(edge_, e2);
         }
@@ -284,13 +284,6 @@ public:
         : base(graph)
     {}
 
-private:
-    bool GreaterPair(EdgeId e1, EdgeId e2) const {
-        auto ep = std::make_pair(e1, e2);
-        return ep > this->ConjugatePair(ep);
-    }
-
-public:
     /**
      * @brief Adds a lot of info from another index, using fast merging strategy.
      *        Should be used instead of point-by-point index merge.
@@ -583,6 +576,8 @@ class PairedIndices {
     Storage data_;
 
 public:
+    typedef Index value_type;
+
     PairedIndices() {}
 
     PairedIndices(const typename Index::Graph& graph, size_t lib_num) {

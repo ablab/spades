@@ -84,6 +84,12 @@ enum class output_broken_scaffolds: char {
     total
 };
 
+enum class Checkpoints : char {
+    None = 0,
+    Last,
+    All
+};
+
 std::vector<std::string> SingleReadResolveModeNames();
 
 template<typename mode_t>
@@ -446,6 +452,7 @@ struct debruijn_config {
     std::string output_base;
     std::string output_dir;
     std::string tmp_dir;
+    Checkpoints checkpoints;
     std::string output_saves;
     std::string log_filename;
     std::string series_analysis;
@@ -484,8 +491,8 @@ struct debruijn_config {
 
     boost::optional<scaffold_correction> sc_cor;
     truseq_analysis tsa;
-    std::string load_from;
 
+    std::string load_from;
     std::string entry_point;
 
     bool rr_enable;

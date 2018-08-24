@@ -138,12 +138,11 @@ class GraphActionHandler : public ActionHandler<typename Graph::VertexId,
 
     const Graph &g_;
 
-protected:
+public:
     const Graph &g() const {
         return g_;
     }
 
-public:
     GraphActionHandler(const Graph &g, const std::string &name)
             : base(name),
               g_(g) {

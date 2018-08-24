@@ -10,6 +10,7 @@
 #include <btree/btree_set.h>
 #include "adt/flat_set.hpp"
 #include "adt/small_pod_vector.hpp"
+#include "io/binary.hpp"
 #include "index_point.hpp"
 
 namespace omnigraph {
@@ -176,6 +177,24 @@ public:
         for (const auto &new_point : other)
             merge_point(new_point);
         return size() - old_size;
+    }
+
+    void BinWrite(std::ostream &str) const {
+        //To be optimized
+        io::binary::BinWrite(str, size());
+        for (const auto &i : *this)
+            i.BinWrite(str);
+    }
+
+    void BinRead(std::istream &str) {
+        VERIFY_MSG(!size(), "Cannot read into a non-empty histogram");
+        //To be optimized
+        auto count = io::binary::BinRead<size_t>(str);
+        while (count--) {
+            Point tmp;
+            tmp.BinRead(str);
+            insert(tmp);
+        }
     }
 };
 

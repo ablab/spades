@@ -319,9 +319,8 @@ namespace spades {
                 cfg::get().flanking_range,
                 cfg::get().pos.max_mapping_gap,
                 cfg::get().pos.max_gap_diff);
-        StageManager manager({cfg::get().developer_mode,
-                              cfg::get().load_from,
-                              cfg::get().output_saves});
+
+        StageManager manager(SavesPolicy(cfg::get().checkpoints, cfg::get().output_saves));
         manager.add<debruijn_graph::Construction>()
                .add<ScaffoldCorrectionStage>(cfg::get().output_dir + "corrected_scaffolds.fasta", *cfg::get().sc_cor);
         INFO("Output directory: " << cfg::get().output_dir);

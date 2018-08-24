@@ -1,5 +1,5 @@
 //***************************************************************************
-//* Copyright (c) 2015 Saint Petersburg State University
+//* Copyright (c) 2015-2018 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
@@ -8,6 +8,8 @@
 
 #include <boost/test/unit_test.hpp>
 #include "paired_info/paired_info_helpers.hpp"
+#include "random_graph.hpp"
+#include "io/binary/paired_index.hpp"
 
 namespace omnigraph {
 
@@ -433,6 +435,28 @@ BOOST_AUTO_TEST_CASE(PairedInfoPairTraverse) {
                          {1, 9, p2}, {8, 2, pj2},
                          {2, 4, p1}, {3, 1, pj1}};
     BOOST_CHECK_EQUAL(GetEdgePairInfo(pi), test1);
+}
+
+using TestIndex = UnclusteredPairedInfoIndexT<Graph>;
+
+BOOST_AUTO_TEST_CASE(PairedInfoRandomSymmetry) {
+    Graph graph(55);
+    RandomGraph<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
+
+    TestIndex pi(graph);
+    RandomPairedIndex<TestIndex>(pi, 100).Generate(20);
+
+    for (auto it = omnigraph::de::pair_begin(pi); it != omnigraph::de::pair_end(pi); ++it) {
+        auto info = *it;
+        auto conj_info = pi.Get(graph.conjugate(it.second()), graph.conjugate(it.first()));
+        BOOST_CHECK_EQUAL(info.size(), conj_info.size());
+        auto offset = DEDistance(graph.length(it.first())) - DEDistance(graph.length(it.second()));
+        for (auto i = info.begin(), ci = conj_info.begin(); i != info.end(); ++i, ++ci) {
+            auto conj_point = *ci;
+            conj_point.d += offset;
+            BOOST_CHECK_EQUAL(*i, conj_point);
+        }
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

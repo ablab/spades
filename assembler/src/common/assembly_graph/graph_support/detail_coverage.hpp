@@ -22,14 +22,19 @@ namespace omnigraph {
 
 template<class Graph>
 class FlankingCoverage : public omnigraph::GraphActionHandler<Graph> {
-    typedef omnigraph::GraphActionHandler<Graph> base;
+
+public:
     typedef typename Graph::EdgeId EdgeId;
+
+private:
+    typedef omnigraph::GraphActionHandler<Graph> base;
     typedef typename Graph::VertexId VertexId;
     typedef pair<EdgeId, unsigned> Pos;
 
     Graph& g_;
     const size_t averaging_range_;
 
+public:
     void SetRawCoverage(EdgeId e, unsigned cov) {
         g_.data(e).set_flanking_coverage(cov);
     }
@@ -38,6 +43,7 @@ class FlankingCoverage : public omnigraph::GraphActionHandler<Graph> {
         return g_.data(e).flanking_coverage();
     }
 
+private:
     size_t EdgeAveragingRange(EdgeId e) const {
         return std::min(this->g().length(e), averaging_range_);
     }
@@ -61,7 +67,6 @@ class FlankingCoverage : public omnigraph::GraphActionHandler<Graph> {
     }
 
 public:
-
     //todo think about interactions with gap closer
     FlankingCoverage(Graph& g, size_t averaging_range)
             : base(g, "FlankingCoverage"), g_(g),

@@ -8,6 +8,7 @@
 
 #include "histogram.hpp"
 #include "histptr.hpp"
+#include "io/id_mapper.hpp"
 
 namespace omnigraph {
 
@@ -89,6 +90,13 @@ class PairedBufferBase {
     EdgePair ConjugatePair(EdgePair ep) const {
         return ConjugatePair(ep.first, ep.second);
     }
+    /**
+     * @brief Checks if an edge pair is canonical (less than its conjugate).
+     */
+    bool IsCanonical(EdgeId e1, EdgeId e2) const {
+        auto ep = std::make_pair(e1, e2);
+        return ep <= this->ConjugatePair(ep);
+    }
 
   private:
     void InsertWithConj(EdgeId e1, EdgeId e2, InnerPoint p) {
@@ -102,7 +110,7 @@ class PairedBufferBase {
         size_ += added;
         if (res.first && !selfconj)
             static_cast<Derived*>(this)->InsertHistView(maxep.first, maxep.second, res.first);
-        else if (selfconj) // This would double the weigth of self-conjugate pairs
+        else if (selfconj) // This would double the weight of self-conjugate pairs
             static_cast<Derived*>(this)->InsertOne(minep.first, minep.second, p);
     }
 
@@ -119,7 +127,7 @@ class PairedBufferBase {
         size_ += added;
         if (res.first && !selfconj)
             static_cast<Derived*>(this)->InsertHistView(maxep.first, maxep.second, res.first);
-        else if (selfconj) // This would double the weigth of self-conjugate pairs
+        else if (selfconj) // This would double the weight of self-conjugate pairs
             static_cast<Derived*>(this)->InsertHist(minep.first, minep.second, h);
     }
 
@@ -183,6 +191,48 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
 
     typename StorageMap::locked_table lock_table() {
         return storage_.lock_table();
+    }
+
+    void BinWrite(std::ostream &str) const {
+        using io::binary::BinWrite;
+        BinWrite<size_t>(str, storage_.size());
+        for (const auto &i : storage_) {
+            BinWrite(str, i.first.int_id());
+            for (const auto &j : i.second) {
+                if (j.second.owning()) {
+                    BinWrite(str, j.first.int_id());
+                    j.second->BinWrite(str);
+                }
+            }
+            BinWrite(str, (size_t)0); //null-term
+        }
+    }
+
+    void BinRead(std::istream &str, const io::IdMapper<EdgeId> &mapper) {
+        VERIFY_MSG(!this->size_, "Cannot read into a non-empty buffer");
+        using io::binary::BinRead;
+        auto storage_size = BinRead<size_t>(str);
+        while (storage_size--) {
+            auto saved_e1 = BinRead<size_t>(str);
+            auto e1 = mapper[saved_e1];
+            while (true) {
+                auto saved_e2 = BinRead<size_t>(str);
+                if (!saved_e2) //null-term
+                    break;
+                auto e2 = mapper[saved_e2];
+                auto hist = new InnerHistogram();
+                hist->BinRead(str);
+                TRACE(saved_e1 << "->" << saved_e2 << ": " << hist->size() << "points");
+                storage_[e1][e2] = InnerHistPtr(hist, /* owning */ true);
+                bool selfconj = this->IsSelfConj(e1, e2);
+                size_t added = hist->size() * (selfconj ? 1 : 2);
+                this->size_ += added;
+                if (!selfconj) {
+                    auto conj = this->ConjugatePair(e1, e2);
+                    storage_[conj.first][conj.second] = InnerHistPtr(hist, /* owning */ false);
+                }
+            }
+        }
     }
 
   private:

@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "pipeline/stage.hpp"
-#include "pipeline/graphio.hpp"
+#include "io/binary/graphio.hpp"
 
 #include "utils/logger/log_writers.hpp"
 
@@ -18,19 +18,24 @@ namespace spades {
 void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
                          const std::string &load_from,
                          const char* prefix) {
-    std::string p = fs::append_path(load_from, prefix == NULL ? id_ : prefix);
-    INFO("Loading current state from " << p);
+    if (!prefix) prefix = id_;
+    auto dir = fs::append_path(load_from, prefix);
+    INFO("Loading current state from " << dir);
 
-    debruijn_graph::graphio::ScanAll(p, gp, false);
+    auto p = fs::append_path(dir, "graph_pack");
+    debruijn_graph::graphio::ScanAll(p, gp);
     debruijn_graph::config::load_lib_data(p);
 }
 
 void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
                          const std::string &save_to,
                          const char* prefix) const {
-    std::string p = fs::append_path(save_to, prefix == NULL ? id_ : prefix);
-    INFO("Saving current state to " << p);
+    if (!prefix) prefix = id_;
+    auto dir = fs::append_path(save_to, prefix);
+    INFO("Saving current state to " << dir);
+    fs::make_dir(dir);
 
+    auto p = fs::append_path(dir, "graph_pack");
     debruijn_graph::graphio::PrintAll(p, gp);
     debruijn_graph::config::write_lib_data(p);
 }
@@ -91,7 +96,8 @@ void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
             std::string composite_id(id());
             composite_id += ":";
             composite_id += prev_phase->id();
-            prev_phase->load(gp, parent_->saves_policy().load_from_, composite_id.c_str());
+            prev_phase->load(gp, parent_->saves_policy().SavesPath(), composite_id.c_str());
+
         }
     }
 
@@ -101,12 +107,14 @@ void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
         INFO("PROCEDURE == " << phase->name());
         phase->run(gp, started_from);
 
-        if (parent_->saves_policy().make_saves_) {
+        if (parent_->saves_policy().EnabledCheckpoints() != SavesPolicy::Checkpoints::None) {
             std::string composite_id(id());
             composite_id += ":";
             composite_id += phase->id();
 
-            phase->save(gp, parent_->saves_policy().save_to_, composite_id.c_str());
+            phase->save(gp, parent_->saves_policy().SavesPath(), composite_id.c_str());
+            //TODO: currently no phases are writing saves.
+            //When they will, erase the previous saves when SavesPolicy::Last
         }
     }
 
@@ -117,13 +125,28 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
                        const char* start_from) {
     auto start_stage = stages_.begin();
     if (start_from) {
-        start_stage = std::find_if(stages_.begin(), stages_.end(), StageIdComparator(start_from));
-        if (start_stage == stages_.end()) {
-            ERROR("Invalid start stage specified: " << start_from);
-            exit(-1);
+        if (strcmp(start_from, "last") == 0) {
+            //The starting stage is RIGHT AFTER the last saved one
+            auto last_saves = saves_policy_.GetLastCheckpoint();
+            if (!last_saves.empty()) {
+                auto last_stage = std::find_if(stages_.begin(), stages_.end(), StageIdComparator(last_saves.c_str()));
+                if (last_stage == stages_.end()) {
+                    WARN("Nothing to continue");
+                    return;
+                }
+                start_stage = std::next(last_stage);
+            } else {
+                WARN("No saved checkpoint");
+            }
+        } else {
+            start_stage = std::find_if(stages_.begin(), stages_.end(), StageIdComparator(start_from));
+            if (start_stage == stages_.end()) {
+                ERROR("Invalid start stage specified: " << start_from);
+                exit(-1);
+            }
         }
         if (start_stage != stages_.begin())
-            (*std::prev(start_stage))->load(g, saves_policy_.load_from_);
+            (*std::prev(start_stage))->load(g, saves_policy_.SavesPath());
     }
 
     for (; start_stage != stages_.end(); ++start_stage) {
@@ -131,8 +154,14 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
 
         INFO("STAGE == " << stage->name());
         stage->run(g, start_from);
-        if (saves_policy_.make_saves_)
-            stage->save(g, saves_policy_.save_to_);
+        if (saves_policy_.EnabledCheckpoints() != SavesPolicy::Checkpoints::None) {
+            auto prev_saves = saves_policy_.GetLastCheckpoint();
+            stage->save(g, saves_policy_.SavesPath());
+            saves_policy_.UpdateCheckpoint(stage->id());
+            if (!prev_saves.empty() && saves_policy_.EnabledCheckpoints() == SavesPolicy::Checkpoints::Last) {
+                fs::remove_if_exists(fs::append_path(saves_policy_.SavesPath(), prev_saves));
+            }
+        }
     }
 }
 

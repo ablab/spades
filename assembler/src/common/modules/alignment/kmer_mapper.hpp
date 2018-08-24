@@ -186,21 +186,6 @@ public:
         normalized_ = false;
     }
 
-    bool CompareTo(KmerMapper<Graph> const &m) {
-        if (size() != m.size()) {
-            INFO("Unequal sizes");
-            return false;
-        }
-
-        for (auto iter = begin(); iter != end(); ++iter) {
-            auto cmp = m.mapping_.find(iter.first());
-            if (cmp == m.mapping_.end() || cmp.second() != iter.second()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     void clear() {
         normalized_ = false;
         return mapping_.clear();

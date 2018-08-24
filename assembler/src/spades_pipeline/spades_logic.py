@@ -37,6 +37,8 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     subst_dict["main_iteration"] = bool_to_str(last_one)
     subst_dict["entry_point"] = stage
     subst_dict["load_from"] = saves_dir
+    if "checkpoints" in cfg.__dict__:
+        subst_dict["checkpoints"] = cfg.checkpoints
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one or K >= 55)
     subst_dict["rr_enable"] = bool_to_str(last_one and cfg.rr_enable)
@@ -168,6 +170,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     dst_configs = os.path.join(data_dir, "configs")
 
     if options_storage.continue_mode:
+        stage = "last"
         if os.path.isfile(os.path.join(data_dir, "final_contigs.fasta")) and not (options_storage.restart_from and
             (options_storage.restart_from == ("k%d" % K) or options_storage.restart_from.startswith("k%d:" % K))):
             log.info("\n== Skipping assembler: " + ("K%d" % K) + " (already processed)")
