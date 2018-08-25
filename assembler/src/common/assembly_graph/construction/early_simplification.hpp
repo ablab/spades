@@ -1,4 +1,5 @@
 //***************************************************************************
+//* Copyright (c) 2018 Saint Petersburg State University
 //* Copyright (c) 2015 Saint Petersburg State University
 //* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
