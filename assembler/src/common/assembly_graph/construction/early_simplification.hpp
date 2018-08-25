@@ -99,12 +99,15 @@ private:
 #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < iters.size(); i++) {
             for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
-                KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
-                if (index_.OutgoingEdgeCount(kh) >= 2) {
-                    size_t removed = RemoveForward_(kh);
-                    result[i] += removed;
-                    if (removed) {
-                        tipped_junctions[i].push_back(kh);
+                auto seq = RtSeq(index_.k(), *it);
+                for (const auto &s : {seq, !seq}) {  // The file stores only canonical (i.e., s > !s) k-mers
+                    KeyWithHash kh = index_.ConstructKWH(s);
+                    if (index_.OutgoingEdgeCount(kh) >= 2) {
+                        size_t removed = RemoveForward_(kh);
+                        result[i] += removed;
+                        if (removed) {
+                            tipped_junctions[i].push_back(kh);
+                        }
                     }
                 }
             }
