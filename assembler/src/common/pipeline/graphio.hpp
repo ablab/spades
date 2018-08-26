@@ -585,7 +585,7 @@ private:
             TRACE("Vertex "<<vertex_real_id<<" ~ "<<conjugate_id<<" .");
             VERIFY(flag == 2);
 
-            if (this->vertex_id_map().find((int) vertex_real_id) == this->vertex_id_map().end()) {
+            if (this->vertex_id_map().find(vertex_real_id) == this->vertex_id_map().end()) {
                 size_t ids[2] = {vertex_real_id, conjugate_id};
                 auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
                 VertexId vid = this->g().AddVertex(typename Graph::VertexData(), id_distributor);
@@ -617,16 +617,17 @@ private:
                           &e_real_id, &start_id, &fin_id, &length, &conjugate_edge_id);
             VERIFY(flag == 5);
             VERIFY(length < longstring_size);
+            size_t e_real_id_tmp;
             if (fasta) {
-                flag = fscanf(sequence_file, ">%zu\n%s\n", &e_real_id, longstring);
+                flag = fscanf(sequence_file, ">%zu\n%s\n", &e_real_id_tmp, longstring);
+            } else {
+                flag = fscanf(sequence_file, "%zu %s .", &e_real_id_tmp, longstring);
             }
-            else {
-                flag = fscanf(sequence_file, "%zu %s .", &e_real_id, longstring);
-            }
+            VERIFY(e_real_id == e_real_id_tmp);
             VERIFY(flag == 2);
             TRACE("Edge " << e_real_id << " : " << start_id << " -> "
                   << fin_id << " l = " << length << " ~ " << conjugate_edge_id);
-            if (this->edge_id_map().find((int) e_real_id) == this->edge_id_map().end()) {
+            if (this->edge_id_map().find(e_real_id) == this->edge_id_map().end()) {
                 size_t ids[2] = {e_real_id, conjugate_edge_id};
                 auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
                 Sequence tmp(longstring);
