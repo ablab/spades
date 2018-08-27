@@ -66,6 +66,7 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
 }
 
 BOOST_AUTO_TEST_CASE(TestPairedInfoIO) {
+    using namespace omnigraph::de;
     using Index = UnclusteredPairedInfoIndexT<Graph>;
     const auto &graph = CommonGraph();
 

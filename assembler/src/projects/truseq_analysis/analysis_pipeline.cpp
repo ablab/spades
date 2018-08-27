@@ -92,9 +92,12 @@ void spades::run_truseq_analysis() {
                                             cfg::get().flanking_range,
                                             cfg::get().pos.max_mapping_gap,
                                             cfg::get().pos.max_gap_diff);
-    StageManager manager({cfg::get().developer_mode,
-                          cfg::get().load_from,
-                          cfg::get().output_saves});
+
+    auto enabled_saves = SavesPolicy::Checkpoints::None;
+    if (cfg::get().developer_mode)
+        enabled_saves = SavesPolicy::Checkpoints::All;
+
+    StageManager manager(SavesPolicy(enabled_saves, cfg::get().output_saves));
     manager.add(new debruijn_graph::Construction());
     std::string output_file = cfg::get().output_dir + "analysis_report";
     manager.add(new VariationDetectionStage(output_file, cfg::get().tsa));

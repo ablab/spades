@@ -77,11 +77,11 @@ EdgeSet GetHalfNeighbours(const MockIndex &pi, MockGraph::EdgeId e) {
     return result;
 }
 
-using EdgeDataSet = std::set<omnigraph::de::PairInfo<MockIndex::EdgeId>>;
+using EdgeDataSet = std::set<PairInfo<MockIndex::EdgeId>>;
 
 EdgeDataSet GetEdgePairInfo(const MockIndex &pi) {
     EdgeDataSet result;
-    for (auto i = omnigraph::de::pair_begin(pi); i != omnigraph::de::pair_end(pi); ++i) {
+    for (auto i = pair_begin(pi); i != pair_end(pi); ++i) {
         for (auto j : *i) {
             result.emplace(i.first(), i.second(), j);
         }
@@ -384,7 +384,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoMoreNeighbours) {
     MockGraph graph;
     MockIndex pi(graph);
     //Check that an empty index has an empty iterator range
-    BOOST_CHECK(omnigraph::de::pair_begin(pi) == omnigraph::de::pair_end(pi));
+    BOOST_CHECK(pair_begin(pi) == pair_end(pi));
     EdgeDataSet empty;
     BOOST_CHECK_EQUAL(GetEdgePairInfo(pi), empty);
     RawPoint p0 = {0, 0}, p1 = {10, 1}, p2 = {20, 1};
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoPairTraverse) {
     MockGraph graph;
     MockIndex pi(graph);
     //Check that an empty index has an empty iterator range
-    BOOST_CHECK(omnigraph::de::pair_begin(pi) == omnigraph::de::pair_end(pi));
+    BOOST_CHECK(pair_begin(pi) == pair_end(pi));
     EdgeDataSet empty;
     BOOST_CHECK_EQUAL(GetEdgePairInfo(pi), empty);
     RawPoint p0 = {0, 0}, p1 = {10, 1}, p2 = {20, 1}, pj1 = {12, 1}, pj2 = {27, 1};
@@ -441,12 +441,12 @@ using TestIndex = UnclusteredPairedInfoIndexT<Graph>;
 
 BOOST_AUTO_TEST_CASE(PairedInfoRandomSymmetry) {
     Graph graph(55);
-    RandomGraph<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
+    debruijn_graph::RandomGraph<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
 
     TestIndex pi(graph);
-    RandomPairedIndex<TestIndex>(pi, 100).Generate(20);
+    debruijn_graph::RandomPairedIndex<TestIndex>(pi, 100).Generate(20);
 
-    for (auto it = omnigraph::de::pair_begin(pi); it != omnigraph::de::pair_end(pi); ++it) {
+    for (auto it = pair_begin(pi); it != pair_end(pi); ++it) {
         auto info = *it;
         auto conj_info = pi.Get(graph.conjugate(it.second()), graph.conjugate(it.first()));
         BOOST_CHECK_EQUAL(info.size(), conj_info.size());

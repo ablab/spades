@@ -251,7 +251,6 @@ void run_dipspades() {
     auto enabled_saves = SavesPolicy::Checkpoints::None;
     if (dsp_cfg::get().rp.developer_mode)
         enabled_saves = SavesPolicy::Checkpoints::All;
-    //TODO: implement SavesPolicy::Last
 
     StageManager DS_Manager (SavesPolicy(enabled_saves, dsp_cfg::get().io.output_saves));
     DipSPAdes *ds_phase = new DipSPAdes();
