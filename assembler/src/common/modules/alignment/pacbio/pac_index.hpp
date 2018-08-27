@@ -118,7 +118,7 @@ private:
                 vector<pair<size_t, int> > range_limits;
                 for (size_t j = 0; j < mapped_path.size(); j++) {
                     if (i != j) {
-                        if (mapped_path[i].second.initial_range.Intersect(mapped_path[j].second.initial_range)) {
+                        if (mapped_path[i].second.initial_range.Intersect(mapped_path[j].second.initial_range) && (mapped_path[i].second.quality * 0.7 < mapped_path[j].second.quality)){
                             size_t pos_start = std::max (mapped_path[i].second.initial_range.start_pos, mapped_path[j].second.initial_range.start_pos)
                                                - mapped_path[i].second.initial_range.start_pos;
                             size_t pos_end = std::min (mapped_path[i].second.initial_range.end_pos, mapped_path[j].second.initial_range.end_pos)
@@ -145,6 +145,20 @@ private:
                 else {
                     DEBUG ("Filtering " << g_.int_id(mapped_path[i].first) << " " << mapped_path[i].second)
                 }
+            }
+        }
+        if (res.size() == 0) {
+            int best_one = -1;
+            for (size_t i = 0; i < mapped_path.size(); i++) {
+                size_t rlen = mapped_path[i].second.initial_range.size();
+                if (rlen > length_cutoff && (best_one == -1 || 
+                                            rlen * mapped_path[i].second.quality > 
+                                            mapped_path[best_one].second.initial_range.size() * mapped_path[best_one].second.quality )) {
+                    best_one = i;
+                }
+            }
+            if (best_one != -1) {
+                res.push_back(mapped_path[best_one].first, mapped_path[best_one].second);
             }
         }
         return res;
