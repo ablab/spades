@@ -71,8 +71,6 @@ class ScaffoldGraphValidator {
     ScaffoldGraphStats GetScaffoldGraphStats(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
                                              const vector <vector<EdgeWithMapping>> &reference_paths);
 
-    ReferencePathIndex BuildReferenceIndex(const vector <vector<EdgeWithMapping>> &reference_paths);
-
  private:
 
     ScaffoldGraphStats GetScaffoldGraphStatsFromTransitions(const path_extend::scaffold_graph::ScaffoldGraph &graph,

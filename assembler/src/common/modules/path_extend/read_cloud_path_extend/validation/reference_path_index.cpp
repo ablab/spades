@@ -14,5 +14,16 @@ void ReferencePathIndex::Insert(EdgeId edge, size_t path, size_t pos, size_t rev
 bool ReferencePathIndex::Contains(const EdgeId &edge) const {
     return edge_to_info_.find(edge) != edge_to_info_.end();
 }
+ReferencePathIndex ReferencePathIndexBuilder::BuildReferencePathIndex(
+        const vector<vector<EdgeWithMapping>> &reference_paths) {
+    ReferencePathIndex result;
+    for (size_t i = 0; i < reference_paths.size(); ++i) {
+        for (size_t j = 0; j < reference_paths[i].size(); ++j) {
+            size_t rev_pos = reference_paths[i].size() - j - 1;
+            result.Insert(reference_paths[i][j].edge_, i, j, rev_pos);
+        }
+    }
+    return result;
+}
 }
 }

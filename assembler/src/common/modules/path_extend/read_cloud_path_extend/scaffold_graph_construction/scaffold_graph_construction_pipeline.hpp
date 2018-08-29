@@ -33,7 +33,6 @@ class ScaffolderParamsConstructor {
         cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor,
         double score_percentile,
         double cluster_length_percentile,
-        size_t min_length_offset,
         size_t block_length) const;
 
 };

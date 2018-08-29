@@ -21,13 +21,11 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParams(
     const size_t INITIAL_DISTANCE_MULTIPLIER = 2;
     const double initial_distance_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
     const double score_percentile = cfg::get().ts_res.scaff_con.score_percentile;
-    const size_t min_length_offset = 5000;
 
     size_t initial_distance =
         INITIAL_DISTANCE_MULTIPLIER * primary_extractor.GetLengthPercentile(initial_distance_percentile);
-    auto score_estimation_params = GetScoreEstimationParams(g, primary_extractor,
-                                                            score_percentile, initial_distance_percentile,
-                                                            min_length_offset, min_length);
+    auto score_estimation_params = GetScoreEstimationParams(g, primary_extractor, score_percentile,
+                                                            initial_distance_percentile, min_length);
 
     ScaffolderParams result(length_threshold, tail_threshold, count_threshold,
                             connection_length_threshold, connection_count_threshold,
@@ -43,23 +41,22 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
         size_t unique_edge_length,
         size_t max_threads) const {
-    const double MIN_SHORT_EDGE_THRESHOLD = 0.001;
-    auto threshold_estimator_params = params.score_estimation_params_;
-//    const size_t min_training_length = 4 * unique_edge_length + threshold_estimator_params.max_cluster_gap_;
-//    INFO("Setting min training length: " << min_training_length);
-    ShortEdgeScoreThresholdEstimatorFactory threshold_estimator_factory(g, barcode_extractor,
-                                                                        threshold_estimator_params.training_edge_length_threshold_,
-                                                                        unique_edge_length,
-                                                                        threshold_estimator_params.max_cluster_gap_,
-                                                                        threshold_estimator_params.score_percentile_,
-                                                                        max_threads);
-    auto score_threshold_estimator = threshold_estimator_factory.GetThresholdEstimator();
-    //fixme magic
-    auto connection_score_threshold = score_threshold_estimator->GetThreshold() * 0.5;
-    if (connection_score_threshold < MIN_SHORT_EDGE_THRESHOLD) {
-        INFO("Estimated threshold is too small, using " << MIN_SHORT_EDGE_THRESHOLD << " as default threshold");
-        connection_score_threshold = MIN_SHORT_EDGE_THRESHOLD;
-    }
+    const double SHORT_EDGE_THRESHOLD = 0.01;
+//    auto threshold_estimator_params = params.score_estimation_params_;
+//    ShortEdgeScoreThresholdEstimatorFactory threshold_estimator_factory(g, barcode_extractor,
+//                                                                        threshold_estimator_params.training_edge_length_threshold_,
+//                                                                        unique_edge_length,
+//                                                                        threshold_estimator_params.max_cluster_gap_,
+//                                                                        threshold_estimator_params.score_percentile_,
+//                                                                        max_threads);
+//    auto score_threshold_estimator = threshold_estimator_factory.GetThresholdEstimator();
+//    //fixme magic
+//    auto connection_score_threshold = score_threshold_estimator->GetThreshold() * 0.5;
+//    if (connection_score_threshold < MIN_SHORT_EDGE_THRESHOLD) {
+//        INFO("Estimated threshold is too small, using " << MIN_SHORT_EDGE_THRESHOLD << " as default threshold");
+//        connection_score_threshold = MIN_SHORT_EDGE_THRESHOLD;
+//    }
+    double connection_score_threshold = SHORT_EDGE_THRESHOLD;
     
     double relative_coverage_threshold = cfg::get().ts_res.scaff_con.relative_coverage_threshold;
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
@@ -72,9 +69,13 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
 }
 ScaffolderParams::ScoreEstimationParams ScaffolderParamsConstructor::GetScoreEstimationParams(
         const Graph &g, cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor,
-        double score_percentile, double cluster_length_percentile, size_t min_length_offset, size_t block_length) const {
+        double score_percentile, double cluster_length_percentile, size_t block_length) const {
     size_t max_training_gap = cluster_statistics_extractor.GetLengthPercentile(cluster_length_percentile);
-    size_t min_training_length = min_length_offset + 2 * block_length + max_training_gap;
+//    double length_normalizer = static_cast<double>(cfg::get().ts_res.long_edge_length_max_upper_bound);
+//    const double block_normalizer = 2.0 / 3.0;
+//    double distance_normalizer = (static_cast<double>(block_length) + length_normalizer * block_normalizer) / length_normalizer;
+//    max_training_gap = static_cast<size_t>(distance_normalizer * static_cast<double>(max_training_gap));
+    size_t min_training_length = 2 * block_length + max_training_gap;
     INFO("Max training gap: " << max_training_gap);
     INFO("Min training length: " << min_training_length);
     ScaffolderParams::ScoreEstimationParams score_estimation_params(score_percentile, max_training_gap,
@@ -245,21 +246,21 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffoldGraphPip
     const size_t min_pipeline_length = cfg::get().ts_res.long_edge_length_lower_bound;
     bool launch_full_pipeline = min_length_ > min_pipeline_length;
 
-//    if (launch_full_pipeline) {
-//        const double EDGE_LENGTH_FRACTION = 0.5;
-//        auto fraction_tail_threshold_getter =
-//            make_shared<barcode_index::FractionTailThresholdGetter>(gp_.g, EDGE_LENGTH_FRACTION);
-//        auto split_scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_,
-//                                                                               fraction_tail_threshold_getter,
-//                                                                               count_threshold, length_threshold,
-//                                                                               max_threads_, scaffold_vertices);
-//        auto split_scaffold_index_extractor =
-//            make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(split_scaffold_vertex_index);
-//        iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g,
-//                                                                                        split_scaffold_index_extractor,
-//                                                                                        max_threads_));
-//        iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
-//    }
+    if (launch_full_pipeline) {
+        const double EDGE_LENGTH_FRACTION = 0.5;
+        auto fraction_tail_threshold_getter =
+            make_shared<barcode_index::FractionTailThresholdGetter>(gp_.g, EDGE_LENGTH_FRACTION);
+        auto split_scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_,
+                                                                               fraction_tail_threshold_getter,
+                                                                               count_threshold, length_threshold,
+                                                                               max_threads_, scaffold_vertices);
+        auto split_scaffold_index_extractor =
+            make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(split_scaffold_vertex_index);
+        iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g,
+                                                                                        split_scaffold_index_extractor,
+                                                                                        max_threads_));
+        iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
+    }
     return iterative_constructor_callers;
 }
 BinningScaffoldGraphPipelineConstructor::BinningScaffoldGraphPipelineConstructor(

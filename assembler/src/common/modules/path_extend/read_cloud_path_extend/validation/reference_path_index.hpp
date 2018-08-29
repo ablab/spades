@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/assembly_graph/core/graph.hpp"
+#include "transition_extractor.hpp"
 
 namespace path_extend {
 namespace validation {
@@ -20,6 +21,11 @@ class ReferencePathIndex {
     void Insert(EdgeId edge, size_t path, size_t pos, size_t rev_pos);
     EdgeInfo at(const EdgeId &edge) const;
     bool Contains(const EdgeId &edge) const;
+};
+
+class ReferencePathIndexBuilder {
+ public:
+    ReferencePathIndex BuildReferencePathIndex(const vector<vector<EdgeWithMapping>>& reference_paths);
 };
 }
 }

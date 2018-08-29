@@ -62,7 +62,8 @@ shared_ptr<PathClusterChecker> PathClusterCheckerFactory::ConstuctPathClusterChe
     auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
 
     const size_t min_read_threshold = 2;
-    auto reference_index = scaffold_graph_validator.BuildReferenceIndex(reference_paths);
+    validation::ReferencePathIndexBuilder path_index_builder;
+    auto reference_index = path_index_builder.BuildReferencePathIndex(reference_paths);
     size_t covered_vertices = 0;
     for (const auto& vertex: vertices) {
         path_extend::scaffold_graph::EdgeGetter edge_getter;
