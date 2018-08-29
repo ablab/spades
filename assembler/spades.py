@@ -280,6 +280,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         elif opt == "--spades-heap-check":
             options_storage.spades_heap_check = arg
 
+        elif opt == "--checkpoints":
+            options_storage.checkpoints = arg
         elif opt == "--continue":
             options_storage.continue_mode = True
         elif opt == "--restart-from":
