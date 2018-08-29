@@ -685,7 +685,6 @@ def get_lib_ids_by_type(dataset_data, types):
         types = [types]
     lib_ids = []
     for id, reads_library in enumerate(dataset_data):
-        print reads_library['type']
         if reads_library['type'] in types:
             lib_ids.append(id)
     return lib_ids

@@ -22,7 +22,6 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
 //    std::random_device rd;
 //    std::mt19937 gen(rd());
 //    std::uniform_int_distribution<size_t> distance_distribution(0, distance_values.size() - 1);
-    std::cout << "Distance,Score" << std::endl;
     std::multiset<double> scores;
     for (size_t i = 0; i < interesting_edges_.size(); ++i) {
         EdgeId edge = interesting_edges_[i];
