@@ -111,21 +111,8 @@ template<> struct MappingTraits<sensitive_aligner::EndsClosingConfig> {
     }
 };
 
-template <>
-struct ScalarEnumerationTraits<alignment::BWAIndex::AlignmentMode> {
-    static void enumeration(IO &io, alignment::BWAIndex::AlignmentMode &value) {
-        io.enumCase(value, "pacbio",  alignment::BWAIndex::AlignmentMode::PacBio);
-        io.enumCase(value, "nanopore", alignment::BWAIndex::AlignmentMode::Ont2D);
-        io.enumCase(value, "16S", alignment::BWAIndex::AlignmentMode::Rna16S);
-    }
-};
-
 template<> struct MappingTraits<sensitive_aligner::GAlignerConfig> {
     static void mapping(IO& io, sensitive_aligner::GAlignerConfig& cfg) {
-        io.mapRequired("k", cfg.K);
-        io.mapRequired("path_to_graphfile", cfg.path_to_graphfile);
-        io.mapRequired("path_to_sequences", cfg.path_to_sequences);
-        io.mapRequired("data_type", cfg.data_type);
         io.mapRequired("output_format", cfg.output_format);
         io.mapRequired("run_dijkstra", cfg.gap_cfg.run_dijkstra);
         io.mapRequired("restore_ends", cfg.ends_cfg.restore_ends);
@@ -183,7 +170,7 @@ public:
         {
             processed_reads_ ++;
         }
-        DEBUG("Read " << read.name() << " read_time=" << pc.time())
+        INFO("Read " << read.name() << " read_time=" << pc.time())
         return;
     }
 
@@ -260,12 +247,17 @@ void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
 int main(int argc, char **argv) {
 
     unsigned nthreads;
-    std::string cfg, output_file;
+    std::string cfg, output_file, seq_type;
+    sensitive_aligner::GAlignerConfig config;
 
     cxxopts::Options options(argv[0], " <YAML-config sequences and graph description> - Tool for sequence alignment on graph");
     options.add_options()
+    ("K,k-mer", "graph k-mer size (odd value)", cxxopts::value<int>(config.K))
+    ("d,datatype", "type of sequences: nanopore, pacbio", cxxopts::value<std::string>(seq_type))
+    ("s,seq", "path to fasta/fastq file with sequences", cxxopts::value<std::string>(config.path_to_sequences))
+    ("g,graph", "path to gfa-file or SPAdes saves folder", cxxopts::value<std::string>(config.path_to_graphfile))
     ("o,outfile", "Output file prefix", cxxopts::value<std::string>(output_file)->default_value("./galigner_output"), "prefix")
-    ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(min(omp_get_max_threads(), 16))), "num")
+    ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(min(omp_get_max_threads(), 16))), "threads")
     ("h,help", "Print help");
 
     options.add_options("Input")
@@ -283,11 +275,20 @@ int main(int argc, char **argv) {
         exit(-1);
     }
 
+    if (seq_type == "nanopore")
+            config.data_type = alignment::BWAIndex::AlignmentMode::Ont2D;
+    else if (seq_type == "pacbio")
+            config.data_type = alignment::BWAIndex::AlignmentMode::PacBio;
+    else {
+        std::cerr << "ERROR: Unsupported data type - nanopore, pacbio" << std::endl << std::endl;
+        std::cout << options.help() << std::endl;
+        exit(-1);
+    }
+
     create_console_logger();
     auto buf = llvm::MemoryBuffer::getFile(cfg);
     VERIFY_MSG(buf, "Failed to load config file " + cfg);
     llvm::yaml::Input yin(*buf.get());
-    sensitive_aligner::GAlignerConfig config;
     yin >> config;
     omp_set_num_threads(nthreads);
 
