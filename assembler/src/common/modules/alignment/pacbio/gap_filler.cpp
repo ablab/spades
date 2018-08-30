@@ -233,7 +233,7 @@ GapFillerResult GapFiller::Run(Sequence &s,
     GapFillerResult res;
     res.return_code = 0;
     int s_len = int(s.size());
-    int score = min(max(ends_cfg_.ed_lower_bound, s_len / ends_cfg_.max_ed_proportion), ends_cfg_.ed_upper_bound);
+    int score =  min(min(max(ends_cfg_.ed_lower_bound, s_len / ends_cfg_.max_ed_proportion), ends_cfg_.ed_upper_bound), s_len);
     if (s_len > (int) ends_cfg_.max_restorable_length && s_len > g_.length(start_pos.edgeid) - start_pos.position + g_.k()) {
         DEBUG("EdgeDijkstra: sequence is too long " << s_len)
         res.return_code += 1;

@@ -299,14 +299,12 @@ public:
             string tmp = g_.EdgeNucls(start_e_).str();
             string edge_str = tmp.substr(start_p_);
             int position = -1;
-            int score = SHWDistance(seq_str, edge_str, path_max_length_, position);
+            int score = SHWDistance(seq_str, edge_str, ss_.size(), position);
             if (score != std::numeric_limits<int>::max()) {
-                path_max_length_ = min(path_max_length_, score);
+                path_max_length_ = score;
                 QueueState state(GraphState(start_e_, start_p_, start_p_ + position + 1), (int) ss_.size() );
                 Update(state, QueueState(), score);
-                if (score == path_max_length_) {
-                    end_qstate_ = state;
-                }
+                end_qstate_ = state;
             }
         }
 
