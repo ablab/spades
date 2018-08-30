@@ -151,9 +151,8 @@ private:
             int best_one = -1;
             for (size_t i = 0; i < mapped_path.size(); i++) {
                 size_t rlen = mapped_path[i].second.initial_range.size();
-                if (rlen > length_cutoff && (best_one == -1 || 
-                                            rlen * mapped_path[i].second.quality > 
-                                            mapped_path[best_one].second.initial_range.size() * mapped_path[best_one].second.quality )) {
+                if (best_one == -1 || rlen * mapped_path[i].second.quality > 
+                                      mapped_path[best_one].second.initial_range.size() * mapped_path[best_one].second.quality ) {
                     best_one = i;
                 }
             }
