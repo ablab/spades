@@ -91,6 +91,33 @@ auto BinRead(std::istream &str, T &value) -> decltype(std::declval<T>().BinRead(
 }
 
 //---- Ad-hoc overloads ------------------------------------------------------------------------------------------------
+template <typename T, typename... Ts>
+void BinWrite(std::ostream &os, const T &v, const Ts &... vs);
+template <typename T, typename... Ts>
+void BinRead(std::istream &is, T &v, Ts &... vs);
+
+inline void BinWrite(std::ostream &str, const std::string &value);
+inline void BinRead(std::istream &str, std::string &value);
+
+template <typename T>
+std::enable_if_t<!std::is_same<T, bool>::value> BinRead(std::istream &is, std::vector<T> &v);
+template <typename T>
+std::enable_if_t<!std::is_same<T, bool>::value> BinWrite(std::ostream &os, const std::vector<T> &v);
+
+template <typename T1, typename T2>
+void BinWrite(std::ostream &os, const std::pair<T1, T2> &p);
+template <typename T1, typename T2>
+void BinRead(std::istream &is, std::pair<T1, T2> &p);
+
+template <typename K, typename V, typename... Args>
+void BinWrite(std::ostream &os, const std::map<K, V, Args...> &m);
+template <typename K, typename V, typename... Args>
+void BinRead(std::istream &is, std::map<K, V, Args...> &m);
+
+template <typename K, typename V, typename... Args>
+void BinWrite(std::ostream &os, const std::unordered_map<K, V, Args...> &m);
+template <typename K, typename V, typename... Args>
+void BinRead(std::istream &is, std::unordered_map<K, V, Args...> &m);
 
 // Arrays
 
