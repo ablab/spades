@@ -6,13 +6,13 @@ GACFG = config["gacfg"]
 
 rule all:
     input:
-        #expand(os.path.join(DATAPATH, "{org}/GAligner/output/aln_{reads}.tsv"), reads=["realnp", "simpb", "realpb"], org=["ecoli", "celegans"]),
-        expand(os.path.join(DATAPATH, "{org}/GAligner/output/aln_{reads}.log"), reads=["realnp", "simpb", "realpb"], org=["ecoli", "celegans"])
+        #expand(os.path.join(DATAPATH, "{org}/SeGal/output/aln_{reads}.tsv"), reads=["realnp", "simpb", "realpb"], org=["ecoli", "celegans"]),
+        expand(os.path.join(DATAPATH, "{org}/SeGal/output/aln_{reads}.log"), reads=["realnp", "simpb", "realpb"], org=["ecoli", "celegans"])
 
 
 rule prepare_cfg:
     output:
-        "{DATAPATH}/{org}/GAligner/tmp/{reads}.yaml"
+        "{DATAPATH}/{org}/SeGal/tmp/{reads}.yaml"
     run:
         print(wildcards.reads)
         if wildcards.reads.endswith("pb"):
