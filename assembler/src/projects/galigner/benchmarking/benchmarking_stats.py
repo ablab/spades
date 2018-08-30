@@ -88,7 +88,7 @@ class DataLoader:
         fin.close()
         return res
 
-    def load_vg_edges(self, gfa_filename):
+    def load_gfa_edges(self, gfa_filename):
         res = {}
         graph = {}
         rev = {"+": "-", "-": "+"}
@@ -107,7 +107,7 @@ class DataLoader:
                     graph[node_id2+rev[pos2]][node_id1+rev[pos1]] = 1
         return res, graph
 
-    def load_ga_paths(self, filename, edges, graph, reads):
+    def load_json_paths(self, filename, edges, graph, reads, stat = "max"):
         json_file = open(filename, "r")
         res = []
         res_mp = {}
@@ -176,19 +176,27 @@ class DataLoader:
                     graph_seq_full += node["nucs"][edge_offset_s: edge_offset_f + 1]
                     # for p in node["seq"]:
                     #     graph_seq += node["nucs"][p["start"]:p["end"]]
-
                 start = connected_nodes[0]["seq"][0]["start"]
                 end = connected_nodes[-1]["seq"][-1]["end"]
-                if end - start + 1 > 0.8*len(reads[ideal_name]):
-                    if (ideal_name not in res_mp) or (end - start + 1) > res_mp[ideal_name]["mapping_len"]:
-                        res_mp[ideal_name] = {"mapping_len": end + 1 - start, "s_start": start, "s_end": end + 1, "mapped_seq": graph_seq_full}
+                if stat == "max":
+                    if end - start + 1 > 0.8*len(reads[ideal_name]):
+                        if (ideal_name not in res_mp) or (end - start + 1) > res_mp[ideal_name][0]["mapping_len"]:
+                            res_mp[ideal_name] = []
+                            res_mp[ideal_name].append({"mapping_len": end + 1 - start, "s_start": start, "s_end": end + 1, "mapped_seq": graph_seq_full})
+                else:    
+                    if end - start + 1 > min(0.8*len(reads[ideal_name]), 1000):
+                        #if (ideal_name not in res_mp) or (end - start + 1) > res_mp[ideal_name]["mapping_len"]:
+                        if ideal_name not in res_mp:
+                            res_mp[ideal_name] = []
+                        res_mp[ideal_name].append({"mapping_len": end + 1 - start, "s_start": start, "s_end": end + 1, "mapped_seq": graph_seq_full})
         json_file.close()
         for r in res_mp.keys():
-            res.append({"r_name": r, "mapping_len": res_mp[r]["mapping_len"], "s_start": res_mp[r]["s_start"], "s_end": res_mp[r]["s_end"], \
-                                     "mapped_seq": res_mp[r]["mapped_seq"]})
+            res.append({"r_name": r, "mapping_len": [x["mapping_len"] for x in res_mp[r]] \
+                                   , "s_start": [x["s_start"] for x in res_mp[r]], "s_end": [x["s_end"] for x in res_mp[r]], \
+                                     "mapped_seq": [x["mapped_seq"] for x in res_mp[r]]})
         return res
 
-    def load_galigner_paths(self, filename, reads):
+    def load_segal_paths(self, filename, reads, stat = "max"):
         res = []
         fin = open(filename, "r")
         for ln in fin.readlines():
@@ -198,17 +206,21 @@ class DataLoader:
             initial_e = [int(x) for x in seq_ends.split(",")[:-1]] if "," in seq_ends else [int(seq_ends)]
             mapped_s = [int(x) for x in e_starts.split(",")[:-1]] if "," in e_starts else [int(e_starts)]
             mapped_e = [int(x) for x in e_ends.split(",")[:-1]] if "," in e_ends else [int(e_ends)]
-            max_ind = 0
-            for i in xrange(1, len(initial_s)):
-                if initial_e[max_ind] - initial_s[max_ind] < initial_e[i] - initial_s[i]:
-                    max_ind = i
-            if initial_e[max_ind] - initial_s[max_ind] + 1 > 0.8*len(reads[cur_read]):
-                res.append({"r_name": cur_read, "mapping_len": initial_e[max_ind] - initial_s[max_ind] + 1, \
-                                "s_start": initial_s[max_ind], "s_end": initial_e[max_ind], \
-                                "mapped_seq": seqs.split(";")[max_ind]})
-            # else:
-            #     print cur_read
-            #     print initial_e[max_ind] - initial_s[max_ind], len(reads[cur_read])
+            max_ind = []
+            for i in xrange(len(initial_s)):
+                if stat == "max":
+                    if initial_e[i] - initial_s[i] >0.8*len(reads[cur_read]) and (len(max_ind) == 0 or initial_e[i] - initial_s[i] > initial_e[max_ind[0]] - initial_s[max_ind[0]]):
+                        max_ind = []
+                        max_ind.append(i)
+                else:
+                    if initial_e[i] - initial_s[i] > min(0.8*len(reads[cur_read]), 1000):
+                        max_ind.append(i)
+            if len(max_ind) > 0:
+                res.append({"r_name": cur_read, "mapping_len": [initial_e[i] - initial_s[i] + 1 for i in max_ind] \
+                                   , "s_start": [initial_s[i] for i in max_ind], \
+                                     "s_end": [initial_e[i] for i in max_ind], \
+                                     "mapped_seq": [seqs.split(";")[i] for i in max_ind]})
+
         fin.close()
         return res
 
@@ -219,9 +231,9 @@ def print_stats(reads, res_mp):
         print name
         df = pd.DataFrame(res_mp[name])
         df["r"] = df.apply(lambda x: reads[x["r_name"]], axis = 1)
-        df["ed"] = df.apply(lambda x: edist([reads[x["r_name"]][x["s_start"]: x["s_end"]], x["mapped_seq"]]), axis = 1)
-        df["prop_len"] = df.apply(lambda x: x["mapping_len"]*100/len(reads[x["r_name"]]), axis = 1)
-        df["prop_ed"] = df.apply(lambda x: x["ed"]*100/x["mapping_len"], axis = 1)
+        df["ed"] = df.apply(lambda x: sum([edist([reads[x["r_name"]][x["s_start"][i]: x["s_end"][i]], x["mapped_seq"][i]]) for i in xrange(len(x["mapped_seq"])) ]), axis = 1)
+        df["prop_len"] = df.apply(lambda x: sum(x["mapping_len"][i] for i in xrange(len(x["mapping_len"])))*100/len(reads[x["r_name"]]), axis = 1)
+        df["prop_ed"] = df.apply(lambda x: x["ed"]*100/sum(x["mapping_len"][i] for i in xrange(len(x["mapping_len"]))), axis = 1)
         print "Mapped:", len(df)*100/len(reads), "%"
         print "Mean len:", int(df["prop_len"].mean()), "%"
         print "Mean ed:", int(df["prop_ed"].mean()), "%"
@@ -230,15 +242,9 @@ def print_stats(reads, res_mp):
         print ""
         eds[name] = list(df["prop_ed"])
 
-    # set_ga = set(x["r_name"] for x in res_mp["GAligner"])
-    # set_gra = set(x["r_name"] for x in res_mp["GraphAligner"])
-    # print "\n".join(list(set_gra - set_ga))
-
-    for k in eds.keys():
-        plt.hist(eds[k], alpha=0.5, label=k, bins=20)
-    plt.legend(loc='upper right')
-    plt.title("Edit distance / read length (%)")
-    plt.savefig("ed_per.png")
+#    set_ga = set(x["r_name"] for x in res_mp["SeGal"])
+#    set_gra = set(x["r_name"] for x in res_mp["GraphAligner"])
+#    print "\n".join(list(set_gra - set_ga))
 
 def save_fasta(aligner_res, filename):
     with open(filename, "w") as fout:
@@ -247,43 +253,26 @@ def save_fasta(aligner_res, filename):
 
 
 if __name__ == "__main__":
-    # reads_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/sim_pacbio/sim_pacbio_len500_100.fasta"
-    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_C.elegans_simpb100_dijkstra_bwa0_ends_inf_extended.tsv"
-    # edges_gfa = "/home/tdvorkina/soft/vg/celegans_sim_pacbio/assembly_graph_with_scaffolds_wp.split.gfa"
-    # vg_res_file = "/home/tdvorkina/soft/vg/celegans_sim_pacbio/sim_pacbio_len500_100.json"
 
-    org_path = "/Sid/tdvorkina/gralign/benchmarking/celegans/"
-    read_type = "realnp"
+    stat = "max"
+    org_path = "/Sid/tdvorkina/gralign/benchmarking/ecoli/"
+    read_type = "realnp2000"
     reads_file = org_path + "input/" + read_type + ".fasta"
-    galigner_res_file = org_path + "GAligner/output/aln_" + read_type + ".tsv"
-    #edges_gfa = "/home/tdvorkina/soft/vg/ecoli_sim_pacbio/assembly_graph_with_scaffolds_wp.split.gfa"
-    #vg_res_file = "/home/tdvorkina/soft/vg/ecoli_sim_pacbio/sim_pacbio_len500_100.json"
+    segal_res_file = org_path + "SeGal/output/aln_" + read_type + ".tsv"
+
     graphaligner_edges_gfa = org_path + "GraphAligner/tmp/graph_idfix.gfa"
     graphaligner_res_file = org_path + "GraphAligner/output/aln_" + read_type + "_selected.json"
 
-    # reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/real_pacbio/real_pacbio_len500_100.fasta"
-    # galigner_res_file =  "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_realpb100_dijkstra_bwa0_ends_inf.tsv"
-    # edges_gfa = "/home/tdvorkina/soft/vg/ecoli_sim_pacbio/assembly_graph_with_scaffolds_wp.split.gfa"
-    # vg_res_file = "/home/tdvorkina/soft/vg/ecoli_real_pacbio/real_pacbio_len500_100.json"
+    vg_edges_gfa = org_path + "vg/tmp/graph.split.gfa"
+    vg_res_file = org_path + "vg/output/aln_" + read_type + ".json"
 
-    # reads_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/real_pacbio/real_pacbio_len500_100.fasta"
-    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_C.elegans_realpb100_dijkstra_bwa0_ends_inf.tsv"
-    # edges_gfa = "/home/tdvorkina/soft/vg/celegans_sim_pacbio/assembly_graph_with_scaffolds_wp.split.gfa"
-    # vg_res_file = "/home/tdvorkina/soft/vg/celegans_real_pacbio/real_pacbio_len500_100.json"
-    
     dl = DataLoader()
     reads = dl.load_reads(reads_file)
-    galigner_res = dl.load_galigner_paths(galigner_res_file, reads)
-    # [vg_edges, vg_graph] = dl.load_vg_edges(edges_gfa)
-    # vg_res = dl.load_vg_paths(vg_res_file, vg_edges, vg_graph, reads)
-    [graphaligner_edges, graphaligner_graph] = dl.load_vg_edges(graphaligner_edges_gfa)
-    graphaligner_res = dl.load_ga_paths(graphaligner_res_file, graphaligner_edges, graphaligner_graph, reads)
-    print_stats(reads, {"GAligner": galigner_res, "GraphAligner": graphaligner_res})
-    # filename = "/".join(vg_res_file.split("/")[:-1]) + "/alignments.fasta"
-    # print "Saving to", filename
-    # save_fasta(vg_res, filename)
-    # print "Draw reads len distribution.."
-    # lens = [len(reads[k]) for k in reads.keys()]
-    # plt.hist(lens)
-    # plt.xlabel("Read length")
-    # plt.savefig("./len_dist.png")
+    segal_res = dl.load_segal_paths(segal_res_file, reads, stat)
+
+    #[vg_edges, vg_graph] = dl.load_gfa_edges(vg_edges_gfa)
+    #vg_res = dl.load_json_paths(vg_res_file, vg_edges, vg_graph, reads, stat)
+
+    [graphaligner_edges, graphaligner_graph] = dl.load_gfa_edges(graphaligner_edges_gfa)
+    graphaligner_res = dl.load_json_paths(graphaligner_res_file, graphaligner_edges, graphaligner_graph, reads, stat)
+    print_stats(reads, {"SeGal": segal_res, "GraphAligner": graphaligner_res})
