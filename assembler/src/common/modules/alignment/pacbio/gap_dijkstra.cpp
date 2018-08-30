@@ -206,10 +206,7 @@ bool DijkstraEndsReconstructor::AddState(const QueueState &cur_state, debruijn_g
 }
 
 bool DijkstraEndsReconstructor::IsEndPosition(const QueueState &cur_state) {
-    if (cur_state.i == ss_.size()) {
-        return true;
-    }
-    return false;
+    return (cur_state.i == ss_.size());
 }
 
 } // namespace sensitive_aligner

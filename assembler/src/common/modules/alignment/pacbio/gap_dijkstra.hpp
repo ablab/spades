@@ -198,14 +198,10 @@ public:
     }
 
     int path_end_position() const {
-        DEBUG("End position edge=" << end_qstate_.gs.e.int_id() << " end_pos=" << end_qstate_.gs.end_pos
-              << " seq_pos=" << end_qstate_.i << " s_len=" << ss_.size())
         return end_qstate_.gs.end_pos;
     }
 
     int seq_end_position() const {
-        DEBUG("End position edge=" << end_qstate_.gs.e.int_id() << " end_pos=" << end_qstate_.gs.end_pos
-              << " seq_pos=" << end_qstate_.i << " s_len=" << ss_.size())
         return end_qstate_.i;
     }
 

@@ -40,6 +40,7 @@ private:
     const Graph &g_;
 
     static const size_t SHORT_SPURIOUS_LENGTH = 500;
+    static const size_t SIMILARITY_LENGTH = 200;
     //presumably separate class for this and GetDistance
     mutable std::map<std::pair<VertexId, VertexId>, size_t> distance_cashed_;
     size_t read_count_;
@@ -55,7 +56,7 @@ private:
         } else {
             return ((b.edge_position - a.edge_position >= (b.read_position - a.read_position) * pb_config_.compression_cutoff) &&
                 ((b.edge_position - a.edge_position) * pb_config_.compression_cutoff <= (b.read_position - a.read_position)))
-                || (a_len > SHORT_SPURIOUS_LENGTH && b_len > SHORT_SPURIOUS_LENGTH 
+                || (a_len > SIMILARITY_LENGTH && b_len > SIMILARITY_LENGTH
                     && (b.read_position - a.read_position) < a_len + b_len 
                     && (b.edge_position - a.edge_position) < a_len + b_len );
         }
