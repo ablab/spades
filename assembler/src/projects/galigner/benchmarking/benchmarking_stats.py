@@ -236,7 +236,7 @@ def print_stats(reads, res_mp):
         df["prop_ed"] = df.apply(lambda x: x["ed"]*100/sum(x["mapping_len"][i] for i in xrange(len(x["mapping_len"]))), axis = 1)
         print "Mapped:", len(df)*100/len(reads), "%"
         print "Mean len:", int(df["prop_len"].mean()), "%"
-        print "Mean ed:", int(df["prop_ed"].mean()), "%"
+        print "Mean ed:", 100 - int(df["prop_ed"].mean()), "%"
         print "Median len:", int(df["prop_len"].median()), "%"
         print "Median ed:", int(df["prop_ed"].median()), "%"
         print ""
@@ -254,25 +254,37 @@ def save_fasta(aligner_res, filename):
 
 if __name__ == "__main__":
 
+    aligners = {"SeGal_5000": 1, "vg": 0, "GraphAligner":1}
     stat = "max"
-    org_path = "/Sid/tdvorkina/gralign/benchmarking/ecoli/"
-    read_type = "realnp2000"
-    reads_file = org_path + "input/" + read_type + ".fasta"
-    segal_res_file = org_path + "SeGal/output/aln_" + read_type + ".tsv"
+    for org in ["celegans"]:
+        for read_type in ["simpb5000", "realpb5000", "realnp5000"]:
+            org_path = "/Sid/tdvorkina/gralign/benchmarking/" + org + "/"
+            reads_file = org_path + "input/" + read_type + ".fasta"
+            print org, read_type
+            dl = DataLoader()
+            reads = dl.load_reads(reads_file)
+            mp = {}
+            for al in aligners.keys():
+                if aligners[al] == 1:
+                    if al.startswith("SeGal"):
+                        segal_res_file = org_path + al + "/output/aln_" + read_type + ".tsv"
+                        segal_res = dl.load_segal_paths(segal_res_file, reads, stat)
+                        mp[al] = segal_res
 
-    graphaligner_edges_gfa = org_path + "GraphAligner/tmp/graph_idfix.gfa"
-    graphaligner_res_file = org_path + "GraphAligner/output/aln_" + read_type + "_selected.json"
+                    if al.startswith("GraphAligner"):
+                        graphaligner_edges_gfa = org_path + al + "/tmp/graph_idfix.gfa"
+                        graphaligner_res_file = org_path + al + "/output/aln_" + read_type + "_selected.json"
+                        [graphaligner_edges, graphaligner_graph] = dl.load_gfa_edges(graphaligner_edges_gfa)
+                        graphaligner_res = dl.load_json_paths(graphaligner_res_file, graphaligner_edges, graphaligner_graph, reads, stat)
+                        mp[al] = graphaligner_res
 
-    vg_edges_gfa = org_path + "vg/tmp/graph.split.gfa"
-    vg_res_file = org_path + "vg/output/aln_" + read_type + ".json"
+                    if al.startswith("vg"):
+                        vg_edges_gfa = org_path + al + "/tmp/graph.split.gfa"
+                        vg_res_file = org_path + al + "/output/aln_" + read_type + ".json"
+                        [vg_edges, vg_graph] = dl.load_gfa_edges(vg_edges_gfa)
+                        vg_res = dl.load_json_paths(vg_res_file, vg_edges, vg_graph, reads, stat)
+                        mp[al] = vg_res
 
-    dl = DataLoader()
-    reads = dl.load_reads(reads_file)
-    segal_res = dl.load_segal_paths(segal_res_file, reads, stat)
+            print_stats(reads, mp)
 
-    #[vg_edges, vg_graph] = dl.load_gfa_edges(vg_edges_gfa)
-    #vg_res = dl.load_json_paths(vg_res_file, vg_edges, vg_graph, reads, stat)
 
-    [graphaligner_edges, graphaligner_graph] = dl.load_gfa_edges(graphaligner_edges_gfa)
-    graphaligner_res = dl.load_json_paths(graphaligner_res_file, graphaligner_edges, graphaligner_graph, reads, stat)
-    print_stats(reads, {"SeGal": segal_res, "GraphAligner": graphaligner_res})
