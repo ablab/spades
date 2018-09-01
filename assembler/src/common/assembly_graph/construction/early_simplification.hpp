@@ -53,7 +53,7 @@ private:
      * It returns all kmers of a tip into tip vector
      * In case it did not end as a tip or if it was too long tip the method returns empty vector
      */
-    std::vector<KeyWithHash> FindForward_(KeyWithHash kh) {
+    std::vector<KeyWithHash> FindForward(KeyWithHash kh) {
         std::vector<KeyWithHash> tip;
         while (tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh)) {
             tip.push_back(kh);
@@ -67,31 +67,31 @@ private:
         }
     }
 
-    size_t RemoveTip_(const vector<KeyWithHash> &tip) {
+    size_t RemoveTip(const vector<KeyWithHash> &tip) {
         for (const auto &kh : tip) index_.IsolateVertex(kh);
         return tip.size();
     }
 
-    size_t RemoveTips_(const std::array<vector<KeyWithHash>, 4> &tips, size_t max) {
+    size_t RemoveTips(const std::array<vector<KeyWithHash>, 4> &tips, size_t max) {
         size_t result = 0;
         for (const auto &tip : tips) {
-            if (tip.size() < max) result += RemoveTip_(tip);
+            if (tip.size() < max) result += RemoveTip(tip);
         }
         return result;
     }
 
-    size_t RemoveForward_(const KeyWithHash &kh) {
+    size_t RemoveForward(const KeyWithHash &kh) {
         std::array<vector<KeyWithHash>, 4> tips;
         size_t max = 0;
         for (char c = 0; c < 4; c++) {
             if (index_.CheckOutgoing(kh, c)) {
                 KeyWithHash khc = index_.GetOutgoing(kh, c);
-                tips[c] = FindForward_(khc);
+                tips[c] = FindForward(khc);
                 size_t len = tips[c].empty() ? std::numeric_limits<size_t>::max() : tips[c].size();
                 if (len > max) max = len;
             }
         }
-        return RemoveTips_(tips, max);
+        return RemoveTips(tips, max);
     }
 
     size_t ClipTips(std::vector<Index::kmer_iterator> &iters) {
@@ -104,7 +104,7 @@ private:
                 for (const auto &s : {seq, !seq}) {  // The file stores only canonical (i.e., s > !s) k-mers
                     KeyWithHash kh = index_.ConstructKWH(s);
                     if (index_.OutgoingEdgeCount(kh) >= 2) {
-                        size_t removed = RemoveForward_(kh);
+                        size_t removed = RemoveForward(kh);
                         result[i] += removed;
                         if (removed) {
                             tipped_junctions[i].push_back(kh);
@@ -125,7 +125,7 @@ private:
 #pragma omp parallel for schedule(guided) reduction(+:clipped_tips)
         for (size_t i = 0; i < tipped_junctions.size(); i++) {
             for (const KeyWithHash &kh : tipped_junctions[i]) {
-                clipped_tips += RemoveUnpairedForwardLinks_(kh);
+                clipped_tips += RemoveUnpairedForwardLinks(kh);
             }
         }
         INFO("Clipped tips: " << clipped_tips);
@@ -139,7 +139,7 @@ private:
         return ClipTips(iters);
     }
 
-    bool RemoveUnpairedForwardLink_(const KeyWithHash &kh, char ch) {
+    bool RemoveUnpairedForwardLink(const KeyWithHash &kh, char ch) {
         if (index_.CheckOutgoing(kh, ch)) {
             KeyWithHash next_kh = index_.GetOutgoing(kh, ch);
             if (!index_.CheckIncoming(next_kh, kh[0])) {
@@ -150,10 +150,10 @@ private:
         return false;
     }
 
-    size_t RemoveUnpairedForwardLinks_(const KeyWithHash &kh) {
+    size_t RemoveUnpairedForwardLinks(const KeyWithHash &kh) {
         size_t count = 0;
         for (char ch = 0; ch < 4; ++ch) {
-            count += RemoveUnpairedForwardLink_(kh, ch);
+            count += RemoveUnpairedForwardLink(kh, ch);
         }
         return count;
     }
