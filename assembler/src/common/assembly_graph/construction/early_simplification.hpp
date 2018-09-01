@@ -79,9 +79,10 @@ private:
 
     size_t RemoveForward(const KeyWithHash &kh, std::array<vector<KeyWithHash>, 4> &tips) {
         size_t max = 0;
+        auto mask = index_.get_value(kh);
         for (char c = 0; c < 4; c++) {
             tips[c].clear();
-            if (index_.CheckOutgoing(kh, c)) {
+            if (mask.CheckOutgoing(c)) {
                 KeyWithHash khc = index_.GetOutgoing(kh, c);
                 FindForward(khc, tips[c]);
                 size_t len = tips[c].empty() ? std::numeric_limits<size_t>::max() : tips[c].size();
@@ -141,21 +142,17 @@ private:
         return ClipTips(iters);
     }
 
-    bool RemoveUnpairedForwardLink(const KeyWithHash &kh, char ch) {
-        if (index_.CheckOutgoing(kh, ch)) {
-            KeyWithHash next_kh = index_.GetOutgoing(kh, ch);
-            if (!index_.CheckIncoming(next_kh, kh[0])) {
-                index_.DeleteOutgoing(kh, ch);
-                return true;
-            }
-        }
-        return false;
-    }
-
     size_t RemoveUnpairedForwardLinks(const KeyWithHash &kh) {
         size_t count = 0;
-        for (char ch = 0; ch < 4; ++ch) {
-            count += RemoveUnpairedForwardLink(kh, ch);
+        auto mask = index_.get_value(kh);
+        for (char c = 0; c < 4; ++c) {
+            if (mask.CheckOutgoing(c)) {
+                KeyWithHash next_kh = index_.GetOutgoing(kh, c);
+                if (!index_.CheckIncoming(next_kh, kh[0])) {
+                    index_.DeleteOutgoing(kh, c);
+                    ++count;
+                }
+            }
         }
         return count;
     }
