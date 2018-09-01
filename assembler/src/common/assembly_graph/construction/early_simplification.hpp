@@ -53,17 +53,14 @@ private:
      * It returns all kmers of a tip into tip vector
      * In case it did not end as a tip or if it was too long tip the method returns empty vector
      */
-    std::vector<KeyWithHash> FindForward(KeyWithHash kh) {
-        std::vector<KeyWithHash> tip;
+    void FindForward(KeyWithHash kh, std::vector<KeyWithHash> &tip) const {
         while (tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh)) {
             tip.push_back(kh);
             kh = index_.GetUniqueOutgoing(kh);
         }
         tip.push_back(kh);
-        if (index_.CheckUniqueIncoming(kh) && index_.IsDeadEnd(kh)) {
-            return tip;
-        } else {
-            return {};
+        if (!index_.CheckUniqueIncoming(kh) || !index_.IsDeadEnd(kh)) {
+            return tip.clear();
         }
     }
 
@@ -80,13 +77,13 @@ private:
         return result;
     }
 
-    size_t RemoveForward(const KeyWithHash &kh) {
-        std::array<vector<KeyWithHash>, 4> tips;
+    size_t RemoveForward(const KeyWithHash &kh, std::array<vector<KeyWithHash>, 4> &tips) {
         size_t max = 0;
         for (char c = 0; c < 4; c++) {
+            tips[c].clear();
             if (index_.CheckOutgoing(kh, c)) {
                 KeyWithHash khc = index_.GetOutgoing(kh, c);
-                tips[c] = FindForward(khc);
+                FindForward(khc, tips[c]);
                 size_t len = tips[c].empty() ? std::numeric_limits<size_t>::max() : tips[c].size();
                 if (len > max) max = len;
             }
@@ -99,12 +96,17 @@ private:
         std::vector<std::vector<KeyWithHash>> tipped_junctions(iters.size());
 #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < iters.size(); i++) {
+            std::array<vector<KeyWithHash>, 4> tips;
+            for (char c = 0; c < 4; ++c) {
+                tips[c].reserve(length_bound_);
+            }
+
             for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
                 auto seq = RtSeq(index_.k(), *it);
                 for (const auto &s : {seq, !seq}) {  // The file stores only canonical (i.e., s > !s) k-mers
                     KeyWithHash kh = index_.ConstructKWH(s);
                     if (index_.OutgoingEdgeCount(kh) >= 2) {
-                        size_t removed = RemoveForward(kh);
+                        size_t removed = RemoveForward(kh, tips);
                         result[i] += removed;
                         if (removed) {
                             tipped_junctions[i].push_back(kh);
