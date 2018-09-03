@@ -183,7 +183,7 @@ public:
         CyclicDigest() : fwd(0), rvs(0) {}
 
         digest value() const {
-            return std::min(fwd, rvs);
+            return fwd + rvs;
         }
 
         explicit operator digest() {
