@@ -33,7 +33,7 @@ public:
             //TODO can be optimized, no need to shift the kmer
             kmer <<= inchar;
             if (!filter_.filter(kmer))
-                return;
+                continue;
             processor_.ProcessKmer(kmer, (HashT) hash);
         }
     }
