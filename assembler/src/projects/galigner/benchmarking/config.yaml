@@ -1,7 +1,7 @@
 datapath: /Sid/tdvorkina/gralign/benchmarking/
 
-vgpath: /home/tdvorkina/soft/vg/miglionico/
-vg_k: 15
+vgpath: /home/tdvorkina/soft/vg/rionero/
+vg_k: 14
 
 gapath: /home/tdvorkina/tmp/algorithmic-biology/assembler/build/release/bin/longreads_aligner
 #/home/tdvorkina/results/benchmarking_test/bin/run_galigner_newcfg_2018-08-17_12-13-37

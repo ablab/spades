@@ -6,7 +6,7 @@ K = config["vg_k"]
 
 rule all:
     input:
-        expand(os.path.join(DATAPATH, "{org}/vg/output/aln_{reads}.json"), reads=["realnp", "simpb", "realpb"], org=["ecoli", "celegans"])
+        expand(os.path.join(DATAPATH, "{org}/vg/output/aln_{reads}.json"), reads=["realnp2000", "simpb2000", "realpb2000"], org=["ecoli", "celegans"]),
         expand(os.path.join(DATAPATH, "{org}/vg/tmp/graph.split.gfa"), org=["ecoli", "celegans"])
 
 ######## vg ###########
@@ -38,7 +38,7 @@ rule split_graph:
         else:
             shell("{VGPATH}/vg mod -X 1024 {input} > {output}")
 
-rule split_graph:
+rule convert_to_gfa:
     input:
         os.path.join(DATAPATH, "{org}/vg/tmp/graph.split.vg")
     output:
