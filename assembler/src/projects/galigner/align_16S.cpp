@@ -98,13 +98,16 @@ private:
     const debruijn_graph::conj_graph_pack &gp_;
     const rna16S_mapping::RnaAlignerConfig cfg_;
     const string &output_file_;
+    PrimerAligner primer_aligner;
 
 public:
     SequenceAligner(const debruijn_graph::conj_graph_pack &gp,
                     const rna16S_mapping::RnaAlignerConfig &cfg,
-                    const string &output_file):
-        gp_(gp), cfg_(cfg), output_file_(output_file) {}
-
+                    const string &output_file,
+                    std::vector<io::SingleRead> &wrappedprimers, int threads):
+        gp_(gp), cfg_(cfg), output_file_(output_file), primer_aligner(gp, cfg) {
+        primer_aligner.PreparePrimers(wrappedprimers, threads);
+    }
 
     bool IsCanonical(EdgeId e) const {
         return e <= gp_.g.conjugate(e);
@@ -112,131 +115,6 @@ public:
 
     EdgeId Canonical(EdgeId e) const {
         return IsCanonical(e) ? e : gp_.g.conjugate(e);
-    }
-
-    void PrepareInitialState(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, const string &s, bool forward, string &ss, EdgeId &start_e, int &start_pos, int &seq_start_pos) const {
-        if (forward) {
-            start_e = path.edge_at(path.size() - 1);
-            omnigraph::MappingRange mapping = path.mapping_at(path.size() - 1);
-            start_pos = mapping.mapped_range.start_pos;
-            ss = s.substr(mapping.initial_range.start_pos, (int) s.size() - mapping.initial_range.start_pos );
-            seq_start_pos = mapping.initial_range.start_pos;
-            DEBUG("sz=" << path.size() << " start_pos=" << start_pos << " s_sz=" << ss.size());
-        } else {
-            start_e = gp_.g.conjugate(path.edge_at(0));
-            omnigraph::MappingRange mapping = path.mapping_at(0);
-            if (gp_.g.length(start_e) + gp_.g.k() - mapping.mapped_range.start_pos < gp_.g.length(start_e)) {
-                start_pos = gp_.g.length(start_e) + gp_.g.k() - mapping.mapped_range.start_pos;
-                seq_start_pos = mapping.initial_range.start_pos;
-            } else {
-                start_pos = gp_.g.length(start_e) - 1;
-                seq_start_pos = mapping.initial_range.start_pos + (gp_.g.k() - mapping.mapped_range.start_pos + 1);
-            }
-            string c_ss = s.substr(0, seq_start_pos);
-
-            map<char, char> nucs = {{'A', 'T'}, {'T', 'A'}, {'C', 'G'}, {'G', 'C'}, {'U', 'A'}
-                , {'R', 'Y'}, {'Y', 'R'}
-                , {'K', 'M'}, {'M', 'K'}
-                , {'S', 'W'}, {'W', 'S'}
-                , {'B', 'V'}, {'V', 'B'}
-                , {'D', 'H'}, {'H', 'D'}
-                , {'N', 'N'}
-            };
-            ss = "";
-            int num = 0;
-            for (int i = c_ss.size() - 1; i >= 0; -- i) {
-                ss = ss + nucs[c_ss[i]];
-                num ++;
-            }
-
-            DEBUG("c_ss=" << c_ss.size() << " ss=" << ss.size() << " num=" << num);
-        }
-    }
-
-    void UpdatePath(omnigraph::MappingPath<debruijn_graph::EdgeId> &path,
-                    std::vector<EdgeId> &ans,
-                    int start_pos, int end_pos,
-                    int seq_start_pos, int seq_end_pos,
-                    bool forward) const {
-        if (forward) {
-            omnigraph::MappingPath<debruijn_graph::EdgeId> cur_sorted;
-            for (int i = 0; i < path.size() - 1; ++i) {
-                cur_sorted.push_back(path[i].first, path[i].second);
-            }
-            if (ans.size() ==  1) {
-                cur_sorted.push_back(ans[0], omnigraph::MappingRange(Range(seq_start_pos, seq_start_pos + seq_end_pos),
-                                     Range(start_pos, end_pos) ));
-            } else {
-                cur_sorted.push_back(ans[0], omnigraph::MappingRange(Range(seq_start_pos, seq_start_pos + gp_.g.length(ans[0]) ),
-                                     Range(0, gp_.g.length(ans[0])) ));
-                for (int i = 1; i < ans.size() - 1; ++i) {
-                    cur_sorted.push_back(ans[i], omnigraph::MappingRange(Range(0, gp_.g.length(ans[i])), Range(0, gp_.g.length(ans[i]) ) ));
-                }
-                DEBUG("forward " << seq_end_pos << " endps=" << end_pos << " anssz=" << ans.size() )
-                cur_sorted.push_back(ans[ans.size() - 1], omnigraph::MappingRange(Range(0, seq_start_pos + seq_end_pos), Range(0, end_pos ) )); //0, seq_start_pos + seq_end_pos -  gp_.g.k()
-            }
-            path = cur_sorted;
-        } else {
-            omnigraph::MappingPath<debruijn_graph::EdgeId> cur_sorted;
-            int start = gp_.g.length(ans[ans.size() - 1]) + gp_.g.k() - end_pos;
-            int seq_start = seq_start_pos - seq_end_pos;
-            int cur_ind = ans.size() - 1;
-            while (cur_ind >= 0 && start - (int) gp_.g.length(ans[cur_ind]) > 0) {
-                start -= gp_.g.length(ans[cur_ind]);
-                cur_ind --;
-            }
-            if (cur_ind == 0) {
-                cur_sorted.push_back(gp_.g.conjugate(ans[cur_ind]), omnigraph::MappingRange(Range(seq_start, seq_start + path[0].second.initial_range.end_pos), Range(start, start + seq_end_pos ) ));
-            } else {
-                cur_sorted.push_back(gp_.g.conjugate(ans[cur_ind]), omnigraph::MappingRange(Range(seq_start, seq_start + gp_.g.length(ans[cur_ind])), Range(start, gp_.g.length(ans[cur_ind]) ) ));
-                for (int i = cur_ind - 1; i > 0; --i) {
-                    cur_sorted.push_back(gp_.g.conjugate(ans[i]), omnigraph::MappingRange(Range(0, gp_.g.length(ans[0])), Range(0, gp_.g.length(ans[i])) ));
-                }
-                cur_sorted.push_back(gp_.g.conjugate(ans[0]), omnigraph::MappingRange(Range(0 , path[0].second.initial_range.end_pos), Range(0, path[0].second.mapped_range.end_pos) ));
-            }
-            for (int i = 1; i < path.size(); ++i) {
-                cur_sorted.push_back(path[i].first, path[i].second);
-            }
-
-            path = cur_sorted;
-        }
-    }
-
-    int GrowEnds(omnigraph::MappingPath<debruijn_graph::EdgeId> &path, const string &s, bool forward) const {
-        VERIFY(path.size() > 0);
-        string ss;
-        int start_pos = -1;
-        int seq_start_pos = -1;
-        EdgeId start_e = EdgeId();
-        PrepareInitialState(path, s, forward, ss, start_e, start_pos, seq_start_pos);
-
-        int s_len = int(ss.size());
-        int score = cfg_.gap_min_ed;
-        if (s_len > 2000) {
-            DEBUG("EdgeDijkstra: sequence is too long " << s_len)
-            return 0;
-        }
-        if (s_len < (int) gp_.g.k()) {
-            DEBUG("EdgeDijkstra: sequence is too small " << s_len)
-            return 0;
-        }
-        DEBUG(" EdgeDijkstra: String length " << s_len << " max-len " << score << " start_pos=" << start_pos << " start_e=" << start_e.int_id() << " e_len=" << gp_.g.length(start_e) + gp_.g.k() );
-        graph_aligner::DijkstraEndsReconstructor algo(gp_.g, cfg_.gap_cfg, ss, start_e, start_pos, score, true);
-        algo.CloseGap();
-        score = algo.edit_distance();
-        if (score == -1) {
-            DEBUG("EdgeDijkstra didn't find anything edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size())
-            return 0;
-        } else {
-            DEBUG("EdgeDijkstra found path edge=" << start_e.int_id() << " s_start=" << start_pos << " seq_len=" << ss.size() << " score=" << score )
-        }
-
-        std::vector<EdgeId> ans = algo.path();
-        int end_pos = algo.path_end_position();
-        int seq_end_pos = algo.seq_end_position();
-        DEBUG("graph_end=" << end_pos << " seq_end_pos=" << seq_end_pos << " anssz=" << ans.size());
-        UpdatePath(path, ans, start_pos, end_pos, seq_start_pos, seq_end_pos, forward);
-        return score;
     }
 
     bool Consistent(const EdgeId &a_e, const MappingRange &a_range,
@@ -470,7 +348,7 @@ public:
         std::vector<ReadMapping> mappings;
         int num = 0;
         int ind = 0;
-        for (auto primer : primers_) {
+        for (auto primer : primer_aligner.primers()) {
             int start_pos = -1;
             int end_pos = -1;
             int dist = EditDistance(primer.read_seq_, read.GetSequenceString(), start_pos, end_pos);
@@ -544,9 +422,7 @@ void Launch(RnaAlignerConfig cfg, const string &output_file, int threads) {
     myfile << "H\n";
     myfile.close();
 
-    aligner.AnalyzePrimers(wrappedprimers, threads);
-
-    SequenceAligner aligner(gp, cfg, output_file);
+    SequenceAligner aligner(gp, cfg, output_file, wrappedprimers, threads);
     #pragma omp parallel num_threads(threads)
     #pragma omp for
     for (size_t i = 0 ; i < wrappedreads.size(); ++i) {
