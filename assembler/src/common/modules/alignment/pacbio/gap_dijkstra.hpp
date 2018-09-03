@@ -25,7 +25,7 @@ struct DijkstraParams {
     size_t updates_limit = 0;
     bool find_shortest_path = false;
     bool restore_mapping = false;
-    int penalty_interval = 200;
+    float penalty_ratio = 200;
 
     int max_ed_proportion = 3;
     int ed_lower_bound = 200;

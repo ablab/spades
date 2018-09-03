@@ -88,7 +88,7 @@ template<> struct MappingTraits<sensitive_aligner::GapClosingConfig> {
         io.mapRequired("updates_limit", cfg.updates_limit);
         io.mapRequired("find_shortest_path", cfg.find_shortest_path);
         io.mapRequired("restore_mapping", cfg.restore_mapping);
-        io.mapRequired("penalty_interval", cfg.penalty_interval);
+        io.mapRequired("penalty_ratio", cfg.penalty_ratio);
         io.mapRequired("max_ed_proportion", cfg.max_ed_proportion);
         io.mapRequired("ed_lower_bound", cfg.ed_lower_bound);
         io.mapRequired("ed_upper_bound", cfg.ed_upper_bound);
@@ -103,7 +103,7 @@ template<> struct MappingTraits<sensitive_aligner::EndsClosingConfig> {
         io.mapRequired("updates_limit", cfg.updates_limit);
         io.mapRequired("find_shortest_path", cfg.find_shortest_path);
         io.mapRequired("restore_mapping", cfg.restore_mapping);
-        io.mapRequired("penalty_interval", cfg.penalty_interval);
+        io.mapRequired("penalty_ratio", cfg.penalty_ratio);
         io.mapRequired("max_ed_proportion", cfg.max_ed_proportion);
         io.mapRequired("ed_lower_bound", cfg.ed_lower_bound);
         io.mapRequired("ed_upper_bound", cfg.ed_upper_bound);

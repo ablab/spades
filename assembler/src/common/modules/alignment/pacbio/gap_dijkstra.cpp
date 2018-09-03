@@ -13,7 +13,7 @@ bool DijkstraGraphSequenceBase::IsBetter(int seq_ind, int ed)
     }
     VERIFY(seq_ind < (int) ss_.size())
     VERIFY(seq_ind >= 0)
-    if (best_ed_[seq_ind] + gap_cfg_.penalty_interval >= ed) {
+    if (seq_ind < 100 || max(best_ed_[seq_ind] + (int) (seq_ind * gap_cfg_.penalty_ratio), 20) >= ed) {
         best_ed_[seq_ind] = min(best_ed_[seq_ind], ed);
         return true;
     } 
