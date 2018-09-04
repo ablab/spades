@@ -465,6 +465,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         cfg["assembly"] = empty_config()
 
     # common
+    cfg["common"].__dict__["checkpoints"] = options_storage.checkpoints
     cfg["common"].__dict__["output_dir"] = options_storage.output_dir
     cfg["common"].__dict__["tmp_dir"] = options_storage.tmp_dir
     cfg["common"].__dict__["max_threads"] = options_storage.threads
