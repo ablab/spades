@@ -1,5 +1,4 @@
-# Edit config.yaml to add the paths before running
-configfile: "config_gra.yaml"
+configfile: "config.yaml"
 MUMMERPATH = config["mummerpath"]
 DATAPATH = config["datapath"]
 VGPATH = config["vgpath"]

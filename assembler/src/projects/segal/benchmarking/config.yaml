@@ -1,0 +1,68 @@
+# Path to folder with benchmarking data
+# datapath/ecoli/input/graph.gfa
+# datapath/ecoli/input/{reads}.fasta(q) reads = "simpb","realpb","realnp"
+# datapath/celegans/input/graph.gfa
+# datapath/celegans/input/{reads}.fasta(q) reads = "simpb","realpb","realnp"
+datapath: /Sid/tdvorkina/gralign/benchmarking/
+
+
+#######################################################################################################
+
+
+# vg cfg
+
+vgpath: /home/tdvorkina/soft/vg/rionero/
+vg_k: 14
+
+
+#######################################################################################################
+
+
+# SeGal cfg
+
+segalpath: /home/tdvorkina/results/benchmarking_test/bin/run_segal_v1_2018-09-03_19-58-07
+segalcfg: ./segal_config_template.yaml
+
+
+#######################################################################################################
+
+
+# GraphAligner cfg
+
+# Important parameters at top: check them!
+
+# https://github.com/maickrau/GraphAligner
+# root directory of the repo
+graphalignerfolder: /home/tdvorkina/soft/GraphAligner/
+# https://github.com/mummer4/mummer
+# required for seed finding
+mummerpath: /home/tdvorkina/soft/mummer-4.0.0beta2/mummer
+
+# The graph must be in input/ folder and in gfa format, eg ./input/graph.gfa
+# If the graph is not a de Bruijn graph (DBG) then some seeds might be missed and some reads might not get aligned
+# datapath: /Sid/tdvorkina/gralign/benchmarking/ # duplicated
+
+# vgpath: /home/tdvorkina/soft/vg/rionero/ # duplicated
+
+############################
+
+# Optional params below: default values might work
+
+# Size of the seed hits. Higher means faster but less accurate alignments.
+# For DBG's, should be the k-mer size of the graph.
+# For non-DBG's, eg assembly graphs, try values between 10 - 50 depending on read length and graph size
+seedsize: 14
+# Max number of seeds. Higher means slower but more accurate alignment.
+# Try values between 10 - 100
+maxseeds: 100
+
+# Aligner parameters.
+# -b: Mandatory. Default bandwidth. eg -b 5. Higher means more accurate but slower alignment. Try values between 5-35.
+# -B: Optional. Higher bandwidth. eg -B 10. If aligning at -b fails, use this higher bandwidth at the failing spot. Higher means more accurate but slightly slower. Try values between 10-35.
+# -C: Optional. Max band size. eg -C 1000000. If the band grows higher than this, stop alignment. Use for complex graphs to skip tangles. For simple graphs, leave out, for complex graphs try values between 50'000-5'000'000
+# -u: Optional. Unsafe heuristics. eg -u. Use heuristics which speed up alignment but can lead to inoptimal results.
+# -q: Optional. Quiet mode. eg -q. Print less stuff
+# Example for RNA splice graph: -b 35
+# Example for human DBG: -b 5 -B 10 -C 1000000 -u
+# Example for bacterial DBG: -b 10 -B 20
+aligner_params: -b 10 -B 35

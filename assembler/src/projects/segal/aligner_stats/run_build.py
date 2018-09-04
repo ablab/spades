@@ -10,7 +10,7 @@ if len(sys.argv) < 4:
 makedir = sys.argv[1]
 feature_name = sys.argv[2]
 prefix = sys.argv[3]
-makecmd = "make -C build/release/projects/galigner/ -j4 longreads_aligner"
+makecmd = "make -C build/release/projects/segal/ -j4 longreads_aligner"
 if not os.path.exists("/home/tdvorkina/results/" + feature_name + "/bin"):
     os.makedirs("/home/tdvorkina/results/" + feature_name + "/bin")
 now = str(datetime.datetime.now())

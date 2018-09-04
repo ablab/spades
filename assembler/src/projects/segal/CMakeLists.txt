@@ -5,7 +5,7 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(galigner CXX)
+project(segal CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 

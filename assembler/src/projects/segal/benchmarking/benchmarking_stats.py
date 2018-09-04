@@ -3,14 +3,9 @@ import json
 import unicodedata
 import pandas as pd
 import edlib
-import matplotlib
-# Force matplotlib to not use any Xwindows backend.
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 
 def edist(lst):
-    #return editdistance.eval(lst[0], lst[1])
     result = edlib.align(str(lst[0]), str(lst[1]), mode="NW", additionalEqualities=[('U', 'T')
                                                 , ('R', 'A'), ('R', 'G')
                                                 , ('Y', 'C'), ('Y', 'T'), ('Y', 'U')
@@ -24,22 +19,6 @@ def edist(lst):
                                                 , ('V', 'A'), ('V', 'C'), ('V', 'G')
                                                 , ('N', 'C'), ('N', 'C'), ('N', 'G'), ('N', 'T'), ('N', 'U')] )
     return result["editDistance"]   
-
-def edist_locations(lst):
-    #return editdistance.eval(lst[0], lst[1])
-    result = edlib.align(str(lst[0]), str(lst[1]), mode="HW", task="locations", additionalEqualities=[('U', 'T')
-                                                , ('R', 'A'), ('R', 'G')
-                                                , ('Y', 'C'), ('Y', 'T'), ('Y', 'U')
-                                                , ('K', 'G'), ('K', 'T'), ('K', 'U')
-                                                , ('M', 'A'), ('M', 'C')
-                                                , ('S', 'C'), ('S', 'G')
-                                                , ('W', 'A'), ('W', 'T'), ('W', 'U')
-                                                , ('B', 'C'), ('B', 'G'), ('B', 'T'), ('B', 'U')
-                                                , ('D', 'A'), ('D', 'G'), ('D', 'T'), ('D', 'U')
-                                                , ('H', 'A'), ('H', 'C'), ('H', 'T'), ('H', 'U')
-                                                , ('V', 'A'), ('V', 'C'), ('V', 'G')
-                                                , ('N', 'C'), ('N', 'C'), ('N', 'G'), ('N', 'T'), ('N', 'U')] )
-    return result["editDistance"], result["locations"][0][0], result["locations"][0][1] 
 
 def make_edit(cur_mp, ideal_seq_offset, graph_seq, ideal_seq):
     if cur_mp["to_length"] == cur_mp["from_length"] and len(cur_mp["sequence"]) == 0:
@@ -260,7 +239,7 @@ def save_fasta(aligner_res, filename):
 
 if __name__ == "__main__":
 
-    aligners = {"SeGal": 1, "vg": 1, "GraphAligner":1}
+    aligners = {"SeGal": 1, "vg": 0, "GraphAligner":1}
     stat = "max"
     for org in ["ecoli", "celegans"]:
         for read_type in ["simpb2000", "realpb2000", "realnp2000"]:

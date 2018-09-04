@@ -1,13 +1,11 @@
-# Edit config.yaml to add the paths before running
 configfile: "config.yaml"
 DATAPATH = config["datapath"]
-GAPATH = config["gapath"]
-GACFG = config["gacfg"] 
+GAPATH = config["segalpath"]
+GACFG = config["segalcfg"] 
 
 rule all:
     input:
-        #expand(os.path.join(DATAPATH, "{org}/SeGal/output/aln_{reads}.tsv"), reads=["realnp", "simpb", "realpb"], org=["ecoli", "celegans"]),
-        expand(os.path.join(DATAPATH, "{org}/SeGal/output/aln_{reads}.log"), reads=["realnp", "simpb", "realpb"], org=["ecoli"])
+        expand(os.path.join(DATAPATH, "{org}/SeGal/output/aln_{reads}.log"), reads=["realnp2000", "simpb2000", "realpb2000"], org=["ecoli", "celegans"])
 
 
 rule run_aligner:
