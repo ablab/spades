@@ -107,6 +107,71 @@ class DataLoader:
                     graph[node_id2+rev[pos2]][node_id1+rev[pos1]] = 1
         return res, graph
 
+    def load_json_read(self, json_data, ideal_seq, ideal_seq_offset, edges):
+        graph_seq = ""
+        edge_offset_f = -1
+        nodes = []
+        for it in json_data["path"]["mapping"]:
+            node_id = int(it["position"]["node_id"])
+            edge_offset = int(it["position"]["offset"]) if "offset" in it["position"].keys() else 0
+            node_seq = edges[node_id] if "is_reverse" not in it["position"].keys() else make_c(edges[node_id])
+            edge_offset_f = edge_offset
+            ideal_seq_offset_s = ideal_seq_offset
+            for mp in it["edit"]:
+                cur_mp = {}
+                ks = ["from_length", "to_length"]
+                for k in ks:
+                    cur_mp[k] = mp[k] if k in mp.keys() else "0"
+                cur_mp["sequence"] = mp["sequence"] if "sequence" in mp.keys() else ""
+                edge_offset_f += int(cur_mp["from_length"])
+                ideal_seq_offset, graph_seq = make_ga_edit(cur_mp, ideal_seq_offset, graph_seq, ideal_seq)
+            if len(nodes) == 0 or (nodes[-1]["node_id"] != node_id or nodes[-1]["path"][-1]['end'] > edge_offset):
+                nodes.append({"node_id": node_id, "node_id_str": str(node_id) + str("+" if "is_reverse" not in it["position"].keys() else "-"),\
+                              "path": [{"start": edge_offset, "end": edge_offset_f}], "seq": [{"start": ideal_seq_offset_s, "end": ideal_seq_offset}], "nucs": node_seq})
+            else:
+                nodes[-1]["path"].append({"start": edge_offset, "end": edge_offset_f})
+                nodes[-1]["seq"].append({"start": ideal_seq_offset_s, "end": ideal_seq_offset})
+        return nodes
+
+    def extract_max_connected_path(self, nodes, graph):
+        prev_node = None
+        connected_nodes = []
+        cur_nodes = []
+        best_len = -1
+        cur_len = 0
+        for node in nodes:
+            if prev_node != None:
+                if not prev_node["node_id_str"] in graph or not node["node_id_str"] in graph[prev_node["node_id_str"]]:
+                    if cur_len > best_len:
+                        best_len = cur_len
+                        connected_nodes = cur_nodes
+                    cur_len = 0
+                    cur_nodes = []
+            for p in node["seq"]:
+                cur_len += abs(p["end"] - p["start"])
+            cur_nodes.append(node)
+            prev_node = node
+
+        if cur_len > best_len:
+            best_len = cur_len
+            connected_nodes = cur_nodes
+        return connected_nodes
+
+    def extract_seq(self, connected_nodes):
+        graph_seq_full = ""
+        graph_seq = ""
+        for i in xrange(len(connected_nodes)):
+            node = connected_nodes[i]
+            edge_offset_s = 0
+            edge_offset_f = len(node["nucs"])
+            if i == 0:
+                edge_offset_s = node["path"][0]["start"]
+            if i == len(connected_nodes) - 1:
+                edge_offset_f = node["path"][-1]["end"]
+            graph_seq_full += node["nucs"][edge_offset_s: edge_offset_f + 1]
+        return graph_seq_full
+
+
     def load_json_paths(self, filename, edges, graph, reads, stat = "max"):
         json_file = open(filename, "r")
         res = []
@@ -116,66 +181,10 @@ class DataLoader:
             ideal_seq = json_data["sequence"]
             ideal_name = json_data["name"].replace(" ","")
             ideal_seq_offset = 0 if "query_position" not in json_data else int(json_data["query_position"])
-            graph_seq = ""
-            edge_offset_f = -1
-            nodes = []
             if "path" in json_data.keys():
-                for it in json_data["path"]["mapping"]:
-                    node_id = int(it["position"]["node_id"])
-                    edge_offset = int(it["position"]["offset"]) if "offset" in it["position"].keys() else 0
-                    node_seq = edges[node_id] if "is_reverse" not in it["position"].keys() else make_c(edges[node_id])
-                    edge_offset_f = edge_offset
-                    ideal_seq_offset_s = ideal_seq_offset
-                    for mp in it["edit"]:
-                        cur_mp = {}
-                        ks = ["from_length", "to_length"]
-                        for k in ks:
-                            cur_mp[k] = mp[k] if k in mp.keys() else "0"
-                        cur_mp["sequence"] = mp["sequence"] if "sequence" in mp.keys() else ""
-                        edge_offset_f += int(cur_mp["from_length"])
-                        ideal_seq_offset, graph_seq = make_ga_edit(cur_mp, ideal_seq_offset, graph_seq, ideal_seq)
-                    if len(nodes) == 0 or nodes[-1]["node_id"] != node_id:
-                        nodes.append({"node_id": node_id, "node_id_str": str(node_id) + str("+" if "is_reverse" not in it["position"].keys() else "-"),\
-                                      "path": [{"start": edge_offset, "end": edge_offset_f}], "seq": [{"start": ideal_seq_offset_s, "end": ideal_seq_offset}], "nucs": node_seq})
-                    else:
-                        nodes[-1]["path"].append({"start": edge_offset, "end": edge_offset_f})
-                        nodes[-1]["seq"].append({"start": ideal_seq_offset_s, "end": ideal_seq_offset})
-
-                prev_node = None
-                connected_nodes = []
-                cur_nodes = []
-                best_len = -1
-                cur_len = 0
-                for node in nodes:
-                    if prev_node != None:
-                        if not prev_node["node_id_str"] in graph or not node["node_id_str"] in graph[prev_node["node_id_str"]]:
-                            if cur_len > best_len:
-                                best_len = cur_len
-                                connected_nodes = cur_nodes
-                            cur_len = 0
-                            cur_nodes = []
-                    for p in node["seq"]:
-                        cur_len += abs(p["end"] - p["start"])
-                    cur_nodes.append(node)
-                    prev_node = node
-
-                if cur_len > best_len:
-                    best_len = cur_len
-                    connected_nodes = cur_nodes
-                graph_seq_full = ""
-                graph_seq = ""
-                for i in xrange(len(connected_nodes)):
-                    node = connected_nodes[i]
-                    edge_offset_s = 0
-                    edge_offset_f = len(node["nucs"])
-                    if i == 0:
-                        edge_offset_s = node["path"][0]["start"]
-                    if i == len(nodes) - 1:
-                        edge_offset_f = node["path"][-1]["end"]
-                    #graph_seq_full = edges[node["node_id"]] if node["node_id_str"].endswith("+") else make_c(edges[node["node_id"]])
-                    graph_seq_full += node["nucs"][edge_offset_s: edge_offset_f + 1]
-                    # for p in node["seq"]:
-                    #     graph_seq += node["nucs"][p["start"]:p["end"]]
+                nodes = self.load_json_read(json_data, ideal_seq, ideal_seq_offset, edges)
+                connected_nodes = self.extract_max_connected_path(nodes, graph)
+                graph_seq_full = self.extract_seq(connected_nodes)
                 start = connected_nodes[0]["seq"][0]["start"]
                 end = connected_nodes[-1]["seq"][-1]["end"]
                 if stat == "max":
@@ -185,7 +194,6 @@ class DataLoader:
                             res_mp[ideal_name].append({"mapping_len": end + 1 - start, "s_start": start, "s_end": end + 1, "mapped_seq": graph_seq_full})
                 else:    
                     if end - start + 1 > min(0.8*len(reads[ideal_name]), 1000):
-                        #if (ideal_name not in res_mp) or (end - start + 1) > res_mp[ideal_name]["mapping_len"]:
                         if ideal_name not in res_mp:
                             res_mp[ideal_name] = []
                         res_mp[ideal_name].append({"mapping_len": end + 1 - start, "s_start": start, "s_end": end + 1, "mapped_seq": graph_seq_full})
@@ -220,6 +228,7 @@ class DataLoader:
                                    , "s_start": [initial_s[i] for i in max_ind], \
                                      "s_end": [initial_e[i] for i in max_ind], \
                                      "mapped_seq": [seqs.split(";")[i] for i in max_ind]})
+        print "Mapped num =", len(res)
 
         fin.close()
         return res
@@ -235,16 +244,13 @@ def print_stats(reads, res_mp):
         df["prop_len"] = df.apply(lambda x: sum(x["mapping_len"][i] for i in xrange(len(x["mapping_len"])))*100/len(reads[x["r_name"]]), axis = 1)
         df["prop_ed"] = df.apply(lambda x: x["ed"]*100/sum(x["mapping_len"][i] for i in xrange(len(x["mapping_len"]))), axis = 1)
         print "Mapped:", len(df)*100/len(reads), "%"
-        print "Mean len:", int(df["prop_len"].mean()), "%"
         print "Mean ed:", 100 - int(df["prop_ed"].mean()), "%"
-        print "Median len:", int(df["prop_len"].median()), "%"
-        print "Median ed:", int(df["prop_ed"].median()), "%"
         print ""
         eds[name] = list(df["prop_ed"])
 
-#    set_ga = set(x["r_name"] for x in res_mp["SeGal"])
-#    set_gra = set(x["r_name"] for x in res_mp["GraphAligner"])
-#    print "\n".join(list(set_gra - set_ga))
+    # set_ga = set(x["r_name"] for x in res_mp["SeGal"])
+    # set_gra = set(x["r_name"] for x in res_mp["GraphAligner"])
+    # print len(set_ga - set_gra), len(set_gra - set_ga) 
 
 def save_fasta(aligner_res, filename):
     with open(filename, "w") as fout:
@@ -254,10 +260,10 @@ def save_fasta(aligner_res, filename):
 
 if __name__ == "__main__":
 
-    aligners = {"SeGal_5000": 1, "vg": 0, "GraphAligner":1}
+    aligners = {"SeGal": 1, "vg": 1, "GraphAligner":1}
     stat = "max"
-    for org in ["celegans"]:
-        for read_type in ["simpb5000", "realpb5000", "realnp5000"]:
+    for org in ["ecoli", "celegans"]:
+        for read_type in ["simpb2000", "realpb2000", "realnp2000"]:
             org_path = "/Sid/tdvorkina/gralign/benchmarking/" + org + "/"
             reads_file = org_path + "input/" + read_type + ".fasta"
             print org, read_type
