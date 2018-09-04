@@ -20,7 +20,7 @@ gap_closing:
   updates_limit: 1000000
   find_shortest_path: true
   restore_mapping: false
-  penalty_interval: 20000
+  penalty_ratio: 200
   max_ed_proportion: 3 # max_ed = min(ed_upper_bound, max(sequence_length/max_ed_proportion, ed_lower_bound))
   ed_lower_bound: 500
   ed_upper_bound: 2000
@@ -32,8 +32,8 @@ ends_recovering:
   updates_limit: 1000000
   find_shortest_path: true
   restore_mapping: false
-  penalty_interval: 20000
+  penalty_ratio: 0.1
   max_ed_proportion: 5 # max_ed = min(ed_upper_bound, max(sequence_length/max_ed_proportion, ed_lower_bound))
-  ed_lower_bound: 200
-  ed_upper_bound: 1000
-  max_restorable_length: 3000
+  ed_lower_bound: 500
+  ed_upper_bound: 2000
+  max_restorable_length: 5000
