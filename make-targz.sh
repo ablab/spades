@@ -26,7 +26,7 @@ cp -r assembler/test_dataset $TARGET_DIR/test_dataset
 cp -r assembler/test_dataset_truspades $TARGET_DIR/test_dataset_truspades
 cp -r assembler/test_dataset_plasmid $TARGET_DIR/test_dataset_plasmid
 cp assembler/LICENSE $TARGET_DIR/
-cp assembler/README $TARGET_DIR/
+cp README.md $TARGET_DIR/
 cp assembler/VERSION $TARGET_DIR/
 cp assembler/spades.py $TARGET_DIR/
 cp assembler/rnaspades.py $TARGET_DIR/
@@ -37,7 +37,6 @@ cp assembler/truspades.py $TARGET_DIR/
 cp assembler/spades_compile.sh $TARGET_DIR/
 cp assembler/spades_init.py $TARGET_DIR/
 cp assembler/manual.html $TARGET_DIR/
-cp assembler/manual.md $TARGET_DIR/
 cp assembler/dipspades_manual.html $TARGET_DIR/
 cp assembler/truspades_manual.html $TARGET_DIR/
 cp assembler/rnaspades_manual.html $TARGET_DIR/
