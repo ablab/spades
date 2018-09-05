@@ -292,7 +292,7 @@ class CoverageAwareIdealInfoProvider : public BasicIdealInfoProvider {
 public:
     //works for single lib only!!!
     virtual double EstimatePathCoverage(const BidirectionalPath& path) const  {
-        VERIFY(path.Length() > 0);
+        VERIFY(path.Size() > 0);
         double answer = std::numeric_limits<double>::max();
         for (size_t i = 0; i < path.Size(); ++i) {
             answer = std::min(g_.coverage(path.At(i)), answer);
