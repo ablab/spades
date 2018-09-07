@@ -94,14 +94,15 @@ std::vector<std::string> SingleReadResolveModeNames();
 template<typename mode_t>
 mode_t ModeByName(const std::string& name, const std::vector<std::string>& names) {
     auto it = std::find(names.begin(), names.end(), name);
-    VERIFY_MSG(it != names.end(), "Unrecognized mode name");
+    VERIFY_MSG(it != names.end(), "Unrecognized mode name: " << name);
     return mode_t(it - names.begin());
 }
 
 template<typename mode_t>
 std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) {
-    VERIFY_MSG(size_t(mode) < names.size(), "Unrecognized mode id");
-    return names[size_t(mode)];
+    auto mode_id = static_cast<size_t>(mode);
+    VERIFY_MSG(mode_id < names.size(), "Unrecognized mode id: " << mode_id);
+    return names[mode_id];
 }
 
 struct LibraryData {
