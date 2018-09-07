@@ -385,6 +385,7 @@ def set_default_values():
     global disable_rr
     global careful
     global mismatch_corrector
+    global checkpoints
     global developer_mode
     global qvoffset
     global cov_cutoff
@@ -408,6 +409,8 @@ def set_default_values():
         careful = False
     if mismatch_corrector is None:
         mismatch_corrector = False
+    if checkpoints is None:
+        checkpoints = "none"
     if developer_mode is None:
         developer_mode = False
     if qvoffset == 'auto':
