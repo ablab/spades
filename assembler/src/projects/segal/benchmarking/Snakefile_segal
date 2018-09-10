@@ -5,7 +5,7 @@ GACFG = config["segalcfg"]
 
 rule all:
     input:
-        expand(os.path.join(DATAPATH, "{org}/SeGal/output/aln_{reads}.log"), reads=["realnp2000", "simpb2000", "realpb2000"], org=["ecoli", "celegans"])
+        expand(os.path.join(DATAPATH, "{org}/SeGal/output/aln_{reads}.log"), reads=["realnp2000", "simpb2000", "realpb2000", "simnp2000"], org=["ecoli", "celegans"])
 
 
 rule run_aligner:

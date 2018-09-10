@@ -10,10 +10,10 @@ SCRIPTPATH = config["graphalignerfolder"] + "scripts"
 
 rule all:
     input:
-        expand(os.path.join(DATAPATH, "{org}/GraphAligner/output/aln_{reads}_all.json"), reads=["realpb", "realnp", "simpb"], org=["ecoli", "celegans"]),
-        expand(os.path.join(DATAPATH, "{org}/GraphAligner/output/aln_{reads}_selected.json"), reads=["realpb", "realnp", "simpb"], org=["ecoli", "celegans"]),
-        expand(os.path.join(DATAPATH, "{org}/GraphAligner/output/aln_{reads}_full_length.json"), reads=["realpb", "realnp", "simpb"], org=["ecoli", "celegans"]),
-        expand(os.path.join(DATAPATH, "{org}/GraphAligner/output/stats_{reads}.txt"), reads=["realpb", "realnp", "simpb"], org=["ecoli", "celegans"])
+        expand(os.path.join(DATAPATH, "{org}/GraphAligner/output/aln_{reads}_all.json"), reads=["realpb2000", "realnp2000", "simpb2000", "simnp2000"], org=["ecoli", "celegans"]),
+        expand(os.path.join(DATAPATH, "{org}/GraphAligner/output/aln_{reads}_selected.json"), reads=["realpb2000", "realnp2000", "simpb2000", "simnp2000"], org=["ecoli", "celegans"]),
+        expand(os.path.join(DATAPATH, "{org}/GraphAligner/output/aln_{reads}_full_length.json"), reads=["realpb2000", "realnp2000", "simpb2000", "simnp2000"], org=["ecoli", "celegans"]),
+        expand(os.path.join(DATAPATH, "{org}/GraphAligner/output/stats_{reads}.txt"), reads=["realpb2000", "realnp2000", "simpb2000", "simnp2000"], org=["ecoli", "celegans"])
 
 
 rule remove_spaces:
@@ -32,25 +32,9 @@ rule remove_paths:
     shell:
         "mkdir -p {DATAPATH}/{wildcards.org}/GraphAligner/tmp && sed '/^P/ d' {input} > {output}"
 
-rule convert_to_vg:
-    input:
-        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_wp.gfa")
-    output:
-        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph.vg")
-    shell:
-        "{VGPATH}/vg view -vF {input} > {output}"
-
-rule convert_to_gfa:
-    input:
-        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph.vg")
-    output:
-        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph.gfa")
-    shell:
-        "{VGPATH}/vg view -g {input} > {output}"
-
 rule fix_graph_nodeids:
     input:
-        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph.gfa")
+        os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_wp.gfa")
     output:
         os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_idfix.gfa"),
         os.path.join(DATAPATH, "{org}/GraphAligner/tmp/graph_nodemapping.txt")

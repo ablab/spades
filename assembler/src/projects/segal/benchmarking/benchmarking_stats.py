@@ -74,7 +74,7 @@ class DataLoader:
         with open(gfa_filename, "r") as fin:
             for ln in fin.readlines():
                 if ln.startswith("S"):
-                    _, node_id, seq = ln.strip().split("\t")
+                    node_id, seq = ln.strip().split("\t")[1:3]
                     res[int(node_id)] = seq
                 elif ln.startswith("L"):
                     _, node_id1, pos1, node_id2, pos2, match  = ln.strip().split("\t")
@@ -238,12 +238,12 @@ def save_fasta(aligner_res, filename):
 
 
 if __name__ == "__main__":
-
+    datapath = "/Sid/tdvorkina/gralign/benchmarking/"
     aligners = {"SeGal": 1, "vg": 0, "GraphAligner":1}
     stat = "max"
     for org in ["ecoli", "celegans"]:
-        for read_type in ["simpb2000", "realpb2000", "realnp2000"]:
-            org_path = "/Sid/tdvorkina/gralign/benchmarking/" + org + "/"
+        for read_type in ["simnp2000", "simpb2000", "realpb2000", "realnp2000"]:
+            org_path = datapath + "/" + org + "/"
             reads_file = org_path + "input/" + read_type + ".fasta"
             print org, read_type
             dl = DataLoader()

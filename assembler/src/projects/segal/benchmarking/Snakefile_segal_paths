@@ -1,0 +1,28 @@
+configfile: "config.yaml"
+DATAPATH = config["datapath"]
+GAPATH = config["segalpath"]
+GACFG = config["segalcfg"] 
+
+rule all:
+    input:
+        expand(os.path.join(DATAPATH, "{org}/SeGal/output/aln_{reads}.log"), reads=["realnp", "simpb", "realpb", "simnp"], org=["ecoli", "celegans"])
+
+
+rule run_aligner:
+    output:
+        tsv = "{DATAPATH}/{org}/SeGal/output/aln_{reads}.tsv",
+        log = "{DATAPATH}/{org}/SeGal/output/aln_{reads}.log"
+    benchmark:
+        repeat("{DATAPATH}/{org}/SeGal/benchmark/align_{reads}.tsv", 3)
+    run:
+        if wildcards.reads.endswith("pb"):
+           shell("{GAPATH} {GACFG} -g {DATAPATH}/{wildcards.org}/input/graph/simplification -s {DATAPATH}/{wildcards.org}/input/{wildcards.reads}_mapped_10000.fasta -K 77 -d pacbio -o {DATAPATH}/{wildcards.org}/SeGal/output/aln_{wildcards.reads} > {output.log}")
+        else:
+           shell("{GAPATH} {GACFG} -g {DATAPATH}/{wildcards.org}/input/graph/simplification -s {DATAPATH}/{wildcards.org}/input/{wildcards.reads}_mapped_10000.fasta -K 77 -d nanopore -o {DATAPATH}/{wildcards.org}/SeGal/output/aln_{wildcards.reads} > {output.log}")
+
+
+
+
+
+
+

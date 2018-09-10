@@ -1,6 +1,7 @@
 import edlib
 import pandas as pd
 import matplotlib
+import sys
 # Force matplotlib to not use any Xwindows backend.
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -57,7 +58,7 @@ class DataLoader:
         fin.close()
         return res
 
-    def load_gapaths(self, filename, reads):
+    def load_segal_paths(self, filename, reads):
         res = []
         fin = open(filename, "r")
         for ln in fin.readlines():
@@ -111,54 +112,36 @@ def print_stats(reads, ppaths, gapaths):
     df = pd.merge(perfect_df, ga_df, on="r_name")
     df["better_ed"] = df.apply(lambda x: check_ed(reads[x["r_name"]], x, x["true_path"], x["path"]), axis = 1)
     df["equal_paths"] = df.apply(lambda x: check_path(reads[x["r_name"]], x), axis = 1)
-    print "TruePath:", "BadED=", df.apply(lambda x: (not x["better_ed"]) and x["equal_paths"], axis = 1).sum(), \
-                      "GoodED=", df.apply(lambda x: x["better_ed"] and x["equal_paths"], axis = 1).sum()
+    tp_baded = df.apply(lambda x: (not x["better_ed"]) and x["equal_paths"], axis = 1).sum()
+    tp_gooded = df.apply(lambda x: x["better_ed"] and x["equal_paths"], axis = 1).sum()
+    print "TruePath:", "BadED=", tp_baded, \
+                      "GoodED=", tp_gooded
     print "WrongPath:", "BadED=", df.apply(lambda x: (not x["better_ed"]) and (not x["equal_paths"]), axis = 1).sum(), \
                       "GoodED=", df.apply(lambda x: x["better_ed"] and (not x["equal_paths"]), axis = 1).sum()
-    print len(df)
+
+
+    print (tp_baded + tp_gooded)*100/len(df), "%"
+    print ""
 
 
 
 if __name__ == "__main__":
-    # reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/sim_pacbio/realseq_bwamem_sim_pacbio_mapped_10000.fasta"
-    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_simpb_dijkstra_bwa0_ends_inf.tsv"
-    # perfectpath_res_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/sim_pacbio/refseq_bwamem_sim_pacbio.fasta_mapping.tsv"
-
-    # reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/real_pacbio/realseq_bwamem_real_pacbio_mapped_10000.fasta"
-    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_realpb_dijkstra_bwa0_ends_inf.tsv"
-    # perfectpath_res_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/real_pacbio/refseq_bwamem_real_pacbio.fasta_mapping.tsv"
-
-    # reads_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/sim_pacbio/realseq_bwamem_sim_pacbio_mapped_10000.fasta"
-    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_C.elegans_simpb_dijkstra_bwa0_ends_inf.tsv"
-    # perfectpath_res_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/sim_pacbio/refseq_bwamem_sim_pacbio_100000.fasta_mapping.tsv"
-    
-    # reads_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/real_pacbio/realseq_bwamem_real_pacbio_mapped_10000.fasta"
-    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_C.elegans_realpb_dijkstra_bwa0_ends_inf.tsv"
-    # perfectpath_res_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/real_pacbio/refseq_bwamem_real_pacbio.fasta_mapping.tsv"
-
-    # reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/sim_nanopore/realseq_bwamem_sim_nanopore_mapped_10000.fasta"
-    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_simnp_dijkstra_bwa0_ends_inf.tsv"
-    # perfectpath_res_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/sim_nanopore/refseq_bwamem_simulated_reads.fasta_mapping.tsv"
-
-    # reads_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/real_nanopore/realseq_bwamem_real_nanopore_mapped_10000.fasta"
-    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_E.coli_realnp_dijkstra_bwa0_ends_inf_extended.tsv"
-    # perfectpath_res_file = "/Sid/tdvorkina/gralign/E.coli_synth/benchmarking/real_nanopore/refseq_bwamem_nanopore_R9.fasta_mapping.tsv"
-
-    # reads_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/sim_nanopore/realseq_bwamem_sim_nanopore_mapped_10000.fasta"
-    # galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_C.elegans_simnp_dijkstra_bwa0_ends_inf.tsv"
-    # perfectpath_res_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/sim_nanopore/refseq_bwamem_simulated_reads.fasta_mapping.tsv"
-    
-    reads_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/real_nanopore/realseq_bwamem_real_nanopore_mapped_10000.fasta"
-    galigner_res_file = "/home/tdvorkina/results//benchmarking_test/run2_2018-07-03_17-43-17_C.elegans_realnp_dijkstra_bwa0_ends_inf_extended.tsv"
-    perfectpath_res_file = "/Sid/tdvorkina/gralign/C.elegans_synth/benchmarking/real_nanopore/refseq_bwamem_real_nanopore.fasta_mapping.tsv"
-    
-    dl = DataLoader()
-    reads = dl.load_reads(reads_file)
-    galigner_res = dl.load_gapaths(galigner_res_file, reads)
-    perfectpaths = dl.load_truepaths(perfectpath_res_file)
-    print_stats(reads, perfectpaths, galigner_res)
-    print "Draw reads len distribution.."
-    lens = [len(reads[k]) for k in reads.keys()]
-    plt.hist(lens)
-    plt.xlabel("Read length")
-    plt.savefig("./len_dist.png")
+    datapath = "/Sid/tdvorkina/gralign/benchmarking_paths"
+    for org in ["ecoli", "celegans"]:
+        print org
+        for read_type in ["simnp", "simpb", "realpb", "realnp"]:
+            print read_type
+            org_path = datapath + "/" + org + "/"
+            reads_file = org_path + "/input/" + read_type + "_mapped_10000.fasta"
+            galigner_res_file = org_path + "/SeGal/output/aln_" + read_type + ".tsv"
+            perfectpath_res_file = org_path + "/input/" + read_type + "_true_mapping.tsv"
+            dl = DataLoader()
+            reads = dl.load_reads(reads_file)
+            galigner_res = dl.load_segal_paths(galigner_res_file, reads)
+            perfectpaths = dl.load_truepaths(perfectpath_res_file)
+            print_stats(reads, perfectpaths, galigner_res)
+    # print "Draw reads len distribution.."
+    # lens = [len(reads[k]) for k in reads.keys()
+    # plt.hist(lens)
+    # plt.xlabel("Read length")
+    # plt.savefig("./len_dist.png")

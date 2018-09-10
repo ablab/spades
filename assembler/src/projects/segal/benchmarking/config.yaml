@@ -1,8 +1,10 @@
 # Path to folder with benchmarking data
 # datapath/ecoli/input/graph.gfa
 # datapath/ecoli/input/{reads}.fasta(q) reads = "simpb","realpb","realnp"
-# datapath/celegans/input/graph.gfa
+# datapath/celegans/input/graph.gfa or datapath/celegans/input/graph/simplification (SPAdes saves for paths reconstruction)
 # datapath/celegans/input/{reads}.fasta(q) reads = "simpb","realpb","realnp"
+# datapath/${ALIGNER_NAME}/benchmark - time and memory
+# datapath/${ALIGNER_NAME}/output - alignments
 datapath: /Sid/tdvorkina/gralign/benchmarking/
 
 
