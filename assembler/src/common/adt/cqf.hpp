@@ -40,7 +40,10 @@ class cqf {
 
     bool add(digest d, uint64_t count = 1,
              bool lock = true, bool spin = true) {
-        return qf_insert(&qf_, d & range_mask_, 0, count, lock, spin);
+        bool res = qf_insert(&qf_, d & range_mask_, 0, count, lock, spin);
+        if (res)
+            insertions_ += 1;
+        return res;
     }
 
     void expand() {
