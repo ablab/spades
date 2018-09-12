@@ -7,7 +7,7 @@
 import re
 import sys
 import itertools
-import sam_parser
+from common import sam_parser
 
 pattern = re.compile('([0-9]*)([MIDNSHP])')
 

@@ -6,12 +6,10 @@
 # See file LICENSE for details.
 ############################################################################
 
-
-import sam_parser
-
-import SeqIO
-
 import sys
+from common import SeqIO
+from common import sam_parser
+
 
 class PatternContigFilter:
     def __init__(self, contigs, sam, pattern, rc_pattern):

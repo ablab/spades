@@ -17,11 +17,12 @@ truspades_home = spades_init.spades_home
 spades_home = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 spades_version = spades_init.spades_version
 
-import SeqIO  # TODO: add to ext/scr/python_libs
-import parallel_launcher
+import support
+from common import SeqIO  # TODO: add to ext/scr/python_libs
+from common import parallel_launcher
+# the next modules are from spades_pipeline/truspades/ (can't write "from truspades import ..." since we are in truspades.py)
 import reference_construction
 import launch_options
-import support
 import barcode_extraction
 
 def generate_dataset(input_dirs, log):

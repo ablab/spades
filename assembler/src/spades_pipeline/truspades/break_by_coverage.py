@@ -7,14 +7,12 @@
 ############################################################################
 
 
-import SeqIO
-from SeqIO import SeqRecord
-
 import sys
 import os
 import shutil
-import sam_parser
 import itertools
+from common import SeqIO
+from common import sam_parser
 
 
 def ConstructCoverage(sam, contigs, k):

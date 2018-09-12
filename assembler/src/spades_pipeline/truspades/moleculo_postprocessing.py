@@ -4,12 +4,12 @@
 # See file LICENSE for details.
 ############################################################################
 
+from common import SeqIO
+from common import sam_parser
 import moleculo_filter_contigs
 import break_by_coverage
-import SeqIO
-import sys
 import generate_quality
-import sam_parser
+
 
 pattern = "TACGCTTGCAT"
 rc_pattern = "ATGCAAGCGTA"

@@ -7,20 +7,15 @@
 ############################################################################
 
 
-# wraps samtools, used to read SAM/BAM
-#import pysam3 as pysam
 import logging
 import os
 import shutil
 import sys
-import itertools
-import traceback
-
-import SeqIO
-import alignment
-import parallel_launcher
-import sam_parser
 import support
+from common import SeqIO
+from common import alignment
+from common import sam_parser
+
 
 # for fasta/q I/O
 
