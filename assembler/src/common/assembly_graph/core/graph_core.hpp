@@ -254,10 +254,6 @@ public:
        return vertices_.end();
    }
 
-   const std::set<VertexId>& vertices() const {
-       return vertices_;
-   }
-
    size_t size() const {
        return vertices_.size();
    }
