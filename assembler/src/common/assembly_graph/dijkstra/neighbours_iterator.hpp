@@ -27,7 +27,7 @@ template<class Graph>
 class ForwardNeighbourIterator {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
+    typedef typename Graph::edge_const_iterator edge_const_iterator;
 
     const Graph &graph_;
     VertexId vertex_;
@@ -54,7 +54,7 @@ template<class Graph>
 class BackwardNeighbourIterator {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
+    typedef typename Graph::edge_const_iterator edge_const_iterator;
 
     const Graph &graph_;
     VertexId vertex_;
@@ -81,7 +81,7 @@ template<class Graph>
 class UnorientedNeighbourIterator {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
+    typedef typename Graph::edge_const_iterator edge_const_iterator;
 
     const Graph &graph_;
     VertexId vertex_;

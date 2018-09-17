@@ -35,12 +35,35 @@ class PairedVertex;
 template<class DataMaster>
 class PairedEdge;
 
+namespace impl {
+struct VertexId {
+    size_t id_;
+
+    VertexId(size_t id = 0)
+            : id_(id) {}
+
+    size_t int_id() const { return id_; }
+    size_t hash() const { return id_; }
+
+    bool operator==(VertexId other) const { return id_ == other.id_; }
+    bool operator!=(VertexId other) const { return id_ != other.id_; }
+    bool operator<(VertexId rhs) const { return id_ < rhs.id_; }
+    bool operator<=(VertexId rhs) const { return *this < rhs || *this == rhs; }
+};
+
+// FIXME: Move to .cpp
+inline std::ostream &operator<<(std::ostream &stream, VertexId id) {
+    stream << id.int_id();
+    return stream;
+}
+}
+
 template<class DataMaster>
 class PairedEdge {
 private:
     typedef typename DataMaster::EdgeData EdgeData;
     typedef restricted::pure_pointer<PairedEdge<DataMaster>> EdgeId;
-    typedef restricted::pure_pointer<PairedVertex<DataMaster>> VertexId;
+    typedef impl::VertexId VertexId;
     friend class GraphCore<DataMaster>;
     friend class ConstructionHelper<DataMaster>;
     friend class PairedElementManipulationHelper<EdgeId>;
@@ -58,7 +81,6 @@ private:
     void set_data(const EdgeData &data) { data_ = data; }
 
     VertexId end() const { return end_; }
-    VertexId start() const { return conjugate_->end()->conjugate(); }
 
     void set_conjugate(EdgeId conjugate) { conjugate_ = conjugate; }
     void SetEndVertex(VertexId end) { end_ = end; }
@@ -73,7 +95,7 @@ class PairedVertex {
 private:
     typedef typename DataMaster::VertexData VertexData;
     typedef restricted::pure_pointer<PairedEdge<DataMaster>> EdgeId;
-    typedef restricted::pure_pointer<PairedVertex<DataMaster>> VertexId;
+    typedef impl::VertexId VertexId;
     typedef typename adt::SmallPODVector<EdgeId>::const_iterator edge_raw_iterator;
 
     class conjugate_iterator : public boost::iterator_facade<conjugate_iterator,
@@ -121,30 +143,17 @@ private:
     VertexId conjugate_;
     VertexData data_;
 
-    bool IsMinimal() const { return conjugate_->conjugate_ <= conjugate_; }
-
     VertexId conjugate() const { return conjugate_; }
     void set_conjugate(VertexId conjugate) { conjugate_ = conjugate; }
 
     size_t OutgoingEdgeCount() const { return outgoing_edges_.size(); }
 
-    edge_const_iterator out_begin() const {
-        return edge_const_iterator(outgoing_edges_.cbegin(), false);
+    edge_const_iterator out_begin(bool conjugate = false) const {
+        return edge_const_iterator(outgoing_edges_.cbegin(), conjugate);
     }
 
-    edge_const_iterator out_end() const {
-        return edge_const_iterator(outgoing_edges_.cend(), false);
-    }
-
-    size_t IncomingEdgeCount() const { return conjugate_->OutgoingEdgeCount(); }
-    size_t IncomingEdgesCount() const { return conjugate_->OutgoingEdgeCount(); }
-
-    edge_const_iterator in_begin() const {
-        return edge_const_iterator(conjugate_->outgoing_edges_.cbegin(), true);
-    }
-
-    edge_const_iterator in_end() const {
-        return edge_const_iterator(conjugate_->outgoing_edges_.cend(), true);
+    edge_const_iterator out_end(bool conjugate = false) const {
+        return edge_const_iterator(outgoing_edges_.cend(), conjugate);
     }
 
     PairedVertex(VertexData data)
@@ -190,7 +199,7 @@ public:
     typedef typename DataMasterT::VertexData VertexData;
     typedef typename DataMasterT::EdgeData EdgeData;
     typedef restricted::pure_pointer<PairedEdge<DataMaster>> EdgeId;
-    typedef restricted::pure_pointer<PairedVertex<DataMaster>> VertexId;
+    typedef impl::VertexId VertexId;
     typedef btree::safe_btree_set<VertexId> VertexContainer;
     typedef typename VertexContainer::const_iterator VertexIt;
     typedef typename PairedVertex<DataMaster>::edge_const_iterator edge_const_iterator;
@@ -207,19 +216,48 @@ public:
 
     size_t size() const { return vertices_.size(); }
 
-    edge_const_iterator out_begin(VertexId v) const { return v->out_begin(); }
-    edge_const_iterator out_end(VertexId v) const { return v->out_end(); }
-    edge_const_iterator in_begin(VertexId v) const { return v->in_begin(); }
-    edge_const_iterator in_end(VertexId v) const { return v->in_end(); }
+    edge_const_iterator out_begin(VertexId v) const { return vertex(v)->out_begin(); }
+    edge_const_iterator out_end(VertexId v) const { return vertex(v)->out_end(); }
+
+    edge_const_iterator in_begin(VertexId v) const { return cvertex(v)->out_begin(true); }
+    edge_const_iterator in_end(VertexId v) const { return cvertex(v)->out_end(true); }
+
+private:
+    std::unordered_map<size_t, PairedVertex<DataMaster>*> vid_map_;
+
+    PairedVertex<DataMaster>* vertex(VertexId id) const {
+        auto val = vid_map_.find(id.int_id());
+        VERIFY(val != vid_map_.end());
+        return val->second;
+    }
+    PairedVertex<DataMaster>* cvertex(VertexId id) const {
+        return vertex(conjugate(id));
+    }
+
 
 private:
     VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
                           restricted::IdDistributor& id_distributor) {
-        VertexId vertex1(new PairedVertex<DataMaster>(data1), id_distributor);
-        VertexId vertex2(new PairedVertex<DataMaster>(data2), id_distributor);
-        vertex1->set_conjugate(vertex2);
-        vertex2->set_conjugate(vertex1);
-        return vertex1;
+        auto v1 = new PairedVertex<DataMaster>(data1), v2 = new PairedVertex<DataMaster>(data2);
+        size_t vid1 = id_distributor.GetId(), vid2 = id_distributor.GetId();
+
+        v1->set_conjugate({ vid2 });
+        v2->set_conjugate({ vid1 });
+
+        vid_map_[vid1] = v1;
+        vid_map_[vid2] = v2;
+
+        return { vid1 };
+    }
+
+    void DestroyVertex(VertexId v) {
+        VertexId conjugate = vertex(v)->conjugate();
+
+        delete vertex(v);
+        delete vertex(conjugate);
+
+        vid_map_.erase(v.int_id());
+        vid_map_.erase(conjugate.int_id());
     }
 
     VertexId CreateVertex(const VertexData &data,
@@ -239,12 +277,6 @@ private:
     void DeleteVertexFromGraph(VertexId vertex) {
         this->vertices_.erase(vertex);
         this->vertices_.erase(conjugate(vertex));
-    }
-
-    void DestroyVertex(VertexId vertex) {
-        VertexId conjugate = vertex->conjugate();
-        delete vertex.get();
-        delete conjugate.get();
     }
 
     bool AdditionalCompressCondition(VertexId v) const {
@@ -274,8 +306,8 @@ protected:
     EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data,
                          restricted::IdDistributor &idDistributor) {
         EdgeId newEdge(new PairedEdge<DataMaster>(v2, data), idDistributor);
-        if (v1 != VertexId())
-            v1->AddOutgoingEdge(newEdge);
+        if (v1.int_id())
+            vertex(v1)->AddOutgoingEdge(newEdge);
         return newEdge;
     }
 
@@ -309,7 +341,7 @@ protected:
             result->set_conjugate(result);
             return result;
         }
-        EdgeId rcEdge = AddSingleEdge(v2->conjugate(), v1->conjugate(), this->master().conjugate(data), id_distributor);
+        EdgeId rcEdge = AddSingleEdge(vertex(v2)->conjugate(), vertex(v1)->conjugate(), this->master().conjugate(data), id_distributor);
         result->set_conjugate(rcEdge);
         rcEdge->set_conjugate(result);
         return result;
@@ -324,8 +356,8 @@ protected:
         EdgeId rcEdge = conjugate(edge);
         VertexId rcStart = conjugate(edge->end());
         VertexId start = conjugate(rcEdge->end());
-        start->RemoveOutgoingEdge(edge);
-        rcStart->RemoveOutgoingEdge(rcEdge);
+        vertex(start)->RemoveOutgoingEdge(edge);
+        vertex(rcStart)->RemoveOutgoingEdge(rcEdge);
         if (edge != rcEdge) {
             delete rcEdge.get();
         }
@@ -368,18 +400,18 @@ public:
 
     const DataMaster& master() const { return master_; }
     const EdgeData& data(EdgeId edge) const { return edge->data(); }
-    const VertexData& data(VertexId v) const { return v->data(); }
+    const VertexData& data(VertexId v) const { return vertex(v)->data(); }
     EdgeData& data(EdgeId edge) { return edge->data(); }
-    VertexData& data(VertexId v) { return v->data(); }
+    VertexData& data(VertexId v) { return vertex(v)->data(); }
 
-    size_t OutgoingEdgeCount(VertexId v) const { return v->OutgoingEdgeCount(); }
-    size_t IncomingEdgeCount(VertexId v) const { return v->IncomingEdgeCount(); }
+    size_t OutgoingEdgeCount(VertexId v) const { return vertex(v)->OutgoingEdgeCount(); }
+    size_t IncomingEdgeCount(VertexId v) const { return cvertex(v)->OutgoingEdgeCount(); }
 
     IteratorContainer OutgoingEdges(VertexId v) const { return { out_begin(v), out_end(v) }; }
     IteratorContainer IncomingEdges(VertexId v) const { return { in_begin(v), in_end(v) }; }
 
     std::vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) const {
-        return v->OutgoingEdgesTo(u);
+        return vertex(v)->OutgoingEdgesTo(u);
     }
 
     bool RelatedVertices(VertexId v1, VertexId v2) const {
@@ -387,10 +419,10 @@ public:
     }
 
     //////////////////////// Edge information
-    VertexId EdgeStart(EdgeId edge) const { return edge->start(); }
+    VertexId EdgeStart(EdgeId edge) const { return conjugate(EdgeEnd(conjugate(edge))); }
     VertexId EdgeEnd(EdgeId edge) const { return edge->end(); }
 
-    VertexId conjugate(VertexId v) const { return v->conjugate(); }
+    VertexId conjugate(VertexId v) const { return vertex(v)->conjugate(); }
     EdgeId conjugate(EdgeId edge) const { return edge->conjugate(); }
 
     size_t length(EdgeId edge) const { return master_.length(data(edge)); }
@@ -491,6 +523,17 @@ public:
 
 private:
     DECL_LOGGER("GraphCore");
+};
+
+}
+
+namespace std {
+
+template<>
+struct hash<omnigraph::impl::VertexId> {
+    size_t operator()(omnigraph::impl::VertexId v) const {
+        return v.hash();
+    }
 };
 
 }
