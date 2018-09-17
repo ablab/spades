@@ -51,42 +51,21 @@ class PairedEdge {
     EdgeId conjugate_;
 
     PairedEdge(VertexId end, const EdgeData &data)
-            : end_(end),
-              data_(data) {
-    }
+            : end_(end), data_(data) {}
 
-    EdgeData &data() {
-        return data_;
-    }
+    EdgeData &data() { return data_; }
+    const EdgeData &data() const { return data_; }
+    void set_data(const EdgeData &data) { data_ = data; }
 
-    void set_data(const EdgeData &data) {
-        data_ = data;
-    }
+    VertexId end() const { return end_; }
+    VertexId start() const { return conjugate_->end()->conjugate(); }
 
-    VertexId end() const {
-        return end_;
-    }
-
-    VertexId start() const {
-        return conjugate_->end()->conjugate();
-    }
-
-    void set_conjugate(EdgeId conjugate) {
-        conjugate_ = conjugate;
-    }
-
-    void SetEndVertex(VertexId end) {
-        end_ = end;
-    }
+    void set_conjugate(EdgeId conjugate) { conjugate_ = conjugate; }
+    void SetEndVertex(VertexId end) { end_ = end; }
 
 public:
-    EdgeId conjugate() const {
-        return conjugate_;
-    }
-
-    size_t length(size_t k) const {
-        return data_.size() - k;
-    }
+    EdgeId conjugate() const { return conjugate_; }
+    size_t length(size_t k) const { return data_.size() - k; }
 };
 
 template<class DataMaster>
@@ -98,25 +77,22 @@ private:
     typedef typename adt::SmallPODVector<EdgeId>::const_iterator edge_raw_iterator;
 
     class conjugate_iterator : public boost::iterator_facade<conjugate_iterator,
-            EdgeId, boost::forward_traversal_tag, EdgeId> {
+                                                             EdgeId,
+                                                             boost::forward_traversal_tag,
+                                                             EdgeId> {
     public:
         explicit conjugate_iterator(edge_raw_iterator it,
                                     bool conjugate = false)
-                : it_(it),
-                  conjugate_(conjugate) {
-        }
+                : it_(it), conjugate_(conjugate) {}
 
         //todo do we need it?
         conjugate_iterator()
-                : conjugate_(false) {
-        }
+                : conjugate_(false) {}
 
     private:
         friend class boost::iterator_core_access;
 
-        void increment() {
-            it_++;
-        }
+        void increment() { it_++; }
 
         bool equal(const conjugate_iterator &other) const {
             return other.it_ == it_ && other.conjugate_ == conjugate_;
@@ -143,24 +119,14 @@ private:
     adt::SmallPODVector<EdgeId> outgoing_edges_;
 
     VertexId conjugate_;
-
     VertexData data_;
 
-    bool IsMinimal() const {
-        return conjugate_->conjugate_ <= conjugate_;
-    }
+    bool IsMinimal() const { return conjugate_->conjugate_ <= conjugate_; }
 
-    VertexId conjugate() const {
-        return conjugate_;
-    }
+    VertexId conjugate() const { return conjugate_; }
+    void set_conjugate(VertexId conjugate) { conjugate_ = conjugate; }
 
-    void set_conjugate(VertexId conjugate) {
-        conjugate_ = conjugate;
-    }
-
-    size_t OutgoingEdgeCount() const {
-        return outgoing_edges_.size();
-    }
+    size_t OutgoingEdgeCount() const { return outgoing_edges_.size(); }
 
     edge_const_iterator out_begin() const {
         return edge_const_iterator(outgoing_edges_.cbegin(), false);
@@ -170,13 +136,8 @@ private:
         return edge_const_iterator(outgoing_edges_.cend(), false);
     }
 
-    size_t IncomingEdgeCount() const {
-        return conjugate_->OutgoingEdgeCount();
-    }
-
-    size_t IncomingEdgesCount() const {
-        return conjugate_->OutgoingEdgeCount();
-    }
+    size_t IncomingEdgeCount() const { return conjugate_->OutgoingEdgeCount(); }
+    size_t IncomingEdgesCount() const { return conjugate_->OutgoingEdgeCount(); }
 
     edge_const_iterator in_begin() const {
         return edge_const_iterator(conjugate_->outgoing_edges_.cbegin(), true);
@@ -187,16 +148,11 @@ private:
     }
 
     PairedVertex(VertexData data)
-            : data_(data) {
-    }
-
-    VertexData &data() {
-        return data_;
-    }
-
-    void set_data(VertexData data) {
-        data_ = data;
-    }
+            : data_(data) {}
+    
+    VertexData &data() { return data_; }
+    const VertexData &data() const { return data_; }
+    void set_data(VertexData data) { data_ = data; }
 
     const std::vector<EdgeId> OutgoingEdgesTo(VertexId v) const {
         std::vector<EdgeId> result;
@@ -246,53 +202,19 @@ private:
 
    friend class ConstructionHelper<DataMaster>;
 public:
-   VertexIt begin() const {
-       return vertices_.begin();
-   }
+   VertexIt begin() const { return vertices_.begin(); }
+   VertexIt end() const { return vertices_.end(); }
 
-   VertexIt end() const {
-       return vertices_.end();
-   }
+   size_t size() const { return vertices_.size(); }
 
-   size_t size() const {
-       return vertices_.size();
-   }
-
-   edge_const_iterator out_begin(VertexId v) const {
-       return v->out_begin();
-   }
-
-   edge_const_iterator out_end(VertexId v) const {
-       return v->out_end();
-   }
-
-   edge_const_iterator in_begin(VertexId v) const {
-       return v->in_begin();
-   }
-
-   edge_const_iterator in_end(VertexId v) const {
-       return v->in_end();
-   }
+   edge_const_iterator out_begin(VertexId v) const { return v->out_begin(); }
+   edge_const_iterator out_end(VertexId v) const { return v->out_end(); }
+   edge_const_iterator in_begin(VertexId v) const { return v->in_begin(); }
+   edge_const_iterator in_end(VertexId v) const { return v->in_end(); }
 
 private:
-   void DeleteVertexFromGraph(VertexId vertex) {
-       this->vertices_.erase(vertex);
-       this->vertices_.erase(conjugate(vertex));
-   }
-
-   void DestroyVertex(VertexId vertex) {
-       VertexId conjugate = vertex->conjugate();
-       delete vertex.get();
-       delete conjugate.get();
-   }
-
-   bool AdditionalCompressCondition(VertexId v) const {
-       return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v) && EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
-   }
-
-protected:
-
-   VertexId CreateVertex(const VertexData& data1, const VertexData& data2, restricted::IdDistributor& id_distributor) {
+    VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
+                          restricted::IdDistributor& id_distributor) {
        VertexId vertex1(new PairedVertex<DataMaster>(data1), id_distributor);
        VertexId vertex2(new PairedVertex<DataMaster>(data2), id_distributor);
        vertex1->set_conjugate(vertex2);
@@ -300,7 +222,8 @@ protected:
        return vertex1;
    }
 
-   VertexId CreateVertex(const VertexData &data, restricted::IdDistributor &id_distributor) {
+   VertexId CreateVertex(const VertexData &data,
+                         restricted::IdDistributor &id_distributor) {
        return CreateVertex(data, master_.conjugate(data), id_distributor);
    }
 
@@ -313,6 +236,23 @@ protected:
         vertices_.insert(conjugate(vertex));
     }
 
+    void DeleteVertexFromGraph(VertexId vertex) {
+       this->vertices_.erase(vertex);
+       this->vertices_.erase(conjugate(vertex));
+   }
+
+   void DestroyVertex(VertexId vertex) {
+       VertexId conjugate = vertex->conjugate();
+       delete vertex.get();
+       delete conjugate.get();
+   }
+
+   bool AdditionalCompressCondition(VertexId v) const {
+       return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v) &&
+                EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
+   }
+
+protected:
     VertexId HiddenAddVertex(const VertexData& data, restricted::IdDistributor& id_distributor) {
         VertexId vertex = CreateVertex(data, id_distributor);
         AddVertexToGraph(vertex);
@@ -339,7 +279,8 @@ protected:
         return newEdge;
     }
 
-    EdgeId HiddenAddEdge(const EdgeData& data, restricted::IdDistributor& id_distributor) {
+    EdgeId HiddenAddEdge(const EdgeData& data,
+                         restricted::IdDistributor& id_distributor) {
         EdgeId result = AddSingleEdge(VertexId(), VertexId(), data, id_distributor);
         if (this->master().isSelfConjugate(data)) {
             result->set_conjugate(result);
@@ -355,7 +296,8 @@ protected:
         return HiddenAddEdge(data, id_distributor_);
     }
 
-    EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData& data, restricted::IdDistributor& id_distributor) {
+    EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData& data,
+                         restricted::IdDistributor& id_distributor) {
         //      todo was suppressed for concurrent execution reasons (see concurrent_graph_component.hpp)
         //      VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
         EdgeId result = AddSingleEdge(v1, v2, data, id_distributor);
@@ -390,22 +332,15 @@ protected:
         delete edge.get();
     }
 
-    void HiddenDeletePath(const std::vector<EdgeId>& edgesToDelete, const std::vector<VertexId>& verticesToDelete) {
-        for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
-            HiddenDeleteEdge(*it);
-        for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
-            HiddenDeleteVertex(*it);
+    void HiddenDeletePath(const std::vector<EdgeId>& edgesToDelete,
+                          const std::vector<VertexId>& verticesToDelete) {
+        for (EdgeId e: edgesToDelete)
+            HiddenDeleteEdge(e);
+        for (VertexId v: verticesToDelete)
+            HiddenDeleteVertex(v);
     }
 
 public:
-
-    GraphCore(const DataMaster& master) : master_(master) {
-    }
-
-    virtual ~GraphCore() {
-        VERIFY(size() == 0);
-    }
-
     class IteratorContainer {
     public:
         typedef edge_const_iterator const_iterator;
@@ -413,72 +348,35 @@ public:
         const_iterator begin_;
         const_iterator end_;
     public:
-        IteratorContainer(const_iterator begin, const_iterator end) :
-            begin_(begin), end_(end) {
+        IteratorContainer(const_iterator begin, const_iterator end)
+                : begin_(begin), end_(end) {}
 
-        }
-
-        const_iterator begin() const {
-            return begin_;
-        }
-
-        const_iterator end() const {
-            return end_;
-        }
+        const_iterator begin() const { return begin_; }
+        const_iterator end() const { return end_; }
     };
 
-    restricted::LocalIdDistributor &GetGraphIdDistributor() {
-        return id_distributor_;
-    }
+    GraphCore(const DataMaster& master)
+            : master_(master) {}
 
-    const restricted::LocalIdDistributor &GetGraphIdDistributor() const {
-        return id_distributor_;
-    }
+    virtual ~GraphCore() { VERIFY(size() == 0); }
 
-    size_t int_id(EdgeId edge) const {
-        return edge.int_id();
-    }
+    restricted::LocalIdDistributor &GetGraphIdDistributor() { return id_distributor_; }
+    const restricted::LocalIdDistributor &GetGraphIdDistributor() const { return id_distributor_; }
 
-    size_t int_id(VertexId vertex) const {
-        return vertex.int_id();
-    }
+    size_t int_id(EdgeId edge) const { return edge.int_id(); }
+    size_t int_id(VertexId vertex) const { return vertex.int_id(); }
 
-    const DataMaster& master() const {
-        return master_;
-    }
+    const DataMaster& master() const { return master_; }
+    const EdgeData& data(EdgeId edge) const { return edge->data(); }
+    const VertexData& data(VertexId v) const { return v->data(); }
+    EdgeData& data(EdgeId edge) { return edge->data(); }
+    VertexData& data(VertexId v) { return v->data(); }
 
-    const EdgeData& data(EdgeId edge) const {
-        return edge->data();
-    }
+    size_t OutgoingEdgeCount(VertexId v) const { return v->OutgoingEdgeCount(); }
+    size_t IncomingEdgeCount(VertexId v) const { return v->IncomingEdgeCount(); }
 
-    const VertexData& data(VertexId v) const {
-        return v->data();
-    }
-
-    EdgeData& data(EdgeId edge) {
-        return edge->data();
-    }
-
-    VertexData& data(VertexId v) {
-        return v->data();
-    }
-
-    size_t OutgoingEdgeCount(VertexId v) const {
-        return v->OutgoingEdgeCount();
-    }
-
-    IteratorContainer OutgoingEdges(VertexId v) const {
-        //INFO("Outgoing");
-        return IteratorContainer(out_begin(v), out_end(v));
-    }
-
-    size_t IncomingEdgeCount(VertexId v) const {
-        return v->IncomingEdgeCount();
-    }
-
-    IteratorContainer IncomingEdges(VertexId v) const {
-        return IteratorContainer(in_begin(v), in_end(v));
-    }
+    IteratorContainer OutgoingEdges(VertexId v) const { return { out_begin(v), out_end(v) }; }
+    IteratorContainer IncomingEdges(VertexId v) const { return { in_begin(v), in_end(v) }; }
 
     std::vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) const {
         return v->OutgoingEdgesTo(u);
@@ -488,34 +386,17 @@ public:
         return v1 == v2 || v1 == conjugate(v2);
     }
 
-    ////////////////////////edge information
-    VertexId EdgeStart(EdgeId edge) const {
-        return edge->start();
-    }
+    //////////////////////// Edge information
+    VertexId EdgeStart(EdgeId edge) const { return edge->start(); }
+    VertexId EdgeEnd(EdgeId edge) const { return edge->end(); }
 
-    VertexId EdgeEnd(EdgeId edge) const {
-        //INFO("Edge end");
-        return edge->end();
-    }
+    VertexId conjugate(VertexId v) const { return v->conjugate(); }
+    EdgeId conjugate(EdgeId edge) const { return edge->conjugate(); }
 
-    VertexId conjugate(VertexId v) const {
-        return v->conjugate();
-    }
+    size_t length(EdgeId edge) const { return master_.length(data(edge)); }
+    size_t length(VertexId v) const { return master_.length(data(v)); }
 
-    EdgeId conjugate(EdgeId edge) const {
-        return edge->conjugate();
-    }
-
-    size_t length(EdgeId edge) const {
-        return master_.length(data(edge));
-    }
-
-    size_t length(VertexId v) const {
-        return master_.length(data(v));
-    }
-
-    //////////////////////shortcut methods
-
+    ////////////////////// shortcut methods
     std::vector<EdgeId> IncidentEdges(VertexId v) const {
         std::vector<EdgeId> answer;
         utils::push_back_all(answer, IncomingEdges(v));
@@ -541,13 +422,8 @@ public:
         return OutgoingEdgeCount(v) == 1;
     }
 
-    bool IsDeadEnd(VertexId v) const {
-        return OutgoingEdgeCount(v) == 0;
-    }
-
-    bool IsDeadStart(VertexId v) const {
-        return IncomingEdgeCount(v) == 0;
-    }
+    bool IsDeadEnd(VertexId v) const { return OutgoingEdgeCount(v) == 0; }
+    bool IsDeadStart(VertexId v) const { return IncomingEdgeCount(v) == 0; }
     
     bool CanCompressVertex(VertexId v) const {
         //      TRACE("Compress vertex check: ");
