@@ -11,16 +11,16 @@
 namespace path_extend {
 typedef debruijn_graph::EdgeId EdgeId;
 
-/* Storage of presumably unique, relatively long edges. Filled by ScaffoldingUniqueEdgeAnalyzer
- *
- */
+/* Storage of presumably unique, relatively long edges.
+ * Filled by ScaffoldingUniqueEdgeAnalyzer */
 class ScaffoldingUniqueEdgeStorage {
     friend class ScaffoldingUniqueEdgeAnalyzer;
     std::set<EdgeId> unique_edges_;
     size_t min_unique_length_;
 
 public:
-    ScaffoldingUniqueEdgeStorage(): unique_edges_(), min_unique_length_(0) {
+    ScaffoldingUniqueEdgeStorage()
+            : unique_edges_(), min_unique_length_(0) {
         DEBUG("storage created, empty");
     }
 
@@ -111,6 +111,7 @@ public:
 class UsedUniqueStorage {
     std::set<EdgeId> used_;
     const ScaffoldingUniqueEdgeStorage& unique_;
+    const debruijn_graph::ConjugateDeBruijnGraph &g_;
 
 public:
     UsedUniqueStorage(const UsedUniqueStorage&) = delete;
@@ -119,14 +120,16 @@ public:
     UsedUniqueStorage(UsedUniqueStorage&&) = default;
     UsedUniqueStorage& operator=(UsedUniqueStorage&&) = default;
 
-    explicit UsedUniqueStorage(const ScaffoldingUniqueEdgeStorage& unique):
-            unique_(unique) {}
+    explicit UsedUniqueStorage(const ScaffoldingUniqueEdgeStorage& unique,
+                               const debruijn_graph::ConjugateDeBruijnGraph &g):
+            unique_(unique), g_(g) {}
 
     void insert(EdgeId e) {
-        if (unique_.IsUnique(e)) {
-            used_.insert(e);
-            used_.insert(e->conjugate());
-        }
+        if (!unique_.IsUnique(e))
+            return;
+
+        used_.insert(e);
+        used_.insert(g_.conjugate(e));
     }
 
 //    const ScaffoldingUniqueEdgeStorage& unique_edge_storage() const {

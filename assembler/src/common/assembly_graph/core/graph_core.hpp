@@ -85,7 +85,6 @@ private:
     void set_conjugate(EdgeId conjugate) { conjugate_ = conjugate; }
     void SetEndVertex(VertexId end) { end_ = end; }
 
-public:
     EdgeId conjugate() const { return conjugate_; }
     size_t length(size_t k) const { return data_.size() - k; }
 };

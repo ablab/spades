@@ -79,10 +79,10 @@ public:
         VERIFY(this->IsAttached());
         auto kwh = inner_index_.ConstructKWH(kmer);
         if (!inner_index_.contains(kwh)) {
-            return {EdgeId(), -1u};
+            return { EdgeId(), -1u };
         } else {
             EdgeInfo<EdgeId> entry = inner_index_.get_value(kwh);
-            return {entry.edge_id, (size_t)entry.offset};
+            return { entry.edge_id, (size_t)entry.offset };
         }
     }
 

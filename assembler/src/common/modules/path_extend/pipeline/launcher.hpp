@@ -88,8 +88,7 @@ public:
         support_(dataset_info, params),
         contig_name_generator_(MakeContigNameGenerator(params_.mode, gp)),
         writer_(gp.g, contig_name_generator_),
-        unique_data_()
-    {
+        unique_data_() {
         unique_data_.min_unique_length_ = params.pset.scaffolding2015.unique_length_upper_bound;
         unique_data_.unique_variation_ = params.pset.uniqueness_analyser.unique_coverage_variation;
     }

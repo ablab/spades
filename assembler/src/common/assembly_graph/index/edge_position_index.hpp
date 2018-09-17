@@ -23,17 +23,12 @@ struct EdgeInfo {
         VERIFY(edge_id != IdType() || clean());
     }
 
-    template<class KWH>
-    EdgeInfo conjugate(const KWH &kwh) const {
-        return conjugate(kwh.key().size());
-    }
-
-    EdgeInfo conjugate(size_t k) const {
-        if(!valid()) {
+    template<class Graph>
+    EdgeInfo conjugate(const Graph &g) const {
+        if (!valid())
             return EdgeInfo(IdType(), unsigned(-1), count);
-        } else {
-            return EdgeInfo(edge_id->conjugate(), (unsigned)edge_id->length(k) - offset, count);
-        }
+
+        return EdgeInfo(g.conjugate(edge_id), unsigned(g.length(edge_id) - offset), count);
     }
 
     void clear() {
@@ -62,9 +57,25 @@ stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
     return s << "EdgeInfo[" << info.edge_id.int_id() << ", " << info.offset << ", " << info.count << "]";
 }
 
+template<class Graph,
+         typename IdType = typename Graph::EdgeId>
+struct GraphInverter {
+    const Graph &g_;
+
+    GraphInverter(const Graph &g)
+            : g_(g) {}
+
+    template<class K>
+    EdgeInfo<IdType> operator()(const EdgeInfo<IdType>& v, const K&) const {
+        return v.conjugate(g_);
+    }
+};
+
+
 template<class Graph, class StoringType = utils::DefaultStoring>
-class KmerFreeEdgeIndex : public utils::KeyIteratingMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
-        utils::kmer_index_traits<RtSeq>, StoringType> {
+class KmerFreeEdgeIndex : public utils::KeyIteratingMap<RtSeq,
+                                                        EdgeInfo<typename Graph::EdgeId>,
+                                                        utils::kmer_index_traits<RtSeq>, StoringType> {
     typedef utils::KeyIteratingMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
             utils::kmer_index_traits<RtSeq>, StoringType> base;
     const Graph &graph_;
@@ -86,6 +97,15 @@ public:
     KmerFreeEdgeIndex(const Graph &graph)
             : base(unsigned(graph.k() + 1)), graph_(graph) {}
 
+
+    KmerPos get_value(const KeyWithHash &kwh) const {
+        return base::get_value(kwh, GraphInverter<Graph>(graph_));
+    }
+
+    void put_value(const KeyWithHash &kwh, const KmerPos &pos) {
+        base::put_value(kwh, pos, GraphInverter<Graph>(graph_));
+    }
+
     /**
      * Shows if kmer has some entry associated with it
      */
@@ -94,7 +114,7 @@ public:
         if (!valid(kwh))
             return false;
 
-        KmerPos entry = base::get_value(kwh);
+        KmerPos entry = get_value(kwh);
         if (!entry.valid())
             return false;
         return graph_.EdgeNucls(entry.edge_id).contains(kwh.key(), entry.offset);
@@ -111,7 +131,7 @@ public:
         }
         if (entry.clean()) {
             //put verify on this conversion!
-            this->put_value(kwh, KmerPos(id, (unsigned)offset, entry.count));
+            put_value(kwh, KmerPos(id, (unsigned)offset, entry.count));
         } else if (contains(kwh)) {
             //VERIFY(false);
             entry.remove();

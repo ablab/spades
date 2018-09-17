@@ -6,8 +6,8 @@ namespace path_extend {
 
 
 void ScaffoldingUniqueEdgeAnalyzer::SetCoverageBasedCutoff() {
-    vector <pair<double, size_t>> coverages;
-    map <EdgeId, size_t> long_component;
+    std::vector<std::pair<double, size_t>> coverages;
+    std::map<EdgeId, size_t> long_component;
     size_t total_len = 0, short_len = 0, cur_len = 0;
 
     for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {

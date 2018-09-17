@@ -493,7 +493,7 @@ void PathExtendLauncher::Launch() {
     DebugOutputPaths(seeds, "init_paths");
 
     GraphCoverageMap cover_map(gp_.g);
-    UsedUniqueStorage used_unique_storage(unique_data_.main_unique_storage_);
+    UsedUniqueStorage used_unique_storage(unique_data_.main_unique_storage_, gp_.g);
     Extenders extenders = ConstructExtenders(cover_map, used_unique_storage);
     CompositeExtender composite_extender(gp_.g, cover_map,
                                          used_unique_storage,

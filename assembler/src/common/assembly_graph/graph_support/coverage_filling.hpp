@@ -22,7 +22,7 @@ struct SimultaneousCoverageCollector<utils::InvertableStoring> {
     template<class SimultaneousCoverageFiller, class Info>
     static void CollectCoverage(SimultaneousCoverageFiller& filler, const Info &edge_info) {
         filler.inc_coverage(edge_info);
-        filler.inc_coverage(edge_info.conjugate(filler.k()));
+        filler.inc_coverage(edge_info.conjugate(filler.g()));
     }
 };
 
@@ -45,6 +45,10 @@ public:
 
     size_t k() const {
         return count_index_.k();
+    }
+
+    const Graph& g() const {
+        return g_;
     }
 
     void inc_coverage(const Value &edge_info) {
