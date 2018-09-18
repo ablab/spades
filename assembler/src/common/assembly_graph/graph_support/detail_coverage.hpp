@@ -89,7 +89,6 @@ public:
             EdgeId e = edge_info.edge_id;
             unsigned offset = edge_info.offset;
             unsigned count = edge_info.count;
-            VERIFY(e.get() != NULL);
             if (offset < averaging_range_) {
                 IncRawCoverage(e, count);
             }

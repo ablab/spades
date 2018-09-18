@@ -26,8 +26,8 @@ class ConstructionHelper {
 
 public:
 
-    ConstructionHelper(Graph &graph) : graph_(graph) {
-    }
+    ConstructionHelper(Graph &graph)
+            : graph_(graph) {}
 
     Graph &graph() {
         return graph_;
@@ -44,13 +44,13 @@ public:
     void LinkIncomingEdge(VertexId v, EdgeId e) {
         VERIFY(graph_.EdgeEnd(e) == VertexId());
         graph_.cvertex(v)->AddOutgoingEdge(graph_.conjugate(e));
-        e->SetEndVertex(v);
+        graph_.edge(e)->SetEndVertex(v);
     }
 
     void LinkOutgoingEdge(VertexId v, EdgeId e) {
         VERIFY(graph_.EdgeEnd(graph_.conjugate(e)) == VertexId());
         graph_.vertex(v)->AddOutgoingEdge(e);
-        graph_.conjugate(e)->SetEndVertex(graph_.conjugate(v));
+        graph_.cedge(e)->SetEndVertex(graph_.conjugate(v));
     }
 
     void LinkEdges(EdgeId e1, EdgeId e2) {
@@ -62,15 +62,12 @@ public:
     void DeleteLink(VertexId v, EdgeId e) {
         bool res = graph_.vertex(v)->RemoveOutgoingEdge(e);
         VERIFY(res);
-        graph_.conjugate(e)->SetEndVertex(VertexId());
+        graph_.cedge(e)->SetEndVertex(VertexId());
     }
 
     void DeleteUnlinkedEdge(EdgeId e) {
         EdgeId rc = graph_.conjugate(e);
-        if (e != rc) {
-            delete rc.get();
-        }
-        delete e.get();
+        graph_.DestroyEdge(e, rc);
     }
 
     void DeleteUnlinkedVertex(VertexId v) {

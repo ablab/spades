@@ -64,7 +64,6 @@ public:
             const auto& edge_info = *I;
             //VERIFY(edge_info.valid());
             if (edge_info.valid()) {
-                VERIFY(edge_info.edge_id.get() != NULL);
                 SimultaneousCoverageCollector<typename CountIndex::storing_type>::CollectCoverage(*this, edge_info);
             } else {
                 VERIFY(edge_info.removed());
