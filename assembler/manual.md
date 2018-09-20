@@ -331,6 +331,7 @@ For example, Illumina produces paired-end reads in two files: `R1.fastq` and `R2
 
 If adapter and/or quality trimming software has been used prior to assembly, files with the orphan reads can be provided as "single read files" for the corresponding read-pair library.
 
+<a name="merged"></a>
 If you have merged some of the reads from your paired-end (not mate-pair or high-quality mate-pair) library (using tools s.a. [BBMerge](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmerge-guide/) or [STORM](https://bitbucket.org/yaoornl/align_test/overview)), you should provide the file with resulting reads as a "merged read file" for the corresponding library.
 Note that non-empty files with the remaining unmerged left/right reads (separate or interlaced) must be provided for the same library (for SPAdes to correctly detect the original read length).
 
@@ -581,7 +582,8 @@ An alternative way to specify an input data set for SPAdes is to create a [YAML]
 -   interlaced reads (comma-separated list of files with interlaced reads)
 -   left reads (comma-separated list of files with left reads)
 -   right reads (comma-separated list of files with right reads)
--   single reads (comma-separated list of files with single reads)
+-   single reads (comma-separated list of files with single reads or unpaired reads from paired library)
+-   merged reads (comma-separated list of files with [merged reads](#merged))
 
 To properly specify a library you should provide its type and at least one file with reads. Orientation is an optional attribute. Its default value is "fr" (forward-reverse) for paired-end libraries and "rf" (reverse-forward) for mate-pair libraries.
 
@@ -1042,10 +1044,15 @@ Additional options are:
 
 <a name="sec5"></a>
 # Citation
-
 If you use SPAdes in your research, please include [Nurk, Bankevich et al., 2013](http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13) in your reference list. You may also add [Bankevich, Nurk et al., 2012](http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021) instead.
 
-If you use PacBio or Nanopore reads, you may also cite [Antipov et al., 2015](http://bioinformatics.oxfordjournals.org/content/early/2015/11/20/bioinformatics.btv688.short). If you use multiple paired-end and/or mate-pair libraries you may also cite papers describing SPAdes repeat resolution algorithms [Prjibelski et al., 2014](http://bioinformatics.oxfordjournals.org/content/30/12/i293.short) and [Vasilinetc et al., 2015](http://bioinformatics.oxfordjournals.org/content/31/20/3262.abstract). If you use plasmidSPAdes please cite [Antipov et al., 2016](http://biorxiv.org/content/early/2016/04/20/048942).
+In case you perform hybrid assembly ussing  PacBio or Nanopore reads, you may also cite [Antipov et al., 2015](http://bioinformatics.oxfordjournals.org/content/early/2015/11/20/bioinformatics.btv688.short). 
+
+If you use multiple paired-end and/or mate-pair libraries you may also cite papers describing SPAdes repeat resolution algorithms [Prjibelski et al., 2014](http://bioinformatics.oxfordjournals.org/content/30/12/i293.short) and [Vasilinetc et al., 2015](http://bioinformatics.oxfordjournals.org/content/31/20/3262.abstract). 
+
+If you use plasmidSPAdes please cite [Antipov et al., 2016](http://biorxiv.org/content/early/2016/04/20/048942).
+
+For rnaSPAdes citation use [Bushmanova et al., 2018](https://www.biorxiv.org/content/early/2018/09/18/420208)</a>.
 
 For the information about dipSPAdes and truSPAdes papers see [dipSPAdes manual](dipspades_manual.html) and [truSPAdes manual](truspades_manual.html) respectively.
 
