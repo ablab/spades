@@ -80,9 +80,7 @@ namespace online_visualization {
   }
 
   bool CheckEnvIsCorrect(string path, size_t K) {
-    if (!CheckFileExists(path + ".grp"))
-      return false;
-    if (!CheckFileExists(path + ".sqn"))
+    if (!CheckFileExists(path + ".grseq"))
       return false;
 
     if (!(K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K)) {

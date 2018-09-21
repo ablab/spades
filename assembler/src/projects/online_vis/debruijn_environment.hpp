@@ -8,7 +8,7 @@
 #pragma once
 
 #include "environment.hpp"
-#include "pipeline/graphio.hpp"
+#include "io/binary/graphio.hpp"
 namespace online_visualization {
 
 class DebruijnEnvironment : public Environment {
@@ -60,9 +60,7 @@ class DebruijnEnvironment : public Environment {
         }
 
         inline bool IsCorrect() const {
-            if (!CheckFileExists(path_ + ".grp"))
-                return false;
-            if (!CheckFileExists(path_ + ".sqn"))
+            if (!CheckFileExists(path_ + ".grseq"))
                 return false;
 
             size_t K = gp_.k_value;

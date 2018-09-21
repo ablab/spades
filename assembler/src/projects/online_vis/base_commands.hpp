@@ -158,7 +158,7 @@ namespace online_visualization {
             " For example:\n" +
             "> load GraphSimplified data/saves/simplification\n" +
             " would load a new environment with the name `GraphSimplified` from the files\n" +
-            " in the folder `data/saves/` with the basename `simplification` (simplification.grp, simplification.sqn, e.t.c).";
+            " in the folder `data/saves/simplification/` with the basename `graph_pack` (graph_pack.grseq, e.t.c).";
           return answer;
         }
 
