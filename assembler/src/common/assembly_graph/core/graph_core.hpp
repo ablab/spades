@@ -248,15 +248,15 @@ private:
     VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
                           restricted::IdDistributor& id_distributor) {
         auto v1 = new PairedVertex<DataMaster>(data1), v2 = new PairedVertex<DataMaster>(data2);
-        size_t vid1 = id_distributor.GetId(), vid2 = id_distributor.GetId();
+        VertexId vid1{id_distributor.GetId()}, vid2{id_distributor.GetId()};
 
-        v1->set_conjugate({ vid2 });
-        v2->set_conjugate({ vid1 });
+        v1->set_conjugate(vid2);
+        v2->set_conjugate(vid1);
 
-        vid_map_[vid1] = v1;
-        vid_map_[vid2] = v2;
+        vid_map_.insert({vid1, v1});
+        vid_map_.insert({vid2, v2});
 
-        return { vid1 };
+        return vid1;
     }
 
     void DestroyVertex(VertexId v) {
@@ -265,17 +265,27 @@ private:
         delete vertex(v);
         delete vertex(conjugate);
 
-        vid_map_.erase(v.int_id());
-        vid_map_.erase(conjugate.int_id());
+        vid_map_.erase(v);
+        vid_map_.erase(conjugate);
+    }
+
+    EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data,
+                         restricted::IdDistributor &idDistributor) {
+        auto e = new PairedEdge<DataMaster>(v2, data);
+        EdgeId eid{idDistributor.GetId()};
+        eid_map_.insert({eid, e});
+        if (v1.int_id())
+            vertex(v1)->AddOutgoingEdge(eid);
+        return eid;
     }
 
     void DestroyEdge(EdgeId e, EdgeId rc) {
         if (e != rc) {
             delete edge(rc);
-            eid_map_.erase(rc.int_id());
+            eid_map_.erase(rc);
         }
         delete edge(e);
-        eid_map_.erase(e.int_id());
+        eid_map_.erase(e);
     }
 
     VertexId CreateVertex(const VertexData &data,
@@ -300,16 +310,6 @@ private:
     bool AdditionalCompressCondition(VertexId v) const {
         return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v) &&
                  EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
-    }
-
-    EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data,
-                         restricted::IdDistributor &idDistributor) {
-        auto e = new PairedEdge<DataMaster>(v2, data);
-        size_t eid = idDistributor.GetId();
-        eid_map_[eid] = e;
-        if (v1.int_id())
-            vertex(v1)->AddOutgoingEdge({ eid });
-        return { eid };;
     }
 
 protected:
