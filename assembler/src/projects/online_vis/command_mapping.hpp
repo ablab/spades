@@ -9,18 +9,17 @@
 
 #include "command.hpp"
 
-
 namespace online_visualization {
 
 template <class Env>
 class CommandMapping {
-  map<string, shared_ptr<Command<Env>>> command_map_;
+  std::map<std::string, std::shared_ptr<Command<Env>>> command_map_;
 
  public:
   CommandMapping() : command_map_() {
   }
 
-  const Command<Env>& GetCommand(string name) const {
+  const Command<Env> &GetCommand(const std::string &name) const {
     auto it = command_map_.find(name);
     if (it == command_map_.end()) {
       cout << "No such command `" << name << "`, try again" << endl;
@@ -30,8 +29,8 @@ class CommandMapping {
     return *(it->second);
   }
 
-  void AddCommand(shared_ptr<Command<Env>> command) {
-    string command_invocation_string = command->invocation_string();
+  void AddCommand(std::shared_ptr<Command<Env>> command) {
+    auto command_invocation_string = command->invocation_string();
     auto it = command_map_.find(command_invocation_string);
     VERIFY_MSG(it == command_map_.end(),
                "Cannot add a command with existing name `"
@@ -40,12 +39,12 @@ class CommandMapping {
     command_map_[command_invocation_string] = command;
   }
 
-  vector<string> GetCommandNamesList() const {
-    vector<string> result;
+  std::vector<std::string> GetCommandNamesList() const {
+    std::vector<std::string> result;
     result.reserve(command_map_.size());
-    for (auto it = command_map_.begin(); it != command_map_.end(); ++it) {
-      if (it->first != "null")
-        result.push_back(it->first);
+    for (const auto &i : command_map_) {
+      if (i.first != "null")
+        result.push_back(i.first);
     }
     return result;
   }

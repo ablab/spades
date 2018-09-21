@@ -242,14 +242,14 @@ void TGenomicHKMersEstimator::ProceedCluster(std::vector<size_t>& cluster) {
     }
     double quality = cluster_model_.GenomicLogLikelihood(centerCandidate);
     quality = std::isfinite(quality) ? quality : -1000;
-    posteriorQualities.push_back(max(quality, -1000.0));
+    posteriorQualities.push_back(std::max(quality, -1000.0));
   }
 
   for (size_t i = 0; i < posteriorQualities.size(); ++i) {
     const auto idx = centerCandidates[i];
     data_[idx].lock();
     const bool wasGood = data_[idx].good();
-    data_[idx].posterior_genomic_ll = (float)max(posteriorQualities[i], (double)data_[idx].posterior_genomic_ll);
+    data_[idx].posterior_genomic_ll = (float)std::max(posteriorQualities[i], (double)data_[idx].posterior_genomic_ll);
     data_[idx].dist_one_subcluster |= distOneGoodCenters[i];
     data_[idx].unlock();
     if (!wasGood && data_[idx].good()) {

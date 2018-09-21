@@ -11,9 +11,8 @@
 #include "nucl.hpp"
 
 struct Chromosome {
-    std::string name;
-    std::string sequence;
-    Chromosome(string chr_name, string seq): name(chr_name), sequence(seq){}
+    std::string name, sequence;
+    Chromosome(const std::string &chr_name, const std::string &seq): name(chr_name), sequence(seq) {}
 };
 
 class GenomeStorage {
@@ -41,7 +40,7 @@ public:
         full_genome_.push_back(Chromosome("genome", ACGTise(glued_genome_)));
     }
 
-    GenomeStorage(const vector<Chromosome> &chromosomes): full_genome_(chromosomes) {
+    GenomeStorage(const std::vector<Chromosome> &chromosomes): full_genome_(chromosomes) {
         std::stringstream ss;
         for (const auto &s: chromosomes) {
             ss << ACGTise(s.sequence);
@@ -50,7 +49,7 @@ public:
         glued_genome_ = ss.str();
     }
 
-    GenomeStorage(const vector<string> &chromosomes): full_genome_() {
+    GenomeStorage(const std::vector<std::string> &chromosomes): full_genome_() {
         std::stringstream ss;
         int count = 0;
         for (const auto &s: chromosomes) {
@@ -66,7 +65,7 @@ public:
 
     //TODO exterminate this where possible
     Sequence GetSequence() const {
-        stringstream ss;
+        std::stringstream ss;
         size_t l = 0, r = 0;
         for (size_t i = 0; i < glued_genome_.size(); i++) {
             if (!is_nucl(glued_genome_[i]) ) {

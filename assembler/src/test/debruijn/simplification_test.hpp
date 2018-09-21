@@ -127,10 +127,10 @@ std::string graph_fragment_root() {
 void PrintGraph(const Graph & g) {
     for (VertexId v: g) {
         for (EdgeId e: g.OutgoingEdges(v)) {
-            cout << g.int_id(e) << ":" << g.int_id(g.EdgeStart(e)) << " " << g.int_id(g.EdgeEnd(e)) << endl;
+            std::cout << g.int_id(e) << ":" << g.int_id(g.EdgeStart(e)) << " " << g.int_id(g.EdgeEnd(e)) << std::endl;
         }
     }
-    cout << endl;
+    std::cout << std::endl;
 }
 
 void DefaultClipTips(Graph& graph) {
@@ -320,7 +320,7 @@ void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
 
 //Relative coverage removal tests
 
-void TestRelativeCoverageRemover(std::string path, size_t graph_size) {
+void TestRelativeCoverageRemover(const std::string &path, size_t graph_size) {
     typedef graph_pack<ConjugateDeBruijnGraph> gp_t;
     gp_t gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
@@ -361,7 +361,7 @@ BOOST_AUTO_TEST_CASE( RelativeCoverageRemover4 ) {
 
 
 BOOST_AUTO_TEST_CASE( CompressorTest ) {
-    string path = "./src/test/debruijn/graph_fragments/compression/graph";
+    std::string path = "./src/test/debruijn/graph_fragments/compression/graph";
     size_t graph_size = 12;
     conj_graph_pack gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE( CompressorTest ) {
 }
 
 BOOST_AUTO_TEST_CASE( ParallelCompressor1 ) {
-    string path = "./src/test/debruijn/graph_fragments/compression/graph";
+    std::string path = "./src/test/debruijn/graph_fragments/compression/graph";
     size_t graph_size = 12;
     conj_graph_pack gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
@@ -379,7 +379,7 @@ BOOST_AUTO_TEST_CASE( ParallelCompressor1 ) {
 }
 
 BOOST_AUTO_TEST_CASE( ParallelTipClipper1 ) {
-    string path = "./src/test/debruijn/graph_fragments/tips/graph";
+    std::string path = "./src/test/debruijn/graph_fragments/tips/graph";
     size_t graph_size = 12;
     conj_graph_pack gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
@@ -390,10 +390,10 @@ BOOST_AUTO_TEST_CASE( ParallelTipClipper1 ) {
 }
 
 BOOST_AUTO_TEST_CASE( ParallelECRemover ) {
-    string path = graph_fragment_root() + "complex_bulge/complex_bulge";
+    std::string path = graph_fragment_root() + "complex_bulge/complex_bulge";
     conj_graph_pack gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
-    string condition = "{ cb 1000 , ec_lb 20 }";
+    std::string condition = "{ cb 1000 , ec_lb 20 }";
     debruijn::simplification::ConditionParser<Graph> parser(gp.g, condition, standard_simplif_relevant_info());
     parser();
     debruijn::simplification::ParallelEC(gp.g, parser.max_length_bound(), parser.max_coverage_bound(), standard_simplif_relevant_info().chunk_cnt());
@@ -403,8 +403,8 @@ BOOST_AUTO_TEST_CASE( ParallelECRemover ) {
 }
 
 BOOST_AUTO_TEST_CASE( ParallelECRemover1 ) {
-    string path = graph_fragment_root() + "complex_bulge_2/graph";
-    string condition = "{ cb 100 , ec_lb 20 }";
+    std::string path = graph_fragment_root() + "complex_bulge_2/graph";
+    std::string condition = "{ cb 100 , ec_lb 20 }";
     conj_graph_pack gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
     debruijn::simplification::ConditionParser<Graph> parser(gp.g, condition, standard_simplif_relevant_info());
@@ -417,8 +417,8 @@ BOOST_AUTO_TEST_CASE( ParallelECRemover1 ) {
 }
 
 BOOST_AUTO_TEST_CASE( ParallelECRemover2 ) {
-    string path = graph_fragment_root() + "rel_cov_ec/constructed_graph";
-    string condition = "{ cb 100 , ec_lb 20 }";
+    std::string path = graph_fragment_root() + "rel_cov_ec/constructed_graph";
+    std::string condition = "{ cb 100 , ec_lb 20 }";
     conj_graph_pack gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
     debruijn::simplification::ConditionParser<Graph> parser(gp.g, condition, standard_simplif_relevant_info());

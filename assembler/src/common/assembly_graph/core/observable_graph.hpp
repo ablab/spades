@@ -276,7 +276,7 @@ void ObservableGraph<DataMaster>::AddActionHandler(Handler* action_handler) cons
 #pragma omp critical(action_handler_list_modification)
     {
         TRACE("Action handler " << action_handler->name() << " added");
-        if (find(action_handler_list_.begin(), action_handler_list_.end(), action_handler) != action_handler_list_.end()) {
+        if (std::find(action_handler_list_.begin(), action_handler_list_.end(), action_handler) != action_handler_list_.end()) {
             VERIFY_MSG(false, "Action handler " << action_handler->name() << " has already been added");
         } else {
             action_handler_list_.push_back(action_handler);
@@ -481,7 +481,7 @@ std::pair<typename ObservableGraph<DataMaster>::EdgeId, typename ObservableGraph
     FireAddEdge(new_edge1);
     FireAddEdge(new_edge2);
     base::HiddenDeleteEdge(edge);
-    return std::make_pair(new_edge1, new_edge2);
+    return {new_edge1, new_edge2};
 }
 
 template<class DataMaster>
@@ -503,4 +503,5 @@ typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::GlueEd
     }
     return new_edge;
 }
-}
+
+} // namespace omnigraph

@@ -29,4 +29,4 @@ inline void OutputEdgeSequences(const Graph &g,
     }
 }
 
-}
+} // namespace debruijn_graph

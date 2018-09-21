@@ -43,16 +43,16 @@ namespace debruijn_graph {
 using io::SingleRead;
 using io::PairedRead;
 
-typedef string MyRead;
-typedef pair<MyRead, MyRead> MyPairedRead;
-typedef string MyEdge;
-typedef pair<MyEdge, MyEdge> MyEdgePair;
-typedef multimap<MyEdgePair, pair<int, double>> EdgePairInfo;
-typedef map<MyEdge, double> CoverageInfo;
-typedef unordered_set<MyEdge> Edges;
+typedef std::string MyRead;
+typedef std::pair<MyRead, MyRead> MyPairedRead;
+typedef std::string MyEdge;
+typedef std::pair<MyEdge, MyEdge> MyEdgePair;
+typedef std::multimap<MyEdgePair, std::pair<int, double>> EdgePairInfo;
+typedef std::map<MyEdge, double> CoverageInfo;
+typedef std::unordered_set<MyEdge> Edges;
 
-string print(const Edges& es) {
-    string s = "Edge set : {";
+std::string print(const Edges& es) {
+    std::string s = "Edge set : {";
     for (auto i = es.begin(); i != es.end(); ++i) {
         s += "'" + *i + "'; ";
     }
@@ -81,7 +81,7 @@ const EdgePairInfo AddBackward(const EdgePairInfo& pair_info) {
     EdgePairInfo ans;
     for (auto it = pair_info.begin(); it != pair_info.end(); ++it) {
         ans.insert(*it);
-        ans.insert(make_pair(make_pair((*it).first.second, (*it).first.first), make_pair(-(*it).second.first, (*it).second.second)));
+        ans.insert({{(*it).first.second, (*it).first.first}, {-(*it).second.first, (*it).second.second}});
     }
     return ans;
 }
@@ -90,7 +90,7 @@ const EdgePairInfo AddComplement(const EdgePairInfo& pair_info) {
     EdgePairInfo ans;
     for (auto it = pair_info.begin(); it != pair_info.end(); ++it) {
         ans.insert(*it);
-        ans.insert(make_pair(make_pair(ReverseComplement((*it).first.second), ReverseComplement((*it).first.first)), (*it).second));
+        ans.insert({{ReverseComplement((*it).first.second), ReverseComplement((*it).first.first)}, (*it).second});
     }
     return ans;
 }
@@ -109,17 +109,17 @@ const io::SingleRead MakeRead(const MyRead& read) {
     return io::SingleRead("", read, qual);
 }
 
-const vector<io::SingleRead> MakeReads(const vector<MyRead>& reads) {
-    vector<io::SingleRead> ans;
+const std::vector<io::SingleRead> MakeReads(const std::vector<MyRead>& reads) {
+    std::vector<io::SingleRead> ans;
     for (size_t i = 0; i < reads.size(); ++i) {
         ans.push_back(MakeRead(reads[i]));
     }
     return ans;
 }
 
-const vector<PairedRead> MakePairedReads(const vector<MyPairedRead>& paired_reads, size_t insert_size) {
+const std::vector<PairedRead> MakePairedReads(const std::vector<MyPairedRead>& paired_reads, size_t insert_size) {
     DEBUG("Making paired reads");
-    vector<PairedRead> ans;
+    std::vector<PairedRead> ans;
     for (size_t i = 0; i < paired_reads.size(); ++i) {
         ans.push_back(PairedRead(MakeRead(paired_reads[i].first), MakeRead(paired_reads[i].second), insert_size));
     }
@@ -136,7 +136,7 @@ void AssertEdges(Graph& g, const Edges& etalon_edges) {
     EdgesEqual(edges, etalon_edges);
 }
 
-void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& etalon_edges) {
+void AssertGraph(size_t k, const std::vector<std::string>& reads, const std::vector<std::string>& etalon_edges) {
     DEBUG("Asserting graph");
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     Graph g(k);
@@ -144,9 +144,8 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
     graph_pack<Graph>::index_t index(g, *workdir);
     index.Detach();
 
-    io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads))));
-    ConstructGraph(config::debruijn_config::construction(), workdir, 
-                   streams, g, index);
+    io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(std::make_shared<RawStream>(MakeReads(reads))));
+    ConstructGraph(config::debruijn_config::construction(), workdir, streams, g, index);
 
     AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }
@@ -167,7 +166,7 @@ void AssertCoverage(Graph& g, const CoverageInfo& etalon_coverage) {
 
 typedef omnigraph::de::PairedInfoIndexT<Graph> PairedIndex;
 typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
-typedef vector<PairInfo> PairInfos;
+typedef std::vector<PairInfo> PairInfos;
 
 template<class PairedIndex>
 void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
@@ -177,10 +176,10 @@ void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, co
         if (pair_info.first == pair_info.second && rounded_d(pair_info) == 0)
           continue;
 
-        pair<MyEdge, MyEdge> my_edge_pair(g.EdgeNucls(pair_info.first).str(), g.EdgeNucls(pair_info.second).str());
+        auto my_edge_pair = std::make_pair(g.EdgeNucls(pair_info.first).str(), g.EdgeNucls(pair_info.second).str());
         auto equal_range = etalon_pair_info.equal_range(my_edge_pair);
 
-        string my_edge_pair_str = "[" + my_edge_pair.first + ", " + my_edge_pair.second + "]";
+        std::string my_edge_pair_str = "[" + my_edge_pair.first + ", " + my_edge_pair.second + "]";
         BOOST_CHECK_MESSAGE(equal_range.first != equal_range.second,
                             "Pair of edges " << my_edge_pair_str << " wasn't found in etalon");
 
@@ -199,12 +198,14 @@ void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, co
     }
 }
 
-void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl*/, size_t insert_size, const vector<MyEdge>& etalon_edges, const CoverageInfo& etalon_coverage, const EdgePairInfo& etalon_pair_info) {
+void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t /*rl*/, size_t insert_size,
+                 const std::vector<MyEdge> &etalon_edges, const CoverageInfo &etalon_coverage,
+                 const EdgePairInfo &etalon_pair_info) {
     typedef io::VectorReadStream<io::PairedRead> RawStream;
 
     DEBUG("Asserting graph with etalon data");
 
-    io::ReadStreamList<io::PairedRead> paired_streams(make_shared<RawStream>(MakePairedReads(paired_reads, insert_size)));
+    io::ReadStreamList<io::PairedRead> paired_streams(std::make_shared<RawStream>(MakePairedReads(paired_reads, insert_size)));
     DEBUG("Streams initialized");
 
     conj_graph_pack gp(k, "tmp", 1);
@@ -232,11 +233,11 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl
 }
 
 template<class graph_pack>
-void CheckIndex(const vector<string> &reads, size_t k) {
+void CheckIndex(const std::vector<string> &reads, size_t k) {
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     graph_pack gp(k, "tmp", 0);
     auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");
-    auto stream = io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads)));
+    auto stream = io::RCWrap<io::SingleRead>(std::make_shared<RawStream>(MakeReads(reads)));
     io::ReadStreamList<io::SingleRead> streams(stream);
     ConstructGraph(config::debruijn_config::construction(), workdir,
                    streams, gp.g, gp.index);

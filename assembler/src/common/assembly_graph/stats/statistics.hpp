@@ -11,6 +11,7 @@
 #include "math/xmath.h"
 #include "pipeline/config_struct.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
+#include "utils/logger/logger.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -37,10 +38,10 @@ public:
 
 class StatList : AbstractStatCounter {
 private:
-    vector<AbstractStatCounter *> to_count_;
+    //FIXME: get rid of raw pointers
+    std::vector<AbstractStatCounter *> to_count_;
 public:
-    StatList(vector<AbstractStatCounter *> to_count =
-    vector<AbstractStatCounter *>()) :
+    StatList(const std::vector<AbstractStatCounter *> &to_count = {}) :
             to_count_(to_count) {
     }
 
@@ -51,7 +52,7 @@ public:
         to_count_.push_back(new_stat);
     }
 
-    const vector<AbstractStatCounter *> stats() {
+    const std::vector<AbstractStatCounter *> &stats() {
         return to_count_;
     }
 
@@ -134,9 +135,9 @@ public:
     virtual void Count() {
         size_t black_count = 0;
         size_t edge_count = 0;
-        const vector <EdgeId> path_edges1 = path1_.sequence();
-        const vector <EdgeId> path_edges2 = path2_.sequence();
-        set <EdgeId> colored_edges;
+        const auto& path_edges1 = path1_.sequence();
+        const auto& path_edges2 = path2_.sequence();
+        std::set<EdgeId> colored_edges;
         colored_edges.insert(path_edges1.begin(), path_edges1.end());
         colored_edges.insert(path_edges2.begin(), path_edges2.end());
         size_t sum_length = 0;
@@ -169,7 +170,7 @@ private:
     Path<EdgeId> path_;
     size_t perc_;
 public:
-    NStat(const Graph &graph, Path<EdgeId> path, size_t perc = 50) :
+    NStat(const Graph &graph, const Path<EdgeId> &path, size_t perc = 50) :
             graph_(graph), path_(path), perc_(perc) {
     }
 
@@ -177,7 +178,7 @@ public:
     }
 
     virtual void Count() {
-        vector <size_t> lengths;
+        std::vector<size_t> lengths;
         size_t sum_all = 0;
         for (size_t i = 0; i < path_.size(); i++) {
             lengths.push_back(graph_.length(path_[i]));
@@ -200,11 +201,10 @@ class IsolatedEdgesStat : public AbstractStatCounter {
 private:
     typedef typename Graph::EdgeId EdgeId;
     const Graph &graph_;
-    set <EdgeId> black_edges_;
-    vector <size_t> lengths;
+    std::set<EdgeId> black_edges_;
+    std::vector<size_t> lengths;
 public:
-    IsolatedEdgesStat(const Graph &graph, Path<EdgeId> path1,
-                      Path<EdgeId> path2) :
+    IsolatedEdgesStat(const Graph &graph, const Path<EdgeId> &path1, const Path<EdgeId> &path2) :
             graph_(graph) {
         for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             black_edges_.insert(*it);
@@ -234,17 +234,17 @@ public:
         WriteLengths(cfg::get().output_dir, "isolated_edges.txt");
     }
 
-    void WriteLengths(string folder_name, string file_name) {
-        ofstream os;
+    void WriteLengths(const std::string &folder_name, const std::string &file_name) {
+        std::ofstream os;
         os.open((folder_name + "/" + file_name).c_str());
         WriteLengths(os);
         os.close();
     }
 
-    void WriteLengths(ostream &os) {
+    void WriteLengths(std::ostream &os) {
         sort(lengths.begin(), lengths.end());
         for (size_t i = 0; i < lengths.size(); i++) {
-            os << lengths[i] << endl;
+            os << lengths[i] << std::endl;
         }
     }
 };

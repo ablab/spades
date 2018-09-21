@@ -29,10 +29,10 @@ class Component {
     typedef typename Graph::VertexId VertexId;
 
     const Graph& g_;
-    set<EdgeId> edges_;
-    set<VertexId> inner_vertices_;
-    set<VertexId> border_;
-    set<VertexId> terminating_vertices_;
+
+    typedef std::set<EdgeId> EdgeSet;
+    EdgeSet edges_;
+    std::set<VertexId> inner_vertices_, border_, terminating_vertices_;
     //maybe use something more sophisticated in future
     size_t cumm_length_;
     bool contains_deadends_;
@@ -96,7 +96,7 @@ public:
         return border_.empty();
     }
 
-    const set<EdgeId>& edges() const {
+    const EdgeSet &edges() const {
         return edges_;
     }
 
@@ -104,12 +104,12 @@ public:
         return edges_.count(e) > 0;
     }
 
-    const set<VertexId>& terminating_vertices() const {
+    const std::set<VertexId> &terminating_vertices() const {
         return terminating_vertices_;
     }
 
-    set<EdgeId> terminating_edges() const {
-        set<EdgeId> answer;
+    EdgeSet terminating_edges() const {
+        EdgeSet answer;
         for (VertexId v : terminating_vertices()) {
             for (EdgeId e : g_.IncidentEdges(v)) {
                 if (contains(e)) {
@@ -121,8 +121,8 @@ public:
     }
 
     //terminating edges, going into the component
-    set<EdgeId> terminating_in_edges() const {
-        set<EdgeId> answer;
+    EdgeSet terminating_in_edges() const {
+        EdgeSet answer;
         for (VertexId v : terminating_vertices()) {
             for (EdgeId e : g_.OutgoingEdges(v)) {
                 if (contains(e)) {
@@ -134,8 +134,8 @@ public:
     }
 
     //terminating edges, going out of the component
-    set<EdgeId> terminating_out_edges() const {
-        set<EdgeId> answer;
+    EdgeSet terminating_out_edges() const {
+        EdgeSet answer;
         for (VertexId v : terminating_vertices()) {
             for (EdgeId e : g_.IncomingEdges(v)) {
                 if (contains(e)) {
@@ -192,7 +192,7 @@ public:
     double MaxLocalCoverage(const EdgeContainer& edges, VertexId v) const {
         double answer = 0.0;
         for (EdgeId e : edges) {
-            answer = max(answer, LocalCoverage(e, v));
+            answer = std::max(answer, LocalCoverage(e, v));
         }
         return answer;
     }
@@ -268,8 +268,8 @@ class LongestPathFinder {
     typedef typename Graph::VertexId VertexId;
     const Component<Graph>& component_;
     const Graph& g_;
-    map<VertexId, int> max_distance_;
-    vector<VertexId> vertex_stack_;
+    std::map<VertexId, int> max_distance_;
+    std::vector<VertexId> vertex_stack_;
     bool cycle_detected_;
 
     //distance is changed!
@@ -527,20 +527,20 @@ class RelativeCovComponentFinder {
     mutable std::atomic_uint fail_cnt_;
     mutable std::atomic_uint succ_cnt_;
 
-    void VisualizeNontrivialComponent(const set<typename Graph::EdgeId>& edges, bool success) const {
+    void VisualizeNontrivialComponent(const std::set<typename Graph::EdgeId> &edges, bool success) const {
         auto colorer = visualization::graph_colorer::DefaultColorer(g_);
-        auto edge_colorer = make_shared<visualization::graph_colorer::CompositeEdgeColorer<Graph>>("black");
+        auto edge_colorer = std::make_shared<visualization::graph_colorer::CompositeEdgeColorer<Graph>>("black");
         edge_colorer->AddColorer(colorer);
-        edge_colorer->AddColorer(make_shared<visualization::graph_colorer::SetColorer<Graph>>(g_, edges, "green"));
+        edge_colorer->AddColorer(std::make_shared<visualization::graph_colorer::SetColorer<Graph>>(g_, edges, "green"));
         //    shared_ptr<visualization::graph_colorer::GraphColorer<Graph>>
-        auto resulting_colorer = make_shared<visualization::graph_colorer::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
+        auto resulting_colorer = std::make_shared<visualization::graph_colorer::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
 
         visualization::graph_labeler::StrGraphLabeler<Graph> str_labeler(g_);
         visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(g_);
         visualization::graph_labeler::CompositeLabeler<Graph> labeler(str_labeler, cov_labler);
 
         if (edges.size() > 1) {
-            set<typename Graph::VertexId> vertices;
+            std::set<typename Graph::VertexId> vertices;
             for (auto e : edges) {
                 vertices.insert(g_.EdgeStart(e));
                 vertices.insert(g_.EdgeEnd(e));

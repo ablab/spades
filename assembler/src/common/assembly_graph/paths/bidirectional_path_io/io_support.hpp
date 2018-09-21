@@ -30,7 +30,7 @@ struct ScaffoldInfo {
     }
 };
 
-typedef vector<ScaffoldInfo> ScaffoldStorage;
+typedef std::vector<ScaffoldInfo> ScaffoldStorage;
 
 class ScaffoldSequenceMaker {
     const Graph &g_;
@@ -49,10 +49,9 @@ private:
     const Graph &g_;
     size_t min_edge_len_; //minimal length for joining transcripts into a gene
 
-    map<BidirectionalPath *, size_t, PathComparator> path_id_; //path ids
+    std::map<BidirectionalPath *, size_t, PathComparator> path_id_; //path ids
     std::vector<size_t> parents_; //node parents in
     std::vector<size_t> ranks_; //tree depth
-
 
     void MakeSet(size_t x);
 
@@ -105,8 +104,8 @@ public:
 class TranscriptNameGenerator: public ContigNameGenerator {
     TranscriptToGeneJoiner transcript_joiner_;
 
-    unordered_map<size_t, size_t> isoform_num_;
-    unordered_map<size_t, size_t> gene_ids_;
+    std::unordered_map<size_t, size_t> isoform_num_;
+    std::unordered_map<size_t, size_t> gene_ids_;
     size_t gene_num_;
 
 public:
@@ -118,7 +117,7 @@ public:
 
     }
 
-    void Preprocess(const PathContainer& paths) override {
+    void Preprocess(const PathContainer &paths) override {
         transcript_joiner_.Construct(paths);
     }
 
@@ -131,11 +130,8 @@ public:
             isoform_num_[parent_id] = 0;
             gene_num_++;
         }
-        string contig_id = io::MakeRNAContigId(index,
-                                               scaffold_info.length(),
-                                               scaffold_info.coverage(),
-                                               gene_ids_[parent_id],
-                                               isoform_num_[parent_id]);
+        auto contig_id = io::MakeRNAContigId(index, scaffold_info.length(), scaffold_info.coverage(),
+                                             gene_ids_[parent_id], isoform_num_[parent_id]);
         isoform_num_[parent_id]++;
         return contig_id;
     }
@@ -146,23 +142,21 @@ inline std::shared_ptr<ContigNameGenerator> MakeContigNameGenerator(config::pipe
                                                                     const conj_graph_pack &gp) {
     std::shared_ptr<path_extend::ContigNameGenerator> name_generator;
     if (mode == config::pipeline_type::plasmid)
-        name_generator = make_shared<PlasmidContigNameGenerator>(gp.components);
+        name_generator = std::make_shared<PlasmidContigNameGenerator>(gp.components);
     else if (mode == config::pipeline_type::rna)
-        name_generator = make_shared<TranscriptNameGenerator>(gp.g);
+        name_generator = std::make_shared<TranscriptNameGenerator>(gp.g);
     else
-        name_generator = make_shared<DefaultContigNameGenerator>();
+        name_generator = std::make_shared<DefaultContigNameGenerator>();
     return name_generator;
 }
 
 class ScaffoldBreaker {
 private:
-
     int min_overlap_;
 
-    void SplitPath(const BidirectionalPath& path, PathContainer &result) const;
+    void SplitPath(const BidirectionalPath &path, PathContainer &result) const;
 
 public:
-
     ScaffoldBreaker(int min_overlap): min_overlap_(min_overlap) {}
 
     void Break(const PathContainer &paths, PathContainer &result) const;

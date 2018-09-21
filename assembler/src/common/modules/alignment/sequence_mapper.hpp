@@ -67,7 +67,7 @@ public:
     MappingPath<EdgeId> MapRead(const io::SingleRead &read) const override {
 //      VERIFY(read.IsValid());
         DEBUG(read.name() << " is mapping");
-        string s = read.GetSequenceString();
+        auto s = read.GetSequenceString();
         size_t l = 0, r = 0;
         MappingPath<EdgeId> result;
         for(size_t i = 0; i < s.size(); i++) {
@@ -142,7 +142,7 @@ public:
             : g_(graph) {
     }
 
-    bool CheckContiguous(const vector<typename Graph::EdgeId>& path) const {
+    bool CheckContiguous(const std::vector<typename Graph::EdgeId> &path) const {
         for (size_t i = 1; i < path.size(); ++i) {
             if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i]))
                 return false;
@@ -154,18 +154,16 @@ public:
         return Path<EdgeId>(TryFixPath(path.sequence(), length_bound), path.start_pos(), path.end_pos());
     }
 
-    vector<EdgeId> TryFixPath(const vector<EdgeId>& edges, size_t length_bound = 70) const {
-        vector<EdgeId> answer;
+    std::vector<EdgeId> TryFixPath(const std::vector<EdgeId>& edges, size_t length_bound = 70) const {
+        std::vector<EdgeId> answer;
         if (edges.empty()) {
             //          WARN("Mapping path was empty");
-            return vector<EdgeId>();
+            return {};
         }
         answer.push_back(edges[0]);
         for (size_t i = 1; i < edges.size(); ++i) {
             if (g_.EdgeEnd(edges[i - 1]) != g_.EdgeStart(edges[i])) {
-                vector<EdgeId> closure = TryCloseGap(g_.EdgeEnd(edges[i - 1]),
-                                                     g_.EdgeStart(edges[i]),
-                                                     length_bound);
+                auto closure = TryCloseGap(g_.EdgeEnd(edges[i - 1]), g_.EdgeStart(edges[i]), length_bound);
                 answer.insert(answer.end(), closure.begin(), closure.end());
             }
             answer.push_back(edges[i]);
@@ -173,8 +171,8 @@ public:
         return answer;
     }
 
-    vector<EdgeId> DeleteSameEdges(const vector<EdgeId>& path) const {
-        vector<EdgeId> result;
+    std::vector<EdgeId> DeleteSameEdges(const std::vector<EdgeId>& path) const {
+        std::vector<EdgeId> result;
         if (path.empty()) {
             return result;
         }
@@ -188,9 +186,9 @@ public:
     }
 
 private:
-    vector<EdgeId> TryCloseGap(VertexId v1, VertexId v2, size_t length_bound) const {
+    std::vector<EdgeId> TryCloseGap(VertexId v1, VertexId v2, size_t length_bound) const {
         if (v1 == v2)
-            return vector<EdgeId>();
+            return {};
         TRACE("Trying to close gap between v1=" << g_.int_id(v1) << " and v2=" << g_.int_id(v2));
         omnigraph::PathStorageCallback<Graph> path_store(g_);
 
@@ -208,14 +206,14 @@ private:
             //                          << " (conjugate "
             //                          << g_.int_id(g_.conjugate(v2)) << ")");
             //          return boost::none;
-            return vector<EdgeId>();
+            return {};
         } else if (path_store.size() == 1) {
             TRACE("Unique closing path found");
         } else {
             TRACE("Several closing paths found, first chosen");
         }
         TRACE("Taking answer    ");
-        vector<EdgeId> answer = path_store.paths().front();
+        const auto& answer = path_store.paths().front();
         TRACE("Gap closed");
         TRACE( "Cumulative closure length is " << CumulativeLength(g_, answer));
         return answer;
@@ -237,7 +235,7 @@ public:
         g_(g), path_fixer_(g), skip_unfixed_(skip_unfixed)
     {}
 
-    vector<EdgeId> FindReadPath(const MappingPath<EdgeId>& mapping_path) const {
+    std::vector<EdgeId> FindReadPath(const MappingPath<EdgeId> &mapping_path) const {
           if (mapping_path.size() == 0) {
               TRACE("Read unmapped");
               return vector<EdgeId>();
@@ -280,7 +278,7 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
 
   bool FindKmer(const Kmer &kmer, size_t kmer_pos, std::vector<EdgeId> &passed,
                 RangeMappings& range_mappings) const {
-    std::pair<EdgeId, size_t> position = index_.get(kmer);
+    const auto& position = index_.get(kmer);
     if (position.second == -1u)
         return false;
     

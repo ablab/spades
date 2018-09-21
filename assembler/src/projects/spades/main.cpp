@@ -16,6 +16,9 @@
 #include "utils/filesystem/copy_file.hpp"
 #include "version.hpp"
 
+using namespace std;
+using fs::make_dir;
+
 void load_config(const vector<string>& cfg_fns) {
     for (const auto& s : cfg_fns) {
         fs::CheckFileExistenceFATAL(s);

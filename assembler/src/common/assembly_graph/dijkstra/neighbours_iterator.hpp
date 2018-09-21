@@ -31,13 +31,13 @@ class ForwardNeighbourIterator {
 
     const Graph &graph_;
     VertexId vertex_;
-    pair<edge_const_iterator, edge_const_iterator> out_edges_;
+    std::pair<edge_const_iterator, edge_const_iterator> out_edges_;
 public:
     ForwardNeighbourIterator(const Graph &graph, VertexId vertex) :
         graph_(graph),
         vertex_(vertex),
-        out_edges_(make_pair(graph.OutgoingEdges(vertex).begin(),
-                graph.OutgoingEdges(vertex).end())) { }
+        out_edges_{graph.OutgoingEdges(vertex).begin(),
+                   graph.OutgoingEdges(vertex).end()} { }
 
     bool HasNext(){
         return out_edges_.first != out_edges_.second;
@@ -58,13 +58,13 @@ class BackwardNeighbourIterator {
 
     const Graph &graph_;
     VertexId vertex_;
-    pair<edge_const_iterator, edge_const_iterator>  in_edges_;
+    std::pair<edge_const_iterator, edge_const_iterator> in_edges_;
 public:
     BackwardNeighbourIterator(const Graph &graph, VertexId vertex) :
         graph_(graph),
         vertex_(vertex),
-        in_edges_(make_pair(graph.IncomingEdges(vertex).begin(),
-                graph.IncomingEdges(vertex).end())) { }
+        in_edges_{graph.IncomingEdges(vertex).begin(),
+                  graph.IncomingEdges(vertex).end()} { }
 
     bool HasNext(){
         return in_edges_.first != in_edges_.second;
@@ -85,16 +85,15 @@ class UnorientedNeighbourIterator {
 
     const Graph &graph_;
     VertexId vertex_;
-    pair<edge_const_iterator, edge_const_iterator>  in_edges_;
-    pair<edge_const_iterator, edge_const_iterator>  out_edges_;
+    std::pair<edge_const_iterator, edge_const_iterator> in_edges_, out_edges_;
 public:
     UnorientedNeighbourIterator(const Graph &graph, VertexId vertex) :
         graph_(graph),
         vertex_(vertex),
-        in_edges_(make_pair(graph.IncomingEdges(vertex).begin(),
-                graph.IncomingEdges(vertex).end())),
-        out_edges_(make_pair(graph.OutgoingEdges(vertex).begin(),
-                graph.OutgoingEdges(vertex).end())) { }
+        in_edges_{graph.IncomingEdges(vertex).begin(),
+                  graph.IncomingEdges(vertex).end()},
+        out_edges_{graph.OutgoingEdges(vertex).begin(),
+                   graph.OutgoingEdges(vertex).end()} { }
 
     bool HasNext(){
         return in_edges_.first != in_edges_.second;

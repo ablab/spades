@@ -7,33 +7,26 @@
 
 #pragma once
 
-#include <map>
-#include <queue>
-
 #include "assembly_graph/components/splitters.hpp"
 #include "cleaner.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 
-namespace omnigraph {
+#include <map>
+#include <queue>
 
-using std::set;
-using std::map;
-using std::vector;
-using std::pair;
-using std::queue;
-using std::make_pair;
+namespace omnigraph {
 
 template<class Graph>
 class FlowGraph {
 public:
     typedef size_t FlowVertexId;
-    typedef pair<FlowVertexId, FlowVertexId> FlowEdgeId;
+    typedef std::pair<FlowVertexId, FlowVertexId> FlowEdgeId;
 
 private:
     typedef typename Graph::VertexId OuterVertexId;
-    map<OuterVertexId, FlowVertexId> vertex_mapping_;
-    map<FlowVertexId, map<FlowVertexId, int>> capacities_;
-    set<FlowVertexId> vertices_;
+    std::map<OuterVertexId, FlowVertexId> vertex_mapping_;
+    std::map<FlowVertexId, std::map<FlowVertexId, int>> capacities_;
+    std::set<FlowVertexId> vertices_;
     size_t vertex_number_;
     FlowVertexId source_;
     FlowVertexId sink_;
@@ -109,23 +102,23 @@ public:
                 && capacities_.find(start)->second.find(end)->second > 0;
     }
 
-    vector<FlowEdgeId> OutgoingEdges(FlowVertexId v) const {
-        vector<FlowEdgeId> result;
-        const map<FlowVertexId, int> &outgoing = capacities_.find(v)->second;
+    std::vector<FlowEdgeId> OutgoingEdges(FlowVertexId v) const {
+        std::vector<FlowEdgeId> result;
+        const auto &outgoing = capacities_.find(v)->second;
         for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
             if (it->second > 0) {
-                result.push_back(make_pair(v, it->first));
+                result.push_back({v, it->first});
             }
         }
         return result;
     }
 
-    vector<FlowEdgeId> IncomingEdges(FlowVertexId v) const {
-        vector<FlowEdgeId> result;
-        const map<FlowVertexId, int> &outgoing = capacities_.find(v)->second;
+    std::vector<FlowEdgeId> IncomingEdges(FlowVertexId v) const {
+        std::vector<FlowEdgeId> result;
+        const auto &outgoing = capacities_.find(v)->second;
         for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
             if (Connected(it->first, v)) {
-                result.push_back(make_pair(it->first, v));
+                result.push_back({it->first, v});
             }
         }
         return result;
@@ -147,11 +140,11 @@ public:
         return edge.second;
     }
 
-    set<FlowVertexId>::iterator begin() const {
+    std::set<FlowVertexId>::iterator begin() const {
         return vertices_.begin();
     }
 
-    set<FlowVertexId>::iterator end() const {
+    std::set<FlowVertexId>::iterator end() const {
         return vertices_.end();
     }
 
@@ -165,11 +158,11 @@ public:
         return it2->second;
     }
 
-    void PushFlow(vector<FlowVertexId> path, int capacity) {
+    void PushFlow(std::vector<FlowVertexId> path, int capacity) {
         size_t n = path.size();
         VERIFY(path[0] == source_ && path[n - 1] == sink_);
         for (size_t i = 0; i + 1 < n; i++) {
-            PushFlow(make_pair(path[i], path[i + 1]), capacity);
+            PushFlow(std::make_pair(path[i], path[i + 1]), capacity);
         }
     }
 
@@ -196,10 +189,9 @@ private:
     typedef typename Graph::FlowVertexId FlowVertexId;
     typedef typename Graph::FlowEdgeId FlowEdgeId;
 
-    vector<FlowVertexId> RestoreAnswer(FlowVertexId start, FlowVertexId end,
-            const map<FlowVertexId, FlowVertexId> &prev) {
-        vector<FlowVertexId> result;
-        result.push_back(end);
+    std::vector<FlowVertexId> RestoreAnswer(FlowVertexId start, FlowVertexId end,
+                                            const std::map<FlowVertexId, FlowVertexId> &prev) {
+        std::vector<FlowVertexId> result = {end};
         FlowVertexId current = end;
         while (current != start) {
             current = prev.find(current)->second;
@@ -213,15 +205,15 @@ public:
             graph_(graph) {
     }
 
-    vector<FlowVertexId> Go(FlowVertexId start, FlowVertexId finish) {
-        queue<FlowVertexId> q;
+    std::vector<FlowVertexId> Go(FlowVertexId start, FlowVertexId finish) {
+        std::queue<FlowVertexId> q;
         q.push(start);
-        map<FlowVertexId, FlowVertexId> prev;
+        std::map<FlowVertexId, FlowVertexId> prev;
         prev[start] = start;
         while (!q.empty()) {
             FlowVertexId current = q.front();
             q.pop();
-            vector<FlowEdgeId> outgoing = graph_.OutgoingEdges(current);
+            auto outgoing = graph_.OutgoingEdges(current);
             for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
                 if (prev.find(it->second) == prev.end()) {
                     q.push(it->second);
@@ -232,7 +224,7 @@ public:
                 }
             }
         }
-        return vector<FlowVertexId>();
+        return {};
     }
 };
 
@@ -243,7 +235,7 @@ private:
     typedef typename FlowGraph<Graph>::FlowVertexId FlowVertexId;
     typedef typename FlowGraph<Graph>::FlowEdgeId FlowEdgeId;
 
-    int MinCapacity(vector<FlowVertexId> path) {
+    int MinCapacity(const vector<FlowVertexId> &path) {
         VERIFY(path.size() >= 2);
         int result = graph_.GetCapacity(path[0], path[1]);
         for (size_t i = 1; i + 1 < path.size(); i++) {
@@ -260,7 +252,7 @@ public:
     void Find() {
         BFS<FlowGraph<Graph> > bfs(graph_);
         while (true) {
-            vector<FlowVertexId> path = bfs.Go(graph_.Source(), graph_.Sink());
+            auto path = bfs.Go(graph_.Source(), graph_.Sink());
             if (path.size() == 0)
                 break;
             int capacity = MinCapacity(path);
@@ -278,7 +270,7 @@ private:
     typedef typename Graph::FlowEdgeId FlowEdgeId;
     const Graph &graph_;
 
-    void Find(FlowVertexId v, vector<FlowVertexId> &result, set<FlowVertexId> &visited) {
+    void Find(FlowVertexId v, std::vector<FlowVertexId> &result, std::set<FlowVertexId> &visited) {
         visited.insert(v);
         vector<FlowEdgeId> outgoing = graph_.OutgoingEdges(v);
         for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
@@ -295,9 +287,9 @@ public:
             graph_(graph) {
     }
 
-    vector<FlowVertexId> Sort() {
-        vector<FlowVertexId> result;
-        set<FlowVertexId> visited;
+    std::vector<FlowVertexId> Sort() {
+        std::vector<FlowVertexId> result;
+        std::set<FlowVertexId> visited;
         for (auto it = graph_.begin(); it != graph_.end(); ++it) {
             if (visited.count(*it) == 0) {
                 Find(*it, result, visited);
@@ -315,9 +307,9 @@ private:
 
     const Graph &graph_;
 
-    void Find(FlowVertexId v, map<FlowVertexId, size_t> &result, size_t cc) {
+    void Find(FlowVertexId v, std::map<FlowVertexId, size_t> &result, size_t cc) {
         result[v] = cc;
-        vector<FlowEdgeId> incoming = graph_.IncomingEdges(v);
+        auto incoming = graph_.IncomingEdges(v);
         for (auto it = incoming.begin(); it != incoming.end(); ++it) {
             FlowVertexId next = graph_.EdgeStart(*it);
             if (result.count(next) == 0) {
@@ -330,9 +322,9 @@ public:
             graph_(graph) {
     }
 
-    map<FlowVertexId, size_t> Find(const vector<FlowVertexId> &order) {
+    std::map<FlowVertexId, size_t> Find(const std::vector<FlowVertexId> &order) {
         size_t cc = 0;
-        map<FlowVertexId, size_t> result;
+        std::map<FlowVertexId, size_t> result;
         for (auto it = order.rbegin(); it != order.rend(); ++it) {
             if (result.count(*it) == 0) {
                 Find(*it, result, cc);
@@ -354,9 +346,9 @@ public:
             graph_(graph), ready_(false) {
     }
 
-    map<FlowVertexId, size_t> ColourComponents() {
-        map<FlowVertexId, size_t> result;
-        vector<FlowVertexId> order = TopSorter<Graph>(graph_).Sort();
+    std::map<FlowVertexId, size_t> ColourComponents() {
+        std::map<FlowVertexId, size_t> result;
+        auto order = TopSorter<Graph>(graph_).Sort();
         return ReverseDFSComponentFinder<Graph>(graph_).Find(order);
     }
 };
@@ -388,9 +380,9 @@ private:
         return g_.length(edge) <= max_length_ && !IsTip(edge);
     }
 
-    set<EdgeId> CollectUnusedEdges(set<VertexId> component, FlowGraph<Graph> fg,
-            const map<typename FlowGraph<Graph>::FlowVertexId, size_t> &colouring) {
-        set<EdgeId> result;
+    std::set<EdgeId> CollectUnusedEdges(const std::set<VertexId> &component, const FlowGraph<Graph> &fg,
+                                        const map<typename FlowGraph<Graph>::FlowVertexId, size_t> &colouring) {
+        std::set<EdgeId> result;
         for (auto it_start = component.begin(); it_start != component.end();
                 ++it_start) {
             VertexId start = *it_start;
@@ -423,33 +415,30 @@ private:
         return g_.length(edge) >= uniqueness_length_;
     }
 
-    bool IsInnerShortEdge(set<VertexId> component, EdgeId edge) {
+    bool IsInnerShortEdge(const std::set<VertexId> &component, EdgeId edge) {
         return !IsUnique(edge) && component.count(g_.EdgeStart(edge)) == 1
                 && component.count(g_.EdgeEnd(edge)) == 1;
     }
 
-    void ProcessShortEdge(FlowGraph<Graph> &fg, set<VertexId> component,
-            EdgeId edge) {
+    void ProcessShortEdge(FlowGraph<Graph> &fg, const std::set<VertexId> &component, EdgeId edge) {
         if (IsInnerShortEdge(component, edge)) {
             fg.AddEdge(g_.EdgeStart(edge), g_.EdgeEnd(edge));
         }
     }
 
-    void ProcessSource(FlowGraph<Graph> &fg, set<VertexId> /*component*/,
-            EdgeId edge) {
+    void ProcessSource(FlowGraph<Graph> &fg, const std::set<VertexId> &/*component*/, EdgeId edge) {
         if (IsPlausible(edge) || IsUnique(edge)) {
             fg.AddSource(g_.EdgeEnd(edge), 1);
         }
     }
 
-    void ProcessSink(FlowGraph<Graph> &fg, set<VertexId> /*component*/,
-            EdgeId edge) {
+    void ProcessSink(FlowGraph<Graph> &fg, const std::set<VertexId> &/*component*/, EdgeId edge) {
         if (IsPlausible(edge) || IsUnique(edge)) {
             fg.AddSink(g_.EdgeStart(edge), 1);
         }
     }
 
-    void ConstructFlowGraph(FlowGraph<Graph> &fg, set<VertexId> component) {
+    void ConstructFlowGraph(FlowGraph<Graph> &fg, const std::set<VertexId> &component) {
         for (auto it = component.begin(); it != component.end(); ++it) {
             fg.AddVertex(*it);
         }
@@ -483,9 +472,9 @@ public:
     }
 
     bool Process() {
-        for (shared_ptr<GraphSplitter<Graph>> splitter_ptr = LongEdgesExclusiveSplitter<Graph>(g_,
+        for (std::shared_ptr<GraphSplitter<Graph>> splitter_ptr = LongEdgesExclusiveSplitter<Graph>(g_,
                 uniqueness_length_); splitter_ptr->HasNext();) {
-            set<VertexId> component = splitter_ptr->Next().vertices();
+            auto component = splitter_ptr->Next().vertices();
             FlowGraph<Graph> fg;
             ConstructFlowGraph(fg, component);
 //            fg.Print();
@@ -497,10 +486,8 @@ public:
             }
             StroglyConnectedComponentFinder<FlowGraph<Graph>> component_finder(
                     fg);
-            map<typename FlowGraph<Graph>::FlowVertexId, size_t> colouring =
-                    component_finder.ColourComponents();
-            set<EdgeId> to_remove = CollectUnusedEdges(component, fg,
-                    colouring);
+            auto colouring = component_finder.ColourComponents();
+            auto to_remove = CollectUnusedEdges(component, fg, colouring);
             component_remover_.DeleteComponent(to_remove.begin(), to_remove.end(), false);
         }
         CompressAllVertices(g_);

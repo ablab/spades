@@ -475,8 +475,8 @@ void PathExtendLauncher::FilterPaths() {
 
 void PathExtendLauncher::Launch() {
     INFO("ExSPAnder repeat resolving tool started");
-    make_dir(params_.output_dir);
-    make_dir(params_.etc_dir);
+    fs::make_dir(params_.output_dir);
+    fs::make_dir(params_.etc_dir);
 
     if (support_.NeedsUniqueEdgeStorage()) {
         //Fill the storage to enable unique edge check

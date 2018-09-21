@@ -18,6 +18,8 @@ namespace debruijn_graph {
 
 namespace gap_closing {
 
+using namespace std;
+
 //TODO standard aligner badly needs spurious match filtering
 class GapTrackingListener : public SequenceMapperListener {
     const Graph& g_;

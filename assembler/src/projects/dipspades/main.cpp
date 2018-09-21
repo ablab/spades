@@ -21,6 +21,9 @@
 
 #include "dipspades.hpp"
 
+using namespace std;
+using namespace fs;
+
 void make_dirs(){
     make_dir(dsp_cfg::get().io.output_base);
     make_dir(dsp_cfg::get().io.output_root);

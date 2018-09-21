@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2015-2018 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #include "path_polisher.hpp"
 
@@ -40,7 +46,7 @@ BidirectionalPath PathPolisher::Polish(const BidirectionalPath &init_path) {
     if (init_path.Empty())
         return init_path;
 
-    auto path = make_shared<BidirectionalPath>(init_path);
+    auto path = std::make_shared<BidirectionalPath>(init_path);
     size_t prev_len = path->Size();
 
     bool changed = true;
@@ -48,7 +54,7 @@ BidirectionalPath PathPolisher::Polish(const BidirectionalPath &init_path) {
     while (changed) {
         changed = false;
         for (const auto& gap_closer : gap_closers_) {
-            path = make_shared<BidirectionalPath>(gap_closer->CloseGaps(*path));
+            path = std::make_shared<BidirectionalPath>(gap_closer->CloseGaps(*path));
             if (path->Size() != prev_len){
                 changed = true;
                 prev_len = path->Size();
@@ -136,7 +142,7 @@ Gap DijkstraGapCloser::FillWithBridge(const Gap &orig_gap,
     auto counts = CountEdgesQuantity(paths, 300);
     DEBUG("filing gap with bridges");
     size_t path_quantity = paths.size();
-    vector<EdgeId> bridges;
+    std::vector<EdgeId> bridges;
     for (const auto& pair: counts)
         if (pair.second == path_quantity)
             bridges.push_back(pair.first);
@@ -190,9 +196,9 @@ Gap DijkstraGapCloser::FillWithMultiplePaths(const PathsT& paths,
 }
 
 std::map<EdgeId, size_t> DijkstraGapCloser::CountEdgesQuantity(const PathsT &paths, size_t length_limit) const {
-    map<EdgeId, size_t> res;
+    std::map<EdgeId, size_t> res;
     for (const auto& path: paths) {
-        set<EdgeId> edge_set(path.begin(), path.end());
+        std::set<EdgeId> edge_set(path.begin(), path.end());
         for (const auto& e: edge_set) {
             if (g_.length(e) >= length_limit) {
                 res[e] += 1;
@@ -210,7 +216,7 @@ size_t DijkstraGapCloser::MinPathSize(const PathsT& paths) const {
     return size;
 }
 
-vector<EdgeId> DijkstraGapCloser::LCP(const PathsT& paths) const {
+std::vector<EdgeId> DijkstraGapCloser::LCP(const PathsT& paths) const {
     bool all_equal = true;
     size_t index = 0;
     size_t min_size = MinPathSize(paths);
@@ -227,7 +233,7 @@ vector<EdgeId> DijkstraGapCloser::LCP(const PathsT& paths) const {
             ++index;
     }
 
-    vector<EdgeId> result;
+    std::vector<EdgeId> result;
     for (size_t i = 0; i < index; ++i) {
         result.push_back(paths.front()[i]);
     }
@@ -235,10 +241,10 @@ vector<EdgeId> DijkstraGapCloser::LCP(const PathsT& paths) const {
 }
 
 EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
-                                   const set<EdgeId>& present_in_paths,
+                                   const std::set<EdgeId> &present_in_paths,
                                    VertexId last_v, EdgeId target_edge) const {
     auto next_edges = g_.OutgoingEdges(last_v);
-    map<EdgeId, double> candidates;
+    std::map<EdgeId, double> candidates;
 
     for (const auto edge: next_edges)
         if (present_in_paths.find(edge) != present_in_paths.end())
@@ -269,10 +275,8 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
                     sum += weight;
                 pair.second = sum / double(g_.length(pair.first));
             }
-            vector<std::pair<EdgeId, double>> to_sort(candidates.begin(),candidates.end());
-            sort(to_sort.begin(), to_sort.end(), [&] (std::pair<EdgeId, double> a, std::pair<EdgeId, double> b ) {
-                return a.second > b.second;
-            });
+            std::vector<std::pair<EdgeId, double>> to_sort(candidates.begin(),candidates.end());
+            std::sort(to_sort.begin(), to_sort.end(), std::greater<std::pair<EdgeId, double>>());
             if (to_sort[0].second > to_sort[1].second * weight_priority && to_sort[0].first != target_edge)
                 return to_sort[0].first;
             else
@@ -302,7 +306,7 @@ Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
             DEBUG("PathProcessor nonzero exit code, gap left unchanged");
             return orig_gap;
         }
-        set<EdgeId> present_in_paths;
+        std::set<EdgeId> present_in_paths;
         for (const auto &p: path_storage.paths())
             for (EdgeId e : p)
                 present_in_paths.insert(e);

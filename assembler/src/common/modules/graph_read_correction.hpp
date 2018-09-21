@@ -26,7 +26,7 @@ class TipsProjector {
 
     const omnigraph::UniquePathFinder<Graph> unique_path_finder_;
 
-    optional<EdgeId> UniqueAlternativeEdge(EdgeId tip, bool outgoing_tip) {
+    boost::optional<EdgeId> UniqueAlternativeEdge(EdgeId tip, bool outgoing_tip) {
         vector<EdgeId> edges;
         if (outgoing_tip) {
             utils::push_back_all(edges, gp_.g.OutgoingEdges(gp_.g.EdgeStart(tip)));
@@ -36,13 +36,13 @@ class TipsProjector {
         std::set<EdgeId> edges_set(edges.begin(), edges.end());
         edges_set.erase(tip);
         if (edges_set.size() == 1)
-            return optional<EdgeId>(*edges_set.begin());
+            return boost::optional<EdgeId>(*edges_set.begin());
         else
             return boost::none;
     }
 
-    vector<EdgeId> UniqueAlternativePath(EdgeId tip, bool outgoing_tip) {
-        optional<EdgeId> alt_edge = UniqueAlternativeEdge(tip, outgoing_tip);
+    std::vector<EdgeId> UniqueAlternativePath(EdgeId tip, bool outgoing_tip) {
+        boost::optional<EdgeId> alt_edge = UniqueAlternativeEdge(tip, outgoing_tip);
         if (alt_edge) {
             if (outgoing_tip) {
                 return unique_path_finder_.UniquePathForward(*alt_edge);
@@ -156,7 +156,7 @@ private:
 };
 
 template<class Graph, class Mapper>
-shared_ptr<GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
+std::shared_ptr<GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
         const Graph& graph, const Mapper& mapper) {
     return std::make_shared<GraphReadCorrector<Graph, Mapper>>(graph, mapper);
 }

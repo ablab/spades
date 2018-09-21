@@ -24,6 +24,7 @@
 #include "utils/standard_base.hpp"
 #include <cmath>
 #include <stack>
+#include <unordered_set>
 #include "math/xmath.h"
 
 namespace omnigraph {
@@ -38,7 +39,7 @@ struct SimplePathCondition {
 
     }
 
-    bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
+    bool operator()(EdgeId edge, const std::vector<EdgeId> &path) const {
         if (edge == g_.conjugate(edge))
             return false;
         for (size_t i = 0; i < path.size(); ++i)
@@ -58,7 +59,7 @@ struct SimplePathCondition {
 
 template<class Graph>
 bool TrivialCondition(typename Graph::EdgeId,
-        const vector<typename Graph::EdgeId>& path) {
+                      const std::vector<typename Graph::EdgeId> &path) {
     for (size_t i = 0; i < path.size(); ++i)
         for (size_t j = i + 1; j < path.size(); ++j)
             if (path[i] == path[j])
@@ -84,7 +85,7 @@ public:
 
     }
 
-    void HandleReversedPath(const vector<EdgeId>& reversed_path) override {
+    void HandleReversedPath(const std::vector<EdgeId> &reversed_path) override {
         vector<EdgeId> path = this->ReversePath(reversed_path);
         double path_cov = AvgCoverage(g_, path);
         for (size_t i = 0; i < path.size(); i++) {
@@ -114,17 +115,17 @@ template<class Graph>
 class BulgeGluer {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
+    typedef std::function<void(EdgeId edge, const std::vector<EdgeId> &path)> BulgeCallbackF;
     Graph& g_;
     BulgeCallbackF opt_callback_;
     std::function<void(EdgeId)> removal_handler_;
 
-    void InnerProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
+    void InnerProcessBulge(EdgeId edge, const std::vector<EdgeId> &path) {
 
         EnsureEndsPositionAligner aligner(CumulativeLength(g_, path),
                 g_.length(edge));
         size_t prefix_length = 0.;
-        vector<size_t> bulge_prefix_lengths;
+        std::vector<size_t> bulge_prefix_lengths;
 
         for (EdgeId e : path) {
             prefix_length += g_.length(e);
@@ -149,7 +150,7 @@ class BulgeGluer {
                     TRACE(
                             "Start: " << g_.str(g_.EdgeEnd(edge_to_split)));
 
-                    pair<EdgeId, EdgeId> split_result = g_.SplitEdge(
+                    std::pair<EdgeId, EdgeId> split_result = g_.SplitEdge(
                             edge_to_split,
                             bulge_prefix_lengths[i] - prev_length);
 
@@ -177,7 +178,7 @@ public:
 
     }
 
-    void operator()(EdgeId edge, const vector<EdgeId>& path) {
+    void operator()(EdgeId edge, const std::vector<EdgeId> &path) {
         if (opt_callback_)
             opt_callback_(edge, path);
 
@@ -212,17 +213,15 @@ class AlternativesAnalyzer {
     size_t max_edge_cnt_;
     size_t dijkstra_vertex_limit_;
 
-    static vector<EdgeId> EmptyPath() {
-        static vector<EdgeId> vec = {};
-        return vec;
+    static std::vector<EdgeId> EmptyPath() {
+        return {};
     }
 
     /**
      * Checks if alternative path is simple (doesn't contain conjugate edges, edge e or conjugate(e))
      * and its average coverage * max_relative_coverage_ is greater than g.coverage(e)
      */
-    bool BulgeCondition(EdgeId e, const vector<EdgeId>& path,
-            double path_coverage) const {
+    bool BulgeCondition(EdgeId e, const std::vector<EdgeId> &path, double path_coverage) const {
         return math::ge(path_coverage * max_relative_coverage_,
                 g_.coverage(e)) && SimplePathCondition<Graph>(g_)(e, path);
     }
@@ -247,7 +246,7 @@ public:
         << " max_relative_delta=" << max_relative_delta);
     }
 
-    vector<EdgeId> operator()(EdgeId e) const {
+    std::vector<EdgeId> operator()(EdgeId e) const {
         if (g_.length(e) > max_length_ || math::gr(g_.coverage(e), max_coverage_)) {
             return EmptyPath();
         }
@@ -363,7 +362,7 @@ protected:
 
 public:
 
-    typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
+    typedef std::function<void(EdgeId edge, const std::vector<EdgeId> &path)> BulgeCallbackF;
 
     BulgeRemover(Graph& g, size_t chunk_cnt,
             const AlternativesAnalyzer<Graph>& alternatives_analyzer,
@@ -463,7 +462,7 @@ private:
         return smart_set;
     }
 
-    bool CheckInteracting(const BulgeInfo& info, const std::unordered_set<EdgeId>& involved_edges) const {
+    bool CheckInteracting(const BulgeInfo &info, const std::unordered_set<EdgeId> &involved_edges) const {
         if (involved_edges.count(info.e))
             return true;
         for (EdgeId e : info.alternative)
@@ -501,7 +500,7 @@ private:
 
             double cov = this->g().coverage(e);
             if (buffer.empty()) {
-                max_cov = cov + max(buff_cov_diff_, buff_cov_rel_diff_ * cov);
+                max_cov = cov + std::max(buff_cov_diff_, buff_cov_rel_diff_ * cov);
                 DEBUG("Coverage interval [" << cov << ", " << max_cov << "]");
             }
 

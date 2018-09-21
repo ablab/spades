@@ -52,18 +52,17 @@ private:
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &g_;
-    string next_token_;
-    string input_;
+    std::string next_token_, input_;
     const SimplifInfoContainer settings_;
     /*(curr_iter + 1) / total_iter*/
     double iter_run_progress_;
-    std::queue<string> tokenized_input_;
+    std::queue<std::string> tokenized_input_;
 
     size_t max_length_bound_;
     double max_coverage_bound_;
     int requested_iterations_;
 
-    string ReadNext() {
+    std::string ReadNext() {
         if (!tokenized_input_.empty()) {
             next_token_ = tokenized_input_.front();
             tokenized_input_.pop();
@@ -226,8 +225,7 @@ public:
               max_coverage_bound_(0.),
               requested_iterations_(1) {
         DEBUG("Creating parser for string " << input);
-        using namespace boost;
-        vector<string> tmp_tokenized_input;
+        std::vector<std::string> tmp_tokenized_input;
         boost::split(tmp_tokenized_input, input_, boost::is_any_of(" ,;"), boost::token_compress_on);
         for (const auto &s : tmp_tokenized_input) {
             tokenized_input_.push(s);
@@ -245,8 +243,8 @@ public:
 
         VERIFY_MSG(next_token_ == "{", "Expected \"{\", but next token was " << next_token_);
         while (next_token_ == "{") {
-            size_t min_length_bound = numeric_limits<size_t>::max();
-            double min_coverage_bound = numeric_limits<double>::max();
+            size_t min_length_bound = std::numeric_limits<size_t>::max();
+            double min_coverage_bound = std::numeric_limits<double>::max();
             answer = func::Or(answer,
                              ParseConjunction(min_length_bound, min_coverage_bound));
             RelaxMax(max_length_bound_, min_length_bound);
@@ -395,7 +393,7 @@ AlternativesAnalyzer<Graph> ParseBRConfig(const Graph &g,
 }
 
 template<class Graph>
-AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const string &condition_str,
+AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const std::string &condition_str,
                 const SimplifInfoContainer &info,
                 EdgeRemovalHandlerF<Graph> removal_handler = 0) {
     if (condition_str.empty())
@@ -558,7 +556,7 @@ AlgoPtr<Graph> TipClipperInstance(Graph &g,
                                   const SimplifInfoContainer &info,
                                   EdgeRemovalHandlerF<Graph> removal_handler = nullptr,
                                   bool track_changes = true) {
-    return make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph, omnigraph::LengthComparator<Graph>>>(g,
+    return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph, omnigraph::LengthComparator<Graph>>>(g,
                                                                         AddTipCondition(g, condition),
                                                                         info.chunk_cnt(),
                                                                         removal_handler,
@@ -597,7 +595,7 @@ AlgoPtr<Graph> DeadEndInstance(Graph &g,
 
     ConditionParser<Graph> parser(g, dead_end_config.condition, info);
     auto condition = parser();
-    return make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph, omnigraph::LengthComparator<Graph>>>(g,
+    return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph, omnigraph::LengthComparator<Graph>>>(g,
             AddDeadEndCondition(g, condition), info.chunk_cnt(), removal_handler, /*canonical_only*/true,
             LengthComparator<Graph>(g), /*track changes*/true);
 }
@@ -632,7 +630,7 @@ AlgoPtr<Graph> BRInstance(Graph &g,
 
     if (br_config.parallel) {
         INFO("Creating parallel br instance");
-        return make_shared<omnigraph::ParallelBulgeRemover<Graph>>(g,
+        return std::make_shared<omnigraph::ParallelBulgeRemover<Graph>>(g,
                 info.chunk_cnt(),
                 br_config.buff_size,
                 br_config.buff_cov_diff,
@@ -643,7 +641,7 @@ AlgoPtr<Graph> BRInstance(Graph &g,
                 /*track_changes*/true);
     } else {
         INFO("Creating br instance");
-        return make_shared<omnigraph::BulgeRemover<Graph>>(g,
+        return std::make_shared<omnigraph::BulgeRemover<Graph>>(g,
                 info.chunk_cnt(),
                 alternatives_analyzer,
                 nullptr,
@@ -668,7 +666,7 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph &g,
                && math::le(flanking_cov.CoverageOfStart(e), cov_bound);
     };
 
-    return make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g, condition,
+    return std::make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g, condition,
                                                                  info.chunk_cnt(),
                                                                  removal_handler);
 }

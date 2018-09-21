@@ -6,7 +6,7 @@
 
 namespace path_extend {
 
-void path_extend::ContigWriter::OutputPaths(const PathContainer &paths, const vector<PathsWriterT>& writers) const {
+void path_extend::ContigWriter::OutputPaths(const PathContainer &paths, const std::vector<PathsWriterT> &writers) const {
     ScaffoldStorage storage;
 
     ScaffoldSequenceMaker scaffold_maker(g_);

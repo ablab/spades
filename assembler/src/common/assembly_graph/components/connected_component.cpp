@@ -3,22 +3,23 @@
 //
 
 #include "connected_component.hpp"
+#include <algorithm>
+#include <map>
 #include <stack>
-
+#include <vector>
 
 namespace debruijn_graph {
 
-
 void ConnectedComponentCounter::CalculateComponents() const {
-    map <EdgeId, size_t> component_ids;
-    vector <pair<size_t, size_t>> to_sort;
-    map<size_t, size_t> comp_size;
+    std::map<EdgeId, size_t> component_ids;
+    std::vector<std::pair<size_t, size_t>> to_sort;
+    std::map<size_t, size_t> comp_size;
     size_t cur_id = 0;
     for (auto e = g_.ConstEdgeBegin(); !e.IsEnd(); ++e) {
         if (component_ids.find(*e) == component_ids.end()) {
-            std::stack <EdgeId> next;
+            std::stack<EdgeId> next;
             next.push(*e);
-            set <EdgeId> used;
+            std::set<EdgeId> used;
             size_t ans = 0;
             while (!next.empty()) {
                 auto cur = next.top();
@@ -28,7 +29,7 @@ void ConnectedComponentCounter::CalculateComponents() const {
                 }
                 ans += g_.length(cur);
                 used.insert(cur);
-                vector <EdgeId> neighbours;
+                std::vector<EdgeId> neighbours;
                 neighbours.push_back(g_.conjugate(cur));
                 auto start = g_.EdgeStart(cur);
                 auto tmp = g_.IncidentEdges(start);
@@ -51,9 +52,10 @@ void ConnectedComponentCounter::CalculateComponents() const {
             cur_id ++;
         }
     }
+    //TODO: sort in descending order
     std::sort(to_sort.begin(), to_sort.end());
     std::reverse(to_sort.begin(), to_sort.end());
-    vector <size_t> perm(to_sort.size());
+    std::vector<size_t> perm(to_sort.size());
     for (size_t i = 0; i < to_sort.size(); i++) {
         perm[to_sort[i].second] = i;
         component_total_len_[i] = comp_size[to_sort[i].second];

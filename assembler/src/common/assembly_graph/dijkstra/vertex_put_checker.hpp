@@ -23,9 +23,9 @@ class EdgeComponentPutChecker {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
-    set<EdgeId> &edges_;
+    std::set<EdgeId> &edges_;
 public:
-    EdgeComponentPutChecker(set<EdgeId> &edges) : VertexPutChecker<Graph, distance_t>(), edges_(edges) { }
+    EdgeComponentPutChecker(std::set<EdgeId> &edges) : VertexPutChecker<Graph, distance_t>(), edges_(edges) { }
     bool Check(VertexId, EdgeId edge, distance_t) const {
         return edges_.count(edge) != 0;
     }
@@ -36,9 +36,9 @@ class SubgraphPutChecker {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
-    const set<VertexId> &subgraph_;
+    const std::set<VertexId> &subgraph_;
 public:
-    SubgraphPutChecker(const set<VertexId>& subgraph) : VertexPutChecker<Graph, distance_t>(),
+    SubgraphPutChecker(const std::set<VertexId>& subgraph) : VertexPutChecker<Graph, distance_t>(),
         subgraph_(subgraph) { }
     bool Check(VertexId vertex, EdgeId, distance_t) const {
         return subgraph_.count(vertex) != 0;

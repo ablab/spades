@@ -27,7 +27,7 @@ class ComplexTipFinder {
     size_t max_path_length_;
 
     double GetTipCoverage(const GraphComponent<Graph>& component) const {
-        double cov = numeric_limits<double>::max();
+        double cov = std::numeric_limits<double>::max();
         for (auto edge : component.edges()) {
             cov = std::min(cov, g_.coverage(edge));
         }
@@ -127,7 +127,7 @@ class ComplexTipClipper : public PersistentProcessingAlgorithm<Graph, typename G
     typedef PersistentProcessingAlgorithm<Graph, VertexId> base;
     typedef typename ComponentRemover<Graph>::HandlerF HandlerF;
 
-    string pics_folder_;
+    std::string pics_folder_;
     ComplexTipFinder<Graph> finder_;
     ComponentRemover<Graph> component_remover_;
 
@@ -136,14 +136,14 @@ public:
     ComplexTipClipper(Graph& g, double relative_coverage,
                       size_t max_edge_len, size_t max_path_len,
                       size_t chunk_cnt,
-                      const string& pics_folder = "" ,
+                      const std::string &pics_folder = "" ,
                       HandlerF removal_handler = nullptr) :
             base(g, nullptr, false, std::less<VertexId>(), /*track changes*/false),
             pics_folder_(pics_folder),
             finder_(g, relative_coverage, max_edge_len, max_path_len),
             component_remover_(g, removal_handler) {
         if (!pics_folder_.empty()) {
-            make_dir(pics_folder_);
+            fs::make_dir(pics_folder_);
         }
         this->interest_el_finder_ = std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(
                 [&](VertexId v) {return !finder_(v).empty();}, chunk_cnt);

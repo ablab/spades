@@ -19,7 +19,7 @@ inline size_t FindMaxISRightQuantile(const config::dataset& dataset_info, bool i
         if (lib.is_paired()) {
             if (lib.is_mate_pair() && !include_mate_pairs)
                 continue;
-            res = max(res, (size_t) lib.data().insert_size_right_quantile);
+            res = std::max(res, (size_t) lib.data().insert_size_right_quantile);
         }
     }
     return res;
@@ -65,7 +65,7 @@ struct PathExtendParamsContainer {
         max_polisher_gap = FindMaxISRightQuantile(dataset_info);
         //TODO: params
         if (HasLongReads(dataset_info))
-            max_polisher_gap = max(max_polisher_gap, size_t(10000));
+            max_polisher_gap = std::max(max_polisher_gap, size_t(10000));
 
         min_edge_len = 0;
 
@@ -108,7 +108,8 @@ public:
         dataset_info_(dataset_info),
         params_(params) { }
 
-    pe_config::ParamSetT::ExtensionOptionsT GetExtensionOpts(shared_ptr<PairedInfoLibrary> lib, const pe_config::ParamSetT& pset) const;
+    pe_config::ParamSetT::ExtensionOptionsT GetExtensionOpts(std::shared_ptr<PairedInfoLibrary> lib,
+                                                             const pe_config::ParamSetT &pset) const;
 
     bool HasOnlyMPLibs() const;
 

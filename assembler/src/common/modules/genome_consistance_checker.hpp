@@ -142,7 +142,7 @@ class GenomeConsistenceChecker {
     const size_t unresolvable_len_;
 
     const ScaffoldingUniqueEdgeStorage &storage_;
-    const vector<path_extend::GraphCoverageMap> &long_reads_cov_map_;
+    const std::vector<path_extend::GraphCoverageMap> &long_reads_cov_map_;
     static const size_t SIGNIFICANT_LENGTH_LOWER_LIMIT = 10000;
     GenomeInfo genome_info_;
     //Edges containing zero point for each reference
@@ -154,18 +154,18 @@ class GenomeConsistenceChecker {
 
     void PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const;
 
-    void ClassifyPosition(size_t prev_pos, size_t cur_pos, const BidirectionalPath & path, PathScore &res) const;
+    void ClassifyPosition(size_t prev_pos, size_t cur_pos, const BidirectionalPath &path, PathScore &res) const;
 
     PathScore InternalCountMisassemblies(const BidirectionalPath &path) const;
 
 //constructs longest sequence of consequetive ranges, stores result in used_mappings
-    vector<MappingRange> FindBestRangeSequence(const set<MappingRange>& mappings) const;
+    std::vector<MappingRange> FindBestRangeSequence(const set<MappingRange>& mappings) const;
 
     string ChromosomeByUniqueEdge(const EdgeId &e,
                                   const EdgesPositionHandler<Graph> &tmp_edge_pos,
                                   size_t &total) const;
 
-    pair<MappingRange, size_t> Merge(const vector<MappingRange>& mappings) const;
+    std::pair<MappingRange, size_t> Merge(const std::vector<MappingRange> &mappings) const;
 
     void FillPos(EdgeId e, const EdgesPositionHandler<Graph> &tmp_edge_pos);
 
@@ -181,12 +181,12 @@ class GenomeConsistenceChecker {
 
     void TheoreticLenStats(vector<size_t> theoretic_lens) const;
 
-    map<string, size_t> TotalAlignedLengths(const EdgesPositionHandler<Graph> &tmp_edge_pos, EdgeId e) const;;
+    std::map<string, size_t> TotalAlignedLengths(const EdgesPositionHandler<Graph> &tmp_edge_pos, EdgeId e) const;
 
     MappingPathT ConstructEdgeOrder(const std::string &chr_name) const;
 
     //returns lengths of mapped regions, divided by "unresolvable_len_"
-    vector<size_t> MappedRegions(const MappingPathT &mapping_path) const;
+    std::vector<size_t> MappedRegions(const MappingPathT &mapping_path) const;
 
     bool IsCloseToEnd(MappingRange range, const ChromosomeInfo &chr_info) const {
         auto last_range = gp_.edge_pos.GetUniqueEdgePosition(chr_info.EdgeAt(chr_info.size() - 1), chr_info.name());

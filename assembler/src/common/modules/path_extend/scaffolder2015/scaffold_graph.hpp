@@ -203,9 +203,9 @@ public:
 
     const debruijn_graph::Graph & AssemblyGraph() const;
 
-    vector<ScaffoldEdge> OutgoingEdges(ScaffoldVertex assembly_graph_edge) const;
+    std::vector<ScaffoldEdge> OutgoingEdges(ScaffoldVertex assembly_graph_edge) const;
 
-    vector<ScaffoldEdge> IncomingEdges(ScaffoldVertex assembly_graph_edge) const;
+    std::vector<ScaffoldEdge> IncomingEdges(ScaffoldVertex assembly_graph_edge) const;
 
     size_t OutgoingEdgeCount(ScaffoldVertex assembly_graph_edge) const;
 
@@ -219,7 +219,7 @@ public:
 
     ScaffoldEdge UniqueIncoming(ScaffoldVertex assembly_graph_edge) const;
 
-    void Print(ostream &os) const;
+    void Print(std::ostream &os) const;
 
 };
 

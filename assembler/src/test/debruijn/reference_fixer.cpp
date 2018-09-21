@@ -14,6 +14,8 @@
 #include "io/reads/wrapper_collection.hpp"
 #include "io/reads/osequencestream.hpp"
 
+using namespace std;
+
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
     log->add_writer(std::make_shared<logging::console_writer>());

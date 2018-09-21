@@ -14,9 +14,9 @@ using namespace debruijn_graph;
 struct ExtenderTriplet {
     io::LibraryType lib_type_;
     size_t lib_index_;
-    shared_ptr<PathExtender> extender_;
+    std::shared_ptr<PathExtender> extender_;
 
-    ExtenderTriplet(io::LibraryType lib_type, size_t lib_index, shared_ptr<PathExtender> extender):
+    ExtenderTriplet(io::LibraryType lib_type, size_t lib_index, std::shared_ptr<PathExtender> extender):
         lib_type_(lib_type), lib_index_(lib_index), extender_(extender) {
 
     }
@@ -28,9 +28,9 @@ struct ExtenderTriplet {
     }
 };
 
-typedef vector<ExtenderTriplet> ExtenderTriplets;
+typedef std::vector<ExtenderTriplet> ExtenderTriplets;
 
-typedef vector<shared_ptr<PathExtender>> Extenders;
+typedef std::vector<std::shared_ptr<PathExtender>> Extenders;
 
 inline Extenders ExtractExtenders(const ExtenderTriplets& triplets) {
     Extenders result;
@@ -79,33 +79,35 @@ public:
 
 private:
 
-    shared_ptr<SimpleExtender> MakePEExtender(size_t lib_index, bool investigate_loops) const;
+    std::shared_ptr<SimpleExtender> MakePEExtender(size_t lib_index, bool investigate_loops) const;
 
     Extenders MakeMPExtenders(const ScaffoldingUniqueEdgeStorage &storage) const;
 
-    shared_ptr<ExtensionChooser> MakeLongReadsExtensionChooser(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
+    std::shared_ptr<ExtensionChooser> MakeLongReadsExtensionChooser(size_t lib_index,
+                                                                    const GraphCoverageMap &read_paths_cov_map) const;
 
-    shared_ptr<SimpleExtender> MakeLongReadsExtender(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
+    std::shared_ptr<SimpleExtender> MakeLongReadsExtender(size_t lib_index,
+                                                          const GraphCoverageMap &read_paths_cov_map) const;
 
-    shared_ptr<SimpleExtender> MakeLongEdgePEExtender(size_t lib_index,
+    std::shared_ptr<SimpleExtender> MakeLongEdgePEExtender(size_t lib_index,
                                                       bool investigate_loops) const;
 
-    shared_ptr<GapAnalyzer> MakeGapAnalyzer(double is_variation) const;
+    std::shared_ptr<GapAnalyzer> MakeGapAnalyzer(double is_variation) const;
 
-    shared_ptr<PathExtender> MakeScaffoldingExtender(size_t lib_index) const;
+    std::shared_ptr<PathExtender> MakeScaffoldingExtender(size_t lib_index) const;
 
-    shared_ptr<PathExtender> MakeRNAScaffoldingExtender(size_t lib_index) const;
+    std::shared_ptr<PathExtender> MakeRNAScaffoldingExtender(size_t lib_index) const;
 
-    shared_ptr<PathExtender> MakeMatePairScaffoldingExtender
-        (size_t lib_index, const ScaffoldingUniqueEdgeStorage &storage) const;
+    std::shared_ptr<PathExtender> MakeMatePairScaffoldingExtender(size_t lib_index,
+                                                                  const ScaffoldingUniqueEdgeStorage &storage) const;
 
-    shared_ptr<SimpleExtender> MakeCoordCoverageExtender(size_t lib_index) const;
+    std::shared_ptr<SimpleExtender> MakeCoordCoverageExtender(size_t lib_index) const;
 
-    shared_ptr<SimpleExtender> MakeRNAExtender(size_t lib_index, bool investigate_loops) const;
+    std::shared_ptr<SimpleExtender> MakeRNAExtender(size_t lib_index, bool investigate_loops) const;
 
-    shared_ptr<SimpleExtender> MakeSimpleCoverageExtender(size_t lib_index) const;
+    std::shared_ptr<SimpleExtender> MakeSimpleCoverageExtender(size_t lib_index) const;
 
-    void PrintExtenders(const vector<shared_ptr<PathExtender>> &extenders) const;
+    void PrintExtenders(const std::vector<std::shared_ptr<PathExtender>> &extenders) const;
 
 };
 

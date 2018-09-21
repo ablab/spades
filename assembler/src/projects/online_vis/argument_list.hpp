@@ -21,14 +21,14 @@ namespace online_visualization {
       ArgumentList() {
       }
 
-      ArgumentList(stringstream& stream) {
+      ArgumentList(std::stringstream &stream) {
         DEBUG("Splitting in tokens");
         vector<string> args = SplitInTokens(stream);
         DEBUG("Parsing args");
         ParseArguments(args);
       }
 
-      string operator[](const string& option_name) const {
+      std::string operator[](const std::string &option_name) const {
         // usual option
         if (options.find(option_name) == options.end()) {
           return "null";
@@ -37,37 +37,37 @@ namespace online_visualization {
         return result;
       }
 
-      bool contains(string short_opt) const {
+      bool contains(const std::string &short_opt) const {
         return (short_options.count(short_opt) > 0);
       }
 
-      const vector<string>& GetAllArguments() const {
+      const std::vector<std::string> &GetAllArguments() const {
         return arguments;
       }
 
-      string Preprocess(const History& history) {
-        vector<string> new_arguments;
+      std::string Preprocess(const History &history) {
+        std::vector<std::string> new_arguments;
 
         for (auto iter = arguments.begin(); iter != arguments.end(); ++iter) {
           string arg = *iter;
           TRACE("Argument " << arg);
           if (arg == "!$") {
             TRACE("!$");
-            stringstream ss(history.back());
+            std::stringstream ss(history.back());
             TRACE("Last command " << ss.str());
             ArgumentList arg_list(ss);
-            const vector<string>& args = arg_list.GetAllArguments();
-            string new_arg = args[args.size() - 1];
+            const auto &args = arg_list.GetAllArguments();
+            const auto &new_arg = args[args.size() - 1];
             TRACE("All args " << args);
             TRACE("New arg " << new_arg);
             new_arguments.push_back(new_arg);
           }
           else if (arg[0] == '!') {
-            stringstream ss(history.back());
+            std::stringstream ss(history.back());
             size_t i = 1;
             if (arg[1] == '-')
               i = 2;
-            string num_of_command = "";
+            std::string num_of_command;
             while (i < arg.size() && arg[i] != ':') {
               num_of_command = num_of_command + arg[i];
               ++i;
@@ -79,7 +79,7 @@ namespace online_visualization {
 
             if (IsNumber(num_of_command) && arg[i] == ':') {
               ++i;
-              string num_of_arg = "";
+              std::string num_of_arg;
               while (i < arg.size()) {
                 num_of_arg = num_of_arg + arg[i];
                 ++i;
@@ -91,10 +91,10 @@ namespace online_visualization {
                   FireNumberOutOfBounds(command_num);
                   return "";
                 }
-                stringstream ss(history[int(history.size()) - GetInt(num_of_command)]);
+                std::stringstream ss(history[int(history.size()) - GetInt(num_of_command)]);
                 TRACE("Got the command " << ss.str());
                 ArgumentList arg_list(ss);
-                string new_arg;
+                std::string new_arg;
                 // $ means the last one
                 if (num_of_arg == "$")
                   new_arg = arg_list.GetAllArguments()[arg_list.GetAllArguments().size() - 1];
@@ -125,7 +125,7 @@ namespace online_visualization {
           }
         }
         arguments = new_arguments;
-        stringstream result;
+        std::stringstream result;
         for (auto iter = options.begin(); iter != options.end(); ++iter)
           result << iter->first + "=" + iter->second + " ";
         for (auto iter = short_options.begin(); iter != short_options.end(); ++iter)
@@ -140,8 +140,8 @@ namespace online_visualization {
       }
 
     private:
-      const vector<string> SplitInTokens(stringstream& args) const {
-        vector<string> answer;
+      const std::vector<std::string> SplitInTokens(std::stringstream &args) const {
+        std::vector<std::string> answer;
         while (!args.eof()) {
           string arg;
           args >> arg;
@@ -155,9 +155,9 @@ namespace online_visualization {
         return answer;
       }
 
-      pair<string, string> ParseOption(const string& arg) const {
-        string opt_name;
-        string opt_value = "";
+      std::pair<string, string> ParseOption(const std::string &arg) const {
+        std::string opt_name;
+        std::string opt_value = "";
 
         size_t i = 2;
         for (; i < arg.size() && arg[i] != '='; ++i) {
@@ -172,11 +172,11 @@ namespace online_visualization {
           opt_value = "true";
 
 
-        return make_pair(opt_name, opt_value);
+        return {opt_name, opt_value};
       }
 
-      vector<string> ParseShortOption(const string& arg) const {
-        vector<string> result;
+      std::vector<std::string> ParseShortOption(const std::string &arg) const {
+        std::vector<std::string> result;
         size_t i = 1;
         for (; i < arg.size(); ++i) {
           string s = "";
@@ -186,18 +186,18 @@ namespace online_visualization {
         return result;
       }
 
-      void ParseArguments(const vector<string>& args) {
+      void ParseArguments(const std::vector<std::string> &args) {
         for (size_t i = 0; i < args.size(); ++i) {
           TRACE("Parsing argument " << args[i]);
           if (args[i][0] == '-' && args[i][1] == '-') {
             //--smth=<smth>
             TRACE("it is an option");
-            pair<string, string> opt_val = ParseOption(args[i]);
+            std::pair<std::string, std::string> opt_val = ParseOption(args[i]);
             options.insert(opt_val);
           }
           else if (args[i][0] == '-') {
             TRACE("it is a short option");
-            const vector<string>& short_opt = ParseShortOption(args[i]);
+            const std::vector<std::string>& short_opt = ParseShortOption(args[i]);
             TRACE("short options in a vector " << short_opt);
             short_options.insert(short_opt.begin(), short_opt.end());
           }
@@ -207,9 +207,9 @@ namespace online_visualization {
           }
         }
       }
-      map<string, string> options;
-      set<string> short_options;
-      vector<string> arguments;
+      std::map<std::string, std::string> options;
+      std::set<std::string> short_options;
+      std::vector<std::string> arguments;
 
       DECL_LOGGER("ArgumentList");
   };

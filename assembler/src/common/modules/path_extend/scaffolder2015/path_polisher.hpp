@@ -1,3 +1,10 @@
+//***************************************************************************
+//* Copyright (c) 2015-2018 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "assembly_graph/paths/path_processor.hpp"
@@ -62,13 +69,13 @@ public:
 };
 
 class MatePairGapCloser: public TargetEdgeGapCloser {
-    const shared_ptr<PairedInfoLibrary> lib_;
-    const ScaffoldingUniqueEdgeStorage& storage_;
+    const std::shared_ptr<PairedInfoLibrary> lib_;
+    const ScaffoldingUniqueEdgeStorage &storage_;
 //TODO: config? somewhere else?
     static constexpr double weight_priority = 5;
 
-    EdgeId FindNext(const BidirectionalPath& path,
-                    const set<EdgeId>& present_in_paths,
+    EdgeId FindNext(const BidirectionalPath &path,
+                    const std::set<EdgeId> &present_in_paths,
                     VertexId last_v, EdgeId target_edge) const;
 protected:
     Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const override;
@@ -76,9 +83,9 @@ protected:
     DECL_LOGGER("MatePairGapCloser")
 
 public:
-    MatePairGapCloser(const Graph& g, size_t max_path_len,
-                      const shared_ptr<PairedInfoLibrary> lib,
-                      const ScaffoldingUniqueEdgeStorage& storage):
+    MatePairGapCloser(const Graph &g, size_t max_path_len,
+                      const std::shared_ptr<PairedInfoLibrary> lib,
+                      const ScaffoldingUniqueEdgeStorage &storage):
             TargetEdgeGapCloser(g, max_path_len), lib_(lib), storage_(storage) {}
 };
 
@@ -115,7 +122,7 @@ class PathPolisher {
     static const size_t MAX_POLISH_ATTEMPTS = 5;
 
     const conj_graph_pack &gp_;
-    vector<shared_ptr<PathGapCloser>> gap_closers_;
+    std::vector<std::shared_ptr<PathGapCloser>> gap_closers_;
 
     void InfoAboutGaps(const PathContainer& result);
 
@@ -124,7 +131,7 @@ class PathPolisher {
 
 public:
     PathPolisher(const conj_graph_pack &gp,
-                               const vector<shared_ptr<PathGapCloser>> &gap_closers):
+                 const std::vector<std::shared_ptr<PathGapCloser>> &gap_closers):
             gp_(gp), gap_closers_(gap_closers) {
     }
 

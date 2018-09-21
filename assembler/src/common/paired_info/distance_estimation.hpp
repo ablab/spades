@@ -65,9 +65,9 @@ public:
     virtual ~AbstractDistanceEstimator() { }
 
 protected:
-    typedef pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
-    typedef vector<pair<int, double> > EstimHist;
-    typedef vector<size_t> GraphLengths;
+    typedef std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
+    typedef std::vector<std::pair<int, double>> EstimHist;
+    typedef std::vector<size_t> GraphLengths;
     typedef std::map<debruijn_graph::EdgeId, GraphLengths> LengthMap;
 
     const debruijn_graph::Graph &graph() const { return graph_; }
@@ -93,9 +93,9 @@ private:
 
 class DistanceEstimator : public AbstractDistanceEstimator {
     typedef AbstractDistanceEstimator base;
-    typedef vector<size_t> GraphLengths;
-    typedef vector<pair<int, double> > EstimHist;
-    typedef pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
+    typedef std::vector<size_t> GraphLengths;
+    typedef std::vector<std::pair<int, double>> EstimHist;
+    typedef std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
 
 protected:
     typedef typename base::InPairedIndex InPairedIndex;
@@ -130,8 +130,8 @@ private:
                              const InPairedIndex &pi,
                              PairedInfoBuffer<debruijn_graph::Graph> &result) const;
 
-    virtual const string Name() const {
-        static const string my_name = "SIMPLE";
+    virtual const std::string Name() const {
+        static const std::string my_name = "SIMPLE";
         return my_name;
     }
 

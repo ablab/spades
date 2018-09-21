@@ -30,9 +30,9 @@ class ComponentLenCalculator {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &graph_;
-    set<EdgeId> &component_;
+    std::set<EdgeId> &component_;
 public:
-    ComponentLenCalculator(const Graph &graph, set<EdgeId> &component) :
+    ComponentLenCalculator(const Graph &graph, std::set<EdgeId> &component) :
         graph_(graph), component_(component) { }
 
     distance_t GetLength(EdgeId edge) const{
@@ -67,11 +67,11 @@ class AlongPathLengthCalculator {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &graph_;
-    set<VertexId> vertex_path_;
+    std::set<VertexId> vertex_path_;
     distance_t bound_;
 
-    set<VertexId> CollectVertices(vector<EdgeId> &edge_path){
-        set<VertexId> result;
+    std::set<VertexId> CollectVertices(std::vector<EdgeId> &edge_path){
+        std::set<VertexId> result;
         for(auto e = edge_path.begin(); e != edge_path.end(); e++){
             result.insert(this->graph_.EdgeStart(*e));
             result.insert(this->graph_.EdgeEnd(*e));
@@ -88,7 +88,7 @@ public:
     distance_t GetLength(EdgeId edge) const{
         if (vertex_path_.count(this->graph_.EdgeStart(edge))
                 && vertex_path_.count(this->graph_.EdgeEnd(edge)))
-            return min(int(graph_.length(edge)), 200);
+            return std::min(int(graph_.length(edge)), 200);
         return graph_.length(edge);
     }
 };
@@ -100,7 +100,7 @@ class PathIgnoringLengthCalculator {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &graph_;
-    set<EdgeId> path_;
+    std::set<EdgeId> path_;
 
 public:
     PathIgnoringLengthCalculator(const Graph &graph, const vector<EdgeId> &edge_path) :

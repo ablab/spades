@@ -25,21 +25,21 @@ class PathExtendLauncher {
     conj_graph_pack& gp_;
     PELaunchSupport support_;
 
-    shared_ptr<ContigNameGenerator> contig_name_generator_;
+    std::shared_ptr<ContigNameGenerator> contig_name_generator_;
     ContigWriter writer_;
 
     UniqueData unique_data_;
 
-    vector<shared_ptr<ConnectionCondition>>
-        ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage& edge_storage) const;
+    std::vector<std::shared_ptr<ConnectionCondition>>
+        ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage &edge_storage) const;
 
-    shared_ptr<scaffold_graph::ScaffoldGraph>
-        ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage& edge_storage) const;
+    std::shared_ptr<scaffold_graph::ScaffoldGraph>
+        ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const;
 
     void PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
-                            const set<EdgeId>& main_edge_set,
-                            const debruijn_graph::GenomeConsistenceChecker& genome_checker,
-                            const string& filename) const;
+                            const set<EdgeId> &main_edge_set,
+                            const debruijn_graph::GenomeConsistenceChecker &genome_checker,
+                            const std::string &filename) const;
 
     void MakeAndOutputScaffoldGraph() const;
 
@@ -55,7 +55,7 @@ class PathExtendLauncher {
 
     void FillLongReadsCoverageMaps();
 
-    void DebugOutputPaths(const PathContainer& paths, const string& name) const;
+    void DebugOutputPaths(const PathContainer &paths, const std::string &name) const;
 
     void RemoveOverlapsAndArtifacts(PathContainer &paths, GraphCoverageMap &cover_map, const PathExtendResolver &resolver) const;
 

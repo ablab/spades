@@ -15,10 +15,10 @@
 #ifndef EDGES_POSITION_HANDLER_HPP_
 #define EDGES_POSITION_HANDLER_HPP_
 
-//#include "utils.hpp"
 #include "utils/stl_utils.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
+#include <map>
 
 namespace omnigraph {
 

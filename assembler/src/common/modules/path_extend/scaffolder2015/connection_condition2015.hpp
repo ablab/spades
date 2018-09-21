@@ -9,10 +9,13 @@
 #include <map>
 #include <set>
 
-
 namespace path_extend {
+
 using debruijn_graph::EdgeId;
 using debruijn_graph::Graph;
+
+typedef std::set<debruijn_graph::EdgeId> EdgeSet;
+typedef std::map<debruijn_graph::EdgeId, double> Connections;
 
 //De Bruijn graph edge condition interface
 class LengthLowerBound : public omnigraph::EdgeCondition<Graph> {
@@ -42,8 +45,8 @@ protected:
 public:
 // Outputs the edges e is connected with.
 //TODO  performance issue: think about inside filtering. Return only unique connected edges?
-    virtual map<EdgeId, double> ConnectedWith(EdgeId e) const = 0;
-    virtual map<EdgeId, double> ConnectedWith(EdgeId e, const ScaffoldingUniqueEdgeStorage& storage) const;
+    virtual Connections ConnectedWith(EdgeId e) const = 0;
+    virtual Connections ConnectedWith(EdgeId e, const ScaffoldingUniqueEdgeStorage &storage) const;
     virtual int GetMedianGap(EdgeId e1, EdgeId e2) const = 0;
     virtual size_t GetLibIndex() const = 0;
     virtual ~ConnectionCondition() {
@@ -54,7 +57,7 @@ public:
 class PairedLibConnectionCondition : public ConnectionCondition {
 protected:
     const Graph &graph_;
-    shared_ptr <PairedInfoLibrary> lib_;
+    std::shared_ptr<PairedInfoLibrary> lib_;
     size_t lib_index_;
 //Minimal number of mate pairs to call connection sound
     size_t min_read_count_;
@@ -64,11 +67,11 @@ public:
     int right_dist_delta_;
 
     PairedLibConnectionCondition(const Graph &graph,
-                                 shared_ptr <PairedInfoLibrary> lib,
+                                 std::shared_ptr<PairedInfoLibrary> lib,
                                  size_t lib_index,
                                  size_t min_read_count);
     size_t GetLibIndex() const override;
-    map <EdgeId, double> ConnectedWith(EdgeId e) const override;
+    Connections ConnectedWith(EdgeId e) const override;
     double GetWeight(EdgeId e1, EdgeId e2) const;
 //Returns median gap size
     int GetMedianGap (EdgeId e1, EdgeId e2) const override;
@@ -91,8 +94,8 @@ public:
                                  size_t lib_index,
                                  size_t min_read_count, const GraphCoverageMap& cov_map);
     size_t GetLibIndex() const override;
-    map<EdgeId, double> ConnectedWith(EdgeId e) const override;
-    map<EdgeId, double> ConnectedWith(EdgeId e, const ScaffoldingUniqueEdgeStorage& storage) const override;
+    Connections ConnectedWith(EdgeId e) const override;
+    Connections ConnectedWith(EdgeId e, const ScaffoldingUniqueEdgeStorage &storage) const override;
 // Returns median gap size
     int GetMedianGap (EdgeId e1, EdgeId e2) const override;
 
@@ -103,7 +106,7 @@ public:
 //Should it be removed after ConnectedWith using unique storage was introduced?
 class ScaffoldGraphPairedConnectionCondition: public PairedLibConnectionCondition {
 protected:
-    const set<EdgeId>& graph_edges_;
+    const EdgeSet &graph_edges_;
 
     size_t always_add_;
     size_t never_add_;
@@ -111,14 +114,14 @@ protected:
 
 public:
     ScaffoldGraphPairedConnectionCondition(const Graph &graph,
-                                      const set<EdgeId>& graph_edges,
-                                      shared_ptr <PairedInfoLibrary> lib,
-                                      size_t lib_index,
-                                      size_t always_add,
-                                      size_t never_add,
-                                      double relative_threshold);
+                                           const EdgeSet &graph_edges,
+                                           std::shared_ptr<PairedInfoLibrary> lib,
+                                           size_t lib_index,
+                                           size_t always_add,
+                                           size_t never_add,
+                                           double relative_threshold);
 
-    map<EdgeId, double> ConnectedWith(EdgeId e) const override;
+    std::map<EdgeId, double> ConnectedWith(EdgeId e) const override;
 
 };
 
@@ -130,13 +133,13 @@ protected:
     const Graph &g_;
 //Maximal gap to the connection.
     size_t max_connection_length_;
-    set<EdgeId> interesting_edge_set_;
-    mutable map<EdgeId, map<EdgeId, double>> stored_distances_;
+    EdgeSet interesting_edge_set_;
+    mutable std::map<EdgeId, Connections> stored_distances_;
 public:
     AssemblyGraphConnectionCondition(const Graph &g, size_t max_connection_length,
-                                     const ScaffoldingUniqueEdgeStorage& unique_edges);
+                                     const ScaffoldingUniqueEdgeStorage &unique_edges);
     void AddInterestingEdges(func::TypedPredicate<typename Graph::EdgeId> edge_condition);
-    map<EdgeId, double> ConnectedWith(EdgeId e) const override;
+    Connections ConnectedWith(EdgeId e) const override;
     size_t GetLibIndex() const override;
     int GetMedianGap(EdgeId, EdgeId ) const override;
 };

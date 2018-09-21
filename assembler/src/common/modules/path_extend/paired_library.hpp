@@ -159,9 +159,9 @@ public:
 };
 
 template<class Index>
-shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
-                                         const debruijn_graph::config::dataset::Library &lib,
-                                         const Index &paired_index) {
+std::shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph &g,
+                                              const debruijn_graph::config::dataset::Library &lib,
+                                              const Index &paired_index) {
     //why all those local variables? :)
     size_t read_length = lib.data().unmerged_read_length;
     size_t is = (size_t) lib.data().mean_insert_size;
@@ -169,15 +169,15 @@ shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
     int is_max = (int) lib.data().insert_size_right_quantile;
     double var = lib.data().insert_size_deviation;
     bool is_mp = lib.type() == io::LibraryType::MatePairs || lib.type() == io::LibraryType::HQMatePairs;
-    return make_shared<PairedInfoLibraryWithIndex<decltype(paired_index)>>(g,
-                                                                           read_length,
-                                                                           is,
-                                                                           is_min > 0 ? size_t(is_min) : 0,
-                                                                           is_max > 0 ? size_t(is_max) : 0,
-                                                                           var,
-                                                                           paired_index,
-                                                                           is_mp,
-                                                                           lib.data().insert_size_distribution);
+    return std::make_shared<PairedInfoLibraryWithIndex<decltype(paired_index)>>(g,
+                                                                                read_length,
+                                                                                is,
+                                                                                is_min > 0 ? size_t(is_min) : 0,
+                                                                                is_max > 0 ? size_t(is_max) : 0,
+                                                                                var,
+                                                                                paired_index,
+                                                                                is_mp,
+                                                                                lib.data().insert_size_distribution);
 }
 
 }  // path extend

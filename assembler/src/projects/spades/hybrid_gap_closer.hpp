@@ -18,9 +18,9 @@
 
 namespace debruijn_graph {
 namespace gap_closing {
-typedef vector<GapDescription> GapInfos;
+typedef std::vector<GapDescription> GapInfos;
 
-typedef pair<EdgeId, EdgeId> EdgePair;
+typedef std::pair<EdgeId, EdgeId> EdgePair;
 inline EdgePair Conjugate(const Graph& g, EdgePair ep) {
     return EdgePair(g.conjugate(ep.second), g.conjugate(ep.first));
 }
@@ -53,8 +53,8 @@ private:
 
     const Graph& g_;
 
-    map<EdgeId, GapInfos> inner_index_;
-    vector<EdgeId> index_;
+    std::map<EdgeId, GapInfos> inner_index_;
+    std::vector<EdgeId> index_;
 
     DECL_LOGGER("GapStorage");
 
@@ -65,7 +65,6 @@ private:
     size_t FillIndex() {
         VERIFY(index_.empty());
         index_.reserve(inner_index_.size());
-        set<EdgeId> tmp;
         for (const auto& kv : inner_index_) {
             index_.push_back(kv.first);
         }
@@ -81,7 +80,7 @@ private:
     //Function should return true if corresponding part of the index should be removed
     void FilterByCandidates(const CandidatesPred &filter_f) {
         for (auto it = inner_index_.begin(); it != inner_index_.end(); ) {
-            vector<GapDescription>& gaps = it->second;
+            auto &gaps = it->second;
             auto ep_ranges = EdgePairGaps(gaps);
 
             auto copy_dest = gaps.begin();
@@ -114,7 +113,7 @@ private:
 
     void FilterByDescription(const DescriptionPred &filter_f) {
         for (auto it = inner_index_.begin(); it != inner_index_.end(); ) {
-            vector<GapDescription>& gaps = it->second;
+            auto &gaps = it->second;
             auto res_it = std::remove_if(gaps.begin(), gaps.end(), filter_f);
             if (res_it == gaps.begin()) {
                 inner_index_.erase(it++);
@@ -125,8 +124,8 @@ private:
         }
     }
 
-    vector<EdgeId> SecondEdges(const GapInfos& edge_gaps) const {
-        vector<EdgeId> jump_edges;
+    std::vector<EdgeId> SecondEdges(const GapInfos& edge_gaps) const {
+        std::vector<EdgeId> jump_edges;
         for (auto it_pair : EdgePairGaps(edge_gaps)) {
             jump_edges.push_back(it_pair.first->right());
         }
@@ -152,7 +151,7 @@ private:
         ConnectionSet answer;
         for (auto it = all_connections.begin(), end_it = all_connections.end(); it != end_it; ) {
             EdgeId left = it->first;
-            vector<EdgeId> right_options;
+            std::vector<EdgeId> right_options;
             auto inner_it = it;
             for (; inner_it != end_it && inner_it->first == left; ++inner_it) {
                 right_options.push_back(inner_it->second);
@@ -177,8 +176,7 @@ private:
     }
 
     std::set<EdgeId> AmbiguouslyExtending() const {
-        std::set<EdgeId> answer;
-        std::set<EdgeId> left_edges;
+        std::set<EdgeId> answer, left_edges;
         for (const auto& e_gaps : inner_index_) {
             EdgeId e1 = e_gaps.first;
             for (EdgeId e2: SecondEdges(e_gaps.second)) {
@@ -217,7 +215,7 @@ private:
         });
 
         DEBUG("Filtering ambiguous situations");
-        std::set<EdgeId> ambiguously_extending = AmbiguouslyExtending();
+        auto ambiguously_extending = AmbiguouslyExtending();
         FilterByEdgePair([&](const EdgePair &ep) {
             return ambiguously_extending.count(ep.first) ||
                     ambiguously_extending.count(g_.conjugate(ep.second));
@@ -230,7 +228,7 @@ public:
             : g_(g) {
     }
 
-    const map<EdgeId, GapInfos>& inner_index() const {
+    const std::map<EdgeId, GapInfos> &inner_index() const {
         return inner_index_;
     };
 
@@ -262,24 +260,24 @@ public:
         std::swap(index_, empty.index_);
     }
 
-    void DumpToFile(const string filename) const {
-        ofstream filestr(filename);
+    void DumpToFile(const std::string &filename) const {
+        std::ofstream filestr(filename);
         for (const auto& e_gaps : inner_index_) {
             EdgeId e = e_gaps.first;
             auto gaps = e_gaps.second;
             DEBUG(g_.int_id(e) << " " << gaps.size());
-            filestr << g_.int_id(e) << " " << gaps.size() << endl;
+            filestr << g_.int_id(e) << " " << gaps.size() << std::endl;
             std::sort(gaps.begin(), gaps.end());
             for (const auto& gap : gaps) {
                 filestr << gap.str(g_);
             }
-            filestr << endl;
+            filestr << std::endl;
         }
     }
 
     //edge_gaps must be sorted
-    vector<info_it_pair> EdgePairGaps(const GapInfos& edge_gaps) const {
-        vector<info_it_pair> answer;
+    std::vector<info_it_pair> EdgePairGaps(const GapInfos &edge_gaps) const {
+        std::vector<info_it_pair> answer;
         auto ep_start = edge_gaps.begin();
         for (auto it = ep_start; it != edge_gaps.end(); ++it) {
             if (it->right() != ep_start->right()) {
@@ -304,14 +302,14 @@ public:
     }
 };
 
-inline string PoaConsensus(const vector<string>& gap_seqs) {
+inline std::string PoaConsensus(const std::vector<std::string> &gap_seqs) {
     const ConsensusCore::PoaConsensus* pc = ConsensusCore::PoaConsensus::FindConsensus(
             gap_seqs,
             ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
     return pc->Sequence();
 }
 
-inline string TrivialConsenus(const vector<string>& gap_seqs, size_t max_length) {
+inline std::string TrivialConsenus(const std::vector<std::string> &gap_seqs, size_t max_length) {
     VERIFY(!gap_seqs.empty());
     return gap_seqs.front().length() < max_length ? gap_seqs.front() : "";
 }
@@ -319,9 +317,9 @@ inline string TrivialConsenus(const vector<string>& gap_seqs, size_t max_length)
 /*Keys are actual edges of the graph, values are original edges*/
 /*In general many-to-many relationship*/
 class EdgeFateTracker : omnigraph::GraphActionHandler<Graph> {
-    map<EdgeId, set<EdgeId>> storage_;
+    std::map<EdgeId, std::set<EdgeId>> storage_;
 
-    void FillRelevant(EdgeId e, set<EdgeId>& relevant) const {
+    void FillRelevant(EdgeId e, std::set<EdgeId> &relevant) const {
         auto it = storage_.find(e);
         if (it != storage_.end()) {
             //one of novel edges
@@ -346,8 +344,8 @@ public:
         storage_.erase(e);
     }
 
-    void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) override {
-        set<EdgeId> relevant_records;
+    void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) override {
+        std::set<EdgeId> relevant_records;
         for (EdgeId e : old_edges) {
             FillRelevant(e, relevant_records);
         }
@@ -358,16 +356,15 @@ public:
         VERIFY(false);
     }
 
-    void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
-                             EdgeId new_edge_2) override {
-        set<EdgeId> relevant_records;
+    void HandleSplit(EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge_2) override {
+        std::set<EdgeId> relevant_records;
         FillRelevant(old_edge, relevant_records);
         storage_[new_edge_1] = relevant_records;
         storage_[new_edge_2] = relevant_records;
     }
 
-    map<EdgeId, EdgeId> Old2NewMapping() const {
-        map<EdgeId, EdgeId> old_2_new;
+    std::map<EdgeId, EdgeId> Old2NewMapping() const {
+        std::map<EdgeId, EdgeId> old_2_new;
         for (const auto& new_2_olds : storage_) {
             for (EdgeId e : new_2_olds.second) {
                 VERIFY(!old_2_new.count(e));
@@ -380,13 +377,13 @@ public:
 };
 
 class MultiGapJoiner {
-    typedef map<EdgeId, pair<size_t, size_t>> SplitInfo;
+    typedef std::map<EdgeId, std::pair<size_t, size_t>> SplitInfo;
 
     Graph& g_;
     GapJoiner inner_joiner_;
 
-    bool CheckGapsValidity(const vector<GapDescription>& gaps) const {
-        vector<GapDescription> answer;
+    bool CheckGapsValidity(const std::vector<GapDescription> &gaps) const {
+        std::vector<GapDescription> answer;
         return std::all_of(gaps.begin(), gaps.end(), [&](const GapDescription &gap) {
             return IsCanonical(g_, gap.left(), gap.right()) &&
                     gap.left() != gap.right() && gap.left() != g_.conjugate(gap.right());
@@ -401,11 +398,11 @@ class MultiGapJoiner {
             storage = &secondary;
         }
         VERIFY(!storage->count(e));
-        storage->insert(make_pair(e, make_pair(idx, pos)));
+        storage->insert({e, {idx, pos}});
     }
 
-    vector<EdgeId> EdgesNeedingSplit(const SplitInfo& left_split_info, const SplitInfo& right_split_info) const {
-        vector<EdgeId> answer;
+    std::vector<EdgeId> EdgesNeedingSplit(const SplitInfo& left_split_info, const SplitInfo& right_split_info) const {
+        std::vector<EdgeId> answer;
         for (EdgeId e : utils::key_set(left_split_info))
             if (right_split_info.count(e))
                 answer.push_back(e);
@@ -462,7 +459,7 @@ class MultiGapJoiner {
         VERIFY(u1 != u2);
     }
 
-    std::set<EdgeId> RelevantEdges(const GapDescription& gap) const {
+    std::set<EdgeId> RelevantEdges(const GapDescription &gap) const {
         std::set<EdgeId> answer;
         answer.insert(gap.left());
         answer.insert(g_.conjugate(gap.left()));
@@ -471,16 +468,16 @@ class MultiGapJoiner {
         return answer;
     }
 
-    bool CheckGaps(const vector<GapDescription>& gaps) const {
-        set<EdgeId> used_edges;
-        for (const auto& gap : gaps)
+    bool CheckGaps(const std::vector<GapDescription> &gaps) const {
+        std::set<EdgeId> used_edges;
+        for (const auto &gap : gaps)
             for (EdgeId e : RelevantEdges(gap))
                 if (!used_edges.insert(e).second)
                     return false;
         return true;
     }
 
-    vector<GapDescription> ArtificialSplitAndGapUpdate(vector<GapDescription> canonical_gaps) const {
+    std::vector<GapDescription> ArtificialSplitAndGapUpdate(std::vector<GapDescription> canonical_gaps) const {
         SplitInfo left_split_pos;
         SplitInfo right_split_pos;
         for (size_t i = 0; i < canonical_gaps.size(); ++i) {
@@ -490,7 +487,7 @@ class MultiGapJoiner {
             Add(i, gap.right(), gap.right_trim(), left_split_pos, right_split_pos);
         }
 
-        set<size_t> to_ignore;
+        std::set<size_t> to_ignore;
 
         for (EdgeId e : EdgesNeedingSplit(left_split_pos, right_split_pos)) {
             size_t artificial_split_pos = ArtificialSplitPos(left_split_pos[e].second, right_split_pos[e].second);
@@ -507,7 +504,7 @@ class MultiGapJoiner {
             }
         }
 
-        vector<GapDescription> updated_gaps;
+        std::vector<GapDescription> updated_gaps;
         updated_gaps.reserve(canonical_gaps.size());
         for (size_t i = 0; i < canonical_gaps.size(); ++i) {
             if (!to_ignore.count(i)) {
@@ -524,7 +521,7 @@ public:
     }
 
     //Resulting graph should be condensed
-    void operator()(const vector<GapDescription>& gaps) {
+    void operator()(const std::vector<GapDescription> &gaps) {
         size_t closed_gaps = 0;
         VERIFY_MSG(CheckGapsValidity(gaps), "Gap check failed");
         for (const auto& gap : ArtificialSplitAndGapUpdate(gaps)) {
@@ -539,7 +536,7 @@ private:
 
 class HybridGapCloser {
 public:
-    typedef std::function<string (const vector<string>&)> ConsensusF;
+    typedef std::function<std::string (const std::vector<std::string> &)> ConsensusF;
 private:
     typedef RtSeq Kmer;
     typedef typename GapStorage::gap_info_it gap_info_it;
@@ -555,21 +552,18 @@ private:
 
     const GapDescription INVALID_GAP;
 
-    string PrintLengths(const vector<string>& gap_seqs) const {
-        stringstream ss;
+    std::string PrintLengths(const std::vector<std::string>& gap_seqs) const {
+        std::stringstream ss;
         for (const auto& gap_v : gap_seqs)
             ss << gap_v.length() << " ";
         return ss.str();
     }
 
-    GapDescription ConstructConsensus(EdgeId left,
-                                      EdgeId right,
-                                      size_t left_trim,
-                                      size_t right_trim,
-                                      const vector<string>& gap_variants) const {
+    GapDescription ConstructConsensus(EdgeId left, EdgeId right, size_t left_trim, size_t right_trim,
+                                      const std::vector<std::string> &gap_variants) const {
         DEBUG(gap_variants.size() << " gap closing variants, lengths: " << PrintLengths(gap_variants));
         DEBUG("var size original " << gap_variants.size());
-        vector<string> new_gap_variants(gap_variants.begin(), gap_variants.end());
+        auto new_gap_variants(gap_variants);
         new_gap_variants.resize(std::min(max_consensus_reads_, gap_variants.size()));
         auto s = consensus_(new_gap_variants);
         DEBUG("consenus for " << g_.int_id(left)
@@ -623,7 +617,7 @@ private:
                 continue;
 
             size_t start_nucl_size = g_.length(gap.left()) + g_.k();
-            string s = g_.EdgeNucls(gap.left()).Subseq(start_nucl_size - start_trim, start_nucl_size - gap.left_trim()).str();
+            auto s = g_.EdgeNucls(gap.left()).Subseq(start_nucl_size - start_trim, start_nucl_size - gap.left_trim()).str();
             s += gap.filling_seq().str();
             s += g_.EdgeNucls(gap.right()).Subseq(gap.right_trim(), end_trim).str();
             answer.push_back(GapDescription(gap.left(), gap.right(), Sequence(s), start_trim, end_trim));
@@ -645,7 +639,7 @@ private:
             return INVALID_GAP;
         }
 
-        vector<string> gap_variants;
+        std::vector<std::string> gap_variants;
         std::transform(padded_gaps.begin(), padded_gaps.end(), std::back_inserter(gap_variants), 
                        [](const GapDescription& gap) {
             return gap.filling_seq().str();
@@ -667,7 +661,7 @@ private:
 
     GapDescription ConstructConsensus(EdgeId e) const {
         DEBUG("Constructing consensus for edge " << g_.str(e));
-        vector<GapDescription> closures;
+        std::vector<GapDescription> closures;
         for (const auto& edge_pair_gaps : storage_.EdgePairGaps(utils::get(storage_.inner_index(), e))) {
             auto consensus = ConstructConsensus(edge_pair_gaps.first, edge_pair_gaps.second);
             if (consensus != INVALID_GAP) {
@@ -686,8 +680,8 @@ private:
         return INVALID_GAP;
     }
 
-    vector<GapDescription> ConstructConsensus() const {
-        vector<vector<GapDescription>> closures_by_thread(omp_get_max_threads());
+    std::vector<GapDescription> ConstructConsensus() const {
+        std::vector<std::vector<GapDescription>> closures_by_thread(omp_get_max_threads());
 
         # pragma omp parallel for
         for (size_t i = 0; i < storage_.size(); i++) {
@@ -699,7 +693,7 @@ private:
             }
         }
 
-        vector<GapDescription> closures;
+        std::vector<GapDescription> closures;
         for (auto& new_per_thread : closures_by_thread) {
             std::copy(new_per_thread.begin(), new_per_thread.end(), std::back_inserter(closures));
             new_per_thread.clear();
@@ -719,7 +713,7 @@ public:
               max_consensus_reads_(max_consensus_reads) {
     }
 
-    map<EdgeId, EdgeId> operator()() {
+    std::map<EdgeId, EdgeId> operator()() {
         EdgeFateTracker fate_tracker(g_);
         MultiGapJoiner gap_joiner(g_);
 

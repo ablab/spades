@@ -114,7 +114,7 @@ class Binarizer {
     }
   }
 
-  Binarizer(const vector<double>& borders) : borders_(borders) {}
+  Binarizer(const std::vector<double> &borders) : borders_(borders) {}
 
   int GetBin(double value) const {
     uint index = 0;

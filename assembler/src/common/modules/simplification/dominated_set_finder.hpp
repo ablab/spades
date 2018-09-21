@@ -27,8 +27,7 @@ class DominatedSetFinder {
         return true;
     }
 
-    void UpdateCanBeProcessed(VertexId v,
-                              std::queue<VertexId>& can_be_processed) const {
+    void UpdateCanBeProcessed(VertexId v, std::queue<VertexId> &can_be_processed) const {
         DEBUG("Updating can be processed");
         for (EdgeId e : g_.OutgoingEdges(v)) {
             DEBUG("Considering edge " << g_.str(e));
@@ -41,7 +40,7 @@ class DominatedSetFinder {
 
     Range NeighbourDistanceRange(VertexId v, bool dominated_only = true) const {
         DEBUG("Counting distance range for vertex " << g_.str(v));
-        size_t min = numeric_limits<size_t>::max();
+        size_t min = std::numeric_limits<size_t>::max();
         size_t max = 0;
         VERIFY(g_.IncomingEdgeCount(v) > 0);
         VERIFY(!dominated_only || CheckCanBeProcessed(v));
@@ -57,7 +56,7 @@ class DominatedSetFinder {
             if (range.end_pos > max)
                 max = range.end_pos;
         }
-        VERIFY((max > 0) && (min < numeric_limits<size_t>::max()) && (min <= max));
+        VERIFY((max > 0) && (min < std::numeric_limits<size_t>::max()) && (min <= max));
         Range answer(min, max);
         DEBUG("Range " << answer);
         return answer;
@@ -86,7 +85,7 @@ public:
     //true if no thresholds exceeded
     bool FillDominated() {
         DEBUG("Adding starting vertex " << g_.str(start_vertex_) << " to dominated set");
-        dominated_.insert(make_pair(start_vertex_, Range(0, 0)));
+        dominated_.insert({start_vertex_, Range(0, 0)});
         cnt_++;
         std::queue<VertexId> can_be_processed;
         UpdateCanBeProcessed(start_vertex_, can_be_processed);
@@ -110,7 +109,7 @@ public:
         return true;
     }
 
-    const map<VertexId, Range>& dominated() const {
+    const std::map<VertexId, Range> &dominated() const {
         return dominated_;
     }
 
@@ -119,8 +118,8 @@ public:
     }
 
     //little meaning if FillDominated returned false
-    const map<VertexId, Range> CountBorder() const {
-        map<VertexId, Range> border;
+    std::map<VertexId, Range> CountBorder() const {
+        std::map<VertexId, Range> border;
         for (VertexId v : utils::key_set(border)) {
             for (EdgeId e : g_.OutgoingEdges(v)) {
                 VertexId e_end = g_.EdgeEnd(e);

@@ -173,7 +173,7 @@ private:
     size_t max_depth_;
 
     bool search(VertexId a, VertexId start, EdgeId e, size_t depth,
-                std::set<VertexId> &was, pair<size_t, size_t> &result) const {
+                std::set<VertexId> &was, std::pair<size_t, size_t> &result) const {
         if (depth > max_depth_)
             return false;
         if (was.count(a) == 1)

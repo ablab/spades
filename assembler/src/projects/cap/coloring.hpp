@@ -28,7 +28,7 @@ public:
 
   // Legacy 'uint' strings support
   // Assuming uints were used only for two colors
-    explicit TColorSet(const string &bitset_string) {
+    explicit TColorSet(const std::string &bitset_string) {
         bool is_legacy;
         size_t length = bitset_string.length();
         if (length == 1) {

@@ -66,14 +66,14 @@ struct MismatchEdgeInfo {
     }
 
 public:
-    map<size_t, NuclCount> info_;
+    std::map<size_t, NuclCount> info_;
 };
 
 template<typename EdgeId>
 class MismatchStatistics {
 private:
-    typedef typename map<EdgeId, MismatchEdgeInfo>::const_iterator const_iterator;
-    map<EdgeId, MismatchEdgeInfo> statistics_;
+    typedef typename std::map<EdgeId, MismatchEdgeInfo>::const_iterator const_iterator;
+    std::map<EdgeId, MismatchEdgeInfo> statistics_;
 
     template<class graph_pack>
     void CollectPotensialMismatches(const graph_pack &gp) {
@@ -99,7 +99,7 @@ private:
                 cnt_arr[3] <= from.size() / 6) {
                 for (size_t i = 0; i < from.size(); i++) {
                     if (from[i] != to[i] && gp.index.contains(to)) {
-                        pair<EdgeId, size_t> position = gp.index.get(to);
+                        const auto &position = gp.index.get(to);
                         //FIXME add only canonical edges?
                         statistics_[position.first].AddPosition(position.second + i);
                     }
@@ -224,7 +224,7 @@ private:
         return position > k_ ? edge : glued;
     }
 
-    EdgeId CorrectNucls(EdgeId edge, const std::vector<pair<size_t, char>> &mismatches) {
+    EdgeId CorrectNucls(EdgeId edge, const std::vector<std::pair<size_t, char>> &mismatches) {
         for (auto it = mismatches.rbegin(); it != mismatches.rend(); ++it) {
             edge = CorrectNucl(edge, it->first, it->second);
         }
@@ -235,8 +235,8 @@ private:
             return tmp;
     }
 
-    vector<pair<size_t, char>> FindMismatches(EdgeId edge, const MismatchEdgeInfo &statistics) const {
-        vector<pair<size_t, char>> to_correct;
+    std::vector<std::pair<size_t, char>> FindMismatches(EdgeId edge, const MismatchEdgeInfo &statistics) const {
+        std::vector<std::pair<size_t, char>> to_correct;
         const Sequence &s_edge = g_.EdgeNucls(edge);
         for (size_t i = k_; i < g_.length(edge); i++) {
             size_t cur_best = 0;
@@ -248,7 +248,7 @@ private:
             }
             char nucl_code = s_edge[i];
             if ((double) nc[cur_best] > relative_threshold_ * (double) nc[nucl_code] + 1.) {
-                to_correct.push_back(make_pair(i, cur_best));
+                to_correct.push_back({i, cur_best});
                 i += k_;
             }
 
@@ -267,7 +267,7 @@ private:
 
     size_t CorrectAllEdges(const MismatchStatistics<EdgeId> &statistics) {
         size_t res = 0;
-        set<EdgeId> conjugate_fix;
+        std::set<EdgeId> conjugate_fix;
         //FIXME after checking saves replace with
         //for (auto it = g_.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
 

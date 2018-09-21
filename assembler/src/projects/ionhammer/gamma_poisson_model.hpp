@@ -176,7 +176,7 @@ class ParametricClusterModel {
   ParametricClusterModel& operator=(const ParametricClusterModel&) = default;
 
   double QualityLogPrior(double qual) const {
-    return max(min(qual_func_.GenomicLogLikelihood(qual), -1e-10), -1000.0);
+    return std::max(std::min(qual_func_.GenomicLogLikelihood(qual), -1e-10), -1000.0);
   }
 
   bool NeedSubcluster(const hammer::KMerStat& stat) const {
@@ -305,7 +305,7 @@ class TClusterModelEstimator {
 
     const double firstLL = first.PartialLogLikelihood((size_t)center.count_) + logPrior;
     const double secondLL = second.PartialLogLikelihood((size_t)center.count_) +
-                            log(max(1.0 - exp(logPrior), 1e-20));
+                            log(std::max(1.0 - exp(logPrior), 1e-20));
 
     const double posterior = 1.0 / (1.0 + exp(secondLL - firstLL));
     center.genomic_class_prob_ = posterior;
@@ -628,7 +628,7 @@ class TClusterModelEstimator {
                                                   const double weight) {
     const double m = sum / weight;
     const double var = sum2 / weight - m * m;
-    const double rate = 1.0 / max(var / m - 1, 1e-3);
+    const double rate = 1.0 / std::max(var / m - 1, 1e-3);
     const double shape = m * rate;
     return GammaDistribution(shape, rate);
   }
@@ -711,7 +711,7 @@ class TClusterModelEstimator {
       const double m = countsStats.GetWeightedSum() / countsStats.GetWeight();
       const double var =
           countsStats.GetWeightedSum2() / countsStats.GetWeight() - m * m;
-      const double rate = 1.0 / max(var / m - 1, 1e-3);
+      const double rate = 1.0 / std::max(var / m - 1, 1e-3);
       const double shape = m * rate;
       return GammaDistribution(shape, rate);
     }();
@@ -724,7 +724,7 @@ class TClusterModelEstimator {
           (totalStats.GetWeightedSum2() - countsStats.GetWeightedSum2()) /
               (totalStats.GetWeight() - countsStats.GetWeight()) -
           m * m;
-      const double rate = 1.0 / max(var / m - 1, 1e-3);
+      const double rate = 1.0 / std::max(var / m - 1, 1e-3);
       const double shape = m * rate;
       return GammaDistribution(shape, rate);
     }();

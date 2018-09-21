@@ -19,11 +19,11 @@ namespace visualization {
 namespace graph_colorer {
 
 template<typename ElementId>
-class ElementColorer : public virtual printing_parameter_storage::ParameterStorage<ElementId, string> {
+class ElementColorer : public virtual printing_parameter_storage::ParameterStorage<ElementId, std::string> {
 public:
     template<typename Iter>
-    set<ElementId> ColoredWith(Iter begin, Iter end, const string &color) {
-        set<ElementId> result;
+    std::set<ElementId> ColoredWith(Iter begin, Iter end, const std::string &color) {
+        std::set<ElementId> result;
         for (Iter it = begin; it != end; ++it) {
             if (this->GetValue(*it) == color)
                 result.insert(*it);
@@ -35,21 +35,21 @@ public:
 //TODO remove all default color parameters!
 
 template<typename ElementId>
-class MapColorer : public ElementColorer<ElementId>, public printing_parameter_storage::MapParameterStorage<ElementId, string> {
+class MapColorer : public ElementColorer<ElementId>, public printing_parameter_storage::MapParameterStorage<ElementId, std::string> {
 public:
-    MapColorer(const string &default_color) : printing_parameter_storage::MapParameterStorage<ElementId, string>(default_color) {
+    MapColorer(const std::string &default_color) : printing_parameter_storage::MapParameterStorage<ElementId, std::string>(default_color) {
     }
 
-    MapColorer(const map<ElementId, string> &color_map) : printing_parameter_storage::MapParameterStorage<ElementId, string>(color_map) {
+    MapColorer(const std::map<ElementId, std::string> &color_map) : printing_parameter_storage::MapParameterStorage<ElementId, std::string>(color_map) {
     }
 
-    MapColorer(const map<ElementId, string> &color_map, const string &default_color)
-            : printing_parameter_storage::MapParameterStorage<ElementId, string>(color_map, default_color) {
+    MapColorer(const std::map<ElementId, std::string> &color_map, const std::string &default_color)
+            : printing_parameter_storage::MapParameterStorage<ElementId, std::string>(color_map, default_color) {
     }
 
     template<class It>
-    MapColorer(It begin, It end, const string &color, const string &default_color)
-            : printing_parameter_storage::MapParameterStorage<ElementId, string>(begin, end, color, default_color) {
+    MapColorer(It begin, It end, const std::string &color, const std::string &default_color)
+            : printing_parameter_storage::MapParameterStorage<ElementId, std::string>(begin, end, color, default_color) {
     }
 
     virtual ~MapColorer() {
@@ -59,7 +59,7 @@ public:
 template<typename ElementId>
 class FixedColorer : public MapColorer<ElementId> {
 public:
-    FixedColorer(const string &default_color) : MapColorer<ElementId>(default_color) {
+    FixedColorer(const std::string &default_color) : MapColorer<ElementId>(default_color) {
     }
 };
 
@@ -71,8 +71,8 @@ private:
     const Graph &graph_;
 
     template<class It>
-    map<EdgeId, string> ConstructColorMap(It begin, It end, const string &color) {
-        map<EdgeId, string> result;
+    std::map<EdgeId, std::string> ConstructColorMap(It begin, It end, const std::string &color) {
+        std::map<EdgeId, std::string> result;
         for (auto it = begin; it != end; ++it) {
             result[*it] = color;
         }
@@ -81,12 +81,12 @@ private:
 
 public:
     template<class It>
-    SetColorer(const Graph &graph, It begin, It end, const string &color) :
+    SetColorer(const Graph &graph, It begin, It end, const std::string &color) :
             MapColorer<typename Graph::EdgeId>(ConstructColorMap(begin, end, color), "black"), graph_(graph) {
     }
 
     template<class Collection>
-    SetColorer(const Graph &graph, const Collection &c, const string &color) :
+    SetColorer(const Graph &graph, const Collection &c, const std::string &color) :
             MapColorer<typename Graph::EdgeId>(ConstructColorMap(c.begin(), c.end(), color), "black"),
             graph_(graph) {
     }
@@ -121,49 +121,49 @@ class CompositeEdgeColorer : public ElementColorer<typename Graph::EdgeId> {
 private:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    string default_color_;
-    vector<shared_ptr<ElementColorer<typename Graph::EdgeId>>> colorers_;
+    std::string default_color_;
+    std::vector<std::shared_ptr<ElementColorer<typename Graph::EdgeId>>> colorers_;
 
-    vector<string> CollectColors(EdgeId edge) const {
-        vector<string> result = {default_color_};
+    std::vector<std::string> CollectColors(EdgeId edge) const {
+        vector<std::string> result = {default_color_};
         for (auto it = colorers_.begin(); it != colorers_.end(); ++it) {
-            string next_color = (*it)->GetValue(edge);
+            std::string next_color = (*it)->GetValue(edge);
             if (std::find(result.begin(), result.end(), next_color) == result.end())
                 result.push_back(next_color);
         }
         return result;
     }
 
-    string ConstructColorString(const vector<string> &colors) const {
+    std::string ConstructColorString(const vector<std::string> &colors) const {
         if (colors.size() == 1)
             return default_color_;
-        string result = "";
+        std::string result;
         for (size_t i = 1; i < colors.size(); i++)
             result += ":" + colors[i];
         return result.substr(1, result.size());
     }
 
 public:
-    CompositeEdgeColorer(const string &default_color) : default_color_(default_color) {
+    CompositeEdgeColorer(const std::string &default_color) : default_color_(default_color) {
     }
 
-    CompositeEdgeColorer(shared_ptr<ElementColorer<typename Graph::EdgeId>> colorer,
-                         const string &default_color) : default_color_(default_color) {
+    CompositeEdgeColorer(std::shared_ptr<ElementColorer<typename Graph::EdgeId>> colorer,
+                         const std::string &default_color) : default_color_(default_color) {
         AddColorer(colorer);
     }
 
-    CompositeEdgeColorer(shared_ptr<ElementColorer<typename Graph::EdgeId>> colorer1,
-                         shared_ptr<ElementColorer<typename Graph::EdgeId>> colorer2,
-                         const string &default_color) : default_color_(default_color) {
+    CompositeEdgeColorer(std::shared_ptr<ElementColorer<typename Graph::EdgeId>> colorer1,
+                         std::shared_ptr<ElementColorer<typename Graph::EdgeId>> colorer2,
+                         const std::string &default_color) : default_color_(default_color) {
         AddColorer(colorer1);
         AddColorer(colorer2);
     }
 
-    void AddColorer(shared_ptr<ElementColorer<typename Graph::EdgeId>> colorer) {
+    void AddColorer(std::shared_ptr<ElementColorer<typename Graph::EdgeId>> colorer) {
         colorers_.push_back(colorer);
     }
 
-    string GetValue(EdgeId edge) const {
+    std::string GetValue(EdgeId edge) const {
         return ConstructColorString(CollectColors(edge));
     }
 };
@@ -172,12 +172,12 @@ template<class Graph>
 class GraphColorer
         : public ElementColorer<typename Graph::VertexId>, public ElementColorer<typename Graph::EdgeId> {
 public:
-    string GetValue(typename Graph::VertexId) const = 0;
+    std::string GetValue(typename Graph::VertexId) const = 0;
 
-    string GetValue(typename Graph::EdgeId) const = 0;
+    std::string GetValue(typename Graph::EdgeId) const = 0;
 
     template<typename Iter>
-    set<typename Iter::value_type> ColoredWith(Iter begin, Iter end, const string &color) {
+    std::set<typename Iter::value_type> ColoredWith(Iter begin, Iter end, const std::string &color) {
         return ElementColorer<typename Iter::value_type>::ColoredWith(begin, end, color);
     }
 };
@@ -190,11 +190,11 @@ public:
     DelegatingGraphColorer(const GraphColorer<Graph> &inner_colorer) : inner_colorer_(inner_colorer) {
     }
 
-    string GetValue(typename Graph::VertexId v) const {
+    std::string GetValue(typename Graph::VertexId v) const {
         return inner_colorer_.GetValue(v);
     }
 
-    string GetValue(typename Graph::EdgeId e) const {
+    std::string GetValue(typename Graph::EdgeId e) const {
         return inner_colorer_.GetValue(e);
     }
 };
@@ -209,7 +209,7 @@ private:
 //    const shared_ptr<const ElementColorer<typename Graph::EdgeId>> edge_colorer_ptr_;
     const ElementColorer<typename Graph::VertexId> &vertex_colorer_;
     const ElementColorer<typename Graph::EdgeId> &edge_colorer_;
-    const string border_color_;
+    const std::string border_color_;
 public:
 //    BorderDecorator(const GraphComponent<Graph> &component,
 //            const shared_ptr<const GraphColorer<Graph>> colorer,
@@ -219,13 +219,13 @@ public:
 //                    *colorer), border_color_(border_color) {
 //    }
 
-    BorderDecorator(const GraphComponent<Graph> &component,
-                    const GraphColorer<Graph> &colorer, const string &border_color = "yellow") :
+    BorderDecorator(const GraphComponent<Graph> &component, const GraphColorer<Graph> &colorer,
+                    const std::string &border_color = "yellow") :
             component_(component), vertex_colorer_(colorer), edge_colorer_(colorer),
             border_color_(border_color) {
     }
 
-    string GetValue(VertexId v) const {
+    std::string GetValue(VertexId v) const {
         if (component_.IsBorder(v)) {
             return border_color_;
         } else {
@@ -233,14 +233,14 @@ public:
         }
     }
 
-    string GetValue(EdgeId e) const {
+    std::string GetValue(EdgeId e) const {
         return edge_colorer_.GetValue(e);
     }
 
-    static shared_ptr<BorderDecorator<Graph>> GetInstance(const GraphComponent<Graph> &component,
-                                                          const GraphColorer<Graph> &colorer,
-                                                          const string &border_color = "yellow") {
-        return make_shared<BorderDecorator<Graph>>(component, colorer, border_color);
+    static std::shared_ptr<BorderDecorator<Graph>> GetInstance(const GraphComponent<Graph> &component,
+                                                               const GraphColorer<Graph> &colorer,
+                                                               const std::string &border_color = "yellow") {
+        return std::make_shared<BorderDecorator<Graph>>(component, colorer, border_color);
     }
 };
 
@@ -255,19 +255,17 @@ private:
 //  const shared_ptr<const ElementColorer<typename Graph::EdgeId>> edge_colorer_ptr_;
     const ElementColorer<typename Graph::VertexId> &vertex_colorer_;
     const ElementColorer<typename Graph::EdgeId> &edge_colorer_;
-    const string sink_color_;
-    const string source_color_;
-    const string sinksource_color_;
+    const std::string sink_color_, source_color_, sinksource_color_;
 public:
 
     SinkSourceDecorator(const GraphComponent<Graph> &component,
-                        const GraphColorer<Graph> &colorer, const string &sink_color = "red",
-                        const string &source_color = "orange", const string &sinksource_color = "green") :
+                        const GraphColorer<Graph> &colorer, const std::string &sink_color = "red",
+                        const std::string &source_color = "orange", const std::string &sinksource_color = "green") :
             component_(component), vertex_colorer_(colorer), edge_colorer_(colorer), sink_color_(sink_color),
             source_color_(source_color), sinksource_color_(sinksource_color) {
     }
 
-    string GetValue(VertexId v) const {
+    std::string GetValue(VertexId v) const {
         if (component_.exits().count(v) && !component_.entrances().count(v)) {
             return sink_color_;
         }
@@ -281,15 +279,15 @@ public:
         return vertex_colorer_.GetValue(v);
     }
 
-    string GetValue(EdgeId e) const {
+    std::string GetValue(EdgeId e) const {
         return edge_colorer_.GetValue(e);
     }
 
-    static shared_ptr<SinkSourceDecorator<Graph>> GetInstance(const GraphComponent<Graph> &component,
-                                                              const GraphColorer<Graph> &colorer,
-                                                              const string &sink_color = "red",
-                                                              const string &source_color = "orange") {
-        return make_shared<SinkSourceDecorator<Graph>>(component, colorer, sink_color, source_color);
+    static std::shared_ptr<SinkSourceDecorator<Graph>> GetInstance(const GraphComponent<Graph> &component,
+                                                                   const GraphColorer<Graph> &colorer,
+                                                                   const std::string &sink_color = "red",
+                                                                   const std::string &source_color = "orange") {
+        return std::make_shared<SinkSourceDecorator<Graph>>(component, colorer, sink_color, source_color);
     }
 };
 
@@ -299,11 +297,11 @@ private:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
-    const shared_ptr<ElementColorer<VertexId>> vertex_colorer_;
-    const shared_ptr<ElementColorer<EdgeId>> edge_colorer_;
+    const std::shared_ptr<ElementColorer<VertexId>> vertex_colorer_;
+    const std::shared_ptr<ElementColorer<EdgeId>> edge_colorer_;
 public:
-    CompositeGraphColorer(shared_ptr<ElementColorer<VertexId>> vertex_colorer,
-                          shared_ptr<ElementColorer<EdgeId>> edge_colorer) :
+    CompositeGraphColorer(std::shared_ptr<ElementColorer<VertexId>> vertex_colorer,
+                          std::shared_ptr<ElementColorer<EdgeId>> edge_colorer) :
             vertex_colorer_(vertex_colorer),
             edge_colorer_(edge_colorer) {
     }
@@ -313,11 +311,11 @@ public:
 //                edge_colorer_(edge_colorer) {
 //    }
 
-    string GetValue(VertexId v) const {
+    std::string GetValue(VertexId v) const {
         return vertex_colorer_->GetValue(v);
     }
 
-    string GetValue(EdgeId e) const {
+    std::string GetValue(EdgeId e) const {
         return edge_colorer_->GetValue(e);
     }
 
@@ -327,29 +325,29 @@ public:
 // edge_colorer management is passed here
 //TODO check all usages
 template<class Graph>
-shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph & /*g*/,
-                                               shared_ptr<ElementColorer<typename Graph::EdgeId>> edge_colorer) {
-    return shared_ptr<GraphColorer<Graph>>(
-            new CompositeGraphColorer<Graph>(make_shared<FixedColorer<typename Graph::VertexId>>("white"),
+std::shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph & /*g*/,
+                                                    std::shared_ptr<ElementColorer<typename Graph::EdgeId>> edge_colorer) {
+    return std::shared_ptr<GraphColorer<Graph>>(
+            new CompositeGraphColorer<Graph>(std::make_shared<FixedColorer<typename Graph::VertexId>>("white"),
                                              edge_colorer));
 }
 
 template<class Graph>
-shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph &g,
-                                               const Path<typename Graph::EdgeId> &path1,
-                                               const Path<typename Graph::EdgeId> &path2) {
-    shared_ptr<ElementColorer<typename Graph::EdgeId>> edge_colorer =
-            make_shared<CompositeEdgeColorer<Graph>>(
-                    make_shared<SetColorer<Graph>>(g, path1.sequence(), "red"),
-                    make_shared<SetColorer<Graph>>(g, path2.sequence(), "blue"), "black");
+std::shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph &g,
+                                                    const Path<typename Graph::EdgeId> &path1,
+                                                    const Path<typename Graph::EdgeId> &path2) {
+    std::shared_ptr<ElementColorer<typename Graph::EdgeId>> edge_colorer =
+            std::make_shared<CompositeEdgeColorer<Graph>>(
+                    std::make_shared<SetColorer<Graph>>(g, path1.sequence(), "red"),
+                    std::make_shared<SetColorer<Graph>>(g, path2.sequence(), "blue"), "black");
     return DefaultColorer(g, edge_colorer);
 }
 
 template<class Graph>
-shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph & /*g*/) {
-    return shared_ptr<GraphColorer<Graph>>(new CompositeGraphColorer<Graph>(
-            make_shared<FixedColorer<typename Graph::VertexId>>("white"),
-            make_shared<FixedColorer<typename Graph::EdgeId>>("black")));
+std::shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph & /*g*/) {
+    return std::shared_ptr<GraphColorer<Graph>>(new CompositeGraphColorer<Graph>(
+            std::make_shared<FixedColorer<typename Graph::VertexId>>("white"),
+            std::make_shared<FixedColorer<typename Graph::EdgeId>>("black")));
 }
 }
 }

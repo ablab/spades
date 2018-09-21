@@ -16,18 +16,18 @@ namespace vertex_linker {
 
 template<class Graph>
 class VertexLinker
-        : public virtual printing_parameter_storage::ParameterStorage<typename Graph::VertexId, string> {
+        : public virtual printing_parameter_storage::ParameterStorage<typename Graph::VertexId, std::string> {
 };
 
 template<class Graph>
 class MapVertexLinker : public VertexLinker<Graph>,
-                        public printing_parameter_storage::MapParameterStorage<typename Graph::VertexId, string> {
+                        public printing_parameter_storage::MapParameterStorage<typename Graph::VertexId, std::string> {
 public:
-    MapVertexLinker() : printing_parameter_storage::MapParameterStorage<typename Graph::VertexId, string>("") {
+    MapVertexLinker() : printing_parameter_storage::MapParameterStorage<typename Graph::VertexId,std:: string>("") {
     }
 
-    MapVertexLinker(const map<typename Graph::VertexId, string> &link_map) :
-            printing_parameter_storage::MapParameterStorage<typename Graph::VertexId, string>(link_map, "") {
+    MapVertexLinker(const std::map<typename Graph::VertexId, std::string> &link_map) :
+            printing_parameter_storage::MapParameterStorage<typename Graph::VertexId, std::string>(link_map, "") {
     }
 
     virtual ~MapVertexLinker() {

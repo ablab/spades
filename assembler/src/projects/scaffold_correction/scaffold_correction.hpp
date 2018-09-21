@@ -19,15 +19,16 @@
 
 namespace scaffold_correction {
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
+    typedef std::vector<EdgeId> Path;
 
     class PathSideSimilarityComparator {
     private:
         typedef Graph::EdgeId EdgeId;
         const Graph &graph_;
-        vector<EdgeId> initial_path_;
+        Path initial_path_;
 
     public:
-        size_t CalculateDifference(vector<EdgeId> path) {
+        size_t CalculateDifference(const Path &path) {
             size_t lside = 0;
             size_t rside = 0;
             size_t min_size = std::min(path.size(), initial_path_.size());
@@ -43,11 +44,11 @@ namespace scaffold_correction {
             return result;
         }
 
-        PathSideSimilarityComparator(const Graph &graph, vector<EdgeId> path) : graph_(graph), initial_path_(path) {
+        PathSideSimilarityComparator(const Graph &graph, const Path &path) : graph_(graph), initial_path_(path) {
         }
 
 
-        bool operator()(const vector<EdgeId> &path1, const vector<EdgeId> &path2) {
+        bool operator()(const Path &path1, const Path &path2) {
             return CalculateDifference(path1) < CalculateDifference(path2);
         }
     };
@@ -64,7 +65,7 @@ namespace scaffold_correction {
             return graph_.EdgeEnd(e1) == graph_.EdgeStart(e2);
         }
 
-        size_t StepBack(size_t pos, const vector<EdgeId> &edges) const {
+        size_t StepBack(size_t pos, const Path &edges) const {
             size_t step_size = 0;
             while(pos > 0 && Consistent(edges[pos - 1], edges[pos]) && step_size + graph_.length(edges[pos]) <= max_cut_length_) {
                 step_size += graph_.length(edges[pos]);
@@ -73,7 +74,7 @@ namespace scaffold_correction {
             return pos;
         }
 
-        size_t StepForward(size_t pos, const vector<EdgeId> &edges) const {
+        size_t StepForward(size_t pos, const Path &edges) const {
             size_t step_size = 0;
             while(pos  + 1 < edges.size() && Consistent(edges[pos], edges[pos + 1])&& step_size + graph_.length(edges[pos]) <= max_cut_length_) {
                 step_size += graph_.length(edges[pos]);
@@ -83,16 +84,16 @@ namespace scaffold_correction {
         }
 
 
-        void PrintPath(vector<EdgeId> path) const {
+        void PrintPath(const Path &path) const {
             for(size_t i = 0; i < path.size(); i++) {
                 TRACE(graph_.EdgeNucls(path[i]));
             }
         }
 
 
-        vector<EdgeId> TryCloseGap(VertexId v1, VertexId v2, const vector<EdgeId> &path) const {
+        Path TryCloseGap(VertexId v1, VertexId v2, const Path &path) const {
             if (v1 == v2)
-                return vector<EdgeId>();
+                return Path();
             TRACE(
                     "Trying to close gap between v1=" << graph_.int_id(v1) << " and v2=" << graph_.int_id(v2));
             typedef omnigraph::DijkstraHelper<Graph>::PathIgnoringDijkstraSettings DS;
@@ -110,7 +111,7 @@ namespace scaffold_correction {
                 return result;
             } else {
                 TRACE("Failed to find closing path");
-                return vector<EdgeId>();
+                return Path();
             }
 /*
             PathSideSimilarityComparator comparator(garph_, path);
@@ -150,19 +151,19 @@ namespace scaffold_correction {
                 : graph_(graph), max_cut_length_(max_cut_length), max_insert_(max_insert) {
         }
 
-        vector<EdgeId> TryFixPath(const vector<EdgeId>& edges) const {
-            vector<EdgeId> result;
+        Path TryFixPath(const Path& edges) const {
+            Path result;
             if (edges.empty()) {
-                return vector<EdgeId>();
+                return Path();
             }
             result.push_back(edges[0]);
             for (size_t i = 1; i < edges.size(); ++i) {
                 if (!Consistent(result.back(), edges[i])) {
                     size_t lindex = StepBack(result.size() - 1, result);
                     size_t rindex = StepForward(i, edges);
-                    vector<EdgeId> current_path(result.begin() + lindex + 1, result.end());
+                    Path current_path(result.begin() + lindex + 1, result.end());
                     current_path.insert(current_path.end(), edges.begin() + i, edges.begin() + rindex);
-                    vector<EdgeId> closure = TryCloseGap(graph_.EdgeEnd(result[lindex]), graph_.EdgeStart(edges[rindex]), current_path);
+                    auto closure = TryCloseGap(graph_.EdgeEnd(result[lindex]), graph_.EdgeStart(edges[rindex]), current_path);
                     if(closure.size() != 0 || Consistent(result[lindex], edges[rindex])) {
                         result.resize(lindex + 1);
                         VERIFY(closure.size() == 0 || Consistent(result.back(), closure.front()));
@@ -197,7 +198,7 @@ namespace scaffold_correction {
             return true;
         }
 
-        Sequence ConstructSequence(const vector<Graph::EdgeId> &path) const {
+        Sequence ConstructSequence(const Path &path) const {
             Sequence result = gp_.g.EdgeNucls(path[0]);
             for(size_t i = 1; i < path.size(); i++) {
                 result = result +  gp_.g.EdgeNucls(path[i]).Subseq(gp_.k_value);
@@ -209,7 +210,7 @@ namespace scaffold_correction {
         ScaffoldCorrector(const graph_pack &gp, const CarefulPathFixer &fixer)
                 : gp_(gp), fixer_(fixer) {}
 
-        Sequence correct(const vector<Sequence> &scaffold) const {
+        Sequence correct(const std::vector<Sequence> &scaffold) const {
             auto mapper = debruijn_graph::MapperInstance(gp_);
             MappingPath <debruijn_graph::EdgeId> path;
             for (auto it = scaffold.begin(); it != scaffold.end(); ++it) {
@@ -228,18 +229,19 @@ namespace spades {
     class ScaffoldCorrectionStage : public AssemblyStage {
     public:
         typedef debruijn_graph::config::debruijn_config::scaffold_correction Config;
+        typedef std::vector<io::SingleRead> ReadSeq;
     private:
         std::string output_file_;
         const Config &config_;
     public:
-        ScaffoldCorrectionStage(string output_file,
+        ScaffoldCorrectionStage(const std::string &output_file,
                 const Config &config) :
                 AssemblyStage("ScaffoldCorrection", "scaffold_correction"),
                 output_file_(output_file), config_(config) {
         }
 
-        vector<Sequence> CollectScaffoldParts(const io::SingleRead &scaffold) const {
-            vector<Sequence> result;
+        std::vector<Sequence> CollectScaffoldParts(const io::SingleRead &scaffold) const {
+            std::vector<Sequence> result;
             for (size_t i = 0; i < scaffold.size(); i++) {
                 size_t j = i;
                 while (j < scaffold.size() && is_nucl(scaffold.GetSequenceString()[j])) {
@@ -253,19 +255,19 @@ namespace spades {
             return result;
         }
 
-        void OutputResults(const vector<io::SingleRead> &results) {
+        void OutputResults(const std::vector<io::SingleRead> &results) {
             io::OFastaReadStream oss(output_file_);
             for (size_t i = 0; i < results.size(); i++) {
-                string sequence = results[i].GetSequenceString();
-                if (sequence != "") {
+                const auto &sequence = results[i].GetSequenceString();
+                if (!sequence.empty()) {
                     oss << io::SingleRead(results[i].name(), sequence);
                 }
             }
         }
 
-        vector<io::SingleRead> ReadScaffolds(const string &scaffolds_file) {
+        ReadSeq ReadScaffolds(const std::string &scaffolds_file) {
             io::FileReadStream scaffold_stream(scaffolds_file);
-            vector<io::SingleRead> scaffolds;
+            ReadSeq scaffolds;
             while (!scaffold_stream.eof()) {
                 io::SingleRead scaffold;
                 scaffold_stream >> scaffold;
@@ -274,13 +276,13 @@ namespace spades {
             return scaffolds;
         }
 
-        vector<io::SingleRead> RunParallelCorrection(const vector<io::SingleRead> &scaffolds, const scaffold_correction::ScaffoldCorrector &corrector) {
-            vector<io::SingleRead> results(scaffolds.size());
+        ReadSeq RunParallelCorrection(const ReadSeq &scaffolds, const scaffold_correction::ScaffoldCorrector &corrector) {
+            ReadSeq results(scaffolds.size());
 #pragma omp parallel for
             for(size_t i = 0; i < scaffolds.size(); i++) {
-                auto scaffold = scaffolds[i];
-                std::string name = scaffold.name();
-                vector<Sequence> part_list = CollectScaffoldParts(scaffold);
+                const auto &scaffold = scaffolds[i];
+                const auto &name = scaffold.name();
+                auto part_list = CollectScaffoldParts(scaffold);
                 TRACE("Correcting scaffold " << name);
                 TRACE("Number of parts: " << part_list.size());
                 Sequence result = corrector.correct(part_list);
@@ -299,9 +301,9 @@ namespace spades {
             INFO("Correcting scaffolds from " << config_.scaffolds_file);
             scaffold_correction::CarefulPathFixer fixer(graph_pack.g, config_.max_cut_length, config_.max_insert);
             scaffold_correction::ScaffoldCorrector corrector(graph_pack, fixer);
-            vector<io::SingleRead> scaffolds = ReadScaffolds(config_.scaffolds_file);
+            auto scaffolds = ReadScaffolds(config_.scaffolds_file);
             graph_pack.EnsureIndex();
-            vector<io::SingleRead> results = RunParallelCorrection(scaffolds, corrector);
+            auto results = RunParallelCorrection(scaffolds, corrector);
             OutputResults(results);
             INFO(scaffolds.size() << " reads processed");
             INFO("Corrected scaffolds written to " << output_file_);

@@ -23,6 +23,9 @@
 #include <unistd.h>
 #include "scaffold_correction.hpp"
 
+using namespace std;
+using fs::make_dir;
+
 //FIXME code duplication
 void load_config(const vector<string>& cfg_fns) {
     for (const auto& s : cfg_fns) {

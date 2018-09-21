@@ -8,11 +8,11 @@
 #include "coverage_uniformity_analyzer.hpp"
 namespace debruijn_graph {
 double CoverageUniformityAnalyzer::CountMedianCoverage() const{
-    vector <pair<double, size_t> > coverages;
+    std::vector<std::pair<double, size_t> > coverages;
     size_t total_len = 0, short_len = 0, cur_len = 0;
     for (auto iter = g_.ConstEdgeBegin(); ! iter.IsEnd(); ++iter){
         if (g_.length(*iter) > length_bound_) {
-            coverages.push_back(make_pair(g_.coverage(*iter), g_.length(*iter)));
+            coverages.push_back({g_.coverage(*iter), g_.length(*iter)});
             total_len += g_.length(*iter);
         } else {
             short_len += g_.length(*iter);

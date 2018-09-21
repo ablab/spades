@@ -56,7 +56,7 @@ private:
     }
 
 public:
-    WeightDEWrapper(const map<int, size_t>& hist, double IS) {
+    WeightDEWrapper(const std::map<int, size_t>& hist, double IS) {
         DEBUG("WeightDEWrapper " << IS);
         insert_size = (int) IS;
         DEBUG("Extending linear");

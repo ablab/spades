@@ -8,7 +8,7 @@
 #pragma once
 
 #include <boost/noncopyable.hpp>
-#include "utils/standard_base.hpp"
+#include <istream>
 
 namespace io {
 

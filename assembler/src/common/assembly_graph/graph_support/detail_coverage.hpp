@@ -15,7 +15,6 @@
 #include <map>
 #include <set>
 #include <string>
-#include <iostream>
 #include <fstream>
 
 namespace omnigraph {
@@ -29,7 +28,7 @@ public:
 private:
     typedef omnigraph::GraphActionHandler<Graph> base;
     typedef typename Graph::VertexId VertexId;
-    typedef pair<EdgeId, unsigned> Pos;
+    typedef std::pair<EdgeId, unsigned> Pos;
 
     Graph& g_;
     const size_t averaging_range_;
@@ -112,7 +111,7 @@ public:
     virtual void HandleAdd(EdgeId /*e*/) {
     }
 
-    virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
+    virtual void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) {
 //        SetRawCoverage(new_edge, RawCoverage(old_edges.front()));
         size_t kpomers_left = averaging_range_;
         unsigned acc = 0;
@@ -172,11 +171,11 @@ public:
 
     //////////////////////////
 
-    void Save(EdgeId e, ostream& out) const {
+    void Save(EdgeId e, std::ostream &out) const {
         out << RawCoverage(e);
     }
 
-    void Load(EdgeId e, istream& in) {
+    void Load(EdgeId e, std::istream &in) {
         unsigned cov;
         in >> cov;
         SetRawCoverage(e, cov);

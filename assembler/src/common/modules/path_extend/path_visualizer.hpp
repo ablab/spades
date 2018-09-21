@@ -74,7 +74,8 @@ public:
 
     }
 
-    void writeGraphWithPathsSimple(const conj_graph_pack& gp, const string& file_name, const string& graph_name, const PathContainer& paths) const {
+    void writeGraphWithPathsSimple(const conj_graph_pack& gp, const std::string& file_name,
+                                   const std::string& graph_name, const PathContainer& paths) const {
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
         filestr.open(file_name.c_str(), std::fstream::out);
@@ -85,7 +86,7 @@ public:
         visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
 
         visualization::graph_labeler::CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, path_labeler, pos_labeler);
-        shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer;
+        std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer;
         if (gp.index.IsAttached()) {
              colorer = stats::DefaultColorer(gp);
         } else {
@@ -99,7 +100,7 @@ public:
         INFO("Visualizing graph done");
     }
 
-    void writeGraphSimple(const conj_graph_pack& gp, const string& file_name, const string& graph_name) const{
+    void writeGraphSimple(const conj_graph_pack& gp, const std::string& file_name, const std::string& graph_name) const{
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
         filestr.open(file_name.c_str(), std::fstream::out);
@@ -109,7 +110,7 @@ public:
         visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(gp.g);
         visualization::graph_labeler::CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, pos_labeler);
 
-        shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer;
+        std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer;
 
         if (gp.index.IsAttached()) {
              colorer = stats::DefaultColorer(gp);
@@ -125,7 +126,7 @@ public:
         INFO("Visualizing graph done");
     }
 
-    void writeGraphSimple(const Graph& g, const string& file_name, const string& graph_name) const{
+    void writeGraphSimple(const Graph& g, const std::string& file_name, const std::string& graph_name) const{
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
         filestr.open(file_name.c_str(), std::fstream::out);
@@ -134,7 +135,7 @@ public:
         visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(g);
         visualization::graph_labeler::CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler);
 
-        shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer;
+        std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer;
 
         Path<EdgeId> empty;
         colorer = visualization::graph_colorer::DefaultColorer(g, empty, empty);

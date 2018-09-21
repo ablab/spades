@@ -21,7 +21,7 @@ using namespace debruijn::simplification;
 using namespace config;
 
 template<class graph_pack>
-shared_ptr<visualization::graph_colorer::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
+std::shared_ptr<visualization::graph_colorer::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
     const graph_pack& gp) {
     io::SingleRead genome("ref", gp.genome.str());
     auto mapper = MapperInstance(gp);
@@ -395,7 +395,7 @@ public:
     }
 };
 
-shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultGPColorer(
+std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultGPColorer(
         const conj_graph_pack &gp) {
     auto mapper = MapperInstance(gp);
     auto path1 = mapper->MapSequence(gp.genome.GetSequence()).path();

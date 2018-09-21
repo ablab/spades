@@ -23,13 +23,13 @@ namespace online_visualization {
       {
       }
 
-      void Execute(shared_ptr<Env>& /* curr_env */,
-                   LoadedEnvironments<Env>& /* loaded_environments */,
-                   const ArgumentList& /* args */) const
+      void Execute(std::shared_ptr<Env> &/* curr_env */,
+                   LoadedEnvironments<Env> &/* loaded_environments */,
+                   const ArgumentList &/* args */) const
       {
       }
 
-      string Usage() const {
+      std::string Usage() const {
         return "Nothing to do here";
       }
     };
@@ -43,7 +43,7 @@ namespace online_visualization {
           "> help <command_name>\n"
           " The list of command names : \n";
 
-        vector<string> command_names = this->command_container_->GetCommandNamesList();
+        auto command_names = this->command_container_->GetCommandNamesList();
         for (auto it = command_names.begin(); it != command_names.end(); ++it) {
           answer += *it;
           answer += '\n';
@@ -52,9 +52,8 @@ namespace online_visualization {
       }
 
       public:
-      string Usage() const {
-        string answer;
-        answer = answer + "The command `help` allows you to see a help message for any command. \n " +
+        std::string Usage() const {
+        string answer = "The command `help` allows you to see a help message for any command. \n " +
           "Usage: \n" +
           "> help <name_of_command> \n" +
           " Running `help` without parameters yields a list of all commands.";
@@ -65,12 +64,14 @@ namespace online_visualization {
         : CommandServingCommand<Env>("help", command_mapping) {
         }
 
-      void Execute(shared_ptr<Env>& /* curr_env */, LoadedEnvironments<Env>& /* loaded_environments */, const ArgumentList& arg_list) const {
-        const vector<string>& args = arg_list.GetAllArguments();
+      void Execute(std::shared_ptr<Env> &/* curr_env */,
+                   LoadedEnvironments<Env> &/* loaded_environments */,
+                   const ArgumentList& arg_list) const {
+        const std::vector<std::string>& args = arg_list.GetAllArguments();
         if (args.size() == 1) {
-          cout << GetCommonUsageString() << endl;
+          std::cout << GetCommonUsageString() << std::endl;
         } else {
-          string command_name = args[1];
+          std::string command_name = args[1];
           const Command<Env>& command = this->command_container_->GetCommand(command_name);
           if (command.invocation_string() == "null")
             return;
@@ -83,7 +84,7 @@ namespace online_visualization {
   template <class Env>
     class ExitCommand : public Command<Env> {
       public:
-        string Usage() const {
+        std::string Usage() const {
           return "The command `exit` allows you to exit this application.";
         }
 
@@ -92,8 +93,8 @@ namespace online_visualization {
       {
       }
 
-        void Execute(shared_ptr<Env>& /* curr_env */, LoadedEnvironments<Env>& /* loaded_environments */, const ArgumentList& /* args */) const {
-          cout << "Exiting" << endl;
+        void Execute(std::shared_ptr<Env>& /* curr_env */, LoadedEnvironments<Env>& /* loaded_environments */, const ArgumentList& /* args */) const {
+            std::cout << "Exiting\n";
           exit(0);
         }
     };
@@ -102,9 +103,9 @@ namespace online_visualization {
   template <class Env>
     class LoadCommand : public Command<Env> {
       private:
-        shared_ptr<Env> MakeNewEnvironment(const string& name, const string& saves, size_t K) const {
+        std::shared_ptr<Env> MakeNewEnvironment(const std::string &name, const std::string &saves, size_t K) const {
           DEBUG("Making new environment " << name);
-          shared_ptr<Env> EnvPointer(new Env(name, saves, K));
+          std::shared_ptr<Env> EnvPointer(new Env(name, saves, K));
           DEBUG("Done");
           return EnvPointer;
         }
@@ -119,7 +120,7 @@ namespace online_visualization {
           if (!this->CheckEnoughArguments(args))
             return false;
 
-          string path = args[2];
+          std::string path = args[2];
           size_t K;
           if (args.size() > 3) {
             if (!CheckIsNumber(args[3]))
@@ -131,7 +132,7 @@ namespace online_visualization {
           if (!CheckEnvIsCorrect(path, K))
             return false;
 
-          string name = args[1];
+            std::string name = args[1];
           for (auto iterator = loaded_environments.begin(); iterator != loaded_environments.end(); ++iterator) {
             if (name == iterator->first) {
               cout << "Name " << name << " already exists" << endl;

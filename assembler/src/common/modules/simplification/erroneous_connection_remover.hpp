@@ -421,7 +421,7 @@ class ECLoopRemover : public EdgeProcessingAlgorithm<Graph> {
 
     bool ProcessEdge(EdgeId e) {
         if (IsAnyLoop(e)) {
-            DEBUG("Susp loop: " << this->g().int_id(e) << endl);
+            DEBUG("Susp loop: " << this->g().int_id(e) << std::endl);
             bool res = FindHiddenLoopEC(e);
             if (res) {DEBUG ("was removed");} else {DEBUG("was not removed"); }
             return res;

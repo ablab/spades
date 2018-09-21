@@ -8,10 +8,9 @@
 #pragma once
 
 #include "utils/filesystem/path_helper.hpp"
-
 #include "io/reads/file_reader.hpp"
-
 #include "pipeline/library.hpp"
+#include "utils/logger/logger.hpp"
 
 #include <string>
 #include <set>

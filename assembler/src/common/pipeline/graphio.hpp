@@ -35,8 +35,7 @@ using namespace omnigraph::de;
 //todo think of inner namespace
 
 template<class KmerMapper>
-void SaveKmerMapper(const string& file_name,
-                    const KmerMapper& mapper) {
+void SaveKmerMapper(const std::string &file_name, const KmerMapper &mapper) {
     std::ofstream file;
     file.open((file_name + ".kmm").c_str(),
               std::ios_base::binary | std::ios_base::out);
@@ -52,8 +51,7 @@ void SaveKmerMapper(const string& file_name,
 }
 
 template<class KmerMapper>
-bool LoadKmerMapper(const string& file_name,
-                    KmerMapper& kmer_mapper) {
+bool LoadKmerMapper(const std::string &file_name, KmerMapper &kmer_mapper) {
     kmer_mapper.clear();
     std::ifstream file;
     file.open((file_name + ".kmm").c_str(),
@@ -74,8 +72,7 @@ bool LoadKmerMapper(const string& file_name,
 }
 
 template<class EdgeIndex>
-void SaveEdgeIndex(const std::string& file_name,
-                   const EdgeIndex& index) {
+void SaveEdgeIndex(const std::string &file_name, const EdgeIndex &index) {
     std::ofstream file;
     file.open((file_name + ".kmidx").c_str(),
               std::ios_base::binary | std::ios_base::out);
@@ -91,8 +88,7 @@ void SaveEdgeIndex(const std::string& file_name,
 }
 
 template<class EdgeIndex>
-bool LoadEdgeIndex(const std::string& file_name,
-                   EdgeIndex& index) {
+bool LoadEdgeIndex(const std::string &file_name, EdgeIndex &index) {
     std::ifstream file;
     file.open((file_name + ".kmidx").c_str(),
               std::ios_base::binary | std::ios_base::in);
@@ -112,7 +108,7 @@ bool LoadEdgeIndex(const std::string& file_name,
 }
 
 inline
-void SaveMapCoverage(const std::string& path, const std::map<int, int>& data ) {
+void SaveMapCoverage(const std::string &path, const std::map<int, int> &data ) {
     std::ofstream outFile;
     outFile.open(path.c_str());
 
@@ -124,7 +120,7 @@ void SaveMapCoverage(const std::string& path, const std::map<int, int>& data ) {
 }
 
 template<class KmerIndex>
-void SaveDetailCoverage(const std::string& pathInCov, const std::string& pathOutCov, const KmerIndex& index ) {
+void SaveDetailCoverage(const std::string &pathInCov, const std::string &pathOutCov, const KmerIndex &index ) {
     SaveMapCoverage(pathInCov, index.inCoverage);
     SaveMapCoverage(pathOutCov, index.outCoverage);
 }
@@ -159,32 +155,32 @@ class DataPrinter {
 
     //todo reduce duplication
     template<class T>
-    void SaveEdgeAssociatedInfo(std::function<T (EdgeId)> access_f, ostream& out) const {
-        out << component_.e_size() << endl;
+    void SaveEdgeAssociatedInfo(std::function<T (EdgeId)> access_f, std::ostream &out) const {
+        out << component_.e_size() << std::endl;
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
             EdgeId e = *iter;
             //todo fixme currently matches old format .cvr format
             out << e.int_id()/* << endl*/;
-            out << " " << access_f(e) << " ." << endl;
+            out << " " << access_f(e) << " .\n";
         }
     }
 
     template<class C>
-    void SaveEdgeAssociatedInfo(const C& c, ostream& out) const {
-        out << component_.e_size() << endl;
+    void SaveEdgeAssociatedInfo(const C& c, std::ostream& out) const {
+        out << component_.e_size() << std::endl;
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
             EdgeId e = *iter;
             //todo fixme currently matches old format .cvr format
             out << e.int_id()/* << endl*/;
             out << " ";
             c.Save(e, out);
-            out << " ." << endl;
+            out << " .\n";
         }
     }
 
   public:
 
-    void SaveGraph(const string& file_name) const {
+    void SaveGraph(const std::string &file_name) const {
         FILE* gid_file = fopen((file_name + ".gid").c_str(), "w");
         size_t max_id = this->component().g().GetGraphIdDistributor().GetMax();
         fprintf(gid_file, "%zu\n", max_id);
@@ -210,32 +206,31 @@ class DataPrinter {
         fclose(file);
     }
 
-    void SaveEdgeSequences(const string& file_name) const {
-        ofstream out(file_name + ".sqn");
+    void SaveEdgeSequences(const std::string &file_name) const {
+        std::ofstream out(file_name + ".sqn");
         //todo switch to general function after its switching to fasta
         DEBUG("Saving sequences, " << file_name <<" created");
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
             EdgeId e = *iter;
-            out << ">" << e.int_id() << endl;
-            out << component_.g().EdgeNucls(e) << endl;
+            out << ">" << e.int_id() << std::endl;
+            out << component_.g().EdgeNucls(e) << std::endl;
         }
     }
 
-    void SaveCoverage(const string& file_name) const {
-        ofstream out(file_name + ".cvr");
+    void SaveCoverage(const std::string &file_name) const {
+        std::ofstream out(file_name + ".cvr");
         DEBUG("Saving coverage, " << file_name <<" created");
         SaveEdgeAssociatedInfo(component_.g().coverage_index(), out);
     }
 
-    void SaveFlankingCoverage(const string& file_name, const FlankingCoverage<Graph>& flanking_cov) const {
-        ofstream out(file_name + ".flcvr");
+    void SaveFlankingCoverage(const std::string &file_name, const FlankingCoverage<Graph> &flanking_cov) const {
+        std::ofstream out(file_name + ".flcvr");
         DEBUG("Saving flanking coverage, " << file_name <<" created");
         SaveEdgeAssociatedInfo(flanking_cov, out);
     }
 
     template<class Index>
-    void SavePaired(const string& file_name,
-                    Index const& paired_index) const {
+    void SavePaired(const std::string &file_name, const Index &paired_index) const {
         FILE* file = fopen((file_name + ".prd").c_str(), "w");
         DEBUG("Saving paired info, " << file_name <<" created");
         VERIFY(file != NULL);
@@ -269,17 +264,16 @@ class DataPrinter {
         fclose(file);
     }
 
-    void SavePositions(const string& file_name,
-                       EdgesPositionHandler<Graph> const& ref_pos) const {
-        ofstream file((file_name + ".pos").c_str());
+    void SavePositions(const std::string &file_name, const EdgesPositionHandler<Graph> &ref_pos) const {
+        std::ofstream file((file_name + ".pos").c_str());
         DEBUG("Saving edges positions, " << file_name << " created");
         VERIFY(file.is_open());
-        file << component_.e_size() << endl;
+        file << component_.e_size() << std::endl;
         for (auto it = component_.e_begin(); it != component_.e_end(); ++it) {
             vector<omnigraph::EdgePosition> pos_it = ref_pos.GetEdgePositions(*it);
-            file << it->int_id() << " " << pos_it.size() << endl;
+            file << it->int_id() << " " << pos_it.size() << std::endl;
             for (size_t i = 0; i < pos_it.size(); i++) {
-                file << "    " << pos_it[i].contigId << " " << pos_it[i].mr << endl;
+                file << "    " << pos_it[i].contigId << " " << pos_it[i].mr << std::endl;
             }
         }
     }
@@ -338,7 +332,7 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
     }
 
     std::string ToPrint(VertexId v) const {
-        stringstream ss;
+        std::stringstream ss;
         ss
                 << "Vertex "
                 << v.int_id()
@@ -348,7 +342,7 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
     }
 
     std::string ToPrint(EdgeId e) const {
-        stringstream ss;
+        std::stringstream ss;
         ss
                 << "Edge "
                 << e.int_id()
@@ -371,13 +365,13 @@ class DataScanner {
     typedef typename Graph::VertexId VertexId;
 
     template<class T>
-    void LoadEdgeAssociatedInfo(std::function<void (EdgeId, T)> setting_f, istream& in) const {
+    void LoadEdgeAssociatedInfo(std::function<void (EdgeId, T)> setting_f, std::istream &in) const {
         size_t cnt;
         in >> cnt;
         for (size_t i = 0 ; i < cnt; ++i) {
             size_t edge_id;
             T t;
-            string delim;
+            std::string delim;
             in >> edge_id;
             in >> t;
             in >> delim;
@@ -388,7 +382,7 @@ class DataScanner {
     }
 
     template<class T>
-    void LoadEdgeAssociatedInfo(T& t, istream& in) const {
+    void LoadEdgeAssociatedInfo(T& t, std::istream &in) const {
         size_t cnt;
         in >> cnt;
         for (size_t i = 0 ; i < cnt; ++i) {
@@ -397,36 +391,34 @@ class DataScanner {
             VERIFY(this->edge_id_map().find(edge_id) != this->edge_id_map().end());
             EdgeId eid = this->edge_id_map().find(edge_id)->second;
             t.Load(eid, in);
-            string delim;
+            std::string delim;
             in >> delim;
             VERIFY(delim == ".");
         }
     }
 
   public:
-    virtual void LoadGraph(const string& file_name) = 0;
+    virtual void LoadGraph(const std::string &file_name) = 0;
 
-    void LoadCoverage(const string& file_name) {
+    void LoadCoverage(const std::string& file_name) {
         INFO("Reading coverage from " << file_name);
-        ifstream in(file_name + ".cvr");
+        std::ifstream in(file_name + ".cvr");
         LoadEdgeAssociatedInfo(g_.coverage_index(), in);
     }
 
-    bool LoadFlankingCoverage(const string& file_name, FlankingCoverage<Graph>& flanking_cov) {
+    bool LoadFlankingCoverage(const string &file_name, FlankingCoverage<Graph> &flanking_cov) {
         if (!fs::FileExists(file_name + ".flcvr")) {
             INFO("Flanking coverage saves are absent");
             return false;
         }
         INFO("Reading flanking coverage from " << file_name);
-        ifstream in(file_name + ".flcvr");
+        std::ifstream in(file_name + ".flcvr");
         LoadEdgeAssociatedInfo(flanking_cov, in);
         return true;
     }
 
     template<typename Index>
-    void LoadPaired(const string& file_name,
-                    Index& paired_index,
-                    bool force_exists = true) {
+    void LoadPaired(const std::string &file_name, Index &paired_index, bool force_exists = true) {
         typedef typename Graph::EdgeId EdgeId;
         FILE* file = fopen((file_name + ".prd").c_str(), "r");
         INFO((file_name + ".prd"));
@@ -465,8 +457,7 @@ class DataScanner {
         fclose(file);
     }
 
-    bool LoadPositions(const string& file_name,
-                       EdgesPositionHandler<Graph>& edge_pos) {
+    bool LoadPositions(const std::string &file_name, EdgesPositionHandler<Graph> &edge_pos) {
         FILE* file = fopen((file_name + ".pos").c_str(), "r");
         if (file == NULL) {
             INFO("No positions were saved");
@@ -499,7 +490,7 @@ class DataScanner {
                 VERIFY(read_count == 5);
                 VERIFY(this->edge_id_map().find(edge_real_id) != this->edge_id_map().end());
                 EdgeId eid = this->edge_id_map()[edge_real_id];
-                edge_pos.AddEdgePosition(eid, string(contigId), start_pos - 1, end_pos, m_start_pos - 1, m_end_pos);
+                edge_pos.AddEdgePosition(eid, contigId, start_pos - 1, end_pos, m_start_pos - 1, m_end_pos);
             }
         }
         fclose(file);
@@ -509,8 +500,10 @@ class DataScanner {
   private:
     Graph& g_;
     //  int edge_count_;
-    map<size_t, EdgeId> edge_id_map_;
-    map<size_t, VertexId> vertex_id_map_;
+    typedef std::map<size_t, EdgeId> EdgeIdMap;
+    typedef std::map<size_t, VertexId> VertexIdMap;
+    EdgeIdMap edge_id_map_;
+    VertexIdMap vertex_id_map_;
 
   protected:
     DataScanner(Graph &g) : g_(g) {
@@ -522,19 +515,19 @@ class DataScanner {
         return g_;
     }
 
-    map<size_t, EdgeId> &edge_id_map() {
+    EdgeIdMap &edge_id_map() {
         return edge_id_map_;
     }
 
-    map<size_t, VertexId> &vertex_id_map() {
+    VertexIdMap &vertex_id_map() {
         return vertex_id_map_;
     }
 
-    const map<size_t, EdgeId> &edge_id_map() const {
+    const EdgeIdMap &edge_id_map() const {
         return edge_id_map_;
     }
 
-    const map<size_t, VertexId> &vertex_id_map() const {
+    const VertexIdMap &vertex_id_map() const {
         return vertex_id_map_;
     }
 
@@ -551,7 +544,7 @@ public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 private:
-    size_t GetMaxId(const string& file_name) {
+    size_t GetMaxId(const std::string &file_name) {
         std::ifstream max_id_stream(file_name);
         if (!max_id_stream) {
             //TODO remove. Here to support compatibility to old saves in tests. 
@@ -566,7 +559,7 @@ private:
 
   public:
     /*virtual*/
-    void LoadGraph(const string& file_name) {
+    void LoadGraph(const std::string &file_name) {
         auto id_storage = this->g().GetGraphIdDistributor().Reserve(GetMaxId(file_name + ".gid"), 
                 /*force_zero_shift*/true);
         INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
@@ -645,8 +638,7 @@ private:
     }
 };
 
-inline std::string MakeSingleReadsFileName(const std::string& file_name,
-                                    size_t index) {
+inline std::string MakeSingleReadsFileName(const std::string &file_name, size_t index) {
     return file_name + "_paths_" + std::to_string(index) + ".mpr";
 }
 
@@ -654,16 +646,16 @@ inline std::string MakeSingleReadsFileName(const std::string& file_name,
 // todo think how to organize them in the most natural way
 
 template<class Graph>
-void PrintBasicGraph(const std::string& file_name, DataPrinter<Graph>& printer) {
+void PrintBasicGraph(const std::string &file_name, DataPrinter<Graph> &printer) {
     printer.SaveGraph(file_name);
     printer.SaveEdgeSequences(file_name);
     printer.SaveCoverage(file_name);
 }
 
 template<class graph_pack>
-void PrintGraphPack(const std::string& file_name,
-                    DataPrinter<typename graph_pack::graph_t>& printer,
-                    const graph_pack& gp) {
+void PrintGraphPack(const std::string &file_name,
+                    DataPrinter<typename graph_pack::graph_t> &printer,
+                    const graph_pack &gp) {
     PrintBasicGraph(file_name, printer);
     //  printer.SavePaired(file_name + "_et", gp.etalon_paired_index);
     if (gp.edge_pos.IsAttached())
@@ -677,67 +669,65 @@ void PrintGraphPack(const std::string& file_name,
 }
 
 template<class graph_pack>
-void PrintGraphPack(const string& file_name, const graph_pack& gp) {
+void PrintGraphPack(const std::string &file_name, const graph_pack &gp) {
     ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g);
     PrintGraphPack(file_name, printer, gp);
 }
 
 template<class Graph>
-void PrintPairedIndex(const string& file_name, DataPrinter<Graph>& printer,
-                      const PairedInfoIndexT<Graph>& paired_index) {
+void PrintPairedIndex(const std::string &file_name, DataPrinter<Graph> &printer,
+                      const PairedInfoIndexT<Graph> &paired_index) {
     printer.SavePaired(file_name, paired_index);
 }
 
 template<class Graph>
-void PrintUnclusteredIndex(const string& file_name, DataPrinter<Graph>& printer,
-                           const UnclusteredPairedInfoIndexT<Graph>& paired_index) {
+void PrintUnclusteredIndex(const std::string &file_name, DataPrinter<Graph> &printer,
+                           const UnclusteredPairedInfoIndexT<Graph> &paired_index) {
     printer.SavePaired(file_name, paired_index);
 }
 
 template<class Graph>
-void PrintClusteredIndex(const string& file_name, DataPrinter<Graph>& printer,
-                         const PairedInfoIndexT<Graph>& clustered_index) {
+void PrintClusteredIndex(const std::string &file_name, DataPrinter<Graph> &printer,
+                         const PairedInfoIndexT<Graph> &clustered_index) {
     PrintPairedIndex(file_name + "_cl", printer, clustered_index);
 }
 
 template<class Graph>
-void PrintScaffoldingIndex(const string& file_name, DataPrinter<Graph>& printer,
-                         const PairedInfoIndexT<Graph>& clustered_index) {
+void PrintScaffoldingIndex(const std::string &file_name, DataPrinter<Graph> &printer,
+                           const PairedInfoIndexT<Graph> &clustered_index) {
     PrintPairedIndex(file_name + "_scf", printer, clustered_index);
 }
 
 template<class Graph>
-void PrintScaffoldIndex(const string& file_name, DataPrinter<Graph>& printer,
-    const PairedInfoIndexT<Graph>& scaffold_index) {
+void PrintScaffoldIndex(const std::string &file_name, DataPrinter<Graph> &printer,
+                        const PairedInfoIndexT<Graph> &scaffold_index) {
     PrintPairedIndex(file_name + "_scf", printer, scaffold_index);
 }
 
 template<class Graph>
-void PrintUnclusteredIndices(const string& file_name, DataPrinter<Graph>& printer,
-                             const UnclusteredPairedInfoIndicesT<Graph>& paired_indices) {
+void PrintUnclusteredIndices(const std::string &file_name, DataPrinter<Graph> &printer,
+                             const UnclusteredPairedInfoIndicesT<Graph> &paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
         PrintUnclusteredIndex(file_name + "_" + std::to_string(i), printer, paired_indices[i]);
 }
 
 template<class Graph>
-void PrintClusteredIndices(const string& file_name, DataPrinter<Graph>& printer,
-                           const PairedInfoIndicesT<Graph>& paired_indices) {
+void PrintClusteredIndices(const std::string &file_name, DataPrinter<Graph> &printer,
+                           const PairedInfoIndicesT<Graph> &paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
         PrintClusteredIndex(file_name  + "_" + std::to_string(i), printer, paired_indices[i]);
 }
 
 template<class Graph>
-void PrintScaffoldingIndices(const string& file_name, DataPrinter<Graph>& printer,
-                           const PairedInfoIndicesT<Graph>& paired_indices) {
+void PrintScaffoldingIndices(const std::string &file_name, DataPrinter<Graph> &printer,
+                           const PairedInfoIndicesT<Graph> &paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
         PrintScaffoldingIndex(file_name  + "_" + std::to_string(i), printer, paired_indices[i]);
 }
 
 template<class graph_pack>
-void PrintWithPairedIndex(const string& file_name,
-                          DataPrinter<typename graph_pack::graph_t>& printer,
-                          const graph_pack& gp,
-                          const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
+void PrintWithPairedIndex(const std::string &file_name, DataPrinter<typename graph_pack::graph_t> &printer,
+                          const graph_pack &gp, const PairedInfoIndexT<typename graph_pack::graph_t> &paired_index,
                           bool clustered_index = false) {
 
     PrintGraphPack(file_name, printer, gp);
@@ -749,18 +739,14 @@ void PrintWithPairedIndex(const string& file_name,
 }
 
 template<class graph_pack>
-void PrintWithClusteredIndex(const string& file_name,
-                             DataPrinter<typename graph_pack::graph_t>& printer,
-                             const graph_pack& gp,
-                             const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index) {
+void PrintWithClusteredIndex(const std::string &file_name, DataPrinter<typename graph_pack::graph_t> &printer,
+                             const graph_pack &gp, const PairedInfoIndexT<typename graph_pack::graph_t> &paired_index) {
     PrintWithPairedIndex(file_name, printer, gp, paired_index, true);
 }
 
 template<class graph_pack>
-void PrintWithPairedIndices(const string& file_name,
-                            DataPrinter<typename graph_pack::graph_t>& printer,
-                            const graph_pack& gp,
-                            const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
+void PrintWithPairedIndices(const std::string &file_name, DataPrinter<typename graph_pack::graph_t> &printer,
+                            const graph_pack &gp, const PairedInfoIndicesT<typename graph_pack::graph_t> &paired_indices,
                             bool clustered_index = false) {
     PrintGraphPack(file_name, printer, gp);
     if (!clustered_index)
@@ -770,22 +756,20 @@ void PrintWithPairedIndices(const string& file_name,
 }
 
 template<class graph_pack>
-void PrintWithClusteredIndices(const string& file_name,
-                               DataPrinter<typename graph_pack::graph_t>& printer,
-                               const graph_pack& gp,
-                               const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices) {
+void PrintWithClusteredIndices(const std::string &file_name, DataPrinter<typename graph_pack::graph_t> &printer,
+                               const graph_pack &gp, const PairedInfoIndicesT<typename graph_pack::graph_t> &paired_indices) {
     PrintWithPairedIndices(file_name, printer, gp, paired_indices, true);
 }
 
 template<class Graph>
-void PrintSingleLongReads(const string& file_name, const LongReadContainer<Graph>& single_long_reads) {
+void PrintSingleLongReads(const std::string &file_name, const LongReadContainer<Graph> &single_long_reads) {
     for (size_t i = 0; i < single_long_reads.size(); ++i){
         single_long_reads[i].DumpToFile(MakeSingleReadsFileName(file_name, i));
     }
 }
 
 template<class graph_pack>
-void PrintAll(const string& file_name, const graph_pack& gp) {
+void PrintAll(const std::string &file_name, const graph_pack &gp) {
     ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g, gp.g.begin(), gp.g.end());
     PrintGraphPack(file_name, printer, gp);
     PrintUnclusteredIndices(file_name, printer, gp.paired_indices);
@@ -796,26 +780,24 @@ void PrintAll(const string& file_name, const graph_pack& gp) {
 }
 
 template<class graph_pack, class VertexIt>
-void PrintWithPairedIndex(const string& file_name, const graph_pack& gp,
+void PrintWithPairedIndex(const std::string &file_name, const graph_pack &gp,
                           VertexIt begin, VertexIt end,
-                          const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
+                          const PairedInfoIndexT<typename graph_pack::graph_t> &paired_index,
                           bool clustered_index = false) {
-    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g,
-                                                                          begin, end);
+    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g, begin, end);
     PrintWithPairedIndex(file_name, printer, gp, paired_index, clustered_index);
 }
 
 template<class graph_pack, class VertexIt>
-void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
+void PrintWithClusteredIndex(const std::string &file_name, const graph_pack &gp,
                              VertexIt begin, VertexIt end,
-                             const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
-    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g,
-                                                                          begin, end);
+                             const PairedInfoIndexT<typename graph_pack::graph_t> &clustered_index) {
+    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g, begin, end);
     PrintWithPairedIndex(file_name, printer, gp, clustered_index, true);
 }
 
 template<class graph_pack>
-void PrintWithPairedIndex(const string& file_name, const graph_pack& gp,
+void PrintWithPairedIndex(const std::string& file_name, const graph_pack& gp,
                           const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
                           bool clustered_index = false) {
     PrintWithPairedIndex(file_name, gp, gp.g.begin(), gp.g.end(), paired_index,
@@ -823,22 +805,21 @@ void PrintWithPairedIndex(const string& file_name, const graph_pack& gp,
 }
 
 template<class graph_pack, class VertexIt>
-void PrinGraphPack(const string& file_name, const graph_pack& gp,
+void PrinGraphPack(const std::string &file_name, const graph_pack &gp,
                    VertexIt begin, VertexIt end) {
-    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g,
-                                                                          begin, end);
+    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g, begin, end);
     PrintGraphPack(file_name, printer, gp);
 }
 
 template<class graph_pack>
-void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
-                             const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
+void PrintWithClusteredIndex(const std::string &file_name, const graph_pack &gp,
+                             const PairedInfoIndexT<typename graph_pack::graph_t> &clustered_index) {
     PrintWithPairedIndex(file_name, gp, clustered_index, true);
 }
 
 template<class graph_pack>
-void PrintWithPairedIndices(const string& file_name, const graph_pack& gp,
-                            const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
+void PrintWithPairedIndices(const std::string &file_name, const graph_pack &gp,
+                            const PairedInfoIndicesT<typename graph_pack::graph_t> &paired_indices,
                             bool clustered_index = false) {
 
     ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g, gp.g.begin(), gp.g.end());
@@ -847,20 +828,19 @@ void PrintWithPairedIndices(const string& file_name, const graph_pack& gp,
 }
 
 template<class graph_pack>
-void PrintWithClusteredIndices(const string& file_name, const graph_pack& gp,
-                               const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices) {
+void PrintWithClusteredIndices(const std::string &file_name, const graph_pack &gp,
+                               const PairedInfoIndicesT<typename graph_pack::graph_t> &paired_indices) {
     PrintWithPairedIndices(file_name, gp, paired_indices, true);
 }
 
 template<class Graph>
-void ScanBasicGraph(const string& file_name, DataScanner<Graph>& scanner) {
+void ScanBasicGraph(const std::string &file_name, DataScanner<Graph> &scanner) {
     scanner.LoadGraph(file_name);
     scanner.LoadCoverage(file_name);
 }
 
 template<class graph_pack>
-void ScanGraphPack(const string& file_name,
-                   DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp) {
+void ScanGraphPack(const std::string &file_name, DataScanner<typename graph_pack::graph_t> &scanner, graph_pack &gp) {
     ScanBasicGraph(file_name, scanner);
     gp.index.Attach();
     if (LoadEdgeIndex(file_name, gp.index.inner_index())) {
@@ -883,53 +863,53 @@ void ScanGraphPack(const string& file_name,
 }
 
 template<class Graph>
-void ScanPairedIndex(const string& file_name, DataScanner<Graph>& scanner,
-                     UnclusteredPairedInfoIndexT<Graph>& paired_index,
+void ScanPairedIndex(const std::string &file_name, DataScanner<Graph> &scanner,
+                     UnclusteredPairedInfoIndexT<Graph> &paired_index,
                      bool force_exists = true) {
     scanner.LoadPaired(file_name, paired_index, force_exists);
 }
 
 template<class Graph>
-void ScanClusteredIndex(const string& file_name, DataScanner<Graph>& scanner,
+void ScanClusteredIndex(const std::string &file_name, DataScanner<Graph> &scanner,
                         PairedInfoIndexT<Graph>& clustered_index,
                         bool force_exists = true) {
     scanner.LoadPaired(file_name + "_cl", clustered_index, force_exists);
 }
 
 template<class Graph>
-void ScanScaffoldingIndex(const string& file_name, DataScanner<Graph>& scanner,
-                          PairedInfoIndexT<Graph>& clustered_index,
+void ScanScaffoldingIndex(const std::string &file_name, DataScanner<Graph> &scanner,
+                          PairedInfoIndexT<Graph> &clustered_index,
                           bool force_exists = true) {
     scanner.LoadPaired(file_name + "_scf", clustered_index, force_exists);
 }
 
 template<class Graph>
-void ScanPairedIndices(const std::string& file_name, DataScanner<Graph>& scanner,
-                       UnclusteredPairedInfoIndicesT<Graph>& paired_indices,
+void ScanPairedIndices(const std::string &file_name, DataScanner<Graph> &scanner,
+                       UnclusteredPairedInfoIndicesT<Graph> &paired_indices,
                        bool force_exists = true) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
         ScanPairedIndex(file_name  + "_" + std::to_string(i), scanner, paired_indices[i], force_exists);
 }
 
 template<class Graph>
-void ScanClusteredIndices(const std:: string& file_name, DataScanner<Graph>& scanner,
-                          PairedInfoIndicesT<Graph>& paired_indices,
+void ScanClusteredIndices(const std::string &file_name, DataScanner<Graph> &scanner,
+                          PairedInfoIndicesT<Graph> &paired_indices,
                           bool force_exists = true) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
         ScanClusteredIndex(file_name  + "_" + std::to_string(i), scanner, paired_indices[i], force_exists);
 }
 
 template<class Graph>
-void ScanScaffoldingIndices(const std:: string& file_name, DataScanner<Graph>& scanner,
-                            PairedInfoIndicesT<Graph>& paired_indices,
+void ScanScaffoldingIndices(const std::string &file_name, DataScanner<Graph> &scanner,
+                            PairedInfoIndicesT<Graph> &paired_indices,
                             bool force_exists = true) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
         ScanScaffoldingIndex(file_name  + "_" + std::to_string(i), scanner, paired_indices[i], force_exists);
 }
 
 template<class Graph>
-void ScanScaffoldIndices(const string& file_name, DataScanner<Graph>& scanner,
-        PairedInfoIndicesT<Graph>& scaffold_indices) {
+void ScanScaffoldIndices(const std::string &file_name, DataScanner<Graph> &scanner,
+                         PairedInfoIndicesT<Graph> &scaffold_indices) {
 
     for (size_t i = 0; i < scaffold_indices.size(); ++i) {
         ScanScaffoldIndex(file_name  + "_" + std::to_string(i), scanner, scaffold_indices[i]);
@@ -937,9 +917,8 @@ void ScanScaffoldIndices(const string& file_name, DataScanner<Graph>& scanner,
 }
 
 template<class graph_pack>
-void ScanWithPairedIndex(const string& file_name,
-                         DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp,
-                         PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
+void ScanWithPairedIndex(const std::string& file_name, DataScanner<typename graph_pack::graph_t> &scanner,
+                         graph_pack &gp, PairedInfoIndexT<typename graph_pack::graph_t> &paired_index,
                          bool clustered_index = false) {
     ScanGraphPack(file_name, scanner, gp);
     if (!clustered_index) {
@@ -950,9 +929,8 @@ void ScanWithPairedIndex(const string& file_name,
 }
 
 template<class graph_pack>
-void ScanWithPairedIndices(const string& file_name,
-                           DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp,
-                           PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
+void ScanWithPairedIndices(const std::string &file_name, DataScanner<typename graph_pack::graph_t> &scanner,
+                           graph_pack &gp, PairedInfoIndicesT<typename graph_pack::graph_t> &paired_indices,
                            bool clustered_index = false) {
 
     ScanGraphPack(file_name, scanner, gp);
@@ -964,29 +942,28 @@ void ScanWithPairedIndices(const string& file_name,
 }
 
 template<class graph_pack>
-void ScanWithPairedIndex(const string& file_name, graph_pack& gp,
-                         PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
+void ScanWithPairedIndex(const std::string &file_name, graph_pack &gp,
+                         PairedInfoIndexT<typename graph_pack::graph_t> &paired_index,
                          bool clustered_index = false) {
     ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanWithPairedIndex(file_name, scanner, gp, paired_index, clustered_index);
 }
 
 template<class graph_pack>
-void ScanWithClusteredIndex(const string& file_name, graph_pack& gp,
-                            PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
+void ScanWithClusteredIndex(const std::string &file_name, graph_pack &gp,
+                            PairedInfoIndexT<typename graph_pack::graph_t> &clustered_index) {
     ScanWithPairedIndex(file_name, gp, clustered_index, true);
 }
 
 template<class graph_pack>
-void ScanWithClusteredIndices(const string& file_name,
-                              DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp,
-                              PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices) {
+void ScanWithClusteredIndices(const std::string &file_name, DataScanner<typename graph_pack::graph_t>& scanner,
+                              graph_pack &gp, PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices) {
     ScanWithPairedIndices(file_name, scanner, gp, paired_indices, true);
 }
 
 template<class graph_pack>
-void ScanWithPairedIndices(const string& file_name, graph_pack& gp,
-                           PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
+void ScanWithPairedIndices(const std::string &file_name, graph_pack &gp,
+                           PairedInfoIndicesT<typename graph_pack::graph_t> &paired_indices,
                            bool clustered_index = false) {
     ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanWithPairedIndices(file_name, scanner, gp, paired_indices, clustered_index);
@@ -994,35 +971,34 @@ void ScanWithPairedIndices(const string& file_name, graph_pack& gp,
 
 
 template<class graph_pack>
-void ScanWithClusteredIndices(const string& file_name, graph_pack& gp,
-                              PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices) {
+void ScanWithClusteredIndices(const std::string &file_name, graph_pack &gp,
+                              PairedInfoIndicesT<typename graph_pack::graph_t> &paired_indices) {
     ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanGraphPack(file_name, scanner, gp);
     ScanClusteredIndices(file_name, scanner, paired_indices, false);
 }
 
 template<class Graph>
-void ScanBasicGraph(const string& file_name, Graph& g) {
+void ScanBasicGraph(const std::string &file_name, Graph &g) {
     ConjugateDataScanner<Graph> scanner(g);
     ScanBasicGraph<Graph>(file_name, scanner);
 }
 
 template<class Graph>
-void ScanSingleLongReads(const string& file_name, LongReadContainer<Graph>& single_long_reads) {
+void ScanSingleLongReads(const std::string &file_name, LongReadContainer<Graph> &single_long_reads) {
     for (size_t i = 0; i < single_long_reads.size(); ++i){
         single_long_reads[i].LoadFromFile(MakeSingleReadsFileName(file_name, i), false);
     }
 }
 
 template<class graph_pack>
-void ScanGraphPack(const string& file_name, graph_pack& gp) {
+void ScanGraphPack(const std::string &file_name, graph_pack &gp) {
     ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanGraphPack(file_name, scanner, gp);
 }
 
 template<class graph_pack>
-void ScanAll(const std::string& file_name, graph_pack& gp,
-             bool force_exists = true) {
+void ScanAll(const std::string &file_name, graph_pack &gp, bool force_exists = true) {
     ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanGraphPack(file_name, scanner, gp);
     ScanPairedIndices(file_name, scanner, gp.paired_indices, force_exists);

@@ -65,9 +65,9 @@ namespace debruijn_graph {
 namespace config {
 
 template<typename mode_t>
-vector<string> CheckedNames(const vector<pair<string, mode_t>>& mapping, mode_t total) {
+std::vector<std::string> CheckedNames(const std::vector<std::pair<std::string, mode_t>>& mapping, mode_t total) {
     VERIFY_MSG(size_t(total) == mapping.size(), "Names for some modes missing")
-    vector<string> answer;
+    std::vector<std::string> answer;
     for (size_t i = 0; i < mapping.size(); ++i) {
         VERIFY_MSG(size_t(mapping[i].second) == i, "Id/name mapping error");
         answer.push_back(mapping[i].first);
@@ -75,7 +75,7 @@ vector<string> CheckedNames(const vector<pair<string, mode_t>>& mapping, mode_t 
     return answer;
 }
 
-vector<string> InfoPrinterPosNames() {
+std::vector<std::string> InfoPrinterPosNames() {
     return CheckedNames<info_printer_pos>({
                     {"default", info_printer_pos::default_pos},
                     {"before_raw_simplification", info_printer_pos::before_raw_simplification},
@@ -87,7 +87,7 @@ vector<string> InfoPrinterPosNames() {
                     {"before_repeat_resolution", info_printer_pos::before_repeat_resolution}}, info_printer_pos::total);
 }
 
-vector<string> PipelineTypeNames() {
+std::vector<std::string> PipelineTypeNames() {
     return CheckedNames<pipeline_type>({
                     {"base", pipeline_type::base},
                     {"isolate", pipeline_type::isolate},
@@ -101,26 +101,26 @@ vector<string> PipelineTypeNames() {
                     }, pipeline_type::total);
 }
 
-vector<string> ConstructionModeNames() {
+std::vector<std::string> ConstructionModeNames() {
     return CheckedNames<construction_mode>({
                     {"old", construction_mode::old},
                     {"extension", construction_mode::extention}}, construction_mode::total);
 }
 
-vector<string> ResolveModeNames() {
+std::vector<std::string> ResolveModeNames() {
     return CheckedNames<resolving_mode>({
                     {"none", resolving_mode::none},
                     {"path_extend", resolving_mode::path_extend}}, resolving_mode::total);
 }
 
-vector<string> SingleReadResolveModeNames() {
+std::vector<std::string> SingleReadResolveModeNames() {
     return CheckedNames<single_read_resolving_mode>({
                     {"none", single_read_resolving_mode::none},
                     {"only_single_libs", single_read_resolving_mode::only_single_libs},
                     {"all", single_read_resolving_mode::all}}, single_read_resolving_mode::total);
 }
 
-vector<string> BrokenScaffoldsModeNames() {
+std::vector<std::string> BrokenScaffoldsModeNames() {
     return CheckedNames<output_broken_scaffolds>({
                                              {"none", output_broken_scaffolds::none},
                                              {"break_gaps", output_broken_scaffolds::break_gaps},
@@ -698,7 +698,7 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
           bool complete) {
     using config_common::load;
 
-    string mode_str = pt.get("mode", "");
+    std::string mode_str = pt.get("mode", "");
     if (!mode_str.empty()) {
         cfg.mode = ModeByName<pipeline_type>(mode_str, PipelineTypeNames());
     }
@@ -821,7 +821,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
 
     //some post-loading processing
     using config::pipeline_type;
-    cfg.uneven_depth = set<pipeline_type>{pipeline_type::mda, pipeline_type::rna, pipeline_type::meta}.count(cfg.mode);
+    cfg.uneven_depth = std::set<pipeline_type>{pipeline_type::mda, pipeline_type::rna, pipeline_type::meta}.count(cfg.mode);
     if (!cfg.developer_mode) {
         cfg.pe_params.debug_output = false;
         cfg.pe_params.viz.DisableAll();

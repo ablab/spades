@@ -11,10 +11,9 @@
 namespace path_extend {
 
 //convert string to vector of words separated by space
-std::vector<string> StringToVector(const std::string& s) {
-    std::string word =
-        "";
-    std::vector<string> res;
+std::vector<std::string> StringToVector(const std::string& s) {
+    std::string word;
+    std::vector<std::string> res;
     for (size_t i = 0; i < s.length(); ++i) {
         if (s[i] == ' ') {
             if (word != "") {
@@ -175,7 +174,7 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.scaffolding2015, pt, "scaffolding2015", complete);
     load(p.scaffold_graph_params, pt, "scaffold_graph", complete);
 
-    string path_cleaning_presets;
+    std::string path_cleaning_presets;
     load(path_cleaning_presets, pt, "path_cleaning_presets", complete);
     auto presets = StringToVector(path_cleaning_presets);
     for (auto &key : presets) {

@@ -186,7 +186,7 @@ public:
     size_t TraverseAllLoops() {
         DEBUG("TraverseAllLoops");
         size_t traversed = 0;
-        shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, long_edge_limit_);
+        auto splitter = LongEdgesExclusiveSplitter<Graph>(g_, long_edge_limit_);
         while (splitter->HasNext()) {
             GraphComponent<Graph> component = splitter->Next();
             if (component.v_size() > component_size_limit_)

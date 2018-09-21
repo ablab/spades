@@ -34,9 +34,9 @@ public:
 
 protected:
 
-    typedef vector<pair<int, double> > EstimHist;
-    typedef pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
-    typedef vector<size_t> GraphLengths;
+    typedef std::vector<std::pair<int, double>> EstimHist;
+    typedef std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
+    typedef std::vector<size_t> GraphLengths;
 
     std::function<double(int)> weight_f_;
 
@@ -44,9 +44,8 @@ protected:
                                                 const InHistogram &histogram,
                                                 const GraphLengths &raw_forward) const override;
 
-    const string Name() const override {
-        static const string my_name = "WEIGHTED";
-        return my_name;
+    const std::string Name() const override {
+        return "WEIGHTED";
     }
 
 private:

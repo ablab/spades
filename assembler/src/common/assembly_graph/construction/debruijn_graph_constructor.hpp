@@ -8,7 +8,6 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/construction_helper.hpp"
-#include "utils/standard_base.hpp"
 #include "utils/extension_index/kmer_extension_index.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/parallel/parallel_wrapper.hpp"
@@ -172,7 +171,7 @@ public:
             CalculateSequences(kwh_list, sequences); // in parallel
             ConstructPart(kwh_list, sequences);
             kwh_list.clear();
-            queueSize = min(size_t(double(queueSize) * queueGrowthRate), queueMaxSize);
+            queueSize = std::min(size_t(double(queueSize) * queueGrowthRate), queueMaxSize);
         }
     }
 

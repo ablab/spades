@@ -27,10 +27,10 @@ private:
     mutable size_t w_;
 
 public:
-    const std::vector<EdgeId>& path() const {
+    const std::vector<EdgeId> &path() const {
         return path_;
     }
-    std::vector<EdgeId>& path() {
+    std::vector<EdgeId> &path() {
         return path_;
     }
 
@@ -68,7 +68,7 @@ template<class Graph>
 class PathStorage {
     friend class PathInfo<Graph> ;
     typedef typename Graph::EdgeId EdgeId;
-    typedef std::map<EdgeId, std::set<PathInfo<Graph> > > InnerIndex;
+    typedef std::map<EdgeId, std::set<PathInfo<Graph>>> InnerIndex;
 
     const Graph &g_;
     InnerIndex inner_index_;
@@ -76,8 +76,7 @@ class PathStorage {
 
     void HiddenAddPath(const std::vector<EdgeId> &p, int w) {
         if (p.size() == 0 ) return;
-        for (typename std::set<PathInfo<Graph> >::iterator iter = inner_index_[p[0]].begin(); iter != inner_index_[p[0]].end(); ++iter) {
-
+        for (typename std::set<PathInfo<Graph>>::iterator iter = inner_index_[p[0]].begin(); iter != inner_index_[p[0]].end(); ++iter) {
             if (iter->path() == p) {
                 iter->increase_weight(w);
                 return;
@@ -88,7 +87,6 @@ class PathStorage {
     }
 
 public:
-
     PathStorage(const Graph &g)
             : g_(g),
               inner_index_(),
@@ -123,7 +121,7 @@ public:
                 DEBUG("new first edge: "<< g_.int_id(old_to_new[iter->first]) << " with " << tmp.size() << " edges ");
                 new_first = old_to_new[iter->first];
             }
-            std::set<PathInfo<Graph> > new_tmp;
+            std::set<PathInfo<Graph>> new_tmp;
             for (auto j_iter = tmp.begin(); j_iter != tmp.end(); j_iter++) {
                 PathInfo<Graph> pi = *(j_iter);
                 for (size_t k = 0; k < pi.path().size(); k++)
@@ -161,7 +159,7 @@ public:
         }
     }
 
-    void DumpToFile(const std::string& filename) const{
+    void DumpToFile(const std::string &filename) const{
         std::map<EdgeId, EdgeId> auxilary;
         DumpToFile(filename, auxilary);
     }
@@ -208,7 +206,7 @@ public:
         std::set<EdgeId> continued_edges;
 
         for(auto iter = inner_index_.begin(); iter != inner_index_.end(); ++iter){
-            filestr<< iter->second.size() << std::endl;
+            filestr << iter->second.size() << std::endl;
             int non1 = 0;
             for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
                 filestr << " Weight: " << j_iter->weight();
@@ -268,7 +266,7 @@ public:
         }
     }
 
-    void LoadFromFile(const std::string s, bool force_exists = true) {
+    void LoadFromFile(const std::string &s, bool force_exists = true) {
         FILE* file = fopen(s.c_str(), "r");
         if (force_exists) {
             VERIFY(file != NULL);
@@ -354,7 +352,7 @@ private:
 template<class Graph>
 class LongReadContainer {
     Graph& g_;
-    vector<PathStorage<Graph>> data_;
+    std::vector<PathStorage<Graph>> data_;
 
 public:
     typedef PathStorage<Graph> value_type;
@@ -385,5 +383,4 @@ public:
 
 };
 
-
-}
+} // namespace debruijn_graph

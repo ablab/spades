@@ -15,6 +15,8 @@
 
 namespace online_visualization {
 
+typedef std::vector<std::string> Args;
+
 template <class Env>
 class CommandMapping;
 
@@ -27,10 +29,10 @@ class Command {
 
  //todo fix modifier
  protected:
-  string invocation_string_;
+    std::string invocation_string_;
 
 
-  bool CheckEnoughArguments(const vector<string>& args) const {
+  bool CheckEnoughArguments(const Args &args) const {
     bool result = (args.size() > MinArgNumber());
     if (!result)
       FireNotEnoughArguments();
@@ -38,28 +40,30 @@ class Command {
   }
 
  public:
-  virtual string Usage() const = 0;
+  virtual std::string Usage() const = 0;
 
-  Command(string invocation_string)
-      : invocation_string_(invocation_string) {
+  Command(std::string invocation_string)
+      : invocation_string_(std::move(invocation_string)) {
   }
 
   virtual ~Command() {
   }
 
-  string invocation_string() const {
+  const std::string &invocation_string() const {
     return invocation_string_;
   }
 
   // system command, curr_env can point to null
-  virtual void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& arg_list) const = 0;
+  virtual void Execute(std::shared_ptr<Env> &curr_env,
+                       LoadedEnvironments<Env> &loaded_environments,
+                       const ArgumentList &arg_list) const = 0;
 
   // virtual void Execute(shared_ptr<Env>& curr_env, const ArgumentList& arg_list) const = 0;
 
 };
 
 //todo reduce code duplication in cap's test_utils
-void MakeDirPath(const std::string& path) {
+void MakeDirPath(const std::string &path) {
   if (path.size() == 0) {
     TRACE("Somewhat delirium: trying to create directory ``");
     return;
@@ -67,14 +71,14 @@ void MakeDirPath(const std::string& path) {
 
   size_t slash_pos = 0;
   while ((slash_pos = path.find_first_of('/', slash_pos + 1)) != std::string::npos) {
-    make_dir(path.substr(0, slash_pos));
+    fs::make_dir(path.substr(0, slash_pos));
   }
   if (path[path.size() - 1] != '/') {
-    make_dir(path);
+    fs::make_dir(path);
   }
 }
 
-bool DirExist(std::string path) {
+inline bool DirExist(const std::string &path) {
   struct stat st;
   return (stat(path.c_str(), &st) == 0) && (S_ISDIR(st.st_mode));
 }
@@ -83,14 +87,17 @@ template <class Env>
 class LocalCommand : public Command<Env> {
 
  public:
-  LocalCommand(string invocation_string) : Command<Env>(invocation_string) {
+  LocalCommand(std::string invocation_string) :
+          Command<Env>(std::move(invocation_string)) {
   }
 
   // command for the current environment
   virtual void Execute(Env& curr_env, const ArgumentList& arg_list) const = 0;
 
   // !!!! NO OVERRIDING !!!!
-  virtual void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& arg_list) const {
+  virtual void Execute(std::shared_ptr<Env> &curr_env,
+                       LoadedEnvironments<Env> &loaded_environments,
+                       const ArgumentList &arg_list) const {
     if (arg_list["all"] == "true")
       for (auto iter = loaded_environments.begin(); iter != loaded_environments.end(); ++iter)
         Execute(*(iter->second), arg_list);
@@ -103,7 +110,7 @@ class LocalCommand : public Command<Env> {
 
  protected:
 
-  string TryFetchFolder(Env& curr_env, const vector<string>& args, size_t arg_nmb = 1) const {
+  std::string TryFetchFolder(Env &curr_env, const Args &args, size_t arg_nmb = 1) const {
     if (args.size() > arg_nmb) {
       return MakeDirIfAbsent(args[arg_nmb] + "/");
     } else {
@@ -111,17 +118,17 @@ class LocalCommand : public Command<Env> {
     }
   }
 
-  string TryFetchFolder(Env& curr_env, const ArgumentList& arg_list, size_t arg_nmb = 1) const {
-      const vector<string>& args = arg_list.GetAllArguments();
+  std::string TryFetchFolder(Env &curr_env, const ArgumentList &arg_list, size_t arg_nmb = 1) const {
+      const auto &args = arg_list.GetAllArguments();
       return TryFetchFolder(curr_env, args, arg_nmb);
   }
 
-  string CurrentFolder(Env& curr_env) const {
+  std::string CurrentFolder(Env& curr_env) const {
     return curr_env.manager().GetDirForCurrentState();
   }
 
 private:
-  string MakeDirIfAbsent(const string& folder) const {
+  std::string MakeDirIfAbsent(const string& folder) const {
       if (!DirExist(folder))
           MakeDirPath(folder);
       return folder;
@@ -135,13 +142,13 @@ class NewLocalCommand : public LocalCommand<Env> {
     size_t min_arg_num_;
 
 public:
-    NewLocalCommand(string invocation_string, size_t min_arg_num)
-            : LocalCommand<Env>(invocation_string), min_arg_num_(min_arg_num) {
+    NewLocalCommand(std::string invocation_string, size_t min_arg_num)
+            : LocalCommand<Env>(std::move(invocation_string)), min_arg_num_(min_arg_num) {
     }
 
     // command for the current environment
     /*virtual*/ void Execute(Env& curr_env, const ArgumentList& arg_list) const {
-        const vector<string>& args = arg_list.GetAllArguments();
+        const auto &args = arg_list.GetAllArguments();
         if (!this->CheckEnoughArguments(args))
             return;
         InnerExecute(curr_env, args);
@@ -153,7 +160,7 @@ private:
       return min_arg_num_;
     }
 
-    virtual void InnerExecute(Env& curr_env, const vector<string>& args) const = 0;
+    virtual void InnerExecute(Env &curr_env, const Args &args) const = 0;
 
 };
 
@@ -163,8 +170,8 @@ class CommandServingCommand : public Command<Env> {
   CommandMapping<Env> *command_container_;
 
  public:
-  CommandServingCommand(string invocation_string, CommandMapping<Env> *command_mapper)
-      : Command<Env>(invocation_string),
+  CommandServingCommand(std::string invocation_string, CommandMapping<Env> *command_mapper)
+      : Command<Env>(std::move(invocation_string)),
         command_container_(command_mapper)
   {
   }

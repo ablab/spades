@@ -75,11 +75,11 @@ public:
         return inner_index_.contains(inner_index_.ConstructKWH(kmer));
     }
 
-    const pair<EdgeId, size_t> get(const KMer& kmer) const {
+    const std::pair<EdgeId, size_t> get(const KMer& kmer) const {
         VERIFY(this->IsAttached());
         auto kwh = inner_index_.ConstructKWH(kmer);
         if (!inner_index_.contains(kwh)) {
-            return make_pair(EdgeId(), -1u);
+            return {EdgeId(), -1u};
         } else {
             EdgeInfo<EdgeId> entry = inner_index_.get_value(kwh);
             return std::make_pair(entry.edge_id, (size_t)entry.offset);

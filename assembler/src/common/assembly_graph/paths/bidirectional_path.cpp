@@ -11,7 +11,6 @@
  *      Author: andrey
  */
 
-#include "utils/standard_base.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
 
 namespace path_extend {
