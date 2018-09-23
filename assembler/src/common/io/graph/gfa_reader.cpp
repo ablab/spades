@@ -60,7 +60,13 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
 
             uint64_t ids[] = { id, id + 1};
             auto id_distributor = eid_storage.GetSegmentIdDistributor(std::begin(ids), std::end(ids));
-            EdgeId e = helper.AddEdge(DeBruijnEdgeData(Sequence(seg->seq)), id_distributor);
+            uint8_t *kc = gfa_aux_get(seg->aux.l_aux, seg->aux.aux, "KC");
+            unsigned cov = 0;
+			if (kc && kc[0] == 'i')
+				cov = *(int32_t*)(kc+1);
+            DeBruijnEdgeData edata(Sequence(seg->seq));
+            edata.set_raw_coverage(cov);
+            EdgeId e = helper.AddEdge(edata, id_distributor);
             edges.push_back(e);
         }
     } else {
@@ -69,7 +75,13 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
             gfa_seg_t *seg = gfa_->seg + i;
 
             auto id_distributor = eid_storage.GetSegmentIdDistributor(i << 1, (i << 1) + 2);
-            EdgeId e = helper.AddEdge(DeBruijnEdgeData(Sequence(seg->seq)), id_distributor);
+            uint8_t *kc = gfa_aux_get(seg->aux.l_aux, seg->aux.aux, "KC");
+            unsigned cov = 0;
+			if (kc && kc[0] == 'i')
+				cov = *(int32_t*)(kc+1);
+            DeBruijnEdgeData edata(Sequence(seg->seq));
+            edata.set_raw_coverage(cov);
+            EdgeId e = helper.AddEdge(edata, id_distributor);
             edges.push_back(e);
         }
     }
