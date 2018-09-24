@@ -140,6 +140,20 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
             ++it;
     }
     helper.AddVerticesToGraph(vertices.begin(), vertices.end());
+
+    // INFO("Reading paths")
+    paths_.reserve(gfa_->n_path);
+    for (uint32_t i = 0; i < gfa_->n_path; ++i) {
+        const gfa_path_t &path = gfa_->path[i];
+        paths_.emplace_back(path.name);
+        GFAPath &cpath = paths_.back();
+        for (unsigned j = 0; j < path.n_seg; ++j) {
+            EdgeId e = edges[path.v[j] >> 1];
+            if (path.v[j] & 1)
+                e = g.conjugate(e);
+            cpath.edges.push_back(e);
+        }
+    }
 }
 
 }
