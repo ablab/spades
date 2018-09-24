@@ -50,8 +50,8 @@ private:
 
     /*
      * This method starts from the kmer that is second in the tip counting from the junction vertex
-     * It returns all kmers of a tip into tip vector
-     * In case it did not end as a tip or if it was too long tip the method returns empty vector
+     * It records all kmers of a tip into tip vector
+     * In case it did not end as a tip or if it was too long tip the method leaves the tip vector empty
      */
     void FindForward(KeyWithHash kh, std::vector<KeyWithHash> &tip) const {
         while (tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh)) {
@@ -60,24 +60,30 @@ private:
         }
         tip.push_back(kh);
         if (!index_.CheckUniqueIncoming(kh) || !index_.IsDeadEnd(kh)) {
-            return tip.clear();
+            // Branching or too long tip -> clear output vector
+            tip.clear();
         }
     }
 
-    size_t RemoveTip(const vector<KeyWithHash> &tip) {
-        for (const auto &kh : tip) index_.IsolateVertex(kh);
+    size_t RemoveTip(const std::vector<KeyWithHash> &tip) {
+        for (const auto &kh : tip) {
+            index_.IsolateVertex(kh);
+        }
         return tip.size();
     }
 
-    size_t RemoveTips(const std::array<vector<KeyWithHash>, 4> &tips, size_t max) {
+    using TipsArray = std::array<std::vector<KeyWithHash>, 4>;
+    size_t RemoveTips(const TipsArray &tips, size_t max) {
         size_t result = 0;
         for (const auto &tip : tips) {
-            if (tip.size() < max) result += RemoveTip(tip);
+            if (tip.size() < max) {
+                result += RemoveTip(tip);
+            }
         }
         return result;
     }
 
-    size_t RemoveForward(const KeyWithHash &kh, std::array<vector<KeyWithHash>, 4> &tips) {
+    size_t RemoveForward(const KeyWithHash &kh, TipsArray &tips) {
         size_t max = 0;
         auto mask = index_.get_value(kh);
         for (char c = 0; c < 4; c++) {
@@ -93,13 +99,13 @@ private:
     }
 
     size_t ClipTips(std::vector<Index::kmer_iterator> &iters) {
-        std::vector<size_t> result(iters.size());
+        std::vector<size_t> removed_kmers(iters.size());
         std::vector<std::vector<KeyWithHash>> tipped_junctions(iters.size());
 #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < iters.size(); i++) {
-            std::array<vector<KeyWithHash>, 4> tips;
-            for (char c = 0; c < 4; ++c) {
-                tips[c].reserve(length_bound_);
+            TipsArray tips;
+            for (auto &tip : tips) {
+                tip.reserve(length_bound_);
             }
 
             for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
@@ -108,7 +114,7 @@ private:
                     KeyWithHash kh = index_.ConstructKWH(s);
                     if (index_.OutgoingEdgeCount(kh) >= 2) {
                         size_t removed = RemoveForward(kh, tips);
-                        result[i] += removed;
+                        removed_kmers[i] += removed;
                         if (removed) {
                             tipped_junctions[i].push_back(kh);
                         }
@@ -133,8 +139,8 @@ private:
         }
         INFO("Clipped tips: " << clipped_tips);
 
-        size_t sum = std::accumulate(result.cbegin(), result.cend(), size_t(0));
-        return sum;
+        size_t n_removed_kmers = std::accumulate(removed_kmers.cbegin(), removed_kmers.cend(), size_t(0));
+        return n_removed_kmers;
     }
 
     size_t ClipTips(size_t n_chunks) {
