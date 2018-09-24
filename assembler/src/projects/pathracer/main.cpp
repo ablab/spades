@@ -442,12 +442,17 @@ void ExportEdges(const Container &entries,
     }
 }
 
-void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename) {
+void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph,
+               std::vector<std::vector<EdgeId>> &paths,
+               const std::string &filename) {
     using namespace debruijn_graph;
     if (ends_with(filename, ".gfa")) {
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(graph);
+        paths.reserve(gfa.num_paths());
+        for (const auto &path : gfa.paths())
+            paths.push_back(path.edges);
     } else {
         graphio::ScanBasicGraph(filename, graph);
     }
@@ -799,7 +804,8 @@ int main(int argc, char* argv[]) {
     using namespace debruijn_graph;
 
     debruijn_graph::ConjugateDeBruijnGraph graph(cfg.k);
-    LoadGraph(graph, cfg.load_from);
+    std::vector<std::vector<EdgeId>> paths;
+    LoadGraph(graph, paths, cfg.load_from);
     INFO("Graph loaded. Total vertices: " << graph.size());
 
     // Collect all the edges
