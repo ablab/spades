@@ -173,6 +173,11 @@ void gfa_destroy(gfa_t *g)
 	uint64_t k;
 	if (g == 0) return;
 	kh_destroy(seg, (seghash_t*)g->h_names);
+    for (i = 0; i < g->n_path; ++i) {
+        gfa_path_t *p = &g->path[i];
+        free(p->name);
+        free(p->v);
+    }
 	for (i = 0; i < g->n_seg; ++i) {
 		gfa_seg_t *s = &g->seg[i];
 		free(s->name);
@@ -184,7 +189,7 @@ void gfa_destroy(gfa_t *g)
 	}
 	for (k = 0; k < g->n_arc; ++k)
 		free(g->arc_aux[k].aux);
-	free(g->idx); free(g->seg); free(g->arc); free(g->arc_aux);
+	free(g->idx); free(g->seg); free(g->arc); free(g->arc_aux); free(g->path);
 	free(g);
 }
 
@@ -374,6 +379,68 @@ int gfa_parse_L(gfa_t *g, char *s)
 	return 0;
 }
 
+int gfa_parse_P(gfa_t *g, char *s)
+{
+	int i, is_ok = 0, ori = -1;
+	char *p, *q, *seg = 0, *seglist = 0, *ovl = 0;
+	for (i = 0, p = q = s + 2;; ++p) {
+		if (*p == 0 || *p == '\t') {
+			int c = *p;
+			*p = 0;
+			if (i == 0) {
+				seg = q;
+			} else if (i == 1) {
+                seglist = q;
+            } else if (i == 2) {
+                ovl = q;
+				is_ok = 1;
+				break;
+            }
+			++i, q = p + 1;
+			if (c == 0) break;
+		}
+	}
+	if (is_ok) {
+        gfa_path_t path;
+        path.name = strdup(seg);
+        path.n_seg = path.m_seg = 0;
+        path.v = 0;
+        for (p = q = seglist;; ++p) {
+            if (*p == 0 || *p == ',') {
+                uint32_t v;
+                int c = *p;
+                *p = 0;
+                if (p[-1] != '+' && p[-1] != '-') {
+                    free(path.name);
+                    if (path.m_seg)
+                        free(path.v);
+                    return -1;
+                }
+                ori = p[-1] != '+'; p[-1] = 0;
+
+                if (path.m_seg == path.n_seg) {
+                    uint64_t old_m = path.m_seg;
+                    path.m_seg = path.m_seg? path.m_seg<<1 : 16;
+                    path.v = (uint32_t*)realloc(path.v, path.m_seg * sizeof(uint32_t));
+                    memset(&path.v[old_m], 0, (path.m_seg - old_m) * sizeof(uint32_t));
+                }
+                v = gfa_add_seg(g, q) << 1 | ori;
+                path.v[path.n_seg++] = v;
+                q = p + 1;
+                if (c == 0) break;
+            }
+        }
+        if (g->m_path == g->n_path) {
+            uint64_t old_m = g->m_path;
+            g->m_path = g->m_path? g->m_path<<1 : 16;
+            g->path = (gfa_path_t*)realloc(g->path, g->m_path * sizeof(gfa_path_t));
+            memset(&g->path[old_m], 0, (g->m_path - old_m) * sizeof(gfa_path_t));
+        }
+        g->path[g->n_path++] = path;
+	} else return -1;
+	return 0;
+}
+
 /********************
  * Fix graph issues *
  ********************/
@@ -507,6 +574,7 @@ gfa_t *gfa_read(const char *fn)
 		if (s.l < 3 || s.s[1] != '\t') continue; // empty line
 		if (s.s[0] == 'S') ret = gfa_parse_S(g, s.s);
 		else if (s.s[0] == 'L') ret = gfa_parse_L(g, s.s);
+        else if (s.s[0] == 'P') ret = gfa_parse_P(g, s.s);
 		if (ret < 0 && gfa_verbose >= 1)
 			fprintf(stderr, "[E] invalid %c-line at line %ld (error code %d)\n", s.s[0], (long)lineno, ret);
 	}
@@ -574,6 +642,15 @@ void gfa_print(const gfa_t *g, FILE *fp, int M_only)
 		}
 		fputc('\n', fp);
 	}
+    for (k = 0; k < g->n_path; ++k) {
+        const gfa_path_t *path = &g->path[k];
+        fprintf(fp, "P\t%s\t", path->name);
+        for (i = 0; i < path->n_seg; ++i) {
+            fprintf(fp, "%s%c%c", g->seg[path->v[i] >> 1].name, "+-"[path->v[i]&1], (i == (path->n_seg - 1)? '\t' : ','));
+        }
+        fputc('*', fp);
+        fputc('\n', fp);
+    }
 }
 
 /**********************

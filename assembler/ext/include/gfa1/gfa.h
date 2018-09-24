@@ -64,6 +64,12 @@ typedef struct {
 
 #define gfa_n_vtx(g) ((g)->n_seg << 1)
 
+typedef struct {
+    char *name;
+    uint32_t m_seg, n_seg;
+    uint32_t *v;
+} gfa_path_t;
+
 typedef struct gfa_s {
 	// segments
 	uint32_t m_seg, n_seg;
@@ -74,6 +80,9 @@ typedef struct gfa_s {
 	gfa_arc_t *arc;
 	gfa_aux_t *arc_aux;
 	uint64_t *idx;
+    // paths
+    uint32_t m_path, n_path;
+    gfa_path_t *path;
 } gfa_t;
 
 extern int gfa_verbose;
