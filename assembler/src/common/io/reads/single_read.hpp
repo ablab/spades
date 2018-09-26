@@ -300,7 +300,7 @@ public:
     }
 
     SingleReadSeq operator!() const {
-        return SingleReadSeq(!seq_);
+        return SingleReadSeq(!seq_, right_offset_, left_offset_);
     }
 
     SequenceOffsetT GetLeftOffset() const {
