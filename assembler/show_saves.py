@@ -9,6 +9,8 @@
 import os.path
 from struct import Struct
 import sys
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE, SIG_DFL)
 
 from Bio.Seq import Seq
 
@@ -59,9 +61,10 @@ def show_grp(file, show_seq=False):
         except EOFError:
             break
         start_conj = read_int(file)
-        count = read_int(file)
-        for _ in range(count):
+        while True:
             edge = read_int(file)
+            if not edge: #null-term
+                break
             edge_conj = read_int(file)
             end = read_int(file)
             end_conj = read_int(file)
@@ -83,9 +86,10 @@ def show_prd(file, clustered=False):
     point = Struct("fff" if clustered else "ff")
     for _ in range(size):
         e1 = read_int(file)
-        inner_size = read_int(file)
-        for _ in range(inner_size):
+        while True:
             e2 = read_int(file)
+            if not e2: #null-term
+                break
             hist_size = read_int(file)
             for _ in range(hist_size):
                 p = read_struct(file, point)
@@ -106,7 +110,7 @@ showers = {".grp": show_grp, ".prd": show_prd, ".sqn": show_sqn}
 
 basename, ext = os.path.splitext(sys.argv[1])
 target = ext
-if ext == ".sqn":
-    target = ".grp"
+if ext in [".grp", ".sqn"]:
+    target = ".grseq"
 with open(basename + target, "rb") as file:
     showers[ext](file)
