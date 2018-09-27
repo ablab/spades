@@ -54,14 +54,14 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
         <li>rnaSPAdes can take as an input only paired-end and single-end libraries.</li>
         <li>rnaSPAdes does not support <code>--careful</code> and <code>--cov-cutoff</code> options.</li>
         <li>rnaSPAdes is not compatible with other pipeline options such as <code>--meta</code>, <code>--sc</code> and <code>--plasmid</code>. If you wish to assemble metatranscriptomic data just run rnaSPAdes as it is.</li>
-        <li>rnaSPAdes works using only a single k-mer size (automatically detected using read length by the default). We strongly recommend not to change this parameter. In case you have any doubts about your run, do not hesitate to contact us using e-mail given below.</li>
+        <li>By default rnaSPAdes uses 2 k-mer sizes, which are automatically detected using read length (approximately one third and half of the maximal read length). We recommend not to change this parameter because smaller k-mer sizes typically result in multiple chimeric (misassembled) transcripts. In case you have any doubts about your run, do not hesitate to contact us using e-mail given below.</li>
     </ul>
 
 <a name="sec2.2"></a>
 <h3>2.2 rnaSPAdes-specific options</h3>
 <p>
     <code>--fast</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Speeds up isoform detection stage by removing short low-covered isolated edges from the graph. Note, that short low-expressed transcripts may be missing when this option is used.
+    &nbsp;&nbsp;&nbsp;&nbsp;Uses only a single k-mer size (detected automatically) and removes short low-covered isolated edges from the graph. Note, that very short and low-expressed transcripts may be missing when this option is used.
 </p>
 
 <a name="sec2.3"></a>

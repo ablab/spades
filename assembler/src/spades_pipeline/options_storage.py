@@ -43,13 +43,15 @@ filtering_types = ["hard", "soft", "default"]
 #other constants
 MIN_K = 1
 MAX_K = 127
+RNA_MIN_K = 29
+RNA_MAX_LOWER_K = 55
 THRESHOLD_FOR_BREAKING_SCAFFOLDS = 3
 THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS = 10
 
 #default values constants
 THREADS = 16
 MEMORY = 250
-K_MERS_RNA = [55]
+K_MERS_RNA = [33,49]
 K_MERS_SHORT = [21,33,55]
 K_MERS_150 = [21,33,55,77]
 K_MERS_250 = [21,33,55,77,99,127]
