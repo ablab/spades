@@ -43,13 +43,15 @@ filtering_types = ["hard", "soft", "default"]
 #other constants
 MIN_K = 1
 MAX_K = 127
+RNA_MIN_K = 29
+RNA_MAX_LOWER_K = 55
 THRESHOLD_FOR_BREAKING_SCAFFOLDS = 3
 THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS = 10
 
 #default values constants
 THREADS = 16
 MEMORY = 250
-K_MERS_RNA = [55]
+K_MERS_RNA = [33,49]
 K_MERS_SHORT = [21,33,55]
 K_MERS_150 = [21,33,55,77]
 K_MERS_250 = [21,33,55,77,99,127]
@@ -130,7 +132,7 @@ correct_scaffolds = False
 run_truseq_postprocessing = False
 
 #rna options
-strand_specific = None  # None, True, False are possible
+strand_specificity = None  # None, 'rf', 'fr' are possible
 fast = None
 
 dict_of_prefixes = dict()
@@ -428,7 +430,7 @@ def save_restart_options(log):
         support.error("you cannot specify --only-assembler with --restart-from option!", log)
     if only_error_correction:
         support.error("you cannot specify --only-error-correction with --restart-from option!", log)
-    if strand_specific is not None:
+    if strand_specificity is not None:
         support.error("you cannot specify strand specificity (--ss-rf or --ss-fr) with --restart-from option!", log)
 
     global restart_k_mers

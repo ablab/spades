@@ -245,9 +245,9 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.rna = True
         elif opt.startswith("--ss-"):  # strand specificity, RNA-Seq only
             if opt == "--ss-rf":
-                options_storage.strand_specific = True
+                options_storage.strand_specificity = 'rf'
             elif opt == "--ss-fr":
-                options_storage.strand_specific = False
+                options_storage.strand_specificity = 'fr'
         elif opt == "--fast":  # fast run, RNA-Seq only
             options_storage.fast = True
         elif opt == "--fast:false":
@@ -399,8 +399,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     if options_storage.rna:
         if options_storage.careful:
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
-        if options_storage.k_mers and options_storage.k_mers != 'auto' and len(options_storage.k_mers) > 1:
-            support.error("you cannot specify multiple k-mer sizes in RNA-Seq mode!", log)
+#        if options_storage.k_mers and options_storage.k_mers != 'auto' and len(options_storage.k_mers) > 1:
+#            support.error("you cannot specify multiple k-mer sizes in RNA-Seq mode!", log)
         if options_storage.restart_from and options_storage.restart_from.startswith('k'):
             support.error("you cannot restart rnaSPAdes from a certain k-mer size, use --restart-from as", log)
     if [options_storage.meta, options_storage.large_genome, options_storage.truseq_mode,
@@ -560,6 +560,38 @@ def check_cfg_for_partial_run(cfg, type='restart-from'):  # restart-from ot stop
                 support.error("failed to " + action + " K=%s because this K " % k_str + verb + " not specified!")
 
 
+def rna_k_values(support, option_storage, dataset_data, log):
+    rna_rl = support.get_reads_length(dataset_data, log, ['merged reads'])
+    upper_k = int(rna_rl / 2) - 1
+    if upper_k % 2 == 0:
+        upper_k -= 1
+
+    lower_k = min(max(int(rna_rl / 3), options_storage.RNA_MIN_K), options_storage.RNA_MAX_LOWER_K)
+    if lower_k % 2 == 0:
+        lower_k -= 1
+
+    use_iterative = True
+    if upper_k <= lower_k:
+        use_iterative= False
+
+    if upper_k < options_storage.RNA_MIN_K:
+        support.warning("\n" + 'Auto K value (' + str(k_value) + ') is too small, recommended to be at least %d.\n' % (options_storage.RNA_MIN_K))
+        if rna_rl <= options_storage.RNA_MIN_K:
+            support.warning('Read length is too small (%d), but keeping current K value anyway. Consider setting K manually. K\n' % (rna_rl))
+        else:
+            upper_k = options_storage.RNA_MIN_K
+        log.info('Upper K value is set to %d.\n' % (upper_k))
+
+    if upper_k > options_storage.MAX_K:
+        log.info("\n" + 'Auto K value (' + str(upper_k) + ') is too large, all K values should not exceed %d. Setting k=%d.\n'
+                 % (options_storage.MAX_K, options_storage.MAX_K))
+        upper_k = options_storage.MAX_K
+
+    if options_storage.fast or (not use_iterative):
+        return [upper_k]
+    return [lower_k, upper_k]
+
+
 def get_options_from_params(params_filename, running_script):
     cmd_line = None
     options = None
@@ -691,20 +723,11 @@ def main(args):
         log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
 
     if options_storage.rna and cfg["assembly"].__dict__["iterative_K"] == 'auto':
-        k_value = options_storage.K_MERS_RNA[0]
+        k_values = options_storage.K_MERS_RNA
         if not options_storage.iontorrent:
-            k_value = int(support.get_reads_length(dataset_data, log, ['merged reads']) / 2) - 1
-            if k_value % 2 == 0:
-                k_value -= 1
-            if k_value < options_storage.MIN_K:
-                log.info("\n" + 'Default k value (' + str(k_value) + ') is too small, all k values should be between %d and %d. Setting k=%d.\n'
-                         % (options_storage.MIN_K, options_storage.MAX_K, options_storage.MIN_K))
-                k_value = options_storage.MIN_K
-            if k_value > options_storage.MAX_K:
-                log.info("\n" + 'Default k value (' + str(k_value) + ') is too large, all k values should be between %d and %d. Setting k=%d.\n'
-                         % (options_storage.MIN_K, options_storage.MAX_K, options_storage.MAX_K))
-                k_value = options_storage.MAX_K
-        cfg["assembly"].__dict__["iterative_K"] = k_value
+            k_values = rna_k_values(support, options_storage, dataset_data, log)
+        cfg["assembly"].__dict__["iterative_K"] = k_values
+        log.info("K values to be used: " + str(k_values))
 
     # splitting interlaced reads and processing Ns in additional contigs if needed
     if support.dataset_has_interlaced_reads(dataset_data) or support.dataset_has_additional_contigs(dataset_data)\
