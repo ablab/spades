@@ -708,6 +708,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
 
     void FindBestFittedEdgesForClustered(const BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) const {
         for (EdgeId e : edges) {
+            DEBUG("Analyzing edge " << g_.int_id(e))
             std::vector<pair<int, double>> histogram;
             CountAvrgDists(path, e, histogram);
             double sum = 0.0;
@@ -720,6 +721,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
             }
 
             int gap = CountMean(histogram);
+            DEBUG("Gap = " << gap)
             if (HasIdealInfo(path, e, gap)) {
                 DEBUG("scaffolding " << g_.int_id(e) << " gap " << gap);
                 result.push_back(EdgeWithDistance(e, gap));
@@ -764,12 +766,21 @@ public:
     }
 
     EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
+        DEBUG("Extension chooser filter, threshold = " << cl_weight_threshold_)
         if (edges.empty()) {
             return edges;
         }
         set<EdgeId> candidates = FindCandidates(path);
+        for (auto e : path) {
+            if (candidates.find(e) != candidates.end()) {
+                DEBUG(g_.int_id(e) << " is removed due to presence in the path")
+                candidates.erase(e);
+            }
+        }
+        DEBUG("Found candidates:" << candidates.size())
         EdgeContainer result;
         FindBestFittedEdgesForClustered(path, candidates, result);
+        DEBUG("Detected possible edges to scaffold: " << result.size())
         return result;
     }
 

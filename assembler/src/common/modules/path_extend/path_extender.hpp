@@ -1407,8 +1407,15 @@ public:
 
 
     bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
-        return MakeSimpleGrowStepForChooser(path, GetExtensionChooser(), true) ||
-            MakeSimpleGrowStepForChooser(path, strict_extension_chooser_);
+        DEBUG("==== RNA scaffolding ===");
+        path.PrintDEBUG();
+        bool res = MakeSimpleGrowStepForChooser(path, GetExtensionChooser(), true);
+        if (!res) {
+            DEBUG("==== Second strategy ====")
+            res = MakeSimpleGrowStepForChooser(path, strict_extension_chooser_);
+        }
+        DEBUG("==== DONE ====")
+        return res;
     }
 
 };
