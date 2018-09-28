@@ -8,5 +8,9 @@
 project(assembly_graph CXX)
 
 add_library(assembly_graph STATIC
-            components/connected_component.cpp paths/bidirectional_path.cpp paths/bidirectional_path_io/io_support.cpp paths/bidirectional_path_io/bidirectional_path_output.cpp graph_support/scaff_supplementary.cpp ../modules/alignment/edge_index_refiller.cpp graph_support/coverage_uniformity_analyzer.cpp)
+            core/id_distributor.cpp
+            components/connected_component.cpp
+            paths/bidirectional_path.cpp paths/bidirectional_path_io/io_support.cpp paths/bidirectional_path_io/bidirectional_path_output.cpp
+            graph_support/scaff_supplementary.cpp graph_support/coverage_uniformity_analyzer.cpp
+            ../modules/alignment/edge_index_refiller.cpp)
 target_link_libraries(assembly_graph hattrie)

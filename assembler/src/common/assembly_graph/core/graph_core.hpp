@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include <vector>
-#include <set>
+#include "id_distributor.hpp"
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
 #include "order_and_law.hpp"
@@ -17,6 +16,9 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <btree/safe_btree_set.h>
+
+#include <vector>
+#include <set>
 
 namespace omnigraph {
 
@@ -37,12 +39,12 @@ class PairedEdge;
 
 namespace impl {
 struct Id {
-    size_t id_;
+    uint64_t id_;
 
-    Id(size_t id = 0)
+    Id(uint64_t id = 0)
             : id_(id) {}
 
-    size_t int_id() const { return id_; }
+    uint64_t int_id() const { return id_; }
     size_t hash() const { return id_; }
 
     bool operator==(Id other) const { return id_ == other.id_; }
@@ -222,22 +224,109 @@ public:
     edge_const_iterator in_end(VertexId v) const { return cvertex(v)->out_end(this, true); }
 
 private:
-    std::unordered_map<VertexId, PairedVertex<DataMaster>*> vid_map_;
-    std::unordered_map<EdgeId, PairedEdge<DataMaster>*> eid_map_;
+    class VertexStorage {
+        std::vector<PairedVertex<DataMaster>*> storage_;
+        ReclaimingIdDistributor id_distributor_;
+      public:
+        VertexStorage(size_t bias)
+                : id_distributor_(bias) {}
+
+        void reserve(size_t sz) {
+            if (id_distributor_.size() > 2*sz)
+                return;
+
+            id_distributor_.resize(2*sz);
+            storage_.reserve(2*sz);
+        }
+
+        std::pair<VertexId, VertexId> create(const VertexData& data1, const VertexData& data2) {
+            auto v1 = new PairedVertex<DataMaster>(data1), v2 = new PairedVertex<DataMaster>(data2);
+            uint64_t pair_id = id_distributor_.allocate();
+            VertexId vid1{2*pair_id + 0}, vid2{2*pair_id + 1};
+
+            while (storage_.size() < 2 * pair_id + 1 + 1)
+                storage_.resize(storage_.size() * 2 + 1);
+
+            VERIFY(storage_[vid1.int_id()] == nullptr);
+            VERIFY(storage_[vid2.int_id()] == nullptr);
+
+            storage_[vid1.int_id()] = v1;
+            storage_[vid2.int_id()] = v2;
+
+            return { vid1, vid2 };
+        }
+
+        void erase(VertexId id) {
+            PairedVertex<DataMaster> *v = storage_[id.int_id()];
+            VertexId cid = v->conjugate();
+            PairedVertex<DataMaster> *cv = storage_[cid.int_id()];
+
+            delete v;
+            delete cv;
+
+            uint64_t pair_id = id.int_id() / 2;
+            id_distributor_.release(pair_id);
+            storage_[id.int_id()] = nullptr;
+            storage_[cid.int_id()] = nullptr;
+        }
+
+        PairedVertex<DataMaster>* at(VertexId id) const {
+            return storage_.at(id.int_id());
+        }
+    };
+
+    class EdgeStorage {
+        std::vector<PairedEdge<DataMaster>*> storage_;
+        ReclaimingIdDistributor id_distributor_;
+      public:
+        EdgeStorage(size_t bias)
+                : id_distributor_(bias) {}
+
+        void reserve(size_t sz) {
+            if (id_distributor_.size() > sz)
+                return;
+
+            id_distributor_.resize(sz);
+            storage_.reserve(sz);
+        }
+
+        EdgeId create(VertexId end, const EdgeData &data) {
+            auto e = new PairedEdge<DataMaster>(end, data);
+            uint64_t id = id_distributor_.allocate();
+
+            while (storage_.size() < id  + 1)
+                storage_.resize(storage_.size() * 2 + 1);
+
+            VERIFY(storage_[id] == nullptr);
+            storage_[id] = e;
+            return id;
+        }
+
+        void erase(EdgeId id) {
+            PairedEdge<DataMaster> *e = storage_[id.int_id()];
+
+            delete e;
+            storage_[id.int_id()] = nullptr;
+            id_distributor_.release(id.int_id());
+        }
+
+        PairedEdge<DataMaster>* at(EdgeId id) const {
+            return storage_.at(id.int_id());
+        }
+    };
+
+    VertexStorage vstorage_;
+    EdgeStorage estorage_;
 
     PairedVertex<DataMaster>* vertex(VertexId id) const {
-        auto val = vid_map_.find(id);
-        VERIFY(val != vid_map_.end());
-        return val->second;
+        return vstorage_.at(id);
     }
     PairedVertex<DataMaster>* cvertex(VertexId id) const {
         return vertex(conjugate(id));
     }
 
     PairedEdge<DataMaster>* edge(EdgeId id) const {
-        auto val = eid_map_.find(id);
-        VERIFY(val != eid_map_.end());
-        return val->second;
+        return estorage_.at(id.int_id());
     }
     PairedEdge<DataMaster>* cedge(EdgeId id) const {
         return edge(conjugate(id));
@@ -247,45 +336,31 @@ private:
 private:
     VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
                           restricted::IdDistributor& id_distributor) {
-        auto v1 = new PairedVertex<DataMaster>(data1), v2 = new PairedVertex<DataMaster>(data2);
-        VertexId vid1{id_distributor.GetId()}, vid2{id_distributor.GetId()};
+        VertexId vid1, vid2;
+        std::tie(vid1, vid2) = vstorage_.create(data1, data2);
 
-        v1->set_conjugate(vid2);
-        v2->set_conjugate(vid1);
-
-        vid_map_.insert({vid1, v1});
-        vid_map_.insert({vid2, v2});
+        vertex(vid1)->set_conjugate(vid2);
+        vertex(vid2)->set_conjugate(vid1);
 
         return vid1;
     }
 
     void DestroyVertex(VertexId v) {
-        VertexId conjugate = vertex(v)->conjugate();
-
-        delete vertex(v);
-        delete vertex(conjugate);
-
-        vid_map_.erase(v);
-        vid_map_.erase(conjugate);
+        vstorage_.erase(v);
     }
 
     EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data,
                          restricted::IdDistributor &idDistributor) {
-        auto e = new PairedEdge<DataMaster>(v2, data);
-        EdgeId eid{idDistributor.GetId()};
-        eid_map_.insert({eid, e});
+        EdgeId eid = estorage_.create(v2, data);
         if (v1.int_id())
             vertex(v1)->AddOutgoingEdge(eid);
         return eid;
     }
 
     void DestroyEdge(EdgeId e, EdgeId rc) {
-        if (e != rc) {
-            delete edge(rc);
-            eid_map_.erase(rc);
-        }
-        delete edge(e);
-        eid_map_.erase(e);
+        if (e != rc)
+            estorage_.erase(rc);
+        estorage_.erase(e);
     }
 
     VertexId CreateVertex(const VertexData &data,
@@ -402,7 +477,8 @@ public:
     };
 
     GraphCore(const DataMaster& master)
-            : master_(master) {}
+            : master_(master),
+              vstorage_(/* bias */3), estorage_(/* bias */3) {}
 
     virtual ~GraphCore() { VERIFY(size() == 0); }
 
