@@ -34,7 +34,8 @@ public:
                   max_path_len_(max_path_len),
                   //TODO:: config
                   min_gap_(int(g.k() + 10)) {}
-
+    
+    virtual ~PathGapCloser() {}
 };
 
 //Intermediate abstract class - majority of GapClosers needs only one next edge after gap, not all original path.
