@@ -225,9 +225,9 @@ public:
 
 private:
     class VertexStorage {
-        std::vector<PairedVertex<DataMaster>*> storage_;
-        ReclaimingIdDistributor id_distributor_;
       public:
+        typedef PairedVertex<DataMaster> Vertex;
+
         VertexStorage(size_t bias)
                 : id_distributor_(bias) {}
 
@@ -240,7 +240,7 @@ private:
         }
 
         std::pair<VertexId, VertexId> create(const VertexData& data1, const VertexData& data2) {
-            auto v1 = new PairedVertex<DataMaster>(data1), v2 = new PairedVertex<DataMaster>(data2);
+            auto v1 = new Vertex(data1), v2 = new Vertex(data2);
             uint64_t pair_id = id_distributor_.allocate();
             VertexId vid1{2*pair_id + 0}, vid2{2*pair_id + 1};
 
@@ -257,9 +257,9 @@ private:
         }
 
         void erase(VertexId id) {
-            PairedVertex<DataMaster> *v = storage_[id.int_id()];
+            Vertex *v = storage_[id.int_id()];
             VertexId cid = v->conjugate();
-            PairedVertex<DataMaster> *cv = storage_[cid.int_id()];
+            Vertex *cv = storage_[cid.int_id()];
 
             delete v;
             delete cv;
@@ -270,15 +270,18 @@ private:
             storage_[cid.int_id()] = nullptr;
         }
 
-        PairedVertex<DataMaster>* at(VertexId id) const {
+        Vertex* at(VertexId id) const {
             return storage_.at(id.int_id());
         }
+      private:
+        std::vector<Vertex*> storage_;
+        ReclaimingIdDistributor id_distributor_;
     };
 
     class EdgeStorage {
-        std::vector<PairedEdge<DataMaster>*> storage_;
-        ReclaimingIdDistributor id_distributor_;
       public:
+        typedef PairedEdge<DataMaster> Edge;
+
         EdgeStorage(size_t bias)
                 : id_distributor_(bias) {}
 
@@ -291,7 +294,7 @@ private:
         }
 
         EdgeId create(VertexId end, const EdgeData &data) {
-            auto e = new PairedEdge<DataMaster>(end, data);
+            auto e = new Edge(end, data);
             uint64_t id = id_distributor_.allocate();
 
             while (storage_.size() < id  + 1)
@@ -303,16 +306,19 @@ private:
         }
 
         void erase(EdgeId id) {
-            PairedEdge<DataMaster> *e = storage_[id.int_id()];
+            Edge *e = storage_[id.int_id()];
 
             delete e;
             storage_[id.int_id()] = nullptr;
             id_distributor_.release(id.int_id());
         }
 
-        PairedEdge<DataMaster>* at(EdgeId id) const {
+        Edge* at(EdgeId id) const {
             return storage_.at(id.int_id());
         }
+      private:
+        std::vector<Edge*> storage_;
+        ReclaimingIdDistributor id_distributor_;
     };
 
     VertexStorage vstorage_;
