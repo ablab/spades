@@ -45,7 +45,7 @@ public:
 
     vertex_neighbour<Graph> Next() {
         vertex_neighbour<Graph> res(this->graph_.EdgeEnd(*out_edges_.first), *out_edges_.first);
-        out_edges_.first++;
+        ++out_edges_.first;
         return res;
     }
 };
@@ -72,7 +72,7 @@ public:
 
     vertex_neighbour<Graph> Next() {
         vertex_neighbour<Graph> res(this->graph_.EdgeStart(*in_edges_.first), *in_edges_.first);
-        in_edges_.first++;
+        ++in_edges_.first;
         return res;
     }
 };
@@ -102,13 +102,13 @@ public:
     // first all outgoing edges are visited
     // then all incoming
     vertex_neighbour<Graph> Next() {
-        if(out_edges_.first != out_edges_.second){
+        if (out_edges_.first != out_edges_.second) {
             vertex_neighbour<Graph> res(this->graph_.EdgeEnd(*out_edges_.first), *out_edges_.first);
-            out_edges_.first++;
+            ++out_edges_.first;
             return res;
         }
         vertex_neighbour<Graph> res(this->graph_.EdgeStart(*in_edges_.first), *in_edges_.first);
-        in_edges_.first++;
+        ++in_edges_.first;
         return res;
     }
 };

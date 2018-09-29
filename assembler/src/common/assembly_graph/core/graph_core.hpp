@@ -12,9 +12,10 @@
 #include "order_and_law.hpp"
 #include "utils/stl_utils.hpp"
 
+#include "adt/iterator_range.hpp"
 #include "adt/small_pod_vector.hpp"
 
-#include <boost/iterator/iterator_facade.hpp>
+#include <llvm/ADT/iterator.h>
 #include <btree/safe_btree_set.h>
 
 #include <vector>
@@ -69,6 +70,37 @@ struct EdgeId : public Id {
 
 }
 
+template<class It, class Graph>
+class conjugate_iterator : public llvm::iterator_adaptor_base<conjugate_iterator<It, Graph>,
+                                                              It,
+                                                              typename std::iterator_traits<It>::iterator_category,
+                                                              typename std::iterator_traits<It>::value_type> {
+  public:
+    typedef typename std::iterator_traits<It>::value_type value_type;
+
+    explicit conjugate_iterator(It it,
+                                const Graph *graph,
+                                bool conjugate = false)
+            : conjugate_iterator::iterator_adaptor_base(it),
+            graph_(graph), conjugate_(conjugate) {}
+
+    conjugate_iterator()
+            : graph_(nullptr), conjugate_(false) {}
+
+    bool operator==(const conjugate_iterator &other) const {
+        return this->I == other.I && other.conjugate_ == conjugate_;
+    }
+
+    value_type operator*() const {
+        value_type v = *this->I;
+        return (conjugate_ ? graph_->conjugate(v) : v);
+    }
+
+  private:
+    const Graph *graph_;
+    bool conjugate_;
+};
+
 template<class DataMaster>
 class PairedEdge {
 private:
@@ -108,45 +140,15 @@ private:
     typedef impl::VertexId VertexId;
     typedef typename adt::SmallPODVector<EdgeId>::const_iterator edge_raw_iterator;
 
-    class conjugate_iterator : public boost::iterator_facade<conjugate_iterator,
-                                                             EdgeId,
-                                                             boost::forward_traversal_tag,
-                                                             EdgeId> {
-    public:
-        explicit conjugate_iterator(edge_raw_iterator it,
-                                    const GraphCore<DataMaster> *graph,
-                                    bool conjugate = false)
-                : it_(it), graph_(graph), conjugate_(conjugate) {}
-
-        conjugate_iterator()
-                : graph_(nullptr), conjugate_(false) {}
-
-    private:
-        friend class boost::iterator_core_access;
-
-        void increment() { it_++; }
-
-        bool equal(const conjugate_iterator &other) const {
-            return other.it_ == it_ && other.conjugate_ == conjugate_;
-        }
-
-        EdgeId dereference() const {
-            return (conjugate_ ? graph_->conjugate(*it_) : *it_);
-        }
-
-        edge_raw_iterator it_;
-        const GraphCore<DataMaster> *graph_;
-        bool conjugate_;
-    };
-
 public:
-    typedef conjugate_iterator edge_const_iterator;
+    typedef conjugate_iterator<edge_raw_iterator, GraphCore<DataMaster>> edge_const_iterator;
 
 private:
     friend class GraphCore<DataMaster>;
     friend class ConstructionHelper<DataMaster>;
     friend class PairedEdge<DataMaster>;
     friend class PairedElementManipulationHelper<VertexId>;
+    template<class It, class Graph>
     friend class conjugate_iterator;
 
     adt::SmallPODVector<EdgeId> outgoing_edges_;
@@ -211,17 +213,6 @@ private:
     VertexContainer vertices_;
 
     friend class ConstructionHelper<DataMaster>;
-public:
-    VertexIt begin() const { return vertices_.begin(); }
-    VertexIt end() const { return vertices_.end(); }
-
-    size_t size() const { return vertices_.size(); }
-
-    edge_const_iterator out_begin(VertexId v) const { return vertex(v)->out_begin(this); }
-    edge_const_iterator out_end(VertexId v) const { return vertex(v)->out_end(this); }
-
-    edge_const_iterator in_begin(VertexId v) const { return cvertex(v)->out_begin(this, true); }
-    edge_const_iterator in_end(VertexId v) const { return cvertex(v)->out_end(this, true); }
 
 private:
     class VertexStorage {
@@ -297,7 +288,7 @@ private:
             auto e = new Edge(end, data);
             uint64_t id = id_distributor_.allocate();
 
-            while (storage_.size() < id  + 1)
+            while (storage_.size() < id + 1)
                 storage_.resize(storage_.size() * 2 + 1);
 
             VERIFY(storage_[id] == nullptr);
@@ -338,6 +329,17 @@ private:
         return edge(conjugate(id));
     }
 
+public:
+    VertexIt begin() const { return vertices_.begin(); }
+    VertexIt end() const { return vertices_.end(); }
+
+    size_t size() const { return vertices_.size(); }
+
+    edge_const_iterator out_begin(VertexId v) const { return vertex(v)->out_begin(this); }
+    edge_const_iterator out_end(VertexId v) const { return vertex(v)->out_end(this); }
+
+    edge_const_iterator in_begin(VertexId v) const { return cvertex(v)->out_begin(this, true); }
+    edge_const_iterator in_end(VertexId v) const { return cvertex(v)->out_end(this, true); }
 
 private:
     VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
@@ -468,20 +470,6 @@ protected:
     }
 
 public:
-    class IteratorContainer {
-    public:
-        typedef edge_const_iterator const_iterator;
-    private:
-        const_iterator begin_;
-        const_iterator end_;
-    public:
-        IteratorContainer(const_iterator begin, const_iterator end)
-                : begin_(begin), end_(end) {}
-
-        const_iterator begin() const { return begin_; }
-        const_iterator end() const { return end_; }
-    };
-
     GraphCore(const DataMaster& master)
             : master_(master),
               vstorage_(/* bias */3), estorage_(/* bias */3) {}
@@ -503,8 +491,8 @@ public:
     size_t OutgoingEdgeCount(VertexId v) const { return vertex(v)->OutgoingEdgeCount(); }
     size_t IncomingEdgeCount(VertexId v) const { return cvertex(v)->OutgoingEdgeCount(); }
 
-    IteratorContainer OutgoingEdges(VertexId v) const { return { out_begin(v), out_end(v) }; }
-    IteratorContainer IncomingEdges(VertexId v) const { return { in_begin(v), in_end(v) }; }
+    adt::iterator_range<edge_const_iterator> OutgoingEdges(VertexId v) const { return { out_begin(v), out_end(v) }; }
+    adt::iterator_range<edge_const_iterator> IncomingEdges(VertexId v) const { return { in_begin(v), in_end(v) }; }
 
     std::vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) const {
         std::vector<EdgeId> result;

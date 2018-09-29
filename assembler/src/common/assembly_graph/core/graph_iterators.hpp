@@ -223,7 +223,7 @@ private:
                 if (!canonical_only_ || Canonical(*e_it_))
                     return;
                 else
-                    e_it_++;
+                    ++e_it_;
             }
         }
     }
@@ -231,7 +231,7 @@ private:
     void increment() {
         if (v_it_ == g_.end())
             return;
-        e_it_++;
+        ++e_it_;
         Skip();
     }
 
