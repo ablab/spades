@@ -36,29 +36,29 @@ static constexpr Encoding GetEncoding() {
 }
 
 template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::Raw> BinWrite(std::ostream &str, const T &value) {
-    str.write(reinterpret_cast<const char *>(&value), sizeof(T));
+typename std::enable_if_t<GetEncoding<T>() == Encoding::Raw> BinWrite(std::ostream &os, const T &value) {
+    os.write(reinterpret_cast<const char *>(&value), sizeof(T));
 }
 
 template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::Raw> BinRead(std::istream &str, T &value) {
-    str.read(reinterpret_cast<char *>(&value), sizeof(T));
+typename std::enable_if_t<GetEncoding<T>() == Encoding::Raw> BinRead(std::istream &is, T &value) {
+    is.read(reinterpret_cast<char *>(&value), sizeof(T));
 }
 
 template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::ULEB128> BinWrite(std::ostream &str, const T &value) {
+typename std::enable_if_t<GetEncoding<T>() == Encoding::ULEB128> BinWrite(std::ostream &os, const T &value) {
     uint8_t buf[LEB_BUF_SIZE];
     auto count = llvm::encodeULEB128(value, buf);
-    str.write(reinterpret_cast<const char *>(buf), count);
+    os.write(reinterpret_cast<const char *>(buf), count);
 }
 
 template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::ULEB128> BinRead(std::istream &str, T &value) {
+typename std::enable_if_t<GetEncoding<T>() == Encoding::ULEB128> BinRead(std::istream &is, T &value) {
     uint8_t buf[LEB_BUF_SIZE];
     auto pos = reinterpret_cast<char *>(buf);
     char count = 0;
     do {
-        str.read(pos, 1);
+        is.read(pos, 1);
         VERIFY_MSG(++count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
     } while (*(pos++) & 0x80);
     value = static_cast<T>(llvm::decodeULEB128(buf));
@@ -66,32 +66,32 @@ typename std::enable_if_t<GetEncoding<T>() == Encoding::ULEB128> BinRead(std::is
 
 // Implementation for classes that have corresponding BinWrite/BinRead methods.
 template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::SLEB128> BinWrite(std::ostream &str, const T &value) {
+typename std::enable_if_t<GetEncoding<T>() == Encoding::SLEB128> BinWrite(std::ostream &os, const T &value) {
     uint8_t buf[LEB_BUF_SIZE];
     auto count = llvm::encodeSLEB128(value, buf);
-    str.write(reinterpret_cast<const char *>(buf), count);
+    os.write(reinterpret_cast<const char *>(buf), count);
 }
 
 template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::SLEB128> BinRead(std::istream &str, T &value) {
+typename std::enable_if_t<GetEncoding<T>() == Encoding::SLEB128> BinRead(std::istream &is, T &value) {
     uint8_t buf[LEB_BUF_SIZE];
     auto pos = reinterpret_cast<char *>(buf);
     char count = 0;
     do {
-        str.read(pos, 1);
+        is.read(pos, 1);
         VERIFY_MSG(++count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
     } while (*(pos++) & 0x80);
     value = static_cast<T>(llvm::decodeSLEB128(buf));
 }
 
 template<typename T>
-auto BinWrite(std::ostream &str, const T &value) -> decltype(std::declval<const T>().BinWrite(str), void()) {
-    value.BinWrite(str);
+auto BinWrite(std::ostream &os, const T &value) -> decltype(std::declval<const T>().BinWrite(os), void()) {
+    value.BinWrite(os);
 }
 
 template<typename T>
-auto BinRead(std::istream &str, T &value) -> decltype(std::declval<T>().BinRead(str), void()) {
-    value.BinRead(str);
+auto BinRead(std::istream &is, T &value) -> decltype(std::declval<T>().BinRead(is), void()) {
+    value.BinRead(is);
 }
 
 //---- Ad-hoc overloads ------------------------------------------------------------------------------------------------
@@ -100,8 +100,8 @@ void BinWrite(std::ostream &os, const T &v, const Ts &... vs);
 template <typename T, typename... Ts>
 void BinRead(std::istream &is, T &v, Ts &... vs);
 
-inline void BinWrite(std::ostream &str, const std::string &value);
-inline void BinRead(std::istream &str, std::string &value);
+inline void BinWrite(std::ostream &os, const std::string &value);
+inline void BinRead(std::istream &is, std::string &value);
 
 template <typename T>
 std::enable_if_t<!std::is_same<T, bool>::value> BinRead(std::istream &is, std::vector<T> &v);
@@ -126,29 +126,29 @@ void BinRead(std::istream &is, std::unordered_map<K, V, Args...> &m);
 // Arrays
 
 template<typename T, size_t N>
-void BinWrite(std::ostream &str, const T (&value)[N]) {
+void BinWrite(std::ostream &os, const T (&value)[N]) {
     for (size_t i = 0; i < N; ++i)
-        BinWrite(str, value[i]);
+        BinWrite(os, value[i]);
 }
 
 template<typename T, size_t N>
-void BinRead(std::istream &str, T (&value)[N]) {
+void BinRead(std::istream &is, T (&value)[N]) {
     for (size_t i = 0; i < N; ++i)
-        BinRead(str, value[i]);
+        BinRead(is, value[i]);
 }
 
 // Strings
 
-inline void BinWrite(std::ostream &str, const std::string &value) {
-    BinWrite(str, static_cast<size_t>(value.length()));
-    str.write(value.data(), value.length());
+inline void BinWrite(std::ostream &os, const std::string &value) {
+    BinWrite(os, static_cast<size_t>(value.length()));
+    os.write(value.data(), value.length());
 }
 
-inline void BinRead(std::istream &str, std::string &value) {
+inline void BinRead(std::istream &is, std::string &value) {
     size_t size;
-    BinRead(str, size);
+    BinRead(is, size);
     value.resize(size);
-    str.read(const_cast<char *>(value.data()), value.length());
+    is.read(const_cast<char *>(value.data()), value.length());
 }
 
 // Vectors
@@ -236,9 +236,9 @@ void BinRead(std::istream &is, std::unordered_map<K, V, Args...> &m) {
  * @brief A value-returning variant of BinRead to save some LOCs.
  */
 template<typename T>
-T BinRead(std::istream &str) {
+T BinRead(std::istream &is) {
     T result;
-    BinRead(str, result);
+    BinRead(is, result);
     return result;
 }
 
