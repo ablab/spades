@@ -54,6 +54,11 @@ public:
     }
 
     /**
+     * Low level event which is triggered when graph is destroyed
+     */
+    virtual void HandleGameOver() { }
+
+    /**
      * Low level event which is triggered when vertex is added to graph.
      * @param v new vertex
      */
@@ -136,32 +141,43 @@ class GraphActionHandler : public ActionHandler<typename Graph::VertexId,
         typename Graph::EdgeId> {
     typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
 
-    const Graph &g_;
+    const Graph *g_;
+
+    void DetachAndIsolate() {
+        TRACE("Removing action handler: " << this->name());
+        if (this->IsAttached())
+            this->Detach();
+        if (g_)
+            g_->RemoveActionHandler(this);
+        g_ = nullptr;
+    }
 
 public:
     const Graph &g() const {
-        return g_;
+        return *g_;
     }
 
     GraphActionHandler(const Graph &g, const std::string &name)
             : base(name),
-              g_(g) {
+              g_(&g) {
         TRACE("Adding new action handler: " << this->name());
-        g_.AddActionHandler(this);
+        g_->AddActionHandler(this);
     }
 
     GraphActionHandler(const GraphActionHandler<Graph> &other)
             : base(other.name()),
               g_(other.g_) {
         TRACE("Adding new action handler: " << this->name());
-        g_.AddActionHandler(this);
+        g_->AddActionHandler(this);
+    }
+
+    void HandleGameOver() override {
+        TRACE("Bye-bye my lovely graph!");
+        DetachAndIsolate();
     }
 
     virtual ~GraphActionHandler() {
-        TRACE("Removing action handler: " << this->name());
-        if (this->IsAttached())
-            this->Detach();
-        g_.RemoveActionHandler(this);
+        DetachAndIsolate();
     }
 };
 
@@ -177,6 +193,9 @@ template<typename VertexId, typename EdgeId>
 class HandlerApplier {
     typedef ActionHandler<VertexId, EdgeId> Handler;
 public:
+
+    virtual void
+            ApplyGameOver(Handler &handler) const = 0;
 
     virtual void
             ApplyAdd(Handler &handler, VertexId v) const = 0;
@@ -213,6 +232,10 @@ public:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef ActionHandler<VertexId, EdgeId> Handler;
+
+    void ApplyGameOver(Handler &handler, VertexId) const override {
+        handler.HandleGameOver();
+    }
 
     void ApplyAdd(Handler &handler, VertexId v) const override {
         handler.HandleAdd(v);
@@ -276,6 +299,10 @@ private:
 public:
     PairedHandlerApplier(Graph &graph)
             : graph_(graph) {
+    }
+
+    void ApplyGameOver(Handler &handler) const override {
+        handler.HandleGameOver();
     }
 
     void ApplyAdd(Handler &handler, VertexId v) const override {

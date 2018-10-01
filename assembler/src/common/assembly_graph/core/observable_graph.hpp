@@ -63,6 +63,8 @@ public:
    // TODO: for debug. remove.
     void PrintHandlersNames() const;
 
+    void FireGameOver() const;
+    
    //todo make Fire* protected once again with helper friend class
     void FireAddVertex(VertexId v) const;
 
@@ -320,6 +322,14 @@ template<class DataMaster>
 void ObservableGraph<DataMaster>::PrintHandlersNames() const {
     for (Handler* handler : action_handler_list_) {
         std::cout << handler->name() << " attached=" << handler->IsAttached() << std::endl;
+    }
+}
+
+template<class DataMaster>
+void ObservableGraph<DataMaster>::FireGameOver() const {
+    for (Handler* handler_ptr : action_handler_list_) {
+        TRACE("FireGameOver to handler " << handler_ptr->name());
+        applier_->ApplyGameOver(*handler_ptr);
     }
 }
 
