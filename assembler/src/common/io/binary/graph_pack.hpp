@@ -31,32 +31,23 @@ public:
     typedef typename debruijn_graph::graph_pack<Graph> Type;
 
     void Save(const std::string &basename, const Type &gp) override {
-        //Save basic graph
+        //1. Save basic graph
         graph_io_.Save(basename, gp.g);
 
-        //Save coverage
-        CoverageIO<Graph>()
-                .Save(basename, gp.g.coverage_index());
+        //2. Save coverage
+        CoverageIO<Graph>().Save(basename, gp.g.coverage_index());
 
-        if (gp.edge_pos.IsAttached()) { //Save edge positions
-            EdgePositionsIO<Graph>()
-                    .Save(basename, gp.edge_pos);
-        }
+        //3. Save edge positions
+        SaveAttached(basename, gp.edge_pos);
 
-        if (gp.index.IsAttached()) { //Save kmer edge index
-            EdgeIndexIO<Graph>()
-                    .Save(basename, gp.index);
-        }
+        //4. Save kmer edge index
+        SaveAttached(basename, gp.index);
 
-        if (gp.kmer_mapper.IsAttached()) { //Save kmer mapper
-            KmerMapperIO<Graph>()
-                    .Save(basename, gp.kmer_mapper);
-        }
+        //5. Save kmer mapper
+        SaveAttached(basename, gp.kmer_mapper);
 
-        if (gp.flanking_cov.IsAttached()) { //Save flanking coverage
-            FlankingCoverageIO<Graph>()
-                    .Save(basename, gp.flanking_cov);
-        }
+        //6. Save flanking coverage
+        SaveAttached(basename, gp.flanking_cov);
     }
 
     bool Load(const std::string &basename, Type &gp) override {
@@ -104,6 +95,14 @@ public:
 
 protected:
     GraphIO<Graph> graph_io_;
+
+    template<typename T>
+    void SaveAttached(const std::string &basename, const T &component) {
+        if (component.IsAttached()) {
+            typename IOTraits<T>::Type io;
+            io.Save(basename, component);
+        }
+    }
 };
 
 template<typename Graph>

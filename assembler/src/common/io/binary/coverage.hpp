@@ -58,6 +58,11 @@ public:
             base("flanking coverage", ".flcvr") {}
 };
 
+template<typename Graph>
+struct IOTraits<omnigraph::FlankingCoverage<Graph>> {
+    typedef FlankingCoverageIO<Graph> Type;
+};
+
 } // namespace binary
 
 } //namespace io

@@ -53,6 +53,11 @@ private:
     };
 };
 
+template<typename Graph>
+struct IOTraits<omnigraph::EdgesPositionHandler<Graph>> {
+    typedef EdgePositionsIO<Graph> Type;
+};
+
 } // namespace binary
 
 } //namespace io

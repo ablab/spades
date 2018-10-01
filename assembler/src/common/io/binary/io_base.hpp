@@ -86,6 +86,12 @@ class IOBase {
 };
 
 /**
+  * @brief  IOTraits<T>::type is the concrete class is needed for (de)serialization of some type T.
+  */
+template<typename T>
+struct IOTraits;
+
+/**
  * @brief  An abstract saver/loader which uses a single file for its component.
  */
 template<typename T, typename... Env>

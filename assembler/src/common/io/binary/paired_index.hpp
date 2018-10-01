@@ -33,6 +33,11 @@ public:
     }
 };
 
+template<typename Index>
+struct IOTraits<omnigraph::de::PairedIndices<Index>> {
+    typedef PairedIndicesIO<Index> Type;
+};
+
 } // namespace binary
 
 } // namespace io
