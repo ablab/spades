@@ -33,6 +33,7 @@ void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
     if (!prefix) prefix = id_;
     auto dir = fs::append_path(save_to, prefix);
     INFO("Saving current state to " << dir);
+    fs::remove_if_exists(dir);
     fs::make_dir(dir);
 
     auto p = fs::append_path(dir, "graph_pack");
