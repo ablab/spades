@@ -173,7 +173,7 @@ private:
 
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::VertexId
-        ObservableGraph<DataMaster>::AddVertex(const VertexData &data, restricted::IdDistributor &id_distributor) {
+ObservableGraph<DataMaster>::AddVertex(const VertexData &data, restricted::IdDistributor &id_distributor) {
     VertexId v = base::HiddenAddVertex(data, id_distributor);
     FireAddVertex(v);
     return v;
@@ -412,17 +412,16 @@ bool ObservableGraph<DataMaster>::VerifyAllDetached() {
 template<class DataMaster>
 void ObservableGraph<DataMaster>::FireDeletePath(const std::vector<EdgeId> &edgesToDelete,
                                                  const std::vector<VertexId> &verticesToDelete) const {
-    for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
-        FireDeleteEdge(*it);
-    for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
-        FireDeleteVertex(*it);
+    for (EdgeId e : edgesToDelete)
+        FireDeleteEdge(e);
+    for (VertexId v : verticesToDelete)
+        FireDeleteVertex(v);
 }
 
 template<class DataMaster>
 void ObservableGraph<DataMaster>::clear() {
-    while (base::size() > 0) {
-        ForceDeleteVertex(*base::begin());
-    }
+    for (VertexId v : base::vertices())
+        ForceDeleteVertex(v);
 }
 
 template<class DataMaster>
@@ -433,7 +432,7 @@ ObservableGraph<DataMaster>::~ObservableGraph<DataMaster>() {
 
 template<class DataMaster>
 std::vector<typename ObservableGraph<DataMaster>::EdgeId>
-        ObservableGraph<DataMaster>::CorrectMergePath(const std::vector<EdgeId>& path) const {
+ObservableGraph<DataMaster>::CorrectMergePath(const std::vector<EdgeId>& path) const {
     for (size_t i = 0; i < path.size(); i++) {
         if (path[i] == base::conjugate(path[i])) {
             std::vector<EdgeId> result;

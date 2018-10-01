@@ -251,7 +251,7 @@ private:
 
             size_ += 2;
 
-            INFO("Create " << vid1 << ":" << vid2);
+            // INFO("Create " << vid1 << ":" << vid2);
             return { vid1, vid2 };
         }
 
@@ -260,7 +260,7 @@ private:
             VertexId cid = v->conjugate();
             Vertex *cv = storage_[cid.int_id()];
 
-            INFO("Remove " << id << ":" << cid);
+            // INFO("Remove " << id << ":" << cid);
 
             delete v;
             delete cv;
