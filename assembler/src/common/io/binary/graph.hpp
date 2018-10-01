@@ -46,6 +46,7 @@ private:
     }
 
     void LoadImpl(BinLoadFile &file, Graph &graph) override {
+        graph.clear();
         size_t max_id;
         file >> max_id;
         auto id_storage = graph.GetGraphIdDistributor().Reserve(max_id, /*force_zero_shift*/true);

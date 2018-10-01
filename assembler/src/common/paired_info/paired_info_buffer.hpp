@@ -209,7 +209,7 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
     }
 
     void BinRead(std::istream &str, const io::IdMapper<EdgeId> &mapper) {
-        VERIFY_MSG(!this->size_, "Cannot read into a non-empty buffer");
+        clear();
         using io::binary::BinRead;
         auto storage_size = BinRead<size_t>(str);
         while (storage_size--) {

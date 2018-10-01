@@ -182,8 +182,6 @@ public:
         SetRawCoverage(e, cov);
     }
 
-    void clear() {}
-
     /*
      * Is thread safe if different threads process different edges.
      */

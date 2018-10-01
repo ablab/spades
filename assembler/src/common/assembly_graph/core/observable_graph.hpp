@@ -148,6 +148,8 @@ public:
 
     void DeleteAllIncoming(VertexId v);
 
+    void clear();
+
     void CompressVertex(VertexId v);
 
     EdgeId UnsafeCompressVertex(VertexId v);
@@ -400,10 +402,15 @@ void ObservableGraph<DataMaster>::FireDeletePath(const vector<EdgeId>& edgesToDe
 }
 
 template<class DataMaster>
-ObservableGraph<DataMaster>::~ObservableGraph<DataMaster>() {
+void ObservableGraph<DataMaster>::clear() {
     while (base::size() > 0) {
         ForceDeleteVertex(*base::begin());
     }
+}
+
+template<class DataMaster>
+ObservableGraph<DataMaster>::~ObservableGraph<DataMaster>() {
+    clear();
 }
 
 template<class DataMaster>

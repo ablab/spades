@@ -182,6 +182,7 @@ public:
     }
 
     void BinRead(std::istream &str, const io::IdMapper<EdgeId> &mapper) {
+        inner_index_.clear();
         using io::binary::BinRead;
 
         auto size = BinRead<size_t>(str);

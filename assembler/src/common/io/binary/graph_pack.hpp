@@ -88,10 +88,8 @@ protected:
 
     template<typename T, typename... Env>
     void LoadAttached(const std::string &basename, T &component, const Env &... env) {
-        if (component.IsAttached()) {
+        if (component.IsAttached())
             component.Detach();
-            component.clear();
-        }
         typename IOTraits<T>::Type io;
         if (io.Load(basename, component, env...))
             component.Attach();
