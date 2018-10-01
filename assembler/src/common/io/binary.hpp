@@ -33,12 +33,12 @@ static constexpr Encoding GetEncoding() {
 
 template<typename T>
 typename std::enable_if_t<GetEncoding<T>() == Encoding::Raw> BinWrite(std::ostream &str, const T &value) {
-    str.write(static_cast<const char *>(&value), sizeof(T));
+    str.write(reinterpret_cast<const char *>(&value), sizeof(T));
 }
 
 template<typename T>
 typename std::enable_if_t<GetEncoding<T>() == Encoding::Raw> BinRead(std::istream &str, T &value) {
-    str.read(static_cast<char *>(&value), sizeof(T));
+    str.read(reinterpret_cast<char *>(&value), sizeof(T));
 }
 
 template<typename T>
@@ -60,6 +60,7 @@ typename std::enable_if_t<GetEncoding<T>() == Encoding::ULEB128> BinRead(std::is
     value = static_cast<T>(llvm::decodeULEB128(buf));
 }
 
+// Implementation for classes that have corresponding BinWrite/BinRead methods.
 template<typename T>
 typename std::enable_if_t<GetEncoding<T>() == Encoding::SLEB128> BinWrite(std::ostream &str, const T &value) {
     uint8_t buf[LEB_BUF_SIZE];
@@ -89,7 +90,10 @@ auto BinRead(std::istream &str, T &value) -> decltype(std::declval<T>().BinRead(
     value.BinRead(str);
 }
 
-//Ad-hoc overloads
+//---- Ad-hoc overloads ------------------------------------------------------------------------------------------------
+
+// Arrays
+
 template<typename T, size_t N>
 void BinWrite(std::ostream &str, const T (&value)[N]) {
     for (size_t i = 0; i < N; ++i)
@@ -102,8 +106,10 @@ void BinRead(std::istream &str, T (&value)[N]) {
         BinRead(str, value[i]);
 }
 
+// Strings
+
 inline void BinWrite(std::ostream &str, const std::string &value) {
-    BinWrite(str, (size_t)value.length());
+    BinWrite(str, static_cast<size_t>(value.length()));
     str.write(value.data(), value.length());
 }
 
@@ -114,11 +120,110 @@ inline void BinRead(std::istream &str, std::string &value) {
     str.read(const_cast<char *>(value.data()), value.length());
 }
 
+// Vectors
+
+template <typename T>
+std::enable_if_t<!std::is_same<T, bool>::value> BinWrite(std::ostream &os, const std::vector<T> &v) {
+    BinWrite(os, v.size());
+    for (size_t i = 0; i < v.size(); ++i) {
+        BinWrite(os, v[i]);
+    }
+}
+
+template <typename T>
+std::enable_if_t<!std::is_same<T, bool>::value> BinRead(std::istream &is, std::vector<T> &v) {
+    size_t size;
+    BinRead(is, size);
+    v.resize(size);
+    for (size_t i = 0; i < size; ++i) {
+        BinRead(is, v[i]);
+    }
+}
+
+// Tuples
+
+// TODO implement for std::tuple
+template <typename T1, typename T2>
+void BinWrite(std::ostream &os, const std::pair<T1, T2> &p) {
+    BinWrite(os, p.first, p.second);
+}
+
+template <typename T1, typename T2>
+void BinRead(std::istream &is, std::pair<T1, T2> &p) {
+    BinRead(is, p.first, p.second);
+}
+
+// Maps
+
+template <typename K, typename V, typename... Args>
+void BinWrite(std::ostream &os, const std::map<K, V, Args...> &m) {
+    size_t size = m.size();
+    BinWrite(os, size);
+    for (const auto &kv : m) {
+        BinWrite(os, kv.first, kv.second);
+    }
+}
+
+template <typename K, typename V, typename... Args>
+void BinRead(std::istream &is, std::map<K, V, Args...> &m) {
+    m.clear();
+    size_t size;
+    BinRead(is, size);
+    for (size_t i = 0; i < size; ++i) {
+        K k;
+        V v;
+        BinRead(is, k, v);
+        m.insert({std::move(k), std::move(v)});
+    }
+}
+
+template <typename K, typename V, typename... Args>
+void BinWrite(std::ostream &os, const std::unordered_map<K, V, Args...> &m) {
+    size_t size = m.size();
+    BinWrite(os, size);
+    for (const auto &kv : m) {
+        BinWrite(os, kv.first, kv.second);
+    }
+}
+
+template <typename K, typename V, typename... Args>
+void BinRead(std::istream &is, std::unordered_map<K, V, Args...> &m) {
+    m.clear();
+    size_t size;
+    BinRead(is, size);
+    for (size_t i = 0; i < size; ++i) {
+        K k;
+        V v;
+        BinRead(is, k, v);
+        m.insert({std::move(k), std::move(v)});
+    }
+}
+
+//---- Helpers ---------------------------------------------------------------------------------------------------------
+
+/**
+ * @brief A value-returning variant of BinRead to save some LOCs.
+ */
 template<typename T>
 T BinRead(std::istream &str) {
     T result;
     BinRead(str, result);
     return result;
+}
+
+/**
+ * @brief Multi-value wrappers to save even more LOCs.
+ */
+template <typename T, typename... Ts>
+void BinWrite(std::ostream &os, const T &v, const Ts &... vs) {
+    BinWrite(os, v);
+    BinWrite(os, vs...);
+}
+
+template <typename T, typename... Ts>
+void BinRead(std::istream &is, T &v, Ts &... vs) {
+    BinRead(is, v);
+    BinRead(is, vs...);
 }
 
 } // namespace binary
