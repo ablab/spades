@@ -103,30 +103,19 @@ public:
     }
 };
 
-template<class Collection>
-class CollectionIterator : public RelaxingIterator<typename Collection::value_type> {
+template<class It>
+class RangeIterator : public RelaxingIterator<typename std::iterator_traits<It>::value_type> {
 private:
-    typedef typename Collection::value_type Element;
-    typedef typename Collection::const_iterator Iter;
-    std::shared_ptr<Collection> storage_;
-    Iter current_;
-    const Iter end_;
+    typedef typename std::iterator_traits<It>::value_type Element;
+    It current_, end_;
     std::set<Element> relaxed_;
 public:
-    CollectionIterator(const Collection &collection)
-            : current_(collection.begin()), end_(collection.end()) {
-    }
-
-    CollectionIterator(std::shared_ptr<Collection> collection)
-            : storage_(collection), current_(collection->begin()), end_(collection->end()) {
-    }
-
-    CollectionIterator(Iter begin, Iter end)
-            : current_(begin), end_(end) {
+    RangeIterator(It begin, It end)
+            : current_(std::move(begin)), end_(std::move(end)) {
     }
 
     Element Next() {
-        if(!HasNext()) { //This function actually changes value of current! It is not just to verify!
+        if (!HasNext()) { //This function actually changes value of current! It is not just to verify!
             //fixme use VERIFY_MSG instead
             VERIFY(HasNext());
         }
@@ -136,23 +125,34 @@ public:
     }
 
     bool HasNext() {
-        while(current_ != end_ && relaxed_.count(*current_) == 1) {
+        while (current_ != end_ && relaxed_.count(*current_) == 1) {
             ++current_;
         }
         return current_ != end_;
     }
 
-    void Relax(Element e) {
-        relaxed_.insert(e);
-    }
+    void Relax(Element e) { relaxed_.insert(e); }
 
     void Relax(const std::vector<Element> &v) {
-        for (auto it = v.begin(); it != v.end(); ++it)
-            Relax(*it);
+        for (const auto& e : v)
+            Relax(e);
     }
 
-    virtual ~CollectionIterator() {
+    virtual ~RangeIterator() {}
+};
+
+template<class Collection>
+class CollectionIterator : public RangeIterator<typename Collection::const_iterator> {
+private:
+    std::shared_ptr<Collection> storage_;
+public:
+    CollectionIterator(const Collection &collection)
+            : CollectionIterator::RangeIterator(collection.begin(), collection.end()) {
     }
+
+    CollectionIterator(std::shared_ptr<Collection> collection)
+            : CollectionIterator::RangeIterator(collection->begin(), collection->end()),
+              storage_(collection) {}
 };
 
 template<class Graph>
@@ -796,7 +796,7 @@ std::shared_ptr<GraphSplitter<Graph>> ReliableSplitter(const Graph &graph,
                             size_t max_size = ReliableNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE) {
     typedef typename Graph::VertexId VertexId;
     std::shared_ptr<RelaxingIterator<VertexId>> inner_iterator =
-            std::make_shared<CollectionIterator<typename Graph::VertexContainer>>(graph.begin(), graph.end());
+            std::make_shared<RangeIterator<typename Graph::VertexIt>>(graph.begin(), graph.end());
     std::shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf =
             std::make_shared<ReliableNeighbourhoodFinder<Graph>>(graph, edge_length_bound, max_size);
     return std::make_shared<NeighbourhoodFindingSplitter<Graph>>(graph, inner_iterator, nf);
@@ -807,11 +807,8 @@ std::shared_ptr<GraphSplitter<Graph>> ConnectedSplitter(const Graph &graph,
                             size_t edge_length_bound = 1000000,
                             size_t max_size = 1000000) {
     typedef typename Graph::VertexId VertexId;
-
-    std::shared_ptr<RelaxingIterator<VertexId>> inner_iterator =
-            std::make_shared<CollectionIterator<typename Graph::VertexContainer>>(graph.begin(), graph.end());
-    std::shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf =
-            std::make_shared<ReliableNeighbourhoodFinder<Graph>>(graph, edge_length_bound, max_size);
+    std::shared_ptr<RelaxingIterator<VertexId>> inner_iterator = std::make_shared<RangeIterator<typename Graph::VertexIt>>(graph.begin(), graph.end());
+    std::shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = std::make_shared<ReliableNeighbourhoodFinder<Graph>>(graph, edge_length_bound, max_size);
     return std::make_shared<NeighbourhoodFindingSplitter<Graph>>(graph, inner_iterator, nf);
 }
 
@@ -833,11 +830,10 @@ std::shared_ptr<GraphSplitter<Graph>> LongEdgesExclusiveSplitter(const Graph &gr
                                                                  size_t bound = ReliableNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND) {
     typedef typename Graph::VertexId VertexId;
     std::shared_ptr<RelaxingIterator<VertexId>> inner_iterator =
-            std::make_shared<CollectionIterator<typename Graph::VertexContainer>>(graph.begin(), graph.end());
+            std::make_shared<RangeIterator<typename Graph::VertexIt>>(graph.begin(), graph.end());
     std::shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf =
             std::make_shared<ShortEdgeComponentFinder<Graph>>(graph, bound);
-    return std::make_shared<NeighbourhoodFindingSplitter<Graph>>(graph,
-                                                            inner_iterator, nf);
+    return std::make_shared<NeighbourhoodFindingSplitter<Graph>>(graph, inner_iterator, nf);
 }
 
 template<class Graph, typename Collection>

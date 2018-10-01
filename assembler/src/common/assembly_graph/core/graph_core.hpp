@@ -15,7 +15,8 @@
 #include "adt/iterator_range.hpp"
 #include "adt/small_pod_vector.hpp"
 
-#include <llvm/ADT/iterator.h>
+#include <boost/iterator/iterator_facade.hpp>
+#include <boost/iterator/iterator_adaptor.hpp>
 #include <btree/safe_btree_set.h>
 
 #include <vector>
@@ -71,32 +72,35 @@ struct EdgeId : public Id {
 }
 
 template<class It, class Graph>
-class conjugate_iterator : public llvm::iterator_adaptor_base<conjugate_iterator<It, Graph>,
-                                                              It,
-                                                              typename std::iterator_traits<It>::iterator_category,
-                                                              typename std::iterator_traits<It>::value_type> {
+class conjugate_iterator : public boost::iterator_adaptor<conjugate_iterator<It, Graph>,
+                                                          It,
+                                                          typename std::iterator_traits<It>::value_type,
+                                                          typename std::iterator_traits<It>::iterator_category,
+                                                          typename std::iterator_traits<It>::value_type> {
   public:
     typedef typename std::iterator_traits<It>::value_type value_type;
 
     explicit conjugate_iterator(It it,
                                 const Graph *graph,
                                 bool conjugate = false)
-            : conjugate_iterator::iterator_adaptor_base(it),
-            graph_(graph), conjugate_(conjugate) {}
+            : conjugate_iterator::iterator_adaptor(it),
+              graph_(graph), conjugate_(conjugate) {}
 
     conjugate_iterator()
             : graph_(nullptr), conjugate_(false) {}
 
-    bool operator==(const conjugate_iterator &other) const {
-        return this->I == other.I && other.conjugate_ == conjugate_;
+  private:
+    friend class boost::iterator_core_access;
+
+    bool equal(const conjugate_iterator &other) const {
+        return this->base() == other.base() && other.conjugate_ == conjugate_;
     }
 
-    value_type operator*() const {
-        value_type v = *this->I;
+    value_type dereference() const {
+        value_type v = *this->base();
         return (conjugate_ ? graph_->conjugate(v) : v);
     }
 
-  private:
     const Graph *graph_;
     bool conjugate_;
 };
@@ -124,12 +128,10 @@ private:
     void set_data(const EdgeData &data) { data_ = data; }
 
     VertexId end() const { return end_; }
-
-    void set_conjugate(EdgeId conjugate) { conjugate_ = conjugate; }
     void SetEndVertex(VertexId end) { end_ = end; }
 
     EdgeId conjugate() const { return conjugate_; }
-    size_t length(size_t k) const { return data_.size() - k; }
+    void set_conjugate(EdgeId conjugate) { conjugate_ = conjugate; }
 };
 
 template<class DataMaster>
@@ -203,14 +205,11 @@ public:
     typedef typename DataMasterT::EdgeData EdgeData;
     typedef impl::EdgeId EdgeId;
     typedef impl::VertexId VertexId;
-    typedef btree::safe_btree_set<VertexId> VertexContainer;
-    typedef typename VertexContainer::const_iterator VertexIt;
     typedef typename PairedVertex<DataMaster>::edge_const_iterator edge_const_iterator;
 
 private:
     restricted::LocalIdDistributor id_distributor_;
     DataMaster master_;
-    VertexContainer vertices_;
 
     friend class ConstructionHelper<DataMaster>;
 
@@ -218,9 +217,13 @@ private:
     class VertexStorage {
       public:
         typedef PairedVertex<DataMaster> Vertex;
+        typedef ReclaimingIdDistributor::id_iterator id_iterator;
 
         VertexStorage(size_t bias)
-                : id_distributor_(bias) {}
+                : size_(0), id_distributor_(bias) {}
+
+        id_iterator id_begin() const { return id_distributor_.begin(); }
+        id_iterator id_end() const { return id_distributor_.end(); }
 
         void reserve(size_t sz) {
             if (id_distributor_.size() > 2*sz)
@@ -230,20 +233,25 @@ private:
             storage_.reserve(2*sz);
         }
 
+        // FIXME: Count!
+        size_t size() const { return size_; }
+
         std::pair<VertexId, VertexId> create(const VertexData& data1, const VertexData& data2) {
             auto v1 = new Vertex(data1), v2 = new Vertex(data2);
-            uint64_t pair_id = id_distributor_.allocate();
-            VertexId vid1{2*pair_id + 0}, vid2{2*pair_id + 1};
+            uint64_t vid1 = id_distributor_.allocate(), vid2 = id_distributor_.allocate();
 
-            while (storage_.size() < 2 * pair_id + 1 + 1)
+            while (storage_.size() < std::max(vid1, vid2) + 1)
                 storage_.resize(storage_.size() * 2 + 1);
 
-            VERIFY(storage_[vid1.int_id()] == nullptr);
-            VERIFY(storage_[vid2.int_id()] == nullptr);
+            VERIFY(storage_[vid1] == nullptr);
+            VERIFY(storage_[vid2] == nullptr);
 
-            storage_[vid1.int_id()] = v1;
-            storage_[vid2.int_id()] = v2;
+            storage_[vid1] = v1;
+            storage_[vid2] = v2;
 
+            size_ += 2;
+
+            INFO("Create " << vid1 << ":" << vid2);
             return { vid1, vid2 };
         }
 
@@ -252,19 +260,23 @@ private:
             VertexId cid = v->conjugate();
             Vertex *cv = storage_[cid.int_id()];
 
+            INFO("Remove " << id << ":" << cid);
+
             delete v;
             delete cv;
 
-            uint64_t pair_id = id.int_id() / 2;
-            id_distributor_.release(pair_id);
+            id_distributor_.release(id.int_id());
+            id_distributor_.release(cid.int_id());
             storage_[id.int_id()] = nullptr;
             storage_[cid.int_id()] = nullptr;
+            size_ -= 2;
         }
 
         Vertex* at(VertexId id) const {
             return storage_.at(id.int_id());
         }
       private:
+        size_t size_;
         std::vector<Vertex*> storage_;
         ReclaimingIdDistributor id_distributor_;
     };
@@ -330,10 +342,28 @@ private:
     }
 
 public:
-    VertexIt begin() const { return vertices_.begin(); }
-    VertexIt end() const { return vertices_.end(); }
+    class VertexIt : public boost::iterator_adaptor<VertexIt,
+                                                    typename VertexStorage::id_iterator,
+                                                    VertexId,
+                                                    typename std::iterator_traits<typename VertexStorage::id_iterator>::iterator_category,
+                                                    VertexId> {
+      public:
+        VertexIt(typename VertexStorage::id_iterator it)
+                : VertexIt::iterator_adaptor(it) {}
 
-    size_t size() const { return vertices_.size(); }
+      private:
+        friend class boost::iterator_core_access;
+
+        VertexId dereference() const {
+            return *this->base();
+        }
+    };
+
+    VertexIt begin() const { return vstorage_.id_begin(); }
+    VertexIt end() const { return vstorage_.id_end(); }
+    adt::iterator_range<VertexIt> vertices() const { return { begin(), end()}; }
+
+    size_t size() const { return vstorage_.size(); }
 
     edge_const_iterator out_begin(VertexId v) const { return vertex(v)->out_begin(this); }
     edge_const_iterator out_end(VertexId v) const { return vertex(v)->out_end(this); }
@@ -343,7 +373,7 @@ public:
 
 private:
     VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
-                          restricted::IdDistributor& id_distributor) {
+                          restricted::IdDistributor&) {
         VertexId vid1, vid2;
         std::tie(vid1, vid2) = vstorage_.create(data1, data2);
 
@@ -358,7 +388,7 @@ private:
     }
 
     EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data,
-                         restricted::IdDistributor &idDistributor) {
+                         restricted::IdDistributor &) {
         EdgeId eid = estorage_.create(v2, data);
         if (v1.int_id())
             vertex(v1)->AddOutgoingEdge(eid);
@@ -380,15 +410,7 @@ private:
         return CreateVertex(data, id_distributor_);
     }
 
-    void AddVertexToGraph(VertexId vertex) {
-        vertices_.insert(vertex);
-        vertices_.insert(conjugate(vertex));
-    }
-
-    void DeleteVertexFromGraph(VertexId vertex) {
-        this->vertices_.erase(vertex);
-        this->vertices_.erase(conjugate(vertex));
-    }
+    void AddVertexToGraph(VertexId) {}
 
     bool AdditionalCompressCondition(VertexId v) const {
         return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v) &&
@@ -397,9 +419,7 @@ private:
 
 protected:
     VertexId HiddenAddVertex(const VertexData& data, restricted::IdDistributor& id_distributor) {
-        VertexId vertex = CreateVertex(data, id_distributor);
-        AddVertexToGraph(vertex);
-        return vertex;
+        return CreateVertex(data, id_distributor);
     }
 
     VertexId HiddenAddVertex(const VertexData& data) {
@@ -407,7 +427,6 @@ protected:
     }
 
     void HiddenDeleteVertex(VertexId vertex) {
-        DeleteVertexFromGraph(vertex);
         DestroyVertex(vertex);
     }
 

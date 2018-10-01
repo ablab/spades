@@ -199,28 +199,27 @@ public:
               canonical_only_(canonical_only) {
         if (v_it_ != g_.end()) {
             e_it_ = g_.out_begin(*v_it_);
-            Skip();
+            skip();
         }
     }
 
 private:
-    
-    bool Canonical(EdgeId e) const {
+    friend class boost::iterator_core_access;
+
+    bool canonical(EdgeId e) const {
         return e <= g_.conjugate(e);
     }
 
-    friend class boost::iterator_core_access;
-
-    void Skip() {
+    void skip() {
         //VERIFY(v_it_ != g_.end());
         while (true) {
             if (e_it_ == g_.out_end(*v_it_)) {
-                v_it_++;
+                ++v_it_;
                 if (v_it_ == g_.end())
                     return;
                 e_it_ = g_.out_begin(*v_it_);
             } else {
-                if (!canonical_only_ || Canonical(*e_it_))
+                if (!canonical_only_ || canonical(*e_it_))
                     return;
                 else
                     ++e_it_;
@@ -232,7 +231,7 @@ private:
         if (v_it_ == g_.end())
             return;
         ++e_it_;
-        Skip();
+        skip();
     }
 
     bool equal(const GraphEdgeIterator &other) const {
@@ -246,10 +245,8 @@ private:
     }
 
     EdgeId dereference() const {
-        //VERIFY(v_it_ != g_.end());
         return *e_it_;
     }
-
 };
 
 template<class Graph>
@@ -349,7 +346,7 @@ public:
         auto it = g_.begin();
         answer.push_back(it);
         for (size_t i = 0; i + chunk_cnt * chunk_size < vertex_cnt; ++i) {
-            it++;
+            ++it;
         }
         if (chunk_size > 0) {
             size_t i = 0;

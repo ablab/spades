@@ -16,6 +16,12 @@ uint64_t ReclaimingIdDistributor::next_free(uint64_t n, uint64_t stride) const {
     return free_map_.size();
 }
 
+void ReclaimingIdDistributor::resize(size_t sz) {
+    fprintf(stderr, "!!!RESIZE!!!!\n");
+    sz = round_up_stride(sz);
+    free_map_.resize(sz, true);
+}
+
 uint64_t ReclaimingIdDistributor::allocate(uint64_t offset) {
     // First hint: see if we could find any spot after last allocated
     uint64_t hint = round_up_stride(last_allocated_) + offset;
