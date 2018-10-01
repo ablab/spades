@@ -483,10 +483,13 @@ public:
 
     void ConstructGraph(Graph &graph, const std::vector<Sequence> &sequences) const {
         typename Graph::HelperT helper = graph.GetConstructionHelper();
+
         std::vector<LinkRecord> records;
+        graph.ereserve(2*sequences.size());
         CollectLinkRecords(helper, graph, records, sequences);//TODO make parallel
         parallel::sort(records.begin(), records.end());
         size_t size = records.size();
+        graph.vreserve(2*size);
         std::vector<std::vector<VertexId>> vertices_list(omp_get_max_threads());
         restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
 #       pragma omp parallel for schedule(guided)

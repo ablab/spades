@@ -230,7 +230,7 @@ private:
                 return;
 
             id_distributor_.resize(2*sz);
-            storage_.reserve(2*sz);
+            storage_.resize(2*sz);
         }
 
         // FIXME: Count!
@@ -293,7 +293,7 @@ private:
                 return;
 
             id_distributor_.resize(sz);
-            storage_.reserve(sz);
+            storage_.resize(sz);
         }
 
         EdgeId create(VertexId end, const EdgeData &data) {
@@ -494,6 +494,13 @@ public:
               vstorage_(/* bias */3), estorage_(/* bias */3) {}
 
     virtual ~GraphCore() { VERIFY(size() == 0); }
+
+    void vreserve(size_t sz) { vstorage_.reserve(sz); }
+    void ereserve(size_t sz) { estorage_.reserve(sz); }
+    void reserve(size_t vertices, size_t edges) {
+        vreserve(vertices);
+        ereserve(edges);
+    }
 
     restricted::LocalIdDistributor &GetGraphIdDistributor() { return id_distributor_; }
     const restricted::LocalIdDistributor &GetGraphIdDistributor() const { return id_distributor_; }
