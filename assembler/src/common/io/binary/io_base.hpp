@@ -13,6 +13,8 @@
 
 namespace io {
 
+namespace binary {
+
 class BinSaveFile {
 public:
     BinSaveFile(const std::string &filename)
@@ -173,4 +175,6 @@ private:
     IOPtr io_;
 };
 
-}
+} // namespace binary
+
+} //namespace io
