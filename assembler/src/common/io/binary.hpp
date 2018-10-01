@@ -7,7 +7,11 @@
 #pragma once
 
 #include <type_traits>
-#include <istream>
+#include <iostream>
+#include <vector>
+#include <map>
+#include <unordered_map>
+
 #include "llvm/Support/LEB128.h"
 
 namespace io {
