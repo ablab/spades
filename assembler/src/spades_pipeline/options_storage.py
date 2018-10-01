@@ -132,7 +132,7 @@ correct_scaffolds = False
 run_truseq_postprocessing = False
 
 #rna options
-strand_specific = None  # None, True, False are possible
+strand_specificity = None  # None, 'rf', 'fr' are possible
 fast = None
 
 dict_of_prefixes = dict()
@@ -445,7 +445,7 @@ def save_restart_options(log):
         support.error("you cannot specify --only-assembler with --restart-from option!", log)
     if only_error_correction:
         support.error("you cannot specify --only-error-correction with --restart-from option!", log)
-    if strand_specific is not None:
+    if strand_specificity is not None:
         support.error("you cannot specify strand specificity (--ss-rf or --ss-fr) with --restart-from option!", log)
 
     global restart_k_mers

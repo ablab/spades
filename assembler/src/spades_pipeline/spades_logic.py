@@ -72,8 +72,8 @@ def prepare_config_rnaspades(filename, log):
     if not options_storage.rna:
         return
     subst_dict = dict()
-    subst_dict["ss_enabled"] = bool_to_str(options_storage.strand_specific is not None)
-    subst_dict["antisense"] = bool_to_str(options_storage.strand_specific)
+    subst_dict["ss_enabled"] = bool_to_str(options_storage.strand_specificity is not None)
+    subst_dict["antisense"] = bool_to_str(options_storage.strand_specificity == 'rf')
     process_cfg.substitute_params(filename, subst_dict, log)
 
 

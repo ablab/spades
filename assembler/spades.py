@@ -245,9 +245,9 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.rna = True
         elif opt.startswith("--ss-"):  # strand specificity, RNA-Seq only
             if opt == "--ss-rf":
-                options_storage.strand_specific = True
+                options_storage.strand_specificity = 'rf'
             elif opt == "--ss-fr":
-                options_storage.strand_specific = False
+                options_storage.strand_specificity = 'fr'
         elif opt == "--fast":  # fast run, RNA-Seq only
             options_storage.fast = True
         elif opt == "--fast:false":
