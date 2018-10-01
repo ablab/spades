@@ -51,44 +51,26 @@ public:
     }
 
     bool Load(const std::string &basename, Type &gp) override {
-        //Load basic graph
+        //1. Load basic graph
         bool loaded = graph_io_.Load(basename, gp.g);
         VERIFY(loaded);
         const auto &mapper = graph_io_.GetEdgeMapper();
 
-        //Load coverage
-        loaded = CoverageIO<Graph>()
-                .Load(basename, gp.g.coverage_index(), mapper);
+        //2. Load coverage
+        loaded = CoverageIO<Graph>().Load(basename, gp.g.coverage_index(), mapper);
         VERIFY(loaded);
 
-        //Load edge positions
-        VERIFY(!gp.edge_pos.IsAttached());
-        gp.edge_pos.Attach();
-        if (!EdgePositionsIO<Graph>()
-                .Load(basename, gp.edge_pos, mapper)) {
-            INFO("No saved positions");
-        }
+        //3. Load edge positions
+        LoadAttached(basename, gp.edge_pos, mapper);
 
-        //Load kmer edge index
-        if (!EdgeIndexIO<Graph>()
-                .Load(basename, gp.index)) {
-            WARN("Cannot load edge index, kmer coverages will be missed");
-            gp.index.Refill();
-        }
+        //4. Load kmer edge index
+        LoadAttached(basename, gp.index);
 
-        if (gp.kmer_mapper.IsAttached()) { //Load kmer mapper
-            if (!KmerMapperIO<Graph>()
-                    .Load(basename, gp.kmer_mapper)) {
-                WARN("Cannot load kmer_mapper, information on projected kmers will be missed");
-            }
-        }
+        //5. Load kmer mapper
+        LoadAttached(basename, gp.kmer_mapper);
 
-        //Load flanking coverage
-        if (!FlankingCoverageIO<Graph>()
-                .Load(basename, gp.flanking_cov, mapper)) {
-            WARN("Cannot load flanking coverage, flanking coverage will be recovered from index");
-            gp.flanking_cov.Fill(gp.index.inner_index());
-        }
+        //6. Load flanking coverage
+        LoadAttached(basename, gp.flanking_cov, mapper);
 
         return true;
     }
@@ -102,6 +84,17 @@ protected:
             typename IOTraits<T>::Type io;
             io.Save(basename, component);
         }
+    }
+
+    template<typename T, typename... Env>
+    void LoadAttached(const std::string &basename, T &component, const Env &... env) {
+        if (component.IsAttached()) {
+            component.Detach();
+            component.clear();
+        }
+        typename IOTraits<T>::Type io;
+        if (io.Load(basename, component, env...))
+            component.Attach();
     }
 };
 
