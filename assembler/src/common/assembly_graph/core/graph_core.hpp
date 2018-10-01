@@ -517,8 +517,15 @@ public:
     size_t OutgoingEdgeCount(VertexId v) const { return vertex(v)->OutgoingEdgeCount(); }
     size_t IncomingEdgeCount(VertexId v) const { return cvertex(v)->OutgoingEdgeCount(); }
 
-    adt::iterator_range<edge_const_iterator> OutgoingEdges(VertexId v) const { return { out_begin(v), out_end(v) }; }
-    adt::iterator_range<edge_const_iterator> IncomingEdges(VertexId v) const { return { in_begin(v), in_end(v) }; }
+    adt::iterator_range<edge_const_iterator> OutgoingEdges(VertexId v) const {
+        auto vertex = this->vertex(v);
+        return { vertex->out_begin(this), vertex->out_end(this) };
+    }
+
+    adt::iterator_range<edge_const_iterator> IncomingEdges(VertexId v) const {
+        auto vertex = this->cvertex(v);
+        return { vertex->out_begin(this, true), vertex->out_end(this, true) };
+    }
 
     std::vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) const {
         std::vector<EdgeId> result;
@@ -557,18 +564,16 @@ public:
         VERIFY(CheckUniqueOutgoingEdge(v));
         return *out_begin(v);
     }
+    bool CheckUniqueOutgoingEdge(VertexId v) const {
+        return OutgoingEdgeCount(v) == 1;
+    }
 
     bool CheckUniqueIncomingEdge(VertexId v) const {
         return IncomingEdgeCount(v) == 1;
     }
-
     EdgeId GetUniqueIncomingEdge(VertexId v) const {
         VERIFY(CheckUniqueIncomingEdge(v));
         return *in_begin(v);
-    }
-
-    bool CheckUniqueOutgoingEdge(VertexId v) const {
-        return OutgoingEdgeCount(v) == 1;
     }
 
     bool IsDeadEnd(VertexId v) const { return OutgoingEdgeCount(v) == 0; }
@@ -590,19 +595,19 @@ public:
     }
 
     //////////////////////printing
-    std::string str(const EdgeId e) const {
+    std::string str(EdgeId e) const {
 //      return master_.str(data(edge));
         std::stringstream ss;
         ss << int_id(e) << " (" << length(e) << ")";
         return ss.str();
     }
 
-    std::string str(const VertexId v) const {
+    std::string str(VertexId v) const {
 //      return master_.str(data(v));
         return std::to_string(int_id(v));
     }
 
-    std::string detailed_str(const VertexId v) const {
+    std::string detailed_str(VertexId v) const {
         std::stringstream ss;
         ss << str(v) << ";";
         ss << "Incoming edges " << str(IncomingEdges(v)) << "; ";
