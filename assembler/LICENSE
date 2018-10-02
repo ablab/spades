@@ -17,6 +17,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 -------------------------------------------------------------------------------
 
+SPAdes
+Genome assembler for single-cell and isolates data sets
+Version: see VERSION
+
+Developed in Center for Algorithmic Biotechnology, Institute of Translational Biomedicine, St. Petersburg State University.
+Developed in Algorithmic Biology Lab of St. Petersburg Academic University of the Russian Academy of Sciences.
+
 Current SPAdes contributors:
 
     Dmitry Antipov,
@@ -51,9 +58,10 @@ Also contributed:
     Irina Vasilinetc,
     Nikolay Vyahhi
 
-Contacts:
-    http://cab.spbu.ru/software/spades/
-    spades.support@cab.spbu.ru
+Installation instructions and manual can be found on the website:
+http://cab.spbu.ru/software/spades/
+
+Address for communication: spades.support@cab.spbu.ru
 
 References:
 
