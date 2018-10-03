@@ -14,16 +14,17 @@ datapath: /Sid/tdvorkina/gralign/benchmarking/
 # vg cfg
 
 vgpath: /home/tdvorkina/soft/vg/rionero/
-vg_k: 14
+vg_k: 15
 
 
 #######################################################################################################
 
 
-# SeGal cfg
+# SPAligner cfg
 
-segalpath: /home/tdvorkina/results/benchmarking_test/bin/run_segal_v1_2018-09-03_19-58-07
-segalcfg: ./segal_config_template.yaml
+spalignerpath: /home/tdvorkina/results/benchmarking_test/bin/run_segal_v1_2018-09-03_19-58-07
+spalignercfg: ./spaligner_config_template.yaml
+graph: "input/graph.gfa" #"input/graph/simplification"  #  
 
 
 #######################################################################################################
@@ -53,10 +54,10 @@ mummerpath: /home/tdvorkina/soft/mummer-4.0.0beta2/mummer
 # Size of the seed hits. Higher means faster but less accurate alignments.
 # For DBG's, should be the k-mer size of the graph.
 # For non-DBG's, eg assembly graphs, try values between 10 - 50 depending on read length and graph size
-seedsize: 14
+seedsize: 51
 # Max number of seeds. Higher means slower but more accurate alignment.
 # Try values between 10 - 100
-maxseeds: 100
+maxseeds: 10
 
 # Aligner parameters.
 # -b: Mandatory. Default bandwidth. eg -b 5. Higher means more accurate but slower alignment. Try values between 5-35.
@@ -67,4 +68,4 @@ maxseeds: 100
 # Example for RNA splice graph: -b 35
 # Example for human DBG: -b 5 -B 10 -C 1000000 -u
 # Example for bacterial DBG: -b 10 -B 20
-aligner_params: -b 10 -B 35
+aligner_params: -b 5 -B 10 -C 100000 -l -u

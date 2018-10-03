@@ -1,0 +1,161 @@
+configfile: "config.yaml"
+MUMMERPATH = config["mummerpath"]
+VGPATH = config["vgpath"]
+SEEDSIZE = config["seedsize"]
+MAXSEEDHITS = config["maxseeds"]
+ALIGNERPARAMS = config["aligner_params"]
+ALIGNERBINPATH = os.path.join(config["graphalignerfolder"], "bin")
+SCRIPTPATH = os.path.join(config["graphalignerfolder"], "scripts")
+
+ALL_ORGS=["ecoli"]
+ALL_READS=["simnp2000", "simpb2000", "realpb2000", "realnp2000"]
+
+workdir: config["datapath"]
+
+rule all:
+    input:
+        expand("{org}/GraphAligner/output/aln_{reads}_all.json", reads=ALL_READS, org=ALL_ORGS),
+        expand("{org}/GraphAligner/output/aln_{reads}_selected.json", reads=ALL_READS, org=ALL_ORGS),
+        expand("{org}/GraphAligner/output/aln_{reads}_full_length.json", reads=ALL_READS, org=ALL_ORGS),
+        expand("{org}/GraphAligner/output/stats_{reads}.txt", reads=ALL_READS, org=ALL_ORGS)
+
+
+rule remove_spaces:
+    input:
+        "{org}/input/{reads}.fasta"
+    output:
+        "{org}/GraphAligner/tmp/{reads}.fasta"
+    shell:
+        "cut -d ' ' -f 1 < {input} > {output}"
+
+rule remove_paths:
+    input:
+        "{org}/input/graph.gfa"
+    output:
+        "{org}/GraphAligner/tmp/graph_wp.gfa"
+    shell:
+        "mkdir -p {wildcards.org}/GraphAligner/tmp && sed '/^P/ d' {input} > {output}"
+
+rule fix_graph_nodeids:
+    input:
+        "{org}/GraphAligner/tmp/graph_wp.gfa"
+    output:
+        "{org}/GraphAligner/tmp/graph_idfix.gfa",
+        "{org}/GraphAligner/tmp/graph_nodemapping.txt"
+    shell:
+        "python {SCRIPTPATH}/gfa_string_to_int.py {input} {output}"
+
+rule make_graphreference:
+    input:
+        "{org}/GraphAligner/tmp/{graph}_idfix.gfa"
+    output:
+        "{org}/GraphAligner/tmp/{graph}_refnodes.txt",
+        "{org}/GraphAligner/tmp/{graph}_gfareference.fa"
+    shell:
+        "python {SCRIPTPATH}/makegfareference.py {input} {output}"
+
+rule reverse_reads:
+    input:
+        "{org}/GraphAligner/tmp/{reads}.fasta"
+    output:
+        "{org}/GraphAligner/tmp/{reads}_reverse.fasta"
+    shell:
+        "{ALIGNERBINPATH}/ReverseReads {input} {output}"
+
+rule mummer_pipe:
+    input:
+        "{org}/GraphAligner/tmp/{reads}.fasta",
+        "{org}/GraphAligner/tmp/{reads}_reverse.fasta",
+        "{org}/GraphAligner/tmp/graph_gfareference.fa",
+        "{org}/GraphAligner/tmp/graph_refnodes.txt"
+    output:
+        "{org}/GraphAligner/tmp/seeds_{reads}_picked.gam"
+    benchmark:
+        repeat("{org}/GraphAligner/benchmark/mummer_pipe_{reads}.tsv", 3)
+    threads: 16
+    shell:
+        "{MUMMERPATH} -F -qthreads {threads} -l {SEEDSIZE} {wildcards.org}/GraphAligner/tmp/graph_gfareference.fa \
+                        {wildcards.org}/GraphAligner/tmp/{wildcards.reads}.fasta {wildcards.org}/GraphAligner/tmp/{wildcards.reads}_reverse.fasta \
+                         | {ALIGNERBINPATH}/PickMummerSeeds {output} {wildcards.org}/GraphAligner/tmp/graph_gfareference.fa {MAXSEEDHITS} {wildcards.org}/GraphAligner/tmp/{wildcards.reads}.fasta"
+
+rule align:
+    input:
+        "{org}/GraphAligner/tmp/graph_idfix.gfa",
+        "{org}/GraphAligner/tmp/{reads}.fasta",
+        "{org}/GraphAligner/tmp/seeds_{reads}_picked.gam"
+    output:
+        "{org}/GraphAligner/tmp/aln_{reads}_raw.gam",
+        "{org}/GraphAligner/tmp/aligner_stdout_{reads}.txt",
+        "{org}/GraphAligner/tmp/aligner_stderr_{reads}.txt"
+    benchmark:
+        repeat("{org}/GraphAligner/benchmark/align_{reads}.tsv", 3)
+    threads: 16
+    shell:
+        "/usr/bin/time -v {ALIGNERBINPATH}/Aligner -g {wildcards.org}/GraphAligner/tmp/graph_idfix.gfa -f {wildcards.org}/GraphAligner/tmp/{wildcards.reads}.fasta -s {wildcards.org}/GraphAligner/tmp/seeds_{wildcards.reads}_picked.gam -a {wildcards.org}/GraphAligner/tmp/aln_{wildcards.reads}_raw.gam -t {threads} {ALIGNERPARAMS} 1> {wildcards.org}/GraphAligner/tmp/aligner_stdout_{wildcards.reads}.txt 2> {wildcards.org}/GraphAligner/tmp/aligner_stderr_{wildcards.reads}.txt"
+
+rule postprocess:
+    input:
+        nodenames = "{org}/GraphAligner/tmp/graph_nodemapping.txt",
+        seeds = "{org}/GraphAligner/tmp/seeds_{reads}_picked.gam",
+        raw_alns = "{org}/GraphAligner/tmp/aln_{reads}_raw.gam",
+        reads = "{org}/GraphAligner/tmp/{reads}.fasta"
+    output:
+        all_alns = "{org}/GraphAligner/output/aln_{reads}_all.gam",
+        selected_alns = "{org}/GraphAligner/output/aln_{reads}_selected.gam",
+        full_len_alns = "{org}/GraphAligner/output/aln_{reads}_full_length.gam",
+        summary = "{org}/GraphAligner/tmp/run_{reads}_summary.txt"
+    benchmark:
+        repeat("{org}/GraphAligner/benchmark/posprocess_{reads}.tsv", 3)
+    shell:
+        "{ALIGNERBINPATH}/Postprocess {input.raw_alns} {input.reads} {input.nodenames} {input.seeds} {output.all_alns} {output.selected_alns} {output.full_len_alns} {output.summary}"
+
+rule output_statistics:
+    input:
+        summary = "{org}/GraphAligner/tmp/run_{reads}_summary.txt",
+        stderr = "{org}/GraphAligner/tmp/aligner_stderr_{reads}.txt"
+    output:
+        "{org}/GraphAligner/output/stats_{reads}.txt"
+    run:
+        shell("touch {output}"),
+        shell("grep 'commit' {input.stderr} >> {output}")
+        shell("grep 'Command being timed:' {input.stderr} >> {output}"),
+        shell("grep 'User time (seconds):' {input.stderr} >> {output}"),
+        shell("grep 'System time (seconds):' {input.stderr} >> {output}"),
+        shell("grep 'Maximum resident set size (kbytes):' {input.stderr} >> {output}"),
+        shell("grep 'Percent of CPU this job got:' {input.stderr} >> {output}"),
+        shell("grep 'Elapsed (wall clock) time (h:mm:ss or m:ss):' {input.stderr} >> {output}"),
+        shell("echo 'Number of reads:' >> {output}"),
+        shell("grep 'number of reads' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of picked seeds:' >> {output}"),
+        shell("grep 'number of seeds' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of reads with a seed:' >> {output}"),
+        shell("grep 'reads with a seed' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of raw alignments:' >> {output}"),
+        shell("grep 'number of all alignments' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of selected alignments:' >> {output}"),
+        shell("grep 'number of selected alignments' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of full length alignments:' >> {output}"),
+        shell("grep 'number of full length alignments' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of reads with an alignment:' >> {output}"),
+        shell("grep 'reads with an alignment' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of reads broken due to an assertion:' >> {output}"),
+        shell("(grep Assert < {wildcards.org}/GraphAligner/tmp/aligner_stderr_{wildcards.reads}.txt || true) | wc -l >> {output}"),
+        shell("echo 'Number of read BP in reads:' >> {output}")
+        shell("grep 'bp in reads' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of read BP in selected alignments:' >> {output}")
+        shell("grep 'bp in selected alignments' < {input.summary} | cut -f 1 >> {output}"),
+        shell("echo 'Number of read BP in full length alignments:' >> {output}")
+        shell("grep 'bp in full length alignments' < {input.summary} | cut -f 1 >> {output}"),
+
+
+rule convert_to_json:
+    input:
+        all_alns = "{org}/GraphAligner/output/aln_{reads}_all.gam",
+        selected_alns = "{org}/GraphAligner/output/aln_{reads}_selected.gam",
+        full_len_alns = "{org}/GraphAligner/output/aln_{reads}_full_length.gam",
+    output:
+        all_alns = "{org}/GraphAligner/output/aln_{reads}_all.json",
+        selected_alns = "{org}/GraphAligner/output/aln_{reads}_selected.json",
+        full_len_alns = "{org}/GraphAligner/output/aln_{reads}_full_length.json",
+    shell:
+        "{VGPATH}/vg view -aj {input.all_alns} > {output.all_alns} && {VGPATH}/vg view -aj {input.selected_alns} > {output.selected_alns} && {VGPATH}/vg view -aj {input.full_len_alns} > {output.full_len_alns}"

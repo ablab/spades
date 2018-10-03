@@ -1,0 +1,135 @@
+configfile: "config.yaml"
+VGPATH = config["vgpath"]
+K = config["vg_k"]
+
+ALL_ORGS=["ecoli"]
+ALL_READS=["simnp2000", "simpb2000", "realpb2000", "realnp2000"]
+
+workdir: config["datapath"]
+
+rule all:
+    input:
+        expand("{org}/vg/output/aln_{reads}_xdrop.json", reads=ALL_READS, org=ALL_ORGS),
+        expand("{org}/vg/output/aln_{reads}_ordinary.json", reads=ALL_READS, org=ALL_ORGS)#,
+        #expand("{org}/vg/tmp/graph.split.gfa", org=ALL_ORGS)
+
+######## vg ###########
+
+rule remove_paths:
+    input:
+        "{org}/input/graph.gfa"
+    output:
+        "{org}/vg/tmp/graph_wp.gfa"
+    shell:
+        "mkdir -p {wildcards.org}/vg/tmp && sed '/^P/ d' {input} > {output}"
+
+rule convert_to_vg:
+    input:
+        "{org}/vg/tmp/graph_wp.gfa"
+    output:
+        "{org}/vg/tmp/graph.vg"
+    shell:
+        "pwd && {VGPATH}/vg view -vF {input} > {output}"
+
+rule split_graph:
+    input:
+        "{org}/vg/tmp/graph.vg"
+    output:
+        "{org}/vg/tmp/graph.split.vg"
+    run:
+        if wildcards.org == "celegans":
+            shell("{VGPATH}/vg mod -X 1024 -M 8 {input} > {output}")
+        else:
+            shell("{VGPATH}/vg mod -X 1024 {input} > {output}")
+
+# rule convert_to_gfa:
+#     input:
+#         "{org}/vg/tmp/graph.split.vg"
+#     output:
+#         "{org}/vg/tmp/graph.split.gfa"
+#     run:
+#         "pwd && {VGPATH}/vg view -g {input} > {output}"
+
+rule prune_graph:
+    input:
+        "celegans/vg/tmp/graph.split.vg"
+    output:
+        "celegans/vg/tmp/graph.pruned.vg"
+    benchmark:
+        repeat("celegans/vg/benchmark/prune_graph.tsv", 3)
+    threads: 16
+    shell:
+        "{VGPATH}/vg prune -k 12 -e 2 -t {threads} {input} > {output}"
+
+rule build_index_celegans:
+    input:
+        "celegans/vg/tmp/graph.pruned.vg"
+    output:
+        xg = "celegans/vg/tmp/graph.split.vg.xg",
+        gcsa = "celegans/vg/tmp/graph.split.vg.gcsa"
+    benchmark:
+        repeat("celegans/vg/benchmark/build_index.tsv", 3)
+    threads: 16
+    shell:
+        "{VGPATH}/vg index -p -t {threads} {input} -x {output.xg} -g {output.gcsa} -k {K}"
+
+rule build_index_ecoli:
+    input:
+        "ecoli/vg/tmp/graph.split.vg"
+    output:
+        xg = "ecoli/vg/tmp/graph.split.vg.xg",
+        gcsa = "ecoli/vg/tmp/graph.split.vg.gcsa"
+    benchmark:
+        repeat("ecoli/vg/benchmark/build_index.tsv", 3)
+    threads: 16
+    shell:
+        "{VGPATH}/vg index -p -t {threads} {input} -x {output.xg} -g {output.gcsa} -k {K}"
+
+rule mapping_xdrop:
+    input:
+        vg = "{org}/vg/tmp/graph.split.vg",
+        xg = "{org}/vg/tmp/graph.split.vg.xg",
+        gcsa = "{org}/vg/tmp/graph.split.vg.gcsa"
+    output:
+        "{org}/vg/output/aln_{reads}_xdrop.gam"
+    params:
+        out = "{org}/vg/output",
+        fq =  "{org}/input/{reads}.fastq"
+    benchmark:
+        repeat("{org}/vg/benchmark/mapping_{reads}_xdrop.tsv", 3)
+    threads: 16
+    shell:
+        "mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.fq} -M 1 -W 64 --xdrop-alignment > {output}"
+
+
+rule mapping_ordinary:
+    input:
+        vg = "{org}/vg/tmp/graph.split.vg",
+        xg = "{org}/vg/tmp/graph.split.vg.xg",
+        gcsa = "{org}/vg/tmp/graph.split.vg.gcsa"
+    output:
+        "{org}/vg/output/aln_{reads}_ordinary.gam"
+    params:
+        out = "{org}/vg/output",
+        fq =  "{org}/input/{reads}.fastq"
+    benchmark:
+        repeat("{org}/vg/benchmark/mapping_{reads}_ordinary.tsv", 3)
+    threads: 16
+    shell:
+        "mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.fq} -M 1 -W 64 > {output}"
+
+rule convert_to_json_ordinary:
+    input:
+        "{org}/vg/output/aln_{reads}_ordinary.gam"
+    output:
+        "{org}/vg/output/aln_{reads}_ordinary.json"
+    shell:
+        "{VGPATH}/vg view -aj {input} > {output}"
+
+rule convert_to_json_xdrop:
+    input:
+        "{org}/vg/output/aln_{reads}_xdrop.gam"
+    output:
+        "{org}/vg/output/aln_{reads}_xdrop.json"
+    shell:
+        "{VGPATH}/vg view -aj {input} > {output}"
