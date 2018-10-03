@@ -31,79 +31,69 @@ public:
     typedef typename debruijn_graph::graph_pack<Graph> Type;
 
     void Save(const std::string &basename, const Type &gp) override {
-        //Save basic graph
+        //1. Save basic graph
         graph_io_.Save(basename, gp.g);
 
-        //Save coverage
-        CoverageIO<Graph>()
-                .Save(basename, gp.g.coverage_index());
+        //2. Save coverage
+        CoverageIO<Graph>().Save(basename, gp.g.coverage_index());
 
-        if (gp.edge_pos.IsAttached()) { //Save edge positions
-            EdgePositionsIO<Graph>()
-                    .Save(basename, gp.edge_pos);
-        }
+        //3. Save edge positions
+        SaveAttached(basename, gp.edge_pos);
 
-        if (gp.index.IsAttached()) { //Save kmer edge index
-            EdgeIndexIO<Graph>()
-                    .Save(basename, gp.index);
-        }
+        //4. Save kmer edge index
+        SaveAttached(basename, gp.index);
 
-        if (gp.kmer_mapper.IsAttached()) { //Save kmer mapper
-            KmerMapperIO<Graph>()
-                    .Save(basename, gp.kmer_mapper);
-        }
+        //5. Save kmer mapper
+        SaveAttached(basename, gp.kmer_mapper);
 
-        if (gp.flanking_cov.IsAttached()) { //Save flanking coverage
-            FlankingCoverageIO<Graph>()
-                    .Save(basename, gp.flanking_cov);
-        }
+        //6. Save flanking coverage
+        SaveAttached(basename, gp.flanking_cov);
     }
 
     bool Load(const std::string &basename, Type &gp) override {
-        //Load basic graph
+        //1. Load basic graph
         bool loaded = graph_io_.Load(basename, gp.g);
         VERIFY(loaded);
         const auto &mapper = graph_io_.GetEdgeMapper();
 
-        //Load coverage
-        loaded = CoverageIO<Graph>()
-                .Load(basename, gp.g.coverage_index(), mapper);
+        //2. Load coverage
+        loaded = CoverageIO<Graph>().Load(basename, gp.g.coverage_index(), mapper);
         VERIFY(loaded);
 
-        //Load edge positions
-        VERIFY(!gp.edge_pos.IsAttached());
-        gp.edge_pos.Attach();
-        if (!EdgePositionsIO<Graph>()
-                .Load(basename, gp.edge_pos, mapper)) {
-            INFO("No saved positions");
-        }
+        //3. Load edge positions
+        LoadAttached(basename, gp.edge_pos, mapper);
 
-        //Load kmer edge index
-        if (!EdgeIndexIO<Graph>()
-                .Load(basename, gp.index)) {
-            WARN("Cannot load edge index, kmer coverages will be missed");
-            gp.index.Refill();
-        }
+        //4. Load kmer edge index
+        LoadAttached(basename, gp.index);
 
-        if (gp.kmer_mapper.IsAttached()) { //Load kmer mapper
-            if (!KmerMapperIO<Graph>()
-                    .Load(basename, gp.kmer_mapper)) {
-                WARN("Cannot load kmer_mapper, information on projected kmers will be missed");
-            }
-        }
+        //5. Load kmer mapper
+        LoadAttached(basename, gp.kmer_mapper);
 
-        //Load flanking coverage
-        if (!FlankingCoverageIO<Graph>()
-                .Load(basename, gp.flanking_cov, mapper)) {
-            WARN("Cannot load flanking coverage, flanking coverage will be recovered from index");
-            gp.flanking_cov.Fill(gp.index.inner_index());
-        }
+        //6. Load flanking coverage
+        LoadAttached(basename, gp.flanking_cov, mapper);
 
         return true;
     }
 
 protected:
     GraphIO<Graph> graph_io_;
+
+    template<typename T>
+    void SaveAttached(const std::string &basename, const T &component) {
+        if (component.IsAttached()) {
+            typename IOTraits<T>::Type io;
+            io.Save(basename, component);
+        }
+    }
+
+    template<typename T, typename... Env>
+    void LoadAttached(const std::string &basename, T &component, const Env &... env) {
+        if (component.IsAttached())
+            component.Detach();
+        typename IOTraits<T>::Type io;
+        if (io.Load(basename, component, env...))
+            component.Attach();
+    }
 };
 
 template<typename Graph>

@@ -39,6 +39,7 @@ private:
     }
 
     void LoadImpl(BinLoadFile &file, Type &edge_pos, const Mapper &mapper) override {
+        edge_pos.clear();
         size_t e;
         while (file >> e) { //Read until the end
             auto eid = mapper[e];
@@ -51,6 +52,11 @@ private:
             }
         }
     };
+};
+
+template<typename Graph>
+struct IOTraits<omnigraph::EdgesPositionHandler<Graph>> {
+    typedef EdgePositionsIO<Graph> Type;
 };
 
 } // namespace binary

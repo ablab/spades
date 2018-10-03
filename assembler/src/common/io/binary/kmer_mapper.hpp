@@ -35,6 +35,11 @@ private:
     }
 };
 
+template<typename Graph>
+struct IOTraits<debruijn_graph::KmerMapper<Graph>> {
+    typedef KmerMapperIO<Graph> Type;
+};
+
 } // namespace binary
 
 } // namespace io

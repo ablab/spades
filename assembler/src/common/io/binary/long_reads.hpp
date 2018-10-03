@@ -26,6 +26,11 @@ public:
     }
 };
 
+template<typename Graph>
+struct IOTraits<debruijn_graph::LongReadContainer<Graph>> {
+    typedef LongReadsIO<Graph> Type;
+};
+
 } // namespace binary
 
 } // namespace io

@@ -38,6 +38,11 @@ private:
     }
 };
 
+template<typename Graph>
+struct IOTraits<debruijn_graph::EdgeIndex<Graph>> {
+    typedef EdgeIndexIO<Graph> Type;
+};
+
 } // namespace binary
 
 } // namespace io

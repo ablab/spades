@@ -13,6 +13,8 @@
 
 namespace io {
 
+namespace binary {
+
 class BinSaveFile {
 public:
     BinSaveFile(const std::string &filename)
@@ -84,6 +86,12 @@ class IOBase {
 };
 
 /**
+  * @brief  IOTraits<T>::type is the concrete class is needed for (de)serialization of some type T.
+  */
+template<typename T>
+struct IOTraits;
+
+/**
  * @brief  An abstract saver/loader which uses a single file for its component.
  */
 template<typename T, typename... Env>
@@ -98,13 +106,17 @@ public:
         VERIFY(file);
         this->SaveImpl(file, value);
     }
-
+    /**
+     * @return false if the file is missing. true if the component was successfully loaded.
+     *         Fails if the file is present but cannot be read.
+     */
     bool Load(const std::string &basename, T &value, const Env &... env) override {
         std::string filename = basename + this->ext_;
-        BinLoadFile file(filename);
-        DEBUG("Loading " << this->name_ << " from " << filename);
-        if (!file)
+        if (!fs::check_existence(filename))
             return false;
+        BinLoadFile file(filename);
+        VERIFY_MSG(file, "Failed to read " << filename);
+        DEBUG("Loading " << this->name_ << " from " << filename);
         this->LoadImpl(file, value, env...);
         return true;
     }
@@ -173,4 +185,6 @@ private:
     IOPtr io_;
 };
 
-}
+} // namespace binary
+
+} //namespace io
