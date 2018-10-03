@@ -3,7 +3,7 @@ GAPATH = config["spalignerpath"]
 GACFG = config["spalignercfg"]
 GRAPH = config["graph"] 
 
-ALL_ORGS=["ecoli"]
+ALL_ORGS=["ecoli", "celegans"]
 ALL_READS=["simnp2000", "simpb2000", "realpb2000", "realnp2000"]
 
 SCRIPT_PATH=os.getcwd()
@@ -25,5 +25,5 @@ rule run_aligner:
     benchmark:
         repeat("{org}/SPAligner/benchmark/align_{reads}.tsv", 3)
     threads: 16
-    run:           
-        shell("{GAPATH} {SCRIPT_PATH}/{GACFG} -g {wildcards.org}/{GRAPH} -s {wildcards.org}/input/{wildcards.reads}.fasta -K 77 -d {params.type} -o {wildcards.org}/SPAligner/output/aln_{wildcards.reads} > {log}")
+    shell:
+        "{GAPATH} {SCRIPT_PATH}/{GACFG} -g {wildcards.org}/{GRAPH} -s {wildcards.org}/input/{wildcards.reads}.fasta -K 77 -d {params.type} -o {wildcards.org}/SPAligner/output/aln_{wildcards.reads} > {log}"

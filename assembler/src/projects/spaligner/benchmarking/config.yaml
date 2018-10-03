@@ -22,7 +22,7 @@ vg_k: 15
 
 # SPAligner cfg
 
-spalignerpath: /home/tdvorkina/results/benchmarking_test/bin/run_segal_v1_2018-09-03_19-58-07
+spalignerpath: /Sid/tdvorkina/gralign/SPAligner_review/spaligner
 spalignercfg: ./spaligner_config_template.yaml
 graph: "input/graph.gfa" #"input/graph/simplification"  #  
 

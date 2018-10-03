@@ -2,7 +2,7 @@ configfile: "config.yaml"
 VGPATH = config["vgpath"]
 K = config["vg_k"]
 
-ALL_ORGS=["ecoli"]
+ALL_ORGS=["ecoli", "celegans"]
 ALL_READS=["simnp2000", "simpb2000", "realpb2000", "realnp2000"]
 
 workdir: config["datapath"]
@@ -94,13 +94,15 @@ rule mapping_xdrop:
         "{org}/vg/output/aln_{reads}_xdrop.gam"
     params:
         out = "{org}/vg/output",
-        fq =  "{org}/input/{reads}.fastq"
+        fq =  "{org}/input/{reads}.fasta" if "{reads}" == "simnp2000" or ("{org}" == "celegans" and "{reads}" == "realnp2000") else "{org}/input/{reads}.fastq"
     benchmark:
         repeat("{org}/vg/benchmark/mapping_{reads}_xdrop.tsv", 3)
     threads: 16
-    shell:
-        "mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.fq} -M 1 -W 64 --xdrop-alignment > {output}"
-
+    run:
+        if (wildcards.org == "celegans" and wildcards.reads == "realnp2000") or wildcards.reads == "simnp2000":
+            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -F {params.fq} -M 1 -W 64 --xdrop-alignment > {output}")
+        else:
+            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.fq} -M 1 -W 64 --xdrop-alignment > {output}")
 
 rule mapping_ordinary:
     input:
@@ -111,12 +113,15 @@ rule mapping_ordinary:
         "{org}/vg/output/aln_{reads}_ordinary.gam"
     params:
         out = "{org}/vg/output",
-        fq =  "{org}/input/{reads}.fastq"
+        fq =  "{org}/input/{reads}.fasta" if "{reads}" == "simnp2000" or ("{org}" == "celegans" and "{reads}" == "realnp2000") else "{org}/input/{reads}.fastq"
     benchmark:
         repeat("{org}/vg/benchmark/mapping_{reads}_ordinary.tsv", 3)
     threads: 16
-    shell:
-        "mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.fq} -M 1 -W 64 > {output}"
+    run:
+        if (wildcards.org == "celegans" and wildcards.reads == "realnp2000") or wildcards.reads == "simnp2000":
+            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -F {params.fq} -M 1 -W 64 > {output}")
+        else:
+            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.fq} -M 1 -W 64 > {output}")
 
 rule convert_to_json_ordinary:
     input:

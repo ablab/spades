@@ -239,7 +239,7 @@ def save_fasta(aligner_res, filename):
 
 if __name__ == "__main__":
     datapath = "/Sid/tdvorkina/gralign/benchmarking/"
-    aligners = {"SeGal": 1, "vg": 0, "GraphAligner":1}
+    aligners = {"SPAligner": 1, "vg": 0, "GraphAligner":1}
     stat = "max"
     for org in ["ecoli", "celegans"]:
         for read_type in ["simnp2000", "simpb2000", "realpb2000", "realnp2000"]:
@@ -251,7 +251,7 @@ if __name__ == "__main__":
             mp = {}
             for al in aligners.keys():
                 if aligners[al] == 1:
-                    if al.startswith("SeGal"):
+                    if al.startswith("SPAligner"):
                         segal_res_file = org_path + al + "/output/aln_" + read_type + ".tsv"
                         segal_res = dl.load_segal_paths(segal_res_file, reads, stat)
                         mp[al] = segal_res
