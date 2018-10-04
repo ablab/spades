@@ -47,8 +47,9 @@ public:
 
     virtual ~PairedInfoLibrary() {}
 
-    virtual size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist, int max_dist, size_t min_len = 0) const = 0;
-    virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const = 0;
+    virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId> &result,
+                                 int min_dist, int max_dist, size_t min_len = 0) const = 0;
+    virtual void CountDistances(EdgeId e1, EdgeId e2, std::vector<int> &dist, std::vector<double> &w) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance, bool from_interval = false) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int dist_min, int dist_max) const = 0;
 
@@ -110,7 +111,7 @@ public:
     }
 
 
-    void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const override {
+    void CountDistances(EdgeId e1, EdgeId e2, std::vector<int> &dist, std::vector<double> &w) const override {
         VERIFY(index_.size() > 0);
         if (e1 == e2)
             return;

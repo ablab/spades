@@ -7,7 +7,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/standard_base.hpp"
 #include "graph_component.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "component_filters.hpp"
@@ -147,7 +146,7 @@ public:
         relaxed_.insert(e);
     }
 
-    void Relax(const vector<Element> &v) {
+    void Relax(const std::vector<Element> &v) {
         for (auto it = v.begin(); it != v.end(); ++it)
             Relax(*it);
     }
@@ -195,14 +194,14 @@ public:
         return current_ < path_.size();
     }
 
-    void Relax(const vector<VertexId> &v) {
+    void Relax(const std::vector<VertexId> &v) {
         std::set<VertexId> toRelax(v.begin(), v.end());
         while(toRelax.count(path_[current_]) == 1)
             current_++;
     }
 
     void Relax(VertexId e) {
-        Relax(vector<VertexId>({e}));
+        Relax(std::vector<VertexId>{e});
     }
 };
 
@@ -220,7 +219,7 @@ public:
 
     virtual GraphComponent<Graph> Find(typename Graph::VertexId v) const = 0;
 
-    virtual vector<typename Graph::VertexId> InnerVertices(const GraphComponent<Graph> &component) const = 0;
+    virtual std::vector<typename Graph::VertexId> InnerVertices(const GraphComponent<Graph> &component) const = 0;
 
     virtual ~AbstractNeighbourhoodFinder() {
     }
@@ -364,8 +363,8 @@ public:
         return dfs_helper.EdgeSummaryLength();
     }
 
-    vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) const {
-        return vector<VertexId>(component.v_begin(), component.v_end());
+    std::vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) const {
+        return std::vector<VertexId>(component.v_begin(), component.v_end());
     }
 };
 
@@ -424,14 +423,14 @@ public:
         auto cd = DijkstraHelper<Graph>::CreateCountingDijkstra(this->graph(), max_size_,
                 edge_length_bound_);
         cd.Run(v);
-        vector<VertexId> result_vector = cd.ReachedVertices();
+        auto result_vector = cd.ReachedVertices();
         std::set<VertexId> result(result_vector.begin(), result_vector.end());
         ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
         cc.CloseComponent(result);
         return GraphComponent<Graph>::FromVertices(this->graph(), result);
     }
 
-    vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) const {
+    std::vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) const {
         std::set<VertexId> border = FindNeighbours(FindBorder(component), 2);
         std::vector<VertexId> result;
         std::set_difference(component.vertices().begin(), component.vertices().end(),
@@ -469,8 +468,7 @@ class PathNeighbourhoodFinder : public AbstractNeighbourhoodFinder<Graph> {
         grey.insert(v);
 
         TRACE("Sorting incident edges");
-        vector<EdgeId> incident_path;
-        vector<EdgeId> incident_non_path;
+        std::vector<EdgeId> incident_path, incident_non_path;
         for (EdgeId e : this->graph().IncidentEdges(v)) {
             if (path_edges_.count(e) != 0) {
                 /*condition not to go backward*/
@@ -518,8 +516,10 @@ public:
 
     mutable std::set<VertexId> last_inner_;
 
-    PathNeighbourhoodFinder(const Graph &graph, const vector<EdgeId>& path, size_t edge_length_bound = DEFAULT_EDGE_LENGTH_BOUND,
-                            size_t max_size = DEFAULT_MAX_SIZE, size_t max_depth = DEFAULT_MAX_DEPTH)
+    PathNeighbourhoodFinder(const Graph &graph, const std::vector<EdgeId> &path,
+                            size_t edge_length_bound = DEFAULT_EDGE_LENGTH_BOUND,
+                            size_t max_size = DEFAULT_MAX_SIZE,
+                            size_t max_depth = DEFAULT_MAX_DEPTH)
             : AbstractNeighbourhoodFinder<Graph>(graph),
               path_edges_(path.begin(), path.end()),
               edge_length_bound_(edge_length_bound),
@@ -539,8 +539,8 @@ public:
         return GraphComponent<Graph>::FromVertices(this->graph(), grey);
     }
 
-    vector<VertexId> InnerVertices(const GraphComponent<Graph> &/*component*/) const {
-        return vector<VertexId>(last_inner_.begin(), last_inner_.end());
+    std::vector<VertexId> InnerVertices(const GraphComponent<Graph> &/*component*/) const {
+        return std::vector<VertexId>(last_inner_.begin(), last_inner_.end());
     }
 private:
     DECL_LOGGER("PathNeighbourhoodFinder");
@@ -568,8 +568,8 @@ public:
         return GraphComponent<Graph>::FromVertices(this->graph(), cd.ProcessedVertices());
     }
 
-    vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) const {
-        return vector<VertexId>(component.v_begin(), component.v_end());
+    std::vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) const {
+        return std::vector<VertexId>(component.v_begin(), component.v_end());
     }
 };
 
@@ -779,7 +779,7 @@ public:
     GraphComponent<Graph> Next() {
         VertexId next_vertex = inner_iterator_->Next();
         GraphComponent<Graph> result = neighbourhood_finder_->Find(next_vertex);
-        vector<VertexId> to_relax = neighbourhood_finder_->InnerVertices(result);
+        auto to_relax = neighbourhood_finder_->InnerVertices(result);
         to_relax.push_back(next_vertex);
         inner_iterator_->Relax(to_relax);
         return result;
@@ -874,7 +874,7 @@ GraphComponent<Graph> VertexNeighborhood(
         const Graph &graph, typename Graph::VertexId vertex, size_t max_size = ReliableNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE,
         size_t edge_length_bound = ReliableNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND) {
     std::vector<typename Graph::VertexId> vv = {vertex};
-    std::shared_ptr<vector<typename Graph::VertexId>> sh_vv = std::make_shared<std::vector<typename Graph::VertexId>>(vv);
+    auto sh_vv = std::make_shared<std::vector<typename Graph::VertexId>>(vv);
     return StandardSplitter<Graph>(graph, sh_vv, max_size, edge_length_bound)->Next();
 }
 
@@ -884,7 +884,7 @@ GraphComponent<Graph> EdgeNeighborhood(
         const Graph &graph, typename Graph::EdgeId edge, size_t max_size = ReliableNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE,
         size_t edge_length_bound = ReliableNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND) {
     std::vector<typename Graph::VertexId> vv = {graph.EdgeStart(edge)};
-    std::shared_ptr<vector<typename Graph::VertexId>> sh_vv = std::make_shared<std::vector<typename Graph::VertexId>>(vv);
+    auto sh_vv = std::make_shared<std::vector<typename Graph::VertexId>>(vv);
     return StandardSplitter<Graph>(graph, sh_vv, max_size, edge_length_bound)->Next();
 }
 

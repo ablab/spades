@@ -8,7 +8,7 @@ namespace path_extend {
 
 namespace scaffold_graph {
 
-const std::map<size_t, string> ScaffoldEdgeColorer::color_map =
+const std::map<size_t, std::string> ScaffoldEdgeColorer::color_map =
         {{(size_t) -1, "black"},
          {0, "red"},
          {1, "blue"},

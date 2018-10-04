@@ -53,7 +53,8 @@ namespace online_visualization {
 
       public:
         std::string Usage() const {
-        string answer = "The command `help` allows you to see a help message for any command. \n " +
+        string answer;
+        answer = answer + "The command `help` allows you to see a help message for any command. \n " +
           "Usage: \n" +
           "> help <name_of_command> \n" +
           " Running `help` without parameters yields a list of all commands.";

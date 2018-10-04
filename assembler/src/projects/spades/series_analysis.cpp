@@ -53,7 +53,7 @@ typedef Profile<Abundance> AbundanceVector;
 typedef ProfileCounter<Abundance> ContigAbundanceCounter;
 
 template<class graph_pack>
-shared_ptr<visualization::graph_colorer::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
+std::shared_ptr<visualization::graph_colorer::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
     const graph_pack& gp) {
     io::SingleRead genome("ref", gp.genome.str());
     auto mapper = MapperInstance(gp);
@@ -80,7 +80,7 @@ inline double cosine_sim(const AbundanceVector& v1, const AbundanceVector& v2) {
 
 template<class Graph>
 class EdgeAbundance: public omnigraph::GraphActionHandler<Graph> {
-    typedef map<EdgeId, AbundanceVector> Storage;
+    typedef std::map<EdgeId, AbundanceVector> Storage;
     typedef Storage::const_iterator const_iterator;
     Storage edge_abundance_;
     const ContigAbundanceCounter& abundance_counter_;
@@ -188,14 +188,14 @@ boost::optional<AbundanceVector> InferAbundance(const std::string& bin_mult_fn,
                                                 const std::string& b_id) {
     fs::CheckFileExistenceFATAL(bin_mult_fn);
 
-    ifstream is(bin_mult_fn);
+    std::ifstream is(bin_mult_fn);
     std::vector<AbundanceVector> abundances;
     std::string name;
     while (true) {
         is >> name;
         if (!is.fail()) {
             if (name != b_id) {
-                is.ignore(numeric_limits<std::streamsize>::max(), '\n');
+                is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                 continue;
             }
             AbundanceVector vec(KmerProfileIndex::SampleCount(), 0.0);
@@ -265,18 +265,18 @@ void SeriesAnalysis::run(conj_graph_pack &gp, const char *) {
         io::OFastaReadStream oss(config.edges_sqn);
         for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
             EdgeId e = *it;
-            string s = gp.g.EdgeNucls(e).str();
+            auto s = gp.g.EdgeNucls(e).str();
             oss << io::SingleRead(io::MakeContigId(gp.g.int_id(e), s.size()), s);
         }
     }
 
     if (!config.edges_mpl.empty()) {
-        ofstream os(config.edges_mpl);
+        std::ofstream os(config.edges_mpl);
         PrintEdgeFragmentProfiles(gp, abundance_counter, -1ul, config.min_len, os);
     }
 
     if (!config.edge_fragments_mpl.empty()) {
-        ofstream os(config.edge_fragments_mpl);
+        std::ofstream os(config.edge_fragments_mpl);
         PrintEdgeFragmentProfiles(gp, abundance_counter, config.frag_size, config.min_len, os);
     }
 

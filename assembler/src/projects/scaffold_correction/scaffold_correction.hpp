@@ -102,7 +102,7 @@ namespace scaffold_correction {
             omnigraph::Dijkstra<Graph, DS> dj(graph_, ds);
             dj.Run(v1);
             if(dj.DistanceCounted(v2) && dj.GetDistance(v2) <= max_insert_) {
-                vector<EdgeId> result = dj.GetShortestPathTo(v2);
+                auto result = dj.GetShortestPathTo(v2);
                 VERIFY(graph_.EdgeStart(result.front()) == v1);
                 VERIFY(graph_.EdgeEnd(result.back()) == v2);
                 TRACE("Gap closed");
@@ -187,7 +187,7 @@ namespace scaffold_correction {
         const CarefulPathFixer &fixer_;
 
 
-        bool CheckPath(const vector<Graph::EdgeId> &path) const {
+        bool CheckPath(const std::vector<Graph::EdgeId> &path) const {
             if (!path.size())
                 return false;
 
@@ -216,7 +216,7 @@ namespace scaffold_correction {
             for (auto it = scaffold.begin(); it != scaffold.end(); ++it) {
                 path.join(mapper->MapSequence(*it));
             }
-            vector<Graph::EdgeId> corrected_path = fixer_.TryFixPath(path.simple_path());
+            auto corrected_path = fixer_.TryFixPath(path.simple_path());
             if (CheckPath(corrected_path))
                 return ConstructSequence(corrected_path);
 

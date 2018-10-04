@@ -1,6 +1,5 @@
 //***************************************************************************
 //* Copyright (c) 2015-2018 Saint Petersburg State University
-//* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
@@ -56,13 +55,13 @@ public:
 };
 
 class PathExtenderGapCloser: public TargetEdgeGapCloser {
-    shared_ptr<path_extend::PathExtender> extender_;
+    std::shared_ptr<path_extend::PathExtender> extender_;
 
 protected:
     Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const override;
 
 public:
-    PathExtenderGapCloser(const Graph& g, size_t max_path_len, shared_ptr<PathExtender> extender):
+    PathExtenderGapCloser(const Graph& g, size_t max_path_len, std::shared_ptr<PathExtender> extender):
             TargetEdgeGapCloser(g, max_path_len), extender_(extender) {
         DEBUG("ext added");
     }
@@ -91,7 +90,7 @@ public:
 
 //TODO switch to a different Callback, no need to store all paths
 class DijkstraGapCloser: public TargetEdgeGapCloser {
-    typedef vector<vector<EdgeId>> PathsT;
+    typedef std::vector<std::vector<EdgeId>> PathsT;
 
     Gap FillWithMultiplePaths(const PathsT& paths,
                               BidirectionalPath& result) const;
@@ -103,7 +102,7 @@ class DijkstraGapCloser: public TargetEdgeGapCloser {
 
     size_t MinPathSize(const PathsT& paths) const;
 
-    vector<EdgeId> LCP(const PathsT& paths) const;
+    std::vector<EdgeId> LCP(const PathsT& paths) const;
 
     std::map<EdgeId, size_t> CountEdgesQuantity(const PathsT& paths, size_t length_limit) const;
 

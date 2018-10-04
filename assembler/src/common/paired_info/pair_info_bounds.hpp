@@ -8,7 +8,7 @@
 #ifndef OMNI_UTILS_HPP_
 #define OMNI_UTILS_HPP_
 
-#include "utils/standard_base.hpp"
+#include "math/xmath.h"
 
 namespace omnigraph {
 

@@ -11,7 +11,6 @@
 
 #include "io/reads/file_reader.hpp"
 #include "stages/construction.hpp"
-#include "utils/standard_base.hpp"
 #include "analysis_pipeline.hpp"
 
 using namespace std;

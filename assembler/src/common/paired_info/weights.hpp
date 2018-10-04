@@ -16,9 +16,7 @@ inline double KmerCountProductWeight(const std::pair<EdgeId, EdgeId>&,
 }
 
 class WeightDEWrapper {
-private:
-
-    vector<double> new_hist;
+    std::vector<double> new_hist;
     int left_x;
     int insert_size;
 

@@ -270,7 +270,7 @@ class DataPrinter {
         VERIFY(file.is_open());
         file << component_.e_size() << std::endl;
         for (auto it = component_.e_begin(); it != component_.e_end(); ++it) {
-            vector<omnigraph::EdgePosition> pos_it = ref_pos.GetEdgePositions(*it);
+            auto pos_it = ref_pos.GetEdgePositions(*it);
             file << it->int_id() << " " << pos_it.size() << std::endl;
             for (size_t i = 0; i < pos_it.size(); i++) {
                 file << "    " << pos_it[i].contigId << " " << pos_it[i].mr << std::endl;
@@ -406,7 +406,7 @@ class DataScanner {
         LoadEdgeAssociatedInfo(g_.coverage_index(), in);
     }
 
-    bool LoadFlankingCoverage(const string &file_name, FlankingCoverage<Graph> &flanking_cov) {
+    bool LoadFlankingCoverage(const std::string &file_name, FlankingCoverage<Graph> &flanking_cov) {
         if (!fs::FileExists(file_name + ".flcvr")) {
             INFO("Flanking coverage saves are absent");
             return false;

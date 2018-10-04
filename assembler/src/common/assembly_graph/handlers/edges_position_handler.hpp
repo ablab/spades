@@ -126,7 +126,7 @@ public:
         new_set.insert(new_pos);
     }
 
-    void AddAndShiftEdgePositions(EdgeId edge, const std::map<string, RangeSet> &contig_map, int shift = 0) {
+    void AddAndShiftEdgePositions(EdgeId edge, const std::map<std::string, RangeSet> &contig_map, int shift = 0) {
         VERIFY(this->IsAttached());
         for (const auto &contig : contig_map) {
             for (const auto &e : contig.second) {

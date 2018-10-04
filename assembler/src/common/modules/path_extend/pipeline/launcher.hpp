@@ -37,7 +37,7 @@ class PathExtendLauncher {
         ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const;
 
     void PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
-                            const set<EdgeId> &main_edge_set,
+                            const std::set<EdgeId> &main_edge_set,
                             const debruijn_graph::GenomeConsistenceChecker &genome_checker,
                             const std::string &filename) const;
 

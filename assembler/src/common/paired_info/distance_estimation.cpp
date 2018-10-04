@@ -15,7 +15,7 @@ std::vector<size_t> GraphDistanceFinder::GetGraphDistancesLengths(EdgeId e1, Edg
 }
 
 void GraphDistanceFinder::FillGraphDistancesLengths(EdgeId e1, LengthMap &second_edges) const {
-    vector<size_t> path_lower_bounds;
+    std::vector<size_t> path_lower_bounds;
     size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), insert_size_, delta_);
     PathProcessor <Graph> paths_proc(graph_, graph_.EdgeEnd(e1), path_upper_bound);
 
@@ -104,7 +104,7 @@ DistanceEstimator::EstimHist DistanceEstimator::EstimateEdgePairDistances(EdgePa
 
     TRACE("Bounds are " << minD << " " << maxD);
     EstimHist result;
-    vector<DEDistance> forward;
+    std::vector<DEDistance> forward;
     forward.reserve(raw_forward.size());
     for (auto raw_length : raw_forward) {
         int length = int(raw_length);
@@ -115,7 +115,7 @@ DistanceEstimator::EstimHist DistanceEstimator::EstimateEdgePairDistances(EdgePa
         return result;
 
     size_t cur_dist = 0;
-    vector<DEWeight> weights(forward.size(), 0);
+    std::vector<DEWeight> weights(forward.size(), 0);
     for (auto point : histogram) {
         if (ls(2 * point.d + DEDistance(second_len), DEDistance(first_len)))
             continue;
@@ -143,7 +143,7 @@ DistanceEstimator::EstimHist DistanceEstimator::EstimateEdgePairDistances(EdgePa
 
     for (size_t i = 0; i < forward.size(); ++i)
         if (ge(weights[i], DEWeight(0)))
-            result.push_back(make_pair(forward[i], weights[i]));
+            result.emplace_back(forward[i], weights[i]);
 
     VERIFY(result.size() == forward.size());
     return result;

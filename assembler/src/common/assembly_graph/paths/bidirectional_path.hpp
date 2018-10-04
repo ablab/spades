@@ -449,8 +449,8 @@ public:
     }
 
     //FIXME remove
-    vector<EdgeId> ToVector() const {
-        return vector<EdgeId>(data_.begin(), data_.end());
+    std::vector<EdgeId> ToVector() const {
+        return std::vector<EdgeId>(data_.begin(), data_.end());
     }
 
     void PrintDEBUG() const {
@@ -482,7 +482,7 @@ public:
     }
 
     std::string str() const {
-        stringstream ss;
+        std::stringstream ss;
         Print(ss);
         return ss.str();
     }

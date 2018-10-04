@@ -15,14 +15,14 @@
 #ifndef EXTENSION_HPP_
 #define EXTENSION_HPP_
 
+#include "weight_counter.hpp"
+#include "pe_utils.hpp"
+//#include "scaff_supplementary.hpp"
+
 #include <cfloat>
 #include <iostream>
 #include <fstream>
 #include <map>
-#include "weight_counter.hpp"
-#include "pe_utils.hpp"
-
-//#include "scaff_supplementary.hpp"
 
 namespace path_extend {
 
@@ -222,7 +222,7 @@ public:
         return wc_ != nullptr;
     }
 
-    shared_ptr<WeightCounter> wc() const {
+    std::shared_ptr<WeightCounter> wc() const {
         return wc_;
     }
 
@@ -404,7 +404,7 @@ private:
     bool IsEnoughCoverage(EdgeId e1, EdgeId e2, bool reverse) const {
         double cov1 = coverage_storage_.GetCoverage(e1, reverse);
         double cov2 = coverage_storage_.GetCoverage(e2, reverse);
-        return math::ge(max(cov1, cov2), min_upper_coverage_) || math::eq(min(cov1, cov2), 0.0);
+        return math::ge(std::max(cov1, cov2), min_upper_coverage_) || math::eq(std::min(cov1, cov2), 0.0);
     }
 
     bool IsCoverageSimilar(EdgeId e1, EdgeId e2, bool reverse) const {
@@ -445,7 +445,7 @@ class ExcludingExtensionChooser: public ExtensionChooser {
         AlternativeContainer weights;
         for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
             double weight = wc_->CountWeight(path, iter->e_, to_exclude);
-            weights.insert(std::make_pair(weight, *iter));
+            weights.emplace(weight, *iter);
             DEBUG("Candidate " << g_.int_id(iter->e_) << " weight " << weight << " length " << g_.length(iter->e_));
         }
         NotifyAll(weights);
@@ -676,7 +676,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
         for (size_t l = 0; l < distances.size(); ++l) {
             //todo commented out condition seems unnecessary and should be library dependent! do we need "max(0" there?
             if (/*distances[l] > max(0, (int) len_to_path_end - int(1000)) && */math::ge(weights[l], raw_weight_threshold_)) {
-                histogram.push_back(std::make_pair(distances[l] - (int) len_to_path_end, weights[l]));
+                histogram.emplace_back(distances[l] - (int) len_to_path_end, weights[l]);
             }
         }
     }
@@ -734,13 +734,13 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
         return g_.IncomingEdgeCount(g_.EdgeStart(e)) == 0;
     }
 
-    set<EdgeId> FindCandidates(const BidirectionalPath &path) const {
-        set<EdgeId> jumping_edges;
+    std::set<EdgeId> FindCandidates(const BidirectionalPath &path) const {
+        std::set<EdgeId> jumping_edges;
         const auto& lib = wc_->PairedLibrary();
         //todo lib (and FindJumpEdges) knows its var so it can be counted there
         int is_scatter = int(math::round(lib.GetIsVar() * is_scatter_coeff_));
         for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib.GetISMax(); --i) {
-            set<EdgeId> jump_edges_i;
+            std::set<EdgeId> jump_edges_i;
             lib.FindJumpEdges(path.At(i), jump_edges_i,
                                std::max(0, (int)path.LengthAt(i) - is_scatter),
                                //FIXME do we need is_scatter here?
@@ -1042,7 +1042,7 @@ public:
         path.PrintDEBUG();
         std::map<EdgeId, double> weights_cands;
         for (const auto &edge : edges) {
-            weights_cands.insert({edge.e_, 0.0});
+            weights_cands.emplace(edge.e_, 0.0);
         }
         std::set<EdgeId> filtered_cands;
         auto support_paths = cov_map_.GetCoveringPaths(path.Back());
@@ -1178,7 +1178,7 @@ private:
     }
 
     GraphComponent<Graph> GetRepeatComponent(const VertexId start, double path_coverage) const {
-        set<VertexId> vertices_of_component;
+        std::set<VertexId> vertices_of_component;
         vertices_of_component.insert(start);
         std::queue<VertexId> can_be_processed;
         UpdateCanBeProcessed(start, can_be_processed, path_coverage);

@@ -17,8 +17,7 @@
 
 namespace debruijn_graph {
 
-inline void OutputEdgeSequences(const Graph &g,
-                                const string &contigs_output_filename) {
+inline void OutputEdgeSequences(const Graph &g, const std::string &contigs_output_filename) {
     INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
     io::osequencestream_cov oss(contigs_output_filename + ".fasta");
 

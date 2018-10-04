@@ -8,6 +8,7 @@
 
 #include "utils/stl_utils.hpp"
 #include "dijkstra_settings.hpp"
+#include "utils/logger/logger.hpp"
 
 #include <queue>
 #include <vector>
@@ -182,7 +183,7 @@ public:
                 TRACE("Distance to vertex " << graph_.str(vertex) << " already counted. Proceeding to next queue entry.");
                 continue;
             }
-            distances_.insert({vertex, distance});
+            distances_.emplace(vertex, distance);
 
             TRACE("Vertex " << graph_.str(vertex) << " is found to be at distance "
                     << distance << " from vertex " << graph_.str(start));

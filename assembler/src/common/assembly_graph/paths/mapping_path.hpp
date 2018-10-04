@@ -20,14 +20,13 @@ namespace omnigraph {
  */
 template<typename ElementId>
 class Path {
-    typedef std::vector<ElementId> Sequence;
-    Sequence sequence_;
+    std::vector<ElementId> sequence_;
     size_t start_pos_;
     size_t end_pos_;
  public:
-    typedef typename Sequence::const_iterator iterator;
+    typedef typename std::vector<ElementId>::const_iterator iterator;
 
-    Path(const Sequence &sequence, size_t start_pos, size_t end_pos)
+    Path(const std::vector<ElementId> &sequence, size_t start_pos, size_t end_pos)
             : sequence_(sequence), start_pos_(start_pos),  end_pos_( end_pos) {
     }
 
@@ -41,7 +40,7 @@ class Path {
 
     size_t size() const { return sequence_.size(); }
 
-    const Sequence &sequence() const { return sequence_; }
+    const std::vector<ElementId> &sequence() const { return sequence_; }
     ElementId operator[](size_t index) const { return sequence_[index]; }
 
     iterator begin() const { return sequence_.begin(); }

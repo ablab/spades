@@ -14,7 +14,7 @@ void path_extend::ContigWriter::OutputPaths(const PathContainer &paths, const st
         BidirectionalPath* path = iter.get();
         if (path->Length() <= 0)
             continue;
-        string path_string = scaffold_maker.MakeSequence(*path);
+        auto path_string = scaffold_maker.MakeSequence(*path);
         if (path_string.length() >= g_.k()) {
             storage.emplace_back(path_string, path);
         }

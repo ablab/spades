@@ -26,7 +26,6 @@
 using namespace omnigraph;
 
 namespace omnigraph {
-using std::map;
 
 //todo ask Shurik to remove new_graph_
 template<class Graph>
@@ -38,9 +37,9 @@ private:
     Graph &old_graph_;
     //From new edge to sequence of old
 public:
-    map<EdgeId, vector<EdgeId> > edge_labels;
+    std::map<EdgeId, std::vector<EdgeId>> edge_labels;
     //From old edge to set of new ones, containing it.
-    map<EdgeId, set<EdgeId> > edge_inclusions;
+    std::map<EdgeId, std::set<EdgeId>> edge_inclusions;
 public:
     //TODO: integrate this to resolver, remove "from_resolve" parameter
     EdgeLabelHandler(Graph &new_graph, Graph &old_graph,
@@ -71,18 +70,16 @@ public:
               old_graph_(old_graph) {
     }
 
-    void FillLabels(const map<EdgeId, EdgeId> &from_resolve) {
+    void FillLabels(const std::map<EdgeId, EdgeId> &from_resolve) {
         for (auto iter = from_resolve.begin(); iter != from_resolve.end();
              ++iter) {
             if (edge_inclusions.find(iter->second) == edge_inclusions.end()) {
-                set<EdgeId> tmp;
-                edge_inclusions.insert(make_pair(iter->second, tmp));
+                edge_inclusions.emplace({iter->second, {}});
             }
             edge_inclusions.find(iter->second)->second.insert(iter->first);
 
             if (edge_labels.find(iter->first) == edge_labels.end()) {
-                vector<EdgeId> tmp;
-                edge_labels.insert(make_pair(iter->first, tmp));
+                edge_labels.emplace({iter->first, {}});
             }
             edge_labels[iter->first].push_back(iter->second);
         }
@@ -95,25 +92,23 @@ public:
         TRACE("Handle glue");
         if (edge_labels[edge1] != edge_labels[edge2])
             WARN("gluing two different edges is not a good idea on this step! EdgeLabel Handler can fail on such operation");
-        vector<EdgeId> tmp;
+        std::vector<EdgeId> tmp;
         for (size_t i = 0; i < edge_labels[edge1].size(); i++) {
-            edge_inclusions.find(edge_labels[edge1][i])->second.insert(
-                    new_edge);
+            edge_inclusions.find(edge_labels[edge1][i])->second.insert(new_edge);
             edge_inclusions.find(edge_labels[edge1][i])->second.erase(edge1);
             tmp.push_back(edge_labels[edge1][i]);
 
             edge_labels.erase(edge1);
         }
         for (size_t i = 0; i < edge_labels[edge2].size(); i++) {
-            edge_inclusions.find(edge_labels[edge2][i])->second.insert(
-                    new_edge);
+            edge_inclusions.find(edge_labels[edge2][i])->second.insert(new_edge);
             edge_inclusions.find(edge_labels[edge2][i])->second.erase(edge2);
             edge_labels.erase(edge2);
 
             //    tmp.push_back(edge_labels[edge1][i]);
         }
 
-        edge_labels.insert(make_pair(new_edge, tmp));
+        edge_labels.emplace(new_edge, std::move(tmp));
 
     }
 
@@ -124,7 +119,7 @@ public:
     virtual void HandleMerge(const vector<EdgeId> &oldEdges, EdgeId newEdge) {
         TRACE("HandleMerge by edge labels handler");
         size_t n = oldEdges.size();
-        vector<EdgeId> tmp;
+        std::vector<EdgeId> tmp;
         for (size_t j = 0; j < n; j++) {
             TRACE("Edge " << oldEdges[j] << " was labeled by " << edge_labels[oldEdges[j]]);
             for (size_t i = 0; i < edge_labels[oldEdges[j]].size(); i++) {
@@ -175,14 +170,13 @@ public:
         return ss.str();
     }
 
-    vector<pair<EdgeId, size_t> > resolvedPositions(EdgeId old_edge, size_t position_on_edge) {
-        vector<pair<EdgeId, size_t> > res;
-        for (auto it = edge_inclusions[old_edge].begin(); it != edge_inclusions[old_edge].end(); it++) {
-            EdgeId cur_edge = *it;
+    std::vector<std::pair<EdgeId, size_t> > resolvedPositions(EdgeId old_edge, size_t position_on_edge) {
+        std::vector<std::pair<EdgeId, size_t> > res;
+        for (auto cur_edge : edge_inclusions[old_edge]) {
             size_t cur_shift = 0;
             for (size_t i = 0; i < edge_labels[cur_edge].size(); i++) {
                 if (edge_labels[cur_edge][i] == old_edge) {
-                    res.push_back(make_pair(cur_edge, cur_shift + position_on_edge));
+                    res.emplace_back(cur_edge, cur_shift + position_on_edge);
                 }
                 cur_shift += old_graph_.length(edge_labels[cur_edge][i]);
             }

@@ -86,7 +86,7 @@ private:
     const GraphDistanceFinder &distance_finder_;
     const size_t linkage_distance_;
 
-    virtual const string Name() const = 0;
+    virtual const std::string Name() const = 0;
 
     DECL_LOGGER("AbstractDistanceEstimator");
 };

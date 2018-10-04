@@ -447,7 +447,8 @@ private:
             return LinkRecord(origin_.ConstructKWH(kmer_rc).idx(), edge, false, true);
     }
 
-    void CollectLinkRecords(typename Graph::HelperT &helper, const Graph &graph, std::vector<LinkRecord> &records, const vector<Sequence> &sequences) const {
+    void CollectLinkRecords(typename Graph::HelperT &helper, const Graph &graph,
+                            std::vector<LinkRecord> &records, const std::vector<Sequence> &sequences) const {
         size_t size = sequences.size();
         records.resize(size * 2, LinkRecord(0, EdgeId(), false, false));
         restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
@@ -464,7 +465,8 @@ private:
         }
     }
 
-    void LinkEdge(typename Graph::HelperT &helper, const Graph &graph, const VertexId v, const EdgeId edge, const bool is_start, const bool is_rc) const {
+    void LinkEdge(typename Graph::HelperT &helper, const Graph &graph, const VertexId v,
+                  const EdgeId edge, const bool is_start, const bool is_rc) const {
         VertexId v1 = v;
         if (is_rc)
             v1 = graph.conjugate(v);
@@ -479,13 +481,13 @@ public:
     FastGraphFromSequencesConstructor(size_t k, Index &origin)
             : kmer_size_(k), origin_(origin) {}
 
-    void ConstructGraph(Graph &graph, const vector<Sequence> &sequences) const {
+    void ConstructGraph(Graph &graph, const std::vector<Sequence> &sequences) const {
         typename Graph::HelperT helper = graph.GetConstructionHelper();
-        vector<LinkRecord> records;
+        std::vector<LinkRecord> records;
         CollectLinkRecords(helper, graph, records, sequences);//TODO make parallel
         parallel::sort(records.begin(), records.end());
         size_t size = records.size();
-        vector<vector<VertexId>> vertices_list(omp_get_max_threads());
+        std::vector<std::vector<VertexId>> vertices_list(omp_get_max_threads());
         restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
 #       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < size; i++) {

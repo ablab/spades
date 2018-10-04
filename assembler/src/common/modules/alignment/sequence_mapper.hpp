@@ -238,7 +238,7 @@ public:
     std::vector<EdgeId> FindReadPath(const MappingPath<EdgeId> &mapping_path) const {
           if (mapping_path.size() == 0) {
               TRACE("Read unmapped");
-              return vector<EdgeId>();
+              return {};
           }
 
           auto fixed_path = path_fixer_.DeleteSameEdges(mapping_path.simple_path());
@@ -252,7 +252,7 @@ public:
               TRACE("Could not fix the path!")
               if (skip_unfixed_) {
                   TRACE("Read unmapped");
-                  return vector<EdgeId>();
+                  return {};
               } else {
                   WARN("Could not fix the path!")
               }

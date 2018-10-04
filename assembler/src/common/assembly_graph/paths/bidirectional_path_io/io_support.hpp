@@ -39,7 +39,7 @@ public:
     ScaffoldSequenceMaker(const Graph& g) : g_(g), k_(g_.k()) {
     }
 
-    string MakeSequence(const BidirectionalPath &scaffold) const;
+    std::string MakeSequence(const BidirectionalPath &scaffold) const;
 };
 
 //Finds common long edges in paths and joins them into

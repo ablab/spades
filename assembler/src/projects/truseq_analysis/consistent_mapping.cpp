@@ -5,9 +5,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/standard_base.hpp"
 #include "AlignmentAnalyserNew.hpp"
 #include "consistent_mapping.h"
+
+using namespace std;
 
 namespace alignment_analysis {
     using omnigraph::MappingRange;

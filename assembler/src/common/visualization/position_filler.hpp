@@ -33,11 +33,11 @@ public:
 
     }
 
-    MappingPath Process(const string &s, const string &name) const {
+    MappingPath Process(const std::string &s, const std::string &name) const {
         return Process(io::SingleRead(name, s));
     }
 
-    MappingPath Process(const Sequence &s, const string &name) const {
+    MappingPath Process(const Sequence &s, const std::string &name) const {
         return Process(s.str(), name);
     }
 

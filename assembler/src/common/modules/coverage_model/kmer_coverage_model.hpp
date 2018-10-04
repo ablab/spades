@@ -8,7 +8,7 @@
 #pragma once
 
 #include <vector>
-using std::size_t;
+#include <cstddef>
 
 namespace coverage_model {
 

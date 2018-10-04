@@ -12,6 +12,8 @@
 #include "vertex_put_checker.hpp"
 #include "neighbours_iterator.hpp"
 
+#include <limits>
+
 namespace omnigraph {
 
 template<class Graph,

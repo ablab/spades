@@ -1,7 +1,6 @@
 #include "connection_condition2015.hpp"
+
 namespace path_extend {
-
-
 
 Connections ConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e,
                                                const ScaffoldingUniqueEdgeStorage &storage) const {
@@ -25,7 +24,7 @@ PairedLibConnectionCondition::PairedLibConnectionCondition(const debruijn_graph:
         min_read_count_(min_read_count),
         //FIXME reconsider condition; config!
         left_dist_delta_((int) lib_->GetISMax()),
-        right_dist_delta_(max(5 * (int) lib_->GetIsVar(), int(lib_->GetISMax()))) {
+        right_dist_delta_(std::max(5 * (int) lib_->GetIsVar(), int(lib_->GetISMax()))) {
 }
 
 size_t PairedLibConnectionCondition::GetLibIndex() const {
@@ -120,12 +119,12 @@ Connections LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeI
 
 int LongReadsLibConnectionCondition::GetMedianGap(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const {
     auto cov_paths = cov_map_.GetCoveringPaths(e1);
-    std::vector<pair<int, double> > h;
+    std::vector<std::pair<int, double>> h;
     for (const auto &path : cov_paths) {
         if (CheckPath(path, e1, e2)) {
             auto pos1 = path->FindAll(e1);
             auto pos2 = path->FindAll(e2);
-            h.push_back({path->LengthAt(pos1[0] + 1) - path->LengthAt(pos2[0]), path->GetWeight()});
+            h.emplace_back(path->LengthAt(pos1[0] + 1) - path->LengthAt(pos2[0]), path->GetWeight());
         }
     }
     std::sort(h.begin(), h.end());
@@ -178,7 +177,7 @@ Connections ScaffoldGraphPairedConnectionCondition::ConnectedWith(debruijn_graph
                 max_weight = w;
         }
     }
-    double threshold = max((double) never_add_, min((double) always_add_, max_weight * relative_threshold_));
+    double threshold = std::max((double) never_add_, std::min((double) always_add_, max_weight * relative_threshold_));
     Connections result;
     for (auto edge : all_edges) {
         double w = GetWeight(e, edge);
@@ -197,11 +196,11 @@ int PairedLibConnectionCondition::GetMedianGap(debruijn_graph::EdgeId e1, debrui
     std::vector<double> weights;
     int e_length = (int) graph_.length(e1);
     lib_->CountDistances(e1, e2, distances, weights);
-    std::vector<pair<int, double> >h(distances.size());
+    std::vector<std::pair<int, double>> h(distances.size());
     for (size_t i = 0; i< distances.size(); i++) {
 //TODO:: we make same checks twice! That's bad
         if (distances[i] >= e_length - left_dist_delta_ && distances[i] <= e_length + right_dist_delta_)
-            h.push_back(make_pair(distances[i], weights[i]));
+            h.emplace_back(distances[i], weights[i]);
     }
 //TODO: is it really necessary?
     std::sort(h.begin(), h.end());
@@ -236,10 +235,10 @@ Connections AssemblyGraphConnectionCondition::ConnectedWith(debruijn_graph::Edge
     if (stored_distances_.find(e) != stored_distances_.end()) {
         return stored_distances_[e];
     }
-    stored_distances_.insert({e, {}});
+    stored_distances_.emplace(e, Connections());
     for (auto connected: g_.OutgoingEdges(g_.EdgeEnd(e))) {
         if (interesting_edge_set_.find(connected) != interesting_edge_set_.end()) {
-            stored_distances_[e].insert(make_pair(connected, 1));
+            stored_distances_[e].emplace(connected, 1);
         }
     }
     auto dijkstra = DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, max_connection_length_);
@@ -247,7 +246,7 @@ Connections AssemblyGraphConnectionCondition::ConnectedWith(debruijn_graph::Edge
     for (auto v: dijkstra.ReachedVertices()) {
         for (auto connected: g_.OutgoingEdges(v)) {
             if (interesting_edge_set_.find(connected) != interesting_edge_set_.end() && dijkstra.GetDistance(v) < max_connection_length_) {
-                stored_distances_[e].insert(make_pair(connected, 1));
+                stored_distances_[e].emplace(connected, 1);
             }
         }
     }

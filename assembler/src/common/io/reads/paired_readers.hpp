@@ -7,11 +7,13 @@
 
 #pragma once
 
-#include <string>
 #include "ireader.hpp"
 #include "paired_read.hpp"
 #include "file_reader.hpp"
 #include "orientation.hpp"
+#include "utils/logger/logger.hpp"
+
+#include <string>
 
 namespace io {
 

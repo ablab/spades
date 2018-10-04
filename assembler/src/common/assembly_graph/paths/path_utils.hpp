@@ -107,8 +107,7 @@ namespace debruijn_graph {
     }
 
     template<class Graph>
-    Sequence MergeSequences(const Graph &g,
-                            const vector<typename Graph::EdgeId> &continuous_path) {
+    Sequence MergeSequences(const Graph &g, const std::vector<typename Graph::EdgeId> &continuous_path) {
         std::vector<Sequence> path_sequences;
         if (continuous_path.size() == 0)
             return Sequence();

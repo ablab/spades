@@ -53,10 +53,9 @@ class AnyEdgeContainFilter : public GraphComponentFilter<Graph> {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
-    const vector<EdgeId> edges_of_interest_;
+    const std::vector<EdgeId> edges_of_interest_;
 public:
-    AnyEdgeContainFilter(const Graph& graph,
-                         const vector<EdgeId>& edges_of_interest)
+    AnyEdgeContainFilter(const Graph& graph, const std::vector<EdgeId>& edges_of_interest)
             : base(graph),
               edges_of_interest_(edges_of_interest) {
 

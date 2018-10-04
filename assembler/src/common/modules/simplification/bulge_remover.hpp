@@ -21,7 +21,6 @@
 #include "assembly_graph/graph_support/comparators.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "utils/standard_base.hpp"
 #include <cmath>
 #include <stack>
 #include <unordered_set>
@@ -76,7 +75,7 @@ class MostCoveredSimpleAlternativePathChooser: public PathProcessor<Graph>::Call
     EdgeId forbidden_edge_;
 
     double max_coverage_;
-    vector<EdgeId> most_covered_path_;
+    std::vector<EdgeId> most_covered_path_;
 
 public:
 
@@ -86,7 +85,7 @@ public:
     }
 
     void HandleReversedPath(const std::vector<EdgeId> &reversed_path) override {
-        vector<EdgeId> path = this->ReversePath(reversed_path);
+        auto path = this->ReversePath(reversed_path);
         double path_cov = AvgCoverage(g_, path);
         for (size_t i = 0; i < path.size(); i++) {
             if (path[i] == forbidden_edge_)
@@ -102,7 +101,7 @@ public:
         return max_coverage_;
     }
 
-    const vector<EdgeId>& most_covered_path() {
+    const std::vector<EdgeId> &most_covered_path() {
         return most_covered_path_;
     }
 };
@@ -268,7 +267,7 @@ public:
         processor.Process(end, (g_.length(e) > delta) ? g_.length(e) - delta : 0,
                           max_path_len, path_chooser, max_edge_cnt_);
 
-        const vector<EdgeId>& path = path_chooser.most_covered_path();
+        const std::vector<EdgeId> &path = path_chooser.most_covered_path();
         if (!path.empty()) {
             VERIFY(g_.EdgeStart(path[0]) == start);
             VERIFY(g_.EdgeEnd(path.back()) == end);
@@ -352,7 +351,7 @@ protected:
             return false;
         }
 
-        vector<EdgeId> alternative = alternatives_analyzer_(e);
+        auto alternative = alternatives_analyzer_(e);
         if (!alternative.empty()) {
             gluer_(e, alternative);
             return true;
@@ -405,9 +404,8 @@ private:
 
     SmartEdgeSet it_;
 
-    static vector<EdgeId> EmptyPath() {
-        static vector<EdgeId> vec = {};
-        return vec;
+    static std::vector<EdgeId> EmptyPath() {
+        return {};
     }
 
     struct BulgeInfo : private boost::noncopyable {
@@ -487,7 +485,7 @@ private:
     }
 
     //returns false if time to stop
-    bool FillEdgeBuffer(vector<EdgeId>& buffer, func::TypedPredicate<EdgeId> proceed_condition) {
+    bool FillEdgeBuffer(std::vector<EdgeId> &buffer, func::TypedPredicate<EdgeId> proceed_condition) {
         VERIFY(buffer.empty());
         DEBUG("Filling edge buffer of size " << buff_size_);
         utils::perf_counter perf;
@@ -636,7 +634,7 @@ private:
 
 public:
 
-    typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
+    typedef std::function<void(EdgeId edge, const std::vector<EdgeId> &path)> BulgeCallbackF;
 
     ParallelBulgeRemover(Graph& g,
                          size_t chunk_cnt,
@@ -706,7 +704,7 @@ public:
                 inner_triggered = BasicProcessBulges(edges);
                 DEBUG("Small buffer processed in " << perf.time() << " seconds");
             } else {
-                std::vector<BulgeInfo> bulges = MergeBuffers(FindBulges(edge_buffer));
+                auto bulges = MergeBuffers(FindBulges(edge_buffer));
                 auto interacting_edges = RetainIndependentBulges(bulges);
                 inner_triggered = ProcessBulges(bulges, interacting_edges);
             }

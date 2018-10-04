@@ -20,11 +20,11 @@ namespace alignment_analysis {
         typedef Graph::VertexId VertexId;
     public:
         AlignmentAnalyserNew(Graph const &graph, size_t step) : graph_(graph), step_(step) { }
-        vector <ConsistentMapping> Analyse(const omnigraph::MappingPath<EdgeId> &path) const;
+        std::vector<ConsistentMapping> Analyse(const omnigraph::MappingPath<EdgeId> &path) const;
     private:
-        void Cut(vector<ConsistentMapping> &path, VertexId start) const;
+        void Cut(std::vector<ConsistentMapping> &path, VertexId start) const;
 
-        size_t StepBack(const vector<ConsistentMapping> &path) const;
+        size_t StepBack(const std::vector<ConsistentMapping> &path) const;
 
         const Graph &graph_;
         size_t step_;

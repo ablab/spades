@@ -107,7 +107,7 @@ public:
         const auto &outgoing = capacities_.find(v)->second;
         for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
             if (it->second > 0) {
-                result.push_back({v, it->first});
+                result.emplace_back(v, it->first);
             }
         }
         return result;
@@ -118,7 +118,7 @@ public:
         const auto &outgoing = capacities_.find(v)->second;
         for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
             if (Connected(it->first, v)) {
-                result.push_back({it->first, v});
+                result.emplace_back(it->first, v);
             }
         }
         return result;
@@ -197,7 +197,7 @@ private:
             current = prev.find(current)->second;
             result.push_back(current);
         }
-        return vector<FlowVertexId>(result.rbegin(), result.rend());
+        return std::vector<FlowVertexId>(result.rbegin(), result.rend());
     }
 
 public:
@@ -235,7 +235,7 @@ private:
     typedef typename FlowGraph<Graph>::FlowVertexId FlowVertexId;
     typedef typename FlowGraph<Graph>::FlowEdgeId FlowEdgeId;
 
-    int MinCapacity(const vector<FlowVertexId> &path) {
+    int MinCapacity(const std::vector<FlowVertexId> &path) {
         VERIFY(path.size() >= 2);
         int result = graph_.GetCapacity(path[0], path[1]);
         for (size_t i = 1; i + 1 < path.size(); i++) {
@@ -272,7 +272,7 @@ private:
 
     void Find(FlowVertexId v, std::vector<FlowVertexId> &result, std::set<FlowVertexId> &visited) {
         visited.insert(v);
-        vector<FlowEdgeId> outgoing = graph_.OutgoingEdges(v);
+        auto outgoing = graph_.OutgoingEdges(v);
         for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
             FlowVertexId next = graph_.EdgeEnd(*it);
             if (visited.count(next) == 0) {
@@ -381,7 +381,7 @@ private:
     }
 
     std::set<EdgeId> CollectUnusedEdges(const std::set<VertexId> &component, const FlowGraph<Graph> &fg,
-                                        const map<typename FlowGraph<Graph>::FlowVertexId, size_t> &colouring) {
+                                        const std::map<typename FlowGraph<Graph>::FlowVertexId, size_t> &colouring) {
         std::set<EdgeId> result;
         for (auto it_start = component.begin(); it_start != component.end();
                 ++it_start) {
@@ -466,7 +466,7 @@ public:
     /*fixme ignored, fix after merge with relative coverage branch!!! removal_handler*/) :
             g_(g), max_length_(max_length), uniqueness_length_(
                     uniqueness_length), plausibility_length_(
-                    plausibility_length), component_remover_(g, (std::function<void (set<EdgeId>)>) 0) {
+                    plausibility_length), component_remover_(g, typename ComponentRemover<Graph>::HandlerF(nullptr)) {
         VERIFY(uniqueness_length >= plausibility_length);
         VERIFY(plausibility_length > max_length);
     }

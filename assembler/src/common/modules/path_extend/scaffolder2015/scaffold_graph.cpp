@@ -83,7 +83,7 @@ bool ScaffoldGraph::AddVertex(ScaffoldGraph::ScaffoldVertex assembly_graph_edge)
     return false;
 }
 
-void ScaffoldGraph::AddVertices(const set<ScaffoldGraph::ScaffoldVertex> &vertices) {
+void ScaffoldGraph::AddVertices(const std::set<ScaffoldGraph::ScaffoldVertex> &vertices) {
     for (auto v : vertices) {
         AddVertex(v);
     }
@@ -103,15 +103,15 @@ bool ScaffoldGraph::AddEdge(ScaffoldGraph::ScaffoldVertex v1, ScaffoldGraph::Sca
     return true;
 }
 
-void ScaffoldGraph::Print(ostream &os) const {
+void ScaffoldGraph::Print(std::ostream &os) const {
     for (auto v: vertices_) {
         os << "Vertex " << int_id(v) << " ~ " << int_id(conjugate(v))
-            << ": len = " << assembly_graph_.length(v) << ", cov = " << assembly_graph_.coverage(v) << endl;
+            << ": len = " << assembly_graph_.length(v) << ", cov = " << assembly_graph_.coverage(v) << std::endl;
     }
     for (auto e_iter = edges_.begin(); e_iter != edges_.end(); ++e_iter) {
         os << "Edge " << e_iter->second.getId() <<
             ": " << int_id(e_iter->second.getStart()) << " -> " << int_id(e_iter->second.getEnd()) <<
-            ", lib index = " << e_iter->second.getColor() << ", weight " << e_iter->second.getWeight() << endl;
+            ", lib index = " << e_iter->second.getColor() << ", weight " << e_iter->second.getWeight() << std::endl;
     }
 }
 

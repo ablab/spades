@@ -8,7 +8,6 @@
 #pragma once
 
 #include "utils/stl_utils.hpp"
-#include "utils/standard_base.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 
 namespace visualization {

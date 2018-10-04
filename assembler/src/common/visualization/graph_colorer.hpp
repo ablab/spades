@@ -125,7 +125,7 @@ private:
     std::vector<std::shared_ptr<ElementColorer<typename Graph::EdgeId>>> colorers_;
 
     std::vector<std::string> CollectColors(EdgeId edge) const {
-        vector<std::string> result = {default_color_};
+        std::vector<std::string> result = {default_color_};
         for (auto it = colorers_.begin(); it != colorers_.end(); ++it) {
             std::string next_color = (*it)->GetValue(edge);
             if (std::find(result.begin(), result.end(), next_color) == result.end())
@@ -134,7 +134,7 @@ private:
         return result;
     }
 
-    std::string ConstructColorString(const vector<std::string> &colors) const {
+    std::string ConstructColorString(const std::vector<std::string> &colors) const {
         if (colors.size() == 1)
             return default_color_;
         std::string result;

@@ -62,11 +62,11 @@ public:
         size_t begin = 0;
         for (size_t i = 0; i < points_.size() - 1; ++i) {
             if (IsANewCluster(i, points_)) {
-                answer.push_back({begin, i + 1});
+                answer.emplace_back(begin, i + 1);
                 begin = i + 1;
             }
         }
-        answer.push_back({begin, points_.size()});
+        answer.emplace_back(begin, points_.size());
 
         return answer;
     }
@@ -94,10 +94,10 @@ public:
                     for (size_t k = begin; k <= i; ++k) {
                         val += points_[k].weight * weight_f(j - rounded_d(points_[k]));
                     }
-                    new_data.push_back(PairInfo<EdgeId>(ep.first, ep.second, j, val, 0.));
+                    new_data.emplace_back(ep.first, ep.second, j, val, 0.);
                 }
                 size_t new_end = new_data.size();
-                answer.push_back({new_begin, new_end});
+                answer.emplace_back(new_begin, new_end);
 
                 begin = i + 1;
             }

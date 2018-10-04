@@ -8,7 +8,8 @@
 #ifndef GRAPH_PRINTER_HPP_
 #define GRAPH_PRINTER_HPP_
 
-#include "utils/standard_base.hpp"
+#include <string>
+#include <sstream>
 
 namespace visualization {
 

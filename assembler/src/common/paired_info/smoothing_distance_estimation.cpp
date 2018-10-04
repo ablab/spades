@@ -24,13 +24,11 @@ SmoothingDistanceEstimator::EstimHist SmoothingDistanceEstimator::FindEdgePairDi
     if (math::ls(picture_weight, 3.))
         return result;
 
-    DataDivider<EdgeId> data_divider(threshold_,
-                                     vector<Point>(data.begin(), data.end()));
+    DataDivider<EdgeId> data_divider(threshold_, std::vector<Point>(data.begin(), data.end()));
 
     PairInfos infos;
     infos.reserve(data.size());
-    const vector<Interval> &clusters =
-            data_divider.DivideAndSmoothData(ep, infos, this->weight_f_);
+    const auto &clusters = data_divider.DivideAndSmoothData(ep, infos, this->weight_f_);
     DEBUG("Seeking for distances");
     TRACE("size " << infos.size());
 

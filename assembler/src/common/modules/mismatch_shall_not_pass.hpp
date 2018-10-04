@@ -78,9 +78,8 @@ private:
     template<class graph_pack>
     void CollectPotensialMismatches(const graph_pack &gp) {
         const auto &kmer_mapper = gp.kmer_mapper;
-        for (auto it = kmer_mapper.begin(); it != kmer_mapper.end(); ++it) {
+        for (const auto &mentry : kmer_mapper) {
             // Kmer mapper iterator dereferences to pair (KMer, KMer), not to the reference!
-            const auto mentry = *it;
             const RtSeq &from = mentry.first;
             const RtSeq &to = mentry.second;
             size_t cnt = 0;
@@ -215,7 +214,7 @@ private:
             mismatch = tmp.second;
         }
         Sequence s_mm = g_.EdgeNucls(mismatch);
-        Sequence correct = s_mm.Subseq(0, k_) + Sequence(string(1, nucl)) +
+        Sequence correct = s_mm.Subseq(0, k_) + Sequence(std::string(1, nucl)) +
                            s_mm.Subseq(k_ + 1, k_ * 2 + 1);
 
         VERIFY(nucl != s_mm[k_]);
@@ -248,7 +247,7 @@ private:
             }
             char nucl_code = s_edge[i];
             if ((double) nc[cur_best] > relative_threshold_ * (double) nc[nucl_code] + 1.) {
-                to_correct.push_back({i, cur_best});
+                to_correct.emplace_back(i, cur_best);
                 i += k_;
             }
 

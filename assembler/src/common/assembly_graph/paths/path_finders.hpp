@@ -73,7 +73,7 @@ class PlausiblePathFinder {
         std::pair<size_t, EdgeId> find(EdgeId edge, size_t length) {
             length += graph_.length(edge);
             VertexId cross = direction_.EdgeEnd(edge);
-            auto result = make_pair(length, edge);
+            auto result = std::make_pair(length, edge);
             if (length < length_bound_
                 && direction_.CheckUniqueIncomingEdge(cross)) {
                 std::vector<EdgeId> outgoing = direction_.OutgoingEdges(cross);

@@ -124,7 +124,7 @@ public:
         for (auto iter = other.path_len_in_edges.begin(); iter != other.path_len_in_edges.end(); ++iter){
             auto j_iter = iter;
             if (( j_iter = path_len_in_edges.find(iter->first)) == other.path_len_in_edges.end()){
-                path_len_in_edges.insert(make_pair(iter->first, iter->second));
+                path_len_in_edges.insert(*iter);
             } else {
                 path_len_in_edges[j_iter->first] += iter->second;
             }
@@ -132,7 +132,7 @@ public:
         for (auto iter = other.seeds_percentage.begin(); iter != other.seeds_percentage.end(); ++iter){
             auto j_iter = iter;
             if (( j_iter = seeds_percentage.find(iter->first)) == other.seeds_percentage.end()){
-                seeds_percentage.insert(make_pair(iter->first, iter->second));
+                seeds_percentage.insert(*iter);
             } else {
                 seeds_percentage[j_iter->first] += iter->second;
             }

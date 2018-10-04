@@ -38,7 +38,7 @@ void WriteComponents(const Graph &g,
 template<class Graph>
 void DrawComponentsOfShortEdges(const Graph &g, const std::string &output_dir, size_t min_length, size_t sinks,
                                 size_t sources) {
-    vector<typename Graph::EdgeId> short_edges;
+    std::vector<typename Graph::EdgeId> short_edges;
     std::string pics_folder_ =
             output_dir + std::to_string(min_length) + "_" + std::to_string(sinks) + "_" + std::to_string(sources) + "_" +
             "pics_polymorphic/";
@@ -191,11 +191,11 @@ public:
         auto edge_colorer = std::make_shared<graph_colorer::CompositeEdgeColorer<Graph>>("black");
         edge_colorer->AddColorer(colorer_);
         edge_colorer->AddColorer(
-                make_shared<graph_colorer::SetColorer<Graph>>(g_, std::vector<EdgeId>(1, e), "green"));
+                std::make_shared<graph_colorer::SetColorer<Graph>>(g_, std::vector<EdgeId>(1, e), "green"));
         std::shared_ptr<graph_colorer::GraphColorer<Graph>> resulting_colorer =
                 std::make_shared<graph_colorer::CompositeGraphColorer<Graph>>(colorer_, edge_colorer);
 
-        string fn = output_folder_ + "/edge_" + std::to_string(g_.int_id(e)) + add_label + ".dot";
+        std::string fn = output_folder_ + "/edge_" + std::to_string(g_.int_id(e)) + add_label + ".dot";
         visualization::visualization_utils::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(g_, e, 50, 250),
                                                            fn, resulting_colorer, labeler_);
     }

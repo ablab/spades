@@ -33,7 +33,7 @@ public:
         std::vector<std::string> colors;
         auto ann = annotation_.Annotation(edge);
         std::ostringstream ss;
-        std::transform(ann.begin(), ann.end(), std::ostream_iterator<string>(ss, ":"), [&](bin_id b){
+        std::transform(ann.begin(), ann.end(), std::ostream_iterator<std::string>(ss, ":"), [&](bin_id b){
             return utils::get(color_map_, b);
         });
         return ss.str();

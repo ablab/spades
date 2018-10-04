@@ -7,11 +7,12 @@
 
 #pragma once
 
-#include "utils/standard_base.hpp"
 #include "utils/stl_utils.hpp"
 #include "comparison_utils.hpp"
 #include "boost/tokenizer.hpp"
 #include "coloring.hpp"
+
+using namespace std;
 
 //todo deprecated
 namespace cap {

@@ -46,11 +46,11 @@ public:
     double IdealPairedInfo(EdgeId e1, EdgeId e2, int dist, bool additive = false) const {
         std::pair<size_t, size_t> lengths{g_.length(e1), g_.length(e2)};
         if (pi_.find(lengths) == pi_.end()) {
-            pi_.insert(std::make_pair(lengths, std::map<int, double>()));
+            pi_.insert({lengths, {}});
         }
         std::map<int, double> &weights = pi_[lengths];
         if (weights.find(dist) == weights.end()) {
-            weights.insert({dist, IdealPairedInfo(g_.length(e1), g_.length(e2), dist, additive)});
+            weights.emplace(dist, IdealPairedInfo(g_.length(e1), g_.length(e2), dist, additive));
         }
         return weights[dist];
     }

@@ -32,7 +32,7 @@ inline BidirectionalPath AsPath(const Graph &g,
                                 const GraphElementFinder<Graph> &finder,
                                 PathInit ids) {
 //    INFO("Converting ids " << utils::join(ids));
-    vector<EdgeId> edges;
+    std::vector<EdgeId> edges;
     std::transform(ids.begin(), ids.end(), std::back_inserter(edges),
                    [&] (size_t id) {
                        EdgeId e = finder.ReturnEdgeId(id);
@@ -52,8 +52,8 @@ inline void FormPaths(const Graph &g,
     }
 }
 
-inline set<size_t> FindPath(const PathContainer &paths, const BidirectionalPath &path) {
-    set<size_t> answer;
+inline std::set<size_t> FindPath(const PathContainer &paths, const BidirectionalPath &path) {
+    std::set<size_t> answer;
     for (size_t i = 0; i < paths.size(); ++i)
         if (*paths.Get(i) == path || *paths.GetConjugate(i) == path)
             answer.insert(i);
@@ -68,7 +68,7 @@ inline void CheckPaths(const Graph &g,
 //    for (size_t i = 0; i < paths.size(); ++i)
 //        paths.Get(i)->PrintINFO();
 
-    set<size_t> poss;
+    std::set<size_t> poss;
     for (const auto &ids: path_ids) {
         auto pos = FindPath(paths, AsPath(g, finder, ids));
         BOOST_TEST(!pos.empty());

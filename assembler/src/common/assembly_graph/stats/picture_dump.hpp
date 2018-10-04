@@ -135,9 +135,8 @@ void WriteErrorLoc(const Graph &g,
                    const visualization::graph_labeler::GraphLabeler<Graph>& labeler) {
     INFO("Writing error localities for graph to folder " << folder_name);
     auto all = GraphComponent<Graph>::WholeGraph(g);
-    set<typename Graph::EdgeId> edges = genome_colorer->ColoredWith(all.edges().begin(),
-                                                    all.edges().end(), "black");
-    set<typename Graph::VertexId> to_draw;
+    auto edges = genome_colorer->ColoredWith(all.edges().begin(), all.edges().end(), "black");
+    std::set<typename Graph::VertexId> to_draw;
     for (auto it = edges.begin(); it != edges.end(); ++it) {
         to_draw.insert(g.EdgeEnd(*it));
         to_draw.insert(g.EdgeStart(*it));

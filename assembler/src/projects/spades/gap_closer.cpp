@@ -103,8 +103,7 @@ private:
 
     template<class Streams>
     void MapReads(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams &streams,
-                  const unordered_map<EdgeId, pair<EdgeId, int>> &OutTipMap,
-                  const unordered_map<EdgeId, pair<EdgeId, int>> &InTipMap) const {
+                  const TipMap &OutTipMap, const TipMap &InTipMap) const {
         INFO("Processing paired reads (takes a while)");
 
         size_t nthreads = streams.size();
@@ -165,9 +164,9 @@ class GapCloser {
     const size_t hamming_dist_bound_;
     const omnigraph::de::DEWeight weight_threshold_;
 
-    vector<size_t> DiffPos(const Sequence &s1, const Sequence &s2) const {
+    std::vector<size_t> DiffPos(const Sequence &s1, const Sequence &s2) const {
         VERIFY(s1.size() == s2.size());
-        vector<size_t> answer;
+        std::vector<size_t> answer;
         for (size_t i = 0; i < s1.size(); ++i)
             if (s1[i] != s2[i])
                 answer.push_back(i);
@@ -187,14 +186,14 @@ class GapCloser {
     //    return DiffPos(s1, s2).size();
     //  }
 
-    vector<size_t> PosThatCanCorrect(size_t overlap_length/*in nucls*/, const MismatchPos &mismatch_pos,
-                                     size_t edge_length/*in nucls*/, bool left_edge) const {
+    std::vector<size_t> PosThatCanCorrect(size_t overlap_length/*in nucls*/, const MismatchPos &mismatch_pos,
+                                          size_t edge_length/*in nucls*/, bool left_edge) const {
         TRACE("Try correct left edge " << left_edge);
         TRACE("Overlap length " << overlap_length);
         TRACE("Edge length " << edge_length);
         TRACE("Mismatches " << mismatch_pos);
 
-        vector<size_t> answer;
+        std::vector<size_t> answer;
         for (size_t i = 0; i < mismatch_pos.size(); ++i) {
             size_t relative_mm_pos =
                     left_edge ?

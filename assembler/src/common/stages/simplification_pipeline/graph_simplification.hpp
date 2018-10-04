@@ -37,7 +37,6 @@
 #include "assembly_graph/core/graph.hpp"
 
 #include "visualization/graph_colorer.hpp"
-#include "utils/standard_base.hpp"
 
 namespace debruijn {
 
@@ -213,11 +212,11 @@ private:
 
 public:
 
-    ConditionParser(const Graph &g, string input, const SimplifInfoContainer &settings,
+    ConditionParser(const Graph &g, std::string input, const SimplifInfoContainer &settings,
                     double iter_run_progress = 1.)
                     //size_t curr_iteration = 0, size_t iteration_cnt = 1)
             : g_(g),
-              input_(input),
+              input_(std::move(input)),
               settings_(settings),
               iter_run_progress_(iter_run_progress),
               //iter_run_progress_((double) (curr_iteration + 1) / (double) iteration_cnt),
@@ -280,7 +279,7 @@ public:
             : g_(g) {
     }
 
-    bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
+    bool operator()(EdgeId edge, const std::vector<EdgeId> &path) const {
         Sequence path_sequence = MergeSequences(g_, path);
         size_t dist = EditDistance(g_.EdgeNucls(edge), path_sequence);
         TRACE( "Bulge sequences with distance " << dist << " were " << g_.EdgeNucls(edge) << " and " << path_sequence);
@@ -580,7 +579,7 @@ AlgoPtr<Graph> TipClipperInstance(Graph &g,
     if (parser.requested_iterations() == 1) {
         return algo;
     } else {
-        return make_shared<LoopedAlgorithm<Graph>>(g, algo, 1, size_t(parser.requested_iterations()),
+        return std::make_shared<LoopedAlgorithm<Graph>>(g, algo, 1, size_t(parser.requested_iterations()),
                 /*force primary for all*/ true);
     }
 }
@@ -681,7 +680,7 @@ AlgoPtr<Graph> LowCoverageEdgeRemoverInstance(Graph &g,
     VERIFY(info.read_length() > g.k());
     double threshold = lcer_config.coverage_threshold * double(info.read_length() - g.k()) / double(info.read_length());
     INFO("Low coverage edge removal (LCER) activated and will remove edges of coverage lower than " << threshold);
-    return make_shared<ParallelEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>>>
+    return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>>>
                         (g,
                         CoverageUpperBound<Graph>(g, threshold),
                         info.chunk_cnt(),

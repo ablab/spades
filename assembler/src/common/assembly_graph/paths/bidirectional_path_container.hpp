@@ -6,13 +6,12 @@
 
 #include "bidirectional_path.hpp"
 #include "modules/path_extend/path_filter.hpp"
+
 #include <vector>
 #include <set>
 #include <map>
 
 namespace path_extend {
-
-using namespace std;
 
 typedef std::pair<BidirectionalPath*, BidirectionalPath*> PathPair;
 
@@ -27,17 +26,17 @@ public:
     }
 };
 
-typedef set<BidirectionalPath*, PathComparator> BidirectionalPathSet;
+typedef std::set<BidirectionalPath*, PathComparator> BidirectionalPathSet;
 
 template<class Value>
-using BidirectionalPathMap = map<BidirectionalPath*, Value, PathComparator>;
+using BidirectionalPathMap = std::map<BidirectionalPath*, Value, PathComparator>;
 
-typedef multiset<BidirectionalPath *, PathComparator> BidirectionalPathMultiset;
+typedef std::multiset<BidirectionalPath *, PathComparator> BidirectionalPathMultiset;
 
 class PathContainer {
 public:
 
-    typedef vector<PathPair> PathContainerT;
+    typedef std::vector<PathPair> PathContainerT;
 
     class Iterator : public PathContainerT::iterator {
     public:
@@ -131,7 +130,7 @@ public:
         cp->SetConjPath(p);
         p->Subscribe(cp);
         cp->Subscribe(p);
-        data_.push_back(std::make_pair(p, cp));
+        data_.emplace_back(p, cp);
         return true;
     }
 
@@ -200,7 +199,7 @@ private:
         pp.second = nullptr;
     }
 
-    vector<PathPair> data_;
+    std::vector<PathPair> data_;
 
 protected:
     DECL_LOGGER("BidirectionalPath");

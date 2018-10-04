@@ -6,7 +6,6 @@
 //***************************************************************************
 #pragma once
 
-#include "utils/standard_base.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "io/reads/io_helper.hpp"
@@ -53,7 +52,7 @@ public:
 class EdgeAnnotation {
     const conj_graph_pack& gp_;
     BinSet bins_of_interest_;
-    map<EdgeId, BinSet> edge_annotation_;
+    std::map<EdgeId, BinSet> edge_annotation_;
 
     template<class BinCollection>
     void InnerStickAnnotation(EdgeId e, const BinCollection& bins) {
@@ -63,7 +62,7 @@ class EdgeAnnotation {
 public:
 
     EdgeAnnotation(const conj_graph_pack& gp,
-                   const set<bin_id>& bins_of_interest) :
+                   const std::set<bin_id>& bins_of_interest) :
                        gp_(gp),
                        bins_of_interest_(bins_of_interest)
     {
@@ -76,7 +75,7 @@ public:
     }
 
     void StickAnnotation(EdgeId e, const bin_id& bin) {
-        StickAnnotation(e, vector<bin_id>{bin});
+        StickAnnotation(e, std::vector<bin_id>{bin});
     }
 
     template<class EdgeCollection>
@@ -86,15 +85,15 @@ public:
         }
     }
 
-    vector<bin_id> Annotation(EdgeId e) const;
-    set<bin_id> RelevantBins(const vector<EdgeId>& path) const;
-    set<EdgeId> EdgesOfBin(bin_id bin, size_t min_length = 0) const;
+    std::vector<bin_id> Annotation(EdgeId e) const;
+    std::set<bin_id> RelevantBins(const std::vector<EdgeId> &path) const;
+    std::set<EdgeId> EdgesOfBin(bin_id bin, size_t min_length = 0) const;
 
     size_t size() const {
         return edge_annotation_.size();
     }
 
-    const set<bin_id>& interesting_bins() const {
+    const std::set<bin_id> &interesting_bins() const {
         return bins_of_interest_;
     }
 };
@@ -103,13 +102,13 @@ class AnnotationFiller {
 
     const conj_graph_pack& gp_;
     BinSet interesting_bins_;
-    shared_ptr<SequenceMapper<Graph>> mapper_;
+    std::shared_ptr<SequenceMapper<Graph>> mapper_;
 
-    vector<EdgeId> EdgesOfContig(const io::SingleRead& contig) const;
+    std::vector<EdgeId> EdgesOfContig(const io::SingleRead& contig) const;
 
-    typedef map<contig_id, BinSet> AnnotationMap;
-    typedef map<bin_id, size_t> ColoringLengths;
-    typedef map<EdgeId, ColoringLengths> ColoringMap;
+    typedef std::map<contig_id, BinSet> AnnotationMap;
+    typedef std::map<bin_id, size_t> ColoringLengths;
+    typedef std::map<EdgeId, ColoringLengths> ColoringMap;
 
     Bins FilterInteresting(const Bins& bins) const;
     AnnotationMap LoadAnnotation(AnnotationStream& splits_annotation_stream) const;
@@ -121,13 +120,11 @@ class AnnotationFiller {
     static bool IsSpurious(size_t colored_len, size_t full_len);
 
     void FilterSpuriousInfo(ColoringMap& coloring) const;
-    set<bin_id> GatherAllBins(const ColoringMap& coloring) const;
-    set<bin_id> DetermineBins(const std::vector<EdgeId>& path,
-                              const ColoringMap& coloring) const;
+    std::set<bin_id> GatherAllBins(const ColoringMap &coloring) const;
+    std::set<bin_id> DetermineBins(const std::vector<EdgeId> &path, const ColoringMap &coloring) const;
 public:
 
-    AnnotationFiller(const conj_graph_pack& gp,
-                     const vector<bin_id>& interesting_bins) :
+    AnnotationFiller(const conj_graph_pack& gp, const std::vector<bin_id> &interesting_bins) :
         gp_(gp),
         interesting_bins_(interesting_bins.begin(), interesting_bins.end()),
         mapper_(MapperInstance(gp)) {

@@ -220,7 +220,7 @@ public:
 
         typename ComponentRemover<Graph>::HandlerF set_removal_handler_f;
         if (removal_handler_) {
-            set_removal_handler_f = [=](const set<EdgeId>& edges) {
+            set_removal_handler_f = [=](const std::set<EdgeId> &edges) {
                 std::for_each(edges.begin(), edges.end(), removal_handler_);
             };
         }

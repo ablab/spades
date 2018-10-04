@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "utils/standard_base.hpp"
+
 #include "assembly_graph/components/graph_component.hpp"
 #include "visualization/graph_colorer.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
@@ -484,9 +484,9 @@ private:
     }
 
     template<class EdgeContainer>
-    vector<EdgeId> FilterEdgesFromComponent(
+    std::vector<EdgeId> FilterEdgesFromComponent(
             const EdgeContainer& edges) const {
-        vector<EdgeId> answer;
+        std::vector<EdgeId> answer;
         for (EdgeId e : edges) {
             if (!component_.contains(e)) {
                 answer.push_back(e);
@@ -496,9 +496,9 @@ private:
     }
 
     template<class EdgeContainer>
-    vector<EdgeId> RetainEdgesFromComponent(
+    std::vector<EdgeId> RetainEdgesFromComponent(
             const EdgeContainer& edges) const {
-        vector<EdgeId> answer;
+        std::vector<EdgeId> answer;
         for (EdgeId e : edges) {
             if (component_.contains(e)) {
                 answer.push_back(e);

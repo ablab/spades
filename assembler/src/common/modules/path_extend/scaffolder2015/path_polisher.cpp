@@ -1,6 +1,5 @@
 //***************************************************************************
 //* Copyright (c) 2015-2018 Saint Petersburg State University
-//* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
@@ -37,7 +36,7 @@ size_t DijkstraGapCloser::MinPathLength(const PathsT& paths) const {
     size_t shortest_len = omnigraph::CumulativeLength(g_, paths.front());
     for (size_t j = 1; j < paths.size(); ++j) {
         size_t cur_len = omnigraph::CumulativeLength(g_, paths[j]);
-        shortest_len = min(shortest_len, cur_len);
+        shortest_len = std::min(shortest_len, cur_len);
     }
     return shortest_len;
 }
@@ -188,8 +187,7 @@ Gap DijkstraGapCloser::FillWithMultiplePaths(const PathsT& paths,
         changed = true;
     }
     if (changed) {
-        int gap = max(min_gap_,
-                      int(MinPathLength(paths) - omnigraph::CumulativeLength(g_, left)));
+        int gap = std::max(min_gap_, int(MinPathLength(paths) - omnigraph::CumulativeLength(g_, left)));
         return Gap(gap, false);
     } else
         return Gap::INVALID();
@@ -211,7 +209,7 @@ std::map<EdgeId, size_t> DijkstraGapCloser::CountEdgesQuantity(const PathsT &pat
 size_t DijkstraGapCloser::MinPathSize(const PathsT& paths) const {
     size_t size = paths.front().size();
     for (size_t i = 1; i < paths.size(); ++i) {
-        size = min(size, paths[i].size());
+        size = std::min(size, paths[i].size());
     }
     return size;
 }
@@ -248,7 +246,7 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
 
     for (const auto edge: next_edges)
         if (present_in_paths.find(edge) != present_in_paths.end())
-            candidates.insert(make_pair(edge, 0));
+            candidates.emplace(edge, 0);
 
     if (candidates.size() <= 1) {
         if (candidates.size() == 0 || candidates.begin()->first == target_edge)
@@ -266,8 +264,8 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
         } else {
             EdgeId last_unique = path[i];
             for (auto &pair: candidates){
-                vector<int> d;
-                vector<double> w;
+                std::vector<int> d;
+                std::vector<double> w;
 //TODO:: any filtration?
                 lib_->CountDistances(last_unique, pair.first, d, w);
                 double sum = 0;
@@ -291,7 +289,7 @@ Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
     if (orig_gap.gap <= min_gap_ || orig_gap.trash.previous > 0) {
         return orig_gap;
     } else {
-        vector<EdgeId> addition;
+        std::vector<EdgeId> addition;
         EdgeId last_e = path.Back();
         VertexId last_v = g_.EdgeEnd(last_e);
         DEBUG("Closing gap with mate pairs between edge " << g_.int_id(last_e)

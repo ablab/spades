@@ -6,7 +6,9 @@
 //***************************************************************************
 
 #pragma once
-#include "utils/standard_base.hpp"
+
+#include <set>
+#include <vector>
 
 namespace omnigraph {
 
@@ -70,7 +72,7 @@ class AlongPathLengthCalculator {
     std::set<VertexId> vertex_path_;
     distance_t bound_;
 
-    std::set<VertexId> CollectVertices(std::vector<EdgeId> &edge_path){
+    std::set<VertexId> CollectVertices(const std::vector<EdgeId> &edge_path){
         std::set<VertexId> result;
         for(auto e = edge_path.begin(); e != edge_path.end(); e++){
             result.insert(this->graph_.EdgeStart(*e));
@@ -80,7 +82,7 @@ class AlongPathLengthCalculator {
     }
 
 public:
-    AlongPathLengthCalculator(const Graph &graph, vector<EdgeId> &edge_path, distance_t bound) :
+    AlongPathLengthCalculator(const Graph &graph, const std::vector<EdgeId> &edge_path, distance_t bound) :
         graph_(graph),
         vertex_path_(CollectVertices(edge_path)),
         bound_(bound) { }
@@ -103,7 +105,7 @@ class PathIgnoringLengthCalculator {
     std::set<EdgeId> path_;
 
 public:
-    PathIgnoringLengthCalculator(const Graph &graph, const vector<EdgeId> &edge_path) :
+    PathIgnoringLengthCalculator(const Graph &graph, const std::vector<EdgeId> &edge_path) :
             graph_(graph),
             path_(edge_path.begin(), edge_path.end())
             { }

@@ -36,12 +36,12 @@ AnnotationStream& AnnotationStream::operator >>(ContigAnnotation& annotation) {
 
 AnnotationOutStream& AnnotationOutStream::operator <<(const ContigAnnotation& annotation) {
     inner_stream_ << annotation.first;
-    string delim = "\t";
+    std::string delim = "\t";
     for (bin_id bin : annotation.second) {
         inner_stream_ << delim << bin;
         delim = " ";
     }
-    inner_stream_ << endl;
+    inner_stream_ << std::endl;
     return *this;
 }
 
@@ -52,10 +52,10 @@ Bins EdgeAnnotation::Annotation(EdgeId e) const {
         return {};
     }
     const auto& annotation = utils::get(edge_annotation_, e);
-    return vector<bin_id>(annotation.begin(), annotation.end());
+    return Bins(annotation.begin(), annotation.end());
 }
 
-BinSet EdgeAnnotation::RelevantBins(const vector<EdgeId>& path) const {
+BinSet EdgeAnnotation::RelevantBins(const std::vector<EdgeId> &path) const {
     BinSet answer;
     for (EdgeId e : path) {
         utils::insert_all(answer, Annotation(e));
@@ -63,8 +63,8 @@ BinSet EdgeAnnotation::RelevantBins(const vector<EdgeId>& path) const {
     return answer;
 }
 
-set<EdgeId> EdgeAnnotation::EdgesOfBin(bin_id bin, size_t min_length) const {
-    set<EdgeId> answer;
+std::set<EdgeId> EdgeAnnotation::EdgesOfBin(bin_id bin, size_t min_length) const {
+    std::set<EdgeId> answer;
     for (auto ann_pair : edge_annotation_) {
         if (ann_pair.second.count(bin) &&
                 gp_.g.length(ann_pair.first) > min_length) {
@@ -85,7 +85,7 @@ std::ostream& operator<<(std::ostream& str, const std::map<K, V>& map) {
     return str;
 }
 
-vector<EdgeId> AnnotationFiller::EdgesOfContig(const io::SingleRead& contig) const {
+std::vector<EdgeId> AnnotationFiller::EdgesOfContig(const io::SingleRead &contig) const {
     return mapper_->MapRead(contig).simple_path();
 }
 
@@ -171,7 +171,7 @@ void AnnotationFiller::FilterSpuriousInfo(ColoringMap& coloring) const {
 }
 
 BinSet AnnotationFiller::GatherAllBins(const ColoringMap& coloring) const {
-    set<bin_id> answer;
+    std::set<bin_id> answer;
     for (const auto& edge_info : coloring) {
         for (const auto& bin_info : edge_info.second) {
             answer.insert(bin_info.first);
@@ -180,8 +180,7 @@ BinSet AnnotationFiller::GatherAllBins(const ColoringMap& coloring) const {
     return answer;
 }
 
-BinSet AnnotationFiller::DetermineBins(const vector<EdgeId>& path,
-                                       const ColoringMap& coloring) const {
+BinSet AnnotationFiller::DetermineBins(const std::vector<EdgeId> &path, const ColoringMap &coloring) const {
     ColoringLengths path_colors;
     size_t total_len = 0;
     for (const auto& e : path) {

@@ -14,6 +14,8 @@
 #include "propagate.hpp"
 #include "visualization.hpp"
 
+using namespace std;
+
 namespace debruijn_graph {
 static const size_t EDGE_LENGTH_THRESHOLD = 2000,
                     EDGE_UPPER_THRESHOLD = 3000;

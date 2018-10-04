@@ -7,11 +7,7 @@
 
 #pragma once
 
-#include <cmath>
-#include <stack>
-#include <queue>
 #include "adt/concurrent_dsu.hpp"
-#include "utils/standard_base.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "math/xmath.h"
 #include "sequence/sequence_tools.hpp"
@@ -20,6 +16,9 @@
 #include "dominated_set_finder.hpp"
 #include "assembly_graph/graph_support/parallel_processing.hpp"
 
+#include <cmath>
+#include <stack>
+#include <queue>
 
 namespace omnigraph {
 
@@ -65,8 +64,8 @@ public:
             VertexId start_vertex/*, const vector<VertexId>& end_vertices*/) :
             base(g, "br_component"), g_(g), start_vertex_(start_vertex) {
         end_vertices_.insert(start_vertex);
-        vertex_depth_.insert(make_pair(start_vertex_, Range(0, 0)));
-        height_2_vertices_.insert(make_pair(0, start_vertex));
+        vertex_depth_.emplace(start_vertex_, Range(0, 0));
+        height_2_vertices_.emplace(0, start_vertex);
     }
 
     const Graph& g() const {
@@ -85,8 +84,8 @@ public:
 //        VERIFY(CheckCloseNeighbour(v));
 //        Range r = NeighbourDistanceRange(v);
         DEBUG("Adding vertex " << g_.str(v) << " to the component");
-        vertex_depth_.insert(make_pair(v, dist_range));
-        height_2_vertices_.insert(make_pair(Average(dist_range), v));
+        vertex_depth_.emplace(v, dist_range);
+        height_2_vertices_.emplace(Average(dist_range), v);
         DEBUG("Range " << dist_range << " Average height " << Average(dist_range));
         for (EdgeId e : g_.IncomingEdges(v)) {
             end_vertices_.erase(g_.EdgeStart(e));
@@ -254,8 +253,8 @@ public:
 //                            * g_.length(new_edge_1) / g_.length(old_edge);
             DEBUG(
                     "Inserting vertex " << g_.str(new_vertex) << " to component during split");
-            vertex_depth_.insert({new_vertex, new_vertex_depth});
-            height_2_vertices_.insert({Average(new_vertex_depth), new_vertex});
+            vertex_depth_.emplace(new_vertex, new_vertex_depth);
+            height_2_vertices_.emplace(Average(new_vertex_depth), new_vertex);
         }
     }
 
@@ -429,7 +428,7 @@ private:
         for (VertexId v : comp_.end_vertices()) {
             mixed_color_t color = 1 << cnt;
             DEBUG("Coloring exit " << comp_.g().str(v));
-            vertex_colors_.insert(make_pair(v, color));
+            vertex_colors_.emplace(v, color);
             cnt++;
         }
         for (auto it = comp_.height_2_vertices().rbegin();
@@ -503,14 +502,14 @@ class SkeletonTreeFinder {
     const LocalizedComponent<Graph>& component_;
     const ComponentColoring<Graph>& coloring_;
 
-    vector<size_t> level_heights_;
+    std::vector<size_t> level_heights_;
 
     int current_level_;
     color_partition_ds_t current_color_partition_;
 
     std::set<VertexId> good_vertices_;
     std::set<EdgeId> good_edges_;
-    std::map<VertexId, vector<EdgeId>> next_edges_;
+    std::map<VertexId, std::vector<EdgeId>> next_edges_;
     std::map<VertexId, size_t> subtree_coverage_;
 
     bool ConsistentWithPartition(mixed_color_t color) const {
@@ -676,9 +675,7 @@ public:
 
             //looking for good edges
             utils::insert_all(good_edges_,
-                    GoodOutgoingEdges(
-                            vector<VertexId>(level_vertices.begin(),
-                                    level_vertices.end())));
+                              GoodOutgoingEdges(std::vector<VertexId>(level_vertices.begin(), level_vertices.end())));
 
 
 
@@ -886,8 +883,7 @@ class LocalizedComponentFinder {
     //false if new interfering vertex is not dominated
     //can be slightly modified in new algorithm
     bool ProcessLocality(VertexId processing_v) {
-        vector<VertexId> processed_neighb;
-        vector<VertexId> unprocessed_neighb;
+        std::vector<VertexId> processed_neighb, unprocessed_neighb;
         for (EdgeId e : g_.OutgoingEdges(processing_v)) {
             VertexId v = g_.EdgeEnd(e);
             if (!comp_.contains(v)) {

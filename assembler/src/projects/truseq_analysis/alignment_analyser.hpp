@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "utils/standard_base.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "consistent_mapping.h"
 
@@ -19,23 +18,23 @@ namespace alignment_analysis {
         typedef Graph::EdgeId EdgeId;
         typedef Graph::VertexId VertexId;
         typedef debruijn_graph::BasicSequenceMapper<Graph, debruijn_graph::conj_graph_pack::index_t> Mapper;
-        stringstream log_;
+        std::stringstream log_;
         const Graph &graph_;
         const Mapper &mapper_;
-        const vector <io::SingleRead> &scaffolds_;
-        const vector <io::SingleRead> &genome_;
+        const std::vector<io::SingleRead> &scaffolds_;
+        const std::vector<io::SingleRead> &genome_;
 
-        string str(const EdgeRange &er) const;
+        std::string str(const EdgeRange &er) const;
 
     public:
-        AlignmentAnalyser(const vector <io::SingleRead> &scaffolds, const vector <io::SingleRead> &genome,
+        AlignmentAnalyser(const std::vector<io::SingleRead> &scaffolds, const std::vector<io::SingleRead> &genome,
                           const Graph &graph, const Mapper &mapper);
 
-        string Analyse(const io::SingleRead &genome_part);
+        std::string Analyse(const io::SingleRead &genome_part);
 
     private:
-        vector <ConsistentMapping> ExtractConsistentMappings(const MappingPath<EdgeId> &path);
+        std::vector<ConsistentMapping> ExtractConsistentMappings(const MappingPath<EdgeId> &path);
 
-        vector <ConsistentMapping> DetectAndMaskShortMutations(const vector <ConsistentMapping> &vector);
+        std::vector<ConsistentMapping> DetectAndMaskShortMutations(const std::vector<ConsistentMapping> &vector);
     };
 }

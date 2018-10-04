@@ -85,7 +85,7 @@ public:
     //true if no thresholds exceeded
     bool FillDominated() {
         DEBUG("Adding starting vertex " << g_.str(start_vertex_) << " to dominated set");
-        dominated_.insert({start_vertex_, Range(0, 0)});
+        dominated_.emplace(start_vertex_, Range(0, 0));
         cnt_++;
         std::queue<VertexId> can_be_processed;
         UpdateCanBeProcessed(start_vertex_, can_be_processed);
@@ -102,7 +102,7 @@ public:
             //Currently dominated vertices cannot have edge to start vertex
             if (CheckNoEdgeToStart(v)) {
                 DEBUG("Adding vertex " << g_.str(v) << " to dominated set");
-                dominated_.insert(make_pair(v, r));
+                dominated_.emplace(v, r);
                 UpdateCanBeProcessed(v, can_be_processed);
             }
         }

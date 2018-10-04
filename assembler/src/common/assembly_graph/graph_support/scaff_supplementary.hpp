@@ -16,7 +16,7 @@ typedef debruijn_graph::EdgeId EdgeId;
  */
 class ScaffoldingUniqueEdgeStorage {
     friend class ScaffoldingUniqueEdgeAnalyzer;
-    set<EdgeId> unique_edges_;
+    std::set<EdgeId> unique_edges_;
     size_t min_unique_length_;
 
 public:
@@ -56,7 +56,7 @@ public:
         min_unique_length_ = min_length;
     }
 
-    const set<EdgeId>& unique_edges() const {
+    const std::set<EdgeId> &unique_edges() const {
         return unique_edges_;
     }
 
@@ -77,8 +77,8 @@ class ScaffoldingUniqueEdgeAnalyzer {
     static const size_t max_dijkstra_depth_ = 1000;
     static const size_t max_dijkstra_vertices_ = 1000;
     static const size_t overwhelming_majority_ = 10;
-    std::set<VertexId> GetChildren(VertexId v, std::map<VertexId, set<VertexId>> &dijkstra_cash) const;
-    bool FindCommonChildren(EdgeId e1, EdgeId e2, std::map<VertexId, set<VertexId>> &dijkstra_cash) const;
+    std::set<VertexId> GetChildren(VertexId v, std::map<VertexId, std::set<VertexId>> &dijkstra_cash) const;
+    bool FindCommonChildren(EdgeId e1, EdgeId e2, std::map<VertexId, std::set<VertexId>> &dijkstra_cash) const;
     bool FindCommonChildren(const std::vector<std::pair<EdgeId, double>> &next_weights) const;
     bool FindCommonChildren(EdgeId from, size_t lib_index) const;
     std::map<EdgeId, size_t> FillNextEdgeVoting(BidirectionalPathMap<size_t>& active_paths, int direction) const;

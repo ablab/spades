@@ -5,8 +5,9 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/standard_base.hpp"
 #include "alignment_analyser.hpp"
+
+using namespace std;
 
 namespace alignment_analysis {
     AlignmentAnalyser::AlignmentAnalyser(const vector <io::SingleRead> &scaffolds,

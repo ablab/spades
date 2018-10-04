@@ -72,7 +72,7 @@ const CoverageInfo AddComplement(const CoverageInfo& coverage_info) {
     CoverageInfo ans;
     for (auto it = coverage_info.begin(); it != coverage_info.end(); ++it) {
         ans.insert(*it);
-        ans.insert(make_pair(ReverseComplement((*it).first), (*it).second));
+        ans.emplace(ReverseComplement((*it).first), (*it).second);
     }
     return ans;
 }
@@ -233,7 +233,7 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
 }
 
 template<class graph_pack>
-void CheckIndex(const std::vector<string> &reads, size_t k) {
+void CheckIndex(const std::vector<std::string> &reads, size_t k) {
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     graph_pack gp(k, "tmp", 0);
     auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");

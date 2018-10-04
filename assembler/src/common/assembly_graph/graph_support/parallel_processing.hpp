@@ -159,7 +159,7 @@ template<class Graph>
 class AlgorithmRunningHelper {
     typedef PersistentAlgorithmBase<Graph> Algo;
 public:
-    static size_t RunAlgo(Algo &algo, const string &comment = "",
+    static size_t RunAlgo(Algo &algo, const std::string &comment = "",
                  bool force_primary_launch = false,
                  double iter_run_progress = 1.) {
         if (!comment.empty()) {INFO("Running " << comment);}
@@ -168,7 +168,7 @@ public:
         return triggered;
     }
 
-    static size_t RunAlgo(AlgoPtr<Graph> algo_ptr, const string &comment = "",
+    static size_t RunAlgo(AlgoPtr<Graph> algo_ptr, const std::string &comment = "",
                           bool force_primary_launch = false,
                           double iter_run_progress = 1.) {
         if (algo_ptr)

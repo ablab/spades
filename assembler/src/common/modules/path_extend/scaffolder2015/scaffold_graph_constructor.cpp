@@ -60,12 +60,12 @@ void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const std::share
 }
 
 
-shared_ptr<ScaffoldGraph> SimpleScaffoldGraphConstructor::Construct() {
+std::shared_ptr<ScaffoldGraph> SimpleScaffoldGraphConstructor::Construct() {
     ConstructFromSet(edge_set_, connection_conditions_);
     return graph_;
 }
 
-shared_ptr<ScaffoldGraph> DefaultScaffoldGraphConstructor::Construct() {
+std::shared_ptr<ScaffoldGraph> DefaultScaffoldGraphConstructor::Construct() {
     ConstructFromSet(edge_set_, connection_conditions_);
     ConstructFromEdgeConditions(edge_condition_, connection_conditions_);
     return graph_;

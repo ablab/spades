@@ -27,7 +27,7 @@ class TipsProjector {
     const omnigraph::UniquePathFinder<Graph> unique_path_finder_;
 
     boost::optional<EdgeId> UniqueAlternativeEdge(EdgeId tip, bool outgoing_tip) {
-        vector<EdgeId> edges;
+        std::vector<EdgeId> edges;
         if (outgoing_tip) {
             utils::push_back_all(edges, gp_.g.OutgoingEdges(gp_.g.EdgeStart(tip)));
         } else {
@@ -50,7 +50,7 @@ class TipsProjector {
                 return unique_path_finder_.UniquePathBackward(*alt_edge);
             }
         }
-        return vector<EdgeId>();
+        return {};
     }
 
     void AlignAndProject(const Sequence& tip_seq, const Sequence& alt_seq,
@@ -88,7 +88,7 @@ public:
         TRACE("Trying to project tip " << gp_.g.str(tip));
         bool outgoing_tip = gp_.g.IsDeadEnd(gp_.g.EdgeEnd(tip));
         Sequence tip_seq = gp_.g.EdgeNucls(tip);
-        vector<EdgeId> alt_path = UniqueAlternativePath(tip, outgoing_tip);
+        auto alt_path = UniqueAlternativePath(tip, outgoing_tip);
         if (alt_path.empty()) {
             TRACE(
                     "Failed to find unique alt path for tip " << gp_.g.str(tip)
