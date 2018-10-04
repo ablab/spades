@@ -274,7 +274,7 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
                 pair.second = sum / double(g_.length(pair.first));
             }
             std::vector<std::pair<EdgeId, double>> to_sort(candidates.begin(),candidates.end());
-            std::sort(to_sort.begin(), to_sort.end(), std::greater<std::pair<EdgeId, double>>());
+            std::sort(to_sort.begin(), to_sort.end(), [&] (auto a, auto b) { return a.second > b.second; });
             if (to_sort[0].second > to_sort[1].second * weight_priority && to_sort[0].first != target_edge)
                 return to_sort[0].first;
             else
