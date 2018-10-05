@@ -190,8 +190,10 @@ public:
         TRACE("Projecting edge " << g_.str(edge));
         InnerProcessBulge(edge, path);
 
-        TRACE("Compressing start vertex " << g_.str(start));
-        g_.CompressVertex(start);
+        if (!g_.RelatedVertices(start, end)) {
+            TRACE("Compressing start vertex " << g_.str(start));
+            g_.CompressVertex(start);
+        }
 
         TRACE("Compressing end vertex " << g_.str(end));
         g_.CompressVertex(end);
