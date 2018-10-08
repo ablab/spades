@@ -362,8 +362,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         elif opt == "--test":
             options_storage.set_test_options()            
             #break
-        elif opt == "--diploid":
-            options_storage.diploid_mode = True
         elif opt == "--truseq":
             options_storage.enable_truseq_mode()
         else:
@@ -505,7 +503,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         else:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
         cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
-        cfg["assembly"].__dict__["diploid_mode"] = options_storage.diploid_mode
         cfg["assembly"].__dict__["cov_cutoff"] = options_storage.cov_cutoff
         cfg["assembly"].__dict__["lcer_cutoff"] = options_storage.lcer_cutoff
         cfg["assembly"].__dict__["save_gp"] = options_storage.save_gp

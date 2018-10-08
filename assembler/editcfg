@@ -28,8 +28,6 @@ case $1 in
   'log') cfg="configs/debruijn/log.properties";;
   'pep')   cfg="configs/debruijn/pe_params.info";;
   'con')   cfg="configs/debruijn/construction.info";;
-  'ds')  cfg="configs/dipspades/config.info";;
-  'logds') cfg="configs/dipspades/log.properties";;
   
 esac
 

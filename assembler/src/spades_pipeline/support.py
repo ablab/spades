@@ -34,11 +34,9 @@ continue_logfile_offset = None
 current_tmp_dir = None
 
 
-def error(err_str, log=None, dipspades=False, prefix=SPADES_PY_ERROR_MESSAGE):
-    if not dipspades:
-        binary_name = "SPAdes"
-    else:
-        binary_name = "dipSPAdes"
+def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
+    binary_name = "SPAdes"
+
     if log:
         log.info("\n\n" + prefix + " " + err_str)
         log_warnings(log, with_error=True)
@@ -98,26 +96,26 @@ def get_spades_binaries_info_message():
 
 
 def check_binaries(binary_dir, log):
-    for binary in ["spades-hammer", "spades-ionhammer", "spades-core", "spades-bwa", "spades-dipspades-core"]:
+    for binary in ["spades-hammer", "spades-ionhammer", "spades-core", "spades-bwa"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
             error("SPAdes binaries not found: " + binary_path + "\n" + get_spades_binaries_info_message(), log)
 
 
-def check_file_existence(input_filename, message="", log=None, dipspades=False):
+def check_file_existence(input_filename, message="", log=None):
     filename = abspath(expanduser(input_filename))
     check_path_is_ascii(filename, message)
     if not os.path.isfile(filename):
-        error("file not found: %s (%s)" % (filename, message), log=log, dipspades=dipspades)
+        error("file not found: %s (%s)" % (filename, message), log=log)
     options_storage.dict_of_rel2abs[input_filename] = filename
     return filename
 
 
-def check_dir_existence(input_dirname, message="", log=None, dipspades=False):
+def check_dir_existence(input_dirname, message="", log=None):
     dirname = abspath(expanduser(input_dirname))
     check_path_is_ascii(dirname, message)
     if not os.path.isdir(dirname):
-        error("directory not found: %s (%s)" % (dirname, message), log=log, dipspades=dipspades)
+        error("directory not found: %s (%s)" % (dirname, message), log=log)
     options_storage.dict_of_rel2abs[input_dirname] = dirname
     return dirname
 

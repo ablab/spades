@@ -14,4 +14,3 @@ cd /spades/assembler
 
 cd build_spades
 make package
-

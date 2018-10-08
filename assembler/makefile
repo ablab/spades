@@ -6,12 +6,6 @@ rd:
 dd:
 	$(MAKE) -C build/debug/projects/spades
 
-rds:
-	$(MAKE) -C build/release/projects/dipspades
-
-dds:
-	$(MAKE) -C build/debug/dipspades
-
 rdt:
 	$(MAKE) -C build/release/test/debruijn
 

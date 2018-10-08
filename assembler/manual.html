@@ -55,7 +55,6 @@ SPAdes version 3.13.0 was released under GPLv2 on October 11, 2018 and can be do
         <li>plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see <a href="#plasmid">plasmidSPAdes options</a>).</li>
         <li>rnaSPAdes &ndash; a <i>de novo</i> transcriptome assembler from RNA-Seq data (see <a href="rnaspades_manual.html" target="_blank">rnaSPAdes manual</a>).</li>
         <li>truSPAdes &ndash; a module for TruSeq barcode assembly (see <a href="truspades_manual.html" target="_blank">truSPAdes manual</a>). </li>
-        <li>dipSPAdes &ndash; a module for assembling highly polymorphic diploid genomes (deprecated, see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a>).</li>
     </ul>
 
 <p>In addition, we provide several stand-alone binaries with relatively simple command-line interface: <a href="#sec4.1">k-mer counting</a> (<code>spades-kmercounter</code>), <a href="#sec4.2">assembly graph construction</a> (<code>spades-gbuilder</code>) and <a href="#sec4.3">long read to graph aligner</a> (<code>spades-gmapper</code>). To learn options of these tools you can either run them without any parameters or read <a href="#sec4">this section</a>.
@@ -166,7 +165,6 @@ SPAdes comes in several separate modules:
         <li><code>plasmidspades.py</code>  (main executable script for <a href="#plasmid">plasmidSPAdes</a>)</li>
         <li><code>rnaspades.py</code>  (main executable script for <a href="rnaspades_manual.html" target="_blank">rnaSPAdes</a>)</li>
         <li><code>truspades.py</code>  (main executable script for <a href="truspades_manual.html" target="_blank">truSPAdes</a>)</li>
-        <li><code>dipspades.py</code>  (deprecated; main executable script for <a href="dipspades_manual.html" target="_blank">dipSPAdes</a>)</li>
         <li><code>spades-core</code>  (assembly module)</li>
         <li><code>spades-gbuilder</code>  (standalone graph builder application)</li>
         <li><code>spades-gmapper</code>  (standalone long read to graph aligner)</li>
@@ -176,7 +174,6 @@ SPAdes comes in several separate modules:
         <li><code>spades-bwa</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
         <li><code>spades-corrector-core</code>  (mismatch correction module)</li>
         <li><code>spades-truseq-scfcorrection</code>  (executable used in truSPAdes pipeline)</li>
-        <li><code>spades-dipspades-core</code>  (deprecated; assembly module for highly polymorphic diploid genomes)</li>
     </ul>
 
 <a name="sec2.1"></a>
@@ -1311,9 +1308,6 @@ To provide input data to SPAdes k-mer counting tool <code>spades-kmercounter</co
 
 <p>
     For rnaSPAdes citation use <a href="https://www.biorxiv.org/content/early/2018/09/18/420208" target="_blank"> Bushmanova et al., 2018</a>.
-
-<p>  
-    For the information about dipSPAdes and truSPAdes papers see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a> and <a href="truspades_manual.html" target="_blank">truSPAdes manual</a> respectively.
 
 <p>
     In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <a href="mailto:spades.support@cab.spbu.ru" target="_blank">spades.support@cab.spbu.ru</a>.

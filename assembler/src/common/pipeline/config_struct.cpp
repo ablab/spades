@@ -94,7 +94,6 @@ std::vector<std::string> PipelineTypeNames() {
                     {"mda", pipeline_type::mda},
                     {"meta", pipeline_type::meta},
                     {"moleculo", pipeline_type::moleculo},
-                    {"diploid", pipeline_type::diploid},
                     {"rna", pipeline_type::rna},
                     {"plasmid", pipeline_type::plasmid},
                     {"large_genome", pipeline_type::large_genome}

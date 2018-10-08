@@ -43,7 +43,6 @@ SPAdes 3.13.0 includes the following additional pipelines:
 -   plasmidSPAdes – a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmidSPAdes options](#plasmid)).
 -   rnaSPAdes – a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](rnaspades_manual.html)).
 -   truSPAdes – a module for TruSeq barcode assembly (see [truSPAdes manual](truspades_manual.html)).
--   dipSPAdes – a module for assembling highly polymorphic diploid genomes (deprecated, see [dipSPAdes manual](dipspades_manual.html)).
 
 In addition, we provide several stand-alone binaries with relatively simple command-line interface: [k-mer counting](#sec4.1) (`spades-kmercounter`), [assembly graph construction](#sec4.2) (`spades-gbuilder`) and [long read to graph aligner](#sec4.3) (`spades-gmapper`). To learn options of these tools you can either run them without any parameters or read [this section](#sec4).
 
@@ -149,7 +148,6 @@ In case of successful installation the following files will be placed in the `bi
 -   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
 -   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
 -   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
--   `dipspades.py` (deprecated; main executable script for [dipSPAdes](dipspades_manual.html))
 -   `spades-core`  (assembly module)
 -   `spades-gbuilder`  (standalone graph builder application)
 -   `spades-gmapper`  (standalone long read to graph aligner)
@@ -159,7 +157,6 @@ In case of successful installation the following files will be placed in the `bi
 -   `spades-bwa`  ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
 -   `spades-corrector-core`  (mismatch correction module)
 -   `spades-truseq-scfcorrection`  (executable used in truSPAdes pipeline)
--   `spades-dipspades-core`  (deprecated; assembly module for highly polymorphic diploid genomes)
 
 <a name="sec2.1"></a>
 ## Downloading SPAdes Linux binaries
@@ -1054,8 +1051,6 @@ If you use multiple paired-end and/or mate-pair libraries you may also cite pape
 If you use plasmidSPAdes please cite [Antipov et al., 2016](http://biorxiv.org/content/early/2016/04/20/048942).
 
 For rnaSPAdes citation use [Bushmanova et al., 2018](https://www.biorxiv.org/content/early/2018/09/18/420208)</a>.
-
-For the information about dipSPAdes and truSPAdes papers see [dipSPAdes manual](dipspades_manual.html) and [truSPAdes manual](truspades_manual.html) respectively.
 
 In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <spades.support@cab.spbu.ru>.
 []()
