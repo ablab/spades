@@ -327,11 +327,28 @@ void OutputMatches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, cons
     fclose(fp);
 }
 
+// std::string PathToString(const std::vector<EdgeId>& path,
+//                          const ConjugateDeBruijnGraph &graph) {
+//     std::string res = "";
+//     for (const auto &e : path)
+//         res = res + graph.EdgeNucls(e).First(graph.length(e)).str();
+//     return res;
+// }
+
 std::string PathToString(const std::vector<EdgeId>& path,
                          const ConjugateDeBruijnGraph &graph) {
-    std::string res = "";
-    for (const auto &e : path)
-        res = res + graph.EdgeNucls(e).First(graph.length(e)).str();
+    if (path.size() == 0) {
+        return "";
+    }
+
+    std::string res = graph.EdgeNucls(path[0]).str();
+    for (size_t i = 1; i < path.size(); ++i) {
+        const auto &e = path[i];
+        res = res + graph.EdgeNucls(e).Last(graph.length(e)).str();
+        size_t k = graph.k();
+        VERIFY(graph.EdgeNucls(path[i - 1]).Last(k).str() == graph.EdgeNucls(path[i]).First(k).str());
+    }
+
     return res;
 }
 
@@ -807,6 +824,20 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<EdgeId>> contig_paths;
     LoadGraph(graph, contig_paths, cfg.load_from);
     INFO("Graph loaded. Total vertices: " << graph.size());
+
+
+
+
+    INFO("Total paths " << contig_paths.size());
+
+    // Convert paths to strings
+    // TODO do the following part optionally
+    std::vector<std::string> contig_paths_str;
+    contig_paths_str.reserve(contig_paths.size());
+    for (const auto &path : contig_paths) {
+        contig_paths_str.push_back(PathToString(path, graph));
+        INFO(contig_paths_str.back());
+    }
 
     // Collect all the edges
     std::vector<EdgeId> edges;
