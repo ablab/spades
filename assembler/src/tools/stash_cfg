@@ -44,7 +44,6 @@ then
 	  'pec') $cmd stashed_configs/$name/debruijn/path_extend/pe_config.info   configs/debruijn/path_extend/pe_config.info;;
 	  'pep') $cmd stashed_configs/$name/debruijn/path_extend/pe_params.info   configs/debruijn/path_extend/pe_params.info;;
 	  'con') $cmd stashed_configs/$name/debruijn/construction.info   configs/debruijn/construction.info;;
-	  'dsp') $cmd stashed_configs/$name/debruijn/dipspades/dipspades.info configs/debruijn/dipspades/dipspades.info ;;
 	  '-all')
 	#  		echo ----------------------spades_config.info------------------------
 	#        $cmd spades_config.info.template                            spades_config.info
@@ -66,8 +65,6 @@ then
 		    $cmd stashed_configs/$name/debruijn/path_extend/pe_params.info   configs/debruijn/path_extend/pe_params.info
 			echo --------------configs/debruijn/construction.info----------------
 		    $cmd stashed_configs/$name/debruijn/construction.info   configs/debruijn/construction.info
-                        echo ----------configs/debruijn/dipspades/dipspades.info-------------
-                    $cmd stashed_configs/$name/debruijn/dipspades/dipspades.info   configs/debruijn/dipspades/dipspades.info
 	esac
 else
 	mkdir -p stashed_configs
@@ -75,7 +72,6 @@ else
 	mkdir -p stashed_configs/$name/debruijn
 	mkdir -p stashed_configs/$name/hammer
 	mkdir -p stashed_configs/$name/debruijn/path_extend
-	mkdir -p stashed_configs/$name/debruijn/dipspades
 	case $mod in
 	  'c')   $cmd configs/debruijn/config.info stashed_configs/$name/debruijn/config.info ;;
 	  'h')   $cmd configs/hammer/config.info stashed_configs/$name/hammer/config.info ;;  
@@ -87,7 +83,6 @@ else
 	  'pec') $cmd configs/debruijn/path_extend/pe_config.info stashed_configs/$name/debruijn/path_extend/pe_config.info ;;
 	  'pep') $cmd configs/debruijn/path_extend/pe_params.info stashed_configs/$name/debruijn/path_extend/pe_params.info ;;
 	  'con') $cmd configs/debruijn/construction.info stashed_configs/$name/debruijn/construction.info ;;
-	  'dsp') $cmd stashed_configs/$name/debruijn/dipspades/dipspades.info configs/debruijn/dipspades/dipspades.info ;;
 	  '-all')
 	#  		echo ----------------------spades_config.info------------------------
 	#        $cmd spades_config.info.template                            spades_config.info
@@ -109,8 +104,6 @@ else
 		    $cmd configs/debruijn/path_extend/pe_params.info	stashed_configs/$name/debruijn/path_extend/pe_params.info
 			echo --------------configs/debruijn/construction.info----------------
 		    $cmd configs/debruijn/construction.info				stashed_configs/$name/debruijn/construction.info
-                        echo ----------configs/debruijn/dipspades/dipspades.info-------------
-                    $cmd configs/debruijn/dipspades/dipspades.info stashed_configs/$name/debruijn/dipspades/dipspades.info
 	esac
 fi
 

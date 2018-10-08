@@ -96,9 +96,6 @@ add_subdirectory(spades_pipeline)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
         DESTINATION bin
         COMPONENT runtime)
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../dipspades.py"
-        DESTINATION bin
-        COMPONENT runtime)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaspades.py"
         DESTINATION bin
         COMPONENT runtime)
@@ -131,9 +128,6 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../manual.html"
         DESTINATION share/spades
         COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../README.md"
-        DESTINATION share/spades
-        COMPONENT runtime)
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../dipspades_manual.html"
         DESTINATION share/spades
         COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../truspades_manual.html"

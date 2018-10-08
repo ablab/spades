@@ -19,6 +19,5 @@ make package
 #ldd /gitrep/algorithmic-biology/assembler/bin/hammer
 #ldd /gitrep/algorithmic-biology/assembler/bin/bwa-spades
 #ldd /gitrep/algorithmic-biology/assembler/bin/corrector
-#ldd /gitrep/algorithmic-biology/assembler/bin/dipspades
 #ldd /gitrep/algorithmic-biology/assembler/bin/ionhammer
 #ldd /gitrep/algorithmic-biology/assembler/bin/scaffold_correction

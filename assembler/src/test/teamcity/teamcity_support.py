@@ -536,8 +536,6 @@ def load_info(dataset_path):
     if "mode" not in info.__dict__:
         if 'truseq' in info.__dict__ and info.truseq:
             info.__dict__["mode"] = "tru"
-        elif 'dipspades' in info.__dict__ and info.dipspades:
-            info.__dict__["mode"] = "dip"
         elif 'meta' in info.__dict__ and info.meta:
             info.__dict__["mode"] = "meta"
         elif 'rna' in info.__dict__ and info.rna:
@@ -556,8 +554,6 @@ def get_contigs_list(args, dataset_info, before_rr = False):
     contigs.append(("contigs_paths", "contigs", "", "", "paths"))
     contigs.append(("scaffolds_paths", "scaffolds", "", "", "paths"))
 
-    if dataset_info.mode == "dip":
-        contigs = [("contigs", "dipspades/consensus_contigs", "", "", "fasta")]
     if dataset_info.mode == "tru":
         contigs = [("contigs", "truseq_long_reads", "", "", "fasta")]
     if dataset_info.mode == "rna":
