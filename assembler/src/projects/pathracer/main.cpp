@@ -804,8 +804,8 @@ int main(int argc, char* argv[]) {
     using namespace debruijn_graph;
 
     debruijn_graph::ConjugateDeBruijnGraph graph(cfg.k);
-    std::vector<std::vector<EdgeId>> paths;
-    LoadGraph(graph, paths, cfg.load_from);
+    std::vector<std::vector<EdgeId>> contig_paths;
+    LoadGraph(graph, contig_paths, cfg.load_from);
     INFO("Graph loaded. Total vertices: " << graph.size());
 
     // Collect all the edges
