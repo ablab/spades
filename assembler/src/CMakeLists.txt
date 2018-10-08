@@ -127,7 +127,7 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset_plasmid"
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../manual.html"
         DESTINATION share/spades
         COMPONENT runtime)
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../README.md"
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md"
         DESTINATION share/spades
         COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../truspades_manual.html"
