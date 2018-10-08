@@ -225,7 +225,6 @@ std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<AAGraphCurso
 using debruijn_graph::EdgeId;
 using debruijn_graph::VertexId;
 using debruijn_graph::ConjugateDeBruijnGraph;
-using EdgeAlnInfo = std::vector<std::pair<EdgeId, std::pair<int, int>>>;
 
 
 auto ScoreSequences(const std::vector<std::string> &seqs,
@@ -257,6 +256,7 @@ auto ScoreSequences(const std::vector<std::string> &seqs,
     return matcher;
 }
 
+using EdgeAlnInfo = std::vector<std::pair<EdgeId, std::pair<int, int>>>;
 EdgeAlnInfo get_matched_edges(const std::vector<EdgeId> &edges,
                               const hmmer::HMMMatcher &matcher,
                               const cfg &cfg) {
@@ -285,6 +285,32 @@ EdgeAlnInfo get_matched_edges(const std::vector<EdgeId> &edges,
     return match_edges;
 }
 
+using PathAlnInfo = std::vector<std::pair<size_t, std::pair<int, int>>>;
+PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
+                            const cfg &cfg) {
+    std::vector<std::pair<size_t, std::pair<int, int>>> matches;
+    for (const auto &hit : matcher.hits()) {
+        if (!hit.reported() || !hit.included())
+            continue;
+
+        size_t id = std::stoull(hit.name());  // Shift is ignored automatically
+
+        for (const auto &domain : hit.domains()) {
+            // Calculate HMM overhang
+            std::pair<int, int> seqpos = domain.seqpos();
+            std::pair<int, int> hmmpos = domain.hmmpos();
+
+            int roverhang = static_cast<int>(domain.M() - hmmpos.second) - static_cast<int>(domain.L() - seqpos.second);
+            int loverhang = static_cast<int>(hmmpos.first) - static_cast<int>(seqpos.first);
+
+            matches.push_back({id, std::make_pair(loverhang, roverhang)});
+        }
+    }
+    INFO("Total matched edges: " << matches.size());
+
+    return matches;
+}
+
 EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
                          const ConjugateDeBruijnGraph &graph,
                          const hmmer::HMM &hmm, const cfg &cfg) {
@@ -307,6 +333,48 @@ EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
     }
 
     return match_edges;
+}
+
+std::string PathToString(const std::vector<EdgeId>& path,
+                         const ConjugateDeBruijnGraph &graph) {
+    if (path.size() == 0) {
+        return "";
+    }
+
+    std::string res = graph.EdgeNucls(path[0]).str();
+    for (size_t i = 1; i < path.size(); ++i) {
+        const auto &e = path[i];
+        res = res + graph.EdgeNucls(e).Last(graph.length(e)).str();
+        size_t k = graph.k();
+        VERIFY(graph.EdgeNucls(path[i - 1]).Last(k).str() == graph.EdgeNucls(path[i]).First(k).str());
+    }
+
+    return res;
+}
+
+PathAlnInfo MatchedPaths(const std::vector<std::vector<EdgeId>> &paths,
+                         const ConjugateDeBruijnGraph &graph,
+                         const hmmer::HMM &hmm, const cfg &cfg) {
+    std::vector<std::string> seqs;
+    seqs.reserve(paths.size());
+    for (const auto &path : paths) {
+        seqs.push_back(PathToString(path, graph));
+    }
+    auto matcher = ScoreSequences(seqs, {}, hmm, cfg);
+
+    auto matched = get_matched_ids(matcher, cfg);
+
+    if (matched.size() && cfg.debug) {
+        int textw = 120;
+        #pragma omp critical(console)
+        {
+            p7_tophits_Targets(stdout, matcher.top_hits(), matcher.pipeline(), textw);
+            p7_tophits_Domains(stdout, matcher.top_hits(), matcher.pipeline(), textw);
+            p7_pli_Statistics(stdout, matcher.pipeline(), nullptr);
+        }
+    }
+
+    return matched;
 }
 
 void OutputMatches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, const std::string &filename,
@@ -334,23 +402,6 @@ void OutputMatches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, cons
 //         res = res + graph.EdgeNucls(e).First(graph.length(e)).str();
 //     return res;
 // }
-
-std::string PathToString(const std::vector<EdgeId>& path,
-                         const ConjugateDeBruijnGraph &graph) {
-    if (path.size() == 0) {
-        return "";
-    }
-
-    std::string res = graph.EdgeNucls(path[0]).str();
-    for (size_t i = 1; i < path.size(); ++i) {
-        const auto &e = path[i];
-        res = res + graph.EdgeNucls(e).Last(graph.length(e)).str();
-        size_t k = graph.k();
-        VERIFY(graph.EdgeNucls(path[i - 1]).Last(k).str() == graph.EdgeNucls(path[i]).First(k).str());
-    }
-
-    return res;
-}
 
 template<class Graph>
 Sequence MergeSequences(const Graph &g,
@@ -570,8 +621,43 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
     OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
 }
 
+using graph_t = debruijn_graph::ConjugateDeBruijnGraph;
+using GraphCursor = DebruijnGraphCursor;
+
+
+std::pair<EdgeId, size_t> get_edge_offset(const graph_t &graph, const std::vector<EdgeId> &path, size_t position) {
+    size_t k = graph.k();
+    for (const auto &e : path) {
+        if (graph.length(e) + k > position) {
+            return {e, position};
+        }
+        position -= graph.length(e);
+    }
+    VERIFY_MSG(false, "position > path lenght");
+}
+
+size_t path_length(const graph_t &graph, const std::vector<EdgeId> &path) {
+    if (path.size() == 0) {
+        return 0;
+    }
+
+    size_t sum = 0;
+    for (const auto &e : path) {
+        sum += graph.length(e);
+    }
+
+    return sum + graph.k();
+}
+
+std::vector<GraphCursor> get_cursors_from_path(const graph_t &graph, const std::vector<EdgeId> &path, size_t position) {
+    // TODO Check cursor noncanonicity stuff once again
+    auto p = get_edge_offset(graph, path, position);
+    return GraphCursor::get_cursors(graph, p.first, p.second);
+}
+
 void TraceHMM(const hmmer::HMM &hmm,
               const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
+              const std::vector<std::vector<EdgeId>> contig_paths,
               const cfg &cfg,
               std::vector<HMMPathInfo> &results) {
     const P7_HMM *p7hmm = hmm.get();
@@ -587,35 +673,49 @@ void TraceHMM(const hmmer::HMM &hmm,
     auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
     INFO("HMM consensus: " << fees.consensus);
 
+
+    std::vector<std::vector<EdgeId>> paths;
+    // Fill paths by single edges
+    for (const auto &e : edges) {
+        paths.push_back(std::vector<EdgeId>({e}));
+    }
+    // Fill paths by paths read from GFA
+    paths.insert(paths.end(), contig_paths.cbegin(), contig_paths.cend());
+
+    auto matched = MatchedPaths(paths, graph, hmm, cfg);
     // Collect the neighbourhood of the matched edges
-    EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);  // hhmer is thread-safe
+    // TODO Remove it
+    // EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);  // hhmer is thread-safe
+
     bool hmm_in_aas = hmm.abc()->K == 20;
 
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
     std::unordered_set<GraphCursor> cursors;
-    for (const auto &kv : matched_edges) {
-        EdgeId e = kv.first;
+    for (const auto &kv : matched) {
+        size_t id = kv.first;
+        const auto &path = paths[id];
         int aa_coef = hmm_in_aas ? 3 : 1;
         int loverhang = (kv.second.first + 10) * aa_coef; // TODO unify overhangs processing
         int roverhang = (kv.second.second + 10) * aa_coef;
 
         if (loverhang > 0) {
-            for (const auto &start : GraphCursor::get_cursors(graph, e, 0)) {
+            for (const auto &start : get_cursors_from_path(graph, path, 0)) {
                 left_queries.push_back({start, loverhang * 2});
             }
         }
 
-        size_t len = graph.length(e) + graph.k();
-        INFO("Edge length: " << len <<"; edge overhangs: " << loverhang << " " << roverhang);
+        size_t len = path_length(graph, path);
+        // VERIFY(len == PathToString(path, graph).length());  // TODO remove it after testing
+        INFO("Path " << path.size() << " edges, length: " << len <<"; edge overhangs: " << loverhang << " " << roverhang);
         if (roverhang > 0) {
-            for (const auto &end : GraphCursor::get_cursors(graph, e, len - 1)) {
+            for (const auto &end : get_cursors_from_path(graph, path, len - 1)) {
                 right_queries.push_back({end, roverhang * 2});
             }
         }
 
         for (size_t i = std::max(0, -loverhang); i < len - std::max(0, -roverhang); ++i) {
-            auto position_cursors = GraphCursor::get_cursors(graph, e, i);
+            auto position_cursors = get_cursors_from_path(graph, path, i);
             cursors.insert(std::make_move_iterator(position_cursors.begin()), std::make_move_iterator(position_cursors.end()));
         }
     }
@@ -669,8 +769,12 @@ void TraceHMM(const hmmer::HMM &hmm,
     };
 
     std::vector<EdgeId> match_edges;
-    for (const auto &entry : matched_edges) {
-        match_edges.push_back(entry.first);
+    for (const auto &entry : matched) {
+        size_t id = entry.first;
+        // FIXME add edges only (not GFA paths)
+        for (const auto &e : paths[id]) {
+            match_edges.push_back(e);
+        }
     }
     remove_duplicates(match_edges);
 
@@ -743,6 +847,7 @@ void TraceHMM(const hmmer::HMM &hmm,
 void hmm_main(const cfg &cfg,
               const debruijn_graph::ConjugateDeBruijnGraph &graph,
               const std::vector<EdgeId> &edges,
+              const std::vector<std::vector<EdgeId>> contig_paths,
               std::unordered_set<std::vector<EdgeId>> &to_rescore,
               std::set<std::pair<std::string, std::vector<EdgeId>>> &gfa_paths) {
     std::vector<hmmer::HMM> hmms;
@@ -759,7 +864,8 @@ void hmm_main(const cfg &cfg,
 
         std::vector<HMMPathInfo> results;
 
-        TraceHMM(hmm, graph, edges, cfg, results);
+        TraceHMM(hmm, graph, edges, contig_paths,
+                 cfg, results);
 
         std::sort(results.begin(), results.end());
         SaveResults(hmm, graph, cfg, results);
@@ -824,20 +930,7 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<EdgeId>> contig_paths;
     LoadGraph(graph, contig_paths, cfg.load_from);
     INFO("Graph loaded. Total vertices: " << graph.size());
-
-
-
-
     INFO("Total paths " << contig_paths.size());
-
-    // Convert paths to strings
-    // TODO do the following part optionally
-    std::vector<std::string> contig_paths_str;
-    contig_paths_str.reserve(contig_paths.size());
-    for (const auto &path : contig_paths) {
-        contig_paths_str.push_back(PathToString(path, graph));
-        INFO(contig_paths_str.back());
-    }
 
     // Collect all the edges
     std::vector<EdgeId> edges;
@@ -849,7 +942,8 @@ int main(int argc, char* argv[]) {
     std::unordered_set<std::vector<EdgeId>> to_rescore;
     std::set<std::pair<std::string, std::vector<EdgeId>>> gfa_paths;
 
-    hmm_main(cfg, graph, edges, to_rescore, gfa_paths);
+    hmm_main(cfg, graph, edges, contig_paths,
+             to_rescore, gfa_paths);
 
     if (cfg.rescore) {
         INFO("Total " << to_rescore.size() << " paths to rescore");
