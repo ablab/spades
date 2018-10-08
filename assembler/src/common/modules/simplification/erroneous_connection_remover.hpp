@@ -121,9 +121,9 @@ template<class Graph>
 inline bool IsAlternativePathExist(const Graph &g, typename Graph::EdgeId e){
     MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(g, e);
 
-    auto start = g.EdgeStart(e);
+    VertexId start = g.EdgeStart(e);
     TRACE("Start " << g.str(start));
-    auto end = g.EdgeEnd(e);
+    VertexId end = g.EdgeEnd(e);
     TRACE("End " << g.str(end));
 
     ProcessPaths(g, 0, std::numeric_limits<std::size_t>::max(), start, end, path_chooser);
@@ -144,9 +144,9 @@ template<class Graph>
 inline bool IsAlternativeInclusivePathExist(const Graph &g, typename Graph::EdgeId forbidden_edge, typename Graph::EdgeId compulsory_edge){
     MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(g, forbidden_edge);
 
-    auto start = g.EdgeStart(forbidden_edge);
+    VertexId start = g.EdgeStart(forbidden_edge);
     TRACE("Start " << g.str(start));
-    auto end = g.EdgeEnd(forbidden_edge);
+    VertexId end = g.EdgeEnd(forbidden_edge);
     TRACE("End " << g.str(end));
 
     ProcessPaths(g, 0, std::numeric_limits<std::size_t>::max(), start, end, path_chooser);

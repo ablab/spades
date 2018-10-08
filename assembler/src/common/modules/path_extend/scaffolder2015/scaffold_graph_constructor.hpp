@@ -10,7 +10,6 @@ namespace path_extend {
 
 namespace scaffold_graph {
 
-typedef std::set<EdgeId> EdgeSet;
 typedef std::vector<std::shared_ptr<ConnectionCondition>> ConnectionConditions;
 
 //Iterface
