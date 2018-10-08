@@ -655,6 +655,14 @@ std::vector<GraphCursor> get_cursors_from_path(const graph_t &graph, const std::
     return GraphCursor::get_cursors(graph, p.first, p.second);
 }
 
+std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path) {
+    std::vector<EdgeId> cpath;
+    for (auto it = path.crbegin(), e = path.crend(); it != e; ++it) {
+        cpath.push_back((*it)->conjugate());
+    }
+    return cpath;
+}
+
 void TraceHMM(const hmmer::HMM &hmm,
               const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
               const std::vector<std::vector<EdgeId>> contig_paths,
@@ -680,6 +688,9 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     // Fill paths by paths read from GFA
     paths.insert(paths.end(), contig_paths.cbegin(), contig_paths.cend());
+    for (const auto &path : contig_paths) {
+        paths.push_back(conjugate_path(path));
+    }
 
     auto matched = MatchedPaths(paths, graph, hmm, cfg);
     // Collect the neighbourhood of the matched edges
