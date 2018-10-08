@@ -477,7 +477,7 @@ struct HMMPathInfo {
               path(std::move(p)), alignment(std::move(alignment)) {}
 };
 
-void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
+void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph */,
                  const cfg &cfg,
                  const std::vector<HMMPathInfo> &results) {
     const P7_HMM *p7hmm = hmm.get();  // TODO We use only hmm name from this object, may be we should just pass the name itself
