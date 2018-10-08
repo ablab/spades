@@ -18,6 +18,8 @@ namespace debruijn_graph {
 
 namespace gap_closing {
 
+using namespace std;
+
 //TODO standard aligner badly needs spurious match filtering
 class GapTrackingListener : public SequenceMapperListener {
     const Graph& g_;
@@ -175,7 +177,7 @@ io::SingleStreamPtr GetReadsStream(const io::SequencingLibrary<config::LibraryDa
     for (const auto& reads : lib.single_reads())
         //do we need input_file function here?
         //TODO add decent support for N-s?
-        streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(reads)));
+        streams.push_back(std::make_shared<io::FixingWrapper>(std::make_shared<io::FileReadStream>(reads)));
     return io::MultifileWrap(streams);
 }
 
@@ -284,7 +286,7 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
                         PathStorage<Graph>& path_storage,
                         gap_closing::GapStorage& gap_storage,
                         size_t thread_cnt, const config::pacbio_processor &pb) {
-    string lib_for_info = (lib.is_long_read_lib() ? "long reads" : "contigs");
+    std::string lib_for_info = lib.is_long_read_lib() ? "long reads" : "contigs";
     INFO("Aligning "<< lib_for_info << " with bwa-mem based aligner");
 
     alignment::BWAIndex::AlignmentMode mode =
@@ -363,7 +365,7 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
             if (make_additional_saves) {
                 INFO("Producing additional saves");
                 path_storage.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
-                                        map<EdgeId, EdgeId>(), /*min_stats_cutoff*/rtype ? 1 : 0, true);
+                                        {}, /*min_stats_cutoff*/rtype ? 1 : 0, true);
                 gap_storage.DumpToFile(cfg::get().output_saves + "gaps.mpr");
             }
 

@@ -25,6 +25,7 @@
 #include "getopt_pp/getopt_pp.h"
 
 using namespace debruijn_graph;
+using namespace std;
 
 io::SingleRead ReadSequence(io::SingleStream& reader) {
     VERIFY(!reader.eof());

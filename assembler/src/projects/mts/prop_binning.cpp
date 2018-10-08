@@ -15,6 +15,7 @@
 #include "visualization/position_filler.hpp"
 
 using namespace debruijn_graph;
+using namespace std;
 
 std::string add_suffix(const std::string& path, const std::string& suffix) {
     auto ext = fs::extension(path);

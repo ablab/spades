@@ -29,6 +29,7 @@ private:
     typedef typename Graph::EdgeId EdgeId;
     const Graph &graph_;
     size_t backet_width_;
+    typedef std::map<size_t, size_t> Histogram;
 
     bool IsInteresting(EdgeId e) const {
         if (graph_.length(e) > graph_.k() + 1)
@@ -46,8 +47,7 @@ private:
         return !eq;
     }
 
-    double weight(size_t value, const map<size_t, size_t> &histogram,
-                  size_t backet_width) const {
+    double weight(size_t value, const Histogram &histogram, size_t backet_width) const {
         double result = 0;
         for (size_t i = 0; i < backet_width && value + i < histogram.size(); i++) {
             result += (double) (getValue(value + i, histogram) * std::min(i + 1, backet_width - i));
@@ -56,7 +56,7 @@ private:
     }
 
     double Median(double thr = 500.0) const {
-        vector<double> coverages;
+        std::vector<double> coverages;
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             if (graph_.length(*it) > thr)
                 coverages.push_back(graph_.coverage(*it));
@@ -71,7 +71,7 @@ private:
         return coverages[coverages.size() / 2];
     }
 
-    size_t getValue(size_t arg, const map<size_t, size_t> &ssmap) const {
+    size_t getValue(size_t arg, const Histogram &ssmap) const {
         auto it = ssmap.find(arg);
         if (it == ssmap.end())
             return 0;
@@ -94,8 +94,8 @@ public:
         return cov / length;
     }
 
-    std::map<size_t, size_t> ConstructHistogram() const {
-        std::map<size_t, size_t> result;
+    Histogram ConstructHistogram() const {
+        Histogram result;
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             if (IsInteresting(*it))
                 result[(size_t)graph_.coverage(*it)]++;
@@ -103,7 +103,7 @@ public:
         return result;
     }
 
-    double FindThreshold(const map<size_t, size_t> &histogram) const {
+    double FindThreshold(const Histogram &histogram) const {
         size_t backet_width = backet_width_;
         if (backet_width == 0) {
             backet_width = (size_t)(0.3 * AvgCovereageCounter<Graph>(graph_).Count() + 5);
@@ -132,7 +132,7 @@ public:
 
     double FindThreshold() const {
         INFO("Finding threshold started");
-        std::map<size_t, size_t> histogram = ConstructHistogram(/*weights*/);
+        auto histogram = ConstructHistogram(/*weights*/);
         for (size_t i = 0; i < histogram.size(); i++) {
             TRACE(i << " " << histogram[i]);
         }

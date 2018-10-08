@@ -7,19 +7,19 @@
 
 #pragma once
 
-#include "utils/standard_base.hpp"
 #include "adt/bag.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
+#include <boost/optional.hpp>
 
 namespace omnigraph {
 
 template<class Graph>
-const string PrintPath(const Graph& g, const vector<typename Graph::EdgeId>& edges) {
-    string delim = "";
+const std::string PrintPath(const Graph &g, const std::vector<typename Graph::EdgeId> &edges) {
     std::stringstream ss;
     for (size_t i = 0; i < edges.size(); ++i) {
-        ss << delim << g.str(edges[i]);
-        delim = " -> ";
+        if (i > 0)
+            ss << " -> ";
+        ss << g.str(edges[i]);
     }
     return ss.str();
 }
@@ -27,10 +27,9 @@ const string PrintPath(const Graph& g, const vector<typename Graph::EdgeId>& edg
 
 template<class Graph>
 class PathProcessor {
-
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef vector<EdgeId> Path;
+    typedef std::vector<EdgeId> Path;
     typedef typename DijkstraHelper<Graph>::BoundedDijkstra DijkstraT;
 public:
     class Callback {
@@ -39,11 +38,11 @@ public:
         virtual ~Callback() {
         }
 
-        virtual void HandleReversedPath(const vector<EdgeId>& reversed_path) = 0;
+        virtual void HandleReversedPath(const std::vector<EdgeId> &reversed_path) = 0;
 
 
     protected:
-        Path ReversePath(const Path& path) const {
+        Path ReversePath(const Path &path) const {
             Path result;
             for (auto it = path.rbegin(), end = path.rend(); it != end; ++it)
                 result.push_back(*it);
@@ -121,7 +120,7 @@ private:
             }
 
             TRACE("Iterating through incoming edges of vertex " << g_.int_id(v))
-            vector<EdgeId> incoming;
+            std::vector<EdgeId> incoming;
             incoming.reserve(4);
             std::copy_if(g_.in_begin(v), g_.in_end(v), std::back_inserter(incoming), [&] (EdgeId e) {
                 return dijkstra_.DistanceCounted(g_.EdgeStart(e));
@@ -239,7 +238,7 @@ int ProcessPaths(const Graph& g, size_t min_len, size_t max_len,
 template<class Graph>
 class AdapterCallback: public PathProcessor<Graph>::Callback {
     typedef typename Graph::EdgeId EdgeId;
-	typedef vector<EdgeId> Path;
+	typedef std::vector<EdgeId> Path;
     std::function<void(const Path&)> func_;
     bool reverse_;
 public:
@@ -256,7 +255,7 @@ public:
 template<class Graph, class Comparator>
 class BestPathStorage: public PathProcessor<Graph>::Callback {
     typedef typename Graph::EdgeId EdgeId;
-    typedef vector<EdgeId> Path;
+    typedef std::vector<EdgeId> Path;
 public:
     BestPathStorage(const Graph& g, Comparator comparator) :
             g_(g), comparator_(comparator) {
@@ -280,14 +279,14 @@ private:
 template<class Graph>
 class PathStorageCallback: public PathProcessor<Graph>::Callback {
     typedef typename Graph::EdgeId EdgeId;
-    typedef vector<EdgeId> Path;
+    typedef std::vector<EdgeId> Path;
 
 public:
     PathStorageCallback(const Graph& g) :
             g_(g) {
     }
 
-    void HandleReversedPath(const vector<EdgeId>& path) override {
+    void HandleReversedPath(const std::vector<EdgeId>& path) override {
         paths_.push_back(this->ReversePath(path));
     }
 
@@ -295,19 +294,19 @@ public:
         return paths_.size();
     }
 
-    const vector<Path>& paths() const {
+    const std::vector<Path>& paths() const {
         return paths_;
     }
 
 private:
     const Graph& g_;
-    vector<Path> paths_;
+    std::vector<Path> paths_;
 };
 
 template<class Graph>
 class NonEmptyPathCounter: public PathProcessor<Graph>::Callback {
     typedef typename Graph::EdgeId EdgeId;
-    typedef vector<EdgeId> Path;
+    typedef std::vector<EdgeId> Path;
 
 public:
     NonEmptyPathCounter(const Graph& g) :
@@ -325,21 +324,21 @@ public:
         return count_;
     }
 
-    const vector<Path>& paths() const {
+    const std::vector<Path> &paths() const {
         return paths_;
     }
 
 private:
     const Graph& g_;
     size_t count_;
-    vector<Path> paths_;
+    std::vector<Path> paths_;
 };
 
 template<class Graph>
 class VertexLabelerCallback: public PathProcessor<Graph>::Callback {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef vector<EdgeId> Path;
+    typedef std::vector<EdgeId> Path;
 
 public:
     VertexLabelerCallback(const Graph& g) :
@@ -356,7 +355,7 @@ public:
         }
     }
 
-    const set<VertexId>& vertices() const {
+    const std::set<VertexId> &vertices() const {
         return vertices_;
     }
 
@@ -367,13 +366,13 @@ public:
 private:
     Graph& g_;
     size_t count_;
-    set<VertexId> vertices_;
+    std::set<VertexId> vertices_;
 };
 
 template<class Graph>
 class DistancesLengthsCallback: public PathProcessor<Graph>::Callback {
     typedef typename Graph::EdgeId EdgeId;
-    typedef vector<EdgeId> Path;
+    typedef std::vector<EdgeId> Path;
 
 public:
     DistancesLengthsCallback(const Graph& g) :
@@ -384,13 +383,13 @@ public:
         distances_.insert(CumulativeLength(g_, path));
     }
 
-    vector<size_t> distances() const {
-        return vector<size_t>(distances_.begin(), distances_.end());
+    std::vector<size_t> distances() const {
+        return std::vector<size_t>(distances_.begin(), distances_.end());
     }
 
 private:
     const Graph& g_;
-    set<size_t> distances_;
+    std::set<size_t> distances_;
 
     DECL_LOGGER("DistancesLengthsCallback");
 };

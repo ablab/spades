@@ -6,7 +6,6 @@ namespace scaffold_graph {
 
 std::atomic<ScaffoldGraph::ScaffoldEdgeIdT> ScaffoldGraph::ScaffoldEdge::scaffold_edge_id_{0};
 
-
 void ScaffoldGraph::AddEdgeSimple(const ScaffoldGraph::ScaffoldEdge &e) {
     edges_.emplace(e.getId(), e);
     outgoing_edges_.emplace(e.getStart(), e.getId());
@@ -84,7 +83,7 @@ bool ScaffoldGraph::AddVertex(ScaffoldGraph::ScaffoldVertex assembly_graph_edge)
     return false;
 }
 
-void ScaffoldGraph::AddVertices(const set<ScaffoldGraph::ScaffoldVertex> &vertices) {
+void ScaffoldGraph::AddVertices(const std::set<ScaffoldGraph::ScaffoldVertex> &vertices) {
     for (auto v : vertices) {
         AddVertex(v);
     }
@@ -104,15 +103,15 @@ bool ScaffoldGraph::AddEdge(ScaffoldGraph::ScaffoldVertex v1, ScaffoldGraph::Sca
     return true;
 }
 
-void ScaffoldGraph::Print(ostream &os) const {
+void ScaffoldGraph::Print(std::ostream &os) const {
     for (auto v: vertices_) {
         os << "Vertex " << int_id(v) << " ~ " << int_id(conjugate(v))
-            << ": len = " << assembly_graph_.length(v) << ", cov = " << assembly_graph_.coverage(v) << endl;
+            << ": len = " << assembly_graph_.length(v) << ", cov = " << assembly_graph_.coverage(v) << std::endl;
     }
     for (auto e_iter = edges_.begin(); e_iter != edges_.end(); ++e_iter) {
         os << "Edge " << e_iter->second.getId() <<
             ": " << int_id(e_iter->second.getStart()) << " -> " << int_id(e_iter->second.getEnd()) <<
-            ", lib index = " << e_iter->second.getColor() << ", weight " << e_iter->second.getWeight() << endl;
+            ", lib index = " << e_iter->second.getColor() << ", weight " << e_iter->second.getWeight() << std::endl;
     }
 }
 
@@ -142,8 +141,8 @@ size_t ScaffoldGraph::OutgoingEdgeCount(ScaffoldGraph::ScaffoldVertex assembly_g
     return outgoing_edges_.count(assembly_graph_edge);
 }
 
-vector<ScaffoldGraph::ScaffoldEdge> ScaffoldGraph::IncomingEdges(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
-    vector<ScaffoldEdge> result;
+std::vector<ScaffoldGraph::ScaffoldEdge> ScaffoldGraph::IncomingEdges(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
+    std::vector<ScaffoldEdge> result;
     auto e_range = incoming_edges_.equal_range(assembly_graph_edge);
     for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
         result.push_back(edges_.at(edge_id->second));
@@ -151,8 +150,8 @@ vector<ScaffoldGraph::ScaffoldEdge> ScaffoldGraph::IncomingEdges(ScaffoldGraph::
     return result;
 }
 
-vector<ScaffoldGraph::ScaffoldEdge> ScaffoldGraph::OutgoingEdges(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
-    vector<ScaffoldEdge> result;
+std::vector<ScaffoldGraph::ScaffoldEdge> ScaffoldGraph::OutgoingEdges(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
+    std::vector<ScaffoldEdge> result;
     auto e_range = outgoing_edges_.equal_range(assembly_graph_edge);
     for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
         result.push_back(edges_.at(edge_id->second));

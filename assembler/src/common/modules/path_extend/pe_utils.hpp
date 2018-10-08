@@ -282,7 +282,7 @@ inline size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cy
     if (count <= 1 || count < min_cycle_appearences * (skip_identical_edges + 1)) {
         return 0;
     }
-    vector<size_t> edge_positions = path_->FindAll(e);
+    auto edge_positions = path_->FindAll(e);
     VERIFY(edge_positions.size() == count);
     VERIFY(edge_positions.size() >= skip_identical_edges);
     size_t loopSize = edge_positions.back() - edge_positions[edge_positions.size() - 1 - (skip_identical_edges + 1)];

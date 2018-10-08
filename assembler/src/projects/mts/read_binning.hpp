@@ -18,13 +18,13 @@ class ContigBinner {
     const EdgeAnnotation& edge_annotation_;
     std::string out_root_;
     std::string sample_name_;
-    shared_ptr<SequenceMapper<Graph>> mapper_;
+    std::shared_ptr<SequenceMapper<Graph>> mapper_;
     std::set<std::string> bins_of_interest_;
 
     typedef io::OPairedReadStream<ogzstream, io::FastqWriter> Stream;
-    map<bin_id, std::unique_ptr<Stream>> out_streams_;
+    std::map<bin_id, std::unique_ptr<Stream>> out_streams_;
 
-    set<bin_id> RelevantBins(const io::SingleRead& r) const;
+    std::set<bin_id> RelevantBins(const io::SingleRead& r) const;
 
     void Init(bin_id bin);
 
@@ -53,6 +53,6 @@ void BinReads(const conj_graph_pack& gp, const std::string& out_root,
              const std::string& sample,
              const std::string& left_reads, const std::string& right_reads,
              const EdgeAnnotation& edge_annotation,
-             const vector<string>& bins_of_interest);
+             const std::vector<std::string>& bins_of_interest);
 
 }

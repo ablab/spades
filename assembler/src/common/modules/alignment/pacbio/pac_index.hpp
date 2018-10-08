@@ -161,10 +161,10 @@ public:
         return ss.str();
     }
 
-    vector<vector<EdgeId>> FillGapsInCluster(const vector<typename ClustersSet::iterator> &cur_cluster,
+    std::vector<std::vector<EdgeId>> FillGapsInCluster(const std::vector<typename ClustersSet::iterator> &cur_cluster,
                                      const Sequence &s) const {
-        vector<EdgeId> cur_sorted;
-        vector<vector<EdgeId>> res;
+        std::vector<EdgeId> cur_sorted;
+        std::vector<std::vector<EdgeId>> res;
         EdgeId prev_edge = EdgeId();
 
         for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();) {
@@ -191,16 +191,15 @@ public:
                     DEBUG(" traversing tangled hregion between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
                     DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
                     DEBUG(" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
-                    string s_add = "";
-                    string e_add = "";
+                    std::string s_add, e_add;
                     int seq_end = cur_first_index.read_position;
                     int seq_start = prev_last_index.read_position;
-                    string tmp = g_.EdgeNucls(prev_edge).str();
+                    auto tmp = g_.EdgeNucls(prev_edge).str();
                     s_add = tmp.substr(prev_last_index.edge_position,
                                        g_.length(prev_edge) - prev_last_index.edge_position);
                     tmp = g_.EdgeNucls(cur_edge).str();
                     e_add = tmp.substr(0, cur_first_index.edge_position);
-                    pair<int, int> limits = GetPathLimits(**prev_iter, **iter, (int) s_add.length(), (int) e_add.length());
+                    auto limits = GetPathLimits(**prev_iter, **iter, (int) s_add.length(), (int) e_add.length());
                     if (limits.first == -1) {
                         DEBUG ("Failed to find Path limits");
                         res.push_back(cur_sorted);
@@ -209,7 +208,7 @@ public:
                         continue;
                     }
                     
-                    vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
+                    auto intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
                     if (intermediate_path.size() == 0) {
                         DEBUG(DebugEmptyBestScoredPath(start_v, end_v, prev_edge, cur_edge,
                                       prev_last_index.edge_position, cur_first_index.edge_position, seq_end - seq_start));
@@ -322,9 +321,9 @@ public:
         return colors;
     }
 
-    OneReadMapping AddGapDescriptions(const vector<typename ClustersSet::iterator> &start_clusters,
-                                      const vector<typename ClustersSet::iterator> &end_clusters,
-                                      const std::vector<vector<EdgeId>> &sorted_edges, const Sequence &s,
+    OneReadMapping AddGapDescriptions(const std::vector<typename ClustersSet::iterator> &start_clusters,
+                                      const std::vector<typename ClustersSet::iterator> &end_clusters,
+                                      const std::vector<std::vector<EdgeId>> &sorted_edges, const Sequence &s,
                                       const std::vector<bool> &block_gap_closer) const {
         DEBUG("adding gaps between subreads");
         std::vector<GapDescription> illumina_gaps;
@@ -380,7 +379,7 @@ public:
                     DEBUG("on "<< (*iter)->str(g_));
                     DEBUG("and " << (*next_iter)->str(g_));
                 }
-                vector<typename ClustersSet::iterator> splitted_cluster(cur_cluster_start, next_iter);
+                std::vector<typename ClustersSet::iterator> splitted_cluster(cur_cluster_start, next_iter);
                 auto res = FillGapsInCluster(splitted_cluster, s);
                 for (auto &cur_sorted:res) {
                     DEBUG("Adding " <<res.size() << " subreads, cur alignments " << cur_sorted.size());
@@ -409,12 +408,12 @@ public:
     OneReadMapping GetReadAlignment(const io::SingleRead &read) const {
         Sequence s = read.sequence();
         ClustersSet mapping_descr = GetBWAClusters(s); //GetOrderClusters(s);
-        vector<int> colors = GetWeightedColors(mapping_descr);
+        auto colors = GetWeightedColors(mapping_descr);
         size_t len =  mapping_descr.size();
-        vector<vector<EdgeId>> sorted_edges;
-        vector<bool> block_gap_closer;
-        vector<typename ClustersSet::iterator> start_clusters, end_clusters;
-        vector<int> used(len);
+        std::vector<std::vector<EdgeId>> sorted_edges;
+        std::vector<bool> block_gap_closer;
+        std::vector<typename ClustersSet::iterator> start_clusters, end_clusters;
+        std::vector<int> used(len);
         auto iter = mapping_descr.begin();
         for (size_t i = 0; i < len; i++, iter ++) {
             used[i] = 0;
@@ -424,7 +423,7 @@ public:
             int cur_color = colors[i];
             if (!used[i] && cur_color != DELETED_COLOR) {
                 DEBUG("starting new subread");
-                vector<typename ClustersSet::iterator> cur_cluster;
+                std::vector<typename ClustersSet::iterator> cur_cluster;
                 used[i] = 1;
                 int j = 0;
                 for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end(); ++i_iter, ++j) {
@@ -447,22 +446,22 @@ public:
         int seq_len = -start_pos + end_pos;
         //int new_seq_len =
 //TODO::something more reasonable
-        int path_min_len = max(int(floor((seq_len - int(g_.k())) * pb_config_.path_limit_pressing)), 0);
+        int path_min_len = std::max(int(floor((seq_len - int(g_.k())) * pb_config_.path_limit_pressing)), 0);
         int path_max_len = (int) ((double) (seq_len + g_.k() * 2) * pb_config_.path_limit_stretching);
         if (seq_len < 0) {
             DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
             if (path_max_len < 0)
             return std::make_pair(-1, -1);
         }
-        path_min_len = max(path_min_len - int(s_add_len + e_add_len), 0);
-        path_max_len = max(path_max_len - int(s_add_len + e_add_len), 0);
+        path_min_len = std::max(path_min_len - int(s_add_len + e_add_len), 0);
+        path_max_len = std::max(path_max_len - int(s_add_len + e_add_len), 0);
         return std::make_pair(path_min_len, path_max_len);
     }
 
     size_t GetDistance(VertexId start_v, VertexId end_v,
                        bool update_cache = true) const {
         size_t result = size_t(-1);
-        pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
+        auto vertex_pair = std::make_pair(start_v, end_v);
         bool not_found;
         auto distance_it = distance_cashed_.begin();
         //FIXME should permit multiple readers
@@ -529,7 +528,7 @@ public:
         return true;
     }
 
-    std::string PathToString(const vector<EdgeId>& path) const {
+    std::string PathToString(const std::vector<EdgeId> &path) const {
         std::string res = "";
         for (auto iter = path.begin(); iter != path.end(); iter++) {
             size_t len = g_.length(*iter);
@@ -557,18 +556,18 @@ public:
             DEBUG ("modifying limits because of some bullshit magic, seq length 0")
             end_pos = start_pos;
         }
-        std::string seq_string = s.Subseq(start_pos, min(end_pos + 1, s_len)).str();
+        std::string seq_string = s.Subseq(start_pos, std::min(end_pos + 1, s_len)).str();
         size_t best_path_ind = paths.size();
         int best_score = std::numeric_limits<int>::max();
         if (paths.size() == 0) {
             DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
             DEBUG ("no paths");
-            return vector<EdgeId>(0);
+            return {};
         }
         if (seq_string.length() > pb_config_.max_contigs_gap_length) {
             DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
             DEBUG("Gap is too large");
-            return vector<EdgeId>(0);
+            return {};
         }
         bool additional_debug = (paths.size() > 1 && paths.size() < 10);
         for (size_t i = 0; i < paths.size(); i++) {

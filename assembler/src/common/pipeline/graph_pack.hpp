@@ -52,7 +52,7 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
     PairedInfoIndicesT &clustered_indices;
     PairedInfoIndicesT &scaffolding_indices;
     LongReadContainerT &single_long_reads;
-    vector<SSCoverageStorage> &ss_coverage;
+    std::vector<SSCoverageStorage> &ss_coverage;
     GenomicInfo &ginfo;
 
     GenomeStorage &genome;

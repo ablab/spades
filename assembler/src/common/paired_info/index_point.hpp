@@ -7,8 +7,8 @@
 
 #pragma once
 
+#include "common/math/xmath.h"
 #include <algorithm>
-#include <cstdint>
 #include <limits>
 
 namespace omnigraph {
@@ -260,7 +260,7 @@ struct PointT : public RawPointT<D, W> {
 typedef PointT<DEDistance, DEWeight> Point;
 typedef PointT<DEGap, DECropWeight> GapPoint;
 
-inline std::ostream& operator<<(std::ostream& os, const Point &point) {
+inline std::ostream &operator<<(std::ostream& os, const Point &point) {
     return os << point.str();
 }
 
@@ -347,7 +347,7 @@ struct PairInfo {
 };
 
 template<typename EdgeId>
-ostream& operator<<(ostream& os, const PairInfo<EdgeId>& info) {
+std::ostream &operator<<(std::ostream &os, const PairInfo<EdgeId> &info) {
     return os << "PairInfo: first = " << info.first << ", second = " << info.second
            << "Point : " << info.point;
 }

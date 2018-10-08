@@ -6,13 +6,13 @@
 
 #pragma once
 
-#include <vector>
-#include <set>
-#include <cstring>
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "utils/standard_base.hpp"
+
+#include <vector>
+#include <set>
+#include <cstring>
 
 namespace debruijn_graph {
 class DeBruijnMaster;

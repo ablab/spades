@@ -35,8 +35,8 @@ public:
             if (profile) {
                 DEBUG("Successfully estimated abundance of " << id);
                 out << id << "\t";
-                copy(profile->begin(), profile->end(),
-                     ostream_iterator<T>(out, "\t"));
+                std::copy(profile->begin(), profile->end(),
+                          std::ostream_iterator<T>(out, "\t"));
                 out << std::endl;
             } else {
                 DEBUG("Failed to estimate abundance of " << id);

@@ -5,7 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/standard_base.hpp"
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
 
@@ -13,6 +12,8 @@
 #include "pipeline/graph_pack.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "assembly_graph/components/splitters.hpp"
+
+using namespace std;
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);

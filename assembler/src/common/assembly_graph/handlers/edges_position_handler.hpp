@@ -15,10 +15,10 @@
 #ifndef EDGES_POSITION_HANDLER_HPP_
 #define EDGES_POSITION_HANDLER_HPP_
 
-//#include "utils.hpp"
 #include "utils/stl_utils.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
+#include <map>
 
 namespace omnigraph {
 
@@ -126,7 +126,7 @@ public:
         new_set.insert(new_pos);
     }
 
-    void AddAndShiftEdgePositions(EdgeId edge, const std::map<string, RangeSet> &contig_map, int shift = 0) {
+    void AddAndShiftEdgePositions(EdgeId edge, const std::map<std::string, RangeSet> &contig_map, int shift = 0) {
         VERIFY(this->IsAttached());
         for (const auto &contig : contig_map) {
             for (const auto &e : contig.second) {

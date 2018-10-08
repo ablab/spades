@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "utils/standard_base.hpp"
 #include "utils/cpp_utils.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 //#include "sequence_mapper.hpp"

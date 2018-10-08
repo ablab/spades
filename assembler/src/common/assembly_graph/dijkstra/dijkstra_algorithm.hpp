@@ -8,6 +8,7 @@
 
 #include "utils/stl_utils.hpp"
 #include "dijkstra_settings.hpp"
+#include "utils/logger/logger.hpp"
 
 #include <queue>
 #include <vector>
@@ -72,7 +73,7 @@ class Dijkstra {
     // accumulative structures
     distances_map distances_;
     std::set<VertexId> processed_vertices_;
-    std::map<VertexId, pair<VertexId, EdgeId>> prev_vert_map_;
+    std::map<VertexId, std::pair<VertexId, EdgeId>> prev_vert_map_;
 
     void Init(VertexId start, queue_t &queue) {
         vertex_number_ = 0;
@@ -182,7 +183,7 @@ public:
                 TRACE("Distance to vertex " << graph_.str(vertex) << " already counted. Proceeding to next queue entry.");
                 continue;
             }
-            distances_.insert(make_pair(vertex, distance));
+            distances_.emplace(vertex, distance);
 
             TRACE("Vertex " << graph_.str(vertex) << " is found to be at distance "
                     << distance << " from vertex " << graph_.str(start));
@@ -219,15 +220,15 @@ public:
         return path;
     }
 
-    vector<VertexId> ReachedVertices() const {
-        vector<VertexId> result;
+    std::vector<VertexId> ReachedVertices() const {
+        std::vector<VertexId> result;
         for (auto it = distances_.begin(); it != distances_.end(); ++it) {
             result.push_back(it->first);
         }
         return result;
     }
 
-    const set<VertexId>& ProcessedVertices() const {
+    const std::set<VertexId>& ProcessedVertices() const {
         return processed_vertices_;
     }
 

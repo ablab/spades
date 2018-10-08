@@ -13,7 +13,7 @@ namespace path_extend {
 
 class ExtensionChooser2015: public ScaffoldingExtensionChooser {
     static const int MIN_N_QUANTITY = 10;
-    shared_ptr<ConnectionCondition> lib_connection_condition_;
+    std::shared_ptr<ConnectionCondition> lib_connection_condition_;
     const ScaffoldingUniqueEdgeStorage& unique_edges_;
 
     // for possible connections e1 and e2 if weight(e1) > relative_weight_threshold_ * weight(e2) then e2 will be ignored
@@ -26,13 +26,13 @@ class ExtensionChooser2015: public ScaffoldingExtensionChooser {
     bool use_graph_connectivity_;
 
     //If path contains no unique edges return -1
-    pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path) const;
+    std::pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path) const;
     //Find all possible next unique edges confirmed with mate-pair information. (absolute/relative)_weight_threshold_ used for filtering
     EdgeContainer FindNextUniqueEdge(const EdgeId from) const;
 public:
     ExtensionChooser2015(const Graph& g,
-                         shared_ptr<WeightCounter> wc,
-                         shared_ptr<ConnectionCondition> condition,
+                         std::shared_ptr<WeightCounter> wc,
+                         std::shared_ptr<ConnectionCondition> condition,
                          const ScaffoldingUniqueEdgeStorage& unique_edges,
                          double cl_weight_threshold,
                          double is_scatter_coeff,

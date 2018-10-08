@@ -61,7 +61,7 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
         auto it = prev_it;
         ++it;
         for (auto end_it = infos.end(); it != end_it; ++it) {
-            if (math::le(abs(it->d - prev_it->d), it->var + prev_it->var)) {
+            if (math::le(std::abs(it->d - prev_it->d), it->var + prev_it->var)) {
                 WARN("Clusters intersect, edges -- " << graph.int_id(first_edge)
                      << " " << graph.int_id(second_edge));
                 INFO("Trying to handle this case");

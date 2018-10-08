@@ -16,7 +16,7 @@ typedef debruijn_graph::EdgeId EdgeId;
  */
 class ScaffoldingUniqueEdgeStorage {
     friend class ScaffoldingUniqueEdgeAnalyzer;
-    set<EdgeId> unique_edges_;
+    std::set<EdgeId> unique_edges_;
     size_t min_unique_length_;
 
 public:
@@ -56,7 +56,7 @@ public:
         min_unique_length_ = min_length;
     }
 
-    const set<EdgeId>& unique_edges() const {
+    const std::set<EdgeId> &unique_edges() const {
         return unique_edges_;
     }
 
@@ -77,11 +77,11 @@ class ScaffoldingUniqueEdgeAnalyzer {
     static const size_t max_dijkstra_depth_ = 1000;
     static const size_t max_dijkstra_vertices_ = 1000;
     static const size_t overwhelming_majority_ = 10;
-    set<VertexId> GetChildren(VertexId v, map<VertexId, set<VertexId>> &dijkstra_cash) const;
-    bool FindCommonChildren(EdgeId e1, EdgeId e2, map<VertexId, set<VertexId>> &dijkstra_cash) const;
-    bool FindCommonChildren(const vector<pair<EdgeId, double>> &next_weights) const;
+    std::set<VertexId> GetChildren(VertexId v, std::map<VertexId, std::set<VertexId>> &dijkstra_cash) const;
+    bool FindCommonChildren(EdgeId e1, EdgeId e2, std::map<VertexId, std::set<VertexId>> &dijkstra_cash) const;
+    bool FindCommonChildren(const std::vector<std::pair<EdgeId, double>> &next_weights) const;
     bool FindCommonChildren(EdgeId from, size_t lib_index) const;
-    map<EdgeId, size_t> FillNextEdgeVoting(BidirectionalPathMap<size_t>& active_paths, int direction) const;
+    std::map<EdgeId, size_t> FillNextEdgeVoting(BidirectionalPathMap<size_t>& active_paths, int direction) const;
     bool ConservativeByPaths(EdgeId e, const GraphCoverageMap &long_reads_cov_map,
                              const pe_config::LongReads &lr_config) const;
     bool ConservativeByPaths(EdgeId e, const GraphCoverageMap &long_reads_cov_map,
@@ -109,7 +109,7 @@ public:
 };
 
 class UsedUniqueStorage {
-    set<EdgeId> used_;
+    std::set<EdgeId> used_;
     const ScaffoldingUniqueEdgeStorage& unique_;
 
 public:
@@ -161,12 +161,11 @@ struct UniqueData {
     double unique_variation_;
 
     ScaffoldingUniqueEdgeStorage main_unique_storage_;
-    vector<ScaffoldingUniqueEdgeStorage> unique_storages_;
+    std::vector<ScaffoldingUniqueEdgeStorage> unique_storages_;
 
     ScaffoldingUniqueEdgeStorage unique_pb_storage_;
-    vector<PathContainer> long_reads_paths_;
-    vector<GraphCoverageMap> long_reads_cov_map_;
+    std::vector<PathContainer> long_reads_paths_;
+    std::vector<GraphCoverageMap> long_reads_cov_map_;
 };
-}
 
-
+} // namespace path_extend

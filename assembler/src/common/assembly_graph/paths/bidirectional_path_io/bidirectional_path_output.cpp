@@ -6,7 +6,7 @@
 
 namespace path_extend {
 
-void path_extend::ContigWriter::OutputPaths(const PathContainer &paths, const vector<PathsWriterT>& writers) const {
+void path_extend::ContigWriter::OutputPaths(const PathContainer &paths, const std::vector<PathsWriterT> &writers) const {
     ScaffoldStorage storage;
 
     ScaffoldSequenceMaker scaffold_maker(g_);
@@ -14,7 +14,7 @@ void path_extend::ContigWriter::OutputPaths(const PathContainer &paths, const ve
         BidirectionalPath* path = iter.get();
         if (path->Length() <= 0)
             continue;
-        string path_string = scaffold_maker.MakeSequence(*path);
+        auto path_string = scaffold_maker.MakeSequence(*path);
         if (path_string.length() >= g_.k()) {
             storage.emplace_back(path_string, path);
         }

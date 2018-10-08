@@ -44,20 +44,22 @@ public:
     }
 
     double IdealPairedInfo(EdgeId e1, EdgeId e2, int dist, bool additive = false) const {
-        std::pair<size_t, size_t> lengths = make_pair(g_.length(e1), g_.length(e2));
+        std::pair<size_t, size_t> lengths{g_.length(e1), g_.length(e2)};
         if (pi_.find(lengths) == pi_.end()) {
-            pi_.insert(make_pair(lengths, std::map<int, double>()));
+            pi_.insert({lengths, {}});
         }
-        std::map<int, double>& weights = pi_[lengths];
+        std::map<int, double> &weights = pi_[lengths];
         if (weights.find(dist) == weights.end()) {
-            weights.insert(make_pair(dist, IdealPairedInfo(g_.length(e1), g_.length(e2), dist, additive)));
+            weights.emplace(dist, IdealPairedInfo(g_.length(e1), g_.length(e2), dist, additive));
         }
         return weights[dist];
     }
 
     double IdealPairedInfo(size_t len1, size_t len2, int dist, bool additive = false) const {
         double result = 0.0;
-        for (auto it = insert_size_distrib_.lower_bound(max(d_min_, 0)); it != insert_size_distrib_.upper_bound(d_max_); ++it) {
+        for (auto it = insert_size_distrib_.lower_bound(std::max(d_min_, 0));
+                it != insert_size_distrib_.upper_bound(d_max_);
+                ++it) {
             result += it->second * (double) IdealReads(len1, len2, dist, it->first, additive);
         }
         return result;

@@ -22,7 +22,7 @@ inline contig_id GetId(const io::SingleRead& contig) {
 
 inline contig_id GetBaseId(const contig_id& id) {
     size_t pos = id.find('_');
-    VERIFY(pos != string::npos && id.substr(0, pos) == "NODE");
+    VERIFY(pos != std::string::npos && id.substr(0, pos) == "NODE");
     size_t pos2 = id.find('_', pos + 1);
     return id.substr(pos + 1, pos2 - pos - 1);
 }

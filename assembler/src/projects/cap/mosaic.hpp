@@ -5,7 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/standard_base.hpp"
 #include "io/reads/rc_reader_wrapper.hpp"
 #include "io/reads/sequence_reader.hpp"
 #include "diff_masking.hpp"

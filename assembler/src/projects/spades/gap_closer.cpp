@@ -17,6 +17,7 @@ class GapCloserPairedIndexFiller {
 private:
     const Graph &graph_;
     const SequenceMapper<Graph> &mapper_;
+    typedef std::unordered_map<EdgeId, std::pair<EdgeId, int>> TipMap;
 
     size_t CorrectLength(Path<EdgeId> path, size_t idx) const {
         size_t answer = graph_.length(path[idx]);
@@ -28,10 +29,8 @@ private:
     }
 
     template<typename PairedRead>
-    void ProcessPairedRead(omnigraph::de::PairedInfoBuffer<Graph> &paired_index,
-                           const PairedRead &p_r,
-                           const std::unordered_map<EdgeId, pair<EdgeId, int> > &OutTipMap,
-                           const std::unordered_map<EdgeId, pair<EdgeId, int> > &InTipMap) const {
+    void ProcessPairedRead(omnigraph::de::PairedInfoBuffer<Graph> &paired_index, const PairedRead &p_r,
+                           const TipMap &OutTipMap, const TipMap &InTipMap) const {
         Sequence read1 = p_r.first().sequence();
         Sequence read2 = p_r.second().sequence();
 
@@ -56,30 +55,24 @@ private:
         }
     }
 
-    void PrepareShiftMaps(std::unordered_map<EdgeId, pair<EdgeId, int> > &OutTipMap,
-                          std::unordered_map<EdgeId, pair<EdgeId, int> > &InTipMap) {
-        std::stack<pair<EdgeId, int>> edge_stack;
+    void PrepareShiftMaps(TipMap &OutTipMap, TipMap &InTipMap) {
+        std::stack<std::pair<EdgeId, int>> edge_stack;
         for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();) {
             EdgeId edge = *iterator;
             if (graph_.IncomingEdgeCount(graph_.EdgeStart(edge)) == 0) {
-                InTipMap.insert(std::make_pair(edge, std::make_pair(edge, 0)));
-                edge_stack.push(std::make_pair(edge, 0));
+                InTipMap.insert({edge, {edge, 0}});
+                edge_stack.push({edge, 0});
                 while (edge_stack.size() > 0) {
-                    pair<EdgeId, int> checking_pair = edge_stack.top();
+                    auto checking_pair = edge_stack.top();
                     edge_stack.pop();
                     if (graph_.IncomingEdgeCount(graph_.EdgeEnd(checking_pair.first)) == 1) {
                         VertexId v = graph_.EdgeEnd(checking_pair.first);
                         if (graph_.OutgoingEdgeCount(v)) {
                             for (auto I = graph_.out_begin(v), E = graph_.out_end(v); I != E; ++I) {
                                 EdgeId Cur_edge = *I;
-                                InTipMap.insert(
-                                        std::make_pair(Cur_edge,
-                                                       std::make_pair(edge,
-                                                                      graph_.length(checking_pair.first) +
-                                                                      checking_pair.second)));
-                                edge_stack.push(
-                                        std::make_pair(Cur_edge,
-                                                       graph_.length(checking_pair.first) + checking_pair.second));
+                                InTipMap.insert({Cur_edge, {edge, graph_.length(checking_pair.first) +
+                                                                  checking_pair.second}});
+                                edge_stack.push({Cur_edge, graph_.length(checking_pair.first) + checking_pair.second});
 
                             }
                         }
@@ -88,20 +81,16 @@ private:
             }
 
             if (graph_.OutgoingEdgeCount(graph_.EdgeEnd(edge)) == 0) {
-                OutTipMap.insert(std::make_pair(edge, std::make_pair(edge, 0)));
-                edge_stack.push(std::make_pair(edge, 0));
+                OutTipMap.insert({edge, {edge, 0}});
+                edge_stack.push({edge, 0});
                 while (edge_stack.size() > 0) {
-                    std::pair<EdgeId, int> checking_pair = edge_stack.top();
+                    auto checking_pair = edge_stack.top();
                     edge_stack.pop();
                     if (graph_.OutgoingEdgeCount(graph_.EdgeStart(checking_pair.first)) == 1) {
                         if (graph_.IncomingEdgeCount(graph_.EdgeStart(checking_pair.first))) {
                             for (EdgeId e : graph_.IncomingEdges(graph_.EdgeStart(checking_pair.first))) {
-                                OutTipMap.insert(std::make_pair(e,
-                                                                std::make_pair(edge,
-                                                                               graph_.length(e) +
-                                                                               checking_pair.second)));
-                                edge_stack.push(std::make_pair(e,
-                                                               graph_.length(e) + checking_pair.second));
+                                OutTipMap.insert({e, {edge, graph_.length(e) + checking_pair.second}});
+                                edge_stack.push({e, graph_.length(e) + checking_pair.second});
                             }
                         }
                     }
@@ -114,8 +103,7 @@ private:
 
     template<class Streams>
     void MapReads(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams &streams,
-                  const std::unordered_map<EdgeId, pair<EdgeId, int> > &OutTipMap,
-                  const std::unordered_map<EdgeId, pair<EdgeId, int> > &InTipMap) const {
+                  const TipMap &OutTipMap, const TipMap &InTipMap) const {
         INFO("Processing paired reads (takes a while)");
 
         size_t nthreads = streams.size();
@@ -154,7 +142,7 @@ public:
      */
     template<class Streams>
     void FillIndex(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams &streams) {
-        std::unordered_map<EdgeId, pair<EdgeId, int> > OutTipMap, InTipMap;
+        TipMap OutTipMap, InTipMap;
 
         INFO("Preparing shift maps");
         PrepareShiftMaps(OutTipMap, InTipMap);
@@ -167,6 +155,7 @@ public:
 class GapCloser {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
+    typedef std::vector<size_t> MismatchPos;
 
     Graph &g_;
     int k_;
@@ -197,15 +186,14 @@ class GapCloser {
     //    return DiffPos(s1, s2).size();
     //  }
 
-    vector<size_t> PosThatCanCorrect(size_t overlap_length/*in nucls*/,
-                                     const vector<size_t> &mismatch_pos, size_t edge_length/*in nucls*/,
-                                     bool left_edge) const {
+    std::vector<size_t> PosThatCanCorrect(size_t overlap_length/*in nucls*/, const MismatchPos &mismatch_pos,
+                                          size_t edge_length/*in nucls*/, bool left_edge) const {
         TRACE("Try correct left edge " << left_edge);
         TRACE("Overlap length " << overlap_length);
         TRACE("Edge length " << edge_length);
         TRACE("Mismatches " << mismatch_pos);
 
-        vector<size_t> answer;
+        std::vector<size_t> answer;
         for (size_t i = 0; i < mismatch_pos.size(); ++i) {
             size_t relative_mm_pos =
                     left_edge ?
@@ -220,13 +208,12 @@ class GapCloser {
     }
 
     //todo write easier
-    bool CanCorrectLeft(EdgeId e, int overlap, const vector<size_t> &mismatch_pos) const {
+    bool CanCorrectLeft(EdgeId e, int overlap, const MismatchPos &mismatch_pos) const {
         return PosThatCanCorrect(overlap, mismatch_pos, g_.length(e) + g_.k(), true).size() == mismatch_pos.size();
     }
 
     //todo write easier
-    bool CanCorrectRight(EdgeId e, int overlap,
-                         const vector<size_t> &mismatch_pos) const {
+    bool CanCorrectRight(EdgeId e, int overlap, const MismatchPos &mismatch_pos) const {
         return PosThatCanCorrect(overlap, mismatch_pos, g_.length(e) + g_.k(), false).size() == mismatch_pos.size();
     }
 
@@ -235,7 +222,7 @@ class GapCloser {
                           : long_seq.Last(short_seq.size()) == short_seq;
     }
 
-    void CorrectLeft(EdgeId first, EdgeId second, int overlap, const vector<size_t> &diff_pos) {
+    void CorrectLeft(EdgeId first, EdgeId second, int overlap, const MismatchPos &diff_pos) {
         DEBUG("Can correct first with sequence from second.");
         Sequence new_sequence = g_.EdgeNucls(first).Subseq(g_.length(first) - overlap + diff_pos.front(),
                                                            g_.length(first) + k_ - overlap)
@@ -243,7 +230,7 @@ class GapCloser {
         DEBUG("Checking new k+1-mers.");
         DEBUG("Check ok.");
         DEBUG("Splitting first edge.");
-        pair<EdgeId, EdgeId> split_res = g_.SplitEdge(first, g_.length(first) - overlap + diff_pos.front());
+        auto split_res = g_.SplitEdge(first, g_.length(first) - overlap + diff_pos.front());
         first = split_res.first;
         tips_paired_idx_.Remove(split_res.second);
         DEBUG("Adding new edge.");
@@ -253,14 +240,14 @@ class GapCloser {
                 new_sequence);
     }
 
-    void CorrectRight(EdgeId first, EdgeId second, int overlap, const vector<size_t> &diff_pos) {
+    void CorrectRight(EdgeId first, EdgeId second, int overlap, const MismatchPos &diff_pos) {
         DEBUG("Can correct second with sequence from first.");
         Sequence new_sequence =
                 g_.EdgeNucls(first).Last(k_) + g_.EdgeNucls(second).Subseq(overlap, diff_pos.back() + 1 + k_);
         DEBUG("Checking new k+1-mers.");
         DEBUG("Check ok.");
         DEBUG("Splitting second edge.");
-        pair<EdgeId, EdgeId> split_res = g_.SplitEdge(second, diff_pos.back() + 1);
+        auto split_res = g_.SplitEdge(second, diff_pos.back() + 1);
         second = split_res.second;
         tips_paired_idx_.Remove(split_res.first);
         DEBUG("Adding new edge.");
@@ -273,8 +260,7 @@ class GapCloser {
 
     bool HandlePositiveHammingDistanceCase(EdgeId first, EdgeId second, int overlap) {
         DEBUG("Match was imperfect. Trying to correct one of the tips");
-        vector<size_t> diff_pos = DiffPos(g_.EdgeNucls(first).Last(overlap),
-                                          g_.EdgeNucls(second).First(overlap));
+        auto diff_pos = DiffPos(g_.EdgeNucls(first).Last(overlap), g_.EdgeNucls(second).First(overlap));
         if (CanCorrectLeft(first, overlap, diff_pos)) {
             CorrectLeft(first, second, overlap, diff_pos);
             return true;

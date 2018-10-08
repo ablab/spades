@@ -20,8 +20,8 @@ class GraphElementFinder : public GraphActionHandler<Graph> {
 private:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    unordered_map<size_t, VertexId> id2vertex_;
-    unordered_map<size_t, EdgeId> id2edge_;
+    std::unordered_map<size_t, VertexId> id2vertex_;
+    std::unordered_map<size_t, EdgeId> id2edge_;
 
 public:
     GraphElementFinder(const Graph &graph) : GraphActionHandler<Graph>(graph, "Graph element finder") {

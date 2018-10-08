@@ -29,7 +29,7 @@ public:
     typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
 
     EdgeId base_edge;
-    vector<PairInfo> path;
+    std::vector<PairInfo> path;
 
     PathInfoClass() : base_edge(NULL) { };
 
@@ -40,7 +40,7 @@ public:
             return std::make_pair(base_edge, 0.0);
 
         VERIFY(i < path.size() + 1);
-        return std::make_pair(path[i - 1].second, path[i - 1].d());
+        return {path[i - 1].second, path[i - 1].d()};
     }
 
     size_t size() const { return path.size() + 1; }
@@ -70,20 +70,20 @@ class SplitPathConstructor {
 public:
     SplitPathConstructor(const Graph &graph) : graph_(graph) { }
 
-    vector<PathInfo> ConvertPIToSplitPaths(EdgeId cur_edge, const omnigraph::de::PairedInfoIndexT<Graph> &pi,
-                                           double is, double is_var) const {
-        vector<PairInfo> pair_infos; //TODO: this is an adaptor for the old implementation
+    std::vector<PathInfo> ConvertPIToSplitPaths(EdgeId cur_edge, const omnigraph::de::PairedInfoIndexT<Graph> &pi,
+                                                double is, double is_var) const {
+        std::vector<PairInfo> pair_infos; //TODO: this is an adaptor for the old implementation
         for (auto i : pi.Get(cur_edge))
             for (auto j : i.second)
                 pair_infos.emplace_back(cur_edge, i.first, j);
         std::sort(pair_infos.begin(), pair_infos.end(),[&](const PairInfo p1, const PairInfo p2){
             return (p1.point.d > p2.point.d || ((p1.point.d == p2.point.d) && (p1.second < p2.second )));
         });
-        vector<PathInfo> result;
+        std::vector<PathInfo> result;
         if (pair_infos.empty())
             return result;
 
-        vector<bool> pair_info_used(pair_infos.size());
+        std::vector<bool> pair_info_used(pair_infos.size());
         TRACE("Preparing path_processor for this base edge");
         size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);
 
@@ -100,7 +100,7 @@ public:
                 continue;
             DEBUG("SPC: pi " << cur_info);
 
-            vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
+            std::vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
                                                            (size_t) (cur_info.d() - cur_info.var()),
                                                            (size_t) (cur_info.d() + cur_info.var()),
                                                            dijkstra);

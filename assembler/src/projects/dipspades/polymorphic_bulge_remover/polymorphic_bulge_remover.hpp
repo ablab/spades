@@ -52,7 +52,7 @@ class PolymorphicBulgeRemover {
     }
 
     template<class BulgeRemover>
-    void BulgeRemoverCycle(string bulge_remover_name, size_t num_iters){
+    void BulgeRemoverCycle(const std::string &bulge_remover_name, size_t num_iters){
         INFO(bulge_remover_name + " starts");
         INFO("Maximal number of iterations: " << num_iters);
         BulgeRemover br(graph_pack_.g,
@@ -69,14 +69,15 @@ class PolymorphicBulgeRemover {
         INFO(bulge_remover_name + " ends");
     }
 
-    void WriteComponents(string component_dir) {
+    void WriteComponents(const std::string &component_dir) {
+        using omnigraph::Path;
         if(!dsp_cfg::get().rp.developer_mode)
             return;
 
         graph_pack_.EnsureDebugInfo();
-        make_dir(dsp_cfg::get().io.output_dir + "components/");
+        fs::make_dir(dsp_cfg::get().io.output_dir + "components/");
         visualization::graph_labeler::DefaultLabeler<Graph> labeler(graph_pack_.g, graph_pack_.edge_pos);
-        make_dir(dsp_cfg::get().io.output_dir + "components/" + component_dir + "/");
+        fs::make_dir(dsp_cfg::get().io.output_dir + "components/" + component_dir + "/");
         visualization::visualization_utils::WriteComponents(graph_pack_.g,
                 dsp_cfg::get().io.output_dir + "components/" + component_dir + "/",
                 omnigraph::ReliableSplitter<Graph>(graph_pack_.g),

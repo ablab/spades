@@ -11,10 +11,10 @@
 
 namespace debruijn_graph {
 
-vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
-                                                     path_extend::FastgPathWriter &fastg_writer) {
+std::vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
+                                                          path_extend::FastgPathWriter &fastg_writer) {
     using namespace path_extend;
-    vector<PathsWriterT> writers;
+    std::vector<PathsWriterT> writers;
 
     writers.push_back(ContigWriter::BasicFastaWriter(fn_base + ".fasta"));
     INFO("Outputting FastG paths to " << fn_base << ".paths");

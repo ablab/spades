@@ -15,6 +15,9 @@
 #include "pipeline/config_struct.hpp"
 #include "analysis_pipeline.hpp"
 
+using namespace std;
+using namespace fs;
+
 void load_config(string cfg_filename) {
     fs::CheckFileExistenceFATAL(cfg_filename);
 

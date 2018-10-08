@@ -8,7 +8,6 @@
 #pragma once
 
 #include "utils/stl_utils.hpp"
-#include "utils/standard_base.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 
 namespace visualization {
@@ -29,9 +28,9 @@ public:
     virtual ~GraphLabeler() {
     }
 
-    virtual string label(VertexId v) const = 0;
+    virtual std::string label(VertexId v) const = 0;
 
-    virtual string label(EdgeId e) const = 0;
+    virtual std::string label(EdgeId e) const = 0;
 
 };
 
@@ -134,8 +133,8 @@ public:
 };
 
 template<class Graph>
-shared_ptr<GraphLabeler<Graph>> StrGraphLabelerInstance(const Graph &g) {
-    return make_shared<StrGraphLabeler<Graph>>(g);
+std::shared_ptr<GraphLabeler<Graph>> StrGraphLabelerInstance(const Graph &g) {
+    return std::make_shared<StrGraphLabeler<Graph>>(g);
 }
 
 template<class Graph>
@@ -187,18 +186,18 @@ class CompositeLabeler : public GraphLabeler<Graph> {
 private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    vector<GraphLabeler<Graph> *> list_;
+    std::vector<GraphLabeler<Graph> *> list_;
 
     template<typename ElementId>
-    string ConstructLabel(ElementId id) const {
-        vector<string> to_print;
+    std::string ConstructLabel(ElementId id) const {
+        std::vector<std::string> to_print;
         for (size_t i = 0; i < list_.size(); i++) {
-            string next = list_[i]->label(id);
+            std::string next = list_[i]->label(id);
             if (next.size() != 0) {
                 to_print.push_back(next);
             }
         }
-        string result = "";
+        std::string result = "";
         for (size_t i = 0; i < to_print.size(); i++) {
             result += to_print[i];
             if (i + 1 < to_print.size())
@@ -239,11 +238,11 @@ public:
         list_.push_back(&labeler);
     }
 
-    virtual string label(VertexId vertexId) const {
+    virtual std::string label(VertexId vertexId) const {
         return ConstructLabel<VertexId>(vertexId);
     }
 
-    virtual string label(EdgeId edgeId) const {
+    virtual std::string label(EdgeId edgeId) const {
         return ConstructLabel<EdgeId>(edgeId);
     }
 };

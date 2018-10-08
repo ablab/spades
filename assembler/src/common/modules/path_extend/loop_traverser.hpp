@@ -37,7 +37,7 @@ class LoopTraverser {
         return false;
     }
 
-    EdgeId FindStart(const set<VertexId>& component_set) const {
+    EdgeId FindStart(const std::set<VertexId> &component_set) const {
         EdgeId result;
         for (auto it = component_set.begin(); it != component_set.end(); ++it) {
             for (auto eit = g_.in_begin(*it); eit != g_.in_end(*it); ++eit) {
@@ -52,7 +52,7 @@ class LoopTraverser {
         return result;
     }
 
-    EdgeId FindFinish(const set<VertexId>& component_set) {
+    EdgeId FindFinish(const std::set<VertexId> &component_set) {
         EdgeId result;
         for (auto it = component_set.begin(); it != component_set.end(); ++it) {
             for (auto I = g_.out_begin(*it), E = g_.out_end(*it);
@@ -69,8 +69,7 @@ class LoopTraverser {
     }
 
 
-    bool IsEndInsideComponent(const BidirectionalPath &path,
-                              const set <VertexId> &component_set) {
+    bool IsEndInsideComponent(const BidirectionalPath &path, const std::set<VertexId> &component_set) {
         if (component_set.count(g_.EdgeStart(path.Front())) == 0)
             return false;
 
@@ -83,8 +82,7 @@ class LoopTraverser {
 
 
     bool IsEndInsideComponent(const BidirectionalPath &path, EdgeId component_entrance,
-                              const set<VertexId> &component_set,
-                              bool conjugate = false) {
+                              const std::set<VertexId> &component_set, bool conjugate = false) {
         int i = path.FindLast(component_entrance);
         VERIFY_MSG(i != -1, "Component edge is not found in the path")
 
@@ -99,7 +97,7 @@ class LoopTraverser {
         return IsEndInsideComponent(path.SubPath((size_t) i + 1), component_set);
     }
 
-    bool TraverseLoop(EdgeId start, EdgeId end, const set<VertexId>& component_set) {
+    bool TraverseLoop(EdgeId start, EdgeId end, const std::set<VertexId> &component_set) {
         DEBUG("start " << g_.int_id(start) << " end " << g_.int_id(end));
         BidirectionalPathSet start_cover_paths = cov_map_.GetCoveringPaths(start);
         BidirectionalPathSet end_cover_paths = cov_map_.GetCoveringPaths(end);
@@ -143,7 +141,7 @@ class LoopTraverser {
             if (first_vertex != last_vertex) {
                 auto dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, shortest_path_limit_, DIJKSTRA_LIMIT);
                 dijkstra.Run(last_vertex);
-                vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(first_vertex);
+                auto shortest_path = dijkstra.GetShortestPathTo(first_vertex);
 
                 if (shortest_path.empty()) {
                     DEBUG("Failed to find closing path");
@@ -186,7 +184,7 @@ public:
     size_t TraverseAllLoops() {
         DEBUG("TraverseAllLoops");
         size_t traversed = 0;
-        shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, long_edge_limit_);
+        auto splitter = LongEdgesExclusiveSplitter<Graph>(g_, long_edge_limit_);
         while (splitter->HasNext()) {
             GraphComponent<Graph> component = splitter->Next();
             if (component.v_size() > component_size_limit_)
@@ -196,7 +194,7 @@ public:
             if (AnyTipsInComponent(component))
                 continue;
 
-            set<VertexId> component_set(component.v_begin(), component.v_end());
+            std::set<VertexId> component_set(component.v_begin(), component.v_end());
             EdgeId start = FindStart(component_set);
             EdgeId finish = FindFinish(component_set);
             if (start == EdgeId() || finish == EdgeId()) {

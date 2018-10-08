@@ -10,6 +10,7 @@
 #include "utils/stl_utils.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/verify.hpp"
+#include <cppformat/format.h>
 
 // todo: undo dirty fix
 

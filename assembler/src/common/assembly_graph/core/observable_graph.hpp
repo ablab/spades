@@ -7,17 +7,16 @@
 
 #pragma once
 
-#include <vector>
-#include <set>
-#include <cstring>
 #include "utils/logger/logger.hpp"
 #include "graph_core.hpp"
 #include "graph_iterators.hpp"
 
+#include <vector>
+#include <set>
+#include <cstring>
+
 namespace omnigraph {
 
-using std::vector;
-using std::set;
 template<class DataMaster>
 class ObservableGraph: public GraphCore<DataMaster> {
 public:
@@ -73,7 +72,7 @@ public:
 
     void FireDeleteEdge(EdgeId e) const;
 
-    void FireMerge(std::vector<EdgeId> old_edges, EdgeId new_edge) const;
+    void FireMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) const;
 
     void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) const;
 
@@ -160,7 +159,7 @@ public:
 
     std::vector<EdgeId> CorrectMergePath(const std::vector<EdgeId>& path) const;
 
-    EdgeId MergePath(const std::vector<EdgeId>& path, bool safe_merging = true);
+    EdgeId MergePath(const std::vector<EdgeId> &path, bool safe_merging = true);
 
     std::pair<EdgeId, EdgeId> SplitEdge(EdgeId edge, size_t position);
 
@@ -171,7 +170,8 @@ private:
 };
 
 template<class DataMaster>
-typename ObservableGraph<DataMaster>::VertexId ObservableGraph<DataMaster>::AddVertex(const VertexData& data, restricted::IdDistributor& id_distributor) {
+typename ObservableGraph<DataMaster>::VertexId
+        ObservableGraph<DataMaster>::AddVertex(const VertexData &data, restricted::IdDistributor &id_distributor) {
     VertexId v = base::HiddenAddVertex(data, id_distributor);
     FireAddVertex(v);
     return v;
@@ -193,14 +193,17 @@ void ObservableGraph<DataMaster>::ForceDeleteVertex(VertexId v) {
 }
 
 template<class DataMaster>
-typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::AddEdge(VertexId v1, VertexId v2, const EdgeData& data, restricted::IdDistributor& id_distributor) {
+typename ObservableGraph<DataMaster>::EdgeId
+        ObservableGraph<DataMaster>::AddEdge(VertexId v1, VertexId v2, const EdgeData &data,
+                                             restricted::IdDistributor &id_distributor) {
     EdgeId e = base::HiddenAddEdge(v1, v2, data, id_distributor);
     FireAddEdge(e);
     return e;
 }
 
 template<class DataMaster>
-typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::AddEdge(const EdgeData& data, restricted::IdDistributor& id_distributor) {
+typename ObservableGraph<DataMaster>::EdgeId
+        ObservableGraph<DataMaster>::AddEdge(const EdgeData& data, restricted::IdDistributor& id_distributor) {
     EdgeId e = base::HiddenAddEdge(data, id_distributor);
     FireAddEdge(e);
     return e;
@@ -248,7 +251,8 @@ typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::Unsafe
 }
 
 template<class DataMaster>
-std::vector<typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMaster>::EdgesToDelete(const std::vector<EdgeId>& path) const {
+std::vector<typename ObservableGraph<DataMaster>::EdgeId>
+        ObservableGraph<DataMaster>::EdgesToDelete(const std::vector<EdgeId> &path) const {
     std::set<EdgeId> edgesToDelete;
     edgesToDelete.insert(path[0]);
     for (size_t i = 0; i + 1 < path.size(); i++) {
@@ -260,7 +264,8 @@ std::vector<typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMa
 }
 
 template<class DataMaster>
-vector<typename ObservableGraph<DataMaster>::VertexId> ObservableGraph<DataMaster>::VerticesToDelete(const vector<EdgeId>& path) const {
+std::vector<typename ObservableGraph<DataMaster>::VertexId>
+        ObservableGraph<DataMaster>::VerticesToDelete(const std::vector<EdgeId> &path) const {
     std::set<VertexId> verticesToDelete;
     for (size_t i = 0; i + 1 < path.size(); i++) {
         EdgeId e = path[i + 1];
@@ -268,7 +273,7 @@ vector<typename ObservableGraph<DataMaster>::VertexId> ObservableGraph<DataMaste
         if (verticesToDelete.find(base::conjugate(v)) == verticesToDelete.end())
             verticesToDelete.insert(v);
     }
-    return vector<VertexId>(verticesToDelete.begin(), verticesToDelete.end());
+    return std::vector<VertexId>(verticesToDelete.begin(), verticesToDelete.end());
 }
 
 template<class DataMaster>
@@ -276,7 +281,7 @@ void ObservableGraph<DataMaster>::AddActionHandler(Handler* action_handler) cons
 #pragma omp critical(action_handler_list_modification)
     {
         TRACE("Action handler " << action_handler->name() << " added");
-        if (find(action_handler_list_.begin(), action_handler_list_.end(), action_handler) != action_handler_list_.end()) {
+        if (std::find(action_handler_list_.begin(), action_handler_list_.end(), action_handler) != action_handler_list_.end()) {
             VERIFY_MSG(false, "Action handler " << action_handler->name() << " has already been added");
         } else {
             action_handler_list_.push_back(action_handler);
@@ -357,7 +362,7 @@ void ObservableGraph<DataMaster>::FireDeleteEdge(EdgeId e) const {
 }
 
 template<class DataMaster>
-void ObservableGraph<DataMaster>::FireMerge(vector<EdgeId> old_edges, EdgeId new_edge) const {
+void ObservableGraph<DataMaster>::FireMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) const {
     for (Handler* handler_ptr : action_handler_list_) {
         if (handler_ptr->IsAttached()) {
             applier_->ApplyMerge(*handler_ptr, old_edges, new_edge);
@@ -394,7 +399,8 @@ bool ObservableGraph<DataMaster>::VerifyAllDetached() {
 }
 
 template<class DataMaster>
-void ObservableGraph<DataMaster>::FireDeletePath(const vector<EdgeId>& edgesToDelete, const vector<VertexId>& verticesToDelete) const {
+void ObservableGraph<DataMaster>::FireDeletePath(const std::vector<EdgeId> &edgesToDelete,
+                                                 const std::vector<VertexId> &verticesToDelete) const {
     for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
         FireDeleteEdge(*it);
     for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
@@ -414,10 +420,11 @@ ObservableGraph<DataMaster>::~ObservableGraph<DataMaster>() {
 }
 
 template<class DataMaster>
-vector<typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMaster>::CorrectMergePath(const vector<EdgeId>& path) const {
+std::vector<typename ObservableGraph<DataMaster>::EdgeId>
+        ObservableGraph<DataMaster>::CorrectMergePath(const std::vector<EdgeId>& path) const {
     for (size_t i = 0; i < path.size(); i++) {
         if (path[i] == base::conjugate(path[i])) {
-            vector<EdgeId> result;
+            std::vector<EdgeId> result;
             if (i < path.size() - 1 - i) {
                 for (size_t j = 0; j < path.size(); j++)
                     result.push_back(base::conjugate(path[path.size() - 1 - j]));
@@ -436,7 +443,8 @@ vector<typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMaster>
 }
 
 template<class DataMaster>
-typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::MergePath(const vector<EdgeId>& path, bool safe_merging) {
+typename ObservableGraph<DataMaster>::EdgeId
+        ObservableGraph<DataMaster>::MergePath(const std::vector<EdgeId>& path, bool safe_merging) {
     VERIFY(!path.empty());
     for (size_t i = 0; i < path.size(); i++)
         for (size_t j = i + 1; j < path.size(); j++) {
@@ -448,17 +456,17 @@ typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::MergeP
     };
     //      cerr << "Merging " << PrintDetailedPath(pObservableGraph<DataMaster><VertexIdT, EdgeIdT, VertexIt>ath) << endl;
     //      cerr << "Conjugate " << PrintConjugatePath(path) << endl;
-    vector<EdgeId> corrected_path = CorrectMergePath(path);
+    auto corrected_path = CorrectMergePath(path);
     VertexId v1 = base::EdgeStart(corrected_path[0]);
     VertexId v2 = base::EdgeEnd(corrected_path[corrected_path.size() - 1]);
-    vector<const EdgeData*> to_merge;
+    std::vector<const EdgeData *> to_merge;
     for (auto it = corrected_path.begin(); it != corrected_path.end(); ++it) {
         to_merge.push_back(&(base::data(*it)));
     }
     EdgeId new_edge = base::HiddenAddEdge(v1, v2, base::master().MergeData(to_merge, safe_merging));
     FireMerge(corrected_path, new_edge);
-    vector<EdgeId> edges_to_delete = EdgesToDelete(corrected_path);
-    vector<VertexId> vertices_to_delete = VerticesToDelete(corrected_path);
+    auto edges_to_delete = EdgesToDelete(corrected_path);
+    auto vertices_to_delete = VerticesToDelete(corrected_path);
     FireDeletePath(edges_to_delete, vertices_to_delete);
     FireAddEdge(new_edge);
     base::HiddenDeletePath(edges_to_delete, vertices_to_delete);
@@ -466,11 +474,12 @@ typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::MergeP
 }
 
 template<class DataMaster>
-std::pair<typename ObservableGraph<DataMaster>::EdgeId, typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMaster>::SplitEdge(EdgeId edge, size_t position) {
+std::pair<typename ObservableGraph<DataMaster>::EdgeId, typename ObservableGraph<DataMaster>::EdgeId>
+        ObservableGraph<DataMaster>::SplitEdge(EdgeId edge, size_t position) {
     bool sc_flag = (edge == conjugate(edge));
     VERIFY_MSG(position > 0 && position < (sc_flag ? base::length(edge) / 2 + 1 : base::length(edge)),
             "Edge length is " << base::length(edge) << " but split pos was " << position);
-    std::pair<VertexData, std::pair<EdgeData, EdgeData> > newData = base::master().SplitData(base::data(edge), position, sc_flag);
+    auto newData = base::master().SplitData(base::data(edge), position, sc_flag);
     VertexId splitVertex = base::HiddenAddVertex(newData.first);
     EdgeId new_edge1 = base::HiddenAddEdge(base::EdgeStart(edge), splitVertex, newData.second.first);
     EdgeId new_edge2 = base::HiddenAddEdge(splitVertex, sc_flag ? conjugate(splitVertex) : base::EdgeEnd(edge), newData.second.second);
@@ -481,7 +490,7 @@ std::pair<typename ObservableGraph<DataMaster>::EdgeId, typename ObservableGraph
     FireAddEdge(new_edge1);
     FireAddEdge(new_edge2);
     base::HiddenDeleteEdge(edge);
-    return std::make_pair(new_edge1, new_edge2);
+    return {new_edge1, new_edge2};
 }
 
 template<class DataMaster>
@@ -503,4 +512,5 @@ typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::GlueEd
     }
     return new_edge;
 }
-}
+
+} // namespace omnigraph

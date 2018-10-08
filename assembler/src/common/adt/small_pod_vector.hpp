@@ -5,6 +5,7 @@
 
 #include <llvm/PointerIntPair.h>
 
+#include <cstring>
 #include <vector>
 #include <type_traits>
 

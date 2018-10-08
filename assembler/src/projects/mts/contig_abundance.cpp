@@ -1,5 +1,6 @@
 #include "contig_abundance.hpp"
 #include "utils/kmer_mph/kmer_splitters.hpp"
+#include "common/math/xmath.h"
 
 namespace debruijn_graph {
 
@@ -168,8 +169,8 @@ ClusterAnalyzer::Result SingleClusterAnalyzer::operator()(const KmerProfiles& km
     return ClusterAnalyzer::Result(MeanVector(locality));
 }*/
 
-vector<std::string> SplitOnNs(const std::string& seq) {
-    vector<std::string> answer;
+std::vector<std::string> SplitOnNs(const std::string& seq) {
+    std::vector<std::string> answer;
     for (size_t i = 0; i < seq.size(); i++) {
         size_t j = i;
         while (j < seq.size() && is_nucl(seq[j])) {

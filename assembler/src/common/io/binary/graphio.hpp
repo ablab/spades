@@ -14,7 +14,7 @@ namespace debruijn_graph {
 namespace graphio {
 
 template<typename Graph>
-void PrintGraphPack(const string &basename, const graph_pack<Graph> &gp) {
+void PrintGraphPack(const std::string &basename, const graph_pack<Graph> &gp) {
     io::binary::GraphPackIO<Graph> io;
     io.Save(basename, gp);
 }
@@ -26,7 +26,7 @@ void PrintAll(const std::string &basename, const graph_pack<Graph> &gp) {
 }
 
 template<typename Graph>
-void ScanGraphPack(const string &basename, graph_pack<Graph> &gp) {
+void ScanGraphPack(const std::string &basename, graph_pack<Graph> &gp) {
     io::binary::GraphPackIO<Graph> io;
     io.Load(basename, gp);
 }

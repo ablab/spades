@@ -31,10 +31,9 @@ BOOST_AUTO_TEST_CASE( OneVertexGraphTest ) {
     BOOST_CHECK_EQUAL(v, g.conjugate(rcv));
 }
 
-pair<vector<VertexId> , vector<EdgeId> > createGraph(Graph &graph,
-        int edgeNumber) {
-    vector<VertexId> v;
-    vector<EdgeId> e;
+std::pair<std::vector<VertexId>, std::vector<EdgeId>> createGraph(Graph &graph, int edgeNumber) {
+    std::vector<VertexId> v;
+    std::vector<EdgeId> e;
     v.push_back(graph.AddVertex());
     for (int i = 0; i < edgeNumber; i++) {
         v.push_back(graph.AddVertex());
@@ -47,7 +46,7 @@ pair<vector<VertexId> , vector<EdgeId> > createGraph(Graph &graph,
 
 BOOST_AUTO_TEST_CASE( OneEdgeGraphTest ) {
     Graph g(11);
-    pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 1);
+    auto data = createGraph(g, 1);
     BOOST_CHECK_EQUAL(1u, g.OutgoingEdgeCount(data.first[0]));
     BOOST_CHECK_EQUAL(0u, g.OutgoingEdgeCount(data.first[1]));
     BOOST_CHECK_EQUAL(data.second[0], g.GetUniqueOutgoingEdge(data.first[0]));
@@ -75,7 +74,7 @@ BOOST_AUTO_TEST_CASE( OneEdgeGraphTest ) {
 
 BOOST_AUTO_TEST_CASE( VertexMethodsSimpleTest ) {
     Graph g(11);
-    pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 2);
+    auto data = createGraph(g, 2);
     BOOST_CHECK_EQUAL(data.second[0], g.GetUniqueIncomingEdge(data.first[1]));
     BOOST_CHECK_EQUAL(data.second[0], g.GetUniqueOutgoingEdge(data.first[0]));
     BOOST_CHECK_EQUAL(false, g.CanCompressVertex(data.first[0]));
@@ -105,9 +104,9 @@ BOOST_AUTO_TEST_CASE( VertexMethodsSimpleTest ) {
 
 BOOST_AUTO_TEST_CASE( SmartIteratorTest ) {
     Graph g(11);
-    pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 4);
+    auto data = createGraph(g, 4);
     size_t num = 0;
-    set<VertexId> visited;
+    std::set<VertexId> visited;
 //    std::less<VertexId> comp;
 //    auto it = g.SmartVertexBegin(comp);
     for (auto it = g.SmartVertexBegin(); !it.IsEnd(); ++it) {
@@ -125,48 +124,48 @@ BOOST_AUTO_TEST_CASE( SmartIteratorTest ) {
 //todo rename tests
 
 BOOST_AUTO_TEST_CASE( TestSimpleThread ) {
-    vector<string> reads = { "ACAAACCACCA" };
+    std::vector<std::string> reads = { "ACAAACCACCA" };
 //    vector<string> edges = { "ACAAACCACCA" };
     AssertGraph (5, reads, reads);
 }
 
 BOOST_AUTO_TEST_CASE( TestSimpleThread2 ) {
-    vector<string> reads = { "ACAAACCACCC", "AAACCACCCAC" };
-    vector<string> edges = { "ACAAACCACCCAC" };
+    std::vector<std::string> reads = { "ACAAACCACCC", "AAACCACCCAC" };
+    std::vector<std::string> edges = { "ACAAACCACCCAC" };
     AssertGraph (5, reads, edges);
 }
 
 BOOST_AUTO_TEST_CASE( TestSplitThread ) {
-    vector<string> reads = { "ACAAACCACCA", "ACAAACAACCC" };
-    vector<string> edges = { "ACAAAC", "CAAACCACCA", "CAAACAACCC" };
+    std::vector<std::string> reads = { "ACAAACCACCA", "ACAAACAACCC" };
+    std::vector<std::string> edges = { "ACAAAC", "CAAACCACCA", "CAAACAACCC" };
     AssertGraph (5, reads, edges);
 }
 
 BOOST_AUTO_TEST_CASE( TestSplitThread2 ) {
-    vector<string> reads = { "ACAAACCACCA", "ACAAACAACCA" };
-    vector<string> edges = { "AACCACCA", "ACAAAC", "CAAACCA", "CAAACAACCA" };
+    std::vector<std::string> reads = { "ACAAACCACCA", "ACAAACAACCA" };
+    std::vector<std::string> edges = { "AACCACCA", "ACAAAC", "CAAACCA", "CAAACAACCA" };
     AssertGraph (5, reads, edges);
 }
 
 BOOST_AUTO_TEST_CASE( TestBuldge ) {
-    vector<string> reads = { "ACAAAACACCA", "ACAAACCACCA" };
+    std::vector<std::string> reads = { "ACAAAACACCA", "ACAAACCACCA" };
 //    vector<string> edges = { "ACAAAACACCA", "ACAAACCACCA" };
     AssertGraph (5, reads, reads);
 }
 
 BOOST_AUTO_TEST_CASE( TestCondenseSimple ) {
-    vector<string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
-    vector<string> edges = { "CGAAAACACAC", "CACACC", "CGAAACCACAC" };
+    std::vector<std::string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
+    std::vector<std::string> edges = { "CGAAAACACAC", "CACACC", "CGAAACCACAC" };
     AssertGraph (5, reads, edges);
 }
 
 BOOST_AUTO_TEST_CASE( TestKmerStoringIndex ) {
-    vector<string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
+    std::vector<std::string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
     CheckIndex<graph_pack<Graph>>(reads, 5);
 }
 
 BOOST_AUTO_TEST_CASE( TestKmerFreeIndex ) {
-    vector<string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
+    std::vector<std::string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
     CheckIndex<conj_graph_pack>(reads, 5);
 }
 
@@ -205,8 +204,8 @@ BOOST_AUTO_TEST_CASE( TestKmerFreeIndex ) {
 //}
 
 BOOST_AUTO_TEST_CASE( SimpleTestEarlyPairedInfo ) {
-    vector<MyPairedRead> paired_reads = {{"CCCAC", "CCACG"}, {"ACCAC", "CCACA"}};
-    vector<MyEdge> edges = {"CCCA", "ACCA", "CCAC", "CACG", "CACA"};
+    std::vector<MyPairedRead> paired_reads = {{"CCCAC", "CCACG"}, {"ACCAC", "CCACA"}};
+    std::vector<MyEdge> edges = {"CCCA", "ACCA", "CCAC", "CACG", "CACA"};
     CoverageInfo coverage_info = {{"CCCA", 1}, {"ACCA", 1}, {"CCAC", 4}, {"CACG", 1}, {"CACA", 1}};
     EdgePairInfo edge_pair_info = {{{"CCCA", "CACG"}, {2, 1.0}}, {{"ACCA", "CACA"}, {2, 1.0}}
         , {{"CCCA", "CCAC"}, {1, 1.0}}, {{"ACCA", "CCAC"}, {1, 1.0}}
@@ -221,7 +220,7 @@ BOOST_AUTO_TEST_CASE( TestSelfRCEdgeMerge ) {
     VertexId v2 = g.AddVertex();
     EdgeId edge1 = g.AddEdge(v1, v2, Sequence("AACGCTATT"));
     EdgeId edge2 = g.AddEdge(v2, g.conjugate(v2), Sequence("CTATTCACGTGAATAG"));
-    vector<EdgeId> path = {edge1, edge2};
+    std::vector<EdgeId> path = {edge1, edge2};
     g.MergePath(path);
     BOOST_CHECK_EQUAL(2u, g.size());
     BOOST_CHECK_EQUAL(1u, g.OutgoingEdgeCount(v1));

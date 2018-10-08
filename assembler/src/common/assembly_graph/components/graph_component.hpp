@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include "utils/standard_base.hpp"
+#include <set>
+#include <string>
 
 namespace omnigraph {
 
@@ -101,7 +102,7 @@ public:
 
     template<class VertexIt>
     static GraphComponent FromVertices(const Graph &g, VertexIt begin, VertexIt end,
-                                       bool add_conjugate = false, const string &name = "") {
+                                       bool add_conjugate = false, const std::string &name = "") {
         GraphComponent answer(g, name);
         answer.FillVertices(begin, end, add_conjugate);
         answer.FillInducedEdges();
@@ -111,7 +112,7 @@ public:
 
     template<class EdgeIt>
     static GraphComponent FromEdges(const Graph &g, EdgeIt begin, EdgeIt end,
-                                    bool add_conjugate = false, const string &name = "") {
+                                    bool add_conjugate = false, const std::string &name = "") {
         GraphComponent answer(g, name);
         answer.FillFromEdges(begin, end, add_conjugate);
         return answer;
@@ -119,32 +120,32 @@ public:
 
     template<class Container>
     static GraphComponent FromVertices(const Graph &g, const Container &c,
-                                       bool add_conjugate = false, const string &name = "") {
+                                       bool add_conjugate = false, const std::string &name = "") {
         return FromVertices(g, c.begin(), c.end(), add_conjugate, name);
     }
 
     template<class Container>
     static GraphComponent FromEdges(const Graph &g, const Container &c,
-                                    bool add_conjugate = false, const string &name = "") {
+                                    bool add_conjugate = false, const std::string &name = "") {
         return FromEdges(g, c.begin(), c.end(), add_conjugate, name);
     }
 
-    static GraphComponent WholeGraph(const Graph &g, const string &name = "") {
+    static GraphComponent WholeGraph(const Graph &g, const std::string &name = "") {
         return FromVertices(g, g.begin(), g.end(), false, name);
     }
 
-    static GraphComponent Empty(const Graph &g, const string &name = "") {
+    static GraphComponent Empty(const Graph &g, const std::string &name = "") {
         return GraphComponent(g, name);
     }
 
-    GraphComponent(const Graph &g, const string &name = "") :
+    GraphComponent(const Graph &g, const std::string &name = "") :
             graph_(g), name_(name) {
     }
 
     //may be used for conjugate closure
     GraphComponent(const GraphComponent& component,
                    bool add_conjugate,
-                   const string &name = "") : graph_(component.graph_), name_(name) {
+                   const std::string &name = "") : graph_(component.graph_), name_(name) {
         FillFromEdges(component.e_begin(), component.e_end(), add_conjugate);
     }
 
@@ -161,7 +162,7 @@ public:
         return graph_;
     }
 
-    string name() const {
+    const std::string &name() const {
         return name_;
     }
 

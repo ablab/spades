@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #pragma once
-#include "utils/standard_base.hpp"
+
 #include "utils/ph_map/perfect_hash_map.hpp"
 #include "utils/kmer_mph/kmer_index.hpp"
 
@@ -42,7 +42,7 @@ public:
 
     //TODO make parallel
     void CleanLinks() {
-        vector<Index::kmer_iterator> iters = index_.kmer_begin(10 * omp_get_max_threads());
+        auto iters = index_.kmer_begin(10 * omp_get_max_threads());
 #   pragma omp parallel for schedule(guided)
         for(size_t i = 0; i < iters.size(); i++) {
             for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
@@ -64,6 +64,7 @@ private:
     typedef utils::DeBruijnExtensionIndex<> Index;
     typedef Index::KMer Kmer;
     typedef Index::KeyWithHash KeyWithHash;
+    typedef std::vector<KeyWithHash> Tip;
     Index &index_;
     size_t length_bound_;
 
@@ -73,7 +74,7 @@ private:
      * In case it did not end as a tip or if it was too long tip vector is cleared and infinite length is returned.
      * Thus tip vector contains only kmers to be removed while returned length value gives reasonable information of what happend.
      */
-    size_t FindForward(KeyWithHash kh, vector<KeyWithHash> &tip) {
+    size_t FindForward(KeyWithHash kh, Tip &tip) {
         while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh)) {
             tip.push_back(kh);
             kh = index_.GetUniqueOutgoing(kh);
@@ -86,7 +87,7 @@ private:
         return -1;
     }
 
-    size_t FindBackward(KeyWithHash kh, vector<KeyWithHash> &tip) {
+    size_t FindBackward(KeyWithHash kh, Tip &tip) {
         while(tip.size() < length_bound_ && index_.CheckUniqueOutgoing(kh) && index_.CheckUniqueIncoming(kh)) {
             tip.push_back(kh);
             kh = index_.GetUniqueIncoming(kh);
@@ -99,13 +100,13 @@ private:
         return -1;
     }
 
-    size_t RemoveTip(vector<KeyWithHash > &tip) {
+    size_t RemoveTip(const Tip &tip) {
         for(size_t i = 0; i < tip.size(); i++)
             index_.IsolateVertex(tip[i]);
         return tip.size();
     }
 
-    size_t RemoveTips(vector<vector<KeyWithHash > > tips, size_t max) {
+    size_t RemoveTips(const std::vector<Tip> &tips, size_t max) {
         size_t result = 0;
         for(char c = 0; c < 4; c++) {
             if(tips[c].size() < max) {
@@ -116,12 +117,12 @@ private:
     }
 
     size_t RemoveForward(KeyWithHash kh) {
-        vector<vector<KeyWithHash >> tips;
+        std::vector<Tip> tips;
         tips.resize(4);
         size_t max = 0;
         for(char c = 0; c < 4; c++) {
             if(index_.CheckOutgoing(kh, c)) {
-                KeyWithHash khc = index_.GetOutgoing(kh, c);
+                auto khc = index_.GetOutgoing(kh, c);
                 size_t len = FindForward(khc, tips[c]);
                 if(len > max)
                     max = len;
@@ -131,8 +132,7 @@ private:
     }
 
     size_t RemoveBackward(KeyWithHash kh) {
-        vector<vector<KeyWithHash >> tips;
-        tips.resize(4);
+        std::vector<Tip> tips(4);
         size_t max = 0;
         for(char c = 0; c < 4; c++) {
             if(index_.CheckIncoming(kh, c)) {
@@ -147,8 +147,8 @@ private:
 
     //TODO make parallel
     size_t RoughClipTips() {
-        vector<Index::kmer_iterator> iters = index_.kmer_begin(10 * omp_get_max_threads());
-        vector<size_t> result(iters.size());
+        auto iters = index_.kmer_begin(10 * omp_get_max_threads());
+        std::vector<size_t> result(iters.size());
 #   pragma omp parallel for schedule(guided)
         for(size_t i = 0; i < iters.size(); i++) {
             for(Index::kmer_iterator &it = iters[i]; it.good(); ++it) {

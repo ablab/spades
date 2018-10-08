@@ -7,11 +7,7 @@
 
 #pragma once
 
-#include <cmath>
-#include <stack>
-#include <queue>
 #include "adt/concurrent_dsu.hpp"
-#include "utils/standard_base.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "math/xmath.h"
 #include "sequence/sequence_tools.hpp"
@@ -20,6 +16,9 @@
 #include "dominated_set_finder.hpp"
 #include "assembly_graph/graph_support/parallel_processing.hpp"
 
+#include <cmath>
+#include <stack>
+#include <queue>
 
 namespace omnigraph {
 
@@ -33,10 +32,10 @@ class LocalizedComponent: public GraphActionHandler<Graph> /*: public GraphCompo
 
     const Graph& g_;
     VertexId start_vertex_;
-    set<VertexId> end_vertices_;
+    std::set<VertexId> end_vertices_;
     //usage of inclusive-inclusive range!!!
-    map<VertexId, Range> vertex_depth_;
-    multimap<size_t, VertexId> height_2_vertices_;
+    std::map<VertexId, Range> vertex_depth_;
+    std::multimap<size_t, VertexId> height_2_vertices_;
 
     bool AllEdgeOut(VertexId v) const {
         for (EdgeId e : g_.OutgoingEdges(v)) {
@@ -65,8 +64,8 @@ public:
             VertexId start_vertex/*, const vector<VertexId>& end_vertices*/) :
             base(g, "br_component"), g_(g), start_vertex_(start_vertex) {
         end_vertices_.insert(start_vertex);
-        vertex_depth_.insert(make_pair(start_vertex_, Range(0, 0)));
-        height_2_vertices_.insert(make_pair(0, start_vertex));
+        vertex_depth_.emplace(start_vertex_, Range(0, 0));
+        height_2_vertices_.emplace(0, start_vertex);
     }
 
     const Graph& g() const {
@@ -85,8 +84,8 @@ public:
 //        VERIFY(CheckCloseNeighbour(v));
 //        Range r = NeighbourDistanceRange(v);
         DEBUG("Adding vertex " << g_.str(v) << " to the component");
-        vertex_depth_.insert(make_pair(v, dist_range));
-        height_2_vertices_.insert(make_pair(Average(dist_range), v));
+        vertex_depth_.emplace(v, dist_range);
+        height_2_vertices_.emplace(Average(dist_range), v);
         DEBUG("Range " << dist_range << " Average height " << Average(dist_range));
         for (EdgeId e : g_.IncomingEdges(v)) {
             end_vertices_.erase(g_.EdgeStart(e));
@@ -128,7 +127,7 @@ public:
         for (VertexId v : utils::key_set(vertex_depth_)) {
             if (v == start_vertex_)
                 continue;
-            vector<EdgeId> filtered_incoming;
+            std::vector<EdgeId> filtered_incoming;
             std::copy_if(g_.in_begin(v), g_.in_end(v), std::back_inserter(filtered_incoming), 
                         [&] (EdgeId e) {return contains(g_.EdgeStart(e));});
             VERIFY_MSG(filtered_incoming.size() == g_.IncomingEdgeCount(v), "Strange component");
@@ -159,8 +158,8 @@ public:
         return Average(vertex_depth_.find(v)->second);
     }
 
-    set<size_t> avg_distances() const {
-        set<size_t> distances;
+    std::set<size_t> avg_distances() const {
+        std::set<size_t> distances;
         for (VertexId v : utils::key_set(vertex_depth_)) {
             distances.insert(avg_distance(v));
         }
@@ -175,7 +174,7 @@ public:
         return start_vertex_;
     }
 
-    const set<VertexId>& end_vertices() const {
+    const std::set<VertexId> &end_vertices() const {
         return end_vertices_;
     }
 
@@ -198,7 +197,7 @@ public:
     }
 
     bool ContainsConjugateVertices() const {
-        set<VertexId> conjugate_vertices;
+        std::set<VertexId> conjugate_vertices;
         for (VertexId v : utils::key_set(vertex_depth_)) {
             if (conjugate_vertices.count(v) == 0) {
                 conjugate_vertices.insert(g_.conjugate(v));
@@ -231,7 +230,7 @@ public:
         //empty for now
     }
 
-    virtual void HandleMerge(const vector<EdgeId>& /*old_edges*/, EdgeId /*new_edge*/) {
+    virtual void HandleMerge(const std::vector<EdgeId> & /*old_edges*/, EdgeId /*new_edge*/) {
         VERIFY(false);
     }
 
@@ -254,18 +253,17 @@ public:
 //                            * g_.length(new_edge_1) / g_.length(old_edge);
             DEBUG(
                     "Inserting vertex " << g_.str(new_vertex) << " to component during split");
-            vertex_depth_.insert(make_pair(new_vertex, new_vertex_depth));
-            height_2_vertices_.insert(
-                    std::make_pair(Average(new_vertex_depth), new_vertex));
+            vertex_depth_.emplace(new_vertex, new_vertex_depth);
+            height_2_vertices_.emplace(Average(new_vertex_depth), new_vertex);
         }
     }
 
-    const multimap<size_t, VertexId>& height_2_vertices() const {
+    const std::multimap<size_t, VertexId> &height_2_vertices() const {
         return height_2_vertices_;
     }
 
-    const set<VertexId> vertices_on_height(size_t height) const {
-        set<VertexId> answer;
+    const std::set<VertexId> vertices_on_height(size_t height) const {
+        std::set<VertexId> answer;
         for (auto it = height_2_vertices_.lower_bound(height);
                 it != height_2_vertices_.upper_bound(height); ++it) {
             answer.insert(it->second);
@@ -285,11 +283,11 @@ class SkeletonTree: public GraphActionHandler<Graph> {
 
 public:
 
-    const set<EdgeId>& edges() const {
+    const std::set<EdgeId> &edges() const {
         return edges_;
     }
 
-    const set<VertexId>& vertices() const {
+    const std::set<VertexId> &vertices() const {
         return vertices_;
     }
 
@@ -319,7 +317,7 @@ public:
         VERIFY(!Contains(e));
     }
 
-    void HandleMerge(const vector<EdgeId>& old_edges, EdgeId /*new_edge*/) override {
+    void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId /*new_edge*/) override {
         //verify false
         for (EdgeId e : old_edges) {
             VERIFY(!Contains(e));
@@ -349,8 +347,8 @@ public:
         }
     }
 
-    SkeletonTree(const LocalizedComponent<Graph>& br_comp,
-            const set<EdgeId>& edges) :
+    SkeletonTree(const LocalizedComponent<Graph> &br_comp,
+                 const std::set<EdgeId> &edges) :
             base(br_comp.g(), "br_tree"), br_comp_(br_comp), edges_(edges) {
         DEBUG("Tree edges " << br_comp.g().str(edges));
         for (EdgeId e : edges_) {
@@ -361,8 +359,8 @@ public:
 
 private:
     const LocalizedComponent<Graph>& br_comp_;
-    set<EdgeId> edges_;
-    set<VertexId> vertices_;
+    std::set<EdgeId> edges_;
+    std::set<VertexId> vertices_;
 
 private:
     DECL_LOGGER("SkeletonTree");
@@ -410,7 +408,7 @@ private:
 
     const LocalizedComponent<Graph>& comp_;
     const size_t color_cnt_;
-    map<VertexId, mixed_color_t> vertex_colors_;
+    std::map<VertexId, mixed_color_t> vertex_colors_;
 
     mixed_color_t CountVertexColor(VertexId v) const {
         mixed_color_t answer = mixed_color_t(0);
@@ -421,7 +419,7 @@ private:
     }
 
     void CountAndSetVertexColor(VertexId v) {
-        vertex_colors_.insert(make_pair(v, CountVertexColor(v)));
+        vertex_colors_.insert({v, CountVertexColor(v)});
     }
 
     void ColorComponent() {
@@ -430,7 +428,7 @@ private:
         for (VertexId v : comp_.end_vertices()) {
             mixed_color_t color = 1 << cnt;
             DEBUG("Coloring exit " << comp_.g().str(v));
-            vertex_colors_.insert(make_pair(v, color));
+            vertex_colors_.emplace(v, color);
             cnt++;
         }
         for (auto it = comp_.height_2_vertices().rbegin();
@@ -471,7 +469,7 @@ public:
         vertex_colors_.erase(v);
     }
 
-    virtual void HandleMerge(const vector<EdgeId>& /*old_edges*/, EdgeId /*new_edge*/) {
+    virtual void HandleMerge(const std::vector<EdgeId> & /*old_edges*/, EdgeId /*new_edge*/) {
         VERIFY(false);
     }
 
@@ -504,15 +502,15 @@ class SkeletonTreeFinder {
     const LocalizedComponent<Graph>& component_;
     const ComponentColoring<Graph>& coloring_;
 
-    vector<size_t> level_heights_;
+    std::vector<size_t> level_heights_;
 
     int current_level_;
     color_partition_ds_t current_color_partition_;
 
-    set<VertexId> good_vertices_;
-    set<EdgeId> good_edges_;
-    map<VertexId, vector<EdgeId>> next_edges_;
-    map<VertexId, size_t> subtree_coverage_;
+    std::set<VertexId> good_vertices_;
+    std::set<EdgeId> good_edges_;
+    std::map<VertexId, std::vector<EdgeId>> next_edges_;
+    std::map<VertexId, size_t> subtree_coverage_;
 
     bool ConsistentWithPartition(mixed_color_t color) const {
         return current_color_partition_.set_size(
@@ -537,8 +535,8 @@ class SkeletonTreeFinder {
         return ConsistentWithPartition(coloring_.color(end));
     }
 
-    vector<EdgeId> GoodOutgoingEdges(VertexId v) const {
-        vector<EdgeId> answer;
+    std::vector<EdgeId> GoodOutgoingEdges(VertexId v) const {
+        std::vector<EdgeId> answer;
         for (EdgeId e : component_.g().OutgoingEdges(v)) {
             if (IsGoodEdge(e)) {
                 DEBUG("Edge " << component_.g().str(e) << " is classified as good");
@@ -550,8 +548,8 @@ class SkeletonTreeFinder {
         return answer;
     }
 
-    vector<EdgeId> GoodOutgoingEdges(const vector<VertexId>& vertices) const {
-        vector<EdgeId> answer;
+    std::vector<EdgeId> GoodOutgoingEdges(const std::vector<VertexId> &vertices) const {
+        std::vector<EdgeId> answer;
         for (VertexId v : vertices) {
             if (component_.end_vertices().count(v) == 0) {
                 utils::push_back_all(answer, GoodOutgoingEdges(v));
@@ -560,13 +558,13 @@ class SkeletonTreeFinder {
         return answer;
     }
 
-    set<EdgeId> VectorAsSet(const vector<EdgeId>& edges) const {
-        return set<EdgeId>(edges.begin(), edges.end());
+    std::set<EdgeId> VectorAsSet(const std::vector<EdgeId> &edges) const {
+        return std::set<EdgeId>(edges.begin(), edges.end());
     }
 
     template<class T>
-    vector<T> SetAsVector(const set<T>& edges) const {
-        return vector<T>(edges.begin(), edges.end());
+    std::vector<T> SetAsVector(const std::set<T> &edges) const {
+        return std::vector<T>(edges.begin(), edges.end());
     }
 
     primitive_color_t GetCorrespondingDisjointSet(mixed_color_t color) const {
@@ -611,8 +609,8 @@ class SkeletonTreeFinder {
     }
 
     void UpdateNextEdgesAndCoverage(VertexId v) {
-        map<mixed_color_t, size_t> best_subtrees_coverage;
-        map<mixed_color_t, EdgeId> best_alternatives;
+        std::map<mixed_color_t, size_t> best_subtrees_coverage;
+        std::map<mixed_color_t, EdgeId> best_alternatives;
         for (EdgeId e : component_.g().OutgoingEdges(v)) {
             if (good_edges_.count(e) > 0) {
                 VertexId end = component_.g().EdgeEnd(e);
@@ -646,8 +644,8 @@ public:
         Init();
     }
 
-    const set<EdgeId> GetTreeEdges() const {
-        set<EdgeId> answer;
+    const std::set<EdgeId> GetTreeEdges() const {
+        std::set<EdgeId> answer;
         std::queue<VertexId> vertex_queue;
         vertex_queue.push(component_.start_vertex());
         while (!vertex_queue.empty()) {
@@ -663,7 +661,7 @@ public:
         return answer;
     }
 
-    const map<VertexId, vector<EdgeId>>& GetTree() const {
+    const std::map<VertexId, std::vector<EdgeId>> &GetTree() const {
         return next_edges_;
     }
 
@@ -672,15 +670,12 @@ public:
         while (current_level_ >= 0) {
             size_t height = level_heights_[current_level_];
             DEBUG("Processing level " << current_level_ << " on height " << height);
-            set<VertexId> level_vertices = component_.vertices_on_height(
-                    height);
+            std::set<VertexId> level_vertices = component_.vertices_on_height(height);
             VERIFY(!level_vertices.empty());
 
             //looking for good edges
             utils::insert_all(good_edges_,
-                    GoodOutgoingEdges(
-                            vector<VertexId>(level_vertices.begin(),
-                                    level_vertices.end())));
+                              GoodOutgoingEdges(std::vector<VertexId>(level_vertices.begin(), level_vertices.end())));
 
 
 
@@ -714,12 +709,12 @@ private:
 };
 
 template<class Graph>
-void PrintComponent(const LocalizedComponent<Graph>& component,
-        const SkeletonTree<Graph>& tree, const string& file_name) {
+void PrintComponent(const LocalizedComponent<Graph> &component,
+                    const SkeletonTree<Graph> &tree, const std::string &file_name) {
     typedef typename Graph::EdgeId EdgeId;
-    const set<EdgeId> tree_edges = tree.edges();
-    shared_ptr<visualization::graph_colorer::ElementColorer<typename Graph::EdgeId>> edge_colorer =
-            make_shared<visualization::graph_colorer::MapColorer<EdgeId>>(
+    const std::set<EdgeId> &tree_edges = tree.edges();
+    std::shared_ptr<visualization::graph_colorer::ElementColorer<typename Graph::EdgeId>> edge_colorer =
+            std::make_shared<visualization::graph_colorer::MapColorer<EdgeId>>(
             tree_edges.begin(), tree_edges.end(),"green", ""
         );
     visualization::visualization_utils::WriteComponentSinksSources(component.AsGraphComponent(), file_name,
@@ -728,8 +723,7 @@ void PrintComponent(const LocalizedComponent<Graph>& component,
 }
 
 template<class Graph>
-void PrintComponent(const LocalizedComponent<Graph>& component,
-        const string& file_name) {
+void PrintComponent(const LocalizedComponent<Graph> &component, const std::string &file_name) {
     visualization::visualization_utils::WriteComponent(component.AsGraphComponent(), file_name,
             visualization::graph_colorer::DefaultColorer(component.g()),
             *visualization::graph_labeler::StrGraphLabelerInstance(component.g()));
@@ -750,7 +744,7 @@ class ComponentProjector {
 
     bool SplitComponent() {
         DEBUG("Splitting component");
-        set<size_t> level_heights(component_.avg_distances());
+        std::set<size_t> level_heights(component_.avg_distances());
         DEBUG("Level heights " << utils::ContainerToString(level_heights));
 
         GraphComponent<Graph> gc = component_.AsGraphComponent();
@@ -761,8 +755,8 @@ class ComponentProjector {
             size_t start_dist = component_.avg_distance(start_v);
             size_t end_dist = component_.avg_distance(end_v);
             DEBUG("Processing edge " << g_.str(*it) << " avg_start " << start_dist << " avg_end " << end_dist);
-            set<size_t> dist_to_split(level_heights.lower_bound(start_dist),
-                    level_heights.upper_bound(end_dist));
+            std::set<size_t> dist_to_split(level_heights.lower_bound(start_dist),
+                                           level_heights.upper_bound(end_dist));
             DEBUG("Distances to split " << utils::ContainerToString(dist_to_split));
 
             size_t offset = start_dist;
@@ -778,7 +772,7 @@ class ComponentProjector {
                     return false;
                 }
                 DEBUG("Splitting edge " << g_.str(e) << " on position " << pos);
-                pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, pos);
+                auto split_res = g_.SplitEdge(e, pos);
                 //checks accordance
                 VertexId inner_v = g_.EdgeEnd(split_res.first);
                 VERIFY(component_.avg_distance(inner_v) == curr);
@@ -865,8 +859,8 @@ class LocalizedComponentFinder {
 
     LocalizedComponent<Graph> comp_;
 
-    map<VertexId, Range> dominated_;
-    set<VertexId> interfering_;
+    std::map<VertexId, Range> dominated_;
+    std::set<VertexId> interfering_;
 
     std::string ToString(EdgeId e) const {
         std::stringstream ss;
@@ -889,8 +883,7 @@ class LocalizedComponentFinder {
     //false if new interfering vertex is not dominated
     //can be slightly modified in new algorithm
     bool ProcessLocality(VertexId processing_v) {
-        vector<VertexId> processed_neighb;
-        vector<VertexId> unprocessed_neighb;
+        std::vector<VertexId> processed_neighb, unprocessed_neighb;
         for (EdgeId e : g_.OutgoingEdges(processing_v)) {
             VertexId v = g_.EdgeEnd(e);
             if (!comp_.contains(v)) {
@@ -1003,7 +996,7 @@ public:
 
         DEBUG("Choosing closest vertex");
         do {
-            optional<VertexId> next_v = ClosestNeigbour();
+            boost::optional<VertexId> next_v = ClosestNeigbour();
 
             if (next_v) {
                 DEBUG("Vertex " << g_.str(*next_v) << " was chosen as closest neighbour");
@@ -1093,7 +1086,7 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
 
     size_t max_length_;
     size_t length_diff_;
-    string pics_folder_;
+    std::string pics_folder_;
 
     bool ProcessComponent(LocalizedComponent<Graph>& component,
             size_t candidate_cnt) {
@@ -1151,8 +1144,8 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
     }
 
     //todo shrink this set if needed
-    set<VertexId> Neighbours(VertexId v) const {
-        set<VertexId> answer;
+    std::set<VertexId> Neighbours(VertexId v) const {
+        std::set<VertexId> answer;
         for (EdgeId e : this->g().IncidentEdges(v)) {
             answer.insert(this->g().EdgeStart(e));
             answer.insert(this->g().EdgeEnd(e));
@@ -1164,7 +1157,7 @@ public:
 
     //track_changes=false leads to every iteration run from scratch
     ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff,
-                        size_t chunk_cnt, const string& pics_folder = "") :
+                        size_t chunk_cnt, const std::string &pics_folder = "") :
             base(g, std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph, VertexId>>(
                 CandidateFinder<Graph>(g, max_length, length_diff), chunk_cnt), 
                 false, std::less<VertexId>(), /*track changes*/false),
@@ -1173,16 +1166,16 @@ public:
             pics_folder_(pics_folder) {
         if (!pics_folder_.empty()) {
 //            remove_dir(pics_folder_);
-            make_dir(pics_folder_);
-            make_dir(pics_folder_ + "success/");
-            make_dir(pics_folder_ + "fail/");
+            fs::make_dir(pics_folder_);
+            fs::make_dir(pics_folder_ + "success/");
+            fs::make_dir(pics_folder_ + "fail/");
         }
 
     }
 
     bool Process(VertexId v) override {
         DEBUG("Processing vertex " << this->g().str(v));
-        vector<VertexId> vertices_to_post_process;
+        std::vector<VertexId> vertices_to_post_process;
         //a bit of hacking (look further)
         SmartSetIterator<Graph, VertexId> added_vertices(this->g(), true);
 

@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathConstructor ) {
 
     EdgeId e1 = g.conjugate(start);
     EdgeId e2 = *(g.OutgoingEdges(g.EdgeEnd(e1)).begin());
-    vector<EdgeId> v;
+    std::vector<EdgeId> v;
     v.push_back(e1);
     v.push_back(e2);
     BidirectionalPath path3(g, v);
@@ -627,7 +627,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathSearch ) {
     BOOST_CHECK_EQUAL(path1.FindLast(e5), 10);
     BOOST_CHECK_EQUAL(path1.FindLast(e6), 9);
 
-    vector<size_t> v = path1.FindAll(e2);
+    auto v = path1.FindAll(e2);
     BOOST_CHECK_EQUAL(v.size(), 1);
     BOOST_CHECK_EQUAL(v[0], 1);
     v = path1.FindAll(e6);

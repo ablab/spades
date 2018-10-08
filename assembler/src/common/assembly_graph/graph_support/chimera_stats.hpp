@@ -25,9 +25,8 @@ class ChimericEdgeClassifier {
     bool real_edges_mode_;
 
     template<class EdgeContainer>
-    vector<EdgeId> FilterNotEqual(const EdgeContainer& edges,
-            EdgeId edge) const {
-        vector<EdgeId> answer;
+    std::vector<EdgeId> FilterNotEqual(const EdgeContainer &edges, EdgeId edge) const {
+        std::vector<EdgeId> answer;
         for (EdgeId e : edges) {
             if (e != edge) {
                 answer.push_back(e);
@@ -36,7 +35,7 @@ class ChimericEdgeClassifier {
         return answer;
     }
 
-    bool TopologyAndQualCheck(const vector<EdgeId>& edges) const {
+    bool TopologyAndQualCheck(const std::vector<EdgeId> &edges) const {
         return edges.size() == 1 && edge_qual_.IsPositiveQuality(edges.front());
     }
 
@@ -53,7 +52,8 @@ class ChimericEdgeClassifier {
     }
 
 public:
-    ChimericEdgeClassifier(const Graph& g, size_t length_bound, const EdgeQuality<Graph>& edge_qual, bool real_edges_mode = false)
+    ChimericEdgeClassifier(const Graph& g, size_t length_bound,
+                           const EdgeQuality<Graph>& edge_qual, bool real_edges_mode = false)
     : g_(g),
       length_bound_(length_bound),
       edge_qual_(edge_qual),
@@ -103,8 +103,7 @@ class InterstrandAnalyzer {
         return infinity;
     }
 
-    size_t ShortestGenomicDistance(EdgeId e1, EdgeId e2,
-            size_t distance_bound) const {
+    size_t ShortestGenomicDistance(EdgeId e1, EdgeId e2, size_t distance_bound) const {
         size_t best = infinity;
         for (size_t i = 0; i < genome_path_.size(); ++i) {
             if (genome_path_[i].first == e1) {
@@ -160,20 +159,19 @@ class ChimericEdgeStats {
     const Graph& g_;
     const ChimericEdgeClassifier<Graph>& chimeric_edge_classifier_;
     const InterstrandAnalyzer<Graph>& interstrand_analyzer_;
-    ostream& out_;
+    std::ostream& out_;
 
 protected:
-    virtual string Head() {
+    virtual std::string Head() const {
         std::stringstream ss;
         ss << "int_id\t"
                 << "length\t"
                 << "coverage\t"
-                << "interstrand_dist"
-                << endl;
+                << "interstrand_dist\n";
         return ss.str();
     }
 
-    virtual string ReportChimera(EdgeId e, size_t interstrand_dist) {
+    virtual std::string ReportChimera(EdgeId e, size_t interstrand_dist) const {
         std::stringstream ss;
         ss << g_.int_id(e) << "\t"
                 << g_.length(e) << "\t"
@@ -183,7 +181,7 @@ protected:
         } else {
             ss << -1;
         }
-        ss << endl;
+        ss << std::endl;
         return ss.str();
     }
 
@@ -195,7 +193,7 @@ public:
     ChimericEdgeStats(const Graph& g,
                       const ChimericEdgeClassifier<Graph>& chimeric_edge_classifier,
                       const InterstrandAnalyzer<Graph>& interstrand_analyzer,
-                      ostream& out)
+                      std::ostream& out)
             : g_(g),
               chimeric_edge_classifier_(chimeric_edge_classifier),
               interstrand_analyzer_(interstrand_analyzer),
@@ -206,15 +204,15 @@ public:
     }
 
     void operator()() {
-        out_ << Head() << endl;
-        set<EdgeId> visited;
+        out_ << Head() << std::endl;
+        std::set<EdgeId> visited;
         for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
             if (visited.count(*it) > 0)
                 continue;
             visited.insert(*it);
             visited.insert(g_.conjugate(*it));
             if (chimeric_edge_classifier_.IsTrivialChimeric(*it)) {
-                out_ << ReportChimera(*it, interstrand_analyzer_.InterstrandDistance(*it)) << endl;
+                out_ << ReportChimera(*it, interstrand_analyzer_.InterstrandDistance(*it)) << std::endl;
             }
         }
     }
@@ -229,7 +227,7 @@ class ChimeraRelativeCoverageStats : public ChimericEdgeStats<Graph> {
 
     simplification::relative_coverage::RelativeCoverageHelper<Graph> rel_helper_;
 
-    double RelativeCoverage(VertexId v, EdgeId base_edge) {
+    double RelativeCoverage(VertexId v, EdgeId base_edge) const {
         return rel_helper_.RelativeCoverageToReport(v, rel_helper_.LocalCoverage(base_edge, v));
     }
 
@@ -238,20 +236,20 @@ public:
                                  const ChimericEdgeClassifier<Graph>& edge_classifier,
                                  const InterstrandAnalyzer<Graph>& interstrand_analyzer,
                                  LocalCoverageFT local_coverage_f,
-                                 ostream& out)
+                                 std::ostream& out)
             : base(g, edge_classifier, interstrand_analyzer, out),
               rel_helper_(g, local_coverage_f, 2.0/*any value works here*/) {
     }
 
 protected:
-    virtual string Head() {
+    std::string Head() const override {
         return base::Head() + "\tmin_rel_cov\tmax_rel_cov";
     }
 
-    virtual string ReportChimera(EdgeId e, size_t interstrand_dist) {
+    std::string ReportChimera(EdgeId e, size_t interstrand_dist) const override {
         double start_cov = RelativeCoverage(this->g().EdgeStart(e), e);
         double end_cov = RelativeCoverage(this->g().EdgeEnd(e), e);
-        stringstream ss;
+        std::stringstream ss;
         ss << base::ReportChimera(e, interstrand_dist) << "\t"
                 << std::min(start_cov, end_cov) << "\t"
                 << std::max(start_cov, end_cov);

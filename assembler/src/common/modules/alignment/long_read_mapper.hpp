@@ -15,7 +15,7 @@ namespace debruijn_graph {
 
 class LongReadMapper: public SequenceMapperListener {
 public:
-    typedef vector<vector<EdgeId>> PathsT;
+    typedef std::vector<std::vector<EdgeId>> PathsT;
     typedef MappingPath<EdgeId> MappingT;
     typedef std::function<PathsT (const MappingT&)> PathExtractionF;
 
@@ -84,9 +84,8 @@ public:
     GappedPathExtractor(const Graph& g): g_(g), path_fixer_(g) {
     }
 
-    vector<vector<EdgeId>> operator() (const MappingPath<EdgeId>& mapping) const {
-        vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
-                mapping.simple_path());
+    std::vector<std::vector<EdgeId>> operator() (const MappingPath<EdgeId>& mapping) const {
+        auto corrected_path = path_fixer_.DeleteSameEdges(mapping.simple_path());
         corrected_path = FilterBadMappings(corrected_path, mapping);
         return FindReadPathWithGaps(mapping, corrected_path);
     }
@@ -114,8 +113,9 @@ private:
         return total_len;
     }
 
-    vector<EdgeId> FilterBadMappings(const vector<EdgeId>& corrected_path, const MappingPath<EdgeId>& mapping_path) const {
-        vector<EdgeId> new_corrected_path;
+    std::vector<EdgeId> FilterBadMappings(const std::vector<EdgeId> &corrected_path,
+                                          const MappingPath<EdgeId> &mapping_path) const {
+        std::vector<EdgeId> new_corrected_path;
         size_t mapping_index = 0;
         for (auto edge : corrected_path) {
             size_t mapping_size = CountMappedEdgeSize(edge, mapping_path, mapping_index);
@@ -129,30 +129,31 @@ private:
         return new_corrected_path;
     }
 
-    vector<vector<EdgeId>> FindReadPathWithGaps(const MappingPath<EdgeId>& mapping_path, vector<EdgeId>& corrected_path) const {
+    std::vector<std::vector<EdgeId>> FindReadPathWithGaps(const MappingPath<EdgeId> &mapping_path,
+                                                          std::vector<EdgeId> &corrected_path) const {
           if (mapping_path.size() == 0) {
               TRACE("read unmapped");
-              return vector<vector<EdgeId>>();
+              return {};
           }
-          vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
+          auto fixed_path = path_fixer_.TryFixPath(corrected_path);
           return SplitUnfixedPoints(fixed_path);
       }
 
-    vector<vector<EdgeId>> SplitUnfixedPoints(vector<EdgeId>& path) const {
-        vector<vector<EdgeId>> result;
+    std::vector<std::vector<EdgeId>> SplitUnfixedPoints(std::vector<EdgeId>& path) const {
+        std::vector<std::vector<EdgeId>> result;
         size_t prev_start = 0;
         for (size_t i = 1; i < path.size(); ++i) {
             if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i])) {
-                    result.push_back(vector<EdgeId>(path.begin() + prev_start, path.begin() + i));
+                    result.emplace_back(path.begin() + prev_start, path.begin() + i);
                     prev_start = i;
             }
         }
-        result.push_back(vector<EdgeId>(path.begin() + prev_start, path.end()));
+        result.emplace_back(path.begin() + prev_start, path.end());
         return result;
     }
 };
 
-typedef std::function<vector<vector<EdgeId>> (const MappingPath<EdgeId>&)> PathExtractionF;
+typedef std::function<std::vector<std::vector<EdgeId>> (const MappingPath<EdgeId>&)> PathExtractionF;
 
 inline PathExtractionF ChooseProperReadPathExtractor(const Graph& g, io::LibraryType lib_type) {
     if (lib_type == io::LibraryType::PathExtendContigs || lib_type == io::LibraryType::TSLReads
@@ -162,7 +163,7 @@ inline PathExtractionF ChooseProperReadPathExtractor(const Graph& g, io::Library
         };
     } else {
         return [&] (const MappingPath<EdgeId>& mapping) {
-            return vector<vector<EdgeId>>{ReadPathFinder<Graph>(g).FindReadPath(mapping)};
+            return std::vector<std::vector<EdgeId>>{ReadPathFinder<Graph>(g).FindReadPath(mapping)};
         };
     }
 }

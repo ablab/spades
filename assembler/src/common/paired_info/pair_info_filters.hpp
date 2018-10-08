@@ -211,8 +211,8 @@ private:
           if(*it_edge != edge){
               size_t it_edge_length = this->graph_.length(*it_edge);
               Sequence it_edge_seq = this->graph_.EdgeNucls(*it_edge);
-              double length_ratio = double(min<size_t>(edge_length, it_edge_length)) /
-                      double(max<size_t>(edge_length, it_edge_length));
+              double length_ratio = double(std::min<size_t>(edge_length, it_edge_length)) /
+                      double(std::max<size_t>(edge_length, it_edge_length));
               if(length_ratio >= relative_length_threshold_){
     //              size_t edit_dist = EditDistance(edge_seq, it_edge_seq);
     //              double seq_ratio = edit_dist / min<size_t> (edge_seq.size(), it_edge_seq.size());

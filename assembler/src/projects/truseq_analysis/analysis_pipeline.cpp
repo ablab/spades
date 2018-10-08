@@ -11,11 +11,13 @@
 
 #include "io/reads/file_reader.hpp"
 #include "stages/construction.hpp"
-#include "utils/standard_base.hpp"
 #include "analysis_pipeline.hpp"
 
-spades::VariationDetectionStage::VariationDetectionStage(string output_file, const Config &config) : AssemblyStage("VariationDetection", "variation_detection"),
-                                                                                                     output_file_(output_file), config_(config) {
+using namespace std;
+
+spades::VariationDetectionStage::VariationDetectionStage(string output_file, const Config &config) :
+        AssemblyStage("VariationDetection", "variation_detection"),
+        output_file_(std::move(output_file)), config_(config) {
 }
 
 vector<io::SingleRead> spades::VariationDetectionStage::ReadScaffolds(const string &scaffolds_file) {

@@ -30,11 +30,11 @@ namespace de {
 
 template <class EdgeId>
 class PeakFinder {
-
+  typedef std::vector<std::pair<int, double>> PeakHist;
   typedef std::complex<double> complex_t;
 
  public:
-    PeakFinder(const vector<PairInfo<EdgeId> >& data,
+    PeakFinder(const std::vector<PairInfo<EdgeId>> &data,
              size_t begin,
              size_t end,
              size_t /*range*/,
@@ -60,7 +60,7 @@ class PeakFinder {
     return weight_;
   }
 
-  void PrintStats(string host) const {
+  void PrintStats(const std::string &host) const {
     for (size_t i = 0; i < data_len_; ++i)
       DEBUG(host << (x_left_ + (int) i) << " " << hist_[i]);
   }
@@ -96,7 +96,7 @@ class PeakFinder {
   }
 
   //  looking for one maximum in the picture
-  vector<pair<int, double> > ListPeaks(/*int delta = 3*/) const {
+  PeakHist ListPeaks(/*int delta = 3*/) const {
     TRACE("Smoothed data");
     //size_t index_max = 0;
     //for (size_t i = 0; i < data_len_; ++i) {
@@ -108,14 +108,15 @@ class PeakFinder {
     //result.push_back(make_pair(x_left_ + index_max, hist_[index_max].real()));
     //return result;
     DEBUG("Listing peaks");
-    map<int, double> peaks_;
+
     //another data_len_
     size_t data_len_ = (size_t) (x_right_ - x_left_);
-    vector<bool> was;
     srand((unsigned) time(NULL));
+    std::vector<bool> was;
     for (size_t i = 0; i < data_len_; ++i)
       was.push_back(false);
 
+    std::map<int, double> peaks_;
     size_t iteration = 0;
     for (size_t l = 0; l < data_len_; ++l) {
     //for (size_t k = 0; k < 4; ++k) {
@@ -166,7 +167,7 @@ class PeakFinder {
         for (int i = left_bound; i < right_bound; ++i)
           weight_ += hist_[i - x_left_].real();
         TRACE("WEIGHT counted");
-        pair<int, double> tmp_pair = make_pair(index, 100. * weight_);
+        std::pair<int, double> tmp_pair(index, 100. * weight_);
         if (!peaks_.count(index)) {
           TRACE("Peaks size " << peaks_.size() << ", inserting " << tmp_pair);
           peaks_.insert(tmp_pair);
@@ -176,9 +177,8 @@ class PeakFinder {
       }
     }
     TRACE("FINISHED " << peaks_.size());
-    vector<pair<int, double> > peaks;
-    for (auto iter = peaks_.begin(); iter != peaks_.end(); ++iter) {
-      const pair<int, double>& tmp_pair = *iter;
+    PeakHist peaks;
+    for (const auto &tmp_pair : peaks_) {
       TRACE("next peak " << tmp_pair);
       peaks.push_back(tmp_pair);
       //for (int i = -10; i <= 10; ++i) {
@@ -188,11 +188,11 @@ class PeakFinder {
     return peaks;
   }
 
-    vector<complex_t> getIn() const {
+    const std::vector<complex_t> &getIn() const {
         return hist_;
     }
 
-    vector<complex_t> getOut() const {
+    const std::vector<complex_t> &getOut() const {
         return hist_;
     }
 
@@ -202,11 +202,11 @@ private:
   double percentage_;
   double der_thr_;
   double weight_;
-  vector<int> x_;
-  vector<double> y_;
+  std::vector<int> x_;
+  std::vector<double> y_;
   size_t data_size_, data_len_;
   int x_left_, x_right_;
-  vector<complex_t> hist_;
+  std::vector<complex_t> hist_;
 
   size_t Rev(size_t num, size_t lg_n) {
     size_t res = 0;
@@ -216,7 +216,7 @@ private:
     return res;
   }
 
-  void FFT(vector<complex_t>& vect, bool invert) {
+  void FFT(std::vector<complex_t> &vect, bool invert) {
     size_t n = vect.size();
     size_t lg_n = 0;
     while ( (1u << lg_n) < n)
@@ -252,15 +252,15 @@ private:
   }
 
 
-  void FFTForward(vector<complex_t>& vect) {
+  void FFTForward(std::vector<complex_t>& vect) {
     FFT(vect, false);
   }
 
-  void FFTBackward(vector<complex_t>& vect) {
+  void FFTBackward(std::vector<complex_t>& vect) {
     FFT(vect, true);
   }
 
-  void ExtendLinear(vector<complex_t>& hist) {
+  void ExtendLinear(std::vector<complex_t>& hist) {
     size_t ind = 0;
     weight_ = 0.;
     for (size_t i = 0; i < data_len_; ++i) {

@@ -41,7 +41,7 @@ size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
         ans += g_.length(cur);
 
         used.insert(cur);
-        vector<EdgeId> neighbours;
+        std::vector<EdgeId> neighbours;
         neighbours.push_back(g_.conjugate(cur));
         auto start = g_.EdgeStart(cur);
         auto tmp = g_.IncidentEdges(start);

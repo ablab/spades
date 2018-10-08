@@ -16,7 +16,7 @@ WeightedDistanceEstimator::EstimHist WeightedDistanceEstimator::EstimateEdgePair
 
     EstimHist result;
     int maxD = rounded_d(histogram.max()), minD = rounded_d(histogram.min());
-    vector<int> forward;
+    std::vector<int> forward;
     for (auto len : raw_forward) {
         int length = (int) len;
         if (minD - (int) this->max_distance_ <= length && length <= maxD + (int) this->max_distance_) {
@@ -28,7 +28,7 @@ WeightedDistanceEstimator::EstimHist WeightedDistanceEstimator::EstimateEdgePair
 
     DEDistance max_dist = this->max_distance_;
     size_t i = 0;
-    vector<double> weights(forward.size());
+    std::vector<double> weights(forward.size());
     for (auto point : histogram) {
         DEDistance cur_dist(forward[i]), next_dist(forward[i + 1]);
         if (le(2 * point.d + DEDistance(second_len), DEDistance(first_len)))
@@ -55,7 +55,7 @@ WeightedDistanceEstimator::EstimHist WeightedDistanceEstimator::EstimateEdgePair
 
     for (size_t i = 0; i < forward.size(); ++i)
         if (gr(weights[i], 0.))
-            result.push_back(make_pair(forward[i], weights[i]));
+            result.emplace_back(forward[i], weights[i]);
 
     return result;
 }

@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "utils/standard_base.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "sequence/sequence.hpp"
 #include "assembly_graph/core/graph_iterators.hpp"

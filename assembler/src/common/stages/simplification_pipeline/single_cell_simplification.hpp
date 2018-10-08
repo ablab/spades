@@ -85,7 +85,7 @@ bool RemoveThorns(
                         func::And(omnigraph::AdditionalMDAThornCondition<Graph>(g, isec_config.uniqueness_length),
                                   omnigraph::TopologicalThornCondition<Graph>(g, isec_config.span_distance)));
 
-    return RemoveErroneousEdgesInCoverageOrder(g, condition, numeric_limits<double>::max(), removal_handler);
+    return RemoveErroneousEdgesInCoverageOrder(g, condition, std::numeric_limits<double>::max(), removal_handler);
 }
 
 template<class Graph>

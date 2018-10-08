@@ -21,7 +21,7 @@ PairedStreamPtr paired_easy_reader(const SequencingLibraryBase &lib,
                                    bool use_orientation = true,
                                    OffsetType offset_type = PhredOffset) {
     ReadStreamList<PairedRead> streams;
-    for (auto read_pair : lib.paired_reads()) {
+    for (const auto &read_pair : lib.paired_reads()) {
         streams.push_back(PairedEasyStream(read_pair.first, read_pair.second, followed_by_rc, insert_size,
                                            use_orientation, lib.orientation(), offset_type));
     }
@@ -36,12 +36,12 @@ ReadStreamList<SingleRead> single_easy_readers(const SequencingLibraryBase &lib,
                                                OffsetType offset_type = PhredOffset) {
     ReadStreamList<SingleRead> streams;
     if (including_paired_reads) {
-      for (const auto& read : lib.reads()) {
+      for (const auto &read : lib.reads()) {
         //do we need input_file function here?
         streams.push_back(EasyStream(read, followed_by_rc, handle_Ns, offset_type));
       }
     } else {
-      for (const auto& read : lib.single_reads()) {
+      for (const auto &read : lib.single_reads()) {
         streams.push_back(EasyStream(read, followed_by_rc, handle_Ns, offset_type));
       }
     }

@@ -74,12 +74,11 @@ class UniquenessPlausabilityCondition : public EdgeCondition<Graph> {
 
     virtual bool CheckPlausibility(EdgeId e, bool forward) const = 0;
 
-    bool SingleUnique(const vector<EdgeId> &edges, bool forward) const {
+    bool SingleUnique(const std::vector<EdgeId> &edges, bool forward) const {
         return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
     }
 
-    bool ExistPlausible(EdgeId init_e, const vector<EdgeId> &edges,
-                        bool forward) const {
+    bool ExistPlausible(EdgeId init_e, const std::vector<EdgeId> &edges, bool forward) const {
         for (EdgeId e : edges) {
             if (e == init_e)
                 continue;
@@ -173,7 +172,7 @@ private:
     size_t max_depth_;
 
     bool search(VertexId a, VertexId start, EdgeId e, size_t depth,
-                std::set<VertexId> &was, pair<size_t, size_t> &result) const {
+                std::set<VertexId> &was, std::pair<size_t, size_t> &result) const {
         if (depth > max_depth_)
             return false;
         if (was.count(a) == 1)

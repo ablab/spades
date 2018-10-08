@@ -7,8 +7,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-
-#include "utils/standard_base.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 
 using namespace omnigraph;
@@ -28,35 +26,34 @@ public:
 
 template<typename ElementId, typename Value>
 class MapParameterStorage : public virtual ParameterStorage<ElementId, Value> {
-private:
+public:
+    typedef std::map<ElementId, Value> Storage;
 private:
     template<class It>
-    static map<ElementId, string> ConstructMap(It begin, It end, const string &color) {
-        map<ElementId, string> result;
+    static std::map<ElementId, std::string> ConstructMap(It begin, It end, const std::string &color) {
+        std::map<ElementId, std::string> result;
         for (auto it = begin; it != end; ++it) {
-            result.insert(make_pair(*it, color));
+            result.insert({*it, color});
         }
         return result;
     }
 
 protected:
-    map<ElementId, Value> storage_;
+    std::map<ElementId, Value> storage_;
 private:
     boost::optional<Value> default_value_;
 public:
-    MapParameterStorage(const string &default_value) : default_value_(default_value) {
+    MapParameterStorage(const std::string &default_value):
+            default_value_(default_value) {
     }
 
-    MapParameterStorage(map<ElementId, Value> storage, Value default_value) : storage_(storage),
-                                                                              default_value_(default_value) {
-    }
-
-    MapParameterStorage(map<ElementId, Value> storage) : storage_(storage) {
+    MapParameterStorage(const Storage &storage, Value default_value = Value()):
+            storage_(storage), default_value_(std::move(default_value)) {
     }
 
     template<class It>
-    MapParameterStorage(It begin, It end, const Value &value, const string &default_value) : storage_(
-            ConstructMap(begin, end, value)), default_value_(default_value) {
+    MapParameterStorage(It begin, It end, const Value &value, const std::string &default_value):
+            storage_(ConstructMap(begin, end, value)), default_value_(default_value) {
     }
 
 

@@ -45,7 +45,7 @@ class Compressor {
                && !graph_.RelatedVertices(graph_.EdgeStart(e),
                                           graph_.EdgeEnd(e))) {
         }
-        vector <EdgeId> mergeList;
+        std::vector<EdgeId> mergeList;
         start_edge = e;
         do {
             mergeList.push_back(e);

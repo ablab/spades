@@ -15,7 +15,6 @@
 #include "HSeq.hpp"
 #include "io/reads/single_read.hpp"
 
-#include <cmath>
 #include <cstdint>
 
 template <size_t kK>
@@ -126,7 +125,7 @@ class ValidHKMerGenerator {
   void TrimBadQuality();
 
   double Prob(unsigned qual) {
-    return max(1 - pow(10.0, -(qual / 10.0)),
+    return std::max(1 - pow(10.0, -(qual / 10.0)),
                1e-40);  //(qual < 3 ? 0.25 : 1 - pow(10.0, -(qual / 10.0)));
                         //     return Globals::quality_probs[qual];
   }

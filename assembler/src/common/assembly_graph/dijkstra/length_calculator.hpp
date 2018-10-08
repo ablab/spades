@@ -6,7 +6,9 @@
 //***************************************************************************
 
 #pragma once
-#include "utils/standard_base.hpp"
+
+#include <set>
+#include <vector>
 
 namespace omnigraph {
 
@@ -30,9 +32,9 @@ class ComponentLenCalculator {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &graph_;
-    set<EdgeId> &component_;
+    std::set<EdgeId> &component_;
 public:
-    ComponentLenCalculator(const Graph &graph, set<EdgeId> &component) :
+    ComponentLenCalculator(const Graph &graph, std::set<EdgeId> &component) :
         graph_(graph), component_(component) { }
 
     distance_t GetLength(EdgeId edge) const{
@@ -67,11 +69,11 @@ class AlongPathLengthCalculator {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &graph_;
-    set<VertexId> vertex_path_;
+    std::set<VertexId> vertex_path_;
     distance_t bound_;
 
-    set<VertexId> CollectVertices(vector<EdgeId> &edge_path){
-        set<VertexId> result;
+    std::set<VertexId> CollectVertices(const std::vector<EdgeId> &edge_path){
+        std::set<VertexId> result;
         for(auto e = edge_path.begin(); e != edge_path.end(); e++){
             result.insert(this->graph_.EdgeStart(*e));
             result.insert(this->graph_.EdgeEnd(*e));
@@ -80,7 +82,7 @@ class AlongPathLengthCalculator {
     }
 
 public:
-    AlongPathLengthCalculator(const Graph &graph, vector<EdgeId> &edge_path, distance_t bound) :
+    AlongPathLengthCalculator(const Graph &graph, const std::vector<EdgeId> &edge_path, distance_t bound) :
         graph_(graph),
         vertex_path_(CollectVertices(edge_path)),
         bound_(bound) { }
@@ -88,7 +90,7 @@ public:
     distance_t GetLength(EdgeId edge) const{
         if (vertex_path_.count(this->graph_.EdgeStart(edge))
                 && vertex_path_.count(this->graph_.EdgeEnd(edge)))
-            return min(int(graph_.length(edge)), 200);
+            return std::min(int(graph_.length(edge)), 200);
         return graph_.length(edge);
     }
 };
@@ -100,10 +102,10 @@ class PathIgnoringLengthCalculator {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &graph_;
-    set<EdgeId> path_;
+    std::set<EdgeId> path_;
 
 public:
-    PathIgnoringLengthCalculator(const Graph &graph, const vector<EdgeId> &edge_path) :
+    PathIgnoringLengthCalculator(const Graph &graph, const std::vector<EdgeId> &edge_path) :
             graph_(graph),
             path_(edge_path.begin(), edge_path.end())
             { }

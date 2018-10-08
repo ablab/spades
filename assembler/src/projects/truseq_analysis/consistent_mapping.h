@@ -18,7 +18,7 @@ namespace alignment_analysis {
         Range second;
     };
 
-    ostream & operator<<(ostream& os, const EdgeRange& er);
+    std::ostream & operator<<(std::ostream &os, const EdgeRange &er);
 
     struct ConsistentMapping {
         ConsistentMapping(const Graph &graph);
@@ -27,7 +27,7 @@ namespace alignment_analysis {
 
         ConsistentMapping(const Graph &graph, const omnigraph::MappingPath<EdgeId> &path);
 
-        ConsistentMapping(Graph const &graph, Range r, const vector<EdgeRange> &path);
+        ConsistentMapping(Graph const &graph, Range r, const std::vector<EdgeRange> &path);
 
         bool CheckConnect(EdgeId e, Range r) const;
 
@@ -41,13 +41,13 @@ namespace alignment_analysis {
 
         void Join(const ConsistentMapping &other);
 
-        void Join(const ConsistentMapping &other, const vector <EdgeRange> &path);
+        void Join(const ConsistentMapping &other, const std::vector<EdgeRange> &path);
 
-        void ForceJoin(const ConsistentMapping &other, const vector <EdgeId> &path);
+        void ForceJoin(const ConsistentMapping &other, const std::vector<EdgeId> &path);
 
         Range const &GetInitialRange() const;
 
-        const vector <EdgeRange> &GetMappedPath() const;
+        const std::vector<EdgeRange> &GetMappedPath() const;
 
         VertexId StartVertex() const;
 
@@ -67,9 +67,9 @@ namespace alignment_analysis {
 
         size_t size() const;
 
-        string description_;
+        std::string description_;
 
-        string CompareToReference(const string &reference_part) const;
+        std::string CompareToReference(const std::string &reference_part) const;
 
 //        void CloseEnd();
 //
@@ -77,14 +77,14 @@ namespace alignment_analysis {
 
     private:
         bool CheckConnect(const EdgeRange &r1, const EdgeRange &r2) const;
-        bool CheckConnect(const vector <EdgeRange> &path) const;
-        vector<EdgeRange> GenerateMappingPath(const vector<EdgeId> &path) const;
+        bool CheckConnect(const std::vector<EdgeRange> &path) const;
+        std::vector<EdgeRange> GenerateMappingPath(const std::vector<EdgeId> &path) const;
 
         const Graph &graph_;
         Range initial_range;
-        vector <EdgeRange> mapped_path;
+        std::vector<EdgeRange> mapped_path;
         DECL_LOGGER("ConsistentMapping");
     };
 
-    ostream & operator<<(ostream& os, const ConsistentMapping& cm);
+    std::ostream & operator<<(std::ostream& os, const ConsistentMapping& cm);
 }

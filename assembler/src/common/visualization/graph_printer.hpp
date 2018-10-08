@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "utils/standard_base.hpp"
 #include "graph_print_utils.hpp"
 #include "graph_labeler.hpp"
 #include "graph_colorer.hpp"
@@ -51,7 +50,7 @@ protected:
         return BaseEdge<GvisVertexId>(from, to, this->labeler_.label(e), this->colorer_.GetValue(e));
     }
 
-    virtual void ManageDrawn(VertexId v, set<VertexId> &visited) {
+    virtual void ManageDrawn(VertexId v, std::set<VertexId> &visited) {
         visited.insert(v);
     }
 
@@ -72,7 +71,7 @@ public:
 
     template<class iter>
     void AddVertices(iter vbegin, iter vend) {
-        set<VertexId> drawn;
+        std::set<VertexId> drawn;
         for (; vbegin != vend; ++vbegin) {
             if (drawn.count(*vbegin) == 0) {
                 AddVertex(*vbegin);
@@ -103,7 +102,7 @@ private:
     DotSingleGraphRecorder<size_t> recorder_;
 
 public:
-    SingleGraphPrinter(const Graph &graph, ostream &os,
+    SingleGraphPrinter(const Graph &graph, std::ostream &os,
                        const graph_labeler::GraphLabeler<Graph> &labeler,
                        const graph_colorer::GraphColorer<Graph> &colorer,
                        const vertex_linker::VertexLinker<Graph> &linker) : GraphPrinter<Graph>(/*os_, */graph, labeler,
@@ -138,24 +137,24 @@ private:
 
     DotPairedGraphRecorder<size_t> recorder_;
 
-    pair<BaseVertex<size_t>, BaseVertex<size_t>> CreateDoubleVertex(VertexId v) {
+    std::pair<BaseVertex<size_t>, BaseVertex<size_t>> CreateDoubleVertex(VertexId v) {
         BaseVertex<size_t> u1 = this->CreateBaseVertex((size_t)this->graph().int_id(v), v);
         BaseVertex<size_t> u2 = this->CreateBaseVertex((size_t)this->graph().int_id(this->graph().conjugate(v)), this->graph().conjugate(v));
-        return make_pair(u1, u2);
+        return std::make_pair(u1, u2);
     }
 
-    pair<size_t, size_t> CreateDoubleVertexId(VertexId v) {
-        return make_pair(this->graph().int_id(v), this->graph().int_id(this->graph().conjugate(v)));
+    std::pair<size_t, size_t> CreateDoubleVertexId(VertexId v) {
+        return std::make_pair(this->graph().int_id(v), this->graph().int_id(this->graph().conjugate(v)));
     }
 
 protected:
-    /*virtual */void ManageDrawn(VertexId v, set<VertexId> &visited) {
+    /*virtual */void ManageDrawn(VertexId v, std::set<VertexId> &visited) {
         visited.insert(v);
         visited.insert(this->graph().conjugate(v));
     }
 
 public:
-    PairedGraphPrinter(const Graph &graph, ostream &os,
+    PairedGraphPrinter(const Graph &graph, std::ostream &os,
                        const graph_labeler::GraphLabeler<Graph> &labeler,
                        const graph_colorer::GraphColorer<Graph> &colorer,
                        const vertex_linker::VertexLinker<Graph> &linker) : GraphPrinter<Graph>(/*os_, */graph, labeler,
@@ -178,7 +177,9 @@ public:
     void AddEdge(EdgeId edge) {
         auto vid1 = CreateDoubleVertexId(this->graph().EdgeStart(edge));
         auto vid2 = CreateDoubleVertexId(this->graph().EdgeEnd(edge));
-        recorder_.recordEdge(BaseEdge<pair<size_t, size_t>>(vid1, vid2, this->labeler_.label(edge), this->colorer_.GetValue(edge)));
+        recorder_.recordEdge(BaseEdge<std::pair<size_t, size_t>>(vid1, vid2,
+                                                                 this->labeler_.label(edge),
+                                                                 this->colorer_.GetValue(edge)));
     }
 };
 

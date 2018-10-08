@@ -119,9 +119,6 @@ inline bool IsSimpleBulge(const Graph &g, typename Graph::EdgeId e){
 
 template<class Graph>
 inline bool IsAlternativePathExist(const Graph &g, typename Graph::EdgeId e){
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-
     MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(g, e);
 
     VertexId start = g.EdgeStart(e);
@@ -131,7 +128,7 @@ inline bool IsAlternativePathExist(const Graph &g, typename Graph::EdgeId e){
 
     ProcessPaths(g, 0, std::numeric_limits<std::size_t>::max(), start, end, path_chooser);
 
-    const vector<EdgeId>& path = path_chooser.most_covered_path();
+    const auto &path = path_chooser.most_covered_path();
     double path_coverage = path_chooser.max_coverage();
     if (!path.empty() && math::gr(path_coverage, 0.)) {
         VERIFY(g.EdgeStart(path[0]) == start);
@@ -145,9 +142,6 @@ inline bool IsAlternativePathExist(const Graph &g, typename Graph::EdgeId e){
 
 template<class Graph>
 inline bool IsAlternativeInclusivePathExist(const Graph &g, typename Graph::EdgeId forbidden_edge, typename Graph::EdgeId compulsory_edge){
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-
     MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(g, forbidden_edge);
 
     VertexId start = g.EdgeStart(forbidden_edge);
@@ -157,7 +151,7 @@ inline bool IsAlternativeInclusivePathExist(const Graph &g, typename Graph::Edge
 
     ProcessPaths(g, 0, std::numeric_limits<std::size_t>::max(), start, end, path_chooser);
 
-    const vector<EdgeId>& path = path_chooser.most_covered_path();
+    const auto &path = path_chooser.most_covered_path();
     double path_coverage = path_chooser.max_coverage();
     if (!path.empty() && math::gr(path_coverage, 0.)) {
         VERIFY(g.EdgeStart(path[0]) == start);
@@ -180,7 +174,7 @@ inline bool IsReachableBulge(const Graph &g, typename Graph::EdgeId e){
         return res;
     else{
         VertexId start = g.EdgeStart(e), end = g.EdgeEnd(e);
-        vector<EdgeId> incident;
+        std::vector<EdgeId> incident;
         utils::push_back_all(incident, g.IncomingEdges(end));
         utils::push_back_all(incident, g.OutgoingEdges(start));
         for (auto it = incident.begin(); it != incident.end(); ++it){
@@ -421,7 +415,7 @@ class ECLoopRemover : public EdgeProcessingAlgorithm<Graph> {
 
     bool ProcessEdge(EdgeId e) {
         if (IsAnyLoop(e)) {
-            DEBUG("Susp loop: " << this->g().int_id(e) << endl);
+            DEBUG("Susp loop: " << this->g().int_id(e) << std::endl);
             bool res = FindHiddenLoopEC(e);
             if (res) {DEBUG ("was removed");} else {DEBUG("was not removed"); }
             return res;
@@ -467,7 +461,7 @@ class MetaHiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename 
 
     void ProcessHiddenEC(VertexId v) {
         VERIFY(this->g().OutgoingEdgeCount(v) == 2);
-        vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
+        std::vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
         if (math::gr(flanking_coverage_.CoverageOfStart(edges.front()),
                     flanking_coverage_.CoverageOfStart(edges.back()))) {
             std::swap(edges.front(), edges.back());
@@ -488,7 +482,7 @@ class MetaHiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename 
         if (this->g().IncomingEdgeCount(v) != 1 || this->g().OutgoingEdgeCount(v) != 2) {
             return false;
         }
-        vector<EdgeId> edges;
+        std::vector<EdgeId> edges;
         utils::push_back_all(edges, this->g().OutgoingEdges(v));
         VERIFY(edges.size() == 2);
         if (this->g().conjugate(edges[0]) != edges[1]) {
@@ -552,7 +546,7 @@ class HiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename Grap
         //todo why 8???
         omnigraph::MultiplicityCounter<Graph> mult_counter(this->g(), uniqueness_length_, 8);
 
-        vector<EdgeId> edges;
+        std::vector<EdgeId> edges;
         utils::push_back_all(edges, this->g().OutgoingEdges(this->g().EdgeEnd(e)));
         VERIFY(edges.size() == 2);
         return (this->g().conjugate(edges[0]) == edges[1] && mult_counter.count(e, this->g().EdgeStart(e)) <= 1) ||
@@ -562,7 +556,7 @@ class HiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename Grap
     bool ProcessHiddenEC(VertexId v) {
         TRACE("Processing outgoing edges for vertex " << this->g().str(v));
         VERIFY(this->g().OutgoingEdgeCount(v) == 2)
-        vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
+        std::vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
         if (math::gr(flanking_coverage_.CoverageOfStart(edges.front()),
                     flanking_coverage_.CoverageOfStart(edges.back()))) {
             std::swap(edges.front(), edges.back());

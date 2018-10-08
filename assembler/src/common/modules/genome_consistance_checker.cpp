@@ -363,9 +363,9 @@ vector<MappingRange> GenomeConsistenceChecker::FindBestRangeSequence(const set<M
     return answer;
 }
 
-map<EdgeId, string> GenomeConsistenceChecker::EdgeLabels() const {
+std::map<EdgeId, std::string> GenomeConsistenceChecker::EdgeLabels() const {
     INFO("Constructing reference labels");
-    map<EdgeId, string> answer;
+    std::map<EdgeId, std::string> answer;
     size_t count = 0;
     for (const auto &chr: genome_info_.Chromosomes()) {
         const auto &chr_info = genome_info_.ChrInfo(chr);
@@ -419,7 +419,7 @@ void GenomeConsistenceChecker::Fill() {
     TheoreticLenStats(theoretic_lens);
 }
 
-void GenomeConsistenceChecker::TheoreticLenStats(vector<size_t> theoretic_lens) const {
+void GenomeConsistenceChecker::TheoreticLenStats(std::vector<size_t> theoretic_lens) const {
     size_t total_len = std::accumulate(theoretic_lens.begin(), theoretic_lens.end(),
                                        0, std::plus<size_t>());
 

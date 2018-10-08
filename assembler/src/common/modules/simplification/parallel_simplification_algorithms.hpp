@@ -9,7 +9,7 @@
 
 #include "cleaner.hpp"
 #include "bulge_remover.hpp"
-#include "utils/standard_base.hpp"
+
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/graph_support/parallel_processing.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
@@ -69,7 +69,7 @@ public:
         if (LockingOutgoingCount(v) == 0)
             return false;
 
-        vector<EdgeId> tips;
+        std::vector<EdgeId> tips;
         //don't need lock here after the previous check
         for (EdgeId e : g_.IncomingEdges(v)) {
             if (IsIncomingTip(e)) {
@@ -79,7 +79,7 @@ public:
 
         //if all of edges are tips, leave the longest one
         if (!tips.empty() && tips.size() == g_.IncomingEdgeCount(v)) {
-            sort(tips.begin(), tips.end(), omnigraph::LengthComparator<Graph>(g_));
+            std::sort(tips.begin(), tips.end(), omnigraph::LengthComparator<Graph>(g_));
             tips.pop_back();
         }
 
@@ -116,7 +116,7 @@ class ParallelSimpleBRFunctor {
         return l1 <= l2 + delta && l2 <= l1 + delta;
     }
 
-    EdgeId Alternative(EdgeId e, const vector<EdgeId>& edges) const {
+    EdgeId Alternative(EdgeId e, const std::vector<EdgeId> &edges) const {
         size_t delta = omnigraph::CountMaxDifference(max_delta_, g_.length(e), max_relative_delta_);
         for (auto it = edges.rbegin(); it != edges.rend(); ++it) {
             EdgeId candidate = *it;
@@ -128,7 +128,7 @@ class ParallelSimpleBRFunctor {
         return EdgeId();
     }
 
-    bool ProcessEdges(const vector<EdgeId>& edges) {
+    bool ProcessEdges(const std::vector<EdgeId> &edges) {
         for (EdgeId e : edges) {
             if (g_.length(e) <= max_length_ && math::le(g_.coverage(e), max_coverage_)) {
                 EdgeId alt = Alternative(e, edges);
@@ -144,9 +144,9 @@ class ParallelSimpleBRFunctor {
         return false;
     }
 
-    vector<VertexId> MultiEdgeDestinations(VertexId v) const {
-        vector<VertexId> answer;
-        set<VertexId> destinations;
+    std::vector<VertexId> MultiEdgeDestinations(VertexId v) const {
+        std::vector<VertexId> answer;
+        std::set<VertexId> destinations;
         for (EdgeId e : g_.OutgoingEdges(v)) {
             VertexId end = g_.EdgeEnd(e);
             if (destinations.count(end) > 0) {
@@ -158,7 +158,7 @@ class ParallelSimpleBRFunctor {
     }
 
     VertexId SingleMultiEdgeDestination(VertexId v) const {
-        vector<VertexId> dests = MultiEdgeDestinations(v);
+        auto dests = MultiEdgeDestinations(v);
         if (dests.size() == 1) {
             return dests.front();
         } else {
@@ -169,10 +169,10 @@ class ParallelSimpleBRFunctor {
     void RemoveBulges(VertexId v) {
         bool flag = true;
         while (flag) {
-            vector<EdgeId> edges(g_.out_begin(v), g_.out_end(v));
+            std::vector<EdgeId> edges(g_.out_begin(v), g_.out_end(v));
             if (edges.size() == 1)
                 return;
-            sort(edges.begin(), edges.end(), omnigraph::CoverageComparator<Graph>(g_));
+            std::sort(edges.begin(), edges.end(), omnigraph::CoverageComparator<Graph>(g_));
             flag = ProcessEdges(edges);
         }
     }
@@ -205,7 +205,7 @@ public:
     }
 
     bool operator()(VertexId v/*, need number of vertex for stable id distribution*/) {
-        vector<VertexId> multi_dest;
+        std::vector<VertexId> multi_dest;
 
         {
             VertexLockT lock(v);
@@ -293,7 +293,7 @@ class ParallelLowCoverageFunctor {
     omnigraph::EdgeRemovalHandlerF<Graph> handler_f_;
 
     omnigraph::GraphElementMarker<EdgeId> edge_marker_;
-    vector<EdgeId> edges_to_remove_;
+    std::vector<EdgeId> edges_to_remove_;
 
     void UnlinkEdgeFromStart(EdgeId e) {
         VertexId start = g_.EdgeStart(e);
@@ -371,17 +371,17 @@ class ParallelCompressor {
         return g_.OutgoingEdgeCount(v);
     }
 
-    vector<VertexId> LockingNextVertices(VertexId v) const {
+    std::vector<VertexId> LockingNextVertices(VertexId v) const {
         VertexLockT lock(v);
-        vector<VertexId> answer;
+        std::vector<VertexId> answer;
         for (EdgeId e : g_.OutgoingEdges(v)) {
             answer.push_back(g_.EdgeEnd(e));
         }
         return answer;
     }
 
-    vector<VertexId> FilterBranchingVertices(const vector<VertexId>& vertices) const {
-        vector<VertexId> answer;
+    std::vector<VertexId> FilterBranchingVertices(const std::vector<VertexId> &vertices) const {
+        std::vector<VertexId> answer;
         for (VertexId v : vertices) {
             VertexLockT lock(v);
             if (!IsBranching(v)) {
@@ -400,7 +400,7 @@ class ParallelCompressor {
     //to_compress is not empty only if compression needs to be done
     //don't need additional checks for v == init | conjugate(init), because init is branching!
     //fixme what about plasmids?! =)
-    bool ProcessNextAndGo(VertexId& v, VertexId init, vector<VertexId>& to_compress) {
+    bool ProcessNextAndGo(VertexId& v, VertexId init, std::vector<VertexId> &to_compress) {
         VertexLockT lock(v);
         if (!CheckConsistent(v)) {
             to_compress.clear();
@@ -431,34 +431,34 @@ class ParallelCompressor {
 
     //fixme duplication with abstract conj graph
     //not locking!
-    vector<EdgeId> EdgesToDelete(const vector<EdgeId> &path) const {
-        set<EdgeId> edgesToDelete;
+    std::vector<EdgeId> EdgesToDelete(const std::vector<EdgeId> &path) const {
+        std::set<EdgeId> edgesToDelete;
         edgesToDelete.insert(path[0]);
         for (size_t i = 0; i + 1 < path.size(); i++) {
             EdgeId e = path[i + 1];
             if (edgesToDelete.find(g_.conjugate(e)) == edgesToDelete.end())
                 edgesToDelete.insert(e);
         }
-        return vector<EdgeId>(edgesToDelete.begin(), edgesToDelete.end());
+        return std::vector<EdgeId>(edgesToDelete.begin(), edgesToDelete.end());
     }
 
     //not locking!
     //fixme duplication with abstract conj graph
-    vector<VertexId> VerticesToDelete(const vector<EdgeId> &path) const {
-        set<VertexId> verticesToDelete;
+    std::vector<VertexId> VerticesToDelete(const std::vector<EdgeId> &path) const {
+        std::set<VertexId> verticesToDelete;
         for (size_t i = 0; i + 1 < path.size(); i++) {
             EdgeId e = path[i + 1];
             VertexId v = g_.EdgeStart(e);
             if (verticesToDelete.find(g_.conjugate(v)) == verticesToDelete.end())
                 verticesToDelete.insert(v);
         }
-        return vector<VertexId>(verticesToDelete.begin(), verticesToDelete.end());
+        return std::vector<VertexId>(verticesToDelete.begin(), verticesToDelete.end());
     }
     //todo end duplication with abstract conj graph
 
     //not locking!
-    vector<EdgeId> CollectEdges(const vector<VertexId>& to_compress) const {
-        vector<EdgeId> answer;
+    std::vector<EdgeId> CollectEdges(const std::vector<VertexId> &to_compress) const {
+        std::vector<EdgeId> answer;
         answer.push_back(g_.GetUniqueIncomingEdge(to_compress.front()));
         for (VertexId v : to_compress) {
             answer.push_back(g_.GetUniqueOutgoingEdge(v));
@@ -466,14 +466,14 @@ class ParallelCompressor {
         return answer;
     }
 
-    void CallHandlers(const vector<EdgeId>& edges, EdgeId new_edge) const {
+    void CallHandlers(const std::vector<EdgeId> &edges, EdgeId new_edge) const {
         g_.FireMerge(edges, new_edge);
         g_.FireDeletePath(EdgesToDelete(edges), VerticesToDelete(edges));
         g_.FireAddEdge(new_edge);
     }
 
-    EdgeData MergedData(const vector<EdgeId>& edges) const {
-        vector<const EdgeData*> to_merge;
+    EdgeData MergedData(const std::vector<EdgeId> &edges) const {
+        std::vector<const EdgeData *> to_merge;
         for (EdgeId e : edges) {
             to_merge.push_back(&(g_.data(e)));
         }
@@ -494,18 +494,19 @@ class ParallelCompressor {
     }
 
     void ProcessBranching(VertexId next, VertexId init, size_t idx) {
-        vector<VertexId> to_compress;
+        std::vector<VertexId> to_compress;
         while (ProcessNextAndGo(next, init, to_compress)) {
         }
 
         if (!to_compress.empty()) {
             //here we are sure that we are the ones to process the path
             //so we can collect edges without any troubles (and actually without locks todo check!)
-            vector<EdgeId> edges = CollectEdges(to_compress);
+            auto edges = CollectEdges(to_compress);
 
             auto id_distributor = segment_storage_->GetSegmentIdDistributor(2 * idx, 2 * idx + 1);
 
-            EdgeId new_edge = SyncAddEdge(g_.EdgeStart(edges.front()), g_.EdgeEnd(edges.back()), MergeSequences(g_, edges), id_distributor);
+            EdgeId new_edge = SyncAddEdge(g_.EdgeStart(edges.front()), g_.EdgeEnd(edges.back()),
+                                          MergeSequences(g_, edges), id_distributor);
 
             CallHandlers(edges, new_edge);
 

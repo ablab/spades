@@ -21,7 +21,7 @@ namespace debruijn_graph {
 
 
     template<class Graph>
-    vector<typename Graph::EdgeId> GetCommonPathsEnd(
+    std::vector<typename Graph::EdgeId> GetCommonPathsEnd(
             const Graph &g,
             typename Graph::EdgeId e1,
             typename Graph::EdgeId e2,
@@ -32,7 +32,7 @@ namespace debruijn_graph {
         typedef typename Graph::EdgeId EdgeId;
         typedef typename Graph::VertexId VertexId;
 
-        vector<EdgeId> res;
+        std::vector<EdgeId> res;
         VERIFY (min_dist >= g.length(e1));
         VERIFY (max_dist >= g.length(e1));
         size_t dist = max_dist - g.length(e1);
@@ -73,7 +73,7 @@ namespace debruijn_graph {
     }
 
     template<class Graph>
-    vector<vector<typename Graph::EdgeId> > GetAllPathsBetweenEdges(
+    std::vector<std::vector<typename Graph::EdgeId>> GetAllPathsBetweenEdges(
             const Graph &g,
             typename Graph::EdgeId &e1,
             typename Graph::EdgeId &e2, size_t min_dist,
@@ -107,9 +107,8 @@ namespace debruijn_graph {
     }
 
     template<class Graph>
-    Sequence MergeSequences(const Graph &g,
-                            const vector<typename Graph::EdgeId> &continuous_path) {
-        vector<Sequence> path_sequences;
+    Sequence MergeSequences(const Graph &g, const std::vector<typename Graph::EdgeId> &continuous_path) {
+        std::vector<Sequence> path_sequences;
         if (continuous_path.size() == 0)
             return Sequence();
         path_sequences.push_back(g.EdgeNucls(continuous_path[0]));

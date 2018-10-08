@@ -5,12 +5,12 @@
 #include "scaffold_graph_constructor.hpp"
 
 namespace path_extend {
+
 namespace scaffold_graph {
 
-
 void BaseScaffoldGraphConstructor::ConstructFromEdgeConditions(func::TypedPredicate<typename Graph::EdgeId> edge_condition,
-                                                           vector<shared_ptr<ConnectionCondition>> &connection_conditions,
-                                                           bool use_terminal_vertices_only) {
+                                                               ConnectionConditions &connection_conditions,
+                                                               bool use_terminal_vertices_only) {
     for (auto e = graph_->AssemblyGraph().ConstEdgeBegin(); !e.IsEnd(); ++e) {
         if (edge_condition(*e)) {
             graph_->AddVertex(*e);
@@ -19,15 +19,15 @@ void BaseScaffoldGraphConstructor::ConstructFromEdgeConditions(func::TypedPredic
     ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
 }
 
-void BaseScaffoldGraphConstructor::ConstructFromSet(const set<EdgeId> edge_set,
-                                                vector<shared_ptr<ConnectionCondition>> &connection_conditions,
-                                                bool use_terminal_vertices_only) {
+void BaseScaffoldGraphConstructor::ConstructFromSet(const EdgeSet &edge_set,
+                                                    ConnectionConditions &connection_conditions,
+                                                    bool use_terminal_vertices_only) {
     graph_->AddVertices(edge_set);
     ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
 }
 
-void BaseScaffoldGraphConstructor::ConstructFromConditions(vector<shared_ptr<ConnectionCondition>> &connection_conditions,
-                                                       bool use_terminal_vertices_only) {
+void BaseScaffoldGraphConstructor::ConstructFromConditions(ConnectionConditions &connection_conditions,
+                                                           bool use_terminal_vertices_only) {
 //TODO :: awful. It depends on ordering of connected conditions.
     for (auto condition : connection_conditions) {
         if (condition->GetLibIndex() == (size_t) -1)
@@ -37,8 +37,8 @@ void BaseScaffoldGraphConstructor::ConstructFromConditions(vector<shared_ptr<Con
     }
 }
 
-void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition,
-                                                            bool use_terminal_vertices_only) {
+void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const std::shared_ptr<ConnectionCondition> condition,
+                                                                bool use_terminal_vertices_only) {
     for (const auto& v : graph_->vertices()) {
         TRACE("Vertex " << graph_->int_id(v));
 
@@ -60,12 +60,12 @@ void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const shared_ptr
 }
 
 
-shared_ptr<ScaffoldGraph> SimpleScaffoldGraphConstructor::Construct() {
+std::shared_ptr<ScaffoldGraph> SimpleScaffoldGraphConstructor::Construct() {
     ConstructFromSet(edge_set_, connection_conditions_);
     return graph_;
 }
 
-shared_ptr<ScaffoldGraph> DefaultScaffoldGraphConstructor::Construct() {
+std::shared_ptr<ScaffoldGraph> DefaultScaffoldGraphConstructor::Construct() {
     ConstructFromSet(edge_set_, connection_conditions_);
     ConstructFromEdgeConditions(edge_condition_, connection_conditions_);
     return graph_;

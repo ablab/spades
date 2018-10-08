@@ -7,8 +7,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-
-#include "utils/standard_base.hpp"
 #include "graph_printer.hpp"
 #include <fstream>
 
@@ -41,7 +39,7 @@ public:
             graph_(graph), paired_(paired) {
     }
 
-    void Visualize(const GraphComponent<Graph> &component, ostream &os,
+    void Visualize(const GraphComponent<Graph> &component, std::ostream &os,
                    const graph_labeler::GraphLabeler<Graph> &labeler,
                    const graph_colorer::GraphColorer<Graph> &colorer,
                    const vertex_linker::VertexLinker<Graph> &linker) {
@@ -54,7 +52,7 @@ public:
         }
     }
 
-    void Visualize(ostream &os,
+    void Visualize(std::ostream &os,
                    const graph_labeler::GraphLabeler<Graph> &labeler,
                    const graph_colorer::GraphColorer<Graph> &colorer,
                    const vertex_linker::VertexLinker<Graph> &linker) {
@@ -66,7 +64,7 @@ public:
 template<class Graph>
 class ComponentNameGenerator {
 public:
-    virtual string ComponentName(const GraphComponent<Graph> &component) = 0;
+    virtual std::string ComponentName(const GraphComponent<Graph> &component) = 0;
 
     virtual ~ComponentNameGenerator() {
     }
@@ -75,17 +73,16 @@ public:
 template<class Graph>
 class SimpleCountingComponentNameGenerator : public ComponentNameGenerator<Graph> {
 private:
-    string name_;
-    string extension_;
+    std::string name_, extension_;
     size_t cnt_;
 public:
-    SimpleCountingComponentNameGenerator(string name, string extension) : name_(name), extension_(extension),
-                                                                          cnt_(0) {
+    SimpleCountingComponentNameGenerator(const std::string &name, const std::string &extension) :
+            name_(name), extension_(extension), cnt_(0) {
     }
 
-    string ComponentName(const GraphComponent<Graph> &component) {
+    std::string ComponentName(const GraphComponent<Graph> &component) {
         cnt_++;
-        stringstream ss;
+        std::stringstream ss;
         ss << name_ << "_" << cnt_;
         if (component.name().size() > 0)
             ss << "_" << component.name();
@@ -97,17 +94,16 @@ public:
 template<class Graph>
 class CountingSizeComponentNameGenerator : public ComponentNameGenerator<Graph> {
 private:
-    string name_;
-    string extension_;
+    std::string name_, extension_;
     size_t cnt_;
 public:
-    CountingSizeComponentNameGenerator(string name, string extension) : name_(name), extension_(extension),
-                                                                        cnt_(0) {
+    CountingSizeComponentNameGenerator(const std::string &name, const std::string &extension) :
+            name_(name), extension_(extension), cnt_(0) {
     }
 
-    string ComponentName(const GraphComponent<Graph> &component) {
+    std::string ComponentName(const GraphComponent<Graph> &component) {
         cnt_++;
-        stringstream ss;
+        std::stringstream ss;
         ss << name_ << "_" << cnt_;
         if (component.name().size() > 0)
             ss << "_" << component.name();
@@ -130,8 +126,8 @@ private:
     const size_t max_component_number_;
     static const size_t DEFAULT_MAX_COMPONENT_NUMBER = 500;
 
-    string ComponentFileName(size_t cnt, const string &folder, const GraphComponent<Graph> &component) {
-        stringstream ss;
+    std::string ComponentFileName(size_t cnt, const std::string &folder, const GraphComponent<Graph> &component) {
+        std::stringstream ss;
         ss << folder << cnt;
         if (component.name().size() > 0)
             ss << "graph_" << component.name();
@@ -150,7 +146,7 @@ public:
             max_component_number_(max_component_number) {
     }
 
-    size_t SplitAndVisualize(GraphSplitter<Graph> &splitter, const string &folder) {
+    size_t SplitAndVisualize(GraphSplitter<Graph> &splitter, const std::string &folder) {
         INFO("Writing components to folder " << folder);
         ComponentVisualizer<Graph> visualizer(graph_, paired_);
         size_t cnt = 0;
@@ -163,7 +159,7 @@ public:
             cnt++;
             GraphComponent<Graph> component = splitter.Next();
             graph_colorer::BorderDecorator<Graph> border_colorer(component, colorer_, "yellow");
-            ofstream os(ComponentFileName(cnt, folder, component));
+            std::ofstream os(ComponentFileName(cnt, folder, component));
             visualizer.Visualize(component, os, labeler_, border_colorer, linker_);
             os.close();
         }

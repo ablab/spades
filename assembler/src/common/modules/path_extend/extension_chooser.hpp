@@ -15,14 +15,14 @@
 #ifndef EXTENSION_HPP_
 #define EXTENSION_HPP_
 
+#include "weight_counter.hpp"
+#include "pe_utils.hpp"
+//#include "scaff_supplementary.hpp"
+
 #include <cfloat>
 #include <iostream>
 #include <fstream>
 #include <map>
-#include "weight_counter.hpp"
-#include "pe_utils.hpp"
-
-//#include "scaff_supplementary.hpp"
 
 namespace path_extend {
 
@@ -180,14 +180,14 @@ public:
 
 protected:
     const Graph& g_;
-    shared_ptr<WeightCounter> wc_;
+    std::shared_ptr<WeightCounter> wc_;
     //FIXME memory leak?!
     std::vector<ExtensionChooserListener *> listeners_;
 
     double weight_threshold_;
 
 public:
-    ExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc = nullptr, double weight_threshold = -1.):
+    ExtensionChooser(const Graph &g, std::shared_ptr<WeightCounter> wc = nullptr, double weight_threshold = -1.):
         g_(g), wc_(wc), 
         weight_threshold_(weight_threshold) {
     }
@@ -222,7 +222,7 @@ public:
         return wc_ != nullptr;
     }
 
-    shared_ptr<WeightCounter> wc() const {
+    std::shared_ptr<WeightCounter> wc() const {
         return wc_;
     }
 
@@ -244,13 +244,13 @@ private:
 
 
 class JointExtensionChooser: public ExtensionChooser {
-    shared_ptr<ExtensionChooser> first_;
-    shared_ptr<ExtensionChooser> second_;
+    std::shared_ptr<ExtensionChooser> first_;
+    std::shared_ptr<ExtensionChooser> second_;
 
 public:
     JointExtensionChooser(const Graph& g,
-                          shared_ptr<ExtensionChooser> first,
-                          shared_ptr<ExtensionChooser> second): ExtensionChooser(g),
+                          std::shared_ptr<ExtensionChooser> first,
+                          std::shared_ptr<ExtensionChooser> second): ExtensionChooser(g),
         first_(first), second_(second) {
     }
 
@@ -404,7 +404,7 @@ private:
     bool IsEnoughCoverage(EdgeId e1, EdgeId e2, bool reverse) const {
         double cov1 = coverage_storage_.GetCoverage(e1, reverse);
         double cov2 = coverage_storage_.GetCoverage(e2, reverse);
-        return math::ge(max(cov1, cov2), min_upper_coverage_) || math::eq(min(cov1, cov2), 0.0);
+        return math::ge(std::max(cov1, cov2), min_upper_coverage_) || math::eq(std::min(cov1, cov2), 0.0);
     }
 
     bool IsCoverageSimilar(EdgeId e1, EdgeId e2, bool reverse) const {
@@ -445,7 +445,7 @@ class ExcludingExtensionChooser: public ExtensionChooser {
         AlternativeContainer weights;
         for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
             double weight = wc_->CountWeight(path, iter->e_, to_exclude);
-            weights.insert(std::make_pair(weight, *iter));
+            weights.emplace(weight, *iter);
             DEBUG("Candidate " << g_.int_id(iter->e_) << " weight " << weight << " length " << g_.length(iter->e_));
         }
         NotifyAll(weights);
@@ -486,7 +486,8 @@ protected:
 
 
 public:
-    ExcludingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, PathAnalyzer analyzer, double weight_threshold, double priority) :
+    ExcludingExtensionChooser(const Graph &g, std::shared_ptr<WeightCounter> wc, PathAnalyzer analyzer,
+                              double weight_threshold, double priority) :
             ExtensionChooser(g, wc, weight_threshold), analyzer_(analyzer), prior_coeff_(priority) {
 
     }
@@ -544,7 +545,7 @@ protected:
         }
         
         //excluding based on presense of ambiguous paired info
-        map<size_t, unsigned> edge_2_extension_cnt;
+        std::map<size_t, unsigned> edge_2_extension_cnt;
         for (size_t i = 0; i < edges.size(); ++i) {
             for (size_t e : wc_->PairInfoExist(path, edges.at(i).e_)) {
                 edge_2_extension_cnt[e] += 1;
@@ -561,7 +562,7 @@ protected:
 
 public:
 
-    SimpleExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
+    SimpleExtensionChooser(const Graph &g, std::shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
         ExcludingExtensionChooser(g, wc, PathAnalyzer(g), weight_threshold, priority) {
     }
 
@@ -597,7 +598,7 @@ protected:
 public:
 
     IdealBasedExtensionChooser(const Graph &g,
-                               shared_ptr<WeightCounter> wc,
+                               std::shared_ptr<WeightCounter> wc,
                                double weight_threshold,
                                double priority) :
         ExcludingExtensionChooser(g, wc, PathAnalyzer(g), weight_threshold, priority) {
@@ -629,7 +630,7 @@ protected:
 
 public:
 
-    RNAExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
+    RNAExtensionChooser(const Graph &g, std::shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
         ExcludingExtensionChooser(g, wc, PreserveSimplePathsAnalyzer(g), weight_threshold, priority) {
     }
 
@@ -658,28 +659,29 @@ protected:
         }
     }
 public:
-    LongEdgeExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
+    LongEdgeExtensionChooser(const Graph& g, std::shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
         ExcludingExtensionChooser(g, wc, PathAnalyzer(g), weight_threshold, priority) {
     }
 };
 
 class ScaffoldingExtensionChooser : public ExtensionChooser {
     typedef ExtensionChooser base;
+    typedef std::vector<std::pair<int, double>> Histogram;
     double raw_weight_threshold_;
     double cl_weight_threshold_;
     const double is_scatter_coeff_ = 3.0;
 
-    void AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, 
-                         std::vector<pair<int, double>>& histogram, size_t len_to_path_end) const {
+    void AddInfoFromEdge(const std::vector<int> &distances, const std::vector<double> &weights,
+                         Histogram &histogram, size_t len_to_path_end) const {
         for (size_t l = 0; l < distances.size(); ++l) {
             //todo commented out condition seems unnecessary and should be library dependent! do we need "max(0" there?
             if (/*distances[l] > max(0, (int) len_to_path_end - int(1000)) && */math::ge(weights[l], raw_weight_threshold_)) {
-                histogram.push_back(make_pair(distances[l] - (int) len_to_path_end, weights[l]));
+                histogram.emplace_back(distances[l] - (int) len_to_path_end, weights[l]);
             }
         }
     }
 
-    int CountMean(const vector<pair<int, double> >& histogram) const {
+    int CountMean(const Histogram &histogram) const {
         double dist = 0.0;
         double sum = 0.0;
         for (size_t i = 0; i < histogram.size(); ++i) {
@@ -690,12 +692,11 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
         return (int) round(dist);
     }
 
-    void GetDistances(EdgeId e1, EdgeId e2, std::vector<int>& dist,
-            std::vector<double>& w) const {
+    void GetDistances(EdgeId e1, EdgeId e2, std::vector<int> &dist, std::vector<double> &w) const {
         wc_->PairedLibrary().CountDistances(e1, e2, dist, w);
     }
 
-    void CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const {
+    void CountAvrgDists(const BidirectionalPath &path, EdgeId e, Histogram &histogram) const {
         for (size_t j = 0; j < path.Size(); ++j) {
             std::vector<int> distances;
             std::vector<double> weights;
@@ -706,9 +707,11 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
         }
     }
 
-    void FindBestFittedEdgesForClustered(const BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) const {
+    void FindBestFittedEdgesForClustered(const BidirectionalPath &path,
+                                         const std::set<EdgeId>& edges,
+                                         EdgeContainer& result) const {
         for (EdgeId e : edges) {
-            std::vector<pair<int, double>> histogram;
+            Histogram histogram;
             CountAvrgDists(path, e, histogram);
             double sum = 0.0;
             for (size_t j = 0; j < histogram.size(); ++j) {
@@ -731,13 +734,13 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
         return g_.IncomingEdgeCount(g_.EdgeStart(e)) == 0;
     }
 
-    set<EdgeId> FindCandidates(const BidirectionalPath& path) const {
-        set<EdgeId> jumping_edges;
+    std::set<EdgeId> FindCandidates(const BidirectionalPath &path) const {
+        std::set<EdgeId> jumping_edges;
         const auto& lib = wc_->PairedLibrary();
         //todo lib (and FindJumpEdges) knows its var so it can be counted there
         int is_scatter = int(math::round(lib.GetIsVar() * is_scatter_coeff_));
         for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib.GetISMax(); --i) {
-            set<EdgeId> jump_edges_i;
+            std::set<EdgeId> jump_edges_i;
             lib.FindJumpEdges(path.At(i), jump_edges_i,
                                std::max(0, (int)path.LengthAt(i) - is_scatter),
                                //FIXME do we need is_scatter here?
@@ -753,11 +756,8 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
     }
 
 public:
-
-
-    ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc,
-                                double cl_weight_threshold,
-                                double is_scatter_coeff) :
+    ScaffoldingExtensionChooser(const Graph &g, std::shared_ptr<WeightCounter> wc,
+                                double cl_weight_threshold, double is_scatter_coeff) :
         ExtensionChooser(g, wc), raw_weight_threshold_(0.0),
         cl_weight_threshold_(cl_weight_threshold),
         is_scatter_coeff_(is_scatter_coeff) {
@@ -767,7 +767,7 @@ public:
         if (edges.empty()) {
             return edges;
         }
-        set<EdgeId> candidates = FindCandidates(path);
+        auto candidates = FindCandidates(path);
         EdgeContainer result;
         FindBestFittedEdgesForClustered(path, candidates, result);
         return result;
@@ -777,8 +777,8 @@ private:
     DECL_LOGGER("ScaffoldingExtensionChooser");
 };
 
-inline bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,
-                                      const pair<EdgeId, double>& p2) {
+inline bool EdgeWithWeightCompareReverse(const std::pair<EdgeId, double>& p1,
+                                         const std::pair<EdgeId, double>& p2) {
     return p1.second > p2.second;
 }
 
@@ -852,10 +852,9 @@ private:
         return true;
     }
 
-    bool CheckInconsistence(
-            const BidirectionalPath& path1, size_t pos1,
-            const BidirectionalPath& path2, size_t pos2,
-            const BidirectionalPathSet& cov_paths) const {
+    bool CheckInconsistence(const BidirectionalPath& path1, size_t pos1,
+                            const BidirectionalPath& path2, size_t pos2,
+                            const BidirectionalPathSet& cov_paths) const {
         size_t first_diff_pos1 = FirstNotEqualPosition(path1, pos1, path2, pos2, false);
         size_t first_diff_pos2 = FirstNotEqualPosition(path2, pos2, path1, pos1, false);
         if (first_diff_pos1 != -1UL && first_diff_pos2 != -1UL) {
@@ -889,9 +888,9 @@ private:
         return false;
     }
 
-    std::pair<double, double> GetSubPathsWeights(
-            const BidirectionalPath& cand1, const BidirectionalPath& cand2,
-            const BidirectionalPathSet& cov_paths) const {
+    std::pair<double, double> GetSubPathsWeights(const BidirectionalPath& cand1,
+                                                 const BidirectionalPath& cand2,
+                                                 const BidirectionalPathSet& cov_paths) const {
         double weight1 = 0.0;
         double weight2 = 0.0;
         for (auto iter = cov_paths.begin(); iter != cov_paths.end(); ++iter) {
@@ -1035,17 +1034,17 @@ public:
      * Edge is unique if all reads mapped to this edge are consistent.
      * Two reads are consistent if they can form one path in the graph.
      */
-    EdgeContainer Filter(const BidirectionalPath& path,
-                                 const EdgeContainer& edges) const override {
+    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
         if (edges.empty()) {
             return edges;
-        }DEBUG("We in Filter of LongReadsExtensionChooser");
-        path.PrintDEBUG();
-        map<EdgeId, double> weights_cands;
-        for (auto it = edges.begin(); it != edges.end(); ++it) {
-            weights_cands.insert(make_pair(it->e_, 0.0));
         }
-        set<EdgeId> filtered_cands;
+        DEBUG("We in Filter of LongReadsExtensionChooser");
+        path.PrintDEBUG();
+        std::map<EdgeId, double> weights_cands;
+        for (const auto &edge : edges) {
+            weights_cands.emplace(edge.e_, 0.0);
+        }
+        std::set<EdgeId> filtered_cands;
         auto support_paths = cov_map_.GetCoveringPaths(path.Back());
         DEBUG("Found " << support_paths.size() << " covering paths!!!");
         for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
@@ -1070,7 +1069,7 @@ public:
         for (auto iter = weights_cands.begin(); iter != weights_cands.end(); ++iter) {
             DEBUG("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
         }
-        vector<pair<EdgeId, double> > sort_res = MapToSortVector(weights_cands);
+        auto sort_res = MapToSortVector(weights_cands);
         DEBUG("sort res " << sort_res.size() << " tr " << weight_priority_threshold_);
         if (sort_res.size() < 1 || sort_res[0].second < filtering_threshold_) {
             filtered_cands.clear();
@@ -1109,8 +1108,8 @@ private:
         return false;
     }
 
-    vector<pair<EdgeId, double> > MapToSortVector(const map<EdgeId, double>& map) const {
-        vector<pair<EdgeId, double> > result(map.begin(), map.end());
+    std::vector<std::pair<EdgeId, double>> MapToSortVector(const std::map<EdgeId, double>& map) const {
+        std::vector<std::pair<EdgeId, double>> result(map.begin(), map.end());
         std::sort(result.begin(), result.end(), EdgeWithWeightCompareReverse);
         return result;
     }
@@ -1179,7 +1178,7 @@ private:
     }
 
     GraphComponent<Graph> GetRepeatComponent(const VertexId start, double path_coverage) const {
-        set<VertexId> vertices_of_component;
+        std::set<VertexId> vertices_of_component;
         vertices_of_component.insert(start);
         std::queue<VertexId> can_be_processed;
         UpdateCanBeProcessed(start, can_be_processed, path_coverage);
@@ -1261,7 +1260,7 @@ private:
     EdgeContainer FindExtensionTroughRepeat(const EdgeContainer& edges, double path_coverage) const {
         static EdgeContainer EMPTY_CONTAINER;
 
-        map<EdgeId, double> good_extension_to_ahead_cov;
+        std::map<EdgeId, double> good_extension_to_ahead_cov;
 
         for (auto edge : edges) {
             DEBUG("Processing candidate extension " << g_.str(edge.e_));

@@ -26,7 +26,7 @@ bool PELaunchSupport::HasOnlySingleReads() const {
     return true;
 }
 
-pe_config::ParamSetT::ExtensionOptionsT PELaunchSupport::GetExtensionOpts(shared_ptr<PairedInfoLibrary> lib,
+pe_config::ParamSetT::ExtensionOptionsT PELaunchSupport::GetExtensionOpts(std::shared_ptr<PairedInfoLibrary> lib,
                                                                           const pe_config::ParamSetT &pset) const {
     return lib->IsMp() ? pset.mate_pair_options : pset.extension_options;
 }
@@ -75,7 +75,7 @@ size_t PELaunchSupport::FindMaxMPIS() const {
     size_t max_is = 0;
     for (size_t i = 0; i < dataset_info_.reads.lib_count(); ++i) {
         if (dataset_info_.reads[i].is_mate_pair()) {
-            max_is = max(max_is, (size_t) dataset_info_.reads[i].data().mean_insert_size);
+            max_is = std::max(max_is, (size_t) dataset_info_.reads[i].data().mean_insert_size);
         }
     }
     return max_is;

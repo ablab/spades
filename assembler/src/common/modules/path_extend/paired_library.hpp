@@ -47,8 +47,9 @@ public:
 
     virtual ~PairedInfoLibrary() {}
 
-    virtual size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist, int max_dist, size_t min_len = 0) const = 0;
-    virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const = 0;
+    virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId> &result,
+                                 int min_dist, int max_dist, size_t min_len = 0) const = 0;
+    virtual void CountDistances(EdgeId e1, EdgeId e2, std::vector<int> &dist, std::vector<double> &w) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance, bool from_interval = false) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int dist_min, int dist_max) const = 0;
 
@@ -110,7 +111,7 @@ public:
     }
 
 
-    void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const override {
+    void CountDistances(EdgeId e1, EdgeId e2, std::vector<int> &dist, std::vector<double> &w) const override {
         VERIFY(index_.size() > 0);
         if (e1 == e2)
             return;
@@ -159,9 +160,9 @@ public:
 };
 
 template<class Index>
-shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
-                                         const debruijn_graph::config::dataset::Library &lib,
-                                         const Index &paired_index) {
+std::shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph &g,
+                                              const debruijn_graph::config::dataset::Library &lib,
+                                              const Index &paired_index) {
     //why all those local variables? :)
     size_t read_length = lib.data().unmerged_read_length;
     size_t is = (size_t) lib.data().mean_insert_size;
@@ -169,15 +170,15 @@ shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
     int is_max = (int) lib.data().insert_size_right_quantile;
     double var = lib.data().insert_size_deviation;
     bool is_mp = lib.type() == io::LibraryType::MatePairs || lib.type() == io::LibraryType::HQMatePairs;
-    return make_shared<PairedInfoLibraryWithIndex<decltype(paired_index)>>(g,
-                                                                           read_length,
-                                                                           is,
-                                                                           is_min > 0 ? size_t(is_min) : 0,
-                                                                           is_max > 0 ? size_t(is_max) : 0,
-                                                                           var,
-                                                                           paired_index,
-                                                                           is_mp,
-                                                                           lib.data().insert_size_distribution);
+    return std::make_shared<PairedInfoLibraryWithIndex<decltype(paired_index)>>(g,
+                                                                                read_length,
+                                                                                is,
+                                                                                is_min > 0 ? size_t(is_min) : 0,
+                                                                                is_max > 0 ? size_t(is_max) : 0,
+                                                                                var,
+                                                                                paired_index,
+                                                                                is_mp,
+                                                                                lib.data().insert_size_distribution);
 }
 
 }  // path extend

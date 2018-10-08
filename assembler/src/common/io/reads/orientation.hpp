@@ -13,19 +13,14 @@ namespace io {
 
 static inline std::pair<bool, bool> GetRCFlags(LibraryOrientation orientation) {
     switch (orientation) {
-        case LibraryOrientation::RR: {
-            return make_pair(true, true);
-        }
-        case LibraryOrientation::FR: {
-            return make_pair(false, true);
-        }
-        case LibraryOrientation::RF: {
-            return make_pair(true, false);
-        }
-        case LibraryOrientation::FF:
-        default: {
-            return make_pair(false, false);
-        }
+        case LibraryOrientation::RR:
+            return {true, true};
+        case LibraryOrientation::FR:
+            return {false, true};
+        case LibraryOrientation::RF:
+            return {true, false};
+        default:
+            return {false, false};
     }
 }
 

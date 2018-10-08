@@ -26,7 +26,7 @@ class Path {
  public:
     typedef typename std::vector<ElementId>::const_iterator iterator;
 
-    Path(const std::vector<ElementId>& sequence, size_t start_pos, size_t end_pos)
+    Path(const std::vector<ElementId> &sequence, size_t start_pos, size_t end_pos)
             : sequence_(sequence), start_pos_(start_pos),  end_pos_( end_pos) {
     }
 
@@ -40,7 +40,7 @@ class Path {
 
     size_t size() const { return sequence_.size(); }
 
-    const std::vector<ElementId>& sequence() const { return sequence_; }
+    const std::vector<ElementId> &sequence() const { return sequence_; }
     ElementId operator[](size_t index) const { return sequence_[index]; }
 
     iterator begin() const { return sequence_.begin(); }
@@ -272,7 +272,7 @@ class MappingPath {
         return edges_;
     }
 
-    void join(const MappingPath<ElementId>& that, int pos_shift = 0) {
+    void join(const MappingPath<ElementId> &that, int pos_shift = 0) {
         for (size_t i = 0; i < that.size(); ++i) {
             edges_.push_back(that.edges_[i]);
             range_mappings_.push_back(that.range_mappings_[i].ShiftInitial(pos_shift));
@@ -290,7 +290,7 @@ class MappingPath {
 };
 
 template <typename ElementId>
-inline std::ostream& operator<<(std::ostream& os, const MappingPath<ElementId>& mp) {
+inline std::ostream &operator<<(std::ostream &os, const MappingPath<ElementId> &mp) {
     os << "MappingPath ( ";
     for(size_t i = 0; i < mp.size(); i++) {
         os << mp[i] << " ";
@@ -299,4 +299,4 @@ inline std::ostream& operator<<(std::ostream& os, const MappingPath<ElementId>& 
     return os;
 }
 
-}
+} // namespace omnigraph

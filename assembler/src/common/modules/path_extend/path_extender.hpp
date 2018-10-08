@@ -49,9 +49,9 @@ class OverlapFindingHelper {
             pos = 0;
     }
 
-    pair<Range, Range> ComparePaths(const BidirectionalPath &path1,
-                                    const BidirectionalPath &path2,
-                                    size_t start2) const {
+    std::pair<Range, Range> ComparePaths(const BidirectionalPath &path1,
+                                         const BidirectionalPath &path2,
+                                         size_t start2) const {
         TRACE("Comparing paths " << path1.GetId() << " and " << path2.GetId());
         //TODO change to edit distance?
         int shift1 = 0;
@@ -104,7 +104,7 @@ class OverlapFindingHelper {
             TryExtendToStart(path2, start2);
         }
 
-        return make_pair(Range(start1, end1), Range(start2, end2));
+        return {Range(start1, end1), Range(start2, end2)};
     }
 
 public:
@@ -140,15 +140,15 @@ public:
     }
 
 
-    pair<size_t, size_t> CommonPrefix(const BidirectionalPath &path1,
-                                      const BidirectionalPath &path2) const {
-        auto answer = make_pair(0, 0);
+    std::pair<size_t, size_t> CommonPrefix(const BidirectionalPath &path1,
+                                           const BidirectionalPath &path2) const {
+        std::pair<size_t, size_t> answer(0, 0);
         size_t cum = 0;
         size_t max_overlap = 0;
         for (size_t j = 0; j < path2.Size(); ++j) {
             auto range_pair = ComparePaths(path1, path2, j);
             if (range_pair.second.start_pos == 0 && range_pair.first.size() > max_overlap) {
-                answer = make_pair(range_pair.first.end_pos, range_pair.second.end_pos);
+                answer = {range_pair.first.end_pos, range_pair.second.end_pos};
                 max_overlap = range_pair.first.size();
             }
 
@@ -163,11 +163,11 @@ public:
     };
 
     //overlap is forced to start from the beginning of path1
-    pair<Range, Range> FindOverlap(const BidirectionalPath &path1,
-                                   const BidirectionalPath &path2,
-                                   bool end_start_only) const {
+    std::pair<Range, Range> FindOverlap(const BidirectionalPath &path1,
+                                        const BidirectionalPath &path2,
+                                        bool end_start_only) const {
         size_t max_overlap = 0;
-        pair<Range, Range> matching_ranges;
+        std::pair<Range, Range> matching_ranges;
         for (size_t j = 0; j < path2.Size(); ++j) {
             auto range_pair = ComparePaths(path1, path2, j);
             VERIFY(range_pair.first.start_pos == 0);
@@ -187,8 +187,8 @@ public:
         return matching_ranges;
     }
 
-    vector<const BidirectionalPath*> FindCandidatePaths(const BidirectionalPath &path) const {
-        set<const BidirectionalPath*> candidates;
+    std::vector<const BidirectionalPath*> FindCandidatePaths(const BidirectionalPath &path) const {
+        std::set<const BidirectionalPath*> candidates;
         size_t cum_len = 0;
         for (size_t i = 0; i < path.Size(); ++i) {
             if (cum_len > max_diff_)
@@ -199,7 +199,7 @@ public:
                 cum_len += path.ShiftLength(i);
             }
         }
-        return vector<const BidirectionalPath*>(candidates.begin(), candidates.end());
+        return std::vector<const BidirectionalPath*>(candidates.begin(), candidates.end());
     }
 
 private:
@@ -237,7 +237,7 @@ class ShortLoopResolver {
 public:
     static const size_t BASIC_N_CNT = 100;
 
-    ShortLoopResolver(const Graph& g, shared_ptr<ShortLoopEstimator> loop_estimator)
+    ShortLoopResolver(const Graph& g, std::shared_ptr<ShortLoopEstimator> loop_estimator)
             : g_(g), loop_estimator_(loop_estimator) { }
 
     void ResolveShortLoop(BidirectionalPath& path) const {
@@ -254,7 +254,7 @@ public:
 private:
     DECL_LOGGER("PathExtender")
     const Graph& g_;
-    shared_ptr<ShortLoopEstimator> loop_estimator_;
+    std::shared_ptr<ShortLoopEstimator> loop_estimator_;
 
     void UndoCycles(BidirectionalPath& p, EdgeId back_cycle_edge, EdgeId loop_incoming) const {
         if (p.Size() <= 2) {
@@ -280,7 +280,9 @@ private:
             p.PopBack(p.Size() - loop_start_index);
 
             if (p.Back() != loop_incoming) {
-                p.PushBack(loop_incoming, Gap(max(0, gap.gap - (int) g_.length(loop_incoming)  - (int) g_.length(forward_cycle_edge)), {gap.trash.previous, 0}));
+                p.PushBack(loop_incoming,
+                           Gap(std::max(0, gap.gap - (int)g_.length(loop_incoming) - (int) g_.length(forward_cycle_edge)),
+                               {gap.trash.previous, 0}));
             }
             p.PushBack(forward_cycle_edge);
             DEBUG("Restored the path");
@@ -306,7 +308,7 @@ private:
                 DEBUG("Multiple cycles");
                 //If the forward edge is shorter than K, avoid overlapping bases between backward edge and outgoing edge
                 //Make sure that the N-stretch will be exactly 100 bp
-                uint32_t overlapping_bases = (uint32_t) max(int(g_.k()) - int(g_.length(forward_cycle_edge)), 0);
+                uint32_t overlapping_bases = (uint32_t) std::max(int(g_.k()) - int(g_.length(forward_cycle_edge)), 0);
                 path.PushBack(loop_outgoing, Gap(int(g_.k() + BASIC_N_CNT - overlapping_bases), {0, overlapping_bases}));
             }
         }
@@ -360,11 +362,11 @@ private:
 
 class PairedInfoLoopEstimator: public ShortLoopEstimator {
     const Graph& g_;
-    shared_ptr<WeightCounter> wc_;
+    std::shared_ptr<WeightCounter> wc_;
     double weight_threshold_;
 
 public:
-    PairedInfoLoopEstimator(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold = 0.0)
+    PairedInfoLoopEstimator(const Graph &g, std::shared_ptr<WeightCounter> wc, double weight_threshold = 0.0)
             : g_(g),
               wc_(wc),
               weight_threshold_(weight_threshold) { }
@@ -422,7 +424,7 @@ class CombinedLoopEstimator: public ShortLoopEstimator {
 public:
     CombinedLoopEstimator(const Graph& g,
                           const FlankingCoverage<Graph>& flanking_cov,
-                          shared_ptr<WeightCounter> wc,
+                          std::shared_ptr<WeightCounter> wc,
                           double weight_threshold = 0.0)
         : pi_estimator_(g, wc, weight_threshold),
           cov_estimator_(g, flanking_cov) {}
@@ -510,8 +512,7 @@ public:
             max_overlap -= gap.estimated_dist();
         }
 
-        max_overlap = min(max_overlap,
-                                      g_.k() + min(g_.length(gap.left()), g_.length(gap.right())));
+        max_overlap = std::min(max_overlap, g_.k() + std::min(g_.length(gap.left()), g_.length(gap.right())));
 
         DEBUG("Corrected max overlap " << max_overlap);
 
@@ -520,7 +521,7 @@ public:
 
         size_t min_overlap = 1;
         if (gap.estimated_dist() < 0) {
-            min_overlap = max(min_overlap, size_t(math::round(MIN_OVERLAP_COEFF * double(-gap.estimated_dist()))));
+            min_overlap = std::max(min_overlap, size_t(math::round(MIN_OVERLAP_COEFF * double(-gap.estimated_dist()))));
         }
         //todo better usage of estimated overlap
         DEBUG("Min overlap " << min_overlap);
@@ -593,7 +594,7 @@ public:
             return GapDescription();
         }
 
-        size_t max_flank_length = max(overlap_info.r2.start_pos,
+        size_t max_flank_length = std::max(overlap_info.r2.start_pos,
                 g_.length(gap.left()) + g_.k() - overlap_info.r1.end_pos);
         DEBUG("Max flank length - " << max_flank_length);
 
@@ -635,11 +636,8 @@ private:
 class CompositeGapAnalyzer: public GapAnalyzer {
 public:
 
-    CompositeGapAnalyzer(const Graph& g,
-                       const vector<shared_ptr<GapAnalyzer>>& joiners,
-                       size_t may_overlap_threshold,
-                       int must_overlap_threshold,
-                       size_t artificial_gap) :
+    CompositeGapAnalyzer(const Graph& g, const std::vector<std::shared_ptr<GapAnalyzer>> &joiners,
+                         size_t may_overlap_threshold, int must_overlap_threshold, size_t artificial_gap) :
             GapAnalyzer(g),
             joiners_(joiners),
             may_overlap_threshold_(may_overlap_threshold),
@@ -671,13 +669,13 @@ public:
         } else {
             DEBUG("Overlap was not found");
             auto answer = gap;
-            answer.set_estimated_dist(max(gap.estimated_dist(), int(artificial_gap_)));
+            answer.set_estimated_dist(std::max(gap.estimated_dist(), int(artificial_gap_)));
             return answer;
         }
     }
 
 private:
-    vector<shared_ptr<GapAnalyzer>> joiners_;
+    std::vector<std::shared_ptr<GapAnalyzer>> joiners_;
     const size_t may_overlap_threshold_;
     const int must_overlap_threshold_;
     const size_t artificial_gap_;
@@ -841,7 +839,7 @@ public:
 
     CompositeExtender(const Graph &g, GraphCoverageMap& cov_map,
                       UsedUniqueStorage &unique,
-                      const vector<shared_ptr<PathExtender>> &pes)
+                      const std::vector<std::shared_ptr<PathExtender>> &pes)
             : g_(g),
               cover_map_(cov_map),
               used_storage_(unique),
@@ -862,7 +860,7 @@ private:
     const Graph &g_;
     GraphCoverageMap &cover_map_;
     UsedUniqueStorage &used_storage_;
-    vector<shared_ptr<PathExtender>> extenders_;
+    std::vector<std::shared_ptr<PathExtender>> extenders_;
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) {
         DEBUG("make grow step composite extender");
@@ -1001,7 +999,7 @@ public:
                               size_t is)
             : PathExtender(gp.g),
               use_short_loop_cov_resolver_(use_short_loop_cov_resolver),
-              cov_loop_resolver_(gp.g, make_shared<CoverageLoopEstimator>(gp.g, gp.flanking_cov)),
+              cov_loop_resolver_(gp.g, std::make_shared<CoverageLoopEstimator>(gp.g, gp.flanking_cov)),
               is_detector_(gp.g, is),
               used_storage_(unique),
               investigate_short_loops_(investigate_short_loops),
@@ -1064,14 +1062,14 @@ protected:
 class SimpleExtender: public LoopDetectingPathExtender {
 
 protected:
-    shared_ptr<ExtensionChooser> extensionChooser_;
+    std::shared_ptr<ExtensionChooser> extensionChooser_;
     ShortLoopResolver loop_resolver_;
     double weight_threshold_;
 
     void FindFollowingEdges(BidirectionalPath& path, ExtensionChooser::EdgeContainer * result) {
         DEBUG("Looking for the following edges")
         result->clear();
-        vector<EdgeId> edges;
+        std::vector<EdgeId> edges;
         DEBUG("Pushing back")
         utils::push_back_all(edges, g_.OutgoingEdges(g_.EdgeEnd(path.Back())));
         result->reserve(edges.size());
@@ -1088,14 +1086,14 @@ public:
     SimpleExtender(const conj_graph_pack &gp,
                    const GraphCoverageMap &cov_map,
                    UsedUniqueStorage &unique,
-                   shared_ptr<ExtensionChooser> ec,
+                   std::shared_ptr<ExtensionChooser> ec,
                    size_t is,
                    bool investigate_short_loops,
                    bool use_short_loop_cov_resolver,
                    double weight_threshold = 0.0):
         LoopDetectingPathExtender(gp, cov_map, unique, investigate_short_loops, use_short_loop_cov_resolver, is),
         extensionChooser_(ec),
-        loop_resolver_(gp.g, make_shared<CombinedLoopEstimator>(gp.g, gp.flanking_cov, extensionChooser_->wc(), weight_threshold)),
+        loop_resolver_(gp.g, std::make_shared<CombinedLoopEstimator>(gp.g, gp.flanking_cov, extensionChooser_->wc(), weight_threshold)),
         weight_threshold_(weight_threshold) {}
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {

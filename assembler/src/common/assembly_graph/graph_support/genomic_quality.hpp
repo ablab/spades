@@ -18,12 +18,11 @@ template<class Graph>
 class EdgeQuality: public visualization::graph_labeler::GraphLabeler<Graph>, public omnigraph::GraphActionHandler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    map<EdgeId, size_t> quality_;
+    std::map<EdgeId, size_t> quality_;
     size_t k_;
 
     template<class Index>
-    void FillQuality(const Index &index
-            , const KmerMapper<Graph>& kmer_mapper, const Sequence &genome) {
+    void FillQuality(const Index &index, const KmerMapper<Graph> &kmer_mapper, const Sequence &genome) {
         if (genome.size() < k_)
             return;
         RtSeq cur = genome.start<RtSeq>(k_);
@@ -40,9 +39,7 @@ class EdgeQuality: public visualization::graph_labeler::GraphLabeler<Graph>, pub
 public:
 
     template<class Index>
-    void Fill(const Index &index
-            , const KmerMapper<Graph>& kmer_mapper
-            , const Sequence &genome) {
+    void Fill(const Index &index, const KmerMapper<Graph> &kmer_mapper, const Sequence &genome) {
         DEBUG("Filling quality values");
         FillQuality(index, kmer_mapper, genome);
         FillQuality(index, kmer_mapper, !genome);
@@ -61,7 +58,7 @@ public:
         quality_.erase(e);
     }
 
-    virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
+    virtual void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) {
         size_t res = 0;
         for (size_t i = 0; i < old_edges.size(); i++) {
             res += quality_[old_edges[i]];
@@ -74,8 +71,7 @@ public:
         quality_[new_edge] += quality_[edge1];
     }
 
-    virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
-            EdgeId new_edge2) {
+    virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) {
         if (old_edge == this->g().conjugate(old_edge)) {
             WARN("EdgeQuality does not support self-conjugate splits");
             return;
@@ -177,11 +173,11 @@ class QualityEdgeLocalityPrintingRH : public QualityLoggingRemovalHandler<Graph>
     typedef typename Graph::VertexId VertexId;
     visualization::visualization_utils::LocalityPrintingRH<Graph> printing_rh_;
 public:
-    QualityEdgeLocalityPrintingRH(const Graph& g
-            , const EdgeQuality<Graph>& quality_handler
-            , const visualization::graph_labeler::GraphLabeler<Graph>& labeler
+    QualityEdgeLocalityPrintingRH(const Graph &g
+            , const EdgeQuality<Graph> &quality_handler
+            , const visualization::graph_labeler::GraphLabeler<Graph> &labeler
             , std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer
-            , const string& output_folder, bool handle_all = false) :
+            , const std::string &output_folder, bool handle_all = false) :
             base(g, quality_handler, handle_all),
             printing_rh_(g, labeler, colorer, output_folder)
     {}

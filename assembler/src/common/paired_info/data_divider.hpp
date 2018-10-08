@@ -31,10 +31,10 @@ namespace de {
 
 template<class EdgeId>
 class DataDivider {
-    typedef pair<size_t, size_t> Interval;
-    typedef vector<PairInfo<EdgeId> > PairInfos;
-    typedef pair<EdgeId, EdgeId> EdgePair;
-    typedef vector<Point> PointArray;
+    typedef std::pair<size_t, size_t> Interval;
+    typedef std::vector<PairInfo<EdgeId>> PairInfos;
+    typedef std::pair<EdgeId, EdgeId> EdgePair;
+    typedef std::vector<Point> PointArray;
     typedef std::function<double(int)> WeightFunction;
 
     //    double LeftDerivative(int index, vector<int> x, vector<int> y) {
@@ -54,28 +54,28 @@ public:
             threshold_(threshold), points_(points) {
     }
 
-    vector<Interval> DivideData() {
+    std::vector<Interval> DivideData() {
         VERIFY(points_.size() > 0);
-        vector<Interval> answer;
+        std::vector<Interval> answer;
         min_value_ = rounded_d(points_.front());
         max_value_ = rounded_d(points_.back());
         size_t begin = 0;
         for (size_t i = 0; i < points_.size() - 1; ++i) {
             if (IsANewCluster(i, points_)) {
-                answer.push_back(make_pair(begin, i + 1));
+                answer.emplace_back(begin, i + 1);
                 begin = i + 1;
             }
         }
-        answer.push_back(make_pair(begin, points_.size()));
+        answer.emplace_back(begin, points_.size());
 
         return answer;
     }
 
-    vector<Interval> DivideAndSmoothData(const EdgePair &ep,
-                                         PairInfos &new_data,
-                                         WeightFunction weight_f) {
+    std::vector<Interval> DivideAndSmoothData(const EdgePair &ep,
+                                              PairInfos &new_data,
+                                              WeightFunction weight_f) {
         VERIFY(points_.size() > 0);
-        vector<Interval> answer;
+        std::vector<Interval> answer;
 
         TRACE("Data");
         //Print();
@@ -94,10 +94,10 @@ public:
                     for (size_t k = begin; k <= i; ++k) {
                         val += points_[k].weight * weight_f(j - rounded_d(points_[k]));
                     }
-                    new_data.push_back(PairInfo<EdgeId>(ep.first, ep.second, j, val, 0.));
+                    new_data.emplace_back(ep.first, ep.second, j, val, 0.);
                 }
                 size_t new_end = new_data.size();
-                answer.push_back(make_pair(new_begin, new_end));
+                answer.emplace_back(new_begin, new_end);
 
                 begin = i + 1;
             }
@@ -123,7 +123,7 @@ private:
 
     bool IsANewCluster(size_t index) {
         VERIFY(index < points_.size() - 1);
-        return (math::gr(abs(points_[index + 1].d - points_[index].d), (DEDistance) threshold_));
+        return (math::gr(std::abs(points_[index + 1].d - points_[index].d), (DEDistance) threshold_));
     }
 
     DECL_LOGGER("DataDivider");

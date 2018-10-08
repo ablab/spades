@@ -1,18 +1,19 @@
 //***************************************************************************
-//* Copyright (c) 2016 Saint Petersburg State University
+//* Copyright (c) 2016-2018 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
 
-
 #include "coverage_uniformity_analyzer.hpp"
+
 namespace debruijn_graph {
+
 double CoverageUniformityAnalyzer::CountMedianCoverage() const{
-    vector <pair<double, size_t> > coverages;
+    std::vector<std::pair<double, size_t>> coverages;
     size_t total_len = 0, short_len = 0, cur_len = 0;
     for (auto iter = g_.ConstEdgeBegin(); ! iter.IsEnd(); ++iter){
         if (g_.length(*iter) > length_bound_) {
-            coverages.push_back(make_pair(g_.coverage(*iter), g_.length(*iter)));
+            coverages.emplace_back(g_.coverage(*iter), g_.length(*iter));
             total_len += g_.length(*iter);
         } else {
             short_len += g_.length(*iter);

@@ -7,8 +7,6 @@
 #include "assembly_graph/core/graph.hpp"
 #include "modules/path_extend/paired_library.hpp"
 #include "connection_condition2015.hpp"
-
-#include "utils/standard_base.hpp"
 #include "adt/iterator_range.hpp"
 
 namespace path_extend {
@@ -161,7 +159,7 @@ public:
     //Add isolated vertex to the graph if not exitsts
     bool AddVertex(ScaffoldVertex assembly_graph_edge);
 
-    void AddVertices(const set<ScaffoldVertex> &vertices);
+    void AddVertices(const std::set<ScaffoldVertex> &vertices);
 
     //Add edge (and conjugate) if not exists
     //v1 and v2 must exist
@@ -203,9 +201,9 @@ public:
 
     const debruijn_graph::Graph & AssemblyGraph() const;
 
-    vector<ScaffoldEdge> OutgoingEdges(ScaffoldVertex assembly_graph_edge) const;
+    std::vector<ScaffoldEdge> OutgoingEdges(ScaffoldVertex assembly_graph_edge) const;
 
-    vector<ScaffoldEdge> IncomingEdges(ScaffoldVertex assembly_graph_edge) const;
+    std::vector<ScaffoldEdge> IncomingEdges(ScaffoldVertex assembly_graph_edge) const;
 
     size_t OutgoingEdgeCount(ScaffoldVertex assembly_graph_edge) const;
 
@@ -219,7 +217,7 @@ public:
 
     ScaffoldEdge UniqueIncoming(ScaffoldVertex assembly_graph_edge) const;
 
-    void Print(ostream &os) const;
+    void Print(std::ostream &os) const;
 
 };
 

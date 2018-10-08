@@ -14,6 +14,8 @@
 
 #include <cxxopts/cxxopts.hpp>
 
+using namespace std;
+
 static void create_console_logger() {
     using namespace logging;
 

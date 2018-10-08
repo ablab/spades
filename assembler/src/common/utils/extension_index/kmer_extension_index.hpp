@@ -25,8 +25,8 @@ inline uint8_t invert_byte_slow(uint8_t a) {
     return uint8_t(res);
 }
 
-inline vector<uint8_t> count_invert_byte() {
-    vector<uint8_t> result;
+inline std::vector<uint8_t> count_invert_byte() {
+    std::vector<uint8_t> result;
     for (size_t a = 0; a < 256; a++) {
         result.push_back(invert_byte_slow((uint8_t)a));
     }
@@ -34,7 +34,7 @@ inline vector<uint8_t> count_invert_byte() {
 }
 
 inline uint8_t invert_byte(uint8_t a) {
-    static vector<uint8_t> precalc = count_invert_byte();
+    static std::vector<uint8_t> precalc = count_invert_byte();
     return precalc[a];
 }
 
@@ -181,7 +181,9 @@ public:
     }
 
     InOutMask operator&(const InOutMask rhs) const {
+
         InOutMask result(*this);
+
         result &= rhs;
         return result;
     }

@@ -8,6 +8,7 @@
 #pragma once
 
 #include "utils/verify.hpp"
+#include <unordered_map>
 
 namespace adt {
 

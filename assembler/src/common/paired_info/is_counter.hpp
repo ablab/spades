@@ -36,7 +36,7 @@ public:
 
     void StartProcessLibrary(size_t threads_count) override {
         hist_.clear();
-        tmp_hists_ = vector<HistType>(threads_count);
+        tmp_hists_ = std::vector<HistType>(threads_count);
 
         total_ = count_data(threads_count);
         counted_ = count_data(threads_count);
@@ -115,7 +115,7 @@ private:
     }
     struct count_data {
       size_t total_;
-      vector<size_t> arr_;
+      std::vector<size_t> arr_;
       count_data()
               : total_(0) {}
 
@@ -134,7 +134,7 @@ private:
     const conj_graph_pack &gp_;
 
     HistType hist_;
-    vector<HistType> tmp_hists_;
+    std::vector<HistType> tmp_hists_;
 
     count_data total_;
     count_data counted_;

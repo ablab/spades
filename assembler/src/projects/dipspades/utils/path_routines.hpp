@@ -10,6 +10,7 @@
 #include "pipeline/graph_pack.hpp"
 
 using namespace debruijn_graph;
+using namespace std;
 
 namespace dipspades {
 

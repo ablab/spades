@@ -33,17 +33,17 @@ public:
 
     }
 
-    MappingPath Process(const string &s, const string &name) const {
+    MappingPath Process(const std::string &s, const std::string &name) const {
         return Process(io::SingleRead(name, s));
     }
 
-    MappingPath Process(const Sequence &s, const string &name) const {
+    MappingPath Process(const Sequence &s, const std::string &name) const {
         return Process(s.str(), name);
     }
 
     MappingPath Process(const io::SingleRead &read) const {
         MappingPath path = mapper_->MapRead(read);
-        const string name = read.name();
+        const auto &name = read.name();
         int cur_pos = 0;
         TRACE("Contig " << name << " mapped on " << path.size() << " fragments.");
         for (size_t i = 0; i < path.size(); i++) {
@@ -85,7 +85,7 @@ private:
 };
 
 template<class gp_t>
-void FillPos(gp_t &gp, const string &contig_file, string prefix, bool with_rc) {
+void FillPos(gp_t &gp, const std::string &contig_file, const std::string &prefix, bool with_rc) {
     PosFiller<typename gp_t::graph_t> pos_filler(gp.g, debruijn_graph::MapperInstance(gp), gp.edge_pos);
     auto irs = std::make_shared<io::PrefixAddingReaderWrapper>(io::EasyStream(contig_file, with_rc, false),
                                                                prefix);
@@ -93,7 +93,7 @@ void FillPos(gp_t &gp, const string &contig_file, string prefix, bool with_rc) {
 }
 
 template<class gp_t>
-void FillPos(gp_t &gp, const string &s, string name) {
+void FillPos(gp_t &gp, const std::string &s, const std::string &name) {
     PosFiller<typename gp_t::graph_t> pos_filler(gp.g, debruijn_graph::MapperInstance(gp), gp.edge_pos);
     pos_filler.Process(s, name);
 }

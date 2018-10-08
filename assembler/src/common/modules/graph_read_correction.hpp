@@ -26,8 +26,8 @@ class TipsProjector {
 
     const omnigraph::UniquePathFinder<Graph> unique_path_finder_;
 
-    optional<EdgeId> UniqueAlternativeEdge(EdgeId tip, bool outgoing_tip) {
-        vector<EdgeId> edges;
+    boost::optional<EdgeId> UniqueAlternativeEdge(EdgeId tip, bool outgoing_tip) {
+        std::vector<EdgeId> edges;
         if (outgoing_tip) {
             utils::push_back_all(edges, gp_.g.OutgoingEdges(gp_.g.EdgeStart(tip)));
         } else {
@@ -36,13 +36,13 @@ class TipsProjector {
         std::set<EdgeId> edges_set(edges.begin(), edges.end());
         edges_set.erase(tip);
         if (edges_set.size() == 1)
-            return optional<EdgeId>(*edges_set.begin());
+            return boost::optional<EdgeId>(*edges_set.begin());
         else
             return boost::none;
     }
 
-    vector<EdgeId> UniqueAlternativePath(EdgeId tip, bool outgoing_tip) {
-        optional<EdgeId> alt_edge = UniqueAlternativeEdge(tip, outgoing_tip);
+    std::vector<EdgeId> UniqueAlternativePath(EdgeId tip, bool outgoing_tip) {
+        boost::optional<EdgeId> alt_edge = UniqueAlternativeEdge(tip, outgoing_tip);
         if (alt_edge) {
             if (outgoing_tip) {
                 return unique_path_finder_.UniquePathForward(*alt_edge);
@@ -50,7 +50,7 @@ class TipsProjector {
                 return unique_path_finder_.UniquePathBackward(*alt_edge);
             }
         }
-        return vector<EdgeId>();
+        return {};
     }
 
     void AlignAndProject(const Sequence& tip_seq, const Sequence& alt_seq,
@@ -88,7 +88,7 @@ public:
         TRACE("Trying to project tip " << gp_.g.str(tip));
         bool outgoing_tip = gp_.g.IsDeadEnd(gp_.g.EdgeEnd(tip));
         Sequence tip_seq = gp_.g.EdgeNucls(tip);
-        vector<EdgeId> alt_path = UniqueAlternativePath(tip, outgoing_tip);
+        auto alt_path = UniqueAlternativePath(tip, outgoing_tip);
         if (alt_path.empty()) {
             TRACE(
                     "Failed to find unique alt path for tip " << gp_.g.str(tip)
@@ -156,7 +156,7 @@ private:
 };
 
 template<class Graph, class Mapper>
-shared_ptr<GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
+std::shared_ptr<GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
         const Graph& graph, const Mapper& mapper) {
     return std::make_shared<GraphReadCorrector<Graph, Mapper>>(graph, mapper);
 }

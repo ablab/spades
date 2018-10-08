@@ -9,6 +9,7 @@
 namespace path_extend {
 
 using namespace debruijn_graph;
+using namespace std;
 
 shared_ptr<ExtensionChooser> ExtendersGenerator::MakeLongReadsExtensionChooser(size_t lib_index,
                                                                                const GraphCoverageMap &read_paths_cov_map) const {

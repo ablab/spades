@@ -456,9 +456,9 @@ public:
 //}
 
 template<class gp_t>
-void ThreadAssemblies(const string& base_saves, ContigStream& base_assembly,
-        const string& base_prefix, ContigStream& assembly_to_thread,
-        const string& to_thread_prefix, const string& output_dir) {
+void ThreadAssemblies(const std::string &base_saves, ContigStream &base_assembly,
+                      const std::string &base_prefix, ContigStream &assembly_to_thread,
+                      const std::string &to_thread_prefix, const std::string &output_dir) {
     typedef typename gp_t::graph_t Graph;
     gp_t gp;
 //        ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, base_assembly);
@@ -477,7 +477,7 @@ void ThreadAssemblies(const string& base_saves, ContigStream& base_assembly,
     io::SingleRead read;
     while (!assembly_to_thread.eof()) {
         assembly_to_thread >> read;
-        make_dir(output_dir + read.name());
+        path::make_dir(output_dir + read.name());
         WriteComponentsAlongPath(gp.g, labeler,
                 output_dir + read.name() + "/.dot", /*split_edge_length*/400,
                 mapper->MapSequence(read.sequence()),
@@ -488,8 +488,8 @@ void ThreadAssemblies(const string& base_saves, ContigStream& base_assembly,
 
 template<class gp_t>
 void RunMultipleGenomesVisualization(size_t k_visualize,
-        vector<pair<std::string, std::string> > genomes_paths,
-        std::string output_folder) {
+                                     std::vector<std::pair<std::string, std::string>> genomes_paths,
+                                     const std::string &output_folder) {
     typedef typename gp_t::graph_t Graph;
 
     utils::MakeDirPath(output_folder);
@@ -509,7 +509,7 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
 
   ConstructColoredGraph(gp, coloring, coordinates_handler, rc_wrapped);
 
-    ofstream indel_event_logger(output_folder + "/indel_events");
+    std::ofstream indel_event_logger(output_folder + "/indel_events");
 
 //  UnversalSaveGP(gp, output_folder + "/colored_split_graph");
 //  SaveColoring(gp.g, coloring, output_folder + "/colored_split_graph");

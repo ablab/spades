@@ -19,7 +19,7 @@
 namespace path_extend {
 
 typedef const BidirectionalPath * PathPtr;
-typedef unordered_map<PathPtr, set<size_t>> SplitsStorage;
+typedef std::unordered_map<PathPtr, std::set<size_t>> SplitsStorage;
 
 inline void PopFront(BidirectionalPath * const path, size_t cnt) {
     path->GetConjPath()->PopBack(cnt);
@@ -89,7 +89,7 @@ class OverlapRemover {
     }
 
     void MarkStartOverlaps(const BidirectionalPath &path, bool end_start_only, bool retain_one_copy) {
-        set<size_t> overlap_poss;
+        std::set<size_t> overlap_poss;
         for (PathPtr candidate : helper_.FindCandidatePaths(path)) {
             size_t overlap = AnalyzeOverlaps(path, *candidate,
                                              end_start_only, retain_one_copy);
@@ -148,8 +148,8 @@ class PathSplitter {
     PathContainer &paths_;
     GraphCoverageMap &coverage_map_;
 
-    set<size_t> TransformConjSplits(PathPtr p) const {
-        set<size_t> path_splits;
+    std::set<size_t> TransformConjSplits(PathPtr p) const {
+        std::set<size_t> path_splits;
         size_t path_len = p->Size();
         auto it = splits_.find(p);
         if (it != splits_.end()) {
@@ -163,9 +163,9 @@ class PathSplitter {
         return path_splits;
     }
 
-    set<size_t> GatherAllSplits(const PathPair &pp) const {
+    std::set<size_t> GatherAllSplits(const PathPair &pp) const {
         VERIFY(pp.first->Size() == pp.second->Size());
-        set<size_t> path_splits = TransformConjSplits(pp.second);
+        std::set<size_t> path_splits = TransformConjSplits(pp.second);
         auto it = splits_.find(pp.first);
         if (it != splits_.end()) {
             utils::insert_all(path_splits, it->second);
@@ -173,7 +173,7 @@ class PathSplitter {
         return path_splits;
     }
 
-    void SplitPath(BidirectionalPath * const p, const set<size_t> &path_splits) {
+    void SplitPath(BidirectionalPath * const p, const std::set<size_t> &path_splits) {
         size_t start_pos = 0;
         for (size_t split_pos : path_splits) {
             if (split_pos == 0)
@@ -195,7 +195,7 @@ public:
             coverage_map_(coverage_map) {}
 
      void Split() {
-         vector<PathPair> tmp_paths(paths_.begin(), paths_.end());
+         std::vector<PathPair> tmp_paths(paths_.begin(), paths_.end());
          for (auto path_pair: tmp_paths) {
              SplitPath(path_pair.first, GatherAllSplits(path_pair));
          }

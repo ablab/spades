@@ -204,7 +204,7 @@ template <>
 class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
  private:
   typedef CapEnvironment Env;
-  shared_ptr<Env> MakeNewEnvironment(const string& name, const string &desc) const {
+    std::shared_ptr<Env> MakeNewEnvironment(const std::string &name, const std::string &desc) const {
     DEBUG("Making new environment " << name);
     shared_ptr<Env> EnvPointer(new Env(name, desc));
     DEBUG("Done");
@@ -216,17 +216,17 @@ class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
     return 1;
   }
 
-  bool CheckCorrectness(const vector<string>& args, LoadedEnvironments<Env>& loaded_environments) const
+  bool CheckCorrectness(const std::vector<std::string> &args, LoadedEnvironments<Env> &loaded_environments) const
   {
     if (!this->CheckEnoughArguments(args))
       return false;
 
-    string name = args[1];
+    const auto &name = args[1];
     for (auto iterator = loaded_environments.begin(); iterator != loaded_environments.end(); ++iterator) {
       if (name == iterator->first) {
-        cout << "Name " << name << " already exists" << endl;
-        cout << "Maybe you want to switch to this environment? " << name << endl;
-        cout << "Please try again" << endl;
+        std::cout << "Name " << name << " already exists" << std::endl
+                  << "Maybe you want to switch to this environment? " << name << std::endl
+                  << "Please try again" << std::endl;
         return false;
       }
     }
@@ -234,9 +234,8 @@ class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
   }
 
  public:
-  string Usage() const {
-    string answer;
-    answer = answer + "Command `load` \n" +
+    std::string Usage() const {
+      std::string answer = "Command `load` \n" +
       "Usage:\n" +
       "> load <environment_name> [description]\n" +
       " You should specify the name of the new environment. All data and cache concerning \n" +
@@ -249,13 +248,13 @@ class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
   {
   }
 
-  void Execute(shared_ptr<Env>& curr_env,
-               LoadedEnvironments<Env>& loaded_environments,
-               const ArgumentList& arg_list) const
+  void Execute(std::shared_ptr<Env> &curr_env,
+               LoadedEnvironments<Env> &loaded_environments,
+               const ArgumentList &arg_list) const
   {
-    vector<string> args = arg_list.GetAllArguments();
-    string name  = args[1];
-    string desc = "";
+    std::vector<std::string> args = arg_list.GetAllArguments();
+    std::string name  = args[1];
+    std::string desc = "";
     for (size_t i = 2; i < args.size(); ++i) {
       if (i > 2) {
         desc += " ";
@@ -263,12 +262,12 @@ class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
       desc += args[i];
     }
 
-    cout << "Loading " << name << endl;
+    std::cout << "Loading " << name << std::endl;
     if (!CheckCorrectness(args, loaded_environments))
       return;
 
-    shared_ptr<Env> new_env = MakeNewEnvironment(name, desc);
-    loaded_environments.insert(make_pair(name, new_env));
+    std::shared_ptr<Env> new_env = MakeNewEnvironment(name, desc);
+    loaded_environments.insert(std::make_pair(name, new_env));
     curr_env = new_env;
   }
 
@@ -286,11 +285,11 @@ class SaveEnvCommand : public NewLocalCommand<CapEnvironment> {
   }
 
  private:
-  virtual void InnerExecute(CapEnvironment& curr_env, const vector<string>& args) const {
+  virtual void InnerExecute(CapEnvironment &curr_env, const std::vector<std::string> &args) const {
     std::string folder;
     folder = args[1] + "/";
 
-    cout << "Saving env in " << folder << " ...";
+    std::cout << "Saving env in " << folder << " ...";
 
     cap::utils::MakeDirPath(folder);
     VERIFY(cap::utils::DirExist(folder));
@@ -298,7 +297,7 @@ class SaveEnvCommand : public NewLocalCommand<CapEnvironment> {
     std::ofstream write_stream(folder + "environment");
     curr_env.WriteToStream(write_stream);
     write_stream.close();
-    cout << " Done.\n";
+    std::cout << " Done.\n";
   }
 
 };

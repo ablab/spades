@@ -45,7 +45,7 @@ public:
 };
 
 class GFAPathWriter : public gfa::GFAWriter {
-    void WritePath(const std::string& name, size_t segment_id,
+    void WritePath(const std::string &name, size_t segment_id,
                    const std::vector<std::string> &edge_strs,
                    const std::string &flags) {
         os_ << "P" << "\t" ;
@@ -65,7 +65,8 @@ public:
     using gfa::GFAWriter::GFAWriter;
 
     void WritePaths(const std::vector<EdgeId> &edges,
-                    const std::string &name, const std::string &flags = "") {
+                    const std::string &name,
+                    const std::string &flags = "") {
         std::vector<std::string> segmented_path;
         size_t segment_id = 1;
         for (size_t i = 0; i < edges.size() - 1; ++i) {
@@ -112,7 +113,7 @@ typedef std::function<void (const ScaffoldStorage&)> PathsWriterT;
 
 class ContigWriter {
     const Graph& g_;
-    shared_ptr<ContigNameGenerator> name_generator_;
+    std::shared_ptr<ContigNameGenerator> name_generator_;
 
 public:
     static void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const std::string &fn) {
@@ -132,15 +133,15 @@ public:
     }
 
     ContigWriter(const Graph& g,
-                 shared_ptr<ContigNameGenerator> name_generator) :
+                 std::shared_ptr<ContigNameGenerator> name_generator) :
             g_(g),
             name_generator_(name_generator) {
     }
 
-    void OutputPaths(const PathContainer &paths, const vector<PathsWriterT>& writers) const;
+    void OutputPaths(const PathContainer &paths, const std::vector<PathsWriterT>& writers) const;
 
     void OutputPaths(const PathContainer &paths, PathsWriterT writer) const {
-        OutputPaths(paths, vector<PathsWriterT>{writer});
+        OutputPaths(paths, std::vector<PathsWriterT>{writer});
     }
 
     void OutputPaths(const PathContainer &paths, const std::string &fn) const {

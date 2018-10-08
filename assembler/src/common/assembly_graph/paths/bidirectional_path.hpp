@@ -1,3 +1,4 @@
+
 //***************************************************************************
 //* Copyright (c) 2015 Saint Petersburg State University
 //* Copyright (c) 2011-2014 Saint Petersburg Academic University
@@ -13,10 +14,13 @@
  */
 #pragma once
 
-#include <atomic>
-#include <boost/algorithm/string.hpp>
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/components/connected_component.hpp"
+#include <boost/algorithm/string.hpp>
+#include <algorithm>
+#include <atomic>
+#include <deque>
+#include <vector>
 
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;
@@ -330,8 +334,8 @@ public:
         return false;
     }
 
-    vector<size_t> FindAll(EdgeId e, size_t start = 0) const {
-        vector<size_t> result;
+    std::vector<size_t> FindAll(EdgeId e, size_t start = 0) const {
+        std::vector<size_t> result;
         for (size_t i = start; i < Size(); ++i) {
             if (data_[i] == e) {
                 result.push_back(i);
@@ -445,8 +449,8 @@ public:
     }
 
     //FIXME remove
-    vector<EdgeId> ToVector() const {
-        return vector<EdgeId>(data_.begin(), data_.end());
+    std::vector<EdgeId> ToVector() const {
+        return std::vector<EdgeId>(data_.begin(), data_.end());
     }
 
     void PrintDEBUG() const {
@@ -478,7 +482,7 @@ public:
     }
 
     std::string str() const {
-        stringstream ss;
+        std::stringstream ss;
         Print(ss);
         return ss.str();
     }
@@ -492,8 +496,7 @@ public:
     }
 
 private:
-
-    vector<std::string> PrintLines() const {
+    std::vector<std::string> PrintLines() const {
         auto as_str = str();
         boost::trim(as_str);
         std::vector<std::string> result;
@@ -585,8 +588,9 @@ inline int SkipOneGap(EdgeId end, const BidirectionalPath& path, int gap, int po
     return -1;
 }
 
-inline void SkipGaps(const BidirectionalPath& path1, size_t& cur_pos1, int gap1, const BidirectionalPath& path2, size_t& cur_pos2, int gap2, bool use_gaps,
-                     bool forward) {
+inline void SkipGaps(const BidirectionalPath &path1, size_t &cur_pos1, int gap1,
+                     const BidirectionalPath &path2, size_t &cur_pos2, int gap2,
+                     bool use_gaps, bool forward) {
     if (use_gaps) {
         if (gap1 > 0 && gap2 <= 0) {
             int temp2 = SkipOneGap(path1.At(cur_pos1), path2, gap1, (int) cur_pos2, forward);
@@ -606,7 +610,9 @@ inline void SkipGaps(const BidirectionalPath& path1, size_t& cur_pos1, int gap1,
 
 
 //Try do ignore multiple loop traversals
-inline size_t FirstNotEqualPosition(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2, bool use_gaps) {
+inline size_t FirstNotEqualPosition(const BidirectionalPath &path1, size_t pos1,
+                                    const BidirectionalPath &path2, size_t pos2,
+                                    bool use_gaps) {
     int cur_pos1 = (int) pos1;
     int cur_pos2 = (int) pos2;
     int gap1 = path1.GapAt(cur_pos1).gap;
@@ -632,12 +638,16 @@ inline size_t FirstNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
     DEBUG("Equal!!");
     return -1UL;
 }
-inline bool EqualBegins(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2, bool use_gaps) {
+inline bool EqualBegins(const BidirectionalPath &path1, size_t pos1,
+                        const BidirectionalPath &path2, size_t pos2,
+                        bool use_gaps) {
     DEBUG("Checking for equal begins");
     return FirstNotEqualPosition(path1, pos1, path2, pos2, use_gaps) == -1UL;
 }
 
-inline size_t LastNotEqualPosition(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2, bool use_gaps) {
+inline size_t LastNotEqualPosition(const BidirectionalPath &path1, size_t pos1,
+                                   const BidirectionalPath &path2, size_t pos2,
+                                   bool use_gaps) {
     size_t cur_pos1 = pos1;
     size_t cur_pos2 = pos2;
     while (cur_pos1 < path1.Size() && cur_pos2 < path2.Size()) {
@@ -654,7 +664,9 @@ inline size_t LastNotEqualPosition(const BidirectionalPath& path1, size_t pos1, 
     return -1UL;
 }
 
-inline bool EqualEnds(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2, bool use_gaps) {
+inline bool EqualEnds(const BidirectionalPath &path1, size_t pos1,
+                      const BidirectionalPath &path2, size_t pos2,
+                      bool use_gaps) {
     return LastNotEqualPosition(path1, pos1, path2, pos2, use_gaps) == -1UL;
 }
 

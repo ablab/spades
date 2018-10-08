@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2015-2018 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "assembly_graph/paths/path_processor.hpp"
@@ -49,26 +55,26 @@ public:
 };
 
 class PathExtenderGapCloser: public TargetEdgeGapCloser {
-    shared_ptr<path_extend::PathExtender> extender_;
+    std::shared_ptr<path_extend::PathExtender> extender_;
 
 protected:
     Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const override;
 
 public:
-    PathExtenderGapCloser(const Graph& g, size_t max_path_len, shared_ptr<PathExtender> extender):
+    PathExtenderGapCloser(const Graph& g, size_t max_path_len, std::shared_ptr<PathExtender> extender):
             TargetEdgeGapCloser(g, max_path_len), extender_(extender) {
         DEBUG("ext added");
     }
 };
 
 class MatePairGapCloser: public TargetEdgeGapCloser {
-    const shared_ptr<PairedInfoLibrary> lib_;
-    const ScaffoldingUniqueEdgeStorage& storage_;
+    const std::shared_ptr<PairedInfoLibrary> lib_;
+    const ScaffoldingUniqueEdgeStorage &storage_;
 //TODO: config? somewhere else?
     static constexpr double weight_priority = 5;
 
-    EdgeId FindNext(const BidirectionalPath& path,
-                    const set<EdgeId>& present_in_paths,
+    EdgeId FindNext(const BidirectionalPath &path,
+                    const std::set<EdgeId> &present_in_paths,
                     VertexId last_v, EdgeId target_edge) const;
 protected:
     Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const override;
@@ -76,15 +82,15 @@ protected:
     DECL_LOGGER("MatePairGapCloser")
 
 public:
-    MatePairGapCloser(const Graph& g, size_t max_path_len,
-                      const shared_ptr<PairedInfoLibrary> lib,
-                      const ScaffoldingUniqueEdgeStorage& storage):
+    MatePairGapCloser(const Graph &g, size_t max_path_len,
+                      const std::shared_ptr<PairedInfoLibrary> lib,
+                      const ScaffoldingUniqueEdgeStorage &storage):
             TargetEdgeGapCloser(g, max_path_len), lib_(lib), storage_(storage) {}
 };
 
 //TODO switch to a different Callback, no need to store all paths
 class DijkstraGapCloser: public TargetEdgeGapCloser {
-    typedef vector<vector<EdgeId>> PathsT;
+    typedef std::vector<std::vector<EdgeId>> PathsT;
 
     Gap FillWithMultiplePaths(const PathsT& paths,
                               BidirectionalPath& result) const;
@@ -96,7 +102,7 @@ class DijkstraGapCloser: public TargetEdgeGapCloser {
 
     size_t MinPathSize(const PathsT& paths) const;
 
-    vector<EdgeId> LCP(const PathsT& paths) const;
+    std::vector<EdgeId> LCP(const PathsT& paths) const;
 
     std::map<EdgeId, size_t> CountEdgesQuantity(const PathsT& paths, size_t length_limit) const;
 
@@ -115,7 +121,7 @@ class PathPolisher {
     static const size_t MAX_POLISH_ATTEMPTS = 5;
 
     const conj_graph_pack &gp_;
-    vector<shared_ptr<PathGapCloser>> gap_closers_;
+    std::vector<std::shared_ptr<PathGapCloser>> gap_closers_;
 
     void InfoAboutGaps(const PathContainer& result);
 
@@ -124,7 +130,7 @@ class PathPolisher {
 
 public:
     PathPolisher(const conj_graph_pack &gp,
-                               const vector<shared_ptr<PathGapCloser>> &gap_closers):
+                 const std::vector<std::shared_ptr<PathGapCloser>> &gap_closers):
             gp_(gp), gap_closers_(gap_closers) {
     }
 

@@ -8,10 +8,13 @@
 #pragma once
 
 #include "pipeline/graph_pack.hpp"
-#include "utils/standard_base.hpp"
 
 #include <readline/readline.h>
 #include <readline/history.h>
+
+//TODO: remove this sometime
+using namespace std;
+using namespace fs;
 
 namespace online_visualization {
     typedef debruijn_graph::conj_graph_pack GraphPack;

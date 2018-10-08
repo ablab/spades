@@ -6,7 +6,6 @@
 //***************************************************************************
 
 //#define BOOST_TEST_MODULE include_test
-//#include "utils/standard_base.hpp"
 
 #include "utils/logger/log_writers.hpp"
 

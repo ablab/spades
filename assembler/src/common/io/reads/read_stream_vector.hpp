@@ -8,6 +8,7 @@
 #pragma once
 
 #include "ireader.hpp"
+#include <memory>
 #include <vector>
 
 namespace io {

@@ -18,7 +18,7 @@ namespace debruijn_graph {
 template<class IdType>
 class EdgeInfoStorage {
 public:
-    typedef vector<EdgeInfo<IdType>> Content;
+    typedef std::vector<EdgeInfo<IdType>> Content;
     typedef typename Content::iterator iterator;
     typedef typename Content::const_iterator const_iterator;
     Content content_;
