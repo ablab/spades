@@ -40,7 +40,7 @@ private:
     const Graph &g_;
 
     static const size_t SHORT_SPURIOUS_LENGTH = 500;
-    static const size_t SIMILARITY_LENGTH = 200;
+    static const int SIMILARITY_LENGTH = 200;
     //presumably separate class for this and GetDistance
     mutable std::map<std::pair<VertexId, VertexId>, size_t> distance_cashed_;
     size_t read_count_;
@@ -152,9 +152,9 @@ private:
             int best_one = -1;
             for (size_t i = 0; i < mapped_path.size(); i++) {
                 size_t rlen = mapped_path[i].second.initial_range.size();
-                if (best_one == -1 || rlen * mapped_path[i].second.quality > 
-                                      mapped_path[best_one].second.initial_range.size() * mapped_path[best_one].second.quality ) {
-                    best_one = i;
+                if (best_one == -1 || (double) rlen * mapped_path[i].second.quality > 
+                                      (double) mapped_path[best_one].second.initial_range.size() * mapped_path[best_one].second.quality ) {
+                    best_one = (int) i;
                 }
             }
             if (best_one != -1) {

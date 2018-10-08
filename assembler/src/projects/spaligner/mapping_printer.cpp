@@ -76,9 +76,7 @@ string MappingPrinterGPA::getCigar(const string &read, const string &aligned) {
                                      , edlib::edlibNewAlignConfig(d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_PATH,
                                              NULL, 0));
     string cigar = "";
-    int score = std::numeric_limits<int>::max();
     if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
-        score = result.editDistance;
         cigar = edlib::edlibAlignmentToCigar(result.alignment, result.alignmentLength, edlib::EDLIB_CIGAR_EXTENDED);
     }
     edlib::edlibFreeAlignResult(result);
@@ -105,20 +103,20 @@ void MappingPrinterGPA::getEdgeCigar(const string &subread, const string &path_s
             char c = cigar[i];
 
             if (c == '=' || c == 'I' || c == 'X' || c == 'M') {
-                while (a_i + n > edgeblocks[cur_block]) {
+                while (a_i + n > (int) edgeblocks[cur_block]) {
                     DEBUG("CIGAR: " << n << c);
                     n -= (int) (edgeblocks[cur_block] - a_i);
                     if (c != 'I') {
-                        seq_end += (edgeblocks[cur_block] - a_i);
+                        seq_end += (int) (edgeblocks[cur_block] - a_i);
                     }
                     edgeranges.push_back(Range(seq_start, seq_end));
-                    edgecigar.push_back(cur_cigar + std::to_string(edgeblocks[cur_block] - a_i) + c);
+                    edgecigar.push_back(cur_cigar + std::to_string((int)edgeblocks[cur_block] - a_i) + c);
                     DEBUG("CIGAR: " << a_i << " " << n << " " << edgeblocks[cur_block] << " " << edgecigar[edgecigar.size() - 1] << " " << i << " " << cigar.size());
-                    a_i = edgeblocks[cur_block];
+                    a_i = (int) edgeblocks[cur_block];
                     seq_start = seq_end;
                     cur_cigar = "";
                     cur_block ++;
-                    if (cur_block > edgeblocks.size()) {
+                    if (cur_block > (int) edgeblocks.size()) {
                         WARN("CIGAR: Blocks ended! Something wrong with CIGAR alignment");
                         break;
                     }
@@ -178,8 +176,8 @@ string MappingPrinterGPA::formGPAOutput(const io::SingleRead &read,
     string next = "-";
     for (size_t i = 0; i < path.size(); ++ i) {
         EdgeId edgeid = path[i];
-        int start = i == 0 ? path_range.path_start.edge_pos : 0;
-        int end = i + 1 == path.size() ? path_range.path_end.edge_pos : g_.length(edgeid);
+        size_t start = i == 0 ? path_range.path_start.edge_pos : 0;
+        size_t end = i + 1 == path.size() ? path_range.path_end.edge_pos : g_.length(edgeid);
         next = i + 1 == path.size() ? "-" : read.name() + "_" + std::to_string(nameIndex + 1);
         map<string, string> line = {{"Ind", "A"},
             {"Name", read.name() + "_" + std::to_string(nameIndex)},

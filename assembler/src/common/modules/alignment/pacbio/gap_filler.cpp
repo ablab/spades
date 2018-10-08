@@ -54,7 +54,7 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     }
     DijkstraGapFiller gap_filler(g_, gap_cfg_, s,
                                  start_pos.edgeid, end_pos.edgeid,
-                                 start_pos.position, end_pos.position,
+                                 (int) start_pos.position, (int) end_pos.position,
                                  ed_limit, vertex_pathlen);
     gap_filler.CloseGap();
     dijkstra_res.score = gap_filler.edit_distance();
@@ -200,7 +200,7 @@ void GapFiller::UpdatePath(vector<debruijn_graph::EdgeId> &path,
     } else {
         vector<debruijn_graph::EdgeId> cur_sorted;
         size_t end_pos = p.edge_pos;
-        int start = (int) g_.length(ans[ans.size() - 1]) + (int) g_.k() - end_pos;
+        int start = (int) g_.length(ans[ans.size() - 1]) + (int) g_.k() - (int) end_pos;
         int cur_ind = (int) ans.size() - 1;
         while (cur_ind >= 0 && start - (int) g_.length(ans[cur_ind]) > 0) {
             start -= (int) g_.length(ans[cur_ind]);
@@ -232,9 +232,9 @@ GapFillerResult GapFiller::Run(Sequence &s,
     }
     GapFillerResult res;
     res.return_code = 0;
-    int s_len = int(s.size());
-    int score =  min(min(max(ends_cfg_.ed_lower_bound, s_len / ends_cfg_.max_ed_proportion), ends_cfg_.ed_upper_bound), s_len);
-    if (s_len > (int) ends_cfg_.max_restorable_length && s_len > g_.length(start_pos.edgeid) - start_pos.position + g_.k()) {
+    size_t s_len = int(s.size());
+    int score =  min(min(max(ends_cfg_.ed_lower_bound, (int) s_len / ends_cfg_.max_ed_proportion), ends_cfg_.ed_upper_bound), (int) s_len);
+    if ((int) s_len >  ends_cfg_.max_restorable_length && s_len >  g_.length(start_pos.edgeid) - start_pos.position + g_.k()) {
         DEBUG("EdgeDijkstra: sequence is too long " << s_len)
         res.return_code += DijkstraReturnCode::TOO_LONG_GAP;
         return res;
@@ -245,7 +245,7 @@ GapFillerResult GapFiller::Run(Sequence &s,
         return res;
     }
     utils::perf_counter pc;
-    DijkstraEndsReconstructor algo(g_, ends_cfg_, s.str(), start_pos.edgeid, start_pos.position, score);
+    DijkstraEndsReconstructor algo(g_, ends_cfg_, s.str(), start_pos.edgeid, (int) start_pos.position, score);
     algo.CloseGap();
     score = algo.edit_distance();
     res.return_code += algo.return_code();

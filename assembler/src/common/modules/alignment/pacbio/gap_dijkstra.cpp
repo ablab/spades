@@ -5,7 +5,7 @@ namespace sensitive_aligner {
 
 bool DijkstraGraphSequenceBase::IsBetter(int seq_ind, int ed)
 {
-    if (seq_ind == ss_.size() ) {
+    if (seq_ind == (int) ss_.size() ) {
         if (ed <= path_max_length_) {
             return true;
         } 
@@ -13,7 +13,7 @@ bool DijkstraGraphSequenceBase::IsBetter(int seq_ind, int ed)
     }
     VERIFY(seq_ind < (int) ss_.size())
     VERIFY(seq_ind >= 0)
-    if (seq_ind < 100 || max(best_ed_[seq_ind] + (int) (seq_ind * gap_cfg_.penalty_ratio), 20) >= ed) {
+    if (seq_ind < 100 || max(best_ed_[seq_ind] + (int) ((double)seq_ind * gap_cfg_.penalty_ratio), 20) >= ed) {
         best_ed_[seq_ind] = min(best_ed_[seq_ind], ed);
         return true;
     } 
@@ -171,7 +171,7 @@ bool DijkstraGapFiller::AddState(const QueueState &cur_state, debruijn_graph::Ed
 }
 
 bool DijkstraGapFiller::IsEndPosition(const QueueState &cur_state) {
-    if (cur_state.i == ss_.size() &&
+    if (cur_state.i == (int) ss_.size() &&
             cur_state.gs.e == end_qstate_.gs.e &&
             cur_state.gs.end_pos == end_qstate_.gs.end_pos) {
         return true;
@@ -206,7 +206,7 @@ bool DijkstraEndsReconstructor::AddState(const QueueState &cur_state, debruijn_g
 }
 
 bool DijkstraEndsReconstructor::IsEndPosition(const QueueState &cur_state) {
-    return (cur_state.i == ss_.size());
+    return (cur_state.i == (int)ss_.size());
 }
 
 } // namespace sensitive_aligner

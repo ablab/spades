@@ -125,7 +125,7 @@ struct StateHasher {
     {
         using std::hash;
 
-        return ((hash<int>()(k.gs.e.int_id())
+        return ((hash<int>()((int) k.gs.e.int_id())
                  ^ (hash<int>()(k.gs.start_pos) << 1)) >> 1)
                ^ (hash<int>()(k.gs.end_pos) << 1)
                ^ (hash<int>()(k.i) << 17);
@@ -230,7 +230,7 @@ protected:
 
     const size_t queue_limit_;
     const size_t iter_limit_;
-    int updates_;
+    size_t updates_;
 };
 
 
@@ -295,7 +295,7 @@ public:
             string tmp = g_.EdgeNucls(start_e_).str();
             string edge_str = tmp.substr(start_p_);
             int position = -1;
-            int score = SHWDistance(seq_str, edge_str, ss_.size(), position);
+            int score = SHWDistance(seq_str, edge_str, (int) ss_.size(), position);
             if (score != std::numeric_limits<int>::max()) {
                 path_max_length_ = score;
                 QueueState state(GraphState(start_e_, start_p_, start_p_ + position + 1), (int) ss_.size() );
