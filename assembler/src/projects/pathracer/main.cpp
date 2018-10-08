@@ -306,7 +306,7 @@ PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
             matches.push_back({id, std::make_pair(loverhang, roverhang)});
         }
     }
-    INFO("Total matched edges: " << matches.size());
+    INFO("Total matched sequences: " << matches.size());
 
     return matches;
 }
@@ -672,7 +672,6 @@ void TraceHMM(const hmmer::HMM &hmm,
 
     auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
     INFO("HMM consensus: " << fees.consensus);
-
 
     std::vector<std::vector<EdgeId>> paths;
     // Fill paths by single edges
