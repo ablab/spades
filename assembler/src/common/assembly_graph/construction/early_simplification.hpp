@@ -45,6 +45,7 @@ public:
     }
 
 private:
+    typedef std::array<std::vector<KeyWithHash>, 4> TipsArray;
     Index &index_;
     size_t length_bound_;
 
@@ -72,7 +73,6 @@ private:
         return tip.size();
     }
 
-    using TipsArray = std::array<std::vector<KeyWithHash>, 4>;
     size_t RemoveTips(const TipsArray &tips, size_t max) {
         size_t result = 0;
         for (const auto &tip : tips) {
