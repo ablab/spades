@@ -44,6 +44,52 @@ public:
         return ClipTips(iters);
     }
 
+    size_t ClipTips(std::vector<Index::kmer_iterator> &iters) {
+        std::vector<size_t> removed_kmers(iters.size());
+        std::vector<std::vector<KeyWithHash>> tipped_junctions(iters.size());
+#pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < iters.size(); i++) {
+            TipsArray tips;
+            for (auto &tip : tips) {
+                tip.reserve(length_bound_);
+            }
+
+            for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
+                auto seq = RtSeq(index_.k(), *it);
+                for (const auto &s : {seq, !seq}) {  // The file stores only canonical (i.e., s > !s) k-mers
+                    KeyWithHash kh = index_.ConstructKWH(s);
+                    if (index_.OutgoingEdgeCount(kh) >= 2) {
+                        size_t removed = RemoveForward(kh, tips);
+                        removed_kmers[i] += removed;
+                        if (removed) {
+                            tipped_junctions[i].push_back(kh);
+                        }
+                    }
+                }
+            }
+        }
+
+        size_t n_tipped_junctions = std::accumulate(tipped_junctions.cbegin(),
+                                                    tipped_junctions.cend(),
+                                                    size_t(0),
+                                                    [](size_t sum, const auto &v) { return sum + v.size(); });
+        INFO("#tipped junctions: " << n_tipped_junctions);
+
+        // Remove links leading to tips
+        size_t clipped_tips = 0;
+#pragma omp parallel for schedule(guided) reduction(+:clipped_tips)
+        for (size_t i = 0; i < tipped_junctions.size(); i++) {
+            for (const KeyWithHash &kh : tipped_junctions[i]) {
+                clipped_tips += RemoveUnpairedForwardLinks(kh);
+            }
+        }
+        INFO("Clipped tips: " << clipped_tips);
+
+        size_t n_removed_kmers = std::accumulate(removed_kmers.cbegin(), removed_kmers.cend(), size_t(0));
+        return n_removed_kmers;
+    }
+
+
 private:
     typedef std::array<std::vector<KeyWithHash>, 4> TipsArray;
     Index &index_;
@@ -96,51 +142,6 @@ private:
             }
         }
         return RemoveTips(tips, max);
-    }
-
-    size_t ClipTips(std::vector<Index::kmer_iterator> &iters) {
-        std::vector<size_t> removed_kmers(iters.size());
-        std::vector<std::vector<KeyWithHash>> tipped_junctions(iters.size());
-#pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < iters.size(); i++) {
-            TipsArray tips;
-            for (auto &tip : tips) {
-                tip.reserve(length_bound_);
-            }
-
-            for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
-                auto seq = RtSeq(index_.k(), *it);
-                for (const auto &s : {seq, !seq}) {  // The file stores only canonical (i.e., s > !s) k-mers
-                    KeyWithHash kh = index_.ConstructKWH(s);
-                    if (index_.OutgoingEdgeCount(kh) >= 2) {
-                        size_t removed = RemoveForward(kh, tips);
-                        removed_kmers[i] += removed;
-                        if (removed) {
-                            tipped_junctions[i].push_back(kh);
-                        }
-                    }
-                }
-            }
-        }
-
-        size_t n_tipped_junctions = std::accumulate(tipped_junctions.cbegin(),
-                                                    tipped_junctions.cend(),
-                                                    size_t(0),
-                                                    [](size_t sum, const auto &v) { return sum + v.size(); });
-        INFO("#tipped junctions: " << n_tipped_junctions);
-
-        // Remove links leading to tips
-        size_t clipped_tips = 0;
-#pragma omp parallel for schedule(guided) reduction(+:clipped_tips)
-        for (size_t i = 0; i < tipped_junctions.size(); i++) {
-            for (const KeyWithHash &kh : tipped_junctions[i]) {
-                clipped_tips += RemoveUnpairedForwardLinks(kh);
-            }
-        }
-        INFO("Clipped tips: " << clipped_tips);
-
-        size_t n_removed_kmers = std::accumulate(removed_kmers.cbegin(), removed_kmers.cend(), size_t(0));
-        return n_removed_kmers;
     }
 
     size_t ClipTips(size_t n_chunks) {
