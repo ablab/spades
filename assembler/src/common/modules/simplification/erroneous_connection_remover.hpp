@@ -119,6 +119,8 @@ inline bool IsSimpleBulge(const Graph &g, typename Graph::EdgeId e){
 
 template<class Graph>
 inline bool IsAlternativePathExist(const Graph &g, typename Graph::EdgeId e){
+    typedef typename Graph::VertexId VertexId;
+
     MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(g, e);
 
     VertexId start = g.EdgeStart(e);
@@ -142,6 +144,8 @@ inline bool IsAlternativePathExist(const Graph &g, typename Graph::EdgeId e){
 
 template<class Graph>
 inline bool IsAlternativeInclusivePathExist(const Graph &g, typename Graph::EdgeId forbidden_edge, typename Graph::EdgeId compulsory_edge){
+    typedef typename Graph::VertexId VertexId;
+
     MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(g, forbidden_edge);
 
     VertexId start = g.EdgeStart(forbidden_edge);

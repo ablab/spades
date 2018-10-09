@@ -9,6 +9,8 @@
 
 #include "pipeline/library.hpp"
 
+#include <functional>
+
 namespace io {
 
 static inline std::pair<bool, bool> GetRCFlags(LibraryOrientation orientation) {
