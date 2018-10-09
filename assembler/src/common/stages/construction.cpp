@@ -254,7 +254,7 @@ public:
             INFO("Early tip clipper length bound set as (RL - K)");
             storage().params.early_tc.length_bound.reset(cfg::get().ds.RL - gp.g.k());
         }
-        AlternativeEarlyTipClipper(storage().ext_index, *storage().params.early_tc.length_bound).ClipTips();
+        EarlyTipClipperProcessor(storage().ext_index, *storage().params.early_tc.length_bound).ClipTips();
     }
 
     void load(debruijn_graph::conj_graph_pack&,

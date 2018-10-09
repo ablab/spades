@@ -15,13 +15,13 @@
 
 namespace debruijn_graph {
 
-class AlternativeEarlyTipClipper {
+class EarlyTipClipperProcessor {
 public:
     typedef utils::DeBruijnExtensionIndex<> Index;
     typedef Index::KMer Kmer;
     typedef Index::KeyWithHash KeyWithHash;
 
-    AlternativeEarlyTipClipper(Index &index, size_t length_bound) : index_(index), length_bound_(length_bound) {}
+    EarlyTipClipperProcessor(Index &index, size_t length_bound) : index_(index), length_bound_(length_bound) {}
 
     // Methods return the number of removed edges
     size_t ClipTips() {

@@ -72,7 +72,7 @@ void EarlyClipTips(const config::debruijn_config::construction& params, Extensio
         return;
 
     VERIFY(params.early_tc.length_bound);
-    AlternativeEarlyTipClipper(ext, *params.early_tc.length_bound).ClipTips();
+    EarlyTipClipperProcessor(ext, *params.early_tc.length_bound).ClipTips();
 }
 
 template<class Graph, class Read, class Index>
