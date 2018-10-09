@@ -31,19 +31,6 @@ public:
         return result;
     }
 
-    // This interface is for MPI version of EarlyTC stage
-    size_t ClipTips(size_t n_chunks, const std::vector<size_t> &chunks) {
-        std::vector<Index::kmer_iterator> all_iters = index_.kmer_begin(n_chunks);
-        std::vector<Index::kmer_iterator> iters;
-        for (size_t chunk : chunks) {
-            if (chunk < all_iters.size()) {  // all_iters.size() could be less than required
-                iters.push_back(std::move(all_iters[chunk]));
-            }
-        }
-
-        return ClipTips(iters);
-    }
-
     size_t ClipTips(std::vector<Index::kmer_iterator> &iters) {
         std::vector<size_t> removed_kmers(iters.size());
         std::vector<std::vector<KeyWithHash>> tipped_junctions(iters.size());
