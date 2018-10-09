@@ -62,12 +62,13 @@ public:
                                                     [](size_t sum, const auto &v) { return sum + v.size(); });
         INFO("#tipped junctions: " << n_tipped_junctions);
 
-        // Remove links leading to tips
+        // Remove inconsistent links leading to removed tips
+        // Tips is already removed but their roots still store phantom extensions
         size_t clipped_tips = 0;
 #pragma omp parallel for schedule(guided) reduction(+:clipped_tips)
         for (size_t i = 0; i < tipped_junctions.size(); i++) {
             for (const KeyWithHash &kh : tipped_junctions[i]) {
-                clipped_tips += RemoveUnpairedForwardLinks(kh);
+                clipped_tips += RemoveInconsistentForwardLinks(kh);
             }
         }
         INFO("Clipped tips: " << clipped_tips);
@@ -136,7 +137,7 @@ private:
         return ClipTips(iters);
     }
 
-    size_t RemoveUnpairedForwardLinks(const KeyWithHash &kh) {
+    size_t RemoveInconsistentForwardLinks(const KeyWithHash &kh) {
         size_t count = 0;
         auto mask = index_.get_value(kh);
         for (char c = 0; c < 4; ++c) {
