@@ -76,11 +76,12 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
     TRACE(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) << " " << g_.int_id(end_v));
     omnigraph::PathStorageCallback<debruijn_graph::Graph> callback(g_);
     GapFillerResult bf_res;
-    bf_res.return_code = ProcessPaths(g_,
+    bf_res.return_code = DijkstraReturnCode::NO_PATH;
+    int return_code = ProcessPaths(g_,
                                       path_min_length, path_max_length,
                                       start_v, end_v,
                                       callback);
-    DEBUG("PathProcessor result: " << bf_res.return_code << " limits " << path_min_length << " " << path_max_length);
+    DEBUG("PathProcessor result: " << return_code << " limits " << path_min_length << " " << path_max_length);
     std::vector<std::vector<EdgeId> > paths = callback.paths();
     size_t best_path_ind = paths.size();
     int best_score = std::numeric_limits<int>::max();
@@ -138,7 +139,9 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
     bf_res.full_intermediate_path = paths[best_path_ind];
     bf_res.full_intermediate_path.insert(bf_res.full_intermediate_path.begin(), start_pos.edgeid);
     bf_res.full_intermediate_path.push_back(end_pos.edgeid);
-    bf_res.return_code = DijkstraReturnCode::OK;
+    if (return_code == 0){
+        bf_res.return_code = DijkstraReturnCode::OK;
+    }
     return bf_res;
 }
 
@@ -149,24 +152,19 @@ GapFillerResult GapFiller::Run(const string &s,
     utils::perf_counter pc;
     auto bf_res = BestScoredPathBruteForce(s, start_pos, end_pos, path_min_length, path_max_length);
     double tm1 = pc.time();
-    if (bf_res.score == std::numeric_limits<int>::max()) {
-        bf_res.return_code = DijkstraReturnCode::NO_PATH;
-    } else {
-        bf_res.return_code = DijkstraReturnCode::OK;
-    }
     pc.reset();
-    if (gap_cfg_.run_dijkstra && bf_res.return_code != 0) {
+    if (gap_cfg_.run_dijkstra && bf_res.return_code != DijkstraReturnCode::OK) {
         auto dijkstra_res = BestScoredPathDijkstra(s, start_pos, end_pos, path_max_length, bf_res.score);
         DEBUG("BruteForce run: return_code=" << bf_res.return_code
               << " score=" << bf_res.score << " time1=" << tm1
               << " Dijkstra run: return_code=" << dijkstra_res.return_code
               << " score=" <<  dijkstra_res.score << " time2=" << pc.time() << " len=" << s.size() << "\n")
-        if (dijkstra_res.score != std::numeric_limits<int>::max()) {
+        if (dijkstra_res.return_code == DijkstraReturnCode::OK) {
             return dijkstra_res;
         }
     }
-    if (bf_res.score == std::numeric_limits<int>::max()) {
-        bf_res.return_code = DijkstraReturnCode::NO_PATH;
+    if (bf_res.score != std::numeric_limits<int>::max() && !gap_cfg_.find_shortest_path) {
+        bf_res.return_code = DijkstraReturnCode::OK;
     }
     return bf_res;
 
