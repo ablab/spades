@@ -83,7 +83,7 @@ enum class mode {
     aa
 };
 
-struct cfg {
+struct PathracerConfig {
     std::string load_from = "";
     std::string hmmfile = "";
     std::string output_dir = "";
@@ -115,7 +115,7 @@ extern "C" {
 #include "hmmer.h"
 }
 
-void process_cmdline(int argc, char **argv, cfg &cfg) {
+void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
   using namespace clipp;
 
   auto cli = (
@@ -229,7 +229,7 @@ using debruijn_graph::ConjugateDeBruijnGraph;
 
 auto ScoreSequences(const std::vector<std::string> &seqs,
                     const std::vector<std::string> &refs,
-                    const hmmer::HMM &hmm, const cfg &cfg) {
+                    const hmmer::HMM &hmm, const PathracerConfig &cfg) {
     bool hmm_in_aas = hmm.abc()->K == 20;
     hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
 
@@ -259,7 +259,7 @@ auto ScoreSequences(const std::vector<std::string> &seqs,
 using EdgeAlnInfo = std::vector<std::pair<EdgeId, std::pair<int, int>>>;
 EdgeAlnInfo get_matched_edges(const std::vector<EdgeId> &edges,
                               const hmmer::HMMMatcher &matcher,
-                              const cfg &cfg) {
+                              const PathracerConfig &cfg) {
     EdgeAlnInfo match_edges;
     for (const auto &hit : matcher.hits()) {
         if (!hit.reported() || !hit.included())
@@ -287,7 +287,7 @@ EdgeAlnInfo get_matched_edges(const std::vector<EdgeId> &edges,
 
 using PathAlnInfo = std::vector<std::pair<size_t, std::pair<int, int>>>;
 PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
-                            const cfg &cfg) {
+                            const PathracerConfig &cfg) {
     std::vector<std::pair<size_t, std::pair<int, int>>> matches;
     for (const auto &hit : matcher.hits()) {
         if (!hit.reported() || !hit.included())
@@ -313,7 +313,7 @@ PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
 
 EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
                          const ConjugateDeBruijnGraph &graph,
-                         const hmmer::HMM &hmm, const cfg &cfg) {
+                         const hmmer::HMM &hmm, const PathracerConfig &cfg) {
     std::vector<std::string> seqs;
     for (size_t i = 0; i < edges.size(); ++i) {
         seqs.push_back(graph.EdgeNucls(edges[i]).str());
@@ -354,7 +354,7 @@ std::string PathToString(const std::vector<EdgeId>& path,
 
 PathAlnInfo MatchedPaths(const std::vector<std::vector<EdgeId>> &paths,
                          const ConjugateDeBruijnGraph &graph,
-                         const hmmer::HMM &hmm, const cfg &cfg) {
+                         const hmmer::HMM &hmm, const PathracerConfig &cfg) {
     std::vector<std::string> seqs;
     seqs.reserve(paths.size());
     for (const auto &path : paths) {
@@ -546,7 +546,7 @@ struct HMMPathInfo {
 };
 
 void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph */,
-                 const cfg &cfg,
+                 const PathracerConfig &cfg,
                  const std::vector<HMMPathInfo> &results) {
     const P7_HMM *p7hmm = hmm.get();  // TODO We use only hmm name from this object, may be we should just pass the name itself
 
@@ -591,7 +591,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
 }
 
 void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
-             const cfg &cfg,
+             const PathracerConfig &cfg,
              const std::vector<HMMPathInfo> &results) {
     P7_HMM *p7hmm = hmm.get();
 
@@ -666,7 +666,7 @@ std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path) {
 void TraceHMM(const hmmer::HMM &hmm,
               const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
               const std::vector<std::vector<EdgeId>> contig_paths,
-              const cfg &cfg,
+              const PathracerConfig &cfg,
               std::vector<HMMPathInfo> &results) {
     const P7_HMM *p7hmm = hmm.get();
 
@@ -854,7 +854,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
 }
 
-void hmm_main(const cfg &cfg,
+void hmm_main(const PathracerConfig &cfg,
               const debruijn_graph::ConjugateDeBruijnGraph &graph,
               const std::vector<EdgeId> &edges,
               const std::vector<std::vector<EdgeId>> contig_paths,
@@ -915,7 +915,7 @@ int main(int argc, char* argv[]) {
     srand(42);
     srandom(42);
 
-    cfg cfg;
+    PathracerConfig cfg;
     process_cmdline(argc, argv, cfg);
 
     create_console_logger(cfg.output_dir + "/pathracer.log");
