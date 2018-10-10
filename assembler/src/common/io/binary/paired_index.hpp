@@ -23,6 +23,11 @@ public:
     }
 };
 
+template<typename G, typename Traits, template<typename, typename> class Container>
+struct IOTraits<omnigraph::de::PairedIndex<G, Traits, Container>> {
+    typedef PairedIndexIO<omnigraph::de::PairedIndex<G, Traits, Container>> Type;
+};
+
 template<typename Index>
 class PairedIndicesIO : public IOCollection<omnigraph::de::PairedIndices<Index>, EdgeMapper<Index>> {
 public:

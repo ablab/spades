@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "io/binary.hpp"
+
 #include <fstream>
 #include <memory>
 #include <string>
@@ -87,10 +89,28 @@ struct IOBase {
 };
 
 /**
-  * @brief  IOTraits<T>::type is the concrete class is needed for (de)serialization of some type T.
-  */
+ * @brief  IOTraits<T>::type is the concrete class is needed for (de)serialization of some type T.
+ */
 template<typename T>
 struct IOTraits;
+
+/**
+ * @brief  A template function that serializes a component calling an appropriate ComponentIO.
+ */
+template<typename T>
+void Save(const std::string &basename, const T &value) {
+    typename IOTraits<T>::Type io;
+    io.Save(basename, value);
+}
+
+/**
+ * @brief  A template function that deserializes a component calling an appropriate ComponentIO.
+ */
+template<typename T, typename... Env>
+bool Load(const std::string &basename, T &value, Env... env) {
+    typename IOTraits<T>::Type io;
+    return io.Load(basename, value, env...);
+}
 
 /**
  * @brief  An abstract saver/loader which uses a single file for its component.
@@ -98,8 +118,6 @@ struct IOTraits;
 template<typename T, typename... Env>
 class IOSingle : public IOBase<T, Env...> {
 public:
-
-
     void Save(const std::string &basename, const T &value) override {
         std::string filename = basename + this->ext_;
         BinSaveFile file(filename);

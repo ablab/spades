@@ -92,6 +92,11 @@ private:
     DECL_LOGGER("GraphIO");
 };
 
+template<>
+struct IOTraits<debruijn_graph::Graph> {
+    typedef GraphIO<debruijn_graph::Graph> Type;
+};
+
 } // namespace binary
 
 } // namespace io

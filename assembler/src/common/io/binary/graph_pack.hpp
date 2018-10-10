@@ -26,7 +26,7 @@ namespace binary {
 //TODO: get rid of ad-hoc component processing
 
 template<typename Graph>
-class GraphPackIO : public IOBase<debruijn_graph::graph_pack<Graph>> {
+class BasePackIO : public IOBase<debruijn_graph::graph_pack<Graph>> {
 public:
     typedef typename debruijn_graph::graph_pack<Graph> Type;
 
@@ -97,51 +97,47 @@ protected:
 };
 
 template<typename Graph>
-class FullPackIO : public GraphPackIO<Graph> {
+class FullPackIO : public BasePackIO<Graph> {
 public:
-    typedef GraphPackIO<Graph> base;
+    typedef BasePackIO<Graph> base;
     typedef typename debruijn_graph::graph_pack<Graph> Type;
     void Save(const std::string &basename, const Type &gp) override {
-        //Save basic graph
+        //1. Save basic graph
         base::Save(basename, gp);
 
-        //Save unclustered paired indices
+        //2. Save unclustered paired indices
         using namespace omnigraph::de;
-        PairedIndicesIO<UnclusteredPairedInfoIndexT<Graph>>()
-                .Save(basename, gp.paired_indices);
+        io::binary::Save(basename, gp.paired_indices);
 
-        { //Save clustered & scaffolding indices
-            PairedIndicesIO<PairedInfoIndexT<Graph>> io;
-            io.Save(basename + "_cl", gp.clustered_indices);
-            io.Save(basename + "_scf", gp.scaffolding_indices);
-        }
+        //3. Save clustered & scaffolding indices
+        io::binary::Save(basename + "_cl", gp.clustered_indices);
+        io::binary::Save(basename + "_scf", gp.scaffolding_indices);
 
-        //Save long reads
-        LongReadsIO<Graph>().Save(basename, gp.single_long_reads);
+        //4. Save long reads
+        io::binary::Save(basename, gp.single_long_reads);
 
+        //5. Save genome info
         gp.ginfo.Save(basename + ".ginfo");
     }
 
     bool Load(const std::string &basename, Type &gp) override {
-        //Load basic graph
+        //1. Load basic graph
         bool loaded = base::Load(basename, gp);
         VERIFY(loaded);
         const auto &mapper = this->graph_io_.GetEdgeMapper();
 
-        //Load paired indices
+        //2. Load paired indices
         using namespace omnigraph::de;
-        PairedIndicesIO<UnclusteredPairedInfoIndexT<Graph>>()
-                .Load(basename, gp.paired_indices, mapper);
+        io::binary::Load(basename, gp.paired_indices, mapper);
 
-        { //Load clustered & scaffolding indices
-            PairedIndicesIO<PairedInfoIndexT<Graph>> io;
-            io.Load(basename + "_cl", gp.clustered_indices, mapper);
-            io.Load(basename + "_scf", gp.scaffolding_indices, mapper);
-        }
+        //3. Load clustered & scaffolding indices
+        io::binary::Load(basename + "_cl", gp.clustered_indices, mapper);
+        io::binary::Load(basename + "_scf", gp.scaffolding_indices, mapper);
 
-        //Load long reads
-        LongReadsIO<Graph>().Load(basename, gp.single_long_reads, mapper);
+        //4. Load long reads
+        io::binary::Load(basename, gp.single_long_reads, mapper);
 
+        //5. Load genome info
         gp.ginfo.Load(basename + ".ginfo");
 
         return true;
