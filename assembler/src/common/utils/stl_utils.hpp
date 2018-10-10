@@ -7,18 +7,14 @@
 
 #pragma once
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include "utils/verify.hpp"
-#include "io/reads/ireader.hpp"
-#include "filesystem/path_helper.hpp"
 #include <memory>
 #include <map>
 #include <string>
 #include <set>
 #include <vector>
+#include <ostream>
 
 namespace utils {
 
@@ -108,10 +104,7 @@ template<class T1, class T2>
 std::ostream &operator<<(std::ostream &os, std::pair<T1, T2> const &pair) {
     return os << "(" << pair.first << ", " << pair.second << ")";
 }
-//}
 
-//namespace omnigraph
-//{
 template<class T>
 std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
     os << "[";

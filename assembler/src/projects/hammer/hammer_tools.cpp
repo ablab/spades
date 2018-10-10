@@ -5,20 +5,22 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "io/reads/ireadstream.hpp"
+#include "config_struct_hammer.hpp"
+#include "hammer_tools.hpp"
+
 #include "valid_kmer_generator.hpp"
 #include "globals.hpp"
 #include "kmer_data.hpp"
 #include "read_corrector.hpp"
 
 #include "io/kmers/mmapped_writer.hpp"
+#include "io/reads/ireadstream.hpp"
+#include "utils/filesystem/path_helper.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <iomanip>
 
-#include "config_struct_hammer.hpp"
-#include "hammer_tools.hpp"
 
 using namespace std;
 
