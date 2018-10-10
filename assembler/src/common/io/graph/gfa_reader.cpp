@@ -50,6 +50,11 @@ unsigned GFAReader::k() const {
 
     return k;
 }
+size_t GFAReader::num_paths() const { return paths_.size(); }
+GFAReader::path_iterator GFAReader::path_begin() const { return paths_.begin(); }
+GFAReader::path_iterator GFAReader::path_end() const { return paths_.end(); }
+std::pair<GFAReader::path_iterator, GFAReader::path_iterator>
+GFAReader::paths() const { return { path_begin(), path_end() }; }
 
 void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
                          io::IdMapper<std::string> *id_mapper) {
