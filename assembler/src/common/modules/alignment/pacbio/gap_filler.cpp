@@ -182,7 +182,7 @@ void GapFiller::Revert(Sequence &ss, GraphPosition &start_pos) const {
 
 void GapFiller::UpdatePath(vector<debruijn_graph::EdgeId> &path,
                            std::vector<EdgeId> &ans,
-                           MappingPoint p, PathRange &range, bool forward) const {
+                           MappingPoint p, PathRange &range, bool forward, GraphPosition &old_start_pos) const {
     if (forward) {
         size_t end_pos = p.edge_pos;
         size_t end_pos_seq = p.seq_pos;
@@ -213,6 +213,9 @@ void GapFiller::UpdatePath(vector<debruijn_graph::EdgeId> &path,
         for (size_t i = 0; i < path.size(); ++i) {
             cur_sorted.push_back(path[i]);
         }
+        if (path.size() == cur_sorted.size() && start > old_start_pos.position) {
+            return;
+        }
         path = cur_sorted;
         range.path_start.seq_pos = 0;
         range.path_start.edge_pos = start;
@@ -225,6 +228,7 @@ GapFillerResult GapFiller::Run(Sequence &s,
                                vector<debruijn_graph::EdgeId> &path,
                                PathRange &range) const {
     VERIFY(path.size() > 0);
+    GraphPosition old_start_pos = start_pos;
     if (!forward) {
         Revert(s, start_pos);
     }
@@ -254,7 +258,7 @@ GapFillerResult GapFiller::Run(Sequence &s,
     }
     std::vector<EdgeId> ans = algo.path();
     MappingPoint p(forward ? algo.seq_end_position() + range.path_end.seq_pos : 0, algo.path_end_position());
-    UpdatePath(path, ans, p, range, forward);
+    UpdatePath(path, ans, p, range, forward, old_start_pos);
     return res;
 }
 

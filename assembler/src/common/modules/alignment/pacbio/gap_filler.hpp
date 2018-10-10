@@ -64,7 +64,7 @@ class GapFiller {
 
     void UpdatePath(vector<debruijn_graph::EdgeId> &path,
                     std::vector<EdgeId> &ans,
-                    MappingPoint p, PathRange &range, bool forward) const;
+                    MappingPoint p, PathRange &range, bool forward, GraphPosition &old_start_pos) const;
 
   public:
 
