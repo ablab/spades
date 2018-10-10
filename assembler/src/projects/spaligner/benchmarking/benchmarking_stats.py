@@ -138,16 +138,11 @@ class DataLoader:
 
     def extract_seq(self, connected_nodes):
         graph_seq_full = ""
-        graph_seq = ""
         for i in xrange(len(connected_nodes)):
             node = connected_nodes[i]
-            edge_offset_s = 0
-            edge_offset_f = len(node["nucs"])
-            if i == 0:
-                edge_offset_s = node["path"][0]["start"]
-            if i == len(connected_nodes) - 1:
-                edge_offset_f = node["path"][-1]["end"]
-            graph_seq_full += node["nucs"][edge_offset_s: edge_offset_f + 1]
+            edge_offset_s = node["path"][0]["start"]
+            edge_offset_f = node["path"][-1]["end"]
+            graph_seq_full += node["nucs"][edge_offset_s: edge_offset_f]
         return graph_seq_full
 
 
@@ -183,7 +178,7 @@ class DataLoader:
                                      "mapped_seq": [x["mapped_seq"] for x in res_mp[r]]})
         return res
 
-    def load_segal_paths(self, filename, reads, stat = "max"):
+    def load_spaligner_paths(self, filename, reads, stat = "max"):
         res = []
         fin = open(filename, "r")
         for ln in fin.readlines():
@@ -227,9 +222,10 @@ def print_stats(reads, res_mp):
         print ""
         eds[name] = list(df["prop_ed"])
 
-    # set_ga = set(x["r_name"] for x in res_mp["SeGal"])
+    # set_spa = set(x["r_name"] for x in res_mp["SPAligner"])
     # set_gra = set(x["r_name"] for x in res_mp["GraphAligner"])
-    # print len(set_ga - set_gra), len(set_gra - set_ga) 
+    # print "\n".join(set_gra - set_spa)
+    # print len(set_spa - set_gra), len(set_gra - set_spa) 
 
 def save_fasta(aligner_res, filename):
     with open(filename, "w") as fout:
@@ -252,9 +248,9 @@ if __name__ == "__main__":
             for al in aligners.keys():
                 if aligners[al] == 1:
                     if al.startswith("SPAligner"):
-                        segal_res_file = org_path + al + "/output/aln_" + read_type + ".tsv"
-                        segal_res = dl.load_segal_paths(segal_res_file, reads, stat)
-                        mp[al] = segal_res
+                        spaligner_res_file = org_path + al + "/output/aln_" + read_type + ".tsv"
+                        spaligner_res = dl.load_spaligner_paths(spaligner_res_file, reads, stat)
+                        mp[al] = spaligner_res
 
                     if al.startswith("GraphAligner"):
                         graphaligner_edges_gfa = org_path + al + "/tmp/graph_idfix.gfa"
@@ -265,10 +261,17 @@ if __name__ == "__main__":
 
                     if al.startswith("vg"):
                         vg_edges_gfa = org_path + al + "/tmp/graph.split.gfa"
-                        vg_res_file = org_path + al + "/output/aln_" + read_type + ".json"
+                        vg_res_file = org_path + al + "/output/aln_" + read_type + "_xdrop.json"
                         [vg_edges, vg_graph] = dl.load_gfa_edges(vg_edges_gfa)
                         vg_res = dl.load_json_paths(vg_res_file, vg_edges, vg_graph, reads, stat)
-                        mp[al] = vg_res
+                        mp[al+"_xdrop"] = vg_res
+
+                    if al.startswith("vg"):
+                        vg_edges_gfa = org_path + al + "/tmp/graph.split.gfa"
+                        vg_res_file = org_path + al + "/output/aln_" + read_type + "_ordinary.json"
+                        [vg_edges, vg_graph] = dl.load_gfa_edges(vg_edges_gfa)
+                        vg_res = dl.load_json_paths(vg_res_file, vg_edges, vg_graph, reads, stat)
+                        mp[al+"_ordinary"] = vg_res
 
             print_stats(reads, mp)
 
