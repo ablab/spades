@@ -23,7 +23,7 @@
 <a name="sec1"></a>
 <h2>1 About rnaSPAdes</h2>
 
-<p> rnaSPAdes is a tool for <i>de novo</i> transcriptome assembly from RNA-Seq data and is suitable for all kind of organisms. rnaSPAdes is a part of <a href="http://cab.spbu.ru/software/spades/">SPAdes package</a> since version 3.9. Information about SPAdes download, requirements, installation and basic options can be found in <a href="manual.html">SPAdes manual</a>. Below you may find information about differences between SPAdes and rnaSPAdes.
+<p> rnaSPAdes is a tool for <i>de novo</i> transcriptome assembly from RNA-Seq data and is suitable for all kind of organisms. rnaSPAdes is a part of <a href="http://cab.spbu.ru/software/spades/" target="_blank">SPAdes package</a> since version 3.9. Information about SPAdes download, requirements, installation and basic options can be found in <a href="manual.html" target="_blank">SPAdes manual</a>. Below you may find information about differences between SPAdes and rnaSPAdes.
 
 <a name="sec2"></a>
 <h2>2 rnaSPAdes specifics</h2>
@@ -66,7 +66,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 
 <a name="sec2.3"></a>
 <h3>2.3 Assemblying strand-specific RNA-Seq</h3>
-<p>rnaSPAdes now supports strand-specific RNA-Seq dataset. You can indicate that the dataset is strand-specific using one of the following options:
+<p>rnaSPAdes supports strand-specific RNA-Seq dataset. You can indicate that the dataset is strand-specific using one of the following options:
 
 <p>
     <code>--ss-fr</code><br>
@@ -75,10 +75,13 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 
 <p>
     <code>--ss-rf</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;The data set is strand-specific and first read in pair corresponds to <b>reverse</b> gene strand.
+    &nbsp;&nbsp;&nbsp;&nbsp;The data set is strand-specific and first read in pair corresponds to <b>reverse</b> gene strand (antisense).
 </p>
-
+<p>
+Note, that strand-specificity is not realated and should not be confused with FR and RF orientation of paired reads. RNA-Seq paired-end reads typically have forward-reverse orientation (--> &lt;--), which is assumed by default and no additional options are needed (see <a href="manual.html#inputdata" target="_blank">main manual</a> for deatails).
+<p>
 If the data set is single-end use <code>--ss-fr</code> option in case when reads correspond to gene strand and <code>--ss-rf</code> otherwise.
+
 
 
 <a name="sec2.4"></a>

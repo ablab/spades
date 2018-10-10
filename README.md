@@ -28,7 +28,7 @@
 <a name="sec1"></a>
 # About SPAdes
 
-SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.13.0 was released under GPLv2 on October 14, 2018 and can be downloaded from <http://cab.spbu.ru/software/spades/>. []()
+SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.13.0 was released under GPLv2 on October 11, 2018 and can be downloaded from <http://cab.spbu.ru/software/spades/>. []()
 
 <a name="sec1.1"></a>
 ## Supported data types
@@ -507,7 +507,8 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 
 `--pe<#>-<or> `
     Orientation of reads for paired-end library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
-    The default orientation for paired-end libraries is forward-reverse. For example, to specify reverse-forward orientation for the second paired-end library, you should use the flag: `--pe2-rf `
+    The default orientation for paired-end libraries is forward-reverse (`--> <--`). For example, to specify reverse-forward orientation for the second paired-end library, you should use the flag: `--pe2-rf `
+    Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <a href="rnaspades_manual.html#sec2.3" target="_blank">rnaSPAdes manual</a>). 
 
 **_Mate-pair libraries_**
 
@@ -522,7 +523,7 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 
 `--mp<#>-<or> `
     Orientation of reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
-    The default orientation for mate-pair libraries is reverse-forward. For example, to specify forward-forward orientation for the first mate-pair library, you should use the flag: `--mp1-ff `
+    The default orientation for mate-pair libraries is reverse-forward (`<-- -->`). For example, to specify forward-forward orientation for the first mate-pair library, you should use the flag: `--mp1-ff `
 
 <a name="hqmp"></a>
 **_High-quality mate-pair libraries_** (can be used for mate-pair only assembly)
@@ -541,7 +542,7 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 
 `--hqmp<#>-<or> `
     Orientation of reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
-    The default orientation for high-quality mate-pair libraries is forward-reverse. For example, to specify reverse-forward orientation for the first high-quality mate-pair library, you should use the flag: `--hqmp1-rf `
+    The default orientation for high-quality mate-pair libraries is forward-reverse (`--> <--`). For example, to specify reverse-forward orientation for the first high-quality mate-pair library, you should use the flag: `--hqmp1-rf `
 
 <a name="lxmp"></a>
 **_Lucigen NxSeq® Long Mate Pair libraries_** (see [section 3.1](#sec3.1) for details)
