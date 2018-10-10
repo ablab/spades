@@ -13,6 +13,7 @@
 #include "io/graph/gfa_reader.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
+#include "io/binary/graph.hpp"
 
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
@@ -23,7 +24,6 @@
 
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/configs/aligner_config.hpp"
-#include "pipeline/graphio.hpp"
 
 #include "projects/spades/hybrid_aligning.hpp"
 #include "projects/spades/hybrid_gap_closer.hpp"
@@ -151,7 +151,7 @@ void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string 
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(graph);
     } else {
-        graphio::ScanBasicGraph(filename, graph);
+        io::binary::Load(filename, graph);
     }
 }
 

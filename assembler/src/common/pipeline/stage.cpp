@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "pipeline/stage.hpp"
-#include "io/binary/graphio.hpp"
+#include "io/binary/graph_pack.hpp"
 
 #include "utils/logger/log_writers.hpp"
 
@@ -23,7 +23,7 @@ void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
     INFO("Loading current state from " << dir);
 
     auto p = fs::append_path(dir, "graph_pack");
-    debruijn_graph::graphio::ScanAll(p, gp);
+    io::binary::FullPackIO<Graph>().Load(p, gp);
     debruijn_graph::config::load_lib_data(p);
 }
 
@@ -37,7 +37,7 @@ void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
     fs::make_dir(dir);
 
     auto p = fs::append_path(dir, "graph_pack");
-    debruijn_graph::graphio::PrintAll(p, gp);
+    io::binary::FullPackIO<Graph>().Save(p, gp);
     debruijn_graph::config::write_lib_data(p);
 }
 

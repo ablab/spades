@@ -7,9 +7,7 @@
 
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
-
-#include "pipeline/graphio.hpp"
-#include "pipeline/graph_pack.hpp"
+#include "io/binary/graph_pack.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "assembly_graph/components/splitters.hpp"
 
@@ -51,8 +49,7 @@ void Launch(size_t K, string saves_path, size_t edge_length_bound,
     fs::TmpFolderFixture tmp_dir("tmp");
     //TODO no need for whole graph pack; change to Graph
     conj_graph_pack gp(K, "tmp", 0);
-    graphio::ScanGraphPack(saves_path, gp);
-
+    io::binary::BasePackIO<Graph>().Load(saves_path, gp);
 
     io::OFastaReadStream oss(fastg_output);
     for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {

@@ -17,7 +17,7 @@ namespace binary {
 template<typename Index>
 class PairedIndexIO : public IOSingleDefault<Index, EdgeMapper<Index>> {
 public:
-    typedef EdgeMapper<Graph> Mapper;
+    typedef EdgeMapper<Index> Mapper;
     PairedIndexIO()
             : IOSingleDefault<Index, Mapper>("paired index", ".prd") {
     }

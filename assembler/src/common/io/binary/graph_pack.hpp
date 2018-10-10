@@ -75,6 +75,10 @@ public:
         return true;
     }
 
+    const IdMapper<typename Graph::EdgeId> &GetEdgeMapper() {
+        return this->graph_io_.GetEdgeMapper();
+    }
+
 protected:
     GraphIO<Graph> graph_io_;
 

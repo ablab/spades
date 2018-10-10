@@ -8,7 +8,7 @@
 #pragma once
 
 #include "environment.hpp"
-#include "io/binary/graphio.hpp"
+#include "io/binary/graph_pack.hpp"
 namespace online_visualization {
 
 class DebruijnEnvironment : public Environment {
@@ -53,7 +53,7 @@ class DebruijnEnvironment : public Environment {
               path_finder_(gp_.g) {
             DEBUG("Environment constructor");
             gp_.kmer_mapper.Attach();
-            debruijn_graph::graphio::ScanGraphPack(path_, gp_);
+            io::binary::BasePackIO<Graph>().Load(path_, gp_);
 //            debruijn_graph::graphio::ScanGraphPack(path_, gp_);
             DEBUG("Graph pack created")
             LoadFromGP();

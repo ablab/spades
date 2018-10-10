@@ -5,7 +5,6 @@
 #include "getopt_pp/getopt_pp.h"
 #include "io/reads/file_reader.hpp"
 #include "io/reads/osequencestream.hpp"
-#include "pipeline/graphio.hpp"
 #include "logger.hpp"
 #include "formats.hpp"
 #include "contig_abundance.hpp"

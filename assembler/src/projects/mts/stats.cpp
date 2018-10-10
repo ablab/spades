@@ -5,14 +5,12 @@
  *      Author: idmit
  */
 
-#include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "utils/stl_utils.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/logger/log_writers.hpp"
 #include "math/xmath.h"
-#include <iostream>
-#include <vector>
+#include "io/binary/graph_pack.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "io/reads/splitting_wrapper.hpp"
 #include "io/reads/modifying_reader_wrapper.hpp"
@@ -23,6 +21,8 @@
 #include "visualization/position_filler.hpp"
 #include "modules/simplification/tip_clipper.hpp"
 #include "getopt_pp/getopt_pp.h"
+#include <iostream>
+#include <vector>
 
 using namespace debruijn_graph;
 using namespace std;
@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
     conj_graph_pack gp(k, "tmp", 0);
     gp.kmer_mapper.Attach();
     INFO("Load graph from " << saves_path);
-    graphio::ScanGraphPack(saves_path, gp);
+    io::binary::BasePackIO<Graph>().Load(saves_path, gp);
     gp.edge_pos.Attach();
 
     ofstream output(table_fn);

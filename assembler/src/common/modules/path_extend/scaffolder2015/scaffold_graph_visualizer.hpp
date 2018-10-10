@@ -5,7 +5,6 @@
 #ifndef PROJECT_SCAFFOLD_GRAPH_VISUALIZER_HPP
 #define PROJECT_SCAFFOLD_GRAPH_VISUALIZER_HPP
 
-#include "pipeline/graphio.hpp"
 #include "scaffold_graph.hpp"
 
 namespace path_extend {

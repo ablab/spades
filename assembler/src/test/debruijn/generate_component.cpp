@@ -7,9 +7,7 @@
 
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
-
-#include "pipeline/graphio.hpp"
-#include "pipeline/graph_pack.hpp"
+#include "io/binary/graph_pack.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 
 using namespace std;
@@ -77,7 +75,8 @@ void Launch(size_t K, string saves_path, size_t start_vertex_int_id,
             string component_out_path) {
     conj_graph_pack gp(K, "tmp", 0);
     omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
-    graphio::ScanGraphPack(saves_path, gp);
+    io::binary::BasePackIO<Graph> io;
+    io.Load(saves_path, gp);
     INFO("Loaded graph with " << gp.g.size() << " vertices");
     VertexId starting_vertex = element_finder.ReturnVertexId(start_vertex_int_id);
     vector<VertexId> blocking_vertices;
@@ -87,8 +86,7 @@ void Launch(size_t K, string saves_path, size_t start_vertex_int_id,
     BlockedComponentFinder<Graph> component_finder(gp.g, blocking_vertices, edge_length_bound);
     GraphComponent<Graph> component_to_save = ComponentCloser<Graph>(gp.g, 0).CloseComponent(component_finder.Find(starting_vertex));
     INFO("Blocked component has " << component_to_save.v_size() << " vertices");
-    graphio::ConjugateDataPrinter<Graph> printer(component_to_save);
-    graphio::PrintGraphPack(component_out_path, printer, gp);
+    io.Save(component_out_path, gp);
     gp.edge_pos.Attach();
     visualization::visualization_utils::WriteComponent<Graph>(component_to_save, component_out_path + ".dot", debruijn_graph::stats::DefaultColorer(gp),
                                                     visualization::graph_labeler::DefaultLabeler<Graph>(gp.g, gp.edge_pos));

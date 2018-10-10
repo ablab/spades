@@ -6,11 +6,15 @@
 //***************************************************************************
 
 #pragma once
-#include <boost/test/unit_test.hpp>
+
 #include "test_utils.hpp"
 #include "random_graph.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
-#include "io/binary/graphio.hpp"
+#include "io/binary/graph.hpp"
+#include "io/binary/kmer_mapper.hpp"
+#include "io/binary/paired_index.hpp"
+
+#include <boost/test/unit_test.hpp>
 
 namespace debruijn_graph {
 
@@ -55,11 +59,10 @@ const char *file_name = "src/test/debruijn/graph_fragments/saves/test_save";
 BOOST_AUTO_TEST_CASE( OrderTest ) {
     const auto &graph = CommonGraph();
 
-    GraphIO<Graph> io;
-    io.Save(file_name, graph);
+    Save(file_name, graph);
 
     Graph new_graph(graph.k());
-    io.Load(file_name, new_graph);
+    Load(file_name, new_graph);
 
     CompareGraphIterators(graph.SmartVertexBegin(), new_graph.SmartVertexBegin());
     CompareGraphIterators(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin());
@@ -78,14 +81,13 @@ BOOST_AUTO_TEST_CASE(TestPairedInfoIO) {
     for (size_t i = 0; i < 5; ++i, ++it)
         pi.Add(*it, graph.conjugate(*it), p);
 
-    PairedIndexIO<Index> io;
-    io.Save(file_name, pi);
+    Save(file_name, pi);
 
     io::IdMapper<Graph::EdgeId> mapper;
     for (auto i = graph.SmartEdgeBegin(); !i.IsEnd(); ++i)
         mapper[(*i).int_id()] = *i;
     Index ni(graph);
-    io.Load(file_name, ni, mapper);
+    Load(file_name, ni, mapper);
 
     BOOST_CHECK_EQUAL(pi.size(), ni.size());
     for (auto pit = omnigraph::de::pair_begin(pi), nit = omnigraph::de::pair_begin(ni);
@@ -108,11 +110,10 @@ BOOST_AUTO_TEST_CASE(TestKmerMapperIO) {
     KmerMapper<Graph> kmer_mapper(graph);
     RandomKmerMapper<Graph>(kmer_mapper).Generate(100);
 
-    KmerMapperIO<Graph> io;
-    io.Save(file_name, kmer_mapper);
+    Save(file_name, kmer_mapper);
 
     KmerMapper<Graph> new_mapper(graph);
-    io.Load(file_name, new_mapper);
+    Load(file_name, new_mapper);
 
     CompareContainers(kmer_mapper, new_mapper);
 }

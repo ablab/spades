@@ -7,8 +7,7 @@
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/graph/gfa_reader.hpp"
 
-#include "pipeline/graphio.hpp"
-#include "pipeline/graph_pack.hpp"
+#include "io/binary/graph_pack.hpp"
 #include "projects/mts/contig_abundance.hpp"
 
 #include "utils/logger/log_writers.hpp"
@@ -54,7 +53,7 @@ static void LoadGraph(conj_graph_pack &gp, const std::string &filename) {
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(gp.g);
     } else {
-        graphio::ScanGraphPack(filename, gp);
+        io::binary::BasePackIO<Graph>().Load(filename, gp);
     }
     PrintGraphInfo(gp.g);
 }

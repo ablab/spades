@@ -7,8 +7,6 @@
 
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
-
-#include "pipeline/graphio.hpp"
 #include "io/reads/file_reader.hpp"
 #include "read_binning.hpp"
 

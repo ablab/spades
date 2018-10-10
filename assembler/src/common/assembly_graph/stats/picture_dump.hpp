@@ -12,7 +12,7 @@
 
 #include "pipeline/graph_pack.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
-#include "pipeline/graphio.hpp"
+#include "io/binary/graph_pack.hpp"
 //FIXME awful dependency to get write_lib_data
 #include "pipeline/config_struct.hpp"
 #include "visualization/position_filler.hpp"
@@ -274,6 +274,7 @@ struct detail_info_printer {
     void ProduceDetailedInfo(const std::string &pos_name,
                              config::info_printer_pos pos) {
         using namespace visualization;
+        using namespace io::binary;
 
         static size_t call_cnt = 0;
 
@@ -292,10 +293,9 @@ struct detail_info_printer {
             auto saves_folder = fs::append_path(fs::append_path(folder_, "saves/"),
                                                 ToString(call_cnt++, 2) + "_" + pos_name + "/");
             fs::make_dirs(saves_folder);
-            graphio::ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp_.g);
-            graphio::PrintGraphPack(saves_folder + "graph_pack", printer, gp_);
+            BasePackIO<Graph>().Save(saves_folder + "graph_pack", gp_);
             //TODO: separate
-            graphio::PrintClusteredIndices(saves_folder + "graph_pack", printer, gp_.clustered_indices);
+            Save(saves_folder + "graph_pack", gp_.clustered_indices);
         }
 
         if (config.save_all) {
@@ -305,7 +305,7 @@ struct detail_info_printer {
             auto p = saves_folder + "/saves";
             INFO("Saving current state to " << p);
 
-            debruijn_graph::graphio::PrintAll(p, gp_);
+            FullPackIO<Graph>().Save(saves_folder + "graph_pack", gp_);
             debruijn_graph::config::write_lib_data(p);
         }
 
@@ -313,8 +313,8 @@ struct detail_info_printer {
             auto saves_folder = fs::append_path(fs::append_path(folder_, "saves/"),
                                                 ToString(call_cnt++, 2) + "_" + pos_name + "/");
             fs::make_dirs(saves_folder);
-            graphio::ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp_.g);
-            graphio::PrintBasicGraph(saves_folder + "graph", printer);
+
+            Save(saves_folder + "graph", gp_.g);
         }
 
         if (config.lib_info) {

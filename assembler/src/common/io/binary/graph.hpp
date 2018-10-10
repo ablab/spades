@@ -9,7 +9,7 @@
 #include "io/id_mapper.hpp"
 #include "io_base.hpp"
 
-#include "common/assembly_graph/components/graph_component.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "common/sequence/sequence.hpp"
 
 namespace io {

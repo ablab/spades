@@ -8,7 +8,7 @@
 #include "getopt_pp/getopt_pp.h"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/osequencestream.hpp"
-#include "pipeline/graphio.hpp"
+#include "io/binary/graph_pack.hpp"
 #include "logger.hpp"
 #include "read_binning.hpp"
 #include "propagate.hpp"
@@ -106,7 +106,12 @@ int main(int argc, char** argv) {
     gp.kmer_mapper.Attach();
 
     INFO("Load graph and clustered paired info from " << saves_path);
-    graphio::ScanWithClusteredIndices(saves_path, gp, gp.clustered_indices);
+    {
+        using namespace io::binary;
+        BasePackIO<Graph> io;
+        io.Load(saves_path, gp);
+        Load(saves_path, gp.clustered_indices, io.GetEdgeMapper());
+    }
 
     //Propagation stage
     INFO("Using contigs from " << contigs_path);

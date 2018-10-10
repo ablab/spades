@@ -6,9 +6,7 @@
 
 #include "modules/alignment/sequence_mapper.hpp"
 #include "io/utils/edge_namer.hpp"
-#include "pipeline/graphio.hpp"
-#include "pipeline/graph_pack.hpp"
-
+#include "io/binary/graph_pack.hpp"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 
@@ -33,7 +31,7 @@ static void Run(size_t K, const string &saves_path, const string &contigs_file,
 
     conj_graph_pack gp(K, tmp_dir, 0);
     gp.kmer_mapper.Attach();
-    graphio::ScanGraphPack(saves_path, gp);
+    io::binary::BasePackIO<Graph>().Load(saves_path, gp);
 
     gp.EnsureBasicMapping();
 

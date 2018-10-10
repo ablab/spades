@@ -92,7 +92,7 @@ public:
             VERIFY(edge_count == tmp_edge_count);
         }
 
-        static const size_t longstring_size = 100000; //Enough for tests
+        static const size_t longstring_size = 1000500; //Enough for tests
         char longstring[longstring_size];
         for (size_t i = 0; i < edge_count; i++) {
             size_t e_real_id, start_id, fin_id, length, conjugate_edge_id;
