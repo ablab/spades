@@ -633,7 +633,7 @@ std::pair<EdgeId, size_t> get_edge_offset(const graph_t &graph, const std::vecto
         }
         position -= graph.length(e);
     }
-    VERIFY_MSG(false, "position > path lenght");
+    VERIFY_MSG(false, "position >= path lenght");
 }
 
 size_t path_length(const graph_t &graph, const std::vector<EdgeId> &path) {
