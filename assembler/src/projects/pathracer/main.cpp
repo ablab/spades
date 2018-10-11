@@ -514,18 +514,48 @@ auto EdgesToSequences(const Container &entries,
     return ids_n_seqs;
 }
 
+using EPath = std::vector<EdgeId>;  // Path is already used
+size_t find_subpath(const EPath &subpath, const EPath &path) {
+    // TODO implement less naive algo
+    const size_t npos = size_t(-1);
+
+    if (path.size() < subpath.size()) {
+        return npos;
+    }
+
+    for (size_t i = 0; i <= path.size() - subpath.size(); ++i) {
+        if (std::equal(subpath.cbegin(), subpath.cend(), path.cbegin() + i)) {
+            return i;
+        }
+    }
+    return npos;
+}
+
 template <typename Container>
 void ExportEdges(const Container &entries,
                  const debruijn_graph::ConjugateDeBruijnGraph &graph,
+                 const std::vector<std::vector<EdgeId>> &scaffold_paths,
                  const std::string &filename) {
     if (entries.size() == 0)
         return;
 
     std::ofstream o(filename, std::ios::out);
 
-    for (const auto &kv : EdgesToSequences(entries, graph)) {
-        o << ">" << kv.first << "\n";
-        io::WriteWrapped(kv.second, o);
+    for (const auto &path : entries) {
+        std::stringstream scaffold_path_info;
+        for (const auto &scaffold_path : scaffold_paths) {
+            size_t pos = find_subpath(path, scaffold_path);
+            if (pos != size_t(-1)) {
+                TRACE("Path " << path << " is a subpath of scaffold path " << scaffold_path);
+                scaffold_path_info << " " << scaffold_path << ":" << pos;
+            }
+        }
+
+        std::string id = join(path, "_");
+        std::string seq = MergeSequences(graph, path).str();
+        // FIXME return sorting like in EdgesToSequences
+        o << ">" << id << scaffold_path_info.str() << "\n";
+        io::WriteWrapped(seq, o);
     }
 }
 
@@ -609,23 +639,6 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
     }
 }
 
-using EPath = std::vector<EdgeId>;  // Path is already used
-size_t find_subpath(const EPath &subpath, const EPath &path) {
-    // TODO implement less naive algo
-    const size_t npos = size_t(-1);
-
-    if (path.size() < subpath.size()) {
-        return npos;
-    }
-
-    for (size_t i = 0; i <= path.size() - subpath.size(); ++i) {
-        if (std::equal(subpath.cbegin(), subpath.cend(), path.cbegin() + i)) {
-            return i;
-        }
-    }
-    return npos;
-}
-
 void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
              const PathracerConfig &cfg,
              const std::vector<HMMPathInfo> &results,
@@ -643,16 +656,8 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
     INFO("Total " << to_rescore.size() << " local paths to rescore");
 
-    for (const auto &path : to_rescore) {
-        for (const auto &scaffold_path : scaffold_paths) {
-            size_t pos = find_subpath(path, scaffold_path);
-            if (pos != size_t(-1)) {
-                INFO("Path " << path << " is a subpath of scaffold path " << scaffold_path);
-            }
-        }
-    }
-
-    ExportEdges(to_rescore, graph, cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
+    ExportEdges(to_rescore, graph, scaffold_paths,
+                cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
 
     std::vector<std::string> seqs_to_rescore;
     std::vector<std::string> refs_to_rescore;
@@ -988,7 +993,8 @@ int main(int argc, char* argv[]) {
 
     if (cfg.rescore) {
         INFO("Total " << to_rescore.size() << " paths to rescore");
-        ExportEdges(to_rescore, graph, cfg.output_dir + "/all.edges.fa");
+        ExportEdges(to_rescore, graph, scaffold_paths,
+                    cfg.output_dir + "/all.edges.fa");
     }
 
     if (cfg.annotate_graph) {
