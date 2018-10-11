@@ -51,6 +51,16 @@ extern "C" {
 struct main_assert : debug_assert::default_handler,
                      debug_assert::set_level<1> {};
 
+template <typename Iter, typename Key>
+void sort_by(Iter b, Iter e, const Key &key) {
+    std::sort(b, e, [&key](const auto &a, const auto &b) -> bool { return key(a) < key(b); });
+}
+
+template <typename Iter, typename Key>
+void stable_sort_by(Iter b, Iter e, const Key &key) {
+    std::stable_sort(b, e, [&key](const auto &a, const auto &b) -> bool { return key(a) < key(b); });
+}
+
 void create_console_logger(const std::string &filename = "") {
     using namespace logging;
 
