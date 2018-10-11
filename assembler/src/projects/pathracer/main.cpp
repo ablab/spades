@@ -609,9 +609,27 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
     }
 }
 
+using EPath = std::vector<EdgeId>;  // Path is already used
+size_t find_subpath(const EPath &subpath, const EPath &path) {
+    // TODO implement less naive algo
+    const size_t npos = size_t(-1);
+
+    if (path.size() < subpath.size()) {
+        return npos;
+    }
+
+    for (size_t i = 0; i <= path.size() - subpath.size(); ++i) {
+        if (std::equal(subpath.cbegin(), subpath.cend(), path.cbegin() + i)) {
+            return i;
+        }
+    }
+    return npos;
+}
+
 void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
              const PathracerConfig &cfg,
-             const std::vector<HMMPathInfo> &results) {
+             const std::vector<HMMPathInfo> &results,
+             const std::vector<EPath> &scaffold_paths) {
     P7_HMM *p7hmm = hmm.get();
 
     std::unordered_set<std::vector<EdgeId>> to_rescore;
@@ -624,6 +642,15 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
     }
 
     INFO("Total " << to_rescore.size() << " local paths to rescore");
+
+    for (const auto &path : to_rescore) {
+        for (const auto &scaffold_path : scaffold_paths) {
+            size_t pos = find_subpath(path, scaffold_path);
+            if (pos != size_t(-1)) {
+                INFO("Path " << path << " is a subpath of scaffold path " << scaffold_path);
+            }
+        }
+    }
 
     ExportEdges(to_rescore, graph, cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
 
@@ -896,7 +923,7 @@ void hmm_main(const PathracerConfig &cfg,
         }
 
         if (cfg.rescore) {
-            Rescore(hmm, graph, cfg, results);
+            Rescore(hmm, graph, cfg, results, contig_paths);
 
             for (const auto &result : results) {
                 #pragma omp critical
