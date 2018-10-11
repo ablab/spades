@@ -697,7 +697,7 @@ std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path) {
 
 void TraceHMM(const hmmer::HMM &hmm,
               const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
-              const std::vector<std::vector<EdgeId>> contig_paths,
+              const std::vector<std::vector<EdgeId>> scaffold_paths,
               const PathracerConfig &cfg,
               std::vector<HMMPathInfo> &results) {
     const P7_HMM *p7hmm = hmm.get();
@@ -719,10 +719,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         paths.push_back(std::vector<EdgeId>({e}));
     }
     // Fill paths by paths read from GFA
-    paths.insert(paths.end(), contig_paths.cbegin(), contig_paths.cend());
-    for (const auto &path : contig_paths) {
-        paths.push_back(conjugate_path(path));
-    }
+    paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
 
     auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
     INFO("Matched paths:");
@@ -885,7 +882,7 @@ void TraceHMM(const hmmer::HMM &hmm,
 void hmm_main(const PathracerConfig &cfg,
               const debruijn_graph::ConjugateDeBruijnGraph &graph,
               const std::vector<EdgeId> &edges,
-              const std::vector<std::vector<EdgeId>> contig_paths,
+              const std::vector<std::vector<EdgeId>> scaffold_paths,
               std::unordered_set<std::vector<EdgeId>> &to_rescore,
               std::set<std::pair<std::string, std::vector<EdgeId>>> &gfa_paths) {
     std::vector<hmmer::HMM> hmms;
@@ -902,7 +899,7 @@ void hmm_main(const PathracerConfig &cfg,
 
         std::vector<HMMPathInfo> results;
 
-        TraceHMM(hmm, graph, edges, contig_paths,
+        TraceHMM(hmm, graph, edges, scaffold_paths,
                  cfg, results);
 
         std::sort(results.begin(), results.end());
@@ -923,7 +920,7 @@ void hmm_main(const PathracerConfig &cfg,
         }
 
         if (cfg.rescore) {
-            Rescore(hmm, graph, cfg, results, contig_paths);
+            Rescore(hmm, graph, cfg, results, scaffold_paths);
 
             for (const auto &result : results) {
                 #pragma omp critical
@@ -965,10 +962,16 @@ int main(int argc, char* argv[]) {
     using namespace debruijn_graph;
 
     debruijn_graph::ConjugateDeBruijnGraph graph(cfg.k);
-    std::vector<std::vector<EdgeId>> contig_paths;
-    LoadGraph(graph, contig_paths, cfg.load_from);
+    std::vector<std::vector<EdgeId>> scaffold_paths;
+    LoadGraph(graph, scaffold_paths, cfg.load_from);
     INFO("Graph loaded. Total vertices: " << graph.size());
-    INFO("Total paths " << contig_paths.size());
+
+    // Add conjugate paths
+    // TODO move it to GFA reader
+    for (size_t i = 0, size = scaffold_paths.size(); i < size; ++i) {
+        scaffold_paths.push_back(conjugate_path(scaffold_paths[i]));
+    }
+    INFO("Total paths " << scaffold_paths.size());
 
     // Collect all the edges
     std::vector<EdgeId> edges;
@@ -980,7 +983,7 @@ int main(int argc, char* argv[]) {
     std::unordered_set<std::vector<EdgeId>> to_rescore;
     std::set<std::pair<std::string, std::vector<EdgeId>>> gfa_paths;
 
-    hmm_main(cfg, graph, edges, contig_paths,
+    hmm_main(cfg, graph, edges, scaffold_paths,
              to_rescore, gfa_paths);
 
     if (cfg.rescore) {
