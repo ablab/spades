@@ -618,41 +618,22 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
     INFO("Total " << results.size() << " resultant paths extracted");
 
     if (cfg.save && !results.empty()) {
-        {
-            std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".seqs.fa", std::ios::out);
-            for (const auto &result : results) {
-                if (result.seq.size() == 0)
-                    continue;
-                auto scaffold_path_info = SuperPathInfo(result.path, scaffold_paths);
-                o << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << "|Scaffolds=" << scaffold_paths << '\n';
-                io::WriteWrapped(result.seq, o);
-            }
-        }
+        std::ofstream o_seqs(cfg.output_dir + std::string("/") + p7hmm->name + ".seqs.fa", std::ios::out);
+        std::ofstream o_nucs(cfg.output_dir + std::string("/") + p7hmm->name + ".nucs.fa", std::ios::out);
 
-        // TODO merge these blocks
-        {
-            std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".nucs.fa", std::ios::out);
-            for (const auto &result : results) {
-                if (result.seq.size() == 0)
-                    continue;
-                o << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << '\n';
-                io::WriteWrapped(result.nuc_seq, o);
-            }
+        for (const auto &result : results) {
+            if (result.seq.size() == 0)
+                continue;
+            auto scaffold_path_info = SuperPathInfo(result.path, scaffold_paths);
+            std::stringstream header;
+            header << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << "|Scaffolds=" << scaffold_path_info << '\n';
+
+            o_seqs << header.str();
+            io::WriteWrapped(result.seq, o_seqs);
+
+            o_nucs << header.str();
+            io::WriteWrapped(result.nuc_seq, o_nucs);
         }
-        // {
-        //     std::ofstream o(cfg.output_dir + std::string("/") + p7hmm->name + ".fa", std::ios::out);
-        //     for (const auto &result : results) {
-        //         o << ">" << result.leader << "_" << result.priority;
-        //         if (result.seq.size() == 0)
-        //             o << " (whole edge)";
-        //         o << '\n';
-        //         if (result.seq.size() == 0) {
-        //             io::WriteWrapped(graph.EdgeNucls(result.leader).str(), o);
-        //         } else {
-        //             io::WriteWrapped(result.seq, o);
-        //         }
-        //     }
-        // }
     }
 }
 
