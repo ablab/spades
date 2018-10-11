@@ -256,35 +256,6 @@ auto ScoreSequences(const std::vector<std::string> &seqs,
     return matcher;
 }
 
-using EdgeAlnInfo = std::vector<std::pair<EdgeId, std::pair<int, int>>>;
-EdgeAlnInfo get_matched_edges(const std::vector<EdgeId> &edges,
-                              const hmmer::HMMMatcher &matcher,
-                              const PathracerConfig &cfg) {
-    EdgeAlnInfo match_edges;
-    for (const auto &hit : matcher.hits()) {
-        if (!hit.reported() || !hit.included())
-            continue;
-
-        EdgeId e = edges[std::stoull(hit.name())];
-        if (cfg.debug)
-            INFO("HMMER seq id:" <<  hit.name() << ", edge id:" << e);
-
-        for (const auto &domain : hit.domains()) {
-            // Calculate HMM overhang
-            std::pair<int, int> seqpos = domain.seqpos();
-            std::pair<int, int> hmmpos = domain.hmmpos();
-
-            int roverhang = static_cast<int>(domain.M() - hmmpos.second) - static_cast<int>(domain.L() - seqpos.second);
-            int loverhang = static_cast<int>(hmmpos.first) - static_cast<int>(seqpos.first);
-
-            match_edges.push_back({e, std::make_pair(loverhang, roverhang)});
-        }
-    }
-    INFO("Total matched edges: " << match_edges.size());
-
-    return match_edges;
-}
-
 using PathAlnInfo = std::vector<std::pair<size_t, std::pair<int, int>>>;
 PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
                             const PathracerConfig &cfg) {
@@ -309,30 +280,6 @@ PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
     INFO("Total matched sequences: " << matches.size());
 
     return matches;
-}
-
-EdgeAlnInfo MatchedEdges(const std::vector<EdgeId> &edges,
-                         const ConjugateDeBruijnGraph &graph,
-                         const hmmer::HMM &hmm, const PathracerConfig &cfg) {
-    std::vector<std::string> seqs;
-    for (size_t i = 0; i < edges.size(); ++i) {
-        seqs.push_back(graph.EdgeNucls(edges[i]).str());
-    }
-    auto matcher = ScoreSequences(seqs, {}, hmm, cfg);
-
-    auto match_edges = get_matched_edges(edges, matcher, cfg);
-
-    if (match_edges.size() && cfg.debug) {
-        int textw = 120;
-        #pragma omp critical(console)
-        {
-            p7_tophits_Targets(stdout, matcher.top_hits(), matcher.pipeline(), textw);
-            p7_tophits_Domains(stdout, matcher.top_hits(), matcher.pipeline(), textw);
-            p7_pli_Statistics(stdout, matcher.pipeline(), nullptr);
-        }
-    }
-
-    return match_edges;
 }
 
 std::string PathToString(const std::vector<EdgeId>& path,
@@ -376,6 +323,8 @@ PathAlnInfo MatchedPaths(const std::vector<std::vector<EdgeId>> &paths,
 
     return matched;
 }
+
+using EdgeAlnInfo = std::vector<std::pair<EdgeId, std::pair<int, int>>>;
 
 void OutputMatches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, const std::string &filename,
                    const std::string &format = "tblout") {
@@ -694,8 +643,6 @@ void TraceHMM(const hmmer::HMM &hmm,
 
     auto matched = MatchedPaths(paths, graph, hmm, cfg);
     // Collect the neighbourhood of the matched edges
-    // TODO Remove it
-    // EdgeAlnInfo matched_edges = MatchedEdges(edges, graph, hmm, cfg);  // hhmer is thread-safe
 
     bool hmm_in_aas = hmm.abc()->K == 20;
 
