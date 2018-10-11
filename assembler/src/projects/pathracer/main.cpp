@@ -363,17 +363,42 @@ PathAlnInfo MatchedPaths(const std::vector<std::vector<EdgeId>> &paths,
 using EdgeAlnInfo = std::vector<std::pair<EdgeId, std::pair<int, int>>>;
 using graph_t = debruijn_graph::ConjugateDeBruijnGraph;
 
+size_t path_length(const graph_t &graph, const std::vector<EdgeId> &path) {
+    if (path.size() == 0) {
+        return 0;
+    }
+
+    size_t sum = 0;
+    for (const auto &e : path) {
+        sum += graph.length(e);
+    }
+
+    return sum + graph.k();
+}
+
 EdgeAlnInfo expand_path_aln_info(const PathAlnInfo &painfo, const std::vector<std::vector<EdgeId>> &paths,
                                  const graph_t &graph) {
     EdgeAlnInfo result;
+    size_t k = graph.k();
 
     for (const auto &aln : painfo) {
+        const auto &path = paths[aln.first];
+        size_t path_len = path_length(graph, path);
         size_t position = 0;
-        for (const auto &e : paths[aln.first]) {
+        for (const auto &e : path) {
+            size_t edge_len = graph.length(e) + k;
+            int loverhang = aln.second.first + position;
+            int roverhang = aln.second.second + static_cast<int>(path_len - position - edge_len);
 
+            if (-loverhang >= static_cast<int>(edge_len) || -roverhang >= static_cast<int>(edge_len)) {
+                // Do nothing, edge lays outside the matched region
+            } else {
+                result.push_back({e, {loverhang, roverhang}});
+            }
 
             position += graph.length(e);
         }
+        VERIFY(position + k == path_len);
     }
 
     return result;
@@ -629,19 +654,6 @@ std::pair<EdgeId, size_t> get_edge_offset(const graph_t &graph, const std::vecto
     VERIFY_MSG(false, "position >= path lenght");
 }
 
-size_t path_length(const graph_t &graph, const std::vector<EdgeId> &path) {
-    if (path.size() == 0) {
-        return 0;
-    }
-
-    size_t sum = 0;
-    for (const auto &e : path) {
-        sum += graph.length(e);
-    }
-
-    return sum + graph.k();
-}
-
 std::vector<GraphCursor> get_cursors_from_path(const graph_t &graph, const std::vector<EdgeId> &path, size_t position) {
     // TODO Check cursor noncanonicity stuff once again
     auto p = get_edge_offset(graph, path, position);
@@ -685,34 +697,33 @@ void TraceHMM(const hmmer::HMM &hmm,
         paths.push_back(conjugate_path(path));
     }
 
-    auto matched = MatchedPaths(paths, graph, hmm, cfg);
+    auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
+    auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
 
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
     std::unordered_set<GraphCursor> cursors;
-    for (const auto &kv : matched) {
-        size_t id = kv.first;
-        const auto &path = paths[id];
-
+    for (const auto &kv : matched_edges) {
+        EdgeId e = kv.first;
         int loverhang = kv.second.first;
         int roverhang = kv.second.second;
+
         if (loverhang > 0) {
-            for (const auto &start : get_cursors_from_path(graph, path, 0)) {
+            for (const auto &start : GraphCursor::get_cursors(graph, e, 0)) {
                 left_queries.push_back({start, loverhang * 2});
             }
         }
 
-        size_t len = path_length(graph, path);
-        // VERIFY(len == PathToString(path, graph).length());  // TODO remove it after testing
-        INFO("Path " << path.size() << " edges, length: " << len <<"; edge overhangs: " << loverhang << " " << roverhang);
+        size_t len = graph.length(e) + graph.k();
+        INFO("Edge length: " << len <<"; edge overhangs: " << loverhang << " " << roverhang);
         if (roverhang > 0) {
-            for (const auto &end : get_cursors_from_path(graph, path, len - 1)) {
+            for (const auto &end : GraphCursor::get_cursors(graph, e, len - 1)) {
                 right_queries.push_back({end, roverhang * 2});
             }
         }
 
         for (size_t i = std::max(0, -loverhang); i < len - std::max(0, -roverhang); ++i) {
-            auto position_cursors = get_cursors_from_path(graph, path, i);
+            auto position_cursors = GraphCursor::get_cursors(graph, e, i);
             cursors.insert(std::make_move_iterator(position_cursors.begin()), std::make_move_iterator(position_cursors.end()));
         }
     }
@@ -766,7 +777,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     };
 
     std::vector<EdgeId> match_edges;
-    for (const auto &entry : matched) {
+    for (const auto &entry : matched_paths) {  // TODO use just matched_edges as before
         size_t id = entry.first;
         // FIXME add edges only (not GFA paths)
         for (const auto &e : paths[id]) {
