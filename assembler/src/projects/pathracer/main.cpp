@@ -777,12 +777,8 @@ void TraceHMM(const hmmer::HMM &hmm,
     };
 
     std::vector<EdgeId> match_edges;
-    for (const auto &entry : matched_paths) {  // TODO use just matched_edges as before
-        size_t id = entry.first;
-        // FIXME add edges only (not GFA paths)
-        for (const auto &e : paths[id]) {
-            match_edges.push_back(e);
-        }
+    for (const auto &entry : matched_edges) {
+        match_edges.push_back(entry.first);
     }
     remove_duplicates(match_edges);
 
