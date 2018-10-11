@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include <boost/test/unit_test.hpp>
+#include "graphio.hpp"
 #include "test_utils.hpp"
 #include "modules/simplification/parallel_simplification_algorithms.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "stages/simplification_pipeline/single_cell_simplification.hpp"
 #include "stages/simplification_pipeline/rna_simplification.hpp"
-#include "assembly_graph/stats/picture_dump.hpp"
+#include <boost/test/unit_test.hpp>
 //#include "repeat_resolving_routine.hpp"
 
 namespace debruijn_graph {
@@ -143,7 +143,7 @@ void DefaultRemoveBulges(Graph& graph) {
 
 BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {
     ConjugateDeBruijnGraph g(55);
-    graphio::ScanBasicGraph<ConjugateDeBruijnGraph>("./src/test/debruijn/graph_fragments/simpliest_tip/simpliest_tip", g);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_tip/simpliest_tip", g);
 
     DefaultClipTips(g);
 
