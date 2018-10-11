@@ -240,13 +240,15 @@ auto ScoreSequences(const std::vector<std::string> &seqs,
     }
 
     for (size_t i = 0; i < seqs.size(); ++i) {
+        const auto &seq = seqs[i];
         std::string ref = refs.size() > i ? refs[i] : std::to_string(i);
         if (!hmm_in_aas) {
-            matcher.match(ref.c_str(), seqs[i].c_str());
+            matcher.match(ref.c_str(), seq.c_str());
         } else {
+            VERIFY(seq.size() >= 2);
             for (size_t shift = 0; shift < 3; ++shift) {
                 std::string ref_shift = ref + "/" + std::to_string(shift);
-                std::string seq_aas = aa::translate(seqs[i].c_str() + shift);
+                std::string seq_aas = aa::translate(seq.c_str() + shift);
                 matcher.match(ref_shift.c_str(), seq_aas.c_str());
             }
         }
@@ -258,13 +260,27 @@ auto ScoreSequences(const std::vector<std::string> &seqs,
 
 using PathAlnInfo = std::vector<std::pair<size_t, std::pair<int, int>>>;
 PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
-                            const PathracerConfig &cfg) {
-    std::vector<std::pair<size_t, std::pair<int, int>>> matches;
+                           const std::vector<std::string> &seqs,
+                           const hmmer::HMM &hmm,
+                           bool extend_overhangs = true) {
+    // TODO Move this logic to ScoreSequences()
+    // we need only alphabet size (actually aa/nt flag) from hmm
+    // and only lengths from the initial seqs
+    // Lets store all this stuff into matcher object or its wrapper
+    bool hmm_in_aas = hmm.abc()->K == 20;
+
+    PathAlnInfo matches;
     for (const auto &hit : matcher.hits()) {
         if (!hit.reported() || !hit.included())
             continue;
 
-        size_t id = std::stoull(hit.name());  // Shift is ignored automatically
+        const std::string name = hit.name();
+        size_t id = std::stoull(name);  // Slash and everything after is ignored automatically
+        size_t slash_pos = name.find('/');
+        VERIFY((slash_pos == std::string::npos ) ^ (hmm_in_aas));
+        int shift = hmm_in_aas ? std::strtol(name.c_str() + slash_pos + 1, nullptr, 10) : 0;
+        VERIFY(0 <= shift && shift < 3);  // shift should be 0, 1, or 3
+        size_t seqlen = seqs[id].length();
 
         for (const auto &domain : hit.domains()) {
             // Calculate HMM overhang
@@ -273,6 +289,26 @@ PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
 
             int roverhang = static_cast<int>(domain.M() - hmmpos.second) - static_cast<int>(domain.L() - seqpos.second);
             int loverhang = static_cast<int>(hmmpos.first) - static_cast<int>(seqpos.first);
+
+
+            if (extend_overhangs) {
+                // extend overhangs in order to take into account possible alignment imperfection
+                // (we are conservative here, let's take larger neighbourhood)
+                // TODO take the extension constant from cfg
+                // Probably, make separate values for aa and nt
+                loverhang += 10;
+                roverhang += 10;
+            }
+
+            if (hmm_in_aas) {
+                loverhang *= 3;
+                roverhang *= 3;
+                // Take shift and sequence length into account
+                int extra_left = shift;
+                int extra_right = (seqlen - shift) % 3;
+                loverhang -= extra_left;
+                roverhang -= extra_right;
+            }
 
             matches.push_back({id, std::make_pair(loverhang, roverhang)});
         }
@@ -309,7 +345,7 @@ PathAlnInfo MatchedPaths(const std::vector<std::vector<EdgeId>> &paths,
     }
     auto matcher = ScoreSequences(seqs, {}, hmm, cfg);
 
-    auto matched = get_matched_ids(matcher, cfg);
+    auto matched = get_matched_ids(matcher, seqs, hmm);
 
     if (matched.size() && cfg.debug) {
         int textw = 120;
@@ -325,6 +361,23 @@ PathAlnInfo MatchedPaths(const std::vector<std::vector<EdgeId>> &paths,
 }
 
 using EdgeAlnInfo = std::vector<std::pair<EdgeId, std::pair<int, int>>>;
+using graph_t = debruijn_graph::ConjugateDeBruijnGraph;
+
+EdgeAlnInfo expand_path_aln_info(const PathAlnInfo &painfo, const std::vector<std::vector<EdgeId>> &paths,
+                                 const graph_t &graph) {
+    EdgeAlnInfo result;
+
+    for (const auto &aln : painfo) {
+        size_t position = 0;
+        for (const auto &e : paths[aln.first]) {
+
+
+            position += graph.length(e);
+        }
+    }
+
+    return result;
+}
 
 void OutputMatches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, const std::string &filename,
                    const std::string &format = "tblout") {
@@ -343,14 +396,6 @@ void OutputMatches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, cons
     }
     fclose(fp);
 }
-
-// std::string PathToString(const std::vector<EdgeId>& path,
-//                          const ConjugateDeBruijnGraph &graph) {
-//     std::string res = "";
-//     for (const auto &e : path)
-//         res = res + graph.EdgeNucls(e).First(graph.length(e)).str();
-//     return res;
-// }
 
 template<class Graph>
 Sequence MergeSequences(const Graph &g,
@@ -570,7 +615,6 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
     OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
 }
 
-using graph_t = debruijn_graph::ConjugateDeBruijnGraph;
 using GraphCursor = DebruijnGraphCursor;
 
 
@@ -642,9 +686,6 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
 
     auto matched = MatchedPaths(paths, graph, hmm, cfg);
-    // Collect the neighbourhood of the matched edges
-
-    bool hmm_in_aas = hmm.abc()->K == 20;
 
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
@@ -652,10 +693,9 @@ void TraceHMM(const hmmer::HMM &hmm,
     for (const auto &kv : matched) {
         size_t id = kv.first;
         const auto &path = paths[id];
-        int aa_coef = hmm_in_aas ? 3 : 1;
-        int loverhang = (kv.second.first + 10) * aa_coef; // TODO unify overhangs processing
-        int roverhang = (kv.second.second + 10) * aa_coef;
 
+        int loverhang = kv.second.first;
+        int roverhang = kv.second.second;
         if (loverhang > 0) {
             for (const auto &start : get_cursors_from_path(graph, path, 0)) {
                 left_queries.push_back({start, loverhang * 2});
@@ -769,6 +809,8 @@ void TraceHMM(const hmmer::HMM &hmm,
         std::vector<HMMPathInfo> local_results;
         std::unordered_set<GraphCursor> component_set(component_cursors.cbegin(), component_cursors.cend());
         auto restricted_component_cursors = make_restricted_cursors(component_cursors, component_set);
+
+        bool hmm_in_aas = hmm.abc()->K == 20;
         if (hmm_in_aas) {
             run_search(make_aa_cursors(restricted_component_cursors), cfg.top, local_results);
         } else {
