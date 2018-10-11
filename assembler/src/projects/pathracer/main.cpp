@@ -541,6 +541,20 @@ size_t find_subpath(const EPath &subpath, const EPath &path) {
     return npos;
 }
 
+std::string SuperPathInfo(const std::vector<EdgeId> &path,
+                          const std::vector<std::vector<EdgeId>> &superpaths) {
+    std::stringstream super_path_info;
+    for (const auto &superpath : superpaths) {
+        size_t pos = find_subpath(path, superpath);
+        if (pos != size_t(-1)) {
+            super_path_info << " " << superpath << ":" << pos;
+        }
+    }
+
+    return super_path_info.str();
+}
+
+
 template <typename Container>
 void ExportEdges(const Container &entries,
                  const debruijn_graph::ConjugateDeBruijnGraph &graph,
@@ -552,19 +566,10 @@ void ExportEdges(const Container &entries,
     std::ofstream o(filename, std::ios::out);
 
     for (const auto &path : entries) {
-        std::stringstream scaffold_path_info;
-        for (const auto &scaffold_path : scaffold_paths) {
-            size_t pos = find_subpath(path, scaffold_path);
-            if (pos != size_t(-1)) {
-                TRACE("Path " << path << " is a subpath of scaffold path " << scaffold_path);
-                scaffold_path_info << " " << scaffold_path << ":" << pos;
-            }
-        }
-
         std::string id = join(path, "_");
         std::string seq = MergeSequences(graph, path).str();
         // FIXME return sorting like in EdgesToSequences
-        o << ">" << id << scaffold_path_info.str() << "\n";
+        o << ">" << id << SuperPathInfo(path, scaffold_paths) << "\n";
         io::WriteWrapped(seq, o);
     }
 }
@@ -606,7 +611,8 @@ struct HMMPathInfo {
 
 void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph */,
                  const PathracerConfig &cfg,
-                 const std::vector<HMMPathInfo> &results) {
+                 const std::vector<HMMPathInfo> &results,
+                 const std::vector<std::vector<EdgeId>> &scaffold_paths) {
     const P7_HMM *p7hmm = hmm.get();  // TODO We use only hmm name from this object, may be we should just pass the name itself
 
     INFO("Total " << results.size() << " resultant paths extracted");
@@ -617,7 +623,8 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
             for (const auto &result : results) {
                 if (result.seq.size() == 0)
                     continue;
-                o << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << '\n';
+                auto scaffold_path_info = SuperPathInfo(result.path, scaffold_paths);
+                o << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << "|Scaffolds=" << scaffold_paths << '\n';
                 io::WriteWrapped(result.seq, o);
             }
         }
@@ -918,7 +925,7 @@ void hmm_main(const PathracerConfig &cfg,
                  cfg, results);
 
         std::sort(results.begin(), results.end());
-        SaveResults(hmm, graph, cfg, results);
+        SaveResults(hmm, graph, cfg, results, scaffold_paths);
 
         if (cfg.annotate_graph) {
             std::unordered_set<std::vector<EdgeId>> unique_paths;
