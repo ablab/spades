@@ -698,6 +698,11 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
 
     auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
+    INFO("Matched paths:");
+    for (const auto &kv : matched_paths) {
+        const auto &path = paths[kv.first];
+        INFO(path);
+    }
     auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
 
     using GraphCursor = DebruijnGraphCursor;
