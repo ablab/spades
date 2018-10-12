@@ -589,7 +589,17 @@ void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph,
     }
 }
 
-struct HMMPathInfo {
+class HMMPathInfo {
+private:
+    double rounded_score() const {
+        return round(score * 1000.0) / 1000.0;
+    }
+
+    auto key() const {
+        return std::make_tuple(rounded_score(), nuc_seq, path);
+    }
+
+public:
     std::string hmmname;
     unsigned priority;
     double score;
@@ -599,7 +609,7 @@ struct HMMPathInfo {
     std::string alignment;
 
     bool operator<(const HMMPathInfo &that) const {
-        return score < that.score;
+        return key() < that.key();
     }
 
     HMMPathInfo(std::string name, unsigned prio, double sc, std::string s, std::string nuc_s, std::vector<EdgeId> p, std::string alignment)
