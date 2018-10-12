@@ -524,8 +524,7 @@ auto EdgesToSequences(const Container &entries,
     return ids_n_seqs;
 }
 
-using EPath = std::vector<EdgeId>;  // Path is already used
-size_t find_subpath(const EPath &subpath, const EPath &path) {
+size_t find_subpath(const std::vector<EdgeId> &subpath, const std::vector<EdgeId> &path) {
     // TODO implement less naive algo
     const size_t npos = size_t(-1);
 
@@ -640,7 +639,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
 void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
              const PathracerConfig &cfg,
              const std::vector<HMMPathInfo> &results,
-             const std::vector<EPath> &scaffold_paths) {
+             const std::vector<std::vector<EdgeId>> &scaffold_paths) {
     P7_HMM *p7hmm = hmm.get();
 
     std::unordered_set<std::vector<EdgeId>> to_rescore;
