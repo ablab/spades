@@ -490,7 +490,7 @@ def cmp_misassemblies(quast_output_dir, old_ctgs, new_ctgs):
 def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir):
     exit_code = 0
     rewrite_latest = True
-    enable_comparison = (dataset_info.mode in ("standard", "tru", "dip", "meta", "plasmid"))
+    enable_comparison = (dataset_info.mode in ("standard", "tru", "meta", "plasmid"))
 
     if enable_comparison and contig_storage_dir != '' and 'quast_params' in dataset_info.__dict__ and dataset_info.quast_params and '-R' in dataset_info.quast_params:
         for name, file_name, prefix, opts, ext in contigs:
@@ -689,7 +689,7 @@ def make_spades_cmd(args, dataset_info, spades_dir, output_dir):
     spades_exec = dataset_info.mode + "spades.py"
     if dataset_info.mode in ['standard', 'tru']:
         spades_exec = "spades.py"
-    if ("--only-assembler" not in spades_params) and (dataset_info.mode != "dip"):
+    if "--only-assembler" not in spades_params:
         spades_exec += " --disable-gzip-output "
 
     return os.path.join(spades_dir, spades_exec) + " " + " ".join(spades_params) + " -o " + output_dir
@@ -741,7 +741,7 @@ def save_contigs(args, output_dir, contig_storage_dir, contigs, rewrite_latest):
 # Save QUAST report as artifact
 def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, artifact_dir, clean_artifacts_dir = True):
     working_dir = os.getcwd()
-    if not (dataset_info.mode in ("standard", "tru", "dip", "meta", "plasmid")):
+    if not (dataset_info.mode in ("standard", "tru", "meta", "plasmid")):
         return
 
     if clean_artifacts_dir:

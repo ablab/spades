@@ -40,7 +40,6 @@ enum class pipeline_type : char {
     mda,
     meta,
     moleculo,
-    diploid,
     rna,
     plasmid,
     large_genome,

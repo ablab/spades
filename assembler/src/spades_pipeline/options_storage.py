@@ -76,7 +76,6 @@ only_assembler = False
 disable_gzip_output = None
 disable_rr = None
 careful = None
-diploid_mode = False
 
 # advanced options
 continue_mode = False
@@ -146,7 +145,7 @@ long_options = "12= merged= threads= memory= tmp-dir= iterations= phred-offset= 
                "help version test debug debug:false reference= series-analysis= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false save-gp save-gp:false "\
-               "continue restart-from= diploid truseq cov-cutoff= hidden-cov-cutoff= read-cov-threshold= " \
+               "continue restart-from= truseq cov-cutoff= hidden-cov-cutoff= read-cov-threshold= " \
                "configs-dir= stop-after=".split()
 short_options = "o:1:2:s:k:t:m:i:hv"
 
@@ -213,10 +212,8 @@ def usage(spades_version, show_hidden=False, mode=None):
     sys.stderr.write("-v/--version\t\tprints version" + "\n")
 
     sys.stderr.write("" + "\n")
-    if mode != "dip":
-        sys.stderr.write("Input data:" + "\n")
-    else:
-        sys.stderr.write("Input reads:" + "\n")
+    sys.stderr.write("Input data:" + "\n")
+
     sys.stderr.write("--12\t<filename>\tfile with interlaced forward and reverse"\
                          " paired-end reads" + "\n")
     sys.stderr.write("-1\t<filename>\tfile with forward paired-end reads" + "\n")
@@ -274,38 +271,29 @@ def usage(spades_version, show_hidden=False, mode=None):
     if not mode == "meta":
         sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
         sys.stderr.write("--untrusted-contigs\t<filename>\tfile with untrusted contigs\n")
-    if mode == "dip":
-        sys.stderr.write("Input haplocontigs:" + "\n")
-        sys.stderr.write("--hap\t<filename>\tfile with haplocontigs" + "\n")
+
     if mode == "rna":
         sys.stderr.write("--ss-<type>\tstrand specific data, <type> = fr (normal) and rf (antisense)\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Pipeline options:" + "\n")
-    if mode != "dip":
-        sys.stderr.write("--only-error-correction\truns only read error correction"\
-                             " (without assembling)" + "\n")
+
+    sys.stderr.write("--only-error-correction\truns only read error correction"\
+                         " (without assembling)" + "\n")
     sys.stderr.write("--only-assembler\truns only assembling (without read error"\
                          " correction)" + "\n")
-    if mode != "dip":
-        if mode not in ["rna", "meta"]:
-            sys.stderr.write("--careful\t\ttries to reduce number of mismatches and short indels" + "\n")
-        sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
-        if mode == "rna":
-            sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'last')" + "\n")
-        else:
-            sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc', 'last')" + "\n")
+
+    if mode not in ["rna", "meta"]:
+        sys.stderr.write("--careful\t\ttries to reduce number of mismatches and short indels" + "\n")
+    sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
+    if mode == "rna":
+        sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'last')" + "\n")
+    else:
+        sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc', 'last')" + "\n")
     sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
                          " compress the corrected reads" + "\n")
     sys.stderr.write("--disable-rr\t\tdisables repeat resolution stage"\
                      " of assembling" + "\n")
-
-    if mode == "dip":
-        sys.stderr.write("" + "\n")
-        sys.stderr.write("DipSPAdes options:" + "\n")
-        sys.stderr.write("--expect-gaps\t\tindicates that significant number of gaps in coverage is expected" + "\n")
-        sys.stderr.write("--expect-rearrangements\tindicates that significant number of rearrangements between haplomes of diploid genome is expected" + "\n")
-        sys.stderr.write("--hap-assembly\t\tenables haplotype assembly phase" + "\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Advanced options:" + "\n")
@@ -359,15 +347,6 @@ def usage(spades_version, show_hidden=False, mode=None):
                             " (a positive float number). Base coverage! Will be adjusted depending on K and RL! \n")
         sys.stderr.write("--read-cov-threshold\t<int>\t\tread median coverage threshold (non-negative integer)\n")
         sys.stderr.write("--help-hidden\tprints this usage message with all hidden options" + "\n")
-
-    if show_hidden and mode == "dip":
-        sys.stderr.write("" + "\n")
-        sys.stderr.write("HIDDEN dipSPAdes options:" + "\n")
-        sys.stderr.write("--dsK\t\t<int>\t\tk value used in dipSPAdes [default: '55']" + '\n')
-        sys.stderr.write("--dsdebug\t\t\tmakes saves and draws pictures" + '\n')
-        sys.stderr.write("--saves\t<directory>\tdirectory with saves which will be used for graph loading" + '\n')
-        sys.stderr.write("--start-from\t<start_point>\tstart point of dipSPAdes:" + '\n')
-        sys.stderr.write("    pbr: polymorphic bulge remover\n    kmg: gluer of equal k-mers\n    cc: consensus constructor\n    ha: haplotype assembly" + '\n')
 
     sys.stderr.flush()
 

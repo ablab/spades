@@ -142,9 +142,8 @@ def add_configs(command, configs_dir):
                            ("truseq_mode", "moleculo_mode"),
                            ("rna", "rna_mode"),
                            ("large_genome", "large_genome_mode"),
-                           ("plasmid", "plasmid_mode"),
+                           ("plasmid", "plasmid_mode")]
                            #("careful", "careful_mode"),
-                           ("diploid_mode", "diploid_mode")]
     for (mode, config) in mode_config_mapping:
         if options_storage.__dict__[mode]:
             if mode == "rna" or mode == "meta":
