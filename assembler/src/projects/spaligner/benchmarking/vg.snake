@@ -2,7 +2,7 @@ configfile: "config.yaml"
 VGPATH = config["vgpath"]
 K = config["vg_k"]
 
-ALL_ORGS=["ecoli", "celegans"]
+ALL_ORGS=["celegans"]
 ALL_READS=["simnp2000", "simpb2000", "realpb2000", "realnp2000"]
 
 workdir: config["datapath"]
@@ -56,8 +56,8 @@ rule prune_graph:
     output:
         "celegans/vg/tmp/graph.pruned.vg"
     benchmark:
-        repeat("celegans/vg/benchmark/prune_graph.tsv", 3)
-    threads: 16
+        repeat("celegans/vg/benchmark/prune_graph.tsv", 1)
+    threads: 32
     shell:
         "{VGPATH}/vg prune -k 12 -e 2 -t {threads} {input} > {output}"
 
@@ -68,8 +68,8 @@ rule build_index_celegans:
         xg = "celegans/vg/tmp/graph.split.vg.xg",
         gcsa = "celegans/vg/tmp/graph.split.vg.gcsa"
     benchmark:
-        repeat("celegans/vg/benchmark/build_index.tsv", 3)
-    threads: 16
+        repeat("celegans/vg/benchmark/build_index.tsv", 1)
+    threads: 32
     shell:
         "{VGPATH}/vg index -p -t {threads} {input} -x {output.xg} -g {output.gcsa} -k {K}"
 
@@ -80,8 +80,8 @@ rule build_index_ecoli:
         xg = "ecoli/vg/tmp/graph.split.vg.xg",
         gcsa = "ecoli/vg/tmp/graph.split.vg.gcsa"
     benchmark:
-        repeat("ecoli/vg/benchmark/build_index.tsv", 3)
-    threads: 16
+        repeat("ecoli/vg/benchmark/build_index.tsv", 1)
+    threads: 32
     shell:
         "{VGPATH}/vg index -p -t {threads} {input} -x {output.xg} -g {output.gcsa} -k {K}"
 
@@ -94,15 +94,15 @@ rule mapping_xdrop:
         "{org}/vg/output/aln_{reads}_xdrop.gam"
     params:
         out = "{org}/vg/output",
-        fq =  "{org}/input/{reads}.fasta" if "{reads}" == "simnp2000" or ("{org}" == "celegans" and "{reads}" == "realnp2000") else "{org}/input/{reads}.fastq"
+        readt =  "{org}/input/{reads}"
     benchmark:
-        repeat("{org}/vg/benchmark/mapping_{reads}_xdrop.tsv", 3)
-    threads: 16
+        repeat("{org}/vg/benchmark/mapping_{reads}_xdrop.tsv", 1)
+    threads: 32
     run:
         if (wildcards.org == "celegans" and wildcards.reads == "realnp2000") or wildcards.reads == "simnp2000":
-            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -F {params.fq} -M 1 -W 64 --xdrop-alignment > {output}")
+            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -F {params.readt}.fasta -M 1 -W 64 --xdrop-alignment > {output}")
         else:
-            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.fq} -M 1 -W 64 --xdrop-alignment > {output}")
+            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.readt}.fastq -M 1 -W 64 --xdrop-alignment > {output}")
 
 rule mapping_ordinary:
     input:
@@ -113,15 +113,15 @@ rule mapping_ordinary:
         "{org}/vg/output/aln_{reads}_ordinary.gam"
     params:
         out = "{org}/vg/output",
-        fq =  "{org}/input/{reads}.fasta" if "{reads}" == "simnp2000" or ("{org}" == "celegans" and "{reads}" == "realnp2000") else "{org}/input/{reads}.fastq"
+        readt =  "{org}/input/{reads}" 
     benchmark:
-        repeat("{org}/vg/benchmark/mapping_{reads}_ordinary.tsv", 3)
-    threads: 16
+        repeat("{org}/vg/benchmark/mapping_{reads}_ordinary.tsv", 1)
+    threads: 32
     run:
         if (wildcards.org == "celegans" and wildcards.reads == "realnp2000") or wildcards.reads == "simnp2000":
-            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -F {params.fq} -M 1 -W 64 > {output}")
+            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -F {params.readt}.fasta -M 1 -W 64 > {output}")
         else:
-            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.fq} -M 1 -W 64 > {output}")
+            shell("mkdir -p {params.out} && {VGPATH}/vg map -t {threads} -d {input.vg} -x {input.xg} -g {input.gcsa} -f {params.readt}.fastq -M 1 -W 64 > {output}")
 
 rule convert_to_json_ordinary:
     input:
