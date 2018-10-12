@@ -86,6 +86,15 @@ if (NOT OPENMP_FOUND)
   add_compile_options(-Wno-unknown-pragmas)
 endif()
 
+# Looking for README.md
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../README.md")
+  #installing from archive
+  set(README_MD_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../README.md")
+else()
+  #installing from the repo
+  set(README_MD_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md")
+endif()
+
 # sub projects
 add_subdirectory(common)
 add_subdirectory(projects)
@@ -127,7 +136,7 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset_plasmid"
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../manual.html"
         DESTINATION share/spades
         COMPONENT runtime)
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md"
+install(FILES "${README_MD_PATH}"
         DESTINATION share/spades
         COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../truspades_manual.html"
