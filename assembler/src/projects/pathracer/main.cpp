@@ -833,8 +833,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     remove_duplicates(match_edges);
 
-
-    auto process_component = [&](const auto &component_cursors) -> void {
+    auto process_component = [&hmm, &run_search, &cfg, &graph, &results, &match_edges](const auto &component_cursors) -> void {
         assert(!component_cursors.empty());
         INFO("Component size " << component_cursors.size());
         if (component_cursors.size() > cfg.max_size) {
