@@ -852,10 +852,6 @@ void TraceHMM(const hmmer::HMM &hmm,
             edges.insert(cursor.edge());
         }
 
-        // EdgeId leader = std::max_element(edges_count.cbegin(), edges_count.cend(),
-        //                                  [](const auto &kv1, const auto &kv2) { return kv1.second < kv2.second; })->first;
-        // INFO("Leader (mostly supported among matched) edge: " << leader << " supported by " << edges_count[leader] << " cursors");
-
         auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromEdges(graph, edges, true, component_name);
 
         if (cfg.draw) {
