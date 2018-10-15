@@ -796,8 +796,8 @@ void TraceHMM(const hmmer::HMM &hmm,
 
     auto cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph);
 
-    auto run_search = [&](const auto &initial, size_t top,
-                          std::vector<HMMPathInfo> &local_results) {
+    auto run_search = [&fees, &p7hmm](const auto &initial, size_t top,
+                                      std::vector<HMMPathInfo> &local_results) -> void {
         auto result = find_best_path(fees, initial);
 
         INFO("Extracting top paths");
