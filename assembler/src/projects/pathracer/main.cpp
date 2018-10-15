@@ -833,12 +833,12 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     remove_duplicates(match_edges);
 
-    auto process_component = [&hmm, &run_search, &cfg, &graph, &results, &match_edges](const auto &component_cursors) -> void {
+    auto process_component = [&hmm, &run_search, &cfg, &graph, &results](const auto &component_cursors) -> std::unordered_set<std::vector<EdgeId>> {
         assert(!component_cursors.empty());
         INFO("Component size " << component_cursors.size());
         if (component_cursors.size() > cfg.max_size) {
             WARN("The component is too large, skipping");
-            return;
+            return {};
         }
 
         for (const auto &cursor : component_cursors) {
@@ -868,6 +868,11 @@ void TraceHMM(const hmmer::HMM &hmm,
         for (const auto& entry : local_results) {
             paths.insert(entry.path);
         }
+        return paths;
+    };
+
+    for (const auto &component_cursors : cursor_conn_comps) {
+        auto paths = process_component(component_cursors);
 
         INFO("Total " << paths.size() << " unique edge paths extracted");
         for (const auto &path : paths) {
@@ -889,10 +894,6 @@ void TraceHMM(const hmmer::HMM &hmm,
                 ++idx;
             }
         }
-    };
-
-    for (const auto &component_cursors : cursor_conn_comps) {
-        process_component(component_cursors);
     }
 }
 
