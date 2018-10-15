@@ -833,30 +833,22 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     remove_duplicates(match_edges);
 
-    for (const auto &component_cursors : cursor_conn_comps) {
+
+    auto process_component = [&](const auto &component_cursors) -> void {
         assert(!component_cursors.empty());
         INFO("Component size " << component_cursors.size());
         if (component_cursors.size() > cfg.max_size) {
             WARN("The component is too large, skipping");
-            continue;
+            return;
         }
 
         for (const auto &cursor : component_cursors) {
             DEBUG_ASSERT(check_cursor_symmetry(cursor), main_assert{}, debug_assert::level<2>{});
         }
 
-        auto component_name = int_to_hex(hash_value(component_cursors));
-        INFO("Construct component " << component_name);
         std::unordered_set<EdgeId> edges;
         for (const auto& cursor : component_cursors) {
             edges.insert(cursor.edge());
-        }
-
-        auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromEdges(graph, edges, true, component_name);
-
-        if (cfg.draw) {
-            INFO("Writing component " << component_name);
-            DrawComponent(component, graph, cfg.output_dir + "/" + component_name, match_edges);
         }
 
         INFO("Running path search");
@@ -874,26 +866,34 @@ void TraceHMM(const hmmer::HMM &hmm,
         results.insert(results.end(), local_results.begin(), local_results.end());
 
         std::unordered_set<std::vector<EdgeId>> paths;
-        for (const auto& entry : local_results)
+        for (const auto& entry : local_results) {
             paths.insert(entry.path);
-        INFO("Total " << paths.size() << " unique edge paths extracted");
+        }
 
-        {
+        INFO("Total " << paths.size() << " unique edge paths extracted");
+        for (const auto &path : paths) {
+            INFO("Path length : " << path.size() << " edges " << path);
+        }
+
+        if (cfg.draw) {
+            auto component_name = int_to_hex(hash_value(component_cursors));
+            INFO("Construct component as omnigraph-component" << component_name);
+            auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromEdges(graph, edges, true, component_name);
+
+            INFO("Writing component " << component_name);
+            DrawComponent(component, graph, cfg.output_dir + "/" + component_name, match_edges);
+
             size_t idx = 0;
             for (const auto &path : paths) {
-                std::vector<size_t> int_ids;
-                for (EdgeId e : path) {
-                    int_ids.push_back(e.int_id());
-                }
-                INFO("Path length : " << path.size() << " edges " << int_ids);
-
-                if (cfg.draw) {
-                    INFO("Writing component around path");
-                    DrawComponent(component, graph, cfg.output_dir + "/" + component_name + "_" + std::to_string(idx), path);
-                }
-                idx += 1;
+                INFO("Writing component around path " << idx);
+                DrawComponent(component, graph, cfg.output_dir + "/" + component_name + "_" + std::to_string(idx), path);
+                ++idx;
             }
         }
+    };
+
+    for (const auto &component_cursors : cursor_conn_comps) {
+        process_component(component_cursors);
     }
 }
 
