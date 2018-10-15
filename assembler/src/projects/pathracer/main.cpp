@@ -542,15 +542,17 @@ size_t find_subpath(const std::vector<EdgeId> &subpath, const std::vector<EdgeId
 
 std::string SuperPathInfo(const std::vector<EdgeId> &path,
                           const std::vector<std::vector<EdgeId>> &superpaths) {
-    std::stringstream super_path_info;
+    std::vector<std::string> results;
     for (const auto &superpath : superpaths) {
         size_t pos = find_subpath(path, superpath);
         if (pos != size_t(-1)) {
+            std::stringstream super_path_info;
             super_path_info << " " << superpath << ":" << pos;
+            results.push_back(super_path_info.str());
         }
     }
 
-    return super_path_info.str();
+    return join(results, ",");
 }
 
 
@@ -681,7 +683,7 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
 using GraphCursor = DebruijnGraphCursor;
 
-
+// Not required anymore, remove?
 std::pair<EdgeId, size_t> get_edge_offset(const graph_t &graph, const std::vector<EdgeId> &path, size_t position) {
     size_t k = graph.k();
     for (const auto &e : path) {
@@ -693,6 +695,7 @@ std::pair<EdgeId, size_t> get_edge_offset(const graph_t &graph, const std::vecto
     VERIFY_MSG(false, "position >= path lenght");
 }
 
+// Not required anymore, remove?
 std::vector<GraphCursor> get_cursors_from_path(const graph_t &graph, const std::vector<EdgeId> &path, size_t position) {
     // TODO Check cursor noncanonicity stuff once again
     auto p = get_edge_offset(graph, path, position);
@@ -707,40 +710,8 @@ std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path) {
     return cpath;
 }
 
-void TraceHMM(const hmmer::HMM &hmm,
-              const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
-              const std::vector<std::vector<EdgeId>> scaffold_paths,
-              const PathracerConfig &cfg,
-              std::vector<HMMPathInfo> &results) {
-    const P7_HMM *p7hmm = hmm.get();
 
-    INFO("Query:         " << p7hmm->name << "  [M=" << p7hmm->M << "]");
-    if (p7hmm->acc) {
-        INFO("Accession:     " << p7hmm->acc);
-    }
-    if (p7hmm->desc) {
-        INFO("Description:   " << p7hmm->desc);
-    }
-
-    auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
-    INFO("HMM consensus: " << fees.consensus);
-
-    std::vector<std::vector<EdgeId>> paths;
-    // Fill paths by single edges
-    for (const auto &e : edges) {
-        paths.push_back(std::vector<EdgeId>({e}));
-    }
-    // Fill paths by paths read from GFA
-    paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
-
-    auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
-    INFO("Matched paths:");
-    for (const auto &kv : matched_paths) {
-        const auto &path = paths[kv.first];
-        INFO(path);
-    }
-    auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
-
+auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph) {
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
     std::unordered_set<GraphCursor> cursors;
@@ -785,6 +756,45 @@ void TraceHMM(const hmmer::HMM &hmm,
         cursor_conn_comps_sizes.push_back(comp.size());
     }
     INFO("Connected component sizes: " << cursor_conn_comps_sizes);
+
+    return cursor_conn_comps;
+}
+
+void TraceHMM(const hmmer::HMM &hmm,
+              const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
+              const std::vector<std::vector<EdgeId>> scaffold_paths,
+              const PathracerConfig &cfg,
+              std::vector<HMMPathInfo> &results) {
+    const P7_HMM *p7hmm = hmm.get();
+
+    INFO("Query:         " << p7hmm->name << "  [M=" << p7hmm->M << "]");
+    if (p7hmm->acc) {
+        INFO("Accession:     " << p7hmm->acc);
+    }
+    if (p7hmm->desc) {
+        INFO("Description:   " << p7hmm->desc);
+    }
+
+    auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
+    INFO("HMM consensus: " << fees.consensus);
+
+    std::vector<std::vector<EdgeId>> paths;
+    // Fill paths by single edges
+    for (const auto &e : edges) {
+        paths.push_back(std::vector<EdgeId>({e}));
+    }
+    // Fill paths by paths read from GFA
+    paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
+
+    auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
+    INFO("Matched paths:");
+    for (const auto &kv : matched_paths) {
+        const auto &path = paths[kv.first];
+        INFO(path);
+    }
+    auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
+
+    auto cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph);
 
     auto run_search = [&](const auto &initial, size_t top,
                           std::vector<HMMPathInfo> &local_results) {
