@@ -75,18 +75,18 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
   }
 
  public:
+  auto best_ancestor() const {
+    DEBUG_ASSERT(scores_.size(), pathtree_assert{});
+    return std::min_element(scores_.cbegin(), scores_.cend(),
+                            [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
+  }
+
   double score() const {
     if (scores_.size() == 0) {
       return std::numeric_limits<double>::infinity();
     }
 
     return best_ancestor()->second.first;
-  }
-
-  auto best_ancestor() const {
-    DEBUG_ASSERT(scores_.size(), pathtree_assert{});
-    return std::min_element(scores_.cbegin(), scores_.cend(),
-                            [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
   }
 
   bool update(GraphCursor gp, double score, const ThisRef &pl) {
