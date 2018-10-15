@@ -598,26 +598,27 @@ private:
     }
 
     auto key() const {
-        return std::make_tuple(rounded_score(), nuc_seq, path);
+        return std::make_tuple(rounded_score(), nuc_seq, label, path);
     }
 
 public:
     std::string hmmname;
-    unsigned priority;
     double score;
     std::string seq;
     std::string nuc_seq;
     std::vector<EdgeId> path;
     std::string alignment;
+    std::string label;
 
     bool operator<(const HMMPathInfo &that) const {
         return key() < that.key();
     }
 
-    HMMPathInfo(std::string name, unsigned prio, double sc, std::string s, std::string nuc_s, std::vector<EdgeId> p, std::string alignment)
-            : hmmname(std::move(name)), priority(prio), score(sc),
+    HMMPathInfo(std::string name, double sc, std::string s, std::string nuc_s, std::vector<EdgeId> p, std::string alignment,
+                std::string label)
+            : hmmname(std::move(name)), score(sc),
               seq(std::move(s)), nuc_seq{std::move(nuc_s)},
-              path(std::move(p)), alignment(std::move(alignment)) {}
+              path(std::move(p)), alignment(std::move(alignment)), label{std::move(label)} {}
 };
 
 void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph */,
@@ -797,7 +798,8 @@ void TraceHMM(const hmmer::HMM &hmm,
     auto cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph);
 
     auto run_search = [&fees, &p7hmm](const auto &initial, size_t top,
-                                      std::vector<HMMPathInfo> &local_results) -> void {
+                                      std::vector<HMMPathInfo> &local_results,
+                                      const std::string &component_name = "") -> void {
         auto result = find_best_path(fees, initial);
 
         INFO("Extracting top paths");
@@ -808,7 +810,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             INFO(top_paths.str(0));
             INFO("Alignment: " << top_paths.compress_alignment(top_paths.alignment(0, fees)));
         }
-        size_t idx = 0;
+
         for (const auto& annotated_path : top_paths) {
             auto seq = top_paths.str(annotated_path.path);
             auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, fees));
@@ -823,7 +825,8 @@ void TraceHMM(const hmmer::HMM &hmm,
                 ERROR("AA: " << edge_path_aas);
             }
             DEBUG_ASSERT(edge_path == edge_path_aas, main_assert{}, debug_assert::level<2>{});
-            local_results.emplace_back(p7hmm->name, idx++, annotated_path.score, seq, nucl_seq, std::move(edge_path), std::move(alignment));
+            local_results.emplace_back(p7hmm->name, annotated_path.score, seq, nucl_seq, std::move(edge_path), std::move(alignment),
+                                       component_name);
         }
     };
 
@@ -833,7 +836,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     remove_duplicates(match_edges);
 
-    auto process_component = [&hmm, &run_search, &cfg, &graph, &results](const auto &component_cursors) -> std::unordered_set<std::vector<EdgeId>> {
+    auto process_component = [&hmm, &run_search, &cfg, &results](const auto &component_cursors) -> std::unordered_set<std::vector<EdgeId>> {
         assert(!component_cursors.empty());
         INFO("Component size " << component_cursors.size());
         if (component_cursors.size() > cfg.max_size) {
