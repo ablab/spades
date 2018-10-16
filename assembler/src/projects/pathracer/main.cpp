@@ -652,7 +652,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
                 continue;
             auto scaffold_path_info = SuperPathInfo(result.path, scaffold_paths);
             std::stringstream header;
-            header << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << "|Scaffolds=" << scaffold_path_info << '\n';
+            header << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << "|Scaffolds=" << scaffold_path_info << "Component=" << result.label << '\n';
 
             o_seqs << header.str();
             io::WriteWrapped(result.seq, o_seqs);
@@ -800,15 +800,25 @@ void TraceHMM(const hmmer::HMM &hmm,
     // }
 
     std::vector<std::vector<GraphCursor>> cursor_conn_comps;
+    std::vector<std::string> component_names;
 
     if (cfg.seed_mode == seed_mode::scaffolds_one_by_one) {
         for (const auto &path : scaffold_paths) {
             std::vector<std::vector<EdgeId>> paths = {path};
             auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
+            if (!matched_paths.size()) {
+                // path not matched
+                continue;
+            }
             auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
             auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
-            // TODO add labels
+            // add labels
+            std::stringstream ss;
+            ss << path;
+            for (const auto &_ : cursor_conn_comps) {
+                component_names.push_back(ss.str());
+            }
             // TODO be more verbose
         }
     } else if (cfg.seed_mode == seed_mode::edges) {
@@ -847,6 +857,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
         cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph);
     }
+    VERIFY(cursor_conn_comps.size());
 
     auto run_search = [&fees, &p7hmm](const auto &initial, size_t top,
                                       std::vector<HMMPathInfo> &local_results,
@@ -888,7 +899,8 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     remove_duplicates(match_edges);
 
-    auto process_component = [&hmm, &run_search, &cfg, &results](const auto &component_cursors) -> std::unordered_set<std::vector<EdgeId>> {
+    auto process_component = [&hmm, &run_search, &cfg, &results](const auto &component_cursors,
+                                                                 const std::string &component_name = "") -> std::unordered_set<std::vector<EdgeId>> {
         assert(!component_cursors.empty());
         INFO("Component size " << component_cursors.size());
         if (component_cursors.size() > cfg.max_size) {
@@ -912,9 +924,9 @@ void TraceHMM(const hmmer::HMM &hmm,
 
         bool hmm_in_aas = hmm.abc()->K == 20;
         if (hmm_in_aas) {
-            run_search(make_aa_cursors(restricted_component_cursors), cfg.top, local_results);
+            run_search(make_aa_cursors(restricted_component_cursors), cfg.top, local_results, component_name);
         } else {
-            run_search(restricted_component_cursors, cfg.top, local_results);
+            run_search(restricted_component_cursors, cfg.top, local_results, component_name);
         }
 
         results.insert(results.end(), local_results.begin(), local_results.end());
@@ -926,8 +938,10 @@ void TraceHMM(const hmmer::HMM &hmm,
         return paths;
     };
 
-    for (const auto &component_cursors : cursor_conn_comps) {
-        auto paths = process_component(component_cursors);
+    for (size_t i = 0; i < cursor_conn_comps.size(); ++i) {
+        const auto &component_cursors = cursor_conn_comps[i];
+        const std::string &component_name = component_names.size() ? component_names[i] : "";
+        auto paths = process_component(component_cursors, component_name);
 
         INFO("Total " << paths.size() << " unique edge paths extracted");
         for (const auto &path : paths) {
@@ -935,17 +949,17 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
 
         if (cfg.draw) {
-            auto component_name = int_to_hex(hash_value(component_cursors));
-            INFO("Construct component as omnigraph-component" << component_name);
-            auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromEdges(graph, edges, true, component_name);
+            auto component_name_with_hash = component_name + int_to_hex(hash_value(component_cursors));
+            INFO("Construct component as omnigraph-component" << component_name_with_hash);
+            auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromEdges(graph, edges, true, component_name_with_hash);
 
-            INFO("Writing component " << component_name);
-            DrawComponent(component, graph, cfg.output_dir + "/" + component_name, match_edges);
+            INFO("Writing component " << component_name_with_hash);
+            DrawComponent(component, graph, cfg.output_dir + "/" + component_name_with_hash, match_edges);
 
             size_t idx = 0;
             for (const auto &path : paths) {
                 INFO("Writing component around path " << idx);
-                DrawComponent(component, graph, cfg.output_dir + "/" + component_name + "_" + std::to_string(idx), path);
+                DrawComponent(component, graph, cfg.output_dir + "/" + component_name_with_hash + "_" + std::to_string(idx), path);
                 ++idx;
             }
         }
