@@ -557,11 +557,12 @@ size_t find_subpath(const std::vector<EdgeId> &subpath, const std::vector<EdgeId
 std::string SuperPathInfo(const std::vector<EdgeId> &path,
                           const std::vector<std::vector<EdgeId>> &superpaths) {
     std::vector<std::string> results;
-    for (const auto &superpath : superpaths) {
+    for (size_t idx = 0; idx < superpaths.size(); ++idx) {
+        const auto &superpath = superpaths[idx];
         size_t pos = find_subpath(path, superpath);
         if (pos != size_t(-1)) {
             std::stringstream super_path_info;
-            super_path_info << " " << superpath << ":" << pos;
+            super_path_info << superpath << ":" << idx << "/" << pos;
             results.push_back(super_path_info.str());
         }
     }
@@ -652,7 +653,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
                 continue;
             auto scaffold_path_info = SuperPathInfo(result.path, scaffold_paths);
             std::stringstream header;
-            header << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << "|Scaffolds=" << scaffold_path_info << "Component=" << result.label << '\n';
+            header << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << "|Scaffolds=" << scaffold_path_info << "|Component=" << result.label << '\n';
 
             o_seqs << header.str();
             io::WriteWrapped(result.seq, o_seqs);
@@ -803,7 +804,8 @@ void TraceHMM(const hmmer::HMM &hmm,
     std::vector<std::string> component_names;
 
     if (cfg.seed_mode == seed_mode::scaffolds_one_by_one) {
-        for (const auto &path : scaffold_paths) {
+        for (size_t idx = 0; idx < scaffold_paths.size(); ++idx) {
+            const auto &path = scaffold_paths[idx];
             std::vector<std::vector<EdgeId>> paths = {path};
             auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
             if (!matched_paths.size()) {
@@ -816,6 +818,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             // add labels
             std::stringstream ss;
             ss << path;
+            ss << ":" << idx;
             for (const auto &_ : cursor_conn_comps) {
                 component_names.push_back(ss.str());
             }
