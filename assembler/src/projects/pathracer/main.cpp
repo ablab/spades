@@ -93,11 +93,20 @@ enum class mode {
     aa
 };
 
+enum class seed_mode {
+    edges,
+    scaffolds,
+    scaffolds_one_by_one,
+    edges_scaffolds,
+    exhaustive
+};
+
 struct PathracerConfig {
     std::string load_from = "";
     std::string hmmfile = "";
     std::string output_dir = "";
     enum mode mode = mode::hmm;
+    enum seed_mode seed_mode = seed_mode::edges_scaffolds;
     size_t k = 0;
     int threads = 4;
     size_t top = 100;
@@ -133,6 +142,10 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       cfg.load_from  << value("load from"),
       cfg.k          << integer("k-mer size"),
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
+      one_of(option("--seed-edges").set(cfg.seed_mode, seed_mode::edges) % "use graph edges as seeds",
+             option("--seed-scaffolds").set(cfg.seed_mode, seed_mode::scaffolds) % "use scaffolds paths as seeds",
+             option("--seed-edges-scaffolds").set(cfg.seed_mode, seed_mode::edges_scaffolds) % "use edges AND scaffolds paths as seeds",
+             option("--seed-scaffolds-1-by-1").set(cfg.seed_mode, seed_mode::scaffolds_one_by_one) % "use scaffolds paths as seeds (1 by 1)"),
       one_of(option("--hmm").set(cfg.mode, mode::hmm) % "match against HMM(s) [default]",
              option("--nucl").set(cfg.mode, mode::nucl) % "match against nucleotide string(s)",
              option("--aa").set(cfg.mode, mode::aa) % "match agains amino acid string(s)"),
