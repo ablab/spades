@@ -80,9 +80,10 @@ private:
  * @tparam Env (optional) parameters to be used in loading (typically an EdgeId mapper).
  */
 template<typename T, typename... Env>
-class IOBase {
+struct IOBase {
     virtual void Save(const std::string &basename, const T &value) = 0;
     virtual bool Load(const std::string &basename, T &value, const Env &... env) = 0;
+    virtual ~IOBase() {}
 };
 
 /**
