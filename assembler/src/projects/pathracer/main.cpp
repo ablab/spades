@@ -821,7 +821,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
             auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
-            for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps.size(); ++cmp_idx) {
+            for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
                 // Hmm... Seems useless, path should induce only one connectivity component
                 std::stringstream ss;
                 ss << path << ":" << idx << "cmp" << cmp_idx;
