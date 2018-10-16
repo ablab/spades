@@ -616,6 +616,18 @@ private:
         return std::make_tuple(rounded_score(), nuc_seq, label, path);
     }
 
+    bool supported_by_original_path(const std::vector<std::vector<EdgeId>> &paths) const {
+        if (label.size() == 0) {
+            return false;
+        }
+
+        size_t path_id = std::stoll(label);
+        size_t pos = find_subpath(path, paths[path_id]);
+        return pos != size_t(-1);
+    }
+
+    friend void unique_hmm_path_info(std::vector<HMMPathInfo> &infos, const std::vector<std::vector<EdgeId>> &paths);
+
 public:
     std::string hmmname;
     double score;
@@ -635,6 +647,22 @@ public:
               seq(std::move(s)), nuc_seq{std::move(nuc_s)},
               path(std::move(p)), alignment(std::move(alignment)), label{std::move(label)} {}
 };
+
+void unique_hmm_path_info(std::vector<HMMPathInfo> &infos, const std::vector<std::vector<EdgeId>> &paths) {
+    auto key = [&paths](const auto &info) {
+        int supported = info.supported_by_original_path(paths) ? 0 : 1;
+        return std::make_tuple(info.rounded_score(), info.nuc_seq, info.path, supported, info.label);
+    };
+    sort_by(infos.begin(), infos.end(), key);
+
+    auto eq = [](const auto &i1, const auto &i2) {
+        return i1.rounded_score() == i2.rounded_score() && i1.nuc_seq == i2.nuc_seq && i1.path == i2.path;
+    };
+
+    auto it = std::unique(infos.begin(), infos.end(), eq);
+    infos.erase(it, infos.end());
+}
+
 
 void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph */,
                  const PathracerConfig &cfg,
@@ -656,8 +684,12 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
             if (result.seq.size() == 0)
                 continue;
             auto scaffold_path_info = SuperPathInfo(result.path, scaffold_paths);
+            std::stringstream component_info;
+            if (result.label.size()) {
+                component_info << scaffold_paths[std::stoll(result.label)] << ":" << result.label;
+            }
             std::stringstream header;
-            header << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << "|Scaffolds=" << scaffold_path_info << "|Component=" << result.label << '\n';
+            header << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << "|ScaffoldSuperpaths=" << scaffold_path_info << "|OriginScaffoldPath=" << component_info.str() << '\n';
 
             o_seqs << header.str();
             io::WriteWrapped(result.seq, o_seqs);
@@ -822,10 +854,8 @@ void TraceHMM(const hmmer::HMM &hmm,
             auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
-                // Hmm... Seems useless, path should induce only one connectivity component
-                std::stringstream ss;
-                ss << path << ":" << idx << "cmp" << cmp_idx;
-                component_names.push_back(ss.str());
+                // TODO add cmp_idx? (it could not be trivial!!!)
+                component_names.push_back(std::to_string(idx));
             }
             // TODO be more verbose
         }
@@ -998,6 +1028,7 @@ void hmm_main(const PathracerConfig &cfg,
                  cfg, results);
 
         std::sort(results.begin(), results.end());
+        unique_hmm_path_info(results, scaffold_paths);
         SaveResults(hmm, graph, cfg, results, scaffold_paths);
 
         if (cfg.annotate_graph) {
