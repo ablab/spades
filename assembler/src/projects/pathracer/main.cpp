@@ -641,12 +641,16 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
                  const std::vector<HMMPathInfo> &results,
                  const std::vector<std::vector<EdgeId>> &scaffold_paths) {
     const P7_HMM *p7hmm = hmm.get();  // TODO We use only hmm name from this object, may be we should just pass the name itself
+    bool hmm_in_aas = hmm.abc()->K == 20;
 
     INFO("Total " << results.size() << " resultant paths extracted");
 
     if (cfg.save && !results.empty()) {
         std::ofstream o_seqs(cfg.output_dir + std::string("/") + p7hmm->name + ".seqs.fa", std::ios::out);
-        std::ofstream o_nucs(cfg.output_dir + std::string("/") + p7hmm->name + ".nucs.fa", std::ios::out);
+        std::ofstream o_nucs;
+        if (hmm_in_aas) {
+            std::ofstream o_nucs(cfg.output_dir + std::string("/") + p7hmm->name + ".nucs.fa", std::ios::out);
+        }
 
         for (const auto &result : results) {
             if (result.seq.size() == 0)
@@ -658,8 +662,10 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
             o_seqs << header.str();
             io::WriteWrapped(result.seq, o_seqs);
 
-            o_nucs << header.str();
-            io::WriteWrapped(result.nuc_seq, o_nucs);
+            if (hmm_in_aas) {
+                o_nucs << header.str();
+                io::WriteWrapped(result.nuc_seq, o_nucs);
+            }
         }
     }
 }
@@ -816,6 +822,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps.size(); ++cmp_idx) {
+                // Hmm... Seems useless, path should induce only one connectivity component
                 std::stringstream ss;
                 ss << path << ":" << idx << "cmp" << cmp_idx;
                 component_names.push_back(ss.str());
