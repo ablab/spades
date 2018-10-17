@@ -21,7 +21,6 @@ set_target_properties(looper PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_
 target_link_libraries(pathracer graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES})
 target_link_libraries(looper hmmercpp input utils pipeline ${COMMON_LIBRARIES})
 
-add_subdirectory(googletest)
 add_library(gtest_main_segfault_handler gtest_main.cpp)
 target_link_libraries(gtest_main_segfault_handler gtest input utils ${COMMON_LIBRARIES})
 
