@@ -69,6 +69,9 @@ if (NOT SPADES_GIT_SHA1)
   set(SPADES_GIT_SHA1 "N/A")
 endif()
 
+# Testing
+include(test)
+
 message("Building SPAdes from ${SPADES_GIT_REFSPEC}, sha: ${SPADES_GIT_SHA1}")
 
 configure_file("${SPADES_MAIN_INCLUDE_DIR}/config.hpp.in"
