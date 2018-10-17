@@ -51,6 +51,11 @@ public:
 };
 
 template<typename Graph>
+struct IOTraits<omnigraph::CoverageIndex<Graph>> {
+    typedef CoverageIO<Graph> Type;
+};
+
+template<typename Graph>
 class FlankingCoverageIO : public BaseCoverageIO<omnigraph::FlankingCoverage<Graph>> {
 public:
     typedef BaseCoverageIO<omnigraph::FlankingCoverage<Graph>> base;

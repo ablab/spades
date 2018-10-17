@@ -10,7 +10,7 @@
 
 #include <memory>
 
-#include "graph.hpp"
+#include "basic.hpp"
 #include "coverage.hpp"
 #include "edge_index.hpp"
 #include "kmer_mapper.hpp"
@@ -34,42 +34,34 @@ public:
         //1. Save basic graph
         graph_io_.Save(basename, gp.g);
 
-        //2. Save coverage
-        CoverageIO<Graph>().Save(basename, gp.g.coverage_index());
-
-        //3. Save edge positions
+        //2. Save edge positions
         SaveAttached(basename, gp.edge_pos);
 
-        //4. Save kmer edge index
+        //3. Save kmer edge index
         SaveAttached(basename, gp.index);
 
-        //5. Save kmer mapper
+        //4. Save kmer mapper
         SaveAttached(basename, gp.kmer_mapper);
 
-        //6. Save flanking coverage
+        //5. Save flanking coverage
         SaveAttached(basename, gp.flanking_cov);
     }
 
     bool Load(const std::string &basename, Type &gp) override {
         //1. Load basic graph
-        bool loaded = graph_io_.Load(basename, gp.g);
-        VERIFY(loaded);
+        graph_io_.Load(basename, gp.g);
         const auto &mapper = graph_io_.GetEdgeMapper();
 
-        //2. Load coverage
-        loaded = CoverageIO<Graph>().Load(basename, gp.g.coverage_index(), mapper);
-        VERIFY(loaded);
-
-        //3. Load edge positions
+        //2. Load edge positions
         LoadAttached(basename, gp.edge_pos, mapper);
 
-        //4. Load kmer edge index
+        //3. Load kmer edge index
         LoadAttached(basename, gp.index);
 
-        //5. Load kmer mapper
+        //4. Load kmer mapper
         LoadAttached(basename, gp.kmer_mapper);
 
-        //6. Load flanking coverage
+        //5. Load flanking coverage
         LoadAttached(basename, gp.flanking_cov, mapper);
 
         return true;
@@ -80,7 +72,7 @@ public:
     }
 
 protected:
-    GraphIO<Graph> graph_io_;
+    BasicGraphIO<Graph> graph_io_;
 
     template<typename T>
     void SaveAttached(const std::string &basename, const T &component) {

@@ -19,7 +19,7 @@
 #include "io/reads/osequencestream.hpp"
 
 #include "assembly_graph/construction/debruijn_graph_constructor.hpp"
-#include "io/binary/graph.hpp"
+#include "io/binary/basic.hpp"
 
 #include "version.hpp"
 
@@ -184,7 +184,7 @@ int main(int argc, char* argv[]) {
                 io::FastgWriter fastg_writer(g, cfg.outfile);
                 fastg_writer.WriteSegmentsAndLinks();
             } else if (cfg.mode == output_type::spades) {
-                io::binary::Save(cfg.outfile, g);
+                io::binary::BasicGraphIO<debruijn_graph::DeBruijnGraph>().Save(cfg.outfile, g);
             } else
                 FATAL_ERROR("Invalid mode");
         }

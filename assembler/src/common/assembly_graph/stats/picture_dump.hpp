@@ -314,7 +314,7 @@ struct detail_info_printer {
                                                 ToString(call_cnt++, 2) + "_" + pos_name + "/");
             fs::make_dirs(saves_folder);
 
-            Save(saves_folder + "graph", gp_.g);
+            BasicGraphIO<Graph>().Save(saves_folder + "graph", gp_.g);
         }
 
         if (config.lib_info) {
