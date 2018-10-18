@@ -158,41 +158,70 @@ namespace sensitive_aligner {
 
         }
         std::vector<PathRange> read_ranges;
-        if (sorted_edges.size() == 1 && ends_cfg_.restore_ends) {
-            PathRange cur_range(MappingPoint(sorted_bwa_hits[0].mapping_at(0).initial_range.start_pos
-                                            , sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos),
-                                MappingPoint(sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).initial_range.end_pos
-                                            , sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).mapped_range.end_pos));
-            RestoreEnds(s, sorted_bwa_hits, sorted_edges, cur_range);
-            read_ranges.push_back(cur_range);
-        } else {
-            for (auto hits: sorted_bwa_hits) {
-                PathRange cur_range(MappingPoint(hits.mapping_at(0).initial_range.start_pos
-                                                , hits.mapping_at(0).mapped_range.start_pos),
-                                    MappingPoint(hits.mapping_at(hits.size() - 1).initial_range.end_pos
-                                                , hits.mapping_at(hits.size() - 1).mapped_range.end_pos));
-                read_ranges.push_back(cur_range);
+        int max_path = 0;
+        size_t max_path_ind = 0;
+        for (size_t i = 0; i < sorted_bwa_hits.size(); ++ i) {
+            if (sorted_bwa_hits[i].mapping_at(sorted_bwa_hits[i].size() - 1).initial_range.end_pos - 
+                 sorted_bwa_hits[i].mapping_at(0).initial_range.start_pos > max_path) {
+                max_path = sorted_bwa_hits[i].mapping_at(sorted_bwa_hits[i].size() - 1).initial_range.end_pos - 
+                            sorted_bwa_hits[i].mapping_at(0).initial_range.start_pos;
+                max_path_ind = i;
             }
+        }
+        int shortest_len = 0.5*s.size();
+        for (size_t i = 0; i < sorted_bwa_hits.size(); ++ i) {
+            PathRange cur_range(MappingPoint(sorted_bwa_hits[i].mapping_at(0).initial_range.start_pos
+                                                , sorted_bwa_hits[i].mapping_at(0).mapped_range.start_pos),
+                                    MappingPoint(sorted_bwa_hits[i].mapping_at(sorted_bwa_hits[i].size() - 1).initial_range.end_pos
+                                                , sorted_bwa_hits[i].mapping_at(sorted_bwa_hits[i].size() - 1).mapped_range.end_pos));
+            if (ends_cfg_.restore_ends  && max_path_ind == i &&
+                    (sorted_edges.size() == 1 || max_path > min(500, shortest_len) )) {
+                int return_code = RestoreEndsF(s, (int) s.size(), sorted_edges[i], cur_range);
+                for (size_t j = sorted_bwa_hits.size() - 1; j > i  && return_code != 0; -- j) {
+                    int end = sorted_bwa_hits[j].mapping_at(0).initial_range.start_pos; 
+                    if (end > cur_range.path_end.seq_pos) {   
+                        return_code = RestoreEndsF(s, end, sorted_edges[i], cur_range);
+                    }
+                }
+                return_code = RestoreEndsB(s, 0, sorted_edges[i], cur_range);
+                if (i > 0) {
+                    for (int j = 0; j < i && return_code != 0; ++ j) {
+                        int start = sorted_bwa_hits[j].mapping_at(sorted_bwa_hits[j].size() - 1).initial_range.end_pos;
+                        if (start < cur_range.path_start.seq_pos) {
+                            return_code = RestoreEndsB(s, start, sorted_edges[i], cur_range);
+                        }
+                    }
+                }
+            }
+            read_ranges.push_back(cur_range);
         }
         return AddGapDescriptions(start_clusters, end_clusters, sorted_edges, sorted_bwa_hits, read_ranges, s,
                                   block_gap_closer);
     }
 
-    void GAligner::RestoreEnds(const Sequence &s,
-                             const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                             std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
+    int GAligner::RestoreEndsB(const Sequence &s,
+                             int start,
+                             vector<debruijn_graph::EdgeId> &sorted_edges,
                              PathRange &cur_range) const {
         bool forward = true;
-        GraphPosition start_pos(sorted_bwa_hits[0].edge_at(0), sorted_bwa_hits[0].mapping_at(0).mapped_range.start_pos);
-        Sequence ss = s.Subseq(0, sorted_bwa_hits[0].mapping_at(0).initial_range.start_pos);
-        GapFillerResult res_backward = gap_filler_.Run(ss, start_pos, !forward, sorted_edges[0], cur_range);
+        GraphPosition start_pos(sorted_edges[0], cur_range.path_start.edge_pos);
+        Sequence ss = s.Subseq(start, cur_range.path_start.seq_pos);
+        GapFillerResult res_backward = gap_filler_.Run(ss, start_pos, !forward, sorted_edges, cur_range);
         DEBUG("Backward return_code_ends=" << res_backward.return_code)
+        return res_backward.return_code;
+    }
 
-        GraphPosition end_pos(sorted_bwa_hits[0].edge_at(sorted_bwa_hits[0].size() - 1)
-                             , sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).mapped_range.end_pos);
-        ss = s.Subseq(sorted_bwa_hits[0].mapping_at(sorted_bwa_hits[0].size() - 1).initial_range.end_pos, (int) s.size() );
-        GapFillerResult res_forward = gap_filler_.Run(ss, end_pos, forward, sorted_edges[0], cur_range);
+    int GAligner::RestoreEndsF(const Sequence &s,
+                             int end,
+                             vector<debruijn_graph::EdgeId> &sorted_edges,
+                             PathRange &cur_range) const {
+        bool forward = true;
+        GraphPosition end_pos(sorted_edges[sorted_edges.size() - 1]
+                             , cur_range.path_end.edge_pos);
+        Sequence ss = s.Subseq(cur_range.path_end.seq_pos, end);
+        GapFillerResult res_forward = gap_filler_.Run(ss, end_pos, forward, sorted_edges, cur_range);
         DEBUG("Forward return_code_ends=" << res_forward.return_code)
+        return res_forward.return_code;
     }
 
     void GAligner::ProcessCluster(const Sequence &s,

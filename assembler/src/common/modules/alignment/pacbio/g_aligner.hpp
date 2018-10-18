@@ -61,10 +61,16 @@ class GAligner {
                               const std::vector<PathRange> &read_ranges,
                               const Sequence &s,
                               const std::vector<bool> &block_gap_closer) const;
-    void RestoreEnds(const Sequence &s,
-                     const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                     std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
+    int RestoreEndsF(const Sequence &s,
+                     int end,
+                     vector<debruijn_graph::EdgeId> &sorted_edges,
                      PathRange &cur_range) const;
+
+    int RestoreEndsB(const Sequence &s,
+                     int start,
+                     vector<debruijn_graph::EdgeId> &sorted_edges,
+                     PathRange &cur_range) const;
+
 public:
     OneReadMapping GetReadAlignment(const io::SingleRead &read) const;
     GAligner(const debruijn_graph::Graph &g,
