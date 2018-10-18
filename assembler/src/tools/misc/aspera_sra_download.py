@@ -40,14 +40,12 @@ def sra_id_to_sra_path(sra_id):
     return res
 
 def download_one_fastq(main_dir, sra_id):
-    aspera_string = sra_id_to_sra_path(sra_id)
+    aspera_string = sra_id_to_sra_path(sra_id.split()[0].strip())
     if exists(join(main_dir, sra_id+"_1.fastq")):
         print sra_id + " already downloaded"
         return
     os.chdir(main_dir)
-#    args = ['fastq-dump', '--split-files', sra_id]
     args = ['ascp', '-i', '/usr/local/etc/asperaweb_id_dsa.openssh', '-k', '1', '-T', '-l', '100m', aspera_string, '.']
-#    print args
     print ('Downloading ' + sra_id)
     subprocess.call(args)
     print ('Downloaded ' + sra_id)
