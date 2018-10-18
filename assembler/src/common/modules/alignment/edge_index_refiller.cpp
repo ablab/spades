@@ -18,8 +18,6 @@ using EdgeIndex = KmerFreeEdgeIndex<ConjugateDeBruijnGraph>;
 template<>
 void EdgeIndexRefiller::Refill(EdgeIndex &index,
                                const ConjugateDeBruijnGraph &g) {
-    if (!g.size())
-        return;
     auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
 
     typedef typename EdgeIndexHelper<EdgeIndex>::GraphPositionFillingIndexBuilderT IndexBuilder;
