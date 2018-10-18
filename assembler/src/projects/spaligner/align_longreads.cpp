@@ -174,12 +174,11 @@ public:
         return;
     }
 
-    void RunAligner(std::vector<io::SingleRead> &wrappedreads, int threads) {
+    void RunAligner(const std::vector<io::SingleRead> &wrappedreads, int threads) {
         size_t step = 10;
         processed_reads_ = 0;
         aligned_reads_ = 0;
-        #pragma omp parallel num_threads(threads)
-        #pragma omp for
+        #pragma omp parallel for schedule(guided, 50) num_threads(threads)
         for (size_t i = 0 ; i < wrappedreads.size(); ++i) {
             AlignRead(wrappedreads[i]);
             #pragma omp critical(aligner)
