@@ -19,6 +19,11 @@ find_package(Readline QUIET)
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses QUIET)
 
+find_package(MPI)
+if (MPI_FOUND)
+  message(STATUS "MPI found")
+endif()
+
 # Use included boost unless explicitly specified
 if (NOT SPADES_BOOST_ROOT)
   set(BOOST_ROOT "${EXT_DIR}/include")
