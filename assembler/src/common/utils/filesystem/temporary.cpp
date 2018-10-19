@@ -28,10 +28,11 @@ TmpDirImpl::TmpDirImpl(nullptr_t, const std::string &dir)
 }
 
 TmpDirImpl::~TmpDirImpl() {
-    if (!released_) {
-        TRACE("Removing " << dir_);
-        fs::remove_dir(dir_);
+    if (released_) {
+        return;
     }
+    TRACE("Removing " << dir_);
+    fs::remove_dir(dir_);
 }
 
 const std::string &TmpDirImpl::release() {
@@ -65,10 +66,11 @@ TmpFileImpl::TmpFileImpl(std::nullptr_t, const std::string &file, TmpDir parent)
 
 TmpFileImpl::~TmpFileImpl() {
     close();
-    if (!released_) {
-        TRACE("Removing " << file_);
-        ::unlink(file_.c_str());
+    if (released_) {
+        return;
     }
+    TRACE("Removing " << file_);
+    ::unlink(file_.c_str());
 }
 
 void TmpFileImpl::close() {
@@ -90,10 +92,11 @@ DependentTmpFileImpl::DependentTmpFileImpl(const std::string &suffix, TmpFile pa
 }
 
 DependentTmpFileImpl::~DependentTmpFileImpl() {
-    if (!released_) {
-        TRACE("Removing " << file_);
-        ::unlink(file_.c_str());
+    if (released_) {
+        return;
     }
+    TRACE("Removing " << file_);
+    ::unlink(file_.c_str());
 }
 
 const std::string &DependentTmpFileImpl::release() {
