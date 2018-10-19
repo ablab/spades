@@ -2,6 +2,7 @@ import sys
 import json
 import unicodedata
 import pandas as pd
+import datetime
 import edlib
 
 
@@ -212,20 +213,42 @@ def print_stats(reads, res_mp):
     eds = {}
     for name in res_mp.keys():
         print name
-        df = pd.DataFrame(res_mp[name])
+        df = pd.DataFrame(res_mp[name]["res"])
         df["r"] = df.apply(lambda x: reads[x["r_name"]], axis = 1)
         df["ed"] = df.apply(lambda x: sum([edist([reads[x["r_name"]][x["s_start"][i]: x["s_end"][i]], x["mapped_seq"][i]]) for i in xrange(len(x["mapped_seq"])) ]), axis = 1)
         df["prop_len"] = df.apply(lambda x: sum(x["mapping_len"][i] for i in xrange(len(x["mapping_len"])))*100/len(reads[x["r_name"]]), axis = 1)
         df["prop_ed"] = df.apply(lambda x: x["ed"]*100/sum(x["mapping_len"][i] for i in xrange(len(x["mapping_len"]))), axis = 1)
-        print "Mapped:", len(df)*100/len(reads), "%"
-        print "Mean ed:", 100 - int(df["prop_ed"].mean()), "%"
+        print "Mapped >80%:", len(df)*100/len(reads), "%"
+        print "Average Identity:", 100 - int(df["prop_ed"].mean()), "%"
+        print "Time:", res_mp[name]["time"]
+        print "Memory:", res_mp[name]["memory"]
         print ""
         eds[name] = list(df["prop_ed"])
 
-    # set_spa = set(x["r_name"] for x in res_mp["SPAligner"])
+    # set_spa = set(x["r_name"] for x in res_mp["SPAligner_new"])
     # set_gra = set(x["r_name"] for x in res_mp["GraphAligner"])
     # print "\n".join(set_gra - set_spa)
-    # print len(set_spa - set_gra), len(set_gra - set_spa) 
+    # print len(set_spa - set_gra), len(set_gra - set_spa)
+
+def get_timedelta(s):
+    (h, m, s) = s.split(':')
+    d = datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+    return d
+
+def get_time(files_lst):
+    res = datetime.timedelta()
+    for f in files_lst:
+        df = pd.read_table(f)
+        df['time'] = df.apply(lambda x: get_timedelta(x['h:m:s']), axis=1)
+        res += min(df['time'])
+    return res
+
+def get_memory(files_lst):
+    res = 0
+    for f in files_lst:
+        df = pd.read_table(f)
+        res = max(res,max(df['max_rss']))
+    return res
 
 def save_fasta(aligner_res, filename):
     with open(filename, "w") as fout:
@@ -234,11 +257,11 @@ def save_fasta(aligner_res, filename):
 
 
 if __name__ == "__main__":
-    datapath = "/Sid/tdvorkina/gralign/benchmarking/"
-    aligners = {"SPAligner": 1, "vg": 0, "GraphAligner":1}
+    datapath = "/Sid/tdvorkina/gralign/benchmarking_real"
+    aligners = {"SPAligner": 1, "vg": 1, "GraphAligner":1}
     stat = "max"
-    for org in ["ecoli", "celegans"]:
-        for read_type in ["simnp2000", "simpb2000", "realpb2000", "realnp2000"]:
+    for org in ["ecoli"]:
+        for read_type in ["realnp2000", "realpb2000"]:
             org_path = datapath + "/" + org + "/"
             reads_file = org_path + "input/" + read_type + ".fasta"
             print org, read_type
@@ -250,29 +273,44 @@ if __name__ == "__main__":
                     if al.startswith("SPAligner"):
                         spaligner_res_file = org_path + al + "/output/aln_" + read_type + ".tsv"
                         spaligner_res = dl.load_spaligner_paths(spaligner_res_file, reads, stat)
-                        mp[al] = spaligner_res
+                        log_files = [org_path + al + "/benchmark/align_" + read_type + ".tsv"]
+                        mp[al] = {"time": get_time(log_files), "memory": get_memory(log_files)}
+                        mp[al]["res"] = spaligner_res
 
                     if al.startswith("GraphAligner"):
                         graphaligner_edges_gfa = org_path + al + "/tmp/graph_idfix.gfa"
                         graphaligner_res_file = org_path + al + "/output/aln_" + read_type + "_selected.json"
                         [graphaligner_edges, graphaligner_graph] = dl.load_gfa_edges(graphaligner_edges_gfa)
                         graphaligner_res = dl.load_json_paths(graphaligner_res_file, graphaligner_edges, graphaligner_graph, reads, stat)
-                        mp[al] = graphaligner_res
+                        log_files = [org_path + al + "/benchmark/mummer_pipe_" + read_type + ".tsv",\
+                                    org_path + al + "/benchmark/align_" + read_type + ".tsv",\
+                                    org_path + al + "/benchmark/posprocess_" + read_type + ".tsv"]
+                        mp[al] = {"time": get_time(log_files), "memory": get_memory(log_files)}
+                        mp[al]["res"] = graphaligner_res
 
                     if al.startswith("vg"):
                         vg_edges_gfa = org_path + al + "/tmp/graph.split.gfa"
                         vg_res_file = org_path + al + "/output/aln_" + read_type + "_xdrop.json"
                         [vg_edges, vg_graph] = dl.load_gfa_edges(vg_edges_gfa)
                         vg_res = dl.load_json_paths(vg_res_file, vg_edges, vg_graph, reads, stat)
-                        mp[al+"_xdrop"] = vg_res
+                        log_files = [org_path + al + "/benchmark/build_index.tsv",\
+                                    org_path + al + "/benchmark/mapping_" + read_type + "_xdrop.tsv"]
+                        if org == "celegans":
+                            log_files.append(org_path + al + "benchmark/prune_graph.tsv")
+                        mp[al+"_xdrop"] = {"time": get_time(log_files), "memory": get_memory(log_files)}
+                        mp[al+"_xdrop"]["res"]  = vg_res
 
                     if al.startswith("vg"):
                         vg_edges_gfa = org_path + al + "/tmp/graph.split.gfa"
                         vg_res_file = org_path + al + "/output/aln_" + read_type + "_ordinary.json"
                         [vg_edges, vg_graph] = dl.load_gfa_edges(vg_edges_gfa)
                         vg_res = dl.load_json_paths(vg_res_file, vg_edges, vg_graph, reads, stat)
-                        mp[al+"_ordinary"] = vg_res
-
+                        log_files = [org_path + al + "/benchmark/build_index.tsv",\
+                                    org_path + al + "/benchmark/mapping_" + read_type + "_ordinary.tsv"]
+                        if org == "celegans":
+                            log_files.append(org_path + al + "benchmark/prune_graph.tsv")
+                        mp[al+"_ordinary"] = {"time": get_time(log_files), "memory": get_memory(log_files)}
+                        mp[al+"_ordinary"]["res"]  = vg_res
             print_stats(reads, mp)
 
 
