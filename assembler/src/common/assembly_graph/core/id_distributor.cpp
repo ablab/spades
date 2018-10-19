@@ -44,3 +44,13 @@ void ReclaimingIdDistributor::release(uint64_t id) {
     free_map_[id - bias_] = true;
 }
 
+size_t ReclaimingIdDistributor::size() const {
+    return free_map_.size();
+}
+
+size_t ReclaimingIdDistributor::free() const {
+    size_t res = 0;
+    for (bool flag : free_map_)
+        res += flag;
+    return res;
+}

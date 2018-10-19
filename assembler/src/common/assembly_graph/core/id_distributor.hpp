@@ -23,20 +23,10 @@ class ReclaimingIdDistributor {
     }
 
     void resize(size_t sz);
-
     uint64_t allocate(uint64_t offset = 0);
     void release(uint64_t id);
-
-    size_t size() const {
-        return free_map_.size();
-    }
-
-    size_t free() const {
-        size_t res = 0;
-        for (bool flag : free_map_)
-            res += flag;
-        return res;
-    }
+    size_t free() const;
+    size_t size() const;
 
     class id_iterator : public boost::iterator_facade<id_iterator,
                                                       uint64_t,
