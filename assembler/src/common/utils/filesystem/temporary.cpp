@@ -22,7 +22,7 @@ TmpDirImpl::TmpDirImpl(const std::string &prefix, const std::string &suffix)
     TRACE("Creating " << dir_);
 }
 
-TmpDirImpl::TmpDirImpl(nullptr_t, const std::string &dir)
+TmpDirImpl::TmpDirImpl(std::nullptr_t, const std::string &dir)
         : dir_(dir), released_(false) {
     TRACE("Acquiring " << dir_);
 }
