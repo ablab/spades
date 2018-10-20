@@ -5,17 +5,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * pe_utils.hpp
- *
- *  Created on: Nov 27, 2012
- *      Author: andrey
- */
-
 #ifndef PE_UTILS_HPP_
 #define PE_UTILS_HPP_
 
 #include "assembly_graph/paths/bidirectional_path.hpp"
+#include "modules/alignment/rna/ss_coverage.hpp"
 
 namespace path_extend {
 

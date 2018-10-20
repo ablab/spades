@@ -7,8 +7,10 @@
 #pragma once
 
 #include "assembly_graph/paths/bidirectional_path.hpp"
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/graph_support/contig_output.hpp"
 #include "assembly_graph/components/connected_component.hpp"
+#include "common/pipeline/graph_pack.hpp"
 
 namespace path_extend {
 using namespace debruijn_graph;
@@ -36,8 +38,8 @@ class ScaffoldSequenceMaker {
     const Graph &g_;
     const size_t k_;
 public:
-    ScaffoldSequenceMaker(const Graph& g) : g_(g), k_(g_.k()) {
-    }
+    ScaffoldSequenceMaker(const Graph& g)
+            : g_(g), k_(g_.k()) {}
 
     std::string MakeSequence(const BidirectionalPath &scaffold) const;
 };
@@ -74,8 +76,7 @@ public:
 
     virtual std::string MakeContigName(size_t index, const ScaffoldInfo &scaffold_info) = 0;
 
-    virtual ~ContigNameGenerator() {
-    }
+    virtual ~ContigNameGenerator() {}
 };
 
 class DefaultContigNameGenerator: public ContigNameGenerator {
@@ -137,28 +138,13 @@ public:
     }
 };
 
-
-inline std::shared_ptr<ContigNameGenerator> MakeContigNameGenerator(config::pipeline_type mode,
-                                                                    const conj_graph_pack &gp) {
-    std::shared_ptr<path_extend::ContigNameGenerator> name_generator;
-    if (mode == config::pipeline_type::plasmid)
-        name_generator = std::make_shared<PlasmidContigNameGenerator>(gp.components);
-    else if (mode == config::pipeline_type::rna)
-        name_generator = std::make_shared<TranscriptNameGenerator>(gp.g);
-    else
-        name_generator = std::make_shared<DefaultContigNameGenerator>();
-    return name_generator;
-}
-
 class ScaffoldBreaker {
 private:
     int min_overlap_;
-
     void SplitPath(const BidirectionalPath &path, PathContainer &result) const;
 
 public:
     ScaffoldBreaker(int min_overlap): min_overlap_(min_overlap) {}
-
     void Break(const PathContainer &paths, PathContainer &result) const;
 };
 

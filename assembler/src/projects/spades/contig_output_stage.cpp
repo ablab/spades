@@ -5,8 +5,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "modules/path_extend/pe_resolver.hpp"
 #include "contig_output_stage.hpp"
+
+#include "modules/path_extend/pe_resolver.hpp"
+#include "modules/path_extend/pipeline/launch_support.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
 namespace debruijn_graph {

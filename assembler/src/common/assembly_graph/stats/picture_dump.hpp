@@ -36,6 +36,11 @@
 
 namespace debruijn_graph {
 
+// FIXME: awful layering violation
+namespace config {
+void write_lib_data(const std::string& prefix);
+};
+
 namespace stats {
 
 template<class Graph, class Index>

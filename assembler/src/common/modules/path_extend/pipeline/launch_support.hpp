@@ -1,13 +1,10 @@
-//
-// Created by andrey on 10.10.16.
-//
-
 #pragma once
 
 
+#include "assembly_graph/paths/bidirectional_path_io/io_support.hpp"
 #include "modules/path_extend/paired_library.hpp"
-#include "pipeline/config_struct.hpp"
 #include "modules/path_extend/pe_config_struct.hpp"
+#include "pipeline/config_struct.hpp"
 
 namespace path_extend {
 
@@ -32,6 +29,17 @@ inline bool HasLongReads(const config::dataset& dataset_info) {
         }
     }
     return false;
+}
+
+inline std::shared_ptr<ContigNameGenerator>
+MakeContigNameGenerator(config::pipeline_type mode,
+                        const conj_graph_pack &gp) {
+    if (mode == config::pipeline_type::plasmid)
+        return std::make_shared<PlasmidContigNameGenerator>(gp.components);
+    else if (mode == config::pipeline_type::rna)
+        return std::make_shared<TranscriptNameGenerator>(gp.g);
+
+    return std::make_shared<DefaultContigNameGenerator>();
 }
 
 struct PathExtendParamsContainer {
