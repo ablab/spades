@@ -18,7 +18,7 @@ add_executable(looper
                graph.cpp)
 set_target_properties(looper PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 
-target_link_libraries(pathracer graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES})
+target_link_libraries(pathracer graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES} hattrie cityhash modules assembly_graph common_modules)
 target_link_libraries(looper hmmercpp input utils pipeline ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
