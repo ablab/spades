@@ -17,11 +17,13 @@
 #include "sequence/aa.hpp"
 
 #include "visualization/visualization.hpp"
-#include "pipeline/graphio.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "io/reads/file_reader.hpp"
+
+// TODO Use actual graph reader
+#include "test/debruijn/graphio.hpp"
 
 #include "hmm/hmmfile.hpp"
 #include "hmm/hmmmatcher.hpp"
