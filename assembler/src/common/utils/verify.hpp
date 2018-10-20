@@ -15,12 +15,7 @@
 
 #include "config.hpp"
 
-#define VERIFY(expr)                                             \
-    do {                                                         \
-        if (!(expr))                                             \
-            utils::print_stacktrace();                           \
-        assert(expr);                                            \
-    } while(0);
+#define VERIFY(expr) do { assert(expr); } while(0);
 
 #ifdef SPADES_ENABLE_EXPENSIVE_CHECKS
 # define VERIFY_DEV(expr) VERIFY(expr)
