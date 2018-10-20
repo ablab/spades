@@ -37,7 +37,6 @@ add_executable(graph-hmm-test-aa test-aa.cpp graph.cpp fees.cpp)
 target_link_libraries(graph-hmm-test-aa gtest_main_segfault_handler hmmercpp input utils pipeline ${COMMON_LIBRARIES})
 add_test(NAME pathracer-aa COMMAND graph-hmm-test-aa)
 
-add_executable(graph-hmm-test-stack-limit test-stack-limit.cpp graph.cpp fees.cpp)
-target_link_libraries(graph-hmm-test-stack-limit gtest_main_segfault_handler hmmercpp input utils pipeline ${COMMON_LIBRARIES})
-add_test(NAME pathracer-stack-limit COMMAND graph-hmm-test-stack-limit)
-
+# add_executable(graph-hmm-test-stack-limit test-stack-limit.cpp graph.cpp fees.cpp)
+# target_link_libraries(graph-hmm-test-stack-limit gtest_main_segfault_handler hmmercpp input utils pipeline ${COMMON_LIBRARIES})
+# add_test(NAME pathracer-stack-limit COMMAND graph-hmm-test-stack-limit)
