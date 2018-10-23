@@ -214,79 +214,17 @@ private:
     friend class ConstructionHelper<DataMaster>;
 
 private:
-    class VertexStorage {
+    template<class T>
+    class IdStorage {
       public:
-        typedef PairedVertex<DataMaster> Vertex;
-        typedef ReclaimingIdDistributor::id_iterator id_iterator;
+        typedef omnigraph::ReclaimingIdDistributor::id_iterator id_iterator;
+        typedef T value_type;
 
-        VertexStorage(size_t bias)
+        IdStorage(size_t bias = 0)
                 : size_(0), id_distributor_(bias) {}
 
         id_iterator id_begin() const { return id_distributor_.begin(); }
         id_iterator id_end() const { return id_distributor_.end(); }
-
-        void reserve(size_t sz) {
-            if (id_distributor_.size() > 2*sz)
-                return;
-
-            id_distributor_.resize(2*sz);
-            storage_.resize(2*sz);
-        }
-
-        // FIXME: Count!
-        size_t size() const { return size_; }
-
-        std::pair<VertexId, VertexId> create(const VertexData& data1, const VertexData& data2) {
-            auto v1 = new Vertex(data1), v2 = new Vertex(data2);
-            uint64_t vid1 = id_distributor_.allocate(), vid2 = id_distributor_.allocate();
-
-            while (storage_.size() < std::max(vid1, vid2) + 1)
-                storage_.resize(storage_.size() * 2 + 1);
-
-            VERIFY(storage_[vid1] == nullptr);
-            VERIFY(storage_[vid2] == nullptr);
-
-            storage_[vid1] = v1;
-            storage_[vid2] = v2;
-
-            size_ += 2;
-
-            // INFO("Create " << vid1 << ":" << vid2);
-            return { vid1, vid2 };
-        }
-
-        void erase(VertexId id) {
-            Vertex *v = storage_[id.int_id()];
-            VertexId cid = v->conjugate();
-            Vertex *cv = storage_[cid.int_id()];
-
-            // INFO("Remove " << id << ":" << cid);
-
-            delete v;
-            delete cv;
-
-            id_distributor_.release(id.int_id());
-            id_distributor_.release(cid.int_id());
-            storage_[id.int_id()] = nullptr;
-            storage_[cid.int_id()] = nullptr;
-            size_ -= 2;
-        }
-
-        Vertex* at(VertexId id) const {
-            return storage_.at(id.int_id());
-        }
-      private:
-        size_t size_;
-        std::vector<Vertex*> storage_;
-        ReclaimingIdDistributor id_distributor_;
-    };
-
-    class EdgeStorage {
-      public:
-        typedef PairedEdge<DataMaster> Edge;
-
-        EdgeStorage(size_t bias)
-                : id_distributor_(bias) {}
 
         void reserve(size_t sz) {
             if (id_distributor_.size() > sz)
@@ -296,39 +234,51 @@ private:
             storage_.resize(sz);
         }
 
-        EdgeId create(VertexId end, const EdgeData &data) {
-            auto e = new Edge(end, data);
+        // FIXME: Count!
+        size_t size() const { return size_; }
+
+        template<typename... ArgTypes>
+        uint64_t create(ArgTypes &&... args) {
             uint64_t id = id_distributor_.allocate();
 
             while (storage_.size() < id + 1)
                 storage_.resize(storage_.size() * 2 + 1);
 
             VERIFY(storage_[id] == nullptr);
-            storage_[id] = e;
+            storage_[id] = new T(std::forward<ArgTypes>(args)...);;
+            size_ += 1;
+
+            // INFO("Create " << vid1 << ":" << vid2);
             return id;
         }
 
-        void erase(EdgeId id) {
-            Edge *e = storage_[id.int_id()];
+        void erase(uint64_t id) {
+            auto *v = storage_[id];
 
-            delete e;
-            storage_[id.int_id()] = nullptr;
-            id_distributor_.release(id.int_id());
+            // INFO("Remove " << id << ":" << cid);
+            delete v;
+
+            id_distributor_.release(id);
+            storage_[id] = nullptr;
+            size_ -= 1;
         }
 
-        Edge* at(EdgeId id) const {
-            return storage_.at(id.int_id());
+        T* at(uint64_t id) const {
+            return storage_.at(id);
         }
       private:
-        std::vector<Edge*> storage_;
-        ReclaimingIdDistributor id_distributor_;
+        size_t size_;
+        std::vector<T*> storage_;
+        omnigraph::ReclaimingIdDistributor id_distributor_;
     };
 
+    using VertexStorage = IdStorage<PairedVertex<DataMaster>>;
     VertexStorage vstorage_;
+    using EdgeStorage = IdStorage<PairedEdge<DataMaster>>;
     EdgeStorage estorage_;
 
     PairedVertex<DataMaster>* vertex(VertexId id) const {
-        return vstorage_.at(id);
+        return vstorage_.at(id.int_id());
     }
     PairedVertex<DataMaster>* cvertex(VertexId id) const {
         return vertex(conjugate(id));
@@ -374,8 +324,8 @@ public:
 private:
     VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
                           restricted::IdDistributor&) {
-        VertexId vid1, vid2;
-        std::tie(vid1, vid2) = vstorage_.create(data1, data2);
+        VertexId vid1 = vstorage_.create(data1);
+        VertexId vid2 = vstorage_.create(data2);
 
         vertex(vid1)->set_conjugate(vid2);
         vertex(vid2)->set_conjugate(vid1);
@@ -384,7 +334,9 @@ private:
     }
 
     void DestroyVertex(VertexId v) {
-        vstorage_.erase(v);
+        VertexId cv = conjugate(v);
+        vstorage_.erase(v.int_id());
+        vstorage_.erase(cv.int_id());
     }
 
     EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data,
@@ -397,8 +349,8 @@ private:
 
     void DestroyEdge(EdgeId e, EdgeId rc) {
         if (e != rc)
-            estorage_.erase(rc);
-        estorage_.erase(e);
+            estorage_.erase(rc.int_id());
+        estorage_.erase(e.int_id());
     }
 
     VertexId CreateVertex(const VertexData &data,
