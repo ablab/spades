@@ -1,5 +1,0 @@
-cache_root ./data/cap/cache
-desc_file_name description.txt
-default_log_filename diversities_log.txt
-; w for rewrite, a for append; on first launch recreated anyway, though
-default_log_file_mode a
