@@ -340,10 +340,35 @@ public:
     edge_const_iterator in_end(VertexId v) const { return cvertex(v)->out_end(this, true); }
 
 private:
+    VertexId CreateVertex(const VertexData &data) {
+        return CreateVertex(data, id_distributor_);
+    }
+
+    VertexId CreateVertex(const VertexData &data,
+                          restricted::IdDistributor &id_distributor) {
+        return CreateVertex(data, master_.conjugate(data), id_distributor);
+    }
+
+    VertexId CreateVertex(VertexId id,
+                          const VertexData &data) {
+        return vstorage_.emplace(id.int_id(), data);
+    }
+
     VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
                           restricted::IdDistributor&) {
         VertexId vid1 = vstorage_.create(data1);
         VertexId vid2 = vstorage_.create(data2);
+
+        vertex(vid1)->set_conjugate(vid2);
+        vertex(vid2)->set_conjugate(vid1);
+
+        return vid1;
+    }
+
+    VertexId CreateVertex(VertexId id, VertexId cid,
+                          const VertexData& data1, const VertexData& data2) {
+        VertexId vid1 = vstorage_.emplace(id.int_id(), data1);
+        VertexId vid2 = vstorage_.emplace(cid.int_id(), data2);
 
         vertex(vid1)->set_conjugate(vid2);
         vertex(vid2)->set_conjugate(vid1);
@@ -365,19 +390,18 @@ private:
         return eid;
     }
 
+    EdgeId AddSingleEdge(VertexId v1, VertexId v2,
+                         EdgeId id, const EdgeData &data) {
+        EdgeId eid = estorage_.emplace(id, v2, data);
+        if (v1.int_id())
+            vertex(v1)->AddOutgoingEdge(eid);
+        return eid;
+    }
+
     void DestroyEdge(EdgeId e, EdgeId rc) {
         if (e != rc)
             estorage_.erase(rc.int_id());
         estorage_.erase(e.int_id());
-    }
-
-    VertexId CreateVertex(const VertexData &data,
-                          restricted::IdDistributor &id_distributor) {
-        return CreateVertex(data, master_.conjugate(data), id_distributor);
-    }
-
-    VertexId CreateVertex(const VertexData &data) {
-        return CreateVertex(data, id_distributor_);
     }
 
     void AddVertexToGraph(VertexId) {}
