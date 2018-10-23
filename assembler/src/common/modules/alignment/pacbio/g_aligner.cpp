@@ -17,7 +17,6 @@ namespace sensitive_aligner {
 
         for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();) {
             EdgeId cur_edge = iter->edgeId;
-            bool merge_hits = false;
             if (prev_edge != EdgeId()) {
 //Need to find sequence of edges between clusters
                 VertexId start_v = g_.EdgeEnd(prev_edge);
@@ -43,7 +42,7 @@ namespace sensitive_aligner {
                     DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
                     DEBUG(" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
                     pair<int, int> limits = GetPathLimits(*prev_iter, *iter, (int) cur_first_index.edge_position
-                                                          , g_.length(prev_edge) - prev_last_index.edge_position);
+                                                          , (int) g_.length(prev_edge) - prev_last_index.edge_position);
 
                     if (limits.first == -1) {
                         DEBUG ("Failed to find Path limits");
@@ -85,7 +84,6 @@ namespace sensitive_aligner {
                         }
                         cur_sorted_edges.pop_back();
                         if (intermediate_path.size() == 1) {
-                            merge_hits = true;
                             DEBUG("Merged e1=" << prev_edge.int_id() << " e2=" << cur_edge.int_id() 
                                 << " s=" << prev_last_index.edge_position  << " e=" << cur_first_index.edge_position);
                         }
@@ -93,11 +91,6 @@ namespace sensitive_aligner {
                 }
             }
             MappingInstance cur_first_index = iter->sorted_positions[iter->first_trustable_index];
-            // if (merge_hits) {
-            //     auto prev_iter = iter - 1;
-            //     cur_first_index = (*prev_iter)->sorted_positions[(*prev_iter)->first_trustable_index];
-            //     cur_sorted_hits.pop_back();
-            // }
             MappingInstance cur_last_index = iter->sorted_positions[iter->last_trustable_index];
             cur_sorted_edges.push_back(cur_edge);
             cur_sorted_hits.push_back(cur_edge, omnigraph::MappingRange(
@@ -161,14 +154,14 @@ namespace sensitive_aligner {
         int max_path = 0;
         size_t max_path_ind = 0;
         for (size_t i = 0; i < sorted_bwa_hits.size(); ++ i) {
-            if (sorted_bwa_hits[i].mapping_at(sorted_bwa_hits[i].size() - 1).initial_range.end_pos - 
-                 sorted_bwa_hits[i].mapping_at(0).initial_range.start_pos > max_path) {
-                max_path = sorted_bwa_hits[i].mapping_at(sorted_bwa_hits[i].size() - 1).initial_range.end_pos - 
-                            sorted_bwa_hits[i].mapping_at(0).initial_range.start_pos;
+            if ((int)(sorted_bwa_hits[i].mapping_at(sorted_bwa_hits[i].size() - 1).initial_range.end_pos - 
+                 sorted_bwa_hits[i].mapping_at(0).initial_range.start_pos) > max_path) {
+                max_path = (int) (sorted_bwa_hits[i].mapping_at(sorted_bwa_hits[i].size() - 1).initial_range.end_pos - 
+                            sorted_bwa_hits[i].mapping_at(0).initial_range.start_pos);
                 max_path_ind = i;
             }
         }
-        int shortest_len = 0.5*s.size();
+        int shortest_len = (int) s.size()/2;
         for (size_t i = 0; i < sorted_bwa_hits.size(); ++ i) {
             PathRange cur_range(MappingPoint(sorted_bwa_hits[i].mapping_at(0).initial_range.start_pos
                                                 , sorted_bwa_hits[i].mapping_at(0).mapped_range.start_pos),
@@ -178,16 +171,16 @@ namespace sensitive_aligner {
                     (sorted_edges.size() == 1 || max_path > min(500, shortest_len) )) {
                 int return_code = RestoreEndsF(s, (int) s.size(), sorted_edges[i], cur_range);
                 for (size_t j = sorted_bwa_hits.size() - 1; j > i  && return_code != 0; -- j) {
-                    int end = sorted_bwa_hits[j].mapping_at(0).initial_range.start_pos; 
-                    if (end > cur_range.path_end.seq_pos) {   
+                    int end = (int) sorted_bwa_hits[j].mapping_at(0).initial_range.start_pos; 
+                    if (end > (int) cur_range.path_end.seq_pos) {   
                         return_code = RestoreEndsF(s, end, sorted_edges[i], cur_range);
                     }
                 }
                 return_code = RestoreEndsB(s, 0, sorted_edges[i], cur_range);
                 if (i > 0) {
-                    for (int j = 0; j < i && return_code != 0; ++ j) {
-                        int start = sorted_bwa_hits[j].mapping_at(sorted_bwa_hits[j].size() - 1).initial_range.end_pos;
-                        if (start < cur_range.path_start.seq_pos) {
+                    for (size_t j = 0; j < i && return_code != 0; ++ j) {
+                        int start = (int) sorted_bwa_hits[j].mapping_at(sorted_bwa_hits[j].size() - 1).initial_range.end_pos;
+                        if (start < (int) cur_range.path_start.seq_pos) {
                             return_code = RestoreEndsB(s, start, sorted_edges[i], cur_range);
                         }
                     }

@@ -213,7 +213,7 @@ void GapFiller::UpdatePath(vector<debruijn_graph::EdgeId> &path,
         for (size_t i = 0; i < path.size(); ++i) {
             cur_sorted.push_back(path[i]);
         }
-        if (path.size() == cur_sorted.size() && start > old_start_pos.position) {
+        if (path.size() == cur_sorted.size() && start > (int) old_start_pos.position) {
             return;
         }
         path = cur_sorted;
