@@ -9,7 +9,6 @@ nanopore	http://lab.loman.net/2016/07/30/nanopore-r9-data-release/ (https://s3.c
 
 Simulators
 
-illumina	ART-MountRainier-2016-06-05 (https://www.niehs.nih.gov/research/resources/software/biostatistics/art/index.cfm)
 pacbio		PBSim (https://github.com/pfaucon/PBSIM-PacBio-Simulator, commit 66052f7c8ff6874c5246c596e88741f334119957)
 ont		NanoSim (https://github.com/bcgsc/NanoSim, commit afad587092a919c855f1a34f69d99a68fa040052)
 
@@ -17,4 +16,4 @@ ont		NanoSim (https://github.com/bcgsc/NanoSim, commit afad587092a919c855f1a34f6
 
 Graph construction
 
-Assembler	SPAdes version: 3.13.0-dev
+Assembler	SPAdes version: 3.12.0
