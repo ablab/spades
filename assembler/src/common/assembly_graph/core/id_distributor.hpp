@@ -28,13 +28,13 @@ class ReclaimingIdDistributor {
     size_t free() const;
     size_t size() const;
     bool occupied(uint64_t at) const {
-        return free_map_[at];
+        return free_map_[at - bias_];
     }
     void occupy(uint64_t at) {
-        free_map_[at] = true;
+        free_map_[at - bias_] = true;
     }
     void deoccupy(uint64_t at) {
-        free_map_[at] = false;
+        free_map_[at - bias_] = false;
     }
 
     class id_iterator : public boost::iterator_facade<id_iterator,

@@ -252,6 +252,24 @@ private:
             return id;
         }
 
+        template<typename... ArgTypes>
+        uint64_t emplace(uint64_t at, ArgTypes &&... args) {
+            while (storage_.size() < at + 1) {
+                id_distributor_.resize(storage_.size() * 2 + 1);
+                storage_.resize(storage_.size() * 2 + 1);
+            }
+
+            VERIFY(storage_[at] == nullptr);
+            VERIFY(!id_distributor_.occupied(at));
+
+            id_distributor_.occupy(at);
+            storage_[at] = new T(std::forward<ArgTypes>(args)...);;
+            size_ += 1;
+
+            // INFO("Create " << vid1 << ":" << vid2);
+            return at;
+        }
+
         void erase(uint64_t id) {
             auto *v = storage_[id];
 
