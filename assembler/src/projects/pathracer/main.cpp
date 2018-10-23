@@ -595,6 +595,14 @@ void ExportEdges(const Container &entries,
     }
 }
 
+std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path) {
+    std::vector<EdgeId> cpath;
+    for (auto it = path.crbegin(), e = path.crend(); it != e; ++it) {
+        cpath.push_back((*it)->conjugate());
+    }
+    return cpath;
+}
+
 void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph,
                std::vector<std::vector<EdgeId>> &paths,
                const std::string &filename,
@@ -605,8 +613,10 @@ void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph,
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(graph);
         paths.reserve(gfa.num_paths());
-        for (const auto &path : gfa.paths())
+        for (const auto &path : gfa.paths()) {
             paths.push_back(path.edges);
+            paths.push_back(conjugate_path(path.edges));
+        }
     } else {
         if (legacy) {
             graphio::ScanBasicGraph(filename, graph);
@@ -766,15 +776,6 @@ std::vector<GraphCursor> get_cursors_from_path(const graph_t &graph, const std::
     auto p = get_edge_offset(graph, path, position);
     return GraphCursor::get_cursors(graph, p.first, p.second);
 }
-
-std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path) {
-    std::vector<EdgeId> cpath;
-    for (auto it = path.crbegin(), e = path.crend(); it != e; ++it) {
-        cpath.push_back((*it)->conjugate());
-    }
-    return cpath;
-}
-
 
 auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph) {
     using GraphCursor = DebruijnGraphCursor;
@@ -1103,11 +1104,6 @@ int main(int argc, char* argv[]) {
     LoadGraph(graph, scaffold_paths, cfg.load_from, cfg.legacy_saves);
     INFO("Graph loaded. Total vertices: " << graph.size());
 
-    // Add conjugate paths
-    // TODO move it to GFA reader
-    for (size_t i = 0, size = scaffold_paths.size(); i < size; ++i) {
-        scaffold_paths.push_back(conjugate_path(scaffold_paths[i]));
-    }
     INFO("Total paths " << scaffold_paths.size());
 
     // Collect all the edges
