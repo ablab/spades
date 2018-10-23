@@ -18,7 +18,7 @@ gap_closing:
   queue_limit: 1000000
   iteration_limit: 1000000
   updates_limit: 1000000
-  find_shortest_path: true
+  find_shortest_path: false
   restore_mapping: false
   penalty_ratio: 200
   max_ed_proportion: 3 # max_ed = min(ed_upper_bound, max(sequence_length/max_ed_proportion, ed_lower_bound))
