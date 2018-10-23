@@ -27,6 +27,15 @@ class ReclaimingIdDistributor {
     void release(uint64_t id);
     size_t free() const;
     size_t size() const;
+    bool occupied(uint64_t at) const {
+        return free_map_[at];
+    }
+    void occupy(uint64_t at) {
+        free_map_[at] = true;
+    }
+    void deoccupy(uint64_t at) {
+        free_map_[at] = false;
+    }
 
     class id_iterator : public boost::iterator_facade<id_iterator,
                                                       uint64_t,
