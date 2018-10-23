@@ -679,7 +679,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
         std::ofstream o_seqs(cfg.output_dir + std::string("/") + p7hmm->name + ".seqs.fa", std::ios::out);
         std::ofstream o_nucs;
         if (hmm_in_aas) {
-            std::ofstream o_nucs(cfg.output_dir + std::string("/") + p7hmm->name + ".nucs.fa", std::ios::out);
+            o_nucs.open(cfg.output_dir + std::string("/") + p7hmm->name + ".nucs.fa", std::ios::out);
         }
 
         for (const auto &result : results) {
