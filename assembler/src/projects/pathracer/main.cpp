@@ -740,12 +740,27 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
     INFO("Total " << to_rescore.size() << " local paths to rescore");
 
-    ExportEdges(to_rescore, graph, scaffold_paths,
+    std::unordered_map<std::vector<EdgeId>, double> path2score;
+    for (const auto &result : results) {
+        // results are already ordered by score
+        const auto &path = result.path;
+        if (!path2score.count(path)) {
+            path2score[path] = result.score;
+        }
+    }
+
+    std::vector<std::vector<EdgeId>> to_rescore_ordered(to_rescore.cbegin(), to_rescore.cend());
+    to_rescore.clear();
+    sort_by(to_rescore_ordered.begin(), to_rescore_ordered.end(),
+            [&](const auto &path){ return std::make_tuple(path2score[path], path); });
+
+    // TODO export paths along with their best score
+    ExportEdges(to_rescore_ordered, graph, scaffold_paths,
                 cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
 
     std::vector<std::string> seqs_to_rescore;
     std::vector<std::string> refs_to_rescore;
-    for (const auto &kv : EdgesToSequences(to_rescore, graph)) {
+    for (const auto &kv : EdgesToSequences(to_rescore_ordered, graph)) {
         refs_to_rescore.push_back(kv.first);
         seqs_to_rescore.push_back(kv.second);
     }
