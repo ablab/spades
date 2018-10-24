@@ -231,7 +231,13 @@ std::vector<GraphCursor> depth_subset(std::vector<std::pair<GraphCursor, size_t>
 
   std::priority_queue<CursorWithDepth> q;
 
+
+  std::unordered_map<GraphCursor, size_t> initial_map;
   for (const auto &cursor_with_depth : initial) {
+    initial_map[cursor_with_depth.first] = std::max(initial_map[cursor_with_depth.first], cursor_with_depth.second);
+  }
+
+  for (const auto &cursor_with_depth : initial_map) {
     q.push({cursor_with_depth.first, cursor_with_depth.second});
   }
 
