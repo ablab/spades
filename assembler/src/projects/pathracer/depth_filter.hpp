@@ -235,7 +235,14 @@ std::vector<GraphCursor> depth_subset(std::vector<std::pair<GraphCursor, size_t>
     q.push({cursor_with_depth.first, cursor_with_depth.second});
   }
 
+  INFO("Initial queue size: " << q.size());
+  size_t step = 0;
   while (!q.empty()) {
+    if (step % 1000) {
+      INFO("Step " << step << ", queue size: " << q.size());
+    }
+    ++step;
+
     CursorWithDepth cursor_with_depth = q.top();
     q.pop();
 
