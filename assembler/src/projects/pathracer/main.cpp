@@ -821,8 +821,12 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
         }
     }
 
+    INFO("Depth search on left");
     auto left_cursors = impl::depth_subset(left_queries, false);
+    INFO("Depth search on right");
     auto right_cursors = impl::depth_subset(right_queries, true);
+
+    INFO("Exporting cursors");
     cursors.insert(left_cursors.cbegin(), left_cursors.cend());
     cursors.insert(right_cursors.cbegin(), right_cursors.cend());
 
