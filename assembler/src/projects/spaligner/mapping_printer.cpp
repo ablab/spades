@@ -6,6 +6,15 @@
 
 namespace sensitive_aligner {
 
+
+string getStrId(const EdgeId &e, const debruijn_graph::ConjugateDeBruijnGraph &g_) {
+    if (e.int_id() < g_.conjugate(e).int_id()) {
+        return std::to_string(e.int_id()) + "+";
+    } else {
+        return std::to_string(e.int_id()) + "-";
+    }
+}
+
 void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
     string path_str = "";
     string path_len_str = "";
@@ -19,7 +28,7 @@ void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &ali
         for (size_t i = 0; i < mappingpath.size(); ++ i) {
             size_t mapping_start = i == 0 ? aligned_mappings.read_ranges[j].path_start.edge_pos : 0;
             size_t mapping_end = i == mappingpath.size() - 1 ?  aligned_mappings.read_ranges[j].path_end.edge_pos : g_.length(mappingpath[i]);
-            path_str += std::to_string(mappingpath[i].int_id()) + ",";
+            path_str += getStrId(mappingpath[i], g_) + ",";
             path_len_str += std::to_string(mapping_end - mapping_start) + ",";
             path_seq_str += g_.EdgeNucls(mappingpath[i]).Subseq(mapping_start, mapping_end).str();
         }
@@ -37,7 +46,7 @@ void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &ali
         for (size_t i = 0; i < path.size(); ++ i) {
             EdgeId edgeid = path.edge_at(i);
             omnigraph::MappingRange mapping = path.mapping_at(i);
-            bwa_path_str += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping.mapped_range.start_pos) + ","
+            bwa_path_str += getStrId(edgeid, g_) + " (" + std::to_string(mapping.mapped_range.start_pos) + ","
                             + std::to_string(mapping.mapped_range.end_pos) + ") ["
                             + std::to_string(mapping.initial_range.start_pos) + ","
                             + std::to_string(mapping.initial_range.end_pos) + "], ";
@@ -185,7 +194,7 @@ string MappingPrinterGPA::formGPAOutput(const io::SingleRead &read,
             {"StartR", std::to_string(path_range.path_start.seq_pos + edgeranges[i].start_pos)},
             {"LenR", std::to_string(edgeranges[i].end_pos - edgeranges[i].start_pos)},
             {"DirR", "+"},
-            {"EdgeId", std::to_string(edgeid.int_id())},
+            {"EdgeId", getStrId(edgeid, g_)},
             {"StartE", std::to_string(start)},
             {"LenE", std::to_string(end - start)},
             {"DirE", "+"},
