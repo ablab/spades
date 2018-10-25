@@ -17,24 +17,29 @@ namespace omnigraph {
 
 class ReclaimingIdDistributor {
   public:
-    ReclaimingIdDistributor(uint64_t bias = 0, size_t initial_size = 1, uint64_t stride = 1)
-            : bias_(bias), stride_(stride), stride_d_(stride) {
+    ReclaimingIdDistributor(uint64_t bias = 0, size_t initial_size = 1)
+            : bias_(bias) {
         resize(initial_size);
     }
 
     void resize(size_t sz);
     uint64_t allocate(uint64_t offset = 0);
-    void release(uint64_t id);
     size_t free() const;
-    size_t size() const;
+    size_t size() const {
+        return free_map_.size();
+    }
     bool occupied(uint64_t at) const {
-        return free_map_[at - bias_];
+        return !free_map_[at - bias_];
     }
-    void occupy(uint64_t at) {
-        free_map_[at - bias_] = true;
-    }
-    void deoccupy(uint64_t at) {
+    void acquire(uint64_t at) {
+        // FIXME: "lock" only single bit
+#pragma omp critical
         free_map_[at - bias_] = false;
+    }
+    void release(uint64_t at) {
+        // FIXME: "lock" only single bit
+#pragma omp critical
+        free_map_[at - bias_] = true;
     }
 
     class id_iterator : public boost::iterator_facade<id_iterator,
@@ -98,18 +103,10 @@ class ReclaimingIdDistributor {
   private:
     friend class id_iterator;
 
-    uint64_t round_up_stride(uint64_t n) const;
-    uint64_t next_free(uint64_t n, uint64_t stride) const;
-
-    uint64_t next_free(uint64_t n = 0) const {
-        return next_free(n, stride_);
-    }
+    uint64_t next_free(uint64_t n = 0) const;
 
     uint64_t last_allocated_;
-
     uint64_t bias_;
-    uint64_t stride_;
-    uint64_t stride_d_;
     std::vector<bool> free_map_;
 };
 

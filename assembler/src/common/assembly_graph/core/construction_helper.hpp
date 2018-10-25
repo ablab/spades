@@ -33,12 +33,8 @@ public:
         return graph_;
     }
 
-    EdgeId AddEdge(const EdgeData &data) {
-        return AddEdge(data, graph_.GetGraphIdDistributor());
-    }
-
-    EdgeId AddEdge(const EdgeData &data, restricted::IdDistributor &id_distributor) {
-        return graph_.AddEdge(data, id_distributor);
+    EdgeId AddEdge(const EdgeData &data, EdgeId id = 0) {
+        return graph_.AddEdge(data, id);
     }
 
     void LinkIncomingEdge(VertexId v, EdgeId e) {
@@ -74,12 +70,8 @@ public:
         graph_.DestroyVertex(v);
     }
 
-    VertexId CreateVertex(const VertexData &data) {
-        return CreateVertex(data, graph_.GetGraphIdDistributor());
-    }
-
-    VertexId CreateVertex(const VertexData &data, restricted::IdDistributor &id_distributor) {
-        return graph_.CreateVertex(data, id_distributor);
+    VertexId CreateVertex(const VertexData &data, VertexId id = 0) {
+        return graph_.CreateVertex(data, id);
     }
 
     template<class Iter>

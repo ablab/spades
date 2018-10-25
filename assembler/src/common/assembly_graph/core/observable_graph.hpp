@@ -118,11 +118,8 @@ public:
 
     /////////////////////////graph operations
     //adding/removing vertices and edges
-    VertexId AddVertex(const VertexData& data) {
-        return AddVertex(data, GetGraphIdDistributor());
-    }
 
-    VertexId AddVertex(const VertexData& data, restricted::IdDistributor& id_distributor);
+    VertexId AddVertex(const VertexData& data, VertexId id = 0);
 
     void DeleteVertex(VertexId v);
 
@@ -131,17 +128,8 @@ public:
     using base::GetGraphIdDistributor;
     using base::conjugate;
 
-    EdgeId AddEdge(const EdgeData &data) {
-        return AddEdge(data, GetGraphIdDistributor());
-    }
-
-    EdgeId AddEdge(const EdgeData& data, restricted::IdDistributor& id_distributor);
-
-    EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-        return AddEdge(v1, v2, data, GetGraphIdDistributor());
-    }
-
-    EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData& data, restricted::IdDistributor& id_distributor);
+    EdgeId AddEdge(const EdgeData& data, EdgeId id = 0);
+    EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData& data, EdgeId id = 0);
 
     void DeleteEdge(EdgeId e);
 
@@ -173,8 +161,8 @@ private:
 
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::VertexId
-ObservableGraph<DataMaster>::AddVertex(const VertexData &data, restricted::IdDistributor &id_distributor) {
-    VertexId v = base::HiddenAddVertex(data, id_distributor);
+ObservableGraph<DataMaster>::AddVertex(const VertexData &data, VertexId id) {
+    VertexId v = base::HiddenAddVertex(data, id);
     FireAddVertex(v);
     return v;
 }
@@ -196,17 +184,17 @@ void ObservableGraph<DataMaster>::ForceDeleteVertex(VertexId v) {
 
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::EdgeId
-        ObservableGraph<DataMaster>::AddEdge(VertexId v1, VertexId v2, const EdgeData &data,
-                                             restricted::IdDistributor &id_distributor) {
-    EdgeId e = base::HiddenAddEdge(v1, v2, data, id_distributor);
+ObservableGraph<DataMaster>::AddEdge(VertexId v1, VertexId v2, const EdgeData &data,
+                                     EdgeId id) {
+    EdgeId e = base::HiddenAddEdge(v1, v2, data, id);
     FireAddEdge(e);
     return e;
 }
 
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::EdgeId
-        ObservableGraph<DataMaster>::AddEdge(const EdgeData& data, restricted::IdDistributor& id_distributor) {
-    EdgeId e = base::HiddenAddEdge(data, id_distributor);
+ObservableGraph<DataMaster>::AddEdge(const EdgeData& data, EdgeId id) {
+    EdgeId e = base::HiddenAddEdge(data, id);
     FireAddEdge(e);
     return e;
 }

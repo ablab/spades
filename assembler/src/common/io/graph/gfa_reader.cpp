@@ -51,48 +51,43 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
             if (mid < id)
                 mid = id;
         }
-        restricted::IdSegmentStorage eid_storage = helper.graph().GetGraphIdDistributor().Reserve(mid + 2, 
-                /*force zero shift*/true);
+        g.ereserve(2 * mid);
         for (size_t i = 0; i < gfa_->n_seg; ++i) {
             gfa_seg_t *seg = gfa_->seg + i;
 
             uint64_t id = std::atoll(seg->name);
 
-            uint64_t ids[] = { id, id + 1};
-            auto id_distributor = eid_storage.GetSegmentIdDistributor(std::begin(ids), std::end(ids));
             uint8_t *kc = gfa_aux_get(seg->aux.l_aux, seg->aux.aux, "KC");
             unsigned cov = 0;
 			if (kc && kc[0] == 'i')
 				cov = *(int32_t*)(kc+1);
             DeBruijnEdgeData edata(Sequence(seg->seq));
             edata.set_raw_coverage(cov);
-            EdgeId e = helper.AddEdge(edata, id_distributor);
+            EdgeId e = helper.AddEdge(edata, id);
             edges.push_back(e);
         }
     } else {
-        restricted::IdSegmentStorage eid_storage = helper.graph().GetGraphIdDistributor().Reserve(gfa_->n_seg * 2);
+        g.ereserve(2 * gfa_->n_seg);
         for (size_t i = 0; i < gfa_->n_seg; ++i) {
             gfa_seg_t *seg = gfa_->seg + i;
 
-            auto id_distributor = eid_storage.GetSegmentIdDistributor(i << 1, (i << 1) + 2);
             uint8_t *kc = gfa_aux_get(seg->aux.l_aux, seg->aux.aux, "KC");
             unsigned cov = 0;
 			if (kc && kc[0] == 'i')
 				cov = *(int32_t*)(kc+1);
             DeBruijnEdgeData edata(Sequence(seg->seq));
             edata.set_raw_coverage(cov);
-            EdgeId e = helper.AddEdge(edata, id_distributor);
+            EdgeId e = helper.AddEdge(edata);
             edges.push_back(e);
         }
     }
 
     // INFO("Creating vertices");
-    restricted::IdSegmentStorage vid_storage = helper.graph().GetGraphIdDistributor().Reserve(gfa_->n_seg * 4);
+    g.vreserve(gfa_->n_seg * 4);
     std::unordered_set<VertexId> vertices;
     for (uint32_t i = 0; i < gfa_->n_seg; ++i) {
-        auto id_distributor = vid_storage.GetSegmentIdDistributor(size_t(i << 2), size_t(i << 2) + 4); // indices for four vertices are required
-        VertexId v1 = helper.CreateVertex(DeBruijnVertexData(), id_distributor),
-                 v2 = helper.CreateVertex(DeBruijnVertexData(), id_distributor);
+        VertexId v1 = helper.CreateVertex(DeBruijnVertexData()),
+                 v2 = helper.CreateVertex(DeBruijnVertexData());
 
         helper.LinkIncomingEdge(v1, edges[i]);
         if (edges[i] != g.conjugate(edges[i]))

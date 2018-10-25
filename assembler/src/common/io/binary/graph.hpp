@@ -48,14 +48,13 @@ public:
         graph.clear();
         size_t max_id;
         str >> max_id;
-        auto id_storage = graph.GetGraphIdDistributor().Reserve(max_id, /*force_zero_shift*/true);
+        graph.vreserve(max_id);
 
         auto TryAddVertex = [&](size_t ids[2]) {
             if (vertex_mapper_.count(ids[0]))
                 return;
             TRACE("Vertex " << ids[0] << " ~ " << ids[1] << " .");
-            auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
-            auto new_id = graph.AddVertex(typename Graph::VertexData(), id_distributor);
+            auto new_id = graph.AddVertex(typename Graph::VertexData(), ids[0]);
             vertex_mapper_[ids[0]] = new_id;
             vertex_mapper_[ids[1]] = graph.conjugate(new_id);
         };
@@ -79,8 +78,7 @@ public:
                 TryAddVertex(end_ids);
 
                 VERIFY_MSG(!edge_mapper_.count(edge_ids[0]), edge_ids[0] << " is not unique");
-                auto id_distributor = id_storage.GetSegmentIdDistributor(edge_ids, edge_ids + 2);
-                auto new_id = graph.AddEdge(vertex_mapper_[start_ids[0]], vertex_mapper_[end_ids[0]], seq, id_distributor);
+                auto new_id = graph.AddEdge(vertex_mapper_[start_ids[0]], vertex_mapper_[end_ids[0]], seq, edge_ids[0]);
                 edge_mapper_[edge_ids[0]] = new_id;
                 edge_mapper_[edge_ids[1]] = graph.conjugate(new_id);
             }

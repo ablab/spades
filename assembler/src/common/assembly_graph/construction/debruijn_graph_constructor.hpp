@@ -450,13 +450,12 @@ private:
     void CollectLinkRecords(typename Graph::HelperT &helper, const Graph &graph,
                             std::vector<LinkRecord> &records, const std::vector<Sequence> &sequences) const {
         size_t size = sequences.size();
+        uint64_t min_id = graph.min_id();
         records.resize(size * 2, LinkRecord(0, EdgeId(), false, false));
-        restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
 #       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < size; ++i) {
             size_t j = i << 1;
-            auto id_distributor = id_storage.GetSegmentIdDistributor(j, j + 2);//indices for two edges are required
-            EdgeId edge = helper.AddEdge(DeBruijnEdgeData(sequences[i]), id_distributor);
+            EdgeId edge = helper.AddEdge(DeBruijnEdgeData(sequences[i]), min_id + j);
             records[j] = StartLink(edge, sequences[i]);
             if (graph.conjugate(edge) != edge)
                 records[j + 1] = EndLink(edge, sequences[i]);
@@ -486,12 +485,12 @@ public:
 
         std::vector<LinkRecord> records;
         graph.ereserve(2*sequences.size());
-        CollectLinkRecords(helper, graph, records, sequences);//TODO make parallel
+        CollectLinkRecords(helper, graph, records, sequences);
         parallel::sort(records.begin(), records.end());
         size_t size = records.size();
         graph.vreserve(2*size);
+        uint64_t min_id = graph.min_id();
         std::vector<std::vector<VertexId>> vertices_list(omp_get_max_threads());
-        restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
 #       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < size; i++) {
             if (i != 0 && records[i].GetHash() == records[i - 1].GetHash())
@@ -499,8 +498,7 @@ public:
             if (records[i].IsInvalid())
                 continue;
 
-            auto id_distributor = id_storage.GetSegmentIdDistributor(i << 1, (i << 1) + 2);
-            VertexId v = helper.CreateVertex(DeBruijnVertexData(), id_distributor);
+            VertexId v = helper.CreateVertex(DeBruijnVertexData(), min_id + (i << 1));
             vertices_list[omp_get_thread_num()].push_back(v);
             for (size_t j = i; j < size && records[j].GetHash() == records[i].GetHash(); j++) {
                 LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsStart(), records[j].IsRC());

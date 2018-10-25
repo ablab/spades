@@ -19,6 +19,7 @@
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <btree/safe_btree_set.h>
 
+#include <atomic>
 #include <vector>
 #include <set>
 
@@ -48,6 +49,7 @@ struct Id {
 
     uint64_t int_id() const { return id_; }
     size_t hash() const { return id_; }
+    explicit operator bool() const { return id_; }
 
     bool operator==(Id other) const { return id_ == other.id_; }
     bool operator!=(Id other) const { return id_ != other.id_; }
@@ -214,24 +216,28 @@ private:
     friend class ConstructionHelper<DataMaster>;
 
 private:
+    static constexpr unsigned ID_BIAS = 3;
+    
     template<class T>
     class IdStorage {
       public:
         typedef omnigraph::ReclaimingIdDistributor::id_iterator id_iterator;
         typedef T value_type;
 
-        IdStorage(size_t bias = 0)
-                : size_(0), id_distributor_(bias) {}
+        IdStorage(uint64_t bias = ID_BIAS)
+                : size_(0), bias_(bias), id_distributor_(bias) {
+            storage_.resize(id_distributor_.size() + bias_);
+        }
 
         id_iterator id_begin() const { return id_distributor_.begin(); }
         id_iterator id_end() const { return id_distributor_.end(); }
 
         void reserve(size_t sz) {
-            if (id_distributor_.size() > sz)
+            if (storage_.size() >= sz + bias_)
                 return;
 
             id_distributor_.resize(sz);
-            storage_.resize(sz);
+            storage_.resize(sz + bias_);
         }
 
         // FIXME: Count!
@@ -254,17 +260,13 @@ private:
 
         template<typename... ArgTypes>
         uint64_t emplace(uint64_t at, ArgTypes &&... args) {
-            while (storage_.size() < at + 1) {
-                id_distributor_.resize(storage_.size() * 2 + 1);
-                storage_.resize(storage_.size() * 2 + 1);
-            }
-
-            VERIFY(storage_[at] == nullptr);
+            // One MUST call reserve before using emplace()
+            VERIFY(storage_.at(at) == nullptr);
             VERIFY(!id_distributor_.occupied(at));
 
-            id_distributor_.occupy(at);
+            id_distributor_.acquire(at);
             storage_[at] = new T(std::forward<ArgTypes>(args)...);;
-            size_ += 1;
+            size_.fetch_add(1);
 
             // INFO("Create " << vid1 << ":" << vid2);
             return at;
@@ -285,7 +287,8 @@ private:
             return storage_.at(id);
         }
       private:
-        size_t size_;
+        std::atomic<size_t> size_;
+        uint64_t bias_;
         std::vector<T*> storage_;
         omnigraph::ReclaimingIdDistributor id_distributor_;
     };
@@ -340,35 +343,14 @@ public:
     edge_const_iterator in_end(VertexId v) const { return cvertex(v)->out_end(this, true); }
 
 private:
-    VertexId CreateVertex(const VertexData &data) {
-        return CreateVertex(data, id_distributor_);
-    }
-
-    VertexId CreateVertex(const VertexData &data,
-                          restricted::IdDistributor &id_distributor) {
-        return CreateVertex(data, master_.conjugate(data), id_distributor);
-    }
-
-    VertexId CreateVertex(VertexId id,
-                          const VertexData &data) {
-        return vstorage_.emplace(id.int_id(), data);
+    VertexId CreateVertex(const VertexData &data, VertexId id = 0) {
+        return CreateVertex(data, master_.conjugate(data), id);
     }
 
     VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
-                          restricted::IdDistributor&) {
-        VertexId vid1 = vstorage_.create(data1);
-        VertexId vid2 = vstorage_.create(data2);
-
-        vertex(vid1)->set_conjugate(vid2);
-        vertex(vid2)->set_conjugate(vid1);
-
-        return vid1;
-    }
-
-    VertexId CreateVertex(VertexId id, VertexId cid,
-                          const VertexData& data1, const VertexData& data2) {
-        VertexId vid1 = vstorage_.emplace(id.int_id(), data1);
-        VertexId vid2 = vstorage_.emplace(cid.int_id(), data2);
+                          VertexId id  = 0) {
+        VertexId vid1 = (id ? vstorage_.emplace(id.int_id(), data1) : vstorage_.create(data1));
+        VertexId vid2 = (id ? vstorage_.emplace(id.int_id() + 1, data2) : vstorage_.create(data2));
 
         vertex(vid1)->set_conjugate(vid2);
         vertex(vid2)->set_conjugate(vid1);
@@ -382,17 +364,11 @@ private:
         vstorage_.erase(cv.int_id());
     }
 
-    EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data,
-                         restricted::IdDistributor &) {
-        EdgeId eid = estorage_.create(v2, data);
-        if (v1.int_id())
-            vertex(v1)->AddOutgoingEdge(eid);
-        return eid;
-    }
-
     EdgeId AddSingleEdge(VertexId v1, VertexId v2,
-                         EdgeId id, const EdgeData &data) {
-        EdgeId eid = estorage_.emplace(id, v2, data);
+                         const EdgeData &data, EdgeId id = 0) {
+        EdgeId eid = (id ?
+                      estorage_.emplace(id.int_id(), v2, data) :
+                      estorage_.create(v2, data));
         if (v1.int_id())
             vertex(v1)->AddOutgoingEdge(eid);
         return eid;
@@ -412,12 +388,8 @@ private:
     }
 
 protected:
-    VertexId HiddenAddVertex(const VertexData& data, restricted::IdDistributor& id_distributor) {
-        return CreateVertex(data, id_distributor);
-    }
-
-    VertexId HiddenAddVertex(const VertexData& data) {
-        return HiddenAddVertex(data, id_distributor_);
+    VertexId HiddenAddVertex(const VertexData& data, VertexId at = 0) {
+        return CreateVertex(data, at);
     }
 
     void HiddenDeleteVertex(VertexId vertex) {
@@ -425,27 +397,24 @@ protected:
     }
 
     EdgeId HiddenAddEdge(const EdgeData& data,
-                         restricted::IdDistributor& id_distributor) {
-        EdgeId result = AddSingleEdge(VertexId(), VertexId(), data, id_distributor);
+                         EdgeId at = 0) {
+        EdgeId result = AddSingleEdge(VertexId(), VertexId(), data, at);
         if (this->master().isSelfConjugate(data)) {
             edge(result)->set_conjugate(result);
             return result;
         }
-        EdgeId rcEdge = AddSingleEdge(VertexId(), VertexId(), this->master().conjugate(data), id_distributor);
+        EdgeId rcEdge = AddSingleEdge(VertexId(), VertexId(), this->master().conjugate(data),
+                                      at ? at.int_id() + 1 : 0);
         edge(result)->set_conjugate(rcEdge);
         edge(rcEdge)->set_conjugate(result);
         return result;
     }
 
-    EdgeId HiddenAddEdge(const EdgeData &data) {
-        return HiddenAddEdge(data, id_distributor_);
-    }
-
     EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData& data,
-                         restricted::IdDistributor& id_distributor) {
+                         EdgeId at = 0) {
         //      todo was suppressed for concurrent execution reasons (see concurrent_graph_component.hpp)
         //      VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
-        EdgeId result = AddSingleEdge(v1, v2, data, id_distributor);
+        EdgeId result = AddSingleEdge(v1, v2, data, at);
         if (this->master().isSelfConjugate(data) && (v1 == conjugate(v2))) {
             //              todo why was it removed???
             //          Because of some split issues: when self-conjugate edge is split armageddon happends
@@ -454,14 +423,11 @@ protected:
             edge(result)->set_conjugate(result);
             return result;
         }
-        EdgeId rcEdge = AddSingleEdge(vertex(v2)->conjugate(), vertex(v1)->conjugate(), this->master().conjugate(data), id_distributor);
+        EdgeId rcEdge = AddSingleEdge(vertex(v2)->conjugate(), vertex(v1)->conjugate(),
+                                      this->master().conjugate(data), at ? at.int_id() + 1 : 0);
         edge(result)->set_conjugate(rcEdge);
         edge(rcEdge)->set_conjugate(result);
         return result;
-    }
-
-    EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-        return HiddenAddEdge(v1, v2, data, id_distributor_);
     }
 
     void HiddenDeleteEdge(EdgeId e) {
@@ -485,7 +451,7 @@ protected:
 public:
     GraphCore(const DataMaster& master)
             : master_(master),
-              vstorage_(/* bias */3), estorage_(/* bias */3) {}
+              vstorage_(ID_BIAS), estorage_(ID_BIAS) {}
 
     virtual ~GraphCore() { VERIFY(size() == 0); }
 
@@ -496,6 +462,8 @@ public:
         ereserve(edges);
     }
 
+    uint64_t min_id() const { return ID_BIAS; }
+    
     restricted::LocalIdDistributor &GetGraphIdDistributor() { return id_distributor_; }
     const restricted::LocalIdDistributor &GetGraphIdDistributor() const { return id_distributor_; }
 
