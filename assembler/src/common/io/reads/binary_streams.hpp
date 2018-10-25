@@ -36,6 +36,12 @@ private:
     }
 
 public:
+    /**
+     * @brief Constructs a reader of a portion of reads.
+     * @param file_name_prefix
+     * @param total_num Total number of (roughly equal) portions.
+     * @param portion_num Index of the portion (0..total_num - 1).
+     */
     BinaryFileStream(const std::string &file_name_prefix, size_t total_num, size_t portion_num)
             : offset_(sizeof(ReadStreamStat)) {
         DEBUG("Preparing binary stream #" << portion_num << "/" << total_num);
@@ -66,6 +72,12 @@ public:
 
         Init();
     }
+
+    /**
+     * @brief Constructs a reader of all available reads.
+     */
+    BinaryFileStream(const std::string &file_name_prefix)
+            : BinaryFileStream(file_name_prefix, 1, 0) {}
 
     BinaryFileStream<SeqT>& operator>>(SeqT &read) override {
         ReadImpl(read);

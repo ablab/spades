@@ -29,7 +29,8 @@ max_threads		8
 max_memory      120; in Gigabytes
 buffer_size     512; in Megabytes
 
-entry_point construction
+entry_point read_conversion
+;entry_point construction
 ;entry_point simplification
 ;entry_point hybrid_aligning
 ;entry_point late_pair_info_count
