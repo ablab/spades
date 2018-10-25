@@ -6,11 +6,11 @@
 //***************************************************************************
 #pragma once
 
+#include "config_singl.hpp"
+#include "library.hpp"
+#include "library_data.hpp"
 #include "utils/verify.hpp"
-#include "pipeline/config_singl.hpp"
 #include "modules/path_extend/pe_config_struct.hpp"
-#include "pipeline/library.hpp"
-
 #include "configs/aligner_config.hpp"
 
 #include <boost/optional.hpp>
@@ -104,53 +104,6 @@ std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) 
     VERIFY_MSG(mode_id < names.size(), "Unrecognized mode id: " << mode_id);
     return names[mode_id];
 }
-
-struct LibraryData {
-    size_t unmerged_read_length;
-    size_t merged_read_length;
-    double mean_insert_size;
-    double insert_size_deviation;
-    double insert_size_left_quantile;
-    double insert_size_right_quantile;
-    double median_insert_size;
-    double insert_size_mad;
-    std::map<int, size_t> insert_size_distribution;
-
-    size_t lib_index;
-    bool single_reads_mapped;
-    uint64_t total_nucls;
-    size_t read_count;
-
-    double pi_threshold;
-
-    struct BinaryReadsInfo {
-        BinaryReadsInfo(): binary_converted(false), chunk_num(0), buffer_size(0) {}
-
-        bool binary_converted;
-        std::string bin_reads_info_file;
-        std::string paired_read_prefix;
-        std::string merged_read_prefix;
-        std::string single_read_prefix;
-        size_t chunk_num;
-        size_t buffer_size;
-    } binary_reads_info;
-
-
-    LibraryData(): unmerged_read_length(0),
-                   merged_read_length(0),
-                   mean_insert_size(0.0),
-                   insert_size_deviation(0.0),
-                   insert_size_left_quantile(0.0),
-                   insert_size_right_quantile(0.0),
-                   median_insert_size(0.0),
-                   insert_size_mad(0.0),
-                   lib_index(0),
-                   single_reads_mapped(false),
-                   total_nucls(0),
-                   read_count(0),
-                   pi_threshold(0.0),
-                   binary_reads_info() {}
-};
 
 struct dataset {
     typedef io::DataSet<LibraryData>::Library Library;
