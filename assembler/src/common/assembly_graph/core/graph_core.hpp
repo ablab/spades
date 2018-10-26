@@ -345,10 +345,25 @@ private:
         return CreateVertex(data, master_.conjugate(data), id);
     }
 
+    VertexId CreateVertex(const VertexData &data, VertexId id1, VertexId id2) {
+        return CreateVertex(data, master_.conjugate(data), id1, id2);
+    }
+
     VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
                           VertexId id  = 0) {
         VertexId vid1 = (id ? vstorage_.emplace(id.int_id(), data1) : vstorage_.create(data1));
         VertexId vid2 = (id ? vstorage_.emplace(id.int_id() + 1, data2) : vstorage_.create(data2));
+
+        vertex(vid1)->set_conjugate(vid2);
+        vertex(vid2)->set_conjugate(vid1);
+
+        return vid1;
+    }
+
+    VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
+                          VertexId id1, VertexId id2) {
+        VertexId vid1 = vstorage_.emplace(id1.int_id(), data1);
+        VertexId vid2 = vstorage_.emplace(id2.int_id(), data2);
 
         vertex(vid1)->set_conjugate(vid2);
         vertex(vid2)->set_conjugate(vid1);
@@ -393,24 +408,27 @@ protected:
     }
 
     EdgeId HiddenAddEdge(const EdgeData& data,
-                         EdgeId at = 0) {
-        EdgeId result = AddSingleEdge(VertexId(), VertexId(), data, at);
+                         EdgeId at1 = 0, EdgeId at2 = 0) {
+        EdgeId result = AddSingleEdge(VertexId(), VertexId(), data, at1);
         if (this->master().isSelfConjugate(data)) {
             edge(result)->set_conjugate(result);
             return result;
         }
+
+        if (at1 && !at2)
+            at2 = at1.int_id() + 1;
         EdgeId rcEdge = AddSingleEdge(VertexId(), VertexId(), this->master().conjugate(data),
-                                      at ? at.int_id() + 1 : 0);
+                                      at2);
         edge(result)->set_conjugate(rcEdge);
         edge(rcEdge)->set_conjugate(result);
         return result;
     }
 
     EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData& data,
-                         EdgeId at = 0) {
+                         EdgeId at1 = 0, EdgeId at2 = 0) {
         //      todo was suppressed for concurrent execution reasons (see concurrent_graph_component.hpp)
         //      VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
-        EdgeId result = AddSingleEdge(v1, v2, data, at);
+        EdgeId result = AddSingleEdge(v1, v2, data, at1);
         if (this->master().isSelfConjugate(data) && (v1 == conjugate(v2))) {
             //              todo why was it removed???
             //          Because of some split issues: when self-conjugate edge is split armageddon happends
@@ -419,8 +437,11 @@ protected:
             edge(result)->set_conjugate(result);
             return result;
         }
+
+        if (at1 && !at2)
+            at2 = at1.int_id() + 1;
         EdgeId rcEdge = AddSingleEdge(vertex(v2)->conjugate(), vertex(v1)->conjugate(),
-                                      this->master().conjugate(data), at ? at.int_id() + 1 : 0);
+                                      this->master().conjugate(data), at2);
         edge(result)->set_conjugate(rcEdge);
         edge(rcEdge)->set_conjugate(result);
         return result;

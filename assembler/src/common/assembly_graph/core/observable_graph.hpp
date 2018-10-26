@@ -127,8 +127,9 @@ public:
     
     using base::conjugate;
 
-    EdgeId AddEdge(const EdgeData& data, EdgeId id = 0);
-    EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData& data, EdgeId id = 0);
+    EdgeId AddEdge(const EdgeData& data, EdgeId id1 = 0, EdgeId id2 = 0);
+    EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData& data,
+                   EdgeId id1 = 0, EdgeId id2 = 0);
 
     void DeleteEdge(EdgeId e);
 
@@ -184,16 +185,16 @@ void ObservableGraph<DataMaster>::ForceDeleteVertex(VertexId v) {
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::EdgeId
 ObservableGraph<DataMaster>::AddEdge(VertexId v1, VertexId v2, const EdgeData &data,
-                                     EdgeId id) {
-    EdgeId e = base::HiddenAddEdge(v1, v2, data, id);
+                                     EdgeId id1, EdgeId id2) {
+    EdgeId e = base::HiddenAddEdge(v1, v2, data, id1, id2);
     FireAddEdge(e);
     return e;
 }
 
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::EdgeId
-ObservableGraph<DataMaster>::AddEdge(const EdgeData& data, EdgeId id) {
-    EdgeId e = base::HiddenAddEdge(data, id);
+ObservableGraph<DataMaster>::AddEdge(const EdgeData& data, EdgeId id1, EdgeId id2) {
+    EdgeId e = base::HiddenAddEdge(data, id1, id2);
     FireAddEdge(e);
     return e;
 }

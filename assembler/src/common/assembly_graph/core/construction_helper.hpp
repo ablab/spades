@@ -37,6 +37,10 @@ public:
         return graph_.AddEdge(data, id);
     }
 
+    EdgeId AddEdge(const EdgeData &data, EdgeId id, EdgeId cid) {
+        return graph_.AddEdge(data, id, cid);
+    }
+
     void LinkIncomingEdge(VertexId v, EdgeId e) {
         VERIFY(graph_.EdgeEnd(e) == VertexId());
         graph_.cvertex(v)->AddOutgoingEdge(graph_.conjugate(e));
@@ -73,6 +77,11 @@ public:
     VertexId CreateVertex(const VertexData &data, VertexId id = 0) {
         return graph_.CreateVertex(data, id);
     }
+
+    VertexId CreateVertex(const VertexData &data, VertexId id1, VertexId id2) {
+        return graph_.CreateVertex(data, id1, id2);
+    }
+
 };
 
 }
