@@ -490,7 +490,6 @@ public:
         size_t size = records.size();
         graph.vreserve(2*size);
         uint64_t min_id = graph.min_id();
-        std::vector<std::vector<VertexId>> vertices_list(omp_get_max_threads());
 #       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < size; i++) {
             if (i != 0 && records[i].GetHash() == records[i - 1].GetHash())
@@ -499,14 +498,10 @@ public:
                 continue;
 
             VertexId v = helper.CreateVertex(DeBruijnVertexData(), min_id + (i << 1));
-            vertices_list[omp_get_thread_num()].push_back(v);
             for (size_t j = i; j < size && records[j].GetHash() == records[i].GetHash(); j++) {
                 LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsStart(), records[j].IsRC());
             }
         }
-
-        for (size_t i = 0; i < vertices_list.size(); i++)
-            helper.AddVerticesToGraph(vertices_list[i].begin(), vertices_list[i].end());
     }
 };
 

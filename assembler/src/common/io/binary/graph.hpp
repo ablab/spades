@@ -28,7 +28,8 @@ public:
     }
 
     void Write(BinOStream &str, const Graph &graph) override {
-        str << graph.GetGraphIdDistributor().GetMax();
+        // FIXME
+        // str << graph.GetGraphIdDistributor().GetMax();
 
         for (auto v1 : graph) {
             str << v1.int_id() << graph.conjugate(v1).int_id();
@@ -46,6 +47,7 @@ public:
 
     void Read(BinIStream &str, Graph &graph) override {
         graph.clear();
+        // FIXME
         size_t max_id;
         str >> max_id;
         graph.vreserve(max_id);

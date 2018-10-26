@@ -5,6 +5,7 @@
 //***************************************************************************
 
 #pragma once
+#include "assembly_graph/core/order_and_law.hpp"
 
 namespace omnigraph {
 

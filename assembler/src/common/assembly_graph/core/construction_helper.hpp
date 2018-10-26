@@ -73,13 +73,6 @@ public:
     VertexId CreateVertex(const VertexData &data, VertexId id = 0) {
         return graph_.CreateVertex(data, id);
     }
-
-    template<class Iter>
-    void AddVerticesToGraph(Iter begin, Iter end) {
-        for(; begin != end; ++begin) {
-            graph_.AddVertexToGraph(*begin);
-        }
-    }
 };
 
 }

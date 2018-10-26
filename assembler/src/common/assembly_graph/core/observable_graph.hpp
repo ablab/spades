@@ -125,7 +125,6 @@ public:
 
     void ForceDeleteVertex(VertexId v);
     
-    using base::GetGraphIdDistributor;
     using base::conjugate;
 
     EdgeId AddEdge(const EdgeData& data, EdgeId id = 0);

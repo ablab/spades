@@ -134,7 +134,6 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
         } else
             ++it;
     }
-    helper.AddVerticesToGraph(vertices.begin(), vertices.end());
 
     // INFO("Reading paths")
     paths_.reserve(gfa_->n_path);

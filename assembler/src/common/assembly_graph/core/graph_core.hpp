@@ -9,7 +9,6 @@
 #include "id_distributor.hpp"
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
-#include "order_and_law.hpp"
 #include "utils/stl_utils.hpp"
 
 #include "adt/iterator_range.hpp"
@@ -210,7 +209,6 @@ public:
     typedef typename PairedVertex<DataMaster>::edge_const_iterator edge_const_iterator;
 
 private:
-    restricted::LocalIdDistributor id_distributor_;
     DataMaster master_;
 
     friend class ConstructionHelper<DataMaster>;
@@ -380,8 +378,6 @@ private:
         estorage_.erase(e.int_id());
     }
 
-    void AddVertexToGraph(VertexId) {}
-
     bool AdditionalCompressCondition(VertexId v) const {
         return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v) &&
                  EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
@@ -464,9 +460,6 @@ public:
 
     uint64_t min_id() const { return ID_BIAS; }
     
-    restricted::LocalIdDistributor &GetGraphIdDistributor() { return id_distributor_; }
-    const restricted::LocalIdDistributor &GetGraphIdDistributor() const { return id_distributor_; }
-
     size_t int_id(EdgeId edge) const { return edge.int_id(); }
     size_t int_id(VertexId vertex) const { return vertex.int_id(); }
 
