@@ -282,7 +282,7 @@ private:
         }
 
         T* at(uint64_t id) const {
-            return storage_.at(id);
+            return storage_[id];
         }
       private:
         std::atomic<size_t> size_;
