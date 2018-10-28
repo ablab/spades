@@ -22,8 +22,9 @@ vg_k: 15
 
 # SPAligner cfg
 
-spalignerpath: /Sid/tdvorkina/gralign/SPAligner_review/spaligner
+spalignerpath: /home/tdvorkina/projects/zenodo/run_aligners/SPAligner/bin/spaligner
 spalignercfg: ./spaligner_config_template.yaml
+kmer: 77
 graph: "input/graph.gfa" #"input/graph/simplification"  #  
 
 

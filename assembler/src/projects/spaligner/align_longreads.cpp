@@ -201,11 +201,7 @@ void LoadGraph(const string &saves_path, bool load_spades_graph, debruijn_graph:
         VERIFY_MSG(fs::is_regular_file(saves_path), "GFA-file " + saves_path + " doesn't exist");
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        if (load_spades_graph){
-            gfa.to_graph(g);
-        } else {
-            gfa.to_graph(g, false);
-        }
+        gfa.to_graph(g, load_spades_graph);
         return;
     } else {
         DEBUG("Load from saves")

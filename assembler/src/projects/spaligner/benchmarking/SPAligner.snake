@@ -4,8 +4,8 @@ GACFG = config["spalignercfg"]
 GRAPH = config["graph"] 
 K = config["kmer"]
 
-ALL_ORGS=["ecoli"] # ["ecoli", "celegans", "scerevisiae"]
-ALL_READS=["realpb2000", "realnp2000", "simpb2000", "simnp2000"]
+ALL_ORGS=["ecoli", "celegans", "scerevisiae"]
+ALL_READS=["simpb2000", "simnp2000","realpb2000", "realnp2000"]
 
 SCRIPT_PATH=os.getcwd()
 
@@ -22,7 +22,7 @@ rule run_aligner:
     log:
         "{org}/SPAligner/output/aln_{reads}.log"
     benchmark:
-        repeat("{org}/SPAligner/benchmark/align_{reads}.tsv", 3)
+        repeat("{org}/SPAligner/benchmark/align_{reads}.tsv", 1)
     threads: 16
     run:
         if wildcards.reads.endswith("pb2000"):
