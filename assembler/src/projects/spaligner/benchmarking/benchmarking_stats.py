@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import sys
 import json
 import unicodedata
@@ -5,6 +6,7 @@ import pandas as pd
 import datetime
 import edlib
 
+import argparse
 
 def edist(lst):
     result = edlib.align(str(lst[0]), str(lst[1]), mode="NW", additionalEqualities=[('U', 'T')
@@ -203,7 +205,6 @@ class DataLoader:
                                    , "s_start": [initial_s[i] for i in max_ind], \
                                      "s_end": [initial_e[i] for i in max_ind], \
                                      "mapped_seq": [seqs.split(";")[i] for i in max_ind]})
-        print "Mapped num =", len(res)
 
         fin.close()
         return res
@@ -224,11 +225,6 @@ def print_stats(reads, res_mp):
         print "Memory:", res_mp[name]["memory"]
         print ""
         eds[name] = list(df["prop_ed"])
-
-    # set_spa = set(x["r_name"] for x in res_mp["SPAligner_new"])
-    # set_gra = set(x["r_name"] for x in res_mp["GraphAligner"])
-    # print "\n".join(set_gra - set_spa)
-    # print len(set_spa - set_gra), len(set_gra - set_spa)
 
 def get_timedelta(s):
     (h, m, s) = s.split(':')
@@ -257,11 +253,19 @@ def save_fasta(aligner_res, filename):
 
 
 if __name__ == "__main__":
-    datapath = "/Sid/tdvorkina/gralign/benchmarking_real"
-    aligners = {"SPAligner": 1, "vg": 1, "GraphAligner":1}
+    parser = argparse.ArgumentParser(description='Calculate Alignment Statistics')
+    parser.add_argument('-p', '--path', nargs='?', help='Path to folder with results for all aligners', required=True)
+    parser.add_argument('-a', '--aligners', nargs='+', help='Names of aligners to test: SPAligner vg_xdrop vg_ordinary GraphAligner', required=True)
+    parser.add_argument('-o', '--orgs', nargs='+', help='Names of organisms to test: ecoli scerevisiae celegans', required=True)
+
+    args = parser.parse_args()
+    datapath = args.path
+    aligners = {"SPAligner": 0, "vg_xdrop": 0, "vg_ordinary": 0, "GraphAligner":0}
+    for al in args.aligners:
+        aligners[al] = 1
     stat = "max"
-    for org in ["ecoli"]:
-        for read_type in ["realnp2000", "realpb2000"]:
+    for org in args.orgs:
+        for read_type in ["realnp2000", "realpb2000", "simpb2000", "simnp2000"]:
             org_path = datapath + "/" + org + "/"
             reads_file = org_path + "input/" + read_type + ".fasta"
             print org, read_type
@@ -288,7 +292,7 @@ if __name__ == "__main__":
                         mp[al] = {"time": get_time(log_files), "memory": get_memory(log_files)}
                         mp[al]["res"] = graphaligner_res
 
-                    if al.startswith("vg"):
+                    if al.startswith("vg_xdrop"):
                         vg_edges_gfa = org_path + al + "/tmp/graph.split.gfa"
                         vg_res_file = org_path + al + "/output/aln_" + read_type + "_xdrop.json"
                         [vg_edges, vg_graph] = dl.load_gfa_edges(vg_edges_gfa)
@@ -296,11 +300,11 @@ if __name__ == "__main__":
                         log_files = [org_path + al + "/benchmark/build_index.tsv",\
                                     org_path + al + "/benchmark/mapping_" + read_type + "_xdrop.tsv"]
                         if org == "celegans":
-                            log_files.append(org_path + al + "benchmark/prune_graph.tsv")
-                        mp[al+"_xdrop"] = {"time": get_time(log_files), "memory": get_memory(log_files)}
-                        mp[al+"_xdrop"]["res"]  = vg_res
+                            log_files.append(org_path + al + "/benchmark/prune_graph.tsv")
+                        mp[al] = {"time": get_time(log_files), "memory": get_memory(log_files)}
+                        mp[al]["res"]  = vg_res
 
-                    if al.startswith("vg"):
+                    if al.startswith("vg_ordinary"):
                         vg_edges_gfa = org_path + al + "/tmp/graph.split.gfa"
                         vg_res_file = org_path + al + "/output/aln_" + read_type + "_ordinary.json"
                         [vg_edges, vg_graph] = dl.load_gfa_edges(vg_edges_gfa)
@@ -308,9 +312,9 @@ if __name__ == "__main__":
                         log_files = [org_path + al + "/benchmark/build_index.tsv",\
                                     org_path + al + "/benchmark/mapping_" + read_type + "_ordinary.tsv"]
                         if org == "celegans":
-                            log_files.append(org_path + al + "benchmark/prune_graph.tsv")
-                        mp[al+"_ordinary"] = {"time": get_time(log_files), "memory": get_memory(log_files)}
-                        mp[al+"_ordinary"]["res"]  = vg_res
+                            log_files.append(org_path + al + "/benchmark/prune_graph.tsv")
+                        mp[al] = {"time": get_time(log_files), "memory": get_memory(log_files)}
+                        mp[al]["res"]  = vg_res
             print_stats(reads, mp)
 
 

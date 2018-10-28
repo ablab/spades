@@ -1,10 +1,11 @@
+#!/usr/bin/env python
+import sys
 import edlib
 import pandas as pd
 import matplotlib
 import sys
-# Force matplotlib to not use any Xwindows backend.
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+
+import argparse
 
 
 def edist(lst):
@@ -126,22 +127,22 @@ def print_stats(reads, ppaths, gapaths):
 
 
 if __name__ == "__main__":
-    datapath = "/Sid/tdvorkina/gralign/benchmarking_paths"
-    for org in ["ecoli", "celegans"]:
+    parser = argparse.ArgumentParser(description='Calculate Alignment Statistics')
+    parser.add_argument('-p', '--path', nargs='?', help='Path to folder with results for all aligners', required=True)
+    parser.add_argument('-o', '--orgs', nargs='+', help='Names of organisms to test: ecoli scerevisiae celegans', required=True)
+
+    args = parser.parse_args()
+    datapath = args.path
+    for org in args.orgs:
         print org
         for read_type in ["simnp2000", "simpb2000", "realpb2000", "realnp2000"]:
             print read_type
             org_path = datapath + "/" + org + "/"
-            reads_file = org_path + "/input/" + read_type + "_mapped_10000.fasta"
+            reads_file = org_path + "/input_paths/" + read_type + "_mapped.fasta"
             galigner_res_file = org_path + "/SPAligner/output/aln_" + read_type + ".tsv"
-            perfectpath_res_file = org_path + "/input/" + read_type + "_true_mapping.tsv"
+            perfectpath_res_file = org_path + "/input/" + read_type + "_refmapping_SPAligner.tsv"
             dl = DataLoader()
             reads = dl.load_reads(reads_file)
             galigner_res = dl.load_spaligner_paths(galigner_res_file, reads)
             perfectpaths = dl.load_truepaths(perfectpath_res_file)
             print_stats(reads, perfectpaths, galigner_res)
-    # print "Draw reads len distribution.."
-    # lens = [len(reads[k]) for k in reads.keys()
-    # plt.hist(lens)
-    # plt.xlabel("Read length")
-    # plt.savefig("./len_dist.png")
