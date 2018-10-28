@@ -58,7 +58,7 @@ class DataLoader:
         fin.close()
         return res
 
-    def load_segal_paths(self, filename, reads):
+    def load_spaligner_paths(self, filename, reads):
         res = []
         fin = open(filename, "r")
         for ln in fin.readlines():
@@ -129,15 +129,15 @@ if __name__ == "__main__":
     datapath = "/Sid/tdvorkina/gralign/benchmarking_paths"
     for org in ["ecoli", "celegans"]:
         print org
-        for read_type in ["simnp", "simpb", "realpb", "realnp"]:
+        for read_type in ["simnp2000", "simpb2000", "realpb2000", "realnp2000"]:
             print read_type
             org_path = datapath + "/" + org + "/"
             reads_file = org_path + "/input/" + read_type + "_mapped_10000.fasta"
-            galigner_res_file = org_path + "/SeGal/output/aln_" + read_type + ".tsv"
+            galigner_res_file = org_path + "/SPAligner/output/aln_" + read_type + ".tsv"
             perfectpath_res_file = org_path + "/input/" + read_type + "_true_mapping.tsv"
             dl = DataLoader()
             reads = dl.load_reads(reads_file)
-            galigner_res = dl.load_segal_paths(galigner_res_file, reads)
+            galigner_res = dl.load_spaligner_paths(galigner_res_file, reads)
             perfectpaths = dl.load_truepaths(perfectpath_res_file)
             print_stats(reads, perfectpaths, galigner_res)
     # print "Draw reads len distribution.."
