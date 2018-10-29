@@ -918,13 +918,17 @@ void TraceHMM(const hmmer::HMM &hmm,
         auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
         cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph);
     } else if (cfg.seed_mode == seed_mode::exhaustive) {
-        EdgeAlnInfo matched_edges;
+        cursor_conn_comps.resize(1);
+        auto &cursors = cursor_conn_comps[0];
 
         for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             EdgeId edge = *it;
-            matched_edges.push_back({edge, {0, 0}});
+            size_t len = graph.length(edge) + graph.k();
+            for (size_t i = 0; i < len; ++i) {
+                auto position_cursors = GraphCursor::get_cursors(graph, edge, i);
+                cursors.insert(cursors.end(), std::make_move_iterator(position_cursors.begin()), std::make_move_iterator(position_cursors.end()));
+            }
         }
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph);
     }
     VERIFY(cursor_conn_comps.size());
 
