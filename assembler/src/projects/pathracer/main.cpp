@@ -114,7 +114,7 @@ struct PathracerConfig {
     int threads = 4;
     size_t top = 100;
     uint64_t int_id = 0;
-    unsigned max_size = 10000000;
+    unsigned max_size = size_t(-1);
     bool debug = false;
     bool draw = false;
     bool save = true;
@@ -157,7 +157,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       (option("--top") & integer("x", cfg.top)) % "extract top x paths [default: 100]",
       (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
       (option("--edge-id") & integer("value", cfg.int_id)) % "match around edge",
-      (option("--max_size") & integer("value", cfg.max_size)) % "maximal component size to consider [default: 10000000]",
+      (option("--max_size") & integer("value", cfg.max_size)) % "maximal component size to consider [default: INF]",
       // Control of output
       cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
       cfg.hcfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
