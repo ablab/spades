@@ -792,7 +792,7 @@ std::vector<GraphCursor> get_cursors_from_path(const graph_t &graph, const std::
     return GraphCursor::get_cursors(graph, p.first, p.second);
 }
 
-auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph) {
+auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef = 1.2) {
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
     std::unordered_set<GraphCursor> cursors;
@@ -803,7 +803,7 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
 
         if (loverhang > 0) {
             for (const auto &start : GraphCursor::get_cursors(graph, e, 0)) {
-                left_queries.push_back({start, loverhang * 2});
+                left_queries.push_back({start, static_cast<size_t>(loverhang * expand_coef)});
             }
         }
 
@@ -811,7 +811,7 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
         INFO("Edge length: " << len <<"; edge overhangs: " << loverhang << " " << roverhang);
         if (roverhang > 0) {
             for (const auto &end : GraphCursor::get_cursors(graph, e, len - 1)) {
-                right_queries.push_back({end, roverhang * 2});
+                right_queries.push_back({end, static_cast<size_t>(roverhang * expand_coef)});
             }
         }
 
