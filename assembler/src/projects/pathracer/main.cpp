@@ -1100,9 +1100,9 @@ int main(int argc, char* argv[]) {
     PathracerConfig cfg;
     process_cmdline(argc, argv, cfg);
 
+    int status = mkdir(cfg.output_dir.c_str(), 0775);
     create_console_logger(cfg.output_dir + "/pathracer.log");
 
-    int status = mkdir(cfg.output_dir.c_str(), 0775);
     if (status != 0) {
         if (errno == EEXIST) {
             WARN("Output directory exists: " << cfg.output_dir);
