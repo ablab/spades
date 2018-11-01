@@ -121,6 +121,7 @@ struct PathracerConfig {
     bool rescore = true;
     bool annotate_graph = true;
     bool legacy_saves = false;
+    double expand_coef = 2.;
 
     hmmer::hmmer_cfg hcfg;
 };
@@ -158,6 +159,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
       (option("--edge-id") & integer("value", cfg.int_id)) % "match around edge",
       (option("--max_size") & integer("value", cfg.max_size)) % "maximal component size to consider [default: INF]",
+      (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
       // Control of output
       cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
       cfg.hcfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
@@ -882,7 +884,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                 continue;
             }
             auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
-            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph);
+            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
                 // TODO add cmp_idx? (it could not be trivial!!!)
@@ -898,14 +900,14 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
     } else if (cfg.seed_mode == seed_mode::scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by paths read from GFA
         paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
     } else if (cfg.seed_mode == seed_mode::edges_scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by single edges
@@ -916,7 +918,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
     } else if (cfg.seed_mode == seed_mode::exhaustive) {
         cursor_conn_comps.resize(1);
         auto &cursors = cursor_conn_comps[0];
