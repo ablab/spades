@@ -769,6 +769,7 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
     INFO("Rescore edges using HMMER");
     auto matcher = ScoreSequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
+    INFO("Edges rescored, output");
     OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
     OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
     OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
@@ -1163,6 +1164,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    INFO("Pathracer successfully finished! Thanks for flying us!");
     return 0;
 }
 
