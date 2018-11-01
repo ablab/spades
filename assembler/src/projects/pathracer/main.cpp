@@ -309,7 +309,7 @@ PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
         size_t id = std::stoull(name);  // Slash and everything after is ignored automatically
         size_t slash_pos = name.find('/');
         VERIFY((slash_pos == std::string::npos ) ^ (hmm_in_aas));
-        int shift = hmm_in_aas ? std::strtol(name.c_str() + slash_pos + 1, nullptr, 10) : 0;
+        int shift = hmm_in_aas ? std::strti(name.c_str() + slash_pos + 1, nullptr, 10) : 0;
         VERIFY(0 <= shift && shift < 3);  // shift should be 0, 1, or 3
         size_t seqlen = seqs[id].length();
 
