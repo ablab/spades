@@ -767,6 +767,7 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
         seqs_to_rescore.push_back(kv.second);
     }
 
+    INFO("Rescore edges using HMMER");
     auto matcher = ScoreSequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
     OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
     OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
