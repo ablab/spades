@@ -267,9 +267,9 @@ auto ScoreSequences(const std::vector<std::string> &seqs,
     hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
 
     if (!hmm_in_aas) {
-        INFO("HMM in nucleotides");
+        DEBUG("HMM in nucleotides");
     } else {
-        INFO("HMM in amino acids");
+        DEBUG("HMM in amino acids");
     }
 
     for (size_t i = 0; i < seqs.size(); ++i) {
@@ -346,7 +346,7 @@ PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
             matches.push_back({id, std::make_pair(loverhang, roverhang)});
         }
     }
-    INFO("Total matched sequences: " << matches.size());
+    DEBUG("Total matched sequences: " << matches.size());
 
     return matches;
 }
