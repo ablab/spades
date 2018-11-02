@@ -843,13 +843,6 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
     std::stable_sort(cursor_conn_comps.begin(), cursor_conn_comps.end(),
                      [](const auto &c1, const auto &c2) { return c1.size() > c2.size(); });
 
-    INFO("The number of connected components: " << cursor_conn_comps.size());
-    std::vector<size_t> cursor_conn_comps_sizes;
-    for (const auto &comp : cursor_conn_comps) {
-        cursor_conn_comps_sizes.push_back(comp.size());
-    }
-    INFO("Connected component sizes: " << cursor_conn_comps_sizes);
-
     return cursor_conn_comps;
 }
 
@@ -960,6 +953,13 @@ void TraceHMM(const hmmer::HMM &hmm,
         return;
     }
     VERIFY(cursor_conn_comps.size());
+
+    INFO("The number of connected components: " << cursor_conn_comps.size());
+    std::vector<size_t> cursor_conn_comps_sizes;
+    for (const auto &comp : cursor_conn_comps) {
+        cursor_conn_comps_sizes.push_back(comp.size());
+    }
+    INFO("Connected component sizes: " << cursor_conn_comps_sizes);
 
     auto run_search = [&fees, &p7hmm](const auto &initial, size_t top,
                                       std::vector<HMMPathInfo> &local_results,
