@@ -100,6 +100,7 @@ enum class seed_mode {
     edges,
     scaffolds,
     scaffolds_one_by_one,
+    edges_one_by_one,
     edges_scaffolds,
     exhaustive
 };
@@ -151,6 +152,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
              option("--seed-scaffolds").set(cfg.seed_mode, seed_mode::scaffolds) % "use scaffolds paths as seeds",
              option("--seed-edges-scaffolds").set(cfg.seed_mode, seed_mode::edges_scaffolds) % "use edges AND scaffolds paths as seeds",
              option("--seed-exhaustive").set(cfg.seed_mode, seed_mode::exhaustive) % "exhaustive mode, use ALL edges",
+             option("--seed-edges-1-by-1").set(cfg.seed_mode, seed_mode::edges_one_by_one) % "use edges as seeds (1 by 1)",
              option("--seed-scaffolds-1-by-1").set(cfg.seed_mode, seed_mode::scaffolds_one_by_one) % "use scaffolds paths as seeds (1 by 1)"),
       one_of(option("--hmm").set(cfg.mode, mode::hmm) % "match against HMM(s) [default]",
              option("--nucl").set(cfg.mode, mode::nucl) % "match against nucleotide string(s)",
@@ -895,6 +897,22 @@ void TraceHMM(const hmmer::HMM &hmm,
                 component_names.push_back(std::to_string(idx));
             }
             // TODO be more verbose
+        }
+    } else if (cfg.seed_mode == seed_mode::edges_one_by_one) {
+        for (const auto &e : edges) {
+            std::vector<std::vector<EdgeId>> paths = {{e}};
+            auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
+            if (!matched_paths.size()) {
+                // path not matched
+                continue;
+            }
+            auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
+            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
+            cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
+            for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
+                // TODO add cmp_idx? (it could not be trivial!!!)
+                component_names.push_back(std::to_string(e.int_id()));
+            }
         }
     } else if (cfg.seed_mode == seed_mode::edges) {
         std::vector<std::vector<EdgeId>> paths;
