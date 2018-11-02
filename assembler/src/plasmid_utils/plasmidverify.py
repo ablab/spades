@@ -8,7 +8,7 @@ import sys
 import argparse
 
 from Bio import SeqIO
-#from parse_blast_xml import parser
+from parse_blast_xml import parser
 
 
 def parse_args(args):
@@ -66,8 +66,8 @@ os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name
 print ("HMM domains prediction...")
 os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
 print ("Parsing...")
-os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
-
+#os.system ("tail -n +4 " + name +"_tblout | head -n -10 | awk '{print $1}'| sed 's/_[^_]*$//g'| sort | uniq > " + name +"_plasmid_contigs_names.txt")
+os.system ("tail -n +4 " + name +"_tblout  | head -n -10 | sort -r -k1,1 -k 6,6 | awk '!x[$1]++' > "+name+"_tblout_top_hit" )
 
 
 #with open(name + "_tblout", "r") as infile2:
@@ -85,7 +85,7 @@ import pickle
 import pandas as pd
 
 
-tblout_pfam= name + "_tblout"
+tblout_pfam= name + "_tblout_top_hit"
 
 def get_table_from_tblout(tblout_pfam):
     with open(tblout_pfam, "r") as infile:
@@ -161,6 +161,7 @@ print ("Classification...")
 t=feature_table.genes.tolist()
 k = naive_bayes(t)
 k.insert(0, "Names", feature_table.name)
+k.insert(5, "Genes", feature_table.genes)
 #k["Names"] = feature_table.name
 k.sort_values(by = "Names").to_csv(name + "_result_table.csv", index=False)
 
@@ -209,10 +210,10 @@ print ("Done!")
 
 
 
-#if args.b:
+if args.b:
     #run blast
  #   os.system ("blastn  -query " + args.f + " -db " + blastdb + " -evalue 0.00001 -outfmt 5 -out "+name+".xml -num_threads 10")
-  #  parser(name+".xml", outdir)
+    parser(name+".xml", outdir)
      #    Add blast results
    # with open(name + "_span_identity.txt", 'r') as infile:
     #     span_identity=infile.readlines()
