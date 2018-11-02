@@ -936,6 +936,11 @@ void TraceHMM(const hmmer::HMM &hmm,
             }
         }
     }
+
+    if (!cursor_conn_comps.size()) {
+        WARN("No components to process!");
+        return;
+    }
     VERIFY(cursor_conn_comps.size());
 
     auto run_search = [&fees, &p7hmm](const auto &initial, size_t top,
