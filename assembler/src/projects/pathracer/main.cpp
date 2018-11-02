@@ -987,6 +987,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                                                                  const std::string &component_name = "") -> std::unordered_set<std::vector<EdgeId>> {
         assert(!component_cursors.empty());
         INFO("Component size " << component_cursors.size());
+
         if (component_cursors.size() > cfg.max_size) {
             WARN("The component is too large, skipping");
             return {};
@@ -1000,6 +1001,9 @@ void TraceHMM(const hmmer::HMM &hmm,
         for (const auto& cursor : component_cursors) {
             edges.insert(cursor.edge());
         }
+
+        INFO("# edges in the component: " << edges.size());
+        INFO("Edges: " << edges);
 
         INFO("Running path search");
         std::vector<HMMPathInfo> local_results;
