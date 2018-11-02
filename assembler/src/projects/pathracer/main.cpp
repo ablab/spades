@@ -114,11 +114,11 @@ struct PathracerConfig {
     int threads = 4;
     size_t top = 100;
     uint64_t int_id = 0;
-    unsigned max_size = size_t(-1);
+    size_t max_size = size_t(-1);
     bool debug = false;
     bool draw = false;
     bool save = true;
-    bool rescore = true;
+    bool rescore = false;
     bool annotate_graph = true;
     bool legacy_saves = false;
     double expand_coef = 2.;
@@ -309,7 +309,7 @@ PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
         size_t id = std::stoull(name);  // Slash and everything after is ignored automatically
         size_t slash_pos = name.find('/');
         VERIFY((slash_pos == std::string::npos ) ^ (hmm_in_aas));
-        int shift = hmm_in_aas ? std::strtol(name.c_str() + slash_pos + 1, nullptr, 10) : 0;
+        int shift = hmm_in_aas ? static_cast<int>(std::strtol(name.c_str() + slash_pos + 1, nullptr, 10)) : 0;
         VERIFY(0 <= shift && shift < 3);  // shift should be 0, 1, or 3
         size_t seqlen = seqs[id].length();
 
@@ -418,7 +418,7 @@ EdgeAlnInfo expand_path_aln_info(const PathAlnInfo &painfo, const std::vector<st
         size_t position = 0;
         for (const auto &e : path) {
             size_t edge_len = graph.length(e) + k;
-            int loverhang = aln.second.first + position;
+            int loverhang = aln.second.first + static_cast<int>(position);
             int roverhang = aln.second.second + static_cast<int>(path_len - position - edge_len);
 
             if (-loverhang >= static_cast<int>(edge_len) || -roverhang >= static_cast<int>(edge_len)) {
@@ -767,12 +767,14 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
         seqs_to_rescore.push_back(kv.second);
     }
 
-    INFO("Rescore edges using HMMER");
-    auto matcher = ScoreSequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
-    INFO("Edges rescored, output");
-    OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
-    OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
-    OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
+    if (cfg.rescore) {
+        INFO("Rescore edges using HMMER");
+        auto matcher = ScoreSequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
+        INFO("Edges rescored, output");
+        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
+        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
+        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
+    }
 }
 
 using GraphCursor = DebruijnGraphCursor;
@@ -1084,14 +1086,12 @@ void hmm_main(const PathracerConfig &cfg,
             }
         }
 
-        if (cfg.rescore) {
-            Rescore(hmm, graph, cfg, results, scaffold_paths);
+        Rescore(hmm, graph, cfg, results, scaffold_paths);
 
-            for (const auto &result : results) {
-                #pragma omp critical
-                {
-                    to_rescore.insert(result.path);
-                }
+        for (const auto &result : results) {
+#pragma omp critical
+            {
+                to_rescore.insert(result.path);
             }
         }
     } // end outer loop over query HMMs
