@@ -646,6 +646,10 @@ private:
             return false;
         }
 
+        const std::string edge_prefix = "edge_";
+        if (label.substr(0, edge_prefix.size()) == edge_prefix) {
+            return false;
+        }
         size_t path_id = std::stoll(label);
         size_t pos = find_subpath(path, paths[path_id]);
         return pos != size_t(-1);
@@ -710,8 +714,11 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
                 continue;
             auto scaffold_path_info = SuperPathInfo(result.path, scaffold_paths);
             std::stringstream component_info;
-            if (result.label.size()) {
+            const std::string edge_prefix = "edge_";
+            if (result.label.size() && result.label.substr(0, edge_prefix.size()) != edge_prefix) {
                 component_info << scaffold_paths[std::stoll(result.label)] << ":" << result.label;
+            } else {
+                component_info << result.label;
             }
             std::stringstream header;
             header << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << "|ScaffoldSuperpaths=" << scaffold_path_info << "|OriginScaffoldPath=" << component_info.str() << '\n';
@@ -904,7 +911,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
                 // TODO add cmp_idx? (it could not be trivial!!!)
-                component_names.push_back(std::to_string(e.int_id()));
+                component_names.push_back("edge_" + std::to_string(e.int_id()));
             }
         }
     } else if (cfg.seed_mode == seed_mode::edges) {
