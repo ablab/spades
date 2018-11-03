@@ -1051,6 +1051,8 @@ void TraceHMM(const hmmer::HMM &hmm,
         return paths;
     };
 
+
+    #pragma omp parallel for
     for (size_t i = 0; i < cursor_conn_comps.size(); ++i) {
         const auto &component_cursors = cursor_conn_comps[i];
         const std::string &component_name = component_names.size() ? component_names[i] : "";
