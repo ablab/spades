@@ -6,12 +6,13 @@
 
 namespace sensitive_aligner {
 
+using namespace std;
 
 string getStrId(const EdgeId &e, const debruijn_graph::ConjugateDeBruijnGraph &g_) {
     if (e.int_id() < g_.conjugate(e).int_id()) {
-        return std::to_string(e.int_id()) + "+";
+        return to_string(e.int_id()) + "+";
     } else {
-        return std::to_string(e.int_id()) + "-";
+        return to_string(e.int_id()) + "-";
     }
 }
 
@@ -29,13 +30,13 @@ void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &ali
             size_t mapping_start = i == 0 ? aligned_mappings.read_ranges[j].path_start.edge_pos : 0;
             size_t mapping_end = i == mappingpath.size() - 1 ?  aligned_mappings.read_ranges[j].path_end.edge_pos : g_.length(mappingpath[i]);
             path_str += getStrId(mappingpath[i], g_) + ",";
-            path_len_str += std::to_string(mapping_end - mapping_start) + ",";
+            path_len_str += to_string(mapping_end - mapping_start) + ",";
             path_seq_str += g_.EdgeNucls(mappingpath[i]).Subseq(mapping_start, mapping_end).str();
         }
-        seq_starts += std::to_string(aligned_mappings.read_ranges[j].path_start.seq_pos) + ",";
-        seq_ends += std::to_string(aligned_mappings.read_ranges[j].path_end.seq_pos) + ",";
-        edge_starts += std::to_string(aligned_mappings.read_ranges[j].path_start.edge_pos) + ",";
-        edge_ends += std::to_string(aligned_mappings.read_ranges[j].path_end.edge_pos) + ",";
+        seq_starts += to_string(aligned_mappings.read_ranges[j].path_start.seq_pos) + ",";
+        seq_ends += to_string(aligned_mappings.read_ranges[j].path_end.seq_pos) + ",";
+        edge_starts += to_string(aligned_mappings.read_ranges[j].path_start.edge_pos) + ",";
+        edge_ends += to_string(aligned_mappings.read_ranges[j].path_end.edge_pos) + ",";
         path_str += ";";
         path_len_str += ";";
         path_seq_str += ";";
@@ -46,10 +47,10 @@ void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &ali
         for (size_t i = 0; i < path.size(); ++ i) {
             EdgeId edgeid = path.edge_at(i);
             omnigraph::MappingRange mapping = path.mapping_at(i);
-            bwa_path_str += getStrId(edgeid, g_) + " (" + std::to_string(mapping.mapped_range.start_pos) + ","
-                            + std::to_string(mapping.mapped_range.end_pos) + ") ["
-                            + std::to_string(mapping.initial_range.start_pos) + ","
-                            + std::to_string(mapping.initial_range.end_pos) + "], ";
+            bwa_path_str += getStrId(edgeid, g_) + " (" + to_string(mapping.mapped_range.start_pos) + ","
+                            + to_string(mapping.mapped_range.end_pos) + ") ["
+                            + to_string(mapping.initial_range.start_pos) + ","
+                            + to_string(mapping.initial_range.end_pos) + "], ";
         }
         bwa_path_str += ";";
     }
@@ -57,7 +58,7 @@ void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &ali
                  + seq_ends + "\t"
                  + edge_starts + "\t"
                  + edge_ends + "\t"
-                 + std::to_string(read.sequence().size()) +  "\t"
+                 + to_string(read.sequence().size()) +  "\t"
                  + path_str + "\t" + path_len_str + "\t" + bwa_path_str + "\t" + path_seq_str + "\n";
     DEBUG("Read " << read.name() << " aligned and length=" << read.sequence().size());
     DEBUG("Read " << read.name() << ". Paths with ends: " << path_str );
@@ -69,8 +70,8 @@ void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &ali
 
 
 
-std::string MappingPrinterGPA::Print(map<string, string> &line) {
-    std::vector<string> v = {"Ind", "Name", "ReadName", "StartR", "LenR", "DirR", "EdgeId", "StartE", "LenE", "DirE", "CIGAR", "Prev", "Next"};
+string MappingPrinterGPA::Print(map<string, string> &line) {
+    vector<string> v = {"Ind", "Name", "ReadName", "StartR", "LenR", "DirR", "EdgeId", "StartE", "LenE", "DirE", "CIGAR", "Prev", "Next"};
     string outStr = "";
     for (const auto &it : v) {
         outStr += line[it] + "\t";
@@ -107,7 +108,7 @@ void MappingPrinterGPA::getEdgeCigar(const string &subread, const string &path_s
         if (isdigit(cigar[i])) {
             cur_num += cigar[i];
         } else {
-            int n = std::stoi(cur_num);
+            int n = stoi(cur_num);
             cur_num = "";
             char c = cigar[i];
 
@@ -119,7 +120,7 @@ void MappingPrinterGPA::getEdgeCigar(const string &subread, const string &path_s
                         seq_end += (int) (edgeblocks[cur_block] - a_i);
                     }
                     edgeranges.push_back(Range(seq_start, seq_end));
-                    edgecigar.push_back(cur_cigar + std::to_string((int)edgeblocks[cur_block] - a_i) + c);
+                    edgecigar.push_back(cur_cigar + to_string((int)edgeblocks[cur_block] - a_i) + c);
                     DEBUG("CIGAR: " << a_i << " " << n << " " << edgeblocks[cur_block] << " " << edgecigar[edgecigar.size() - 1] << " " << i << " " << cigar.size());
                     a_i = (int) edgeblocks[cur_block];
                     seq_start = seq_end;
@@ -135,7 +136,7 @@ void MappingPrinterGPA::getEdgeCigar(const string &subread, const string &path_s
             if (c != 'I') {
                 seq_end += n;
             }
-            cur_cigar += std::to_string(n) + c;
+            cur_cigar += to_string(n) + c;
         }
     }
     if (cur_cigar != "") {
@@ -149,7 +150,7 @@ void MappingPrinterGPA::getEdgeCigar(const string &subread, const string &path_s
 
 void MappingPrinterGPA::getPath(const vector<debruijn_graph::EdgeId> &path,
                                 const PathRange &path_range,
-                                string &aligned, std::vector<size_t> &edgeblocks) {
+                                string &aligned, vector<size_t> &edgeblocks) {
     aligned = "";
     edgeblocks.clear();
     for (size_t i = 0; i < path.size(); ++ i) {
@@ -187,22 +188,22 @@ string MappingPrinterGPA::formGPAOutput(const io::SingleRead &read,
         EdgeId edgeid = path[i];
         size_t start = i == 0 ? path_range.path_start.edge_pos : 0;
         size_t end = i + 1 == path.size() ? path_range.path_end.edge_pos : g_.length(edgeid);
-        next = i + 1 == path.size() ? "-" : read.name() + "_" + std::to_string(nameIndex + 1);
+        next = i + 1 == path.size() ? "-" : read.name() + "_" + to_string(nameIndex + 1);
         map<string, string> line = {{"Ind", "A"},
-            {"Name", read.name() + "_" + std::to_string(nameIndex)},
+            {"Name", read.name() + "_" + to_string(nameIndex)},
             {"ReadName", read.name()},
-            {"StartR", std::to_string(path_range.path_start.seq_pos + edgeranges[i].start_pos)},
-            {"LenR", std::to_string(edgeranges[i].end_pos - edgeranges[i].start_pos)},
+            {"StartR", to_string(path_range.path_start.seq_pos + edgeranges[i].start_pos)},
+            {"LenR", to_string(edgeranges[i].end_pos - edgeranges[i].start_pos)},
             {"DirR", "+"},
             {"EdgeId", getStrId(edgeid, g_)},
-            {"StartE", std::to_string(start)},
-            {"LenE", std::to_string(end - start)},
+            {"StartE", to_string(start)},
+            {"LenE", to_string(end - start)},
             {"DirE", "+"},
             {"CIGAR", edgecigar[i]},
             {"Prev", prev},
             {"Next", next}
         };
-        prev = read.name() + "_" + std::to_string(nameIndex);
+        prev = read.name() + "_" + to_string(nameIndex);
         ++ nameIndex;
         res += Print(line) + "\n";
     }
@@ -219,13 +220,13 @@ void MappingPrinterGPA::SaveMapping(const sensitive_aligner::OneReadMapping &ali
         auto &path_range = aligned_mappings.read_ranges[i];
 
         string path_seq;
-        std::vector<size_t> path_edgeblocks;
+        vector<size_t> path_edgeblocks;
         getPath(path, path_range, path_seq, path_edgeblocks);
 
         string subread = getSubread(read.sequence(), path_range);
 
-        std::vector<string> path_edgecigar;
-        std::vector<Range> path_edgeranges;
+        vector<string> path_edgecigar;
+        vector<Range> path_edgeranges;
         getEdgeCigar(subread, path_seq, path_edgeblocks, path_edgecigar, path_edgeranges);
 
         string path_line = formGPAOutput(read, path, path_edgecigar, path_edgeranges, nameIndex, path_range);

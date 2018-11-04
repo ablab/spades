@@ -3,14 +3,15 @@
 #include "modules/alignment/pacbio/pacbio_read_structures.hpp"
 
 namespace sensitive_aligner {
+    using namespace std;
 
     using debruijn_graph::EdgeId;
     using debruijn_graph::VertexId;
     using debruijn_graph::Graph;
     void GAligner::FillGapsInCluster(const vector<QualityRange> &cur_cluster,
                            const Sequence &s,
-                           std::vector<vector<debruijn_graph::EdgeId> > &edges,
-                           std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &bwa_hits) const {
+                           vector<vector<debruijn_graph::EdgeId> > &edges,
+                           vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &bwa_hits) const {
         omnigraph::MappingPath<debruijn_graph::EdgeId> cur_sorted_hits;
         vector<debruijn_graph::EdgeId> cur_sorted_edges;
         EdgeId prev_edge = EdgeId();
@@ -61,7 +62,7 @@ namespace sensitive_aligner {
                         seq_end = seq_start;
                     }
                     DEBUG("taking subseq" << seq_start << " " << seq_end << " " << s.size());
-                    std::string seq_string = s.Subseq(seq_start, min(seq_end, (int) s.size() )).str();
+                    string seq_string = s.Subseq(seq_start, min(seq_end, (int) s.size() )).str();
                     GapFillerResult res = gap_filler_.Run(seq_string,
                                                          GraphPosition(prev_edge, prev_last_index.edge_position),
                                                          GraphPosition(cur_edge, cur_first_index.edge_position),
@@ -106,7 +107,7 @@ namespace sensitive_aligner {
     }
 
 
-    std::pair<int, int> GAligner::GetPathLimits(const QualityRange &a,
+    pair<int, int> GAligner::GetPathLimits(const QualityRange &a,
                                       const QualityRange &b,
                                       int s_add_len, int e_add_len) const {
         int start_pos = a.sorted_positions[a.last_trustable_index].read_position;
@@ -119,11 +120,11 @@ namespace sensitive_aligner {
         if (seq_len < 0) {
             DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
             if (path_max_len < 0)
-            return std::make_pair(-1, -1);
+            return make_pair(-1, -1);
         }
         path_min_len = max(path_min_len - int(s_add_len + e_add_len), 0);
         path_max_len = max(path_max_len - int(s_add_len + e_add_len), 0);
-        return std::make_pair(path_min_len, path_max_len);
+        return make_pair(path_min_len, path_max_len);
     }
 
     bool GAligner::TopologyGap(EdgeId first, EdgeId second, bool oriented) const {
@@ -138,7 +139,7 @@ namespace sensitive_aligner {
     OneReadMapping GAligner::GetReadAlignment(const io::SingleRead &read) const {
         auto paths  = pac_index_.GetChainingPaths(read);
         size_t len = paths.size();
-        std::vector<vector<debruijn_graph::EdgeId> > sorted_edges;
+        vector<vector<debruijn_graph::EdgeId> > sorted_edges;
         vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> sorted_bwa_hits;
         Sequence s = read.sequence();
         omnigraph::MappingRange read_range;
@@ -150,7 +151,7 @@ namespace sensitive_aligner {
                                block_gap_closer);
 
         }
-        std::vector<PathRange> read_ranges;
+        vector<PathRange> read_ranges;
         int max_path = 0;
         size_t max_path_ind = 0;
         for (size_t i = 0; i < sorted_bwa_hits.size(); ++ i) {
@@ -218,21 +219,21 @@ namespace sensitive_aligner {
     }
 
     void GAligner::ProcessCluster(const Sequence &s,
-                             std::vector<QualityRange> &cur_cluster,
-                             std::vector<QualityRange> &start_clusters,
-                             std::vector<QualityRange> &end_clusters,
-                             std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
-                             std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                             std::vector<bool> &block_gap_closer) const {
-        std::sort(cur_cluster.begin(), cur_cluster.end(),
+                             vector<QualityRange> &cur_cluster,
+                             vector<QualityRange> &start_clusters,
+                             vector<QualityRange> &end_clusters,
+                             vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
+                             vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
+                             vector<bool> &block_gap_closer) const {
+        sort(cur_cluster.begin(), cur_cluster.end(),
                   [](const QualityRange &a, const QualityRange &b) {
                       return (a.average_read_position < b.average_read_position);
                   });
         VERIFY(cur_cluster.size() > 0);
         auto cur_cluster_start = cur_cluster.begin();
         auto cur_cluster_end = cur_cluster.end() - 1;
-        std::vector<vector<debruijn_graph::EdgeId> > edges;
-        std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > bwa_hits;
+        vector<vector<debruijn_graph::EdgeId> > edges;
+        vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > bwa_hits;
         FillGapsInCluster(cur_cluster, s, edges, bwa_hits);
         for (auto &cur_sorted: edges) {
             DEBUG("Adding " << edges.size() << " subreads, cur alignments " << cur_sorted.size());
@@ -258,15 +259,15 @@ namespace sensitive_aligner {
 
     }
 
-    OneReadMapping GAligner::AddGapDescriptions(const std::vector<QualityRange> &start_clusters,
-                                                const std::vector<QualityRange> &end_clusters,
-                                                const std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
-                                                const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
-                                                const std::vector<PathRange> &read_ranges,
+    OneReadMapping GAligner::AddGapDescriptions(const vector<QualityRange> &start_clusters,
+                                                const vector<QualityRange> &end_clusters,
+                                                const vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
+                                                const vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
+                                                const vector<PathRange> &read_ranges,
                                                 const Sequence &s,
-                                                const std::vector<bool> &block_gap_closer) const {
+                                                const vector<bool> &block_gap_closer) const {
         DEBUG("adding gaps between subreads");
-        std::vector<GapDescription> illumina_gaps;
+        vector<GapDescription> illumina_gaps;
         for (size_t i = 0; i + 1 < sorted_edges.size(); i++) {
             if (block_gap_closer[i])
                 continue;

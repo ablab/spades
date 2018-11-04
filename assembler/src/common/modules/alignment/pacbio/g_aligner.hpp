@@ -13,11 +13,11 @@
 namespace sensitive_aligner {
 
 struct OneReadMapping {
-    std::vector<vector<debruijn_graph::EdgeId>> main_storage;
+    std::vector<std::vector<debruijn_graph::EdgeId>> main_storage;
     std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> bwa_paths;
     std::vector<GapDescription> gaps;
     std::vector<PathRange> read_ranges;
-    OneReadMapping(const std::vector<vector<debruijn_graph::EdgeId>> &main_storage_,
+    OneReadMapping(const std::vector<std::vector<debruijn_graph::EdgeId>> &main_storage_,
                    const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> &bwa_paths_,
                    const std::vector<GapDescription>& gaps_,
                    const std::vector<PathRange> &read_ranges_) :
@@ -39,13 +39,13 @@ class GAligner {
                              std::vector<QualityRange> &cur_cluster,
                              std::vector<QualityRange> &start_clusters,
                              std::vector<QualityRange> &end_clusters,
-                             std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
+                             std::vector<std::vector<debruijn_graph::EdgeId> > &sorted_edges,
                              std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
                              std::vector<bool> &block_gap_closer) const;
     
-    void FillGapsInCluster(const vector<QualityRange> &cur_cluster,
+    void FillGapsInCluster(const std::vector<QualityRange> &cur_cluster,
                       const Sequence &s,
-                      std::vector<vector<debruijn_graph::EdgeId> > &edges,
+                      std::vector<std::vector<debruijn_graph::EdgeId> > &edges,
                       std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &bwa_hits) const;
 
     std::pair<int, int> GetPathLimits(const QualityRange &a,
@@ -56,19 +56,19 @@ class GAligner {
 
     OneReadMapping AddGapDescriptions(const std::vector<QualityRange> &start_clusters,
                               const std::vector<QualityRange> &end_clusters,
-                              const std::vector<vector<debruijn_graph::EdgeId> > &sorted_edges,
+                              const std::vector<std::vector<debruijn_graph::EdgeId> > &sorted_edges,
                               const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_bwa_hits,
                               const std::vector<PathRange> &read_ranges,
                               const Sequence &s,
                               const std::vector<bool> &block_gap_closer) const;
     int RestoreEndsF(const Sequence &s,
                      int end,
-                     vector<debruijn_graph::EdgeId> &sorted_edges,
+                     std::vector<debruijn_graph::EdgeId> &sorted_edges,
                      PathRange &cur_range) const;
 
     int RestoreEndsB(const Sequence &s,
                      int start,
-                     vector<debruijn_graph::EdgeId> &sorted_edges,
+                     std::vector<debruijn_graph::EdgeId> &sorted_edges,
                      PathRange &cur_range) const;
 
 public:

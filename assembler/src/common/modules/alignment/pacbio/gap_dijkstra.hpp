@@ -70,7 +70,7 @@ struct GraphState {
                 || (this->e == state.e && this->start_pos == state.start_pos && this->end_pos < state.end_pos));
     }
 
-    string str() const {
+    std::string str() const {
         return "edge_id=" + std::to_string(e.int_id())
                + " " + std::to_string(start_pos)
                + "-" + std::to_string(end_pos);
@@ -115,7 +115,7 @@ struct QueueState {
         return is_empty;
     }
 
-    string str() const {
+    std::string str() const {
         return gs.str() + " seq_ind=" + std::to_string(i) + " empty=" + std::to_string(is_empty);
     }
 };
@@ -153,7 +153,7 @@ protected:
 public:
     DijkstraGraphSequenceBase(const debruijn_graph::Graph &g,
                               const DijkstraParams &gap_cfg,
-                              string ss,
+                              std::string ss,
                               debruijn_graph::EdgeId start_e, int start_p, int path_max_length)
         : g_(g)
         , gap_cfg_(gap_cfg)
@@ -172,7 +172,7 @@ public:
 
     void CloseGap();
 
-    vector<debruijn_graph::EdgeId> path() const {
+    std::vector<debruijn_graph::EdgeId> path() const {
         return mapping_path_.simple_path();
     }
 
@@ -180,8 +180,8 @@ public:
         return mapping_path_;
     }
 
-    string path_str() const {
-        string result = "";
+    std::string path_str() const {
+        std::string result = "";
         auto gap_path = mapping_path_.simple_path();
         for (EdgeId e : gap_path) {
             result += std::to_string(e.int_id()) + ",";
@@ -210,17 +210,17 @@ public:
     }
 
 protected:
-    set<pair<int, QueueState> > q_;
-    unordered_map<QueueState, int, StateHasher> visited_;
-    unordered_map<QueueState, QueueState, StateHasher> prev_states_;
+    std::set<std::pair<int, QueueState>> q_;
+    std::unordered_map<QueueState, int, StateHasher> visited_;
+    std::unordered_map<QueueState, QueueState, StateHasher> prev_states_;
 
     omnigraph::MappingPath<debruijn_graph::EdgeId> mapping_path_;
 
-    vector<int> best_ed_;
+    std::vector<int> best_ed_;
 
     const debruijn_graph::Graph &g_;
     const DijkstraParams gap_cfg_;
-    const string ss_;
+    const std::string ss_;
     const debruijn_graph::EdgeId start_e_;
     const int start_p_;
     int path_max_length_;
@@ -246,22 +246,22 @@ private:
     virtual bool IsEndPosition(const QueueState &cur_state);
 
 public:
-    DijkstraGapFiller(const debruijn_graph::Graph &g, const GapClosingConfig &gap_cfg, string ss,
+    DijkstraGapFiller(const debruijn_graph::Graph &g, const GapClosingConfig &gap_cfg, std::string ss,
                       debruijn_graph::EdgeId start_e, debruijn_graph::EdgeId end_e,
                       int start_p, int end_p, int path_max_length,
-                      const map<debruijn_graph::VertexId, size_t> &reachable_vertex)
+                      const std::map<debruijn_graph::VertexId, size_t> &reachable_vertex)
         : DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length)
         , end_e_(end_e) , end_p_(end_p)
         , reachable_vertex_(reachable_vertex) {
         GraphState end_gstate(end_e_, 0, end_p_);
         end_qstate_ = QueueState(end_gstate, (int) ss_.size());
         if (start_e_ == end_e_ && end_p_ - start_p_ > 0) {
-            string seq_str = ss_;
-            string tmp = g_.EdgeNucls(start_e_).str();
-            string edge_str = tmp.substr(start_p_, end_p_ - start_p_);
+            std::string seq_str = ss_;
+            std::string tmp = g_.EdgeNucls(start_e_).str();
+            std::string edge_str = tmp.substr(start_p_, end_p_ - start_p_);
             int score = StringDistance(seq_str, edge_str, path_max_length_);
             if (score != std::numeric_limits<int>::max()) {
-                path_max_length_ = min(path_max_length_, score);
+                path_max_length_ = std::min(path_max_length_, score);
                 QueueState state(GraphState(start_e_, start_p_, end_p_), (int) ss_.size());
                 Update(state, QueueState(), score);
                 if (score == path_max_length_) {
@@ -274,7 +274,7 @@ public:
 protected:
     debruijn_graph::EdgeId end_e_;
     const int end_p_;
-    const map<debruijn_graph::VertexId, size_t> &reachable_vertex_;
+    const std::map<debruijn_graph::VertexId, size_t> &reachable_vertex_;
 };
 
 
@@ -286,14 +286,14 @@ private:
 
     virtual bool IsEndPosition(const QueueState &cur_state);
 public:
-    DijkstraEndsReconstructor(const debruijn_graph::Graph &g, const EndsClosingConfig &gap_cfg, string ss,
+    DijkstraEndsReconstructor(const debruijn_graph::Graph &g, const EndsClosingConfig &gap_cfg, std::string ss,
                               debruijn_graph::EdgeId start_e, int start_p, int path_max_length)
         : DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length) {
         end_qstate_ = QueueState();
         if (g_.length(start_e_) + g_.k() - start_p_ + path_max_length_ > ss_.size()) {
-            string seq_str = ss_;
-            string tmp = g_.EdgeNucls(start_e_).str();
-            string edge_str = tmp.substr(start_p_);
+            std::string seq_str = ss_;
+            std::string tmp = g_.EdgeNucls(start_e_).str();
+            std::string edge_str = tmp.substr(start_p_);
             int position = -1;
             int score = SHWDistance(seq_str, edge_str, path_max_length, position);
             if (score != std::numeric_limits<int>::max()) {

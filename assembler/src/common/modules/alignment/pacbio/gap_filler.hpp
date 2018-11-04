@@ -14,7 +14,7 @@ using debruijn_graph::VertexId;
 
 struct GapFillerResult {
     int score = std::numeric_limits<int>::max();
-    vector<EdgeId> full_intermediate_path;
+    std::vector<EdgeId> full_intermediate_path;
     int return_code = -1;
 };
 
@@ -48,21 +48,21 @@ struct GraphPosition {
 };
 
 class GapFiller {
-    std::string PathToString(const vector<EdgeId>& path) const;
+    std::string PathToString(const std::vector<EdgeId>& path) const;
 
-    GapFillerResult BestScoredPathDijkstra(const string &s,
+    GapFillerResult BestScoredPathDijkstra(const std::string &s,
                                            const GraphPosition &start_pos,
                                            const GraphPosition &end_pos,
                                            int path_max_length, int score) const;
 
-    GapFillerResult BestScoredPathBruteForce(const string &seq_string,
+    GapFillerResult BestScoredPathBruteForce(const std::string &seq_string,
             const GraphPosition &start_pos,
             const GraphPosition &end_pos,
             int path_min_length, int path_max_length) const;
 
     void Revert(Sequence &ss, GraphPosition &start_pos) const;
 
-    void UpdatePath(vector<debruijn_graph::EdgeId> &path,
+    void UpdatePath(std::vector<debruijn_graph::EdgeId> &path,
                     std::vector<EdgeId> &ans,
                     MappingPoint p, PathRange &range, bool forward, GraphPosition &old_start_pos) const;
 
@@ -74,7 +74,7 @@ class GapFiller {
               const EndsClosingConfig &ends_cfg):
         g_(g), pb_config_(pb_config), gap_cfg_(gap_cfg), ends_cfg_(ends_cfg) {}
 
-    GapFillerResult Run(const string &s,
+    GapFillerResult Run(const std::string &s,
                         const GraphPosition &start_pos,
                         const GraphPosition &end_pos,
                         int path_min_length, int path_max_length) const;
@@ -82,7 +82,7 @@ class GapFiller {
     GapFillerResult Run(Sequence &s,
                         GraphPosition &start_pos,
                         bool forward, 
-                        vector<debruijn_graph::EdgeId> &path, 
+                        std::vector<debruijn_graph::EdgeId> &path, 
                         PathRange &range) const;
 
   private:

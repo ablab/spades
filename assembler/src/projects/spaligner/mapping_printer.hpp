@@ -19,7 +19,7 @@ class MappingPrinter {
   protected:
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
     std::string output_file_prefix_;
-    ofstream output_file_;
+    std::ofstream output_file_;
 };
 
 class MappingPrinterTSV: public MappingPrinter {
@@ -45,24 +45,24 @@ class MappingPrinterGPA : public MappingPrinter {
         output_file_ << "H\n";
     }
 
-    std::string Print(map<string, string> &line);
+    std::string Print(std::map<std::string, std::string> &line);
 
 
-    string getCigar(const string &read, const string &aligned);
+    std::string getCigar(const std::string &read, const std::string &aligned);
 
-    void getEdgeCigar(const string &subread, const string &path_seq, const vector<size_t> &edgeblocks,
-                      vector<string> &edgecigar, vector<Range> &edgeranges);
+    void getEdgeCigar(const std::string &subread, const std::string &path_seq, const std::vector<size_t> &edgeblocks,
+                      std::vector<std::string> &edgecigar, std::vector<Range> &edgeranges);
 
-    void getPath(const vector<debruijn_graph::EdgeId> &path,
+    void getPath(const std::vector<debruijn_graph::EdgeId> &path,
                  const PathRange &path_range,
-                 string &aligned, std::vector<size_t> &edgeblocks);
+                 std::string &aligned, std::vector<size_t> &edgeblocks);
 
-    string getSubread(const Sequence &read, const PathRange &path_range);
+    std::string getSubread(const Sequence &read, const PathRange &path_range);
 
-    string formGPAOutput(const io::SingleRead &read,
-                         const vector<debruijn_graph::EdgeId> &path,
-                         const vector<string> &edgecigar,
-                         const vector<Range> &edgeranges,
+    std::string formGPAOutput(const io::SingleRead &read,
+                         const std::vector<debruijn_graph::EdgeId> &path,
+                         const std::vector<std::string> &edgecigar,
+                         const std::vector<Range> &edgeranges,
                          int &nameIndex, const PathRange &path_range);
 
     virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
@@ -98,7 +98,7 @@ class MappingPrinterHub {
     }
 
   private:
-    vector<MappingPrinter*> mapping_printers_;
+    std::vector<MappingPrinter*> mapping_printers_;
 };
 
 } // namespace sensitive_aligner

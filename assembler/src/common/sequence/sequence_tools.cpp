@@ -46,9 +46,9 @@ int StringDistance(const std::string &a, const std::string &b, int max_score) {
 }
 
 
-void SHWDistanceFull(const string &target, const string &query, int max_score, vector<int> &positions, vector<int> &scores) {
+void SHWDistanceFull(const std::string &target, const std::string &query, int max_score, std::vector<int> &positions, std::vector<int> &scores) {
     if (query.size() == 0) {
-        for (int i = 0; i < min(max_score, (int) target.size()); ++ i) {
+        for (int i = 0; i < std::min(max_score, (int) target.size()); ++ i) {
             positions.push_back(i);
             scores.push_back(i + 1);
         }
@@ -79,7 +79,7 @@ void SHWDistanceFull(const string &target, const string &query, int max_score, v
     edlib::edlibFreeAlignResult(result);
 }
 
-int SHWDistance(const string &a, const string &b, int max_score, int &end_pos) {
+int SHWDistance(const std::string &a, const std::string &b, int max_score, int &end_pos) {
     int a_len = (int) a.length();
     int b_len = (int) b.length();
     VERIFY(a_len > 0);

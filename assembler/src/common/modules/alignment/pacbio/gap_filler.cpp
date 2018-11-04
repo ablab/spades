@@ -2,12 +2,13 @@
 
 namespace sensitive_aligner {
 
+using namespace std;
 
-std::string GapFiller::PathToString(const vector<EdgeId>& path) const {
-    std::string res = "";
+string GapFiller::PathToString(const vector<EdgeId>& path) const {
+    string res = "";
     for (auto iter = path.begin(); iter != path.end(); iter++) {
         size_t len = g_.length(*iter);
-        std::string tmp = g_.EdgeNucls(*iter).First(len).str();
+        string tmp = g_.EdgeNucls(*iter).First(len).str();
         res = res + tmp;
     }
     return res;
@@ -26,7 +27,7 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     auto reached_vertices_b = path_searcher_b.ProcessedVertices();
     auto reached_vertices = path_searcher.ProcessedVertices();
 
-    std::map<VertexId, size_t> vertex_pathlen;
+    map<VertexId, size_t> vertex_pathlen;
     for (auto v : reached_vertices_b) {
         if (reached_vertices.count(v) > 0) {
             vertex_pathlen[v] = path_searcher_b.GetDistance(v);
@@ -34,7 +35,7 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     }
     int s_len = int(s.size());
     int ed_limit = score;
-    if (score == std::numeric_limits<int>::max()) {
+    if (score == numeric_limits<int>::max()) {
         ed_limit = min(max(gap_cfg_.ed_lower_bound, s_len / gap_cfg_.max_ed_proportion), gap_cfg_.ed_upper_bound);
     }
     DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len <<
@@ -59,7 +60,7 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     gap_filler.CloseGap();
     dijkstra_res.score = gap_filler.edit_distance();
     dijkstra_res.return_code = gap_filler.return_code();
-    if (dijkstra_res.score == std::numeric_limits<int>::max()) {
+    if (dijkstra_res.score == numeric_limits<int>::max()) {
         DEBUG("Dijkstra didn't find anything")
         return dijkstra_res;
     }
@@ -82,9 +83,9 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
                                       start_v, end_v,
                                       callback);
     DEBUG("PathProcessor result: " << return_code << " limits " << path_min_length << " " << path_max_length);
-    std::vector<std::vector<EdgeId> > paths = callback.paths();
+    vector<vector<EdgeId> > paths = callback.paths();
     size_t best_path_ind = paths.size();
-    int best_score = std::numeric_limits<int>::max();
+    int best_score = numeric_limits<int>::max();
     if (paths.size() == 0) {
         DEBUG("need to find best scored path between " << paths.size() << " , seq_len " << seq_string.length());
         DEBUG ("no paths");
@@ -103,7 +104,7 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
         if (paths[i].size() == 0) {
             DEBUG ("Pathprocessor returns path with size = 0")
         }
-        std::string cur_string = s_add + PathToString(paths[i]) + e_add;
+        string cur_string = s_add + PathToString(paths[i]) + e_add;
         TRACE("cur_string: " << cur_string << "\n seq_string " << seq_string);
         int cur_score = StringDistance(cur_string, seq_string);
         //DEBUG only
@@ -124,7 +125,7 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
     }
     TRACE(best_score);
     bf_res.score = best_score;
-    if (best_score == std::numeric_limits<int>::max()) {
+    if (best_score == numeric_limits<int>::max()) {
         if (paths.size() < 10) {
             for (size_t i = 0; i < paths.size(); i++) {
                 DEBUG ("failed with strings " << seq_string << " " << s_add + PathToString(paths[i]) + e_add);
@@ -163,7 +164,7 @@ GapFillerResult GapFiller::Run(const string &s,
             return dijkstra_res;
         }
     }
-    if (bf_res.score != std::numeric_limits<int>::max() && !gap_cfg_.find_shortest_path) {
+    if (bf_res.score != numeric_limits<int>::max() && !gap_cfg_.find_shortest_path) {
         bf_res.return_code = DijkstraReturnCode::OK;
     }
     return bf_res;
@@ -181,7 +182,7 @@ void GapFiller::Revert(Sequence &ss, GraphPosition &start_pos) const {
 }
 
 void GapFiller::UpdatePath(vector<debruijn_graph::EdgeId> &path,
-                           std::vector<EdgeId> &ans,
+                           vector<EdgeId> &ans,
                            MappingPoint p, PathRange &range, bool forward, GraphPosition &old_start_pos) const {
     if (forward) {
         size_t end_pos = p.edge_pos;
@@ -251,12 +252,12 @@ GapFillerResult GapFiller::Run(Sequence &s,
     algo.CloseGap();
     score = algo.edit_distance();
     res.return_code += algo.return_code();
-    if (score == std::numeric_limits<int>::max()) {
+    if (score == numeric_limits<int>::max()) {
         DEBUG("EdgeDijkstra didn't find anything edge=" << start_pos.edgeid.int_id()
               << " s_start=" << start_pos.position << " seq_len=" << s.size())
         return res;
     }
-    std::vector<EdgeId> ans = algo.path();
+    vector<EdgeId> ans = algo.path();
     MappingPoint p(forward ? algo.seq_end_position() + range.path_end.seq_pos : 0, algo.path_end_position());
     UpdatePath(path, ans, p, range, forward, old_start_pos);
     return res;

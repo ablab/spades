@@ -70,7 +70,7 @@ private:
             return (abs(int(b.edge_position) + shift - int(a.edge_position)) < 2);
         } else {
 //3 to allow small deletion in read on the consecutive edges
-            return ((b.edge_position + shift - a.edge_position) * pb_config_.compression_cutoff <= max((b.read_position - a.read_position), 3));
+            return ((b.edge_position + shift - a.edge_position) * pb_config_.compression_cutoff <= std::max((b.read_position - a.read_position), 3));
         }
     }
 
@@ -116,7 +116,7 @@ private:
 //left and right ends of ranges;
 //TODO:: think whether it is right condition
             if (rlen > length_cutoff/* || (rlen > g_.k() && (i == mini || i == maxi))*/){
-                vector<pair<size_t, int> > range_limits;
+                std::vector<std::pair<size_t, int> > range_limits;
                 for (size_t j = 0; j < mapped_path.size(); j++) {
                     if (i != j) {
                         if (mapped_path[i].second.initial_range.Intersect(mapped_path[j].second.initial_range) && (mapped_path[i].second.quality * 0.7 < mapped_path[j].second.quality)){
@@ -124,12 +124,12 @@ private:
                                                - mapped_path[i].second.initial_range.start_pos;
                             size_t pos_end = std::min (mapped_path[i].second.initial_range.end_pos, mapped_path[j].second.initial_range.end_pos)
                                              - mapped_path[i].second.initial_range.start_pos;
-                            range_limits.push_back(make_pair(pos_start, 1));
-                            range_limits.push_back(make_pair(pos_end, -1));
+                            range_limits.push_back(std::make_pair(pos_start, 1));
+                            range_limits.push_back(std::make_pair(pos_end, -1));
                         }
                     }
                 }
-                sort(range_limits.begin(), range_limits.end());
+                std::sort(range_limits.begin(), range_limits.end());
                 size_t current_cover = 0;
                 if (range_limits.size() > 0) {
 //may be negative if some ranges are zero-sized
@@ -312,7 +312,7 @@ public:
         std::vector<ColoredRange> res;
         size_t ind = 0;
         for ( auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end(); ++i_iter, ++ind) {
-            res.push_back(make_pair(*i_iter, colors[ind]));
+            res.push_back(std::make_pair(*i_iter, colors[ind]));
         }
         return res;
     }
