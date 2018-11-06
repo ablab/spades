@@ -23,8 +23,6 @@
 #include "io/reads/file_reader.hpp"
 
 #include "io/binary/graph.hpp"
-// For legacy graph format
-#include "test/debruijn/graphio.hpp"
 
 #include "hmm/hmmfile.hpp"
 #include "hmm/hmmmatcher.hpp"
@@ -121,7 +119,6 @@ struct PathracerConfig {
     bool save = true;
     bool rescore = false;
     bool annotate_graph = true;
-    bool legacy_saves = false;
     double expand_coef = 2.;
 
     hmmer::hmmer_cfg hcfg;
@@ -187,7 +184,6 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       cfg.debug << option("--debug") % "enable extensive debug output",
       cfg.draw  << option("--draw")  % "draw pictures around the interesting edges",
       cfg.save << option("--save") % "save found sequences",
-      cfg.legacy_saves << option("--legacy-saves") % "read legacy SPAdes graph format",
       cfg.rescore  << option("--rescore")  % "rescore paths via HMMer",
       cfg.annotate_graph << option("--annotate-graph") % "emit paths in GFA graph"
   );
@@ -609,8 +605,7 @@ std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path) {
 
 void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph,
                std::vector<std::vector<EdgeId>> &paths,
-               const std::string &filename,
-               bool legacy = false) {
+               const std::string &filename) {
     using namespace debruijn_graph;
     if (ends_with(filename, ".gfa")) {
         gfa::GFAReader gfa(filename);
@@ -622,12 +617,8 @@ void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph,
             paths.push_back(conjugate_path(path.edges));
         }
     } else {
-        if (legacy) {
-            graphio::ScanBasicGraph(filename, graph);
-        } else {
-            io::binary::GraphIO<debruijn_graph::ConjugateDeBruijnGraph> gio;
-            gio.Load(filename, graph);
-        }
+        io::binary::GraphIO<debruijn_graph::ConjugateDeBruijnGraph> gio;
+        gio.Load(filename, graph);
     }
 }
 
@@ -1164,7 +1155,7 @@ int main(int argc, char* argv[]) {
 
     debruijn_graph::ConjugateDeBruijnGraph graph(cfg.k);
     std::vector<std::vector<EdgeId>> scaffold_paths;
-    LoadGraph(graph, scaffold_paths, cfg.load_from, cfg.legacy_saves);
+    LoadGraph(graph, scaffold_paths, cfg.load_from);
     INFO("Graph loaded. Total vertices: " << graph.size());
 
     INFO("Total paths " << scaffold_paths.size());
