@@ -115,6 +115,8 @@ class PathClusterConflictResolver {
     ConflictIndex GetConflicts(const SimpleTransitionGraph &graph) const;
 
     bool AreClustersConflicted(const VertexSet &first, const VertexSet &second, const ConflictIndex &conflicts) const;
+
+    DECL_LOGGER("PathClusterConflictResolver")
 };
 
 class CloudPathExtractor {
@@ -157,8 +159,6 @@ class PathClusterTransitionStorageHelper {
  public:
     PathClusterTransitionStorageHelper(const Graph &g, const PathClusterExtractorHelper &cluster_extractor_helper)
         : g_(g), cluster_extractor_helper_(cluster_extractor_helper) {}
-
-    transitions::ClusterTransitionStorage GetPathClusterTransitionStorage(const SimpleTransitionGraph &graph) const;
 
     DECL_LOGGER("PathClusterTransitionStorageHelper");
 };

@@ -45,36 +45,5 @@ namespace transitions {
 
 typedef unordered_map<Transition, size_t> ClusterTransitionStorage;
 
-class ClusterTransitionExtractor {
- public:
-    virtual vector<Transition> ExtractTransitions(const cluster_storage::Cluster& cluster) const = 0;
-};
-
-class PathClusterTransitionExtractor: public ClusterTransitionExtractor {
-
-    const cluster_storage::ClusterGraphAnalyzer& cluster_analyzer_;
-    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
-
- public:
-    explicit PathClusterTransitionExtractor(const cluster_storage::ClusterGraphAnalyzer& cluster_analyzer_)
-        : cluster_analyzer_(cluster_analyzer_) {}
-
-    vector<Transition> ExtractTransitions(const cluster_storage::Cluster& cluster) const override;
-};
-
-class ClusterTransitionStorageBuilder {
-    shared_ptr<ClusterTransitionStorage> storage_;
- public:
-    ClusterTransitionStorageBuilder(): storage_(make_shared<ClusterTransitionStorage>()) {};
-
- public:
-    void BuildFromClusters(const vector<cluster_storage::Cluster>& clusters, shared_ptr<ClusterTransitionExtractor> extractor);
-
-    shared_ptr<ClusterTransitionStorage> GetStorage() {
-        return storage_;
-    }
-
-    DECL_LOGGER("ClusterTransitionStorageBuilder");
-};
 }
 }

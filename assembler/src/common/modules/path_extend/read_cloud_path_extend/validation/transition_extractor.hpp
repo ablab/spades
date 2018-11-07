@@ -231,13 +231,6 @@ class ClusterTransitionExtractor {
     vector<Transition> ExtractAllTransitionsFromNonPathCluster(const cluster_storage::Cluster& cluster);
 
     vector<Transition> ExtractGoodTransitionsFromNonPathCluster(const cluster_storage::Cluster& cluster);
-
-    vector<Transition> ExtractTransitionsFromOrdering(const vector<ScaffoldVertex>& ordering);
-
-    vector<Transition> ExtractTransitionsFromPathCluster(const cluster_storage::Cluster& cluster) {
-        auto ordering = ordering_analyzer_.GetOrderingFromCluster(cluster);
-        return ExtractTransitionsFromOrdering(ordering);
-    }
 };
 
 }

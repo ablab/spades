@@ -281,15 +281,6 @@ vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::Extra
     }
     return result;
 }
-vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::ExtractTransitionsFromOrdering(
-        const vector<ScaffoldVertex>& ordering) {
-    VERIFY(ordering.size() != 0);
-    vector<Transition> result;
-    for (auto first = ordering.begin(), second = std::next(ordering.begin()); second != ordering.end(); ++first, ++second) {
-        result.emplace_back(*first, *second);
-    }
-    return result;
-}
 FilteredReferencePathHelper::FilteredReferencePathHelper(const conj_graph_pack& gp_) : gp_(gp_) {}
 vector<vector<EdgeWithMapping>> FilteredReferencePathHelper:: GetFilteredReferencePathsFromLength(const string& path_to_reference,
                                                                                                  size_t length_threshold) {

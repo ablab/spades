@@ -15,6 +15,12 @@ void PathClusterChecker::CheckPathClusters(const PathClusterChecker::ScaffoldGra
     //Normalization
     DEBUG("Constructing corrected clusters");
     auto corrected_clusters = path_cluster_helper_.GetCorrectedClusters(path_clusters, graph);
+//    GraphBasedPathClusterNormalizer path_cluster_normalizer(g_);
+//    auto cluster_to_weight = path_cluster_normalizer.GetNormalizedStorage(path_clusters);
+//    vector<std::set<ScaffoldVertex>> corrected_clusters;
+//    for (const auto &entry: cluster_to_weight) {
+//        corrected_clusters.push_back(entry.first);
+//    }
 
     DEBUG("Constructing covered clusters");
     vector<set<ScaffoldVertex>> covered_clusters;

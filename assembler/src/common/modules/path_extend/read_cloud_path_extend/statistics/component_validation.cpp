@@ -45,7 +45,7 @@ vector<ScaffoldGraphComponentExtractor::TransitionGraph> ScaffoldGraphComponentE
                     component.AddEdge(vertex, *it);
                 }
             }
-            if (component.size() > 1) {
+            if (component.size() > 2) {
                 components.push_back(component);
             } else {
                 ++trivial_components;

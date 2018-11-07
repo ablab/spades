@@ -4,25 +4,6 @@
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 
 namespace path_extend {
-transitions::ClusterTransitionStorage PathClusterTransitionStorageHelper::GetPathClusterTransitionStorage(
-        const SimpleTransitionGraph &graph) const {
-    auto path_clusters = cluster_extractor_helper_.GetPathClusters(graph);
-    contracted_graph::ContractedGraphFactoryHelper contracted_helper(g_);
-    cluster_storage::ClusterGraphAnalyzer cluster_graph_analyzer(contracted_helper);
-
-    auto path_cluster_extractor =
-        make_shared<path_extend::transitions::PathClusterTransitionExtractor>(cluster_graph_analyzer);
-    path_extend::transitions::ClusterTransitionStorageBuilder transition_storage_builder;
-    DEBUG("Building transition storage");
-    transition_storage_builder.BuildFromClusters(path_clusters, path_cluster_extractor);
-    path_extend::transitions::ClusterTransitionStorage transition_storage = *(transition_storage_builder.GetStorage());
-    size_t transition_storage_size = 0;
-    for (const auto& entry: transition_storage) {
-        transition_storage_size += entry.second;
-    }
-    DEBUG("Transition storage size: " << transition_storage_size);
-    return transition_storage;
-}
 vector<cluster_storage::Cluster> PathClusterExtractorHelper::GetPathClusters(
         const PathClusterExtractorHelper::SimpleTransitionGraph &graph) const {
     cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_, linkage_distance_);
@@ -31,10 +12,6 @@ vector<cluster_storage::Cluster> PathClusterExtractorHelper::GetPathClusters(
     contracted_graph::ContractedGraphFactoryHelper contracted_helper(g_);
     cluster_storage::ClusterGraphAnalyzer cluster_graph_analyzer(contracted_helper);
     auto path_cluster_filter_ptr = make_shared<cluster_storage::PathClusterFilter>(cluster_graph_analyzer);
-//    const size_t max_span = 7000;
-//    auto max_span_filter = make_shared<cluster_storage::MaxSpanClusterFilter>(max_span);
-//    vector<shared_ptr<cluster_storage::ClusterFilter>> cluster_filters({path_cluster_filter_ptr, max_span_filter});
-//    auto composite_filter = make_shared<cluster_storage::CompositeClusterFilter>(cluster_filters);
     cluster_storage::ClusterStorageExtractor cluster_extractor;
     DEBUG("Processing");
     auto path_clusters = cluster_extractor.FilterClusterStorage(cluster_storage, path_cluster_filter_ptr);
@@ -162,6 +139,7 @@ vector<PathClusterConflictResolver::VertexSet> PathClusterConflictResolver::GetC
             const auto &second_set = other.first;
             const auto &second_weight = other.second;
             DEBUG("Checking conflicts");
+
             if (AreClustersConflicted(first_set, second_set, conflict_index)) {
                 if (first_weight > second_weight * relative_threshold_) {
                     result_set.erase(second_set);
@@ -216,6 +194,7 @@ vector<CloudPathExtractor::InternalPathWithSet> CloudPathExtractor::ExtractAllPa
     InternalPathWithSet start;
     start.AddVertex(source);
     current_paths.push(start);
+    size_t ops_counter = 0;
     while (not current_paths.empty()) {
         auto last_path = current_paths.front();
         string last_path_string;
@@ -241,6 +220,12 @@ vector<CloudPathExtractor::InternalPathWithSet> CloudPathExtractor::ExtractAllPa
                 TRACE("Adding new path");
                 current_paths.push(last_path_copy);
             }
+        }
+        ++ops_counter;
+        if (ops_counter > 200) {
+            DEBUG("Too many operations!");
+            vector<InternalPathWithSet> empty;
+            return empty;
         }
     }
     DEBUG("Extracted " << result.size() << " paths");
@@ -288,6 +273,10 @@ bool CloudPathExtractor::IsPathCorrect(const InternalPathWithSet &path,
         supporting_clouds.push_back(cloud_vertices);
     }
     DEBUG("Found " << supporting_clouds.size() << " supporting clouds");
+    const size_t max_supporting = 20;
+    if (supporting_clouds.size() > max_supporting) {
+        return false;
+    }
 
     for (size_t i = 0; i < vertex_path.size(); ++i) {
         for (size_t j = i + 1; j < vertex_path.size(); ++j) {
@@ -333,10 +322,15 @@ vector<vector<CloudPathExtractor::ScaffoldVertex>> CloudPathExtractor::ExtractCo
         const vector<CloudPathExtractor::VertexSet> &clouds) const {
     DEBUG("Extracting correct paths");
     const auto paths = ExtractAllPaths(graph, source, sink);
+    DEBUG("Extracted all paths");
     vector<vector<ScaffoldVertex>> result;
     if (paths.size() == 1) {
         DEBUG("Single path");
         result.push_back(paths[0].path_);
+        return result;
+    }
+    if (paths.size() > 20) {
+        DEBUG("Too many paths");
         return result;
     }
     for (const auto &path: paths) {
@@ -360,10 +354,13 @@ vector<vector<CloudBasedPathExtractor::ScaffoldVertex>> CloudBasedPathExtractor:
         const CloudBasedPathExtractor::ScaffoldVertex &sink) const {
     PathClusterExtractorHelper path_cluster_extractor(g_, initial_cluster_storage_,
                                                       barcode_extractor_, linkage_distance_);
+    DEBUG("Getting path clusters");
     auto path_clusters = path_cluster_extractor.GetPathClusters(graph);
     GraphBasedPathClusterNormalizer path_cluster_normalizer(g_);
+    DEBUG("Get normalized storage")
     auto cluster_to_weight = path_cluster_normalizer.GetNormalizedStorage(path_clusters);
     PathClusterConflictResolver conflict_resolver(relative_cluster_threshold_);
+    DEBUG("Resolving conflicts")
     auto final_clusters = conflict_resolver.GetClusterSets(graph, cluster_to_weight);
     CloudPathExtractor cloud_path_extractor;
     DEBUG("Extracting paths using final clusters");
@@ -415,6 +412,7 @@ vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetAllClusters(
     }
     for (const auto &edge: graph.edges()) {
         simple_graph.AddEdge(edge.getStart(), edge.getEnd());
+
     }
     auto cluster_storage = cluster_storage_builder.ConstructClusterStorage(*initial_cluster_storage_, simple_graph);
     vector<cluster_storage::Cluster> result;

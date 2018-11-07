@@ -52,7 +52,7 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     read_cloud_path_extend/validation/path_cluster_validation.cpp
                     read_cloud_path_extend/statistics/cloud_check_statistics.cpp
                     read_cloud_path_extend/statistics/component_validation.cpp
-                    read_cloud_path_extend/statistics/long_edge_dataset.cpp)
+                    read_cloud_path_extend/statistics/long_edge_dataset.cpp read_cloud_path_extend/statistics/perfect_transitions.cpp read_cloud_path_extend/statistics/perfect_transitions.hpp read_cloud_path_extend/statistics/perfect_clouds.cpp read_cloud_path_extend/statistics/perfect_clouds.hpp)
 
 target_link_libraries(path_extend assembly_graph ssw)
 

@@ -153,4 +153,5 @@ class TransitiveConstructorCaller: public IterativeScaffoldGraphConstructorCalle
         const path_extend::ScaffolderParams& params,
         const ScaffoldGraph& scaffold_graph) const override;
 };
+
 } //path_extend
