@@ -284,6 +284,9 @@ private:
         T* at(uint64_t id) const {
             return storage_[id];
         }
+
+        uint64_t reserved() const { return id_distributor_.size(); }
+
       private:
         std::atomic<size_t> size_;
         uint64_t bias_;
@@ -478,6 +481,9 @@ public:
         vreserve(vertices);
         ereserve(edges);
     }
+
+    size_t vreserved() const { return vstorage_.reserved(); }
+    size_t ereserved() const { return estorage_.reserved(); }
 
     uint64_t min_id() const { return ID_BIAS; }
     

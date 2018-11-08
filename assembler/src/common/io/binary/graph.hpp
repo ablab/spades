@@ -27,9 +27,9 @@ public:
         return edge_mapper_;
     }
 
+private:
     void Write(BinOStream &str, const Graph &graph) override {
-        // FIXME
-        // str << graph.GetGraphIdDistributor().GetMax();
+        str << graph.vreserved() << graph.ereserved();
 
         for (auto v1 : graph) {
             str << v1.int_id() << graph.conjugate(v1).int_id();
@@ -47,18 +47,21 @@ public:
 
     void Read(BinIStream &str, Graph &graph) override {
         graph.clear();
-        // FIXME
-        size_t max_id;
-        str >> max_id;
-        graph.vreserve(max_id);
 
-        auto TryAddVertex = [&](size_t ids[2]) {
+        uint64_t max_vid, max_eid;
+        str >> max_vid >> max_eid;
+        graph.reserve(max_vid, max_eid);
+
+        auto TryAddVertex = [&](uint64_t ids[2]) {
+            //FIXME: use fast check
             if (vertex_mapper_.count(ids[0]))
                 return;
             TRACE("Vertex " << ids[0] << " ~ " << ids[1] << " .");
-            auto new_id = graph.AddVertex(typename Graph::VertexData(), ids[0]);
-            vertex_mapper_[ids[0]] = new_id;
-            vertex_mapper_[ids[1]] = graph.conjugate(new_id);
+            auto new_id = graph.AddVertex(typename Graph::VertexData(), std::min(ids[0], ids[1]));
+            VERIFY(new_id == std::min(ids[0], ids[1]));
+            VERIFY(graph.conjugate(new_id) == std::max(ids[0], ids[1]));
+            vertex_mapper_[ids[0]] = ids[0];
+            vertex_mapper_[ids[1]] = ids[1];
         };
 
         while (str.has_data()) { //Read until the end
@@ -79,10 +82,9 @@ public:
                               << end_ids[0] << " l = " << seq.size() << " ~ " << edge_ids[1]);
                 TryAddVertex(end_ids);
 
-                VERIFY_MSG(!edge_mapper_.count(edge_ids[0]), edge_ids[0] << " is not unique");
-                auto new_id = graph.AddEdge(vertex_mapper_[start_ids[0]], vertex_mapper_[end_ids[0]], seq, edge_ids[0]);
-                edge_mapper_[edge_ids[0]] = new_id;
-                edge_mapper_[edge_ids[1]] = graph.conjugate(new_id);
+                auto new_id = graph.AddEdge(start_ids[0], end_ids[0], seq, edge_ids[0], edge_ids[1]);
+                VERIFY(new_id == edge_ids[0]);
+                VERIFY(graph.conjugate(new_id) == edge_ids[1]);
             }
         }
     }

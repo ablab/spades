@@ -8,6 +8,7 @@
 
 #include "io/id_mapper.hpp"
 #include "pipeline/graph_pack.hpp"
+#include "assembly_graph/core/construction_helper.hpp"
 
 namespace debruijn_graph {
 
@@ -46,13 +47,13 @@ public:
     }
 
     void LoadGraph(const std::string &file_name, Graph &graph) {
-        auto id_storage = graph.GetGraphIdDistributor().Reserve(GetMaxId(file_name + ".gid"), /*force_zero_shift*/true);
         INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
         FILE* file = fopen((file_name + ".grp").c_str(), "r");
         VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
         FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
         VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".sqn"));
         INFO("Reading conjugate de bruijn  graph from " << file_name << " started");
+        typename Graph::HelperT helper(graph);
         size_t vertex_count;
         size_t edge_count;
         int flag = fscanf(file, "%zu %zu \n", &vertex_count, &edge_count);
@@ -65,12 +66,13 @@ public:
 
             if (!vertex_mapper_.count(vertex_real_id)) {
                 size_t ids[2] = {vertex_real_id, conjugate_id};
-                auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
-                VertexId vid = graph.AddVertex(typename Graph::VertexData(), id_distributor);
-                VertexId conj_vid = graph.conjugate(vid);
+                //VertexId vid = graph.AddVertex(, id_distributor);
+                //VertexId conj_vid = graph.conjugate(vid);
+                auto vid = helper.CreateVertex(typename Graph::VertexData(), ids[0], ids[1]);
+                VERIFY(vid = ids[0]);
 
-                vertex_mapper_[vertex_real_id] = vid;
-                vertex_mapper_[conjugate_id] = conj_vid;
+                vertex_mapper_[vertex_real_id] = ids[0];
+                vertex_mapper_[conjugate_id] = ids[1];
             }
         }
 
@@ -112,9 +114,12 @@ public:
                           << fin_id << " l = " << length << " ~ " << conjugate_edge_id);
             if (!edge_mapper_.count(e_real_id)) {
                 size_t ids[2] = {e_real_id, conjugate_edge_id};
-                auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
                 Sequence tmp(longstring);
-                EdgeId eid = graph.AddEdge(vertex_mapper_[start_id], vertex_mapper_[fin_id], tmp, id_distributor);
+                //EdgeId eid = graph.AddEdge(vertex_mapper_[start_id], vertex_mapper_[fin_id], tmp, id_distributor);
+                EdgeId eid = helper.AddEdge(tmp, e_real_id, conjugate_edge_id);
+                VERIFY(eid == e_real_id);
+                helper.LinkOutgoingEdge(start_id, e_real_id);
+                //helper.LinkIncomingEdge(fin_id, conjugate_edge_id);
                 edge_mapper_[e_real_id] = eid;
                 edge_mapper_[conjugate_edge_id] = graph.conjugate(eid);
             }
