@@ -51,7 +51,7 @@ class ReclaimingIdDistributor {
                     const std::vector<bool> &map,
                     uint64_t bias)
                 : map_(map), bias_(bias), cur_(start) {
-            if (cur_ != -1ULL && map_[cur_])
+            if (cur_ != NPOS && map_[cur_])
                 cur_ = next_occupied(cur_);
         }
 
@@ -67,17 +67,14 @@ class ReclaimingIdDistributor {
                 if (!map_[i])
                     return i;
             }
-
-            return map_.size();
+            return NPOS;
         }
 
         void increment() {
-            if (cur_ == -1ULL)
+            if (cur_ == NPOS)
                 return;
 
             cur_ = next_occupied(cur_);
-            if (cur_ == map_.size())
-                cur_ = -1ULL;
         }
 
         bool equal(const id_iterator &other) const {
@@ -85,6 +82,7 @@ class ReclaimingIdDistributor {
         }
 
       private:
+        static const uint64_t NPOS = -1ULL;
         const std::vector<bool> &map_;
         uint64_t bias_, cur_;
     };
