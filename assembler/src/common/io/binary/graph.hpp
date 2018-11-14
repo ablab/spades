@@ -47,16 +47,14 @@ private:
         str >> max_vid >> max_eid;
         graph.reserve(max_vid, max_eid);
 
-        std::set<uint64_t> vertices_;
         auto TryAddVertex = [&](uint64_t ids[2]) {
             //FIXME: use fast check
-            if (vertices_.count(ids[0]))
+            if (graph.contains(typename Graph::VertexId(ids[0])))
                 return;
             TRACE("Vertex " << ids[0] << " ~ " << ids[1] << " .");
             auto new_id = graph.AddVertex(typename Graph::VertexData(), std::min(ids[0], ids[1]));
             VERIFY(new_id == std::min(ids[0], ids[1]));
             VERIFY(graph.conjugate(new_id) == std::max(ids[0], ids[1]));
-            vertices_.insert({ids[0], ids[1]});
         };
 
         while (str.has_data()) { //Read until the end

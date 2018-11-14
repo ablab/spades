@@ -241,6 +241,10 @@ private:
         // FIXME: Count!
         size_t size() const { return size_; }
 
+        bool contains(uint64_t id) const {
+            return (id < storage_.size()) && storage_[id];
+        }
+
         template<typename... ArgTypes>
         uint64_t create(ArgTypes &&... args) {
             uint64_t id = id_distributor_.allocate();
@@ -486,6 +490,10 @@ public:
     size_t ereserved() const { return estorage_.reserved(); }
 
     uint64_t min_id() const { return ID_BIAS; }
+
+    bool contains(VertexId vertex) const {
+        return vstorage_.contains(vertex.int_id());
+    }
     
     size_t int_id(EdgeId edge) const { return edge.int_id(); }
     size_t int_id(VertexId vertex) const { return vertex.int_id(); }
