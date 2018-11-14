@@ -8,7 +8,6 @@
 
 #include "histogram.hpp"
 #include "histptr.hpp"
-#include "io/id_mapper.hpp"
 
 namespace omnigraph {
 
@@ -208,21 +207,19 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
         }
     }
 
-    void BinRead(std::istream &str, const io::IdMapper<EdgeId> &mapper) {
+    void BinRead(std::istream &str) {
         clear();
         using io::binary::BinRead;
         auto storage_size = BinRead<size_t>(str);
         while (storage_size--) {
-            auto saved_e1 = BinRead<size_t>(str);
-            auto e1 = mapper[saved_e1];
+            auto e1 = BinRead<uint64_t>(str);
             while (true) {
-                auto saved_e2 = BinRead<size_t>(str);
-                if (!saved_e2) //null-term
+                auto e2 = BinRead<uint64_t>(str);
+                if (!e2) //null-term
                     break;
-                auto e2 = mapper[saved_e2];
                 auto hist = new InnerHistogram();
                 hist->BinRead(str);
-                TRACE(saved_e1 << "->" << saved_e2 << ": " << hist->size() << "points");
+                TRACE(e1 << "->" << e2 << ": " << hist->size() << "points");
                 storage_[e1][e2] = InnerHistPtr(hist, /* owning */ true);
                 bool selfconj = this->IsSelfConj(e1, e2);
                 size_t added = hist->size() * (selfconj ? 1 : 2);

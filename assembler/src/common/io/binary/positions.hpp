@@ -7,7 +7,6 @@
 #pragma once
 
 #include "io_base.hpp"
-#include "io/id_mapper.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 
 namespace io {
@@ -19,12 +18,11 @@ inline BinOStream &operator<<(BinOStream &str, const Range &range) {
 }
 
 template<typename Graph>
-class EdgePositionsIO : public IOSingle<typename omnigraph::EdgesPositionHandler<Graph>, EdgeMapper<Graph>> {
+class EdgePositionsIO : public IOSingle<typename omnigraph::EdgesPositionHandler<Graph>> {
 public:
     typedef omnigraph::EdgesPositionHandler<Graph> Type;
-    typedef EdgeMapper<Graph> Mapper;
     EdgePositionsIO()
-            : IOSingle<Type, Mapper>("edge positions", ".pos") {
+            : IOSingle<Type>("edge positions", ".pos") {
     }
 
     void Write(BinOStream &str, const Type &edge_pos) override {
@@ -37,12 +35,11 @@ public:
         }
     }
 
-    void Read(BinIStream &str, Type &edge_pos, const Mapper &mapper) override {
+    void Read(BinIStream &str, Type &edge_pos) override {
         edge_pos.clear();
         while (str.has_data()) {
-            size_t e;
-            str >> e;
-            auto eid = mapper[e];
+            uint64_t eid;
+            str >> eid;
             auto info_count = str.Read<size_t>();
             while (info_count--) {
                 auto contig = str.Read<std::string>();

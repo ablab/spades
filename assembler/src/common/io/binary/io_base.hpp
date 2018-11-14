@@ -18,13 +18,12 @@ namespace io {
 namespace binary {
 
 /**
- * @brief  An interface that can consistently save and load some component T into a file (or files).
- * @tparam Env (optional) parameters to be used in loading (typically an EdgeId mapper).
+ * @brief  An interface that can consistently save and load some component T.
  */
-template<typename T, typename... Env>
+template<typename T>
 struct IOBase {
     virtual void Save(const std::string &basename, const T &value) = 0;
-    virtual bool Load(const std::string &basename, T &value, const Env &... env) = 0;
+    virtual bool Load(const std::string &basename, T &value) = 0;
     virtual ~IOBase() {}
 };
 
@@ -48,20 +47,19 @@ void Save(const std::string &basename, const T &value) {
  * @brief  A convenient template function that reads a component from a file
  *         calling an appropriate ComponentIO.
  */
-template<typename T, typename... Env>
-bool Load(const std::string &basename, T &value, Env... env) {
+template<typename T>
+bool Load(const std::string &basename, T &value) {
     typename IOTraits<T>::Type io;
-    return io.Load(basename, value, env...);
+    return io.Load(basename, value);
 }
 
 /**
  * @brief  An interface that can consistently (de)serialize some component T using a binary stream wrapper.
- * @tparam Env (optional) parameters to be used in loading (typically an EdgeId mapper).
  */
-template<typename T, typename... Env>
-struct IOStream : public IOBase<T, Env...> {
+template<typename T>
+struct IOStream : public IOBase<T> {
     virtual void Write(BinOStream &stream, const T &value) = 0;
-    virtual void Read(BinIStream &stream, T &value, const Env &... env) = 0;
+    virtual void Read(BinIStream &stream, T &value) = 0;
 };
 
 /**
@@ -89,8 +87,8 @@ bool Load(std::istream &str, T &value, Env... env) {
 /**
  * @brief  An abstract saver/loader which uses a single file for its component.
  */
-template<typename T, typename... Env>
-class IOSingle : public IOStream<T, Env...> {
+template<typename T>
+class IOSingle : public IOStream<T> {
 public:
     IOSingle(const char *name, const char *ext)
             : name_(name), ext_(ext) {
@@ -109,7 +107,7 @@ public:
      * @return false if the file is missing. true if the component was successfully loaded.
      *         Fails if the file is present but cannot be read.
      */
-    bool Load(const std::string &basename, T &value, const Env &... env) override {
+    bool Load(const std::string &basename, T &value) override {
         std::string filename = basename + this->ext_;
         if (!fs::check_existence(filename))
             return false;
@@ -117,7 +115,7 @@ public:
         VERIFY_MSG(file, "Failed to read " << filename);
         DEBUG("Loading " << this->name_ << " from " << filename);
         BinIStream reader(file);
-        this->Read(reader, value, env...);
+        this->Read(reader, value);
         return true;
     }
 
@@ -130,29 +128,29 @@ private:
 /**
  * @brief  A default implementor of single-file binary saving/loading.
  */
-template<typename T, typename... Env>
-class IOSingleDefault : public IOSingle<T, Env...> {
+template<typename T>
+class IOSingleDefault : public IOSingle<T> {
 public:
     IOSingleDefault(const char *name, const char *ext)
-            : IOSingle<T, Env...>(name, ext) {
+            : IOSingle<T>(name, ext) {
     }
 
     void Write(BinOStream &str, const T &value) override {
         str << value;
     }
 
-    void Read(BinIStream &str, T &value, const Env &... env) override {
-        value.BinRead(str.stream(), env...);
+    void Read(BinIStream &str, T &value) override {
+        value.BinRead(str.stream());
     }
 };
 
 /**
  * @brief  An saver/loader over a vector-like collection (one file with numerical suffix per element).
  */
-template<typename T, typename Env>
-class IOCollection : public IOBase<T, Env> {
+template<typename T>
+class IOCollection : public IOBase<T> {
 public:
-    typedef std::unique_ptr<IOSingle<typename T::value_type, Env>> IOPtr;
+    typedef std::unique_ptr<IOSingle<typename T::value_type>> IOPtr;
 
     IOCollection(IOPtr io)
         : io_(std::move(io)) {
@@ -164,10 +162,10 @@ public:
         }
     }
 
-    bool Load(const std::string &basename, T &value, const Env &env) override {
+    bool Load(const std::string &basename, T &value) override {
         bool res = true;
         for (size_t i = 0; i < value.size(); ++i) {
-            res &= io_->Load(basename + "_" + std::to_string(i), value[i], env);
+            res &= io_->Load(basename + "_" + std::to_string(i), value[i]);
         }
         return res;
     }

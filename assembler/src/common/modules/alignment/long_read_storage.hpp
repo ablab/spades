@@ -8,7 +8,6 @@
 #pragma once
 
 #include "io/binary.hpp"
-#include "io/id_mapper.hpp"
 #include <string>
 #include <vector>
 #include <map>
@@ -179,7 +178,7 @@ public:
         }
     }
 
-    void BinRead(std::istream &str, const io::IdMapper<EdgeId> &mapper) {
+    void BinRead(std::istream &str) {
         inner_index_.clear();
         using io::binary::BinRead;
 
@@ -192,8 +191,8 @@ public:
                 std::vector<EdgeId> path;
                 path.reserve(length);
                 while (length--) {
-                    auto saved_id = BinRead<size_t>(str);
-                    path.push_back(mapper[saved_id]);
+                    auto eid = BinRead<uint64_t>(str);
+                    path.push_back(eid);
                 }
                 AddPath(path, (int)weight);
             }

@@ -26,7 +26,7 @@ public:
     bool Load(const std::string &basename, Graph &graph) override {
         bool loaded = Base::Load(basename, graph);
         VERIFY(loaded);
-        loaded = io::binary::Load(basename, graph.coverage_index(), this->GetEdgeMapper());
+        loaded = io::binary::Load(basename, graph.coverage_index());
         VERIFY(loaded);
         return true;
     }

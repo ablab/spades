@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "io/id_mapper.hpp"
 #include "io_base.hpp"
 
 #include "assembly_graph/core/graph.hpp"
@@ -23,10 +22,6 @@ public:
             : IOSingle<Graph>("debruijn graph", ".grseq") {
     }
 
-    const IdMapper<typename Graph::EdgeId> &GetEdgeMapper() {
-        return edge_mapper_;
-    }
-
 private:
     void Write(BinOStream &str, const Graph &graph) override {
         str << graph.vreserved() << graph.ereserved();
@@ -41,7 +36,7 @@ private:
                     << graph.EdgeEnd(e1).int_id() << graph.EdgeStart(e2).int_id()
                     << graph.EdgeNucls(e1);
             }
-            str << (size_t)0; //null-term
+            str << (uint64_t)0; //null-term
         }
     }
 
@@ -52,30 +47,30 @@ private:
         str >> max_vid >> max_eid;
         graph.reserve(max_vid, max_eid);
 
+        std::set<uint64_t> vertices_;
         auto TryAddVertex = [&](uint64_t ids[2]) {
             //FIXME: use fast check
-            if (vertex_mapper_.count(ids[0]))
+            if (vertices_.count(ids[0]))
                 return;
             TRACE("Vertex " << ids[0] << " ~ " << ids[1] << " .");
             auto new_id = graph.AddVertex(typename Graph::VertexData(), std::min(ids[0], ids[1]));
             VERIFY(new_id == std::min(ids[0], ids[1]));
             VERIFY(graph.conjugate(new_id) == std::max(ids[0], ids[1]));
-            vertex_mapper_[ids[0]] = ids[0];
-            vertex_mapper_[ids[1]] = ids[1];
+            vertices_.insert({ids[0], ids[1]});
         };
 
         while (str.has_data()) { //Read until the end
             // FIXME use two separate ids instead of C-array! C-array are error-prone and could be easily mixed up with pointers!
-            size_t start_ids[2];
+            uint64_t start_ids[2];
             str >> start_ids;
             TryAddVertex(start_ids);
             while (true) {
-                size_t edge_ids[2];
+                uint64_t edge_ids[2];
                 str >> edge_ids[0];
                 if (!edge_ids[0]) //null-term
                     break;
                 str >> edge_ids[1];
-                size_t end_ids[2];
+                uint64_t end_ids[2];
                 Sequence seq;
                 str >> end_ids >> seq;
                 TRACE("Edge " << edge_ids[0] << " : " << start_ids[0] << " -> "
@@ -88,10 +83,6 @@ private:
             }
         }
     }
-
-private:
-    IdMapper<typename Graph::VertexId> vertex_mapper_;
-    IdMapper<typename Graph::EdgeId> edge_mapper_;
 
     DECL_LOGGER("GraphIO");
 };

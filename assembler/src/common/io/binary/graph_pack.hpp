@@ -50,10 +50,9 @@ public:
     bool Load(const std::string &basename, Type &gp) override {
         //1. Load basic graph
         graph_io_.Load(basename, gp.g);
-        const auto &mapper = graph_io_.GetEdgeMapper();
 
         //2. Load edge positions
-        LoadAttached(basename, gp.edge_pos, mapper);
+        LoadAttached(basename, gp.edge_pos);
 
         //3. Load kmer edge index
         LoadAttached(basename, gp.index);
@@ -62,13 +61,9 @@ public:
         LoadAttached(basename, gp.kmer_mapper);
 
         //5. Load flanking coverage
-        LoadAttached(basename, gp.flanking_cov, mapper);
+        LoadAttached(basename, gp.flanking_cov);
 
         return true;
-    }
-
-    const IdMapper<typename Graph::EdgeId> &GetEdgeMapper() {
-        return this->graph_io_.GetEdgeMapper();
     }
 
 protected:
@@ -82,12 +77,12 @@ protected:
         }
     }
 
-    template<typename T, typename... Env>
-    void LoadAttached(const std::string &basename, T &component, const Env &... env) {
+    template<typename T>
+    void LoadAttached(const std::string &basename, T &component) {
         if (component.IsAttached())
             component.Detach();
         typename IOTraits<T>::Type io;
-        if (io.Load(basename, component, env...))
+        if (io.Load(basename, component))
             component.Attach();
     }
 };
@@ -120,18 +115,17 @@ public:
         //1. Load basic graph
         bool loaded = base::Load(basename, gp);
         VERIFY(loaded);
-        const auto &mapper = this->graph_io_.GetEdgeMapper();
 
         //2. Load paired indices
         using namespace omnigraph::de;
-        io::binary::Load(basename, gp.paired_indices, mapper);
+        io::binary::Load(basename, gp.paired_indices);
 
         //3. Load clustered & scaffolding indices
-        io::binary::Load(basename + "_cl", gp.clustered_indices, mapper);
-        io::binary::Load(basename + "_scf", gp.scaffolding_indices, mapper);
+        io::binary::Load(basename + "_cl", gp.clustered_indices);
+        io::binary::Load(basename + "_scf", gp.scaffolding_indices);
 
         //4. Load long reads
-        io::binary::Load(basename, gp.single_long_reads, mapper);
+        io::binary::Load(basename, gp.single_long_reads);
 
         //5. Load genome info
         gp.ginfo.Load(basename + ".ginfo");

@@ -7,7 +7,6 @@
 #pragma once
 
 #include "io_base.hpp"
-#include "io/id_mapper.hpp"
 #include "assembly_graph/core/coverage.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 
@@ -16,12 +15,10 @@ namespace io {
 namespace binary {
 
 template<typename Index>
-class BaseCoverageIO : public IOSingle<Index, EdgeMapper<Index>> {
+class BaseCoverageIO : public IOSingle<Index> {
 public:
-    typedef EdgeMapper<Index> Mapper;
-
     BaseCoverageIO(const char *name, const char *ext):
-            IOSingle<Index, Mapper>(name, ext) {
+            IOSingle<Index>(name, ext) {
     }
 
     void Write(BinOStream &str, const Index &index) override {
@@ -31,11 +28,10 @@ public:
         }
     }
 
-    void Read(BinIStream &str, Index &index, const Mapper &mapper) override {
+    void Read(BinIStream &str, Index &index) override {
         while (str.has_data()) {
-            size_t e;
-            str >> e;
-            auto eid = mapper[e];
+            uint64_t eid;
+            str >> eid;
             auto cov = str.Read<unsigned>();
             index.SetRawCoverage(eid, cov);
         }
