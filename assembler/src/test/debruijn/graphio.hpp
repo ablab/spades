@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "io/id_mapper.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "assembly_graph/core/construction_helper.hpp"
 
@@ -59,20 +58,18 @@ public:
         int flag = fscanf(file, "%zu %zu \n", &vertex_count, &edge_count);
         VERIFY(flag == 2);
         for (size_t i = 0; i < vertex_count; i++) {
-            size_t vertex_real_id, conjugate_id;
-            flag = fscanf(file, "Vertex %zu ~ %zu .\n", &vertex_real_id, &conjugate_id);
-            TRACE("Vertex "<<vertex_real_id<<" ~ "<<conjugate_id<<" .");
+            size_t vid, conj_vid;
+            flag = fscanf(file, "Vertex %zu ~ %zu .\n", &vid, &conj_vid);
+            TRACE("Vertex " << vid << " ~ " << conj_vid << " .");
             VERIFY(flag == 2);
 
-            if (!vertex_mapper_.count(vertex_real_id)) {
-                size_t ids[2] = {vertex_real_id, conjugate_id};
-                //VertexId vid = graph.AddVertex(, id_distributor);
-                //VertexId conj_vid = graph.conjugate(vid);
-                auto vid = helper.CreateVertex(typename Graph::VertexData(), ids[0], ids[1]);
-                VERIFY(vid = ids[0]);
-
-                vertex_mapper_[vertex_real_id] = ids[0];
-                vertex_mapper_[conjugate_id] = ids[1];
+            if (!graph.contains(VertexId(vid))) {
+                size_t needed = std::max(vid, conj_vid);
+                if (graph.vreserved() <= needed)
+                    graph.vreserve(needed * 2 + 1);
+                VertexId new_id = graph.AddVertex(typename Graph::VertexData(), vid, conj_vid);
+                VERIFY(new_id = vid);
+                VERIFY(graph.conjugate(new_id) = conj_vid);
             }
         }
 
@@ -97,31 +94,29 @@ public:
         static const size_t longstring_size = 1000500; //Enough for tests
         char longstring[longstring_size];
         for (size_t i = 0; i < edge_count; i++) {
-            size_t e_real_id, start_id, fin_id, length, conjugate_edge_id;
+            size_t eid, start_id, fin_id, length, conj_eid;
             flag = fscanf(file, "Edge %zu : %zu -> %zu, l = %zu ~ %zu .\n",
-                          &e_real_id, &start_id, &fin_id, &length, &conjugate_edge_id);
+                          &eid, &start_id, &fin_id, &length, &conj_eid);
             VERIFY(flag == 5);
             VERIFY(length < longstring_size);
-            size_t e_real_id_tmp;
+            size_t eid_tmp;
             if (fasta) {
-                flag = fscanf(sequence_file, ">%zu\n%s\n", &e_real_id_tmp, longstring);
+                flag = fscanf(sequence_file, ">%zu\n%s\n", &eid_tmp, longstring);
             } else {
-                flag = fscanf(sequence_file, "%zu %s .", &e_real_id_tmp, longstring);
+                flag = fscanf(sequence_file, "%zu %s .", &eid_tmp, longstring);
             }
-            VERIFY(e_real_id == e_real_id_tmp);
+            VERIFY(eid == eid_tmp);
             VERIFY(flag == 2);
-            TRACE("Edge " << e_real_id << " : " << start_id << " -> "
-                          << fin_id << " l = " << length << " ~ " << conjugate_edge_id);
-            if (!edge_mapper_.count(e_real_id)) {
-                size_t ids[2] = {e_real_id, conjugate_edge_id};
+            TRACE("Edge " << eid << " : " << start_id << " -> "
+                          << fin_id << " l = " << length << " ~ " << conj_eid);
+            if (!graph.contains(EdgeId(eid))) {
+                size_t needed = std::min(eid, conj_eid);
+                if (graph.ereserved() <= needed)
+                    graph.ereserve(needed * 2 + 1);
                 Sequence tmp(longstring);
-                //EdgeId eid = graph.AddEdge(vertex_mapper_[start_id], vertex_mapper_[fin_id], tmp, id_distributor);
-                EdgeId eid = helper.AddEdge(tmp, e_real_id, conjugate_edge_id);
-                VERIFY(eid == e_real_id);
-                helper.LinkOutgoingEdge(start_id, e_real_id);
-                //helper.LinkIncomingEdge(fin_id, conjugate_edge_id);
-                edge_mapper_[e_real_id] = eid;
-                edge_mapper_[conjugate_edge_id] = graph.conjugate(eid);
+                EdgeId new_id = graph.AddEdge(start_id, fin_id, tmp, eid, conj_eid);
+                VERIFY(new_id == eid);
+                VERIFY(graph.conjugate(new_id) == conj_eid);
             }
         }
 
@@ -168,7 +163,6 @@ public:
 
     template<typename Index>
     void LoadPaired(const std::string &file_name, Index &paired_index, bool force_exists = true) {
-        typedef typename Graph::EdgeId EdgeId;
         FILE* file = fopen((file_name + ".prd").c_str(), "r");
         INFO((file_name + ".prd"));
         if (force_exists) {
@@ -183,16 +177,11 @@ public:
         int read_count = fscanf(file, "%zu \n", &paired_count);
         VERIFY(read_count == 1);
         while (!feof(file)) {
-            size_t first_real_id, second_real_id;
+            size_t e1, e2;
 
             typename Index::Point point;
-            DeserializePoint(file, first_real_id, second_real_id, point);
+            DeserializePoint(file, e1, e2, point);
 
-            TRACE(first_real_id << " " << second_real_id << " " << point);
-            EdgeId e1 = edge_mapper_[first_real_id];
-            EdgeId e2 = edge_mapper_[second_real_id];
-            if (e1 == EdgeId() || e2 == EdgeId())
-                continue;
             TRACE(e1 << " " << e2 << " " << point);
             //Need to prevent doubling of self-conjugate edge pairs
             //Their weight would be always even, so we don't lose precision
@@ -219,10 +208,10 @@ public:
         int read_count = fscanf(file, "%zu\n", &pos_count);
         VERIFY(read_count == 1);
         for (size_t i = 0; i < pos_count; i++) {
-            size_t edge_real_id, pos_info_count;
+            size_t eid, pos_info_count;
             char contigId[500];
             char cur_str[500];
-            read_count = fscanf(file, "%zu %zu\n", &edge_real_id, &pos_info_count);
+            read_count = fscanf(file, "%zu %zu\n", &eid, &pos_info_count);
             VERIFY(read_count == 2);
             for (size_t j = 0; j < pos_info_count; j++) {
                 int start_pos, end_pos;
@@ -232,7 +221,6 @@ public:
                 read_count = sscanf(cur_str, "%s [%d - %d] --> [%d - %d]", contigId,
                                     &start_pos, &end_pos, &m_start_pos, &m_end_pos);
                 VERIFY(read_count == 5);
-                EdgeId eid = edge_mapper_[edge_real_id];
                 edge_pos.AddEdgePosition(eid, contigId, start_pos - 1, end_pos, m_start_pos - 1, m_end_pos);
             }
         }
@@ -267,29 +255,13 @@ public:
     }
 
 private:
-    io::IdMapper<VertexId> vertex_mapper_;
-    io::IdMapper<EdgeId> edge_mapper_;
-
-    size_t GetMaxId(const std::string &file_name) {
-        std::ifstream max_id_stream(file_name);
-        if (!max_id_stream) {
-            //Here to support compatibility to old saves in tests.
-            return 1000000000;
-        } else {
-            size_t max;
-            VERIFY_MSG(max_id_stream >> max, "Failed to read max_id");
-            return max;
-        }
-    }
-
     template<class T>
     void LoadEdgeAssociatedInfo(std::istream &in, T &t) const {
         size_t cnt;
         in >> cnt;
         for (size_t i = 0 ; i < cnt; ++i) {
-            size_t edge_id;
-            in >> edge_id;
-            EdgeId eid = edge_mapper_[edge_id];
+            size_t eid;
+            in >> eid;
             t.Load(eid, in);
             std::string delim;
             in >> delim;
