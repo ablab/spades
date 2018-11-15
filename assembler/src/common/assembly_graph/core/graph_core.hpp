@@ -348,29 +348,17 @@ public:
     edge_const_iterator in_end(VertexId v) const { return cvertex(v)->out_end(this, true); }
 
 private:
-    VertexId CreateVertex(const VertexData &data, VertexId id = 0) {
-        return CreateVertex(data, master_.conjugate(data), id);
-    }
-
-    VertexId CreateVertex(const VertexData &data, VertexId id1, VertexId id2) {
+    VertexId CreateVertex(const VertexData &data, VertexId id1 = 0, VertexId id2 = 0) {
         return CreateVertex(data, master_.conjugate(data), id1, id2);
     }
 
     VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
-                          VertexId id  = 0) {
-        VertexId vid1 = (id ? vstorage_.emplace(id.int_id(), data1) : vstorage_.create(data1));
-        VertexId vid2 = (id ? vstorage_.emplace(id.int_id() + 1, data2) : vstorage_.create(data2));
+                          VertexId id1 = 0, VertexId id2 = 0) {
+        if (id1 && !id2)
+            id2 = id1.int_id() + 1;
 
-        vertex(vid1)->set_conjugate(vid2);
-        vertex(vid2)->set_conjugate(vid1);
-
-        return vid1;
-    }
-
-    VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
-                          VertexId id1, VertexId id2) {
-        VertexId vid1 = vstorage_.emplace(id1.int_id(), data1);
-        VertexId vid2 = vstorage_.emplace(id2.int_id(), data2);
+        VertexId vid1 = (id1 ? vstorage_.emplace(id1.int_id(), data1) : vstorage_.create(data1));
+        VertexId vid2 = (id2 ? vstorage_.emplace(id2.int_id(), data2) : vstorage_.create(data2));
 
         vertex(vid1)->set_conjugate(vid2);
         vertex(vid2)->set_conjugate(vid1);
@@ -406,8 +394,8 @@ private:
     }
 
 protected:
-    VertexId HiddenAddVertex(const VertexData& data, VertexId at = 0) {
-        return CreateVertex(data, at);
+    VertexId HiddenAddVertex(const VertexData& data, VertexId at1 = 0, VertexId at2 = 0) {
+        return CreateVertex(data, at1, at2);
     }
 
     void HiddenDeleteVertex(VertexId vertex) {
@@ -493,6 +481,10 @@ public:
 
     bool contains(VertexId vertex) const {
         return vstorage_.contains(vertex.int_id());
+    }
+
+    bool contains(EdgeId edge) const {
+        return estorage_.contains(edge.int_id());
     }
     
     size_t int_id(EdgeId edge) const { return edge.int_id(); }

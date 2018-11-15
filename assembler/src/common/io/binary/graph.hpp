@@ -48,13 +48,12 @@ private:
         graph.reserve(max_vid, max_eid);
 
         auto TryAddVertex = [&](uint64_t ids[2]) {
-            //FIXME: use fast check
             if (graph.contains(typename Graph::VertexId(ids[0])))
                 return;
             TRACE("Vertex " << ids[0] << " ~ " << ids[1] << " .");
-            auto new_id = graph.AddVertex(typename Graph::VertexData(), std::min(ids[0], ids[1]));
-            VERIFY(new_id == std::min(ids[0], ids[1]));
-            VERIFY(graph.conjugate(new_id) == std::max(ids[0], ids[1]));
+            auto new_id = graph.AddVertex(typename Graph::VertexData(), ids[0], ids[1]);
+            VERIFY(new_id == ids[0]);
+            VERIFY(graph.conjugate(new_id) == ids[1]);
         };
 
         while (str.has_data()) { //Read until the end

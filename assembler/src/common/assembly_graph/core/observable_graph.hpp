@@ -119,7 +119,7 @@ public:
     /////////////////////////graph operations
     //adding/removing vertices and edges
 
-    VertexId AddVertex(const VertexData& data, VertexId id = 0);
+    VertexId AddVertex(const VertexData& data, VertexId id1 = 0, VertexId id2 = 0);
 
     void DeleteVertex(VertexId v);
 
@@ -161,8 +161,8 @@ private:
 
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::VertexId
-ObservableGraph<DataMaster>::AddVertex(const VertexData &data, VertexId id) {
-    VertexId v = base::HiddenAddVertex(data, id);
+ObservableGraph<DataMaster>::AddVertex(const VertexData &data, VertexId id1, VertexId id2) {
+    VertexId v = base::HiddenAddVertex(data, id1, id2);
     FireAddVertex(v);
     return v;
 }
