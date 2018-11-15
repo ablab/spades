@@ -28,7 +28,7 @@ struct EdgeInfo {
         if (!valid())
             return EdgeInfo(IdType(), unsigned(-1), count);
 
-        return EdgeInfo(g.conjugate(edge_id), unsigned(g.length(edge_id) - offset), count);
+        return EdgeInfo(g.conjugate(edge_id), unsigned(g.length(edge_id) - offset - 1), count);
     }
 
     void clear() {
