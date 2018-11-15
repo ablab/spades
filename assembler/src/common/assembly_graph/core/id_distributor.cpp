@@ -12,7 +12,7 @@ uint64_t ReclaimingIdDistributor::next_free(uint64_t n) const {
 }
 
 void ReclaimingIdDistributor::resize(size_t sz) {
-    fprintf(stderr, "!!!RESIZE!!!! %llu\n", sz);
+    //fprintf(stderr, "!!!RESIZE!!!! %llu\n", sz);
     free_map_.resize(sz, true);
 }
 
