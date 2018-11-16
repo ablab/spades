@@ -8,7 +8,7 @@
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
 
-#include "pipeline/graphio.hpp"
+#include "io/binary/graph.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/config_struct.hpp"
 
@@ -177,8 +177,8 @@ void LoadGraph(const string &saves_path, bool load_spades_graph, debruijn_graph:
         gfa.to_graph(g, load_spades_graph);
         return;
     } else {
-        INFO("Load from saves")
-        debruijn_graph::graphio::ScanBasicGraph(saves_path, g);
+        INFO("Load from saves");
+        io::binary::Load(saves_path, g);
         return;
     }
 }

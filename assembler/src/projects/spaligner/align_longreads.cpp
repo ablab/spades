@@ -14,7 +14,7 @@
 #include "llvm/Support/YAMLTraits.h"
 #include <cxxopts/cxxopts.hpp>
 
-#include "pipeline/graphio.hpp"
+#include "io/binary/graph.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/config_struct.hpp"
 
@@ -199,15 +199,15 @@ public:
 
 void LoadGraph(const string &saves_path, bool load_spades_graph, debruijn_graph::ConjugateDeBruijnGraph &g) {
     if (fs::extension(saves_path) == ".gfa") {
-        DEBUG("Load gfa")
+        DEBUG("Load gfa");
         VERIFY_MSG(fs::is_regular_file(saves_path), "GFA-file " + saves_path + " doesn't exist");
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(g, load_spades_graph);
         return;
     } else {
-        DEBUG("Load from saves")
-        debruijn_graph::graphio::ScanBasicGraph(saves_path, g);
+        DEBUG("Load from saves");
+        io::binary::Load(saves_path, g);
         return;
     }
 }
