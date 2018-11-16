@@ -27,9 +27,11 @@
 #include <iostream>
 #include <fstream>
 
+using namespace std;
+
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
-    log->add_writer(std::make_shared<logging::console_writer>());
+    log->add_writer(make_shared<logging::console_writer>());
     logging::attach_logger(log);
 }
 
@@ -39,9 +41,9 @@ typedef debruijn_graph::BasicSequenceMapper<debruijn_graph::Graph, Index> Mapper
 
 string getStrId(const EdgeId &e, const debruijn_graph::ConjugateDeBruijnGraph &g_) {
     if (e.int_id() < g_.conjugate(e).int_id()) {
-        return std::to_string(e.int_id()) + "+";
+        return to_string(e.int_id()) + "+";
     } else {
-        return std::to_string(e.int_id()) + "-";
+        return to_string(e.int_id()) + "-";
     }
 }
 
@@ -49,15 +51,15 @@ class IdealAligner {
   private:
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
     const string &output_file_;
-    std::shared_ptr<MapperClass> mapper_;
+    shared_ptr<MapperClass> mapper_;
     ofstream myfile_;
 
   public:
     IdealAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
                  const string &output_file,
-                 std::shared_ptr<MapperClass> mapper):
+                 shared_ptr<MapperClass> mapper):
         g_(g), output_file_(output_file), mapper_(mapper) {
-        myfile_.open(output_file_ + ".tsv", std::ofstream::out);
+        myfile_.open(output_file_ + ".tsv", ofstream::out);
     }
 
 
@@ -69,8 +71,8 @@ class IdealAligner {
         return IsCanonical(e) ? e : g_.conjugate(e);
     }
 
-    std::vector<int> CheckPathConsistency(const vector<EdgeId> &read_mapping, const MappingPath<EdgeId>& current_mapping)  {
-        std::vector<int> inds;
+    vector<int> CheckPathConsistency(const vector<EdgeId> &read_mapping, const MappingPath<EdgeId>& current_mapping)  {
+        vector<int> inds;
         int j = 0;
         int len_before = 0;
         for (int i = 0; i < read_mapping.size(); ++ i) {
@@ -79,7 +81,7 @@ class IdealAligner {
                 VertexId v2 = g_.EdgeStart(read_mapping[i]);
                 if (v1 != v2) {
                     INFO("Not a connected path!")
-                    return std::vector<int>();
+                    return vector<int>();
                 }
             }
             EdgeId edgeid = read_mapping[i];
@@ -101,7 +103,7 @@ class IdealAligner {
         }
         if (j != current_mapping.size()) {
             INFO("Badly mapped j != mapping")
-            return std::vector<int>();
+            return vector<int>();
         }
         return inds;
     }
@@ -116,14 +118,14 @@ class IdealAligner {
             INFO("Read " << read.name() << " wasn't aligned");
         }
 
-        std::vector<int> inds = CheckPathConsistency(read_mapping, current_mapping);
+        vector<int> inds = CheckPathConsistency(read_mapping, current_mapping);
         if (inds.size() > 0){
             int j = 0;
             int len_before = 0;
-            std::string path_str = "";
-            std::string pathlen_str = "";
-            std::string edgelen_str = "";
-            std::string str = "";
+            string path_str = "";
+            string pathlen_str = "";
+            string edgelen_str = "";
+            string str = "";
             for (int i = 0; i < read_mapping.size(); ++ i) {
                 EdgeId edgeid = read_mapping[i];
                 size_t mapping_start = 0;
@@ -143,10 +145,10 @@ class IdealAligner {
                     ++ j;
                 }
                 len_before += g_.length(edgeid);
-                path_str += getStrId(edgeid, g_) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
-                            + std::to_string(initial_start) + "," + std::to_string(initial_end) + "], ";
-                pathlen_str += std::to_string(mapping_end - mapping_start) + ",";
-                edgelen_str += std::to_string(g_.length(edgeid)) + ",";
+                path_str += getStrId(edgeid, g_) + " (" + to_string(mapping_start) + "," + to_string(mapping_end) + ") ["
+                            + to_string(initial_start) + "," + to_string(initial_end) + "], ";
+                pathlen_str += to_string(mapping_end - mapping_start) + ",";
+                edgelen_str += to_string(g_.length(edgeid)) + ",";
                 str += g_.EdgeNucls(edgeid).Subseq(mapping_start, mapping_end).str();
             }
             INFO("Path: " << path_str);
@@ -191,7 +193,7 @@ void Launch(size_t K, const string &saves_path, bool load_spades_graph, const st
     kmer_mapper.Detach();
     EdgeIndex<debruijn_graph::Graph> edge_index(g, tmpdir);
     edge_index.Detach();
-    std::shared_ptr<MapperClass> mapper(new MapperClass(g, edge_index, kmer_mapper));
+    shared_ptr<MapperClass> mapper(new MapperClass(g, edge_index, kmer_mapper));
     edge_index.Attach();
     kmer_mapper.Attach();
     edge_index.Refill();
@@ -201,11 +203,11 @@ void Launch(size_t K, const string &saves_path, bool load_spades_graph, const st
     streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(reads_fasta)));
 
     io::SingleStreamPtr sstream = io::MultifileWrap(streams);
-    std::vector<io::SingleRead> wrappedreads;
+    vector<io::SingleRead> wrappedreads;
     while (!sstream->eof()) {
         io::SingleRead read;
         *sstream >> read;
-        wrappedreads.push_back(std::move(read));
+        wrappedreads.push_back(move(read));
     }
     INFO("Loaded reads from " << reads_fasta);
 
@@ -219,7 +221,7 @@ void Launch(size_t K, const string &saves_path, bool load_spades_graph, const st
     }
     if (!load_spades_graph) {
         INFO("Saving *.gfa to " << output_file + ".gfa");
-        std::ofstream os(output_file + ".gfa");
+        ofstream os(output_file + ".gfa");
         gfa::GFAWriter gfa_writer(g, os);
         gfa_writer.WriteSegmentsAndLinks();
     }
@@ -235,7 +237,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
     create_console_logger();
-    size_t K = std::stoll(argv[1]);
+    size_t K = stoll(argv[1]);
     string saves_path = argv[2];
     INFO("Load graph from " << saves_path);
     string longreads_file = argv[3];
