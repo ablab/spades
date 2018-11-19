@@ -107,13 +107,13 @@ BOOST_AUTO_TEST_CASE( TestBasicNoDiff ) {
     GraphCoverageMap cov_map(g);
     PathContainer container;
 
-    auto path1 = AsPath(g, finder, {26, 157, 70, 3, 130, 68});
+    auto path1 = AsPath(g, finder, {26, 157, 70, 23, 130, 68});
 //    AddPath(container, path1, cov_map);
-    auto path2 = AsPath(g, finder, {26, 157, 70, 3, 130, 68});
+    auto path2 = AsPath(g, finder, {26, 157, 70, 23, 130, 68});
 //    AddPath(container, path2, cov_map);
-    auto path3 = AsPath(g, finder, {157, 70, 3, 130, 68});
+    auto path3 = AsPath(g, finder, {157, 70, 23, 130, 68});
 //    AddPath(container, path2, cov_map);
-    auto path4 = AsPath(g, finder, {26, 157, 70, 3, 130});
+    auto path4 = AsPath(g, finder, {26, 157, 70, 23, 130});
     size_t min_edge_len = 0;
     size_t max_diff = 0;
     OverlapFindingHelper finding_helper(g, cov_map, min_edge_len, max_diff);
@@ -133,14 +133,14 @@ BOOST_AUTO_TEST_CASE( TestBasicDiff ) {
     GraphCoverageMap cov_map(g);
     PathContainer container;
 
-    auto path1 = AsPath(g, finder, {26, 157, 70, 3, 130, 68});
+    auto path1 = AsPath(g, finder, {26, 157, 70, 23, 130, 68});
 //    AddPath(container, path1, cov_map);
-    auto path2 = AsPath(g, finder, {157, 70, 3, 130});
+    auto path2 = AsPath(g, finder, {157, 70, 23, 130});
 //    AddPath(container, path2, cov_map);
-    auto path3 = AsPath(g, finder, {157, 70, 3, 130, 68});
+    auto path3 = AsPath(g, finder, {157, 70, 23, 130, 68});
 //    AddPath(container, path2, cov_map);
-    auto path4 = AsPath(g, finder, {26, 157, 70, 3, 130});
-    auto path5 = AsPath(g, finder, {70, 3, 130, 68});
+    auto path4 = AsPath(g, finder, {26, 157, 70, 23, 130});
+    auto path5 = AsPath(g, finder, {70, 23, 130, 68});
     size_t min_edge_len = 0;
     size_t max_diff = 1;
     OverlapFindingHelper finding_helper(g, cov_map, min_edge_len, max_diff);

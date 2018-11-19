@@ -9,7 +9,7 @@
 
 #include "graphio.hpp"
 #include "test_utils.hpp"
-#include "modules/simplification/parallel_simplification_algorithms.hpp"
+//#include "modules/simplification/parallel_simplification_algorithms.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "stages/simplification_pipeline/single_cell_simplification.hpp"
 #include "stages/simplification_pipeline/rna_simplification.hpp"
@@ -369,6 +369,7 @@ BOOST_AUTO_TEST_CASE( CompressorTest ) {
     BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
 }
 
+#if 0
 BOOST_AUTO_TEST_CASE( ParallelCompressor1 ) {
     std::string path = "./src/test/debruijn/graph_fragments/compression/graph";
     size_t graph_size = 12;
@@ -426,6 +427,7 @@ BOOST_AUTO_TEST_CASE( ParallelECRemover2 ) {
     debruijn::simplification::ParallelEC(gp.g, parser.max_length_bound(), parser.max_coverage_bound(), standard_simplif_relevant_info().chunk_cnt());
     BOOST_CHECK_EQUAL(gp.g.size(), 20u);
 }
+#endif
 
 //BOOST_AUTO_TEST_CASE( ComplexTipRemover ) {
 //    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
