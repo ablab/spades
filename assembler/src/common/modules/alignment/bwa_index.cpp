@@ -53,17 +53,6 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode, size_t le
             memopt_->drop_ratio = 20;
             memopt_->min_chain_weight = 10;
             break;
-        case AlignmentMode::Rna16S:
-            memopt_->o_del = 1; memopt_->e_del = 1;
-            memopt_->o_ins = 1; memopt_->e_ins = 1;
-            memopt_->b = 1;
-            memopt_->split_factor = 10.;
-            memopt_->pen_clip5 = 1; memopt_->pen_clip3 = 1;
-            memopt_->min_chain_weight = 20;
-            memopt_->min_seed_len = 10;
-            memopt_->drop_ratio = 20;
-            memopt_->mask_level = 20;
-            break;
     };
 
     Init();
@@ -233,12 +222,9 @@ void BWAIndex::Init() {
     idx_.reset((bwaidx_t*)calloc(1, sizeof(bwaidx_t)));
     ids_.clear();
 
-    for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it)
-//TODO:: experimental
-//        if (g_.length(*it) > length_cutoff_)
-        {
-            ids_.push_back(*it);
-        }
+    for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+        ids_.push_back(*it);
+    }
 
     // construct the forward-only pac
     uint8_t* fwd_pac = seqlib_make_pac(g_, ids_, true); // true->for_only
@@ -308,7 +294,6 @@ void BWAIndex::Init() {
 
 static bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
 //  k-rb > re - k
-
     if (rb < k && 2 * k  > re + rb)
         return true;
 //  re - edge_len > edge_len - rb
@@ -316,6 +301,7 @@ static bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
         return true;
     return false;
 }
+
 inline std::ostream& operator<<(std::ostream& os, const mem_alnreg_s& a) {
     os << a.qb << " - " << a.qe << " ---> " << a.rb << " - " << a.re << "query->ref\n";
     os << a.seedcov << " - seedcov; " << a.score << " - score";

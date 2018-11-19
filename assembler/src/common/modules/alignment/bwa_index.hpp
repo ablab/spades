@@ -29,8 +29,7 @@ class BWAIndex {
         Default,
         IntraCtg,
         PacBio,
-        Ont2D,
-        Rna16S,
+        Ont2D
     };
 
     // bwaidx / memopt are incomplete below, therefore we need to outline ctor
