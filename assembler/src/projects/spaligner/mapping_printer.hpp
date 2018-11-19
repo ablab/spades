@@ -35,7 +35,6 @@ class MappingPrinterTSV: public MappingPrinter {
     MappingPrinterTSV(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
         : MappingPrinter(g, output_file_prefix) {
         output_file_.open(output_file_prefix_ + ".tsv", std::ofstream::out);
-        //tsv_file << "read\tstart_pos\tend_pos\tread_length\tgraph_path\tedges_lengths\tmapping\ted\n";
     }
 
     virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);

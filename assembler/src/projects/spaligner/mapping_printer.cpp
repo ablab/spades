@@ -167,7 +167,6 @@ void MappingPrinterGPA::getPath(const vector<debruijn_graph::EdgeId> &path,
         if (i == path.size() - 1) {
             mapping_end = path_range.path_end.edge_pos;
         }
-        //INFO("getPath " << mapping_start << " " << mapping_end << " " << g_.EdgeNucls(edgeid).size());
         aligned += g_.EdgeNucls(edgeid).Subseq(mapping_start, mapping_end).str();
         edgeblocks.push_back(aligned.size());
     }
@@ -176,7 +175,6 @@ void MappingPrinterGPA::getPath(const vector<debruijn_graph::EdgeId> &path,
 
 
 string MappingPrinterGPA::getSubread(const Sequence &read, const PathRange &path_range) {
-    //INFO("getSubread " << path_range.path_start.seq_pos << " " << path_range.path_end.seq_pos << " " << read.size());
     return read.Subseq(path_range.path_start.seq_pos, path_range.path_end.seq_pos).str();
 }
 
@@ -219,7 +217,6 @@ string MappingPrinterGPA::formGPAOutput(const io::SingleRead &read,
 void MappingPrinterGPA::SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
     int nameIndex = 0;
     for (size_t i = 0; i < aligned_mappings.main_storage.size(); ++ i) {
-        //auto &bwa_path = aligned_mappings.bwa_paths[i];
         auto &path = aligned_mappings.main_storage[i];
         auto &path_range = aligned_mappings.read_ranges[i];
 
