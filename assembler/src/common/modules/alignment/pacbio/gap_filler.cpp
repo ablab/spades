@@ -47,9 +47,9 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len <<
           " max-len " << ed_limit << " vertex_num=" << vertex_pathlen.size());
     GapFillerResult dijkstra_res;
-    if ((vertex_pathlen.size() == 0
-            || ((size_t) s_len) * vertex_pathlen.size() > gap_cfg_.max_gs_states)
-            && start_pos.edgeid.int_id() != end_pos.edgeid.int_id()) {
+    if ((vertex_pathlen.size() == 0 ||
+            ((size_t) s_len) * vertex_pathlen.size() > gap_cfg_.max_gs_states) &&
+            start_pos.edgeid.int_id() != end_pos.edgeid.int_id()) {
         DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
         if (vertex_pathlen.size() == 0) {
             dijkstra_res.return_code = DijkstraReturnCode::NOT_CONNECTED;

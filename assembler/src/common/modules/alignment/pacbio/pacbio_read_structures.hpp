@@ -57,7 +57,8 @@ struct MappingInstance {
 //Less by READ position
 struct ReadPositionComparator {
     bool operator ()(MappingInstance const& a, MappingInstance const& b) const {
-        return (a.read_position < b.read_position || (a.read_position == b.read_position && a.edge_position < b.edge_position));
+        return (a.read_position < b.read_position ||
+                (a.read_position == b.read_position && a.edge_position < b.edge_position));
     }
 };
 //TODO::  to inherit from MappingRange
@@ -87,7 +88,8 @@ struct QualityRange {
     }
 
     bool operator <(const QualityRange & b) const {
-        return (average_read_position < b.average_read_position || (average_read_position == b.average_read_position && edgeId < b.edgeId) ||
+        return (average_read_position < b.average_read_position ||
+                (average_read_position == b.average_read_position && edgeId < b.edgeId) ||
                 (average_read_position == b.average_read_position && edgeId == b.edgeId && sorted_positions < b.sorted_positions));
     }
 

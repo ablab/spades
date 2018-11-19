@@ -126,7 +126,8 @@ class IdealAligner {
                     mapping_end = j + 1 < (int) inds.size() ? range.mapped_range.end_pos : range.mapped_range.end_pos + g_.k();
                     initial_start = range.initial_range.start_pos;
                     initial_end = j + 1 < (int) inds.size() ? range.initial_range.end_pos : range.initial_range.end_pos + g_.k();
-                    if ( (i > 0 && i < (int)(read_mapping.size()) - 1) && (mapping_end - mapping_start != initial_end - initial_start || mapping_end - mapping_start != g_.length(edgeid)) ) {
+                    if ((i > 0 && i < (int)(read_mapping.size()) - 1) &&
+                            (mapping_end - mapping_start != initial_end - initial_start || mapping_end - mapping_start != g_.length(edgeid))) {
                         DEBUG("Bad ranges")
                         return;
                     }
@@ -159,6 +160,7 @@ class IdealAligner {
     const string &output_file_;
     shared_ptr<MapperClass> mapper_;
     ofstream myfile_;
+
 
 };
 

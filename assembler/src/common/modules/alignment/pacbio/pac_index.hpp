@@ -55,10 +55,10 @@ class PacBioMappingIndex {
             return (abs(int(b.edge_position) - int(a.edge_position)) < 2);
         } else {
             return ((b.edge_position - a.edge_position >= (b.read_position - a.read_position) * pb_config_.compression_cutoff) &&
-                    ((b.edge_position - a.edge_position) * pb_config_.compression_cutoff <= (b.read_position - a.read_position)))
-                   || (a_len > SIMILARITY_LENGTH && b_len > SIMILARITY_LENGTH
-                       && (b.read_position - a.read_position) < a_len + b_len
-                       && (b.edge_position - a.edge_position) < a_len + b_len );
+                    ((b.edge_position - a.edge_position) * pb_config_.compression_cutoff <= (b.read_position - a.read_position))) ||
+                   (a_len > SIMILARITY_LENGTH && b_len > SIMILARITY_LENGTH &&
+                    (b.read_position - a.read_position) < a_len + b_len &&
+                    (b.edge_position - a.edge_position) < a_len + b_len );
         }
     }
 
@@ -119,7 +119,8 @@ class PacBioMappingIndex {
                 std::vector<std::pair<size_t, int> > range_limits;
                 for (size_t j = 0; j < mapped_path.size(); j++) {
                     if (i != j) {
-                        if (mapped_path[i].second.initial_range.Intersect(mapped_path[j].second.initial_range) && (mapped_path[i].second.quality * 0.7 < mapped_path[j].second.quality)) {
+                        if (mapped_path[i].second.initial_range.Intersect(mapped_path[j].second.initial_range) &&
+                                (mapped_path[i].second.quality * 0.7 < mapped_path[j].second.quality)) {
                             size_t pos_start = std::max (mapped_path[i].second.initial_range.start_pos, mapped_path[j].second.initial_range.start_pos)
                                                - mapped_path[i].second.initial_range.start_pos;
                             size_t pos_end = std::min (mapped_path[i].second.initial_range.end_pos, mapped_path[j].second.initial_range.end_pos)
@@ -179,7 +180,8 @@ class PacBioMappingIndex {
 
 //FIXME more reasonable condition
 //g_.k() to compare sequence lengths, not kmers
-            if (rlen < SHORT_SPURIOUS_LENGTH && (rlen + g_.k()) * 2 < expected_additional_left + expected_additional_right) {
+            if (rlen < SHORT_SPURIOUS_LENGTH &&
+                    (rlen + g_.k()) * 2 < expected_additional_left + expected_additional_right) {
                 DEBUG ("Skipping spurious alignment " << i << " on edge " << mapped_path[i].first);
             } else
                 res.push_back(mapped_path[i].first, mapped_path[i].second);
@@ -412,8 +414,8 @@ class PacBioMappingIndex {
         } else {
 //FIXME: reconsider this condition! i.e only one large range? That may allow to decrease the bwa length cutoff
             if (- a.sorted_positions[1].edge_position +  (int)result + b.sorted_positions[0].edge_position  <=
-                    b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * int(g_.k())
-                    && (pb_config_.bwa_length_cutoff > 2 * g_.k() || pb_config_.internal_length_cutoff > 2 * g_.k()) ) {
+                    b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * int(g_.k()) &&
+                    (pb_config_.bwa_length_cutoff > 2 * g_.k() || pb_config_.internal_length_cutoff > 2 * g_.k()) ) {
                 DEBUG("overlapping range magic worked, " << - a.sorted_positions[1].edge_position +
                       (int)result + b.sorted_positions[0].edge_position
                       << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k());

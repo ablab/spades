@@ -19,7 +19,8 @@ bool DijkstraGraphSequenceBase::IsBetter(int seq_ind, int ed) {
     }
     VERIFY(seq_ind < (int) ss_.size())
     VERIFY(seq_ind >= 0)
-    if (seq_ind < 100 || max(best_ed_[seq_ind] + (int) ((double)seq_ind * gap_cfg_.penalty_ratio), 20) >= ed) {
+    if (seq_ind < 100 ||
+            max(best_ed_[seq_ind] + (int) ((double)seq_ind * gap_cfg_.penalty_ratio), 20) >= ed) {
         best_ed_[seq_ind] = min(best_ed_[seq_ind], ed);
         return true;
     }
@@ -102,10 +103,10 @@ bool DijkstraGraphSequenceBase::RunDijkstra() {
     size_t iter = 0;
     QueueState cur_state;
     int ed = 0;
-    while (q_.size() > 0
-            && !QueueLimitsExceeded(iter)
-            && ed <= path_max_length_
-            && updates_ < gap_cfg_.updates_limit) {
+    while (q_.size() > 0 &&
+            !QueueLimitsExceeded(iter) &&
+            ed <= path_max_length_ &&
+            updates_ < gap_cfg_.updates_limit) {
         cur_state = q_.begin()->second;
         ed = visited_[cur_state];
         ++ iter;
