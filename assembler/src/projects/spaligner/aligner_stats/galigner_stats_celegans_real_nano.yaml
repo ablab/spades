@@ -1,8 +1,0 @@
-reads_path: 
-edges: 
-truepaths_tsv: 
-galigner_out: lst_celegans_real_nano.txt
-k: 77
-print_html: celegans_real_nanopore.html
-print_bwa_hits_failure: no
-print_gaps_failure: no

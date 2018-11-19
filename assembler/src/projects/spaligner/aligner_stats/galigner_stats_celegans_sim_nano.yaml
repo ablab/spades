@@ -1,8 +1,0 @@
-reads_path: /Sid/tdvorkina/gralign/C.elegans/reads/nanopore_sim/refseq_bwamem_sampled_read_mapped_10k.fasta
-edges: /Sid/tdvorkina/gralign/C.elegans_synth/graph_idealreads/K55/saves/construction.sqn
-truepaths_tsv: /Sid/tdvorkina/gralign/C.elegans/reads/nanopore_sim/refseq_bwamem_sampled_read.fasta_mapping.tsv
-galigner_out: lst_celegans_sim_nano.txt
-k: 55
-print_html: celegans_sim_nanopore.html
-print_bwa_hits_failure: no
-print_gaps_failure: no
