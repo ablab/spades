@@ -4,9 +4,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <iostream>
-#include <fstream>
-
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
 
@@ -20,6 +17,9 @@
 #include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
+
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 

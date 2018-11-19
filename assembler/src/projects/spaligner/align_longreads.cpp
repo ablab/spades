@@ -4,27 +4,23 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <iostream>
-#include <fstream>
-#include <cxxopts/cxxopts.hpp>
-
-
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
-
 #include "io/binary/graph.hpp"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/graph/gfa_writer.hpp"
-
 #include "assembly_graph/core/graph.hpp"
-
 #include "utils/logger/log_writers.hpp"
-
 #include "modules/alignment/pacbio/g_aligner.hpp"
+
 #include "mapping_printer.hpp"
+
+#include <iostream>
+#include <fstream>
+#include <cxxopts/cxxopts.hpp>
 
 using namespace std;
 

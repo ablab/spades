@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include <fstream>
-
 #include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/pacbio/g_aligner.hpp"
+
+#include <fstream>
 
 namespace sensitive_aligner {
 
