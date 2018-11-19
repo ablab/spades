@@ -1,5 +1,9 @@
-#include "edlib/edlib.h"
 #include "sequence_tools.hpp"
+
+#include "utils/logger/logger.hpp"
+
+#include "edlib/edlib.h"
+
 
 static edlib::EdlibEqualityPair additionalEqualities[36] = {{'U', 'T'}
     , {'R', 'A'}, {'R', 'G'}
@@ -22,7 +26,7 @@ int StringDistance(const std::string &a, const std::string &b, int max_score) {
     d = std::max(d, 10);
     if (a_len == 0 || b_len == 0) {
         if (d > 10) {
-            // TRACE("zero length path , lengths " << a_len << " and " << b_len);
+            DEBUG("zero length path , lengths " << a_len << " and " << b_len);
             return std::numeric_limits<int>::max();
         } else {
             return std::max(a_len, b_len);
@@ -31,8 +35,6 @@ int StringDistance(const std::string &a, const std::string &b, int max_score) {
     if (max_score == -1) {
         max_score = 2 * d;
     }
-    // DEBUG(a_len << " " << b_len << " " << d);
-
     edlib::EdlibAlignResult result = edlib::edlibAlign(a.c_str(), a_len,
                                      b.c_str(), b_len,
                                      edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
@@ -55,9 +57,9 @@ void SHWDistanceFull(const std::string &target, const std::string &query, int ma
         return;
     }
     if (target.size() == 0) {
-        if (query.size() <= max_score) {
+        if ((int) query.size() <= max_score) {
             positions.push_back(0);
-            scores.push_back(query.size());
+            scores.push_back((int) query.size());
         }
         return;
     }
@@ -69,7 +71,6 @@ void SHWDistanceFull(const std::string &target, const std::string &query, int ma
         positions.reserve(result.numLocations);
         scores.reserve(result.numLocations);
         for (int i = 0; i < result.numLocations; ++ i) {
-            //INFO("Loc=" << result.endLocations[i] << " score=" << result.endScores[i]);
             if (result.endLocations[i] >= 0) {
                 positions.push_back(result.endLocations[i]);
                 scores.push_back(result.endScores[i]);
