@@ -1,5 +1,5 @@
 //***************************************************************************
-//* Copyright (c) 2015 Saint Petersburg State University
+//* Copyright (c) 2015-2018 Saint Petersburg State University
 //* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
@@ -29,9 +29,9 @@ struct MappingInstance {
     int read_position;
     //Now quality is the same with multiplicity, so best quality is 1,
     int quality;
-    
+
     MappingInstance(int edge_position, int read_position, int quality)
-            : edge_position(edge_position), read_position(read_position), quality(quality) {}
+        : edge_position(edge_position), read_position(read_position), quality(quality) {}
 
     bool IsUnique() const {
         return (quality == 1);
@@ -50,7 +50,7 @@ struct MappingInstance {
         else
             return false;
     }
-private:
+  private:
     DECL_LOGGER("MappingInstance");
 };
 
@@ -74,15 +74,15 @@ struct QualityRange {
     int size;
     double quality;
 
-    QualityRange(EdgeId e, size_t edge_start_pos, size_t edge_end_pos, size_t read_start_pos, size_t read_end_pos, double quality):quality(quality) {
+    QualityRange(EdgeId e, size_t edge_start_pos, size_t edge_end_pos, size_t read_start_pos, size_t read_end_pos, double quality): quality(quality) {
         last_trustable_index = 1;
         first_trustable_index = 0;
         sorted_positions.push_back(MappingInstance((int)edge_start_pos, (int)read_start_pos, 1));
         sorted_positions.push_back(MappingInstance((int)edge_end_pos, (int)read_end_pos, 1));
         VERIFY_MSG(edge_start_pos < edge_end_pos, "range size should be positive");
         size = int (edge_end_pos - edge_start_pos);
-        average_read_position = (read_start_pos + read_end_pos)/2;
-        average_edge_position = (edge_start_pos + edge_end_pos)/2;
+        average_read_position = (read_start_pos + read_end_pos) / 2;
+        average_edge_position = (edge_start_pos + edge_end_pos) / 2;
         edgeId = e;
     }
 
@@ -95,22 +95,22 @@ struct QualityRange {
         return (b.sorted_positions[b.last_trustable_index].read_position < sorted_positions[first_trustable_index].read_position);
     }
 
-    std::string str(const Graph &g) const{
+    std::string str(const Graph &g) const {
         std::stringstream s;
-        s << "Edge: " << g.int_id(edgeId) << " on edge: " << sorted_positions[first_trustable_index].edge_position<<
-                " - "  << sorted_positions[last_trustable_index].edge_position<< ";on read: "
-        << sorted_positions[first_trustable_index].read_position<< " - "
-        << sorted_positions[last_trustable_index].read_position<< ";size "<< size;
+        s << "Edge: " << g.int_id(edgeId) << " on edge: " << sorted_positions[first_trustable_index].edge_position <<
+          " - "  << sorted_positions[last_trustable_index].edge_position << ";on read: "
+          << sorted_positions[first_trustable_index].read_position << " - "
+          << sorted_positions[last_trustable_index].read_position << ";size " << size;
 
         return s.str();
     }
-private:
+  private:
     DECL_LOGGER("QualityRange");
 };
 
 class StatsCounter {
-public:
-    std::map<size_t,size_t> path_len_in_edges;
+  public:
+    std::map<size_t, size_t> path_len_in_edges;
     std::vector<size_t> subreads_length;
     size_t total_len ;
     size_t reads_with_conjugate;
@@ -127,18 +127,18 @@ public:
         for (auto iter = other.subreads_length.begin(); iter != other.subreads_length.end(); ++iter) {
             subreads_length.push_back(*iter);
         }
-        
-        for (auto iter = other.path_len_in_edges.begin(); iter != other.path_len_in_edges.end(); ++iter){
+
+        for (auto iter = other.path_len_in_edges.begin(); iter != other.path_len_in_edges.end(); ++iter) {
             auto j_iter = iter;
-            if (( j_iter = path_len_in_edges.find(iter->first)) == other.path_len_in_edges.end()){
+            if (( j_iter = path_len_in_edges.find(iter->first)) == other.path_len_in_edges.end()) {
                 path_len_in_edges.insert(*iter);
             } else {
                 path_len_in_edges[j_iter->first] += iter->second;
             }
         }
-        for (auto iter = other.seeds_percentage.begin(); iter != other.seeds_percentage.end(); ++iter){
+        for (auto iter = other.seeds_percentage.begin(); iter != other.seeds_percentage.end(); ++iter) {
             auto j_iter = iter;
-            if (( j_iter = seeds_percentage.find(iter->first)) == other.seeds_percentage.end()){
+            if (( j_iter = seeds_percentage.find(iter->first)) == other.seeds_percentage.end()) {
                 seeds_percentage.insert(*iter);
             } else {
                 seeds_percentage[j_iter->first] += iter->second;
@@ -153,7 +153,7 @@ public:
         }
         size_t cur = 0;
         size_t percentage = 0;
-        for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter){
+        for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter) {
             cur += iter->second;
             percentage = iter->first;
             if (cur * 2 > total) break;
@@ -161,7 +161,7 @@ public:
         INFO("Median fraction of present seeds in maximal alignmnent among reads aligned to the graph: " << double(percentage) * 0.001);
     }
 
-private:
+  private:
     DECL_LOGGER("StatsCounter");
 };
 }

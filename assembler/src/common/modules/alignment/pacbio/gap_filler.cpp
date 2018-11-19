@@ -1,3 +1,10 @@
+//***************************************************************************
+//* Copyright (c) 2015-2018 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "modules/alignment/pacbio/gap_filler.hpp"
 
 namespace sensitive_aligner {
@@ -41,13 +48,13 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len <<
           " max-len " << ed_limit << " vertex_num=" << vertex_pathlen.size());
     GapFillerResult dijkstra_res;
-    if ((vertex_pathlen.size() == 0 
-            || ((size_t) s_len) * vertex_pathlen.size() > gap_cfg_.max_gs_states) 
+    if ((vertex_pathlen.size() == 0
+            || ((size_t) s_len) * vertex_pathlen.size() > gap_cfg_.max_gs_states)
             && start_pos.edgeid.int_id() != end_pos.edgeid.int_id()) {
         DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
         if (vertex_pathlen.size() == 0) {
             dijkstra_res.return_code = DijkstraReturnCode::NOT_CONNECTED;
-        }else{
+        } else {
             dijkstra_res.return_code += DijkstraReturnCode::TOO_LONG_GAP;
             dijkstra_res.return_code += DijkstraReturnCode::TOO_MANY_VERTICES;
         }
@@ -79,9 +86,9 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
     GapFillerResult bf_res;
     bf_res.return_code = DijkstraReturnCode::NO_PATH;
     int return_code = ProcessPaths(g_,
-                                      path_min_length, path_max_length,
-                                      start_v, end_v,
-                                      callback);
+                                   path_min_length, path_max_length,
+                                   start_v, end_v,
+                                   callback);
     DEBUG("PathProcessor result: " << return_code << " limits " << path_min_length << " " << path_max_length);
     vector<vector<EdgeId> > paths = callback.paths();
     size_t best_path_ind = paths.size();
@@ -140,7 +147,7 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
     bf_res.full_intermediate_path = paths[best_path_ind];
     bf_res.full_intermediate_path.insert(bf_res.full_intermediate_path.begin(), start_pos.edgeid);
     bf_res.full_intermediate_path.push_back(end_pos.edgeid);
-    if (return_code == 0){
+    if (return_code == 0) {
         bf_res.return_code = DijkstraReturnCode::OK;
     }
     return bf_res;
@@ -175,7 +182,7 @@ GapFillerResult GapFiller::Run(const string &s,
 
 void GapFiller::Revert(Sequence &ss, GraphPosition &start_pos) const {
     start_pos.edgeid = g_.conjugate(start_pos.edgeid);
-    start_pos.position = min((int) g_.length(start_pos.edgeid), 
+    start_pos.position = min((int) g_.length(start_pos.edgeid),
                              (int) g_.length(start_pos.edgeid) + (int) g_.k() - (int) start_pos.position);
     ss = !ss;
     DEBUG("Backward e=" << start_pos.edgeid.int_id() << " sp=" << start_pos.position << " seq_sz" << ss.size())

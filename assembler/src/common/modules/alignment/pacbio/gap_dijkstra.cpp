@@ -1,15 +1,21 @@
+//***************************************************************************
+//* Copyright (c) 2015-2018 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "modules/alignment/pacbio/gap_dijkstra.hpp"
 
 namespace sensitive_aligner {
 
 using namespace std;
 
-bool DijkstraGraphSequenceBase::IsBetter(int seq_ind, int ed)
-{
+bool DijkstraGraphSequenceBase::IsBetter(int seq_ind, int ed) {
     if (seq_ind == (int) ss_.size() ) {
         if (ed <= path_max_length_) {
             return true;
-        } 
+        }
         return false;
     }
     VERIFY(seq_ind < (int) ss_.size())
@@ -17,12 +23,11 @@ bool DijkstraGraphSequenceBase::IsBetter(int seq_ind, int ed)
     if (seq_ind < 100 || max(best_ed_[seq_ind] + (int) ((double)seq_ind * gap_cfg_.penalty_ratio), 20) >= ed) {
         best_ed_[seq_ind] = min(best_ed_[seq_ind], ed);
         return true;
-    } 
+    }
     return false;
 }
 
-void DijkstraGraphSequenceBase::Update(const QueueState &state, const QueueState &prev_state, int score)
-{
+void DijkstraGraphSequenceBase::Update(const QueueState &state, const QueueState &prev_state, int score) {
     if (visited_.count(state) > 0) {
         if (visited_[state] >= score) {
             ++ updates_;
@@ -43,8 +48,7 @@ void DijkstraGraphSequenceBase::Update(const QueueState &state, const QueueState
     }
 }
 
-void DijkstraGraphSequenceBase::AddNewEdge(const GraphState &gs, const QueueState &prev_state, int ed)
-{
+void DijkstraGraphSequenceBase::AddNewEdge(const GraphState &gs, const QueueState &prev_state, int ed) {
     string edge_str = g_.EdgeNucls(gs.e).Subseq(gs.start_pos, gs.end_pos).str();
     if ( 0 == (int) edge_str.size()) {
         QueueState state(gs, prev_state.i);
@@ -102,8 +106,7 @@ bool DijkstraGraphSequenceBase::RunDijkstra() {
     while (q_.size() > 0
             && !QueueLimitsExceeded(iter)
             && ed <= path_max_length_
-            && updates_ < gap_cfg_.updates_limit)
-    {
+            && updates_ < gap_cfg_.updates_limit) {
         cur_state = q_.begin()->second;
         ed = visited_[cur_state];
         ++ iter;

@@ -60,10 +60,10 @@ class MappingPrinterGPA : public MappingPrinter {
     std::string getSubread(const Sequence &read, const PathRange &path_range);
 
     std::string formGPAOutput(const io::SingleRead &read,
-                         const std::vector<debruijn_graph::EdgeId> &path,
-                         const std::vector<std::string> &edgecigar,
-                         const std::vector<Range> &edgeranges,
-                         int &nameIndex, const PathRange &path_range);
+                              const std::vector<debruijn_graph::EdgeId> &path,
+                              const std::vector<std::string> &edgecigar,
+                              const std::vector<Range> &edgeranges,
+                              int &nameIndex, const PathRange &path_range);
 
     virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
 

@@ -1,3 +1,10 @@
+//***************************************************************************
+//* Copyright (c) 2015-2018 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
@@ -121,8 +128,7 @@ struct QueueState {
 };
 
 struct StateHasher {
-    std::size_t operator()(const QueueState& k) const
-    {
+    std::size_t operator()(const QueueState& k) const {
         using std::hash;
 
         return ((hash<int>()((int) k.gs.e.int_id())
@@ -135,7 +141,7 @@ struct StateHasher {
 
 class DijkstraGraphSequenceBase {
 
-protected:
+  protected:
     bool IsBetter(int seq_ind, int ed);
 
     void Update(const QueueState &state, const QueueState &prev_state, int score);
@@ -150,7 +156,7 @@ protected:
 
     virtual bool IsEndPosition(const QueueState &cur_state) = 0;
 
-public:
+  public:
     DijkstraGraphSequenceBase(const debruijn_graph::Graph &g,
                               const DijkstraParams &gap_cfg,
                               std::string ss,
@@ -209,7 +215,7 @@ public:
         DEBUG("updates=" << updates_)
     }
 
-protected:
+  protected:
     std::set<std::pair<int, QueueState>> q_;
     std::unordered_map<QueueState, int, StateHasher> visited_;
     std::unordered_map<QueueState, QueueState, StateHasher> prev_states_;
@@ -239,13 +245,13 @@ protected:
 
 class DijkstraGapFiller: public DijkstraGraphSequenceBase {
 
-private:
+  private:
 
     virtual bool AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed);
 
     virtual bool IsEndPosition(const QueueState &cur_state);
 
-public:
+  public:
     DijkstraGapFiller(const debruijn_graph::Graph &g, const GapClosingConfig &gap_cfg, std::string ss,
                       debruijn_graph::EdgeId start_e, debruijn_graph::EdgeId end_e,
                       int start_p, int end_p, int path_max_length,
@@ -271,7 +277,7 @@ public:
         }
     }
 
-protected:
+  protected:
     debruijn_graph::EdgeId end_e_;
     const int end_p_;
     const std::map<debruijn_graph::VertexId, size_t> &reachable_vertex_;
@@ -281,11 +287,11 @@ protected:
 
 class DijkstraEndsReconstructor: public DijkstraGraphSequenceBase {
 
-private:
+  private:
     virtual bool AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed);
 
     virtual bool IsEndPosition(const QueueState &cur_state);
-public:
+  public:
     DijkstraEndsReconstructor(const debruijn_graph::Graph &g, const EndsClosingConfig &gap_cfg, std::string ss,
                               debruijn_graph::EdgeId start_e, int start_p, int path_max_length)
         : DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length) {

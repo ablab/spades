@@ -92,9 +92,9 @@ class IdealAligner {
                     j++;
                     len_before = range.initial_range.end_pos;
                 } else {
-                    INFO("len_before: "<< len_before << " start=" << range.initial_range.start_pos 
-                            << " end=" << range.initial_range.end_pos << " e_sz=" << g_.length(edgeid))
-                    len_before += g_.length(edgeid);    
+                    INFO("len_before: " << len_before << " start=" << range.initial_range.start_pos
+                         << " end=" << range.initial_range.end_pos << " e_sz=" << g_.length(edgeid))
+                    len_before += g_.length(edgeid);
                 }
             } else {
                 len_before += g_.length(edgeid);
@@ -119,7 +119,7 @@ class IdealAligner {
         }
 
         vector<int> inds = CheckPathConsistency(read_mapping, current_mapping);
-        if (inds.size() > 0){
+        if (inds.size() > 0) {
             int j = 0;
             int len_before = 0;
             string path_str = "";
@@ -244,7 +244,7 @@ int main(int argc, char **argv) {
     INFO("Load long reads from " << longreads_file);
     string output_file = argv[4];
     bool load_spades_graph = false;
-    if (argc == 6){
+    if (argc == 6) {
         load_spades_graph = true;
     }
     debruijn_graph::Launch(K, saves_path, load_spades_graph, longreads_file, output_file);
