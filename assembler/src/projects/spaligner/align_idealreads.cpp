@@ -69,34 +69,34 @@ class IdealAligner {
         vector<int> inds;
         int j = 0;
         int len_before = 0;
-        for (int i = 0; i < read_mapping.size(); ++ i) {
+        for (int i = 0; i < (int) read_mapping.size(); ++ i) {
             if (i > 0) {
                 VertexId v1 = g_.EdgeEnd(read_mapping[i - 1]);
                 VertexId v2 = g_.EdgeStart(read_mapping[i]);
                 if (v1 != v2) {
-                    INFO("Not a connected path!")
+                    DEBUG("Not a connected path!")
                     return vector<int>();
                 }
             }
             EdgeId edgeid = read_mapping[i];
-            if (j < current_mapping.size() && current_mapping[j].first == edgeid) {
+            if (j < (int) current_mapping.size() && current_mapping[j].first == edgeid) {
                 omnigraph::MappingRange range = current_mapping[j].second;
-                if (len_before == range.initial_range.start_pos) {
+                if (len_before == (int) range.initial_range.start_pos) {
                     inds.push_back(i);
                     j++;
-                    len_before = range.initial_range.end_pos;
+                    len_before = (int) range.initial_range.end_pos;
                 } else {
-                    INFO("len_before: " << len_before << " start=" << range.initial_range.start_pos
+                    DEBUG("len_before: " << len_before << " start=" << range.initial_range.start_pos
                          << " end=" << range.initial_range.end_pos << " e_sz=" << g_.length(edgeid))
-                    len_before += g_.length(edgeid);
+                    len_before += (int) g_.length(edgeid);
                 }
             } else {
-                len_before += g_.length(edgeid);
+                len_before += (int) g_.length(edgeid);
             }
 
         }
-        if (j != current_mapping.size()) {
-            INFO("Badly mapped j != mapping")
+        if (j != (int) current_mapping.size()) {
+            DEBUG("Badly mapped j != mapping")
             return vector<int>();
         }
         return inds;
@@ -104,7 +104,7 @@ class IdealAligner {
 
     void AlignRead(const io::SingleRead &read) {
         Sequence seq(read.sequence());
-        INFO("Read " << read.name() << ". Current Read")
+        INFO("Read " << read.name() << ".")
         auto current_mapping = mapper_->MapRead(read);
         ReadPathFinder<debruijn_graph::Graph> readmapper(g_);
         auto read_mapping = readmapper.FindReadPath(current_mapping);
@@ -120,7 +120,7 @@ class IdealAligner {
             string pathlen_str = "";
             string edgelen_str = "";
             string str = "";
-            for (int i = 0; i < read_mapping.size(); ++ i) {
+            for (int i = 0; i < (int) read_mapping.size(); ++ i) {
                 EdgeId edgeid = read_mapping[i];
                 size_t mapping_start = 0;
                 size_t mapping_end = g_.length(edgeid);
@@ -129,26 +129,26 @@ class IdealAligner {
                 if (inds[j] == i) {
                     omnigraph::MappingRange range = current_mapping[j].second;
                     mapping_start = range.mapped_range.start_pos;
-                    mapping_end = j + 1 < inds.size() ? range.mapped_range.end_pos : range.mapped_range.end_pos + g_.k();
+                    mapping_end = j + 1 < (int) inds.size() ? range.mapped_range.end_pos : range.mapped_range.end_pos + g_.k();
                     initial_start = range.initial_range.start_pos;
-                    initial_end = j + 1 < inds.size() ? range.initial_range.end_pos : range.initial_range.end_pos + g_.k();
-                    if ( (i > 0 && i < read_mapping.size() - 1) && (mapping_end - mapping_start != initial_end - initial_start || mapping_end - mapping_start != g_.length(edgeid)) ) {
-                        INFO("Bad ranges")
+                    initial_end = j + 1 < (int) inds.size() ? range.initial_range.end_pos : range.initial_range.end_pos + g_.k();
+                    if ( (i > 0 && i < (int)(read_mapping.size()) - 1) && (mapping_end - mapping_start != initial_end - initial_start || mapping_end - mapping_start != g_.length(edgeid)) ) {
+                        DEBUG("Bad ranges")
                         return;
                     }
                     ++ j;
                 }
-                len_before += g_.length(edgeid);
+                len_before += (int) g_.length(edgeid);
                 path_str += getStrId(edgeid, g_) + " (" + to_string(mapping_start) + "," + to_string(mapping_end) + ") ["
                             + to_string(initial_start) + "," + to_string(initial_end) + "], ";
                 pathlen_str += to_string(mapping_end - mapping_start) + ",";
                 edgelen_str += to_string(g_.length(edgeid)) + ",";
                 str += g_.EdgeNucls(edgeid).Subseq(mapping_start, mapping_end).str();
             }
-            INFO("Path: " << path_str);
-            INFO("Read " << read.name() << " length=" << seq.size() << "; path_len=" << current_mapping.size()  << "; aligned: " << path_str);
+            DEBUG("Path: " << path_str);
+            DEBUG("Read " << read.name() << " length=" << seq.size() << "; path_len=" << current_mapping.size()  << "; aligned: " << path_str);
             if (str.size() != seq.size()) {
-                INFO("Read " << read.name() << " wasn't fully aligned");
+                DEBUG("Read " << read.name() << " wasn't fully aligned");
                 return;
             }
             #pragma omp critical
