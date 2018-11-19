@@ -34,10 +34,22 @@ struct OneReadMapping {
 typedef std::pair<QualityRange, int> ColoredRange;
 
 class GAligner {
+ public:
+  OneReadMapping GetReadAlignment(const io::SingleRead &read) const;
+  
+  GAligner(const debruijn_graph::Graph &g,
+           debruijn_graph::config::pacbio_processor pb_config,
+           alignment::BWAIndex::AlignmentMode mode,
+           GapClosingConfig gap_cfg = GapClosingConfig(),
+           EndsClosingConfig ends_cfg = EndsClosingConfig())
+    : pac_index_(g, pb_config, mode), g_(g), pb_config_(pb_config), gap_cfg_(gap_cfg), ends_cfg_(ends_cfg), gap_filler_(g, pb_config, gap_cfg, ends_cfg_) {}
+
+
+ private:
   PacBioMappingIndex pac_index_;
   const debruijn_graph::Graph &g_;
   debruijn_graph::config::pacbio_processor pb_config_;
-//TODO:: shouldn't it be somewhere in debruijn_graph::config?
+  //TODO:: shouldn't it be somewhere in debruijn_graph::config?
   GapClosingConfig gap_cfg_;
   EndsClosingConfig ends_cfg_;
   GapFiller gap_filler_;
@@ -77,17 +89,5 @@ class GAligner {
                    int start,
                    std::vector<debruijn_graph::EdgeId> &sorted_edges,
                    PathRange &cur_range) const;
-
- public:
-  OneReadMapping GetReadAlignment(const io::SingleRead &read) const;
-  GAligner(const debruijn_graph::Graph &g,
-           debruijn_graph::config::pacbio_processor pb_config,
-           alignment::BWAIndex::AlignmentMode mode,
-           GapClosingConfig gap_cfg = GapClosingConfig(),
-           EndsClosingConfig ends_cfg = EndsClosingConfig())
-    : pac_index_(g, pb_config, mode), g_(g), pb_config_(pb_config), gap_cfg_(gap_cfg), ends_cfg_(ends_cfg), gap_filler_(g, pb_config, gap_cfg, ends_cfg_) {}
-
-
-
 };
 }

@@ -116,14 +116,6 @@ template<> struct MappingTraits<sensitive_aligner::GAlignerConfig> {
 namespace sensitive_aligner {
 
 class LongReadsAligner {
-  private:
-    const debruijn_graph::ConjugateDeBruijnGraph &g_;
-    const sensitive_aligner::GAligner galigner_;
-    MappingPrinterHub mapping_printer_hub_;
-
-    int aligned_reads_;
-    int processed_reads_;
-
   public:
     LongReadsAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
                      const alignment::BWAIndex::AlignmentMode mode,
@@ -179,6 +171,14 @@ class LongReadsAligner {
             }
         }
     }
+
+  private:
+    const debruijn_graph::ConjugateDeBruijnGraph &g_;
+    const sensitive_aligner::GAligner galigner_;
+    MappingPrinterHub mapping_printer_hub_;
+
+    int aligned_reads_;
+    int processed_reads_;
 };
 
 void LoadGraph(const string &saves_path, bool load_spades_graph, debruijn_graph::ConjugateDeBruijnGraph &g) {

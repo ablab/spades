@@ -42,12 +42,6 @@ string getStrId(const EdgeId &e, const debruijn_graph::ConjugateDeBruijnGraph &g
 }
 
 class IdealAligner {
-  private:
-    const debruijn_graph::ConjugateDeBruijnGraph &g_;
-    const string &output_file_;
-    shared_ptr<MapperClass> mapper_;
-    ofstream myfile_;
-
   public:
     IdealAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
                  const string &output_file,
@@ -87,7 +81,7 @@ class IdealAligner {
                     len_before = (int) range.initial_range.end_pos;
                 } else {
                     DEBUG("len_before: " << len_before << " start=" << range.initial_range.start_pos
-                         << " end=" << range.initial_range.end_pos << " e_sz=" << g_.length(edgeid))
+                          << " end=" << range.initial_range.end_pos << " e_sz=" << g_.length(edgeid))
                     len_before += (int) g_.length(edgeid);
                 }
             } else {
@@ -159,6 +153,12 @@ class IdealAligner {
             }
         }
     }
+
+  private:
+    const debruijn_graph::ConjugateDeBruijnGraph &g_;
+    const string &output_file_;
+    shared_ptr<MapperClass> mapper_;
+    ofstream myfile_;
 
 };
 

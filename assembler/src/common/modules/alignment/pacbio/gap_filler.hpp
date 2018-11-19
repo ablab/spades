@@ -54,24 +54,6 @@ struct GraphPosition {
 };
 
 class GapFiller {
-    std::string PathToString(const std::vector<EdgeId>& path) const;
-
-    GapFillerResult BestScoredPathDijkstra(const std::string &s,
-                                           const GraphPosition &start_pos,
-                                           const GraphPosition &end_pos,
-                                           int path_max_length, int score) const;
-
-    GapFillerResult BestScoredPathBruteForce(const std::string &seq_string,
-            const GraphPosition &start_pos,
-            const GraphPosition &end_pos,
-            int path_min_length, int path_max_length) const;
-
-    void Revert(Sequence &ss, GraphPosition &start_pos) const;
-
-    void UpdatePath(std::vector<debruijn_graph::EdgeId> &path,
-                    std::vector<EdgeId> &ans,
-                    MappingPoint p, PathRange &range, bool forward, GraphPosition &old_start_pos) const;
-
   public:
 
     GapFiller(const debruijn_graph::Graph &g,
@@ -92,6 +74,25 @@ class GapFiller {
                         PathRange &range) const;
 
   private:
+
+    std::string PathToString(const std::vector<EdgeId>& path) const;
+
+    GapFillerResult BestScoredPathDijkstra(const std::string &s,
+                                           const GraphPosition &start_pos,
+                                           const GraphPosition &end_pos,
+                                           int path_max_length, int score) const;
+
+    GapFillerResult BestScoredPathBruteForce(const std::string &seq_string,
+            const GraphPosition &start_pos,
+            const GraphPosition &end_pos,
+            int path_min_length, int path_max_length) const;
+
+    void Revert(Sequence &ss, GraphPosition &start_pos) const;
+
+    void UpdatePath(std::vector<debruijn_graph::EdgeId> &path,
+                    std::vector<EdgeId> &ans,
+                    MappingPoint p, PathRange &range, bool forward, GraphPosition &old_start_pos) const;
+
     const debruijn_graph::Graph &g_;
     const debruijn_graph::config::pacbio_processor pb_config_;
     const GapClosingConfig gap_cfg_;

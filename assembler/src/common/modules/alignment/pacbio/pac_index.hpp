@@ -391,7 +391,6 @@ class PacBioMappingIndex {
         int b_len = b.sorted_positions[1].read_position - b.sorted_positions[0].read_position;
         DEBUG("Checking consistency: " << g_.int_id(a_edge) << " and " << g_.int_id(b_edge));
         if (g_.int_id(a_edge) == g_.int_id(b_edge) && similar(a.sorted_positions[1], b.sorted_positions[0], a_len, b_len)) {
-            //INFO("Similar on edge ");
             return true;
         }
         //FIXME: Is this check useful?

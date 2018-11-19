@@ -76,9 +76,6 @@ void GAligner::FillGapsInCluster(const vector<QualityRange> &cur_cluster,
                                                       limits.first, limits.second);
                 vector<EdgeId> intermediate_path = res.full_intermediate_path;
                 if (res.return_code != DijkstraReturnCode::OK) {
-//                        DEBUG(DebugEmptyBestScoredPath(start_v, end_v, prev_edge, cur_edge,
-//                                                       prev_last_index.edge_position, cur_first_index.edge_position,
-//                                                       seq_end - seq_start));
                     bwa_hits.push_back(cur_sorted_hits);
                     edges.push_back(cur_sorted_edges);
                     cur_sorted_edges.clear();
@@ -120,7 +117,6 @@ pair<int, int> GAligner::GetPathLimits(const QualityRange &a,
     int start_pos = a.sorted_positions[a.last_trustable_index].read_position;
     int end_pos = b.sorted_positions[b.first_trustable_index].read_position;
     int seq_len = -start_pos + end_pos;
-    //int new_seq_len =
 //TODO::something more reasonable
     int path_min_len = max(int(floor((seq_len - int(g_.k())) * pb_config_.path_limit_pressing)), 0);
     int path_max_len = (int) ((double) (seq_len + g_.k() * 2) * pb_config_.path_limit_stretching);
