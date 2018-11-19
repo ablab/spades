@@ -1,4 +1,12 @@
+//***************************************************************************
+//* Copyright (c) 2018 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
+
+#include <fstream>
 
 #include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/pacbio/g_aligner.hpp"

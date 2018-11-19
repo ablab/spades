@@ -1,31 +1,25 @@
 //***************************************************************************
-//* Copyright (c) 2015-2018 Saint Petersburg State University
-//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* Copyright (c) 2018 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
+
+#include <iostream>
+#include <fstream>
 
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
 
 #include "io/binary/graph.hpp"
-#include "pipeline/graph_pack.hpp"
-#include "pipeline/config_struct.hpp"
-
-#include "assembly_graph/core/graph.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
-
 #include "io/reads/io_helper.hpp"
-#include "common/assembly_graph/core/coverage.hpp"
-
 #include "io/reads/wrapper_collection.hpp"
-#include "assembly_graph/stats/picture_dump.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/graph/gfa_writer.hpp"
 
-#include <iostream>
-#include <fstream>
+#include "assembly_graph/core/graph.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
 
 using namespace std;
 

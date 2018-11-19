@@ -1,8 +1,12 @@
-#include <fstream>
-
-#include "edlib/edlib.h"
+//***************************************************************************
+//* Copyright (c) 2018 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #include "mapping_printer.hpp"
+
+#include "edlib/edlib.h"
 
 namespace sensitive_aligner {
 

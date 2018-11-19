@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "modules/alignment/sequence_mapper.hpp"
-#include "assembly_graph/core/graph.hpp"
-
 #include <algorithm>
 #include <sstream>
 #include <map>
 #include <set>
+
+#include "modules/alignment/sequence_mapper.hpp"
+#include "assembly_graph/core/graph.hpp"
 
 namespace sensitive_aligner {
 typedef omnigraph::GapDescription<debruijn_graph::Graph> GapDescription;
