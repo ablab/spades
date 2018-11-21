@@ -141,6 +141,8 @@ class PredicateScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
  protected:
     void ConstructFromGraphAndPredicate(const ScaffoldGraph& old_graph, shared_ptr<EdgePairPredicate> predicate);
 
+    DECL_LOGGER("PredicateScaffoldGraphFilter");
+
 };
 
 class ScoreFunctionScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
