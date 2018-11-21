@@ -20,6 +20,8 @@ void LongEdgePairDataset::Serialize(const string &path) {
 LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(
         const vector<vector<validation::EdgeWithMapping>> &reference_paths) const {
     INFO("Getting long edge dataset")
+    validation::ReferencePathIndexBuilder path_index_builder;
+    auto reference_index = path_index_builder.BuildReferencePathIndex(reference_paths);
     path_extend::validation::GeneralTransitionStorageBuilder forward_transition_builder(gp_.g, 1, false, false);
     auto reference_transition_storage = forward_transition_builder.GetTransitionStorage(reference_paths);
     const size_t close_distance = 5;
@@ -27,11 +29,9 @@ LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(
     auto close_transition_storage = close_transition_builder.GetTransitionStorage(reference_paths);
     auto covered_edges_set = reference_transition_storage.GetCoveredEdges();
 
-    validation::ReferencePathIndexBuilder path_index_builder;
-    auto reference_index = path_index_builder.BuildReferencePathIndex(reference_paths);
+
     auto distance_map = GetDistanceMap(reference_paths);
     vector<EdgeId> reference_edges(covered_edges_set.begin(), covered_edges_set.end());
-    INFO(reference_edges.size() << " reference edges.");
 
     vector<LongEdgePairEntry> dataset;
     auto long_edge_extractor = ConstructLongEdgeExtractor();
@@ -39,6 +39,8 @@ LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(
                                              reference_index, distance_map);
     std::move(correct_entries.begin(), correct_entries.end(), std::back_inserter(dataset));
 
+    INFO(reference_edges.size() << " reference edges");
+    INFO(reference_paths.size() << " reference paths");
     INFO(dataset.size() << " correct pairs");
 
     const size_t sample_size = 100000;
@@ -81,7 +83,7 @@ map<LongEdgePairDatasetExtractor::Transition, size_t> LongEdgePairDatasetExtract
             }
         }
     }
-    INFO(result.size() << "distances counted");
+    INFO(result.size() << " distances counted");
     return result;
 }
 vector<LongEdgePairEntry> LongEdgePairDatasetExtractor::GetCorrectEntries(
@@ -107,7 +109,7 @@ vector<LongEdgePairEntry> LongEdgePairDatasetExtractor::GetCorrectEntries(
                 size_t distance = distance_map.at(transition);
                 correct_entries.push_back(GetLongEdgePairEntry(long_edge_extractor,
                                                                transition.first_, transition.second_, distance,
-                                                               (first_path_id / 2) + 1, true));
+                                                               first_path_id, true));
             }
         }
     }
@@ -168,4 +170,27 @@ shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> LongEdgePairDa
     return scaffold_index_extractor;
 }
 LongEdgePairDatasetExtractor::LongEdgePairDatasetExtractor(const conj_graph_pack &gp) : gp_(gp) {}
+LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(size_t length_threshold,
+                                                                     const string &path_to_reference) const {
+    path_extend::validation::FilteredReferencePathHelper path_helper(gp_);
+    auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
+    return GetLongEdgeDataset(reference_paths);
+}
+void LongEdgePairDatasetExtractor::ConstructAndSerialize(const string &path_to_reference, const string &output_base) const {
+    path_extend::LongEdgePairDatasetExtractor long_pair_extractor(gp_);
+    const string reference_path = path_to_reference;
+    size_t long_threshold = gp_.scaffold_graph_storage.GetSmallLengthThreshold();
+//    size_t ultralong_threshold = gp_.scaffold_graph_storage.GetLargeLengthThreshold();
+    size_t ultralong_threshold = 10000;
+    INFO(gp_.scaffold_graph_storage.GetSmallScaffoldGraph().VertexCount() << " long edges");
+    auto long_edge_dataset = long_pair_extractor.GetLongEdgeDataset(long_threshold, reference_path);
+    INFO(gp_.scaffold_graph_storage.GetLargeScaffoldGraph().VertexCount() << " ultralong edges");
+    auto ultralong_edge_dataset = long_pair_extractor.GetLongEdgeDataset(ultralong_threshold, reference_path);
+    const string output_name = "long_edge_dataset_";
+    const string long_output_path = fs::append_path(output_base, output_name + std::to_string(long_threshold));
+    const string ultralong_output_path = fs::append_path(output_base, output_name +
+        std::to_string(ultralong_threshold));
+    long_edge_dataset.Serialize(long_output_path);
+    ultralong_edge_dataset.Serialize(ultralong_output_path);
+}
 }
