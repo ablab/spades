@@ -188,6 +188,39 @@ namespace barcode_index {
             ScaffoldVertexIndexBuilder<SimpleVertexEntry> builder(g_, entry_extractor, max_threads);
             return builder.GetConstructedIndex(vertex_container);
         }
+
+        template <class ContainerT>
+        shared_ptr<SimpleScaffoldVertexIndex> HalfEdgeScaffoldVertexIndex(const Graph& g,
+                                                                          const FrameBarcodeIndexInfoExtractor& extractor,
+                                                                          const ContainerT& vertex_container,
+                                                                          size_t count_threshold,
+                                                                          size_t max_threads) {
+            const size_t length_threshold = 1000;
+            const size_t linkage_distance = 10;
+            const double EDGE_LENGTH_FRACTION = 0.5;
+            auto fraction_tail_threshold_getter =
+                make_shared<barcode_index::FractionTailThresholdGetter>(g, EDGE_LENGTH_FRACTION);
+            auto split_scaffold_vertex_index = ConstructScaffoldVertexIndex(g, extractor,
+                                                                            fraction_tail_threshold_getter,
+                                                                            count_threshold, length_threshold,
+                                                                            max_threads, vertex_container);
+            return split_scaffold_vertex_index;
+        }
+
+        template <class ContainerT>
+        shared_ptr<SimpleScaffoldVertexIndex> TailEdgeScaffoldVertexIndex(const Graph& g,
+                                                                          const FrameBarcodeIndexInfoExtractor& extractor,
+                                                                          const ContainerT& vertex_container,
+                                                                          size_t count_threshold,
+                                                                          size_t tail_threshold,
+                                                                          size_t max_threads) {
+            const size_t length_threshold = 1000;
+            auto tail_threshold_getter = make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
+            auto scaffold_vertex_index = ConstructScaffoldVertexIndex(g, extractor, tail_threshold_getter,
+                                                                      count_threshold, length_threshold,
+                                                                      max_threads, vertex_container);
+            return scaffold_vertex_index;
+        }
     };
 
 }

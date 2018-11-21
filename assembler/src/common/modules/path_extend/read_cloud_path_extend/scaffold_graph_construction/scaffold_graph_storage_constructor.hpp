@@ -67,7 +67,6 @@ class CloudScaffoldGraphConstructor {
                                                      size_t min_length,
                                                      scaffold_graph_construction_pipeline_type::Type type) const;
 
- private:
     ScaffoldingUniqueEdgeStorage ConstructUniqueStorage(size_t min_length) const;
 
     DECL_LOGGER("CloudScaffoldGraphConstructor");

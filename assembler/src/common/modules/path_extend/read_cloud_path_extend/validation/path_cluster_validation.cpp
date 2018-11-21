@@ -19,37 +19,11 @@ bool PathClusterValidator::IsCovered(const cluster_storage::Cluster &cluster) co
     return IsCovered(cluster_vertices);
 }
 bool PathClusterValidator::IsCorrect(const set<scaffold_graph::ScaffoldVertex> &scaffold_vertices) const {
-    std::set<EdgeId> cluster_vertices;
-    path_extend::scaffold_graph::EdgeGetter edge_getter;
-    for (const auto &vertex: scaffold_vertices) {
-        cluster_vertices.insert(edge_getter.GetEdgeFromScaffoldVertex(vertex));
-    }
-    VERIFY_DEV(cluster_vertices.size() >= 1);
-    size_t first_path = ref_path_index_.at(*cluster_vertices.begin()).path_;
-    for (const auto &vertex: cluster_vertices) {
-        if (ref_path_index_.at(vertex).path_ != first_path) {
-            return false;
-        }
-    }
-    std::vector<size_t> vertex_positions;
-    vertex_positions.resize(cluster_vertices.size());
-    std::transform(cluster_vertices.begin(), cluster_vertices.end(), vertex_positions.begin(),
-                   [this](const EdgeId &edge) {
-                     return this->ref_path_index_.at(edge).pos_;
-                   });
-    std::sort(vertex_positions.begin(), vertex_positions.end());
-    for (auto curr = vertex_positions.begin(), next = std::next(curr); next != vertex_positions.end(); ++curr, ++next) {
-        if (*next <= *curr or *next - *curr != 1) {
-            return false;
-        }
-    }
-    return true;
+    return GetReferencePath(scaffold_vertices).is_initialized();
 }
 bool PathClusterValidator::IsCovered(const set<scaffold_graph::ScaffoldVertex> &cluster_vertices) const {
     for (const auto& vertex: cluster_vertices) {
-        path_extend::scaffold_graph::EdgeGetter edge_getter;
-        EdgeId edge = edge_getter.GetEdgeFromScaffoldVertex(vertex);
-        if (not ref_path_index_.Contains(edge)) {
+        if (not IsCovered(vertex)) {
             return false;
         }
     }
@@ -64,5 +38,46 @@ void PathClusterValidator::PrintRefIndexInfo(const set<scaffold_graph::ScaffoldV
         TRACE("Path: " << ref_info.path_ << ", pos: " << ref_info.pos_ << ", rev pos: " << ref_info.rev_pos_);
     }
 }
+bool PathClusterValidator::IsCovered(const scaffold_graph::ScaffoldVertex &vertex) const {
+    path_extend::scaffold_graph::EdgeGetter edge_getter;
+    EdgeId edge = edge_getter.GetEdgeFromScaffoldVertex(vertex);
+    return ref_path_index_.Contains(edge);
+}
+optional<PathClusterValidator::SimplePath> PathClusterValidator::GetReferencePath(
+        const set<PathClusterValidator::ScaffoldVertex> &vertices) const {
+    boost::optional<SimplePath> result;
+    std::set<EdgeId> cluster_vertices;
+    path_extend::scaffold_graph::EdgeGetter edge_getter;
+    for (const auto &vertex: vertices) {
+        cluster_vertices.insert(edge_getter.GetEdgeFromScaffoldVertex(vertex));
+    }
+    VERIFY_DEV(cluster_vertices.size() >= 1);
+    size_t first_path = ref_path_index_.at(*cluster_vertices.begin()).path_;
+    for (const auto &vertex: cluster_vertices) {
+        if (ref_path_index_.at(vertex).path_ != first_path) {
+            return result;
+        }
+    }
+    std::unordered_map<size_t, ScaffoldVertex> position_to_vertex;
+    std::vector<size_t> vertex_positions;
+    for (const auto &vertex: cluster_vertices) {
+        size_t position = ref_path_index_.at(vertex).pos_;
+        position_to_vertex.insert({position, vertex});
+        vertex_positions.push_back(position);
+    }
+    std::sort(vertex_positions.begin(), vertex_positions.end());
+    for (auto curr = vertex_positions.begin(), next = std::next(curr); next != vertex_positions.end(); ++curr, ++next) {
+        if (*next <= *curr or *next - *curr != 1) {
+            return result;
+        }
+    }
+    SimplePath correct_path;
+    for (const auto &position: vertex_positions) {
+        correct_path.push_back(position_to_vertex[position]);
+    }
+    result = correct_path;
+    return result;
+}
+
 }
 }
