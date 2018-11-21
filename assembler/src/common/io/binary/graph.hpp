@@ -27,28 +27,27 @@ public:
         return edge_mapper_;
     }
 
-private:
-    void SaveImpl(BinSaveFile &file, const Graph &graph) override {
-        file << graph.GetGraphIdDistributor().GetMax();
+    void Write(BinOStream &str, const Graph &graph) override {
+        str << graph.GetGraphIdDistributor().GetMax();
 
         for (auto v1 : graph) {
-            file << v1.int_id() << graph.conjugate(v1).int_id();
+            str << v1.int_id() << graph.conjugate(v1).int_id();
             for (auto e1 : graph.OutgoingEdges(v1)) {
                 auto e2 = graph.conjugate(e1);
                 if (e2 < e1)
                     continue;
-                file << e1.int_id() << e2.int_id()
-                     << graph.EdgeEnd(e1).int_id() << graph.EdgeStart(e2).int_id()
-                     << graph.EdgeNucls(e1);
+                str << e1.int_id() << e2.int_id()
+                    << graph.EdgeEnd(e1).int_id() << graph.EdgeStart(e2).int_id()
+                    << graph.EdgeNucls(e1);
             }
-            file << (size_t)0; //null-term
+            str << (size_t)0; //null-term
         }
     }
 
-    void LoadImpl(BinLoadFile &file, Graph &graph) override {
+    void Read(BinIStream &str, Graph &graph) override {
         graph.clear();
         size_t max_id;
-        file >> max_id;
+        str >> max_id;
         auto id_storage = graph.GetGraphIdDistributor().Reserve(max_id, /*force_zero_shift*/true);
 
         auto TryAddVertex = [&](size_t ids[2]) {
@@ -62,17 +61,17 @@ private:
         };
 
         size_t start_ids[2];
-        while (file >> start_ids) { //Read until the end
+        while (str >> start_ids) { //Read until the end
             TryAddVertex(start_ids);
             while (true) {
                 size_t edge_ids[2];
-                file >> edge_ids[0];
+                str >> edge_ids[0];
                 if (!edge_ids[0]) //null-term
                     break;
-                file >> edge_ids[1];
+                str >> edge_ids[1];
                 size_t end_ids[2];
                 Sequence seq;
-                file >> end_ids >> seq;
+                str >> end_ids >> seq;
                 TRACE("Edge " << edge_ids[0] << " : " << start_ids[0] << " -> "
                               << end_ids[0] << " l = " << seq.size() << " ~ " << edge_ids[1]);
                 TryAddVertex(end_ids);
@@ -86,6 +85,7 @@ private:
         }
     }
 
+private:
     IdMapper<typename Graph::VertexId> vertex_mapper_;
     IdMapper<typename Graph::EdgeId> edge_mapper_;
 

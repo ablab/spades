@@ -257,6 +257,72 @@ void BinRead(std::istream &is, T &v, Ts &... vs) {
     BinRead(is, vs...);
 }
 
+/**
+ * @brief  A small wrapper for binary serialization into an STL ostream.
+ */
+class BinOStream {
+public:
+    BinOStream(std::ostream &str)
+            : str_(str) {
+    }
+
+    template<typename T>
+    BinOStream &operator<<(const T &value) {
+        io::binary::BinWrite(str_, value);
+        return *this;
+    }
+
+    operator bool() const {
+        return (bool) str_;
+    }
+
+    bool operator!() const {
+        return !str_;
+    }
+
+private:
+    std::ostream &str_;
+};
+
+/**
+ * @brief  A small wrapper for binary deserialization from an STL istream.
+ */
+class BinIStream {
+public:
+    BinIStream(std::istream &str)
+            : str_(str) {
+    }
+
+    template<typename T>
+    BinIStream &operator>>(T &value) {
+        io::binary::BinRead(str_, value);
+        //VERIFY(!str.fail());
+        return *this;
+    }
+
+    template<typename T>
+    T Read() {
+        T result;
+        (*this) >> result;
+        return result;
+    }
+
+    operator bool() const {
+        return (bool) str_;
+    }
+
+    bool operator!() const {
+        return !str_;
+    }
+
+    std::istream &stream() {
+        return str_;
+    }
+
+private:
+    std::istream &str_;
+};
+
 } // namespace binary
 
 } // namespace io
