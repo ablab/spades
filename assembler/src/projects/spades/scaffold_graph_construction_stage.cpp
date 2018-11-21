@@ -19,9 +19,11 @@ void debruijn_graph::ScaffoldGraphConstructionStage::run(debruijn_graph::conj_gr
     INFO(loaded_distributions.length_distribution_.size() << " clusters loaded");
     path_extend::cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor(loaded_distributions);
     path_extend::cluster_model::UpperLengthBoundEstimator length_bound_estimator;
-    const double cluster_length_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
+    //fixme configs
+    const double ultralong_edge_length_percentile = 0.6;
     size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
-                                                                          cluster_length_percentile);
+                                                                          ultralong_edge_length_percentile) / 2;
+    INFO("Length upper bound: " << length_upper_bound);
     path_extend::ScaffoldGraphStorageConstructor storage_constructor(unique_length_threshold, length_upper_bound,
                                                                      graph_pack);
     auto storage = storage_constructor.ConstructStorage();

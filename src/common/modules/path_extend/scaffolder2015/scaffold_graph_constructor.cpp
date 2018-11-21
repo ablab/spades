@@ -101,6 +101,7 @@ void PredicateScaffoldGraphFilter::ConstructFromGraphAndPredicate(const Scaffold
     size_t counter = 0;
     const size_t block_size = scaffold_edges.size() / 10;
     size_t threads = max_threads_;
+    DEBUG("Number of threads: " << threads);
 #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < scaffold_edges.size(); ++i) {
         auto edge = scaffold_edges[i];

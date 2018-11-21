@@ -87,34 +87,30 @@ class PathClusterConflictResolver {
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef std::set<ScaffoldVertex> VertexSet;
     typedef SimpleGraph<ScaffoldVertex> SimpleTransitionGraph;
-    typedef std::pair<ScaffoldVertex, ScaffoldVertex> VertexPair;
+    typedef shared_ptr<barcode_index::SimpleScaffoldVertexIndex> ScaffoldBarcodeIndex;
+    const Graph &g_;
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
     const double relative_threshold_;
 
-    struct ConflictIndex {
-      ScaffoldVertex shared_;
-      ScaffoldVertex first_;
-      ScaffoldVertex second_;
-
-        std::map<std::set<ScaffoldVertex>, std::set<ScaffoldVertex>> conflict_to_shared_;
-
-     public:
-
-        void AddConflict(const ScaffoldVertex &first, const ScaffoldVertex &second, const ScaffoldVertex &shared);
-
-        bool HasConflict(const ScaffoldVertex &first, const ScaffoldVertex &second) const;
-
-        set<ScaffoldVertex> GetShared(const ScaffoldVertex &first, const ScaffoldVertex &second) const;
-    };
-
  public:
-    PathClusterConflictResolver(double relative_threshold);
+    PathClusterConflictResolver(const Graph &g,
+                                shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+                                double relative_threshold);
 
     vector<VertexSet> GetClusterSets(const SimpleTransitionGraph &graph, const PathClusterStorage &storage) const;
 
  private:
-    ConflictIndex GetConflicts(const SimpleTransitionGraph &graph) const;
 
-    bool AreClustersConflicted(const VertexSet &first, const VertexSet &second, const ConflictIndex &conflicts) const;
+    bool AreClustersConflicted(const VertexSet &first, const VertexSet &second,
+                               const SimpleTransitionGraph &graph) const;
+
+    bool CheckOverlap(const vector<ScaffoldVertex> &first, const vector<ScaffoldVertex> &second, size_t overlap) const;
+
+    double GetClashScore(const set<ScaffoldVertex> &first, const set<ScaffoldVertex> &second,
+                         ScaffoldBarcodeIndex scaffold_vertex_index) const;
+
+    set<barcode_index::BarcodeId> GetBarcodesFromSet(const set<ScaffoldVertex> &vertices,
+                                                     ScaffoldBarcodeIndex scaffold_vertex_index) const;
 
     DECL_LOGGER("PathClusterConflictResolver")
 };
