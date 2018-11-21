@@ -1,7 +1,9 @@
+#include "read_cloud_path_extend/utils/barcode_score_functions.hpp"
 #include "path_cluster_helper.hpp"
 #include "common/barcode_index/cluster_storage/graph_cluster_storage_builder.hpp"
 #include "common/barcode_index/cluster_storage/cluster_storage_helper.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+#include "simple_graph_utils.hpp"
 
 namespace path_extend {
 vector<cluster_storage::Cluster> PathClusterExtractorHelper::GetPathClusters(
@@ -70,85 +72,93 @@ PathClusterStorage::ClusterToWeightT::const_iterator PathClusterStorage::end() c
     return cluster_to_weight_.end();
 }
 
-PathClusterConflictResolver::ConflictIndex PathClusterConflictResolver::GetConflicts(
-        const PathClusterConflictResolver::SimpleTransitionGraph &graph) const {
-    ConflictIndex conflicts;
-    for (const auto& vertex: graph) {
-        const auto& outcoming_vertices = graph.GetOutcoming(vertex);
-        const auto& incoming_vertices = graph.GetIncoming(vertex);
-        for (const auto &first: outcoming_vertices) {
-            for (const auto &second: outcoming_vertices) {
-                if (first.int_id() < second.int_id()) {
-                    conflicts.AddConflict(first, second, vertex);
-                }
-            }
-        }
-        for (const auto &first: incoming_vertices) {
-            for (const auto &second: incoming_vertices) {
-                if (first.int_id() < second.int_id()) {
-                    conflicts.AddConflict(first, second, vertex);
-                }
-            }
-        }
-    }
-    return conflicts;
-}
 bool PathClusterConflictResolver::AreClustersConflicted(
         const PathClusterConflictResolver::VertexSet &first,
         const PathClusterConflictResolver::VertexSet &second,
-        const PathClusterConflictResolver::ConflictIndex &conflicts) const {
-    if (first.size() != second.size()) {
-        return false;
-    }
-    VertexSet first_minus_second;
-    std::set_difference(first.begin(), first.end(), second.begin(), second.end(),
-                        std::inserter(first_minus_second, first_minus_second.begin()));
-    if (first_minus_second.size() != 1) {
-        return false;
-    }
-    VertexSet second_minus_first;
-    std::set_difference(second.begin(), second.end(), first.begin(), first.end(),
-                        std::inserter(second_minus_first, second_minus_first.begin()));
-    VERIFY_DEV(second_minus_first.size() == 1);
-    ScaffoldVertex first_vertex = *(first_minus_second.begin());
-    ScaffoldVertex second_vertex = *(second_minus_first.begin());
-    if (not conflicts.HasConflict(first_vertex, second_vertex)) {
+        const PathClusterConflictResolver::SimpleTransitionGraph &graph) const {
+    TRACE("First size: " << first.size());
+    TRACE("Second size: " << second.size());
+    //todo maybe it is not needed
+    if (first.size() != second.size() or first.size() == 1) {
         return false;
     }
 
-    const auto& conflict_bases = conflicts.GetShared(first_vertex, second_vertex);
     VertexSet intersection;
-    std::set_intersection(conflict_bases.begin(), conflict_bases.end(), first.begin(), first.end(),
+    std::set_intersection(first.begin(), first.end(), second.begin(), second.end(),
                           std::inserter(intersection, intersection.begin()));
-    return not intersection.empty();
+    size_t possible_overlap = intersection.size();
+    if (possible_overlap != first.size() - 1) {
+        return false;
+    }
+    cluster_storage::GraphAnalyzer graph_analyzer;
 
+    SubgraphGetter subgraph_getter;
+    auto first_subgraph = subgraph_getter.GetSubgraph(graph, first);
+    auto second_subgraph = subgraph_getter.GetSubgraph(graph, second);
+    vector<vector<ScaffoldVertex>> first_ham_paths = graph_analyzer.GetHamiltonianPaths(first_subgraph);
+    vector<vector<ScaffoldVertex>> second_ham_paths = graph_analyzer.GetHamiltonianPaths(second_subgraph);
+
+    for (const auto &first_path: first_ham_paths) {
+        for (const auto &second_path: second_ham_paths) {
+            if (CheckOverlap(first_path, second_path, possible_overlap) or
+                CheckOverlap(second_path, first_path, possible_overlap)) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
+
 vector<PathClusterConflictResolver::VertexSet> PathClusterConflictResolver::GetClusterSets(
         const PathClusterConflictResolver::SimpleTransitionGraph &graph, const PathClusterStorage &storage) const {
     std::set<VertexSet> result_set;
+    //fixme move from here
+    const size_t MAX_CLOUD_SIZE = 6;
+    DEBUG("Checking entries");
     for (const auto &entry: storage) {
-        result_set.insert(entry.first);
+        if (entry.first.size() <= MAX_CLOUD_SIZE) {
+            result_set.insert(entry.first);
+            for (const auto &vertex: entry.first) {
+                VERIFY_DEV(graph.ContainsVertex(vertex));
+            }
+        }
     }
-    DEBUG("Getting conflicts");
-    const auto conflict_index = GetConflicts(graph);
-    DEBUG("Got conflicts");
+    set<ScaffoldVertex> vertices;
+    for (const auto &vertex: graph) {
+        vertices.insert(vertex);
+        vertices.insert(vertex.getConjugateFromGraph(g_));
+    }
+    barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
+    const size_t tail_threshold = 10000;
+    size_t count_threshold = 1;
+    size_t max_threads = cfg::get().max_threads;
+    auto scaffold_vertex_index = helper.TailEdgeScaffoldVertexIndex(g_, *barcode_extractor_, vertices,
+                                                                    count_threshold, tail_threshold, max_threads);
+    VERIFY_DEV(math::gr(relative_threshold_, 0.));
+    size_t path_cluster_size = storage.cluster_to_weight_.size();
+    DEBUG(path_cluster_size << " path clusters");
+    size_t processed = 0;
     for (const auto &entry: storage) {
         const auto &first_set = entry.first;
-        double first_weight = entry.second;
         for (const auto &other: storage) {
             const auto &second_set = other.first;
-            const auto &second_weight = other.second;
-            DEBUG("Checking conflicts");
-
-            if (AreClustersConflicted(first_set, second_set, conflict_index)) {
-                if (first_weight > second_weight * relative_threshold_) {
+            TRACE("Checking conflicts");
+            if (AreClustersConflicted(first_set, second_set, graph)) {
+                DEBUG("Found conflict");
+                double clash_score = GetClashScore(first_set, second_set, scaffold_vertex_index);
+                DEBUG("Got clash score");
+                if (math::ge(clash_score, relative_threshold_)) {
                     result_set.erase(second_set);
-                } else if (second_weight > first_weight * relative_threshold_) {
+                } else if (math::le(clash_score, 1 / relative_threshold_)) {
                     result_set.erase(first_set);
                 } else {
                     result_set.erase(first_set);
                     result_set.erase(second_set);
                 }
+            }
+            ++processed;
+            if (path_cluster_size > 10 and processed % (path_cluster_size * path_cluster_size / 10) == 0) {
+                DEBUG("Processed " << processed << " pairs");
             }
         }
     }
@@ -157,33 +167,70 @@ vector<PathClusterConflictResolver::VertexSet> PathClusterConflictResolver::GetC
     std::move(result_set.begin(), result_set.end(), std::back_inserter(result));
     return result;
 }
-PathClusterConflictResolver::PathClusterConflictResolver(double relative_threshold) :
-    relative_threshold_(relative_threshold) {}
-void PathClusterConflictResolver::ConflictIndex::AddConflict(const PathClusterConflictResolver::ScaffoldVertex &first,
-                                                             const PathClusterConflictResolver::ScaffoldVertex &second,
-                                                             const PathClusterConflictResolver::ScaffoldVertex &shared) {
-    std::set<ScaffoldVertex> conflict_set;
-    conflict_set.insert(first);
-    conflict_set.insert(second);
-    conflict_to_shared_[conflict_set].insert(shared);
+PathClusterConflictResolver::PathClusterConflictResolver(const Graph &g,
+                                                         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+                                                         double relative_threshold) :
+    g_(g), barcode_extractor_(barcode_extractor), relative_threshold_(relative_threshold) {}
+bool PathClusterConflictResolver::CheckOverlap(const vector<PathClusterConflictResolver::ScaffoldVertex> &first,
+                                               const vector<PathClusterConflictResolver::ScaffoldVertex> &second,
+                                               size_t overlap) const {
+    VERIFY_DEV(first.size() >= overlap);
+    for (size_t i = 0; i < overlap; ++i) {
+        if (first[first.size() - overlap + i] != second[i]) {
+            return false;
+        }
+    }
+    return true;
 }
-bool PathClusterConflictResolver::ConflictIndex::HasConflict(
-        const PathClusterConflictResolver::ScaffoldVertex &first,
-        const PathClusterConflictResolver::ScaffoldVertex &second) const {
-    std::set<ScaffoldVertex> conflict_set;
-    conflict_set.insert(first);
-    conflict_set.insert(second);
-    return conflict_to_shared_.find(conflict_set) != conflict_to_shared_.end();
+double PathClusterConflictResolver::GetClashScore(const set<PathClusterConflictResolver::ScaffoldVertex> &first,
+                                                  const set<PathClusterConflictResolver::ScaffoldVertex> &second,
+                                                  PathClusterConflictResolver::ScaffoldBarcodeIndex scaffold_vertex_index) const {
+    //todo make one pass instead of three
+    //fixme deal with conjugates
+    set<ScaffoldVertex> intersection;
+    set<ScaffoldVertex> first_minus_second;
+    set<ScaffoldVertex> second_minus_first;
+    std::set_intersection(first.begin(), first.end(), second.begin(), second.end(),
+                          std::inserter(intersection, intersection.end()));
+    std::set_difference(first.begin(), first.end(), second.begin(), second.end(),
+                        std::inserter(first_minus_second, first_minus_second.end()));
+    std::set_difference(first.begin(), first.end(), second.begin(), second.end(),
+                        std::inserter(second_minus_first, second_minus_first.end()));
+    set<ScaffoldVertex> first_minus_second_inter;
+    set<ScaffoldVertex> second_minus_first_inter;
+    auto intersection_barcodes = GetBarcodesFromSet(intersection, scaffold_vertex_index);
+    auto first_minus_second_barcodes = GetBarcodesFromSet(first_minus_second, scaffold_vertex_index);
+    auto second_minus_first_barcodes = GetBarcodesFromSet(second_minus_first, scaffold_vertex_index);
+    ContainmentIndex containment_index;
+    TRACE("Getting scores");
+    double first_minus_second_ci = containment_index.GetScoreFromSets(first_minus_second_barcodes, intersection_barcodes);
+    double second_minus_first_ci = containment_index.GetScoreFromSets(second_minus_first_barcodes, intersection_barcodes);
+    TRACE("Got scores");
+    const double infty = relative_threshold_ + 1;
+    if (math::eq(second_minus_first_ci, 0.)) {
+        if (math::eq(first_minus_second_ci, 0.)) {
+            return 1;
+        } else {
+            return infty;
+        }
+    }
+    return first_minus_second_ci / second_minus_first_ci;
 }
-set<PathClusterConflictResolver::ScaffoldVertex> PathClusterConflictResolver::ConflictIndex::GetShared(
-        const PathClusterConflictResolver::ScaffoldVertex &first,
-        const PathClusterConflictResolver::ScaffoldVertex &second) const {
-    VERIFY_DEV(HasConflict(first, second));
-    std::set<ScaffoldVertex> conflict_set;
-    conflict_set.insert(first);
-    conflict_set.insert(second);
-    return conflict_to_shared_.at(conflict_set);
+set<barcode_index::BarcodeId> PathClusterConflictResolver::GetBarcodesFromSet(
+        const set<PathClusterConflictResolver::ScaffoldVertex> &vertices,
+        PathClusterConflictResolver::ScaffoldBarcodeIndex scaffold_vertex_index) const {
+    set<barcode_index::BarcodeId> result;
+    for (const auto &vertex: vertices) {
+        auto head_barcodes_begin = scaffold_vertex_index->GetHeadBegin(vertex);
+        auto head_barcodes_end = scaffold_vertex_index->GetHeadEnd(vertex);
+        auto tail_barcodes_begin = scaffold_vertex_index->GetTailBegin(vertex);
+        auto tail_barcodes_end = scaffold_vertex_index->GetTailEnd(vertex);
+        std::copy(head_barcodes_begin, head_barcodes_end, std::inserter(result, result.end()));
+        std::copy(tail_barcodes_begin, tail_barcodes_end, std::inserter(result, result.end()));
+    }
+    return result;
 }
+
 vector<CloudPathExtractor::InternalPathWithSet> CloudPathExtractor::ExtractAllPaths(
         const CloudPathExtractor::SimpleTransitionGraph &graph,
         const ScaffoldVertex &source, const ScaffoldVertex &sink) const {
@@ -359,7 +406,8 @@ vector<vector<CloudBasedPathExtractor::ScaffoldVertex>> CloudBasedPathExtractor:
     GraphBasedPathClusterNormalizer path_cluster_normalizer(g_);
     DEBUG("Get normalized storage")
     auto cluster_to_weight = path_cluster_normalizer.GetNormalizedStorage(path_clusters);
-    PathClusterConflictResolver conflict_resolver(relative_cluster_threshold_);
+
+    PathClusterConflictResolver conflict_resolver(g_, barcode_extractor_, relative_cluster_threshold_);
     DEBUG("Resolving conflicts")
     auto final_clusters = conflict_resolver.GetClusterSets(graph, cluster_to_weight);
     CloudPathExtractor cloud_path_extractor;
@@ -467,7 +515,7 @@ vector<set<ScaffoldGraphPathClusterHelper::ScaffoldVertex>> ScaffoldGraphPathClu
     GraphBasedPathClusterNormalizer path_cluster_normalizer(g_);
     auto cluster_to_weight = path_cluster_normalizer.GetNormalizedStorage(path_clusters);
     const double relative_threshold = 2;
-    PathClusterConflictResolver conflict_resolver(relative_threshold);
+    PathClusterConflictResolver conflict_resolver(g_, barcode_extractor_, relative_threshold);
     auto final_clusters = conflict_resolver.GetClusterSets(graph, cluster_to_weight);
     return final_clusters;
 }

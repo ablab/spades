@@ -41,7 +41,7 @@ void PathClusterChecker::CheckPathClusters(const PathClusterChecker::ScaffoldGra
 
     DEBUG("Printing false clusters info");
     for (const auto &cluster: false_clusters) {
-        DEBUG("Printing cluster info");
+        TRACE("Printing cluster info");
         path_cluster_validator_.PrintRefIndexInfo(cluster);
     }
 
@@ -109,6 +109,7 @@ void PathClusterStorageChecker::CheckPathClusters(const ScaffoldGraphStorage &st
                                                                                         small_length_threshold);
     INFO("Small scaffold graph path cluster stats");
     path_cluster_checker->CheckPathClusters(small_scaffold_graph);
+    INFO("Checking components");
     path_cluster_checker->CheckComponents(small_scaffold_graph);
 
     set<ScaffoldVertex> large_vertices;
@@ -118,6 +119,7 @@ void PathClusterStorageChecker::CheckPathClusters(const ScaffoldGraphStorage &st
               std::inserter(large_vertices, large_vertices.end()));
     auto large_path_cluster_checker = path_cluster_checker_factory.ConstuctPathClusterChecker(large_vertices,
                                                                                               large_length_threshold);
+    INFO("Large scaffold graph path cluster stats");
     large_path_cluster_checker->CheckPathClusters(large_scaffold_graph);
     large_path_cluster_checker->CheckComponents(large_scaffold_graph);
 }

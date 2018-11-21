@@ -9,7 +9,10 @@ ReferencePathIndex::EdgeInfo path_extend::validation::ReferencePathIndex::at(con
 }
 void ReferencePathIndex::Insert(EdgeId edge, size_t path, size_t pos, size_t rev_pos) {
     EdgeInfo info(pos, rev_pos, path);
-    edge_to_info_.insert({edge, info});
+    bool has_edge = edge_to_info_.insert({edge, info}).second;
+    if (not has_edge) {
+        WARN("Double insertion");
+    }
 }
 bool ReferencePathIndex::Contains(const EdgeId &edge) const {
     return edge_to_info_.find(edge) != edge_to_info_.end();

@@ -5,7 +5,6 @@
 #include "read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 #include "common/barcode_index/cluster_storage/cluster_storage_helper.hpp"
 
-
 namespace path_extend {
 
 ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorage() const {
@@ -13,8 +12,27 @@ ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorage() const {
     auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     CloudScaffoldGraphConstructor constructor(num_threads, gp_, extractor);
     scaffold_graph_construction_pipeline_type::Type type = scaffold_graph_construction_pipeline_type::Basic;
-    ScaffoldGraphStorage storage(constructor.ConstructScaffoldGraphFromMinLength(large_length_threshold_, type),
-                                 constructor.ConstructScaffoldGraphFromMinLength(small_length_threshold_, type),
+    auto large_scaffold_graph = constructor.ConstructScaffoldGraphFromMinLength(large_length_threshold_, type);
+
+    //todo code duplication with ConstructScaffoldGraphFromMinLength
+    //make sure that small scaffold graph contains vertices of large scaffold graph
+    set<scaffold_graph::ScaffoldVertex> small_graph_vertices;
+    auto unique_storage = constructor.ConstructUniqueStorage(small_length_threshold_);
+    for (const auto &edge: unique_storage.unique_edges()) {
+        scaffold_graph::ScaffoldVertex sc_vertex(edge);
+        small_graph_vertices.insert(sc_vertex);
+    }
+    std::unordered_set<EdgeId> long_edges;
+    for (const auto &vertex: large_scaffold_graph.vertices()) {
+        small_graph_vertices.insert(vertex);
+        path_extend::scaffold_graph::EdgeGetter edge_getter;
+        long_edges.insert(edge_getter.GetEdgeFromScaffoldVertex(vertex));
+    }
+    path_extend::ScaffoldingUniqueEdgeAnalyzer scaffolding_unique_analyzer(gp_, 0, 0);
+    scaffolding_unique_analyzer.AddUniqueEdgesFromSet(unique_storage, long_edges);
+    auto small_scaffold_graph = constructor.ConstructScaffoldGraphFromVertices(small_graph_vertices, unique_storage,
+                                                                               small_length_threshold_, type);
+    ScaffoldGraphStorage storage(std::move(large_scaffold_graph), std::move(small_scaffold_graph),
                                  large_length_threshold_, small_length_threshold_);
 
     return storage;
@@ -194,11 +212,15 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     return *(pipeline.GetResult());
 }
 ScaffoldingUniqueEdgeStorage CloudScaffoldGraphConstructor::ConstructUniqueStorage(size_t min_length) const {
-    const double max_relative_coverage = 5000.0;
+    //fixme use procedure from path extend launcher
+    bool nonuniform_coverage = cfg::get().mode == debruijn_graph::config::pipeline_type::meta;
+    double max_relative_coverage = cfg::get().pe_params.param_set.uniqueness_analyser.unique_coverage_variation;
+    if (nonuniform_coverage) {
+        max_relative_coverage = cfg::get().pe_params.param_set.uniqueness_analyser.nonuniform_coverage_variation;
+    }
     path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, max_relative_coverage);
     ScaffoldingUniqueEdgeStorage unique_storage;
     unique_edge_analyzer.FillUniqueEdgeStorage(unique_storage);
     return unique_storage;
 }
-
 }

@@ -10,6 +10,10 @@ class PathClusterValidator {
     ReferencePathIndex ref_path_index_;
 
  public:
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef std::vector<ScaffoldVertex> SimplePath;
+
+ public:
     PathClusterValidator(const ReferencePathIndex &ref_path_index);
 
     bool IsCorrect(const cluster_storage::Cluster &cluster) const;
@@ -20,7 +24,11 @@ class PathClusterValidator {
 
     bool IsCovered(const set<scaffold_graph::ScaffoldVertex> &cluster_vertices) const;
 
+    bool IsCovered(const scaffold_graph::ScaffoldVertex &vertex) const;
+
     void PrintRefIndexInfo(const set<scaffold_graph::ScaffoldVertex> &cluster_vertices) const;
+
+    boost::optional<SimplePath> GetReferencePath(const set<ScaffoldVertex> &vertices) const;
 };
 
 }

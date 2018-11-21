@@ -55,6 +55,10 @@ class LongEdgePairDatasetExtractor {
 
     LongEdgePairDataset GetLongEdgeDataset(const vector<vector<validation::EdgeWithMapping>>& reference_paths) const;
 
+    LongEdgePairDataset GetLongEdgeDataset(size_t length_threshold, const string &path_to_reference) const;
+
+    void ConstructAndSerialize(const string &path_to_reference, const string &output_path) const;
+
  private:
     shared_ptr<BarcodeExtractor> ConstructLongEdgeExtractor() const;
 

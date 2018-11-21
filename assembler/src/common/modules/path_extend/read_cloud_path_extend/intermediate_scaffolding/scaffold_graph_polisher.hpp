@@ -101,7 +101,7 @@ namespace path_extend {
         bool CheckSubgraphEdge (const ScaffoldEdge& edge, const ScaffoldVertex& first,
                                 const ScaffoldVertex& second, const unordered_set<ScaffoldVertex>& subgraph_vertices) const;
 
-        DECL_LOGGER("ScaffoldGraphSubgraphExtractor");
+        DECL_LOGGER("CloudScaffoldSubgraphExtractor");
     };
 
     class ReachabilityChecker {

@@ -317,4 +317,11 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(GraphCoverageMa
     }
     CheckCorrectness(unique_storage_pb);
 }
+void ScaffoldingUniqueEdgeAnalyzer::AddUniqueEdgesFromSet(ScaffoldingUniqueEdgeStorage &storage,
+                                                          const unordered_set<EdgeId> &edges) const {
+    for (const auto &edge: edges) {
+        storage.unique_edges_.insert(edge);
+    }
+}
+
 }

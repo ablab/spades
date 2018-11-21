@@ -57,6 +57,10 @@ namespace barcode_index {
                                    GetTailEnd(vertex.getConjugateFromGraph(g_)));
         }
 
+        bool Contains(const ScaffoldVertex &vertex) const {
+            return vertex_to_entry_.find(vertex) != vertex_to_entry_.end();
+        }
+
      private:
         void InsertEntry(const ScaffoldVertex& vertex, VertexEntryT&& entry) {
             vertex_to_entry_.insert({vertex, entry});

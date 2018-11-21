@@ -136,12 +136,14 @@ class ContigPathFilter {
     ContigPathFilter(const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_)
         : unique_storage_(unique_storage_) {}
 
-    vector<vector<EdgeWithMapping>> FilterPathsUsingUniqueStorage(const vector<vector<EdgeWithMapping>>& paths) const;
+    vector<vector<EdgeWithMapping>> FilterPathsUsingUniqueStorage(const vector<vector<EdgeWithMapping>> &paths) const;
 
-    vector<vector<EdgeWithMapping>> FilterPathsUsingLength(const vector<vector<EdgeWithMapping>>& paths,
-                                                           const size_t min_length, const Graph& g) const;
+ private:
+    vector<vector<EdgeWithMapping>> MergeSameEdges(const vector<vector<EdgeWithMapping>> &paths) const;
 
-    vector<vector<EdgeWithMapping>> MergeSameEdges(const vector<vector<EdgeWithMapping>>& paths) const;
+    vector<vector<EdgeWithMapping>> RemoveRepeats(const vector<vector<EdgeWithMapping>> &paths) const;
+
+    std::unordered_set<EdgeId> GetRepeats(const vector<vector<EdgeWithMapping>> &paths) const;
 };
 
 class FilteredReferencePathHelper {

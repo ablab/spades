@@ -119,6 +119,7 @@ public:
                                       ScaffoldingUniqueEdgeStorage &unique_storage_pb,
                                       const pe_config::LongReads &lr_config);
     void FillUniqueEdgesWithTopology(ScaffoldingUniqueEdgeStorage &storage_);
+    void AddUniqueEdgesFromSet(ScaffoldingUniqueEdgeStorage &storage, const unordered_set<EdgeId> &edges) const;
 };
 
 class UsedUniqueStorage {

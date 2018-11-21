@@ -74,7 +74,7 @@ vector<NamedSimplePath> ContigPathBuilder::FixMappingPaths(const vector<NamedPat
     return result;
 }
 vector<vector<EdgeWithMapping>> ContigPathFilter::FilterPathsUsingUniqueStorage(const vector<vector<EdgeWithMapping>>& paths) const {
-    vector<vector<EdgeWithMapping>> result;
+    vector<vector<EdgeWithMapping>> filtered_paths;
     for (const auto& path: paths) {
         vector<EdgeWithMapping> filtered_path;
         for (const auto& ewm: path) {
@@ -83,27 +83,14 @@ vector<vector<EdgeWithMapping>> ContigPathFilter::FilterPathsUsingUniqueStorage(
             }
         }
         if (not filtered_path.empty()) {
-            result.push_back(filtered_path);
+            filtered_paths.push_back(filtered_path);
         }
     }
-    return MergeSameEdges(result);
-}
-vector<vector<EdgeWithMapping>> ContigPathFilter::FilterPathsUsingLength(const vector<vector<EdgeWithMapping>>& paths,
-                                                                         const size_t min_length,
-                                                                         const Graph& g) const {
-    vector<vector<EdgeWithMapping>> result;
-    for (const auto& path: paths) {
-        vector<EdgeWithMapping> filtered_path;
-        for (const auto& ewm: path) {
-            if (g.length(ewm.edge_) >= min_length) {
-                filtered_path.push_back(ewm);
-            }
-        }
-        if (not filtered_path.empty()) {
-            result.push_back(filtered_path);
-        }
-    }
-    return MergeSameEdges(result);
+    auto merged_paths = MergeSameEdges(filtered_paths);
+
+    auto result = RemoveRepeats(merged_paths);
+
+    return result;
 }
 vector<vector<EdgeWithMapping>> ContigPathFilter::MergeSameEdges(const vector<vector<EdgeWithMapping>>& paths) const {
     vector<vector<EdgeWithMapping>> result;
@@ -137,6 +124,35 @@ vector<vector<EdgeWithMapping>> ContigPathFilter::MergeSameEdges(const vector<ve
     }
     return result;
 }
+std::unordered_set<EdgeId> ContigPathFilter::GetRepeats(const vector<vector<EdgeWithMapping>> &paths) const {
+    std::unordered_set<EdgeId> repeats;
+    std::unordered_set<EdgeId> visited;
+    for (const auto &path: paths) {
+        for (const auto &edge: path) {
+            bool is_visited = not (visited.insert(edge.edge_).second);
+            if (is_visited) {
+                repeats.insert(edge.edge_);
+            }
+        }
+    }
+    return repeats;
+}
+vector<vector<EdgeWithMapping>> ContigPathFilter::RemoveRepeats(const vector<vector<EdgeWithMapping>> &paths) const {
+    vector<vector<EdgeWithMapping>> result;
+    auto repeats = GetRepeats(paths);
+    INFO("Detected " << repeats.size() << " repeats");
+    for (const auto &path: paths) {
+        vector<EdgeWithMapping> new_path;
+        for (const auto &edge: path) {
+            if (repeats.find(edge.edge_) == repeats.end()) {
+                new_path.push_back(edge);
+            }
+        }
+        result.push_back(new_path);
+    }
+    return result;
+}
+
 ContigTransitionStorage StrictTransitionStorageBuilder::BuildStorage(const vector<vector<EdgeWithMapping>>& long_edges) const {
     ContigTransitionStorage storage;
     for (const auto& path: long_edges) {
@@ -285,7 +301,12 @@ FilteredReferencePathHelper::FilteredReferencePathHelper(const conj_graph_pack& 
 vector<vector<EdgeWithMapping>> FilteredReferencePathHelper:: GetFilteredReferencePathsFromLength(const string& path_to_reference,
                                                                                                  size_t length_threshold) {
     path_extend::ScaffoldingUniqueEdgeStorage unique_storage;
-    path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, length_threshold, 1000);
+    bool nonuniform_coverage = cfg::get().mode == debruijn_graph::config::pipeline_type::meta;
+    double max_relative_coverage = cfg::get().pe_params.param_set.uniqueness_analyser.unique_coverage_variation;
+    if (nonuniform_coverage) {
+        max_relative_coverage = cfg::get().pe_params.param_set.uniqueness_analyser.nonuniform_coverage_variation;
+    }
+    path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, length_threshold, max_relative_coverage);
     unique_edge_analyzer.FillUniqueEdgeStorage(unique_storage);
     path_extend::validation::ContigPathBuilder contig_path_builder(gp_);
 

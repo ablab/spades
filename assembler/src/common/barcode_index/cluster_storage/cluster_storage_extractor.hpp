@@ -30,6 +30,26 @@ class GraphAnalyzer {
         return false;
     }
 
+    vector<vector<ScaffoldVertex>> GetHamiltonianPaths(const Cluster::InternalGraph &graph) const {
+        vector<vector<ScaffoldVertex>> result;
+        vector<ScaffoldVertex> vertices;
+        std::copy(graph.begin(), graph.end(), std::back_inserter(vertices));
+        std::sort(vertices.begin(), vertices.end());
+        do {
+            bool is_hamiltonian = true;
+            for (auto curr = vertices.begin(), next = std::next(curr); next != vertices.end(); ++curr, ++next) {
+                if (not graph.ContainsEdge(*curr, *next)) {
+                    is_hamiltonian = false;
+                    break;
+                }
+            }
+            if (is_hamiltonian) {
+                result.push_back(vertices);
+            }
+        } while (std::next_permutation(vertices.begin(), vertices.end()));
+        return result;
+    }
+
     bool IsEulerianPath(const ContractedGraph& contracted_graph) const {
         auto indegrees = GetIndegrees(contracted_graph);
         auto outdegrees = GetOutdegrees(contracted_graph);
@@ -90,6 +110,8 @@ class GraphAnalyzer {
         }
         return outdegree;
     }
+
+
 };
 
 class ClusterGraphAnalyzer {
