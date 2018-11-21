@@ -38,6 +38,14 @@ class ComponentEstimator {
 
     void EstimateComponents(const ScaffoldGraph &scaffold_graph) const;
 
-    bool IsCorrect(const TransitionGraph &transition_graph) const;
+    bool IsCorrect(const TransitionGraph &transition_graph, const std::vector<std::set<ScaffoldVertex>> &clusters) const;
+
+    bool IsSimple(const TransitionGraph &transition_graph, const std::vector<std::set<ScaffoldVertex>> &clusters) const;
+
+    bool IsCovered(const TransitionGraph &transition_graph) const;
+
+    bool IsTrivial(const TransitionGraph &transition_graph) const;
+
+    DECL_LOGGER("ComponentEstimator")
 };
 }

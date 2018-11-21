@@ -92,7 +92,7 @@ SubgraphInfo PathClusterStatisticsExtractor::GetSubgraphInfo(
     auto cluster_to_weight = path_cluster_normalizer.GetNormalizedStorage(path_clusters);
     INFO("Normalized");
     const double relative_threshold = 2;
-    PathClusterConflictResolver conflict_resolver(relative_threshold);
+    PathClusterConflictResolver conflict_resolver(gp_.g, path_cluster_extraction_params.barcode_extractor_, relative_threshold);
     auto final_clusters = conflict_resolver.GetClusterSets(graph, cluster_to_weight);
     INFO("Resolved conflicts");
 

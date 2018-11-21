@@ -47,6 +47,8 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
     DEBUG("Second: " << second.int_id());
     DEBUG("First length: " << first.getLengthFromGraph(g_));
     DEBUG("Second length: " << second.getLengthFromGraph(g_));
+    DEBUG("First coverage: " << first.getCoverageFromGraph(g_));
+    DEBUG("Second coverage: " << second.getCoverageFromGraph(g_));
     SimpleGraph result;
     unordered_set<ScaffoldVertex> forward_vertices;
     unordered_set<ScaffoldVertex> backward_vertices;
@@ -57,8 +59,10 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
                                                     params_.small_length_threshold_, true);
     auto start = edge.getStart();
     auto end = edge.getEnd();
-//    auto start_entry = scaff_vertex_extractor_->GetTailEntry(start);
-//    auto end_entry = scaff_vertex_extractor_-> GetHeadEntry(end);
+
+    DEBUG("Checking sizes");
+    DEBUG("First size: " << scaff_vertex_extractor_->GetHeadSize(start));
+    DEBUG("Second size: " << scaff_vertex_extractor_->GetHeadSize(end));
     DEBUG("Getting intersection");
     auto intersection_entry = scaff_vertex_extractor_->GetIntersection(start, end);
     DEBUG("Got intersection");
@@ -165,8 +169,6 @@ ScaffoldGraph ScaffoldGraphPolisher::CleanSmallGraphUsingLargeGraph(
 ScaffoldGraphPolisher::InternalPaths ScaffoldGraphPolisher::ExtractPathsWithinUnivocal(
     const ScaffoldGraph &input_graph,
     const vector<ScaffoldGraphPolisher::ScaffoldEdge> &univocal_edges) const {
-    DEBUG("Cleaning graph using cut vertices");
-    DEBUG(input_graph.VertexCount() << " vertices and " << input_graph.EdgeCount() << " edges in cut vertex graph");
     DEBUG("Getting inserted path connections");
     InternalPaths result;
     for (const auto& edge: univocal_edges) {

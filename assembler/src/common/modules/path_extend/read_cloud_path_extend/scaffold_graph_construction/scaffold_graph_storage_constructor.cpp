@@ -194,7 +194,12 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     return *(pipeline.GetResult());
 }
 ScaffoldingUniqueEdgeStorage CloudScaffoldGraphConstructor::ConstructUniqueStorage(size_t min_length) const {
-    const double max_relative_coverage = 5000.0;
+    //fixme use procedure from path extend launcher
+    bool nonuniform_coverage = cfg::get().mode == debruijn_graph::config::pipeline_type::meta;
+    double max_relative_coverage = cfg::get().pe_params.param_set.uniqueness_analyser.unique_coverage_variation;
+    if (nonuniform_coverage) {
+        max_relative_coverage = cfg::get().pe_params.param_set.uniqueness_analyser.nonuniform_coverage_variation;
+    }
     path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, max_relative_coverage);
     ScaffoldingUniqueEdgeStorage unique_storage;
     unique_edge_analyzer.FillUniqueEdgeStorage(unique_storage);

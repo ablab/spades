@@ -17,13 +17,10 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParams(
     size_t connection_length_threshold = cfg::get().ts_res.scaff_con.connection_length_threshold;
     size_t min_length_for_barcode_collection = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
 
-    //fixme move to configs
-    const size_t INITIAL_DISTANCE_MULTIPLIER = 2;
     const double initial_distance_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
     const double score_percentile = cfg::get().ts_res.scaff_con.score_percentile;
 
-    size_t initial_distance =
-        INITIAL_DISTANCE_MULTIPLIER * primary_extractor.GetLengthPercentile(initial_distance_percentile);
+    size_t initial_distance = primary_extractor.GetLengthPercentile(initial_distance_percentile);
     auto score_estimation_params = GetScoreEstimationParams(g, primary_extractor, score_percentile,
                                                             initial_distance_percentile, min_length);
 

@@ -27,12 +27,6 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
         return;
     }
 
-//    if (cfg::get().ts_res.debug_mode) {
-//        string path_to_references = cfg::get().ts_res.statistics.genome_path;
-//        path_extend::PerfectClustersAnalyzer perfect_cluster_analyzer(graph_pack);
-//        perfect_cluster_analyzer.AnalyzePerfectClouds(path_to_references, 1000);
-//    }
-
 //    path_extend::PathClusterStorageChecker path_cluster_storage_checker(graph_pack, cfg::get().max_threads);
 //    path_cluster_storage_checker.CheckPathClusters(graph_pack.scaffold_graph_storage);
 
@@ -41,6 +35,12 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 //    INFO("Printing subgraph stats");
 //    path_extend::SubgraphInfoPrinter printer;
 //    printer.PrintSubgraphInfo(subgraph_infos, cfg::get().output_dir);
+
+//    if (cfg::get().ts_res.debug_mode) {
+//        string path_to_references = cfg::get().ts_res.statistics.genome_path;
+//        path_extend::PerfectClustersAnalyzer perfect_cluster_analyzer(graph_pack);
+//        perfect_cluster_analyzer.AnalyzePerfectClouds(path_to_references, 1000);
+//    }
 
 //    string path_to_references = cfg::get().ts_res.statistics.genome_path;
 //    path_extend::validation::FilteredReferencePathHelper path_helper(graph_pack);
@@ -82,6 +82,9 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 //        thresholds.push_back(i);
 //    }
 //    statistics_extractor.GetMeanWeights(thresholds, output_name);
+
+//    path_extend::LongEdgePairDatasetExtractor long_edge_pair_extractor(graph_pack);
+//    long_edge_pair_extractor.ConstructAndSerialize(cfg::get().ts_res.statistics.genome_path, cfg::get().output_dir);
 
     path_extend::ScaffoldGraphPolisherHelper scaffold_graph_polisher(graph_pack);
     bool path_scaffolding = false;
