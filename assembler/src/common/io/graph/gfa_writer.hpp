@@ -7,7 +7,8 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
-#include "common/io/utils/edge_namer.hpp"
+#include "io/utils/edge_namer.hpp"
+#include "io/id_mapper.hpp"
 
 #include <memory>
 #include <string>

@@ -7,6 +7,7 @@
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
 
+#include "io/id_mapper.hpp"
 #include "io/binary/graph.hpp"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/wrapper_collection.hpp"
@@ -33,24 +34,85 @@ namespace debruijn_graph {
 
 typedef debruijn_graph::BasicSequenceMapper<debruijn_graph::Graph, Index> MapperClass;
 
-string getStrId(const EdgeId &e, const debruijn_graph::ConjugateDeBruijnGraph &g_) {
-    if (e.int_id() < g_.conjugate(e).int_id()) {
-        return to_string(e.int_id()) + "+";
-    } else {
-        return to_string(e.int_id()) + "-";
-    }
-}
 
 class IdealAligner {
   public:
     IdealAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
+                 const io::IdMapper<std::string> &id_mapper,
                  const string &output_file,
                  shared_ptr<MapperClass> mapper):
-        g_(g), output_file_(output_file), mapper_(mapper) {
+        g_(g), id_mapper_(id_mapper), output_file_(output_file), mapper_(mapper) {
         myfile_.open(output_file_ + ".tsv", ofstream::out);
     }
 
+    void AlignRead(const io::SingleRead &read) {
+        Sequence seq(read.sequence());
+        INFO("Read " << read.name() << ".")
+        auto current_mapping = mapper_->MapRead(read);
+        ReadPathFinder<debruijn_graph::Graph> readmapper(g_);
+        auto read_mapping = readmapper.FindReadPath(current_mapping);
+        if (current_mapping.empty() || read_mapping.size() == 0) {
+            INFO("Read " << read.name() << " wasn't aligned");
+        }
 
+        vector<int> inds = CheckPathConsistency(read_mapping, current_mapping);
+        if (inds.size() > 0) {
+            int j = 0;
+            int len_before = 0;
+            string path_str = "";
+            string pathlen_str = "";
+            string edgelen_str = "";
+            string str = "";
+            for (int i = 0; i < (int) read_mapping.size(); ++ i) {
+                EdgeId edgeid = read_mapping[i];
+                size_t mapping_start = 0;
+                size_t mapping_end = g_.length(edgeid);
+                size_t initial_start = len_before;
+                size_t initial_end = len_before + g_.length(edgeid);
+                if (inds[j] == i) {
+                    omnigraph::MappingRange range = current_mapping[j].second;
+                    mapping_start = range.mapped_range.start_pos;
+                    mapping_end = j + 1 < (int) inds.size() ? range.mapped_range.end_pos : range.mapped_range.end_pos + g_.k();
+                    initial_start = range.initial_range.start_pos;
+                    initial_end = j + 1 < (int) inds.size() ? range.initial_range.end_pos : range.initial_range.end_pos + g_.k();
+                    if ((i > 0 && i < (int)(read_mapping.size()) - 1) &&
+                            (mapping_end - mapping_start != initial_end - initial_start || mapping_end - mapping_start != g_.length(edgeid))) {
+                        DEBUG("Bad ranges")
+                        return;
+                    }
+                    ++ j;
+                }
+                len_before += (int) g_.length(edgeid);
+                path_str += StrId(edgeid) + " (" + to_string(mapping_start) + "," + to_string(mapping_end) + ") ["
+                            + to_string(initial_start) + "," + to_string(initial_end) + "], ";
+                pathlen_str += to_string(mapping_end - mapping_start) + ",";
+                edgelen_str += to_string(g_.length(edgeid)) + ",";
+                str += g_.EdgeNucls(edgeid).Subseq(mapping_start, mapping_end).str();
+            }
+            DEBUG("Path: " << path_str);
+            DEBUG("Read " << read.name() << " length=" << seq.size() << "; path_len=" << current_mapping.size()  << "; aligned: " << path_str);
+            if (str.size() != seq.size()) {
+                DEBUG("Read " << read.name() << " wasn't fully aligned");
+                return;
+            }
+            #pragma omp critical
+            {
+                myfile_ << read.name() << "\t" << seq.size() << "\t" << current_mapping.size()
+                        << "\t" << path_str << "\t" << pathlen_str << "\t" << edgelen_str << "\t" << str << "\n";
+
+            }
+        }
+    }
+
+  private:
+
+    string StrId(const EdgeId &e) const {
+        if (id_mapper_.count(e.int_id()))
+            return id_mapper_[e.int_id()];
+
+        return e.int_id() < g_.conjugate(e).int_id() ? to_string(e.int_id()) : to_string(e.int_id()) + "-";
+    }
+    
     bool IsCanonical(EdgeId e) const {
         return e <= g_.conjugate(e);
     }
@@ -96,67 +158,8 @@ class IdealAligner {
         return inds;
     }
 
-    void AlignRead(const io::SingleRead &read) {
-        Sequence seq(read.sequence());
-        INFO("Read " << read.name() << ".")
-        auto current_mapping = mapper_->MapRead(read);
-        ReadPathFinder<debruijn_graph::Graph> readmapper(g_);
-        auto read_mapping = readmapper.FindReadPath(current_mapping);
-        if (current_mapping.empty() || read_mapping.size() == 0) {
-            INFO("Read " << read.name() << " wasn't aligned");
-        }
-
-        vector<int> inds = CheckPathConsistency(read_mapping, current_mapping);
-        if (inds.size() > 0) {
-            int j = 0;
-            int len_before = 0;
-            string path_str = "";
-            string pathlen_str = "";
-            string edgelen_str = "";
-            string str = "";
-            for (int i = 0; i < (int) read_mapping.size(); ++ i) {
-                EdgeId edgeid = read_mapping[i];
-                size_t mapping_start = 0;
-                size_t mapping_end = g_.length(edgeid);
-                size_t initial_start = len_before;
-                size_t initial_end = len_before + g_.length(edgeid);
-                if (inds[j] == i) {
-                    omnigraph::MappingRange range = current_mapping[j].second;
-                    mapping_start = range.mapped_range.start_pos;
-                    mapping_end = j + 1 < (int) inds.size() ? range.mapped_range.end_pos : range.mapped_range.end_pos + g_.k();
-                    initial_start = range.initial_range.start_pos;
-                    initial_end = j + 1 < (int) inds.size() ? range.initial_range.end_pos : range.initial_range.end_pos + g_.k();
-                    if ((i > 0 && i < (int)(read_mapping.size()) - 1) &&
-                            (mapping_end - mapping_start != initial_end - initial_start || mapping_end - mapping_start != g_.length(edgeid))) {
-                        DEBUG("Bad ranges")
-                        return;
-                    }
-                    ++ j;
-                }
-                len_before += (int) g_.length(edgeid);
-                path_str += getStrId(edgeid, g_) + " (" + to_string(mapping_start) + "," + to_string(mapping_end) + ") ["
-                            + to_string(initial_start) + "," + to_string(initial_end) + "], ";
-                pathlen_str += to_string(mapping_end - mapping_start) + ",";
-                edgelen_str += to_string(g_.length(edgeid)) + ",";
-                str += g_.EdgeNucls(edgeid).Subseq(mapping_start, mapping_end).str();
-            }
-            DEBUG("Path: " << path_str);
-            DEBUG("Read " << read.name() << " length=" << seq.size() << "; path_len=" << current_mapping.size()  << "; aligned: " << path_str);
-            if (str.size() != seq.size()) {
-                DEBUG("Read " << read.name() << " wasn't fully aligned");
-                return;
-            }
-            #pragma omp critical
-            {
-                myfile_ << read.name() << "\t" << seq.size() << "\t" << current_mapping.size()
-                        << "\t" << path_str << "\t" << pathlen_str << "\t" << edgelen_str << "\t" << str << "\n";
-
-            }
-        }
-    }
-
-  private:
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
+    const io::IdMapper<std::string> &id_mapper_;
     const string &output_file_;
     shared_ptr<MapperClass> mapper_;
     ofstream myfile_;
@@ -164,13 +167,13 @@ class IdealAligner {
 
 };
 
-void LoadGraph(const string &saves_path, bool load_spades_graph, debruijn_graph::ConjugateDeBruijnGraph &g) {
+void LoadGraph(const string &saves_path, debruijn_graph::ConjugateDeBruijnGraph &g, io::IdMapper<std::string> &id_mapper) {
     if (fs::extension(saves_path) == ".gfa") {
         DEBUG("Load gfa")
         VERIFY_MSG(fs::is_regular_file(saves_path), "GFA-file " + saves_path + " doesn't exist");
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(g, load_spades_graph);
+        gfa.to_graph(g, &id_mapper);
         return;
     } else {
         INFO("Load from saves");
@@ -180,10 +183,11 @@ void LoadGraph(const string &saves_path, bool load_spades_graph, debruijn_graph:
 }
 
 
-void Launch(size_t K, const string &saves_path, bool load_spades_graph, const string &reads_fasta, const string &output_file) {
+void Launch(size_t K, const string &saves_path, const string &reads_fasta, const string &output_file) {
     string tmpdir = fs::make_temp_dir(fs::current_dir(), "tmp");
     debruijn_graph::ConjugateDeBruijnGraph g(K);
-    LoadGraph(saves_path, load_spades_graph, g);
+    io::IdMapper<std::string> id_mapper;
+    LoadGraph(saves_path, g, id_mapper);
 
     KmerMapper<debruijn_graph::Graph> kmer_mapper(g);
     kmer_mapper.Detach();
@@ -207,19 +211,13 @@ void Launch(size_t K, const string &saves_path, bool load_spades_graph, const st
     }
     INFO("Loaded reads from " << reads_fasta);
 
-    IdealAligner aligner(g, output_file, mapper);
+    IdealAligner aligner(g, id_mapper, output_file, mapper);
     INFO("IdealAligner created");
 
     #pragma omp parallel num_threads(16)
     #pragma omp for
     for (size_t i = 0 ; i < wrappedreads.size(); ++i) {
         aligner.AlignRead(wrappedreads[i]);
-    }
-    if (!load_spades_graph) {
-        INFO("Saving *.gfa to " << output_file + ".gfa");
-        ofstream os(output_file + ".gfa");
-        gfa::GFAWriter gfa_writer(g, os);
-        gfa_writer.WriteSegmentsAndLinks();
     }
     fs::remove_dir(tmpdir);
 }
@@ -229,7 +227,7 @@ int main(int argc, char **argv) {
     omp_set_num_threads(1);
     if (argc < 5) {
         cout << "Usage: idealreads_aligner <K>"
-             << " <saves path> <long reads file (fasta)> <ouput-prefix> --spades" << endl;
+             << " <saves path> <long reads file (fasta)> <ouput-prefix>" << endl;
         exit(1);
     }
     create_console_logger();
@@ -239,10 +237,6 @@ int main(int argc, char **argv) {
     string longreads_file = argv[3];
     INFO("Load long reads from " << longreads_file);
     string output_file = argv[4];
-    bool load_spades_graph = false;
-    if (argc == 6) {
-        load_spades_graph = true;
-    }
-    debruijn_graph::Launch(K, saves_path, load_spades_graph, longreads_file, output_file);
+    debruijn_graph::Launch(K, saves_path, longreads_file, output_file);
     return 0;
 }

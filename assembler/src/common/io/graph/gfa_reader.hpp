@@ -6,6 +6,7 @@
 
 // This one is temporary, until we will be able to untangle IDs from the graph
 #include "assembly_graph/core/graph.hpp"
+#include "io/id_mapper.hpp"
 
 #include "adt/iterator_range.hpp"
 

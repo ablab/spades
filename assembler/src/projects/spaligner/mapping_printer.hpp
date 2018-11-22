@@ -6,106 +6,122 @@
 
 #pragma once
 
+#include "io/utils/edge_namer.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/pacbio/g_aligner.hpp"
+#include "io/id_mapper.hpp"
+
 
 #include <fstream>
 
 namespace sensitive_aligner {
 
 class MappingPrinter {
-  public:
+ public:
 
-    MappingPrinter(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
-        : g_(g), output_file_prefix_(output_file_prefix)
-    {}
+  MappingPrinter(const debruijn_graph::ConjugateDeBruijnGraph &g,
+                 const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
+                 const std::string &output_file_prefix)
+    : g_(g), edge_namer_(edge_namer), output_file_prefix_(output_file_prefix)
+  {}
 
-    virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) = 0;
+  virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) = 0;
 
-    virtual ~MappingPrinter () {};
+  virtual ~MappingPrinter () {};
 
-  protected:
-    const debruijn_graph::ConjugateDeBruijnGraph &g_;
-    std::string output_file_prefix_;
-    std::ofstream output_file_;
+ protected:
+
+  std::string StrId(const EdgeId &e) const;
+
+  const debruijn_graph::ConjugateDeBruijnGraph &g_;
+  const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer_;
+  std::string output_file_prefix_;
+  std::ofstream output_file_;
 };
 
 class MappingPrinterTSV: public MappingPrinter {
-  public:
-    MappingPrinterTSV(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
-        : MappingPrinter(g, output_file_prefix) {
-        output_file_.open(output_file_prefix_ + ".tsv", std::ofstream::out);
-    }
+ public:
+  MappingPrinterTSV(const debruijn_graph::ConjugateDeBruijnGraph &g,
+                    const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
+                    const std::string &output_file_prefix)
+    : MappingPrinter(g, edge_namer, output_file_prefix) {
+    output_file_.open(output_file_prefix_ + ".tsv", std::ofstream::out);
+  }
 
-    virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
+  virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
 
-    ~MappingPrinterTSV() {
-        output_file_.close();
-    }
+  ~MappingPrinterTSV() {
+    output_file_.close();
+  }
 };
 
 class MappingPrinterGPA : public MappingPrinter {
-  public:
-    MappingPrinterGPA(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix)
-        : MappingPrinter(g, output_file_prefix) {
-        output_file_.open(output_file_prefix_ + ".gpa", std::ofstream::out);
-        output_file_ << "H\n";
-    }
+ public:
+  MappingPrinterGPA(const debruijn_graph::ConjugateDeBruijnGraph &g,
+                    const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
+                    const std::string &output_file_prefix)
+    : MappingPrinter(g, edge_namer, output_file_prefix) {
+    output_file_.open(output_file_prefix_ + ".gpa", std::ofstream::out);
+    output_file_ << "H\n";
+  }
 
-    std::string Print(std::map<std::string, std::string> &line);
+  std::string Print(std::map<std::string, std::string> &line);
 
 
-    std::string getCigar(const std::string &read, const std::string &aligned);
+  std::string getCigar(const std::string &read, const std::string &aligned);
 
-    void getEdgeCigar(const std::string &subread, const std::string &path_seq, const std::vector<size_t> &edgeblocks,
-                      std::vector<std::string> &edgecigar, std::vector<Range> &edgeranges);
+  void getEdgeCigar(const std::string &subread, const std::string &path_seq, const std::vector<size_t> &edgeblocks,
+                    std::vector<std::string> &edgecigar, std::vector<Range> &edgeranges);
 
-    void getPath(const std::vector<debruijn_graph::EdgeId> &path,
-                 const PathRange &path_range,
-                 std::string &aligned, std::vector<size_t> &edgeblocks);
+  void getPath(const std::vector<debruijn_graph::EdgeId> &path,
+               const PathRange &path_range,
+               std::string &aligned, std::vector<size_t> &edgeblocks);
 
-    std::string getSubread(const Sequence &read, const PathRange &path_range);
+  std::string getSubread(const Sequence &read, const PathRange &path_range);
 
-    std::string formGPAOutput(const io::SingleRead &read,
-                              const std::vector<debruijn_graph::EdgeId> &path,
-                              const std::vector<std::string> &edgecigar,
-                              const std::vector<Range> &edgeranges,
-                              int &nameIndex, const PathRange &path_range);
+  std::string formGPAOutput(const io::SingleRead &read,
+                            const std::vector<debruijn_graph::EdgeId> &path,
+                            const std::vector<std::string> &edgecigar,
+                            const std::vector<Range> &edgeranges,
+                            int &nameIndex, const PathRange &path_range);
 
-    virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
+  virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
 
-    ~MappingPrinterGPA() {
-        output_file_.close();
-    }
+  ~MappingPrinterGPA() {
+    output_file_.close();
+  }
 
 };
 
 class MappingPrinterHub {
-  public:
-    MappingPrinterHub(const debruijn_graph::ConjugateDeBruijnGraph &g, const std::string &output_file_prefix, const std::string formats) {
-        if (formats.find("tsv") != std::string::npos) {
-            mapping_printers_.push_back(new MappingPrinterTSV(g, output_file_prefix));
-        }
-        if (formats.find("gpa") != std::string::npos) {
-            mapping_printers_.push_back(new MappingPrinterGPA(g, output_file_prefix));
-        }
+ public:
+  MappingPrinterHub(const debruijn_graph::ConjugateDeBruijnGraph &g,
+                    const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
+                    const std::string &output_file_prefix,
+                    const std::string formats) {
+    if (formats.find("tsv") != std::string::npos) {
+      mapping_printers_.push_back(new MappingPrinterTSV(g, edge_namer, output_file_prefix));
     }
-
-    void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
-        for (auto printer : mapping_printers_) {
-            printer->SaveMapping(aligned_mappings, read);
-        }
+    if (formats.find("gpa") != std::string::npos) {
+      mapping_printers_.push_back(new MappingPrinterGPA(g, edge_namer, output_file_prefix));
     }
+  }
 
-    ~MappingPrinterHub() {
-        for (auto printer : mapping_printers_) {
-            delete printer;
-        }
-        mapping_printers_.clear();
+  void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
+    for (auto printer : mapping_printers_) {
+      printer->SaveMapping(aligned_mappings, read);
     }
+  }
 
-  private:
-    std::vector<MappingPrinter*> mapping_printers_;
+  ~MappingPrinterHub() {
+    for (auto printer : mapping_printers_) {
+      delete printer;
+    }
+    mapping_printers_.clear();
+  }
+
+ private:
+  std::vector<MappingPrinter*> mapping_printers_;
 };
 
 } // namespace sensitive_aligner
