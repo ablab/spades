@@ -12,6 +12,7 @@
 #include <map>
 #include <unordered_map>
 
+#include "utils/verify.hpp"
 #include "llvm/Support/LEB128.h"
 
 namespace io {
