@@ -32,8 +32,9 @@ public:
     }
 
     void Read(BinIStream &str, Index &index, const Mapper &mapper) override {
-        size_t e;
-        while (str >> e) { //Read until the end
+        while (str.has_data()) {
+            size_t e;
+            str >> e;
             auto eid = mapper[e];
             auto cov = str.Read<unsigned>();
             index.SetRawCoverage(eid, cov);

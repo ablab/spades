@@ -60,8 +60,10 @@ public:
             vertex_mapper_[ids[1]] = graph.conjugate(new_id);
         };
 
-        size_t start_ids[2];
-        while (str >> start_ids) { //Read until the end
+        while (str.has_data()) { //Read until the end
+            // FIXME use two separate ids instead of C-array! C-array are error-prone and could be easily mixed up with pointers!
+            size_t start_ids[2];
+            str >> start_ids;
             TryAddVertex(start_ids);
             while (true) {
                 size_t edge_ids[2];
