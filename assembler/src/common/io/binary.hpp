@@ -60,7 +60,9 @@ typename std::enable_if_t<GetEncoding<T>() == Encoding::ULEB128> BinRead(std::is
     char count = 0;
     do {
         is.read(pos, 1);
-        VERIFY_MSG(++count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
+        VERIFY(is);
+        ++count;
+        VERIFY_MSG(count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
     } while (*(pos++) & 0x80);
     value = static_cast<T>(llvm::decodeULEB128(buf));
 }
@@ -80,7 +82,9 @@ typename std::enable_if_t<GetEncoding<T>() == Encoding::SLEB128> BinRead(std::is
     char count = 0;
     do {
         is.read(pos, 1);
-        VERIFY_MSG(++count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
+        VERIFY(is);
+        ++count;
+        VERIFY_MSG(count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
     } while (*(pos++) & 0x80);
     value = static_cast<T>(llvm::decodeSLEB128(buf));
 }
