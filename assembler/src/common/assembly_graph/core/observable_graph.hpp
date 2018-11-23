@@ -38,7 +38,7 @@ public:
 private:
    //todo switch to smart iterators
    mutable std::vector<Handler*> action_handler_list_;
-   const HandlerApplier<VertexId, EdgeId> *applier_;
+   std::unique_ptr<const HandlerApplier<VertexId, EdgeId>> applier_;
 
 public:
 //todo move to graph core
