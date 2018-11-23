@@ -7,6 +7,7 @@
 #pragma once
 
 #include <map>
+#include <string>
 
 // Forward decls for LLVM YAML API
 namespace llvm { namespace yaml { class IO; template<typename T> struct MappingTraits; } }
