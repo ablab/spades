@@ -426,6 +426,7 @@ void ObservableGraph<DataMaster>::clear() {
 
 template<class DataMaster>
 ObservableGraph<DataMaster>::~ObservableGraph<DataMaster>() {
+    FireGameOver();
     clear();
 }
 
