@@ -18,7 +18,7 @@ namespace omnigraph {
 class ReclaimingIdDistributor {
   public:
     ReclaimingIdDistributor(uint64_t bias = 0, size_t initial_size = 1)
-            : bias_(bias) {
+            : last_allocated_(0), bias_(bias) {
         resize(initial_size);
     }
 
