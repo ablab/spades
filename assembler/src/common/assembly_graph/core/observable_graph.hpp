@@ -327,7 +327,8 @@ void ObservableGraph<DataMaster>::PrintHandlersNames() const {
 
 template<class DataMaster>
 void ObservableGraph<DataMaster>::FireGameOver() const {
-    for (Handler* handler_ptr : action_handler_list_) {
+    auto action_handler_list_copy = action_handler_list_;  // We should copy list since GameOver initiates removing from the list
+    for (Handler* handler_ptr : action_handler_list_copy) {
         TRACE("FireGameOver to handler " << handler_ptr->name());
         applier_->ApplyGameOver(*handler_ptr);
     }
