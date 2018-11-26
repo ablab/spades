@@ -575,7 +575,7 @@ def rna_k_values(support, option_storage, dataset_data, log):
         use_iterative= False
 
     if upper_k < options_storage.RNA_MIN_K:
-        support.warning("\n" + 'Auto K value (' + str(k_value) + ') is too small, recommended to be at least %d.\n' % (options_storage.RNA_MIN_K))
+        support.warning("\n" + 'Auto K value (' + str(upper_k) + ') is too small, recommended to be at least %d.\n' % (options_storage.RNA_MIN_K))
         if rna_rl <= options_storage.RNA_MIN_K:
             support.warning('Read length is too small (%d), but keeping current K value anyway. Consider setting K manually. K\n' % (rna_rl))
         else:
