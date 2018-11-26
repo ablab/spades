@@ -12,14 +12,14 @@ TRUE_PERFORMANCE = {"ecoli": {"realpb": "90% 87%",
                               "realnp": "87% 87%",
                               "simpb": "99% 83%",
                               "simnp": "96% 88%"}, 
-                    "scerevisiae": {"realpb": "",
-                              "realnp": "",
-                              "simpb": "",
-                              "simnp": ""}, 
-                    "celegans": {"realpb": "",
-                              "realnp": "",
-                              "simpb": "",
-                              "simnp": ""} }
+                    "scerevisiae": {"realpb": "63% 83%",
+                              "realnp": "63% 82%",
+                              "simpb": "99% 83%",
+                              "simnp": "86% 83%"}, 
+                    "celegans": {"realpb": "86% 87%",
+                              "realnp": "66% 87%",
+                              "simpb": "98% 83%",
+                              "simnp": "89% 87%"} }
 
 def edist(lst):
     result = edlib.align(str(lst[0]), str(lst[1]), mode="NW", additionalEqualities=[('U', 'T')
@@ -120,6 +120,7 @@ if __name__ == "__main__":
     stat = "max"
     for org in args.orgs:
         res = {}
+        # print org
         for read_type in ["realnp", "realpb", "simpb", "simnp"]:
             reads_file = args.input + "/" + org+ "/input/" + read_type + "2000.fasta"
             dl = DataLoader()
@@ -127,6 +128,8 @@ if __name__ == "__main__":
             spaligner_res_file = args.path + "/" + org + "_" + read_type + ".tsv"
             spaligner_res = dl.load_spaligner_paths(spaligner_res_file, reads, stat)
             res[read_type] = save_stats(reads, spaligner_res)
+            # print read_type
+            # print res[read_type]
             if res[read_type] != TRUE_PERFORMANCE[org][read_type]:
                 print "Failed: ", read_type
                 exit(-1)
