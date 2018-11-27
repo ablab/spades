@@ -34,6 +34,51 @@ class PacBioMappingIndex {
     typedef debruijn_graph::EdgeId EdgeId;
 
 
+
+    PacBioMappingIndex(const Graph &g,
+                       debruijn_graph::config::pacbio_processor pb_config,
+                       alignment::BWAIndex::AlignmentMode mode)
+        : g_(g),
+          pb_config_(pb_config),
+          bwa_mapper_(g, mode, pb_config.bwa_length_cutoff) {
+        DEBUG("PB Mapping Index construction started");
+        DEBUG("Index constructed");
+        read_count_ = 0;
+    }
+
+    std::vector<std::vector<QualityRange>> GetChainingPaths(const io::SingleRead &read) const {
+        std::vector<ColoredRange> ranged_colors = GetRangedColors(read);
+        size_t len = ranged_colors.size();
+        std::vector<std::vector<QualityRange>> res;
+        for (size_t i = 0; i < len; i++) {
+            if (ranged_colors[i].second != DELETED_COLOR) {
+                std::vector<QualityRange> path;
+                int cur_color = ranged_colors[i].second;
+                for (size_t j = 0; j < len; j++) {
+                    if (ranged_colors[j].second == cur_color) {
+                        path.push_back(ranged_colors[j].first);
+                        ranged_colors[j].second = DELETED_COLOR;
+                    }
+                }
+                auto prev_iter = path.begin();
+                for (auto iter = path.begin(); iter != path.end(); ++iter) {
+                    auto next_iter = iter + 1;
+                    if (next_iter == path.end() || !IsConsistent(*iter, *next_iter)) {
+                        if (next_iter != path.end()) {
+                            DEBUG("clusters splitted:");
+                            DEBUG("on " << iter->str(g_));
+                            DEBUG("and " << next_iter->str(g_));
+                        }
+                        res.push_back(std::vector<QualityRange>(prev_iter, next_iter));
+                        prev_iter = next_iter;
+                    }
+                }
+
+            }
+        }
+        return res;
+    }
+
   private:
     DECL_LOGGER("PacIndex")
 
@@ -235,17 +280,6 @@ class PacBioMappingIndex {
         return ss.str();
     }
 
-  public:
-    PacBioMappingIndex(const Graph &g,
-                       debruijn_graph::config::pacbio_processor pb_config,
-                       alignment::BWAIndex::AlignmentMode mode)
-        : g_(g),
-          pb_config_(pb_config),
-          bwa_mapper_(g, mode, pb_config.bwa_length_cutoff) {
-        DEBUG("PB Mapping Index construction started");
-        DEBUG("Index constructed");
-        read_count_ = 0;
-    }
 
 //former GetWeightedColors
     std::vector<ColoredRange> GetRangedColors(const io::SingleRead &read) const {
@@ -315,39 +349,6 @@ class PacBioMappingIndex {
         size_t ind = 0;
         for ( auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end(); ++i_iter, ++ind) {
             res.push_back(std::make_pair(*i_iter, colors[ind]));
-        }
-        return res;
-    }
-
-    std::vector<std::vector<QualityRange>> GetChainingPaths(const io::SingleRead &read) const {
-        std::vector<ColoredRange> ranged_colors = GetRangedColors(read);
-        size_t len = ranged_colors.size();
-        std::vector<std::vector<QualityRange>> res;
-        for (size_t i = 0; i < len; i++) {
-            if (ranged_colors[i].second != DELETED_COLOR) {
-                std::vector<QualityRange> path;
-                int cur_color = ranged_colors[i].second;
-                for (size_t j = 0; j < len; j++) {
-                    if (ranged_colors[j].second == cur_color) {
-                        path.push_back(ranged_colors[j].first);
-                        ranged_colors[j].second = DELETED_COLOR;
-                    }
-                }
-                auto prev_iter = path.begin();
-                for (auto iter = path.begin(); iter != path.end(); ++iter) {
-                    auto next_iter = iter + 1;
-                    if (next_iter == path.end() || !IsConsistent(*iter, *next_iter)) {
-                        if (next_iter != path.end()) {
-                            DEBUG("clusters splitted:");
-                            DEBUG("on " << iter->str(g_));
-                            DEBUG("and " << next_iter->str(g_));
-                        }
-                        res.push_back(std::vector<QualityRange>(prev_iter, next_iter));
-                        prev_iter = next_iter;
-                    }
-                }
-
-            }
         }
         return res;
     }
