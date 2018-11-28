@@ -18,7 +18,7 @@ inline std::pair<size_t, size_t> LongestValidCoords(const SingleRead& r) {
     size_t best_len = 0;
     size_t best_pos = none;
     size_t pos = none;
-    std::string seq = r.GetSequenceString();
+    const std::string &seq = r.GetSequenceString();
     for (size_t i = 0; i <= seq.size(); ++i) {
         if (i < seq.size() && is_nucl(seq[i])) {
             if (pos == none) {
