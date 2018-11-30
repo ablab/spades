@@ -204,13 +204,13 @@ class ReadCloudDijkstraHelper {
 
     typedef Dijkstra<Graph, UniqueDijkstraSettings> UniqueDijkstra;
 
-    static UniqueDijkstra CreateUniqueDijkstra(const Graph& graph, size_t length_bound,
+    static UniqueDijkstra CreateUniqueDijkstra(const Graph& graph, size_t distance_bound,
                                                const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
                                                size_t max_vertex_number = -1ul) {
         return UniqueDijkstra(graph,
                               UniqueDijkstraSettings(
                                   LengthCalculator<Graph>(graph),
-                                  BoundProcessChecker<Graph>(length_bound),
+                                  BoundProcessChecker<Graph>(distance_bound),
                                   UniquePutChecker<Graph>(graph, unique_storage),
                                   ForwardNeighbourIteratorFactory<Graph>(graph)),
                               max_vertex_number);

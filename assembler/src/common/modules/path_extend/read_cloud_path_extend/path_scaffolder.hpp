@@ -8,6 +8,17 @@
 
 namespace path_extend {
 
+class StartFinder {
+    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef unordered_map<ScaffoldVertex, ScaffoldVertex> TransitionMap;
+
+    const Graph &g_;
+ public:
+    StartFinder(const Graph &g);
+
+    std::unordered_set<ScaffoldVertex> GetStarts(const TransitionMap &transition_map) const;
+};
+
 class PathScaffolder {
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;

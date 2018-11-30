@@ -96,7 +96,7 @@ void ScaffoldGraphSerializer::LoadScaffoldGraph(ifstream &fin,
         double weight = 0;
         size_t length = 0;
         fin >> start_id >> end_id >> lib >> weight >> length;
-        if (i % block_size == 0) {
+        if (block_size != 0 and i % block_size == 0) {
             DEBUG("Loaded " << i << " edges out of " << number_of_edges);
         }
         TRACE("Read values")

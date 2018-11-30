@@ -136,6 +136,10 @@ double LabeledDistributionThresholdEstimator::GetThreshold() const {
     const double STEP = 0.001;
     const double MIN = 0.0;
     const double MAX = 1.0;
+
+    //fixme configs
+    const double default_threshold = 0.05;
+
     vector<EdgeId> long_edges;
     omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(g_);
     for (const auto& edge: edge_it_helper) {
@@ -144,6 +148,11 @@ double LabeledDistributionThresholdEstimator::GetThreshold() const {
         }
     }
     INFO(long_edges.size() << " training edges.");
+    if (long_edges.size() == 0) {
+        WARN("Not enough ultralong edges, setting containment index threshold at " << default_threshold);
+        return default_threshold;
+    }
+
     LongEdgeScoreHistogramConstructor histogram_constructor(STEP, MIN, MAX, g_, segment_score_function_,
                                                             long_edges, left_block_length_,
                                                             right_block_length_, min_distance_,

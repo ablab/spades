@@ -74,7 +74,7 @@ class PathInitialClusterStorageBuilder: public InitialClusterStorageBuilder {
             ScaffoldVertex vertex = target_edges_vector[i];
             path_extend::scaffold_graph::PathGetter getter;
             path_extend::BidirectionalPath* path = getter.GetPathFromScaffoldVertex(vertex);
-            auto conj_vertex = vertex.getConjugateFromGraph(g_);
+            auto conj_vertex = vertex.GetConjugateFromGraph(g_);
             path_extend::BidirectionalPath* conj_path = getter.GetPathFromScaffoldVertex(conj_vertex);
             DEBUG("Extracting clusters from path " << path->GetId());
             DEBUG("Conj path: " << conj_path->GetId());
