@@ -71,6 +71,9 @@ class ScaffoldGraphValidator {
     ScaffoldGraphStats GetScaffoldGraphStats(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
                                              const vector <vector<EdgeWithMapping>> &reference_paths);
 
+    set <transitions::Transition> GetFalseNegativeTransitions(const ScaffoldGraphValidator::ScaffoldGraph &graph,
+                                                              const ContigTransitionStorage &genome_transitions) const;
+
  private:
 
     ScaffoldGraphStats GetScaffoldGraphStatsFromTransitions(const path_extend::scaffold_graph::ScaffoldGraph &graph,
@@ -84,8 +87,7 @@ class ScaffoldGraphValidator {
 
     size_t CountFalsePositive(const ScaffoldGraph &graph, const ContigTransitionStorage &reference_transtions);
 
-    set <transitions::Transition> GetFalseNegativeTransitions(const ScaffoldGraphValidator::ScaffoldGraph &graph,
-                                                              const ContigTransitionStorage &transitions) const;
+    DECL_LOGGER("ScaffoldGraphValidator");
 };
 }
 }

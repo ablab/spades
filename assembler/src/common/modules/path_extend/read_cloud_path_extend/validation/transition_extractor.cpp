@@ -206,16 +206,15 @@ ContigTransitionStorage ConjugateTransitionStorageBuilder::BuildStorage(const ve
 ContigTransitionStorage GeneralTransitionStorageBuilder::BuildStorage(const vector<vector<EdgeWithMapping>>& paths) const {
     ContigTransitionStorage storage;
     for (const auto& path: paths) {
-        for (size_t left_idx = 0; left_idx < path.size(); ++left_idx) {
-            EdgeId first = path[left_idx].edge_;
+        for (size_t prev_idx = 0; prev_idx < path.size(); ++prev_idx) {
+            EdgeId first = path[prev_idx].edge_;
             storage.InsertEdge(first);
-            for (size_t right_idx = left_idx + 1;
-                 right_idx != path.size() and right_idx <= left_idx + distance_; ++right_idx) {
-                EdgeId second = path[right_idx].edge_;
+            for (size_t next_idx = prev_idx + 1; next_idx != path.size() and next_idx <= prev_idx + distance_; ++next_idx) {
+                EdgeId second = path[next_idx].edge_;
                 ProcessPair(first, second, with_conjugate_, with_reverse_, storage);
             }
-            if (left_idx + distance_ >= path.size() and left_idx + distance_ < 2 * path.size()) {
-                size_t rem = left_idx + distance_ - path.size();
+            if (prev_idx + distance_ >= path.size() and prev_idx + distance_ < 2 * path.size()) {
+                size_t rem = prev_idx + distance_ - path.size();
                 for (size_t right_idx = 0; right_idx <= rem; ++right_idx) {
                     EdgeId second = path[right_idx].edge_;
                     ProcessPair(first, second, with_conjugate_, with_reverse_, storage);
@@ -298,7 +297,7 @@ vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::Extra
     return result;
 }
 FilteredReferencePathHelper::FilteredReferencePathHelper(const conj_graph_pack& gp_) : gp_(gp_) {}
-vector<vector<EdgeWithMapping>> FilteredReferencePathHelper:: GetFilteredReferencePathsFromLength(const string& path_to_reference,
+vector<vector<EdgeWithMapping>> FilteredReferencePathHelper::GetFilteredReferencePathsFromLength(const string& path_to_reference,
                                                                                                  size_t length_threshold) {
     path_extend::ScaffoldingUniqueEdgeStorage unique_storage;
     bool nonuniform_coverage = cfg::get().mode == debruijn_graph::config::pipeline_type::meta;

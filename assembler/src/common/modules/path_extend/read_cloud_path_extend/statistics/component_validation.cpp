@@ -133,7 +133,7 @@ void ComponentEstimator::EstimateComponents(const ComponentEstimator::ScaffoldGr
     auto add_component_length = [this](size_t current_sum, const TransitionGraph &graph) {
       size_t component_length = std::accumulate(graph.begin(), graph.end(), 0,
                                                 [this](size_t current_length, const ScaffoldVertex &vertex) {
-                                                  return current_length + vertex.getLengthFromGraph(this->g_);
+                                                  return current_length + vertex.GetLengthFromGraph(this->g_);
                                                 });
       return current_sum + component_length;
     };

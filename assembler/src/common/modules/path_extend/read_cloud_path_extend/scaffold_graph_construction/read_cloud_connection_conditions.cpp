@@ -40,9 +40,9 @@ bool AssemblyGraphUniqueConnectionCondition::IsLast() const {
 double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge) const {
     auto first = edge.getStart();
     auto second = edge.getEnd();
-//    DEBUG("Checking edge " << edge.getStart().int_id() << " -> " << edge.getEnd().int_id());
-    size_t first_length = first.getLengthFromGraph(graph_);
-    size_t second_length = second.getLengthFromGraph(graph_);
+    DEBUG("Checking edge " << edge.getStart().int_id() << " -> " << edge.getEnd().int_id());
+    size_t first_length = first.GetLengthFromGraph(graph_);
+    size_t second_length = second.GetLengthFromGraph(graph_);
     size_t first_size = barcode_extractor_->GetTailSize(first);
     size_t second_size = barcode_extractor_->GetHeadSize(second);
     if (first_size == 0 or second_size == 0) {
@@ -61,8 +61,8 @@ double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGr
         DEBUG("Score: " << containment_index);
     }
     VERIFY(math::ge(1.0, containment_index));
-//    double first_coverage = first.getCoverageFromGraph(graph_);
-//    double second_coverage = second.getCoverageFromGraph(graph_);
+//    double first_coverage = first.GetCoverageFromGraph(graph_);
+//    double second_coverage = second.GetCoverageFromGraph(graph_);
     return containment_index;
 }
 NormalizedBarcodeScoreFunction::NormalizedBarcodeScoreFunction(
@@ -90,9 +90,9 @@ bool ReadCloudMiddleDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph
                                                                 scaffold_edge.getStart(), scaffold_edge.getEnd(),
                                                                 params_.edge_pair_gap_closer_params_);
     DEBUG("Created dijkstra");
-    long_gap_dijkstra.Run(scaffold_edge.getStart().getEndGraphVertex(g));
+    long_gap_dijkstra.Run(scaffold_edge.getStart().GetEndGraphVertex(g));
     DEBUG("Dijkstra finished");
-    VertexId target = scaffold_edge.getEnd().getStartGraphVertex(g);
+    VertexId target = scaffold_edge.getEnd().GetStartGraphVertex(g);
     for (const auto &vertex: long_gap_dijkstra.ReachedVertices()) {
         if (vertex == target) {
             return true;
@@ -232,6 +232,9 @@ vector<SimpleSearcher::ScaffoldVertex> SimpleSearcher::GetReachableVertices(cons
     std::queue<VertexWithDistance> vertex_queue;
     vertex_queue.push(new_vertex);
     unordered_set<ScaffoldVertex> visited;
+    visited.insert(vertex);
+    visited.insert(vertex.GetConjugateFromGraph(g_));
+    visited.insert(restricted_edge.getEnd().GetConjugateFromGraph(g_));
     while (not vertex_queue.empty()) {
         auto current_vertex = vertex_queue.front();
         vertex_queue.pop();
@@ -308,7 +311,7 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
 //    auto recording_scaffold_vertex_predicate = ConstructScaffoldVertexPredicate(start, end, recording_pair_entry_processor);
 
     path_extend::QueueContainer paths_container;
-    BidirectionalPath* initial_path = start.toPath(gp_.g);
+    BidirectionalPath* initial_path = start.ToPath(gp_.g);
     DEBUG("Initial path id: " << initial_path->GetId());
     DEBUG("Initial path size: " << initial_path->Size());
     BidirectionalPath* initial_path_copy = new BidirectionalPath(*initial_path);
@@ -333,8 +336,8 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
         searching_extenders.push_back(scaffolding_extender);
     }
 
-    VertexId start_vertex = start.getEndGraphVertex(gp_.g);
-    VertexId target_vertex = end.getStartGraphVertex(gp_.g);
+    VertexId start_vertex = start.GetEndGraphVertex(gp_.g);
+    VertexId target_vertex = end.GetStartGraphVertex(gp_.g);
     DEBUG("Start: " << start_vertex.int_id());
     DEBUG("Target: " << target_vertex.int_id());
 

@@ -70,9 +70,9 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
         std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     auto barcode_extractor_wrapper =
         std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, barcode_extractor);
-    auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor, reliable_edge_length,
-                                                                         seed_edge_length, tail_threshold,
-                                                                         relative_coverage_threshold);
+    RelativeUniquePredicateGetter predicate_getter(gp_.g, reliable_edge_length, seed_edge_length, relative_coverage_threshold);
+    auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor,
+                                                                         predicate_getter, tail_threshold);
     auto edge_selector_factory = std::make_shared<SimpleReachableEdgesSelectorFactory>(gp_.g, barcode_extractor,
                                                                                        barcode_threshold,
                                                                                        reliable_edge_length,
@@ -101,6 +101,7 @@ shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructEx
                                                               investigate_short_loops,
                                                               use_short_loops_cov_resolver,
                                                               weight_threshold,
+                                                              predicate_getter,
                                                               entry_collector,
                                                               edge_selector_factory,
                                                               tail_threshold);
@@ -117,11 +118,11 @@ shared_ptr<ScaffoldGraphGapCloser> ReadCloudScaffoldGraphGapCloserConstructor::C
     };
     auto barcode_extractor =
         std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+    RelativeUniquePredicateGetter predicate_getter(gp_.g, params_.reliable_edge_length_, edge_length_threshold,
+                                                   params_.relative_coverage_threshold_);
     auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor,
-                                                                         params_.reliable_edge_length_,
-                                                                         edge_length_threshold,
-                                                                         params_.tail_threshold_,
-                                                                         params_.relative_coverage_threshold_);
+                                                                         predicate_getter,
+                                                                         params_.tail_threshold_);
     ScaffoldGraphExtractor extractor;
     DEBUG("Getting edge map");
     auto long_edge_to_vertex = extractor.GetFirstEdgeMap(graph, length_predicate);

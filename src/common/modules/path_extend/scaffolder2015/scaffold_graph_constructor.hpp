@@ -120,7 +120,7 @@ class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
         if (unique_storage_.IsUnique(connected) and first_unique_to_vertex.find(connected) != first_unique_to_vertex.end()) {
             auto connected_scaff_vertex = first_unique_to_vertex.at(connected);
             if (from != connected_scaff_vertex and
-                from != connected_scaff_vertex.getConjugateFromGraph(graph_->AssemblyGraph())) {
+                from != connected_scaff_vertex.GetConjugateFromGraph(graph_->AssemblyGraph())) {
                 return true;
             }
         }
@@ -209,6 +209,8 @@ class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor
                                           const size_t num_threads_);
 
     shared_ptr<ScaffoldGraph> Construct() override;
+
+    DECL_LOGGER("ScoreFunctionScaffoldGraphConstructor");
 };
 
 } //scaffold_graph

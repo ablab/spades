@@ -114,8 +114,8 @@ SubgraphInfo PathClusterStatisticsExtractor::GetSubgraphInfo(
     std::map<ScaffoldVertex, size_t> vertex_to_len;
     std::map<ScaffoldVertex, double> vertex_to_cov;
     for (const auto& vertex: graph) {
-        vertex_to_len[vertex] = vertex.getLengthFromGraph(gp_.g);
-        vertex_to_cov[vertex] = vertex.getCoverageFromGraph(gp_.g);
+        vertex_to_len[vertex] = vertex.GetLengthFromGraph(gp_.g);
+        vertex_to_cov[vertex] = vertex.GetCoverageFromGraph(gp_.g);
     }
     SubgraphInfo result(graph, source, sink, cluster_to_weight, final_clusters, resulting_paths, all_paths,
                         correct_path, id_map, vertex_to_cov, vertex_to_len, scaffold_edge_to_len);
@@ -161,10 +161,10 @@ bool PathClusterStatisticsExtractor::CheckSubgraph(const PathClusterStatisticsEx
 //        set<scaffold_graph::ScaffoldVertex> permitted_vertices;
 //        for (const auto &vertex: correct_path_result.get()) {
 //            permitted_vertices.insert(vertex);
-//            permitted_vertices.insert(vertex.getConjugateFromGraph(gp_.g));
+//            permitted_vertices.insert(vertex.GetConjugateFromGraph(gp_.g));
 //        }
-//        permitted_vertices.erase(sink.getConjugateFromGraph(gp_.g));
-//        permitted_vertices.erase(source.getConjugateFromGraph(gp_.g));
+//        permitted_vertices.erase(sink.GetConjugateFromGraph(gp_.g));
+//        permitted_vertices.erase(source.GetConjugateFromGraph(gp_.g));
 //        for (const auto &vertex: graph) {
 //            if (permitted_vertices.find(vertex) == permitted_vertices.end()) {
 //                INFO("Vertex " << vertex.int_id() << " is not permitted!");
@@ -183,7 +183,7 @@ PathClusterStatisticsExtractor::IdMap PathClusterStatisticsExtractor::GetIdMap(
 //    if (not correct_path.empty()) {
 //        for (const auto& vertex: correct_path) {
 //            result.insert({vertex, std::to_string(current_id)});
-//            result.insert({vertex.getConjugateFromGraph(gp_.g), std::to_string(current_id) + "'"});
+//            result.insert({vertex.GetConjugateFromGraph(gp_.g), std::to_string(current_id) + "'"});
 //            ++current_id;
 //        }
 //        return result;
