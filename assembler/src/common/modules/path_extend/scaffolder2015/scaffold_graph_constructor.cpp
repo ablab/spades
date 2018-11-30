@@ -182,7 +182,7 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
 
     std::unordered_map<EdgeId, ScaffoldVertex> first_unique_to_vertex;
     for (const auto& vertex: vertices_copy) {
-        auto first_unique = vertex.getFirstEdgeWithPredicate(is_unique);
+        auto first_unique = vertex.GetFirstEdgeWithPredicate(is_unique);
         if (first_unique.is_initialized()) {
             first_unique_to_vertex.insert({first_unique.get(), vertex});
         }
@@ -196,7 +196,7 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
         ReadCloudDijkstraHelper helper;
         auto dij = helper.CreateUniqueDijkstra(graph_->AssemblyGraph(), distance_, unique_storage_);
         const auto vertex = vertices_copy[i];
-        EdgeId last_edge = vertex.getLastEdge();
+        EdgeId last_edge = vertex.GetLastEdge();
         VertexId last_vertex = graph_->AssemblyGraph().EdgeEnd(last_edge);
         dij.Run(last_vertex);
         vector<std::pair<ScaffoldVertex, size_t>> incident_vertices;
@@ -219,7 +219,7 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
                 graph_->AddEdgeSimple(edge);
             }
             ++counter;
-            if (counter % block_size == 0) {
+            if (block_size != 0 and counter % block_size == 0) {
                 DEBUG("Processed " << counter << " vertices out of " << vertices_copy.size());
             }
         }
@@ -304,14 +304,14 @@ shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
                 TRACE("Checking edge " << edge.getStart().int_id() << " -> " << edge.getEnd().int_id());
                 TRACE("Score: " << score);
                 TRACE("Score threshold: " << score_threshold_);
-                bool are_conjugate = from == to.getConjugateFromGraph(graph_->AssemblyGraph());
+                bool are_conjugate = from == to.GetConjugateFromGraph(graph_->AssemblyGraph());
                 if (math::ge(score, score_threshold_) and from != to and not are_conjugate) {
                     TRACE("Success");
                     graph_->AddEdge(edge.getStart(), edge.getEnd(), edge.getColor(), score, edge.getLength());
                 }
                 TRACE("Edge added");
                 ++counter;
-                if (counter % block_size == 0) {
+                if (block_size != 0 and counter % block_size == 0) {
                     INFO("Processed " << counter << " edges out of " << edges_size);
                 }
             }
