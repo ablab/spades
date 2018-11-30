@@ -51,7 +51,7 @@ void path_extend::TipFinderGapCloser::CloseGaps(ScaffoldGraph &graph) const {
 }
 TipFinderGapCloser::TipFinderGapCloser(shared_ptr<TipSearcher> tip_searcher_) : tip_searcher_(tip_searcher_) {}
 boost::optional<TipSearcher::ScaffoldVertex> PathExtenderTipSearcher::FindTip(const TipSearcher::ScaffoldVertex &vertex) const {
-    BidirectionalPath initial_path = vertex.getPath(g_);
+    BidirectionalPath initial_path = vertex.GetPath(g_);
     boost::optional<ScaffoldVertex> empty_result;
     auto length_predicate = [this](const EdgeId& edge) {
       return this->g_.length(edge) >= this->edge_length_threshold_;
@@ -77,7 +77,7 @@ PathExtenderTipSearcher::PathExtenderTipSearcher(const Graph &g_,
 TipExtender::TipExtender(const Graph &g, shared_ptr<PathExtender> path_extender, size_t edge_length_threshold)
     : g_(g), path_extender_(path_extender), edge_length_threshold_(edge_length_threshold) {}
 BidirectionalPath TipExtender::ExtendTip(const TipExtender::ScaffoldVertex &vertex) const {
-    BidirectionalPath initial_path = vertex.getPath(g_);
+    BidirectionalPath initial_path = vertex.GetPath(g_);
     auto length_predicate = [this](const EdgeId& edge) {
       return this->g_.length(edge) >= this->edge_length_threshold_;
     };
@@ -117,7 +117,7 @@ void ScoreFunctionGapCloser::CloseGaps(ScaffoldGraphGapCloser::ScaffoldGraph &gr
         vertex_to_out_entry.insert({tip, std::move(forward_entry)});
     }
     for (const auto& tip: in_tips) {
-        auto backward_path = tip_extender_->ExtendTip(tip.getConjugateFromGraph(g_));
+        auto backward_path = tip_extender_->ExtendTip(tip.GetConjugateFromGraph(g_));
         auto backward_entry = entry_collector_->CollectEntry(backward_path);
         TRACE("Backward entry size: " << backward_entry.size());
         vertex_to_in_entry.insert({tip, std::move(backward_entry)});
@@ -130,7 +130,7 @@ void ScoreFunctionGapCloser::CloseGaps(ScaffoldGraphGapCloser::ScaffoldGraph &gr
     for (size_t i = 0; i < out_tips.size(); ++i) {
         const auto& out_tip = out_tips[i];
         for (const auto& in_tip: in_tips) {
-            if (in_tip != out_tip and in_tip != out_tip.getConjugateFromGraph(g_)) {
+            if (in_tip != out_tip and in_tip != out_tip.GetConjugateFromGraph(g_)) {
                 const auto& in_entry = vertex_to_in_entry.at(in_tip);
                 const auto& out_entry = vertex_to_out_entry.at(out_tip);
                 size_t in_size = in_entry.size();

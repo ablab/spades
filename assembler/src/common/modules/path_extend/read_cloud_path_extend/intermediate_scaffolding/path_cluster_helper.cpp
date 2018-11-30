@@ -49,11 +49,11 @@ PathClusterStorage GraphBasedPathClusterNormalizer::GetNormalizedStorage(
         if (entry.first.size() == 2) {
             double length_normalizer = 0;
             for (const auto &vertex: entry.first) {
-                length_normalizer += static_cast<double>(std::max(local_tail_threshold, vertex.getLengthFromGraph(g_)));
+                length_normalizer += static_cast<double>(std::max(local_tail_threshold, vertex.GetLengthFromGraph(g_)));
             }
             entry.second = entry.second / length_normalizer * 100000;
             for (const auto &vertex: entry.first) {
-                entry.second /= vertex.getCoverageFromGraph(g_);
+                entry.second /= vertex.GetCoverageFromGraph(g_);
             }
             entry.second *= 10000;
         }
@@ -126,7 +126,7 @@ vector<PathClusterConflictResolver::VertexSet> PathClusterConflictResolver::GetC
     set<ScaffoldVertex> vertices;
     for (const auto &vertex: graph) {
         vertices.insert(vertex);
-        vertices.insert(vertex.getConjugateFromGraph(g_));
+        vertices.insert(vertex.GetConjugateFromGraph(g_));
     }
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     const size_t tail_threshold = 10000;

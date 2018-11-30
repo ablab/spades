@@ -35,7 +35,7 @@ void PathClusterValidator::PrintRefIndexInfo(const set<scaffold_graph::ScaffoldV
     for (const auto &vertex: cluster_vertices) {
         auto edge = edge_getter.GetEdgeFromScaffoldVertex(vertex);
         auto ref_info = ref_path_index_.at(edge);
-        TRACE("Path: " << ref_info.path_ << ", pos: " << ref_info.pos_ << ", rev pos: " << ref_info.rev_pos_);
+        TRACE("Path: " << ref_info.path_ << ", pos: " << ref_info.edge_pos_ << ", rev pos: " << ref_info.conj_edge_pos_);
     }
 }
 bool PathClusterValidator::IsCovered(const scaffold_graph::ScaffoldVertex &vertex) const {
@@ -61,7 +61,7 @@ optional<PathClusterValidator::SimplePath> PathClusterValidator::GetReferencePat
     std::unordered_map<size_t, ScaffoldVertex> position_to_vertex;
     std::vector<size_t> vertex_positions;
     for (const auto &vertex: cluster_vertices) {
-        size_t position = ref_path_index_.at(vertex).pos_;
+        size_t position = ref_path_index_.at(vertex).edge_pos_;
         position_to_vertex.insert({position, vertex});
         vertex_positions.push_back(position);
     }

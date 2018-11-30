@@ -845,6 +845,7 @@ class ScaffoldingSearchingMultiExtender: public SearchingMultiExtender, public S
 class ReadCloudExtender : public SimpleExtender { //Traverse forward to find long edges
 using SimpleExtender::g_;
 protected:
+    RelativeUniquePredicateGetter predicate_getter_;
     shared_ptr<BarcodeEntryCollector> entry_collector_;
     shared_ptr<CloudReachableEdgesSelectorFactory> edge_selector_factory_;
     size_t min_path_length_;
@@ -857,11 +858,13 @@ protected:
                       bool investigate_short_loops,
                       bool use_short_loop_cov_resolver,
                       double weight_threshold,
+                      RelativeUniquePredicateGetter predicate_getter,
                       shared_ptr<BarcodeEntryCollector> entry_collector,
                       shared_ptr<CloudReachableEdgesSelectorFactory> edge_selector_factory,
                       size_t min_path_length) :
         SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops,
                        use_short_loop_cov_resolver, weight_threshold),
+        predicate_getter_(predicate_getter),
         entry_collector_(entry_collector),
         edge_selector_factory_(edge_selector_factory),
         min_path_length_(min_path_length) {}
@@ -872,17 +875,35 @@ protected:
         if (path.Length() < min_path_length_) {
             return;
         }
-        vector<EdgeId> initial_candidates;
         auto path_barcodes = entry_collector_->CollectEntry(path);
         DEBUG("Creating dijkstra");
         auto edge_selector = edge_selector_factory_->ConstructReachableEdgesSelector(path_barcodes);
         auto reached_edges = edge_selector->SelectReachableEdges(path.Back());
-        for (const auto& edge: reached_edges) {
-            result->push_back(edge);
+        auto last_unique_result = GetLastUnique(path);
+        if (not last_unique_result.is_initialized()) {
+            return;
+        }
+        EdgeId last_unique = last_unique_result.get();
+        for (const auto& candidate: reached_edges) {
+            if (candidate.e_ != last_unique and g_.conjugate(candidate.e_) != last_unique) {
+                result->push_back(candidate);
+            }
         }
         DEBUG(result->size() << " reached edges");
     }
- protected:
+ private:
+    boost::optional<EdgeId> GetLastUnique(const BidirectionalPath &path) const {
+        auto predicate = predicate_getter_.GetPredicate(path);
+        boost::optional<EdgeId> result;
+        for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+            if (predicate(path.At(i))) {
+                result = path.At(i);
+                return result;
+            }
+        }
+        return result;
+    }
+
     bool IsNotInPath(const BidirectionalPath &path, const EdgeId &edge) const {
         return path.FindFirst(edge) == -1 and path.FindFirst(g_.conjugate(edge)) == -1;
     }
@@ -937,7 +958,7 @@ class ScaffoldGraphExtender: public PathExtender {
             DEBUG("Graph contains next vertex: " << scaffold_graph_.Exists(next_vertex));
             DEBUG("Graph vertices contain vertex: "
                       << (scaffold_graph_vertices_.find(next_vertex) != scaffold_graph_vertices_.end()));
-            scaffold_graph::ScaffoldVertexT type = next_vertex.getType();
+            scaffold_graph::ScaffoldVertexT type = next_vertex.GetType();
             switch (type) {
                 case scaffold_graph::Edge: {
                     scaffold_graph::EdgeGetter getter;

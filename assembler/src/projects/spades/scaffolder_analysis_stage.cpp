@@ -1,5 +1,9 @@
 #include <common/assembly_graph/contracted_graph/contracted_statistics.hpp>
 #include <common/assembly_graph/contracted_graph/graph_condensation.hpp>
+#include <common/modules/path_extend/read_cloud_path_extend/path_scaffolder.hpp>
+#include <common/modules/path_extend/read_cloud_path_extend/statistics/coverage_break_analysis.hpp>
+#include <common/modules/path_extend/read_cloud_path_extend/contracted_graph_scaffolding/contracted_graph_scaffolder.hpp>
+#include <common/modules/path_extend/read_cloud_path_extend/contracted_graph_scaffolding/contracted_gfa_writer.hpp>
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/containment_index_threshold_finder.hpp"
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
@@ -12,6 +16,8 @@
 #include "common/modules/path_extend/read_cloud_path_extend/statistics/path_cluster_statistics.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/statistics/cloud_check_statistics.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/statistics/long_edge_dataset.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/statistics/short_edge_dataset.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/statistics/split_index_statistics.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/statistics/perfect_clouds.hpp"
 
 void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
@@ -27,6 +33,15 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
         return;
     }
 
+//    path_extend::SplitStatisticsExtractor split_stats_extractor(graph_pack);
+//    split_stats_extractor.ConstructAndSerialize(cfg::get().ts_res.statistics.genome_path, cfg::get().output_dir, 10000);
+
+//    path_extend::LongEdgePairDatasetExtractor long_edge_pair_extractor(graph_pack);
+//    long_edge_pair_extractor.ConstructAndSerialize(cfg::get().ts_res.statistics.genome_path, cfg::get().output_dir);
+
+//    path_extend::ShortEdgeDatasetExtractor short_edge_pair_extractor(graph_pack);
+//    short_edge_pair_extractor.ConstructAndSerialize(cfg::get().ts_res.statistics.genome_path, cfg::get().output_dir);
+
 //    path_extend::PathClusterStorageChecker path_cluster_storage_checker(graph_pack, cfg::get().max_threads);
 //    path_cluster_storage_checker.CheckPathClusters(graph_pack.scaffold_graph_storage);
 
@@ -35,12 +50,6 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 //    INFO("Printing subgraph stats");
 //    path_extend::SubgraphInfoPrinter printer;
 //    printer.PrintSubgraphInfo(subgraph_infos, cfg::get().output_dir);
-
-//    if (cfg::get().ts_res.debug_mode) {
-//        string path_to_references = cfg::get().ts_res.statistics.genome_path;
-//        path_extend::PerfectClustersAnalyzer perfect_cluster_analyzer(graph_pack);
-//        perfect_cluster_analyzer.AnalyzePerfectClouds(path_to_references, 1000);
-//    }
 
 //    string path_to_references = cfg::get().ts_res.statistics.genome_path;
 //    path_extend::validation::FilteredReferencePathHelper path_helper(graph_pack);
@@ -55,6 +64,12 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 //                fout << "\n" << edge.edge_.int_id() << " ";
 //            }
 //        }
+//    }
+
+//    if (cfg::get().ts_res.debug_mode) {
+//        string path_to_references = cfg::get().ts_res.statistics.genome_path;
+//        path_extend::PerfectClustersAnalyzer perfect_cluster_analyzer(graph_pack);
+//        perfect_cluster_analyzer.AnalyzePerfectClouds(path_to_references, 1000);
 //    }
 
 //    INFO("Constructing contracted graph");
@@ -83,8 +98,13 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 //    }
 //    statistics_extractor.GetMeanWeights(thresholds, output_name);
 
-//    path_extend::LongEdgePairDatasetExtractor long_edge_pair_extractor(graph_pack);
-//    long_edge_pair_extractor.ConstructAndSerialize(cfg::get().ts_res.statistics.genome_path, cfg::get().output_dir);
+
+//    path_extend::GraphBreakAnalyzer graph_break_analyzer(graph_pack);
+//    string graph_break_output_path = fs::append_path(cfg::get().output_dir, "graph_breaks");
+//    auto graph_breaks = graph_break_analyzer.GetGraphBreaks(cfg::get().ts_res.statistics.genome_path,
+//                                                            graph_pack.scaffold_graph_storage.GetSmallLengthThreshold());
+//    graph_break_analyzer.PrintGraphBreaks(graph_breaks, graph_break_output_path);
+
 
     path_extend::ScaffoldGraphPolisherHelper scaffold_graph_polisher(graph_pack);
     bool path_scaffolding = false;
@@ -116,4 +136,13 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
                                                                                              relative_threshold);
     auto final_scaffold_graph = filtered_graph_constructor.Construct();
     graph_pack.scaffold_graph_storage.SetSmallScaffoldGraph(*final_scaffold_graph);
+
+//    path_extend::ContractedGraphScaffolder contracted_graph_scaffolder(graph_pack.g);
+//    auto path_contracted_graph = contracted_graph_scaffolder.GetSimplifiedContractedGraph(
+//        graph_pack.scaffold_graph_storage.GetSmallScaffoldGraph());
+//    std::string con_graph_output_path = fs::append_path(cfg::get().output_dir, "contracted_graph.gfa");
+//    INFO(con_graph_output_path);
+//    std::ofstream con_graph_stream(con_graph_output_path);
+//    path_extend::ContractedGFAWriter gfa_writer(path_contracted_graph.graph_, con_graph_stream);
+//    gfa_writer.WriteSegmentsAndLinks();
 }

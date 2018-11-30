@@ -501,9 +501,9 @@ namespace contracted_graph {
         VertexDataStats GetVertexDataStats() {
             VertexDataStats stats;
             for (const auto& vertex: contracted_graph_) {
-                size_t outcoming = contracted_graph_.getOutcomingEdges(vertex).size();
-                size_t incoming = contracted_graph_.getIncomingEdges(vertex).size();
-                size_t capacity = contracted_graph_.capacity(vertex);
+                size_t outcoming = contracted_graph_.GetOutcomingEdges(vertex).size();
+                size_t incoming = contracted_graph_.GetIncomingEdges(vertex).size();
+                size_t capacity = contracted_graph_.GetCapacity(vertex);
                 stats.Insert(vertex, incoming, outcoming, capacity);
             }
             return stats;
@@ -517,11 +517,11 @@ namespace contracted_graph {
             for (const auto& vertex: contracted_graph_) {
                 DEBUG("Vertex: " << vertex.int_id());
                 DetailedVertexData vertex_data;
-                vector<ScaffoldVertex> incoming = contracted_graph_.getIncomingEdges(vertex);
-                vector<ScaffoldVertex> outcoming = contracted_graph_.getOutcomingEdges(vertex);
+                vector<ScaffoldVertex> incoming = contracted_graph_.GetIncomingEdges(vertex);
+                vector<ScaffoldVertex> outcoming = contracted_graph_.GetOutcomingEdges(vertex);
                 vertex_data.incoming_ = incoming;
                 vertex_data.outcoming_ = outcoming;
-                vertex_data.capacity_ = contracted_graph_.capacity(vertex);
+                vertex_data.capacity_ = contracted_graph_.GetCapacity(vertex);
 
                 vector<VertexClusterData> vertex_to_cluster_storages = {VertexClusterData("Path clusters assigned to the vertex (2 edges)"),
                                                                         VertexClusterData("Path clusters assigned to the vertex (3 edges)"),
@@ -541,13 +541,13 @@ namespace contracted_graph {
                 //fixme why?
                 const size_t coverage_read_threshold = 3;
                 for (const auto& edge: incoming_set) {
-                    vertex_data.lengths_.push_back(edge.getLengthFromGraph(graph_));
-                    vertex_data.coverages_.push_back(edge.getCoverageFromGraph(graph_));
+                    vertex_data.lengths_.push_back(edge.GetLengthFromGraph(graph_));
+                    vertex_data.coverages_.push_back(edge.GetCoverageFromGraph(graph_));
                     vertex_data.barcode_coverages_.push_back(GetBarcodeCoverage(edge, coverage_read_threshold));
                 }
                 for (const auto& edge: outcoming_set) {
-                    vertex_data.lengths_.push_back(edge.getLengthFromGraph(graph_));
-                    vertex_data.coverages_.push_back(edge.getCoverageFromGraph(graph_));
+                    vertex_data.lengths_.push_back(edge.GetLengthFromGraph(graph_));
+                    vertex_data.coverages_.push_back(edge.GetCoverageFromGraph(graph_));
                     vertex_data.barcode_coverages_.push_back(GetBarcodeCoverage(edge, coverage_read_threshold));
                 }
                 vector<Transition> transitions;

@@ -4,6 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "read_cloud_path_extend/statistics/path_scaffolder_analyzer.hpp"
 #include "read_cloud_path_extend/fragment_model/secondary_stats_estimators.hpp"
 #include "launcher.hpp"
 
@@ -743,6 +744,7 @@ void PathExtendLauncher::Launch() {
     DebugOutputPaths(polished_paths, "overlap_removed");
 
     //todo discuss
+
     if (support_.HasReadClouds() and cfg::get().ts_res.read_cloud_resolution_on and
             cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
         const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
@@ -751,6 +753,11 @@ void PathExtendLauncher::Launch() {
         const double cluster_length_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
         size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
                                                                               cluster_length_percentile);
+
+//        PathScaffolderAnalyzer path_scaffolder_analyzer(gp_, small_path_length_threshold, cfg::get().max_threads);
+//        auto path_pair_dataset = path_scaffolder_analyzer.GetFalseNegativeDataset(polished_paths);
+//
+//        return;
 
         PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_,
                                        small_path_length_threshold,

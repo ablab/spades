@@ -17,8 +17,8 @@ double ContractedStatisticsExtractor::GetMeanWeight(const ContractedGraph &graph
     size_t total_capacity = 0;
     size_t non_isolated = 0;
     for (const auto &vertex: graph) {
-        if (graph.getOutDegree(vertex) > 0 or graph.getInDegree(vertex) > 0) {
-            total_capacity += graph.capacity(vertex);
+        if (graph.GetOutDegree(vertex) > 0 or graph.GetInDegree(vertex) > 0) {
+            total_capacity += graph.GetCapacity(vertex);
             ++non_isolated;
         }
     }
@@ -50,7 +50,7 @@ ContractedStatisticsExtractor::ContractedStatisticsExtractor(const Graph &assemb
 size_t ContractedStatisticsExtractor::CountNonIsolated(const ContractedGraph &graph) const {
     size_t result = 0;
     for (const auto &vertex: graph) {
-        if (graph.getInDegree(vertex) > 0 or graph.getOutDegree(vertex) > 0) {
+        if (graph.GetInDegree(vertex) > 0 or graph.GetOutDegree(vertex) > 0) {
             ++result;
         }
     }

@@ -16,11 +16,6 @@ ContractedGraph ContractedGraphFactoryHelper::ConstructFromInternalGraph(
     factory.Construct();
     return *(factory.GetGraph());
 }
-ContractedGraph ContractedGraphFactoryHelper::TransposeContractedGraph(const ContractedGraph& other) const {
-    TransposedContractedGraphFactory factory(other);
-    factory.Construct();
-    return *(factory.GetGraph());
-}
 ContractedGraph ContractedGraphFactoryHelper::ExtractContractedSubgraph(const ContractedGraph& other,
                                                                         const std::unordered_set<VertexId>& vertices) const {
     SubgraphContractedGraphFactory factory(other, vertices);
