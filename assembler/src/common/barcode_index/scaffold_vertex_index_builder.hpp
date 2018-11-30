@@ -32,7 +32,7 @@ namespace barcode_index {
             : g_(g_), edge_length_fraction_(edge_length_fraction_) {}
 
         size_t GetTailThreshold(const path_extend::scaffold_graph::ScaffoldVertex &vertex) const override {
-            return static_cast<size_t>(static_cast<double>(vertex.getLengthFromGraph(g_)) * edge_length_fraction_);
+            return static_cast<size_t>(static_cast<double>(vertex.GetLengthFromGraph(g_)) * edge_length_fraction_);
         }
     };
 
@@ -60,10 +60,10 @@ namespace barcode_index {
               length_threshold_(length_threshold_) {}
 
         SimpleVertexEntry ExtractEntry(const path_extend::scaffold_graph::ScaffoldVertex &vertex) const override {
-            auto inner_vertex = vertex.getInnerVertex();
+            auto inner_vertex = vertex.GetInnerVertex();
 
             SimpleVertexEntry empty;
-            auto type = vertex.getType();
+            auto type = vertex.GetType();
             switch (type) {
                 case path_extend::scaffold_graph::ScaffoldVertexT::Edge: {
                     auto edge_vertex = std::static_pointer_cast<EdgeIdVertex>(inner_vertex);

@@ -20,14 +20,16 @@ class MinTrainingLengthEstimator {
     boost::optional<size_t> EstimateTrainingLength() const {
         size_t min_length = 5000;
         vector<size_t> edge_length_initial_list;
+        boost::optional<size_t> result;
         omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(g_);
         for (const auto& edge: edge_it_helper) {
             if (g_.length(edge) >= min_length) {
                 edge_length_initial_list.push_back(g_.length(edge));
             }
         }
-        VERIFY(edge_length_initial_list.size() >= min_edges_);
-        //fixme return nothing if estimated value is too low
+        if (edge_length_initial_list.size() < min_edges_) {
+            return result;
+        }
         vector<std::pair<size_t, size_t>> length_rev_cumulative_list;
         std::sort(edge_length_initial_list.begin(), edge_length_initial_list.end(), std::greater<size_t>());
         size_t current_sum = 0;
@@ -36,8 +38,10 @@ class MinTrainingLengthEstimator {
             length_rev_cumulative_list.emplace_back(length, current_sum);
         }
         size_t total_long_length = current_sum;
-        size_t result = length_rev_cumulative_list.back().first;
-        VERIFY(total_long_length >= min_total_length_);
+        if (total_long_length < min_total_length_) {
+            return result;
+        }
+        result = length_rev_cumulative_list.back().first;
         auto it = length_rev_cumulative_list.begin();
         current_sum = 0;
         size_t optimal_total_length = std::min(optimal_total_length_, total_long_length / 2);
@@ -46,7 +50,7 @@ class MinTrainingLengthEstimator {
             current_sum = (*it).second;
             ++it;
         }
-        INFO("Estimated training length: " << result);
+        INFO("Estimated training length: " << result.get());
         return result;
     }
 };
@@ -275,7 +279,7 @@ class ClusterDistributionExtractor {
         return current_distance;
     }
 
-    DECL_LOGGER("ClusterDistributionAnalyzer");
+    DECL_LOGGER("ClusterDistributionExtractor");
 };
 
 class ClusterStatisticsExtractor {
@@ -317,14 +321,17 @@ class ClusterStatisticsExtractorHelper {
         : gp_(gp), max_threads_(max_threads) {}
 
     ClusterStatisticsExtractor GetStatisticsExtractor() const {
+        const size_t DEFAULT_TRAINING_LENGTH = 10000;
         const size_t MIN_CLUSTER_OFFSET = 10000;
         const size_t LENGTH_TO_OFFSET = 5;
         const size_t MIN_READ_THRESHOLD = 5;
 
         MinTrainingLengthEstimatorHelper training_length_estimator_helper;
         const auto min_training_length_result = training_length_estimator_helper.EstimateTrainingLength(gp_.g);
-        VERIFY(min_training_length_result.is_initialized());
-        size_t min_training_length = min_training_length_result.get();
+        size_t min_training_length = DEFAULT_TRAINING_LENGTH;
+        if (min_training_length_result.is_initialized()) {
+            min_training_length = min_training_length_result.get();
+        }
 
         const size_t min_cluster_offset = std::min(MIN_CLUSTER_OFFSET, min_training_length / LENGTH_TO_OFFSET);
 

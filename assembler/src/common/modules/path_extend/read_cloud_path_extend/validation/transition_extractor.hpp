@@ -44,8 +44,8 @@ class ContigTransitionStorage {
         auto is_covered = [this](const EdgeId& edge) {
           return IsEdgeCovered(edge);
         };
-        boost::optional<EdgeId> first_covered = first.getLastEdgeWithPredicate(is_covered);
-        boost::optional<EdgeId> second_covered = second.getFirstEdgeWithPredicate(is_covered);
+        boost::optional<EdgeId> first_covered = first.GetLastEdgeWithPredicate(is_covered);
+        boost::optional<EdgeId> second_covered = second.GetFirstEdgeWithPredicate(is_covered);
         if (first_covered.is_initialized() and second_covered.is_initialized()) {
             return CheckTransition(first_covered.get(), second_covered.get());
         }
@@ -69,7 +69,7 @@ class ContigTransitionStorage {
         auto is_covered = [this](const EdgeId& edge) {
           return IsEdgeCovered(edge);
         };
-        boost::optional<EdgeId> first_covered = vertex.getFirstEdgeWithPredicate(is_covered);
+        boost::optional<EdgeId> first_covered = vertex.GetFirstEdgeWithPredicate(is_covered);
         return first_covered.is_initialized();
     }
 
@@ -94,7 +94,7 @@ struct EdgeWithMapping {
   EdgeId edge_;
   Range mapping_;
 
-  EdgeWithMapping(const EdgeId &edge_, const Range &mapping_) : edge_(edge_), mapping_(mapping_) {}
+  EdgeWithMapping(const EdgeId &edge, const Range &mapping) : edge_(edge), mapping_(mapping) {}
 };
 
 struct NamedPath {
@@ -119,11 +119,11 @@ class ContigPathBuilder {
 
     vector<NamedSimplePath> GetContigPaths(const string& path_to_contigs) const;
 
+    vector<NamedPath> GetRawPaths(const string &contig_path) const;
+
     vector<vector<EdgeWithMapping>> StripNames(const vector<NamedSimplePath>& named_paths) const;
 
  protected:
-    vector<NamedPath> GetRawPaths(const string &contig_path) const;
-
     string RemoveSpacesFromName(const string& name) const;
 
     vector<NamedSimplePath> FixMappingPaths(const vector<NamedPath>& contig_paths) const;

@@ -11,10 +11,13 @@ void PathClusterChecker::CheckPathClusters(const PathClusterChecker::ScaffoldGra
     DEBUG("Constructing all clusters");
     auto all_clusters = path_cluster_helper_.GetAllClusters(graph);
     DEBUG("Constructing path clusters");
+    //Check if cluster is hamiltonian
     auto path_clusters = path_cluster_helper_.GetPathClusters(all_clusters);
     //Normalization
     DEBUG("Constructing corrected clusters");
-    auto corrected_clusters = path_cluster_helper_.GetCorrectedClusters(path_clusters, graph);
+    //Remove false clusters using clashing procedure
+//    auto corrected_clusters = path_cluster_helper_.GetCorrectedClusters(path_clusters, graph);
+
 //    GraphBasedPathClusterNormalizer path_cluster_normalizer(g_);
 //    auto cluster_to_weight = path_cluster_normalizer.GetNormalizedStorage(path_clusters);
 //    vector<std::set<ScaffoldVertex>> corrected_clusters;
@@ -22,9 +25,15 @@ void PathClusterChecker::CheckPathClusters(const PathClusterChecker::ScaffoldGra
 //        corrected_clusters.push_back(entry.first);
 //    }
 
+    std::vector<std::set<ScaffoldVertex>> covered_clusters;
+
+    std::set<std::set<ScaffoldVertex>> path_cluster_sets;
+    for (const auto &cluster: path_clusters) {
+        path_cluster_sets.insert(cluster.GetVertexSet());
+    }
     DEBUG("Constructing covered clusters");
-    vector<set<ScaffoldVertex>> covered_clusters;
-    std::copy_if(corrected_clusters.begin(), corrected_clusters.end(), std::back_inserter(covered_clusters),
+//    std::copy_if(corrected_clusters.begin(), corrected_clusters.end(), std::back_inserter(covered_clusters),
+    std::copy_if(path_cluster_sets.begin(), path_cluster_sets.end(), std::back_inserter(covered_clusters),
                  [this](const set<ScaffoldVertex> &cluster) {
                    return this->path_cluster_validator_.IsCovered(cluster);
                  });
@@ -48,7 +57,7 @@ void PathClusterChecker::CheckPathClusters(const PathClusterChecker::ScaffoldGra
     VERIFY_DEV(true_clusters.size() <= covered_clusters.size());
     INFO("All clusters: " << all_clusters.size());
     INFO("Path clusters: " << path_clusters.size());
-    INFO("Corrected clusters: " << corrected_clusters.size());
+//    INFO("Corrected clusters: " << corrected_clusters.size());
     INFO("Covered clusters: " << covered_clusters.size());
     INFO("True clusters: " << true_clusters.size());
     INFO("False clusters: " << false_clusters.size());

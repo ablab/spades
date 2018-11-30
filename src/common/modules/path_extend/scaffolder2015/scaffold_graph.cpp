@@ -94,7 +94,7 @@ bool ScaffoldGraph::Exists(const ScaffoldGraph::ScaffoldEdge &e) const {
 }
 
 ScaffoldVertex ScaffoldGraph::conjugate(ScaffoldVertex scaffold_vertex) const {
-    return scaffold_vertex.getConjugateFromGraph(assembly_graph_);
+    return scaffold_vertex.GetConjugateFromGraph(assembly_graph_);
 }
 
 ScaffoldGraph::ScaffoldEdge ScaffoldGraph::conjugate(const ScaffoldGraph::ScaffoldEdge &e) const {
@@ -292,10 +292,10 @@ size_t ScaffoldGraph::length(const ScaffoldGraph::ScaffoldEdge &edge) const {
     return edge.getLength();
 }
 size_t ScaffoldGraph::length(const ScaffoldVertex &vertex) const {
-    return vertex.getLengthFromGraph(assembly_graph_);
+    return vertex.GetLengthFromGraph(assembly_graph_);
 }
 double ScaffoldGraph::coverage(const ScaffoldVertex &vertex) const {
-    return vertex.getCoverageFromGraph(assembly_graph_);
+    return vertex.GetCoverageFromGraph(assembly_graph_);
 }
 void ScaffoldGraph::AddVertices(const set<debruijn_graph::EdgeId> &vertices) {
     for (const auto& v: vertices) {
