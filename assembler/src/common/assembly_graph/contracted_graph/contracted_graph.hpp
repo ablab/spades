@@ -11,14 +11,16 @@ namespace contracted_graph {
         typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
      private:
-        std::map<debruijn_graph::VertexId, vector<ScaffoldVertex>> data_;
+        std::map<debruijn_graph::VertexId, std::unordered_set<ScaffoldVertex>> data_;
 
     public:
-        typedef std::map<VertexId, vector<ScaffoldVertex>>::const_iterator const_iterator;
-        typedef std::map<VertexId, vector<ScaffoldVertex>>::value_type value_type;
+        typedef std::map<VertexId, std::unordered_set<ScaffoldVertex>>::const_iterator const_iterator;
+        typedef std::map<VertexId, std::unordered_set<ScaffoldVertex>>::value_type value_type;
         AdjacencyMap() = default;
         AdjacencyMap(const VertexId& vertex, const ScaffoldVertex& edge) : data_({{vertex, {edge}}}) {}
         void InsertPair(const VertexId& vertex, const ScaffoldVertex& edge);
+        void RemovePair(const VertexId &vertex, const ScaffoldVertex &edge);
+        bool Contains(const VertexId &vertex, const ScaffoldVertex &edge);
 
         const_iterator begin() const;
         const_iterator end() const;
@@ -45,6 +47,7 @@ namespace contracted_graph {
 
         void InsertVertex(const VertexId& vertex);
         void InsertEdge(const VertexId& head, const VertexId& tail, const ScaffoldVertex& edge);
+        void RemoveEdge(const VertexId& head, const VertexId& tail, const ScaffoldVertex& edge);
 
         AdjacencyMap::const_iterator in_begin(const VertexId& vertex) const;
         AdjacencyMap::const_iterator in_end(const VertexId& vertex) const;

@@ -235,9 +235,9 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffoldGraphPip
         make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_, scaffold_index_extractor,
                                                         unique_storage_, max_threads_));
     bool scaffolding_mode = false;
-    iterative_constructor_callers.push_back(
-        make_shared<CompositeConnectionConstructorCaller>(gp_, barcode_extractor_, scaffold_index_extractor,
-                                                          unique_storage_, max_threads_, scaffolding_mode));
+//    iterative_constructor_callers.push_back(
+//        make_shared<CompositeConnectionConstructorCaller>(gp_, barcode_extractor_, scaffold_index_extractor,
+//                                                          unique_storage_, max_threads_, scaffolding_mode));
 
     //fixme works only with 2 graphs pipeline
     const size_t min_pipeline_length = cfg::get().ts_res.long_edge_length_lower_bound;

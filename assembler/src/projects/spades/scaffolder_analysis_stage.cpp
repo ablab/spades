@@ -1,5 +1,6 @@
 #include <common/assembly_graph/contracted_graph/contracted_statistics.hpp>
 #include <common/assembly_graph/contracted_graph/graph_condensation.hpp>
+#include <common/modules/path_extend/read_cloud_path_extend/path_scaffolder.hpp>
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/containment_index_threshold_finder.hpp"
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
@@ -85,6 +86,9 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 
 //    path_extend::LongEdgePairDatasetExtractor long_edge_pair_extractor(graph_pack);
 //    long_edge_pair_extractor.ConstructAndSerialize(cfg::get().ts_res.statistics.genome_path, cfg::get().output_dir);
+
+    path_extend::ContractedGraphScaffolder contracted_graph_scaffolder(graph_pack.g);
+    auto path_contracted_graph = contracted_graph_scaffolder.GetSimplifiedContractedGraph(graph_pack.scaffold_graph_storage.GetLargeScaffoldGraph());
 
     path_extend::ScaffoldGraphPolisherHelper scaffold_graph_polisher(graph_pack);
     bool path_scaffolding = false;

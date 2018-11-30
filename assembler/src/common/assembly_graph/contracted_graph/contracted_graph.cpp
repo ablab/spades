@@ -3,13 +3,26 @@
 namespace contracted_graph {
 
 void AdjacencyMap::InsertPair(const AdjacencyMap::VertexId& vertex, const AdjacencyMap::ScaffoldVertex& edge) {
-    data_[vertex].push_back(edge);
+    data_[vertex].insert(edge);
 }
 AdjacencyMap::const_iterator AdjacencyMap::begin() const {
     return data_.begin();
 }
 AdjacencyMap::const_iterator AdjacencyMap::end() const {
     return data_.end();
+}
+void AdjacencyMap::RemovePair(const VertexId &vertex, const AdjacencyMap::ScaffoldVertex &edge) {
+    data_.at(vertex).erase(edge);
+    if (data_.at(vertex).size() == 0) {
+        data_.erase(vertex);
+    }
+}
+bool AdjacencyMap::Contains(const VertexId &vertex, const AdjacencyMap::ScaffoldVertex &edge) {
+    auto vertex_entry = data_.find(vertex);
+    if (vertex_entry == data_.end()) {
+        return false;
+    }
+    return vertex_entry->second.find(edge) != vertex_entry->second.end();
 }
 
 void ContractedGraph::InsertVertex(const ContractedGraph::VertexId& vertex) {
@@ -95,17 +108,26 @@ size_t ContractedGraph::size() const {
     return vertices_.size();
 }
 size_t ContractedGraph::CountEdges() const {
-    size_t incoming = 0;
     size_t outcoming = 0;
     for (auto it = begin(); it != end(); ++it) {
         VertexId vertex = *it;
         for (auto out_it = out_begin(vertex); out_it != out_end(vertex); ++out_it) {
             outcoming += out_it->second.size();
         }
-        for (auto in_it = in_begin(vertex); in_it != in_end(vertex); ++in_it) {
-            incoming += in_it->second.size();
-        }
     }
-    return (incoming + outcoming) / 2;
+    return outcoming;
+}
+void ContractedGraph::RemoveEdge(const VertexId &head, const VertexId &tail, const ContractedGraph::ScaffoldVertex &edge) {
+    VERIFY_DEV(ContainsVertex(head));
+    VERIFY_DEV(ContainsVertex(tail));
+    auto &head_outcoming = outcoming_.at(head);
+    auto &tail_incoming = incoming_.at(tail);
+    if (not head_outcoming.Contains(tail, edge)) {
+        INFO("No edge");
+        return;
+    }
+    VERIFY_DEV(tail_incoming.Contains(head, edge));
+    head_outcoming.RemovePair(tail, edge);
+    tail_incoming.RemovePair(head, edge);
 }
 }
