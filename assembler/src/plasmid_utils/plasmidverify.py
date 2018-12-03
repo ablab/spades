@@ -134,7 +134,7 @@ features = ['name' ,'genes']
 feature_table = pd.DataFrame.from_records(feature_table, columns=features)
 
 print ("Vectorization..")
-with open('/Nancy/mrayko/algorithmic-biology/assembler/src/plasmid_utils/vectorizer.pkl', 'rb') as fid:
+with open(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),"vectorizer.pkl"), 'rb') as fid:
     vect = pickle.load(fid)
 
 feature_table_dtm = vect.transform(feature_table.genes)
