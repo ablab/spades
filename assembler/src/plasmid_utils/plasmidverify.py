@@ -62,9 +62,9 @@ else:
 
 # run hmm
 print ("Gene prediction...")
-#os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
 print ("HMM domains prediction...")
-#os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
 print ("Parsing...")
 os.system ("tail -n +4 " + name +"_tblout  | head -n -10 | sort -r -k1,1 -k 6,6 | awk '!x[$1]++' > "+name+"_tblout_top_hit" )
 
