@@ -23,7 +23,7 @@ def parse_args(args):
     parser.add_argument('-o', required = True, help='Output directory')
     parser.add_argument('-b', help='Run BLAST on input contigs', action='store_true')
     parser.add_argument('-db', help='Path to BLAST db')
-    parser.add_argument('-hmm', help='Path to plasmid-specific HMMs')    
+    parser.add_argument('-hmm', help='Path to Pfam-A HMM database')    
     return parser.parse_args()
 
 
