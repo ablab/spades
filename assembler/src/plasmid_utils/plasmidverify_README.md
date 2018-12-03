@@ -18,9 +18,12 @@ plasmidVerify is a Python script, thus, installation is not required. However, i
 
 * Python 2.7+,
 * Biopython,
-* Prodigal,
-* hmmsearch (from the hmmer package),
-* Pfam-A database (check most recent release here ftp://ftp.ebi.ac.uk/pub/databases/Pfam/releases/ )
+* Prodigal (https://github.com/hyattpd/Prodigal, available via conda),
+* hmmsearch (from the hmmer package, http://hmmer.org/download.html),
+* Pfam-A database (check most recent release here ftp://ftp.ebi.ac.uk/pub/databases/Pfam/releases/)
+
+In order to work properly, plasmidVerify require Prodigal and hmmsearch in your PATH environment variable.
+
 
 ### Optional BLAST verification
 
