@@ -30,13 +30,18 @@ if __name__ == "__main__":
                # print arr[-1]
   #              count[int(arr[-1])] += 1
             for contig in contigs:
-                arr = contig[0].strip(';').split('_')
-                comp_id = int(arr[-1])
-                length = float (arr[3])
-                print str(comp_id) + " " + str(count[comp_id])
-                if (count[comp_id]) == 1 and length > 500:
-              â      print fullname
-		    
-                    fastaparser.write_fasta_to_file((os.path.splitext(fullname)[0] + "_circular.fasta"), [contig])
+               arr = contig[0].strip(';').split('_')
+               length = float (arr[3])
+             #  print contig[0]
+              # print length
+               if length > 500:
+                    for kval in range (50,33, -1):
+                        start = contig[1][:kval]
+                        end = contig[1][-kval:]
+                    #    print start
+                     #   print end
+                        if start == end:
+                              fastaparser.write_fasta_to_file((os.path.splitext(fullname)[0] + "_circular.fasta"), [contig])
+                              break
 
 
