@@ -7,7 +7,7 @@ import collections
 from math import log
 from math import exp
 import pickle
-import pandas as pd
+import csv
 
 from Bio import SeqIO
 from parse_blast_xml import parser
@@ -62,9 +62,9 @@ else:
 
 # run hmm
 print ("Gene prediction...")
-os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+#os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
 print ("HMM domains prediction...")
-os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+#os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
 print ("Parsing...")
 os.system ("tail -n +4 " + name +"_tblout  | head -n -10 | sort -r -k1,1 -k 6,6 | awk '!x[$1]++' > "+name+"_tblout_top_hit" )
 
@@ -120,31 +120,37 @@ def naive_bayes(input_list):
         if (plasm_log - chrom_log) > threshold: out_list.append(["Plasmid", plasm_log, chrom_log, chrom_log - plasm_log])
         else: out_list.append(["Chromosome",  plasm_log, chrom_log, chrom_log - plasm_log])
      
-    features = ['label','Plasm_log_prob', 'Chrom_log_prob', "Difference"]
-    df = pd.DataFrame.from_records(out_list, columns=features)
-    return df 
-
+   
+    return out_list 
 
 
 feature_table = get_table_from_tblout(tblout_pfam) 
 feature_table = [i.strip().split(' ', 1) for i in feature_table]
 
-# Turn into dataframe
-features = ['name' ,'genes']
-feature_table = pd.DataFrame.from_records(feature_table, columns=features)
+feature_table_names=[]
+feature_table_genes=[]
+for i in feature_table:
+      feature_table_names.append(i[0])
+      feature_table_genes.append(i[1])
 
 print ("Vectorization..")
 with open(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),"vectorizer.pkl"), 'rb') as fid:
     vect = pickle.load(fid)
 
-feature_table_dtm = vect.transform(feature_table.genes)
+feature_table_dtm = vect.transform(feature_table_genes)
 
 print ("Classification...")
-t=feature_table.genes.tolist()
+t=feature_table_genes
+
 k = naive_bayes(t)
-k.insert(0, "Names", feature_table.name)
-k.insert(5, "Genes", feature_table.genes)
-k.sort_values(by = "Names").to_csv(name + "_result_table.csv", index=False)
+
+final_table=[]
+for i in range (0,len(k)):
+  final_table.append ([feature_table_names[i], k[i][0], feature_table_genes[i]])
+
+with open(name + '_result_table.csv', 'w') as output:
+    writer = csv.writer(output, lineterminator='\n')
+    writer.writerows(final_table)
 
 print ("Done!")
 
