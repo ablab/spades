@@ -2,7 +2,7 @@ from Bio.Blast import NCBIXML
 import sys
 import argparse
 from glob import glob
-from joblib import Parallel, delayed
+#from joblib import Parallel, delayed
 import os.path
 import pickle
 
@@ -150,7 +150,7 @@ def parser(f, out_dir):
                 amb_file.write(item.query + '\n')
                 amb_file.write (alignments[0][1] + '\t' + str(best_query_cov) + '\t' + alignments[ambigous][1] + '\t' + str(alignments[ambigous][0]) + '\n')
             else:
-                print type
+                print (type)
                 report_file(files[type], item.query,alignments[0])
     return
 
