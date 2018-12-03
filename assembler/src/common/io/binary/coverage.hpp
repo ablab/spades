@@ -24,19 +24,18 @@ public:
             IOSingle<Index, Mapper>(name, ext) {
     }
 
-private:
-    void SaveImpl(BinSaveFile &file, const Index &index) override {
+    void Write(BinOStream &str, const Index &index) override {
         for (auto it = index.g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             auto e = *it;
-            file << e.int_id() << index.RawCoverage(e);
+            str << e.int_id() << index.RawCoverage(e);
         }
     }
 
-    void LoadImpl(BinLoadFile &file, Index &index, const Mapper &mapper) override {
+    void Read(BinIStream &str, Index &index, const Mapper &mapper) override {
         size_t e;
-        while (file >> e) { //Read until the end
+        while (str >> e) { //Read until the end
             auto eid = mapper[e];
-            auto cov = file.Read<unsigned>();
+            auto cov = str.Read<unsigned>();
             index.SetRawCoverage(eid, cov);
         }
     }

@@ -21,17 +21,16 @@ public:
             : IOSingle<Type>("kmer mapper", ".kmm") {
     }
 
-private:
-    void SaveImpl(BinSaveFile &file, const Type &mapper) override {
-        file << (uint32_t)mapper.k() << mapper;
+    void Write(BinOStream &str, const Type &mapper) override {
+        str << (uint32_t)mapper.k() << mapper;
     }
 
-    void LoadImpl(BinLoadFile &file, Type &mapper) override {
+    void Read(BinIStream &str, Type &mapper) override {
         uint32_t k_;
-        file >> k_;
-        VERIFY_MSG(k_ == mapper.k(), "Cannot read " << this->name_ << ", different Ks");
+        str >> k_;
+        VERIFY_MSG(k_ == mapper.k(), "Cannot read kmer mapper, different Ks");
         mapper.clear();
-        file >> mapper;
+        str >> mapper;
     }
 };
 

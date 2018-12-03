@@ -21,19 +21,18 @@ public:
             : IOSingle<Type>("edge index", ".kmidx") {
     }
 
-private:
-    void SaveImpl(BinSaveFile &file, const Type &value) override {
+    void Write(BinOStream &str, const Type &value) override {
         const auto &index = value.inner_index();
-        file << (uint32_t)index.k() << index;
+        str << (uint32_t)index.k() << index;
     }
 
-    void LoadImpl(BinLoadFile &file, Type &value) override {
+    void Read(BinIStream &str, Type &value) override {
         auto &index = value.inner_index();
         uint32_t k_;
-        file >> k_;
-        VERIFY_MSG(k_ == index.k(), "Cannot read " << this->name_ << ", different Ks");
+        str >> k_;
+        VERIFY_MSG(k_ == index.k(), "Cannot read edge index, different Ks");
         index.clear();
-        file >> index;
+        str >> index;
         value.Update();
     }
 };
