@@ -8,7 +8,6 @@ from math import log
 from math import exp
 import csv
 
-from Bio import SeqIO
 from parse_blast_xml import parser
 
 
@@ -43,6 +42,12 @@ except OSError as e:
         raise
 
 name = os.path.join(outdir, name_file)
+
+ids = []
+with open(args.f, "r") as ins:
+    for line in ins:
+        if line[0]==">":
+            ids.append(line[1:].strip())
 
 if args.hmm:
     hmm = args.hmm
@@ -138,9 +143,17 @@ t=feature_table_genes
 
 k = naive_bayes(t)
 
-final_table=[]
+names_result={}
 for i in range (0,len(k)):
-  final_table.append ([feature_table_names[i], k[i][0], feature_table_genes[i]])
+  names_result[feature_table_names[i]] = [k[i][0], feature_table_genes[i]]
+
+final_table=[]
+for i in ids:
+   if i in names_result:
+        final_table.append([i, names_result[i][0],names_result[i][1] ])
+   else:
+        final_table.append([i, "Chromosome", "--"])
+
 
 with open(name + '_result_table.csv', 'w') as output:
     writer = csv.writer(output, lineterminator='\n')
