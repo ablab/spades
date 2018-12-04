@@ -6,7 +6,6 @@ import argparse
 import collections
 from math import log
 from math import exp
-import pickle
 import csv
 
 from Bio import SeqIO
@@ -69,7 +68,7 @@ print ("Parsing...")
 os.system ("tail -n +4 " + name +"_tblout  | head -n -10 | sort -r -k1,1 -k 6,6 | awk '!x[$1]++' > "+name+"_tblout_top_hit" )
 
 
-tblout_pfam= name + "_tblout_top_hit"
+tblout_pfam= name + "_tblout" 
 
 def get_table_from_tblout(tblout_pfam):
     with open(tblout_pfam, "r") as infile:
@@ -133,11 +132,6 @@ for i in feature_table:
       feature_table_names.append(i[0])
       feature_table_genes.append(i[1])
 
-print ("Vectorization..")
-with open(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),"vectorizer.pkl"), 'rb') as fid:
-    vect = pickle.load(fid)
-
-feature_table_dtm = vect.transform(feature_table_genes)
 
 print ("Classification...")
 t=feature_table_genes
