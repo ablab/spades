@@ -59,10 +59,6 @@ if args.db:
 else:
     blastdb = ("/Bmo/ncbi_nt_database/nt")
 
-#hmmsearch="/Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmsearch"
-#prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
-#cbar="/Nancy/mrayko/Libs/cBar.1.2/cBar.pl"
-
 
 # run hmm
 print ("Gene prediction...")
@@ -84,12 +80,9 @@ def get_table_from_tblout(tblout_pfam):
     for i in range (0, len(tblout_pfam)):
         name = tblout_pfam[i][0].rsplit("_", 1)[0]
         if name not in contigs:
-         # if float(tblout_pfam[i][4]) <= 1e-06 :
             contigs[name]=[tblout_pfam[i][2]]
         else:
-         # if float(tblout_pfam[i][4]) <= 1e-06:
             contigs[name].append(tblout_pfam[i][2])
-           # contigs[name].append(tblout_pfam[i][5])
 
     out = []
     for key, value in contigs.items():
@@ -121,7 +114,7 @@ def naive_bayes(input_list):
                 plasm_log=plasm_log+log(hmm_dict[j][0])
                 chrom=chrom*hmm_dict[j][1]
                 chrom_log=chrom_log+log(hmm_dict[j][1])
-        if (plasm_log - chrom_log) > threshold: out_list.append(["Plasmid", plasm_log, chrom_log, chrom_log - plasm_log])
+        if (plasm_log - chrom_log) > threshold: out_list.append(["Plasmid", plasm_log, chrom_log, "{0:.2f}".format(chrom_log - plasm_log)])
         else: out_list.append(["Chromosome",  plasm_log, chrom_log, chrom_log - plasm_log])
      
    
@@ -145,15 +138,14 @@ k = naive_bayes(t)
 
 names_result={}
 for i in range (0,len(k)):
-  names_result[feature_table_names[i]] = [k[i][0], feature_table_genes[i]]
+  names_result[feature_table_names[i]] = [k[i][0],k[i][3], feature_table_genes[i]]
 
 final_table=[]
 for i in ids:
    if i in names_result:
-        final_table.append([i, names_result[i][0],names_result[i][1] ])
+        final_table.append([i, names_result[i][0],names_result[i][1], names_result[i][2]])
    else:
         final_table.append([i, "Chromosome", "--"])
-
 
 with open(name + '_result_table.csv', 'w') as output:
     writer = csv.writer(output, lineterminator='\n')

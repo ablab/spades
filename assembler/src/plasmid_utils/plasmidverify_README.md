@@ -1,5 +1,3 @@
-
-
 # plasmidVerify: plasmid contig verification tool
 
 plasmidVerify classifies contigs (output of metaplasmidSPAdes or other assemblers) as plasmidic or non-plasmidic, based on gene content. 
@@ -17,10 +15,9 @@ For the set of predicted HMMs, plasmidVerify uses trained NBC to classify this s
 plasmidVerify is a Python script, thus, installation is not required. However, it has following dependencies:
 
 * Python 2.7+,
-* Biopython,
 * Prodigal (https://github.com/hyattpd/Prodigal, available via conda),
 * hmmsearch (from the hmmer package, http://hmmer.org/download.html),
-* Pfam-A database (check most recent release here ftp://ftp.ebi.ac.uk/pub/databases/Pfam/releases/)
+* Plasmid- and chromosome-specific HMMs database (you can download it here:<LINK>  . Also you can use recent release of Pfam-A database, ftp://ftp.ebi.ac.uk/pub/databases/Pfam/releases/)
 
 In order to work properly, plasmidVerify require Prodigal and hmmsearch in your PATH environment variable.
 
@@ -42,5 +39,4 @@ You can verify your output by BLAST to check if you found novel plasmid. In this
             -hmm HMM    Path to Pfam-A HMM database
 
 
-Output file input_file_result_table.csv contain comma-separated table with predicted HMMs and verification result.
-
+Output file input_file_result_table.csv contains comma-separated table with predicted HMMs and verification result.
