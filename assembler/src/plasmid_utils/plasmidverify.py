@@ -47,7 +47,7 @@ ids = []
 with open(args.f, "r") as ins:
     for line in ins:
         if line[0]==">":
-            ids.append(line[1:].strip())
+            ids.append(line.split()[0][1:])
 
 if args.hmm:
     hmm = args.hmm
@@ -133,12 +133,12 @@ for i in feature_table:
 
 print ("Classification...")
 t=feature_table_genes
-
 k = naive_bayes(t)
 
 names_result={}
 for i in range (0,len(k)):
   names_result[feature_table_names[i]] = [k[i][0],k[i][3], feature_table_genes[i]]
+
 
 final_table=[]
 for i in ids:
@@ -146,6 +146,7 @@ for i in ids:
         final_table.append([i, names_result[i][0],names_result[i][1], names_result[i][2]])
    else:
         final_table.append([i, "Chromosome", "--"])
+
 
 with open(name + '_result_table.csv', 'w') as output:
     writer = csv.writer(output, lineterminator='\n')
