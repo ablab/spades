@@ -2,11 +2,9 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "utils/standard_base.hpp"
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
 
-#include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/config_struct.hpp"
 
@@ -16,11 +14,8 @@
 #include "io/reads/io_helper.hpp"
 #include "common/assembly_graph/core/coverage.hpp"
 
-#include "modules/alignment/pacbio/pac_index.hpp"
-#include "modules/alignment/long_read_mapper.hpp"
-#include "io/reads/wrapper_collection.hpp"
-#include "assembly_graph/stats/picture_dump.hpp"
-#include "io/reads/multifile_reader.hpp"
+#include "edlib/edlib.h"
+#include "modules/alignment/pacbio/g_aligner.hpp"
 
 
 namespace debruijn_graph {
@@ -30,12 +25,11 @@ BOOST_AUTO_TEST_SUITE(graph_alignment_tests)
 
 BOOST_AUTO_TEST_CASE( EdlibSHWFULLTest  ) {
 
-    string target = "abcd";
-    string query = "ac";
-    edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), query.size(), target.c_str(), target.size()
+    std::string target = "abcd";
+    std::string query = "ac";
+    edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), (int) query.size(), target.c_str(), (int) target.size()
                                                    , edlib::edlibNewAlignConfig(10, edlib::EDLIB_MODE_SHW_FULL, edlib::EDLIB_TASK_DISTANCE,
                                                                          NULL, 0));
-    int score = -1;
     BOOST_CHECK_EQUAL(result.status, edlib::EDLIB_STATUS_OK);
     BOOST_CHECK_NE(result.status, -1);
     INFO("Edlib: Result status = " << result.status)
@@ -61,12 +55,11 @@ BOOST_AUTO_TEST_CASE( EdlibSHWFULLTest  ) {
 
 BOOST_AUTO_TEST_CASE( EdlibSHWFULLTestZero  ) {
 
-    string target = "abcd";
-    string query = "";
-    edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), query.size(), target.c_str(), target.size()
+    std::string target = "abcd";
+    std::string query = "";
+    edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), (int) query.size(), target.c_str(), (int) target.size()
                                                    , edlib::edlibNewAlignConfig(10, edlib::EDLIB_MODE_SHW_FULL, edlib::EDLIB_TASK_DISTANCE,
                                                                          NULL, 0));
-    int score = -1;
     BOOST_CHECK_EQUAL(result.status, edlib::EDLIB_STATUS_OK);
     BOOST_CHECK_NE(result.status, -1);
     INFO("Edlib: Result status = " << result.status)
@@ -82,9 +75,10 @@ BOOST_AUTO_TEST_CASE( EdlibSHWFULLTestZero  ) {
     edlib::edlibFreeAlignResult(result);
 }
 
-config::debruijn_config::pacbio_processor InitializePacBioProcessor() {
-    config::debruijn_config::pacbio_processor pb;  
+debruijn_graph::config::pacbio_processor InitializePacBioProcessor() {
+    debruijn_graph::config::pacbio_processor pb;  
     pb.bwa_length_cutoff = 0; //500
+    pb.internal_length_cutoff = 200; //500
     pb.compression_cutoff = 0.6; // 0.6
     pb.path_limit_stretching = 1.3; //1.3
     pb.path_limit_pressing = 0.7;//0.7
@@ -94,7 +88,6 @@ config::debruijn_config::pacbio_processor InitializePacBioProcessor() {
     pb.long_seq_limit = 400; //400
     pb.pacbio_min_gap_quantity = 2; //2
     pb.contigs_min_gap_quantity = 1; //1
-    pb.max_contigs_gap_length = 10000; // 10000
     return pb;
 }
 
@@ -107,15 +100,37 @@ BOOST_AUTO_TEST_CASE( TrivialTest ) {
     std::string idealMapping = "17572 (7854,15914) 1565 (15914,8812) 20042 (8812,14180) 20044 (14180,10154) 20385 (10154,7187) 20449 (7187,9851) 2142 (9851,14410) 4373 (14410,14180) 20044 (14180,10154) 18816 (10154,7187) 20449 (7187,9851) 2142 (9851,14410) 18066 (14410,15914) 1565 (15914,8812) 19391 (8812,8959) 19476 (8959,8766) 20469 (8766,15855) 20420 (15855,12379) 20100 (12379,15855) 20420 (15855,12379) 20465 (12379,15430) 19870 (15430,9757) 19876 (9757,15430) 19870 (15430,9757) 19876 (9757,15430) 19870 (15430,9757) 19876 (9757,15430) 19870 (15430,9757) 20126 (9757,8767) 19477 (8767,8958) 18366 (8958,16718) ";
     // Sequence readSeq(s);
     io::SingleRead r("read", s);
-    config::debruijn_config::pacbio_processor pb = InitializePacBioProcessor();
+    debruijn_graph::config::pacbio_processor pb = InitializePacBioProcessor();
     alignment::BWAIndex::AlignmentMode mode = alignment::BWAIndex::AlignmentMode::PacBio;
-    sensitive_aligner::PacBioMappingIndex pac_index(g, pb, mode);
-    auto current_read_mapping = pac_index.GetReadAlignment(r);
+    sensitive_aligner::GapClosingConfig gap_cfg;
+    gap_cfg.find_shortest_path = true;
+    gap_cfg.updates_limit = 10000000;
+    gap_cfg.penalty_ratio = 0.1;
+    gap_cfg.queue_limit = 1000000;
+    gap_cfg.iteration_limit = 1000000;
+    gap_cfg.max_ed_proportion = 3;
+    gap_cfg.ed_lower_bound = 500;
+    gap_cfg.ed_upper_bound = 2000;
+    gap_cfg.max_gs_states = 12000000;
+
+    sensitive_aligner::EndsClosingConfig ends_cfg;
+    ends_cfg.find_shortest_path = true;
+    ends_cfg.updates_limit = 10000000;
+    ends_cfg.penalty_ratio = 0.1;
+    ends_cfg.queue_limit = 1000000;
+    ends_cfg.iteration_limit = 1000000;
+    ends_cfg.max_ed_proportion = 3;
+    ends_cfg.ed_lower_bound = 500;
+    ends_cfg.ed_upper_bound = 2000;
+    ends_cfg.max_restorable_length = 5000;
+
+    sensitive_aligner::GAligner galigner(g, pb, mode, gap_cfg, ends_cfg);
+    auto current_read_mapping = galigner.GetReadAlignment(r);
     const auto& aligned_edges = current_read_mapping.main_storage;
     std::string pathStr = "";
     if (aligned_edges.size() > 0){
         for (const auto &path : aligned_edges){
-            for (const auto &edgeid: path.path()) {
+            for (const auto &edgeid: path) {
                 VertexId v1 = g.EdgeStart(edgeid);
                 VertexId v2 = g.EdgeEnd(edgeid);
                 pathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(v1.int_id()) + "," + std::to_string(v2.int_id()) + ") ";
@@ -144,9 +159,16 @@ BOOST_AUTO_TEST_CASE( DijkstraOneEdgeTest ) {
             break;
         }
     }
-    sensitive_aligner::DijkstraGapFiller gap_filler = sensitive_aligner::DijkstraGapFiller(g, s, eid, eid, 0, s.size(), path_maxlen, vertex_pathlen);
+    sensitive_aligner::GapClosingConfig gap_cfg;
+    gap_cfg.find_shortest_path = true;
+    gap_cfg.updates_limit = 10000000;
+    gap_cfg.penalty_ratio = 200;
+    gap_cfg.queue_limit = 1000000;
+    gap_cfg.iteration_limit = 1000000;
+
+    sensitive_aligner::DijkstraGapFiller gap_filler = sensitive_aligner::DijkstraGapFiller(g, gap_cfg, s, eid, eid, 0, (int) s.size(), path_maxlen, vertex_pathlen);
     gap_filler.CloseGap();
-    int score = gap_filler.GetEditDistance();
+    int score = gap_filler.edit_distance();
     BOOST_CHECK_EQUAL(ideal_score, score);
 }
 
@@ -168,9 +190,15 @@ BOOST_AUTO_TEST_CASE( DijkstraGrowEndsTest ) {
             break;
         }
     }
-    sensitive_aligner::DijkstraEndsReconstructor ends_filler = sensitive_aligner::DijkstraEndsReconstructor(g, s, eid, 0, path_maxlen);
+    sensitive_aligner::EndsClosingConfig gap_cfg;
+    gap_cfg.find_shortest_path = true;
+    gap_cfg.updates_limit = 10000000;
+    gap_cfg.penalty_ratio = 0.1;
+    gap_cfg.queue_limit = 1000000;
+    gap_cfg.iteration_limit = 1000000;
+    sensitive_aligner::DijkstraEndsReconstructor ends_filler = sensitive_aligner::DijkstraEndsReconstructor(g, gap_cfg, s, eid, 0, path_maxlen);
     ends_filler.CloseGap();
-    int score = ends_filler.GetEditDistance();
+    int score = ends_filler.edit_distance();
     BOOST_CHECK_EQUAL(ideal_score, score);
 }
 
