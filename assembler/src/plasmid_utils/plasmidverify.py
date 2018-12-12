@@ -1,3 +1,6 @@
+
+
+
 #!/usr/bin/env python
 
 import os, errno
@@ -7,6 +10,7 @@ import collections
 from math import log
 from math import exp
 import csv
+import operator
 
 from parse_blast_xml import parser
 
@@ -62,27 +66,42 @@ else:
 
 # run hmm
 print ("Gene prediction...")
-os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+#os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
 print ("HMM domains prediction...")
-os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+#os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
 print ("Parsing...")
-os.system ("tail -n +4 " + name +"_tblout  | head -n -10 | sort -r -k1,1 -k6,6 -n | awk '!x[$1]++' > "+name+"_tblout_top_hit" )
+#os.system ("tail -n +4 " + name +"_tblout  | head -n -10 | sort -r -k1,1 -k6,6n | awk '!x[$1]++' > "+name+"_tblout_top_hit" )
 
 
-tblout_pfam= name + "_tblout_top_hit" 
+tblout_pfam= name + "_tblout" 
 
 def get_table_from_tblout(tblout_pfam):
     with open(tblout_pfam, "r") as infile:
         tblout_pfam=infile.readlines()
    
-    tblout_pfam = [i.split() for i in tblout_pfam] 
-    contigs = collections.OrderedDict()
-    for i in range (0, len(tblout_pfam)):
-        name = tblout_pfam[i][0].rsplit("_", 1)[0]
-        if name not in contigs:
-            contigs[name]=[tblout_pfam[i][2]]
+    tblout_pfam = [i.split() for i in tblout_pfam[3:-10]]
+
+#    tblout_pfam = sorted(tblout_pfam, key = operator.itemgetter(1, 5)) 
+    top_genes={}
+    for i in tblout_pfam:
+        print(i)
+        if i[0] not in top_genes:
+            top_genes[i[0]] = [i[2],i[5]]
         else:
-            contigs[name].append(tblout_pfam[i][2])
+            if i[5] > top_genes[i[0]][1]:
+              top_genes[i[0]] = [i[2],i[5]]
+
+
+
+    contigs = collections.OrderedDict()
+    for i in top_genes:
+        name = i.rsplit("_", 1)[0]
+        if name not in contigs:
+            contigs[name]=[top_genes[i][0]]
+        else:
+            contigs[name].append(top_genes[i][0])
+
+
 
     out = []
     for key, value in contigs.items():
