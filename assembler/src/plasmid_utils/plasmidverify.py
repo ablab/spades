@@ -66,16 +66,16 @@ os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name
 print ("HMM domains prediction...")
 os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
 print ("Parsing...")
-os.system ("tail -n +4 " + name +"_tblout  | head -n -10 | sort -r -k1,1 -k 6,6 | awk '!x[$1]++' > "+name+"_tblout_top_hit" )
+os.system ("tail -n +4 " + name +"_tblout  | head -n -10 | sort -r -k1,1 -k6,6 -n | awk '!x[$1]++' > "+name+"_tblout_top_hit" )
 
 
-tblout_pfam= name + "_tblout" 
+tblout_pfam= name + "_tblout_top_hit" 
 
 def get_table_from_tblout(tblout_pfam):
     with open(tblout_pfam, "r") as infile:
         tblout_pfam=infile.readlines()
    
-    tblout_pfam = [i.split() for i in tblout_pfam[3:-10]] 
+    tblout_pfam = [i.split() for i in tblout_pfam] 
     contigs = collections.OrderedDict()
     for i in range (0, len(tblout_pfam)):
         name = tblout_pfam[i][0].rsplit("_", 1)[0]
