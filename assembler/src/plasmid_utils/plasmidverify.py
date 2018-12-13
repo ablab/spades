@@ -82,10 +82,10 @@ def get_table_from_tblout(tblout_pfam):
     top_genes={}
     for i in tblout_pfam:
         if i[0] not in top_genes:
-            top_genes[i[0]] = [i[2],i[5]]
+            top_genes[i[0]] = [i[2],float(i[5])]
         else:
-            if i[5] > top_genes[i[0]][1]:
-              top_genes[i[0]] = [i[2],i[5]]
+            if float(i[5]) > top_genes[i[0]][1]:
+              top_genes[i[0]] = [i[2],float(i[5])]
 
 
 
