@@ -94,7 +94,7 @@ struct EdgeWithMapping {
   EdgeId edge_;
   Range mapping_;
 
-  EdgeWithMapping(const EdgeId &edge_, const Range &mapping_) : edge_(edge_), mapping_(mapping_) {}
+  EdgeWithMapping(const EdgeId &edge, const Range &mapping) : edge_(edge), mapping_(mapping) {}
 };
 
 struct NamedPath {
@@ -119,11 +119,11 @@ class ContigPathBuilder {
 
     vector<NamedSimplePath> GetContigPaths(const string& path_to_contigs) const;
 
+    vector<NamedPath> GetRawPaths(const string &contig_path) const;
+
     vector<vector<EdgeWithMapping>> StripNames(const vector<NamedSimplePath>& named_paths) const;
 
  protected:
-    vector<NamedPath> GetRawPaths(const string &contig_path) const;
-
     string RemoveSpacesFromName(const string& name) const;
 
     vector<NamedSimplePath> FixMappingPaths(const vector<NamedPath>& contig_paths) const;

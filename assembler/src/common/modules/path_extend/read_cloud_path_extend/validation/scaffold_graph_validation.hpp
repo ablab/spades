@@ -86,6 +86,8 @@ class ScaffoldGraphValidator {
 
     set <transitions::Transition> GetFalseNegativeTransitions(const ScaffoldGraphValidator::ScaffoldGraph &graph,
                                                               const ContigTransitionStorage &transitions) const;
+
+    DECL_LOGGER("ScaffoldGraphValidator");
 };
 }
 }

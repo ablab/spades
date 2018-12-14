@@ -298,7 +298,7 @@ vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::Extra
     return result;
 }
 FilteredReferencePathHelper::FilteredReferencePathHelper(const conj_graph_pack& gp_) : gp_(gp_) {}
-vector<vector<EdgeWithMapping>> FilteredReferencePathHelper:: GetFilteredReferencePathsFromLength(const string& path_to_reference,
+vector<vector<EdgeWithMapping>> FilteredReferencePathHelper::GetFilteredReferencePathsFromLength(const string& path_to_reference,
                                                                                                  size_t length_threshold) {
     path_extend::ScaffoldingUniqueEdgeStorage unique_storage;
     bool nonuniform_coverage = cfg::get().mode == debruijn_graph::config::pipeline_type::meta;
