@@ -1,6 +1,5 @@
 
 
-
 #!/usr/bin/env python
 
 import os, errno
@@ -68,34 +67,49 @@ else:
 print ("Gene prediction...")
 os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
 print ("HMM domains prediction...")
-os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ hmm + " "+name+"_proteins.fa")
+os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --domtblout "+name+"_domtblout --cpu 20 "+ hmm + " "+name+"_proteins.fa")
 print ("Parsing...")
 
-tblout_pfam= name + "_tblout" 
+tblout_pfam= name + "_domtblout" 
 
 def get_table_from_tblout(tblout_pfam):
     with open(tblout_pfam, "r") as infile:
         tblout_pfam=infile.readlines()
    
     tblout_pfam = [i.split() for i in tblout_pfam[3:-10]]
+    for i in tblout_pfam:
+        i[13] = float(i[13])
+
+    tblout_pfam.sort(key = operator.itemgetter(0, 13,17), reverse = True)
 
     top_genes={}
     for i in tblout_pfam:
         if i[0] not in top_genes:
-            top_genes[i[0]] = [i[2],float(i[5])]
+            top_genes[i[0]] = [[i[3],float(i[13]),float(i[17]),float(i[18])]]
         else:
-            if float(i[5]) > top_genes[i[0]][1]:
-              top_genes[i[0]] = [i[2],float(i[5])]
-
+            for j in top_genes[i[0]]:
+                start_i = float(i[17])
+                end_i = float(i[18])
+                start_j = float(j[2])
+                end_j = float(j[3])
+                 
+                if not ((end_i <= start_j) or (start_i >= end_j)):
+                    break
+                else: 
+                    top_genes[i[0]].append([i[3],float(i[13]),start_i,end_i])
+                    break
 
 
     contigs = collections.OrderedDict()
     for i in top_genes:
         name = i.rsplit("_", 1)[0]
         if name not in contigs:
-            contigs[name]=[top_genes[i][0]]
+            contigs[name] = []
+            for i in top_genes[i]:
+                contigs[name].append(i[0])
         else:
-            contigs[name].append(top_genes[i][0])
+            for i in top_genes[i]:
+                contigs[name].append(i[0])
 
 
 
@@ -108,7 +122,7 @@ def get_table_from_tblout(tblout_pfam):
 tr=os.path.dirname(__file__) + "/plasmid_hmms_table_ps1_top_hit_e06_train.txt"
 
 def naive_bayes(input_list):
-    threshold = 0.966999581251
+    threshold = 0.966999581251 # 2.52322389516
     with open(tr, 'r') as infile:
         table=infile.readlines()
         table = [i.split() for i in table]
@@ -129,8 +143,8 @@ def naive_bayes(input_list):
                 plasm_log=plasm_log+log(hmm_dict[j][0])
                 chrom=chrom*hmm_dict[j][1]
                 chrom_log=chrom_log+log(hmm_dict[j][1])
-        if (plasm_log - chrom_log) > threshold: out_list.append(["Plasmid", plasm_log, chrom_log, "{0:.2f}".format(chrom_log - plasm_log)])
-        else: out_list.append(["Chromosome",  plasm_log, chrom_log, chrom_log - plasm_log])
+        if (plasm_log - chrom_log) > threshold: out_list.append(["Plasmid", plasm_log, chrom_log, "{0:.2f}".format(plasm_log - chrom_log)])
+        else: out_list.append(["Chromosome",  plasm_log, chrom_log, plasm_log - chrom_log])
      
    
     return out_list 
@@ -138,6 +152,12 @@ def naive_bayes(input_list):
 
 feature_table = get_table_from_tblout(tblout_pfam) 
 feature_table = [i.strip().split(' ', 1) for i in feature_table]
+
+with open(name + '_feature_table.txt', 'w') as output:
+    writer = csv.writer(output, lineterminator='\n')
+    writer.writerows(feature_table)
+
+
 
 feature_table_names=[]
 feature_table_genes=[]
