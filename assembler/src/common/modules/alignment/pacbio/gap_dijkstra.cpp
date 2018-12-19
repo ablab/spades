@@ -69,7 +69,7 @@ void DijkstraGraphSequenceBase::AddNewEdge(const GraphState &gs, const QueueStat
         vector<int> positions;
         vector<int> scores;
         if (path_max_length_ - ed >= 0) {
-            SHWDistanceFull(seq_str, edge_str, path_max_length_ - ed, positions, scores);
+            SHWDistanceExtended(seq_str, edge_str, path_max_length_ - ed, positions, scores);
             int prev_score = numeric_limits<int>::max();
             for (size_t i = 0; i < positions.size(); ++ i) {
                 if (positions[i] >= 0 && scores[i] >= 0) {

@@ -48,7 +48,7 @@ int StringDistance(const std::string &a, const std::string &b, int max_score) {
 }
 
 
-void SHWDistanceFull(const std::string &target, const std::string &query, int max_score, std::vector<int> &positions, std::vector<int> &scores) {
+void SHWDistanceExtended(const std::string &target, const std::string &query, int max_score, std::vector<int> &positions, std::vector<int> &scores) {
     if (query.size() == 0) {
         for (int i = 0; i < std::min(max_score, (int) target.size()); ++ i) {
             positions.push_back(i);
@@ -65,7 +65,7 @@ void SHWDistanceFull(const std::string &target, const std::string &query, int ma
     }
     VERIFY(target.size() > 0)
     edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), (int) query.size(), target.c_str(), (int) target.size()
-                                     , edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_SHW_FULL, edlib::EDLIB_TASK_DISTANCE,
+                                     , edlib::edlibNewAlignConfig(max_score, edlib::EDLIB_MODE_SHW_EXTENDED, edlib::EDLIB_TASK_DISTANCE,
                                              additionalEqualities, 36));
     if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
         positions.reserve(result.numLocations);

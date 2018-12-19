@@ -99,7 +99,7 @@ static int myersCalcEditDistanceSemiGlobal(const Word* Peq, int W, int maxNumBlo
                                            int k, EdlibAlignMode mode,
                                            int* bestScore_, int** positions_, int* numPositions_);
 
-static int myersCalcEditDistanceSemiGlobalFull(const Word* Peq, int W, int maxNumBlocks,
+static int myersCalcEditDistanceSemiGlobalExtended(const Word* Peq, int W, int maxNumBlocks,
                                            int queryLength,
                                            const unsigned char* target, int targetLength,
                                            int k, EdlibAlignMode mode,
@@ -191,8 +191,8 @@ extern "C" EdlibAlignResult edlibAlign(const char* const queryOriginal, const in
                                             k, config.mode, &(result.editDistance),
                                             &(result.endLocations), &(result.numLocations));
         } else {
-            if (config.mode == EDLIB_MODE_SHW_FULL) {
-                myersCalcEditDistanceSemiGlobalFull(Peq, W, maxNumBlocks,
+            if (config.mode == EDLIB_MODE_SHW_EXTENDED) {
+                myersCalcEditDistanceSemiGlobalExtended(Peq, W, maxNumBlocks,
                                                 queryLength, target, targetLength,
                                                 k, config.mode, &(result.editDistance),
                                                 &(result.endScores), &(result.endLocations), &(result.numLocations));
@@ -701,7 +701,7 @@ static int myersCalcEditDistanceSemiGlobal(
  * @param [out] numPositions_  Number of positions in the positions_ array.
  * @return Status.
  */
-static int myersCalcEditDistanceSemiGlobalFull(
+static int myersCalcEditDistanceSemiGlobalExtended(
         const Word* const Peq, const int W, const int maxNumBlocks,
         const int queryLength,
         const unsigned char* const target, const int targetLength,

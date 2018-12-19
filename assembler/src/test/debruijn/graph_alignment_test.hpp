@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE( EdlibSHWFULLTest  ) {
     std::string target = "abcd";
     std::string query = "ac";
     edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), (int) query.size(), target.c_str(), (int) target.size()
-                                                   , edlib::edlibNewAlignConfig(10, edlib::EDLIB_MODE_SHW_FULL, edlib::EDLIB_TASK_DISTANCE,
+                                                   , edlib::edlibNewAlignConfig(10, edlib::EDLIB_MODE_SHW_EXTENDED, edlib::EDLIB_TASK_DISTANCE,
                                                                          NULL, 0));
     BOOST_CHECK_EQUAL(result.status, edlib::EDLIB_STATUS_OK);
     BOOST_CHECK_NE(result.status, -1);
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE( EdlibSHWFULLTestZero  ) {
     std::string target = "abcd";
     std::string query = "";
     edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), (int) query.size(), target.c_str(), (int) target.size()
-                                                   , edlib::edlibNewAlignConfig(10, edlib::EDLIB_MODE_SHW_FULL, edlib::EDLIB_TASK_DISTANCE,
+                                                   , edlib::edlibNewAlignConfig(10, edlib::EDLIB_MODE_SHW_EXTENDED, edlib::EDLIB_TASK_DISTANCE,
                                                                          NULL, 0));
     BOOST_CHECK_EQUAL(result.status, edlib::EDLIB_STATUS_OK);
     BOOST_CHECK_NE(result.status, -1);
