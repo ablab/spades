@@ -77,7 +77,6 @@ BOOST_AUTO_TEST_CASE( EdlibSHWFULLTestZero  ) {
 
 debruijn_graph::config::pacbio_processor InitializePacBioProcessor() {
     debruijn_graph::config::pacbio_processor pb;  
-    pb.bwa_length_cutoff = 0; //500
     pb.internal_length_cutoff = 200; //500
     pb.compression_cutoff = 0.6; // 0.6
     pb.path_limit_stretching = 1.3; //1.3

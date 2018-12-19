@@ -40,7 +40,7 @@ class PacBioMappingIndex {
                        alignment::BWAIndex::AlignmentMode mode)
         : g_(g),
           pb_config_(pb_config),
-          bwa_mapper_(g, mode, pb_config.bwa_length_cutoff) {
+          bwa_mapper_(g, mode) {
         DEBUG("PB Mapping Index construction started");
         DEBUG("Index constructed");
         read_count_ = 0;
@@ -413,10 +413,9 @@ class PacBioMappingIndex {
             DEBUG(" similar! ")
             return true;
         } else {
-//FIXME: reconsider this condition! i.e only one large range? That may allow to decrease the bwa length cutoff
             if (- a.sorted_positions[1].edge_position +  (int)result + b.sorted_positions[0].edge_position  <=
                     b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * int(g_.k()) &&
-                    (pb_config_.bwa_length_cutoff > 2 * g_.k() || pb_config_.internal_length_cutoff > 2 * g_.k()) ) {
+                    (pb_config_.internal_length_cutoff > 2 * g_.k()) ) {
                 DEBUG("overlapping range magic worked, " << - a.sorted_positions[1].edge_position +
                       (int)result + b.sorted_positions[0].edge_position
                       << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k());

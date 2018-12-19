@@ -414,8 +414,6 @@ void load(bwa_aligner& bwa,
 void load(pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
-
-  load(pb.bwa_length_cutoff, pt, "bwa_length_cutoff");
   load(pb.internal_length_cutoff, pt, "internal_length_cutoff");
   load(pb.compression_cutoff, pt, "compression_cutoff");
   load(pb.path_limit_stretching, pt, "path_limit_stretching");

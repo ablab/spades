@@ -56,8 +56,6 @@ namespace yaml {
 
 template<> struct MappingTraits<debruijn_graph::config::pacbio_processor> {
     static void mapping(IO& io, debruijn_graph::config::pacbio_processor& cfg) {
-
-        io.mapRequired("bwa_length_cutoff", cfg.bwa_length_cutoff);
         io.mapRequired("internal_length_cutoff", cfg.internal_length_cutoff);
         io.mapRequired("compression_cutoff", cfg.compression_cutoff);
         io.mapRequired("path_limit_stretching", cfg.path_limit_stretching);

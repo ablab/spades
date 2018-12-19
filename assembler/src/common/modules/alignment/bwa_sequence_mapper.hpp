@@ -18,10 +18,9 @@ class BWAReadMapper: public debruijn_graph::AbstractSequenceMapper<Graph> {
     using debruijn_graph::AbstractSequenceMapper<Graph>::g_;
 public:
     explicit BWAReadMapper(const Graph& g,
-                           BWAIndex::AlignmentMode mode = BWAIndex::AlignmentMode::Default,
-                           size_t length_cutoff = 0)
+                           BWAIndex::AlignmentMode mode = BWAIndex::AlignmentMode::Default)
             : debruijn_graph::AbstractSequenceMapper<Graph>(g),
-            index_(g, mode, length_cutoff) {}
+            index_(g, mode) {}
 
     omnigraph::MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
         return index_.AlignSequence(sequence);

@@ -11,7 +11,6 @@ namespace debruijn_graph {
 namespace config {
 
 struct pacbio_processor {
-    size_t bwa_length_cutoff      = 0;
     size_t internal_length_cutoff = 200;
     double compression_cutoff     = 0.6;
     double path_limit_stretching  = 1.3;

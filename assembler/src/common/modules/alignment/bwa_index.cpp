@@ -25,12 +25,11 @@ int is_bwt(uint8_t *T, bwtint_t n);
 
 namespace alignment {
 
-BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode, size_t length_cutoff)
+BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
         : g_(g),
           memopt_(mem_opt_init(), free),
           idx_(nullptr, bwa_idx_destroy),
-          mode_(mode),
-          length_cutoff_(length_cutoff) {
+          mode_(mode) {
     memopt_->flag |= MEM_F_SOFTCLIP;
     switch (mode) {
         default:
@@ -292,16 +291,6 @@ void BWAIndex::Init() {
         free(aln.cigar);
 #endif
 
-static bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
-//  k-rb > re - k
-    if (rb < k && 2 * k  > re + rb)
-        return true;
-//  re - edge_len > edge_len - rb
-    if (re > edge_len && re + rb > 2 * edge_len)
-        return true;
-    return false;
-}
-
 inline std::ostream& operator<<(std::ostream& os, const mem_alnreg_s& a) {
     os << a.qb << " - " << a.qe << " ---> " << a.rb << " - " << a.re << "query->ref\n";
     os << a.seedcov << " - seedcov; " << a.score << " - score";
@@ -350,9 +339,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
 //FIXME: what about other scoring systems?
         double qual = double(a.score)/double(a.qe - a.qb);
         DEBUG("Edge: "<< ids_[a.rid] << " quality from score: " << qual);
-//length_cutoff meaning changed!
-        if (g_.length(ids_[a.rid]) > length_cutoff_ && MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
-            continue;
+
         if (!is_rev) {
             res.push_back(ids_[a.rid],
                           { { (size_t)a.qb, initial_range_end },
