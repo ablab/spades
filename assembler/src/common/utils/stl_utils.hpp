@@ -15,6 +15,7 @@
 #include "io/reads/ireader.hpp"
 #include "filesystem/path_helper.hpp"
 #include <memory>
+#include <map>
 #include <string>
 #include <set>
 #include <vector>
@@ -131,6 +132,19 @@ std::ostream &operator<<(std::ostream &os, const std::set<T> &set) {
     for (const auto &i : set) {
         if (delim) os << ", ";
         os << i;
+        delim = true;
+    }
+    os << "}";
+    return os;
+}
+
+template<typename K, typename V>
+std::ostream &operator<<(std::ostream &os, const std::map<K, V> &map) {
+    os << "{";
+    bool delim = false;
+    for (const auto &i : map) {
+        if (delim) os << ", ";
+        os << i.first << ": " << i.second;
         delim = true;
     }
     os << "}";
