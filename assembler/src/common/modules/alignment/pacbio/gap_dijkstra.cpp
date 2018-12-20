@@ -19,8 +19,8 @@ bool DijkstraGraphSequenceBase::IsBetter(int seq_ind, int ed) {
     }
     VERIFY(seq_ind < (int) ss_.size())
     VERIFY(seq_ind >= 0)
-    if (seq_ind < 100 ||
-            max(best_ed_[seq_ind] + (int) ((double)seq_ind * gap_cfg_.penalty_ratio), 20) >= ed) {
+    if (seq_ind < SHORT_SEQ_LENGTH ||
+            max(best_ed_[seq_ind] + (int) ((double)seq_ind * gap_cfg_.penalty_ratio), ED_MIN_OFFSET) >= ed) {
         best_ed_[seq_ind] = min(best_ed_[seq_ind], ed);
         return true;
     }
@@ -118,7 +118,7 @@ bool DijkstraGraphSequenceBase::RunDijkstra() {
             end_qstate_ = cur_state;
             return true;
         }
-        for (const debruijn_graph::EdgeId &e : g_.OutgoingEdges(g_.EdgeEnd(cur_state.gs.e))) {
+        for (const EdgeId &e : g_.OutgoingEdges(g_.EdgeEnd(cur_state.gs.e))) {
             found_path = AddState(cur_state, e, ed);
             if (!gap_cfg_.find_shortest_path && found_path) return true;
         }
@@ -129,6 +129,8 @@ bool DijkstraGraphSequenceBase::RunDijkstra() {
 
 void DijkstraGraphSequenceBase::CloseGap() {
     bool found_path = RunDijkstra();
+    DEBUG("updates=" << updates_)
+
     if (!found_path) {
         return_code_ += DijkstraReturnCode::NO_PATH;
     }
@@ -151,7 +153,7 @@ void DijkstraGraphSequenceBase::CloseGap() {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool DijkstraGapFiller::AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed) {
+bool DijkstraGapFiller::AddState(const QueueState &cur_state, EdgeId e, int ed) {
     if (reachable_vertex_.size() == 0 || reachable_vertex_.count(g_.EdgeEnd(cur_state.gs.e)) > 0) {
         if (reachable_vertex_.size() == 0 || reachable_vertex_.count(g_.EdgeEnd(e)) > 0) {
             GraphState next_state(e, 0, (int) g_.length(e) );
@@ -185,7 +187,7 @@ bool DijkstraGapFiller::IsEndPosition(const QueueState &cur_state) {
 
 
 
-bool DijkstraEndsReconstructor::AddState(const QueueState &cur_state, debruijn_graph::EdgeId e, int ed) {
+bool DijkstraEndsReconstructor::AddState(const QueueState &cur_state, EdgeId e, int ed) {
     if (!IsEndPosition(cur_state)) {
         GraphState next_state(e, 0, (int) g_.length(e));
         AddNewEdge(next_state, cur_state, ed);

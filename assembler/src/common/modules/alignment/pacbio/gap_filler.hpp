@@ -78,7 +78,7 @@ struct GraphPosition {
     EdgeId edgeid;
     size_t position;
 
-    GraphPosition(EdgeId edgeid_, size_t position_):
+    GraphPosition(EdgeId edgeid_ = EdgeId(), size_t position_ = -1):
         edgeid(edgeid_), position(position_) {}
 };
 
@@ -114,7 +114,7 @@ class GapFiller {
             const GraphPosition &end_pos,
             int path_min_length, int path_max_length) const;
 
-    void Revert(Sequence &ss, GraphPosition &start_pos) const;
+    GraphPosition ConjugatePosition(const GraphPosition &start_pos) const;
 
     void UpdatePath(std::vector<debruijn_graph::EdgeId> &path,
                     std::vector<EdgeId> &ans,
