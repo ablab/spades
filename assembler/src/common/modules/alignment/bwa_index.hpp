@@ -29,7 +29,9 @@ class BWAIndex {
         Default,
         IntraCtg,
         PacBio,
-        Ont2D
+        Ont2D,
+        PacBioSPAligner,
+        Ont2DSPAligner
     };
 
     // bwaidx / memopt are incomplete below, therefore we need to outline ctor
@@ -54,7 +56,7 @@ class BWAIndex {
     std::vector<debruijn_graph::EdgeId> ids_;
 
     AlignmentMode mode_;
-  private:
+
     DECL_LOGGER("BWAIndex");
 };
 
