@@ -171,7 +171,7 @@ OneReadMapping GAligner::GetReadAlignment(const io::SingleRead &read) const {
                                          , sorted_bwa_hits[i].mapping_at(0).mapped_range.start_pos),
                             MappingPoint(sorted_bwa_hits[i].mapping_at(sorted_bwa_hits[i].size() - 1).initial_range.end_pos
                                          , sorted_bwa_hits[i].mapping_at(sorted_bwa_hits[i].size() - 1).mapped_range.end_pos));
-        if (ends_cfg_.restore_ends  && max_path_ind == i &&
+        if (restore_ends_  && max_path_ind == i &&
                 (sorted_edges.size() == 1 || max_path > min(500, shortest_len) )) {
             int return_code = RestoreEndsF(s, (int) s.size(), sorted_edges[i], cur_range);
             for (size_t j = sorted_bwa_hits.size() - 1; j > i  && return_code != 0; -- j) {

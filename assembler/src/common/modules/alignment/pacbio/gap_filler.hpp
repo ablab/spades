@@ -12,11 +12,40 @@
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 
+#include "modules/alignment/bwa_index.hpp"
 #include "modules/alignment/pacbio/gap_dijkstra.hpp"
 
 namespace sensitive_aligner {
 using debruijn_graph::EdgeId;
 using debruijn_graph::VertexId;
+
+struct GAlignerConfig {
+    // general
+    int K = -1;
+    std::string path_to_graphfile;
+    std::string path_to_sequences;
+    alignment::BWAIndex::AlignmentMode data_type; // pacbio, nanopore, 16S
+    std::string output_format = "tsv"; // default: tsv and gpa without CIGAR
+    bool restore_ends = false;
+
+    //path construction
+    debruijn_graph::config::pacbio_processor pb;
+    GapClosingConfig gap_cfg;
+    EndsClosingConfig ends_cfg;
+
+    GAlignerConfig(const debruijn_graph::config::pacbio_processor &pb_,
+                   const alignment::BWAIndex::AlignmentMode &data_type_,
+                   const GapClosingConfig &gap_cfg_ = GapClosingConfig(),
+                   const EndsClosingConfig &ends_cfg_ = EndsClosingConfig())
+    :data_type(data_type_),
+     pb(pb_),
+     gap_cfg(gap_cfg_),
+     ends_cfg(ends_cfg_)
+    {}
+
+    GAlignerConfig(){}
+};
+
 
 struct GapFillerResult {
     int score = std::numeric_limits<int>::max();
@@ -57,10 +86,8 @@ class GapFiller {
   public:
 
     GapFiller(const debruijn_graph::Graph &g,
-              const debruijn_graph::config::pacbio_processor &pb_config,
-              const GapClosingConfig &gap_cfg,
-              const EndsClosingConfig &ends_cfg):
-        g_(g), pb_config_(pb_config), gap_cfg_(gap_cfg), ends_cfg_(ends_cfg) {}
+              const GAlignerConfig &cfg):
+        g_(g), cfg_(cfg) {}
 
     GapFillerResult Run(const std::string &s,
                         const GraphPosition &start_pos,
@@ -94,9 +121,7 @@ class GapFiller {
                     MappingPoint p, PathRange &range, bool forward, GraphPosition &old_start_pos) const;
 
     const debruijn_graph::Graph &g_;
-    const debruijn_graph::config::pacbio_processor pb_config_;
-    const GapClosingConfig gap_cfg_;
-    const EndsClosingConfig ends_cfg_;
+    const GAlignerConfig &cfg_;
 };
 
 

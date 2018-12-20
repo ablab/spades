@@ -32,25 +32,6 @@ void create_console_logger() {
     logging::attach_logger(log);
 }
 
-
-namespace sensitive_aligner {
-
-struct GAlignerConfig {
-    // general
-    int K;
-    string path_to_graphfile;
-    string path_to_sequences;
-    alignment::BWAIndex::AlignmentMode data_type; // pacbio, nanopore, 16S
-    string output_format; // default: tsv and gpa without CIGAR
-
-    //path construction
-    debruijn_graph::config::pacbio_processor pb;
-    GapClosingConfig gap_cfg;
-    EndsClosingConfig ends_cfg;
-};
-
-}
-
 namespace llvm {
 namespace yaml {
 
@@ -102,7 +83,7 @@ template<> struct MappingTraits<sensitive_aligner::GAlignerConfig> {
     static void mapping(IO& io, sensitive_aligner::GAlignerConfig& cfg) {
         io.mapRequired("output_format", cfg.output_format);
         io.mapRequired("run_dijkstra", cfg.gap_cfg.run_dijkstra);
-        io.mapRequired("restore_ends", cfg.ends_cfg.restore_ends);
+        io.mapRequired("restore_ends", cfg.restore_ends);
 
         io.mapRequired("pb", cfg.pb);
         io.mapRequired("gap_closing", cfg.gap_cfg);
@@ -119,13 +100,9 @@ class LongReadsAligner {
   public:
     LongReadsAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
                      const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                     const alignment::BWAIndex::AlignmentMode mode,
-                     const debruijn_graph::config::pacbio_processor &pb,
-                     const GapClosingConfig gap_cfg,
-                     const EndsClosingConfig ends_cfg,
-                     const string output_file,
-                     const string formats):
-        g_(g), galigner_(g_, pb, mode, gap_cfg, ends_cfg), mapping_printer_hub_(g_, edge_namer, output_file, formats) {
+                     const GAlignerConfig &cfg,
+                     const string output_file):
+        g_(g), galigner_(g_, cfg), mapping_printer_hub_(g_, edge_namer, output_file, cfg.output_format) {
         aligned_reads_ = 0;
         processed_reads_ = 0;
     }
@@ -205,7 +182,7 @@ void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
     io::CanonicalEdgeHelper<debruijn_graph::Graph> edge_namer(g, io::MapNamingF<debruijn_graph::Graph>(id_mapper));
     INFO("Loaded graph with " << g.size() << " vertices");
 
-    LongReadsAligner aligner(g, edge_namer, cfg.data_type, cfg.pb, cfg.gap_cfg, cfg.ends_cfg, output_file, cfg.output_format);
+    LongReadsAligner aligner(g, edge_namer, cfg, output_file);
     INFO("LongReadsAligner created");
 
     io::ReadStreamList<io::SingleRead> streams;

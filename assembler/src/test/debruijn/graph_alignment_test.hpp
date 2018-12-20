@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE( TrivialTest ) {
     ends_cfg.ed_upper_bound = 2000;
     ends_cfg.max_restorable_length = 5000;
 
-    sensitive_aligner::GAligner galigner(g, pb, mode, gap_cfg, ends_cfg);
+    sensitive_aligner::GAligner galigner(g, sensitive_aligner::GAlignerConfig(pb, mode, gap_cfg, ends_cfg));
     auto current_read_mapping = galigner.GetReadAlignment(r);
     const auto& aligned_edges = current_read_mapping.main_storage;
     std::string pathStr = "";

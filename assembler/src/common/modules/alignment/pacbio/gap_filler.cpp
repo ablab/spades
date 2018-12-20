@@ -24,6 +24,7 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
         const GraphPosition &start_pos,
         const GraphPosition &end_pos,
         int path_max_length, int score) const {
+    GapClosingConfig gap_cfg = cfg_.gap_cfg;
     VertexId start_v = g_.EdgeEnd(start_pos.edgeid);
     VertexId end_v = g_.EdgeStart(end_pos.edgeid);
     auto path_searcher_b = omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBackwardBoundedDijkstra(g_, path_max_length);
@@ -42,13 +43,13 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     int s_len = int(s.size());
     int ed_limit = score;
     if (score == numeric_limits<int>::max()) {
-        ed_limit = min(max(gap_cfg_.ed_lower_bound, s_len / gap_cfg_.max_ed_proportion), gap_cfg_.ed_upper_bound);
+        ed_limit = min(max(gap_cfg.ed_lower_bound, s_len / gap_cfg.max_ed_proportion), gap_cfg.ed_upper_bound);
     }
     DEBUG(" Dijkstra: String length " << s_len << "  "  << (size_t) s_len <<
           " max-len " << ed_limit << " vertex_num=" << vertex_pathlen.size());
     GapFillerResult dijkstra_res;
     if ((vertex_pathlen.size() == 0 ||
-            ((size_t) s_len) * vertex_pathlen.size() > gap_cfg_.max_gs_states) &&
+            ((size_t) s_len) * vertex_pathlen.size() > gap_cfg.max_gs_states) &&
             start_pos.edgeid.int_id() != end_pos.edgeid.int_id()) {
         DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
         if (vertex_pathlen.size() == 0) {
@@ -59,7 +60,7 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
         }
         return dijkstra_res;
     }
-    DijkstraGapFiller gap_filler(g_, gap_cfg_, s,
+    DijkstraGapFiller gap_filler(g_, gap_cfg, s,
                                  start_pos.edgeid, end_pos.edgeid,
                                  (int) start_pos.position, (int) end_pos.position,
                                  ed_limit, vertex_pathlen);
@@ -97,7 +98,7 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
         DEBUG ("no paths");
         return bf_res;
     }
-    if (seq_string.length() > pb_config_.max_contigs_gap_length) {
+    if (seq_string.length() > cfg_.pb.max_contigs_gap_length) {
         DEBUG("need to find best scored path between " << paths.size() << " , seq_len " << seq_string.length());
         DEBUG("Gap is too large");
         return bf_res;
@@ -157,10 +158,11 @@ GapFillerResult GapFiller::Run(const string &s,
                                const GraphPosition &end_pos,
                                int path_min_length, int path_max_length) const {
     utils::perf_counter pc;
+    GapClosingConfig gap_cfg = cfg_.gap_cfg;
     auto bf_res = BestScoredPathBruteForce(s, start_pos, end_pos, path_min_length, path_max_length);
     double tm1 = pc.time();
     pc.reset();
-    if (gap_cfg_.run_dijkstra && bf_res.return_code != DijkstraReturnCode::OK) {
+    if (gap_cfg.run_dijkstra && bf_res.return_code != DijkstraReturnCode::OK) {
         auto dijkstra_res = BestScoredPathDijkstra(s, start_pos, end_pos, path_max_length, bf_res.score);
         DEBUG("BruteForce run: return_code=" << bf_res.return_code
               << " score=" << bf_res.score << " time1=" << tm1
@@ -170,7 +172,7 @@ GapFillerResult GapFiller::Run(const string &s,
             return dijkstra_res;
         }
     }
-    if (bf_res.score != numeric_limits<int>::max() && !gap_cfg_.find_shortest_path) {
+    if (bf_res.score != numeric_limits<int>::max() && !gap_cfg.find_shortest_path) {
         bf_res.return_code = DijkstraReturnCode::OK;
     }
     return bf_res;
@@ -235,6 +237,7 @@ GapFillerResult GapFiller::Run(Sequence &s,
                                vector<debruijn_graph::EdgeId> &path,
                                PathRange &range) const {
     VERIFY(path.size() > 0);
+    EndsClosingConfig ends_cfg = cfg_.ends_cfg;
     GraphPosition old_start_pos = start_pos;
     if (!forward) {
         Revert(s, start_pos);
@@ -242,8 +245,8 @@ GapFillerResult GapFiller::Run(Sequence &s,
     GapFillerResult res;
     res.return_code = 0;
     size_t s_len = int(s.size());
-    int score =  min(min(max(ends_cfg_.ed_lower_bound, (int) s_len / ends_cfg_.max_ed_proportion), ends_cfg_.ed_upper_bound), (int) s_len);
-    if ((int) s_len >  ends_cfg_.max_restorable_length && s_len >  g_.length(start_pos.edgeid) - start_pos.position + g_.k()) {
+    int score =  min(min(max(ends_cfg.ed_lower_bound, (int) s_len / ends_cfg.max_ed_proportion), ends_cfg.ed_upper_bound), (int) s_len);
+    if ((int) s_len >  ends_cfg.max_restorable_length && s_len >  g_.length(start_pos.edgeid) - start_pos.position + g_.k()) {
         DEBUG("EdgeDijkstra: sequence is too long " << s_len)
         res.return_code += DijkstraReturnCode::TOO_LONG_GAP;
         return res;
@@ -254,7 +257,7 @@ GapFillerResult GapFiller::Run(Sequence &s,
         return res;
     }
     utils::perf_counter pc;
-    DijkstraEndsReconstructor algo(g_, ends_cfg_, s.str(), start_pos.edgeid, (int) start_pos.position, score);
+    DijkstraEndsReconstructor algo(g_, ends_cfg, s.str(), start_pos.edgeid, (int) start_pos.position, score);
     algo.CloseGap();
     score = algo.edit_distance();
     res.return_code += algo.return_code();

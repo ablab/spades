@@ -38,20 +38,20 @@ class GAligner {
   OneReadMapping GetReadAlignment(const io::SingleRead &read) const;
   
   GAligner(const debruijn_graph::Graph &g,
-           debruijn_graph::config::pacbio_processor pb_config,
-           alignment::BWAIndex::AlignmentMode mode,
-           GapClosingConfig gap_cfg = GapClosingConfig(),
-           EndsClosingConfig ends_cfg = EndsClosingConfig())
-    : pac_index_(g, pb_config, mode), g_(g), pb_config_(pb_config), gap_cfg_(gap_cfg), ends_cfg_(ends_cfg), gap_filler_(g, pb_config, gap_cfg, ends_cfg_) {}
+           const GAlignerConfig &cfg)
+    : pac_index_(g, cfg.pb, cfg.data_type), g_(g), pb_config_(cfg.pb), restore_ends_(cfg.restore_ends), gap_filler_(g, cfg) {}
+
+  GAligner(const debruijn_graph::Graph &g,
+           const debruijn_graph::config::pacbio_processor &pb_config,
+           const alignment::BWAIndex::AlignmentMode &mode)
+    : pac_index_(g, pb_config, mode), g_(g), pb_config_(pb_config), restore_ends_(false), gap_filler_(g, GAlignerConfig(pb_config, mode)) {}
 
 
  private:
   PacBioMappingIndex pac_index_;
   const debruijn_graph::Graph &g_;
-  debruijn_graph::config::pacbio_processor pb_config_;
-  //TODO:: shouldn't it be somewhere in debruijn_graph::config?
-  GapClosingConfig gap_cfg_;
-  EndsClosingConfig ends_cfg_;
+  const debruijn_graph::config::pacbio_processor pb_config_;
+  bool restore_ends_;
   GapFiller gap_filler_;
 
   void ProcessCluster(const Sequence &s,

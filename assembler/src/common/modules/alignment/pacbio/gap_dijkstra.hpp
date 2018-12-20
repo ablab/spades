@@ -26,10 +26,10 @@ enum DijkstraReturnCode {
 };
 
 struct DijkstraParams {
-    size_t queue_limit = 0;
-    size_t iteration_limit = 0;
-    size_t updates_limit = 0;
-    bool find_shortest_path = false;
+    size_t queue_limit = 1000000;
+    size_t iteration_limit = 1000000;
+    size_t updates_limit = 1000000;
+    bool find_shortest_path = true;
     bool restore_mapping = false;
     float penalty_ratio = 200;
 
@@ -44,7 +44,6 @@ struct GapClosingConfig: public DijkstraParams {
 };
 
 struct EndsClosingConfig: public DijkstraParams {
-    bool restore_ends = false;
     int max_restorable_length = 0;
 };
 
