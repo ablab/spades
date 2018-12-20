@@ -30,9 +30,10 @@ static const char LEB_BUF_SIZE = 128 / 7 + 1;
 template<typename T>
 static constexpr Encoding GetEncoding() {
     return !std::is_pod<T>::value ? Encoding::Unknown :
-               std::is_unsigned<T>::value && sizeof(T) > 1 ? Encoding::ULEB128 :
-               std::is_signed<T>::value && sizeof(T) > 1 ? Encoding::SLEB128 :
-               Encoding::Raw;
+           std::is_floating_point<T>::value ? Encoding::Raw : //Required because is_signed is true for floats
+           std::is_unsigned<T>::value && sizeof(T) > 1 ? Encoding::ULEB128 :
+           std::is_signed<T>::value && sizeof(T) > 1 ? Encoding::SLEB128 :
+           Encoding::Raw;
 }
 
 template<typename T>
