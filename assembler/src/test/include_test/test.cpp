@@ -15,6 +15,7 @@
 #include "quality_test.hpp"
 #include "nucl_test.hpp"
 #include "cyclic_hash_test.hpp"
+#include "binary_test.hpp"
 
 #define BOOST_TEST_SOURCE
 #include <boost/test/impl/unit_test_main.ipp>
