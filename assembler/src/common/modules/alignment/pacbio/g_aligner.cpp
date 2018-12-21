@@ -75,7 +75,7 @@ void GAligner::FillGapsInCluster(const vector<QualityRange> &cur_cluster,
                                                       GraphPosition(cur_edge, cur_first_index.edge_position),
                                                       limits.first, limits.second);
                 vector<EdgeId> intermediate_path = res.full_intermediate_path;
-                if (res.return_code != DijkstraReturnCode::OK) {
+                if (res.return_code != static_cast<int>(DijkstraReturnCode::OK)) {
                     bwa_hits.push_back(cur_sorted_hits);
                     edges.push_back(cur_sorted_edges);
                     cur_sorted_edges.clear();

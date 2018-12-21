@@ -13,9 +13,10 @@
 #include "utils/perf/perfcounter.hpp"
 
 namespace sensitive_aligner {
+
 using debruijn_graph::EdgeId;
 
-enum DijkstraReturnCode {
+enum class DijkstraReturnCode {
     OK = 0,
     NOT_CONNECTED = 1,
     TOO_LONG_GAP = 2,
