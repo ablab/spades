@@ -68,18 +68,18 @@ class MappingPrinterGPA : public MappingPrinter {
   std::string Print(std::map<std::string, std::string> &line);
 
 
-  std::string getCigar(const std::string &read, const std::string &aligned);
+  std::string FormCigar(const std::string &read, const std::string &aligned);
 
-  void getEdgeCigar(const std::string &subread, const std::string &path_seq, const std::vector<size_t> &edgeblocks,
+  void FormEdgeCigar(const std::string &subread, const std::string &path_seq, const std::vector<size_t> &edgeblocks,
                     std::vector<std::string> &edgecigar, std::vector<Range> &edgeranges);
 
-  void getPath(const std::vector<debruijn_graph::EdgeId> &path,
+  void GeneratePath(const std::vector<debruijn_graph::EdgeId> &path,
                const PathRange &path_range,
                std::string &aligned, std::vector<size_t> &edgeblocks);
 
-  std::string getSubread(const Sequence &read, const PathRange &path_range);
+  std::string GenerateSubread(const Sequence &read, const PathRange &path_range);
 
-  std::string formGPAOutput(const io::SingleRead &read,
+  std::string FormGPAOutput(const io::SingleRead &read,
                             const std::vector<debruijn_graph::EdgeId> &path,
                             const std::vector<std::string> &edgecigar,
                             const std::vector<Range> &edgeranges,
