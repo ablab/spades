@@ -102,6 +102,8 @@ class GapFiller {
 
   private:
 
+    std::string PathToString(std::vector<EdgeId> &path) const;
+
     GapFillerResult BestScoredPathDijkstra(const std::string &s,
                                            const GraphPosition &start_pos,
                                            const GraphPosition &end_pos,
