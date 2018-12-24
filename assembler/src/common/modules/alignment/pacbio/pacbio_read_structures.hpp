@@ -20,7 +20,7 @@ typedef omnigraph::GapDescription<debruijn_graph::Graph> GapDescription;
 
 enum class InvalidColors {
     UNDEF_COLOR = -1,
-    DELETED_COLOR = - 2
+    DELETED_COLOR = -2
 };
 
 struct MappingInstance {
