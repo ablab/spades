@@ -7,7 +7,7 @@
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
 
-#include "io/id_mapper.hpp"
+#include "io/utils/edge_namer.hpp"
 #include "io/binary/graph.hpp"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/wrapper_collection.hpp"
@@ -35,17 +35,31 @@ namespace debruijn_graph {
 typedef debruijn_graph::BasicSequenceMapper<debruijn_graph::Graph, Index> MapperClass;
 
 
-class IdealAligner {
+struct ReadMappingStr {
+    string path_str = "";
+    string pathlen_str = "";
+    string edgelen_str = "";
+    string str = "";
+    size_t hits_num = 0;
+    size_t paths_num = 0;
+    bool mapped = false;
+
+    ReadMappingStr(size_t hits_num_, size_t paths_num_)
+    : hits_num(hits_num_),
+      paths_num(paths_num_) {}
+};
+
+class KMerAligner {
   public:
-    IdealAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
-                 const io::IdMapper<std::string> &id_mapper,
+    KMerAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
+                 const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
                  const string &output_file,
                  shared_ptr<MapperClass> mapper):
-        g_(g), id_mapper_(id_mapper), output_file_(output_file), mapper_(mapper) {
+        g_(g), edge_namer_(edge_namer), output_file_(output_file), mapper_(mapper) {
         myfile_.open(output_file_ + ".tsv", ofstream::out);
     }
 
-    void AlignRead(const io::SingleRead &read) {
+    ReadMappingStr AlignRead(const io::SingleRead &read) const {
         Sequence seq(read.sequence());
         INFO("Read " << read.name() << ".")
         auto current_mapping = mapper_->MapRead(read);
@@ -56,61 +70,42 @@ class IdealAligner {
         }
 
         vector<int> inds = CheckPathConsistency(read_mapping, current_mapping);
+        ReadMappingStr read_mapping_str(read_mapping.size(), current_mapping.size());
         if (inds.size() > 0) {
             int j = 0;
             int len_before = 0;
-            string path_str = "";
-            string pathlen_str = "";
-            string edgelen_str = "";
-            string str = "";
             for (int i = 0; i < (int) read_mapping.size(); ++ i) {
-                EdgeId edgeid = read_mapping[i];
-                size_t mapping_start = 0;
-                size_t mapping_end = g_.length(edgeid);
-                size_t initial_start = len_before;
-                size_t initial_end = len_before + g_.length(edgeid);
-                if (inds[j] == i) {
-                    omnigraph::MappingRange range = current_mapping[j].second;
-                    mapping_start = range.mapped_range.start_pos;
-                    mapping_end = j + 1 < (int) inds.size() ? range.mapped_range.end_pos : range.mapped_range.end_pos + g_.k();
-                    initial_start = range.initial_range.start_pos;
-                    initial_end = j + 1 < (int) inds.size() ? range.initial_range.end_pos : range.initial_range.end_pos + g_.k();
-                    if ((i > 0 && i < (int)(read_mapping.size()) - 1) &&
-                            (mapping_end - mapping_start != initial_end - initial_start || mapping_end - mapping_start != g_.length(edgeid))) {
-                        DEBUG("Bad ranges")
-                        return;
-                    }
-                    ++ j;
+                if (!FormMappingString(read_mapping, inds, current_mapping, i, j, len_before, read_mapping_str)) {
+                    return read_mapping_str;
                 }
-                len_before += (int) g_.length(edgeid);
-                path_str += StrId(edgeid) + " (" + to_string(mapping_start) + "," + to_string(mapping_end) + ") ["
-                            + to_string(initial_start) + "," + to_string(initial_end) + "], ";
-                pathlen_str += to_string(mapping_end - mapping_start) + ",";
-                edgelen_str += to_string(g_.length(edgeid)) + ",";
-                str += g_.EdgeNucls(edgeid).Subseq(mapping_start, mapping_end).str();
             }
-            DEBUG("Path: " << path_str);
-            DEBUG("Read " << read.name() << " length=" << seq.size() << "; path_len=" << current_mapping.size()  << "; aligned: " << path_str);
-            if (str.size() != seq.size()) {
+            DEBUG("Path: " << read_mapping_str.path_str);
+            DEBUG("Read " << read.name() << " length=" << seq.size() << "; path_len=" << current_mapping.size()  << "; aligned: " << read_mapping_str.path_str);
+            if (read_mapping_str.str.size() != seq.size()) {
                 DEBUG("Read " << read.name() << " wasn't fully aligned");
-                return;
+                return read_mapping_str;
             }
-            #pragma omp critical
-            {
-                myfile_ << read.name() << "\t" << seq.size() << "\t" << current_mapping.size()
-                        << "\t" << path_str << "\t" << pathlen_str << "\t" << edgelen_str << "\t" << str << "\n";
+            read_mapping_str.mapped = true;
+            return read_mapping_str;
+        }
+        return read_mapping_str;
+    }
 
-            }
+    void Print(const io::SingleRead &read, const ReadMappingStr &read_mapping_str){
+        Sequence seq(read.sequence());
+        #pragma omp critical
+        {
+            myfile_ << read.name() << "\t" << seq.size() << "\t" << read_mapping_str.hits_num
+                    << "\t" << read_mapping_str.path_str << "\t" << read_mapping_str.pathlen_str 
+                    << "\t" << read_mapping_str.edgelen_str << "\t" << read_mapping_str.str << "\n";
+
         }
     }
 
   private:
 
     string StrId(const EdgeId &e) const {
-        if (id_mapper_.count(e.int_id()))
-            return id_mapper_[e.int_id()];
-
-        return e.int_id() < g_.conjugate(e).int_id() ? to_string(e.int_id()) : to_string(e.int_id()) + "-";
+        return edge_namer_.EdgeOrientationString(e);
     }
     
     bool IsCanonical(EdgeId e) const {
@@ -121,7 +116,7 @@ class IdealAligner {
         return IsCanonical(e) ? e : g_.conjugate(e);
     }
 
-    vector<int> CheckPathConsistency(const vector<EdgeId> &read_mapping, const MappingPath<EdgeId>& current_mapping)  {
+    vector<int> CheckPathConsistency(const vector<EdgeId> &read_mapping, const MappingPath<EdgeId>& current_mapping) const {
         vector<int> inds;
         int j = 0;
         int len_before = 0;
@@ -158,8 +153,40 @@ class IdealAligner {
         return inds;
     }
 
+    bool FormMappingString(const vector<EdgeId> &read_mapping, 
+                           const vector<int> &inds,
+                           const MappingPath<EdgeId>& current_mapping,
+                           int i, int &j,
+                           int &len_before, ReadMappingStr &read_mapping_str) const {
+        EdgeId edgeid = read_mapping[i];
+        size_t mapping_start = 0;
+        size_t mapping_end = g_.length(edgeid);
+        size_t initial_start = len_before;
+        size_t initial_end = len_before + g_.length(edgeid);
+        if (inds[j] == i) {
+            omnigraph::MappingRange range = current_mapping[j].second;
+            mapping_start = range.mapped_range.start_pos;
+            mapping_end = j + 1 < (int) inds.size() ? range.mapped_range.end_pos : range.mapped_range.end_pos + g_.k();
+            initial_start = range.initial_range.start_pos;
+            initial_end = j + 1 < (int) inds.size() ? range.initial_range.end_pos : range.initial_range.end_pos + g_.k();
+            if ((i > 0 && i < (int)(read_mapping.size()) - 1) &&
+                    (mapping_end - mapping_start != initial_end - initial_start || mapping_end - mapping_start != g_.length(edgeid))) {
+                DEBUG("Bad ranges")
+                return false;
+            }
+            ++ j;
+        }
+        len_before += (int) g_.length(edgeid);
+        read_mapping_str.path_str += StrId(edgeid) + " (" + to_string(mapping_start) + "," + to_string(mapping_end) + ") ["
+                    + to_string(initial_start) + "," + to_string(initial_end) + "], ";
+        read_mapping_str.pathlen_str += to_string(mapping_end - mapping_start) + ",";
+        read_mapping_str.edgelen_str += to_string(g_.length(edgeid)) + ",";
+        read_mapping_str.str += g_.EdgeNucls(edgeid).Subseq(mapping_start, mapping_end).str();
+        return true;
+    }
+
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
-    const io::IdMapper<std::string> &id_mapper_;
+    const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer_;
     const string &output_file_;
     shared_ptr<MapperClass> mapper_;
     ofstream myfile_;
@@ -188,7 +215,6 @@ void Launch(size_t K, const string &saves_path, const string &reads_fasta, const
     debruijn_graph::ConjugateDeBruijnGraph g(K);
     io::IdMapper<std::string> id_mapper;
     LoadGraph(saves_path, g, id_mapper);
-
     KmerMapper<debruijn_graph::Graph> kmer_mapper(g);
     kmer_mapper.Detach();
     EdgeIndex<debruijn_graph::Graph> edge_index(g, tmpdir);
@@ -211,13 +237,17 @@ void Launch(size_t K, const string &saves_path, const string &reads_fasta, const
     }
     INFO("Loaded reads from " << reads_fasta);
 
-    IdealAligner aligner(g, id_mapper, output_file, mapper);
-    INFO("IdealAligner created");
+    io::CanonicalEdgeHelper<debruijn_graph::Graph> edge_namer(g, io::MapNamingF<debruijn_graph::Graph>(id_mapper));
+    KMerAligner aligner(g, edge_namer, output_file, mapper);
+    INFO("KMerAligner created");
 
     #pragma omp parallel num_threads(16)
     #pragma omp for
     for (size_t i = 0 ; i < wrappedreads.size(); ++i) {
-        aligner.AlignRead(wrappedreads[i]);
+        debruijn_graph::ReadMappingStr read_mapping_res = aligner.AlignRead(wrappedreads[i]);
+        if (read_mapping_res.mapped) {
+            aligner.Print(wrappedreads[i], read_mapping_res);
+        }
     }
     fs::remove_dir(tmpdir);
 }
