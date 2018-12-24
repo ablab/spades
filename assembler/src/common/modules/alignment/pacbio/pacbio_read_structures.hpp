@@ -18,7 +18,7 @@
 namespace sensitive_aligner {
 typedef omnigraph::GapDescription<debruijn_graph::Graph> GapDescription;
 
-enum {
+enum class InvalidColors {
     UNDEF_COLOR = -1,
     DELETED_COLOR = - 2
 };

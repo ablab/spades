@@ -51,13 +51,13 @@ class PacBioMappingIndex {
         size_t len = ranged_colors.size();
         std::vector<std::vector<QualityRange>> res;
         for (size_t i = 0; i < len; i++) {
-            if (ranged_colors[i].second != DELETED_COLOR) {
+            if (ranged_colors[i].second != static_cast<int>(InvalidColors::DELETED_COLOR)) {
                 std::vector<QualityRange> path;
                 int cur_color = ranged_colors[i].second;
                 for (size_t j = 0; j < len; j++) {
                     if (ranged_colors[j].second == cur_color) {
                         path.push_back(ranged_colors[j].first);
-                        ranged_colors[j].second = DELETED_COLOR;
+                        ranged_colors[j].second = static_cast<int>(InvalidColors::DELETED_COLOR);
                     }
                 }
                 auto prev_iter = path.begin();
@@ -287,7 +287,7 @@ class PacBioMappingIndex {
         RangeSet mapping_descr = GetBWAClusters(read);
 
         size_t len = mapping_descr.size();
-        std::vector<int> colors(len, UNDEF_COLOR);
+        std::vector<int> colors(len, static_cast<int>(InvalidColors::UNDEF_COLOR));
         std::vector<double> cluster_size(len) ;
         size_t ii = 0;
         for (const auto &cl : mapping_descr) {
@@ -306,7 +306,7 @@ class PacBioMappingIndex {
                 prev[i] = size_t(-1);
             }
             for (size_t i = 0; i < len; ++i) {
-                if (colors[i] != UNDEF_COLOR) continue;
+                if (colors[i] != static_cast<int>(InvalidColors::UNDEF_COLOR)) continue;
                 max_size[i] = cluster_size[i];
                 for (size_t j = 0; j < i; j++) {
                     if (colors[j] != -1) continue;
@@ -338,8 +338,8 @@ class PacBioMappingIndex {
                 colors[maxi] = cur_color;
             }
             while (real_maxi >= min_i) {
-                if (colors[real_maxi] == UNDEF_COLOR) {
-                    colors[real_maxi] = DELETED_COLOR;
+                if (colors[real_maxi] == static_cast<int>(InvalidColors::UNDEF_COLOR)) {
+                    colors[real_maxi] = static_cast<int>(InvalidColors::DELETED_COLOR);
                 }
                 real_maxi--;
             }
