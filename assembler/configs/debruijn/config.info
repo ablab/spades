@@ -142,7 +142,6 @@ lcer
 
 pacbio_processor
 {
-    bwa_length_cutoff 0
     internal_length_cutoff 200
 ;align and traverse.
     compression_cutoff 0.6
