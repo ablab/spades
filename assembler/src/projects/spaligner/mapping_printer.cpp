@@ -71,7 +71,7 @@ void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &ali
 
 
 
-string MappingPrinterGPA::Print(map<string, string> &line) {
+string MappingPrinterGPA::Print(map<string, string> &line) const {
     vector<string> v = {"Ind", "Name", "ReadName", "StartR", "LenR", "DirR", "EdgeId", "StartE", "LenE", "DirE", "CIGAR", "Prev", "Next"};
     string outStr = "";
     for (const auto &it : v) {
@@ -81,7 +81,7 @@ string MappingPrinterGPA::Print(map<string, string> &line) {
 }
 
 
-string MappingPrinterGPA::FormCigar(const string &read, const string &aligned) {
+string MappingPrinterGPA::FormCigar(const string &read, const string &aligned) const {
     int d = max((int) read.size(), 20);
     edlib::EdlibAlignResult result = edlib::edlibAlign(aligned.c_str(), (int) aligned.size(), read.c_str(), (int) read.size()
                                      , edlib::edlibNewAlignConfig(d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_PATH,
@@ -94,8 +94,10 @@ string MappingPrinterGPA::FormCigar(const string &read, const string &aligned) {
     return cigar;
 }
 
-void MappingPrinterGPA::FormEdgeCigar(const string &subread, const string &path_seq, const vector<size_t> &edgeblocks,
-                                     vector<string> &edgecigar, vector<Range> &edgeranges) {
+void MappingPrinterGPA::FormEdgeCigar(const string &subread, const string &path_seq,
+                                      const vector<size_t> &edgeblocks,
+                                      vector<string> &edgecigar,
+                                      vector<Range> &edgeranges) const {
     edgecigar.clear();
     edgeranges.clear();
     string cigar = FormCigar(subread, path_seq);
@@ -151,7 +153,7 @@ void MappingPrinterGPA::FormEdgeCigar(const string &subread, const string &path_
 
 void MappingPrinterGPA::GeneratePath(const vector<debruijn_graph::EdgeId> &path,
                                 const PathRange &path_range,
-                                string &aligned, vector<size_t> &edgeblocks) {
+                                string &aligned, vector<size_t> &edgeblocks) const {
     aligned = "";
     edgeblocks.clear();
     for (size_t i = 0; i < path.size(); ++ i) {
@@ -171,7 +173,7 @@ void MappingPrinterGPA::GeneratePath(const vector<debruijn_graph::EdgeId> &path,
 }
 
 
-string MappingPrinterGPA::GenerateSubread(const Sequence &read, const PathRange &path_range) {
+string MappingPrinterGPA::GenerateSubread(const Sequence &read, const PathRange &path_range) const {
     return read.Subseq(path_range.path_start.seq_pos, path_range.path_end.seq_pos).str();
 }
 
@@ -179,7 +181,7 @@ string MappingPrinterGPA::FormGPAOutput(const io::SingleRead &read,
                                         const vector<debruijn_graph::EdgeId> &path,
                                         const vector<string> &edgecigar,
                                         const vector<Range> &edgeranges,
-                                        int &nameIndex, const PathRange &path_range) {
+                                        int &nameIndex, const PathRange &path_range) const {
     string res;
     string prev = "-";
     string next = "-";

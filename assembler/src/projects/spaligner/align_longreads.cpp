@@ -101,47 +101,73 @@ class LongReadsAligner {
     LongReadsAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
                      const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
                      const GAlignerConfig &cfg,
-                     const string output_file):
-        g_(g), galigner_(g_, cfg), mapping_printer_hub_(g_, edge_namer, output_file, cfg.output_format) {
+                     const string output_file,
+                     const int threads)
+        :g_(g),
+         cfg_(cfg),
+         galigner_(g_, cfg),
+         threads_(threads),
+         mapping_printer_hub_(g_, edge_namer, output_file, cfg.output_format) {
         aligned_reads_ = 0;
         processed_reads_ = 0;
     }
 
-    void AlignRead(const io::SingleRead &read) {
+    void RunAligner() {
+        io::ReadStreamList<io::SingleRead> streams;
+        streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(cfg_.path_to_sequences)));
+        io::SingleStreamPtr read_stream = io::MultifileWrap(streams);
+        size_t n = 0;
+        size_t buffer_no = 0;
+        while (!read_stream->eof()) {
+            vector<io::SingleRead> read_buffer;
+            read_buffer.reserve(read_buffer_size);
+            io::SingleRead read;
+            for (size_t buf_size = 0; buf_size < read_buffer_size && !read_stream->eof(); ++buf_size) {
+                *read_stream >> read;
+                read_buffer.push_back(move(read));
+            }
+            INFO("Prepared batch " << buffer_no << " of " << read_buffer.size() << " reads.");
+            AlignBatch(read_buffer);
+            ++buffer_no;
+            n += read_buffer.size();
+            INFO("Processed " << n << " reads");
+        }
+    }
+
+  private:
+
+    OneReadMapping AlignRead(const io::SingleRead &read) const {
         DEBUG("Read " << read.name() << ". Current Read")
         utils::perf_counter pc;
         auto current_read_mapping = galigner_.GetReadAlignment(read);
         const auto& aligned_mappings = current_read_mapping.main_storage;
-
         if (aligned_mappings.size() > 0) {
-            mapping_printer_hub_.SaveMapping(current_read_mapping, read);
             DEBUG("Read " << read.name() << " is aligned");
-            #pragma omp critical(align_read)
-            {
-                aligned_reads_ ++;
-            }
         }  else {
             DEBUG("Read " << read.name() << " wasn't aligned and length=" << read.sequence().size());
         }
-        #pragma omp critical(align_read)
-        {
-            processed_reads_ ++;
-        }
-        INFO("Read " << read.name() << " read_time=" << pc.time())
-        return;
+        DEBUG("Read " << read.name() << " read_time=" << pc.time())
+        return current_read_mapping;
     }
 
-    void RunAligner(const vector<io::SingleRead> &wrappedreads, int threads) {
+    void AlignBatch(const vector<io::SingleRead> &reads) {
         size_t step = 10;
         processed_reads_ = 0;
         aligned_reads_ = 0;
-        #pragma omp parallel for schedule(guided, 50) num_threads(threads)
-        for (size_t i = 0 ; i < wrappedreads.size(); ++i) {
-            AlignRead(wrappedreads[i]);
+        #pragma omp parallel for schedule(guided, 50) num_threads(threads_)
+        for (size_t i = 0 ; i < reads.size(); ++i) {
+            OneReadMapping res = AlignRead(reads[i]);
+            if (res.main_storage.size() > 0) {
+                mapping_printer_hub_.SaveMapping(res, reads[i]);
+            }
             #pragma omp critical(aligner)
             {
-                if (processed_reads_ * 100 / wrappedreads.size() >= step) {
-                    INFO("Processed \% reads: " << processed_reads_ * 100 / wrappedreads.size() <<
+                if (res.main_storage.size() > 0) {
+                    aligned_reads_ ++;
+                }
+                processed_reads_ ++;
+                if (processed_reads_ * 100 / reads.size() >= step) {
+                    INFO("Processed \% reads: " << processed_reads_ * 100 / reads.size() <<
                          "\%, Aligned reads: " << aligned_reads_ * 100 / processed_reads_ <<
                          "\% (" << aligned_reads_ << " out of " << processed_reads_ << ")")
                     step += 10;
@@ -150,13 +176,17 @@ class LongReadsAligner {
         }
     }
 
-  private:
+    const size_t read_buffer_size = 50000;
+
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
+    const GAlignerConfig &cfg_;
     const sensitive_aligner::GAligner galigner_;
+    const int threads_;
     MappingPrinterHub mapping_printer_hub_;
 
     int aligned_reads_;
     int processed_reads_;
+
 };
 
 void LoadGraph(const string &saves_path, debruijn_graph::ConjugateDeBruijnGraph &g, io::IdMapper<std::string> &id_mapper) {
@@ -182,29 +212,11 @@ void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
     io::CanonicalEdgeHelper<debruijn_graph::Graph> edge_namer(g, io::MapNamingF<debruijn_graph::Graph>(id_mapper));
     INFO("Loaded graph with " << g.size() << " vertices");
 
-    LongReadsAligner aligner(g, edge_namer, cfg, output_file);
+    LongReadsAligner aligner(g, edge_namer, cfg, output_file, threads);
     INFO("LongReadsAligner created");
 
-    io::ReadStreamList<io::SingleRead> streams;
-    streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(cfg.path_to_sequences)));
-    io::SingleStreamPtr read_stream = io::MultifileWrap(streams);
-    size_t n = 0;
-    size_t buffer_no = 0;
-    size_t read_buffer_size = 50000;
-    while (!read_stream->eof()) {
-        vector<io::SingleRead> read_buffer;
-        read_buffer.reserve(read_buffer_size);
-        io::SingleRead read;
-        for (size_t buf_size = 0; buf_size < read_buffer_size && !read_stream->eof(); ++buf_size) {
-            *read_stream >> read;
-            read_buffer.push_back(move(read));
-        }
-        INFO("Prepared batch " << buffer_no << " of " << read_buffer.size() << " reads.");
-        aligner.RunAligner(read_buffer, threads);
-        ++buffer_no;
-        n += read_buffer.size();
-        INFO("Processed " << n << " reads");
-    }
+    INFO("Process reads from " << cfg.path_to_sequences);
+    aligner.RunAligner();
     INFO("Finished")
     fs::remove_dir(tmpdir);
 }

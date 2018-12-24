@@ -65,25 +65,25 @@ class MappingPrinterGPA : public MappingPrinter {
     output_file_ << "H\n";
   }
 
-  std::string Print(std::map<std::string, std::string> &line);
+  std::string Print(std::map<std::string, std::string> &line) const;
 
 
-  std::string FormCigar(const std::string &read, const std::string &aligned);
+  std::string FormCigar(const std::string &read, const std::string &aligned) const;
 
   void FormEdgeCigar(const std::string &subread, const std::string &path_seq, const std::vector<size_t> &edgeblocks,
-                    std::vector<std::string> &edgecigar, std::vector<Range> &edgeranges);
+                    std::vector<std::string> &edgecigar, std::vector<Range> &edgeranges) const;
 
   void GeneratePath(const std::vector<debruijn_graph::EdgeId> &path,
                const PathRange &path_range,
-               std::string &aligned, std::vector<size_t> &edgeblocks);
+               std::string &aligned, std::vector<size_t> &edgeblocks) const;
 
-  std::string GenerateSubread(const Sequence &read, const PathRange &path_range);
+  std::string GenerateSubread(const Sequence &read, const PathRange &path_range) const;
 
   std::string FormGPAOutput(const io::SingleRead &read,
                             const std::vector<debruijn_graph::EdgeId> &path,
                             const std::vector<std::string> &edgecigar,
                             const std::vector<Range> &edgeranges,
-                            int &nameIndex, const PathRange &path_range);
+                            int &nameIndex, const PathRange &path_range) const;
 
   virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
 
