@@ -226,7 +226,7 @@ class DijkstraGraphSequenceBase {
 
   private:
     static const int SHORT_SEQ_LENGTH = 100;
-    static const int EDITDISTANCE_MAX_DEV = 20;
+    static const int ED_DEVIATION = 20;
 
     std::set<std::pair<int, QueueState>> q_;
     std::unordered_map<QueueState, int, StateHasher> visited_;
