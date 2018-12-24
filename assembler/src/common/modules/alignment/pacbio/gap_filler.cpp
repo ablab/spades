@@ -6,19 +6,11 @@
 
 #include "modules/alignment/pacbio/gap_filler.hpp"
 
+#include "assembly_graph/paths/path_utils.hpp"
+
 namespace sensitive_aligner {
 
 using namespace std;
-
-string GapFiller::PathToString(const vector<EdgeId>& path) const {
-    string res = "";
-    for (auto e: path) {
-        size_t len = g_.length(e);
-        string tmp = g_.EdgeNucls(e).First(len).str();
-        res = res + tmp;
-    }
-    return res;
-}
 
 GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
         const GraphPosition &start_pos,
@@ -116,7 +108,8 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
         if (paths[i].size() == 0) {
             DEBUG ("Pathprocessor returns path with size = 0")
         }
-        string cur_string = s_add + PathToString(paths[i]) + e_add;
+        Sequence merged_seq = MergeSequences(g_, paths[i]);
+        string cur_string = s_add + merged_seq.Subseq(0, merged_seq.size() - g_.k()).str() + e_add;
         TRACE("cur_string: " << cur_string << "\n seq_string " << seq_string);
         int cur_score = StringDistance(cur_string, seq_string);
         //DEBUG only
@@ -140,7 +133,9 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
     if (best_score == numeric_limits<int>::max()) {
         if (paths.size() < 10) {
             for (size_t i = 0; i < paths.size(); i++) {
-                DEBUG ("failed with strings " << seq_string << " " << s_add + PathToString(paths[i]) + e_add);
+                Sequence merged_seq = MergeSequences(g_, paths[i]);
+                DEBUG ("failed with strings " << seq_string <<
+                        " " << s_add + merged_seq.Subseq(0, merged_seq.size() - g_.k()).str() + e_add);
             }
         }
         DEBUG (paths.size() << " paths available");
