@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE( TrivialTest ) {
 
     sensitive_aligner::GAligner galigner(g, sensitive_aligner::GAlignerConfig(pb, mode, gap_cfg, ends_cfg));
     auto current_read_mapping = galigner.GetReadAlignment(r);
-    const auto& aligned_edges = current_read_mapping.main_storage;
+    const auto& aligned_edges = current_read_mapping.edge_paths;
     std::string pathStr = "";
     if (aligned_edges.size() > 0){
         for (const auto &path : aligned_edges){

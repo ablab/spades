@@ -140,7 +140,7 @@ class LongReadsAligner {
         DEBUG("Read " << read.name() << ". Current Read")
         utils::perf_counter pc;
         auto current_read_mapping = galigner_.GetReadAlignment(read);
-        const auto& aligned_mappings = current_read_mapping.main_storage;
+        const auto& aligned_mappings = current_read_mapping.edge_paths;
         if (aligned_mappings.size() > 0) {
             DEBUG("Read " << read.name() << " is aligned");
         }  else {
@@ -157,12 +157,12 @@ class LongReadsAligner {
         #pragma omp parallel for schedule(guided, 50) num_threads(threads_)
         for (size_t i = 0 ; i < reads.size(); ++i) {
             OneReadMapping res = AlignRead(reads[i]);
-            if (res.main_storage.size() > 0) {
+            if (res.edge_paths.size() > 0) {
                 mapping_printer_hub_.SaveMapping(res, reads[i]);
             }
             #pragma omp critical(aligner)
             {
-                if (res.main_storage.size() > 0) {
+                if (res.edge_paths.size() > 0) {
                     aligned_reads_ ++;
                 }
                 processed_reads_ ++;

@@ -20,15 +20,15 @@
 namespace sensitive_aligner {
 
 struct OneReadMapping {
-  std::vector<std::vector<debruijn_graph::EdgeId>> main_storage;
+  std::vector<std::vector<debruijn_graph::EdgeId>> edge_paths;
   std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> bwa_paths;
   std::vector<GapDescription> gaps;
   std::vector<PathRange> read_ranges;
-  OneReadMapping(const std::vector<std::vector<debruijn_graph::EdgeId>> &main_storage_,
+  OneReadMapping(const std::vector<std::vector<debruijn_graph::EdgeId>> &edge_paths_,
                  const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> &bwa_paths_,
                  const std::vector<GapDescription>& gaps_,
                  const std::vector<PathRange> &read_ranges_) :
-    main_storage(main_storage_), bwa_paths(bwa_paths_), gaps(gaps_), read_ranges(read_ranges_) {}
+    edge_paths(edge_paths_), bwa_paths(bwa_paths_), gaps(gaps_), read_ranges(read_ranges_) {}
 };
 
 typedef std::pair<QualityRange, int> ColoredRange;

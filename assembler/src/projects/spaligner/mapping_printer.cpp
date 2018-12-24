@@ -25,8 +25,8 @@ void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &ali
     string seq_ends = "";
     string edge_starts = "";
     string edge_ends = "";
-    for (size_t j = 0; j < aligned_mappings.main_storage.size(); ++ j) {
-        auto &mappingpath = aligned_mappings.main_storage[j];
+    for (size_t j = 0; j < aligned_mappings.edge_paths.size(); ++ j) {
+        auto &mappingpath = aligned_mappings.edge_paths[j];
         for (size_t i = 0; i < mappingpath.size(); ++ i) {
             size_t mapping_start = i == 0 ? aligned_mappings.read_ranges[j].path_start.edge_pos : 0;
             size_t mapping_end = i == mappingpath.size() - 1 ?  aligned_mappings.read_ranges[j].path_end.edge_pos : g_.length(mappingpath[i]);
@@ -215,8 +215,8 @@ string MappingPrinterGPA::FormGPAOutput(const io::SingleRead &read,
 
 void MappingPrinterGPA::SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
     int nameIndex = 0;
-    for (size_t i = 0; i < aligned_mappings.main_storage.size(); ++ i) {
-        auto &path = aligned_mappings.main_storage[i];
+    for (size_t i = 0; i < aligned_mappings.edge_paths.size(); ++ i) {
+        auto &path = aligned_mappings.edge_paths[i];
         auto &path_range = aligned_mappings.read_ranges[i];
 
         string path_seq;

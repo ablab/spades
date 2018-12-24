@@ -211,7 +211,7 @@ class PacbioAligner {
                 gaps_by_thread[thread_num].AddGap(gap);
             }
 
-            const auto& aligned_edges = current_read_mapping.main_storage;
+            const auto& aligned_edges = current_read_mapping.edge_paths;
             for (const auto& path : aligned_edges)
                 long_reads_by_thread[thread_num].AddPath(path, 1, true);
 
