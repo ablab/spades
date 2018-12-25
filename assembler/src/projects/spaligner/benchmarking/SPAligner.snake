@@ -17,6 +17,8 @@ rule all:
 
 
 rule run_aligner:
+    params:
+        tp = lambda wildcards: "pacbio" if wildcards.reads.endswith("pb2000") else "nanopore"
     output:
         tsv = "{org}/SPAligner/output/aln_{reads}.tsv"
     log:
@@ -25,7 +27,6 @@ rule run_aligner:
         repeat("{org}/SPAligner/benchmark/align_{reads}.tsv", 1)
     threads: 16
     run:
-        if wildcards.reads.endswith("pb2000"):
-            shell("{GAPATH} {SCRIPT_PATH}/{GACFG} --spades -g {wildcards.org}/{GRAPH} -s {wildcards.org}/input/{wildcards.reads}.fasta -K {K} -d pacbio -o {wildcards.org}/SPAligner/output/aln_{wildcards.reads} > {log}")
-        else:
-            shell("{GAPATH} {SCRIPT_PATH}/{GACFG} --spades -g {wildcards.org}/{GRAPH} -s {wildcards.org}/input/{wildcards.reads}.fasta -K {K} -d nanopore -o {wildcards.org}/SPAligner/output/aln_{wildcards.reads} > {log}")
+        shell("{GAPATH} {SCRIPT_PATH}/{GACFG} -g {wildcards.org}/{GRAPH} \
+                -s {wildcards.org}/input/{wildcards.reads}.fasta -K {K} \
+                -d {params.tp} -o {wildcards.org}/SPAligner/output/aln_{wildcards.reads} > {log}")

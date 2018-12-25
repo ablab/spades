@@ -22,7 +22,7 @@ vg_k: 15
 
 # SPAligner cfg
 
-spalignerpath: /home/tdvorkina/projects/zenodo/run_aligners/SPAligner/bin/spaligner
+spalignerpath: /home/tdvorkina/tmp/algorithmic-biology/assembler/build/release/bin/longreads_aligner
 spalignercfg: ./spaligner_config_template.yaml
 kmer: 77
 graph: "input/graph.gfa" #"input/graph/simplification"  #  
