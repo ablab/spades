@@ -125,13 +125,15 @@ struct QueueState {
 };
 
 struct StateHasher {
-    std::size_t operator()(const QueueState& k) const {
-        using std::hash;
+    inline size_t hash_size_t_pair(size_t s0, size_t s1) const {
+         s1 ^= s1 << 23;  // a
+         return (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26)) + s0;
+    }
 
-        return ((hash<int>()((int) k.gs.e.int_id())
-                 ^ (hash<int>()(k.gs.start_pos) << 1)) >> 1)
-               ^ (hash<int>()(k.gs.end_pos) << 1)
-               ^ (hash<int>()(k.i) << 17);
+    std::size_t operator()(const QueueState& k) const {
+        return hash_size_t_pair(k.gs.e.int_id(), 
+                                hash_size_t_pair(k.gs.start_pos, 
+                                                 hash_size_t_pair(k.gs.end_pos, k.i)));
     }
 };
 
