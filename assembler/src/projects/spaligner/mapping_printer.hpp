@@ -48,7 +48,7 @@ class MappingPrinterTSV: public MappingPrinter {
     output_file_.open(output_file_prefix_ + ".tsv", std::ofstream::out);
   }
 
-  virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
+  void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) override;
 
   ~MappingPrinterTSV() {
     output_file_.close();
@@ -85,7 +85,7 @@ class MappingPrinterGPA : public MappingPrinter {
                             const std::vector<Range> &edgeranges,
                             int &nameIndex, const PathRange &path_range) const;
 
-  virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read);
+  void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) override;
 
   ~MappingPrinterGPA() {
     output_file_.close();
@@ -107,7 +107,7 @@ class MappingPrinterHub {
     }
   }
 
-  void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
+  void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read)  {
     for (auto printer : mapping_printers_) {
       printer->SaveMapping(aligned_mappings, read);
     }
