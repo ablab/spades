@@ -108,8 +108,11 @@ public:
     nrps::DomainGraph& ConstructGraph(const nrps::ContigAlnInfo &info) {
         gp_.EnsureIndex();
         INFO("A-domain graph construction started");
+        INFO("Constructing nodes...");
         ConstructNodes(info);
+        INFO("Constructing strong edges...");
         ConstructStrongEdges();
+        INFO("Constructing weak edges...");
         ConstructWeakEdges();
         INFO("A-domain graph construction ended");
         return graph;
@@ -164,7 +167,13 @@ private:
             forbidden_edges.insert(mapping.second.simple_path());
 
         SetOfForbiddenEdgesPathChooser<Graph> chooser(gp_.g, forbidden_edges);
+        size_t current_index = 0;
         for (auto v1 : graph.getNodeSet()) {
+            current_index++;
+            if (current_index % 100 == 0) {
+                INFO(current_index << " of " << graph.getNodeSet().size() << " processed.");
+            }
+
             if (!graph.HasStrongEdge(v1) && (v1->near_to_the_end_of_contig_)) {
 
                 auto reached_vertices = VerticesReachedFrom(gp_.g.EdgeEnd(v1->domain_edges_in_row_.back()));
