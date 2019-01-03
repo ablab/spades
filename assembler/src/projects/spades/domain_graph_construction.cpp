@@ -149,6 +149,15 @@ private:
         chooser.reset();
     }
 
+
+    vector<VertexId> VerticesReachedFrom(VertexId start_vertex) {
+        auto bounded_dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(gp_.g,
+                                                                             4000, 10000);
+        bounded_dijkstra.Run(start_vertex);
+        TRACE("Reached vertices size - " << bounded_dijkstra.ReachedVertices());
+        return bounded_dijkstra.ReachedVertices();
+    }
+
     void ConstructWeakEdges() {
         std::set<std::vector<EdgeId>> forbidden_edges;
         for (const auto &mapping : mappings)
@@ -157,11 +166,17 @@ private:
         SetOfForbiddenEdgesPathChooser<Graph> chooser(gp_.g, forbidden_edges);
         for (auto v1 : graph.getNodeSet()) {
             if (!graph.HasStrongEdge(v1) && (v1->near_to_the_end_of_contig_)) {
+
+                auto reached_vertices = VerticesReachedFrom(gp_.g.EdgeEnd(v1->domain_edges_in_row_.back()));
+                std::set<VertexId> reached_vertices_set(reached_vertices.begin(), reached_vertices.end());
+
                 for (auto v2 : graph.getNodeSet()) {
-                    if (v1 != v2 && v1->rc_ != v2 && !graph.HasStrongIncomingEdge(v2) && v2->near_to_the_start_of_contig_) {
+                    if (reached_vertices_set.count(gp_.g.EdgeStart(v2->domain_edges_in_row_[0])) && v1 != v2 && v1->rc_ != v2 && !graph.HasStrongIncomingEdge(v2) && v2->near_to_the_start_of_contig_) {
                         ConnectWithWeakEdge(v1, v2, chooser);
                     }
                 }
+
+
             }
         }
     }
