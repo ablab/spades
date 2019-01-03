@@ -25,7 +25,7 @@ namespace nrps {
 
 static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::BidirectionalPath* path,
                                    const std::string &path_string,
-                                   const std::string &type, ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
+                                   const std::string &type, ContigAlnInfo &res, io::OFastaReadStream &oss_contig, size_t model_length) {
     for (size_t shift = 0; shift < 3; ++shift) {
         std::string ref_shift = std::to_string(path->GetId()) + "_" + std::to_string(shift);
         std::string seq_aas = aa::translate(path_string.c_str() + shift);
@@ -42,9 +42,14 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::Bidi
             std::pair<int, int> seqpos2 = domain.hmmpos();
             DEBUG("First - " << seqpos2.first << ", second - " << seqpos2.second);
             DEBUG("First - " << seqpos.first << ", second - " << seqpos.second);
+            if (seqpos2.second - seqpos2.first < model_length / 3) {
+                DEBUG("Fragmented hit");
+                continue;
+            }
             int shift = hit.name()[strlen(hit.name()) - 1] - '0';
             seqpos.first = seqpos.first * 3  + shift;
             seqpos.second = seqpos.second * 3  + shift;
+
             std::string name(hit.name());
             oss_contig << io::SingleRead(name, path_string);
             DEBUG(name);
@@ -65,13 +70,13 @@ static void match_contigs(const path_extend::PathContainer &contig_paths, const 
         if (path->Length() <= 0)
             continue;
         std::string path_string = scaffold_maker.MakeSequence(*path);
-        match_contigs_internal(matcher, path, path_string, type, res, oss_contig);
+        match_contigs_internal(matcher, path, path_string, type, res, oss_contig, hmm.length());
 
         path_extend::BidirectionalPath* conj_path = path->GetConjPath();
         if (conj_path->Length() <= 0)
             continue;
         std::string path_string_conj = scaffold_maker.MakeSequence(*conj_path);
-        match_contigs_internal(matcher, conj_path, path_string_conj, type, res, oss_contig);
+        match_contigs_internal(matcher, conj_path, path_string_conj, type, res, oss_contig, hmm.length());
     }
 }
 
