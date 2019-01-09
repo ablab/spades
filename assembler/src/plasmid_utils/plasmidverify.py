@@ -23,8 +23,8 @@ def parse_args(args):
     parser.add_argument('-f', required = True, help='Input fasta file')
     parser.add_argument('-o', required = True, help='Output directory')
     parser.add_argument('-b', help='Run BLAST on input contigs', action='store_true')
-    parser.add_argument('-db', help='Path to BLAST db')
-    parser.add_argument('-hmm', help='Path to Pfam-A HMM database')    
+    parser.add_argument('--db', help='Path to BLAST db')
+    parser.add_argument('--hmm', help='Path to Pfam-A HMM database')    
     return parser.parse_args()
 
 
@@ -65,9 +65,16 @@ else:
 
 # run hmm
 print ("Gene prediction...")
-os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+res = os.system ("prodigal -p meta -i " + args.f + " -a "+name+"_proteins.fa -o "+name+"_genes.fa 2>"+name+"_prodigal.log" )
+if res != 0:
+    print ("Prodigal run failed")
+    exit(1)    
 print ("HMM domains prediction...")
-os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --domtblout "+name+"_domtblout --cpu 20 "+ hmm + " "+name+"_proteins.fa")
+res = os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --domtblout "+name+"_domtblout --cpu 20 "+ hmm + " "+name+"_proteins.fa")
+if res != 0:
+    print ("hmmsearch run failed")
+    exit(2)    
+
 print ("Parsing...")
 
 tblout_pfam= name + "_domtblout" 
