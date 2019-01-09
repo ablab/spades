@@ -31,12 +31,12 @@ You can verify your output by BLAST to check if you found novel plasmid. In this
     ./plasmidverify.py 
             -f Input fasta file
             -o output_directory 
+            --hmm HMM    Path to Pfam-A HMM database
 
             Optional arguments:
             -h, --help  Show the help message and exit
             -b          Run BLAST on input contigs
-            -db DB      Path to BLAST db
-            -hmm HMM    Path to Pfam-A HMM database
+            --db DB      Path to BLAST db
 
 
 Output file input_file_result_table.csv contains comma-separated table with predicted HMMs and verification result.
