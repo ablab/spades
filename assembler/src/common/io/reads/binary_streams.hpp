@@ -31,7 +31,7 @@ private:
     void Init() {
         stream_.clear();
         stream_.seekg(offset_);
-        VERIFY(stream_.good());
+        VERIFY_MSG(stream_.good(), "Stream is not good(), offset_ " << offset_ << " count_ " << count_);
         current_ = 0;
     }
 
@@ -39,36 +39,56 @@ public:
     /**
      * @brief Constructs a reader of a portion of reads.
      * @param file_name_prefix
-     * @param total_num Total number of (roughly equal) portions.
-     * @param portion_num Index of the portion (0..total_num - 1).
+     * @param portion_count Total number of (roughly equal) portions.
+     * @param portion_num Index of the portion (0..portion_count - 1).
      */
-    BinaryFileStream(const std::string &file_name_prefix, size_t total_num, size_t portion_num)
-            : offset_(sizeof(ReadStreamStat)) {
-        DEBUG("Preparing binary stream #" << portion_num << "/" << total_num);
-        VERIFY(portion_num < total_num);
-        std::string fname = file_name_prefix + ".seq";
+    BinaryFileStream(const std::string &file_name_prefix, size_t portion_count, size_t portion_num) {
+        DEBUG("Preparing binary stream #" << portion_num << "/" << portion_count);
+        VERIFY(portion_num < portion_count);
+        const std::string fname = file_name_prefix + ".seq";
         stream_.open(fname, std::ios_base::binary | std::ios_base::in);
         ReadStreamStat stat;
         stat.read(stream_);
 
-        //Determining the number of N-read chunks and actual number of reads
-        std::string offset_name = file_name_prefix + ".off";
+        const std::string offset_name = file_name_prefix + ".off";
         const size_t chunk_count = fs::filesize(offset_name) / sizeof(size_t);
-        const size_t chunk_num = chunk_count * portion_num / total_num;
 
-        if (chunk_count) {
-            //Calculating the absolute offset in the reads file
+        // We split all read chunks into portion_count portions
+        // Portion could have size (chunk_count / portion_count) or (chunk_count / portion_count + 1)
+        const size_t small_portion_size = chunk_count / portion_count;
+        const size_t big_portion_size = small_portion_size + 1;
+        const size_t big_portion_count = chunk_count % portion_count;
+        VERIFY(big_portion_count * big_portion_size + (portion_count - big_portion_count) * small_portion_size == chunk_count);
+        // We suppose that all small portions are placed at the end
+        // Note that small portion could have size 0
+
+        // Compute the number of big portions preceding the current portion
+        const size_t big_portion_before = std::min(portion_num, big_portion_count);
+
+        // At last, compute the number of the first chunk in the current portion
+        const size_t chunk_num = big_portion_before * (big_portion_size - small_portion_size) + portion_num * small_portion_size;
+        VERIFY_MSG(chunk_num <= chunk_count, "chunk_num " << chunk_num << " chunk_count " << chunk_count << " big_portion_before " << big_portion_before << " big_portion_size " << big_portion_size << " small_portion_size " << small_portion_size << " portion_num " << portion_num);
+
+        if (chunk_num < chunk_count) {  // if we start from existing chunk
+            // Calculating the absolute offset in the reads file
             std::ifstream offset_stream(offset_name, std::ios_base::binary | std::ios_base::in);
             offset_stream.seekg(chunk_num * sizeof(size_t));
             offset_stream.read(reinterpret_cast<char *>(&offset_), sizeof(offset_));
+            DEBUG("Offset read: " << offset_ << " chunk_count " << chunk_count << " chunk_num " << chunk_num << " portion_count " << portion_count << " portion_num " << portion_num << " prefix " << file_name_prefix << " name " << offset_name);
+            VERIFY(offset_stream);
+            const bool is_big_portion = portion_num < big_portion_count;
+            const size_t start_num = chunk_num * BinaryWriter::CHUNK;
+            // Last chunk could be incomplete => we should truncate count_ for last portions
+            count_ = std::min(stat.read_count - start_num,
+                              (is_big_portion ? big_portion_size : small_portion_size) * BinaryWriter::CHUNK);
+
+            DEBUG("Reads " << start_num << "-" << start_num + count_ << "/" << stat.read_count << " from " << offset_);
+        } else {  // current portion has size 0 (the case of chunk_count == 0 is also included here)
+            // Setup safe offset value
+            offset_ = sizeof(ReadStreamStat);
+            count_ = 0;
+            DEBUG("Empty BinaryFileStream constructed");
         }
-
-        //Calculating the size of our portion (be careful at the file end)
-        const size_t start_num = chunk_num * BinaryWriter::CHUNK;
-        const size_t start_next = chunk_count * (portion_num + 1) / total_num * BinaryWriter::CHUNK;
-        count_ = std::min(stat.read_count, start_next) - start_num;
-
-        DEBUG("Reads " << start_num << "-" << start_num + count_ << "/" << stat.read_count << " from " << offset_);
 
         Init();
     }
@@ -113,8 +133,8 @@ protected:
     }
 
 public:
-    BinaryFileSingleStream(const std::string &file_name_prefix, size_t total_num, size_t portion_num)
-            : BinaryFileStream(file_name_prefix, total_num, portion_num) {
+    BinaryFileSingleStream(const std::string &file_name_prefix, size_t portion_count, size_t portion_num)
+            : BinaryFileStream(file_name_prefix, portion_count, portion_num) {
     }
 };
 
@@ -128,8 +148,8 @@ protected:
 
 public:
     BinaryFilePairedStream(const std::string &file_name_prefix, size_t insert_size,
-                           size_t total_num, size_t portion_num)
-            : BinaryFileStream(file_name_prefix, total_num, portion_num), insert_size_ (insert_size) {
+                           size_t portion_count, size_t portion_num)
+            : BinaryFileStream(file_name_prefix, portion_count, portion_num), insert_size_ (insert_size) {
     }
 };
 
@@ -156,8 +176,8 @@ class BinaryUnmergingPairedStream: public ReadStream<PairedReadSeq> {
 
 public:
     BinaryUnmergingPairedStream(const std::string& file_name_prefix, size_t insert_size, size_t read_length,
-                                size_t total_num, size_t portion_num) :
-            stream_(file_name_prefix, total_num, portion_num),
+                                size_t portion_count, size_t portion_num) :
+            stream_(file_name_prefix, portion_count, portion_num),
             insert_size_(insert_size),
             read_length_(read_length) {
     }
