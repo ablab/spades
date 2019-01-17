@@ -39,8 +39,9 @@ public:
 
     void Read(BinIStream &str, Type &edge_pos, const Mapper &mapper) override {
         edge_pos.clear();
-        size_t e;
-        while (str >> e) { //Read until the end
+        while (str.has_data()) {
+            size_t e;
+            str >> e;
             auto eid = mapper[e];
             auto info_count = str.Read<size_t>();
             while (info_count--) {
