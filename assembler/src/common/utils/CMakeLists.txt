@@ -21,6 +21,7 @@ endif()
 
 add_library(utils STATIC
             ${utils_src})
+target_link_libraries(utils ${COMMON_LIBRARIES})
 
 add_library(version STATIC
             version.cpp)
