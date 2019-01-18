@@ -1,6 +1,5 @@
 //***************************************************************************
-//* Copyright (c) 2015 Saint Petersburg State University
-//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* Copyright (c) 2019 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
@@ -9,8 +8,9 @@
 
 #include "io/binary/binary.hpp"
 #include "utils/stl_utils.hpp"
-#include <boost/test/unit_test.hpp>
 #include <sstream>
+#include <gtest/gtest.h>
+
 
 template<typename T>
 void SimpleCheck(const T &value = T()) {
@@ -19,10 +19,10 @@ void SimpleCheck(const T &value = T()) {
     BinWrite(str, value);
     T result;
     BinRead(str, result);
-    BOOST_CHECK_EQUAL(value, result);
+    ASSERT_EQ(value, result);
 }
 
-BOOST_AUTO_TEST_CASE(TestBinarySimple) {
+TEST(Binary, Simple) {
     //Integrals
     SimpleCheck((char)rand());
     SimpleCheck((unsigned)rand());
@@ -53,7 +53,7 @@ std::ostream &operator<<(std::ostream& str, const Boo &b) {
     return str;
 }
 
-BOOST_AUTO_TEST_CASE(TestBinaryContainers) {
+TEST(Binary, Containers) {
     //POD
     SimpleCheck<Boo>({rand(), (float)rand() / 10.0f});
 
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(TestBinaryContainers) {
     SimpleCheck(s);
 }
 
-BOOST_AUTO_TEST_CASE(TestBinaryVariadic) {
+TEST(Binary, Variadic) {
     using namespace io::binary;
 
     char c1 = (char)rand(), c2;
@@ -78,8 +78,8 @@ BOOST_AUTO_TEST_CASE(TestBinaryVariadic) {
     BinWrite(str, c1, u1, f1, l1);
     BinRead(str, c2, u2, f2, l2);
 
-    BOOST_CHECK_EQUAL(c1, c2);
-    BOOST_CHECK_EQUAL(u1, u2);
-    BOOST_CHECK_EQUAL(f1, f2);
-    BOOST_CHECK_EQUAL(l1, l2);
+    ASSERT_EQ(c1, c2);
+    ASSERT_EQ(u1, u2);
+    ASSERT_EQ(f1, f2);
+    ASSERT_EQ(l1, l2);
 }

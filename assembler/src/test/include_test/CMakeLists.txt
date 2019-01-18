@@ -1,6 +1,5 @@
 ############################################################################
-# Copyright (c) 2015 Saint Petersburg State University
-# Copyright (c) 2011-2014 Saint Petersburg Academic University
+# Copyright (c) 2019 Saint Petersburg State University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
@@ -8,9 +7,9 @@
 project(include_test CXX)
 
 add_executable(include_test
- ${EXT_DIR}/include/teamcity_boost/teamcity_boost.cpp
- ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
- test.cpp)
+               seq_test.cpp sequence_test.cpp rtseq_test.cpp quality_test.cpp nucl_test.cpp
+               cyclic_hash_test.cpp binary_test.cpp
+               test.cpp)
 
-target_link_libraries(include_test common_modules ${COMMON_LIBRARIES} input)
+target_link_libraries(include_test common_modules input ${COMMON_LIBRARIES} teamcity_gtest gtest)
 

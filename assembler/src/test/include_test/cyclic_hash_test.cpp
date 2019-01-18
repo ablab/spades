@@ -1,11 +1,15 @@
-#pragma once
-#include <boost/test/unit_test.hpp>
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "sequence/rtseq.hpp"
 #include "sequence/sequence.hpp"
 #include "adt/cyclichash.hpp"
-#include "utils/verify.hpp"
+#include <gtest/gtest.h>
 
-BOOST_AUTO_TEST_CASE( TestBasic ) {
+TEST( CyclicHash, TestBasic ) {
     unsigned k = 4;
     typedef uint64_t digest;
     rolling_hash::SymmetricCyclicHash<rolling_hash::DNASeqHash> hasher(k);
@@ -14,17 +18,17 @@ BOOST_AUTO_TEST_CASE( TestBasic ) {
     auto h3 = hasher.hash(std::string("CGGT"));
     auto h4 = hasher.hash(std::string("GGTA"));
 
-    BOOST_CHECK_EQUAL((digest) h1, (digest) h1);
-    BOOST_CHECK_EQUAL((digest) h1, h1.value());
-    BOOST_CHECK_EQUAL((digest) h1, (digest) h2);
-    BOOST_CHECK_EQUAL((digest) h1, (digest) h3);
+    ASSERT_EQ((digest) h1, (digest) h1);
+    ASSERT_EQ((digest) h1, h1.value());
+    ASSERT_EQ((digest) h1, (digest) h2);
+    ASSERT_EQ((digest) h1, (digest) h3);
 
-    BOOST_CHECK((digest) h3 != (digest) h4);
+    ASSERT_NE((digest) h3, (digest) h4);
 
-    BOOST_CHECK_EQUAL((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
+    ASSERT_EQ((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
 }
 
-BOOST_AUTO_TEST_CASE( TestBasicRtSeq ) {
+TEST( CyclicHash, TestBasicRtSeq ) {
     unsigned k = 4;
     typedef uint64_t digest;
     rolling_hash::SymmetricCyclicHash<rolling_hash::DNASeqHash> hasher(k);
@@ -33,18 +37,18 @@ BOOST_AUTO_TEST_CASE( TestBasicRtSeq ) {
     auto h3 = hasher.hash(RtSeq(4, "CGGT"));
     auto h4 = hasher.hash(RtSeq(4, "GGTA"));
 
-    BOOST_CHECK_EQUAL((digest) h1, (digest) h1);
-    BOOST_CHECK_EQUAL((digest) h1, h1.value());
-    BOOST_CHECK_EQUAL((digest) h1, (digest) h2);
-    BOOST_CHECK_EQUAL((digest) h1, (digest) h3);
-    BOOST_CHECK((digest) h3 != (digest) h4);
+    ASSERT_EQ((digest) h1, (digest) h1);
+    ASSERT_EQ((digest) h1, h1.value());
+    ASSERT_EQ((digest) h1, (digest) h2);
+    ASSERT_EQ((digest) h1, (digest) h3);
+    ASSERT_NE((digest) h3, (digest) h4);
 
-    //BOOST_CHECK_EQUAL((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
-    BOOST_CHECK_EQUAL((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
+    //ASSERT_EQ((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
+    ASSERT_EQ((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
 
 }
 
-BOOST_AUTO_TEST_CASE( TestRC ) {
+TEST( CyclicHash, TestRC ) {
     unsigned k = 4;
     typedef uint64_t digest;
     rolling_hash::SymmetricCyclicHash<rolling_hash::DNASeqHash> hasher(k);
@@ -53,12 +57,11 @@ BOOST_AUTO_TEST_CASE( TestRC ) {
     Sequence s2 = !s;
     size_t kmer_cnt = s.size() - k + 1;
     for (size_t i = 0; i < kmer_cnt; ++i) {
-        VERIFY((digest) hasher(RtSeq(k, s, i)) == (digest) hasher(RtSeq(k, s2, kmer_cnt - i - 1)));
-        BOOST_CHECK_EQUAL((digest) hasher(RtSeq(k, s, i)), (digest) hasher(RtSeq(k, s2, kmer_cnt - i - 1)));
+        ASSERT_EQ((digest) hasher(RtSeq(k, s, i)), (digest) hasher(RtSeq(k, s2, kmer_cnt - i - 1)));
     }
 }
 
-BOOST_AUTO_TEST_CASE( TestRoll ) {
+TEST( CyclicHash, TestRoll ) {
     unsigned k = 4;
     typedef uint64_t digest;
     rolling_hash::SymmetricCyclicHash<rolling_hash::NDNASeqHash> hasher(k);
@@ -68,7 +71,6 @@ BOOST_AUTO_TEST_CASE( TestRoll ) {
     auto hash = hasher(s);
     for (size_t i = 1; i < kmer_cnt; ++i) {
         hash = hasher.hash_update(hash, s[i - 1], s[i - 1 + k]);
-        VERIFY((digest) hasher(RtSeq(k, s, i)) == (digest) hash);
-        BOOST_CHECK_EQUAL((digest) hasher(RtSeq(k, s, i)), (digest) hash);
+        ASSERT_EQ((digest) hasher(RtSeq(k, s, i)), (digest) hash);
     }
 }
