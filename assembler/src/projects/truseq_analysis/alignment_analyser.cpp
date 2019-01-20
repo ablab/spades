@@ -20,7 +20,7 @@ namespace alignment_analysis {
 
     string AlignmentAnalyser::str(const EdgeRange &er) const {
         stringstream result;
-        result << "[" << er.first.int_id() << " len: " << er.first->length(55) << " from: " <<
+        result << "[" << er.first.int_id() << " len: " << graph_.length(er.first) << " from: " <<
         graph_.EdgeStart(er.first) << " to: " << graph_.EdgeEnd(er.first) << ", " << er.second << "]";
         return result.str();
     }

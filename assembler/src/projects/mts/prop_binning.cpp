@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
         using namespace io::binary;
         BasePackIO<Graph> io;
         io.Load(saves_path, gp);
-        Load(saves_path, gp.clustered_indices, io.GetEdgeMapper());
+        Load(saves_path, gp.clustered_indices);
     }
 
     //Propagation stage

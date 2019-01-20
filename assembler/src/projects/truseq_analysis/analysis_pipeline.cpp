@@ -119,9 +119,8 @@ bool spades::VariationDetectionStage::CheckEndVertex(debruijn_graph::DeBruijnGra
         return false;
     }
     VertexId v = graph.EdgeEnd(e);
-    GraphCore<debruijn_graph::DeBruijnDataMaster>::IteratorContainer outgoingEdges = graph.OutgoingEdges(v);
-    for(auto it = outgoingEdges.begin(); it != outgoingEdges.end(); ++it) {
-        if(!CheckEndVertex(graph, *it, dist - graph.length(e)))
+    for (const auto &e : graph.OutgoingEdges(v)) {
+        if(!CheckEndVertex(graph, e, dist - graph.length(e)))
             return false;
     }
     return true;
