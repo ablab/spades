@@ -3,6 +3,7 @@
 #include "assembly_graph/core/directions.hpp"
 
 #include <set>
+#include <vector>
 
 namespace omnigraph {
 template<class Graph>

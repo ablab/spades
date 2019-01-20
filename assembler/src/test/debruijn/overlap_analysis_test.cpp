@@ -1,129 +1,121 @@
-#pragma once
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
-#include <boost/test/unit_test.hpp>
 #include "modules/path_extend/overlap_analysis.hpp"
 #include "modules/path_extend/path_extender.hpp"
-//#include "repeat_resolving_routine.hpp"
+#include "sequence/sequence.hpp"
 
-namespace debruijn_graph {
+#include <gtest/gtest.h>
 
-BOOST_AUTO_TEST_SUITE(overlap_analysis_tests)
+using namespace debruijn_graph;
 
-BOOST_AUTO_TEST_CASE( TrivialTest ) {
+TEST( OverlapAnalysis, Trivial ) {
     SWOverlapAnalyzer analyzer(-1ul);
 
     Sequence s1("ACGTACGT");
     Sequence s2("ACGTACGT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_NE(overlap.match_cnt, 0);
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 8);
+    ASSERT_NE(overlap.match_cnt, 0) << overlap;
+    ASSERT_EQ(overlap.match_cnt, 8) << overlap;
 }
 
-BOOST_AUTO_TEST_CASE( MismatchTest ) {
+TEST( OverlapAnalysis, Mismatch ) {
     SWOverlapAnalyzer analyzer(-1ul);
 
     Sequence s1("GTACTTACG");
     Sequence s2("GTACGTACG");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 8);
+    ASSERT_EQ(overlap.match_cnt, 8) << overlap;
 }
 
-BOOST_AUTO_TEST_CASE( MismatchTest2 ) {
+TEST( OverlapAnalysis, Mismatch2 ) {
     SWOverlapAnalyzer analyzer(-1ul);
     //two nucleotide match is not enough to compensate mismatch
     Sequence s1("GTACTTA");
     Sequence s2("GTACGTA");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 4);
+    ASSERT_EQ(overlap.match_cnt, 4) << overlap;
 }
 
-BOOST_AUTO_TEST_CASE( DelTest ) {
+TEST( OverlapAnalysis, Deletion ) {
     SWOverlapAnalyzer analyzer(-1ul);
 
     Sequence s1("ACGTACTACGT");
     Sequence s2("ACGTACGTACGT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 11);
+    ASSERT_EQ(overlap.match_cnt, 11) << overlap;
 }
 
-BOOST_AUTO_TEST_CASE( InsTest ) {
+TEST( OverlapAnalysis, Insertion ) {
     SWOverlapAnalyzer analyzer(-1ul);
 
     Sequence s1("ACGTACGTACGT");
     Sequence s2("ACGTACTACGT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 11);
+    ASSERT_EQ(overlap.match_cnt, 11) << overlap;
 }
 
-BOOST_AUTO_TEST_CASE( QueryLongerTest ) {
+TEST( OverlapAnalysis, QueryLonger ) {
     SWOverlapAnalyzer analyzer(-1ul);
 
     Sequence s1("AACGTACGTT");
     Sequence s2("ACGTACGT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_NE(overlap.match_cnt, 0);
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 8);
+    ASSERT_NE(overlap.match_cnt, 0) << overlap;
+    ASSERT_EQ(overlap.match_cnt, 8) << overlap;
 }
 
-BOOST_AUTO_TEST_CASE( RefLongerTest ) {
+TEST( OverlapAnalysis, RefLonger ) {
     SWOverlapAnalyzer analyzer(-1ul);
 
     Sequence s1("ACGTACGT");
     Sequence s2("AACGTACGTT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_NE(overlap.match_cnt, 0);
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 8);
+    ASSERT_NE(overlap.match_cnt, 0) << overlap;
+    ASSERT_EQ(overlap.match_cnt, 8) << overlap;
 }
 
-BOOST_AUTO_TEST_CASE( TrivialBoundedFlankTest ) {
+TEST( OverlapAnalysis, TrivialBoundedFlank ) {
     SWOverlapAnalyzer analyzer(4);
 
     Sequence s1("CCCCACGT");
     Sequence s2("ACGTAAAA");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_NE(overlap.match_cnt, 0);
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 4);
+    ASSERT_NE(overlap.match_cnt, 0) << overlap;
+    ASSERT_EQ(overlap.match_cnt, 4) << overlap;
 }
 
-BOOST_AUTO_TEST_CASE( PartialPerfectAlignmentTest ) {
+TEST( OverlapAnalysis, PartialPerfectAlignment ) {
     SWOverlapAnalyzer analyzer(6);
 
     Sequence s1("ACGTACGT");
     Sequence s2("ACGTACGT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_NE(overlap.match_cnt, 0);
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 4);
+    ASSERT_NE(overlap.match_cnt, 0) << overlap;
+    ASSERT_EQ(overlap.match_cnt, 4) << overlap;
 }
 
-BOOST_AUTO_TEST_CASE( UnalignableTest ) {
+TEST( OverlapAnalysis, Unalignable ) {
     SWOverlapAnalyzer analyzer(6);
 
     Sequence s1("CCCCCCCC");
     Sequence s2("AAAAAAAA");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_EQUAL(overlap, OverlapInfo());
+    ASSERT_EQ(overlap, OverlapInfo()) << overlap;
 }
 
-BOOST_AUTO_TEST_CASE( LargeTest ) {
+TEST( OverlapAnalysis, Large ) {
     SWOverlapAnalyzer analyzer(25);
 
     Sequence s1("CCCCCCCCACGTTCGTACATACGTGGGGGGG");
     Sequence s2("AAAAAAAAACGTACGTACGTACGTCCCCCCC");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 14);
-    BOOST_CHECK_EQUAL(overlap.r1, Range(8, 24));
-    BOOST_CHECK_EQUAL(overlap.r2, Range(8, 24));
+    ASSERT_EQ(overlap.match_cnt, 14) << overlap;
+    ASSERT_EQ(overlap.r1, Range(8, 24)) << overlap;
+    ASSERT_EQ(overlap.r2, Range(8, 24)) << overlap;
 }
 
 inline path_extend::Gap MimicLAGapAnalyzer(size_t k, Sequence &s1, Sequence &s2) {
@@ -141,7 +133,7 @@ inline path_extend::Gap MimicLAGapAnalyzer(size_t k, Sequence &s1, Sequence &s2)
         DEBUG("Low identity score");
         return path_extend::Gap(INVALID_GAP);
     }
-    std::cout << overlap_info;
+    // std::cout << overlap_info;
 
     return path_extend::Gap(
             (int) (k - overlap_info.r1.size() - s1.size() + overlap_info.r1.end_pos - overlap_info.r2.start_pos),
@@ -149,29 +141,23 @@ inline path_extend::Gap MimicLAGapAnalyzer(size_t k, Sequence &s1, Sequence &s2)
 }
 
 //TODO what does it test?! Why is it not a test of SWOverlapAnalyzer?
-BOOST_AUTO_TEST_CASE( SimpleGapTest ) {
+TEST( OverlapAnalysis, SimpleGap ) {
     Sequence s1("AAAAAAAACGCGCTTTCGCTTTAA");
     Sequence s2("GGGGCGCGCTTTCGCTAAAAAAAAAA");
     size_t k = 5;
     path_extend::Gap g = MimicLAGapAnalyzer(k, s1, s2);
-    BOOST_CHECK_EQUAL(14, 14);
-    BOOST_CHECK_EQUAL(g.trash.current, 4);
-    BOOST_CHECK_EQUAL(g.trash.previous, 4);
-    BOOST_CHECK_EQUAL(g.gap, -15);
+    ASSERT_EQ(14, 14);
+    ASSERT_EQ(g.trash.current, 4);
+    ASSERT_EQ(g.trash.previous, 4);
+    ASSERT_EQ(g.gap, -15);
 }
 
-BOOST_AUTO_TEST_CASE( UndefinedBehavior ) {
+TEST( OverlapAnalysis, UndefinedBehavior ) {
     SWOverlapAnalyzer analyzer(166);
     Sequence s1("ACGCAAGTAAGTGACGAAGGACATCCTCCCGCCCTCCCTTCCTCCCTGTCTTCATTCGCCTCCCTTCCCCGGTCTTCGCATTTCTGCAAGCGCTTTACCGAGCGGTCAGCGTGCGATAGACTCGCGCCGATCGCTTCTGCTGGCCTCACGCAGGCTGGGGGTGTTT");
     Sequence s2("CTCCCTCCTCCCGTCCTCCCCCTCCCTGTCTTCATTCGCCTCCCTTCCCCGGTCTTCGCATTTCTGCAAGCGCTTTACCGAGCGGTCAGCGTGCGATAGACTCGCGCCGATCGCTTCTGCTGGCCTCACGCAGGCTGGGGGTGTTTGTGTTTCGTCTGGACGCCGA");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    std::cout << overlap << std::endl;
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 140);
-    BOOST_CHECK_EQUAL(overlap.r1, Range(23, 166));
-    BOOST_CHECK_EQUAL(overlap.r2, Range(5, 146));
-}
-
-
-BOOST_AUTO_TEST_SUITE_END()
-
+    ASSERT_EQ(overlap.match_cnt, 140) << overlap;
+    ASSERT_EQ(overlap.r1, Range(23, 166)) << overlap;
+    ASSERT_EQ(overlap.r2, Range(5, 146)) << overlap;
 }

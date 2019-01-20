@@ -4,8 +4,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#pragma once
-
 #include "io/binary/binary.hpp"
 #include "utils/stl_utils.hpp"
 #include <sstream>

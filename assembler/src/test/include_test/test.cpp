@@ -4,15 +4,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
-#include "seq_test.hpp"
-#include "rtseq_test.hpp"
-#include "sequence_test.hpp"
-#include "quality_test.hpp"
-#include "nucl_test.hpp"
-#include "cyclic_hash_test.hpp"
-#include "binary_test.hpp"*/
-
 #include "utils/segfault_handler.hpp"
 #include "utils/logger/logger.hpp"
 #include "utils/logger/log_writers.hpp"

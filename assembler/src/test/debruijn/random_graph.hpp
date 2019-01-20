@@ -7,7 +7,10 @@
 
 #pragma once
 
+#include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/kmer_mapper.hpp"
+#include "paired_info/index_point.hpp"
+#include "paired_info/paired_info_helpers.hpp"
 
 namespace debruijn_graph {
 

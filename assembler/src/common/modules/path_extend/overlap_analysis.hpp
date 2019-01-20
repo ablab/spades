@@ -1,7 +1,16 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
-#include "utils/logger/logger.hpp"
 #include "sequence/range.hpp"
+#include "sequence/sequence.hpp"
+
+#include "utils/logger/logger.hpp"
+
 #include "ssw/ssw_cpp.h"
 
 namespace debruijn_graph {
@@ -50,7 +59,6 @@ inline std::ostream& operator<<(std::ostream& os, const OverlapInfo& info) {
 class SWOverlapAnalyzer {
     static const uint32_t CIGAR_FLAG_MASK = (1 << 4) - 1;
     static const uint32_t CIGAR_MATCH_FLAG = 7;
-    typedef typename Graph::EdgeId EdgeId;
     size_t flank_length_;
 
     const StripedSmithWaterman::Aligner aligner_;
@@ -111,7 +119,7 @@ public:
     }
 
     template<class Graph>
-    OverlapInfo AnalyzeOverlap(const Graph& g, EdgeId e1, EdgeId e2) const {
+    OverlapInfo AnalyzeOverlap(const Graph& g, typename Graph::EdgeId e1, typename Graph::EdgeId e2) const {
         DEBUG("Analyzing edges " << g.str(e1) << " and " << g.str(e2));
         return AnalyzeOverlap(g.EdgeNucls(e1), g.EdgeNucls(e2));
     }

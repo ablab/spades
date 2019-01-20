@@ -4,15 +4,12 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#pragma once
-
-#include <boost/test/unit_test.hpp>
-
 #include "paired_info/histogram.hpp"
+#include "paired_info/histptr.hpp"
 
-namespace omnigraph {
+#include <gtest/gtest.h>
 
-namespace de {
+using namespace omnigraph::de;
 
 class alignas(2) Counter {
 public:
@@ -27,35 +24,27 @@ private:
 
 int Counter::count_ = 0;
 
-BOOST_AUTO_TEST_SUITE(histogram_tests)
-
-BOOST_AUTO_TEST_CASE(StrongWeakPtrBasic) {
+TEST(Histogram, StrongWeakPtrBasic) {
     using Ptr = StrongWeakPtr<Counter>;
     //Empty
     Ptr p1;
-    BOOST_CHECK(!p1.owning());
-    BOOST_CHECK_EQUAL(p1.get(), static_cast<Counter *>(nullptr));
+    ASSERT_FALSE(p1.owning());
+    ASSERT_EQ(p1.get(), static_cast<Counter *>(nullptr));
     {
         //Owning
         Ptr p2(new Counter());
         auto ptr = p2.get();
-        BOOST_CHECK(p2.owning());
-        BOOST_CHECK_EQUAL(Counter::Count(), 1);
+        ASSERT_TRUE(p2.owning());
+        ASSERT_EQ(Counter::Count(), 1);
         //Moving
         Ptr p3 = std::move(p2);
-        BOOST_CHECK_EQUAL(p3.get(), ptr);
-        BOOST_CHECK_EQUAL(Counter::Count(), 1);
+        ASSERT_EQ(p3.get(), ptr);
+        ASSERT_EQ(Counter::Count(), 1);
         //Non-owning
         Ptr p4(p3.get(), false);
-        BOOST_CHECK_EQUAL(p4.get(), ptr);
-        BOOST_CHECK_EQUAL(Counter::Count(), 1);
+        ASSERT_EQ(p4.get(), ptr);
+        ASSERT_EQ(Counter::Count(), 1);
     }
     //Free
-    BOOST_CHECK_EQUAL(Counter::Count(), 0);
+    ASSERT_EQ(Counter::Count(), 0);
 }
-
-BOOST_AUTO_TEST_SUITE_END()
-
-} // namespace de
-
-} // namespace omnigraph

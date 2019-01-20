@@ -11,6 +11,7 @@
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/core/directions.hpp"
 #include "assembly_graph/paths/path_finders.hpp"
+#include "utils/logger/logger.hpp"
 #include "math/xmath.h"
 #include "utils/logger/logger.hpp"
 

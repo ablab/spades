@@ -7,8 +7,9 @@
 
 #pragma once
 
-#include "common/math/xmath.h"
+#include "math/xmath.h"
 #include <algorithm>
+#include <sstream>
 #include <limits>
 
 namespace omnigraph {

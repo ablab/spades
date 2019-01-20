@@ -65,21 +65,4 @@ std::string make_relative_path(std::string p, std::string base = current_dir());
 
 std::string MakeLaunchTimeDirName();
 
-class TmpFolderFixture
-{
-    std::string tmp_folder_;
-
-public:
-    TmpFolderFixture(std::string tmp_folder = "tmp") :
-            tmp_folder_(tmp_folder)
-    {
-        fs::make_dirs(tmp_folder_);
-    }
-
-    ~TmpFolderFixture()
-    {
-        fs::remove_dir(tmp_folder_);
-    }
-};
-
 }

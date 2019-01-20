@@ -37,19 +37,19 @@ int main() {
     pp.erase<int>();
     */
 
-    std::cout << p.get_const<int>("first") << " " << p.get_const<double>() << " " << p.get_const<int>("second") << std::endl;
+    std::cout << p.get<int>("first") << " " << p.get<double>() << " " << p.get<int>("second") << std::endl;
     std::cout << p.count<std::string>() << std::endl;
     std::cout << p.size() << std::endl;
-    std::cout << p.get_const<std::string>("Jane") << std::endl;
-    std::cout << p.get_const<std::string>("Mama") << std::endl;
+    std::cout << p.get<std::string>("Jane") << std::endl;
+    std::cout << p.get<std::string>("Mama") << std::endl;
 
     p.reset_invalidated();
 
     std::cout << p.invalidated<std::string>("Mama") << std::endl;
-    p.get<std::string>("Mama") += "---Hello";
+    p.get_mutable<std::string>("Mama") += "---Hello";
     std::cout << p.invalidated<std::string>("Mama") << std::endl;
 
-    std::cout << p.get_const<std::string>("Mama") << std::endl;
+    std::cout << p.get<std::string>("Mama") << std::endl;
     std::cout << p.invalidated<std::string>("Mama") << std::endl;
 
     // Release
