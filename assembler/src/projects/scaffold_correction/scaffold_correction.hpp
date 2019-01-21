@@ -12,6 +12,7 @@
 #include "pipeline/graph_pack.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 #include "stages/construction.hpp"
+#include "stages/read_conversion.hpp"
 #include "pipeline/config_struct.hpp"
 #include "assembly_graph/dijkstra/dijkstra_algorithm.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
@@ -323,7 +324,8 @@ namespace spades {
                 cfg::get().pos.max_gap_diff);
 
         StageManager manager(SavesPolicy(cfg::get().checkpoints, cfg::get().output_saves));
-        manager.add<debruijn_graph::Construction>()
+        manager.add<ReadConversion>()
+               .add<debruijn_graph::Construction>()
                .add<ScaffoldCorrectionStage>(cfg::get().output_dir + "corrected_scaffolds.fasta", *cfg::get().sc_cor);
         INFO("Output directory: " << cfg::get().output_dir);
         conj_gp.kmer_mapper.Attach();
