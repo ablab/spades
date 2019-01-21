@@ -55,6 +55,23 @@ class MappingPrinterTSV: public MappingPrinter {
   }
 };
 
+
+class MappingPrinterFasta: public MappingPrinter {
+ public:
+  MappingPrinterFasta(const debruijn_graph::ConjugateDeBruijnGraph &g,
+                    const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
+                    const std::string &output_file_prefix)
+    : MappingPrinter(g, edge_namer, output_file_prefix) {
+    output_file_.open(output_file_prefix_ + ".fasta", std::ofstream::out);
+  }
+
+  void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) override;
+
+  ~MappingPrinterFasta() {
+    output_file_.close();
+  }
+};
+
 class MappingPrinterGPA : public MappingPrinter {
  public:
   MappingPrinterGPA(const debruijn_graph::ConjugateDeBruijnGraph &g,
@@ -104,6 +121,9 @@ class MappingPrinterHub {
     }
     if (formats.find("gpa") != std::string::npos) {
       mapping_printers_.push_back(new MappingPrinterGPA(g, edge_namer, output_file_prefix));
+    }
+    if (formats.find("fasta") != std::string::npos) {
+      mapping_printers_.push_back(new MappingPrinterFasta(g, edge_namer, output_file_prefix));
     }
   }
 

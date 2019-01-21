@@ -30,37 +30,28 @@ void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &ali
         for (size_t i = 0; i < mappingpath.size(); ++ i) {
             size_t mapping_start = i == 0 ? aligned_mappings.read_ranges[j].path_start.edge_pos : 0;
             size_t mapping_end = i == mappingpath.size() - 1 ?  aligned_mappings.read_ranges[j].path_end.edge_pos : g_.length(mappingpath[i]);
-            path_str += StrId(mappingpath[i]) + ",";
-            path_len_str += to_string(mapping_end - mapping_start) + ",";
+            string delim = i == mappingpath.size() - 1 ? "" : ",";
+            path_str += StrId(mappingpath[i]) + delim;
+            path_len_str += to_string(mapping_end - mapping_start) + delim;
             path_seq_str += g_.EdgeNucls(mappingpath[i]).Subseq(mapping_start, mapping_end).str();
         }
-        seq_starts += to_string(aligned_mappings.read_ranges[j].path_start.seq_pos) + ",";
-        seq_ends += to_string(aligned_mappings.read_ranges[j].path_end.seq_pos) + ",";
-        edge_starts += to_string(aligned_mappings.read_ranges[j].path_start.edge_pos) + ",";
-        edge_ends += to_string(aligned_mappings.read_ranges[j].path_end.edge_pos) + ",";
-        path_str += ";";
-        path_len_str += ";";
-        path_seq_str += ";";
+        string delim = j == aligned_mappings.edge_paths.size() - 1 ? "" : ",";
+        seq_starts += to_string(aligned_mappings.read_ranges[j].path_start.seq_pos) + delim;
+        seq_ends += to_string(aligned_mappings.read_ranges[j].path_end.seq_pos) + delim;
+        edge_starts += to_string(aligned_mappings.read_ranges[j].path_start.edge_pos) + delim;
+        edge_ends += to_string(aligned_mappings.read_ranges[j].path_end.edge_pos) + delim;
+        string s_delim = j == aligned_mappings.edge_paths.size() - 1 ? "" : ";";
+        path_str += s_delim;
+        path_len_str += s_delim;
+        path_seq_str += s_delim;
     }
     DEBUG("Paths: " << path_str);
-    string bwa_path_str = "";
-    for (const auto &path : aligned_mappings.bwa_paths) {
-        for (size_t i = 0; i < path.size(); ++ i) {
-            EdgeId edgeid = path.edge_at(i);
-            omnigraph::MappingRange mapping = path.mapping_at(i);
-            bwa_path_str += StrId(edgeid) + " (" + to_string(mapping.mapped_range.start_pos) + ","
-                            + to_string(mapping.mapped_range.end_pos) + ") ["
-                            + to_string(mapping.initial_range.start_pos) + ","
-                            + to_string(mapping.initial_range.end_pos) + "], ";
-        }
-        bwa_path_str += ";";
-    }
     string str = read.name() + "\t" + seq_starts + "\t"
                  + seq_ends + "\t"
                  + edge_starts + "\t"
                  + edge_ends + "\t"
                  + to_string(read.sequence().size()) +  "\t"
-                 + path_str + "\t" + path_len_str + "\t" + bwa_path_str + "\t" + path_seq_str + "\n";
+                 + path_str + "\t" + path_len_str + "\t" + path_seq_str + "\n";
     DEBUG("Read " << read.name() << " aligned and length=" << read.sequence().size());
     DEBUG("Read " << read.name() << ". Paths with ends: " << path_str );
     #pragma omp critical
@@ -69,7 +60,31 @@ void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &ali
     }
 }
 
-
+void MappingPrinterFasta::SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
+    string str = "";
+    for (size_t j = 0; j < aligned_mappings.edge_paths.size(); ++ j) {
+        auto &mappingpath = aligned_mappings.edge_paths[j];
+        string path_str = "";
+        string path_seq_str = "";
+        for (size_t i = 0; i < mappingpath.size(); ++ i) {
+            size_t mapping_start = i == 0 ? aligned_mappings.read_ranges[j].path_start.edge_pos : 0;
+            size_t mapping_end = i == mappingpath.size() - 1 ?  aligned_mappings.read_ranges[j].path_end.edge_pos : g_.length(mappingpath[i]);
+            string delim = i == mappingpath.size() - 1 ? "" : "_";
+            path_str += StrId(mappingpath[i]) + delim;
+            path_seq_str += g_.EdgeNucls(mappingpath[i]).Subseq(mapping_start, mapping_end).str();
+        }
+        str += ">" + read.name() + "|Edges=" + path_str
+                                 + "|start_g=" + to_string(aligned_mappings.read_ranges[j].path_start.edge_pos)
+                                 + "|end_g=" + to_string(aligned_mappings.read_ranges[j].path_end.edge_pos)
+                                 + "|start_s=" + to_string(aligned_mappings.read_ranges[j].path_start.seq_pos)
+                                 + "|end_s=" + to_string(aligned_mappings.read_ranges[j].path_end.seq_pos)
+                                 + "\n" + path_seq_str + "\n";
+    }
+    #pragma omp critical
+    {
+        output_file_ << str;
+    }
+}
 
 string MappingPrinterGPA::Print(map<string, string> &line) const {
     vector<string> v = {"Ind", "Name", "ReadName", "StartR", "LenR", "DirR", "EdgeId", "StartE", "LenE", "DirE", "CIGAR", "Prev", "Next"};
