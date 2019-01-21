@@ -1,6 +1,6 @@
-#SPAligner
+# SPAligner
 
-Tool for fast and accurate alignment of nucleotide sequences (such as long reads, genes CDS etc.) to assembly graphs. 
+Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, coding sequences, etc.) to assembly graphs. 
 
 
 ## Compilation
@@ -11,27 +11,27 @@ Tool for fast and accurate alignment of nucleotide sequences (such as long reads
     make -C build/release/projects/spaligner/ -j4 longreads_aligner
 
 
-
 ## Running SPAligner
 ---
 
-Run *help* to see full list of options.
-```
-./build/release/bin/longreads_aligner -h
-```
-
-Run SPAligner on ecoli assembly graph with K=77 and align PacBio reads realpb.fasta(accepts fasta/fastq files) to it. 
-Dataset can be found on [figshare](https://figshare.com/s/004baf22fc1bfd758f5b "Figshare DB")
-All alignments will be saved to test_ecoli.tsv. 
+To align PacBio reads realpb.fasta (accepts fasta/fastq files) to *E.coli* assembly graph built for K=77 (dataset is available [here](https://figshare.com/s/004baf22fc1bfd758f5b "Figshare DB")):
 ``` 
 ./build/release/bin/longreads_aligner ./src/projects/spaligner/config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli > test_ecoli.log
+```
+Alignments will be saved to test_ecoli.tsv. 
+
+Run *help* to see full list of options:
+```
+./build/release/bin/longreads_aligner -h
 ```
 
 
 ## Results interpretation
 ---
-SPAligner results can be stored in two formats: *.tsv (default) and [*.gpa](https://github.com/ocxtal/gpa "GPA-format spec").
-Each line in tsv-file represents alignments of one read.
+SPAligner can represent the results in two formats: *.tsv (default) and [*.gpa](https://github.com/ocxtal/gpa "GPA-format spec").
+Each line in tsv-file represents alignments of a single read.
+
+**Examples:**
 
 * Example1
 
@@ -62,22 +62,22 @@ name2     4,0,  17,19,       2,44,   15,10,       19    123+,;288-,128+,;       
 GATACGGTTATCC;GGGCGATACGGTTATCCGGG
 ```
 
-Read name2 has two alignments on the graph:
+The read *name2* has two alignments on the graph:
 
-1. The first alignment starts on read at position 4 and ends on position 17. 
-Corresponding path consists of one edge 123+ (i.e. 123+,;) with start on position 2 and end on position 15.
+1. The first alignment starts on read on position 4 and ends on position 17. 
+Corresponding path consists of a single edge 123+ (i.e. 123+,;) with start on position 2 and end on position 15.
 Path sequence: GATACGGTTATCC
-2. While the second alignment is a full alignment: from position 0 to position 19 on Read.
+2. While the second alignment is a "full" alignment: from position 0 to position 19 on the read.
 Corresponding path consists of two edges 288- and 128+ (i.e. 288-,128+;) with start on position 44 and end on position 10.
 Path sequence: GGGCGATACGGTTATCCGGG
 
 
 ## Supported assembly graph types
 ---
-SPAligner accepts graphs in *.gfa format, interpreting `S` segments as edges and `L` links as vertecies.
+SPAligner accepts graphs in *.gfa format, interpreting `S` segments as edges of the condensed de Bruijn graph (and `L` links -- as vertices).
 
 
 ## Future plans 
 ---
 1. Add amino acid sequence support.
-2. Speed-up hits search step.
+2. Alignment speed-up.
