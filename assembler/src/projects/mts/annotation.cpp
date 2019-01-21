@@ -76,15 +76,6 @@ std::set<EdgeId> EdgeAnnotation::EdgesOfBin(bin_id bin, size_t min_length) const
 
 //------------------------------------------------------------------------------
 
-template<typename K, typename V>
-std::ostream& operator<<(std::ostream& str, const std::map<K, V>& map) {
-    str << "{";
-    for (const auto& kv : map)
-        str << kv.first << ": " << kv.second << ", ";
-    str << "}";
-    return str;
-}
-
 std::vector<EdgeId> AnnotationFiller::EdgesOfContig(const io::SingleRead &contig) const {
     return mapper_->MapRead(contig).simple_path();
 }
