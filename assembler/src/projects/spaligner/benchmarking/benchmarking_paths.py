@@ -63,19 +63,19 @@ class DataLoader:
         res = []
         fin = open(filename, "r")
         for ln in fin.readlines():
-            cur_read, seq_starts, seq_ends, e_starts, e_ends, rlen, path, edgelen, bwa_path_dirty, seqs = ln.strip().split("\t")
+            cur_read, seq_starts, seq_ends, e_starts, e_ends, rlen, path, edgelen, seqs = ln.strip().split("\t")
             cur_read = cur_read.split(" ")[0]
-            initial_s = [int(x) for x in seq_starts.split(",")[:-1]] if "," in seq_starts else [int(seq_starts)]
-            initial_e = [int(x) for x in seq_ends.split(",")[:-1]] if "," in seq_ends else [int(seq_ends)]
-            mapped_s = [int(x) for x in e_starts.split(",")[:-1]] if "," in e_starts else [int(e_starts)]
-            mapped_e = [int(x) for x in e_ends.split(",")[:-1]] if "," in e_ends else [int(e_ends)]
+            initial_s = [int(x) for x in seq_starts.split(",")] if "," in seq_starts else [int(seq_starts)]
+            initial_e = [int(x) for x in seq_ends.split(",")] if "," in seq_ends else [int(seq_ends)]
+            mapped_s = [int(x) for x in e_starts.split(",")] if "," in e_starts else [int(e_starts)]
+            mapped_e = [int(x) for x in e_ends.split(",")] if "," in e_ends else [int(e_ends)]
             max_ind = 0
             for i in xrange(1, len(initial_s)):
                 if initial_e[max_ind] - initial_s[max_ind] < initial_e[i] - initial_s[i]:
                     max_ind = i
             if initial_e[max_ind] - initial_s[max_ind] + 1 > 0.*len(reads[cur_read]):
                 res.append({"r_name": cur_read, "mapping_len": initial_e[max_ind] - initial_s[max_ind] + 1, \
-                                "path": path.split(";")[max_ind][:-1],
+                                "path": path.split(";")[max_ind],
                                 "s_start": initial_s[max_ind], "s_end": initial_e[max_ind], \
                                 "mapped_seq": seqs.split(";")[max_ind]})
         fin.close()
@@ -86,12 +86,6 @@ def check_ed(seq, x, tpath, gapath):
     tmapped = x["truemapped_seq"]
     gamapped = x["mapped_seq"]
     s, e = x["s_start"], x["s_end"]
-    # if tpath == gapath:
-    #     if s != 0 or e != len(seq):
-    #         print x["r_name"]
-    #     elif edist([seq, tmapped]) < edist([seq, gamapped]):
-    #         print "More:", x["r_name"], edist([seq, tmapped]), edist([seq, gamapped])
-
     if s != 0 or e != len(seq):
         return False
     if edist([seq, tmapped]) > edist([seq, gamapped]):

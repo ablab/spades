@@ -75,12 +75,12 @@ class DataLoader:
         res = []
         fin = open(filename, "r")
         for ln in fin.readlines():
-            cur_read, seq_starts, seq_ends, e_starts, e_ends, rlen, path, edgelen, bwa_path_dirty, seqs = ln.strip().split("\t")
+            cur_read, seq_starts, seq_ends, e_starts, e_ends, rlen, path, edgelen, seqs = ln.strip().split("\t")
             cur_read = cur_read.split(" ")[0]
-            initial_s = [int(x) for x in seq_starts.split(",")[:-1]] if "," in seq_starts else [int(seq_starts)]
-            initial_e = [int(x) for x in seq_ends.split(",")[:-1]] if "," in seq_ends else [int(seq_ends)]
-            mapped_s = [int(x) for x in e_starts.split(",")[:-1]] if "," in e_starts else [int(e_starts)]
-            mapped_e = [int(x) for x in e_ends.split(",")[:-1]] if "," in e_ends else [int(e_ends)]
+            initial_s = [int(x) for x in seq_starts.split(",")] if "," in seq_starts else [int(seq_starts)]
+            initial_e = [int(x) for x in seq_ends.split(",")] if "," in seq_ends else [int(seq_ends)]
+            mapped_s = [int(x) for x in e_starts.split(",")] if "," in e_starts else [int(e_starts)]
+            mapped_e = [int(x) for x in e_ends.split(",")] if "," in e_ends else [int(e_ends)]
             max_ind = []
             for i in xrange(len(initial_s)):
                 if stat == "max":
@@ -131,7 +131,7 @@ if __name__ == "__main__":
             # print read_type
             # print res[read_type]
             if res[read_type] != TRUE_PERFORMANCE[org][read_type]:
-                print "Failed: ", read_type
+                print "Failed: ", org, read_type, res[read_type]
                 exit(-1)
 
 
