@@ -14,6 +14,7 @@
 #include "adt/iterator_range.hpp"
 #include "adt/small_pod_vector.hpp"
 
+#include <boost/core/noncopyable.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <btree/safe_btree_set.h>

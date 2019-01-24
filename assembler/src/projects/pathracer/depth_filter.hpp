@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+namespace depth_filter {
+
 namespace impl {
 
 template <typename GraphCursor>
@@ -219,7 +221,7 @@ class DepthAtLeast {
 };
 
 template <typename GraphCursor>
-std::vector<GraphCursor> depth_subset(std::vector<std::pair<GraphCursor, size_t>> initial, bool forward = true) {
+std::vector<GraphCursor> depth_subset(const std::vector<std::pair<GraphCursor, size_t>> &initial, bool forward = true) {
   std::unordered_set<GraphCursor> visited;
   struct CursorWithDepth {
     GraphCursor cursor;
@@ -271,11 +273,18 @@ std::vector<GraphCursor> depth_subset(std::vector<std::pair<GraphCursor, size_t>
   return std::vector<GraphCursor>(visited.cbegin(), visited.cend());
 }
 
+}  // namespace impl
+
 template <typename GraphCursor>
-std::vector<GraphCursor> depth_subset(const GraphCursor& cursor, size_t depth, bool forward = true) {
-  return depth_subset(std::vector<std::pair<GraphCursor, size_t>>({std::make_pair(cursor, depth)}), forward);
+std::vector<GraphCursor> subset(const GraphCursor& cursor, size_t depth, bool forward = true) {
+    return impl::depth_subset(std::vector<std::pair<GraphCursor, size_t>>({std::make_pair(cursor, depth)}), forward);
 }
 
-}  // namespace impl
+template <typename GraphCursor>
+std::vector<GraphCursor> subset(const std::vector<std::pair<GraphCursor, size_t>> &initial, bool forward = true) {
+    return impl::depth_subset(initial, forward);
+}
+
+} // namespace depth_filter 
 
 // vim: set ts=2 sw=2 et :
