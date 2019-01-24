@@ -7,8 +7,8 @@ Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, c
 ---
     git clone https://github.com/ablab/spades.git
     cd algorithmic-biology/assembler/
-    ./prepare_cfg
-    make -C build/release/projects/spaligner/ -j4 longreads_aligner
+    mkdir build && cd build && cmake ../src && cd ../
+    make -C build/projects/spaligner/ -j4 longreads_aligner
 
 
 ## Running SPAligner
@@ -16,7 +16,7 @@ Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, c
 
 To align PacBio reads realpb.fasta (accepts fasta/fastq files) to *E.coli* assembly graph built for K=77 (dataset is available [here](https://figshare.com/s/004baf22fc1bfd758f5b "Figshare DB")):
 ``` 
-./build/release/bin/longreads_aligner ./src/projects/spaligner/config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli > test_ecoli.log
+./build/bin/longreads_aligner ./src/projects/spaligner/config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli > test_ecoli.log
 ```
 Alignments will be saved to test_ecoli.tsv. 
 
