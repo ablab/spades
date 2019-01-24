@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include "common/io/reads/header_naming.hpp"
-#include "common/utils/verify.hpp"
+#include "io/reads/header_naming.hpp"
+#include "io/id_mapper.hpp"
+#include "utils/verify.hpp"
 
 #include <string>
 #include <functional>
@@ -29,6 +30,14 @@ EdgeNamingF<Graph> BasicNamingF(const std::string &prefix = "EDGE") {
     using EdgeId = typename Graph::EdgeId;
     return [=](const Graph &g, EdgeId e) {
         return io::MakeContigId(g.int_id(e), g.length(e) + g.k(), g.coverage(e), prefix);
+    };
+}
+
+template<class Graph>
+EdgeNamingF<Graph> MapNamingF(const io::IdMapper<std::string> &id_mapper) {
+    using EdgeId = typename Graph::EdgeId;
+    return [=](const Graph &g, EdgeId e) {
+        return id_mapper[g.int_id(e)];
     };
 }
 

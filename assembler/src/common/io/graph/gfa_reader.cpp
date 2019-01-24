@@ -9,6 +9,8 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/construction_helper.hpp"
 
+#include "io/id_mapper.hpp"
+
 #include "gfa1/gfa.h"
 
 #include <string>
@@ -34,52 +36,28 @@ uint32_t GFAReader::num_edges() const { return gfa_->n_seg; }
 uint64_t GFAReader::num_links() const { return gfa_->n_arc; }
 
 void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
-                         bool numeric_ids) {
+                         io::IdMapper<std::string> *id_mapper) {
     auto helper = g.GetConstructionHelper();
 
     // INFO("Loading segments");
     std::vector<EdgeId> edges;
     edges.reserve(gfa_->n_seg);
+    g.ereserve(2 * gfa_->n_seg);
+    for (size_t i = 0; i < gfa_->n_seg; ++i) {
+        gfa_seg_t *seg = gfa_->seg + i;
 
-    if (numeric_ids) {
-        uint64_t mid = 0;
-        std::unordered_set<uint64_t> ids;
-        for (size_t i = 0; i < gfa_->n_seg; ++i) {
-            gfa_seg_t *seg = gfa_->seg + i;
-            uint64_t id = std::atoll(seg->name);
-            VERIFY_MSG(ids.insert(id).second, "Unique numeric ids are required");
-            if (mid < id)
-                mid = id;
+        uint8_t *kc = gfa_aux_get(seg->aux.l_aux, seg->aux.aux, "KC");
+        unsigned cov = 0;
+        if (kc && kc[0] == 'i')
+            cov = *(int32_t*)(kc+1);
+        DeBruijnEdgeData edata(Sequence(seg->seq));
+        edata.set_raw_coverage(cov);
+        EdgeId e = helper.AddEdge(edata);
+        if (id_mapper) {
+            (*id_mapper)[e.int_id()] = seg->name;
+            (*id_mapper)[g.conjugate(e).int_id()] = std::string(seg->name) + '\'';
         }
-        g.ereserve(2 * mid);
-        for (size_t i = 0; i < gfa_->n_seg; ++i) {
-            gfa_seg_t *seg = gfa_->seg + i;
-
-            uint64_t id = std::atoll(seg->name);
-
-            uint8_t *kc = gfa_aux_get(seg->aux.l_aux, seg->aux.aux, "KC");
-            unsigned cov = 0;
-			if (kc && kc[0] == 'i')
-				cov = *(int32_t*)(kc+1);
-            DeBruijnEdgeData edata(Sequence(seg->seq));
-            edata.set_raw_coverage(cov);
-            EdgeId e = helper.AddEdge(edata, id);
-            edges.push_back(e);
-        }
-    } else {
-        g.ereserve(2 * gfa_->n_seg);
-        for (size_t i = 0; i < gfa_->n_seg; ++i) {
-            gfa_seg_t *seg = gfa_->seg + i;
-
-            uint8_t *kc = gfa_aux_get(seg->aux.l_aux, seg->aux.aux, "KC");
-            unsigned cov = 0;
-			if (kc && kc[0] == 'i')
-				cov = *(int32_t*)(kc+1);
-            DeBruijnEdgeData edata(Sequence(seg->seq));
-            edata.set_raw_coverage(cov);
-            EdgeId e = helper.AddEdge(edata);
-            edges.push_back(e);
-        }
+        edges.push_back(e);
     }
 
     // INFO("Creating vertices");

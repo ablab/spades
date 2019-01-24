@@ -21,6 +21,11 @@ namespace debruijn_graph {
 class DeBruijnGraph;
 };
 
+namespace io {
+template<typename IdType>
+class IdMapper;
+}
+
 namespace gfa {
 
 class GFAReader {
@@ -53,8 +58,7 @@ class GFAReader {
         return adt::make_range(path_begin(), path_end());
     }
 
-    void to_graph(debruijn_graph::DeBruijnGraph &g,
-                  bool numeric_ids = true);
+    void to_graph(debruijn_graph::DeBruijnGraph &g, io::IdMapper<std::string> *id_mapper = nullptr);
 
   private:
     std::unique_ptr<gfa_t, void(*)(gfa_t*)> gfa_;
