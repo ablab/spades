@@ -34,7 +34,7 @@ class DebruijnGraphCursor {
 
     size_t position() const { return position_; }
 
-    bool is_empty() const { return e_.get() == nullptr; }
+    bool is_empty() const { return !e_; }
 
     char letter() const { return nucl(g_->EdgeNucls(e_)[position_]); }
 
@@ -120,7 +120,7 @@ class DebruijnComponentCursor {
     EdgeId edge() const { return e_; }
     size_t position() const { return position_; }
 
-    bool is_empty() const { return e_.get() == nullptr; }
+    bool is_empty() const { return !e_; }
 
     char letter() const { return nucl(c_->g().EdgeNucls(e_)[position_]); }
 

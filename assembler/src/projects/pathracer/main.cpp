@@ -595,10 +595,11 @@ void ExportEdges(const Container &entries,
     }
 }
 
-std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path) {
+std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path,
+                                   const debruijn_graph::ConjugateDeBruijnGraph &g) {
     std::vector<EdgeId> cpath;
     for (auto it = path.crbegin(), e = path.crend(); it != e; ++it) {
-        cpath.push_back((*it)->conjugate());
+        cpath.push_back(g.conjugate(*it));
     }
     return cpath;
 }
@@ -614,7 +615,7 @@ void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph,
         paths.reserve(gfa.num_paths());
         for (const auto &path : gfa.paths()) {
             paths.push_back(path.edges);
-            paths.push_back(conjugate_path(path.edges));
+            paths.push_back(conjugate_path(path.edges, graph));
         }
     } else {
         io::binary::GraphIO<debruijn_graph::ConjugateDeBruijnGraph> gio;
@@ -828,9 +829,9 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
     }
 
     INFO("Depth search on left");
-    auto left_cursors = impl::depth_subset(left_queries, false);
+    auto left_cursors = depth_filter::subset(left_queries, false);
     INFO("Depth search on right");
-    auto right_cursors = impl::depth_subset(right_queries, true);
+    auto right_cursors = depth_filter::subset(right_queries, true);
 
     INFO("Exporting cursors");
     cursors.insert(left_cursors.cbegin(), left_cursors.cend());
