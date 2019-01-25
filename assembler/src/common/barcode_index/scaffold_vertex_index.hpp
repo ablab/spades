@@ -29,7 +29,7 @@ namespace barcode_index {
         }
 
         const VertexEntryT& GetTailEntry(const ScaffoldVertex& vertex) const {
-            return vertex_to_entry_.at(vertex.getConjugateFromGraph(g_));
+            return vertex_to_entry_.at(vertex.GetConjugateFromGraph(g_));
         }
 
         const_iterator GetHeadBegin(const ScaffoldVertex& vertex) const {
@@ -45,16 +45,16 @@ namespace barcode_index {
         }
 
         const_iterator GetTailBegin(const ScaffoldVertex& vertex) const {
-            return vertex_to_entry_.at(vertex.getConjugateFromGraph(g_)).begin();
+            return vertex_to_entry_.at(vertex.GetConjugateFromGraph(g_)).begin();
         }
 
         const_iterator GetTailEnd(const ScaffoldVertex& vertex) const {
-            return vertex_to_entry_.at(vertex.getConjugateFromGraph(g_)).end();
+            return vertex_to_entry_.at(vertex.GetConjugateFromGraph(g_)).end();
         }
 
         adt::iterator_range<const_iterator> GetTailRange(const ScaffoldVertex& vertex) const {
-            return adt::make_range(GetTailBegin(vertex.getConjugateFromGraph(g_)),
-                                   GetTailEnd(vertex.getConjugateFromGraph(g_)));
+            return adt::make_range(GetTailBegin(vertex.GetConjugateFromGraph(g_)),
+                                   GetTailEnd(vertex.GetConjugateFromGraph(g_)));
         }
 
         bool Contains(const ScaffoldVertex &vertex) const {

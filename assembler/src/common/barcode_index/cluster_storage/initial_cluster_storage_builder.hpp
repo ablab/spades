@@ -85,11 +85,12 @@ class EdgeInitialClusterStorageBuilder: public InitialClusterStorageBuilder {
                                                  edge_cluster_storage, cluster_storage, clusters);
                 }
                 processed_edges++;
-                if (processed_edges % block_size == 0) {
+                if (block_size != 0 and processed_edges % block_size == 0) {
                     DEBUG("Processed " << processed_edges << " out of " << target_edges_vector.size());
                 }
             }
         }
+        DEBUG("Constructed cluster storage");
     }
 
     void AddClustersFromBarcodeOnEdge(const EdgeId& edge, const BarcodeId& barcode, size_t distance,

@@ -28,16 +28,35 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStats(
     return stats;
 }
 
-set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransitions(
+std::set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransitions(
         const ScaffoldGraphValidator::ScaffoldGraph &graph,
-        const ContigTransitionStorage &transitions) const {
-    std::set<transitions::Transition> graph_transitions;
-    std::set<transitions::Transition> result;
+        const ContigTransitionStorage &genome_transitions) const {
+    std::unordered_set<transitions::Transition> graph_transitions;
+
+    std::unordered_map<EdgeId, size_t> edge_to_vertex;
+    for (const scaffold_graph::ScaffoldVertex &vertex: graph.vertices()) {
+        auto vertex_edges = vertex.GetAllEdges();
+        for (const auto &edge: vertex_edges) {
+            edge_to_vertex[edge] = vertex.int_id();
+        }
+    }
+
+    std::unordered_set<transitions::Transition> external_transitions;
+    for (const auto &transition: genome_transitions) {
+        if (edge_to_vertex.at(transition.first_) != edge_to_vertex.at(transition.second_)) {
+            external_transitions.insert(transition);
+        }
+    }
+
+    INFO(genome_transitions.size() << " genome transitions");
+    INFO(external_transitions.size() << " external transitions");
+
     for (const auto& edge: graph.edges()) {
         transitions::Transition t(edge.getStart(), edge.getEnd());
         graph_transitions.insert(t);
     }
-    for (const auto& transition: transitions) {
+    std::set<transitions::Transition> result;
+    for (const auto& transition: external_transitions) {
         if (graph_transitions.find(transition) == graph_transitions.end()){
             result.insert(transition);
         }
@@ -53,16 +72,17 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
         const ContigTransitionStorage &near_in_both_strands_transitions,
         const ContigTransitionStorage &forward_neighbouring_transitions) {
     ScaffoldGraphStats stats;
+    auto false_negative_transitions = GetFalseNegativeTransitions(graph, reference_transitions);
     DEBUG("True positive");
     stats.true_positive_ = CountStatsUsingTransitions(graph, reference_transitions);
+    DEBUG("False negative");
+    stats.false_negative_ = false_negative_transitions.size();
     DEBUG("To previous");
     stats.to_prev_ = CountStatsUsingTransitions(graph, reverse_transitions);
     DEBUG("To near rc");
     stats.to_next_rc_ = CountStatsUsingTransitions(graph, conjugate_transitions);
     DEBUG("To close in both");
     stats.to_close_in_both_strands_ = CountStatsUsingTransitions(graph, near_in_both_strands_transitions);
-    DEBUG("False negative");
-    stats.false_negative_ = reference_transitions.size() - stats.true_positive_;
     DEBUG("False positive");
     stats.false_positive_ = CountFalsePositive(graph, reference_transitions);
     DEBUG("Next with distance");
@@ -70,7 +90,6 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
     DEBUG("Edges");
     stats.edges_ = graph.EdgeCount();
 
-    auto false_negative_transitions = GetFalseNegativeTransitions(graph, reference_transitions);
     DEBUG(false_negative_transitions.size() << " false negative transitions:");
     for (const auto &transition: false_negative_transitions) {
         DEBUG(transition.first_.int_id() << " -> " << transition.second_.int_id());

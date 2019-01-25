@@ -1716,7 +1716,7 @@ class ScaffoldGraphExtender: public PathExtender {
             DEBUG("Graph contains next vertex: " << scaffold_graph_.Exists(next_vertex));
             DEBUG("Graph vertices contain vertex: "
                       << (scaffold_graph_vertices_.find(next_vertex) != scaffold_graph_vertices_.end()));
-            scaffold_graph::ScaffoldVertexT type = next_vertex.getType();
+            scaffold_graph::ScaffoldVertexT type = next_vertex.GetType();
             switch (type) {
                 case scaffold_graph::Edge: {
                     scaffold_graph::EdgeGetter getter;

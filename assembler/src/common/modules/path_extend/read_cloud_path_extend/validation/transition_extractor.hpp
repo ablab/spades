@@ -44,8 +44,8 @@ class ContigTransitionStorage {
         auto is_covered = [this](const EdgeId& edge) {
           return IsEdgeCovered(edge);
         };
-        boost::optional<EdgeId> first_covered = first.getLastEdgeWithPredicate(is_covered);
-        boost::optional<EdgeId> second_covered = second.getFirstEdgeWithPredicate(is_covered);
+        boost::optional<EdgeId> first_covered = first.GetLastEdgeWithPredicate(is_covered);
+        boost::optional<EdgeId> second_covered = second.GetFirstEdgeWithPredicate(is_covered);
         if (first_covered.is_initialized() and second_covered.is_initialized()) {
             return CheckTransition(first_covered.get(), second_covered.get());
         }
@@ -69,7 +69,7 @@ class ContigTransitionStorage {
         auto is_covered = [this](const EdgeId& edge) {
           return IsEdgeCovered(edge);
         };
-        boost::optional<EdgeId> first_covered = vertex.getFirstEdgeWithPredicate(is_covered);
+        boost::optional<EdgeId> first_covered = vertex.GetFirstEdgeWithPredicate(is_covered);
         return first_covered.is_initialized();
     }
 

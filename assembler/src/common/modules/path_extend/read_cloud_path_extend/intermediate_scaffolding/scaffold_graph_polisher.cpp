@@ -45,10 +45,10 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
     DEBUG("Extracting scaffold subgraph");
     DEBUG("First: " << first.int_id());
     DEBUG("Second: " << second.int_id());
-    DEBUG("First length: " << first.getLengthFromGraph(g_));
-    DEBUG("Second length: " << second.getLengthFromGraph(g_));
-    DEBUG("First coverage: " << first.getCoverageFromGraph(g_));
-    DEBUG("Second coverage: " << second.getCoverageFromGraph(g_));
+    DEBUG("First length: " << first.GetLengthFromGraph(g_));
+    DEBUG("Second length: " << second.GetLengthFromGraph(g_));
+    DEBUG("First coverage: " << first.GetCoverageFromGraph(g_));
+    DEBUG("Second coverage: " << second.GetCoverageFromGraph(g_));
     SimpleGraph result;
     unordered_set<ScaffoldVertex> forward_vertices;
     unordered_set<ScaffoldVertex> backward_vertices;
@@ -148,7 +148,7 @@ bool CloudScaffoldSubgraphExtractor::CheckSubgraphEdge(const ScaffoldEdge& edge,
 bool CloudScaffoldSubgraphExtractor::CheckSubGraphVertex(const CloudScaffoldSubgraphExtractor::ScaffoldVertex& vertex,
                                                          const CloudScaffoldSubgraphExtractor::ScaffoldVertex& first,
                                                          const CloudScaffoldSubgraphExtractor::ScaffoldVertex& second) const {
-    return vertex != first.getConjugateFromGraph(g_) and vertex != second.getConjugateFromGraph(g_);
+    return vertex != first.GetConjugateFromGraph(g_) and vertex != second.GetConjugateFromGraph(g_);
 }
 ScaffoldGraph ScaffoldGraphPolisher::CleanSmallGraphUsingLargeGraph(
         const ScaffoldGraphPolisher::ScaffoldGraph &large_scaffold_graph,

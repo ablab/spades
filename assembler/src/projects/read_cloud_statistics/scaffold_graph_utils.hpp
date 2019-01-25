@@ -327,7 +327,7 @@ namespace scaffold_graph_utils {
         }
 
         bool IsMinusVertex(const std::unordered_set<ScaffoldVertex>& path_edges, const ScaffoldVertex& vertex) {
-            return path_edges.find(vertex.getConjugateFromGraph(g_)) != path_edges.end();
+            return path_edges.find(vertex.GetConjugateFromGraph(g_)) != path_edges.end();
         }
     };
 
@@ -392,7 +392,7 @@ namespace scaffold_graph_utils {
             std::unordered_map<ScaffoldVertex, string> vertex_to_name;
             size_t id = 0;
             for (const ScaffoldVertex& vertex: graph.vertices()) {
-                string name = io::MakeContigId(id++, vertex.getLengthFromGraph(g_), vertex.getCoverageFromGraph(g_));
+                string name = io::MakeContigId(id++, vertex.GetLengthFromGraph(g_), vertex.GetCoverageFromGraph(g_));
                 vertex_to_name.insert({vertex, name});
             }
             return vertex_to_name;

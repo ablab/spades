@@ -38,12 +38,6 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 //    path_extend::SubgraphInfoPrinter printer;
 //    printer.PrintSubgraphInfo(subgraph_infos, cfg::get().output_dir);
 
-//    if (cfg::get().ts_res.debug_mode) {
-//        string path_to_references = cfg::get().ts_res.statistics.genome_path;
-//        path_extend::PerfectClustersAnalyzer perfect_cluster_analyzer(graph_pack);
-//        perfect_cluster_analyzer.AnalyzePerfectClouds(path_to_references, 1000);
-//    }
-
 //    string path_to_references = cfg::get().ts_res.statistics.genome_path;
 //    path_extend::validation::FilteredReferencePathHelper path_helper(graph_pack);
 //    auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_references, 1);
@@ -57,6 +51,12 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 //                fout << "\n" << edge.edge_.int_id() << " ";
 //            }
 //        }
+//    }
+
+//    if (cfg::get().ts_res.debug_mode) {
+//        string path_to_references = cfg::get().ts_res.statistics.genome_path;
+//        path_extend::PerfectClustersAnalyzer perfect_cluster_analyzer(graph_pack);
+//        perfect_cluster_analyzer.AnalyzePerfectClouds(path_to_references, 1000);
 //    }
 
 //    INFO("Constructing contracted graph");

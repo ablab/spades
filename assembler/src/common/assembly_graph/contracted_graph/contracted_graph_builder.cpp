@@ -14,9 +14,9 @@ void PartsBasedContractedFactory::ConstructFromParts(PartsBasedContractedFactory
     }
     for (const auto& edge: long_edges) {
         DEBUG("Processing edge " << edge.int_id());
-        DEBUG(edge.getStartGraphVertex(g_) << " -> " << edge.getEndGraphVertex(g_));
-        VertexId start_root = vertex_to_root.at(edge.getStartGraphVertex(g_));
-        VertexId end_root = vertex_to_root.at(edge.getEndGraphVertex(g_));
+        DEBUG(edge.GetStartGraphVertex(g_) << " -> " << edge.GetEndGraphVertex(g_));
+        VertexId start_root = vertex_to_root.at(edge.GetStartGraphVertex(g_));
+        VertexId end_root = vertex_to_root.at(edge.GetEndGraphVertex(g_));
         DEBUG("Inserting vertices and edges");
         this->graph_ptr_->InsertEdge(start_root, end_root, edge);
 
@@ -51,8 +51,8 @@ PartsBasedContractedFactory::ContractedGraphParts SimpleContractedGraphFactory::
 
     for (auto it = internal_graph_.begin(); it != internal_graph_.end(); ++it) {
         SimpleContractedGraphFactory::ScaffoldVertex edge = *it;
-        VertexId start = edge.getStartGraphVertex(g_);
-        VertexId end = edge.getEndGraphVertex(g_);
+        VertexId start = edge.GetStartGraphVertex(g_);
+        VertexId end = edge.GetEndGraphVertex(g_);
         vertices.insert(start);
         vertices.insert(end);
         vertex_to_capacity[start] = 0;
@@ -81,8 +81,8 @@ PartsBasedContractedFactory::ContractedGraphParts SimpleContractedGraphFactory::
     for (const auto& start: internal_graph_) {
         for (auto it = internal_graph_.outcoming_begin(start); it != internal_graph_.outcoming_end(start); ++it) {
             auto end = *it;
-            VertexId start_vertex = start.getEndGraphVertex(g_);
-            VertexId end_vertex = end.getStartGraphVertex(g_);
+            VertexId start_vertex = start.GetEndGraphVertex(g_);
+            VertexId end_vertex = end.GetStartGraphVertex(g_);
             TRACE("Merging vertices " << start_vertex.int_id() << " and " << end_vertex.int_id());
             size_t start_id = vertex_to_id.at(start_vertex);
             size_t end_id = vertex_to_id.at(end_vertex);

@@ -15,7 +15,7 @@ struct Transition {
 
     //fixme make it work with paths
     Transition(const ScaffoldVertex &first, const ScaffoldVertex &second):
-        first_(first.getLastEdge()), second_(second.getFirstEdge()) {}
+        first_(first.GetLastEdge()), second_(second.GetFirstEdge()) {}
 
     bool operator==(const Transition& other) const {
         return first_ == other.first_ and second_ == other.second_;

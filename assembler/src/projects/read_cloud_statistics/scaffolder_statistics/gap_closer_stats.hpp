@@ -377,7 +377,7 @@ class PathClusterScoreAnalyzer: public read_cloud_statistics::StatisticProcessor
             DEBUG(neighbourhood_string);
             std::string rc_neighbourhood_string;
             for (const auto& edge: path_neighbourhood) {
-                rc_neighbourhood_string += (std::to_string(edge.getConjugateFromGraph(g_).int_id()) + ", ");
+                rc_neighbourhood_string += (std::to_string(edge.GetConjugateFromGraph(g_).int_id()) + ", ");
             }
             DEBUG("Conjugate neighbourhood: ");
             DEBUG(rc_neighbourhood_string);

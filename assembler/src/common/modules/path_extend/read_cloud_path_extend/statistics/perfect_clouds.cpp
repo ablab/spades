@@ -78,7 +78,7 @@ double PerfectClustersAnalyzer::GetMeanEdgeNumber(const SetDistribution &cluster
         const auto &vertex_set = entry.first;
         size_t long_edges = std::count_if(vertex_set.begin(), vertex_set.end(),
                                           [&g, length_threshold](const scaffold_graph::ScaffoldVertex &vertex) {
-          return vertex.getLengthFromGraph(g) >= length_threshold;
+          return vertex.GetLengthFromGraph(g) >= length_threshold;
         });
         if (long_edges > 0) {
             total_edges += long_edges * entry.second;

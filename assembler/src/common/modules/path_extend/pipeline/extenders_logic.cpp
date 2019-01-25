@@ -359,8 +359,8 @@ Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdge
         const auto &lib = dataset_info_.reads[lib_index];
 
         if (lib.type() == io::LibraryType::Clouds10x) {
-            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index));
             result.emplace_back(lib.type(), lib_index, MakeScaffoldGraphExtender());
+            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index));
         }
     }
     std::stable_sort(result.begin(), result.end());

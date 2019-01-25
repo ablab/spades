@@ -142,7 +142,7 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     DEBUG(path_set.size());
     for (const auto &path: path_set) {
         DEBUG(path.int_id());
-        DEBUG(path.getLengthFromGraph(gp_.g));
+        DEBUG(path.GetLengthFromGraph(gp_.g));
     }
     auto unique_storage = ConstructUniqueStorage(min_length);
     scaffold_graph_construction_pipeline_type::Type type;
@@ -203,6 +203,7 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
             string name = result.second;
             auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
             INFO("Stats for " << name);
+            //fixme write to somewhere
             stats.Serialize(std::cout);
 
 //            DEBUG("Cluster stats for " << name);

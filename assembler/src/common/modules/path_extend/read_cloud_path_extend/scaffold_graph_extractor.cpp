@@ -59,7 +59,7 @@ unordered_map<EdgeId,
         const ScaffoldGraphExtractor::ScaffoldGraph &scaffold_graph, const func::TypedPredicate<EdgeId>& pred) const {
     unordered_map<EdgeId, VertexSet> result;
     for (const ScaffoldVertex& vertex: scaffold_graph.vertices()) {
-        auto first_edge = vertex.getFirstEdgeWithPredicate(pred);
+        auto first_edge = vertex.GetFirstEdgeWithPredicate(pred);
         if (first_edge.is_initialized()) {
             result[first_edge.get()].insert(vertex);
         }

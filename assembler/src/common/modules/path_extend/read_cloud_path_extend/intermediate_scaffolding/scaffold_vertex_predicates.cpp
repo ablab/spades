@@ -4,10 +4,10 @@
 namespace path_extend {
 
 bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVertex &vertex) const {
-    size_t vertex_length = vertex.getLengthFromGraph(g_);
-    double vertex_coverage = vertex.getCoverageFromGraph(g_);
-    double start_coverage = start_.getCoverageFromGraph(g_);
-    double end_coverage = end_.getCoverageFromGraph(g_);
+    size_t vertex_length = vertex.GetLengthFromGraph(g_);
+    double vertex_coverage = vertex.GetCoverageFromGraph(g_);
+    double start_coverage = start_.GetCoverageFromGraph(g_);
+    double end_coverage = end_.GetCoverageFromGraph(g_);
     DEBUG("Length: " << vertex_length);
     DEBUG("Coverage: " << vertex_coverage);
     DEBUG("Id: " << vertex.int_id());
@@ -71,7 +71,7 @@ path_extend::LongEdgePairGapCloserParams::LongEdgePairGapCloserParams(size_t cou
 LengthChecker::LengthChecker(const size_t length_threshold_, const Graph &g_)
     : length_threshold_(length_threshold_), g_(g_) {}
 bool LengthChecker::Check(const ScaffoldVertexPredicate::ScaffoldVertex &vertex) const {
-    return vertex.getLengthFromGraph(g_) < length_threshold_;
+    return vertex.GetLengthFromGraph(g_) < length_threshold_;
 }
 bool IntersectionBasedPairEntryProcessor::CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex,
                                                            double score_threshold) {

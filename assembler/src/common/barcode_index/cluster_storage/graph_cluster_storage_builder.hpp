@@ -122,8 +122,8 @@ class ClusterMerger {
             TRACE("Tail cluster size: " << second_cluster.Size());
             TRACE("Tail cluster id: " << second_cluster.GetId());
             Cluster::MappingInfo second_cluster_mapping = second_cluster.GetMapping(second);
-            VERIFY(second.getLengthFromGraph(g_) >= second_cluster_mapping.GetRight());
-            uint64_t distance_to_end = first.getLengthFromGraph(g_) - first_cluster_mapping.GetRight();
+            VERIFY(second.GetLengthFromGraph(g_) >= second_cluster_mapping.GetRight());
+            uint64_t distance_to_end = first.GetLengthFromGraph(g_) - first_cluster_mapping.GetRight();
             uint64_t distance_to_start = second_cluster_mapping.GetLeft();
             uint64_t distance = distance_to_end + distance_to_start;
             TRACE("Distance to end: " << distance_to_end);
@@ -145,7 +145,7 @@ class ClusterMerger {
                         if (mapping_entry.second.IsOnHead((size_t) distance_threshold)) {
                             edge_cluster_storage.InsertBarcodeOnHead(edge, barcode, new_id);
                         }
-                        if (mapping_entry.second.IsOnTail((size_t) distance_threshold, edge.getLengthFromGraph(g_))) {
+                        if (mapping_entry.second.IsOnTail((size_t) distance_threshold, edge.GetLengthFromGraph(g_))) {
                             edge_cluster_storage.InsertBarcodeOnTail(edge, barcode, new_id);
                         }
                     }

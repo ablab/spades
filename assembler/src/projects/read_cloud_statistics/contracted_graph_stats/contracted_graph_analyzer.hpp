@@ -541,13 +541,13 @@ namespace contracted_graph {
                 //fixme why?
                 const size_t coverage_read_threshold = 3;
                 for (const auto& edge: incoming_set) {
-                    vertex_data.lengths_.push_back(edge.getLengthFromGraph(graph_));
-                    vertex_data.coverages_.push_back(edge.getCoverageFromGraph(graph_));
+                    vertex_data.lengths_.push_back(edge.GetLengthFromGraph(graph_));
+                    vertex_data.coverages_.push_back(edge.GetCoverageFromGraph(graph_));
                     vertex_data.barcode_coverages_.push_back(GetBarcodeCoverage(edge, coverage_read_threshold));
                 }
                 for (const auto& edge: outcoming_set) {
-                    vertex_data.lengths_.push_back(edge.getLengthFromGraph(graph_));
-                    vertex_data.coverages_.push_back(edge.getCoverageFromGraph(graph_));
+                    vertex_data.lengths_.push_back(edge.GetLengthFromGraph(graph_));
+                    vertex_data.coverages_.push_back(edge.GetCoverageFromGraph(graph_));
                     vertex_data.barcode_coverages_.push_back(GetBarcodeCoverage(edge, coverage_read_threshold));
                 }
                 vector<Transition> transitions;
