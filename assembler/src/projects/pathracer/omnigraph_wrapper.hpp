@@ -10,45 +10,71 @@
 
 #include <vector>
 
+struct IdHolder {
+    uint64_t id_ : 26;
+    uint64_t pos_ : 28;
+
+    IdHolder()
+            : id_(0), pos_(-1) {}
+
+    IdHolder(debruijn_graph::EdgeId id, uint64_t pos)
+            : id_(id.int_id()), pos_(pos) {}
+
+    explicit operator bool() const { return id_; }
+
+    bool operator==(const IdHolder &other) const {
+        return (id_ == other.id_) && (pos_ == other.pos_);
+    }
+
+    debruijn_graph::EdgeId e() const {
+        return id_;
+    }
+
+    size_t pos() const {
+        return pos_;
+    };
+};
+
+static_assert(sizeof(IdHolder) == sizeof(uint64_t), "Invalid packed id holder");
+
 class DebruijnGraphCursor {
   public:
-    DebruijnGraphCursor()
-            : e_(), position_(-1) {}
+      DebruijnGraphCursor()
+              : holder_{} {}
 
-    DebruijnGraphCursor(debruijn_graph::EdgeId e, size_t position)
-            : e_(e), position_(position) {}
+      DebruijnGraphCursor(debruijn_graph::EdgeId e, size_t position) : holder_{e, position} {}
 
-    DebruijnGraphCursor(const DebruijnGraphCursor &) = default;
-    DebruijnGraphCursor(DebruijnGraphCursor &&) = default;
-    DebruijnGraphCursor &operator=(const DebruijnGraphCursor &) = default;
-    DebruijnGraphCursor &operator=(DebruijnGraphCursor &&) = default;
-    ~DebruijnGraphCursor() noexcept = default;
+      DebruijnGraphCursor(const DebruijnGraphCursor &) = default;
+      DebruijnGraphCursor(DebruijnGraphCursor &&) = default;
+      DebruijnGraphCursor &operator=(const DebruijnGraphCursor &) = default;
+      DebruijnGraphCursor &operator=(DebruijnGraphCursor &&) = default;
+      ~DebruijnGraphCursor() noexcept = default;
 
-    bool operator==(const DebruijnGraphCursor &other) const {
-        return (e_ == other.e_) && (position_ == other.position_);
+      bool operator==(const DebruijnGraphCursor &other) const {
+          return holder_ == other.holder_;
     }
 
     using EdgeId = debruijn_graph::EdgeId;
-    EdgeId edge() const { return e_; }
-    size_t position() const { return position_; }
-    bool is_empty() const { return !e_; }
+    EdgeId edge() const { return holder_.e(); }
+    size_t position() const { return holder_.pos(); }
+    bool is_empty() const { return !holder_; }
 
     char letter(const void *context) const {
-        return nucl(g(context).EdgeNucls(e_)[position_]); }
+        return nucl(g(context).EdgeNucls(edge())[position()]); }
 
     bool is_convergent(const void *context) const {
         const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
 
-        return position_ == g.k() &&
-                g.IncomingEdgeCount(g.EdgeStart(e_)) > 1;
+        return position() == g.k() &&
+                g.IncomingEdgeCount(g.EdgeStart(edge())) > 1;
         // return prev().size() > 1;
     }
 
     bool is_divergent(const void *context) const {
         const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
 
-        return position_ + 1 == g.length(e_) + g.k() &&
-                g.OutgoingEdgeCount(g.EdgeEnd(e_)) > 1;
+        return position() + 1 == g.length(edge()) + g.k() &&
+                g.OutgoingEdgeCount(g.EdgeEnd(edge())) > 1;
         // return next().size() > 1;
     }
 
@@ -79,18 +105,17 @@ class DebruijnGraphCursor {
         // Also please not that in terms of next() all normalized versions are equivalent
         // Thus, for initial cursors we can (and should!) perform even more aggressive normalization "to brother":
         // if we are in vertex, replace the edge with the edge having the least id among all ingoing edges.
-        while (position_ < g.k() && g.IncomingEdgeCount(g.EdgeStart(e_)) > 0) {
-            e_ = *g.in_begin(g.EdgeStart(e_));
-            position_ = g.length(e_) + position_;
+        while (position() < g.k() && g.IncomingEdgeCount(g.EdgeStart(edge())) > 0) {
+            holder_ = { *g.in_begin(g.EdgeStart(edge())), g.length(edge()) + position() };
         }
     }
 
     void generate_normalized_cursors(std::vector<DebruijnGraphCursor> &out,
                                      const void *context) const {
         const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
-        if (position_ < g.k() && g.IncomingEdgeCount(g.EdgeStart(e_)) > 0) {
-            for (EdgeId new_e : g.IncomingEdges(g.EdgeStart(e_))) {
-                size_t new_position = g.length(new_e) + position_;
+        if (position() < g.k() && g.IncomingEdgeCount(g.EdgeStart(edge())) > 0) {
+            for (EdgeId new_e : g.IncomingEdges(g.EdgeStart(edge()))) {
+                size_t new_position = g.length(new_e) + position();
                 DebruijnGraphCursor cursor{new_e, new_position};
                 cursor.generate_normalized_cursors(out, context);
             }
@@ -101,18 +126,20 @@ class DebruijnGraphCursor {
 
     friend struct std::hash<DebruijnGraphCursor>;
     friend std::ostream &operator<<(std::ostream &os, const DebruijnGraphCursor &p);
-
-    debruijn_graph::EdgeId e_;
-    size_t position_;
+    
+    IdHolder holder_;
 };
+
+static_assert(sizeof(DebruijnGraphCursor) == sizeof(uint64_t), "Invalid packed id holder");
+
 
 class DebruijnComponentCursor {
   public:
     DebruijnComponentCursor()
-            : e_(), position_(-1) {}
+            : holder_() {}
 
     DebruijnComponentCursor(debruijn_graph::EdgeId e, size_t position)
-            : e_(e), position_(position) {}
+            : holder_{e, position} {}
 
     DebruijnComponentCursor(const DebruijnComponentCursor &) = default;
     DebruijnComponentCursor(DebruijnComponentCursor &&) = default;
@@ -121,28 +148,28 @@ class DebruijnComponentCursor {
     ~DebruijnComponentCursor() noexcept = default;
 
     bool operator==(const DebruijnComponentCursor &other) const {
-        return (e_ == other.e_) && (position_ == other.position_);
+        return holder_ == other.holder_;
     }
 
     using EdgeId = debruijn_graph::EdgeId;
-    EdgeId edge() const { return e_; }
-    size_t position() const { return position_; }
+    EdgeId edge() const { return holder_.e(); }
+    size_t position() const { return holder_.pos(); }
 
-    bool is_empty() const { return !e_; }
+    bool is_empty() const { return !holder_; }
 
-    char letter(const void *context) const { return nucl(this->g(context).EdgeNucls(e_)[position_]); }
+    char letter(const void *context) const { return nucl(this->g(context).EdgeNucls(edge())[position()]); }
 
     bool is_convergent(const void *context) const {
         const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
-        return position_ == g.k() &&
-                (g.IncomingEdgeCount(g.EdgeStart(e_)) > 1 && !this->c(context).IsBorder(g.EdgeStart(e_)));
+        return position() == g.k() &&
+                (g.IncomingEdgeCount(g.EdgeStart(edge())) > 1 && !this->c(context).IsBorder(g.EdgeStart(edge())));
         // return prev().size() > 1;
     }
 
     bool is_divergent(const void *context) const {
         const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
-        return position_ + 1 == g.length(e_) + g.k() &&
-                (g.OutgoingEdgeCount(g.EdgeEnd(e_)) > 1 && !this->c(context).IsBorder(g.EdgeEnd(e_)));
+        return position() + 1 == g.length(edge()) + g.k() &&
+                (g.OutgoingEdgeCount(g.EdgeEnd(edge())) > 1 && !this->c(context).IsBorder(g.EdgeEnd(edge())));
         // return next().size() > 1;
     }
 
@@ -169,25 +196,26 @@ class DebruijnComponentCursor {
 
     void normalize_prefix_to_suffix(const void *context) {
         const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
-        while (position_ < g.k() &&
-               (g.IncomingEdgeCount(g.EdgeStart(e_)) > 0 && !this->c(context).IsBorder(g.EdgeStart(e_)))) {
-            e_ = *g.in_begin(g.EdgeStart(e_));
-            position_ = g.length(e_) + position_;
+        while (position() < g.k() &&
+               (g.IncomingEdgeCount(g.EdgeStart(edge())) > 0 && !this->c(context).IsBorder(g.EdgeStart(edge())))) {
+            holder_ = { *g.in_begin(g.EdgeStart(edge())), g.length(edge()) + position() };
         }
     }
 
     friend struct std::hash<DebruijnComponentCursor>;
     friend std::ostream &operator<<(std::ostream &os, const DebruijnComponentCursor &p);
-
-    debruijn_graph::EdgeId e_;
-    size_t position_;
+        
+    IdHolder holder_;
 };
+
+static_assert(sizeof(DebruijnComponentCursor) == sizeof(uint64_t), "Invalid packed id holder");
+
 
 namespace std {
 template <>
 struct hash<DebruijnGraphCursor> {
     std::size_t operator()(const DebruijnGraphCursor &p) const {
-        return std::hash<size_t>()(hash_size_t_pair(p.e_.hash(), p.position_));
+        return std::hash<size_t>()(hash_size_t_pair(p.edge().hash(), p.position()));
     }
 };
 }
@@ -196,7 +224,7 @@ namespace std {
 template <>
 struct hash<DebruijnComponentCursor> {
     std::size_t operator()(const DebruijnComponentCursor &p) const {
-        return std::hash<size_t>()(hash_size_t_pair(p.e_.hash(), p.position_));
+        return std::hash<size_t>()(hash_size_t_pair(p.edge().hash(), p.position()));
     }
 };
 }
@@ -205,7 +233,7 @@ inline std::ostream &operator<<(std::ostream &os, const DebruijnGraphCursor &p) 
   if (p.is_empty()) {
     return os << "(@)";
   } else {
-    return os << "(" << p.e_ << ", " << p.position_ << ")";
+    return os << "(" << p.edge() << ", " << p.position() << ")";
   }
 }
 
@@ -213,7 +241,7 @@ inline std::ostream &operator<<(std::ostream &os, const DebruijnComponentCursor 
   if (p.is_empty()) {
     return os << "(@)";
   } else {
-    return os << "(" << p.e_ << ", " << p.position_ << ")";
+    return os << "(" << p.edge() << ", " << p.position() << ")";
   }
 }
 
