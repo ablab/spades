@@ -327,7 +327,8 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
 };
 
 template <typename GraphCursor>
-PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<GraphCursor> &initial_original) {
+PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
+                                    const std::vector<GraphCursor> &initial_original, const void *context) {
   const double absolute_threshold = 250.0;
   using StateSet = StateSet<GraphCursor>;
   using DeletionStateSet = DeletionStateSet<GraphCursor>;
@@ -353,28 +354,28 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   std::vector<GraphCursor> initial;
 
-  auto transfer = [&code, &initial](StateSet &to, const auto &from, double transfer_fee,
-                                    const std::vector<double> &emission_fees) {
+  auto transfer = [&code, &initial,context](StateSet &to, const auto &from, double transfer_fee,
+                                            const std::vector<double> &emission_fees) {
     DEBUG_ASSERT((void*)(&to) != (void*)(&from), hmmpath_assert{});
     for (const auto &state : from.states()) {
-      for (const auto &next : (state.cursor.is_empty() ? initial : state.cursor.next())) {
-        double cost = state.score + transfer_fee + emission_fees[code(next.letter())];
+      for (const auto &next : (state.cursor.is_empty() ? initial : state.cursor.next(context))) {
+        double cost = state.score + transfer_fee + emission_fees[code(next.letter(context))];
         to.update(next, cost, state.cursor, state.plink);
       }
     }
   };
 
-  auto transfer_upd = [&code](StateSet &to, const StateSet &from, double transfer_fee,
-                              const std::vector<double> &emission_fees, const std::string &,
-                              const std::unordered_set<GraphCursor> &keys) {
+  auto transfer_upd = [&code,context](StateSet &to, const StateSet &from, double transfer_fee,
+                                      const std::vector<double> &emission_fees, const std::string &,
+                                      const std::unordered_set<GraphCursor> &keys) {
     DEBUG_ASSERT(&to != &from, hmmpath_assert{});
     std::unordered_set<GraphCursor> updated;
     for (const auto &state : from.states(keys)) {
       const auto &cur = state.cursor;
       const auto &fee = state.score;
       const auto &id = state.plink;
-      for (const auto &next : cur.next()) {
-        char letter = next.letter();
+      for (const auto &next : cur.next(context)) {
+        char letter = next.letter(context);
         double cost = fee + transfer_fee + emission_fees[code(letter)];
         if (to.update(next, cost, cur, id)) {
           updated.insert(next);
@@ -404,7 +405,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
     I = std::move(Inew);  // It is necessary to copy minorly updated states
   };
 
-  auto i_loop_processing_non_negative = [&fees, &code, &absolute_threshold](StateSet &I, size_t m, const auto &filter) {
+  auto i_loop_processing_non_negative = [&fees, &code, &absolute_threshold, context](StateSet &I, size_t m, const auto &filter) {
     const auto &emission_fees = fees.ins[m];
     const auto &transfer_fee = fees.t[m][p7H_II];
 
@@ -458,11 +459,11 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
       I.update(elt.current_cursor, elt.score, elt.source_cursor, elt.source_state);  // TODO return iterator to inserted/updated elt
       const auto &id = I[elt.current_cursor];
-      for (const auto &next : elt.current_cursor.next()) {
+      for (const auto &next : elt.current_cursor.next(context)) {
         if (processed.count(next)) {
           continue;
         }
-        char letter = next.letter();
+        char letter = next.letter(context);
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
         if (!filter(next)) {
           q.push({next, cost, elt.current_cursor, id});
@@ -498,7 +499,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   INFO("Original (before filtering) initial set size: " << initial_original.size());
   std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
-               [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, static_cast<double>(fees.M) / 3 - 10); });  // FIXME Correct this condition for local-local matching
+               [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, static_cast<double>(fees.M) / 3 - 10, context); });  // FIXME Correct this condition for local-local matching
   INFO("Initial set size: " << initial.size());
 
   StateSet I, M;
@@ -511,7 +512,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
 
   size_t positions_left = fees.M;
   auto depth_filter_cursor = [&](const GraphCursor &cursor) -> bool {
-    return !depth.depth_at_least(cursor, static_cast<double>(positions_left) / 3 - 10);
+    return !depth.depth_at_least(cursor, static_cast<double>(positions_left) / 3 - 10, context);
   };
 
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
@@ -587,7 +588,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<Gra
   INFO(terminal.object_count_current() << " pathlink objects");
   INFO(terminal.object_count_max() << " pathlink objects maximum");
   INFO(terminal.object_count_constructed() << " pathlink objects constructed");
-  result.clip_tails_non_aggressive();
+  result.clip_tails_non_aggressive(context);
 
   return result;
 }

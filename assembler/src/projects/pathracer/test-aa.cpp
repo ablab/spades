@@ -13,8 +13,8 @@ std::string traverse(GraphCursor cursor) {
   std::string result;
 
   while (true) {
-    result += cursor.letter();
-    auto nexts = cursor.next();
+    result += cursor.letter(nullptr);
+    auto nexts = cursor.next(nullptr);
     if (nexts.empty()) {
       break;
     }
@@ -26,7 +26,7 @@ std::string traverse(GraphCursor cursor) {
 
 std::string translate_via_cursor(const std::string &nts) {
   auto nt_graph = Graph({nts});
-  auto aa_cursor = make_aa_cursors(nt_graph.begins())[0];
+  auto aa_cursor = make_aa_cursors(nt_graph.begins(), nullptr)[0];
   return traverse(aa_cursor);
 }
 

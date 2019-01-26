@@ -10,7 +10,7 @@ template <class GraphCursor>
 class AAGraphCursor;
 
 template <class GraphCursor>
-auto make_aa_cursors(const std::vector<GraphCursor> &cursors);
+auto make_aa_cursors(const std::vector<GraphCursor> &cursors, const void *context);
 
 template <class GraphCursor>
 inline std::ostream &operator<<(std::ostream &os, const AAGraphCursor<GraphCursor> &cursor);
@@ -20,7 +20,7 @@ class AAGraphCursor {
   using This = AAGraphCursor<GraphCursor>;
 
  public:
-  char letter() const { return to_one_letter(aa::to_aa(c0_.letter(), c1_.letter(), c2_.letter())); }
+  char letter(const void *context) const { return to_one_letter(aa::to_aa(c0_.letter(context), c1_.letter(context), c2_.letter(context))); }
 
   AAGraphCursor() = default;
   AAGraphCursor(const GraphCursor &c0, const GraphCursor &c1, const GraphCursor &c2) : c0_{c0}, c1_{c1}, c2_{c2} {}
@@ -36,24 +36,25 @@ class AAGraphCursor {
 
   using EdgeId = std::decay_t<decltype(GraphCursor().edge())>;
 
-  std::vector<This> prev() const;  // TODO implement it
+  std::vector<This> prev(void*) const;  // TODO implement it
 
-  std::vector<This> next() const { return from_bases(c2_.next()); }
+  std::vector<This> next(const void *context) const { return from_bases(c2_.next(context), context); }
 
   std::vector<GraphCursor> nucl_cursors() const { return {c0_, c1_, c2_}; }
 
  private:
   GraphCursor c0_, c1_, c2_;
   friend struct std::hash<This>;
-  friend auto make_aa_cursors<GraphCursor>(const std::vector<GraphCursor> &cursors);
+  friend auto make_aa_cursors<GraphCursor>(const std::vector<GraphCursor> &cursors, const void *context);
   friend std::ostream &operator<<<GraphCursor>(std::ostream &os, const AAGraphCursor<GraphCursor> &cursor);
 
-  static std::vector<This> from_bases(const std::vector<GraphCursor> &cursors) {
+  static std::vector<This> from_bases(const std::vector<GraphCursor> &cursors,
+                                      const void *context) {
     llvm::SmallVector<llvm::SmallVector<GraphCursor, 2>, 16> nexts;
     // nexts.reserve(16);
 
     for (const auto &cursor : cursors) {
-      for (const auto &n : cursor.next()) {
+      for (const auto &n : cursor.next(context)) {
         nexts.push_back({ cursor, n });
       }
     }
@@ -62,7 +63,7 @@ class AAGraphCursor {
     result.reserve(64);
     for (const auto &n : nexts) {
       assert(n.size() == 2);
-      for (const auto &n2 : n.back().next()) {
+      for (const auto &n2 : n.back().next(context)) {
         result.emplace_back(n[0], n[1], n2);
       }
     }
@@ -81,13 +82,13 @@ inline std::ostream &operator<<(std::ostream &os, const AAGraphCursor<GraphCurso
 }
 
 template <class GraphCursor>
-auto make_aa_cursors(const std::vector<GraphCursor> &cursors) {
-  return AAGraphCursor<GraphCursor>::from_bases(cursors);
+auto make_aa_cursors(const std::vector<GraphCursor> &cursors, const void *context) {
+  return AAGraphCursor<GraphCursor>::from_bases(cursors, context);
 }
 
 template <class GraphCursor>
-auto make_aa_cursors(const GraphCursor &cursor) {
-  return make_aa_cursors({cursor});
+auto make_aa_cursors(const GraphCursor &cursor, const void *context) {
+  return make_aa_cursors({cursor}, context);
 }
 
 namespace std {

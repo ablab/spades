@@ -6,7 +6,7 @@
 double levenshtein_substring_score(const std::string &s, const std::string &query) {
   auto fees = hmm::levenshtein_fees(query);
   auto graph = Graph({s});
-  auto result = find_best_path(fees, graph.all());
+  auto result = find_best_path(fees, graph.all(), nullptr);
   auto paths = result.top_k(5);
   return paths[0].score;
 }

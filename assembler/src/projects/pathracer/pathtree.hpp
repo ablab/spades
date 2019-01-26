@@ -238,7 +238,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
 
   bool check_all_states_have_children() const { return states_without_children().size() == 0; }
 
-  void clean_non_aggressive() {
+  void clean_non_aggressive(const void *context) {
     if (!check_all_states_have_children()) {
       auto bad_states = states_without_children();
       INFO(this);
@@ -249,7 +249,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
           if (bad_states.count(p)) {
             ERROR(kv.first.is_empty());
             ERROR(kv.second.first);
-            ERROR(kv.first.letter());
+            ERROR(kv.first.letter(context));
           }
         }
       };
@@ -574,12 +574,13 @@ class PathSet {
     auto operator[](size_t n) const { return paths_[n]; }
 
     template <class Cursor>
-    static std::string str(const std::vector<Cursor> &path) {
+    static std::string str(const std::vector<Cursor> &path,
+                           const void *context) {
       std::string s;
       for (size_t i = 0; i < path.size(); ++i) {
         DEBUG_ASSERT(!path[i].is_empty(), pathtree_assert{});
 
-        s += path[i].letter();
+        s += path[i].letter(context);
       }
       return s;
     }
@@ -608,7 +609,8 @@ class PathSet {
       return result;
     }
 
-    static std::string alignment(const AnnotatedPath &apath, const hmm::Fees &fees) {
+    static std::string alignment(const AnnotatedPath &apath, const hmm::Fees &fees,
+                                 const void *context) {
       size_t m = fees.M;
       std::string s;
       size_t prev_position = 0;
@@ -618,7 +620,7 @@ class PathSet {
 
         if (apath.events[i].type == EventType::NONE) {
           ERROR("Position: " << i);
-          ERROR("Path: " << str(apath.path));
+          ERROR("Path: " << str(apath.path, context));
           ERROR("Alignment:" << s);
         }
         DEBUG_ASSERT(apath.events[i].type != EventType::NONE, pathtree_assert{});
@@ -626,7 +628,7 @@ class PathSet {
           s += '-';
         }
         prev_position = apath.events[i].m;
-        s += apath.events[i].type == EventType::MATCH ? (fees.consensus[apath.events[i].m - 1] == apath.path[i].letter() ? 'M' : 'X') : 'I';
+        s += apath.events[i].type == EventType::MATCH ? (fees.consensus[apath.events[i].m - 1] == apath.path[i].letter(context) ? 'M' : 'X') : 'I';
       }
 
       // Add trailing gaps (-)
@@ -636,8 +638,8 @@ class PathSet {
       return s;
     }
 
-    std::string str(size_t n) const { return str(paths_[n].path); }
-    std::string alignment(size_t n, const hmm::Fees &fees) const { return alignment(paths_[n], fees); }
+    std::string str(size_t n, const void *context) const { return str(paths_[n].path, context); }
+    std::string alignment(size_t n, const hmm::Fees &fees, const void *context) const { return alignment(paths_[n], fees, context); }
 
    private:
     std::vector<AnnotatedPath> paths_;
@@ -652,7 +654,7 @@ class PathSet {
 
   path_container top_k(size_t k) const { return path_container(pathlink_, k); }
 
-  auto clip_tails_non_aggressive() { return pathlink_.clean_non_aggressive(); }
+  auto clip_tails_non_aggressive(const void *context) { return pathlink_.clean_non_aggressive(context); }
 
  private:
   pathtree::PathLink<GraphCursor> pathlink_;

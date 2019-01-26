@@ -19,13 +19,13 @@ class ReversalGraphCursor : public GraphCursor {
   ReversalGraphCursor& operator=(const ReversalGraphCursor&) = default;
   ReversalGraphCursor& operator=(ReversalGraphCursor&&) = default;
 
-  std::vector<ReversalGraphCursor> next() const {
-    auto result = GraphCursor::prev();
+  std::vector<ReversalGraphCursor> next(const void *context) const {
+    auto result = GraphCursor::prev(context);
     return std::vector<ReversalGraphCursor>(std::cbegin(result), std::cend(result));
   }
 
-  std::vector<ReversalGraphCursor> prev() const {
-    auto result = GraphCursor::next();
+  std::vector<ReversalGraphCursor> prev(const void *context) const {
+    auto result = GraphCursor::next(context);
     return std::vector<ReversalGraphCursor>(std::cbegin(result), std::cend(result));
   }
 };
@@ -42,12 +42,12 @@ class RestrictedGraphCursor : public GraphCursor {
   RestrictedGraphCursor(const GraphCursor &other, const std::unordered_set<GraphCursor> &space) : GraphCursor(other), pspace_{&space} {}
   RestrictedGraphCursor(GraphCursor &&other, const std::unordered_set<GraphCursor> &space) : GraphCursor(std::move(other)), pspace_{&space} {}
 
-  std::vector<RestrictedGraphCursor> next() const {
-    return filter_(GraphCursor::next());
+  std::vector<RestrictedGraphCursor> next(const void *context) const {
+    return filter_(GraphCursor::next(context));
   }
 
-  std::vector<RestrictedGraphCursor> prev() const {
-    return filter_(GraphCursor::prev());
+  std::vector<RestrictedGraphCursor> prev(const void *context) const {
+    return filter_(GraphCursor::prev(context));
   }
 
  private:

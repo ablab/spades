@@ -62,19 +62,19 @@ class Graph {
       return (edge_id_ == other.edge_id_) && (position_ == other.position_);
     }
 
-    char letter() const {
+    char letter(const void*) const {
       assert(edge_id_ < pgraph_->edges_.size());
       assert(position_ < pgraph_->edges_[edge_id_].size());
       return pgraph_->edges_[edge_id_][position_];
     }
 
-    bool is_divergent() const {
+    bool is_divergent(const void*) const {
       return (position_ + 1 == pgraph_->edges_[edge_id_].size()) && (pgraph_->outgoing_[edge_id_].size() > 1);
     }
 
-    bool is_convergent() const { return (position_ == 0) && (pgraph_->ingoing_[edge_id_].size() > 1); }
+    bool is_convergent(const void*) const { return (position_ == 0) && (pgraph_->ingoing_[edge_id_].size() > 1); }
 
-    std::vector<GraphCursor> prev() const {
+    std::vector<GraphCursor> prev(const void*) const {
       if (position_ == 0) {
         std::vector<GraphCursor> result;
         for (size_t i : pgraph_->ingoing_[edge_id_]) {
@@ -87,7 +87,7 @@ class Graph {
       }
     }
 
-    std::vector<GraphCursor> next() const {
+    std::vector<GraphCursor> next(const void*) const {
       if (position_ + 1 == pgraph_->edges_[edge_id_].size()) {
         std::vector<GraphCursor> result;
         for (size_t i : pgraph_->outgoing_[edge_id_]) {
@@ -443,19 +443,19 @@ class DBGraph {
       return (edge_id_ == other.edge_id_) && (position_ == other.position_);
     }
 
-    char letter() const { return pgraph_->edges_[edge_id_][position_]; }
+    char letter(const void*) const { return pgraph_->edges_[edge_id_][position_]; }
 
-    bool is_convergent() const {
-      return prev().size() > 1;  // TODO implement it more efficiently
+    bool is_convergent(const void *context) const {
+      return prev(context).size() > 1;  // TODO implement it more efficiently
     }
 
-    bool is_divergent() const {
+    bool is_divergent(const void*) const {
       return position_ + 1 == pgraph_->edges_[edge_id_].size() && pgraph_->outgoing_[edge_id_].size() > 1;
       // // return next().size() > 1;
       // return true;
     }
 
-    std::vector<GraphCursor> prev() const {
+    std::vector<GraphCursor> prev(const void *context) const {
       if (position_ == 0) {
         assert(pgraph_->ingoing_[edge_id_].size() == 0);
         return {};
@@ -471,7 +471,7 @@ class DBGraph {
 
         std::unordered_set<char> letters;
         for (const auto &cur : result) {
-          letters.insert(cur.letter());
+          letters.insert(cur.letter(context));
         }
         if (letters.size() != result.size()) {
           ERROR(letters);
@@ -486,7 +486,7 @@ class DBGraph {
       }
     }
 
-    std::vector<GraphCursor> next() const {
+    std::vector<GraphCursor> next(const void*) const {
       if (position_ + 1 < pgraph_->edges_[edge_id_].size()) {
         // assert(position_ != pgraph_->k_ - 1 || pgraph_->prefix_brothers_[edge_id_].size() == 1);
         return {GraphCursor(pgraph_, edge_id_, position_ + 1)};
@@ -530,7 +530,7 @@ class DBGraph {
     GraphCursor end;
   };
 
-  Path trace_exact_sequence(const std::string &s) const {
+  Path trace_exact_sequence(const std::string &s, const void *context) const {
     assert(s.length() > k_);
 
     // auto it = kp1mer_index_.find(s.substr(0, k_ + 1));
@@ -548,14 +548,14 @@ class DBGraph {
     }
 
     auto cur = begin;
-    assert(cur.letter() == s[0]);
+    assert(cur.letter(context) == s[0]);
 
     std::string turns;
     for (size_t i = 1; i < s.length(); ++i) {
-      auto nexts = cur.next();
+      auto nexts = cur.next(context);
       bool flag = false;
       for (const auto &next_cur : nexts) {
-        if (next_cur.letter() == s[i]) {
+        if (next_cur.letter(context) == s[i]) {
           if (nexts.size() > 1) {
             // divergence
             turns += s[i];
@@ -848,7 +848,8 @@ std::string restore_path(const GraphCursor &begin, const GraphCursor &end, const
 }
 
 template <typename GraphCursor>
-std::string restore_path(const GraphCursor &begin, const GraphCursor &end, const std::string &turns) {
+std::string restore_path(const GraphCursor &begin, const GraphCursor &end, const std::string &turns,
+                         const void *context) {
   if (begin.is_empty() || end.is_empty()) {
     return "";
   }
@@ -858,20 +859,20 @@ std::string restore_path(const GraphCursor &begin, const GraphCursor &end, const
   size_t i = 0;
   std::string path;
   while (true) {
-    path += cur.letter();
+    path += cur.letter(context);
 
     if (cur == end && i == turns.size()) {
       break;
     }
 
-    auto nexts = cur.next();
+    auto nexts = cur.next(context);
     assert(nexts.size());
 
     if (nexts.size() > 1) {
       bool flag = false;
       for (const auto &next_cur : nexts) {
         assert(i < turns.size());
-        if (next_cur.letter() == turns[i]) {
+        if (next_cur.letter(context) == turns[i]) {
           cur = next_cur;
           ++i;
           flag = true;
@@ -892,7 +893,7 @@ std::string restore_path(const GraphCursor &begin, const GraphCursor &end, const
   return path;
 }
 
-inline std::string restore_path(const DBGraph::Path &path) { return restore_path(path.begin, path.end, path.turns); }
+inline std::string restore_path(const DBGraph::Path &path, const void *context) { return restore_path(path.begin, path.end, path.turns, context); }
 // auto cur = graph.get_pointer(0, 0);
 
 // std::cout << "Graph walk:" << std::endl;
@@ -911,10 +912,14 @@ struct Fees;
 };
 
 PathSet<ReversalGraphCursor<Graph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
-                                                                    const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial);
+                                                                    const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial,
+                                                                    const void *context);
 PathSet<ReversalGraphCursor<DBGraph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
-                                                                      const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial);
-PathSet<DBGraph::GraphCursor> ind_best_path(const hmm::Fees &fees,
-                                            const std::vector<DBGraph::GraphCursor> &initial);
+                                                                      const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial,
+                                                                      const void *context);
+PathSet<DBGraph::GraphCursor> find_best_path(const hmm::Fees &fees,
+                                             const std::vector<DBGraph::GraphCursor> &initial,
+                                             const void *context);
 PathSet<Graph::GraphCursor> find_best_path(const hmm::Fees &fees,
-                                           const std::vector<Graph::GraphCursor> &initial);
+                                           const std::vector<Graph::GraphCursor> &initial,
+                                           const void *context);
