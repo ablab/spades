@@ -829,16 +829,16 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
     }
 
     INFO("Depth search on left");
-    auto left_cursors = depth_filter::subset(left_queries, false);
+    auto left_cursors = depth_filter::subset(left_queries, &graph, false);
     INFO("Depth search on right");
-    auto right_cursors = depth_filter::subset(right_queries, true);
+    auto right_cursors = depth_filter::subset(right_queries, &graph, true);
 
     INFO("Exporting cursors");
     cursors.insert(left_cursors.cbegin(), left_cursors.cend());
     cursors.insert(right_cursors.cbegin(), right_cursors.cend());
 
     std::vector<GraphCursor> cursors_vector(cursors.cbegin(), cursors.cend());
-    auto cursor_conn_comps = cursor_connected_components(cursors_vector);
+    auto cursor_conn_comps = cursor_connected_components(cursors_vector, &graph);
     std::stable_sort(cursor_conn_comps.begin(), cursor_conn_comps.end(),
                      [](const auto &c1, const auto &c2) { return c1.size() > c2.size(); });
 
@@ -960,26 +960,26 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     INFO("Connected component sizes: " << cursor_conn_comps_sizes);
 
-    auto run_search = [&fees, &p7hmm](const auto &initial, size_t top,
-                                      std::vector<HMMPathInfo> &local_results,
-                                      const std::string &component_name = "") -> void {
-        auto result = find_best_path(fees, initial);
+    auto run_search = [&fees, &p7hmm, &graph](const auto &initial, size_t top,
+                                              std::vector<HMMPathInfo> &local_results,
+                                              const std::string &component_name = "") -> void {
+        auto result = find_best_path(fees, initial, graph);
 
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
         if (!top_paths.empty()) {
             INFO("Best score in the current component: " << result.best_score());
             INFO("Best sequence in the current component");
-            INFO(top_paths.str(0));
-            INFO("Alignment: " << top_paths.compress_alignment(top_paths.alignment(0, fees)));
+            INFO(top_paths.str(0, &graph));
+            INFO("Alignment: " << top_paths.compress_alignment(top_paths.alignment(0, fees, &graph)));
         }
 
         for (const auto& annotated_path : top_paths) {
-            auto seq = top_paths.str(annotated_path.path);
-            auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, fees));
+            auto seq = top_paths.str(annotated_path.path, &graph);
+            auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, fees, &graph));
             auto nucl_path = to_nucl_path(annotated_path.path);
-            std::string nucl_seq = top_paths.str(nucl_path);
-            DEBUG_ASSERT(check_path_continuity(nucl_path), main_assert{}, debug_assert::level<2>{});
+            std::string nucl_seq = top_paths.str(nucl_path, &graph);
+            DEBUG_ASSERT(check_path_continuity(nucl_path, &graph), main_assert{}, debug_assert::level<2>{});
             auto edge_path = to_path(nucl_path);
             DEBUG_ASSERT(!edge_path.empty(), main_assert{});
             auto edge_path_aas = to_path(annotated_path.path);
@@ -1000,8 +1000,8 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     remove_duplicates(match_edges);
 
-    auto process_component = [&hmm, &run_search, &cfg, &results](const auto &component_cursors,
-                                                                 const std::string &component_name = "") -> std::unordered_set<std::vector<EdgeId>> {
+    auto process_component = [&hmm, &run_search, &cfg, &results, &graph](const auto &component_cursors,
+                                                                         const std::string &component_name = "") -> std::unordered_set<std::vector<EdgeId>> {
         assert(!component_cursors.empty());
         INFO("Component size " << component_cursors.size());
 
@@ -1011,7 +1011,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
 
         for (const auto &cursor : component_cursors) {
-            DEBUG_ASSERT(check_cursor_symmetry(cursor), main_assert{}, debug_assert::level<2>{});
+            DEBUG_ASSERT(check_cursor_symmetry(cursor, &graph), main_assert{}, debug_assert::level<2>{});
         }
 
         std::unordered_set<EdgeId> edges;
@@ -1029,7 +1029,7 @@ void TraceHMM(const hmmer::HMM &hmm,
 
         bool hmm_in_aas = hmm.abc()->K == 20;
         if (hmm_in_aas) {
-            run_search(make_aa_cursors(restricted_component_cursors), cfg.top, local_results, component_name);
+            run_search(make_aa_cursors(restricted_component_cursors, &graph), cfg.top, local_results, component_name);
         } else {
             run_search(restricted_component_cursors, cfg.top, local_results, component_name);
         }

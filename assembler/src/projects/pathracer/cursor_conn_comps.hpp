@@ -6,7 +6,8 @@
 
 
 template <typename GraphCursor>
-std::vector<std::vector<GraphCursor>> cursor_connected_components(const std::vector<GraphCursor> &cursors) {
+std::vector<std::vector<GraphCursor>> cursor_connected_components(const std::vector<GraphCursor> &cursors,
+                                                                  const void *context) {
   dsu::ConcurrentDSU dsu(cursors.size());
   std::unordered_map<GraphCursor, size_t> cursor2id;
   for (size_t i = 0; i < cursors.size(); ++i) {
@@ -16,7 +17,7 @@ std::vector<std::vector<GraphCursor>> cursor_connected_components(const std::vec
   for (const auto &kv : cursor2id) {
     const GraphCursor &cursor = kv.first;
     const size_t &id = kv.second;
-    for (const auto &adj : {cursor.next(), cursor.prev()}) {
+    for (const auto &adj : {cursor.next(context), cursor.prev(context)}) {
       for (const GraphCursor &adj_cursor : adj) {
         auto it = cursor2id.find(adj_cursor);
         if (it != cursor2id.cend()) {
@@ -49,16 +50,16 @@ bool in_vector(const T &val, const std::vector<T> &vec) {
 }
 
 template <typename GraphCursor>
-bool check_cursor_symmetry(const GraphCursor &cursor) {
-  for (const auto &next_cursor : cursor.next()) {
-    auto prevs = next_cursor.prev();
+bool check_cursor_symmetry(const GraphCursor &cursor, const void *context) {
+  for (const auto &next_cursor : cursor.next(context)) {
+    auto prevs = next_cursor.prev(context);
     if (!in_vector(cursor, prevs)) {
       ERROR(cursor << ", next: " << next_cursor << ", prevs: " << prevs);
       return false;
     }
   }
-  for (const auto &prev_cursor : cursor.prev()) {
-    auto nexts = prev_cursor.next();
+  for (const auto &prev_cursor : cursor.prev(context)) {
+    auto nexts = prev_cursor.next(context);
     if (!in_vector(cursor, nexts)) {
       ERROR(cursor << ", prev " << prev_cursor << ", nexts" << nexts);
       return false;
@@ -69,10 +70,11 @@ bool check_cursor_symmetry(const GraphCursor &cursor) {
 }
 
 template <typename GraphCursor>
-bool check_path_continuity(const std::vector<GraphCursor> &path) {
+bool check_path_continuity(const std::vector<GraphCursor> &path,
+                           const void *context) {
   for (size_t i = 1; i < path.size(); ++i) {
-    auto nexts = path[i - 1].next();
-    auto prevs = path[i].prev();
+    auto nexts = path[i - 1].next(context);
+    auto prevs = path[i].prev(context);
     if (!in_vector(path[i], nexts) || !in_vector(path[i - 1], prevs)) {
       return false;
     }
