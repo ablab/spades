@@ -462,7 +462,7 @@ void PathExtendLauncher::FilterPaths() {
         if (filtration_name == "default" && it->second.enabled) {
             default_filtration = it;
         }
-        else if (filtration_name == "default" && it->second.enabled) {
+        else if (filtration_name != "default" && it->second.enabled) {
             INFO("Finalizing paths - " + filtration_name);
             PathContainer to_clean(gp_.contig_paths.begin(), gp_.contig_paths.end());
             CleanPaths(to_clean, it->second);
