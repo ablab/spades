@@ -456,20 +456,24 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 }
 
 void PathExtendLauncher::FilterPaths() {
-    PathContainer contig_paths_copy(gp_.contig_paths.begin(), gp_.contig_paths.end());
-    for (const auto& it: params_.pset.path_filtration) {
-        if (it.first == "default" && it.second.enabled) {
-            INFO("Finalizing main paths");
-            CleanPaths(gp_.contig_paths, it.second);
-            DebugOutputPaths(gp_.contig_paths, "final_paths");
+    auto default_filtration = params_.pset.path_filtration.end();
+    for (auto it = params_.pset.path_filtration.begin(); it != params_.pset.path_filtration.end(); ++it) {
+        const auto& filtration_name = it->first;
+        if (filtration_name == "default" && it->second.enabled) {
+            default_filtration = it;
         }
-        else if (it.second.enabled) {
-            INFO("Finalizing paths - " + it.first);
-            PathContainer to_clean(contig_paths_copy.begin(), contig_paths_copy.end());
-            CleanPaths(to_clean, it.second);
-            DebugOutputPaths(to_clean, it.first + "_final_paths");
-            writer_.OutputPaths(to_clean, params_.output_dir + it.first + "_filtered_final_paths" + ".fasta");
+        else if (filtration_name != "default" && it->second.enabled) {
+            INFO("Finalizing paths - " + filtration_name);
+            PathContainer to_clean(gp_.contig_paths.begin(), gp_.contig_paths.end());
+            CleanPaths(to_clean, it->second);
+            DebugOutputPaths(to_clean, filtration_name + "_final_paths");
+            writer_.OutputPaths(to_clean, params_.output_dir + filtration_name + "_filtered_final_paths" + ".fasta");
         }
+    }
+    if (default_filtration != params_.pset.path_filtration.end()) {
+        INFO("Finalizing main paths");
+        CleanPaths(gp_.contig_paths, default_filtration->second);
+        DebugOutputPaths(gp_.contig_paths, "final_paths");
     }
 }
 
