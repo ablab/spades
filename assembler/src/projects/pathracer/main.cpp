@@ -29,6 +29,7 @@
 
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/log_writers.hpp"
+#include "utils/logger/log_writers_thread.hpp"
 #include "utils/segfault_handler.hpp"
 
 #include "version.hpp"
@@ -66,9 +67,9 @@ void create_console_logger(const std::string &filename = "") {
     using namespace logging;
 
     logger *lg = create_logger("");
-    lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<console_writer>()));
+    lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<console_writer_thread>()));
     if (filename != "") {
-        lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<file_writer>(filename)));
+        lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<file_writer_thread>(filename)));
     }
     attach_logger(lg);
 }
