@@ -42,6 +42,15 @@ bool Fees::check_i_loop(size_t i) const {
   return t[i][p7H_II] + *min_element(ins[i].cbegin(), ins[i].cend()) > 0;
 }
 
+size_t Fees::count_negative_loops() const {
+  size_t count = 0;
+  for (size_t i = 0; i <= M; ++i) {
+    count += !check_i_loop(i);
+  }
+
+  return count;
+}
+
 bool Fees::check_i_negative_loops() const {
   for (size_t i = 0; i <= M; ++i) {
     if (!check_i_loop(i)) {
