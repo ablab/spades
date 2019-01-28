@@ -1,0 +1,14 @@
+option('sse2',
+  type : 'boolean',
+  value : true,
+  description : 'Build SSE2 routines')
+
+option('sse41',
+  type : 'boolean',
+  value : true,
+  description : 'Build SSE4.1 routines')
+
+option('avx2',
+  type : 'boolean',
+  value : true,
+  description : 'Build AVX2 routines')

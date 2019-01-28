@@ -16,4 +16,4 @@ add_library(modules STATIC
             alignment/pacbio/gap_dijkstra_edlib.cpp 
             alignment/pacbio/g_aligner.cpp)
 
-target_link_libraries(modules sequence bwa)
+target_link_libraries(modules sequence bwa parasail)

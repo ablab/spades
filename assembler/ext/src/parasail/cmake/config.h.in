@@ -1,0 +1,44 @@
+#cmakedefine HAVE__ALIGNED_MALLOC
+#cmakedefine HAVE_POSIX_MEMALIGN
+#cmakedefine HAVE_ALIGNED_ALLOC
+#cmakedefine HAVE_MEMALIGN
+#cmakedefine SIZEOF_INT @SIZEOF_INT@
+#cmakedefine01 HAVE_XGETBV
+#cmakedefine01 HAVE_SSE2
+#cmakedefine01 HAVE_SSE2_MM_SET1_EPI64X
+#cmakedefine01 HAVE_SSE2_MM_SET_EPI64X
+#cmakedefine01 HAVE_SSE41
+#cmakedefine01 HAVE_SSE41_MM_INSERT_EPI64
+#cmakedefine01 HAVE_SSE41_MM_EXTRACT_EPI64
+#cmakedefine01 HAVE_AVX2
+#cmakedefine01 HAVE_AVX2_MM256_SET1_EPI64X
+#cmakedefine01 HAVE_AVX2_MM256_SET_EPI64X
+#cmakedefine01 HAVE_AVX2_MM256_INSERT_EPI64
+#cmakedefine01 HAVE_AVX2_MM256_INSERT_EPI32
+#cmakedefine01 HAVE_AVX2_MM256_INSERT_EPI16
+#cmakedefine01 HAVE_AVX2_MM256_INSERT_EPI8
+#cmakedefine01 HAVE_AVX2_MM256_EXTRACT_EPI64
+#cmakedefine01 HAVE_AVX2_MM256_EXTRACT_EPI32
+#cmakedefine01 HAVE_AVX2_MM256_EXTRACT_EPI16
+#cmakedefine01 HAVE_AVX2_MM256_EXTRACT_EPI8
+#cmakedefine01 HAVE_ALTIVEC
+#cmakedefine01 HAVE_NEON
+#cmakedefine01 HAVE_ZLIB
+#cmakedefine01 WORDS_BIGENDIAN
+#cmakedefine HAVE_SYS_MMAN_H
+#cmakedefine HAVE_UNISTD_H
+#cmakedefine HAVE_WINDOWS_H
+#cmakedefine HAVE_GETOPT
+#cmakedefine HAVE_POLL
+#cmakedefine HAVE_FILELENGTH
+#cmakedefine01 HAVE_GETSYSTEMTIMEASFILETIME
+#cmakedefine HAVE_SETUNHANDLEDEXCEPTIONFILTER
+#cmakedefine01 HAVE_CLOCK_GET_TIME
+#cmakedefine01 HAVE_CLOCK_GETTIME_MONOTONIC
+#cmakedefine01 HAVE_CLOCK_GETTIME_REALTIME
+#cmakedefine INT64_LITERAL_SUFFIX_I64
+#cmakedefine INT64_LITERAL_SUFFIX_LL
+#ifndef __cplusplus
+#cmakedefine inline ${inline}
+#endif
+#cmakedefine restrict ${restrict}

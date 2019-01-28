@@ -1,0 +1,91 @@
+###########
+# headers #
+###########
+
+if not meson.is_subproject()
+  install_headers(
+    files([
+      '../parasail.h']))
+
+  install_headers(
+    files([
+      'cpuid.h',
+      'io.h',
+      'function_lookup.h',
+      'matrix_lookup.h']),
+    subdir : 'parasail')
+
+  install_headers(
+    files([
+      'matrices/blosum100.h',
+      'matrices/blosum30.h',
+      'matrices/blosum35.h',
+      'matrices/blosum40.h',
+      'matrices/blosum45.h',
+      'matrices/blosum50.h',
+      'matrices/blosum55.h',
+      'matrices/blosum60.h',
+      'matrices/blosum62.h',
+      'matrices/blosum65.h',
+      'matrices/blosum70.h',
+      'matrices/blosum75.h',
+      'matrices/blosum80.h',
+      'matrices/blosum85.h',
+      'matrices/blosum90.h',
+      'matrices/blosum_map.h',
+      'matrices/blosumn.h',
+      'matrices/dnafull.h',
+      'matrices/nuc44.h',
+      'matrices/pam10.h',
+      'matrices/pam100.h',
+      'matrices/pam110.h',
+      'matrices/pam120.h',
+      'matrices/pam130.h',
+      'matrices/pam140.h',
+      'matrices/pam150.h',
+      'matrices/pam160.h',
+      'matrices/pam170.h',
+      'matrices/pam180.h',
+      'matrices/pam190.h',
+      'matrices/pam20.h',
+      'matrices/pam200.h',
+      'matrices/pam210.h',
+      'matrices/pam220.h',
+      'matrices/pam230.h',
+      'matrices/pam240.h',
+      'matrices/pam250.h',
+      'matrices/pam260.h',
+      'matrices/pam270.h',
+      'matrices/pam280.h',
+      'matrices/pam290.h',
+      'matrices/pam30.h',
+      'matrices/pam300.h',
+      'matrices/pam310.h',
+      'matrices/pam320.h',
+      'matrices/pam330.h',
+      'matrices/pam340.h',
+      'matrices/pam350.h',
+      'matrices/pam360.h',
+      'matrices/pam370.h',
+      'matrices/pam380.h',
+      'matrices/pam390.h',
+      'matrices/pam40.h',
+      'matrices/pam400.h',
+      'matrices/pam410.h',
+      'matrices/pam420.h',
+      'matrices/pam430.h',
+      'matrices/pam440.h',
+      'matrices/pam450.h',
+      'matrices/pam460.h',
+      'matrices/pam470.h',
+      'matrices/pam480.h',
+      'matrices/pam490.h',
+      'matrices/pam50.h',
+      'matrices/pam500.h',
+      'matrices/pam60.h',
+      'matrices/pam70.h',
+      'matrices/pam80.h',
+      'matrices/pam90.h',
+      'matrices/pam_map.h']),
+    subdir : 'parasail/matrices')
+endif
