@@ -606,12 +606,13 @@ std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path,
 
 void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph,
                std::vector<std::vector<EdgeId>> &paths,
-               const std::string &filename) {
+               const std::string &filename,
+               io::IdMapper<std::string> *id_mapper) {
     using namespace debruijn_graph;
     if (ends_with(filename, ".gfa")) {
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(graph);
+        gfa.to_graph(graph, id_mapper);
         paths.reserve(gfa.num_paths());
         for (const auto &path : gfa.paths()) {
             paths.push_back(path.edges);
@@ -1156,7 +1157,10 @@ int main(int argc, char* argv[]) {
 
     debruijn_graph::ConjugateDeBruijnGraph graph(cfg.k);
     std::vector<std::vector<EdgeId>> scaffold_paths;
-    LoadGraph(graph, scaffold_paths, cfg.load_from);
+    std::unique_ptr<io::IdMapper<std::string>> id_mapper(nullptr);
+    if (cfg.annotate_graph)
+        id_mapper.reset(new io::IdMapper<std::string>());
+    LoadGraph(graph, scaffold_paths, cfg.load_from, id_mapper.get());
     INFO("Graph loaded. Total vertices: " << graph.size());
 
     INFO("Total paths " << scaffold_paths.size());
@@ -1184,7 +1188,8 @@ int main(int argc, char* argv[]) {
         std::string fname = cfg.output_dir + "/graph_with_hmm_paths.gfa";
         INFO("Saving annotated graph to " << fname)
         std::ofstream os(fname);
-        path_extend::GFAPathWriter gfa_writer(graph, os);
+        path_extend::GFAPathWriter gfa_writer(graph, os,
+                                              io::MapNamingF<debruijn_graph::ConjugateDeBruijnGraph>(*id_mapper));
         gfa_writer.WriteSegmentsAndLinks();
 
         for (const auto& entry : gfa_paths) {
