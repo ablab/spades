@@ -863,6 +863,7 @@ void TraceHMM(const hmmer::HMM &hmm,
 
     auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
     INFO("HMM consensus: " << fees.consensus);
+    INFO("HMM " << p7hmm->name << " has " << fees.count_negative_loops() << " negative I loops over " << fees.ins.size());
 
     // INFO("Matched paths:");
     // for (const auto &kv : matched_paths) {
