@@ -150,7 +150,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       const This *state;
       score_t score;
       const This *ancestor;
-      std::tie(state, score, ancestor) = {payload.state, payload.score, payload.ancestor};
+      std::tie(state, score, ancestor) = std::make_tuple(payload.state, payload.score, payload.ancestor);
 
       if (result.count(state)) {
         continue;
