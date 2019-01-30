@@ -89,13 +89,13 @@ std::string join(const Range &range, const Sep &sep) {
     return ss.str();
 }
 
-enum class mode {
+enum class Mode {
     hmm,
     nucl,
     aa
 };
 
-enum class seed_mode {
+enum class SeedMode {
     edges,
     scaffolds,
     scaffolds_one_by_one,
@@ -108,8 +108,8 @@ struct PathracerConfig {
     std::string load_from = "";
     std::string hmmfile = "";
     std::string output_dir = "";
-    enum mode mode = mode::hmm;
-    enum seed_mode seed_mode = seed_mode::edges_scaffolds;
+    enum Mode mode = Mode::hmm;
+    enum SeedMode seed_mode = SeedMode::edges_scaffolds;
     size_t k = 0;
     int threads = 4;
     size_t top = 100;
@@ -146,15 +146,15 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       cfg.load_from  << value("load from"),
       cfg.k          << integer("k-mer size"),
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
-      one_of(option("--seed-edges").set(cfg.seed_mode, seed_mode::edges) % "use graph edges as seeds",
-             option("--seed-scaffolds").set(cfg.seed_mode, seed_mode::scaffolds) % "use scaffolds paths as seeds",
-             option("--seed-edges-scaffolds").set(cfg.seed_mode, seed_mode::edges_scaffolds) % "use edges AND scaffolds paths as seeds",
-             option("--seed-exhaustive").set(cfg.seed_mode, seed_mode::exhaustive) % "exhaustive mode, use ALL edges",
-             option("--seed-edges-1-by-1").set(cfg.seed_mode, seed_mode::edges_one_by_one) % "use edges as seeds (1 by 1)",
-             option("--seed-scaffolds-1-by-1").set(cfg.seed_mode, seed_mode::scaffolds_one_by_one) % "use scaffolds paths as seeds (1 by 1)"),
-      one_of(option("--hmm").set(cfg.mode, mode::hmm) % "match against HMM(s) [default]",
-             option("--nucl").set(cfg.mode, mode::nucl) % "match against nucleotide string(s)",
-             option("--aa").set(cfg.mode, mode::aa) % "match agains amino acid string(s)"),
+      one_of(option("--seed-edges").set(cfg.seed_mode, SeedMode::edges) % "use graph edges as seeds",
+             option("--seed-scaffolds").set(cfg.seed_mode, SeedMode::scaffolds) % "use scaffolds paths as seeds",
+             option("--seed-edges-scaffolds").set(cfg.seed_mode, SeedMode::edges_scaffolds) % "use edges AND scaffolds paths as seeds",
+             option("--seed-exhaustive").set(cfg.seed_mode, SeedMode::exhaustive) % "exhaustive mode, use ALL edges",
+             option("--seed-edges-1-by-1").set(cfg.seed_mode, SeedMode::edges_one_by_one) % "use edges as seeds (1 by 1)",
+             option("--seed-scaffolds-1-by-1").set(cfg.seed_mode, SeedMode::scaffolds_one_by_one) % "use scaffolds paths as seeds (1 by 1)"),
+      one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
+             option("--nucl").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
+             option("--aa").set(cfg.mode, Mode::aa) % "match agains amino acid string(s)"),
       (option("--top") & integer("x", cfg.top)) % "extract top x paths [default: 100]",
       (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
       (option("--edge-id") & integer("value", cfg.int_id)) % "match around edge",
@@ -491,12 +491,12 @@ std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
 }
 
 
-std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, enum mode mode) {
+std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, enum Mode mode) {
     std::vector<hmmer::HMM> res;
-    hmmer::HMMSequenceBuilder builder(mode == mode::nucl ? hmmer::Alphabet::DNA : hmmer::Alphabet::AMINO,
+    hmmer::HMMSequenceBuilder builder(mode == Mode::nucl ? hmmer::Alphabet::DNA : hmmer::Alphabet::AMINO,
                                       hmmer::ScoreSystem::Default);
 
-    ESL_ALPHABET   *abc  = esl_alphabet_Create(mode == mode::nucl ? eslDNA : eslAMINO);
+    ESL_ALPHABET   *abc  = esl_alphabet_Create(mode == Mode::nucl ? eslDNA : eslAMINO);
     ESL_SQ         *qsq  = esl_sq_CreateDigital(abc);
     ESL_SQFILE     *qfp  = NULL;
     const char *qfile = filename.c_str();
@@ -874,7 +874,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     std::vector<std::vector<GraphCursor>> cursor_conn_comps;
     std::vector<std::string> component_names;
 
-    if (cfg.seed_mode == seed_mode::scaffolds_one_by_one) {
+    if (cfg.seed_mode == SeedMode::scaffolds_one_by_one) {
         for (size_t idx = 0; idx < scaffold_paths.size(); ++idx) {
             const auto &path = scaffold_paths[idx];
             std::vector<std::vector<EdgeId>> paths = {path};
@@ -892,7 +892,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             }
             // TODO be more verbose
         }
-    } else if (cfg.seed_mode == seed_mode::edges_one_by_one) {
+    } else if (cfg.seed_mode == SeedMode::edges_one_by_one) {
         for (const auto &e : edges) {
             std::vector<std::vector<EdgeId>> paths = {{e}};
             auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
@@ -908,7 +908,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                 component_names.push_back("edge_" + std::to_string(e.int_id()));
             }
         }
-    } else if (cfg.seed_mode == seed_mode::edges) {
+    } else if (cfg.seed_mode == SeedMode::edges) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by single edges
         for (const auto &e : edges) {
@@ -917,14 +917,14 @@ void TraceHMM(const hmmer::HMM &hmm,
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
         cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
-    } else if (cfg.seed_mode == seed_mode::scaffolds) {
+    } else if (cfg.seed_mode == SeedMode::scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by paths read from GFA
         paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
         cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
-    } else if (cfg.seed_mode == seed_mode::edges_scaffolds) {
+    } else if (cfg.seed_mode == SeedMode::edges_scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by single edges
         for (const auto &e : edges) {
@@ -935,7 +935,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
         cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
-    } else if (cfg.seed_mode == seed_mode::exhaustive) {
+    } else if (cfg.seed_mode == SeedMode::exhaustive) {
         cursor_conn_comps.resize(1);
         auto &cursors = cursor_conn_comps[0];
 
@@ -1083,7 +1083,7 @@ void hmm_main(const PathracerConfig &cfg,
               std::set<std::pair<std::string, std::vector<EdgeId>>> &gfa_paths,
               const std::function<std::string(EdgeId)> &mapping_f) {
     std::vector<hmmer::HMM> hmms;
-    if (cfg.mode == mode::hmm)
+    if (cfg.mode == Mode::hmm)
         hmms = ParseHMMFile(cfg.hmmfile);
     else
         hmms = ParseFASTAFile(cfg.hmmfile, cfg.mode);
