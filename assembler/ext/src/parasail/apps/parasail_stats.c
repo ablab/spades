@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "parasail.h"
-#include "parasail/io.h"
+#include "parasail/parasail.h"
+#include "parasail/parasail/io.h"
 
 static void print_help(const char *progname, int status) {
     fprintf(stderr, "\nusage: %s "

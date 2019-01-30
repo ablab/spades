@@ -58,8 +58,8 @@
 #define THREAD_DOC "      threads: Warning: ignored; OpenMP was not supported by your compiler\n"
 #endif
 
-#include "parasail.h"
-#include "parasail/io.h"
+#include "parasail/parasail.h"
+#include "parasail/parasail/io.h"
 
 #include "sais.h"
 
