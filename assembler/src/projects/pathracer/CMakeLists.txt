@@ -13,6 +13,10 @@ add_executable(pathracer
                main.cpp)
 # target_compile_options(pathracer PRIVATE -g)
 
+install(TARGETS pathracer
+        DESTINATION bin
+        COMPONENT runtime)
+
 add_executable(looper
                looper.cpp
                fasta_reader.cpp fees.cpp
