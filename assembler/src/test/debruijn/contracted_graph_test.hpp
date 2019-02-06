@@ -45,30 +45,30 @@ BOOST_AUTO_TEST_CASE( ContractedGraphBuilder ) {
     for (const auto& vertex: vertex_it_helper) {
         simple_vertex_map.insert({vertex.int_id(), vertex});
     }
-    BOOST_CHECK_EQUAL(contracted_graph.getOutDegree(simple_vertex_map.at(first_id)), 2);
-    BOOST_CHECK_EQUAL(contracted_graph.getInDegree(simple_vertex_map.at(first_id)), 0);
-    BOOST_CHECK_EQUAL(contracted_graph.getOutDegree(simple_vertex_map.at(second_id)), 1);
-    BOOST_CHECK_EQUAL(contracted_graph.getInDegree(simple_vertex_map.at(second_id)), 2);
-    BOOST_CHECK_EQUAL(contracted_graph.getOutDegree(simple_vertex_map.at(third_id)), 2);
-    BOOST_CHECK_EQUAL(contracted_graph.getInDegree(simple_vertex_map.at(third_id)), 1);
-    BOOST_CHECK_EQUAL(contracted_graph.getOutDegree(simple_vertex_map.at(fourth_id)), 0);
-    BOOST_CHECK_EQUAL(contracted_graph.getInDegree(simple_vertex_map.at(fourth_id)), 2);
+    BOOST_CHECK_EQUAL(contracted_graph.GetOutDegree(simple_vertex_map.at(first_id)), 2);
+    BOOST_CHECK_EQUAL(contracted_graph.GetInDegree(simple_vertex_map.at(first_id)), 0);
+    BOOST_CHECK_EQUAL(contracted_graph.GetOutDegree(simple_vertex_map.at(second_id)), 1);
+    BOOST_CHECK_EQUAL(contracted_graph.GetInDegree(simple_vertex_map.at(second_id)), 2);
+    BOOST_CHECK_EQUAL(contracted_graph.GetOutDegree(simple_vertex_map.at(third_id)), 2);
+    BOOST_CHECK_EQUAL(contracted_graph.GetInDegree(simple_vertex_map.at(third_id)), 1);
+    BOOST_CHECK_EQUAL(contracted_graph.GetOutDegree(simple_vertex_map.at(fourth_id)), 0);
+    BOOST_CHECK_EQUAL(contracted_graph.GetInDegree(simple_vertex_map.at(fourth_id)), 2);
 
     contraction_threshold = 200;
     contracted_graph = CreateContractedGraph(g, contraction_threshold);
     BOOST_CHECK_EQUAL(contracted_graph.size(), 6);
     BOOST_CHECK_EQUAL(contracted_graph.CountEdges(), 8);
-    BOOST_CHECK_EQUAL(contracted_graph.getOutDegree(simple_vertex_map.at(first_id)), 2);
-    BOOST_CHECK_EQUAL(contracted_graph.getInDegree(simple_vertex_map.at(first_id)), 0);
-    BOOST_CHECK_EQUAL(contracted_graph.getOutDegree(simple_vertex_map.at(fourth_id)), 0);
-    BOOST_CHECK_EQUAL(contracted_graph.getInDegree(simple_vertex_map.at(fourth_id)), 2);
+    BOOST_CHECK_EQUAL(contracted_graph.GetOutDegree(simple_vertex_map.at(first_id)), 2);
+    BOOST_CHECK_EQUAL(contracted_graph.GetInDegree(simple_vertex_map.at(first_id)), 0);
+    BOOST_CHECK_EQUAL(contracted_graph.GetOutDegree(simple_vertex_map.at(fourth_id)), 0);
+    BOOST_CHECK_EQUAL(contracted_graph.GetInDegree(simple_vertex_map.at(fourth_id)), 2);
 
     contraction_threshold = 5000;
     contracted_graph = CreateContractedGraph(g, contraction_threshold);
     BOOST_CHECK_EQUAL(contracted_graph.size(), 4);
     BOOST_CHECK_EQUAL(contracted_graph.CountEdges(), 4);
-    BOOST_CHECK_EQUAL(contracted_graph.getOutDegree(simple_vertex_map.at(first_id)), 2);
-    BOOST_CHECK_EQUAL(contracted_graph.getInDegree(simple_vertex_map.at(first_id)), 0);
+    BOOST_CHECK_EQUAL(contracted_graph.GetOutDegree(simple_vertex_map.at(first_id)), 2);
+    BOOST_CHECK_EQUAL(contracted_graph.GetInDegree(simple_vertex_map.at(first_id)), 0);
 
     contraction_threshold = 25000;
     contracted_graph = CreateContractedGraph(g, contraction_threshold);

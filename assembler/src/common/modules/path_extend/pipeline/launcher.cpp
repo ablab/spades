@@ -2,6 +2,7 @@
 // Created by andrey on 14.11.16.
 //
 
+#include "read_cloud_path_extend/statistics/path_scaffolder_analyzer.hpp"
 #include "read_cloud_path_extend/fragment_model/secondary_stats_estimators.hpp"
 #include "launcher.hpp"
 #include "modules/path_extend/path_visualizer.hpp"
@@ -606,6 +607,11 @@ void PathExtendLauncher::Launch() {
         const double cluster_length_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
         size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
                                                                               cluster_length_percentile);
+
+//        PathScaffolderAnalyzer path_scaffolder_analyzer(gp_, small_path_length_threshold, cfg::get().max_threads);
+//        auto path_pair_dataset = path_scaffolder_analyzer.GetFalseNegativeDataset(polished_paths);
+//
+//        return;
 
         PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_,
                                        small_path_length_threshold,

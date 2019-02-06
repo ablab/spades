@@ -19,15 +19,8 @@ GraphBreakAnalyzer::TransitionToBreaks GraphBreakAnalyzer::GetGraphBreaks(const 
     const double min_mapped_ratio = 0.5;
     auto fixed_long_edge_paths = FixLongEdgeAlignments(raw_paths, long_edges, min_mapped_ratio);
 
-    validation::ReferencePathIndex raw_path_index;
-    for (size_t i = 0; i < raw_paths.size(); ++i) {
-        for (size_t j = 0; j < raw_paths[i].size(); ++j) {
-            if (long_edges.find(raw_paths[i][j].edge_) != long_edges.end()) {
-                size_t rev_pos = raw_paths[i].size() - j - 1;
-                raw_path_index.Insert(raw_paths[i][j].edge_, i, j, rev_pos);
-            }
-        }
-    }
+    validation::ReferencePathIndexBuilder path_index_builder;
+    auto raw_path_index = path_index_builder.BuildReferencePathIndex(raw_paths);
 
     const size_t min_intersection = 1;
     size_t total_breaks = 0;
@@ -75,8 +68,8 @@ GraphBreakAnalyzer::SimplePath GraphBreakAnalyzer::GetBarcodedSubpath(
     SimplePath result;
     size_t path_id = ref_path_index.at(first).path_;
     VERIFY_DEV(ref_path_index.at(second).path_ == path_id);
-    size_t first_pos = ref_path_index.at(first).pos_;
-    size_t second_pos = ref_path_index.at(second).pos_;
+    size_t first_pos = ref_path_index.at(first).edge_pos_;
+    size_t second_pos = ref_path_index.at(second).edge_pos_;
     if (first_pos >= second_pos) {
         WARN("Backward reference transition");
         return result;

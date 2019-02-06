@@ -22,6 +22,7 @@ class InnerScaffoldVertex {
     virtual debruijn_graph::VertexId GetStartGraphVertex(const debruijn_graph::Graph &g) const = 0;
     virtual boost::optional<debruijn_graph::EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const = 0;
     virtual boost::optional<debruijn_graph::EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const = 0;
+    virtual string GetSequence(const debruijn_graph::Graph &g) const = 0;
 
     virtual debruijn_graph::EdgeId GetLastEdge() const = 0;
     virtual EdgeId GetFirstEdge() const = 0;
@@ -49,6 +50,7 @@ class EdgeIdVertex : public InnerScaffoldVertex {
     debruijn_graph::VertexId GetStartGraphVertex(const debruijn_graph::Graph &g) const override;
     optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
     optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
+    std::string GetSequence(const debruijn_graph::Graph &g) const override;
 
     EdgeId GetLastEdge() const override;
     EdgeId GetFirstEdge() const override;
@@ -77,6 +79,7 @@ class PathVertex : public InnerScaffoldVertex {
     VertexId GetStartGraphVertex(const debruijn_graph::Graph &g) const override;
     optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
     optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
+    std::string GetSequence(const debruijn_graph::Graph &g) const override;
 
     EdgeId GetLastEdge() const override;
     EdgeId GetFirstEdge() const override;
@@ -114,11 +117,11 @@ class ScaffoldVertex {
     VertexId GetStartGraphVertex(const debruijn_graph::Graph &g) const;
     boost::optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const;
     boost::optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const;
+    std::string GetSequence(const debruijn_graph::Graph &g) const;
 
     EdgeId GetLastEdge() const;
     EdgeId GetFirstEdge() const;
     std::unordered_set<EdgeId> GetAllEdges() const;
-
 
     string str(const debruijn_graph::Graph &g) const;
     BidirectionalPath* ToPath(const debruijn_graph::Graph &g) const;

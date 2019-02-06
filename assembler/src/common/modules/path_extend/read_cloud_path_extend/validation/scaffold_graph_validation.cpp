@@ -14,13 +14,13 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStats(
     const size_t distance = 10;
     GeneralTransitionStorageBuilder general_transition_builder(g_, distance, true, true);
     GeneralTransitionStorageBuilder forward_neighbourhood_transition_builder(g_, distance, false, false);
+    DEBUG("Getting reference transitions");
     auto reference_transitions = reference_transition_builder.GetTransitionStorage(reference_paths);
     auto reverse_transitions = reverse_transition_builder.GetTransitionStorage(reference_paths);
     auto conjugate_transitions = conjugate_transition_builder.GetTransitionStorage(reference_paths);
     auto near_in_both_strands_transitions = general_transition_builder.GetTransitionStorage(reference_paths);
     auto forward_neighbouring_transitions =
         forward_neighbourhood_transition_builder.GetTransitionStorage(reference_paths);
-//    auto reference_path_index = BuildReferenceIndex(reference_paths);
     auto stats = GetScaffoldGraphStatsFromTransitions(scaffold_graph, reference_transitions,
                                                       reverse_transitions, conjugate_transitions,
                                                       near_in_both_strands_transitions,
@@ -31,7 +31,6 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStats(
 std::set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransitions(
         const ScaffoldGraphValidator::ScaffoldGraph &graph,
         const ContigTransitionStorage &genome_transitions) const {
-    std::unordered_set<transitions::Transition> graph_transitions;
 
     std::unordered_map<EdgeId, size_t> edge_to_vertex;
     for (const scaffold_graph::ScaffoldVertex &vertex: graph.vertices()) {
@@ -43,7 +42,10 @@ std::set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransi
 
     std::unordered_set<transitions::Transition> external_transitions;
     for (const auto &transition: genome_transitions) {
-        if (edge_to_vertex.at(transition.first_) != edge_to_vertex.at(transition.second_)) {
+        auto first_result = edge_to_vertex.find(transition.first_);
+        auto second_result = edge_to_vertex.find(transition.second_);
+        if (first_result != edge_to_vertex.end() and second_result != edge_to_vertex.end() and
+                first_result->first != second_result->first) {
             external_transitions.insert(transition);
         }
     }
@@ -51,8 +53,17 @@ std::set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransi
     INFO(genome_transitions.size() << " genome transitions");
     INFO(external_transitions.size() << " external transitions");
 
-    for (const auto& edge: graph.edges()) {
-        transitions::Transition t(edge.getStart(), edge.getEnd());
+    std::unordered_set<transitions::Transition> graph_transitions;
+    for (const ScaffoldGraph::ScaffoldEdge& edge: graph.edges()) {
+        auto is_covered = [&genome_transitions](const EdgeId &edge) {
+          return genome_transitions.IsEdgeCovered(edge);
+        };
+        auto first_unique_result = edge.getStart().GetLastEdgeWithPredicate(is_covered);
+        auto second_unique_result = edge.getEnd().GetFirstEdgeWithPredicate(is_covered);
+        if (not first_unique_result.is_initialized() or not second_unique_result.is_initialized()) {
+            continue;
+        }
+        transitions::Transition t(first_unique_result.get(), second_unique_result.get());
         graph_transitions.insert(t);
     }
     std::set<transitions::Transition> result;
@@ -72,6 +83,7 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
         const ContigTransitionStorage &near_in_both_strands_transitions,
         const ContigTransitionStorage &forward_neighbouring_transitions) {
     ScaffoldGraphStats stats;
+    DEBUG("Getting fn transitions");
     auto false_negative_transitions = GetFalseNegativeTransitions(graph, reference_transitions);
     DEBUG("True positive");
     stats.true_positive_ = CountStatsUsingTransitions(graph, reference_transitions);

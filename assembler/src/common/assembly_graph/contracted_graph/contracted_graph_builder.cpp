@@ -162,23 +162,6 @@ void DBGContractedGraphFactory::ProcessEdge(DBGContractedGraphFactory::contracte
         parts.long_edges_.push_back(edge);
     }
 }
-void TransposedContractedGraphFactory::TransposeContractedGraph(const ContractedGraph& other) {
-    for (const auto& vertex: other) {
-        graph_ptr_->InsertVertex(vertex);
-    }
-
-    for (const auto& start: other) {
-        for (auto it = other.out_begin(start); it != other.out_end(start); ++it) {
-            VertexId end = (*it).first;
-            for (const auto& edge: (*it).second) {
-                graph_ptr_->InsertEdge(end, start, edge);
-            }
-        }
-    }
-}
-void TransposedContractedGraphFactory::Construct() {
-    TransposeContractedGraph(other_);
-}
 void SubgraphContractedGraphFactory::Construct() {
     ExtractSubgraphFromContractedGraph(other_, vertices_);
 }

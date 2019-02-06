@@ -200,7 +200,7 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GapScaffoldGraphPipelineCon
     vector<ScaffoldVertex> scaff_vertex_vector;
     std::copy(scaffold_vertices.begin(), scaffold_vertices.end(), back_inserter(scaff_vertex_vector));
     //fixme move somewhere
-    const double score_threshold = 0.12;
+    const double score_threshold = 0.1;
     INFO("Setting containment index threshold to " << score_threshold);
 
     auto initial_constructor =

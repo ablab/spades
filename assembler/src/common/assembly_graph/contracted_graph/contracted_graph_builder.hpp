@@ -7,22 +7,24 @@
 namespace contracted_graph {
 
 class ContractedGraphFactory {
- protected:
-    shared_ptr<ContractedGraph> graph_ptr_;
  public:
-    ContractedGraphFactory() : graph_ptr_(make_shared<ContractedGraph>()) {}
+    ContractedGraphFactory(const Graph &g) :
+        g_(g), graph_ptr_(make_shared<ContractedGraph>(g)) {}
     virtual ~ContractedGraphFactory() = default;
     virtual void Construct() = 0;
     shared_ptr<ContractedGraph> GetGraph() {
         return graph_ptr_;
     }
+ protected:
+    const Graph &g_;
+    shared_ptr<ContractedGraph> graph_ptr_;
 };
 
 class PartsBasedContractedFactory : public ContractedGraphFactory{
 
  protected:
-    const Graph& g_;
     using ContractedGraphFactory::graph_ptr_;
+    using ContractedGraphFactory::g_;
     typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
     struct ContractedGraphParts {
@@ -37,7 +39,7 @@ class PartsBasedContractedFactory : public ContractedGraphFactory{
     void ConstructFromParts(ContractedGraphParts&& parts);
     DECL_LOGGER("DSUBasedContractedGraphFactory");
  public:
-    PartsBasedContractedFactory(const Graph& assembly_graph_) : g_(assembly_graph_) {}
+    PartsBasedContractedFactory(const Graph &g): ContractedGraphFactory(g) {}
     virtual ~PartsBasedContractedFactory() {}
 
     void Construct() override;
@@ -66,23 +68,12 @@ class DBGContractedGraphFactory : public PartsBasedContractedFactory {
     DECL_LOGGER("DBGContractedGraphFactory");
 };
 
-class TransposedContractedGraphFactory: public ContractedGraphFactory {
-    const ContractedGraph& other_;
- public:
-    explicit TransposedContractedGraphFactory(const ContractedGraph& other) : other_(other) {}
-
-    void Construct() override;
-
- private:
-    void TransposeContractedGraph(const ContractedGraph& other);
-};
-
 class SubgraphContractedGraphFactory: public ContractedGraphFactory {
     const ContractedGraph& other_;
     const std::unordered_set<VertexId>& vertices_;
  public:
     SubgraphContractedGraphFactory(const ContractedGraph& other, const std::unordered_set<VertexId>& vertices) :
-        other_(other), vertices_(vertices) {}
+        ContractedGraphFactory(other.GetAssemblyGraph()), other_(other), vertices_(vertices) {}
 
     void Construct() override;
 

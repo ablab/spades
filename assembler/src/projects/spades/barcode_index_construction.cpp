@@ -40,7 +40,6 @@ namespace debruijn_graph {
         INFO("Barcode index construction finished.");
         FrameBarcodeIndexInfoExtractor extractor(graph_pack.barcode_mapper_ptr, graph_pack.g);
         INFO("Average barcode coverage: " + std::to_string(extractor.AverageBarcodeCoverage()));
-        INFO("Estimating read cloud statistics using long edges");
         path_extend::cluster_model::ClusterStatisticsExtractorHelper cluster_extractor_helper(graph_pack,
                                                                                               cfg::get().max_threads);
         auto cluster_statistics_extractor = cluster_extractor_helper.GetStatisticsExtractor();

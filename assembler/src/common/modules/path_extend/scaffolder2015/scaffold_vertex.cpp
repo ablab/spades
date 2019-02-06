@@ -1,4 +1,6 @@
+#include <common/assembly_graph/paths/bidirectional_path_io/io_support.hpp>
 #include "scaffold_vertex.hpp"
+#include "scaffold_graph_constructor.hpp"
 
 namespace path_extend {
 
@@ -69,6 +71,9 @@ std::unordered_set<EdgeId> EdgeIdVertex::GetAllEdges() const {
     unordered_set<EdgeId> result;
     result.insert(edge_);
     return result;
+}
+std::string EdgeIdVertex::GetSequence(const debruijn_graph::Graph &g) const {
+    return g.EdgeNucls(edge_).str();
 }
 
 size_t PathVertex::GetId() const {
@@ -147,6 +152,11 @@ unordered_set<EdgeId> PathVertex::GetAllEdges() const {
     }
     return result;
 }
+std::string PathVertex::GetSequence(const debruijn_graph::Graph &g) const {
+    //fixme might be ineffective
+    path_extend::ScaffoldSequenceMaker sequence_maker(g);
+    return sequence_maker.MakeSequence(*path_);
+}
 
 ScaffoldVertex::ScaffoldVertex(shared_ptr<InnerScaffoldVertex> vertex_ptr_) : vertex_ptr_(vertex_ptr_) {}
 size_t ScaffoldVertex::int_id() const {
@@ -220,7 +230,9 @@ BidirectionalPath ScaffoldVertex::GetPath(const debruijn_graph::Graph &g) const 
 std::unordered_set<EdgeId> ScaffoldVertex::GetAllEdges() const {
     return vertex_ptr_->GetAllEdges();
 }
-
+std::string ScaffoldVertex::GetSequence(const debruijn_graph::Graph &g) const {
+    return vertex_ptr_->GetSequence(g);
+}
 }
 
 }

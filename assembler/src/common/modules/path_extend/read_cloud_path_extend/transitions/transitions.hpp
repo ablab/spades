@@ -13,7 +13,6 @@ struct Transition {
  public:
     Transition(const EdgeId& first, const EdgeId& second) : first_(first), second_(second) {}
 
-    //fixme make it work with paths
     Transition(const ScaffoldVertex &first, const ScaffoldVertex &second):
         first_(first.GetLastEdge()), second_(second.GetFirstEdge()) {}
 
