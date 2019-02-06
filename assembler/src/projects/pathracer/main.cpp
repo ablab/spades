@@ -782,25 +782,6 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
 using GraphCursor = DebruijnGraphCursor;
 
-// Not required anymore, remove?
-std::pair<EdgeId, size_t> get_edge_offset(const graph_t &graph, const std::vector<EdgeId> &path, size_t position) {
-    size_t k = graph.k();
-    for (const auto &e : path) {
-        if (graph.length(e) + k > position) {
-            return {e, position};
-        }
-        position -= graph.length(e);
-    }
-    VERIFY_MSG(false, "position >= path lenght");
-}
-
-// Not required anymore, remove?
-std::vector<GraphCursor> get_cursors_from_path(const graph_t &graph, const std::vector<EdgeId> &path, size_t position) {
-    // TODO Check cursor noncanonicity stuff once again
-    auto p = get_edge_offset(graph, path, position);
-    return GraphCursor::get_cursors(graph, p.first, p.second);
-}
-
 auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef = 1.2) {
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
