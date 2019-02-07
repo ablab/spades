@@ -817,7 +817,7 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
         }
 
         size_t len = graph.length(e) + graph.k();
-        INFO("Edge length: " << len <<"; edge id " << e.int_id() << " edge overhangs: " << loverhang << " " << roverhang);
+        DEBUG("Edge length: " << len <<"; edge id " << e.int_id() << " edge overhangs: " << loverhang << " " << roverhang);
         if (roverhang > 0) {
             for (const auto &end : GraphCursor::get_cursors(graph, e, len - 1)) {
                 right_queries.push_back({end, static_cast<size_t>(roverhang * expand_coef)});
