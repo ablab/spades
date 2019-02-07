@@ -1025,7 +1025,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
 
         INFO("# edges in the component: " << edges.size());
-        INFO("Edges: " << edges);
+        DEBUG("Edges: " << edges);
 
         INFO("Running path search");
         std::vector<HMMPathInfo> local_results;
