@@ -673,16 +673,17 @@ public:
     std::vector<EdgeId> path;
     std::string alignment;
     std::string label;
+    size_t pos;
 
     bool operator<(const HMMPathInfo &that) const {
         return key() < that.key();
     }
 
     HMMPathInfo(std::string name, double sc, std::string s, std::string nuc_s, std::vector<EdgeId> p, std::string alignment,
-                std::string label)
+                std::string label, size_t pos)
             : hmmname(std::move(name)), score(sc),
               seq(std::move(s)), nuc_seq{std::move(nuc_s)},
-              path(std::move(p)), alignment(std::move(alignment)), label{std::move(label)} {}
+              path(std::move(p)), alignment(std::move(alignment)), label{std::move(label)}, pos{pos} {}
 };
 
 void unique_hmm_path_info(std::vector<HMMPathInfo> &infos, const std::vector<std::vector<EdgeId>> &paths) {
@@ -731,7 +732,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
             }
             std::stringstream header;
             std::string path_id = edgepath2str(result.path, mapping_f);
-            header << ">Score=" << result.score << "|Edges=" << path_id << "|Alignment=" << result.alignment << "|ScaffoldSuperpaths=" << scaffold_path_info << "|OriginScaffoldPath=" << component_info.str() << '\n';
+            header << ">Score=" << result.score << "|Edges=" << path_id << "|Position=" << result.pos << "|Alignment=" << result.alignment << "|ScaffoldSuperpaths=" << scaffold_path_info << "|OriginScaffoldPath=" << component_info.str() << '\n';
 
             o_seqs << header.str();
             io::WriteWrapped(result.seq, o_seqs);
@@ -977,6 +978,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
 
         for (const auto& annotated_path : top_paths) {
+            VERIFY(annotated_path.path.size());
             auto seq = top_paths.str(annotated_path.path, &graph);
             auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, fees, &graph));
             auto nucl_path = to_nucl_path(annotated_path.path);
@@ -990,8 +992,9 @@ void TraceHMM(const hmmer::HMM &hmm,
                 ERROR("AA: " << edge_path_aas);
             }
             DEBUG_ASSERT(edge_path == edge_path_aas, main_assert{}, debug_assert::level<2>{});
+            size_t pos = nucl_path[0].position();
             local_results.emplace_back(p7hmm->name, annotated_path.score, seq, nucl_seq, std::move(edge_path), std::move(alignment),
-                                       component_name);
+                                       component_name, pos);
         }
     };
 
