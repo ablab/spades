@@ -530,12 +530,25 @@ std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, enum mode mo
     return res;
 }
 
+using MappingF = std::function<std::string(EdgeId)>;
+
+template <typename Path>
+std::string edgepath2str(const Path &path,
+                         const MappingF &mapping_f) {
+    std::vector<std::string> mapped_ids;
+    for (const auto &id : path) {
+        mapped_ids.push_back(mapping_f(id));
+    }
+    return join(mapped_ids, "_");
+}
+
 template <typename Container>
 auto EdgesToSequences(const Container &entries,
-                      const debruijn_graph::ConjugateDeBruijnGraph &graph) {
+                      const debruijn_graph::ConjugateDeBruijnGraph &graph,
+                      const MappingF &mapping_f) {
     std::vector<std::pair<std::string, std::string>> ids_n_seqs;
     for (const auto &entry : entries) {
-        std::string id = join(entry, "_");
+        std::string id = edgepath2str(entry, mapping_f);
         std::string seq = MergeSequences(graph, entry).str();
         ids_n_seqs.push_back({id, seq});
     }
@@ -581,14 +594,15 @@ template <typename Container>
 void ExportEdges(const Container &entries,
                  const debruijn_graph::ConjugateDeBruijnGraph &graph,
                  const std::vector<std::vector<EdgeId>> &scaffold_paths,
-                 const std::string &filename) {
+                 const std::string &filename,
+                 const MappingF &mapping_f) {
     if (entries.size() == 0)
         return;
 
     std::ofstream o(filename, std::ios::out);
 
     for (const auto &path : entries) {
-        std::string id = join(path, "_");
+        std::string id = edgepath2str(path, mapping_f);
         std::string seq = MergeSequences(graph, path).str();
         // FIXME return sorting like in EdgesToSequences
         o << ">" << id << SuperPathInfo(path, scaffold_paths) << "\n";
@@ -690,7 +704,8 @@ void unique_hmm_path_info(std::vector<HMMPathInfo> &infos, const std::vector<std
 void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph */,
                  const PathracerConfig &cfg,
                  const std::vector<HMMPathInfo> &results,
-                 const std::vector<std::vector<EdgeId>> &scaffold_paths) {
+                 const std::vector<std::vector<EdgeId>> &scaffold_paths,
+                 const MappingF &mapping_f) {
     const P7_HMM *p7hmm = hmm.get();  // TODO We use only hmm name from this object, may be we should just pass the name itself
     bool hmm_in_aas = hmm.abc()->K == 20;
 
@@ -715,7 +730,8 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
                 component_info << result.label;
             }
             std::stringstream header;
-            header << ">Score=" << result.score << "|Edges=" << join(result.path, "_") << "|Alignment=" << result.alignment << "|ScaffoldSuperpaths=" << scaffold_path_info << "|OriginScaffoldPath=" << component_info.str() << '\n';
+            std::string path_id = edgepath2str(result.path, mapping_f);
+            header << ">Score=" << result.score << "|Edges=" << path_id << "|Alignment=" << result.alignment << "|ScaffoldSuperpaths=" << scaffold_path_info << "|OriginScaffoldPath=" << component_info.str() << '\n';
 
             o_seqs << header.str();
             io::WriteWrapped(result.seq, o_seqs);
@@ -731,7 +747,8 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
 void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
              const PathracerConfig &cfg,
              const std::vector<HMMPathInfo> &results,
-             const std::vector<std::vector<EdgeId>> &scaffold_paths) {
+             const std::vector<std::vector<EdgeId>> &scaffold_paths,
+             const MappingF &mapping_f) {
     P7_HMM *p7hmm = hmm.get();
 
     std::unordered_set<std::vector<EdgeId>> to_rescore;
@@ -761,11 +778,12 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
     // TODO export paths along with their best score
     ExportEdges(to_rescore_ordered, graph, scaffold_paths,
-                cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa");
+                cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa",
+                mapping_f);
 
     std::vector<std::string> seqs_to_rescore;
     std::vector<std::string> refs_to_rescore;
-    for (const auto &kv : EdgesToSequences(to_rescore_ordered, graph)) {
+    for (const auto &kv : EdgesToSequences(to_rescore_ordered, graph, mapping_f)) {
         refs_to_rescore.push_back(kv.first);
         seqs_to_rescore.push_back(kv.second);
     }
@@ -1062,7 +1080,8 @@ void hmm_main(const PathracerConfig &cfg,
               const std::vector<EdgeId> &edges,
               const std::vector<std::vector<EdgeId>> scaffold_paths,
               std::unordered_set<std::vector<EdgeId>> &to_rescore,
-              std::set<std::pair<std::string, std::vector<EdgeId>>> &gfa_paths) {
+              std::set<std::pair<std::string, std::vector<EdgeId>>> &gfa_paths,
+              const std::function<std::string(EdgeId)> &mapping_f) {
     std::vector<hmmer::HMM> hmms;
     if (cfg.mode == mode::hmm)
         hmms = ParseHMMFile(cfg.hmmfile);
@@ -1082,7 +1101,7 @@ void hmm_main(const PathracerConfig &cfg,
 
         std::sort(results.begin(), results.end());
         unique_hmm_path_info(results, scaffold_paths);
-        SaveResults(hmm, graph, cfg, results, scaffold_paths);
+        SaveResults(hmm, graph, cfg, results, scaffold_paths, mapping_f);
 
         if (cfg.annotate_graph) {
             std::unordered_set<std::vector<EdgeId>> unique_paths;
@@ -1098,7 +1117,7 @@ void hmm_main(const PathracerConfig &cfg,
             }
         }
 
-        Rescore(hmm, graph, cfg, results, scaffold_paths);
+        Rescore(hmm, graph, cfg, results, scaffold_paths, mapping_f);
 
         for (const auto &result : results) {
 #pragma omp critical
@@ -1140,9 +1159,7 @@ int main(int argc, char* argv[]) {
 
     debruijn_graph::ConjugateDeBruijnGraph graph(cfg.k);
     std::vector<std::vector<EdgeId>> scaffold_paths;
-    std::unique_ptr<io::IdMapper<std::string>> id_mapper(nullptr);
-    if (cfg.annotate_graph)
-        id_mapper.reset(new io::IdMapper<std::string>());
+    std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
     LoadGraph(graph, scaffold_paths, cfg.load_from, id_mapper.get());
     INFO("Graph loaded. Total vertices: " << graph.size());
 
@@ -1158,13 +1175,15 @@ int main(int argc, char* argv[]) {
     std::unordered_set<std::vector<EdgeId>> to_rescore;
     std::set<std::pair<std::string, std::vector<EdgeId>>> gfa_paths;
 
-    hmm_main(cfg, graph, edges, scaffold_paths,
-             to_rescore, gfa_paths);
+    const auto mapping_f = [&id_mapper, &graph](EdgeId id) -> std::string { return (*id_mapper)[graph.int_id(id)]; };
+    hmm_main(cfg, graph, edges, scaffold_paths, to_rescore, gfa_paths,
+             mapping_f);
 
     if (cfg.rescore) {
         INFO("Total " << to_rescore.size() << " paths to rescore");
         ExportEdges(to_rescore, graph, scaffold_paths,
-                    cfg.output_dir + "/all.edges.fa");
+                    cfg.output_dir + "/all.edges.fa",
+                    mapping_f);
     }
 
     if (cfg.annotate_graph) {
