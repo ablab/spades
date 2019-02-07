@@ -201,6 +201,8 @@ class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor
                                           const size_t num_threads_);
 
     shared_ptr<ScaffoldGraph> Construct() override;
+
+    DECL_LOGGER("ScoreFunctionScaffoldGraphConstructor");
 };
 
 } //scaffold_graph

@@ -316,7 +316,7 @@ shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
                 }
                 TRACE("Edge added");
                 ++counter;
-                if (counter % block_size == 0) {
+                if (block_size != 0 and counter % block_size == 0) {
                     INFO("Processed " << counter << " edges out of " << edges_size);
                 }
             }
