@@ -75,12 +75,75 @@ auto make_restricted_cursors(const std::vector<GraphCursor> &cursors, const std:
   return result;
 }
 
+template <class GraphCursor>
+struct OptimizedRestrictedGraphCursorContext {
+    const std::unordered_set<GraphCursor> space;
+    const void *context;
+};
+
+template <class GraphCursor>
+class OptimizedRestrictedGraphCursor : public GraphCursor {
+ public:
+  OptimizedRestrictedGraphCursor() = default;
+  OptimizedRestrictedGraphCursor(const OptimizedRestrictedGraphCursor&) = default;
+  OptimizedRestrictedGraphCursor(OptimizedRestrictedGraphCursor&&) = default;
+  OptimizedRestrictedGraphCursor& operator=(const OptimizedRestrictedGraphCursor&) = default;
+  OptimizedRestrictedGraphCursor& operator=(OptimizedRestrictedGraphCursor&&) = default;
+
+  OptimizedRestrictedGraphCursor(const GraphCursor &other) : GraphCursor(other) {}
+  OptimizedRestrictedGraphCursor(GraphCursor &&other) : GraphCursor(std::move(other)) {}
+
+  std::vector<OptimizedRestrictedGraphCursor> next(const void *context) const {
+    return filter_(GraphCursor::next(unvoid_context(context)->context), unvoid_context(context)->space);
+  }
+
+  std::vector<OptimizedRestrictedGraphCursor> prev(const void *context) const {
+    return filter_(GraphCursor::prev(unvoid_context(context)->context), unvoid_context(context)->space);
+  }
+
+  char letter(const void *context) const { return GraphCursor::letter(unvoid_context(context)->context); }
+
+ private:
+  static const OptimizedRestrictedGraphCursorContext<GraphCursor> *unvoid_context(const void *context) {
+    return static_cast<const OptimizedRestrictedGraphCursorContext<GraphCursor>*>(context);
+  }
+
+  std::vector<OptimizedRestrictedGraphCursor> filter_(std::vector<GraphCursor> v, const std::unordered_set<GraphCursor> &space) const {
+    std::vector<OptimizedRestrictedGraphCursor> result;
+    for (auto &&cursor : v) {
+      if (space.count(cursor)) {
+        result.emplace_back(std::move(cursor));
+      }
+    }
+
+    return result;
+  }
+};
+
+template <class GraphCursor>
+auto make_optimized_restricted_cursor_context(const std::unordered_set<GraphCursor> &space, const void *context) {
+    return OptimizedRestrictedGraphCursorContext<GraphCursor>{space, context};
+}
+
+template <class GraphCursor>
+auto make_optimized_restricted_cursors(const std::vector<GraphCursor> &cursors) {
+  std::vector<OptimizedRestrictedGraphCursor<GraphCursor>> result;
+  for (const auto &cursor : cursors) {
+    result.emplace_back(cursor);
+  }
+
+  return result;
+
+}
 namespace std {
 template <typename GraphCursor>
 struct hash<ReversalGraphCursor<GraphCursor>> : public hash<GraphCursor> {};
 
 template <typename GraphCursor>
 struct hash<RestrictedGraphCursor<GraphCursor>> : public hash<GraphCursor> {};
+
+template <typename GraphCursor>
+struct hash<OptimizedRestrictedGraphCursor<GraphCursor>> : public hash<GraphCursor> {};
 }  // namespace std
 
 // vim: set ts=2 sw=2 et :

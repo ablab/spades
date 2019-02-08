@@ -62,21 +62,21 @@ class DebruijnGraphCursor {
     char letter(const void *context) const {
         return nucl(g(context).EdgeNucls(edge())[position()]); }
 
-    bool is_convergent(const void *context) const {
-        const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
-
-        return position() == g.k() &&
-                g.IncomingEdgeCount(g.EdgeStart(edge())) > 1;
-        // return prev().size() > 1;
-    }
-
-    bool is_divergent(const void *context) const {
-        const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
-
-        return position() + 1 == g.length(edge()) + g.k() &&
-                g.OutgoingEdgeCount(g.EdgeEnd(edge())) > 1;
-        // return next().size() > 1;
-    }
+    // bool is_convergent(const void *context) const {
+    //     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
+    //
+    //     return position() == g.k() &&
+    //             g.IncomingEdgeCount(g.EdgeStart(edge())) > 1;
+    //     // return prev().size() > 1;
+    // }
+    //
+    // bool is_divergent(const void *context) const {
+    //     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
+    //
+    //     return position() + 1 == g.length(edge()) + g.k() &&
+    //             g.OutgoingEdgeCount(g.EdgeEnd(edge())) > 1;
+    //     // return next().size() > 1;
+    // }
 
     std::vector<DebruijnGraphCursor> prev(const void*) const;
     std::vector<DebruijnGraphCursor> next(const void*) const;
@@ -159,19 +159,19 @@ class DebruijnComponentCursor {
 
     char letter(const void *context) const { return nucl(this->g(context).EdgeNucls(edge())[position()]); }
 
-    bool is_convergent(const void *context) const {
-        const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
-        return position() == g.k() &&
-                (g.IncomingEdgeCount(g.EdgeStart(edge())) > 1 && !this->c(context).IsBorder(g.EdgeStart(edge())));
-        // return prev().size() > 1;
-    }
-
-    bool is_divergent(const void *context) const {
-        const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
-        return position() + 1 == g.length(edge()) + g.k() &&
-                (g.OutgoingEdgeCount(g.EdgeEnd(edge())) > 1 && !this->c(context).IsBorder(g.EdgeEnd(edge())));
-        // return next().size() > 1;
-    }
+    // bool is_convergent(const void *context) const {
+    //     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
+    //     return position() == g.k() &&
+    //             (g.IncomingEdgeCount(g.EdgeStart(edge())) > 1 && !this->c(context).IsBorder(g.EdgeStart(edge())));
+    //     // return prev().size() > 1;
+    // }
+    //
+    // bool is_divergent(const void *context) const {
+    //     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
+    //     return position() + 1 == g.length(edge()) + g.k() &&
+    //             (g.OutgoingEdgeCount(g.EdgeEnd(edge())) > 1 && !this->c(context).IsBorder(g.EdgeEnd(edge())));
+    //     // return next().size() > 1;
+    // }
 
     std::vector<DebruijnComponentCursor> prev(const void*) const;
     std::vector<DebruijnComponentCursor> next(const void*) const;
@@ -251,24 +251,31 @@ struct Fees;
 
 PathSet<DebruijnGraphCursor> find_best_path(const hmm::Fees &fees,
                                             const std::vector<DebruijnGraphCursor> &initial,
-                                            const debruijn_graph::ConjugateDeBruijnGraph &g);
+                                            const void *context);
 PathSet<DebruijnComponentCursor> find_best_path(const hmm::Fees &fees,
                                                 const std::vector<DebruijnComponentCursor> &initial,
-                                                const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &c);
+                                                const void *context);
 PathSet<ReversalGraphCursor<DebruijnGraphCursor>> find_best_path_rev(const hmm::Fees &fees,
                                                                      const std::vector<ReversalGraphCursor<DebruijnGraphCursor>> &initial,
-                                                                     const debruijn_graph::ConjugateDeBruijnGraph &g);
+                                                                     const void *context);
 PathSet<ReversalGraphCursor<DebruijnComponentCursor>> find_best_path_rev(const hmm::Fees &fees,
                                                                          const std::vector<ReversalGraphCursor<DebruijnComponentCursor>> &initial,
-                                                                         const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &c);
+                                                                         const void *context);
 PathSet<AAGraphCursor<DebruijnComponentCursor>> find_best_path(const hmm::Fees &fees,
                                                                const std::vector<AAGraphCursor<DebruijnComponentCursor>> &initial,
-                                                               const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &c);
-PathSet<AAGraphCursor<DebruijnGraphCursor>> find_best_path(const hmm::Fees &fees, const std::vector<AAGraphCursor<DebruijnGraphCursor>> &initial,
-                                                           const debruijn_graph::ConjugateDeBruijnGraph &g);
+                                                               const void *context);
+PathSet<AAGraphCursor<DebruijnGraphCursor>> find_best_path(const hmm::Fees &fees,
+                                                           const std::vector<AAGraphCursor<DebruijnGraphCursor>> &initial,
+                                                           const void *context);
 PathSet<AAGraphCursor<RestrictedGraphCursor<DebruijnGraphCursor>>> find_best_path(const hmm::Fees &fees,
                                                                                   const std::vector<AAGraphCursor<RestrictedGraphCursor<DebruijnGraphCursor>>> &initial,
-                                                                                  const debruijn_graph::ConjugateDeBruijnGraph &g);
+                                                                                  const void *context);
 PathSet<RestrictedGraphCursor<DebruijnGraphCursor>> find_best_path(const hmm::Fees &fees,
                                                                    const std::vector<RestrictedGraphCursor<DebruijnGraphCursor>> &initial,
-                                                                   const debruijn_graph::ConjugateDeBruijnGraph &g);
+                                                                   const void *context);
+PathSet<AAGraphCursor<OptimizedRestrictedGraphCursor<DebruijnGraphCursor>>> find_best_path(const hmm::Fees &fees,
+                                                                                           const std::vector<AAGraphCursor<OptimizedRestrictedGraphCursor<DebruijnGraphCursor>>> &initial,
+                                                                                           const void *context);
+PathSet<OptimizedRestrictedGraphCursor<DebruijnGraphCursor>> find_best_path(const hmm::Fees &fees,
+                                                                            const std::vector<OptimizedRestrictedGraphCursor<DebruijnGraphCursor>> &initial,
+                                                                            const void *context);

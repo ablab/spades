@@ -963,27 +963,28 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     INFO("Connected component sizes: " << cursor_conn_comps_sizes);
 
-    auto run_search = [&fees, &p7hmm, &graph](const auto &initial, size_t top,
-                                              std::vector<HMMPathInfo> &local_results,
-                                              const std::string &component_name = "") -> void {
-        auto result = find_best_path(fees, initial, graph);
+    auto run_search = [&fees, &p7hmm](const auto &initial, size_t top,
+                                      std::vector<HMMPathInfo> &local_results,
+                                      const void *context,
+                                      const std::string &component_name = "") -> void {
+        auto result = find_best_path(fees, initial, context);
 
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
         if (!top_paths.empty()) {
             INFO("Best score in the current component: " << result.best_score());
             INFO("Best sequence in the current component");
-            INFO(top_paths.str(0, &graph));
-            INFO("Alignment: " << top_paths.compress_alignment(top_paths.alignment(0, fees, &graph)));
+            INFO(top_paths.str(0, context));
+            INFO("Alignment: " << top_paths.compress_alignment(top_paths.alignment(0, fees, context)));
         }
 
         for (const auto& annotated_path : top_paths) {
             VERIFY(annotated_path.path.size());
-            auto seq = top_paths.str(annotated_path.path, &graph);
-            auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, fees, &graph));
+            auto seq = top_paths.str(annotated_path.path, context);
+            auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, fees, context));
             auto nucl_path = to_nucl_path(annotated_path.path);
-            std::string nucl_seq = top_paths.str(nucl_path, &graph);
-            DEBUG_ASSERT(check_path_continuity(nucl_path, &graph), main_assert{}, debug_assert::level<2>{});
+            std::string nucl_seq = top_paths.str(nucl_path, context);
+            DEBUG_ASSERT(check_path_continuity(nucl_path, context), main_assert{}, debug_assert::level<2>{});
             auto edge_path = to_path(nucl_path);
             DEBUG_ASSERT(!edge_path.empty(), main_assert{});
             auto edge_path_aas = to_path(annotated_path.path);
@@ -1030,13 +1031,14 @@ void TraceHMM(const hmmer::HMM &hmm,
         INFO("Running path search");
         std::vector<HMMPathInfo> local_results;
         std::unordered_set<GraphCursor> component_set(component_cursors.cbegin(), component_cursors.cend());
-        auto restricted_component_cursors = make_restricted_cursors(component_cursors, component_set);
+        auto restricted_context = make_optimized_restricted_cursor_context(component_set, &graph);
+        auto restricted_component_cursors = make_optimized_restricted_cursors(component_cursors);
 
         bool hmm_in_aas = hmm.abc()->K == 20;
         if (hmm_in_aas) {
-            run_search(make_aa_cursors(restricted_component_cursors, &graph), cfg.top, local_results, component_name);
+            run_search(make_aa_cursors(restricted_component_cursors, &restricted_context), cfg.top, local_results, &restricted_context, component_name);
         } else {
-            run_search(restricted_component_cursors, cfg.top, local_results, component_name);
+            run_search(restricted_component_cursors, cfg.top, local_results, &restricted_context, component_name);
         }
 
         results.insert(results.end(), local_results.begin(), local_results.end());
