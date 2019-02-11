@@ -20,22 +20,24 @@ if [ ! -d $etalons_folder ]; then
 fi
 
 diffs=0
-    for f in $etalons_folder/*/saves/* $etalons_folder/before_rr.fasta $etalons_folder/assembly_graph* $etalons_folder/scaffolds* $etalons_folder/contigs*
+    for f in $etalons_folder/*/saves/* $etalons_folder/*/saves/*/* $etalons_folder/before_rr.fasta $etalons_folder/assembly_graph* $etalons_folder/scaffolds* $etalons_folder/contigs*
     do
-        echo "Checking diffs in " $f
-        set +e
-        diff $f $target_folder/${f#$etalons_folder} >> diff_with_etalon.txt
-        errlvl=$?
-        if [ $errlvl -ne 0 ]; then
-            if [ $errlvl -eq 1 ]; then
-                echo "^^^^^^^ it was $f" >> diff_with_etalon.txt
-                echo "BAD: difference found in $f"
-            else
-                echo "BAD: unable to compare with $f"
+        if [[ -f $f ]]; then
+            echo "Checking diffs in " $f
+            set +e
+            diff $f $target_folder/${f#$etalons_folder} >> diff_with_etalon.txt
+            errlvl=$?
+            if [ $errlvl -ne 0 ]; then
+                if [ $errlvl -eq 1 ]; then
+                    echo "^^^^^^^ it was $f" >> diff_with_etalon.txt
+                    echo "BAD: difference found in $f"
+                else
+                    echo "BAD: unable to compare with $f"
+                fi
+                (( diffs += 1 ))
             fi
-            (( diffs += 1 ))
+            set -e
         fi
-        set -e
     done
 
 echo $diffs differences with etalon saves found
