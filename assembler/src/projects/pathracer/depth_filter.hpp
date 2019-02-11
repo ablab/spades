@@ -284,22 +284,27 @@ std::vector<GraphCursor> depth_subset(const std::vector<std::pair<GraphCursor, s
   initial_map.clear();
 
   INFO("Initial queue size: " << q.size());
-  std::vector<GraphCursor> visited;
+  std::unordered_set<GraphCursor> visited;
   while (!q.empty()) {
     auto cursor_with_depth = q.top();
     q.pop();
 
-    visited.push_back(cursor_with_depth.key);
+    if (visited.count(cursor_with_depth.key)) {
+      continue;
+    }
+    visited.insert(cursor_with_depth.key);
 
     if (cursor_with_depth.value > 0) {
       auto cursors = forward ? cursor_with_depth.key.next(context) : cursor_with_depth.key.prev(context);
       for (const auto &cursor : cursors) {
-        q.push_or_increase(cursor, cursor_with_depth.value - 1);
+        if (!visited.count(cursor)) {
+          q.push_or_increase(cursor, cursor_with_depth.value - 1);
+        }
       }
     }
   }
 
-  return visited;
+  return std::vector<GraphCursor>(visited.cbegin(), visited.cend());
 }
 
 }  // namespace impl
