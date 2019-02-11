@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
+#include <functional>
 
 #include <llvm/ADT/iterator_range.h>
 #include <type_traits>
@@ -256,10 +257,24 @@ using debruijn_graph::EdgeId;
 using debruijn_graph::VertexId;
 using debruijn_graph::ConjugateDeBruijnGraph;
 
+template <typename T>
+class PseudoVector {
+public:
+    size_t size() const { return size_; }
+    bool empty() const { return size() == 0; }
+    T operator[](size_t i) const { return function_(i); }
+    PseudoVector(size_t size, const std::function<T(size_t)> function) : size_{size}, function_{function} {}
 
-auto ScoreSequences(const std::vector<std::string> &seqs,
+private:
+    size_t size_;
+    std::function<T(size_t)> function_;
+};
+
+template <typename StringArray>
+auto ScoreSequences(const StringArray &seqs,
                     const std::vector<std::string> &refs,
                     const hmmer::HMM &hmm, const PathracerConfig &cfg) {
+    INFO("ScoreSequences started");
     bool hmm_in_aas = hmm.abc()->K == 20;
     hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
 
@@ -270,7 +285,7 @@ auto ScoreSequences(const std::vector<std::string> &seqs,
     }
 
     for (size_t i = 0; i < seqs.size(); ++i) {
-        const auto &seq = seqs[i];
+        std::string seq = seqs[i];
         std::string ref = refs.size() > i ? refs[i] : std::to_string(i);
         if (!hmm_in_aas) {
             matcher.match(ref.c_str(), seq.c_str());
@@ -289,8 +304,10 @@ auto ScoreSequences(const std::vector<std::string> &seqs,
 }
 
 using PathAlnInfo = std::vector<std::pair<size_t, std::pair<int, int>>>;
+
+template <typename StringArray>
 PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
-                           const std::vector<std::string> &seqs,
+                           const StringArray &seqs,
                            const hmmer::HMM &hmm,
                            bool extend_overhangs = true) {
     // TODO Move this logic to ScoreSequences()
@@ -368,11 +385,18 @@ std::string PathToString(const std::vector<EdgeId>& path,
 PathAlnInfo MatchedPaths(const std::vector<std::vector<EdgeId>> &paths,
                          const ConjugateDeBruijnGraph &graph,
                          const hmmer::HMM &hmm, const PathracerConfig &cfg) {
-    std::vector<std::string> seqs;
-    seqs.reserve(paths.size());
-    for (const auto &path : paths) {
-        seqs.push_back(PathToString(path, graph));
-    }
+    INFO("MatchedPaths started");
+    // std::vector<std::string> seqs;
+    // seqs.reserve(paths.size());
+    // for (const auto &path : paths) {
+    //     seqs.push_back(PathToString(path, graph));
+    // }
+    // INFO("seqs constructed");
+    auto get = [&](size_t i) -> std::string {
+        return PathToString(paths[i], graph);
+    };
+
+    PseudoVector<std::string> seqs(paths.size(), get);
     auto matcher = ScoreSequences(seqs, {}, hmm, cfg);
 
     auto matched = get_matched_ids(matcher, seqs, hmm);
@@ -408,6 +432,7 @@ size_t path_length(const graph_t &graph, const std::vector<EdgeId> &path) {
 
 EdgeAlnInfo expand_path_aln_info(const PathAlnInfo &painfo, const std::vector<std::vector<EdgeId>> &paths,
                                  const graph_t &graph) {
+    INFO("expand_path_aln_info started");
     EdgeAlnInfo result;
     size_t k = graph.k();
 
@@ -802,6 +827,7 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 using GraphCursor = DebruijnGraphCursor;
 
 auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef = 1.2) {
+    INFO("ConnCompsFromEdgesMatches started");
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
     std::unordered_set<GraphCursor> cursors;
