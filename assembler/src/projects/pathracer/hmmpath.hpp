@@ -532,13 +532,13 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     TRACE("# states " << m << " => " << n_of_states);
     size_t top = n_of_states;
     if (m > 25) {
-      top = 1000000;
+      top = fees.state_limits.l25;
     }
     if (m > 100) {
-      top = 50000;
+      top = fees.state_limits.l100;
     }
     if (m > 500) {
-      top = 10000;
+      top = fees.state_limits.l500;
     }
 
     if (m >= n) {
