@@ -122,6 +122,7 @@ struct PathracerConfig {
     bool rescore = false;
     bool annotate_graph = true;
     double expand_coef = 2.;
+    size_t state_limits_coef = 1;
 
     hmmer::hmmer_cfg hcfg;
 };
@@ -159,8 +160,9 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       (option("--top") & integer("x", cfg.top)) % "extract top x paths [default: 100]",
       (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
       (option("--edge-id") & integer("value", cfg.int_id)) % "match around edge",
-      (option("--max_size") & integer("value", cfg.max_size)) % "maximal component size to consider [default: INF]",
+      (option("--max-size") & integer("value", cfg.max_size)) % "maximal component size to consider [default: INF]",
       (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
+      (option("--state-limits-coef") & integer("x", cfg.state_limits_coef)) % "multiplier for default #state limit [default: 1]",
       // Control of output
       cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
       cfg.hcfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
@@ -889,6 +891,9 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
 
     auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
+    fees.state_limits.l25 = 1000000 * cfg.state_limits_coef;
+    fees.state_limits.l100 = 50000 * cfg.state_limits_coef;
+    fees.state_limits.l500 = 10000 * cfg.state_limits_coef;
     INFO("HMM consensus: " << fees.consensus);
     INFO("HMM " << p7hmm->name << " has " << fees.count_negative_loops() << " negative I loops over " << fees.ins.size());
 

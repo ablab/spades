@@ -31,6 +31,8 @@ struct Fees {
   DigitalCodind code;
   std::string consensus;
 
+  struct {size_t l25, l100, l500; } state_limits;
+
   bool check_i_loop(size_t i) const;
   size_t count_negative_loops() const;
   bool is_i_loop_non_negative(size_t i) const { return check_i_loop(i); }
