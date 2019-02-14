@@ -6,6 +6,8 @@
 
 
 #include "coverage_uniformity_analyzer.hpp"
+using namespace std;
+
 namespace debruijn_graph {
 double CoverageUniformityAnalyzer::CountMedianCoverage() const{
     vector <pair<double, size_t> > coverages;
@@ -23,7 +25,7 @@ double CoverageUniformityAnalyzer::CountMedianCoverage() const{
     return res;
 }
 
-double CoverageUniformityAnalyzer::CountMedianCoverage(std::vector<std::pair<double, size_t>> coverages, size_t total_len) const {
+double CoverageUniformityAnalyzer::CountMedianCoverage(std::vector<std::pair<double, size_t>> coverages, size_t total_len) const{
     if (total_len == 0){
         INFO("Median coverage detection failed, not enough long edges");
         return -1.0;

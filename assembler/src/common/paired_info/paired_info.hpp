@@ -539,7 +539,7 @@ public:
         Remove(e);
     }
 
-    virtual void HandleMerge(const vector<EdgeId> &old_edges, EdgeId new_edge) override {
+    virtual void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) override {
 //        VerifyIndex();
 //        return;
         size_t shift = 0;
@@ -548,9 +548,9 @@ public:
         } */
         DEBUG("created: " << new_edge);
         if (new_edge == this->graph().conjugate(new_edge)) 
-            INFO("merging self-conj");
-        set<EdgeId> forbidden;
-        map<EdgeId, size_t> shifts;
+            DEBUG("merging self-conj");
+        std::set<EdgeId> forbidden;
+        std::map<EdgeId, size_t> shifts;
         for (auto e: old_edges)  {
             shifts[e] = shift;
             shift += this->graph_.length(e);
@@ -566,7 +566,7 @@ public:
             for (auto it: old_e)
                 rs++;
             DEBUG(rs <<"  next edges");
-            vector  <pair<EdgeId, Point>> to_add;
+            std::vector<std::pair<EdgeId, Point>> to_add;
             for (auto it: old_e) {
                 EdgeId next = it.first;
                 if (forbidden.find(next) != forbidden.end()) {
@@ -588,7 +588,7 @@ public:
                     if (this->graph_.length(new_edge) > point.d && new_edge != next) {
                         DEBUG("not adding, assert failed");
                     } else {
-                        to_add.push_back(make_pair(next, point));
+                        to_add.push_back(std::make_pair(next, point));
 //                        DEBUG("should add something but skpd");
                         DEBUG("added");
                     }
@@ -605,8 +605,8 @@ public:
         DEBUG("over3");
     }
     void VerifyIndex() {
-        set<EdgeId> edges_in_graph;
-        set<EdgeId> edges_in_index;
+        std::set<EdgeId> edges_in_graph;
+        std::set<EdgeId> edges_in_index;
         for (auto iter = this->graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             edges_in_graph.insert(*iter);
         }

@@ -47,8 +47,8 @@ inline bool HybridLibrariesPresent() {
     return false;
 }
 
-inline string GetContigName(string contig_id, size_t cov) {
-    string res = std::to_string(cov);
+inline std::string GetContigName(std::string contig_id, size_t cov) {
+    std::string res = std::to_string(cov);
     while (res.length() < 4) {
         res = "_" + res;
     }

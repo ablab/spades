@@ -58,7 +58,7 @@ struct graph_pack: private boost::noncopyable {
     EdgeQuality<Graph> edge_qual;
     mutable EdgesPositionHandler<graph_t> edge_pos;
     ConnectedComponentCounter components;
-    set<EdgeId> used_edges;
+    std::set<EdgeId> used_edges;
     path_extend::PathContainer contig_paths;
 
     graph_pack(size_t k,

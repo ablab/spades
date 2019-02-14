@@ -15,7 +15,7 @@ class EdgeFatePositionTracker : omnigraph::GraphActionHandler<Graph> {
 
     std::map<EdgeId, OldEdgesInfo> storage_;
 
-    void FillRelevant(EdgeId e, set<EdgeId> &relevant) const {
+    void FillRelevant(EdgeId e, std::set<EdgeId> &relevant) const {
         auto it = storage_.find(e);
         if (it != storage_.end()) {
             //one of novel edges
@@ -41,7 +41,7 @@ public:
         storage_.erase(e);
     }
 
-    void HandleMerge(const vector<EdgeId> &old_edges, EdgeId new_edge) override {
+    void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) override {
         OldEdgesInfo res;
         DEBUG("merging ");
         for (EdgeId e : old_edges) {

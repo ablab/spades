@@ -125,8 +125,8 @@ public:
         }
     }
 
-    static void WriteCircularScaffolds(const ScaffoldStorage &scaffold_storage, const string &fn) {
-        io::OFastaReadStream oss(fn);
+    /* static void WriteCircularScaffolds(const ScaffoldStorage &scaffold_storage, const std::string &fn) {
+        io::OutputSequenceStream oss(fn);
         std::ofstream os_fastg;
 
         for (const auto& scaffold_info : scaffold_storage) {
@@ -136,7 +136,7 @@ public:
                 oss << io::SingleRead(scaffold_info.name, scaffold_info.sequence);
             }
         }
-    }
+    } */
 
     static PathsWriterT BasicFastaWriter(const std::string &fn) {
         return [=](const ScaffoldStorage& scaffold_storage) {

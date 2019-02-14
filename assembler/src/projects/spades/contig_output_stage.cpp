@@ -10,6 +10,7 @@
 #include "contig_output_stage.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
+using namespace std;
 
 namespace debruijn_graph {
 bool CheckCircularPath(const path_extend::BidirectionalPath* path) {
