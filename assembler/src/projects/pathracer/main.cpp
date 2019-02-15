@@ -1239,4 +1239,63 @@ int pathracer_main(int argc, char* argv[]) {
     return 0;
 }
 
+#include "fasta_reader.hpp"
+int aling_kmers_main(int argc, char* argv[]) {
+    create_console_logger("");
+    if (argc != 4) {
+        INFO("Call: " << argv[0] << " <hmm file> <sequence file> <k>");
+        return 0;
+    }
+    std::string hmm_file = argv[1];
+    std::string sequence_file = argv[2];
+    size_t k = atoi(argv[3]);
+
+    auto hmms = ParseHMMFile(hmm_file);
+    auto seqs = read_fasta_edges(sequence_file, false);
+
+    hmmer::hmmer_cfg hcfg;
+    const auto &hmm = hmms[0];
+    bool hmm_in_aas = hmm.abc()->K == 20;
+    for (size_t seq_id = 0; seq_id < seqs.size(); ++seq_id) {
+        const auto &seq = seqs[seq_id];
+
+        hmmer::HMMMatcher matcher(hmm, hcfg);
+        // Split into k-mers
+        if (k > seq.size()) {
+            continue;
+        }
+        for (size_t i = 0; i < seq.size() - k + 1; ++i) {
+            std::string kmer = seq.substr(i, k);
+            std::string ref = std::string("seq_") + std::to_string(seq_id) + std::string("_kmer_") + std::to_string(i);
+            matcher.match(ref.c_str(), kmer.c_str());
+            // if (!hmm_in_aas) {
+            //     matcher.match(ref.c_str(), kmer.c_str());
+            // } else {
+            //     VERIFY(seq.size() >= 2);
+            //     for (size_t shift = 0; shift < 3; ++shift) {
+            //         std::string ref_shift = ref + "/" + std::to_string(shift);
+            //         std::string seq_aas = aa::translate(kmer.c_str() + shift);
+            //         matcher.match(ref_shift.c_str(), seq_aas.c_str());
+            //     }
+            // }
+        }
+
+        size_t hit_count = 0;
+
+        matcher.summarize();
+        for (const auto &hit : matcher.hits()) {
+            if (!hit.reported() || !hit.included())
+                continue;
+
+            const std::string name = hit.name();
+            ++hit_count;
+            // size_t id = std::stoull(name);  // Slash and everything after is ignored automatically
+        }
+        INFO("Hits: " << hit_count << " over " << seq.size() - k + 1);
+    }
+
+    return 0;
+}
+
+
 // vim: set ts=4 sw=4 et :
