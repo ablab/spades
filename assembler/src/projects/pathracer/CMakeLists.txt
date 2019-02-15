@@ -11,7 +11,14 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(pathracer
                omnigraph_wrapper.cpp fees.cpp
                main.cpp
+               fasta_reader.cpp
                pathracer.cpp)
+add_executable(pathracer_aling_kmers_test
+               fasta_reader.cpp
+               omnigraph_wrapper.cpp fees.cpp
+               main.cpp
+               align_kmers.cpp)
+target_link_libraries(pathracer_aling_kmers_test graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES} hattrie cityhash modules assembly_graph common_modules)
 # target_compile_options(pathracer PRIVATE -g)
 
 install(TARGETS pathracer
