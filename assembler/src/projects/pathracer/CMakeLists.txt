@@ -10,7 +10,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(pathracer
                omnigraph_wrapper.cpp fees.cpp
-               main.cpp)
+               main.cpp
+               pathracer.cpp)
 # target_compile_options(pathracer PRIVATE -g)
 
 install(TARGETS pathracer
