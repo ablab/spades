@@ -82,8 +82,8 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
     std::ofstream os(gfa_fn);
     GFAPathWriter gfa_writer(gp.g, os,
-                             cfg::get().pd ?
-                             PlasmidNamingF<Graph>(io::IdNamingF<Graph>(), gp.components) :
+                             cfg::get().pd && gp.components.IsFilled()?
+                             PlasmidNamingF<Graph>(io::IdNamingF<Graph>(), gp.components) : 
                              io::IdNamingF<Graph>());
     gfa_writer.WriteSegmentsAndLinks();
 
@@ -94,7 +94,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
     FastgPathWriter fastg_writer(gp.g,
                                  fastg_fn,
-                                 cfg::get().pd ?
+                                 cfg::get().pd && gp.components.IsFilled() ?
                                  PlasmidNamingF<Graph>(io::BasicNamingF<Graph>(), gp.components) :
                                  io::BasicNamingF<Graph>());
     fastg_writer.WriteSegmentsAndLinks();
