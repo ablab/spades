@@ -29,7 +29,8 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
         : g_(g),
           memopt_(mem_opt_init(), free),
           idx_(nullptr, bwa_idx_destroy),
-          mode_(mode) {
+          mode_(mode),
+          skip_secondary_(true) {
     memopt_->flag |= MEM_F_SOFTCLIP;
     switch (mode) {
         default:
@@ -51,6 +52,7 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
             memopt_->mask_level = 20;
             memopt_->drop_ratio = 20;
             memopt_->min_chain_weight = 10;
+            skip_secondary_ = false;
             break;
     };
 
@@ -310,7 +312,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
 
-        if (mode_ != AlignmentMode::Ont2D && mode_ != AlignmentMode::PacBio && a.secondary >= 0) continue; // skip secondary alignments
+        if (skip_secondary_ && a.secondary >= 0) continue; // skip secondary alignments
 
         if (is_short) {
 // skipping alignments shorter than half of read length

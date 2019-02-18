@@ -54,6 +54,7 @@ class BWAIndex {
     std::vector<debruijn_graph::EdgeId> ids_;
 
     AlignmentMode mode_;
+    bool skip_secondary_;
 
     DECL_LOGGER("BWAIndex");
 };
