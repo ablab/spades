@@ -4,6 +4,7 @@
 #include "pathtree.hpp"
 #include "utils.hpp"
 #include "aa_cursor.hpp"
+#include "string_cursor.hpp"
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/components/graph_component.hpp"
@@ -279,3 +280,6 @@ PathSet<AAGraphCursor<OptimizedRestrictedGraphCursor<DebruijnGraphCursor>>> find
 PathSet<OptimizedRestrictedGraphCursor<DebruijnGraphCursor>> find_best_path(const hmm::Fees &fees,
                                                                             const std::vector<OptimizedRestrictedGraphCursor<DebruijnGraphCursor>> &initial,
                                                                             const void *context);
+PathSet<StringCursor> find_best_path(const hmm::Fees &fees,
+                                     const std::vector<StringCursor> &initial,
+                                     const void *context);

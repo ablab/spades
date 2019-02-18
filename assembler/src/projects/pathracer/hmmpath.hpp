@@ -498,8 +498,15 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   depth_filter::impl::DepthAtLeast<GraphCursor> depth;
 
   INFO("Original (before filtering) initial set size: " << initial_original.size());
+  // depth_filter::impl::Depth<GraphCursor> depth_naive;
+  // for (const auto &cursor : initial_original) {
+  //   INFO("Cursor " << cursor << "Depth: " << depth_naive.depth(cursor, context));
+  // }
+  double required_cursor_depth = static_cast<double>(fees.M) * fees.depth_filter_rate - fees.depth_filter_constant;
+  INFO("Depth required: " << required_cursor_depth);
   std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
-               [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, static_cast<double>(fees.M) / 3 - 10, context); });  // FIXME Correct this condition for local-local matching
+               [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, required_cursor_depth,
+                                                                            context); });  // FIXME Correct this condition for local-local matching
   INFO("Initial set size: " << initial.size());
 
   StateSet I, M;
@@ -512,8 +519,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   size_t positions_left = fees.M;
   auto depth_filter_cursor = [&](const GraphCursor &cursor) -> bool {
-    return !depth.depth_at_least(cursor, static_cast<double>(positions_left) / 3 - 10, context);
+    return !depth.depth_at_least(cursor, static_cast<double>(positions_left) * fees.depth_filter_rate - fees.depth_filter_constant, context);
   };
+  // FIXME Do we really need depth filter on each iteration? Probably not
 
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
   i_loop_processing(I, 0, depth_filter_cursor);  // Do we really need I at the beginning???
