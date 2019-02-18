@@ -32,6 +32,16 @@ struct Fees {
   std::string consensus;
 
   struct {size_t l25, l100, l500; } state_limits;
+  double depth_filter_rate;
+  double depth_filter_constant;
+
+  Fees() {
+      state_limits.l25 = 1000000;
+      state_limits.l100 = 50000;
+      state_limits.l500 = 10000;
+      depth_filter_rate = 0.66;
+      depth_filter_constant = 20;
+  }
 
   bool check_i_loop(size_t i) const;
   size_t count_negative_loops() const;

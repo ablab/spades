@@ -1240,6 +1240,8 @@ int pathracer_main(int argc, char* argv[]) {
 }
 
 #include "fasta_reader.hpp"
+#include "string_cursor.hpp"
+
 int aling_kmers_main(int argc, char* argv[]) {
     create_console_logger("");
     if (argc != 4) {
@@ -1255,9 +1257,45 @@ int aling_kmers_main(int argc, char* argv[]) {
 
     hmmer::hmmer_cfg hcfg;
     const auto &hmm = hmms[0];
+    const P7_HMM *p7hmm = hmm.get();
+    auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
+    const size_t state_limits_coef = 1;
+    fees.state_limits.l25 = 1000000 * state_limits_coef;
+    fees.state_limits.l100 = 50000 * state_limits_coef;
+    fees.state_limits.l500 = 10000 * state_limits_coef;
+
     bool hmm_in_aas = hmm.abc()->K == 20;
+    std::vector<double> best_scores;
     for (size_t seq_id = 0; seq_id < seqs.size(); ++seq_id) {
-        const auto &seq = seqs[seq_id];
+        std::string seq = seqs[seq_id];
+
+        if (seq.find('X') != std::string::npos) {
+            INFO("Stop-codon found, skipping the sequence");
+            continue;
+        }
+        // remove -
+        seq.erase(std::remove(seq.begin(), seq.end(), '-'), seq.end());
+
+        StringCursor cursor(0);
+        // auto lg_bak = logging::__logger();
+        // logging::logger *lg = logging::create_logger("");
+        // logging::attach_logger(lg);
+
+        auto result = find_best_path(fees, {cursor}, &seq);
+        // logging::__logger() = lg_bak;
+
+        auto top_paths = result.top_k(1);
+        if(top_paths.empty()) {
+            INFO("EMPTY: " << seq);
+        }
+        VERIFY(!top_paths.empty());
+
+        INFO("Best score: " << result.best_score());
+        best_scores.push_back(result.best_score());
+        std::string aligned = top_paths.str(0, &seq);
+
+        INFO("Aligned string: " << aligned);
+        INFO("Aligned length: " << aligned.size() << " from " << seq.size());
 
         hmmer::HMMMatcher matcher(hmm, hcfg);
         // Split into k-mers
@@ -1293,6 +1331,7 @@ int aling_kmers_main(int argc, char* argv[]) {
         }
         INFO("Hits: " << hit_count << " over " << seq.size() - k + 1);
     }
+    INFO("Best scores: " << best_scores);
 
     return 0;
 }

@@ -5,7 +5,7 @@
 
 class StringCursor {
 public:
-    StringCursor(size_t pos) : pos_{pos} {}
+    StringCursor(size_t pos = -1) : pos_{pos} {}
     char letter(const void *context) const {
         const std::string &s = *static_cast<const std::string *>(context);
         return s[pos_];
@@ -33,11 +33,28 @@ public:
         if (pos_ == s.length() - 1) {
             return {};
         } else {
-            StringCursor(pos_ + 1);
+            return {StringCursor(pos_ + 1)};
         }
     }
+
+    size_t position() const { return pos_; }
 
 private:
     size_t pos_;
 };
 
+namespace std {
+template <>
+struct hash<StringCursor> {
+    std::size_t operator()(const StringCursor &c) const { return std::hash<size_t>()(c.position()); }
+};
+
+inline std::ostream &operator<<(std::ostream &os, const StringCursor &c) {
+  if (c.is_empty()) {
+    return os << "(@)";
+  } else {
+    return os << "(" << c.position() << ")";
+  }
+}
+
+}  // namespace std
