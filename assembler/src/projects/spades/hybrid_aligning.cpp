@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <common/modules/alignment/pacbio/g_aligner.hpp>
+#include "modules/alignment/pacbio/g_aligner.hpp"
 #include "modules/alignment/pacbio/pac_index.hpp"
 #include "hybrid_gap_closer.hpp"
 #include "modules/alignment/long_read_mapper.hpp"

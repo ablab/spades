@@ -6,9 +6,7 @@
 
 #pragma once
 #include "assembly_graph/index/edge_multi_index.hpp"
-#include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 
-#include "modules/alignment/edge_index_refiller.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "modules/alignment/gap_info.hpp"
 

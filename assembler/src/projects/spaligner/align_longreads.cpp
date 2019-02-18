@@ -1,11 +1,8 @@
 //***************************************************************************
-//* Copyright (c) 2018 Saint Petersburg State University
+//* Copyright (c) 2018-2019 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
-
-#include "llvm/Support/YAMLParser.h"
-#include "llvm/Support/YAMLTraits.h"
 
 #include "io/utils/edge_namer.hpp"
 #include "io/binary/graph.hpp"
@@ -19,6 +16,9 @@
 #include "modules/alignment/pacbio/g_aligner.hpp"
 
 #include "mapping_printer.hpp"
+
+#include "llvm/Support/YAMLParser.h"
+#include "llvm/Support/YAMLTraits.h"
 
 #include <iostream>
 #include <fstream>

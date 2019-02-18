@@ -8,7 +8,6 @@
 
 #include "pipeline/configs/aligner_config.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
-#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 
