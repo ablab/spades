@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include <string>
@@ -50,11 +56,11 @@ struct hash<StringCursor> {
 };
 
 inline std::ostream &operator<<(std::ostream &os, const StringCursor &c) {
-  if (c.is_empty()) {
-    return os << "(@)";
-  } else {
-    return os << "(" << c.position() << ")";
-  }
+    if (c.is_empty()) {
+        return os << "(@)";
+    } else {
+        return os << "(" << c.position() << ")";
+    }
 }
 
 }  // namespace std
