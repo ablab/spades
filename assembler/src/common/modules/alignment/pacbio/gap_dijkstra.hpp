@@ -142,7 +142,7 @@ class DijkstraGraphSequenceBase {
   public:
     DijkstraGraphSequenceBase(const debruijn_graph::Graph &g,
                               const DijkstraParams &gap_cfg,
-                              std::string ss,
+                              const std::string &ss,
                               EdgeId start_e, int start_p, int path_max_length)
         : g_(g)
         , gap_cfg_(gap_cfg)
@@ -246,7 +246,9 @@ class DijkstraGraphSequenceBase {
 
 class DijkstraGapFiller: public DijkstraGraphSequenceBase {
   public:
-    DijkstraGapFiller(const debruijn_graph::Graph &g, const GapClosingConfig &gap_cfg, std::string ss,
+    DijkstraGapFiller(const debruijn_graph::Graph &g,
+                      const GapClosingConfig &gap_cfg,
+                      const std::string &ss,
                       EdgeId start_e, EdgeId end_e,
                       int start_p, int end_p, int path_max_length,
                       const std::map<debruijn_graph::VertexId, size_t> &reachable_vertex)
@@ -284,7 +286,9 @@ class DijkstraGapFiller: public DijkstraGraphSequenceBase {
 
 class DijkstraEndsReconstructor: public DijkstraGraphSequenceBase {
   public:
-    DijkstraEndsReconstructor(const debruijn_graph::Graph &g, const EndsClosingConfig &gap_cfg, std::string ss,
+    DijkstraEndsReconstructor(const debruijn_graph::Graph &g,
+                              const EndsClosingConfig &gap_cfg,
+                              const std::string &ss,
                               EdgeId start_e, int start_p, int path_max_length)
         : DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length) {
         end_qstate_ = QueueState();
