@@ -213,3 +213,10 @@ find_best_path(const hmm::Fees &fees,
                const void *context) {
     return impl::find_best_path(fees, initial, context);
 }
+
+PathSet<CachedCursor>
+find_best_path(const hmm::Fees &fees,
+               const std::vector<CachedCursor> &initial,
+               const void *context) {
+    return impl::find_best_path(fees, initial, context);
+}
