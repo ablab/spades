@@ -8,6 +8,7 @@
 #include "omnigraph_wrapper.hpp"
 #include "depth_filter.hpp"
 #include "cursor_conn_comps.hpp"
+#include "cached_cursor.hpp"
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
@@ -998,27 +999,30 @@ void TraceHMM(const hmmer::HMM &hmm,
                                       std::vector<HMMPathInfo> &local_results,
                                       const void *context,
                                       const std::string &component_name = "") -> void {
-        auto result = find_best_path(fees, initial, context);
+        CachedCursorContext ccc(initial, context);
+        auto cached_initial = ccc.Cursors();
+        auto result = find_best_path(fees, cached_initial, &ccc);
 
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
         if (!top_paths.empty()) {
             INFO("Best score in the current component: " << result.best_score());
             INFO("Best sequence in the current component");
-            INFO(top_paths.str(0, context));
-            INFO("Alignment: " << top_paths.compress_alignment(top_paths.alignment(0, fees, context)));
+            INFO(top_paths.str(0, &ccc));
+            INFO("Alignment: " << top_paths.compress_alignment(top_paths.alignment(0, fees, &ccc)));
         }
 
         for (const auto& annotated_path : top_paths) {
             VERIFY(annotated_path.path.size());
-            auto seq = top_paths.str(annotated_path.path, context);
-            auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, fees, context));
-            auto nucl_path = to_nucl_path(annotated_path.path);
+            auto seq = top_paths.str(annotated_path.path, &ccc);
+            auto unpacked_path = ccc.UnpackPath(annotated_path.path, initial);
+            auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, fees, &ccc));
+            auto nucl_path = to_nucl_path(unpacked_path);
             std::string nucl_seq = top_paths.str(nucl_path, context);
             DEBUG_ASSERT(check_path_continuity(nucl_path, context), main_assert{}, debug_assert::level<2>{});
             auto edge_path = to_path(nucl_path);
             DEBUG_ASSERT(!edge_path.empty(), main_assert{});
-            auto edge_path_aas = to_path(annotated_path.path);
+            auto edge_path_aas = to_path(unpacked_path);
             if (edge_path != edge_path_aas) {
                 ERROR("NT: " << edge_path);
                 ERROR("AA: " << edge_path_aas);
