@@ -89,7 +89,7 @@ class KMerMap {
         auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
         if (res == mapping_.end())
             return nullptr;
-
+        
         return res.value();
     }
 

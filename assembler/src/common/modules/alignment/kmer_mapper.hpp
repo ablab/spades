@@ -27,7 +27,6 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
 
     unsigned k_;
     KMerMap mapping_;
-    bool verification_on_;
     bool normalized_;
 
     bool CheckAllDifferent(const Sequence &old_s, const Sequence &new_s) const {
@@ -170,9 +169,7 @@ public:
 
         while (rawval != nullptr) {
             Seq val(k_, rawval);
-            if (verification_on_) {
-                VERIFY(answer != val);
-            }
+            VERIFY(answer != val);
 
             answer = val;
             rawval = mapping_.find(answer);
@@ -181,8 +178,7 @@ public:
     }
 
     bool CanSubstitute(const Kmer &kmer) const {
-        const auto *rawval = mapping_.find(kmer);
-        return rawval != nullptr;
+        return mapping_.count(kmer);
     }
 
     void BinWrite(std::ostream &file) const {
@@ -217,11 +213,6 @@ public:
 
     size_t size() const {
         return mapping_.size();
-    }
-
-    // "turn on = true" means turning of all verifies
-    void SetUnsafeMode(bool turn_on) {
-        verification_on_ = !turn_on;
     }
 };
 
