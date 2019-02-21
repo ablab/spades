@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <algorithm>
 
 #include "fees.hpp"
 
@@ -402,6 +403,8 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       return AnnotatedPath{path, cost, events};
     };
 
+    std::unordered_map<const This*, std::unordered_map<GraphCursor, const This*>> best_edges;
+
     while (!q.empty() && result.size() < k) {
       auto qe = q.top();
       q.pop();
@@ -410,6 +413,34 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       const double &cost = qe.cost;
 
       TRACE("Extracting path with cost " << cost);
+      // Check
+      if (!qe.path->is_root()) {
+        const GraphCursor &prev_gp = qe.path->parent()->data().gp;
+        const This *prev_path_link = qe.path->parent()->data().path_link;
+        auto &be = best_edges[path_link];
+        // Trimming
+        if (prev_gp.is_empty()) {
+          be[prev_gp] = prev_path_link;  // Strong trimming!
+          // Check has non-empty cursor
+          if (std::any_of(be.cbegin(), be.cend(), [](const auto& x){ return !x.first.is_empty(); })) {
+            continue;
+          }
+        } else {
+          if (be.count(GraphCursor())) {
+            continue;
+          }
+        }
+
+        // Collapsing
+        auto it = be.find(prev_gp);
+        if (it != be.cend() && it->second != prev_path_link) {
+          continue;
+        }
+        if (it == be.cend()) {
+          be[prev_gp] = prev_path_link;
+        }
+      }
+
       // Check if path started with SOURCE: TODO implement it properly
       if (gp.is_empty() && !qe.path->is_root()) {
         // Report path
@@ -538,7 +569,7 @@ class PathSet {
 
   path_container top_k(size_t k) const { return path_container(pathlink_, k); }
 
-  auto clip_tails_non_aggressive(const void *context) { return pathlink_.clean_non_aggressive(context); }
+  // auto clip_tails_non_aggressive(const void *context) { return pathlink_.clean_non_aggressive(context); }
 
  private:
   pathtree::PathLink<GraphCursor> pathlink_;

@@ -596,7 +596,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   INFO(terminal.object_count_current() << " pathlink objects");
   INFO(terminal.object_count_max() << " pathlink objects maximum");
   INFO(terminal.object_count_constructed() << " pathlink objects constructed");
-  result.clip_tails_non_aggressive(context);
+  // result.clip_tails_non_aggressive(context);
 
   return result;
 }
