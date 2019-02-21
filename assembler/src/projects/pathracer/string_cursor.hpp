@@ -54,6 +54,7 @@ template <>
 struct hash<StringCursor> {
     std::size_t operator()(const StringCursor &c) const { return std::hash<size_t>()(c.position()); }
 };
+}  // namespace std
 
 inline std::ostream &operator<<(std::ostream &os, const StringCursor &c) {
     if (c.is_empty()) {
@@ -63,4 +64,3 @@ inline std::ostream &operator<<(std::ostream &os, const StringCursor &c) {
     }
 }
 
-}  // namespace std
