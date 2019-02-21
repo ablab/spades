@@ -327,6 +327,85 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
   };
 
   std::vector<AnnotatedPath> top_k(size_t k) const {
+    struct Event {
+      GraphCursor gp; // PathLink does not know its own position!
+      const This *path_link;
+    };
+
+    using EventPath = NodeRef<Event>;
+    struct QueueElement {
+      EventPath path;
+      double cost;  // TODO Use scores as in the paper
+    };
+
+    struct Comp {
+      bool operator()(const QueueElement &e1, const QueueElement &e2) const {
+        return e1.cost > e2.cost;
+      }
+    };
+
+    std::priority_queue<QueueElement, std::vector<QueueElement>, Comp> q;
+
+    std::vector<AnnotatedPath> result;
+    auto best = best_ancestor();
+    if (best == scores_.end()) {
+      return result;
+      // TODO Support empty Link as a common case and remove this workaround
+    }
+
+    double best_score = best->second.first;
+    auto SinkPath = make_root<Event>({GraphCursor(), this});
+    q.push({SinkPath, best_score});
+
+    auto get_annotated_path = [&](const EventPath &epath, double cost) -> AnnotatedPath {
+      std::vector<GraphCursor> path;
+      std::vector<pathtree::Event> events;
+
+      for (const auto &tpl : epath->collect()) {
+        if (tpl.gp.is_empty()) {
+          continue;  // TODO Think about a better way to exclude empty cursors
+        }
+        path.push_back(tpl.gp);
+        events.push_back(tpl.path_link->event);
+      }
+
+      return AnnotatedPath{path, cost, events};
+    };
+
+    while (!q.empty() && result.size() < k) {
+      auto qe = q.top();
+      q.pop();
+      const GraphCursor &gp = qe.path->payload().gp;
+      const This *path_link = qe.path->payload().path_link;
+      const double &cost = qe.cost;
+
+      TRACE("Extracting path with cost " << cost);
+      // Check if path started with SOURCE: TODO implement it properly
+      if (gp.is_empty() && !qe.path->is_root()) {
+        // Report path
+        auto annotated_path = get_annotated_path(qe.path, qe.cost);
+        if (annotated_path.empty()) {
+          // We should stop after the first empty path found
+          // FIXME is it possible to obtain an empty path at all?????
+          break;
+        }
+        result.push_back(get_annotated_path(qe.path, qe.cost));
+        continue;
+      }
+
+      auto best = path_link->best_ancestor();
+      for (auto it = path_link->scores_.cbegin(); it != path_link->scores_.cend(); ++it) {
+        double delta = it->second.first - best->second.first;
+        Event new_event{it->first, const_cast<const This *>(it->second.second.get())};
+        auto new_path = qe.path->add(new_event);
+        q.push({new_path, cost + delta});
+      }
+    }
+
+    return result;
+  }
+
+  std::vector<AnnotatedPath> top_k_old(size_t k) const {
     // using Payload = std::tuple<GraphCursor, double, const This *>;
     struct Payload {
       GraphCursor gp;

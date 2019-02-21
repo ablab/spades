@@ -28,8 +28,14 @@ public:
     Node(const T &payload, const ThisRef &parent = nullptr) : payload_{payload}, parent_{parent} {}
 
     static ThisRef child(const T &payload, const ThisRef &parent = nullptr) { return new This(payload, parent); }
+    ThisRef add(const T &payload) { return new This(payload, this); }
 
     const auto &payload() const { return payload_; }
+    bool is_root() const {
+        return parent_ == nullptr;
+    }
+
+    ~Node() noexcept = default;
 
 private:
     T payload_;
@@ -42,6 +48,11 @@ using NodeRef = llvm::IntrusiveRefCntPtr<Node<T>>;
 template <typename T>
 NodeRef<T> make_child(const T &payload, const NodeRef<T> &parent = nullptr) {
     return Node<T>::child(payload, parent);
+}
+
+template <typename T>
+NodeRef<T> make_root(const T &payload) {
+    return Node<T>::child(payload, nullptr);
 }
 
 }  // namespace pathtree
