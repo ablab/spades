@@ -63,4 +63,3 @@ inline std::ostream &operator<<(std::ostream &os, const StringCursor &c) {
         return os << "(" << c.position() << ")";
     }
 }
-
