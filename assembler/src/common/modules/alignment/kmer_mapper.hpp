@@ -164,17 +164,18 @@ public:
 
     Kmer Substitute(const Kmer &kmer) const {
         VERIFY(this->IsAttached());
-        Kmer answer = kmer;
-        const RawSeqData *rawval = mapping_.find(answer);
+        const auto *rawval = mapping_.find(kmer);
+        if (rawval == nullptr)
+            return kmer;
 
+        const auto *newval = rawval;
         while (rawval != nullptr) {
-            Seq val(k_, rawval);
-            VERIFY(answer != val);
-
-            answer = val;
-            rawval = mapping_.find(answer);
+            // VERIFY(answer != val);
+            newval = rawval;
+            rawval = mapping_.find(newval);
         }
-        return answer;
+
+        return Kmer(k_, newval);
     }
 
     bool CanSubstitute(const Kmer &kmer) const {

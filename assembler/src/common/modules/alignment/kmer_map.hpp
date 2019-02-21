@@ -89,7 +89,15 @@ class KMerMap {
         auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
         if (res == mapping_.end())
             return nullptr;
-        
+
+        return res.value();
+    }
+
+    const RawSeqData *find(const RawSeqData *key) const {
+        auto res = mapping_.find_ks((const char*)key, rawcnt_ * sizeof(RawSeqData));
+        if (res == mapping_.end())
+            return nullptr;
+
         return res.value();
     }
 
@@ -108,7 +116,7 @@ class KMerMap {
     size_t size() const {
         return mapping_.size();
     }
-    
+
     iterator begin() const {
         return iterator(k_, mapping_.begin());
     }
