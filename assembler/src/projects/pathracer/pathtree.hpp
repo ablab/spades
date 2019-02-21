@@ -263,8 +263,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
         continue;
       }
 
-      current->clean_left_link_non_aggressive();
-
       for (auto it = current->scores_.begin(); it != current->scores_.end(); ++it) {
         This *p = it->second.second.get();
         // We cannot do this in the previous loop since some references could be invalidated
@@ -325,6 +323,45 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       return path.size();
     }
   };
+
+  auto get_cursor_delta_trimmed_left() const {
+    // TODO Check and fix this description
+    // the idea is in the following:
+    // if a path is a prefix or suffix of another one,
+    // we do not consider them as DIFFERENT paths. We leave only one (the best) of them
+    // In order to implement this we do not allow to link to be "left-terminal" (contain backref to "empty cursor") and
+    // "transit" (contain backrefs to other nontrivial links).
+    // Here we just remove ref to empty cursor or refs to nontrivial links dependent on what is better
+
+    // If terminal ref is present:
+    // 1) Remove all other refs worse than it
+    // 2) In case of some non-terminal refs still present, remove terminal ref as well
+    // We add some tolerance. If two paths have almost equal scores we keep them both
+    // const double eps = 1e-7;
+    std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> result(scores_.cbegin(), scores_.cend());
+    std::sort(result.begin(), result.end(), [](const auto &p1, const auto &p2) { return p1.second.first < p2.second.first; });
+
+    for (size_t i = 0; i < result.size(); ++i) {
+      if (result[i].first.is_empty()) {
+        size_t new_len = i + 1;
+        if (new_len > 1) {
+          --new_len;
+        }
+        result.resize(new_len);
+        break;
+      }
+    }
+
+    if (result.size()) {
+      const double best_score = result[0].second.first;
+      for (size_t i = 0; i < result.size(); ++i) {
+        // delta >= 0
+        result[i].second.first -= best_score;
+      }
+    }
+
+    return result;
+  }
 
   std::vector<AnnotatedPath> top_k(size_t k) const {
     struct Event {
@@ -393,119 +430,14 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
         continue;
       }
 
-      auto best = path_link->best_ancestor();
-      for (auto it = path_link->scores_.cbegin(); it != path_link->scores_.cend(); ++it) {
-        double delta = it->second.first - best->second.first;
-        Event new_event{it->first, const_cast<const This *>(it->second.second.get())};
+      for (const auto &cdp : path_link->get_cursor_delta_trimmed_left()) {
+        Event new_event{cdp.first, const_cast<const This *>(cdp.second.second.get())};
         auto new_path = qe.path->child(new_event);
-        q.push({new_path, cost + delta});
+        q.push({new_path, cost + cdp.second.first});
       }
     }
 
     return result;
-  }
-
-  void clean_left_link_non_aggressive() {
-    auto it_terminal = scores_.find(GraphCursor());
-    if (it_terminal == scores_.end()) {
-      return;
-    }
-
-    auto best = best_ancestor();
-    if (best == scores_.end()) {
-      return;
-      // TODO Support empty Link as a common case and remove this workaround
-    }
-
-    if (best == it_terminal) {
-      for (auto it = scores_.begin(); it != scores_.end();) {
-        if (!it->first.is_empty()) {
-          it = scores_.erase(it);
-        } else {
-          ++it;
-        }
-      }
-    } else {
-      scores_.erase(it_terminal);
-    }
-  }
-
-  size_t clean_left_link_old_() {
-    // the idea is in the following:
-    // if a path is a prefix or suffix of another one,
-    // we do not consider them as DIFFERENT paths. We leave only one (the best) of them
-    // In order to implement this we do not allow to link to be "left-terminal" (contain backref to "empty cursor") and
-    // "transit" (contain backrefs to other nontrivial links).
-    // Here we just remove ref to empty cursor or refs to nontrivial links dependent on what is better
-
-    // If terminal ref is present:
-    // 1) Remove all other refs worse than it
-    // 2) In case of some non-terminal refs still present, remove terminal ref as well
-    auto it_terminal = scores_.find(GraphCursor());
-    if (it_terminal == scores_.end()) {
-      return 0;
-    }
-
-    double terminal_score = it_terminal->second.first;
-    std::vector<GraphCursor> to_remove;
-    for (const auto &kv : scores_) {
-      if (kv.first.is_empty()) {
-        continue;
-      }
-      double score = kv.second.first;
-      if (score >= terminal_score) {  // We prefer short paths
-        to_remove.push_back(kv.first);
-      } else {
-        to_remove.push_back(GraphCursor());
-      }
-    }
-
-    size_t count = 0;
-    for (const auto &key : to_remove) {
-      count += scores_.erase(key);
-    }
-
-    return count;
-  }
-
-  size_t clean_left_link_() {
-    // the idea is in the following:
-    // if a path is a prefix or suffix of another one,
-    // we do not consider them as DIFFERENT paths. We leave only one (the best) of them
-    // In order to implement this we do not allow to link to be "left-terminal" (contain backref to "empty cursor") and
-    // "transit" (contain backrefs to other nontrivial links).
-    // Here we just remove ref to empty cursor or refs to nontrivial links dependent on what is better
-
-    // If terminal ref is present:
-    // 1) Remove all other refs worse than it
-    // 2) In case of some non-terminal refs still present, remove terminal ref as well
-    // We add some tolerance. If two paths have almost equal scores we keep them both
-    const double eps = 1e-7;
-    auto it_terminal = scores_.find(GraphCursor());
-    if (it_terminal == scores_.end()) {
-      return 0;
-    }
-
-    double terminal_score = it_terminal->second.first;
-    std::vector<GraphCursor> to_remove;
-    for (const auto &kv : scores_) {
-      if (kv.first.is_empty()) {
-        continue;
-      }
-      double score = kv.second.first;
-      if (score > terminal_score + eps) {
-        to_remove.push_back(kv.first);
-      } else if (score < terminal_score - eps) {
-        to_remove.push_back(GraphCursor());
-      }
-    }
-
-    size_t count = 0;
-    for (const auto &key : to_remove) {
-      count += scores_.erase(key);
-    }
-
-    return count;
   }
 
   Event event;
