@@ -11,6 +11,8 @@
 
 class StringCursor {
 public:
+    using Context = const std::string*;
+
     StringCursor(size_t pos = -1) : pos_{pos} {}
     char letter(const void *context) const {
         const std::string &s = *static_cast<const std::string *>(context);

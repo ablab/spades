@@ -26,6 +26,7 @@ class Graph {
  public:
   class GraphCursor {
    public:
+    using Context = const void *;
     GraphCursor() : pgraph_{nullptr}, edge_id_(-1), position_(-1) {
       // INFO("Empty GP constructed");
       // empty pointer
@@ -359,6 +360,7 @@ class DBGraph {
  public:
   class GraphCursor {
    public:
+    using Context = const void *;
     GraphCursor() : pgraph_{nullptr}, edge_id_(-1), position_(-1) {
       // INFO("Empty GP constructed");
       // empty pointer

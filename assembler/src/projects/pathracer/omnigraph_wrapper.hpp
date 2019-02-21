@@ -39,21 +39,19 @@ struct IdHolder {
 static_assert(sizeof(IdHolder) == sizeof(uint64_t), "Invalid packed id holder");
 
 class DebruijnGraphCursor {
-  public:
-      DebruijnGraphCursor()
-              : holder_{} {}
+public:
+    using Context = const debruijn_graph::ConjugateDeBruijnGraph*;
+    DebruijnGraphCursor() : holder_{} {}
 
-      DebruijnGraphCursor(debruijn_graph::EdgeId e, size_t position) : holder_{e, position} {}
+    DebruijnGraphCursor(debruijn_graph::EdgeId e, size_t position) : holder_{e, position} {}
 
-      DebruijnGraphCursor(const DebruijnGraphCursor &) = default;
-      DebruijnGraphCursor(DebruijnGraphCursor &&) = default;
-      DebruijnGraphCursor &operator=(const DebruijnGraphCursor &) = default;
-      DebruijnGraphCursor &operator=(DebruijnGraphCursor &&) = default;
-      ~DebruijnGraphCursor() noexcept = default;
+    DebruijnGraphCursor(const DebruijnGraphCursor &) = default;
+    DebruijnGraphCursor(DebruijnGraphCursor &&) = default;
+    DebruijnGraphCursor &operator=(const DebruijnGraphCursor &) = default;
+    DebruijnGraphCursor &operator=(DebruijnGraphCursor &&) = default;
+    ~DebruijnGraphCursor() noexcept = default;
 
-      bool operator==(const DebruijnGraphCursor &other) const {
-          return holder_ == other.holder_;
-    }
+    bool operator==(const DebruijnGraphCursor &other) const { return holder_ == other.holder_; }
 
     using EdgeId = debruijn_graph::EdgeId;
     EdgeId edge() const { return holder_.e(); }

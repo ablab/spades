@@ -7,6 +7,7 @@
 template <class GraphCursor>
 class ReversalGraphCursor : public GraphCursor {
  public:
+  using Context = typename GraphCursor::Context;
   using GraphCursor::GraphCursor;
   using GraphCursor::operator=;
   // "an inherited constructor is not a candidate for initialization from an expression of the same or derived type"
@@ -33,6 +34,7 @@ class ReversalGraphCursor : public GraphCursor {
 template <class GraphCursor>
 class RestrictedGraphCursor : public GraphCursor {
  public:
+  using Context = typename GraphCursor::Context;
   RestrictedGraphCursor() = default;
   RestrictedGraphCursor(const RestrictedGraphCursor&) = default;
   RestrictedGraphCursor(RestrictedGraphCursor&&) = default;
@@ -84,6 +86,7 @@ struct OptimizedRestrictedGraphCursorContext {
 template <class GraphCursor>
 class OptimizedRestrictedGraphCursor : public GraphCursor {
  public:
+  using Context = OptimizedRestrictedGraphCursorContext<GraphCursor>;
   OptimizedRestrictedGraphCursor() = default;
   OptimizedRestrictedGraphCursor(const OptimizedRestrictedGraphCursor&) = default;
   OptimizedRestrictedGraphCursor(OptimizedRestrictedGraphCursor&&) = default;
