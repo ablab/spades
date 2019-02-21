@@ -290,7 +290,7 @@ class PathSet {
 
     template <class Cursor>
     static std::string str(const std::vector<Cursor> &path,
-                           const void *context) {
+                           typename Cursor::Context context) {
       std::string s;
       for (size_t i = 0; i < path.size(); ++i) {
         DEBUG_ASSERT(!path[i].is_empty(), pathtree_assert{});
@@ -325,7 +325,7 @@ class PathSet {
     }
 
     static std::string alignment(const AnnotatedPath &apath, const hmm::Fees &fees,
-                                 const void *context) {
+                                 typename GraphCursor::Context context) {
       size_t m = fees.M;
       std::string s;
       size_t prev_position = 0;
@@ -353,8 +353,8 @@ class PathSet {
       return s;
     }
 
-    std::string str(size_t n, const void *context) const { return str(paths_[n].path, context); }
-    std::string alignment(size_t n, const hmm::Fees &fees, const void *context) const { return alignment(paths_[n], fees, context); }
+    std::string str(size_t n, typename GraphCursor::Context context) const { return str(paths_[n].path, context); }
+    std::string alignment(size_t n, const hmm::Fees &fees, typename GraphCursor::Context context) const { return alignment(paths_[n], fees, context); }
 
    private:
     std::vector<AnnotatedPath> paths_;

@@ -328,7 +328,8 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
 
 template <typename GraphCursor>
 PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
-                                    const std::vector<GraphCursor> &initial_original, const void *context) {
+                                    const std::vector<GraphCursor> &initial_original,
+                                    typename GraphCursor::Context context) {
   const double absolute_threshold = 250.0;
   using StateSet = StateSet<GraphCursor>;
   using DeletionStateSet = DeletionStateSet<GraphCursor>;
