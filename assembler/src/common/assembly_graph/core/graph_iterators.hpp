@@ -15,6 +15,28 @@
 
 namespace omnigraph {
 
+template<class Container, class Graph>
+class SmartWrapper : public GraphActionHandler<Graph>, Container {
+    typedef GraphActionHandler<Graph> handler;
+    typedef Container container;
+    typedef typename Container::key_type Element;
+
+public:
+    template<typename... Args>
+    SmartWrapper(const Graph &g, Args&&... args)
+            : handler(g, "SmartWrapper"),
+              container(std::forward<Args>(args)...) {}
+
+    void HandleDelete(Element e) override {
+        container::erase(e);
+    }
+};
+
+template<class Container, class Graph, typename... Args>
+SmartWrapper<Container, Graph> make_smart_wrapper(const Graph &g, Args&&... args) {
+    return SmartWrapper<Container, Graph>(g, std::forward<Args>(args)...);
+}
+
 /**
  * SmartIterator is able to iterate through collection content of which can be changed in process of
  * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
