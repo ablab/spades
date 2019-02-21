@@ -215,7 +215,7 @@ private:
 
 private:
     static constexpr unsigned ID_BIAS = 3;
-    
+
     template<class T>
     class IdStorage {
       public:
@@ -340,6 +340,28 @@ public:
     adt::iterator_range<VertexIt> vertices() const { return { begin(), end()}; }
 
     size_t size() const { return vstorage_.size(); }
+    size_t e_size() const { return estorage_.size(); }
+
+    class EdgeIt : public boost::iterator_adaptor<EdgeIt,
+                                                  typename EdgeStorage::id_iterator,
+                                                  EdgeId,
+                                                  typename std::iterator_traits<typename EdgeStorage::id_iterator>::iterator_category,
+                                                  EdgeId> {
+      public:
+        EdgeIt(typename EdgeStorage::id_iterator it)
+                : EdgeIt::iterator_adaptor(it) {}
+
+      private:
+        friend class boost::iterator_core_access;
+
+        EdgeId dereference() const {
+            return *this->base();
+        }
+    };
+
+    EdgeIt e_begin() const { return estorage_.id_begin(); }
+    EdgeIt e_end() const { return estorage_.id_end(); }
+    adt::iterator_range<EdgeIt> edges() const { return { e_begin(), e_end()}; }
 
     edge_const_iterator out_begin(VertexId v) const { return vertex(v)->out_begin(this); }
     edge_const_iterator out_end(VertexId v) const { return vertex(v)->out_end(this); }
@@ -486,7 +508,7 @@ public:
     bool contains(EdgeId edge) const {
         return estorage_.contains(edge.int_id());
     }
-    
+
     size_t int_id(EdgeId edge) const { return edge.int_id(); }
     size_t int_id(VertexId vertex) const { return vertex.int_id(); }
 
