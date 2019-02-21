@@ -15,8 +15,11 @@
 
 using Index = uint32_t;
 
+class CachedCursorContext;
+
 class CachedCursor {
 public:
+    using Context = CachedCursorContext;
     CachedCursor(Index index = Index(-1)) : index_{index} {}
     bool is_empty() const { return index_ == Index(-1); }
     bool operator==(const CachedCursor &other) const { return index_ == other.index_; }

@@ -20,6 +20,7 @@ class AAGraphCursor {
   using This = AAGraphCursor<GraphCursor>;
 
  public:
+  using Context = typename GraphCursor::Context;
   char letter(const void *context) const { return to_one_letter(aa::to_aa(c0_.letter(context), c1_.letter(context), c2_.letter(context))); }
 
   AAGraphCursor() = default;
