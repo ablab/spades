@@ -332,7 +332,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       const This *path_link;
     };
 
-    using EventPath = NodeRef<Event>;
+    using EventPath = pathtrie::NodeRef<Event>;
     struct QueueElement {
       EventPath path;
       double cost;  // TODO Use scores as in the paper
@@ -354,7 +354,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
     }
 
     double best_score = best->second.first;
-    auto SinkPath = make_root<Event>({GraphCursor(), this});
+    auto SinkPath = pathtrie::make_root<Event>({GraphCursor(), this});
     q.push({SinkPath, best_score});
 
     auto get_annotated_path = [&](const EventPath &epath, double cost) -> AnnotatedPath {
@@ -375,8 +375,8 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
     while (!q.empty() && result.size() < k) {
       auto qe = q.top();
       q.pop();
-      const GraphCursor &gp = qe.path->payload().gp;
-      const This *path_link = qe.path->payload().path_link;
+      const GraphCursor &gp = qe.path->data().gp;
+      const This *path_link = qe.path->data().path_link;
       const double &cost = qe.cost;
 
       TRACE("Extracting path with cost " << cost);
@@ -397,96 +397,9 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       for (auto it = path_link->scores_.cbegin(); it != path_link->scores_.cend(); ++it) {
         double delta = it->second.first - best->second.first;
         Event new_event{it->first, const_cast<const This *>(it->second.second.get())};
-        auto new_path = qe.path->add(new_event);
+        auto new_path = qe.path->child(new_event);
         q.push({new_path, cost + delta});
       }
-    }
-
-    return result;
-  }
-
-  std::vector<AnnotatedPath> top_k_old(size_t k) const {
-    // using Payload = std::tuple<GraphCursor, double, const This *>;
-    struct Payload {
-      GraphCursor gp;
-      double cost;
-      const This *p;
-    };
-    using Node = Node<Payload>;
-    using SPT = NodeRef<Payload>;
-    struct Comp {
-      bool operator()(const SPT &e1, const SPT &e2) const {
-        return e1->payload().cost> e2->payload().cost;
-      }
-    };
-    std::priority_queue<SPT, std::vector<SPT>, Comp> q;
-    auto extract_path = [&q]() -> AnnotatedPath {
-      DEBUG_ASSERT(!q.empty(), pathtree_assert{});
-      SPT tail = q.top();
-      q.pop();
-      // GraphCursor gp;
-      const This *p = tail->payload().p;
-      double cost = tail->payload().cost;
-
-      TRACE("Extracting path with cost " << cost);
-
-      while (p) {
-        auto new_tail = tail;
-        auto best = p->best_ancestor();
-        for (auto it = p->scores_.cbegin(); it != p->scores_.cend(); ++it) {
-          double delta = it->second.first - best->second.first;
-          auto spt = make_child<Payload>({it->first, cost + delta, const_cast<const This *>(it->second.second.get())}, tail);
-          DEBUG_ASSERT(spt->payload().gp.is_empty() == (spt->payload().p->event.type == EventType::NONE), pathtree_assert{});
-          if (it != best) {
-            q.push(spt);
-          } else {
-            new_tail = spt;
-          }
-        }
-        p = best->second.second.get();
-        tail = new_tail;
-
-        if (p->best_ancestor()->second.second == nullptr) {  // TODO Add method to check master_source
-          break;
-        }
-      }
-
-      std::vector<GraphCursor> path;
-      std::vector<Event> events;
-
-      for (const auto &tpl : tail->collect()) {
-        if (tpl.gp.is_empty()) {
-          continue;  // TODO Think about a better way to exclude empty cursors
-        }
-        path.push_back(tpl.gp);
-        events.push_back(tpl.p->event);
-      }
-
-      return AnnotatedPath{path, cost, events};
-    };
-
-    std::vector<AnnotatedPath> result;
-    auto best = best_ancestor();
-    if (best == scores_.end()) {
-      return result;
-      // TODO Support empty Link as a common case and remove this workaround
-    }
-
-    double best_score = best->second.first;
-    auto initial = make_child<Payload>({GraphCursor(), best_score, this});
-    q.push(initial);
-
-    for (size_t i = 0; i < k && !q.empty();) {
-      auto annotated_path = extract_path();
-      if (annotated_path.empty()) {
-        continue;
-      }
-      result.push_back(annotated_path);
-      ++i;
-      TRACE(i << " top paths extracted");
-      TRACE(Node::object_count_current() << " current # of best path tree nodes");
-      TRACE(Node::object_count_max() << " max # of best path tree nodes");
-      TRACE(Node::object_count_constructed() << " overall best path tree nodes constructed");
     }
 
     return result;

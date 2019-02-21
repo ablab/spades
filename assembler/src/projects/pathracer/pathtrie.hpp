@@ -1,58 +1,64 @@
 #pragma once
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
-#include "object_counter.hpp"
 
 #include <memory>
 #include <vector>
 
-namespace pathtree {
+namespace pathtrie {
 
+namespace impl {
 template <typename T>
-class Node : public AtomicObjectCounter<Node<T>>, public llvm::RefCountedBase<Node<T>> {
+class Node : public llvm::RefCountedBase<Node<T>> {
     using This = Node<T>;
     using ThisRef = llvm::IntrusiveRefCntPtr<This>;
 
 public:
+    // TODO Implement collect via iterators
     std::vector<T> collect() const {
         std::vector<T> result;
         const This *p = this;
         while (p) {
-            result.push_back(p->payload_);
+            result.push_back(p->data_);
             p = p->parent_.get();
         }
 
         return result;
     }
 
-    Node(const T &payload, const ThisRef &parent = nullptr) : payload_{payload}, parent_{parent} {}
+    static ThisRef make_child(const T &data, const ThisRef &parent = nullptr) { return new This(data, parent); }
+    static ThisRef make_child(T &&data, const ThisRef &parent = nullptr) { return new This(std::move(data), parent); }
+    ThisRef child(const T &data) { return make_child(data, this); }
+    ThisRef child(T &&data) { return make_child(std::move(data), this); }
 
-    static ThisRef child(const T &payload, const ThisRef &parent = nullptr) { return new This(payload, parent); }
-    ThisRef add(const T &payload) { return new This(payload, this); }
-
-    const auto &payload() const { return payload_; }
-    bool is_root() const {
-        return parent_ == nullptr;
-    }
+    auto &data() { return data_; }
+    const auto &data() const { return data_; }
+    bool is_root() const { return parent_ == nullptr; }
 
     ~Node() noexcept = default;
 
 private:
-    T payload_;
+    T data_;
     ThisRef parent_;
+
+    Node(const T &data, const ThisRef &parent = nullptr) : data_{data}, parent_{parent} {}
+    Node(T &&data, const ThisRef &parent = nullptr) : data_{std::move(data)}, parent_{parent} {}
 };
 
 template <class T>
 using NodeRef = llvm::IntrusiveRefCntPtr<Node<T>>;
 
 template <typename T>
-NodeRef<T> make_child(const T &payload, const NodeRef<T> &parent = nullptr) {
-    return Node<T>::child(payload, parent);
+NodeRef<T> make_root(const T &data) {
+    return Node<T>::make_child(data, nullptr);
 }
 
 template <typename T>
-NodeRef<T> make_root(const T &payload) {
-    return Node<T>::child(payload, nullptr);
+NodeRef<T> make_root(T &&data) {
+    return Node<T>::make_child(std::move(data), nullptr);
+}
 }
 
-}  // namespace pathtree
+using impl::make_root;
+using impl::NodeRef;
+}  // namespace pathtrie
