@@ -771,7 +771,7 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.use_scaffolder, pt, "use_scaffolder", complete);
     load(cfg.avoid_rc_connections, pt, "avoid_rc_connections", complete);
 
-    bool save_gp;
+    bool save_gp = false;
     load(save_gp, pt, "save_gp", complete);
     load(cfg.info_printers, pt, "info_printers", complete);
 
