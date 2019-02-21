@@ -19,7 +19,7 @@ class CachedCursorContext;
 
 class CachedCursor {
 public:
-    using Context = CachedCursorContext;
+    using Context = const CachedCursorContext*;
     CachedCursor(Index index = Index(-1)) : index_{index} {}
     bool is_empty() const { return index_ == Index(-1); }
     bool operator==(const CachedCursor &other) const { return index_ == other.index_; }
@@ -72,7 +72,7 @@ public:
     }
 
     template <typename Cursor>
-    CachedCursorContext(const std::vector<Cursor> &cursors, const void *context) {
+    CachedCursorContext(const std::vector<Cursor> &cursors, typename Cursor::Context context) {
         VERIFY(std::numeric_limits<Index>::max() > cursors.size());
         std::unordered_map<Cursor, Index> cursor2index;
         for (size_t i = 0; i < cursors.size(); ++i) {

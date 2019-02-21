@@ -86,7 +86,7 @@ struct OptimizedRestrictedGraphCursorContext {
 template <class GraphCursor>
 class OptimizedRestrictedGraphCursor : public GraphCursor {
  public:
-  using Context = OptimizedRestrictedGraphCursorContext<GraphCursor>;
+  using Context = const OptimizedRestrictedGraphCursorContext<GraphCursor>*;
   OptimizedRestrictedGraphCursor() = default;
   OptimizedRestrictedGraphCursor(const OptimizedRestrictedGraphCursor&) = default;
   OptimizedRestrictedGraphCursor(OptimizedRestrictedGraphCursor&&) = default;

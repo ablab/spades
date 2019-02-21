@@ -963,7 +963,7 @@ void TraceHMM(const hmmer::HMM &hmm,
 
     auto run_search = [&fees, &p7hmm](const auto &initial, size_t top,
                                       std::vector<HMMPathInfo> &local_results,
-                                      const void *context,
+                                      const auto context,
                                       const std::string &component_name = "") -> void {
         CachedCursorContext ccc(initial, context);
         auto cached_initial = ccc.Cursors();
