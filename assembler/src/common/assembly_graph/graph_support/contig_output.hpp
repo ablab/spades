@@ -30,9 +30,9 @@ inline void OutputEdgeSequences(const Graph &g,
 }
 
 inline void OutputEdgesByID(const Graph &g,
-                                const string &contigs_output_filename) {
+                            const string &contigs_output_filename) {
     INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
-    io::OutputSequenceStream oss(contigs_output_filename + ".fasta");
+    io::OFastaReadStream oss(contigs_output_filename + ".fasta");
     for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
         EdgeId e = *it;
         string s = g.EdgeNucls(e).str();

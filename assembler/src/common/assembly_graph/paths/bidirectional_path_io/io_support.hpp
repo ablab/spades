@@ -148,9 +148,9 @@ inline std::shared_ptr<ContigNameGenerator> MakeContigNameGenerator(config::pipe
     if (mode == config::pipeline_type::plasmid && !cfg::get().pd->meta_mode)
         name_generator = std::make_shared<PlasmidContigNameGenerator>(gp.components);
     else if (mode == config::pipeline_type::rna)
-        name_generator = make_shared<TranscriptNameGenerator>(gp.g);
+        name_generator = std::make_shared<TranscriptNameGenerator>(gp.g);
     else
-        name_generator = make_shared<DefaultContigNameGenerator>();
+        name_generator = std::make_shared<DefaultContigNameGenerator>();
     return name_generator;
 }
 

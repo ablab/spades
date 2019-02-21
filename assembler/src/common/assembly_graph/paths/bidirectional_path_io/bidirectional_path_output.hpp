@@ -126,7 +126,7 @@ public:
     }
 
     static void WriteCircularScaffolds(const ScaffoldStorage &scaffold_storage, const string &fn) {
-        io::OutputSequenceStream oss(fn);
+        io::OFastaReadStream oss(fn);
         std::ofstream os_fastg;
 
         for (const auto& scaffold_info : scaffold_storage) {
