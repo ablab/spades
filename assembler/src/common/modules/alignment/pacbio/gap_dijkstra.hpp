@@ -126,19 +126,28 @@ struct QueueState {
     }
 };
 
-struct StateHasher {
+} // namespace sensitive_aligner
+
+namespace std {
+
+template <>
+struct hash<sensitive_aligner::QueueState> {
     inline size_t hash_size_t_pair(size_t s0, size_t s1) const {
          s1 ^= s1 << 23;  // a
          return (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26)) + s0;
     }
 
-    std::size_t operator()(const QueueState& k) const {
-        return hash_size_t_pair(k.gs.e.int_id(), 
-                                hash_size_t_pair(k.gs.start_pos, 
-                                                 hash_size_t_pair(k.gs.end_pos, k.i)));
+    size_t operator()(const sensitive_aligner::QueueState& k) const {
+        return std::hash<size_t>()(hash_size_t_pair(
+                                    hash_size_t_pair(k.gs.e.int_id(), k.gs.start_pos), 
+                                    hash_size_t_pair(k.gs.end_pos, k.i)
+                                ));
     }
 };
 
+}  // namespace std
+
+namespace sensitive_aligner {
 
 class DijkstraGraphSequenceBase {
   public:
@@ -232,8 +241,8 @@ class DijkstraGraphSequenceBase {
     static const int ED_DEVIATION = 20;
 
     std::set<std::pair<int, QueueState>> q_;
-    std::unordered_map<QueueState, int, StateHasher> visited_;
-    std::unordered_map<QueueState, QueueState, StateHasher> prev_states_;
+    std::unordered_map<QueueState, int> visited_;
+    std::unordered_map<QueueState, QueueState> prev_states_;
     std::vector<int> best_ed_;
 
     const size_t queue_limit_;
@@ -252,7 +261,7 @@ class DijkstraGapFiller: public DijkstraGraphSequenceBase {
                       const std::string &ss,
                       EdgeId start_e, EdgeId end_e,
                       int start_p, int end_p, int path_max_length,
-                      const std::map<debruijn_graph::VertexId, size_t> &reachable_vertex)
+                      const std::unordered_map<debruijn_graph::VertexId, size_t> &reachable_vertex)
         : DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length)
         , end_e_(end_e) , end_p_(end_p)
         , reachable_vertex_(reachable_vertex) {
@@ -280,7 +289,7 @@ class DijkstraGapFiller: public DijkstraGraphSequenceBase {
 
     EdgeId end_e_;
     const int end_p_;
-    const std::map<debruijn_graph::VertexId, size_t> &reachable_vertex_;
+    const std::unordered_map<debruijn_graph::VertexId, size_t> &reachable_vertex_;
 };
 
 

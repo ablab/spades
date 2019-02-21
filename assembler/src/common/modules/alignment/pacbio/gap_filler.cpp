@@ -38,7 +38,7 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     auto reached_vertices_b = path_searcher_b.ProcessedVertices();
     auto reached_vertices = path_searcher.ProcessedVertices();
 
-    map<VertexId, size_t> vertex_pathlen;
+    unordered_map<VertexId, size_t> vertex_pathlen;
     for (auto v : reached_vertices_b) {
         if (reached_vertices.count(v) > 0) {
             vertex_pathlen[v] = path_searcher_b.GetDistance(v);
