@@ -85,233 +85,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
     return result;
   }
 
-  auto best_scores() const {
-    struct Payload {
-      const This *state;
-      score_t score;
-      const This *ancestor;
-    };
-
-    struct TopScore {
-      score_t score;
-      const This *ancestor;
-    };
-
-    std::unordered_map<const This *, TopScore> result;
-    std::unordered_map<const This *, std::unordered_set<This *>> forward;
-
-    struct Comp {
-      bool operator()(const Payload &e1, const Payload &e2) const { return e1.score > e2.score; }
-    };
-
-    std::priority_queue<Payload, std::vector<Payload>, Comp> q;
-    for (const auto &kv : scores_) {
-      This *p = kv.second.second.get();
-      q.push({p, kv.second.first, this});
-      forward[p].insert(const_cast<This *>(this));
-    }
-
-    while (!q.empty()) {
-      auto payload = q.top();
-      q.pop();
-      const This *state;
-      score_t score;
-      const This *ancestor;
-      std::tie(state, score, ancestor) = std::make_tuple(payload.state, payload.score, payload.ancestor);
-
-      if (result.count(state)) {
-        continue;
-      }
-      result[state] = {score, ancestor};
-
-      auto best = state->best_ancestor();
-      for (auto it = state->scores_.cbegin(); it != state->scores_.cend(); ++it) {
-        score_t delta = it->second.first - best->second.first;
-        This *p = it->second.second.get();
-        if (p) {  // is not master source TODO make a method
-          q.push({p, score + delta, state});
-          forward[p].insert(const_cast<This *>(state));
-        }
-      }
-    }
-
-    return make_pair(result, forward);
-  }
-
-  auto exit_scores() const {
-    std::unordered_map<const This *, score_t> result;
-    for (const auto &kv : scores_) {
-      result[kv.first] = kv.second.fisrt;
-    }
-
-    return result;
-  }
-
-  template <typename Function>
-  auto apply(const Function &function) {
-    std::unordered_set<const This *> checked;
-
-    std::queue<const This *> q;
-    q.push(this);
-    while (!q.empty()) {
-      const This *current = q.front();
-      q.pop();
-      if (!current || checked.count(current)) {
-        continue;
-      }
-
-      function(*current);
-
-      checked.insert(current);
-
-      for (const auto &kv : current->scores_) {
-        const This *p = kv.second.second.get();
-        if (p) {
-          q.push(p);
-        }
-      }
-    }
-  }
-
-  auto states_without_children() const {
-    std::unordered_set<const This *> checked;
-    std::unordered_set<const This *> result;
-
-    std::queue<const This *> q;
-    q.push(this);
-    while (!q.empty()) {
-      const This *current = q.front();
-      q.pop();
-      if (!current || checked.count(current)) {
-        continue;
-      }
-
-      if (current->scores_.size() == 0) {
-        result.insert(current);
-      }
-
-      checked.insert(current);
-
-      for (const auto &kv : current->scores_) {
-        const This *p = kv.second.second.get();
-        if (p) {
-          q.push(p);
-        }
-      }
-    }
-
-    return result;
-  }
-
-  bool check_all_states_have_children() const { return states_without_children().size() == 0; }
-
-  void clean_non_aggressive(const void *context) {
-    if (!check_all_states_have_children()) {
-      auto bad_states = states_without_children();
-      INFO(this);
-      INFO(bad_states);
-      auto fnc = [&](const auto &state) {
-        for (const auto &kv : state.scores_) {
-          const This *p = kv.second.second.get();
-          if (bad_states.count(p)) {
-            ERROR(kv.first.is_empty());
-            ERROR(kv.second.first);
-            ERROR(kv.first.letter(context));
-          }
-        }
-      };
-
-      apply(fnc);
-    }
-    DEBUG_ASSERT(check_all_states_have_children(), pathtree_assert{}, debug_assert::level<2>{});
-
-    auto bs_fwd = best_scores();
-    auto bs = bs_fwd.first;
-    auto forward = bs_fwd.second;
-
-    std::queue<This *> q;
-    std::unordered_set<This *> processed;
-    std::unordered_set<This *> collapsed;
-    q.push(this);
-
-    while (!q.empty()) {
-      This *current = q.front();
-      q.pop();
-
-      if (processed.count(current)) {
-        continue;
-      }
-      processed.insert(current);
-
-      // The order of the elements that are not erased is preserved (this makes it possible to erase individual elements
-      // while iterating through the container)
-      for (auto it = current->scores_.begin(); it != current->scores_.end();) {
-        const This *p = it->second.second.get();
-        DEBUG_ASSERT(p, pathtree_assert{});
-        DEBUG_ASSERT(bs.count(p), pathtree_assert{}, debug_assert::level<2>{});
-
-        if ((current == this && bs[p].ancestor != this) || (current != this && bs[p].ancestor == this)) {
-          it = current->scores_.erase(it);
-          TRACE("Link erased");
-        } else {
-          ++it;
-        }
-      }
-
-      if (current->scores_.size() == 0) {
-        TRACE("We collapse current state");
-        collapsed.insert(current);
-        continue;
-      }
-
-      for (auto it = current->scores_.begin(); it != current->scores_.end(); ++it) {
-        This *p = it->second.second.get();
-        // We cannot do this in the previous loop since some references could be invalidated
-        if (!it->first.is_empty()) {
-          q.push(p);
-        }
-      }
-    }
-
-    DEBUG_ASSERT(q.empty(), pathtree_assert{});
-    // Remove collapsed states recursively
-    for (This *p : collapsed) {
-      for (This *pp : forward[p]) {
-        q.push(pp);
-      }
-    }
-
-    while (!q.empty()) {
-      This *current = q.front();
-      q.pop();
-
-      for (auto it = current->scores_.begin(); it != current->scores_.end();) {
-        This *p = it->second.second.get();
-        DEBUG_ASSERT(p, pathtree_assert{});
-
-        if (collapsed.count(p)) {
-          it = current->scores_.erase(it);
-          TRACE("Link erased");
-        } else {
-          ++it;
-        }
-      }
-
-      if (current->scores_.size() == 0) {
-        TRACE("We collapse current state");
-        collapsed.insert(current);
-        for (This *pp : forward[current]) {
-          q.push(pp);
-        }
-      }
-    }
-    DEBUG_ASSERT(q.empty(), pathtree_assert{});
-    DEBUG_ASSERT(check_all_states_have_children(), pathtree_assert{}, debug_assert::level<2>{});
-    DEBUG_ASSERT(!collapsed.count(this), pathtree_assert{});
-
-    INFO(collapsed.size() << " states collapsed");
-  }
-
   struct AnnotatedPath {
     std::vector<GraphCursor> path;
     double score;
@@ -324,45 +97,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       return path.size();
     }
   };
-
-  auto get_cursor_delta_trimmed_left() const {
-    // TODO Check and fix this description
-    // the idea is in the following:
-    // if a path is a prefix or suffix of another one,
-    // we do not consider them as DIFFERENT paths. We leave only one (the best) of them
-    // In order to implement this we do not allow to link to be "left-terminal" (contain backref to "empty cursor") and
-    // "transit" (contain backrefs to other nontrivial links).
-    // Here we just remove ref to empty cursor or refs to nontrivial links dependent on what is better
-
-    // If terminal ref is present:
-    // 1) Remove all other refs worse than it
-    // 2) In case of some non-terminal refs still present, remove terminal ref as well
-    // We add some tolerance. If two paths have almost equal scores we keep them both
-    // const double eps = 1e-7;
-    std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> result(scores_.cbegin(), scores_.cend());
-    std::sort(result.begin(), result.end(), [](const auto &p1, const auto &p2) { return p1.second.first < p2.second.first; });
-
-    for (size_t i = 0; i < result.size(); ++i) {
-      if (result[i].first.is_empty()) {
-        size_t new_len = i + 1;
-        if (new_len > 1) {
-          --new_len;
-        }
-        result.resize(new_len);
-        break;
-      }
-    }
-
-    if (result.size()) {
-      const double best_score = result[0].second.first;
-      for (size_t i = 0; i < result.size(); ++i) {
-        // delta >= 0
-        result[i].second.first -= best_score;
-      }
-    }
-
-    return result;
-  }
 
   std::vector<AnnotatedPath> top_k(size_t k) const {
     struct Event {
@@ -468,6 +202,72 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
   Event event;
  private:
   std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
+
+  template <typename Function>
+  auto apply(const Function &function) {
+    std::unordered_set<const This *> checked;
+
+    std::queue<const This *> q;
+    q.push(this);
+    while (!q.empty()) {
+      const This *current = q.front();
+      q.pop();
+      if (!current || checked.count(current)) {
+        continue;
+      }
+
+      function(*current);
+
+      checked.insert(current);
+
+      for (const auto &kv : current->scores_) {
+        const This *p = kv.second.second.get();
+        if (p) {
+          q.push(p);
+        }
+      }
+    }
+  }
+
+  auto get_cursor_delta_trimmed_left() const {
+    // TODO Check and fix this description
+    // the idea is in the following:
+    // if a path is a prefix or suffix of another one,
+    // we do not consider them as DIFFERENT paths. We leave only one (the best) of them
+    // In order to implement this we do not allow to link to be "left-terminal" (contain backref to "empty cursor") and
+    // "transit" (contain backrefs to other nontrivial links).
+    // Here we just remove ref to empty cursor or refs to nontrivial links dependent on what is better
+
+    // If terminal ref is present:
+    // 1) Remove all other refs worse than it
+    // 2) In case of some non-terminal refs still present, remove terminal ref as well
+    // We add some tolerance. If two paths have almost equal scores we keep them both
+    // const double eps = 1e-7;
+    std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> result(scores_.cbegin(), scores_.cend());
+    std::sort(result.begin(), result.end(), [](const auto &p1, const auto &p2) { return p1.second.first < p2.second.first; });
+
+    for (size_t i = 0; i < result.size(); ++i) {
+      if (result[i].first.is_empty()) {
+        size_t new_len = i + 1;
+        if (new_len > 1) {
+          --new_len;
+        }
+        result.resize(new_len);
+        break;
+      }
+    }
+
+    if (result.size()) {
+      const double best_score = result[0].second.first;
+      for (size_t i = 0; i < result.size(); ++i) {
+        // delta >= 0
+        result[i].second.first -= best_score;
+      }
+    }
+
+    return result;
+  }
+
 };
 
 template <class GraphCursor>
@@ -568,8 +368,6 @@ class PathSet {
   std::string best_path_string() const { return path_container::str(best_path().path); }
 
   path_container top_k(size_t k) const { return path_container(pathlink_, k); }
-
-  // auto clip_tails_non_aggressive(const void *context) { return pathlink_.clean_non_aggressive(context); }
 
  private:
   pathtree::PathLink<GraphCursor> pathlink_;
