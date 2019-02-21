@@ -6,15 +6,15 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <sys/stat.h>
+
+
 #include "utils/stl_utils.hpp"
 using namespace utils;
 
-namespace std {
 // template <typename T>
-// std::ostream &operator<<(std::ostream &os, const std::vector<T> &v);
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const std::unordered_set<T> &v);
-
+// std::ostream &operator<<(std::ostream &os, const std::unordered_set<T> &v);
+//
 // template <typename T>
 // std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
 //   os << "[ ";
@@ -24,6 +24,9 @@ std::ostream &operator<<(std::ostream &os, const std::unordered_set<T> &v);
 //   os << "]";
 //   return os;
 // }
+//
+// template <typename T>
+// std::ostream &operator<<(std::ostream &os, const std::vector<T> &v);
 
 template <typename T>
 std::ostream &operator<<(std::ostream &os, const std::unordered_set<T> &v) {
@@ -34,7 +37,6 @@ std::ostream &operator<<(std::ostream &os, const std::unordered_set<T> &v) {
     os << "}";
     return os;
 }
-}  // namespace std
 
 template <typename T>
 void remove_duplicates(std::vector<T> &v) {
@@ -102,4 +104,9 @@ inline bool ends_with(const std::string &s, const std::string &p) {
         return false;
 
     return (s.compare(s.size() - p.size(), p.size(), p) == 0);
+}
+
+inline bool is_dir(const std::string &path) {
+  struct stat sb;
+  return (stat(path.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode));
 }

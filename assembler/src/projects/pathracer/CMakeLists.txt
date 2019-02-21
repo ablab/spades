@@ -25,18 +25,10 @@ install(TARGETS pathracer
         DESTINATION bin
         COMPONENT runtime)
 
-add_executable(looper
-               looper.cpp
-               fasta_reader.cpp fees.cpp
-               graph.cpp)
-set_target_properties(looper PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
-
 target_link_libraries(pathracer graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES} hattrie cityhash modules assembly_graph common_modules)
-target_link_libraries(looper hmmercpp input utils pipeline ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(pathracer PROPERTIES LINK_SEARCH_END_STATIC 1)
-  set_target_properties(looper PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
 add_library(gtest_main_segfault_handler gtest_main.cpp)
