@@ -384,26 +384,19 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
     std::priority_queue<QueueElement, std::vector<QueueElement>, Comp> q;
 
     std::vector<AnnotatedPath> result;
-    auto best = best_ancestor();
-    if (best == scores_.end()) {
-      return result;
-      // TODO Support empty Link as a common case and remove this workaround
-    }
-
-    double best_score = best->second.first;
     auto SinkPath = pathtrie::make_root<Event>({GraphCursor(), this});
-    q.push({SinkPath, best_score});
+    q.push({SinkPath, score()});
 
     auto get_annotated_path = [&](const EventPath &epath, double cost) -> AnnotatedPath {
       std::vector<GraphCursor> path;
       std::vector<pathtree::Event> events;
 
-      for (const auto &tpl : epath->collect()) {
-        if (tpl.gp.is_empty()) {
+      for (const auto &event : epath->collect()) {
+        if (event.gp.is_empty()) {
           continue;  // TODO Think about a better way to exclude empty cursors
         }
-        path.push_back(tpl.gp);
-        events.push_back(tpl.path_link->event);
+        path.push_back(event.gp);
+        events.push_back(event.path_link->event);
       }
 
       return AnnotatedPath{path, cost, events};
@@ -423,7 +416,8 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
         auto annotated_path = get_annotated_path(qe.path, qe.cost);
         if (annotated_path.empty()) {
           // We should stop after the first empty path found
-          // FIXME is it possible to obtain an empty path at all?????
+          // FIXME is it possible to obtain an empty path at all? --- Yes, it is, but it means that there are no proper paths
+          WARN("Empty path reconstructed by top_k algorithm!");
           break;
         }
         result.push_back(get_annotated_path(qe.path, qe.cost));
