@@ -66,21 +66,6 @@ void create_console_logger(const std::string &filename = "") {
     attach_logger(lg);
 }
 
-template <typename Range, typename Sep>
-std::string join(const Range &range, const Sep &sep) {
-    std::stringstream ss;
-    size_t inserted = 0;
-    for (const auto &e : range) {
-        if (inserted > 0) {
-            ss << sep;
-        }
-        ss << e;
-        ++inserted;
-    }
-
-    return ss.str();
-}
-
 enum class Mode {
     hmm,
     nucl,
@@ -482,13 +467,6 @@ Sequence MergeSequences(const Graph &g,
     return MergeOverlappingSequences(path_sequences, g.k());
 }
 
-static bool ends_with(const std::string &s, const std::string &p) {
-    if (s.size() < p.size())
-        return false;
-
-    return (s.compare(s.size() - p.size(), p.size(), p) == 0);
-}
-
 std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
     /* Open the query profile HMM file */
     hmmer::HMMFile hmmfile(filename);
@@ -507,7 +485,6 @@ std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
 
     return hmms;
 }
-
 
 std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, enum Mode mode) {
     std::vector<hmmer::HMM> res;
@@ -606,7 +583,6 @@ std::string SuperPathInfo(const std::vector<EdgeId> &path,
 
     return join(results, ",");
 }
-
 
 template <typename Container>
 void ExportEdges(const Container &entries,
@@ -1158,7 +1134,6 @@ void hmm_main(const PathracerConfig &cfg,
     } // end outer loop over query HMMs
 }
 
-
 int pathracer_main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     utils::perf_counter pc;
@@ -1329,6 +1304,5 @@ int aling_kmers_main(int argc, char* argv[]) {
 
     return 0;
 }
-
 
 // vim: set ts=4 sw=4 et :
