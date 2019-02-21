@@ -35,6 +35,8 @@ struct hash<CachedCursor> {
     std::size_t operator()(const CachedCursor &c) const { return std::hash<size_t>()(c.index()); }
 };
 
+}  // namespace std
+
 inline std::ostream &operator<<(std::ostream &os, const CachedCursor &c) {
     if (c.is_empty()) {
         return os << "(@)";
@@ -42,8 +44,6 @@ inline std::ostream &operator<<(std::ostream &os, const CachedCursor &c) {
         return os << "(" << c.index() << ")";
     }
 }
-
-}  // namespace std
 
 class CachedCursorContext {
 public:
