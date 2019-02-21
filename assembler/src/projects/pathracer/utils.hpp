@@ -81,3 +81,25 @@ template <typename Iter, typename Key>
 void stable_sort_by(Iter b, Iter e, const Key &key) {
     std::stable_sort(b, e, [&key](const auto &a, const auto &b) -> bool { return key(a) < key(b); });
 }
+
+template <typename Range, typename Sep>
+std::string join(const Range &range, const Sep &sep) {
+    std::stringstream ss;
+    size_t inserted = 0;
+    for (const auto &e : range) {
+        if (inserted > 0) {
+            ss << sep;
+        }
+        ss << e;
+        ++inserted;
+    }
+
+    return ss.str();
+}
+
+inline bool ends_with(const std::string &s, const std::string &p) {
+    if (s.size() < p.size())
+        return false;
+
+    return (s.compare(s.size() - p.size(), p.size(), p) == 0);
+}
