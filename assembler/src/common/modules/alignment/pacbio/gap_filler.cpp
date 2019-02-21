@@ -58,10 +58,10 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
             start_pos.edgeid.int_id() != end_pos.edgeid.int_id()) {
         DEBUG("Dijkstra won't run: Too big gap or too many paths " << s_len << " " << vertex_pathlen.size());
         if (vertex_pathlen.size() == 0) {
-            dijkstra_res.return_code = static_cast<int>(DijkstraReturnCode::NOT_CONNECTED);
+            dijkstra_res.return_code.not_connected = true;
         } else {
-            dijkstra_res.return_code |= static_cast<int>(DijkstraReturnCode::TOO_LONG_GAP);
-            dijkstra_res.return_code |= static_cast<int>(DijkstraReturnCode::TOO_MANY_VERTICES);
+            dijkstra_res.return_code.long_gap = true;
+            dijkstra_res.return_code.wide_gap = true;
         }
         return dijkstra_res;
     }
@@ -90,7 +90,7 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
                     << g_.int_id(start_v) << " " << g_.int_id(end_v));
     omnigraph::PathStorageCallback<debruijn_graph::Graph> callback(g_);
     GapFillerResult bf_res;
-    bf_res.return_code = static_cast<int>(DijkstraReturnCode::NO_PATH);
+    bf_res.return_code.no_path = true;
     int return_code = ProcessPaths(g_,
                                    path_min_length, path_max_length,
                                    start_v, end_v,
@@ -157,7 +157,7 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
     bf_res.full_intermediate_path.insert(bf_res.full_intermediate_path.begin(), start_pos.edgeid);
     bf_res.full_intermediate_path.push_back(end_pos.edgeid);
     if (return_code == 0) {
-        bf_res.return_code = static_cast<int>(DijkstraReturnCode::OK);
+        bf_res.return_code.status = 0;
     }
     return bf_res;
 }
@@ -171,18 +171,18 @@ GapFillerResult GapFiller::Run(const string &s,
     auto bf_res = BestScoredPathBruteForce(s, start_pos, end_pos, path_min_length, path_max_length);
     double bf_time = pc.time();
     pc.reset();
-    if (gap_cfg.run_dijkstra && bf_res.return_code != static_cast<int>(DijkstraReturnCode::OK)) {
+    if (gap_cfg.run_dijkstra && bf_res.return_code.status != 0) {
         auto dijkstra_res = BestScoredPathDijkstra(s, start_pos, end_pos, path_max_length, bf_res.score);
-        DEBUG("BruteForce run: return_code=" << bf_res.return_code
+        DEBUG("BruteForce run: return_code=" << bf_res.return_code.status
               << " score=" << bf_res.score << " time_bf=" << bf_time
-              << " Dijkstra run: return_code=" << dijkstra_res.return_code
+              << " Dijkstra run: return_code=" << dijkstra_res.return_code.status
               << " score=" <<  dijkstra_res.score << " time_d=" << pc.time() << " len=" << s.size() << "\n")
-        if (dijkstra_res.return_code == static_cast<int>(DijkstraReturnCode::OK)) {
+        if (dijkstra_res.return_code.status == 0) {
             return dijkstra_res;
         }
     }
     if (bf_res.score != numeric_limits<int>::max() && !gap_cfg.find_shortest_path) {
-        bf_res.return_code = static_cast<int>(DijkstraReturnCode::OK);
+        bf_res.return_code.status = 0;
     }
     return bf_res;
 
@@ -254,7 +254,6 @@ GapFillerResult GapFiller::Run(Sequence &s,
         start_pos = ConjugatePosition(start_pos);
     }
     GapFillerResult res;
-    res.return_code = 0;
     size_t s_len = int(s.size());
     int score =  min(min(
                         max(ends_cfg.ed_lower_bound, (int) s_len / ends_cfg.max_ed_proportion),
@@ -262,12 +261,11 @@ GapFillerResult GapFiller::Run(Sequence &s,
                     (int) s_len);
     if ((int) s_len >  ends_cfg.max_restorable_length && s_len >  g_.length(start_pos.edgeid) - start_pos.position + g_.k()) {
         DEBUG("EdgeDijkstra: sequence is too long " << s_len)
-        res.return_code |= static_cast<int>(DijkstraReturnCode::TOO_LONG_GAP);
+        res.return_code.long_gap = true;
         return res;
     }
     if (s_len < 1) {
         DEBUG("EdgeDijkstra: sequence is too small " << s_len)
-        res.return_code |= static_cast<int>(DijkstraReturnCode::OK);
         return res;
     }
     utils::perf_counter pc;

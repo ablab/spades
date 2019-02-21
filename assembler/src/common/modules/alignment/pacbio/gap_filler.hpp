@@ -49,7 +49,7 @@ struct GAlignerConfig {
 struct GapFillerResult {
     int score = std::numeric_limits<int>::max();
     std::vector<EdgeId> full_intermediate_path;
-    int return_code = -1;
+    DijkstraReturnCode return_code;
 };
 
 struct MappingPoint {

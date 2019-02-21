@@ -16,14 +16,16 @@ namespace sensitive_aligner {
 
 using debruijn_graph::EdgeId;
 
-enum class DijkstraReturnCode {
-    OK = 0,
-    NOT_CONNECTED = 1,
-    TOO_LONG_GAP = 2,
-    TOO_MANY_VERTICES = 4,
-    QUEUE_LIMIT = 8,
-    ITERATION_LIMIT = 16,
-    NO_PATH = 32
+union DijkstraReturnCode {
+    struct {
+        bool queue_limit: 1;
+        bool iter_limit: 1;
+        bool not_connected: 1;
+        bool no_path: 1;
+        bool long_gap: 1;
+        bool wide_gap: 1;
+    };
+    unsigned status = 0;
 };
 
 struct DijkstraParams {
@@ -151,7 +153,6 @@ class DijkstraGraphSequenceBase {
         , start_p_(start_p)
         , path_max_length_(path_max_length)
         , min_score_(std::numeric_limits<int>::max())
-        , return_code_(0)
         , queue_limit_(gap_cfg_.queue_limit)
         , iter_limit_(gap_cfg_.iteration_limit)
         , updates_(0) {
@@ -182,7 +183,7 @@ class DijkstraGraphSequenceBase {
         return min_score_;
     }
 
-    int return_code() const {
+    DijkstraReturnCode return_code() const {
         return return_code_;
     }
 
@@ -224,7 +225,7 @@ class DijkstraGraphSequenceBase {
 
     int path_max_length_;
     int min_score_;
-    int return_code_;
+    DijkstraReturnCode return_code_;
 
   private:
     static const int SHORT_SEQ_LENGTH = 100;

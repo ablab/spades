@@ -92,13 +92,9 @@ void DijkstraGraphSequenceBase::AddNewEdge(const GraphState &gs, const QueueStat
 }
 
 bool DijkstraGraphSequenceBase::QueueLimitsExceeded(size_t iter) {
-    if (q_.size() > queue_limit_) {
-        return_code_ |= static_cast<int>(DijkstraReturnCode::QUEUE_LIMIT);
-    }
-    if (iter > iter_limit_) {
-        return_code_ |= static_cast<int>(DijkstraReturnCode::ITERATION_LIMIT);
-    }
-    return q_.size() > queue_limit_ || iter > iter_limit_;
+    return_code_.queue_limit = q_.size() > queue_limit_;
+    return_code_.iter_limit = iter > iter_limit_;
+    return return_code_.status;
 }
 
 bool DijkstraGraphSequenceBase::RunDijkstra() {
@@ -135,7 +131,7 @@ void DijkstraGraphSequenceBase::CloseGap() {
     DEBUG("updates=" << updates_)
 
     if (!found_path) {
-        return_code_ |= static_cast<int>(DijkstraReturnCode::NO_PATH);
+        return_code_.no_path = true;
     }
     if (found_path) {
         QueueState state(end_qstate_);

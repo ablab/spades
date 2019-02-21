@@ -74,7 +74,7 @@ void GAligner::FillGapsInCluster(const vector<QualityRange> &cur_cluster,
                                                       GraphPosition(cur_edge, cur_first_index.edge_position),
                                                       limits.first, limits.second);
                 vector<EdgeId> intermediate_path = res.full_intermediate_path;
-                if (res.return_code != static_cast<int>(DijkstraReturnCode::OK)) {
+                if (res.return_code.status != 0) {
                     bwa_hits.push_back(cur_sorted_hits);
                     edges.push_back(cur_sorted_edges);
                     cur_sorted_edges.clear();
@@ -172,7 +172,7 @@ OneReadMapping GAligner::GetReadAlignment(const io::SingleRead &read) const {
                                          , sorted_bwa_hits[i].mapping_at(sorted_bwa_hits[i].size() - 1).mapped_range.end_pos));
         if (restore_ends_  && max_path_ind == i &&
                 (sorted_edges.size() == 1 || max_path > min(500, shortest_len) )) {
-            int return_code = RestoreEndsF(s, (int) s.size(), sorted_edges[i], cur_range);
+            unsigned return_code = RestoreEndsF(s, (int) s.size(), sorted_edges[i], cur_range);
             for (size_t j = sorted_bwa_hits.size() - 1; j > i  && return_code != 0; -- j) {
                 int end = (int) sorted_bwa_hits[j].mapping_at(0).initial_range.start_pos;
                 if (end > (int) cur_range.path_end.seq_pos) {
@@ -203,8 +203,8 @@ int GAligner::RestoreEndsB(const Sequence &s,
     GraphPosition start_pos(sorted_edges[0], cur_range.path_start.edge_pos);
     Sequence ss = s.Subseq(start, cur_range.path_start.seq_pos);
     GapFillerResult res_backward = gap_filler_.Run(ss, start_pos, !forward, sorted_edges, cur_range);
-    DEBUG("Backward return_code_ends=" << res_backward.return_code)
-    return res_backward.return_code;
+    DEBUG("Backward return_code_ends=" << res_backward.return_code.status)
+    return res_backward.return_code.status;
 }
 
 int GAligner::RestoreEndsF(const Sequence &s,
@@ -216,8 +216,8 @@ int GAligner::RestoreEndsF(const Sequence &s,
                           , cur_range.path_end.edge_pos);
     Sequence ss = s.Subseq(cur_range.path_end.seq_pos, end);
     GapFillerResult res_forward = gap_filler_.Run(ss, end_pos, forward, sorted_edges, cur_range);
-    DEBUG("Forward return_code_ends=" << res_forward.return_code)
-    return res_forward.return_code;
+    DEBUG("Forward return_code_ends=" << res_forward.return_code.status)
+    return res_forward.return_code.status;
 }
 
 void GAligner::ProcessCluster(const Sequence &s,
