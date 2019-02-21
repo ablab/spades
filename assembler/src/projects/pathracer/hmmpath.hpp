@@ -519,7 +519,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   size_t positions_left = fees.M;
   auto depth_filter_cursor = [&](const GraphCursor &cursor) -> bool {
-    return !depth.depth_at_least(cursor, static_cast<double>(positions_left) * fees.depth_filter_rate - fees.depth_filter_constant, context);
+    double required_cursor_depth = static_cast<double>(positions_left) * fees.depth_filter_rate - fees.depth_filter_constant;
+    return !depth.depth_at_least(cursor, required_cursor_depth, context);
   };
   // FIXME Do we really need depth filter on each iteration? Probably not
 
@@ -562,10 +563,11 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     D.score_filter(top, absolute_threshold);
 
     size_t depth_filtered = 0;
-    depth_filtered += I.filter_key(depth_filter_cursor);
-    depth_filtered += M.filter_key(depth_filter_cursor);
-    depth_filtered += D.filter_key(depth_filter_cursor);
-
+    if (m % 8 == 0) {
+      depth_filtered += I.filter_key(depth_filter_cursor);
+      depth_filtered += M.filter_key(depth_filter_cursor);
+      depth_filtered += D.filter_key(depth_filter_cursor);
+    }
 
     if (m >= n) {
       INFO("depth-filtered " << depth_filtered << ", positions left = " << positions_left << " states m = " << m);
