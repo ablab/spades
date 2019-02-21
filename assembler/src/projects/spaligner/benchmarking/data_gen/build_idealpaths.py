@@ -119,8 +119,8 @@ def run_minimap2(reads_fasta, reference_fasta, tp, build_index = False):
        t = "map-pb"
     elif tp == "nanopore":
        t = "map-ont"
-    print("/home/tdvorkina/soft/minimap2/minimap2/minimap2 -ax " + t + " -t 33 " + reference_fasta + " " + reads_fasta + " | samtools view -bS - > " + reads_bam)
-    subprocess.call(["/home/tdvorkina/soft/minimap2/minimap2/minimap2 -ax " + t + " -t 33 " + reference_fasta + " " + reads_fasta + " | samtools view -bS - > " + reads_bam], shell=True)
+    print("minimap -ax " + t + " -t 33 " + reference_fasta + " " + reads_fasta + " | samtools view -bS - > " + reads_bam)
+    subprocess.call(["minimap -ax " + t + " -t 33 " + reference_fasta + " " + reads_fasta + " | samtools view -bS - > " + reads_bam], shell=True)
     print("> Load mappings from bam (longest mapping for each read name and not less 20% length)")
     refseq = load_ideal_reads(reads_bam, reference_fasta, reads)
     refseq_fasta =  "/".join(reads_fasta.split("/")[:-1] + [ "refseq_minimap" + reads_fasta.split("/")[-1]])

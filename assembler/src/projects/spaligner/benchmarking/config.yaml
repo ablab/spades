@@ -5,7 +5,7 @@
 # datapath/celegans/input/{reads}.fasta(q) reads = "simpb","realpb","realnp"
 # datapath/${ALIGNER_NAME}/benchmark - time and memory
 # datapath/${ALIGNER_NAME}/output - alignments
-datapath: /Sid/tdvorkina/gralign/benchmarking/
+datapath: datapath
 
 
 #######################################################################################################
@@ -13,7 +13,7 @@ datapath: /Sid/tdvorkina/gralign/benchmarking/
 
 # vg cfg
 
-vgpath: /home/tdvorkina/soft/vg/rionero/
+vgpath: path_to_vg_binary
 vg_k: 15
 
 
@@ -22,10 +22,10 @@ vg_k: 15
 
 # SPAligner cfg
 
-spalignerpath: /home/tdvorkina/tmp/algorithmic-biology/assembler/build/release/bin/longreads_aligner
+spalignerpath: path_to_spaligner_binary
 spalignercfg: ./spaligner_config_template.yaml
 kmer: 77
-graph: "input/graph.gfa" #"input/graph/simplification"  #  
+graph: "input/graph.gfa" 
 
 
 #######################################################################################################
@@ -37,10 +37,10 @@ graph: "input/graph.gfa" #"input/graph/simplification"  #
 
 # https://github.com/maickrau/GraphAligner
 # root directory of the repo
-graphalignerfolder: /home/tdvorkina/soft/GraphAligner/
+graphalignerfolder: path_to_graphaligner
 # https://github.com/mummer4/mummer
 # required for seed finding
-mummerpath: /home/tdvorkina/soft/mummer-4.0.0beta2/mummer
+mummerpath: path_to_mummer
 
 # The graph must be in input/ folder and in gfa format, eg ./input/graph.gfa
 # If the graph is not a de Bruijn graph (DBG) then some seeds might be missed and some reads might not get aligned

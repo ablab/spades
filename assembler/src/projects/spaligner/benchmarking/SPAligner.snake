@@ -27,6 +27,6 @@ rule run_aligner:
         repeat("{org}/SPAligner/benchmark/align_{reads}.tsv", 1)
     threads: 16
     run:
-        shell("{GAPATH} {SCRIPT_PATH}/{GACFG} -g {wildcards.org}/{GRAPH} \
+        shell("{GAPATH}/longreads_aligner {SCRIPT_PATH}/{GACFG} -g {wildcards.org}/{GRAPH} \
                 -s {wildcards.org}/input/{wildcards.reads}.fasta -K {K} \
                 -d {params.tp} -o {wildcards.org}/SPAligner/output/aln_{wildcards.reads} > {log}")
