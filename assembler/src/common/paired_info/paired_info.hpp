@@ -528,7 +528,7 @@ public:
     }
 
     //Handlers for edges deletion support
-    virtual void HandleDelete(EdgeId e) {
+    void HandleDelete(EdgeId e) override {
 //        VerifyIndex();
     
 //        INFO("Handling deletion " << e.int_id() <<" "<< Remove(e));
@@ -539,7 +539,7 @@ public:
         Remove(e);
     }
 
-    virtual void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) override {
+    void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) override {
 //        VerifyIndex();
 //        return;
         size_t shift = 0;
