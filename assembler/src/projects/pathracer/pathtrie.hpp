@@ -30,6 +30,7 @@ public:
     static ThisRef make_child(T &&data, const ThisRef &parent = nullptr) { return new This(std::move(data), parent); }
     ThisRef child(const T &data) { return make_child(data, this); }
     ThisRef child(T &&data) { return make_child(std::move(data), this); }
+    ThisRef parent() const { return parent_; }
 
     auto &data() { return data_; }
     const auto &data() const { return data_; }
