@@ -15,3 +15,7 @@ target_link_libraries(longreads_aligner mapping_printer common_modules cityhash 
 
 add_executable(form_truealignments form_truealignments.cpp)
 target_link_libraries(form_truealignments common_modules cityhash bwa edlib graphio ${COMMON_LIBRARIES})
+
+install(TARGETS longreads_aligner
+        DESTINATION bin
+        COMPONENT spaligner)
