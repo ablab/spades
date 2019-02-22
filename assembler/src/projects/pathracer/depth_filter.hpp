@@ -14,11 +14,11 @@ namespace impl {
 template <typename GraphCursor>
 class Depth {
  public:
-  bool depth_at_least(const GraphCursor &cursor, double d, const void *context) {
+  bool depth_at_least(const GraphCursor &cursor, double d, typename GraphCursor::Context context) {
     return depth(cursor, context) >= d;
   }
 
-  double depth(const GraphCursor &cursor, const void *context) {
+  double depth(const GraphCursor &cursor, typename GraphCursor::Context context) {
     std::unordered_set<GraphCursor> stack;  // TODO do not construct stack in case of using cached value
     assert(stack.size() == 0);
     auto result = get_depth_(cursor, stack, context);
@@ -32,7 +32,7 @@ class Depth {
   std::unordered_map<GraphCursor, double> depth_;
   size_t max_stack_size_ = 0;
 
-  double get_depth_(const GraphCursor &cursor, std::unordered_set<GraphCursor> &stack, const void *context) {
+  double get_depth_(const GraphCursor &cursor, std::unordered_set<GraphCursor> &stack, typename GraphCursor::Context context) {
     if (depth_.count(cursor)) {
       return depth_[cursor];
     }
@@ -136,7 +136,7 @@ class DepthAtLeast {
   static const size_t INF = std::numeric_limits<size_t>::max();
 
   bool depth_at_least(const GraphCursor &cursor, double depth,
-                      const void *context) {
+                      typename GraphCursor::Context context) {
     if (depth <= 0) {
       return true;
     }
@@ -144,7 +144,7 @@ class DepthAtLeast {
   }
 
   bool depth_at_least(const GraphCursor &cursor, size_t depth,
-                      const void *context) {
+                      typename GraphCursor::Context context) {
     if (depth == 0) {
       return true;
     }
@@ -179,7 +179,7 @@ class DepthAtLeast {
   size_t max_stack_size_ = 0;
 
   Estimation get_depth_(const GraphCursor &cursor, std::unordered_set<GraphCursor> &stack, size_t stack_limit,
-                        const void *context) {
+                        typename GraphCursor::Context context) {
     if (cursor.is_empty()) {
       return depth_[cursor] = {INF, true};
     }
@@ -268,7 +268,7 @@ private:
 
 template <typename GraphCursor>
 std::vector<GraphCursor> depth_subset(const std::vector<std::pair<GraphCursor, size_t>> &initial,
-                                      const void *context,
+                                      typename GraphCursor::Context context,
                                       bool forward = true) {
   IndexedPriorityQueue<GraphCursor, size_t> q;
 
@@ -311,13 +311,13 @@ std::vector<GraphCursor> depth_subset(const std::vector<std::pair<GraphCursor, s
 
 template <typename GraphCursor>
 std::vector<GraphCursor> subset(const GraphCursor& cursor, size_t depth,
-                                const void *context, bool forward = true) {
+                                typename GraphCursor::Context context, bool forward = true) {
     return impl::depth_subset(std::vector<std::pair<GraphCursor, size_t>>({std::make_pair(cursor, depth)}), context, forward);
 }
 
 template <typename GraphCursor>
 std::vector<GraphCursor> subset(const std::vector<std::pair<GraphCursor, size_t>> &initial,
-                                const void *context,
+                                typename GraphCursor::Context context,
                                 bool forward = true) {
     return impl::depth_subset(initial, context, forward);
 }

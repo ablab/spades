@@ -23,9 +23,9 @@ public:
     CachedCursor(Index index = Index(-1)) : index_{index} {}
     bool is_empty() const { return index_ == Index(-1); }
     bool operator==(const CachedCursor &other) const { return index_ == other.index_; }
-    const std::vector<CachedCursor> &next(const void *context) const;
-    const std::vector<CachedCursor> &prev(const void *context) const;
-    char letter(const void *context) const;
+    const std::vector<CachedCursor> &next(Context context) const;
+    const std::vector<CachedCursor> &prev(Context context) const;
+    char letter(Context context) const;
     Index index() const { return index_; }
 
 private:
@@ -107,13 +107,13 @@ private:
 
 // FIXME add cpp
 
-inline char CachedCursor::letter(const void *context) const {
+inline char CachedCursor::letter(Context context) const {
     return static_cast<const CachedCursorContext *>(context)->letters_[index_];
 }
 
 
-inline const std::vector<CachedCursor> &CachedCursor::next(const void *context) const {
-    return static_cast<const CachedCursorContext *>(context)->nexts_[index_];
+inline const std::vector<CachedCursor> &CachedCursor::next(Context context) const {
+    return context->nexts_[index_];
 }
 
 // It is not required for find_best_path
