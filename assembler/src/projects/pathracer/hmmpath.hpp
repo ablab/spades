@@ -417,8 +417,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     struct QueueElement {
       GraphCursor current_cursor;
       double score;
-      GraphCursor source_cursor;
-      PathLinkRef<GraphCursor> source_state;
 
       bool operator<(const QueueElement &other) const {
         return this->score > other.score;
@@ -429,46 +427,38 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
     for (const auto &kv : I) {
       const auto &current_cursor = kv.first;
-      auto best = kv.second->best_ancestor();
-      const auto &score = best->second.first;
+      const score_t &score = kv.second->score();
       if (score > absolute_threshold) {
         continue;
       }
       if (!filter(current_cursor)) {
-        q.push({current_cursor, score, best->first, best->second.second});
+        q.push({current_cursor, score});
       }
     }
     TRACE(q.size() << " I values in queue m = " << m);
 
     std::unordered_set<GraphCursor> processed;
     size_t taken_values = 0;
-    while(!q.empty()) {
+    while (!q.empty()) {
       QueueElement elt = q.top();
       q.pop();
       ++taken_values;
 
-      if (elt.score > absolute_threshold) {
-        break;
-      }
-
       if (processed.count(elt.current_cursor)) {
         continue;
       }
-
-      // add processed.size() limit
-
       processed.insert(elt.current_cursor);
 
-      I.update(elt.current_cursor, elt.score, elt.source_cursor, elt.source_state);  // TODO return iterator to inserted/updated elt
       const auto &id = I[elt.current_cursor];
       for (const auto &next : elt.current_cursor.next(context)) {
-        if (processed.count(next)) {
-          continue;
-        }
         char letter = next.letter(context);
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
         if (!filter(next)) {
-          q.push({next, cost, elt.current_cursor, id});
+          bool updated = I.update(next, cost, elt.current_cursor, id);
+          // FIXME potential memory leak here!
+          if (updated) {
+            q.push({next, cost});
+          }
         }
       }
     }
