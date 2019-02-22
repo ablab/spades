@@ -32,6 +32,20 @@ struct Event {
 };
 
 template <typename GraphCursor>
+struct AnnotatedPath {
+  std::vector<GraphCursor> path;
+  double score;
+  std::vector<Event> events;
+
+  bool empty() const { return path.empty(); }
+
+  size_t size() const {
+    DEBUG_ASSERT(path.size() == events.size(), pathtree_assert{});
+    return path.size();
+  }
+};
+
+template <typename GraphCursor>
 class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
                  public AtomicObjectCounter<PathLink<GraphCursor>> {
   using This = PathLink<GraphCursor>;
@@ -79,20 +93,7 @@ public:
     return result;
   }
 
-  struct AnnotatedPath {
-    std::vector<GraphCursor> path;
-    double score;
-    std::vector<Event> events;
-
-    bool empty() const { return path.empty(); }
-
-    size_t size() const {
-      DEBUG_ASSERT(path.size() == events.size(), pathtree_assert{});
-      return path.size();
-    }
-  };
-
-  std::vector<AnnotatedPath> top_k(size_t k) const {
+  std::vector<AnnotatedPath<GraphCursor>> top_k(size_t k) const {
     struct Event {
       GraphCursor gp; // PathLink does not know its own position!
       const This *path_link;
@@ -112,11 +113,11 @@ public:
 
     std::priority_queue<QueueElement, std::vector<QueueElement>, Comp> q;
 
-    std::vector<AnnotatedPath> result;
+    std::vector<AnnotatedPath<GraphCursor>> result;
     auto SinkPath = pathtrie::make_root<Event>({GraphCursor(), this});
     q.push({SinkPath, score()});
 
-    auto get_annotated_path = [&](const EventPath &epath, double cost) -> AnnotatedPath {
+    auto get_annotated_path = [&](const EventPath &epath, double cost) -> AnnotatedPath<GraphCursor> {
       std::vector<GraphCursor> path;
       std::vector<pathtree::Event> events;
 
@@ -128,7 +129,7 @@ public:
         events.push_back(event.path_link->event);
       }
 
-      return AnnotatedPath{path, cost, events};
+      return AnnotatedPath<GraphCursor>{path, cost, events};
     };
 
     std::unordered_map<const This*, std::unordered_map<GraphCursor, const This*>> best_edges;
@@ -272,12 +273,10 @@ private:
 
 template <class GraphCursor>
 using PathLinkRef = llvm::IntrusiveRefCntPtr<PathLink<GraphCursor>>;
-}  // namespace pathtree
 
 template <class GraphCursor>
 class PathSet {
  public:
-  using AnnotatedPath = typename pathtree::PathLink<GraphCursor>::AnnotatedPath;
   class path_container {
    public:
     path_container(const pathtree::PathLink<GraphCursor> &paths, size_t k) : paths_(paths.top_k(k)) {}
@@ -324,7 +323,7 @@ class PathSet {
       return result;
     }
 
-    static std::string alignment(const AnnotatedPath &apath, const hmm::Fees &fees,
+    static std::string alignment(const AnnotatedPath<GraphCursor> &apath, const hmm::Fees &fees,
                                  typename GraphCursor::Context context) {
       size_t m = fees.M;
       std::string s;
@@ -357,14 +356,14 @@ class PathSet {
     std::string alignment(size_t n, const hmm::Fees &fees, typename GraphCursor::Context context) const { return alignment(paths_[n], fees, context); }
 
    private:
-    std::vector<AnnotatedPath> paths_;
+    std::vector<AnnotatedPath<GraphCursor>> paths_;
   };
 
   pathtree::PathLink<GraphCursor> &pathlink() { return pathlink_; }
   const pathtree::PathLink<GraphCursor> &pathlink() const { return pathlink_; }
 
   double best_score() const { return pathlink_.score(); }
-  AnnotatedPath best_path() const { return top_k(1)[0]; }
+  AnnotatedPath<GraphCursor> best_path() const { return top_k(1)[0]; }
   std::string best_path_string() const { return path_container::str(best_path().path); }
 
   path_container top_k(size_t k) const { return path_container(pathlink_, k); }
@@ -372,5 +371,8 @@ class PathSet {
  private:
   pathtree::PathLink<GraphCursor> pathlink_;
 };
+
+}  // namespace pathtree
+using pathtree::PathSet;
 
 // vim: set ts=2 sw=2 et :
