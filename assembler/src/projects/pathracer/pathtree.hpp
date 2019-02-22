@@ -41,13 +41,7 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
       return ::operator new(sz);
   }
 
- public:
-  auto best_ancestor() const {
-    DEBUG_ASSERT(scores_.size(), pathtree_assert{});
-    return std::min_element(scores_.cbegin(), scores_.cend(),
-                            [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
-  }
-
+public:
   double score() const {
     if (scores_.size() == 0) {
       return std::numeric_limits<double>::infinity();
@@ -200,8 +194,14 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
   }
 
   Event event;
- private:
+private:
   std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
+
+  auto best_ancestor() const {
+    DEBUG_ASSERT(scores_.size(), pathtree_assert{});
+    return std::min_element(scores_.cbegin(), scores_.cend(),
+                            [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
+  }
 
   template <typename Function>
   auto apply(const Function &function) {
