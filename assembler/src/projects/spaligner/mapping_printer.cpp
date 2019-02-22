@@ -1,5 +1,5 @@
 //***************************************************************************
-//* Copyright (c) 2018 Saint Petersburg State University
+//* Copyright (c) 2018-2019 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
@@ -7,6 +7,8 @@
 #include "mapping_printer.hpp"
 
 #include "edlib/edlib.h"
+
+#include <sstream>
 
 namespace sensitive_aligner {
 
@@ -18,42 +20,40 @@ string MappingPrinter::StrId(const EdgeId &e) const {
 }
 
 void MappingPrinterTSV::SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
-    string path_str = "";
-    string path_len_str = "";
-    string path_seq_str = "";
-    string seq_starts = "";
-    string seq_ends = "";
-    string edge_starts = "";
-    string edge_ends = "";
+    stringstream path_ss;
+    stringstream path_len_ss;
+    stringstream path_seq_ss;
+    stringstream seq_starts;
+    stringstream seq_ends;
+    stringstream edge_starts;
+    stringstream edge_ends;
     for (size_t j = 0; j < aligned_mappings.edge_paths.size(); ++ j) {
         auto &mappingpath = aligned_mappings.edge_paths[j];
         for (size_t i = 0; i < mappingpath.size(); ++ i) {
             size_t mapping_start = i == 0 ? aligned_mappings.read_ranges[j].path_start.edge_pos : 0;
             size_t mapping_end = i == mappingpath.size() - 1 ?  aligned_mappings.read_ranges[j].path_end.edge_pos : g_.length(mappingpath[i]);
             string delim = i == mappingpath.size() - 1 ? "" : ",";
-            path_str += StrId(mappingpath[i]) + delim;
-            path_len_str += to_string(mapping_end - mapping_start) + delim;
-            path_seq_str += g_.EdgeNucls(mappingpath[i]).Subseq(mapping_start, mapping_end).str();
+            path_ss << StrId(mappingpath[i]) << delim;
+            path_len_ss << mapping_end - mapping_start << delim;
+            path_seq_ss << g_.EdgeNucls(mappingpath[i]).Subseq(mapping_start, mapping_end).str();
         }
         string delim = j == aligned_mappings.edge_paths.size() - 1 ? "" : ",";
-        seq_starts += to_string(aligned_mappings.read_ranges[j].path_start.seq_pos) + delim;
-        seq_ends += to_string(aligned_mappings.read_ranges[j].path_end.seq_pos) + delim;
-        edge_starts += to_string(aligned_mappings.read_ranges[j].path_start.edge_pos) + delim;
-        edge_ends += to_string(aligned_mappings.read_ranges[j].path_end.edge_pos) + delim;
+        seq_starts << aligned_mappings.read_ranges[j].path_start.seq_pos << delim;
+        seq_ends << aligned_mappings.read_ranges[j].path_end.seq_pos << delim;
+        edge_starts << aligned_mappings.read_ranges[j].path_start.edge_pos << delim;
+        edge_ends << aligned_mappings.read_ranges[j].path_end.edge_pos << delim;
         string s_delim = j == aligned_mappings.edge_paths.size() - 1 ? "" : ";";
-        path_str += s_delim;
-        path_len_str += s_delim;
-        path_seq_str += s_delim;
+        path_ss << s_delim;
+        path_len_ss << s_delim;
+        path_seq_ss << s_delim;
     }
-    DEBUG("Paths: " << path_str);
-    string str = read.name() + "\t" + seq_starts + "\t"
-                 + seq_ends + "\t"
-                 + edge_starts + "\t"
-                 + edge_ends + "\t"
+    string str = read.name() + "\t" + seq_starts.str() + "\t"
+                 + seq_ends.str() + "\t"
+                 + edge_starts.str() + "\t"
+                 + edge_ends.str() + "\t"
                  + to_string(read.sequence().size()) +  "\t"
-                 + path_str + "\t" + path_len_str + "\t" + path_seq_str + "\n";
+                 + path_ss.str() + "\t" + path_len_ss.str() + "\t" + path_seq_ss.str() + "\n";
     DEBUG("Read " << read.name() << " aligned and length=" << read.sequence().size());
-    DEBUG("Read " << read.name() << ". Paths with ends: " << path_str );
     #pragma omp critical
     {
         output_file_ << str;
