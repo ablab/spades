@@ -58,10 +58,10 @@ public:
     size_t position() const { return holder_.pos(); }
     bool is_empty() const { return !holder_; }
 
-    char letter(const void *context) const {
+    char letter(Context context) const {
         return nucl(g(context).EdgeNucls(edge())[position()]); }
 
-    // bool is_convergent(const void *context) const {
+    // bool is_convergent(Context context) const {
     //     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
     //
     //     return position() == g.k() &&
@@ -69,7 +69,7 @@ public:
     //     // return prev().size() > 1;
     // }
     //
-    // bool is_divergent(const void *context) const {
+    // bool is_divergent(Context context) const {
     //     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
     //
     //     return position() + 1 == g.length(edge()) + g.k() &&
@@ -77,8 +77,8 @@ public:
     //     // return next().size() > 1;
     // }
 
-    std::vector<DebruijnGraphCursor> prev(const void*) const;
-    std::vector<DebruijnGraphCursor> next(const void*) const;
+    std::vector<DebruijnGraphCursor> prev(Context) const;
+    std::vector<DebruijnGraphCursor> next(Context) const;
 
     static std::vector<DebruijnGraphCursor> get_cursors(const debruijn_graph::ConjugateDeBruijnGraph &g, const debruijn_graph::EdgeId &e, size_t pos) {
         // Unfortunately, several different cursors (actually different, having different prev's) may have the same edge & position
@@ -92,11 +92,11 @@ public:
     static std::vector<DebruijnGraphCursor> all(const debruijn_graph::ConjugateDeBruijnGraph &g);
 
   private:
-    const debruijn_graph::ConjugateDeBruijnGraph &g(const void *context) const {
-        return *static_cast<const debruijn_graph::ConjugateDeBruijnGraph *>(context);
+    const debruijn_graph::ConjugateDeBruijnGraph &g(Context context) const {
+        return *context;
     }
-    
-    void normalize_prefix_to_suffix(const void *context) {
+
+    void normalize_prefix_to_suffix(Context context) {
         const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
 
         // This method is used ONLY in all() generators for duplicates merging
@@ -110,7 +110,7 @@ public:
     }
 
     void generate_normalized_cursors(std::vector<DebruijnGraphCursor> &out,
-                                     const void *context) const {
+                                     Context context) const {
         const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
         if (position() < g.k() && g.IncomingEdgeCount(g.EdgeStart(edge())) > 0) {
             for (EdgeId new_e : g.IncomingEdges(g.EdgeStart(edge()))) {
@@ -125,7 +125,7 @@ public:
 
     friend struct std::hash<DebruijnGraphCursor>;
     friend std::ostream &operator<<(std::ostream &os, const DebruijnGraphCursor &p);
-    
+
     IdHolder holder_;
 };
 
