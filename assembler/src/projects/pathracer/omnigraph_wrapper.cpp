@@ -13,9 +13,9 @@ using namespace debruijn_graph;
 struct omnigraph_assert : debug_assert::default_handler,
                           debug_assert::set_level<1> {};
 
-std::vector<DebruijnGraphCursor> DebruijnGraphCursor::prev(const void *context) const {
+std::vector<DebruijnGraphCursor> DebruijnGraphCursor::prev(DebruijnGraphCursor::Context context) const {
     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
-        
+
     // Case 1: edge is a tip and we're inside the terminal vertex
     if (position() == 0) {
         // assert(pg_->ingoing_[edge_id_].size() == 0);
@@ -40,7 +40,7 @@ std::vector<DebruijnGraphCursor> DebruijnGraphCursor::prev(const void *context) 
 }
 
 
-inline std::vector<DebruijnGraphCursor> DebruijnGraphCursor::next(const void *context) const {
+inline std::vector<DebruijnGraphCursor> DebruijnGraphCursor::next(DebruijnGraphCursor::Context context) const {
     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
 
     // Common case: we have not reached the end of the edge (in nucls)
