@@ -59,7 +59,7 @@ public:
     bool is_empty() const { return !holder_; }
 
     char letter(Context context) const {
-        return nucl(g(context).EdgeNucls(edge())[position()]); }
+        return nucl2(g(context).EdgeNucls(edge())[position()]); }
 
     // bool is_convergent(Context context) const {
     //     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
