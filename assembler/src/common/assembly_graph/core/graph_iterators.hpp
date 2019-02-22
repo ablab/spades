@@ -11,6 +11,7 @@
 #include "func/pred.hpp"
 #include "action_handlers.hpp"
 #include "utils/stl_utils.hpp"
+#include <set>
 #include <boost/iterator/iterator_facade.hpp>
 
 namespace omnigraph {
@@ -316,7 +317,7 @@ template<class Graph>
 class DynamicEdgeSet : public GraphActionHandler<Graph>{
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    set<EdgeId> edge_set_;
+    std::set<EdgeId> edge_set_;
 public:
     DynamicEdgeSet(const Graph &graph) :
             omnigraph::GraphActionHandler<Graph>(graph, "DynamicEdgeSet") {
@@ -329,7 +330,7 @@ public:
         edge_set_.erase(e);
     }
 
-    virtual void HandleMerge(const vector<EdgeId> &old_edges, EdgeId new_edge) {
+    virtual void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) {
         for (auto edge : old_edges) {
             if (edge_set_.count(edge)) {
                 edge_set_.erase(edge);
@@ -355,7 +356,7 @@ public:
         }
     }
 
-    void Fill(const vector<EdgeId> &container) {
+    void Fill(const std::vector<EdgeId> &container) {
         for (auto elem : container) {
             edge_set_.insert(elem);
         }

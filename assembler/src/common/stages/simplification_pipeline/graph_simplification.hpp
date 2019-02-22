@@ -625,7 +625,7 @@ AlgoPtr<Graph> TopologyTipClipperInstance(
                               condition, info, removal_handler, /*track changes*/false);
 }
 
-typedef std::function<bool(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
+typedef std::function<bool(EdgeId edge, const std::vector<EdgeId>& path)> BulgeCallbackF;
 
 template<class Graph>
 AlgoPtr<Graph> BRInstance(Graph &g,

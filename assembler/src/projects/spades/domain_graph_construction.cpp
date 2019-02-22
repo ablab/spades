@@ -47,8 +47,8 @@ public:
             g_(g), forbidden_edges_(forbidden_edges) {
     }
 
-    void HandleReversedPath(const vector<EdgeId> &reversed_path) override {
-        vector<EdgeId> forward_path = reversed_path;
+    void HandleReversedPath(const std::vector<EdgeId> &reversed_path) override {
+        std::vector<EdgeId> forward_path = reversed_path;
         std::reverse(forward_path.begin(), forward_path.end());
         bool cross_start = false;
         bool cross_end = false;
@@ -89,7 +89,7 @@ public:
         answer_path_.clear();
     }
 
-    const vector<EdgeId>& answer() {
+    const std::vector<EdgeId>& answer() {
         return answer_path_;
     }
 
@@ -147,13 +147,13 @@ private:
                 DEBUG("Path was not found");
             }
         } else {
-            graph.addEdge(v1, v2, false, last_mapping + first_mapping, vector<EdgeId>());
+            graph.addEdge(v1, v2, false, last_mapping + first_mapping, std::vector<EdgeId>());
         }
         chooser.reset();
     }
 
 
-    vector<VertexId> VerticesReachedFrom(VertexId start_vertex) {
+    std::vector<VertexId> VerticesReachedFrom(VertexId start_vertex) {
         auto bounded_dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(gp_.g,
                                                                              4000, 10000);
         bounded_dijkstra.Run(start_vertex);
@@ -268,8 +268,8 @@ private:
         return index;
     }
 
-    vector<EdgeId> FindEdgesBetweenMappings(int first_mapping_end_coord, int second_mapping_start_coord, path_extend::BidirectionalPath *path) {
-        vector<EdgeId> answer;
+    std::vector<EdgeId> FindEdgesBetweenMappings(int first_mapping_end_coord, int second_mapping_start_coord, path_extend::BidirectionalPath *path) {
+        std::vector<EdgeId> answer;
         if (first_mapping_end_coord < 0 || second_mapping_start_coord < 0) {
             return answer;
         }
@@ -307,7 +307,7 @@ private:
         std::set<std::string> removed_vertices;
         for (auto p : mappings_for_path) {
             DEBUG("Processing path " << p.first);
-            std::pair<std::pair<int, int>, std::pair<std::string, vector<EdgeId>>> prev(make_pair(-1, -1), make_pair("", std::vector<EdgeId>()));
+            std::pair<std::pair<int, int>, std::pair<std::string, std::vector<EdgeId>>> prev(std::make_pair(-1, -1), std::make_pair("", std::vector<EdgeId>()));
             for (const auto& maps : p.second) {
                 DEBUG("Processing mapping " << maps.second.first);
                 DEBUG("Mapping start: " << maps.first.first << ". Mapping end: " << maps.first.second);

@@ -17,7 +17,7 @@
 
 namespace io {
 
-inline void WriteWrapped(const std::string &s, ostream &os, size_t max_width = 60) {
+inline void WriteWrapped(const std::string &s, std::ostream &os, size_t max_width = 60) {
     size_t cur = 0;
     while (cur < s.size()) {
         os << s.substr(cur, max_width) << "\n";

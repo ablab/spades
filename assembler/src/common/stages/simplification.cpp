@@ -413,7 +413,7 @@ public:
             return std::vector<EdgeId>();
 
         auto mapper = MapperInstance(gp_);
-        auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(cfg::get().output_dir + "temp_anti/restricted_edges.fasta"));
+        auto reader = std::make_shared<io::FixingWrapper>(std::make_shared<io::FileReadStream>(cfg::get().output_dir + "temp_anti/restricted_edges.fasta"));
 
         std::vector<EdgeId> a_domain_edges;
         while (!reader->eof()) {

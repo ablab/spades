@@ -128,13 +128,13 @@ public:
 
     Edge *addEdge(const std::string &v1, const std::string &v2, bool strong,
                   size_t length = 0,
-                  const vector<EdgeId> &edges = vector<EdgeId>()) {
+                  const std::vector<EdgeId> &edges = std::vector<EdgeId>()) {
         return addEdge(getVertex(v1), getVertex(v2), strong, length, edges);
     }
 
     Edge *addEdge(std::shared_ptr<Vertex> v1, std::shared_ptr<Vertex> v2,
                   bool strong, size_t length = 0,
-                  const vector<EdgeId> &edges = vector<EdgeId>()) {
+                  const std::vector<EdgeId> &edges = std::vector<EdgeId>()) {
         Edge *e = new Edge(v1, v2, edges, strong);
         e->length_ = length;
         return addEdge(e);
