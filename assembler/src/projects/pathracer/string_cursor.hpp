@@ -14,9 +14,8 @@ public:
     using Context = const std::string*;
 
     StringCursor(size_t pos = -1) : pos_{pos} {}
-    char letter(const void *context) const {
-        const std::string &s = *static_cast<const std::string *>(context);
-        return s[pos_];
+    char letter(Context context) const {
+        return (*context)[pos_];
     }
 
     bool is_empty() const { return pos_ == size_t(-1); }
@@ -28,7 +27,7 @@ public:
     StringCursor &operator=(StringCursor &&) = default;
     ~StringCursor() noexcept = default;
 
-    std::vector<StringCursor> prev(const void *) const {
+    std::vector<StringCursor> prev(Context) const {
         if (pos_ == 0) {
             return {};
         } else {
@@ -36,7 +35,7 @@ public:
         }
     }
 
-    std::vector<StringCursor> next(const void *context) const {
+    std::vector<StringCursor> next(Context context) const {
         const std::string &s = *static_cast<const std::string *>(context);
         if (pos_ == s.length() - 1) {
             return {};
