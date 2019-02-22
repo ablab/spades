@@ -108,7 +108,7 @@ private:
 // FIXME add cpp
 
 inline char CachedCursor::letter(Context context) const {
-    return static_cast<const CachedCursorContext *>(context)->letters_[index_];
+    return context->letters_[index_];
 }
 
 
@@ -118,5 +118,5 @@ inline const std::vector<CachedCursor> &CachedCursor::next(Context context) cons
 
 // It is not required for find_best_path
 // inline const std::vector<CachedCursor> &CachedCursor::prev(Context context) const {
-//     return static_cast<const CachedCursorContext *>(context)->prevs_[index_];
+//     return context->prevs_[index_];
 // }

@@ -36,7 +36,7 @@ public:
     }
 
     std::vector<StringCursor> next(Context context) const {
-        const std::string &s = *static_cast<const std::string *>(context);
+        const std::string &s = *context;
         if (pos_ == s.length() - 1) {
             return {};
         } else {
