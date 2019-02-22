@@ -306,13 +306,14 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
     return copy;
   }
 
-  bool update(const GraphCursor &cursor,
-              score_t score,
-              const GraphCursor &from,
+  bool update(const GraphCursor &cursor, score_t score, const GraphCursor &from,
               const PathLinkRef<GraphCursor> &plink) {
-    auto it_fl = this->insert({cursor, PathLink<GraphCursor>::create()});
+    auto it_fl = this->insert({cursor, nullptr});
     auto it = it_fl.first;
     bool inserted = it_fl.second;
+    if (inserted) {
+      it->second = PathLink<GraphCursor>::create();
+    }
 
     score_t prev = inserted ? std::numeric_limits<score_t>::infinity() : it->second->score();
     it->second->update(from, score, plink);
