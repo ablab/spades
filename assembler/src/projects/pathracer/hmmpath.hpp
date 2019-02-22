@@ -514,8 +514,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   StateSet I, M;
   DeletionStateSet D;
   const auto empty = GraphCursor();
-  auto base = PathLink<GraphCursor>::master_source();
-  M[empty] = base;  // TODO Implement and use empty Trajectory() instead of Trajectory(0)
+  auto source = PathLink<GraphCursor>::master_source();
+  M[empty] = source;  // TODO Implement and use empty Trajectory() instead of Trajectory(0)
 
   INFO("The number of links (M): " << fees.M);
 
@@ -585,21 +585,20 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   INFO("Max stack size in Depth: " << depth.max_stack_size());
 
   PathSet<GraphCursor> result;
-  auto &terminal = result.pathlink();
-  terminal.update(empty, std::numeric_limits<score_t>::infinity(), base);
-  auto upd_terminal = [&terminal](const auto &S, double fee) {
+  auto &sink = result.pathlink();
+  auto update_sink = [&sink](const auto &S, double fee) {
     for (const auto &state : S.states()) {
-      terminal.update(state.cursor, state.score + fee, state.plink);
+      sink.update(state.cursor, state.score + fee, state.plink);
     }
   };
 
-  upd_terminal(D, fees.t[fees.M][p7H_DM]);
-  upd_terminal(I, fees.t[fees.M][p7H_DM]);  // Do we really need I at the end?
-  upd_terminal(M, fees.t[fees.M][p7H_MM]);
+  update_sink(D, fees.t[fees.M][p7H_DM]);
+  update_sink(I, fees.t[fees.M][p7H_IM]);  // Do we really need I at the end?
+  update_sink(M, fees.t[fees.M][p7H_MM]);
 
-  INFO(terminal.object_count_current() << " pathlink objects");
-  INFO(terminal.object_count_max() << " pathlink objects maximum");
-  INFO(terminal.object_count_constructed() << " pathlink objects constructed");
+  INFO(sink.object_count_current() << " pathlink objects");
+  INFO(sink.object_count_max() << " pathlink objects maximum");
+  INFO(sink.object_count_constructed() << " pathlink objects constructed");
 
   return result;
 }
