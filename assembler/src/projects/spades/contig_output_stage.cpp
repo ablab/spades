@@ -33,6 +33,7 @@ bool CheckUsedPath(const path_extend::BidirectionalPath* path, set<EdgeId> &used
         used_edges.insert(path->At(i));
         used_edges.insert(g.conjugate(path->At(i)));
     }
+//FIXME: constant
     if (used_len > total_len * 0.8) return true;
     else return false;
 }
@@ -137,11 +138,11 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
                                                   fastg_writer));
         }
 
-//        auto writers = CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name, fastg_writer);
-//        writers.push_back([&](const ScaffoldStorage &storage) {
-//            gfa_writer.WritePaths(storage);
-//        });
-//        writer.OutputPaths(gp.contig_paths, writers);
+        auto writers = CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name, fastg_writer);
+        writers.push_back([&](const ScaffoldStorage &storage) {
+            gfa_writer.WritePaths(storage);
+        });
+        writer.OutputPaths(gp.contig_paths, writers);
 
     } else {
         //FIXME weird logic

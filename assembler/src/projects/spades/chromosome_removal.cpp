@@ -418,11 +418,6 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
         }
 
     }
-    for(size_t i = 0; i < 2; i++) {
-        INFO(gp.paired_indices[i].IsAttached());
-        INFO(gp.clustered_indices[i].IsAttached());
-        INFO(gp.scaffolding_indices[i].IsAttached());
-    }
     OutputEdgeSequences(gp.g, cfg::get().output_dir + "before_chromosome_removal");
     INFO("Before iteration " << 0 << ", " << gp.g.size() << " vertices in graph");
     std::string additional_list = cfg::get().pd->remove_list;

@@ -131,6 +131,8 @@ void assemble_genome() {
         if (!cfg::get().series_analysis.empty())
             SPAdes.add<debruijn_graph::SeriesAnalysis>();
 
+        if (cfg::get().pd && cfg::get().mode != debruijn_graph::config::pipeline_type::meta)
+            SPAdes.add<debruijn_graph::ChromosomeRemoval>();
 
         if (HybridLibrariesPresent()) {
             SPAdes.add(new debruijn_graph::HybridLibrariesAligning());
@@ -143,7 +145,7 @@ void assemble_genome() {
               .add(new debruijn_graph::DistanceEstimation())
               .add(new debruijn_graph::RepeatResolution());
 
-        if (cfg::get().pd) {
+        if (cfg::get().pd && cfg::get().mode == debruijn_graph::config::pipeline_type::meta) {
             size_t cov = 5;
             double multiplier = 1.3;
             size_t max_cov = 600;
