@@ -126,6 +126,15 @@ inline char nucl(char c) {
     }
 }
 
+/* Optimized version of the above. Only use if you're 100% sure that the input
+ * is 0-4 digital string
+ */
+inline char nucl2(char c) {
+    unsigned idx = c & 3;
+    uint32_t res = 0x54474341; // 'TGCA'
+    return (res >> (8 * idx)) & 0xFF;
+}
+
 /**
  * ACGT -> 0123
  * @param char c is 'A/a/', 'C', 'G' or 'T'

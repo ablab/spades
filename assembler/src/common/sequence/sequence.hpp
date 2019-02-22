@@ -373,7 +373,7 @@ Sequence Sequence::operator+(const Sequence &s) const {
 std::string Sequence::str() const {
     std::string res(size_, '-');
     for (size_t i = 0; i < size_; ++i) {
-        res[i] = nucl(this->operator[](i));
+        res[i] = nucl2(this->operator[](i));
     }
     return res;
 }
