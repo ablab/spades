@@ -20,12 +20,12 @@ class ReversalGraphCursor : public GraphCursor {
   ReversalGraphCursor& operator=(const ReversalGraphCursor&) = default;
   ReversalGraphCursor& operator=(ReversalGraphCursor&&) = default;
 
-  std::vector<ReversalGraphCursor> next(const void *context) const {
+  std::vector<ReversalGraphCursor> next(typename GraphCursor::Context context) const {
     auto result = GraphCursor::prev(context);
     return std::vector<ReversalGraphCursor>(std::cbegin(result), std::cend(result));
   }
 
-  std::vector<ReversalGraphCursor> prev(const void *context) const {
+  std::vector<ReversalGraphCursor> prev(typename GraphCursor::Context context) const {
     auto result = GraphCursor::next(context);
     return std::vector<ReversalGraphCursor>(std::cbegin(result), std::cend(result));
   }
@@ -44,11 +44,11 @@ class RestrictedGraphCursor : public GraphCursor {
   RestrictedGraphCursor(const GraphCursor &other, const std::unordered_set<GraphCursor> &space) : GraphCursor(other), pspace_{&space} {}
   RestrictedGraphCursor(GraphCursor &&other, const std::unordered_set<GraphCursor> &space) : GraphCursor(std::move(other)), pspace_{&space} {}
 
-  std::vector<RestrictedGraphCursor> next(const void *context) const {
+  std::vector<RestrictedGraphCursor> next(typename GraphCursor::Context context) const {
     return filter_(GraphCursor::next(context));
   }
 
-  std::vector<RestrictedGraphCursor> prev(const void *context) const {
+  std::vector<RestrictedGraphCursor> prev(typename GraphCursor::Context context) const {
     return filter_(GraphCursor::prev(context));
   }
 
@@ -79,8 +79,8 @@ auto make_restricted_cursors(const std::vector<GraphCursor> &cursors, const std:
 
 template <class GraphCursor>
 struct OptimizedRestrictedGraphCursorContext {
-    const std::unordered_set<GraphCursor> space;
-    const void *context;
+    const std::unordered_set<GraphCursor> &space;
+    typename GraphCursor::Context context;
 };
 
 template <class GraphCursor>
@@ -96,21 +96,17 @@ class OptimizedRestrictedGraphCursor : public GraphCursor {
   OptimizedRestrictedGraphCursor(const GraphCursor &other) : GraphCursor(other) {}
   OptimizedRestrictedGraphCursor(GraphCursor &&other) : GraphCursor(std::move(other)) {}
 
-  std::vector<OptimizedRestrictedGraphCursor> next(const void *context) const {
-    return filter_(GraphCursor::next(unvoid_context(context)->context), unvoid_context(context)->space);
+  std::vector<OptimizedRestrictedGraphCursor> next(Context context) const {
+    return filter_(GraphCursor::next(context->context), context->space);
   }
 
-  std::vector<OptimizedRestrictedGraphCursor> prev(const void *context) const {
-    return filter_(GraphCursor::prev(unvoid_context(context)->context), unvoid_context(context)->space);
+  std::vector<OptimizedRestrictedGraphCursor> prev(Context context) const {
+    return filter_(GraphCursor::prev(context->context), context->space);
   }
 
-  char letter(const void *context) const { return GraphCursor::letter(unvoid_context(context)->context); }
+  char letter(Context context) const { return GraphCursor::letter(context->context); }
 
  private:
-  static const OptimizedRestrictedGraphCursorContext<GraphCursor> *unvoid_context(const void *context) {
-    return static_cast<const OptimizedRestrictedGraphCursorContext<GraphCursor>*>(context);
-  }
-
   std::vector<OptimizedRestrictedGraphCursor> filter_(std::vector<GraphCursor> v, const std::unordered_set<GraphCursor> &space) const {
     std::vector<OptimizedRestrictedGraphCursor> result;
     for (auto &&cursor : v) {
@@ -124,7 +120,7 @@ class OptimizedRestrictedGraphCursor : public GraphCursor {
 };
 
 template <class GraphCursor>
-auto make_optimized_restricted_cursor_context(const std::unordered_set<GraphCursor> &space, const void *context) {
+auto make_optimized_restricted_cursor_context(const std::unordered_set<GraphCursor> &space, typename GraphCursor::Context context) {
     return OptimizedRestrictedGraphCursorContext<GraphCursor>{space, context};
 }
 

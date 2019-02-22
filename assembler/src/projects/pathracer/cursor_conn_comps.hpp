@@ -7,7 +7,7 @@
 
 template <typename GraphCursor>
 std::vector<std::vector<GraphCursor>> cursor_connected_components(const std::vector<GraphCursor> &cursors,
-                                                                  const void *context) {
+                                                                  typename GraphCursor::Context context) {
   dsu::ConcurrentDSU dsu(cursors.size());
   std::unordered_map<GraphCursor, size_t> cursor2id;
   for (size_t i = 0; i < cursors.size(); ++i) {
@@ -50,7 +50,7 @@ bool in_vector(const T &val, const std::vector<T> &vec) {
 }
 
 template <typename GraphCursor>
-bool check_cursor_symmetry(const GraphCursor &cursor, const void *context) {
+bool check_cursor_symmetry(const GraphCursor &cursor, typename GraphCursor::Context context) {
   for (const auto &next_cursor : cursor.next(context)) {
     auto prevs = next_cursor.prev(context);
     if (!in_vector(cursor, prevs)) {
@@ -71,7 +71,7 @@ bool check_cursor_symmetry(const GraphCursor &cursor, const void *context) {
 
 template <typename GraphCursor>
 bool check_path_continuity(const std::vector<GraphCursor> &path,
-                           const void *context) {
+                           typename GraphCursor::Context context) {
   for (size_t i = 1; i < path.size(); ++i) {
     auto nexts = path[i - 1].next(context);
     auto prevs = path[i].prev(context);

@@ -10,7 +10,7 @@ template <class GraphCursor>
 class AAGraphCursor;
 
 template <class GraphCursor>
-auto make_aa_cursors(const std::vector<GraphCursor> &cursors, const void *context);
+auto make_aa_cursors(const std::vector<GraphCursor> &cursors, typename GraphCursor::Context context);
 
 template <class GraphCursor>
 inline std::ostream &operator<<(std::ostream &os, const AAGraphCursor<GraphCursor> &cursor);
@@ -21,7 +21,7 @@ class AAGraphCursor {
 
  public:
   using Context = typename GraphCursor::Context;
-  char letter(const void *context) const { return to_one_letter(aa::to_aa(c0_.letter(context), c1_.letter(context), c2_.letter(context))); }
+  char letter(Context context) const { return to_one_letter(aa::to_aa(c0_.letter(context), c1_.letter(context), c2_.letter(context))); }
 
   AAGraphCursor() = default;
   AAGraphCursor(const GraphCursor &c0, const GraphCursor &c1, const GraphCursor &c2) : c0_{c0}, c1_{c1}, c2_{c2} {}
@@ -37,20 +37,20 @@ class AAGraphCursor {
 
   using EdgeId = std::decay_t<decltype(GraphCursor().edge())>;
 
-  std::vector<This> prev(void*) const;  // TODO implement it
+  std::vector<This> prev(Context) const;  // TODO implement it
 
-  std::vector<This> next(const void *context) const { return from_bases(c2_.next(context), context); }
+  std::vector<This> next(Context context) const { return from_bases(c2_.next(context), context); }
 
   std::vector<GraphCursor> nucl_cursors() const { return {c0_, c1_, c2_}; }
 
  private:
   GraphCursor c0_, c1_, c2_;
   friend struct std::hash<This>;
-  friend auto make_aa_cursors<GraphCursor>(const std::vector<GraphCursor> &cursors, const void *context);
+  friend auto make_aa_cursors<GraphCursor>(const std::vector<GraphCursor> &cursors, Context context);
   friend std::ostream &operator<<<GraphCursor>(std::ostream &os, const AAGraphCursor<GraphCursor> &cursor);
 
   static std::vector<This> from_bases(const std::vector<GraphCursor> &cursors,
-                                      const void *context) {
+                                      Context context) {
     llvm::SmallVector<llvm::SmallVector<GraphCursor, 2>, 16> nexts;
     // nexts.reserve(16);
 
@@ -83,12 +83,12 @@ inline std::ostream &operator<<(std::ostream &os, const AAGraphCursor<GraphCurso
 }
 
 template <class GraphCursor>
-auto make_aa_cursors(const std::vector<GraphCursor> &cursors, const void *context) {
+auto make_aa_cursors(const std::vector<GraphCursor> &cursors, typename GraphCursor::Context context) {
   return AAGraphCursor<GraphCursor>::from_bases(cursors, context);
 }
 
 template <class GraphCursor>
-auto make_aa_cursors(const GraphCursor &cursor, const void *context) {
+auto make_aa_cursors(const GraphCursor &cursor, typename GraphCursor::Context context) {
   return make_aa_cursors({cursor}, context);
 }
 
