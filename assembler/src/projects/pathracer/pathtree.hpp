@@ -172,7 +172,7 @@ public:
           continue;  // TODO Think about a better way to exclude empty cursors
         }
         path.push_back(event.gp);
-        events.push_back(event.path_link->event);
+        events.push_back(event.path_link->emission());
       }
 
       return AnnotatedPath<GraphCursor>{path, cost, events};
@@ -240,9 +240,18 @@ public:
     return result;
   }
 
-  Event event;
+  void set_emission(size_t m, EventType type) {
+    event_.m = m;
+    event_.type = type;
+  }
+
+  Event emission() const {
+    return event_;
+  }
+
 private:
   std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
+  Event event_;
 
   auto best_ancestor() const {
     DEBUG_ASSERT(scores_.size(), pathtree_assert{});

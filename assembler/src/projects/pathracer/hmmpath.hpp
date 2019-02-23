@@ -292,7 +292,7 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
   void set_event(size_t m, EventType type) {
     for (auto &kv : *this) {
       if (!kv.first.is_empty()) {
-        kv.second->event = {static_cast<unsigned int>(m), type};
+        kv.second->set_emission(m, type);
       }
     }
   }
