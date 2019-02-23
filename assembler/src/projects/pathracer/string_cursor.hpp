@@ -57,6 +57,8 @@ struct hash<StringCursor> {
 };
 }  // namespace std
 
+inline bool operator<(const StringCursor &c1, const StringCursor &c2) { return c1.position() < c2.position(); }
+
 inline std::ostream &operator<<(std::ostream &os, const StringCursor &c) {
     if (c.is_empty()) {
         return os << "(@)";

@@ -46,6 +46,12 @@ void remove_duplicates(std::vector<T> &v) {
   v.resize(std::distance(v.begin(), it));
 }
 
+template <class InputIt, class OutputIt, class Key>
+OutputIt unique_copy_by(InputIt first, InputIt last, OutputIt d_first, Key key) {
+    return std::unique_copy(first, last, d_first,
+                            [&key](const auto &e1, const auto &e2) -> bool { return key(e1) == key(e2); });
+}
+
 inline size_t hash_size_t_pair(size_t s0, size_t s1) {
   s1 ^= s1 << 23;  // a
   return (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26)) + s0;

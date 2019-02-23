@@ -147,6 +147,9 @@ inline std::ostream &operator<<(std::ostream &os, const DebruijnGraphCursor &p) 
     return os << "(" << p.edge() << ", " << p.position() << ")";
   }
 }
+inline bool operator<(const DebruijnGraphCursor &c1, const DebruijnGraphCursor &c2) {
+    return std::make_tuple(c1.edge(), c1.position()) < std::make_tuple(c2.edge(), c2.position());
+}
 
 namespace hmm {
 struct Fees;

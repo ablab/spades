@@ -29,6 +29,10 @@ class ReversalGraphCursor : public GraphCursor {
     auto result = GraphCursor::next(context);
     return std::vector<ReversalGraphCursor>(std::cbegin(result), std::cend(result));
   }
+
+  bool operator<(const ReversalGraphCursor<GraphCursor>& other) const {
+    return this->GraphCursor::operator<(other);
+  }
 };
 
 template <class GraphCursor>
