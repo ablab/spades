@@ -31,10 +31,14 @@ struct Fees {
   DigitalCodind code;
   std::string consensus;
 
-  struct {size_t l25, l100, l500; } state_limits;
-  double depth_filter_rate;
+  struct {size_t l25 = 1000000, l100 = 50000, l500 = 10000; } state_limits;
+  double depth_filter_rate = 0.66;
   double depth_filter_constant;
   double absolute_threshold;
+
+  double cleavage_cost;
+  bool local = false;
+  size_t minimal_match_length = 100;
 
   double empty_sequence_score() const;
   double all_matches_score(const std::string &seq) const;
@@ -58,6 +62,7 @@ struct Fees {
     depth_filter_rate = 0.66;
     depth_filter_constant = 20;
     absolute_threshold = 250.0;
+    cleavage_cost = 0;
   }
 
   bool check_i_loop(size_t i) const;
