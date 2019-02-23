@@ -687,9 +687,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   sink->collapse_and_trim();
   // sink.apply([](auto &p) { const_cast<PathLink<GraphCursor>&>(p).collapse_and_trim(); });
 
-  INFO(sink->object_count_current() << " pathlink objects");
-  INFO(sink->object_count_max() << " pathlink objects maximum");
-  INFO(sink->object_count_constructed() << " pathlink objects constructed");
+  DEBUG(sink->object_count_current() << " pathlink objects");
+  DEBUG(sink->object_count_max() << " pathlink objects maximum");
+  DEBUG(sink->object_count_constructed() << " pathlink objects constructed");
 
   return result;
 }
