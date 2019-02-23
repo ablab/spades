@@ -346,7 +346,7 @@ class PathSet {
  public:
   class path_container {
    public:
-    path_container(const pathtree::PathLink<GraphCursor> &paths, size_t k) : paths_(paths.top_k(k)) {}
+    path_container(const pathtree::PathLinkRef<GraphCursor> &paths, size_t k) : paths_(paths->top_k(k)) {}
 
     auto begin() const { return paths_.begin(); }
     auto end() const { return paths_.end(); }
@@ -361,17 +361,16 @@ class PathSet {
     std::vector<AnnotatedPath<GraphCursor>> paths_;
   };
 
-  pathtree::PathLink<GraphCursor> &pathlink() { return pathlink_; }
-  const pathtree::PathLink<GraphCursor> &pathlink() const { return pathlink_; }
+  PathSet(const PathLinkRef<GraphCursor> &pathlink) : pathlink_{pathlink} {}
 
-  double best_score() const { return pathlink_.score(); }
+  double best_score() const { return pathlink_->score(); }
   AnnotatedPath<GraphCursor> best_path() const { return top_k(1)[0]; }
   std::string best_path_string() const { return path_container::str(best_path().path); }
 
   path_container top_k(size_t k) const { return path_container(pathlink_, k); }
 
  private:
-  pathtree::PathLink<GraphCursor> pathlink_;
+  PathLinkRef<GraphCursor> pathlink_;
 };
 
 }  // namespace pathtree

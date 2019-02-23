@@ -578,9 +578,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   StateSet I, M;
   DeletionStateSet D;
-  const auto empty = GraphCursor();
   auto source = PathLink<GraphCursor>::create_source();
-  M[empty] = source;
+  auto sink = PathLink<GraphCursor>::create();
+  M[GraphCursor()] = source;
 
   INFO("The number of links (M): " << fees.M);
 
@@ -657,23 +657,22 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   INFO("Max stack size in Depth: " << depth.max_stack_size());
 
-  PathSet<GraphCursor> result;
-  auto &sink = result.pathlink();
+  PathSet<GraphCursor> result(sink);
   auto update_sink = [&sink](const auto &S, double fee) {
     for (const auto &state : S.states()) {
-      sink.update(state.cursor, state.score + fee, state.plink);
+      sink->update(state.cursor, state.score + fee, state.plink);
     }
   };
 
   update_sink(D, fees.t[fees.M][p7H_DM]);
   update_sink(I, fees.t[fees.M][p7H_IM]);  // Do we really need I at the end?
   update_sink(M, fees.t[fees.M][p7H_MM]);
-  sink.collapse_and_trim();
+  sink->collapse_and_trim();
   // sink.apply([](auto &p) { const_cast<PathLink<GraphCursor>&>(p).collapse_and_trim(); });
 
-  INFO(sink.object_count_current() << " pathlink objects");
-  INFO(sink.object_count_max() << " pathlink objects maximum");
-  INFO(sink.object_count_constructed() << " pathlink objects constructed");
+  INFO(sink->object_count_current() << " pathlink objects");
+  INFO(sink->object_count_max() << " pathlink objects maximum");
+  INFO(sink->object_count_constructed() << " pathlink objects constructed");
 
   return result;
 }
