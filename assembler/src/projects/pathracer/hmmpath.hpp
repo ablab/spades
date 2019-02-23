@@ -337,20 +337,20 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   INFO("pHMM size: " << fees.M);
   if (!fees.check_i_loop(0)) {
-    WARN("Negative-cost insertion at the beginning");
+    WARN("Positive-score insertion at the beginning");
   }
   if (!fees.check_i_loop(fees.M)) {
-    WARN("Negative-cost insertion at the end");
+    WARN("Positive-score insertion at the end");
   }
 
   for (size_t i = 0; i <= fees.M; ++i) {
     if (!fees.check_i_loop(i)) {
-      WARN("Negative-cost insertion at position " << i);
+      WARN("Positive-score insertion at position " << i);
     }
   }
 
   if (!fees.check_i_negative_loops()) {
-    WARN("MODEL CONTAINS NEGATIVE I-LOOPS");
+    WARN("MODEL CONTAINS POSITIVE-SCORE I-LOOPS");
   }
 
   std::vector<GraphCursor> initial;
