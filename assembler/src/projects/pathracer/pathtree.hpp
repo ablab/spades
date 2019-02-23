@@ -136,11 +136,13 @@ public:
   PathLink() : score_{std::numeric_limits<score_t>::infinity()} {}
 
   void collapse_and_trim() {
+    // Collapse left
     sort_by(scores_.begin(), scores_.end(), [](const auto &p) { return std::make_tuple(p.first, p.second.first); }); // TODO prefer matchs to insertions in case of eveness
     auto it = unique_copy_by(scores_.cbegin(), scores_.cend(), scores_.begin(),
                              [](const auto &p){ return p.first; });
     scores_.resize(std::distance(scores_.begin(), it));
 
+    // Trim left
     sort_by(scores_.begin(), scores_.end(), [](const auto &p) { return p.second.first; });
 
     for (size_t i = 0; i < scores_.size(); ++i) {

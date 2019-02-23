@@ -412,7 +412,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     const auto &transfer_fee = fees.t[m][p7H_II];
 
     TRACE(I.size() << " I states initially present in I-loop m = " << m);
-    std::unordered_set<GraphCursor> updated;
 
     struct QueueElement {
       GraphCursor current_cursor;
@@ -444,22 +443,22 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       q.pop();
       ++taken_values;
 
-      if (processed.count(elt.current_cursor)) {
+      auto it_fl = processed.insert(elt.current_cursor);
+      if (!it_fl.second) { // Already there
         continue;
       }
-      processed.insert(elt.current_cursor);
 
       const auto &id = I[elt.current_cursor];
       for (const auto &next : elt.current_cursor.next(context)) {
         char letter = next.letter(context);
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
-        if (!filter(next)) {
+        // if (!filter(next)) {
           bool updated = I.update(next, cost, elt.current_cursor, id);
           // FIXME potential memory leak here!
           if (updated) {
             q.push({next, cost});
           }
-        }
+        // }
       }
     }
 
@@ -547,9 +546,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       INFO("# states " << m << " => " << n_of_states << ": I = " << I.size() << " M = " << M.size() << " D = " << D.size());
     }
 
-    I.set_event(m, EventType::INSERTION);
-    M.set_event(m, EventType::MATCH);
-
     I.score_filter(top, absolute_threshold);
     M.score_filter(top, absolute_threshold);
     D.score_filter(top, absolute_threshold);
@@ -561,13 +557,17 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       depth_filtered += D.filter_key(depth_filter_cursor);
     }
 
-    // collapse
+    I.set_event(m, EventType::INSERTION);
+    M.set_event(m, EventType::MATCH);
+
+    // collapse and trim
     for (auto &kv : I) {
       kv.second->collapse_and_trim();
     }
     for (auto &kv : M) {
       kv.second->collapse_and_trim();
     }
+
     if (m >= n) {
       INFO("depth-filtered " << depth_filtered << ", positions left = " << positions_left << " states m = " << m);
       INFO("I = " << I.size() << " M = " << M.size() << " D = " << D.size());
