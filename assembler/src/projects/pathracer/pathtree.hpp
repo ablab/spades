@@ -170,9 +170,9 @@ public:
   static ThisRef create() { return new This(); }
   ThisRef clone() const { return new This(*this); }
 
-  static ThisRef master_source() {
+  static ThisRef create_source() {
     ThisRef result = create();
-    result->update(GraphCursor(), 0, nullptr);  // master_source score should be 0
+    result->update(GraphCursor(), 0, nullptr);  // SOURCE score should be 0
     return result;
   }
 
