@@ -133,7 +133,9 @@ public:
     // }
   }
 
-  PathLink() : score_{std::numeric_limits<score_t>::infinity()} {}
+  PathLink() : score_{std::numeric_limits<score_t>::infinity()} {
+    scores_.reserve(8);
+  }
 
   void collapse_and_trim() {
     // Collapse left
@@ -155,6 +157,8 @@ public:
         break;
       }
     }
+
+    scores_.shrink_to_fit();
   }
 
   static ThisRef create() { return new This(); }
