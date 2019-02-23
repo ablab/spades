@@ -35,12 +35,20 @@ struct Fees {
   double depth_filter_rate;
   double depth_filter_constant;
 
+  bool is_proteomic() const {
+    return k == 20;
+  }
+
+  bool is_nucleotide() const {
+    return !is_proteomic();
+  }
+
   Fees() {
-      state_limits.l25 = 1000000;
-      state_limits.l100 = 50000;
-      state_limits.l500 = 10000;
-      depth_filter_rate = 0.66;
-      depth_filter_constant = 20;
+    state_limits.l25 = 1000000;
+    state_limits.l100 = 50000;
+    state_limits.l500 = 10000;
+    depth_filter_rate = 0.66;
+    depth_filter_constant = 20;
   }
 
   bool check_i_loop(size_t i) const;
@@ -61,3 +69,5 @@ Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc, double lambda = 0
 Fees fees_from_file(const std::string &filename);
 
 }  // namespace hmm
+
+// vim: set ts=2 sw=2 et :
