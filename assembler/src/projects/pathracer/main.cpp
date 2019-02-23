@@ -686,7 +686,7 @@ public:
 void unique_hmm_path_info(std::vector<HMMPathInfo> &infos, const std::vector<std::vector<EdgeId>> &paths) {
     auto key = [&paths](const auto &info) {
         int supported = info.supported_by_original_path(paths) ? 0 : 1;
-        return std::make_tuple(info.rounded_score(), info.nuc_seq, info.path, supported, info.label);
+        return std::make_tuple(-info.rounded_score(), info.nuc_seq, info.path, supported, info.label);
     };
     sort_by(infos.begin(), infos.end(), key);
 
@@ -980,8 +980,6 @@ void TraceHMM(const hmmer::HMM &hmm,
         auto top_paths = result.top_k(top);
         bool x_as_m_in_alignment = fees.is_proteomic();
         if (!top_paths.empty()) {
-            INFO("All-matches consensus sequence score: " << fees.all_matches_score());
-            INFO("Empty sequence score: " << fees.empty_sequence_score());
             INFO("Best score in the current component: " << result.best_score());
             INFO("Best sequence in the current component");
             INFO(top_paths.str(0, &ccc));
