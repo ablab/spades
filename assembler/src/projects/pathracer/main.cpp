@@ -1234,7 +1234,7 @@ int aling_kmers_main(int argc, char* argv[]) {
     fees.state_limits.l100 = 50000 * state_limits_coef;
     fees.state_limits.l500 = 10000 * state_limits_coef;
 
-    bool hmm_in_aas = hmm.abc()->K == 20;
+    // bool hmm_in_aas = hmm.abc()->K == 20;
     std::vector<double> best_scores;
     for (size_t seq_id = 0; seq_id < seqs.size(); ++seq_id) {
         std::string seq = seqs[seq_id];
