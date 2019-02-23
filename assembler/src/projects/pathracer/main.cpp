@@ -571,14 +571,15 @@ size_t find_subpath(const std::vector<EdgeId> &subpath, const std::vector<EdgeId
 }
 
 std::string SuperPathInfo(const std::vector<EdgeId> &path,
-                          const std::vector<std::vector<EdgeId>> &superpaths) {
+                          const std::vector<std::vector<EdgeId>> &superpaths,
+                          const MappingF &mapping_f) {
     std::vector<std::string> results;
     for (size_t idx = 0; idx < superpaths.size(); ++idx) {
         const auto &superpath = superpaths[idx];
         size_t pos = find_subpath(path, superpath);
         if (pos != size_t(-1)) {
             std::stringstream super_path_info;
-            super_path_info << superpath << ":" << idx << "/" << pos;
+            super_path_info << edgepath2str(superpath, mapping_f) << ":" << idx << "/" << pos;
             results.push_back(super_path_info.str());
         }
     }
@@ -601,7 +602,7 @@ void ExportEdges(const Container &entries,
         std::string id = edgepath2str(path, mapping_f);
         std::string seq = MergeSequences(graph, path).str();
         // FIXME return sorting like in EdgesToSequences
-        o << ">" << id << SuperPathInfo(path, scaffold_paths) << "\n";
+        o << ">" << id << SuperPathInfo(path, scaffold_paths, mapping_f) << "\n";
         io::WriteWrapped(seq, o);
     }
 }
@@ -718,7 +719,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
         for (const auto &result : results) {
             if (result.seq.size() == 0)
                 continue;
-            auto scaffold_path_info = SuperPathInfo(result.path, scaffold_paths);
+            auto scaffold_path_info = SuperPathInfo(result.path, scaffold_paths, mapping_f);
             std::stringstream component_info;
             const std::string edge_prefix = "edge_";
             if (result.label.size() && result.label.substr(0, edge_prefix.size()) != edge_prefix) {
