@@ -863,6 +863,8 @@ void TraceHMM(const hmmer::HMM &hmm,
     fees.state_limits.l500 = 10000 * cfg.state_limits_coef;
     INFO("HMM consensus: " << fees.consensus);
     INFO("HMM " << p7hmm->name << " has " << fees.count_negative_loops() << " negative I loops over " << fees.ins.size());
+    INFO("All-matches consensus sequence score: " << fees.all_matches_score());
+    INFO("Empty sequence score: " << fees.empty_sequence_score());
 
     // INFO("Matched paths:");
     // for (const auto &kv : matched_paths) {
@@ -973,6 +975,8 @@ void TraceHMM(const hmmer::HMM &hmm,
         auto top_paths = result.top_k(top);
         bool x_as_m_in_alignment = fees.is_proteomic();
         if (!top_paths.empty()) {
+            INFO("All-matches consensus sequence score: " << fees.all_matches_score());
+            INFO("Empty sequence score: " << fees.empty_sequence_score());
             INFO("Best score in the current component: " << result.best_score());
             INFO("Best sequence in the current component");
             INFO(top_paths.str(0, &ccc));

@@ -36,6 +36,13 @@ struct Fees {
   double depth_filter_constant;
   double absolute_threshold;
 
+  double empty_sequence_score() const;
+  double all_matches_score(const std::string &seq) const;
+
+  double all_matches_score() const {
+    return all_matches_score(consensus);
+  }
+
   bool is_proteomic() const {
     return k == 20;
   }
