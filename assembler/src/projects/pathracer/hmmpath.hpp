@@ -498,9 +498,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       if (score > fees.absolute_threshold) {
         continue;
       }
-      if (!filter(current_cursor)) {
+      // if (!filter(current_cursor)) {
         q.push({current_cursor, score, best->first, best->second.second});
-      }
+      // }
     }
     TRACE(q.size() << " I values in queue m = " << m);
 
