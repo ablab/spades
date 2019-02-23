@@ -260,7 +260,7 @@ public:
       for (const auto &cdp : path_link->get_cursor_delta_trimmed_left()) {
         Event new_event{cdp.first, const_cast<const This *>(cdp.second.second.get())};
         auto new_path = qe.path->child(new_event);
-        q.push({new_path, cost + cdp.second.first});
+        q.push({new_path, cost + cdp.second.first - path_link->score()});
       }
     }
 
@@ -308,13 +308,7 @@ private:
   score_t score_;
   Event event_;
 
-  auto best_ancestor() const {
-    DEBUG_ASSERT(scores_.size(), pathtree_assert{});
-    return std::min_element(scores_.cbegin(), scores_.cend(),
-                            [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
-  }
-
-  auto get_cursor_delta_trimmed_left() const {
+  const auto& get_cursor_delta_trimmed_left() const { // FIXME rename
     // TODO Check and fix this description
     // the idea is in the following:
     // if a path is a prefix or suffix of another one,
@@ -328,29 +322,8 @@ private:
     // 2) In case of some non-terminal refs still present, remove terminal ref as well
     // We add some tolerance. If two paths have almost equal scores we keep them both
     // const double eps = 1e-7;
-    std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> result(scores_.cbegin(), scores_.cend());
-    std::sort(result.begin(), result.end(), [](const auto &p1, const auto &p2) { return p1.second.first < p2.second.first; });
-
-    for (size_t i = 0; i < result.size(); ++i) {
-      if (result[i].first.is_empty()) {
-        size_t new_len = i + 1;
-        if (new_len > 1) {
-          --new_len;
-        }
-        result.resize(new_len);
-        break;
-      }
-    }
-
-    if (result.size()) {
-      const double best_score = result[0].second.first;
-      for (size_t i = 0; i < result.size(); ++i) {
-        // delta >= 0
-        result[i].second.first -= best_score;
-      }
-    }
-
-    return result;
+    // const_cast<This*>(this)->collapse_and_trim();
+    return scores_;
   }
 
 };
