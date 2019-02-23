@@ -6,7 +6,7 @@
 
 #include "fees.hpp"
 #include "omnigraph_wrapper.hpp"
-#include "depth_filter.hpp"
+#include "cursor_neighborhood.hpp"
 #include "cursor_conn_comps.hpp"
 #include "cached_cursor.hpp"
 
@@ -829,9 +829,10 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
     }
 
     INFO("Depth search on left");
-    auto left_cursors = depth_filter::subset(left_queries, &graph, false);
+    // TODO Rename subset(...) -> ?
+    auto left_cursors = subset(left_queries, &graph, false);
     INFO("Depth search on right");
-    auto right_cursors = depth_filter::subset(right_queries, &graph, true);
+    auto right_cursors = subset(right_queries, &graph, true);
 
     INFO("Exporting cursors");
     cursors.insert(left_cursors.cbegin(), left_cursors.cend());
