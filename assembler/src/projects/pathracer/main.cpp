@@ -1054,7 +1054,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     };
 
 
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < cursor_conn_comps.size(); ++i) {
         const auto &component_cursors = cursor_conn_comps[i];
         const std::string &component_name = component_names.size() ? component_names[i] : "";
@@ -1098,7 +1098,7 @@ void hmm_main(const PathracerConfig &cfg,
 
     // Outer loop: over each query HMM in <hmmfile>.
     omp_set_num_threads(cfg.threads);
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(dynamic)
     for (size_t _i = 0; _i < hmms.size(); ++_i) {
         const auto &hmm = hmms[_i];
 
