@@ -110,24 +110,27 @@ public:
     return best_ancestor()->second.first;
   }
 
-  bool update(GraphCursor gp, double score, const ThisRef &pl) {
-    auto val = std::make_pair(score, pl);
-    auto it_fl = scores_.insert({gp, val});
-    bool inserted = it_fl.second;
-    if (!inserted) {
-      const auto &it = it_fl.first;
-      if (it->second.first > score) {
-        it->second = std::move(val);
-        DEBUG_ASSERT(scores_.size(), pathtree_assert{});
-        return true;
-      } else {
-        DEBUG_ASSERT(scores_.size(), pathtree_assert{});
-        return false;
-      }
-    } else {
-      DEBUG_ASSERT(scores_.size(), pathtree_assert{});
-      return true;
-    }
+  bool update(GraphCursor gp, score_t score, const ThisRef &pl) {
+    bool result = score < this->score();
+    scores_.push_back({gp, {score, pl}});
+    return result;
+    // auto val = std::make_pair(score, pl);
+    // auto it_fl = scores_.insert({gp, val});
+    // bool inserted = it_fl.second;
+    // if (!inserted) {
+    //   const auto &it = it_fl.first;
+    //   if (it->second.first > score) {
+    //     it->second = std::move(val);
+    //     DEBUG_ASSERT(scores_.size(), pathtree_assert{});
+    //     return true;
+    //   } else {
+    //     DEBUG_ASSERT(scores_.size(), pathtree_assert{});
+    //     return false;
+    //   }
+    // } else {
+    //   DEBUG_ASSERT(scores_.size(), pathtree_assert{});
+    //   return true;
+    // }
   }
 
   static ThisRef create() { return new This(); }
@@ -135,7 +138,7 @@ public:
 
   static ThisRef master_source() {
     ThisRef result = create();
-    result->scores_[GraphCursor()] = std::make_pair(0, nullptr);  // master_source score should be 0
+    result->update(GraphCursor(), 0, nullptr);  // master_source score should be 0
     return result;
   }
 
@@ -250,7 +253,9 @@ public:
   }
 
 private:
-  std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
+  // std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
+  std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> scores_;
+  score_t score_;
   Event event_;
 
   auto best_ancestor() const {
