@@ -17,7 +17,7 @@
 
 #include "fees.hpp"
 
-enum class EventType { NONE, MATCH, INSERTION };
+enum EventType { NONE, MATCH, INSERTION };
 using score_t = double;
 
 struct pathtree_assert : debug_assert::default_handler,
@@ -25,10 +25,9 @@ struct pathtree_assert : debug_assert::default_handler,
 
 namespace pathtree {
 
-// TODO Pack Event (shoud weigth 4 bytes only!)
 struct Event {
-  unsigned int m;  // We do not need size_t here
-  EventType type;
+  unsigned int m : 29;  // 29 bits are more than enough
+  EventType type : 2;
 };
 
 template <class GraphCursor>
@@ -278,7 +277,7 @@ public:
   }
 
   void set_emission(size_t m, EventType type) {
-    event_.m = m;
+    event_.m = static_cast<unsigned>(m);
     event_.type = type;
   }
 
