@@ -407,7 +407,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     I = std::move(Inew);  // It is necessary to copy minorly updated states
   };
 
-  auto i_loop_processing_non_negative = [&fees, &code, &absolute_threshold, context](StateSet &I, size_t m, const auto &filter) {
+  size_t not_cool_global_n_const = size_t(-1);
+  auto i_loop_processing_non_negative = [&fees, &code, &absolute_threshold, context, &not_cool_global_n_const](StateSet &I, size_t m, const auto &filter) {
     const auto &emission_fees = fees.ins[m];
     const auto &transfer_fee = fees.t[m][p7H_II];
 
@@ -438,11 +439,14 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
     std::unordered_set<GraphCursor> processed;
     size_t taken_values = 0;
-    while (!q.empty()) {
+    while (!q.empty() && processed.size() < not_cool_global_n_const) {
       QueueElement elt = q.top();
       q.pop();
       ++taken_values;
 
+      if (elt.score > absolute_threshold) {
+        break;
+      }
       auto it_fl = processed.insert(elt.current_cursor);
       if (!it_fl.second) { // Already there
         continue;
@@ -532,13 +536,13 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     TRACE("# states " << m << " => " << n_of_states);
     size_t top = n_of_states;
     if (m > 25) {
-      top = fees.state_limits.l25;
+      not_cool_global_n_const = top = fees.state_limits.l25;
     }
     if (m > 100) {
-      top = fees.state_limits.l100;
+      not_cool_global_n_const = top = fees.state_limits.l100;
     }
     if (m > 500) {
-      top = fees.state_limits.l500;
+      not_cool_global_n_const = top = fees.state_limits.l500;
     }
 
     if (m >= n) {
