@@ -430,9 +430,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       if (score > fees.absolute_threshold) {
         continue;
       }
-      if (!filter(current_cursor)) {
+      // if (!filter(current_cursor)) {
         q.push({current_cursor, score});
-      }
+      // }
     }
     TRACE(q.size() << " I values in queue m = " << m);
 
@@ -531,9 +531,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
         }
         char letter = next.letter(context);
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
-        if (!filter(next)) {
+        // if (!filter(next)) {
           q.push({next, cost, elt.current_cursor, id});
-        }
+        // }
       }
     }
 
@@ -599,7 +599,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     }
     return !depth.depth_at_least(cursor, required_cursor_depth, context);
   };
-  // FIXME Do we really need depth filter on each iteration? Probably not
 
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
   i_loop_processing(I, 0, depth_filter_cursor);  // Do we really need I at the beginning???
