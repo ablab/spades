@@ -103,17 +103,17 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
 
 public:
   double score() const {
-    if (scores_.size() == 0) {
-      return std::numeric_limits<double>::infinity();
-    }
-
-    return best_ancestor()->second.first;
+    return score_;
   }
 
   bool update(GraphCursor gp, score_t score, const ThisRef &pl) {
-    bool result = score < this->score();
     scores_.push_back({gp, {score, pl}});
-    return result;
+    if (score_ > score) {
+      score_ = score;
+      return true;
+    } else {
+      return false;
+    }
     // auto val = std::make_pair(score, pl);
     // auto it_fl = scores_.insert({gp, val});
     // bool inserted = it_fl.second;
@@ -131,6 +131,28 @@ public:
     //   DEBUG_ASSERT(scores_.size(), pathtree_assert{});
     //   return true;
     // }
+  }
+
+  PathLink() : score_{std::numeric_limits<score_t>::infinity()} {}
+
+  void collapse_and_trim() {
+    sort_by(scores_.begin(), scores_.end(), [](const auto &p) { return std::make_tuple(p.first, p.second.first); }); // TODO prefer matchs to insertions in case of eveness
+    auto it = unique_copy_by(scores_.cbegin(), scores_.cend(), scores_.begin(),
+                             [](const auto &p){ return p.first; });
+    scores_.resize(std::distance(scores_.begin(), it));
+
+    sort_by(scores_.begin(), scores_.end(), [](const auto &p) { return p.second.first; });
+
+    for (size_t i = 0; i < scores_.size(); ++i) {
+      if (scores_[i].first.is_empty()) {
+        size_t new_len = i + 1;
+        if (new_len > 1) {
+          --new_len;
+        }
+        scores_.resize(new_len);
+        break;
+      }
+    }
   }
 
   static ThisRef create() { return new This(); }
@@ -252,18 +274,6 @@ public:
     return event_;
   }
 
-private:
-  // std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
-  std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> scores_;
-  score_t score_;
-  Event event_;
-
-  auto best_ancestor() const {
-    DEBUG_ASSERT(scores_.size(), pathtree_assert{});
-    return std::min_element(scores_.cbegin(), scores_.cend(),
-                            [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
-  }
-
   template <typename Function>
   auto apply(const Function &function) {
     std::unordered_set<const This *> checked;
@@ -288,6 +298,18 @@ private:
         }
       }
     }
+  }
+
+private:
+  // std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
+  std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> scores_;
+  score_t score_;
+  Event event_;
+
+  auto best_ancestor() const {
+    DEBUG_ASSERT(scores_.size(), pathtree_assert{});
+    return std::min_element(scores_.cbegin(), scores_.cend(),
+                            [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
   }
 
   auto get_cursor_delta_trimmed_left() const {

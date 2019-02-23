@@ -59,6 +59,10 @@ class Graph {
       return edge_id_;
     }
 
+    bool operator<(const GraphCursor &other) const {
+      return std::make_tuple(edge(), position_) < std::make_tuple(other.edge(), other.position_);
+    }
+
     bool operator==(const GraphCursor &other) const {
       return (edge_id_ == other.edge_id_) && (position_ == other.position_);
     }
@@ -379,6 +383,10 @@ class DBGraph {
 
         // assert(pgraph_->edges_[old_id][old_pos] == pgraph_->edges_[edge_id_][position_]);
       }
+    }
+
+    bool operator<(const GraphCursor &other) const {
+      return std::make_tuple(edge_id_, position_) < std::make_tuple(other.edge_id_, other.position_);
     }
 
     void normalize_suffix_() {

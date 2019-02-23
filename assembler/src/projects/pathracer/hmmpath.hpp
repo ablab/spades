@@ -561,6 +561,13 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       depth_filtered += D.filter_key(depth_filter_cursor);
     }
 
+    // collapse
+    for (auto &kv : I) {
+      kv.second->collapse_and_trim();
+    }
+    for (auto &kv : M) {
+      kv.second->collapse_and_trim();
+    }
     if (m >= n) {
       INFO("depth-filtered " << depth_filtered << ", positions left = " << positions_left << " states m = " << m);
       INFO("I = " << I.size() << " M = " << M.size() << " D = " << D.size());
@@ -585,6 +592,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   update_sink(D, fees.t[fees.M][p7H_DM]);
   update_sink(I, fees.t[fees.M][p7H_IM]);  // Do we really need I at the end?
   update_sink(M, fees.t[fees.M][p7H_MM]);
+  sink.collapse_and_trim();
+  sink.apply([](auto &p) { const_cast<PathLink<GraphCursor>&>(p).collapse_and_trim(); });
 
   INFO(sink.object_count_current() << " pathlink objects");
   INFO(sink.object_count_max() << " pathlink objects maximum");

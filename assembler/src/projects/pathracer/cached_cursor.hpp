@@ -6,10 +6,10 @@
 
 #pragma once
 
+#include <cstdint>
 #include <limits>
 #include <unordered_map>
 #include <vector>
-#include <cstdint>
 
 #include "common/utils/verify.hpp"
 
@@ -19,7 +19,7 @@ class CachedCursorContext;
 
 class CachedCursor {
 public:
-    using Context = const CachedCursorContext*;
+    using Context = const CachedCursorContext *;
     CachedCursor(Index index = Index(-1)) : index_{index} {}
     bool is_empty() const { return index_ == Index(-1); }
     bool operator==(const CachedCursor &other) const { return index_ == other.index_; }
@@ -39,6 +39,8 @@ struct hash<CachedCursor> {
 };
 
 }  // namespace std
+
+inline bool operator<(const CachedCursor &c1, const CachedCursor &c2) { return c1.index() < c2.index(); }
 
 inline std::ostream &operator<<(std::ostream &os, const CachedCursor &c) {
     if (c.is_empty()) {
@@ -107,14 +109,9 @@ private:
 
 // FIXME add cpp
 
-inline char CachedCursor::letter(Context context) const {
-    return context->letters_[index_];
-}
+inline char CachedCursor::letter(Context context) const { return context->letters_[index_]; }
 
-
-inline const std::vector<CachedCursor> &CachedCursor::next(Context context) const {
-    return context->nexts_[index_];
-}
+inline const std::vector<CachedCursor> &CachedCursor::next(Context context) const { return context->nexts_[index_]; }
 
 // It is not required for find_best_path
 // inline const std::vector<CachedCursor> &CachedCursor::prev(Context context) const {
