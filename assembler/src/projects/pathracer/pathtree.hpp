@@ -31,6 +31,20 @@ struct Event {
   EventType type;
 };
 
+template <class GraphCursor>
+std::string path2string(const std::vector<GraphCursor> &path,
+                               typename GraphCursor::Context context) {
+  std::string result;
+  result.reserve(path.size());
+
+  for (size_t i = 0; i < path.size(); ++i) {
+    DEBUG_ASSERT(!path[i].is_empty(), pathtree_assert{});
+
+    result += path[i].letter(context);
+  }
+  return result;
+}
+
 template <typename GraphCursor>
 struct AnnotatedPath {
   std::vector<GraphCursor> path;
@@ -42,6 +56,38 @@ struct AnnotatedPath {
   size_t size() const {
     DEBUG_ASSERT(path.size() == events.size(), pathtree_assert{});
     return path.size();
+  }
+
+  std::string alignment(const hmm::Fees &fees, typename GraphCursor::Context context) const {
+    size_t m = fees.M;
+    std::string s;
+    size_t prev_position = 0;
+    DEBUG_ASSERT(path.size() == events.size(), pathtree_assert{});
+    for (size_t i = 0; i < path.size(); ++i) {
+      DEBUG_ASSERT(!path[i].is_empty(), pathtree_assert{});
+
+      if (events[i].type == EventType::NONE) {
+        ERROR("Position: " << i);
+        ERROR("Path: " << str(context));
+        ERROR("Alignment:" << s);
+      }
+      DEBUG_ASSERT(events[i].type != EventType::NONE, pathtree_assert{});
+      for (size_t j = prev_position + 1; j < events[i].m; ++j) {
+        s += '-';
+      }
+      prev_position = events[i].m;
+      s += events[i].type == EventType::MATCH ? (fees.consensus[events[i].m - 1] == path[i].letter(context) ? 'M' : 'X') : 'I';
+    }
+
+    // Add trailing gaps (-)
+    for (size_t j = prev_position + 1; j <= m; ++j) {
+      s += '-';
+    }
+    return s;
+  }
+
+  std::string str(typename GraphCursor::Context context) const {
+    return path2string(path, context);
   }
 };
 
@@ -287,73 +333,8 @@ class PathSet {
     bool empty() const { return paths_.empty(); }
     auto operator[](size_t n) const { return paths_[n]; }
 
-    template <class Cursor>
-    static std::string str(const std::vector<Cursor> &path,
-                           typename Cursor::Context context) {
-      std::string s;
-      for (size_t i = 0; i < path.size(); ++i) {
-        DEBUG_ASSERT(!path[i].is_empty(), pathtree_assert{});
-
-        s += path[i].letter(context);
-      }
-      return s;
-    }
-
-    static std::string compress_alignment(const std::string &s) {
-      size_t count = 0;
-      char prev_c = '\0';
-      std::string result;
-      for (size_t i = 0; i <= s.size(); ++i) {
-        char c = s[i];
-        if (c == prev_c) {
-          ++count;
-        } else {
-          if (prev_c != '\0') {
-            result += std::to_string(count);
-            if (prev_c == '-') {
-              prev_c = 'D';
-            }
-            result += prev_c;
-          }
-          count = 1;
-        }
-        prev_c = c;
-      }
-
-      return result;
-    }
-
-    static std::string alignment(const AnnotatedPath<GraphCursor> &apath, const hmm::Fees &fees,
-                                 typename GraphCursor::Context context) {
-      size_t m = fees.M;
-      std::string s;
-      size_t prev_position = 0;
-      DEBUG_ASSERT(apath.path.size() == apath.events.size(), pathtree_assert{});
-      for (size_t i = 0; i < apath.path.size(); ++i) {
-        DEBUG_ASSERT(!apath.path[i].is_empty(), pathtree_assert{});
-
-        if (apath.events[i].type == EventType::NONE) {
-          ERROR("Position: " << i);
-          ERROR("Path: " << str(apath.path, context));
-          ERROR("Alignment:" << s);
-        }
-        DEBUG_ASSERT(apath.events[i].type != EventType::NONE, pathtree_assert{});
-        for (size_t j = prev_position + 1; j < apath.events[i].m; ++j) {
-          s += '-';
-        }
-        prev_position = apath.events[i].m;
-        s += apath.events[i].type == EventType::MATCH ? (fees.consensus[apath.events[i].m - 1] == apath.path[i].letter(context) ? 'M' : 'X') : 'I';
-      }
-
-      // Add trailing gaps (-)
-      for (size_t j = prev_position + 1; j <= m; ++j) {
-          s += '-';
-      }
-      return s;
-    }
-
-    std::string str(size_t n, typename GraphCursor::Context context) const { return str(paths_[n].path, context); }
-    std::string alignment(size_t n, const hmm::Fees &fees, typename GraphCursor::Context context) const { return alignment(paths_[n], fees, context); }
+    std::string str(size_t n, typename GraphCursor::Context context) const { return path2string(paths_[n].path, context); }
+    std::string alignment(size_t n, const hmm::Fees &fees, typename GraphCursor::Context context) const { return paths_[n].alignment(fees, context); }
 
    private:
     std::vector<AnnotatedPath<GraphCursor>> paths_;

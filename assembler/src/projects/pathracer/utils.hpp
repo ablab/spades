@@ -110,3 +110,27 @@ inline bool is_dir(const std::string &path) {
   struct stat sb;
   return (stat(path.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode));
 }
+
+inline std::string compress_alignment(const std::string &alignment) {
+    size_t count = 0;
+    char prev_c = '\0';
+    std::string result;
+    for (size_t i = 0; i <= alignment.size(); ++i) {
+        char c = alignment[i];
+        if (c == prev_c) {
+            ++count;
+        } else {
+            if (prev_c != '\0') {
+                result += std::to_string(count);
+                if (prev_c == '-') {
+                    prev_c = 'D';
+                }
+                result += prev_c;
+            }
+            count = 1;
+        }
+        prev_c = c;
+    }
+
+    return result;
+}
