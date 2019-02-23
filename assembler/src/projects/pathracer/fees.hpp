@@ -34,6 +34,7 @@ struct Fees {
   struct {size_t l25, l100, l500; } state_limits;
   double depth_filter_rate;
   double depth_filter_constant;
+  double absolute_threshold;
 
   bool is_proteomic() const {
     return k == 20;
@@ -49,6 +50,7 @@ struct Fees {
     state_limits.l500 = 10000;
     depth_filter_rate = 0.66;
     depth_filter_constant = 20;
+    absolute_threshold = 250.0;
   }
 
   bool check_i_loop(size_t i) const;
