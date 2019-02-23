@@ -212,7 +212,7 @@ public:
         events.push_back(event.path_link->emission());
       }
 
-      return AnnotatedPath<GraphCursor>{path, cost, events};
+      return AnnotatedPath<GraphCursor>{path, -cost, events}; // FIXME sign!!!!!
     };
 
     std::unordered_map<const This*, std::unordered_map<GraphCursor, const This*>> best_edges;

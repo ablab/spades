@@ -41,25 +41,25 @@ DigitalCodind::DigitalCodind()
 }
 
 double Fees::empty_sequence_score() const {
-  double score = 0;
-  score += t[0][p7H_MD];
+  double cost = 0;
+  cost += t[0][p7H_MD];
   for (size_t i = 1; i < M; ++i) {
-    score += t[i][p7H_DD];
+    cost += t[i][p7H_DD];
   }
-  score += t[M][p7H_DM];
-  return score;
+  cost += t[M][p7H_DM];
+  return -cost;
 }
 
 double Fees::all_matches_score(const std::string &seq) const {
   VERIFY(seq.size() == M);
-  double score = 0;
+  double cost = 0;
   for (size_t i = 0; i <= M; ++i) {
-    score += t[i][p7H_MM];
+    cost += t[i][p7H_MM];
   }
   for (size_t i = 0; i < M; ++i) {
-    score += mat[i + 1][code(seq[i])];
+    cost += mat[i + 1][code(seq[i])];
   }
-  return score;
+  return -cost;
 }
 
 bool Fees::check_i_loop(size_t i) const {
