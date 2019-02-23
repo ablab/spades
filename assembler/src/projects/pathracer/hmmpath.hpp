@@ -669,6 +669,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       auto scores = M.scores();
       std::sort(scores.begin(), scores.end());
       if (scores.size() > 100) { scores.resize(100); }
+      for (auto &score : scores) {
+        score = -score;
+      }
       INFO("Top scores: " << scores);
       n <<= 1;
     }
