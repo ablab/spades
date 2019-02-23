@@ -33,7 +33,7 @@ struct Event {
 
 template <class GraphCursor>
 std::string path2string(const std::vector<GraphCursor> &path,
-                               typename GraphCursor::Context context) {
+                        typename GraphCursor::Context context) {
   std::string result;
   result.reserve(path.size());
 
