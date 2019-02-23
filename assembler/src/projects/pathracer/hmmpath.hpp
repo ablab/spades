@@ -331,7 +331,6 @@ template <typename GraphCursor>
 PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
                                     const std::vector<GraphCursor> &initial_original,
                                     typename GraphCursor::Context context) {
-  const double absolute_threshold = 250.0;
   using StateSet = StateSet<GraphCursor>;
   using DeletionStateSet = DeletionStateSet<GraphCursor>;
   const auto &code = fees.code;
@@ -408,7 +407,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   size_t not_cool_global_n_const = size_t(-1);
-  auto i_loop_processing_non_negative_formally_correct_but_slow_and_potentially_leaking = [&fees, &code, &absolute_threshold, context, &not_cool_global_n_const](StateSet &I, size_t m, const auto &filter) {
+  auto i_loop_processing_non_negative_formally_correct_but_slow_and_potentially_leaking = [&fees, &code, context, &not_cool_global_n_const](StateSet &I, size_t m, const auto &filter) {
     const auto &emission_fees = fees.ins[m];
     const auto &transfer_fee = fees.t[m][p7H_II];
 
@@ -428,7 +427,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     for (const auto &kv : I) {
       const auto &current_cursor = kv.first;
       const score_t &score = kv.second->score();
-      if (score > absolute_threshold) {
+      if (score > fees.absolute_threshold) {
         continue;
       }
       if (!filter(current_cursor)) {
@@ -444,7 +443,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       q.pop();
       ++taken_values;
 
-      if (elt.score > absolute_threshold) {
+      if (elt.score > fees.absolute_threshold) {
         break;
       }
       auto it_fl = processed.insert(elt.current_cursor);
@@ -472,7 +471,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     // Cycle references may appear =(
   };
 
-  auto i_loop_processing_non_negative = [&fees, &code, &absolute_threshold, context](StateSet &I, size_t m, const auto &filter) {
+  auto i_loop_processing_non_negative = [&fees, &code, context](StateSet &I, size_t m, const auto &filter) {
     const auto &emission_fees = fees.ins[m];
     const auto &transfer_fee = fees.t[m][p7H_II];
 
@@ -496,7 +495,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       const auto &current_cursor = kv.first;
       auto best = kv.second->best_ancestor();
       const auto &score = best->second.first;
-      if (score > absolute_threshold) {
+      if (score > fees.absolute_threshold) {
         continue;
       }
       if (!filter(current_cursor)) {
@@ -512,7 +511,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       q.pop();
       ++taken_values;
 
-      if (elt.score > absolute_threshold) {
+      if (elt.score > fees.absolute_threshold) {
         break;
       }
 
@@ -622,9 +621,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       INFO("# states " << m << " => " << n_of_states << ": I = " << I.size() << " M = " << M.size() << " D = " << D.size());
     }
 
-    I.score_filter(top, absolute_threshold);
-    M.score_filter(top, absolute_threshold);
-    D.score_filter(top, absolute_threshold);
+    I.score_filter(top, fees.absolute_threshold);
+    M.score_filter(top, fees.absolute_threshold);
+    D.score_filter(top, fees.absolute_threshold);
 
     size_t depth_filtered = 0;
     if (m % 8 == 0) {
