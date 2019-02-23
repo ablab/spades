@@ -1,6 +1,8 @@
 #include "fees.hpp"
 
 #include "common/hmm/hmmfile.hpp"
+#include "utils/logger/logger.hpp"
+#include "common/utils/verify.hpp"
 
 #include <algorithm>
 
@@ -19,7 +21,7 @@ extern "C" {
 namespace hmm {
 
 static void to_upper_case(std::string &s) {
-  for (char &c: s) c = std::toupper(c);
+  for (char &c: s) c = static_cast<char>(std::toupper(c));
 }
 
 DigitalCodind::DigitalCodind(const ESL_ALPHABET *abc)
@@ -36,6 +38,28 @@ DigitalCodind::DigitalCodind()
   for (size_t i = 0; i < alphabet.length(); ++i) {
     inmap_[alphabet[i]] = i;
   }
+}
+
+double Fees::empty_sequence_score() const {
+  double score = 0;
+  score += t[0][p7H_MD];
+  for (size_t i = 1; i < M; ++i) {
+    score += t[i][p7H_DD];
+  }
+  score += t[M][p7H_DM];
+  return score;
+}
+
+double Fees::all_matches_score(const std::string &seq) const {
+  VERIFY(seq.size() == M);
+  double score = 0;
+  for (size_t i = 0; i <= M; ++i) {
+    score += t[i][p7H_MM];
+  }
+  for (size_t i = 0; i < M; ++i) {
+    score += mat[i + 1][code(seq[i])];
+  }
+  return score;
 }
 
 bool Fees::check_i_loop(size_t i) const {
@@ -208,3 +232,5 @@ Fees fees_from_file(const std::string &filename) {
 }
 
 };
+
+// vim: set ts=2 sw=2 et :
