@@ -593,7 +593,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   update_sink(I, fees.t[fees.M][p7H_IM]);  // Do we really need I at the end?
   update_sink(M, fees.t[fees.M][p7H_MM]);
   sink.collapse_and_trim();
-  sink.apply([](auto &p) { const_cast<PathLink<GraphCursor>&>(p).collapse_and_trim(); });
+  // sink.apply([](auto &p) { const_cast<PathLink<GraphCursor>&>(p).collapse_and_trim(); });
 
   INFO(sink.object_count_current() << " pathlink objects");
   INFO(sink.object_count_max() << " pathlink objects maximum");
