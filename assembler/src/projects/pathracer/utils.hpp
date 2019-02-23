@@ -107,16 +107,19 @@ inline bool ends_with(const std::string &s, const std::string &p) {
 }
 
 inline bool is_dir(const std::string &path) {
-  struct stat sb;
-  return (stat(path.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode));
+    struct stat sb;
+    return (stat(path.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode));
 }
 
-inline std::string compress_alignment(const std::string &alignment) {
+inline std::string compress_alignment(const std::string &alignment, bool x_as_m = false) {
     size_t count = 0;
     char prev_c = '\0';
     std::string result;
     for (size_t i = 0; i <= alignment.size(); ++i) {
         char c = alignment[i];
+        if (x_as_m && c == 'X') {
+            c = 'M';
+        }
         if (c == prev_c) {
             ++count;
         } else {
