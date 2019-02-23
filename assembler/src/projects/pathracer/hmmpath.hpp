@@ -579,8 +579,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   StateSet I, M;
   DeletionStateSet D;
   const auto empty = GraphCursor();
-  auto source = PathLink<GraphCursor>::master_source();
-  M[empty] = source;  // TODO Implement and use empty Trajectory() instead of Trajectory(0)
+  auto source = PathLink<GraphCursor>::create_source();
+  M[empty] = source;
 
   INFO("The number of links (M): " << fees.M);
 
