@@ -137,6 +137,12 @@ public:
     scores_.reserve(8);
   }
 
+  auto best_ancestor() const {
+    DEBUG_ASSERT(scores_.size(), pathtree_assert{});
+    return std::min_element(scores_.cbegin(), scores_.cend(),
+                            [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
+  }
+
   void collapse_and_trim() {
     // Collapse left
     sort_by(scores_.begin(), scores_.end(), [](const auto &p) { return std::make_tuple(p.first, p.second.first); }); // TODO prefer matchs to insertions in case of eveness

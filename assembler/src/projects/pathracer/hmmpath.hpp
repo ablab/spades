@@ -408,7 +408,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   size_t not_cool_global_n_const = size_t(-1);
-  auto i_loop_processing_non_negative = [&fees, &code, &absolute_threshold, context, &not_cool_global_n_const](StateSet &I, size_t m, const auto &filter) {
+  auto i_loop_processing_non_negative_formally_correct_but_slow_and_potentially_leaking = [&fees, &code, &absolute_threshold, context, &not_cool_global_n_const](StateSet &I, size_t m, const auto &filter) {
     const auto &emission_fees = fees.ins[m];
     const auto &transfer_fee = fees.t[m][p7H_II];
 
@@ -463,6 +463,78 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
             q.push({next, cost});
           }
         // }
+      }
+    }
+
+    TRACE(processed.size() << " states processed in I-loop m = " << m);
+    TRACE(taken_values << " values extracted from queue m = " << m);
+    // TODO update secondary references.
+    // Cycle references may appear =(
+  };
+
+  auto i_loop_processing_non_negative = [&fees, &code, &absolute_threshold, context](StateSet &I, size_t m, const auto &filter) {
+    const auto &emission_fees = fees.ins[m];
+    const auto &transfer_fee = fees.t[m][p7H_II];
+
+    TRACE(I.size() << " I states initially present in I-loop m = " << m);
+    std::unordered_set<GraphCursor> updated;
+
+    struct QueueElement {
+      GraphCursor current_cursor;
+      double score;
+      GraphCursor source_cursor;
+      PathLinkRef<GraphCursor> source_state;
+
+      bool operator<(const QueueElement &other) const {
+        return this->score > other.score;
+      }
+    };
+
+    std::priority_queue<QueueElement> q;
+
+    for (const auto &kv : I) {
+      const auto &current_cursor = kv.first;
+      auto best = kv.second->best_ancestor();
+      const auto &score = best->second.first;
+      if (score > absolute_threshold) {
+        continue;
+      }
+      if (!filter(current_cursor)) {
+        q.push({current_cursor, score, best->first, best->second.second});
+      }
+    }
+    TRACE(q.size() << " I values in queue m = " << m);
+
+    std::unordered_set<GraphCursor> processed;
+    size_t taken_values = 0;
+    while(!q.empty()) {
+      QueueElement elt = q.top();
+      q.pop();
+      ++taken_values;
+
+      if (elt.score > absolute_threshold) {
+        break;
+      }
+
+      if (processed.count(elt.current_cursor)) {
+        continue;
+      }
+
+      // add processed.size() limit
+
+      processed.insert(elt.current_cursor);
+
+      I.update(elt.current_cursor, elt.score, elt.source_cursor, elt.source_state);  // TODO return iterator to inserted/updated elt
+      const auto &id = I[elt.current_cursor];
+      for (const auto &next : elt.current_cursor.next(context)) {
+        if (processed.count(next)) {
+          continue;
+        }
+        char letter = next.letter(context);
+        double cost = elt.score + transfer_fee + emission_fees[code(letter)];
+        if (!filter(next)) {
+          q.push({next, cost, elt.current_cursor, id});
+        }
       }
     }
 
