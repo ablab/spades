@@ -26,8 +26,9 @@ struct pathtree_assert : debug_assert::default_handler,
 namespace pathtree {
 
 struct Event {
-  unsigned int m : 29;  // 29 bits are more than enough
+  unsigned m : 30;  // 30 bits are more than enough
   EventType type : 2;
+  static const unsigned m_mask = unsigned(-1) >> 2;
 };
 
 template <class GraphCursor>
@@ -277,7 +278,7 @@ public:
   }
 
   void set_emission(size_t m, EventType type) {
-    event_.m = static_cast<unsigned>(m);
+    event_.m = static_cast<unsigned>(m & Event::m_mask);
     event_.type = type;
   }
 
