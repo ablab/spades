@@ -569,10 +569,13 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   //   INFO("Cursor " << cursor << "Depth: " << depth_naive.depth(cursor, context));
   // }
   double required_cursor_depth = static_cast<double>(fees.M) * fees.depth_filter_rate - fees.depth_filter_constant;
+  if (fees.local) {
+    required_cursor_depth = fees.minimal_match_length;
+  }
   INFO("Depth required: " << required_cursor_depth);
   std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
                [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, required_cursor_depth,
-                                                                            context); });  // FIXME Correct this condition for local-local matching
+                                                                            context); });
   INFO("Initial set size: " << initial.size());
 
   StateSet I, M;
@@ -580,12 +583,20 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   auto source = PathLink<GraphCursor>::create_source();
   auto sink = PathLink<GraphCursor>::create();
   M[GraphCursor()] = source;
+  auto update_sink = [&sink](const auto &S, double fee) {
+    for (const auto &state : S.states()) {
+      sink->update(state.cursor, state.score + fee, state.plink);
+    }
+  };
 
   INFO("The number of links (M): " << fees.M);
 
   size_t positions_left = fees.M;
   auto depth_filter_cursor = [&](const GraphCursor &cursor) -> bool {
     double required_cursor_depth = static_cast<double>(positions_left) * fees.depth_filter_rate - fees.depth_filter_constant;
+    if (fees.local) {
+      required_cursor_depth = 0;
+    }
     return !depth.depth_at_least(cursor, required_cursor_depth, context);
   };
   // FIXME Do we really need depth filter on each iteration? Probably not
@@ -597,7 +608,11 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   for (size_t m = 1; m <= fees.M; ++m) {
     positions_left = fees.M - m;
 
+    if (fees.local && m > 1) {
+      D.update(GraphCursor(), fees.cleavage_cost, source);
+    }
     dm_new(D, M, I, m);
+
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
     i_loop_processing(I, m, depth_filter_cursor);
@@ -643,6 +658,11 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       kv.second->collapse_and_trim();
     }
 
+    if (fees.local) {
+      update_sink(D, fees.cleavage_cost);
+      sink->collapse_and_trim();
+    }
+
     if (m >= n) {
       INFO("depth-filtered " << depth_filtered << ", positions left = " << positions_left << " states m = " << m);
       INFO("I = " << I.size() << " M = " << M.size() << " D = " << D.size());
@@ -657,11 +677,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   INFO("Max stack size in Depth: " << depth.max_stack_size());
 
   PathSet<GraphCursor> result(sink);
-  auto update_sink = [&sink](const auto &S, double fee) {
-    for (const auto &state : S.states()) {
-      sink->update(state.cursor, state.score + fee, state.plink);
-    }
-  };
 
   update_sink(D, fees.t[fees.M][p7H_DM]);
   update_sink(I, fees.t[fees.M][p7H_IM]);  // Do we really need I at the end?
