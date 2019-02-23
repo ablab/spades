@@ -867,7 +867,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     fees.state_limits.l500 = 10000 * cfg.state_limits_coef;
     fees.local = cfg.local;
     INFO("HMM consensus: " << fees.consensus);
-    INFO("HMM " << p7hmm->name << " has " << fees.count_negative_loops() << " negative I loops over " << fees.ins.size());
+    INFO("HMM " << p7hmm->name << " has " << fees.count_negative_loops() << " positive-score I-loops over " << fees.ins.size());
     INFO("All-matches consensus sequence score: " << fees.all_matches_score());
     INFO("Empty sequence score: " << fees.empty_sequence_score());
 
