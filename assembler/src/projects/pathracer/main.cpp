@@ -975,16 +975,16 @@ void TraceHMM(const hmmer::HMM &hmm,
             INFO("Best score in the current component: " << result.best_score());
             INFO("Best sequence in the current component");
             INFO(top_paths.str(0, &ccc));
-            INFO("Alignment: " << top_paths.compress_alignment(top_paths.alignment(0, fees, &ccc)));
+            INFO("Alignment: " << compress_alignment(top_paths.alignment(0, fees, &ccc)));
         }
 
         for (const auto& annotated_path : top_paths) {
             VERIFY(annotated_path.path.size());
-            auto seq = top_paths.str(annotated_path.path, &ccc);
+            std::string seq = annotated_path.str(&ccc);
             auto unpacked_path = ccc.UnpackPath(annotated_path.path, initial);
-            auto alignment = top_paths.compress_alignment(top_paths.alignment(annotated_path, fees, &ccc));
+            auto alignment = compress_alignment(annotated_path.alignment(fees, &ccc));
             auto nucl_path = to_nucl_path(unpacked_path);
-            std::string nucl_seq = top_paths.str(nucl_path, context);
+            std::string nucl_seq = pathtree::path2string(nucl_path, context);
             DEBUG_ASSERT(check_path_continuity(nucl_path, context), main_assert{}, debug_assert::level<2>{});
             auto edge_path = to_path(nucl_path);
             DEBUG_ASSERT(!edge_path.empty(), main_assert{});
