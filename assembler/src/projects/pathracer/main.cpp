@@ -772,7 +772,7 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
     std::vector<std::vector<EdgeId>> to_rescore_ordered(to_rescore.cbegin(), to_rescore.cend());
     to_rescore.clear();
     sort_by(to_rescore_ordered.begin(), to_rescore_ordered.end(),
-            [&](const auto &path){ return std::make_tuple(path2score[path], path); });
+            [&](const auto &path){ return std::make_tuple(-path2score[path], path); });
 
     // TODO export paths along with their best score
     ExportEdges(to_rescore_ordered, graph, scaffold_paths,
