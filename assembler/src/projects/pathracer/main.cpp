@@ -580,36 +580,27 @@ public:
         }
     }
 
-    const std::vector<size_t> &indices(EdgeId e) const {
-        const static std::vector<size_t> empty;
+    const auto &operator[](size_t i) const { return superpaths_[i]; }
+    size_t size() const { return superpaths_.size(); }
+    bool empty() const { return superpaths_.empty(); }
+    auto cbegin() const { return superpaths_.cbegin(); }
+    auto cend() const { return superpaths_.cend(); }
 
-        auto it = edge2paths_.find(e);
-        if (it != edge2paths_.end()) {
-            return it->second;
-        } else {
-            return empty;
+    std::vector<std::pair<size_t, size_t>> query(const std::vector<EdgeId> &q) const {
+        std::vector<std::pair<size_t, size_t>> result;
+        for (size_t i : candidates(q)) {
+            size_t pos = find_subpath(q, superpaths_[i]);
+            if (pos != size_t(-1)) {
+                result.push_back({i, pos});
+            }
         }
+
+        return result;
     }
 
-    const auto& operator[](size_t i) const {
-        return superpaths_[i];
-    }
-
-    size_t size() const {
-        return superpaths_.size();
-    }
-
-    bool empty() const {
-        return superpaths_.empty();
-    }
-
-    auto cbegin() const {
-        return superpaths_.cbegin();
-    }
-
-    auto cend() const {
-        return superpaths_.cend();
-    }
+private:
+    std::vector<std::vector<EdgeId>> superpaths_;
+    std::unordered_map<EdgeId, std::vector<size_t>> edge2paths_;
 
     std::vector<size_t> candidates(const std::vector<EdgeId> &query) const {
         std::vector<size_t> result;
@@ -627,21 +618,17 @@ public:
         return result;
     }
 
-    std::vector<std::pair<size_t, size_t>> query(const std::vector<EdgeId> &q) const {
-        std::vector<std::pair<size_t, size_t>> result;
-        for (size_t i : candidates(q)) {
-            size_t pos = find_subpath(q, superpaths_[i]);
-            if (pos != size_t(-1)) {
-                result.push_back({i, pos});
-            }
-        }
+    const std::vector<size_t> &indices(EdgeId e) const {
+        const static std::vector<size_t> empty;
 
-        return result;
+        auto it = edge2paths_.find(e);
+        if (it != edge2paths_.end()) {
+            return it->second;
+        } else {
+            return empty;
+        }
     }
 
-private:
-    std::vector<std::vector<EdgeId>> superpaths_;
-    std::unordered_map<EdgeId, std::vector<size_t>> edge2paths_;
 };
 
 std::string SuperPathInfo(const std::vector<EdgeId> &path,
