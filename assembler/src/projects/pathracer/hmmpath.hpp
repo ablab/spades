@@ -431,9 +431,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       if (score > fees.absolute_threshold) {
         continue;
       }
-      // if (!filter(current_cursor)) {
+      if (!filter(current_cursor)) {
         q.push({current_cursor, score});
-      // }
+      }
     }
     TRACE(q.size() << " I values in queue m = " << m);
 
@@ -456,13 +456,13 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       for (const auto &next : elt.current_cursor.next(context)) {
         char letter = next.letter(context);
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
-        // if (!filter(next)) {
+        if (!filter(next)) {
           bool updated = I.update(next, cost, elt.current_cursor, id);
           // FIXME potential memory leak here!
           if (updated) {
             q.push({next, cost});
           }
-        // }
+        }
       }
     }
 
@@ -499,9 +499,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       if (score > fees.absolute_threshold) {
         continue;
       }
-      // if (!filter(current_cursor)) {
+      if (!filter(current_cursor)) {
         q.push({current_cursor, score, best->first, best->second.second});
-      // }
+      }
     }
     TRACE(q.size() << " I values in queue m = " << m);
 
@@ -524,14 +524,14 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       I.update(elt.current_cursor, elt.score, elt.source_cursor, elt.source_state);  // TODO return iterator to inserted/updated elt
       const auto &id = I[elt.current_cursor];
       for (const auto &next : elt.current_cursor.next(context)) {
-        // if (processed.count(next)) {
-        //   continue;
-        // }
+        if (processed.count(next)) {
+          continue;
+        }
         char letter = next.letter(context);
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
-        // if (!filter(next)) {
+        if (!filter(next)) {
           q.push({next, cost, elt.current_cursor, id});
-        // }
+        }
       }
     }
 
