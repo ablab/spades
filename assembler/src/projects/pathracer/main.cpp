@@ -9,6 +9,7 @@
 #include "cursor_neighborhood.hpp"
 #include "cursor_conn_comps.hpp"
 #include "cached_cursor.hpp"
+#include "superpath_index.hpp"
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
@@ -236,6 +237,9 @@ std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<AAGraphCurso
 using debruijn_graph::EdgeId;
 using debruijn_graph::VertexId;
 using debruijn_graph::ConjugateDeBruijnGraph;
+
+using SuperpathIndex = superpath_index::SuperpathIndex<EdgeId>;
+
 
 template <typename T>
 class PseudoVector {
@@ -554,83 +558,6 @@ auto EdgesToSequences(const Container &entries,
     return ids_n_seqs;
 }
 
-size_t find_subpath(const std::vector<EdgeId> &subpath, const std::vector<EdgeId> &path) {
-    // TODO implement less naive algo
-    const size_t npos = size_t(-1);
-
-    if (path.size() < subpath.size()) {
-        return npos;
-    }
-
-    for (size_t i = 0; i <= path.size() - subpath.size(); ++i) {
-        if (std::equal(subpath.cbegin(), subpath.cend(), path.cbegin() + i)) {
-            return i;
-        }
-    }
-    return npos;
-}
-
-class SuperpathIndex {
-public:
-    SuperpathIndex(const std::vector<std::vector<EdgeId>> &superpaths) : superpaths_{superpaths} {
-        for (size_t i = 0; i < superpaths_.size(); ++i) {
-            for (EdgeId edge : superpaths_[i]) {
-                edge2paths_[edge].push_back(i);
-            }
-        }
-    }
-
-    const auto &operator[](size_t i) const { return superpaths_[i]; }
-    size_t size() const { return superpaths_.size(); }
-    bool empty() const { return superpaths_.empty(); }
-    auto cbegin() const { return superpaths_.cbegin(); }
-    auto cend() const { return superpaths_.cend(); }
-
-    std::vector<std::pair<size_t, size_t>> query(const std::vector<EdgeId> &q) const {
-        std::vector<std::pair<size_t, size_t>> result;
-        for (size_t i : candidates(q)) {
-            size_t pos = find_subpath(q, superpaths_[i]);
-            if (pos != size_t(-1)) {
-                result.push_back({i, pos});
-            }
-        }
-
-        return result;
-    }
-
-private:
-    std::vector<std::vector<EdgeId>> superpaths_;
-    std::unordered_map<EdgeId, std::vector<size_t>> edge2paths_;
-
-    std::vector<size_t> candidates(const std::vector<EdgeId> &query) const {
-        std::vector<size_t> result;
-        VERIFY(!query.empty());
-        for (size_t i = 0; i < query.size(); ++i) {
-            const auto &ind = indices(query[i]);
-            if (i == 0) {
-                result = ind;
-            } else {
-                auto it = std::set_intersection(result.cbegin(), result.cend(),
-                                                ind.cbegin(), ind.cend(), result.begin());
-                result.resize(it - result.begin());
-            }
-        }
-        return result;
-    }
-
-    const std::vector<size_t> &indices(EdgeId e) const {
-        const static std::vector<size_t> empty;
-
-        auto it = edge2paths_.find(e);
-        if (it != edge2paths_.end()) {
-            return it->second;
-        } else {
-            return empty;
-        }
-    }
-
-};
-
 std::string SuperPathInfo(const std::vector<EdgeId> &path,
                           const SuperpathIndex &index,
                           const MappingF &mapping_f) {
@@ -713,7 +640,7 @@ private:
             return false;
         }
         size_t path_id = std::stoll(label);
-        size_t pos = find_subpath(path, paths[path_id]);
+        size_t pos = superpath_index::find_subpath(path, paths[path_id]);
         return pos != size_t(-1);
     }
 
