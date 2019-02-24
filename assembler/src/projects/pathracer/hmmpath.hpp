@@ -516,20 +516,17 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
         break;
       }
 
-      if (processed.count(elt.current_cursor)) {
+      auto it_fl = processed.insert(elt.current_cursor);
+      if (!it_fl.second) { // Already there
         continue;
       }
-
-      // add processed.size() limit
-
-      processed.insert(elt.current_cursor);
 
       I.update(elt.current_cursor, elt.score, elt.source_cursor, elt.source_state);  // TODO return iterator to inserted/updated elt
       const auto &id = I[elt.current_cursor];
       for (const auto &next : elt.current_cursor.next(context)) {
-        if (processed.count(next)) {
-          continue;
-        }
+        // if (processed.count(next)) {
+        //   continue;
+        // }
         char letter = next.letter(context);
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
         // if (!filter(next)) {
