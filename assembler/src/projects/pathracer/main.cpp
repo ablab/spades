@@ -570,18 +570,88 @@ size_t find_subpath(const std::vector<EdgeId> &subpath, const std::vector<EdgeId
     return npos;
 }
 
+class SuperpathIndex {
+public:
+    SuperpathIndex(const std::vector<std::vector<EdgeId>> &superpaths) : superpaths_{superpaths} {
+        for (size_t i = 0; i < superpaths_.size(); ++i) {
+            for (EdgeId edge : superpaths_[i]) {
+                edge2paths_[edge].push_back(i);
+            }
+        }
+    }
+
+    const std::vector<size_t> &indices(EdgeId e) const {
+        const static std::vector<size_t> empty;
+
+        auto it = edge2paths_.find(e);
+        if (it != edge2paths_.end()) {
+            return it->second;
+        } else {
+            return empty;
+        }
+    }
+
+    const auto& operator[](size_t i) const {
+        return superpaths_[i];
+    }
+
+    size_t size() const {
+        return superpaths_.size();
+    }
+
+    bool empty() const {
+        return superpaths_.empty();
+    }
+
+    auto cbegin() const {
+        return superpaths_.cbegin();
+    }
+
+    auto cend() const {
+        return superpaths_.cend();
+    }
+
+    std::vector<size_t> candidates(const std::vector<EdgeId> &query) const {
+        std::vector<size_t> result;
+        VERIFY(!query.empty());
+        for (size_t i = 0; i < query.size(); ++i) {
+            const auto &ind = indices(query[i]);
+            if (i == 0) {
+                result = ind;
+            } else {
+                auto it = std::set_intersection(result.cbegin(), result.cend(),
+                                                ind.cbegin(), ind.cend(), result.begin());
+                result.resize(it - result.begin());
+            }
+        }
+        return result;
+    }
+
+    std::vector<std::pair<size_t, size_t>> query(const std::vector<EdgeId> &q) const {
+        std::vector<std::pair<size_t, size_t>> result;
+        for (size_t i : candidates(q)) {
+            size_t pos = find_subpath(q, superpaths_[i]);
+            if (pos != size_t(-1)) {
+                result.push_back({i, pos});
+            }
+        }
+
+        return result;
+    }
+
+private:
+    std::vector<std::vector<EdgeId>> superpaths_;
+    std::unordered_map<EdgeId, std::vector<size_t>> edge2paths_;
+};
+
 std::string SuperPathInfo(const std::vector<EdgeId> &path,
-                          const std::vector<std::vector<EdgeId>> &superpaths,
+                          const SuperpathIndex &index,
                           const MappingF &mapping_f) {
     std::vector<std::string> results;
-    for (size_t idx = 0; idx < superpaths.size(); ++idx) {
-        const auto &superpath = superpaths[idx];
-        size_t pos = find_subpath(path, superpath);
-        if (pos != size_t(-1)) {
-            std::stringstream super_path_info;
-            super_path_info << edgepath2str(superpath, mapping_f) << ":" << idx << "/" << pos;
-            results.push_back(super_path_info.str());
-        }
+    for (const auto &p : index.query(path)) {
+        std::stringstream super_path_info;
+        super_path_info << edgepath2str(index[p.first], mapping_f) << ":" << p.first << "/" << p.second;
+        results.push_back(super_path_info.str());
     }
 
     return join(results, ",");
@@ -590,7 +660,7 @@ std::string SuperPathInfo(const std::vector<EdgeId> &path,
 template <typename Container>
 void ExportEdges(const Container &entries,
                  const debruijn_graph::ConjugateDeBruijnGraph &graph,
-                 const std::vector<std::vector<EdgeId>> &scaffold_paths,
+                 const SuperpathIndex &scaffold_paths,
                  const std::string &filename,
                  const MappingF &mapping_f) {
     if (entries.size() == 0)
@@ -646,7 +716,7 @@ private:
         return std::make_tuple(rounded_score(), nuc_seq, label, path);
     }
 
-    bool supported_by_original_path(const std::vector<std::vector<EdgeId>> &paths) const {
+    bool supported_by_original_path(const SuperpathIndex &paths) const {
         if (label.size() == 0) {
             return false;
         }
@@ -660,7 +730,7 @@ private:
         return pos != size_t(-1);
     }
 
-    friend void unique_hmm_path_info(std::vector<HMMPathInfo> &infos, const std::vector<std::vector<EdgeId>> &paths);
+    friend void unique_hmm_path_info(std::vector<HMMPathInfo> &infos, const SuperpathIndex &paths);
 
 public:
     std::string hmmname;
@@ -683,7 +753,7 @@ public:
               path(std::move(p)), alignment(std::move(alignment)), label{std::move(label)}, pos{pos} {}
 };
 
-void unique_hmm_path_info(std::vector<HMMPathInfo> &infos, const std::vector<std::vector<EdgeId>> &paths) {
+void unique_hmm_path_info(std::vector<HMMPathInfo> &infos, const SuperpathIndex &paths) {
     auto key = [&paths](const auto &info) {
         int supported = info.supported_by_original_path(paths) ? 0 : 1;
         return std::make_tuple(-info.rounded_score(), info.nuc_seq, info.path, supported, info.label);
@@ -702,7 +772,7 @@ void unique_hmm_path_info(std::vector<HMMPathInfo> &infos, const std::vector<std
 void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph */,
                  const PathracerConfig &cfg,
                  const std::vector<HMMPathInfo> &results,
-                 const std::vector<std::vector<EdgeId>> &scaffold_paths,
+                 const SuperpathIndex &scaffold_paths,
                  const MappingF &mapping_f) {
     const P7_HMM *p7hmm = hmm.get();  // TODO We use only hmm name from this object, may be we should just pass the name itself
     bool hmm_in_aas = hmm.abc()->K == 20;
@@ -745,7 +815,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
 void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
              const PathracerConfig &cfg,
              const std::vector<HMMPathInfo> &results,
-             const std::vector<std::vector<EdgeId>> &scaffold_paths,
+             const SuperpathIndex &scaffold_paths,
              const MappingF &mapping_f) {
     P7_HMM *p7hmm = hmm.get();
 
@@ -848,7 +918,7 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
 
 void TraceHMM(const hmmer::HMM &hmm,
               const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
-              const std::vector<std::vector<EdgeId>> scaffold_paths,
+              const SuperpathIndex scaffold_paths,
               const PathracerConfig &cfg,
               std::vector<HMMPathInfo> &results) {
     const P7_HMM *p7hmm = hmm.get();
@@ -1102,6 +1172,8 @@ void hmm_main(const PathracerConfig &cfg,
     else
         hmms = ParseFASTAFile(cfg.hmmfile, cfg.mode);
 
+    SuperpathIndex scaffold_path_index(scaffold_paths);
+
     // Outer loop: over each query HMM in <hmmfile>.
     omp_set_num_threads(cfg.threads);
     #pragma omp parallel for schedule(dynamic)
@@ -1110,12 +1182,12 @@ void hmm_main(const PathracerConfig &cfg,
 
         std::vector<HMMPathInfo> results;
 
-        TraceHMM(hmm, graph, edges, scaffold_paths,
+        TraceHMM(hmm, graph, edges, scaffold_path_index,
                  cfg, results);
 
         std::sort(results.begin(), results.end());
-        unique_hmm_path_info(results, scaffold_paths);
-        SaveResults(hmm, graph, cfg, results, scaffold_paths, mapping_f);
+        unique_hmm_path_info(results, scaffold_path_index);
+        SaveResults(hmm, graph, cfg, results, scaffold_path_index, mapping_f);
 
         if (cfg.annotate_graph) {
             std::unordered_set<std::vector<EdgeId>> unique_paths;
