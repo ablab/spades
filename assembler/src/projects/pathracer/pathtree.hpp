@@ -363,7 +363,7 @@ class PathSet {
 
   PathSet(const PathLinkRef<GraphCursor> &pathlink) : pathlink_{pathlink} {}
 
-  double best_score() const { return pathlink_->score(); }
+  double best_score() const { return -pathlink_->score(); }  // FIXME sign
   AnnotatedPath<GraphCursor> best_path() const { return top_k(1)[0]; }
   std::string best_path_string() const { return path_container::str(best_path().path); }
 
