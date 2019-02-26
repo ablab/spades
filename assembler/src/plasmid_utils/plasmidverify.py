@@ -55,7 +55,8 @@ with open(args.f, "r") as ins:
 if args.hmm:
     hmm = args.hmm
 else:
-    hmm = ("/Nancy/mrayko/db/pfam/Pfam-A.hmm")
+    print ("No HMM database provided") 
+    exit(1)    
 
 if args.db:
     blastdb = args.db
