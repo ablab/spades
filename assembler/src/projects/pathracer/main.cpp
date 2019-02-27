@@ -586,7 +586,7 @@ void ExportEdges(const Container &entries,
         std::string id = edgepath2str(path, mapping_f);
         std::string seq = MergeSequences(graph, path).str();
         // FIXME return sorting like in EdgesToSequences
-        o << ">" << id << SuperPathInfo(path, scaffold_paths, mapping_f) << "\n";
+        o << ">" << id << "|ScaffoldSuperpaths=" << SuperPathInfo(path, scaffold_paths, mapping_f) << "\n";
         io::WriteWrapped(seq, o);
     }
 }
