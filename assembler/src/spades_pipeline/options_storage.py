@@ -339,7 +339,7 @@ def usage(spades_version, show_hidden=False, mode=None):
         sys.stderr.write("--configs-dir\t<configs_dir>\tdirectory with configs" + "\n")
         sys.stderr.write("-i/--iterations\t<int>\t\tnumber of iterations for read error"\
                              " correction [default: %s]\n" % ITERATIONS)
-        sys.stderr.write("--read-buffer-size\t<int>\t\tsets size of read buffer for graph construction")
+        sys.stderr.write("--read-buffer-size\t<int>\t\tsets size of read buffer for graph construction \n")
         sys.stderr.write("--bh-heap-check\t\t<value>\tsets HEAPCHECK environment variable"\
                              " for BayesHammer" + "\n")
         sys.stderr.write("--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
