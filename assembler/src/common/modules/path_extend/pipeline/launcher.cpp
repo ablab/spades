@@ -329,7 +329,6 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
         const auto &edges = path.path();
         if (edges.size() <= size_threshold)
             continue;
-
         BidirectionalPath *new_path = new BidirectionalPath(gp_.g, edges);
         BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
         new_path->SetWeight((float) path.weight());
@@ -390,16 +389,15 @@ Extenders PathExtendLauncher::ConstructPBExtenders(const ExtendersGenerator &gen
 Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_map,
                                                  UsedUniqueStorage &used_unique_storage) {
     INFO("Creating main extenders, unique edge length = " << unique_data_.min_unique_length_);
-    if (support_.SingleReadsMapped() || support_.HasLongReads())
+    if (!cfg::get().pd && (support_.SingleReadsMapped() || support_.HasLongReads()))
         FillLongReadsCoverageMaps();
-
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map,
                                  unique_data_, used_unique_storage, support_);
     Extenders extenders = generator.MakeBasicExtenders();
 
     //long reads scaffolding extenders.
 
-    if (support_.HasLongReads()) {
+    if (!cfg::get().pd && support_.HasLongReads()) {
         if (params_.pset.sm == sm_old) {
             INFO("Will not use new long read scaffolding algorithm in this mode");
         } else {
