@@ -398,6 +398,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     if options_storage.meta:
         if options_storage.careful or options_storage.mismatch_corrector or options_storage.cov_cutoff != "off":
             support.error("you cannot specify --careful, --mismatch-correction or --cov-cutoff in metagenomic mode!", log)
+    if not options_storage.plasmid:
+        support.error("Please specify --plasmid option. All SPAdes modes except plasmid detection are disabled in this metaplasmidSPAdes paper-support release! For other modes, please download regular SPAdes ")
     if options_storage.rna:
         if options_storage.careful:
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
@@ -1049,7 +1051,10 @@ def main(args):
                         # correctness check: should be one contig of length 1000 bp
                         correct_number = 1
                         if options_storage.plasmid:
-                            correct_length = 9667
+                            if options_storage.meta:
+                                correct_length = 9689
+                            else:
+                                correct_length = 9667                        
                         else:
                             correct_length = 1000
                         if not len(result_fasta):
