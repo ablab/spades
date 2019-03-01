@@ -4,4 +4,4 @@ It consists of script for plasmid assembly from metagenomes  (./assembler/metapl
 
 Installation and input/output options of first are same as in regular SPAdes -- see http://cab.spbu.ru/files/release3.13.0/manual.html for details
 
-Second script has it's own README file ./assembler/src/plasmid_utils/plasmidverify_README.md
+Second script has it's own README file ./assembler/src/plasmid_utils/README.md
