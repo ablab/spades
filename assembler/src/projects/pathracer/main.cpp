@@ -33,6 +33,7 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/logger/log_writers_thread.hpp"
 #include "utils/segfault_handler.hpp"
+#include "utils/memory_limit.hpp"
 
 #include "version.hpp"
 
@@ -101,6 +102,7 @@ struct PathracerConfig {
     double expand_coef = 2.;
     size_t state_limits_coef = 1;
     bool local = false;
+    size_t memory = 100;  // 100GB
 
     hmmer::hmmer_cfg hcfg;
 };
@@ -138,6 +140,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       cfg.local << option("--local") % "perform local HMM match",
       (option("--top") & integer("x", cfg.top)) % "extract top x paths [default: 100]",
       (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
+      (option("--memory", "-m") & integer("value", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
       (option("--edge-id") & integer("value", cfg.int_id)) % "match around edge",
       (option("--max-size") & integer("value", cfg.max_size)) % "maximal component size to consider [default: INF]",
       (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
@@ -1153,6 +1156,10 @@ int pathracer_main(int argc, char* argv[]) {
     START_BANNER("Graph HMM aligning engine");
     std::string cmd_line = join(llvm::make_range(argv, argv + argc), " ");
     INFO("Command line: " << cmd_line);
+
+    // Set memory limit
+    const size_t GB = 1 << 30;
+    utils::limit_memory(cfg.memory * GB);
 
     using namespace debruijn_graph;
 
