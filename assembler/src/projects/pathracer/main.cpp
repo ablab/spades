@@ -13,7 +13,6 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
-#include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
 #include "sequence/aa.hpp"
@@ -36,6 +35,7 @@
 #include "utils/memory_limit.hpp"
 
 #include "version.hpp"
+#include "common/utils/verify.hpp"
 
 #include <clipp/clipp.h>
 #include <debug_assert/debug_assert.hpp>
@@ -1203,11 +1203,12 @@ int pathracer_main(int argc, char* argv[]) {
 
 #include "fasta_reader.hpp"
 #include "string_cursor.hpp"
+#include "naive_edge_index.hpp"
 
 int aling_kmers_main(int argc, char* argv[]) {
     create_console_logger("");
-    if (argc != 4) {
-        INFO("Call: " << argv[0] << " <hmm file> <sequence file> <k>");
+    if (argc != 4 && argc != 5) {
+        INFO("Call: " << argv[0] << " <hmm file> <sequence file> <k> [<graph file>]");
         return 0;
     }
     std::string hmm_file = argv[1];
@@ -1226,7 +1227,7 @@ int aling_kmers_main(int argc, char* argv[]) {
     fees.state_limits.l100 = 50000 * state_limits_coef;
     fees.state_limits.l500 = 10000 * state_limits_coef;
 
-    // bool hmm_in_aas = hmm.abc()->K == 20;
+    /*
     std::vector<double> best_scores;
     for (size_t seq_id = 0; seq_id < seqs.size(); ++seq_id) {
         std::string seq = seqs[seq_id];
@@ -1294,6 +1295,39 @@ int aling_kmers_main(int argc, char* argv[]) {
         INFO("Hits: " << hit_count << " over " << seq.size() - k + 1);
     }
     INFO("Best scores: " << best_scores);
+    */
+
+    if (argc != 5) {
+        return 0;
+    }
+
+    INFO("Reading GFA graph");
+    debruijn_graph::ConjugateDeBruijnGraph graph(k);
+    gfa::GFAReader gfa(argv[4]);
+    INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+    gfa.to_graph(graph, nullptr);
+    INFO("Graph loaded");
+    INFO("Edge index construction");
+    NaiveEdgeIndex eindex;
+    if (fees.is_proteomic()) {
+        eindex.build_aa(graph, (k - 2) / 3);
+    } else {
+        eindex.build_nt(graph, k);
+    }
+    INFO("Index built");
+    // check sequences
+    for (size_t seq_id = 0; seq_id < seqs.size(); ++seq_id) {
+        std::string seq = seqs[seq_id];
+
+        if (seq.find('X') != std::string::npos) {
+            INFO("Stop-codon found, skipping the sequence");
+            continue;
+        }
+        // remove -
+        seq.erase(std::remove(seq.begin(), seq.end(), '-'), seq.end());
+        INFO("Checking " << seq << "...");
+        INFO("#" << eindex.has_aa(seq, &graph));
+    }
 
     return 0;
 }
