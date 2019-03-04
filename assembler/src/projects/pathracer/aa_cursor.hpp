@@ -89,7 +89,7 @@ auto make_aa_cursors(const std::vector<GraphCursor> &cursors, typename GraphCurs
 
 template <class GraphCursor>
 auto make_aa_cursors(const GraphCursor &cursor, typename GraphCursor::Context context) {
-  return make_aa_cursors({cursor}, context);
+  return make_aa_cursors(std::vector<GraphCursor>({cursor}), context);
 }
 
 namespace std {
