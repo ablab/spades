@@ -46,7 +46,7 @@ def run_quast(contigs, quast_output_dir, ref, opts):
 
 def run_all_quasts(contig_dir, ref, quast_output_dir):
     i = 1
-    for prefix, opts in [("contigs", ""), ("scaffolds", ""), ("scaffolds", " --scaffolds ")]:
+    for prefix, opts in [("contigs", ""), ("scaffolds", ""), ("scaffolds", " -s ")]:
         contigs = find_in_dir(contig_dir, prefix)
         if len(contigs) == 2:
             run_quast(contigs, os.path.join(quast_output_dir, str(i) + "_" + prefix), ref, opts)
