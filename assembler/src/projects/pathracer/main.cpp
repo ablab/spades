@@ -293,10 +293,10 @@ auto ScoreSequences(const StringArray &seqs,
 using PathAlnInfo = std::vector<std::pair<size_t, std::pair<int, int>>>;
 
 template <typename StringArray>
-PathAlnInfo get_matched_ids(const hmmer::HMMMatcher &matcher,
-                           const StringArray &seqs,
-                           const hmmer::HMM &hmm,
-                           bool extend_overhangs = true) {
+PathAlnInfo GetOverhangs(const hmmer::HMMMatcher &matcher,
+                         const StringArray &seqs,
+                         const hmmer::HMM &hmm,
+                         bool extend_overhangs = true) {
     // TODO Move this logic to ScoreSequences()
     // we need only alphabet size (actually aa/nt flag) from hmm
     // and only lengths from the initial seqs
@@ -386,7 +386,7 @@ PathAlnInfo MatchedPaths(const std::vector<std::vector<EdgeId>> &paths,
     PseudoVector<std::string> seqs(paths.size(), get);
     auto matcher = ScoreSequences(seqs, {}, hmm, cfg);
 
-    auto matched = get_matched_ids(matcher, seqs, hmm);
+    auto matched = GetOverhangs(matcher, seqs, hmm);
 
     if (matched.size() && cfg.debug) {
         int textw = 120;
@@ -417,9 +417,10 @@ size_t path_length(const graph_t &graph, const std::vector<EdgeId> &path) {
     return sum + graph.k();
 }
 
-EdgeAlnInfo expand_path_aln_info(const PathAlnInfo &painfo, const std::vector<std::vector<EdgeId>> &paths,
-                                 const graph_t &graph) {
-    INFO("expand_path_aln_info started");
+EdgeAlnInfo PathAlignments2EdgeAlignments(const PathAlnInfo &painfo,
+                                          const std::vector<std::vector<EdgeId>> &paths,
+                                          const graph_t &graph) {
+    INFO("PathAlignments2EdgeAlignments started");
     EdgeAlnInfo result;
     size_t k = graph.k();
 
@@ -876,7 +877,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                 // path not matched
                 continue;
             }
-            auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
+            auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
             auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
@@ -893,7 +894,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                 // path not matched
                 continue;
             }
-            auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
+            auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
             auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
@@ -908,14 +909,14 @@ void TraceHMM(const hmmer::HMM &hmm,
             paths.push_back(std::vector<EdgeId>({e}));
         }
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
-        auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
+        auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
         cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
     } else if (cfg.seed_mode == SeedMode::scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by paths read from GFA
         paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
-        auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
+        auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
         cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
     } else if (cfg.seed_mode == SeedMode::edges_scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
@@ -926,7 +927,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         // Fill paths by paths read from GFA
         paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
-        auto matched_edges = expand_path_aln_info(matched_paths, paths, graph);
+        auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
         cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef);
     } else if (cfg.seed_mode == SeedMode::exhaustive) {
         cursor_conn_comps.resize(1);
