@@ -295,8 +295,7 @@ using PathAlnInfo = std::vector<std::pair<size_t, std::pair<int, int>>>;
 template <typename StringArray>
 PathAlnInfo GetOverhangs(const hmmer::HMMMatcher &matcher,
                          const StringArray &seqs,
-                         const hmmer::HMM &hmm,
-                         bool extend_overhangs = true) {
+                         const hmmer::HMM &hmm) {
     // TODO Move this logic to ScoreSequences()
     // we need only alphabet size (actually aa/nt flag) from hmm
     // and only lengths from the initial seqs
@@ -323,16 +322,6 @@ PathAlnInfo GetOverhangs(const hmmer::HMMMatcher &matcher,
 
             int roverhang = static_cast<int>(domain.M() - hmmpos.second) - static_cast<int>(domain.L() - seqpos.second);
             int loverhang = static_cast<int>(hmmpos.first) - static_cast<int>(seqpos.first);
-
-
-            if (extend_overhangs) {
-                // extend overhangs in order to take into account possible alignment imperfection
-                // (we are conservative here, let's take larger neighbourhood)
-                // TODO take the extension constant from cfg
-                // Probably, make separate values for aa and nt
-                loverhang += 10;
-                roverhang += 10;
-            }
 
             if (hmm_in_aas) {
                 loverhang *= 3;
@@ -786,15 +775,15 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
 using GraphCursor = DebruijnGraphCursor;
 
-auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef) {
+auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef, int extend_const = 10) {
     INFO("ConnCompsFromEdgesMatches started");
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
     std::unordered_set<GraphCursor> cursors;
     for (const auto &kv : matched_edges) {
         EdgeId e = kv.first;
-        int loverhang = kv.second.first;
-        int roverhang = kv.second.second;
+        int loverhang = kv.second.first + extend_const;
+        int roverhang = kv.second.second + extend_const;
 
         if (loverhang > 0) {
             for (const auto &start : GraphCursor::get_cursors(graph, e, 0)) {
