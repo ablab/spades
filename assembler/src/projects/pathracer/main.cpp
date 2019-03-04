@@ -785,7 +785,7 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
 using GraphCursor = DebruijnGraphCursor;
 
-auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef = 1.2) {
+auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef) {
     INFO("ConnCompsFromEdgesMatches started");
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
