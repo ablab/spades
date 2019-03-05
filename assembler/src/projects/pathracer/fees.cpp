@@ -5,6 +5,7 @@
 #include "common/utils/verify.hpp"
 
 #include <algorithm>
+#include "utils.hpp"
 
 extern "C" {
 #include "p7_config.h"
@@ -19,10 +20,6 @@ extern "C" {
 }
 
 namespace hmm {
-
-static void to_upper_case(std::string &s) {
-  for (char &c: s) c = static_cast<char>(std::toupper(c));
-}
 
 DigitalCodind::DigitalCodind(const ESL_ALPHABET *abc)
     : inmap_(abc->inmap, abc->inmap + 128), k_(abc->K) {

@@ -24,7 +24,7 @@ public:
         k_ = k;
         size_t count = 0;
         for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (count % 1000 == 0) {
+            if (count % 100000 == 0) {
                 INFO(count << " edges processed");
             }
             ++count;
@@ -45,7 +45,7 @@ public:
         k_ = k;
         size_t count = 0;
         for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (count % 1000 == 0) {
+            if (count % 100000 == 0) {
                 INFO(count << " edges processed");
             }
             ++count;
