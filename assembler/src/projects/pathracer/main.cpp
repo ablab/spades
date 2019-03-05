@@ -92,7 +92,7 @@ struct PathracerConfig {
     size_t k = 0;
     int threads = 4;
     size_t top = 100;
-    uint64_t int_id = 0;
+    std::vector<std::string> edges;
     size_t max_size = size_t(-1);
     bool debug = false;
     bool draw = false;
@@ -131,18 +131,19 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
       one_of(option("--seed-edges").set(cfg.seed_mode, SeedMode::edges) % "use graph edges as seeds",
              option("--seed-scaffolds").set(cfg.seed_mode, SeedMode::scaffolds) % "use scaffolds paths as seeds",
-             option("--seed-edges-scaffolds").set(cfg.seed_mode, SeedMode::edges_scaffolds) % "use edges AND scaffolds paths as seeds",
+             option("--seed-edges-scaffolds").set(cfg.seed_mode, SeedMode::edges_scaffolds) % "use edges AND scaffolds paths as seeds [default]",
              option("--seed-exhaustive").set(cfg.seed_mode, SeedMode::exhaustive) % "exhaustive mode, use ALL edges",
              option("--seed-edges-1-by-1").set(cfg.seed_mode, SeedMode::edges_one_by_one) % "use edges as seeds (1 by 1)",
              option("--seed-scaffolds-1-by-1").set(cfg.seed_mode, SeedMode::scaffolds_one_by_one) % "use scaffolds paths as seeds (1 by 1)"),
       one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
-             option("--nucl").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
+             option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
+             option("--nucl").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s) [deprecated, use --nt instead]",
              option("--aa").set(cfg.mode, Mode::aa) % "match agains amino acid string(s)"),
       cfg.local << option("--local") % "perform local HMM match",
       (option("--top") & integer("x", cfg.top)) % "extract top x paths [default: 100]",
       (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
       (option("--memory", "-m") & integer("value", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
-      (option("--edge-id") & integer("value", cfg.int_id)) % "match around edge",
+      (option("--edges") & values("value", cfg.edges)) % "match around edges",
       (option("--max-size") & integer("value", cfg.max_size)) % "maximal component size to consider [default: INF]",
       (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
       (option("--extend-const") & integer("value", cfg.extend_const)) % "const addition to overhang values for neighbourhood search [default: 15]",
@@ -1047,7 +1048,7 @@ void TraceHMM(const hmmer::HMM &hmm,
 
         INFO("Total " << paths.size() << " unique edge paths extracted");
         for (const auto &path : paths) {
-            INFO("Path length : " << path.size() << " edges " << path);
+            INFO("Path length : " << path.size() << " edges " << path);  // FIXME use id_mapper here as well
         }
 
         if (cfg.draw) {
@@ -1165,9 +1166,15 @@ int pathracer_main(int argc, char* argv[]) {
 
     // Collect all the edges
     std::vector<EdgeId> edges;
+    for (std::string &edge : cfg.edges) {
+        std::replace(edge.begin(), edge.end(), '^', '\'');
+    }
+    std::unordered_set<std::string> allowed_edges(cfg.edges.cbegin(), cfg.edges.cend());
     for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         EdgeId edge = *it;
-        if (cfg.int_id == 0 || edge.int_id() == cfg.int_id) edges.push_back(edge);
+        if (allowed_edges.empty() || allowed_edges.count(id_mapper->operator[](edge.int_id()))) {
+            edges.push_back(edge);
+        }
     }
 
     std::unordered_set<std::vector<EdgeId>> to_rescore;
