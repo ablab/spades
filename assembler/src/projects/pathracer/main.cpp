@@ -91,12 +91,11 @@ struct PathracerConfig {
     enum SeedMode seed_mode = SeedMode::edges_scaffolds;
     size_t k = 0;
     int threads = 4;
-    size_t top = 100;
+    size_t top = 1000;
     std::vector<std::string> edges;
     size_t max_size = size_t(-1);
     bool debug = false;
     bool draw = false;
-    bool save = true;
     bool rescore = false;
     bool annotate_graph = true;
     double expand_coef = 2.;
@@ -104,6 +103,7 @@ struct PathracerConfig {
     size_t state_limits_coef = 1;
     bool local = false;
     size_t memory = 100;  // 100GB
+    int use_experimental_i_loop_processing = 0;
 
     hmmer::hmmer_cfg hcfg;
 };
@@ -129,52 +129,61 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       cfg.load_from  << value("load from"),
       cfg.k          << integer("k-mer size"),
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
-      one_of(option("--seed-edges").set(cfg.seed_mode, SeedMode::edges) % "use graph edges as seeds",
-             option("--seed-scaffolds").set(cfg.seed_mode, SeedMode::scaffolds) % "use scaffolds paths as seeds",
-             option("--seed-edges-scaffolds").set(cfg.seed_mode, SeedMode::edges_scaffolds) % "use edges AND scaffolds paths as seeds [default]",
-             option("--seed-exhaustive").set(cfg.seed_mode, SeedMode::exhaustive) % "exhaustive mode, use ALL edges",
-             option("--seed-edges-1-by-1").set(cfg.seed_mode, SeedMode::edges_one_by_one) % "use edges as seeds (1 by 1)",
-             option("--seed-scaffolds-1-by-1").set(cfg.seed_mode, SeedMode::scaffolds_one_by_one) % "use scaffolds paths as seeds (1 by 1)"),
+      cfg.local << option("--local") % "perform local-local HMM matching",
+      (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 1000]",
+      (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "number of threads",
+      (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
+      (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
+      "Query type:" %
       one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
              option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
              option("--nucl").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s) [deprecated, use --nt instead]",
              option("--aa").set(cfg.mode, Mode::aa) % "match agains amino acid string(s)"),
-      cfg.local << option("--local") % "perform local HMM match",
-      (option("--top") & integer("x", cfg.top)) % "extract top x paths [default: 100]",
-      (option("--threads", "-t") & integer("value", cfg.threads)) % "number of threads",
-      (option("--memory", "-m") & integer("value", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
-      (option("--edges") & values("value", cfg.edges)) % "match around edges",
-      (option("--max-size") & integer("value", cfg.max_size)) % "maximal component size to consider [default: INF]",
-      (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
-      (option("--extend-const") & integer("value", cfg.extend_const)) % "const addition to overhang values for neighbourhood search [default: 15]",
-      (option("--state-limits-coef") & integer("x", cfg.state_limits_coef)) % "multiplier for default #state limit [default: 1]",
-      // Control of output
-      cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
-      cfg.hcfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
-      // Control of reporting thresholds
-      (option("-E") & number("value", cfg.hcfg.E))        % "report sequences <= this E-value threshold in output",
-      (option("-T") & number("value", cfg.hcfg.T))        % "report sequences >= this score threshold in output",
-      (option("--domE") & number("value", cfg.hcfg.domE)) % "report domains <= this E-value threshold in output",
-      (option("--domT") & number("value", cfg.hcfg.domT)) % "report domains >= this score cutoff in output",
-      // Control of inclusion (significance) thresholds
-      (option("-incE") & number("value", cfg.hcfg.incE))       % "consider sequences <= this E-value threshold as significant",
-      (option("-incT") & number("value", cfg.hcfg.incT))       % "consider sequences >= this score threshold as significant",
-      (option("-incdomE") & number("value", cfg.hcfg.incdomE)) % "consider domains <= this E-value threshold as significant",
-      (option("-incdomT") & number("value", cfg.hcfg.incdomT)) % "consider domains >= this score threshold as significant",
-      // Model-specific thresholding for both reporting and inclusion
-      cfg.hcfg.cut_ga  << option("--cut_ga")       % "use profile's GA gathering cutoffs to set all thresholding",
-      cfg.hcfg.cut_nc  << option("--cut_nc")       % "use profile's NC noise cutoffs to set all thresholding",
-      cfg.hcfg.cut_tc  << option("--cut_tc")       % "use profile's TC trusted cutoffs to set all thresholding",
-      // Control of acceleration pipeline
-      cfg.hcfg.max     << option("--max")             % "Turn all heuristic filters off (less speed, more power)",
-      (option("--F1") & number("value", cfg.hcfg.F1)) % "Stage 1 (MSV) threshold: promote hits w/ P <= F1",
-      (option("--F2") & number("value", cfg.hcfg.F2)) % "Stage 2 (Vit) threshold: promote hits w/ P <= F2",
-      (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3",
-      cfg.debug << option("--debug") % "enable extensive debug output",
-      cfg.draw  << option("--draw")  % "draw pictures around the interesting edges",
-      cfg.save << option("--save") % "save found sequences",
-      cfg.rescore  << option("--rescore")  % "rescore paths via HMMer",
-      cfg.annotate_graph << option("--annotate-graph") % "emit paths in GFA graph"
+      "Seeding options:" % (
+          (option("--edges") & values("edges", cfg.edges)) % "match around edges",
+          "Seeding mode:" %
+          one_of(option("--seed-edges").set(cfg.seed_mode, SeedMode::edges) % "use graph edges as seeds",
+                 option("--seed-scaffolds").set(cfg.seed_mode, SeedMode::scaffolds) % "use scaffolds paths as seeds",
+                 option("--seed-edges-scaffolds").set(cfg.seed_mode, SeedMode::edges_scaffolds) % "use edges AND scaffolds paths as seeds [default]",
+                 option("--seed-exhaustive").set(cfg.seed_mode, SeedMode::exhaustive) % "exhaustive mode, use ALL edges",
+                 option("--seed-edges-1-by-1").set(cfg.seed_mode, SeedMode::edges_one_by_one) % "use edges as seeds (1 by 1)",
+                 option("--seed-scaffolds-1-by-1").set(cfg.seed_mode, SeedMode::scaffolds_one_by_one) % "use scaffolds paths as seeds (1 by 1)")
+      ),
+      "Control of the output:" % (
+          cfg.debug << option("--debug") % "enable extensive debug output",
+          cfg.draw  << option("--draw")  % "draw pictures around the interesting edges",
+          cfg.rescore  << option("--rescore")  % "rescore paths via HMMer",
+          cfg.annotate_graph << option("--annotate-graph") % "emit paths in GFA graph"
+      ),
+      "HMMER options (used for seeding and rescoring):" % (
+          cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
+          cfg.hcfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
+          // Control of reporting thresholds
+          (option("-E") & number("value", cfg.hcfg.E))        % "report sequences <= this E-value threshold in output",
+          (option("-T") & number("value", cfg.hcfg.T))        % "report sequences >= this score threshold in output",
+          (option("--domE") & number("value", cfg.hcfg.domE)) % "report domains <= this E-value threshold in output",
+          (option("--domT") & number("value", cfg.hcfg.domT)) % "report domains >= this score cutoff in output",
+          // Control of inclusion (significance) thresholds
+          (option("-incE") & number("value", cfg.hcfg.incE))       % "consider sequences <= this E-value threshold as significant",
+          (option("-incT") & number("value", cfg.hcfg.incT))       % "consider sequences >= this score threshold as significant",
+          (option("-incdomE") & number("value", cfg.hcfg.incdomE)) % "consider domains <= this E-value threshold as significant",
+          (option("-incdomT") & number("value", cfg.hcfg.incdomT)) % "consider domains >= this score threshold as significant",
+          // Model-specific thresholding for both reporting and inclusion
+          cfg.hcfg.cut_ga  << option("--cut_ga")       % "use profile's GA gathering cutoffs to set all thresholding",
+          cfg.hcfg.cut_nc  << option("--cut_nc")       % "use profile's NC noise cutoffs to set all thresholding",
+          cfg.hcfg.cut_tc  << option("--cut_tc")       % "use profile's TC trusted cutoffs to set all thresholding",
+          // Control of acceleration pipeline
+          cfg.hcfg.max     << option("--max")             % "Turn all heuristic filters off (less speed, more power)",
+          (option("--F1") & number("value", cfg.hcfg.F1)) % "Stage 1 (MSV) threshold: promote hits w/ P <= F1",
+          (option("--F2") & number("value", cfg.hcfg.F2)) % "Stage 2 (Vit) threshold: promote hits w/ P <= F2",
+          (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3"
+      ),
+      "Developer options:" % (
+          (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
+          (option("--extend-const") & integer("value", cfg.extend_const)) % "const addition to overhang values for neighbourhood search [default: 15]",
+          (option("--state-limits-coef") & integer("x", cfg.state_limits_coef)) % "multiplier for default #state limit [default: 1]",
+          option("--experimental-i-loops").set(cfg.use_experimental_i_loop_processing, 1) % "use experimental I-loops processing"
+      )
   );
 
   if (!parse(argc, argv, cli)) {
@@ -689,7 +698,7 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
 
     INFO("Total " << results.size() << " resultant paths extracted");
 
-    if (cfg.save && !results.empty()) {
+    if (!results.empty()) {
         std::ofstream o_seqs(cfg.output_dir + std::string("/") + p7hmm->name + ".seqs.fa", std::ios::out);
         std::ofstream o_nucs;
         if (hmm_in_aas) {
@@ -846,6 +855,8 @@ void TraceHMM(const hmmer::HMM &hmm,
     fees.state_limits.l100 = 50000 * cfg.state_limits_coef;
     fees.state_limits.l500 = 10000 * cfg.state_limits_coef;
     fees.local = cfg.local;
+    fees.use_experimental_i_loop_processing = cfg.use_experimental_i_loop_processing;
+
     INFO("HMM consensus: " << fees.consensus);
     INFO("HMM " << p7hmm->name << " has " << fees.count_negative_loops() << " positive-score I-loops over " << fees.ins.size());
     INFO("All-matches consensus sequence score: " << fees.all_matches_score());

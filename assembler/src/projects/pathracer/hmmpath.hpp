@@ -542,7 +542,15 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   auto i_loop_processing = [&](StateSet &I, size_t m, const auto &filter) {
-    return fees.is_i_loop_non_negative(m) ? i_loop_processing_non_negative(I, m, filter) : i_loop_processing_negative(I, m);
+    if (fees.is_i_loop_non_negative(m)) {
+      if (fees.use_experimental_i_loop_processing) {
+        return i_loop_processing_non_negative_formally_correct_but_slow_and_potentially_leaking(I, m, filter);
+      } else {
+        return i_loop_processing_non_negative(I, m, filter);
+      }
+    } else {
+      return i_loop_processing_negative(I, m);
+    }
   };
 
   auto dm_new = [&](DeletionStateSet &D, StateSet &M, const StateSet &I, size_t m) {

@@ -40,6 +40,8 @@ struct Fees {
   bool local = false;
   size_t minimal_match_length = 100;
 
+  bool use_experimental_i_loop_processing = false;
+
   double empty_sequence_score() const;
   double all_matches_score(const std::string &seq) const;
 
