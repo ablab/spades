@@ -143,3 +143,7 @@ inline std::string compress_alignment(const std::string &alignment, bool x_as_m 
 
     return result;
 }
+
+inline void to_upper_case(std::string &s) {
+    for (char &c: s) c = static_cast<char>(std::toupper(c));
+}

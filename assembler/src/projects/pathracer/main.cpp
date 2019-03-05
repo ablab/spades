@@ -1203,7 +1203,6 @@ int pathracer_main(int argc, char* argv[]) {
 
 #include "fasta_reader.hpp"
 #include "string_cursor.hpp"
-#include "naive_edge_index.hpp"
 
 int aling_kmers_main(int argc, char* argv[]) {
     create_console_logger("");
@@ -1227,7 +1226,6 @@ int aling_kmers_main(int argc, char* argv[]) {
     fees.state_limits.l100 = 50000 * state_limits_coef;
     fees.state_limits.l500 = 10000 * state_limits_coef;
 
-    /*
     std::vector<double> best_scores;
     for (size_t seq_id = 0; seq_id < seqs.size(); ++seq_id) {
         std::string seq = seqs[seq_id];
@@ -1295,39 +1293,6 @@ int aling_kmers_main(int argc, char* argv[]) {
         INFO("Hits: " << hit_count << " over " << seq.size() - k + 1);
     }
     INFO("Best scores: " << best_scores);
-    */
-
-    if (argc != 5) {
-        return 0;
-    }
-
-    INFO("Reading GFA graph");
-    debruijn_graph::ConjugateDeBruijnGraph graph(k);
-    gfa::GFAReader gfa(argv[4]);
-    INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-    gfa.to_graph(graph, nullptr);
-    INFO("Graph loaded");
-    INFO("Edge index construction");
-    NaiveEdgeIndex eindex;
-    if (fees.is_proteomic()) {
-        eindex.build_aa(graph, (k - 2) / 3);
-    } else {
-        eindex.build_nt(graph, k);
-    }
-    INFO("Index built");
-    // check sequences
-    for (size_t seq_id = 0; seq_id < seqs.size(); ++seq_id) {
-        std::string seq = seqs[seq_id];
-
-        if (seq.find('X') != std::string::npos) {
-            INFO("Stop-codon found, skipping the sequence");
-            continue;
-        }
-        // remove -
-        seq.erase(std::remove(seq.begin(), seq.end(), '-'), seq.end());
-        INFO("Checking " << seq << "...");
-        INFO("#" << eindex.has_aa(seq, &graph));
-    }
 
     return 0;
 }

@@ -24,6 +24,12 @@ add_executable(pathracer_align_kmers_test
 target_link_libraries(pathracer_align_kmers_test graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES} hattrie cityhash modules assembly_graph common_modules)
 # set_target_properties(pathracer_align_kmers_test PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 
+add_executable(graph_exact_finder
+               fasta_reader.cpp
+               omnigraph_wrapper.cpp fees.cpp
+               graph_exact_finder.cpp)
+target_link_libraries(graph_exact_finder graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES} hattrie cityhash modules assembly_graph common_modules)
+
 install(TARGETS pathracer
         DESTINATION bin
         COMPONENT runtime)

@@ -57,3 +57,24 @@ std::vector<std::string> read_fasta_edges(const std::string &filename, bool add_
 
   return edges;
 }
+
+std::vector<std::pair<std::string, std::string>> read_fasta(const std::string &filename) {
+  std::vector<std::pair<std::string, std::string>> records;
+
+  gzFile fp;
+  kseq_t *seq;
+  int l;
+  fp = gzopen(filename.c_str(), "r");
+  assert(fp);
+  seq = kseq_init(fp);
+  while ((l = kseq_read(seq)) >= 0) {
+    records.push_back({seq->name.s, seq->seq.s});
+  }
+
+  kseq_destroy(seq);
+  gzclose(fp);
+
+  return records;
+}
+
+// vim: set ts=2 sw=2 et :
