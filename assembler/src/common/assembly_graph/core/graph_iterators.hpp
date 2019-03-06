@@ -16,7 +16,7 @@
 namespace omnigraph {
 
 template<class Container, class Graph>
-class SmartWrapper : public GraphActionHandler<Graph>, Container {
+class SmartWrapper : public GraphActionHandler<Graph>, public Container {
     typedef GraphActionHandler<Graph> handler;
     typedef Container container;
     typedef typename Container::key_type Element;
