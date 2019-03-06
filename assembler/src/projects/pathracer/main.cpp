@@ -854,6 +854,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     fees.state_limits.l25 = 1000000 * cfg.state_limits_coef;
     fees.state_limits.l100 = 50000 * cfg.state_limits_coef;
     fees.state_limits.l500 = 10000 * cfg.state_limits_coef;
+    fees.absolute_threshold *= cfg.state_limits_coef;
     fees.local = cfg.local;
     fees.use_experimental_i_loop_processing = cfg.use_experimental_i_loop_processing;
 
@@ -1228,12 +1229,15 @@ int aling_kmers_main(int argc, char* argv[]) {
 
     std::string hmm_file;
     std::string sequence_file;
+    std::string output_file;
     size_t k;
 
     auto cli =
         (sequence_file << value("input sequence file"),
          hmm_file << value("HMM file"),
-         k << integer("k-mer size"));
+         k << integer("k-mer size"),
+         required("--output", "-o") & value("output file", output_file) % "output file"
+         );
 
     if (!parse(argc, argv, cli)) {
         std::cout << make_man_page(cli, argv[0]);
@@ -1241,7 +1245,7 @@ int aling_kmers_main(int argc, char* argv[]) {
     }
 
     auto hmms = ParseHMMFile(hmm_file);
-    auto seqs = read_fasta_edges(sequence_file, false);
+    auto seqs = read_fasta(sequence_file);
 
     hmmer::hmmer_cfg hcfg;
     const auto &hmm = hmms[0];
@@ -1252,9 +1256,11 @@ int aling_kmers_main(int argc, char* argv[]) {
     fees.state_limits.l100 = 50000 * state_limits_coef;
     fees.state_limits.l500 = 10000 * state_limits_coef;
 
+    std::ofstream of(output_file);
     std::vector<double> best_scores;
     for (size_t seq_id = 0; seq_id < seqs.size(); ++seq_id) {
-        std::string seq = seqs[seq_id];
+        std::string seq = seqs[seq_id].second;
+        std::string id = seqs[seq_id].first;
 
         if (seq.find('X') != std::string::npos) {
             INFO("Stop-codon found, skipping the sequence");
@@ -1272,10 +1278,14 @@ int aling_kmers_main(int argc, char* argv[]) {
         // logging::__logger() = lg_bak;
 
         auto top_paths = result.top_k(1);
-        if(top_paths.empty()) {
+        if (top_paths.empty()) {
+            INFO("ID: " << id);
             INFO("EMPTY: " << seq);
+            continue;
         }
         VERIFY(!top_paths.empty());
+        of << ">" << id << "|Score=" << result.best_score() <<  "\n";
+        io::WriteWrapped(seq, of);
 
         INFO("Best score: " << result.best_score());
         best_scores.push_back(result.best_score());
