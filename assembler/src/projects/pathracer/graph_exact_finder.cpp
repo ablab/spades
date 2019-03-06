@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
     Mode mode;
     using namespace clipp;
     auto cli =
-        (sequence_file << value("input file (HMM or sequence)"),
+        (sequence_file << value("input sequence file"),
          graph_file << value("graph file in GFA"),
          k << integer("k-mer size"),
          required("--output", "-o") & value("output file", output_file) % "output file",
