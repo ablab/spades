@@ -1224,13 +1224,21 @@ int pathracer_main(int argc, char* argv[]) {
 
 int aling_kmers_main(int argc, char* argv[]) {
     create_console_logger("");
-    if (argc != 4 && argc != 5) {
-        INFO("Call: " << argv[0] << " <hmm file> <sequence file> <k> [<graph file>]");
-        return 0;
+    using namespace clipp;
+
+    std::string hmm_file;
+    std::string sequence_file;
+    size_t k;
+
+    auto cli =
+        (sequence_file << value("input sequence file"),
+         hmm_file << value("HMM file"),
+         k << integer("k-mer size"));
+
+    if (!parse(argc, argv, cli)) {
+        std::cout << make_man_page(cli, argv[0]);
+        exit(1);
     }
-    std::string hmm_file = argv[1];
-    std::string sequence_file = argv[2];
-    size_t k = atoi(argv[3]);
 
     auto hmms = ParseHMMFile(hmm_file);
     auto seqs = read_fasta_edges(sequence_file, false);
