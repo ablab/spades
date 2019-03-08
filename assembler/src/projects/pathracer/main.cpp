@@ -968,6 +968,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         auto cached_initial = ccc.Cursors();
         auto result = find_best_path(fees, cached_initial, &ccc);
 
+
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
         bool x_as_m_in_alignment = fees.is_proteomic();
@@ -976,6 +977,10 @@ void TraceHMM(const hmmer::HMM &hmm,
             INFO("Best sequence in the current component");
             INFO(top_paths.str(0, &ccc));
             INFO("Alignment: " << compress_alignment(top_paths.alignment(0, fees, &ccc), x_as_m_in_alignment));
+        }
+        auto topstring = top_paths.str(0, &ccc);
+        if (result.pathlink()->has_sequence(topstring, &ccc)) {
+            INFO("Top path found");
         }
 
         for (const auto& annotated_path : top_paths) {
