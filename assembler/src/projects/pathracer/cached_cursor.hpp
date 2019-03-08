@@ -13,6 +13,12 @@
 
 #include "common/utils/verify.hpp"
 
+
+// Serialization
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/common.hpp>
+
 using Index = uint32_t;
 
 class CachedCursorContext;
@@ -28,6 +34,10 @@ public:
     char letter(Context context) const;
     Index index() const { return index_; }
 
+    template <class Archive>
+    void serialize(Archive &archive) {
+        archive(index_);
+    }
 private:
     Index index_;
 };
@@ -101,6 +111,10 @@ public:
 
     friend class CachedCursor;
 
+    template <class Archive>
+    void serialize(Archive &archive) {
+        archive(letters_, nexts_, prevs_);
+    }
 private:
     std::vector<char> letters_;
     std::vector<std::vector<CachedCursor>> nexts_;
