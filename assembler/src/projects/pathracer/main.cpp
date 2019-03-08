@@ -49,6 +49,8 @@
 #include <llvm/ADT/iterator_range.h>
 #include <type_traits>
 
+#include <cereal/archives/binary.hpp>
+
 extern "C" {
     #include "easel.h"
     #include "esl_sqio.h"
@@ -972,6 +974,12 @@ void TraceHMM(const hmmer::HMM &hmm,
         CachedCursorContext ccc(initial, context);
         auto cached_initial = ccc.Cursors();
         auto result = find_best_path(fees, cached_initial, &ccc);
+        {
+            std::ofstream of(cfg.output_dir + "/event_graph_" + component_name + ".cereal");
+            cereal::BinaryOutputArchive oarchive(of);
+            // oarchive(ccc, result);
+            oarchive(ccc);
+        }
 
         if (!cfg.known_sequences.empty()) {
             auto seqs = read_fasta(cfg.known_sequences);
