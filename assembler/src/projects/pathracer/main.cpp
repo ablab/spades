@@ -1248,7 +1248,7 @@ int aling_kmers_main(int argc, char* argv[]) {
     auto seqs = read_fasta(sequence_file);
 
     hmmer::hmmer_cfg hcfg;
-    const auto &hmm = hmms[0];
+    for (const auto &hmm : hmms) {
     const P7_HMM *p7hmm = hmm.get();
     auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
     const size_t state_limits_coef = 1;
@@ -1256,7 +1256,7 @@ int aling_kmers_main(int argc, char* argv[]) {
     fees.state_limits.l100 = 50000 * state_limits_coef;
     fees.state_limits.l500 = 10000 * state_limits_coef;
 
-    std::ofstream of(output_file);
+    std::ofstream of(output_file + hmm.get()->name);
     std::vector<double> best_scores;
     for (size_t seq_id = 0; seq_id < seqs.size(); ++seq_id) {
         std::string seq = seqs[seq_id].second;
@@ -1284,15 +1284,17 @@ int aling_kmers_main(int argc, char* argv[]) {
             continue;
         }
         VERIFY(!top_paths.empty());
-        of << ">" << id << "|Score=" << result.best_score() <<  "\n";
-        io::WriteWrapped(seq, of);
-
         INFO("Best score: " << result.best_score());
         best_scores.push_back(result.best_score());
         std::string aligned = top_paths.str(0, &seq);
 
         INFO("Aligned string: " << aligned);
         INFO("Aligned length: " << aligned.size() << " from " << seq.size());
+        if (aligned.size() + 5 >= seq.size()) {
+            of << ">" << id << "|Score=" << result.best_score() <<  "\n";
+            io::WriteWrapped(seq, of);
+        }
+
 
         hmmer::HMMMatcher matcher(hmm, hcfg);
         // Split into k-mers
@@ -1329,6 +1331,7 @@ int aling_kmers_main(int argc, char* argv[]) {
         INFO("Hits: " << hit_count << " over " << seq.size() - k + 1);
     }
     INFO("Best scores: " << best_scores);
+    }
 
     return 0;
 }
