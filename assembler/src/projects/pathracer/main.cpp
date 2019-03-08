@@ -831,7 +831,7 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
     cursors.insert(right_cursors.cbegin(), right_cursors.cend());
 
     std::vector<GraphCursor> cursors_vector(cursors.cbegin(), cursors.cend());
-    auto cursor_conn_comps = cursor_connected_components(cursors_vector, &graph);
+    auto cursor_conn_comps = fake_cursor_connected_components(cursors_vector, &graph);  // FIXME
     std::stable_sort(cursor_conn_comps.begin(), cursor_conn_comps.end(),
                      [](const auto &c1, const auto &c2) { return c1.size() > c2.size(); });
 
