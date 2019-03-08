@@ -10,6 +10,7 @@
 #include "cursor_conn_comps.hpp"
 #include "cached_cursor.hpp"
 #include "superpath_index.hpp"
+#include "fasta_reader.hpp"
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
@@ -104,6 +105,7 @@ struct PathracerConfig {
     bool local = false;
     size_t memory = 100;  // 100GB
     int use_experimental_i_loop_processing = 0;
+    std::string known_sequences = "";
 
     hmmer::hmmer_cfg hcfg;
 };
@@ -179,6 +181,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
           (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3"
       ),
       "Developer options:" % (
+          (option("--known-sequences") & value("filename", cfg.known_sequences)) % "FASTA file with known sequnces that should be found",
           (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
           (option("--extend-const") & integer("value", cfg.extend_const)) % "const addition to overhang values for neighbourhood search [default: 15]",
           (option("--state-limits-coef") & integer("x", cfg.state_limits_coef)) % "multiplier for default #state limit [default: 1]",
@@ -960,14 +963,24 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     INFO("Connected component sizes: " << cursor_conn_comps_sizes);
 
-    auto run_search = [&fees, &p7hmm](const auto &initial, size_t top,
-                                      std::vector<HMMPathInfo> &local_results,
-                                      const auto context,
-                                      const std::string &component_name = "") -> void {
+    auto run_search = [&fees, &p7hmm, &cfg](const auto &initial, size_t top,
+                                            std::vector<HMMPathInfo> &local_results,
+                                            const auto context,
+                                            const std::string &component_name = "") -> void {
         CachedCursorContext ccc(initial, context);
         auto cached_initial = ccc.Cursors();
         auto result = find_best_path(fees, cached_initial, &ccc);
 
+        if (cfg.known_sequences != "") {
+            auto seqs = read_fasta(cfg.known_sequences);
+            for (const auto &kv : seqs) {
+                if (result.pathlink()->has_sequence(kv.second, &ccc)) {
+                    INFO("Sequence " << kv.first << " found");
+                } else {
+                    INFO("Sequence " << kv.first << " not found")
+                }
+            }
+        }
 
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
@@ -977,10 +990,6 @@ void TraceHMM(const hmmer::HMM &hmm,
             INFO("Best sequence in the current component");
             INFO(top_paths.str(0, &ccc));
             INFO("Alignment: " << compress_alignment(top_paths.alignment(0, fees, &ccc), x_as_m_in_alignment));
-        }
-        auto topstring = top_paths.str(0, &ccc);
-        if (result.pathlink()->has_sequence(topstring, &ccc)) {
-            INFO("Top path found");
         }
 
         for (const auto& annotated_path : top_paths) {
@@ -1228,7 +1237,6 @@ int pathracer_main(int argc, char* argv[]) {
     return 0;
 }
 
-#include "fasta_reader.hpp"
 #include "string_cursor.hpp"
 
 int aling_kmers_main(int argc, char* argv[]) {
