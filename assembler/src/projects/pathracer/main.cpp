@@ -977,8 +977,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         {
             std::ofstream of(cfg.output_dir + "/event_graph_" + component_name + ".cereal");
             cereal::BinaryOutputArchive oarchive(of);
-            // oarchive(ccc, result);
-            oarchive(ccc);
+            oarchive(ccc, result);
         }
 
         if (!cfg.known_sequences.empty()) {

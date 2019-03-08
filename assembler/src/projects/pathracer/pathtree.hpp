@@ -21,6 +21,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/common.hpp>
+#include <cereal/types/utility.hpp>
 #include "cereal_llvm_intrusive_ptr.hpp"
 
 enum EventType { NONE, MATCH, INSERTION };
@@ -35,6 +36,11 @@ struct Event {
   unsigned m : 30;  // 30 bits are more than enough
   EventType type : 2;
   static const unsigned m_mask = unsigned(-1) >> 2;
+
+  template <class Archive>
+  void serialize(Archive &archive) {
+    archive(*reinterpret_cast<uint32_t*>(this));
+  }
 };
 
 template <class GraphCursor>
