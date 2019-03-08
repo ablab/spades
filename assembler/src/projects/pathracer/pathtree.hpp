@@ -17,6 +17,12 @@
 
 #include "fees.hpp"
 
+// Serialization
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/common.hpp>
+#include "cereal_llvm_intrusive_ptr.hpp"
+
 enum EventType { NONE, MATCH, INSERTION };
 using score_t = double;
 
@@ -334,6 +340,11 @@ public:
     return links.size();
   }
 
+  template <class Archive>
+  void serialize(Archive &archive) {
+    archive(scores_, score_, event_);
+  }
+
 private:
   // std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
   std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> scores_;
@@ -395,6 +406,10 @@ class PathSet {
     return pathlink_.get();
   }
 
+  template <class Archive>
+  void serialize(Archive &archive) {
+    archive(pathlink_);
+  }
  private:
   PathLinkRef<GraphCursor> pathlink_;
 };
