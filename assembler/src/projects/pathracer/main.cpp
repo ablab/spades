@@ -1059,8 +1059,11 @@ void TraceHMM(const hmmer::HMM &hmm,
         auto paths = process_component(component_cursors, component_name);
 
         INFO("Total " << paths.size() << " unique edge paths extracted");
+        size_t count = 0;  // FIXME this ad-hoc
         for (const auto &path : paths) {
             INFO("Path length : " << path.size() << " edges " << path);  // FIXME use id_mapper here as well
+            ++count;
+            if (count > 1000) break;
         }
 
         if (cfg.draw) {
