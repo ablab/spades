@@ -973,13 +973,20 @@ void TraceHMM(const hmmer::HMM &hmm,
         auto cached_initial = ccc.Cursors();
         auto result = find_best_path(fees, cached_initial, &ccc);
 
-        if (cfg.known_sequences != "") {
+        if (!cfg.known_sequences.empty()) {
             auto seqs = read_fasta(cfg.known_sequences);
             for (const auto &kv : seqs) {
-                if (result.pathlink()->has_sequence(kv.second, &ccc)) {
+                const std::string seq = kv.second;
+                if (result.pathlink()->has_sequence(seq, &ccc)) {
                     INFO("Sequence " << kv.first << " found");
                 } else {
-                    INFO("Sequence " << kv.first << " not found")
+                    auto has_prefix = [&](int l) -> bool { return result.pathlink()->has_sequence(seq.substr(0, l), &ccc); };
+                    auto has_suffix = [&](int l) -> bool { return result.pathlink()->has_sequence(seq.substr(seq.size() - l), &ccc); };
+                    auto has_infix = [&](int l) -> bool { return result.pathlink()->has_sequence(seq.substr((seq.size() - l) / 2, l), &ccc); };
+                    size_t max_prefix_size = int_max_binsearch(has_prefix, 0, seq.length() + 1);
+                    size_t max_suffix_size = int_max_binsearch(has_suffix, 0, seq.length() + 1);
+                    size_t max_infix_size = int_max_binsearch(has_infix, 0, seq.length() + 1);
+                    INFO("Sequence " << kv.first << " not found, max prefix " << max_prefix_size << ", max suffix " << max_suffix_size << " max infix " << max_infix_size << " over " << seq.size());
                 }
             }
         }
