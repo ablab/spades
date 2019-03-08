@@ -8,7 +8,6 @@ from string_dist_utils import multi_lcs
 
 __author__ = 'anton'
 
-import sys
 
 def CommonPrefix(s1, s2):
     n = 0
@@ -16,11 +15,13 @@ def CommonPrefix(s1, s2):
         n += 1
     return n
 
+
 def CommonSuffix(s1, s2):
     n = 0
     while n < len(s1) and n < len(s2) and s1[-n - 1] == s2[-n - 1]:
         n += 1
     return n
+
 
 def FindCommon(lines):
     if len(lines) == 0:
@@ -35,11 +36,13 @@ def FindCommon(lines):
         min_len = min(min_len, len(line))
     return left, min(right, min_len - left)
 
+
 def generate_ids(lines):
     l, r = FindCommon(lines)
     lines = [line[l: len(line) - r] for line in lines]
     id_candidates = generate_id_candidates(lines)
     return select_ids_from_candidates(id_candidates)
+
 
 def select_ids_from_candidates(id_candidates):
     if len(id_candidates) == 1:

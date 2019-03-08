@@ -7,8 +7,10 @@
 import os
 import sys
 
+
 def StringStartsFromPrefix(string, prefix):
     return string[:len(prefix)] == prefix
+
 
 def CIGAR_to_List(cigar):
     delims = ["M", "I", "D", "N", "S", "H", "P", "=", "X"]
@@ -24,12 +26,14 @@ def CIGAR_to_List(cigar):
             cur_num += s
     return [cigar_list, num_list]
 
+
 def UpdateAlignmentLength(align_len, cigar_char, cigar_len, seq_len):
     if cigar_char == "M" or cigar_char == "D" or cigar_char == "N":
         align_len += cigar_len
     elif cigar_char == "=":
         align_len = seq_len
     return align_len
+
 
 ############################# SAM Config class #############################
 
@@ -61,20 +65,21 @@ class SAM_Config:
     seq_index = 9
     qual_index = 10
 
+
 ############################# SAM Entry class #############################
 
 class SAM_entry:
-    query_name = ""         # string
-    flag = 0                # int
-    target_name = ""        # string
-    pos = 0                 # int
-    mapping_qiality = 0     # int
-    cigar = ""              # string
-    mate_target_name = ""   # string
-    mate_pos = 0            # int
-    tlen = 0                # int
-    seq = ""                # string
-    qual = ""               # string
+    query_name = ""  # string
+    flag = 0  # int
+    target_name = ""  # string
+    pos = 0  # int
+    mapping_qiality = 0  # int
+    cigar = ""  # string
+    mate_target_name = ""  # string
+    mate_pos = 0  # int
+    tlen = 0  # int
+    seq = ""  # string
+    qual = ""  # string
 
     alen = 0
     sam_config = SAM_Config()
@@ -107,8 +112,9 @@ class SAM_entry:
 
         self.ComputeAlignmentLength()
 
-        #if self.cigar != "101M":
+        # if self.cigar != "101M":
         #    self.Print()
+
 
 ############################# SAM Parser class #############################
 
@@ -127,9 +133,11 @@ class SAMEntryInfo:
         self.qual = qual
         self.cigar = cigar
 
-
     def Print(self):
-        sys.stdout.write(self.name + " " + str(self.tid) + " " + str(self.pos) + " " + str(self.alen) + " " + str(self.is_unmapped) + " " + str(self.proper_alignment) + " " + str(self.flag) + " " + str(self.secondary) + "\n")
+        sys.stdout.write(self.name + " " + str(self.tid) + " " + str(self.pos) + " " + str(self.alen) + " " + str(
+            self.is_unmapped) + " " + str(self.proper_alignment) + " " + str(self.flag) + " " + str(
+            self.secondary) + "\n")
+
 
 class SamIter:
     def __init__(self, sam):
@@ -141,25 +149,25 @@ class SamIter:
         return self.next()
 
     def next(self):
-        while  self.iter_index < self.sam.NumEntries():
+        while self.iter_index < self.sam.NumEntries():
             entry = self.sam.entries[self.iter_index]
             tid = self.sam.target_map[entry.target_name]
-            sam_iterator = SAMEntryInfo(tid, entry.target_name, entry.pos, entry.alen, entry.seq, entry.flag, entry.query_name, entry.qual, entry.cigar)
+            sam_iterator = SAMEntryInfo(tid, entry.target_name, entry.pos, entry.alen, entry.seq, entry.flag,
+                                        entry.query_name, entry.qual, entry.cigar)
             self.iter_index += 1
             if not sam_iterator.secondary:
                 return sam_iterator
         raise StopIteration()
 
 
-
 class Samfile:
-    headers = list()        # is not used
-    queries = list()        # is not used
-    targets = list()        # lines corresponding to references. Can be parsed
-    programs = list()       # is not used
-    comments = list()       # something strange
-    entries = list()        # list of SAM_entry objects
-    target_map = dict()     # map "target" -> index
+    headers = list()  # is not used
+    queries = list()  # is not used
+    targets = list()  # lines corresponding to references. Can be parsed
+    programs = list()  # is not used
+    comments = list()  # something strange
+    entries = list()  # list of SAM_entry objects
+    target_map = dict()  # map "target" -> index
 
     # auxiliaries
     sam_config = SAM_Config()
@@ -193,7 +201,6 @@ class Samfile:
         target_name = target_name[len(self.sam_config.sq_tname_prefix):]
         self.target_map[target_name] = len(self.targets) - 1
 
-
     def InitFields(self):
         self.targets = list()
         self.headers = list()
@@ -223,7 +230,7 @@ class Samfile:
         self.target_map["*"] = -1
         for line in lines:
             line = line.strip()
-            
+
             # line is reference sequence dictionary
             if self.IsLineReferenceDescr(line):
                 self.UpdateTargetFields(line)
@@ -255,10 +262,12 @@ class Samfile:
     def gettid(self, tname):
         return self.target_map[tname]
 
+
 def chain_iter(iterators):
     for it in iterators:
         for element in it:
             yield element
+
 
 class SamChain:
     def __init__(self, sam_files):
@@ -273,14 +282,13 @@ class SamChain:
                 return sam.gettid(tname)
         return None
 
-
 ############################# test
 
-#sam_file = "example.sam"
-#sam_parser = Samfile(sam_file)
-#sam_parser.PrintStats()
-#i = 0
-#for e in sam_parser:
+# sam_file = "example.sam"
+# sam_parser = Samfile(sam_file)
+# sam_parser.PrintStats()
+# i = 0
+# for e in sam_parser:
 #    if i >= 5:
 #        break
 #    e.Print()

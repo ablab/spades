@@ -8,7 +8,9 @@ __author__ = 'anton'
 import getopt
 import os
 import sys
+
 import options_storage
+
 
 class Options:
     def set_default_options(self):
@@ -85,7 +87,8 @@ class Options:
             elif key == "--help-hidden":
                 print_usage_and_exit(0, self.version, show_hidden=True)
         if not self.mode in self.possible_modes:
-            sys.stderr.write("Error: --do parameter can only have one of the following values: " + ", ".join(self.possible_modes) + "\n")
+            sys.stderr.write("Error: --do parameter can only have one of the following values: " + ", ".join(
+                self.possible_modes) + "\n")
             print_usage_and_exit(1, self.version)
         if None == self.output_dir or os.path.isfile(self.output_dir):
             sys.stderr.write("Error: Please provide output directory\n")
@@ -119,11 +122,12 @@ def print_usage_and_exit(code, version, show_hidden=False):
     sys.stderr.write("--construct-dataset\t\tparse dataset from input folder" + "\n")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Input options:" + "\n")
-    sys.stderr.write("--input-dir\t<directory>\tdirectory with input data. Note that the directory should contain only files with reads. This option can be used several times to provide several input directories." + "\n")
+    sys.stderr.write(
+        "--input-dir\t<directory>\tdirectory with input data. Note that the directory should contain only files with reads. This option can be used several times to provide several input directories." + "\n")
     sys.stderr.write("--dataset\t<file>\t\tfile with dataset description" + "\n")
     if show_hidden:
         pass
-        #ToDo
+        # ToDo
     # sys.stderr.write("" + "\n")
     # sys.stderr.write("Output options:" + "\n")
     # sys.stderr.write("--print-dataset\tprints file with dataset generated after analysis of input directory contents" + "\n")

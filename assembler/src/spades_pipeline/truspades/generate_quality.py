@@ -5,14 +5,12 @@
 ############################################################################
 
 import re
-import sys
-import itertools
-from common import sam_parser
 
 pattern = re.compile('([0-9]*)([MIDNSHP])')
 
-def parse(cigar, len, pos = 0):
-    if cigar == "=" :
+
+def parse(cigar, len, pos=0):
+    if cigar == "=":
         for i in range(len):
             yield (i, i + pos)
         return
@@ -35,8 +33,9 @@ def parse(cigar, len, pos = 0):
         elif c in "IS":
             cur += n
 
+
 def CollectQuality(contigs, sam):
-    qual = [[[0,0] for i in range(len(contig))] for contig in contigs]
+    qual = [[[0, 0] for i in range(len(contig))] for contig in contigs]
     for rec in sam:
         if rec.proper_alignment:
             for seq_pos, contig_pos in parse(rec.cigar, rec.alen, rec.pos - 1):
@@ -44,6 +43,7 @@ def CollectQuality(contigs, sam):
                     qual[rec.tid][contig_pos][1] += 1
                     qual[rec.tid][contig_pos][0] += ord(rec.qual[seq_pos])
     return qual
+
 
 def CountContigQuality(contigs, qual):
     for i in range(len(contigs)):
@@ -61,4 +61,3 @@ def CountContigQuality(contigs, qual):
 def GenerateQuality(contigs, sam):
     qual = CollectQuality(contigs, sam)
     CountContigQuality(contigs, qual)
-

@@ -1,27 +1,28 @@
 #!/usr/bin/env python
 
 ############################################################################
-# Copyright (c) 2015-2016 Saint Petersburg State University
+# Copyright (c) 2015-2019 Saint Petersburg State University
 # Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
 
+import glob
+import gzip
+import itertools
+import logging
+import math
 import os
+import re
+import shutil
 import stat
 import sys
-import logging
-import glob
-import re
-import gzip
 import tempfile
-import shutil
-import options_storage
-import itertools
-from common import SeqIO
-import math
-from os.path import abspath, expanduser, join
 from distutils.version import LooseVersion
+from os.path import abspath, expanduser, join
+
+import options_storage
+from common import SeqIO
 
 # constants to print and detect warnings and errors in logs
 SPADES_PY_ERROR_MESSAGE = "== Error == "
@@ -33,21 +34,27 @@ continue_logfile_offset = None
 # for removing tmp_dir even if error occurs
 current_tmp_dir = None
 
+only_old_style_options = True
+old_style_single_reads = False
+
 
 def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
     binary_name = "SPAdes"
 
     if log:
-        log.info("\n\n" + prefix + " " + err_str)
+        log.info("\n\n%s %s" % (prefix, err_str))
         log_warnings(log, with_error=True)
-        log.info("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@cab.spbu.ru")
+        log.info("\nIn case you have troubles running %s, you can write to spades.support@cab.spbu.ru" % binary_name)
         log.info("or report an issue on our GitHub repository github.com/ablab/spades")
-        log.info("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.")
+        log.info(
+            "Please provide us with params.txt and %s.log files from the output directory." % binary_name.lower())
     else:
-        sys.stderr.write("\n\n" + prefix + " " + err_str + "\n\n")
-        sys.stderr.write("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@cab.spbu.ru\n")
+        sys.stderr.write("\n\n%s %s\n\n" % (prefix, err_str))
+        sys.stderr.write(
+            "\nIn case you have troubles running %s, you can write to spades.support@cab.spbu.ru\n" % binary_name)
         sys.stderr.write("or report an issue on our GitHub repository github.com/ablab/spades\n")
-        sys.stderr.write("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.\n")
+        sys.stderr.write(
+            "Please provide us with params.txt and %s.log files from the output directory.\n" % binary_name.lower())
         sys.stderr.flush()
     if current_tmp_dir and os.path.isdir(current_tmp_dir):
         shutil.rmtree(current_tmp_dir)
@@ -56,9 +63,9 @@ def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
 
 def warning(warn_str, log=None, prefix="== Warning == "):
     if log:
-        log.info("\n\n" + prefix + " " + warn_str + "\n\n")
+        log.info("\n\n%s %s\n\n" % (prefix, warn_str))
     else:
-        sys.stdout.write("\n\n" + prefix + " " + warn_str + "\n\n\n")
+        sys.stdout.write("\n\n%s %s\n\n\n" % (prefix, warn_str))
         sys.stdout.flush()
 
 
@@ -85,13 +92,13 @@ def check_python_version():
         supported_versions_msg.append("Python%s: %s" % (major, supported_versions.replace('+', " and higher")))
         if LooseVersion(min_inc) <= LooseVersion(current_version) < LooseVersion(max_exc):
             return True
-    error("Python version " + current_version + " is not supported!\n" +
-          "Supported versions are " + ", ".join(supported_versions_msg))
+    error("python version %s is not supported!\n"
+          "Supported versions are %s" % (current_version, ", ".join(supported_versions_msg)))
 
 
 def get_spades_binaries_info_message():
-    return "You can obtain SPAdes binaries in one of two ways:" +\
-           "\n1. Download them from http://cab.spbu.ru/software/spades/" +\
+    return "You can obtain SPAdes binaries in one of two ways:" + \
+           "\n1. Download them from http://cab.spbu.ru/software/spades/" + \
            "\n2. Build source code with ./spades_compile.sh script"
 
 
@@ -99,7 +106,7 @@ def check_binaries(binary_dir, log):
     for binary in ["spades-hammer", "spades-ionhammer", "spades-core", "spades-bwa"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
-            error("SPAdes binaries not found: " + binary_path + "\n" + get_spades_binaries_info_message(), log)
+            error("SPAdes binaries not found: %s\n%s" % (binary_path, get_spades_binaries_info_message()), log)
 
 
 def check_file_existence(input_filename, message="", log=None):
@@ -125,6 +132,7 @@ def check_path_is_ascii(path, message=""):
         error("path contains non-ASCII characters: %s (%s)" % (path, message))
 
 
+# FIXME: "isfile" for dirname looks strange.
 def ensure_dir_existence(dirname):
     if os.path.isfile(dirname):
         os.remove(dirname)
@@ -133,7 +141,7 @@ def ensure_dir_existence(dirname):
 
 
 def recreate_dir(dirname):
-    if os.path.exists(dirname):
+    if os.path.isdir(dirname):
         shutil.rmtree(dirname)
     os.makedirs(dirname)
 
@@ -144,30 +152,34 @@ def check_files_duplication(filenames, log):
             error("file %s was specified at least twice" % filename, log)
 
 
-def check_reads_file_format(filename, message, only_assembler, library_type, log):
+def check_reads_file_format(filename, message, only_assembler, iontorrent, library_type, log):
     if filename in options_storage.dict_of_prefixes:
         ext = options_storage.dict_of_prefixes[filename]
     else:
         ext = os.path.splitext(filename)[1]
-        if ext.lower() == '.gz':
+        if ext.lower() == ".gz":
             pre_ext = os.path.splitext(filename[:-len(ext)])[1]
             if (pre_ext + ext).lower() in options_storage.ALLOWED_READS_EXTENSIONS:
                 ext = pre_ext + ext
-            else: # allows ".fastq.1.gz" like extensions
+            else:  # allows ".fastq.1.gz" like extensions
                 pre_pre_ext = os.path.splitext(filename[:-len(pre_ext + ext)])[1]
                 ext = pre_pre_ext + ext
     if ext.lower() not in options_storage.ALLOWED_READS_EXTENSIONS:
-        error("file with reads has unsupported format (only " + ", ".join(options_storage.ALLOWED_READS_EXTENSIONS) +
-              " are supported): %s (%s)" % (filename, message), log)
+        error("file with reads has unsupported format (only %s are supported): %s (%s)" %
+              (", ".join(options_storage.ALLOWED_READS_EXTENSIONS), filename, message), log)
+
+    if not iontorrent and ext.lower() in options_storage.IONTORRENT_ONLY_ALLOWED_READS_EXTENSIONS:
+        error(", ".join(options_storage.IONTORRENT_ONLY_ALLOWED_READS_EXTENSIONS) +
+              " formats supported only for iontorrent mode: %s (%s)" % (filename, message), log)
+
     if not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS and \
-       library_type not in options_storage.LONG_READS_TYPES:
-        error("to run read error correction, reads should be in FASTQ format (" +
-              ", ".join(options_storage.BH_ALLOWED_READS_EXTENSIONS) +
-              " are supported): %s (%s)" % (filename, message), log)
+                    library_type not in options_storage.LONG_READS_TYPES:
+        error("to run read error correction, reads should be in FASTQ format (%s are supported): %s (%s)" %
+              (", ".join(options_storage.BH_ALLOWED_READS_EXTENSIONS), filename, message), log)
+
     if library_type.endswith("contigs") and ext.lower() not in options_storage.CONTIGS_ALLOWED_READS_EXTENSIONS:
-        error("file with " + library_type + " should be in FASTA format  (" +
-              ", ".join(options_storage.CONTIGS_ALLOWED_READS_EXTENSIONS) +
-              " are supported): %s (%s)" % (filename, message), log)
+        error("file with %s should be in FASTA format  (%s are supported): %s (%s)" %
+              (library_type, ", ".join(options_storage.CONTIGS_ALLOWED_READS_EXTENSIONS), filename, message), log)
 
 
 # http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
@@ -195,8 +207,8 @@ def get_available_memory():
         try:
             for line in open(mem_info_filename):
                 if line.startswith(avail_mem_header):
-                    avail_mem = int(line[len(avail_mem_header):].split()[0]) # in kB
-                    avail_mem /= 1024 * 1024 # in GB
+                    avail_mem = int(line[len(avail_mem_header):].split()[0])  # in kB
+                    avail_mem /= 1024 * 1024  # in GB
                     return avail_mem
         except ValueError:
             return None
@@ -208,7 +220,7 @@ def get_available_memory():
 # based on http://stackoverflow.com/questions/196345/how-to-check-if-a-string-in-python-is-in-ascii
 def is_ascii_string(line):
     try:
-        line.encode('ascii')
+        line.encode("ascii")
     except UnicodeDecodeError:  # python2
         return False
     except UnicodeEncodeError:  # python3
@@ -217,14 +229,14 @@ def is_ascii_string(line):
         return True
 
 
-def process_readline(line, is_python3=sys.version.startswith('3.')):
+def process_readline(line, is_python3=sys.version.startswith("3.")):
     if is_python3:
-        return str(line, 'utf-8').rstrip()
+        return str(line, "utf-8").rstrip()
     return line.rstrip()
 
 
 def process_spaces(str):
-    if str.find(" ") != -1:
+    if " " in str:
         str = '"' + str + '"'
     return str
 
@@ -240,7 +252,7 @@ def sys_call(cmd, log=None, cwd=None):
 
     proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd)
 
-    output = ''
+    output = ""
     while not proc.poll():
         line = process_readline(proc.stdout.readline())
         if line:
@@ -260,7 +272,7 @@ def sys_call(cmd, log=None, cwd=None):
                 output += line + "\n"
 
     if proc.returncode:
-        error('system call for: "%s" finished abnormally, err code: %d' % (cmd, proc.returncode), log)
+        error("system call for: \"%s\" finished abnormally, OS return value: %d" % (cmd, proc.returncode), log)
     return output
 
 
@@ -302,11 +314,11 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
 
         if not out_filename:
             for line in proc.stdout.readlines():
-                if line != '':
+                if line != "":
                     log.info(process_readline(line))
         if not err_filename:
             for line in proc.stderr.readlines():
-                if line != '':
+                if line != "":
                     log.info(process_readline(line))
     else:
         proc.wait()
@@ -316,18 +328,18 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     if err_filename:
         stderr.close()
     if proc.returncode:
-        error('system call for: "%s" finished abnormally, err code: %d' % (cmd, proc.returncode), log)
+        error("system call for: \"%s\" finished abnormally, OS return value: %d" % (cmd, proc.returncode), log)
 
 
 def save_data_to_file(data, file):
-    output = open(file, 'wb')
-    output.write(data.read())
-    output.close()
+    with open(file, "wb") as output:
+        output.write(data.read())
+
     os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
 def get_important_messages_from_log(log_filename, warnings=True):
-    def already_saved(list_to_check, suffix): # for excluding duplicates (--continue-from may cause them)
+    def already_saved(list_to_check, suffix):  # for excluding duplicates (--continue-from may cause them)
         for item in list_to_check:
             if item.endswith(suffix):
                 return True
@@ -340,34 +352,33 @@ def get_important_messages_from_log(log_filename, warnings=True):
         spades_py_message = SPADES_PY_ERROR_MESSAGE
         spades_message = SPADES_ERROR_MESSAGE
 
-    ### for capturing correct warnings in case of continue_mode
+    # for capturing correct warnings in case of continue_mode
     if continue_logfile_offset:
-        continued_log = open(log_filename, 'r')
-        continued_log.seek(continue_logfile_offset)
-        continued_stage_phrase = continued_log.readline()
-        while not continued_stage_phrase.strip():
+        with open(log_filename) as continued_log:
+            continued_log.seek(continue_logfile_offset)
             continued_stage_phrase = continued_log.readline()
-        lines_to_check = continued_log.readlines()
-        continued_log.close()
+            while not continued_stage_phrase.strip():
+                continued_stage_phrase = continued_log.readline()
+            lines_to_check = continued_log.readlines()
 
-        all_lines = open(log_filename, 'r').readlines()
+        all_lines = open(log_filename).readlines()
         failed_stage_index = all_lines.index(continued_stage_phrase)
         lines_to_check = all_lines[:failed_stage_index] + lines_to_check
     else:
-        lines_to_check = open(log_filename, 'r').readlines()
+        lines_to_check = open(log_filename).readlines()
 
     spades_py_msgs = []
     spades_msgs = []
-    IMPORTANT_MESSAGE_SUMMARY_PREFIX = ' * '
+    IMPORTANT_MESSAGE_SUMMARY_PREFIX = " * "
     for line in lines_to_check:
         if line.startswith(IMPORTANT_MESSAGE_SUMMARY_PREFIX):
             continue
-        if line.find(spades_py_message) != -1:
+        if spades_py_message in line:
             suffix = line[line.find(spades_py_message) + len(spades_py_message):].strip()
-            line = line.replace(spades_py_message, '').strip()
+            line = line.replace(spades_py_message, "").strip()
             if not already_saved(spades_py_msgs, suffix):
                 spades_py_msgs.append(IMPORTANT_MESSAGE_SUMMARY_PREFIX + line)
-        elif line.find(spades_message) != -1:
+        elif spades_message in line:
             suffix = line[line.find(spades_message) + len(spades_message):].strip()
             line = line.strip()
             if not already_saved(spades_msgs, suffix):
@@ -377,8 +388,8 @@ def get_important_messages_from_log(log_filename, warnings=True):
 
 def get_logger_filename(log):
     log_file = None
-    for h in log.__dict__['handlers']:
-        if h.__class__.__name__ == 'FileHandler':
+    for h in log.__dict__["handlers"]:
+        if h.__class__.__name__ == "FileHandler":
             log_file = h.baseFilename
     return log_file
 
@@ -387,7 +398,7 @@ def log_warnings(log, with_error=False):
     log_file = get_logger_filename(log)
     if not log_file:
         return False
-    for h in log.__dict__['handlers']:
+    for h in log.__dict__["handlers"]:
         h.flush()
     spades_py_warns, spades_warns = get_important_messages_from_log(log_file, warnings=True)
     if spades_py_warns or spades_warns:
@@ -398,7 +409,7 @@ def log_warnings(log, with_error=False):
         warnings_filename = os.path.join(os.path.dirname(log_file), "warnings.log")
         warnings_handler = logging.FileHandler(warnings_filename, mode='w')
         log.addHandler(warnings_handler)
-        #log.info("===== Warnings occurred during SPAdes run =====")
+        # log.info("===== Warnings occurred during SPAdes run =====")
         log.info("")
         if spades_py_warns:
             log.info("=== Pipeline warnings:")
@@ -421,20 +432,14 @@ def log_warnings(log, with_error=False):
 
 
 def continue_from_here(log):
-    if options_storage.continue_mode:
-        options_storage.continue_mode = False
+    if options_storage.args.continue_mode:
+        options_storage.args.continue_mode = False
         log_filename = get_logger_filename(log)
         if log_filename:
-            log_file = open(log_filename, 'r')
-            log_file.seek(0, 2) # seek to the end of file
+            log_file = open(log_filename)
+            log_file.seek(0, 2)  # seek to the end of file
             global continue_logfile_offset
             continue_logfile_offset = log_file.tell()
-
-
-def finish_here(log):
-    log.info("\n======= Skipping the rest of SPAdes pipeline (--stop-after was set to '%s'). "
-             "You can continue later with --continue or --restart-from options\n" % options_storage.stop_after)
-    options_storage.run_completed = True
 
 
 def get_latest_dir(pattern):
@@ -444,7 +449,7 @@ def get_latest_dir(pattern):
         return text
 
     def natural_keys(text):
-        return [atoi(c) for c in re.split('(\d+)', text)]
+        return [atoi(c) for c in re.split("(\d+)", text)]
 
     latest_dir = None
     for dir_to_test in sorted(glob.glob(pattern), key=natural_keys, reverse=True):
@@ -458,37 +463,37 @@ def get_tmp_dir(prefix="", base_dir=None):
     global current_tmp_dir
 
     if not base_dir:
-        base_dir = options_storage.tmp_dir
+        base_dir = options_storage.args.tmp_dir
     if not os.path.isdir(base_dir):
         os.makedirs(base_dir)
     current_tmp_dir = tempfile.mkdtemp(dir=base_dir, prefix=prefix)
     return current_tmp_dir
 
 
-### START for processing YAML files
+# START for processing YAML files
 def get_short_reads_type(option):
     for short_reads_type in options_storage.SHORT_READS_TYPES.keys():
-        if option.startswith('--' + short_reads_type):
+        if option.startswith("--" + short_reads_type):
             # additional check to except collisions with LONG_READS_TYPES, e.g. --s<#> and --sanger
-            if option[len('--' + short_reads_type):len('--' + short_reads_type) + 1].isdigit():
+            if option[len("--" + short_reads_type):len("--" + short_reads_type) + 1].isdigit():
                 return short_reads_type
     return None
 
 
 def get_long_reads_type(option):
     for long_reads_type in options_storage.LONG_READS_TYPES:
-        if option.startswith('--') and option in ("--" + long_reads_type):
+        if option.startswith("--") and option in ("--" + long_reads_type):
             return long_reads_type
     return None
 
 
 def is_single_read_type(option):
-    return option.startswith('--s') and option[3:].isdigit()
+    return option.startswith("--s") and option[3:].isdigit()
 
 
 def get_lib_type_and_number(option):
     # defaults for simple -1, -2, -s, --12 options
-    lib_type = 'pe'
+    lib_type = "pe"
     lib_number = 1
 
     if get_short_reads_type(option):
@@ -500,24 +505,24 @@ def get_lib_type_and_number(option):
 
 
 def get_data_type(option):
-    if option.endswith('-12'):
-        data_type = 'interlaced reads'
-    elif option.endswith('-1'):
-        data_type = 'left reads'
-    elif option.endswith('-2'):
-        data_type = 'right reads'
-    elif option.endswith('-s') or is_single_read_type(option) or get_long_reads_type(option):
-        data_type = 'single reads'
-    elif option.endswith('-m') or option.endswith('-merged'):
-        data_type = 'merged reads'
-    else: # -rf, -ff, -fr
-        data_type = 'orientation'
+    if option.endswith("-12"):
+        data_type = "interlaced reads"
+    elif option.endswith("-1"):
+        data_type = "left reads"
+    elif option.endswith("-2"):
+        data_type = "right reads"
+    elif option.endswith("-s") or is_single_read_type(option) or get_long_reads_type(option):
+        data_type = "single reads"
+    elif option.endswith("-m") or option.endswith("-merged"):
+        data_type = "merged reads"
+    else:  # -rf, -ff, -fr
+        data_type = "orientation"
     return data_type
 
 
 def get_option_prefix(data):
     prefix = None
-    if data.find(':') != -1 and ('.' + data[:data.find(':')]) in options_storage.ALLOWED_READS_EXTENSIONS:
+    if ':' in data and ('.' + data[:data.find(':')]) in options_storage.ALLOWED_READS_EXTENSIONS:
         prefix = data[:data.find(':')]
         data = data[data.find(':') + 1:]
     return data, prefix
@@ -525,25 +530,18 @@ def get_option_prefix(data):
 
 def add_to_dataset(option, data, dataset_data):
     lib_type, lib_number = get_lib_type_and_number(option)
+    record_id = "%s_%d" % (lib_type, lib_number)
     data_type = get_data_type(option)
-    if data_type == 'orientation':
+    if data_type == "orientation":
         data = option[-2:]
 
-    if lib_type in options_storage.SHORT_READS_TYPES:
-        record_id = options_storage.MAX_LIBS_NUMBER * sorted(options_storage.SHORT_READS_TYPES.keys()).index(lib_type) \
-                    + lib_number - 1
-    elif lib_type in options_storage.LONG_READS_TYPES:
-        record_id = options_storage.MAX_LIBS_NUMBER * len(options_storage.SHORT_READS_TYPES.keys()) \
-                    + options_storage.LONG_READS_TYPES.index(lib_type)
-    else:
-        error("can't detect library type from option %s!" % option)
-
-    if not dataset_data[record_id]:  # setting default values for a new record
+    if record_id not in dataset_data:  # setting default values for a new record
+        dataset_data[record_id] = {}
         if lib_type in options_storage.SHORT_READS_TYPES:
-            dataset_data[record_id]['type'] = options_storage.SHORT_READS_TYPES[lib_type]
+            dataset_data[record_id]["type"] = options_storage.SHORT_READS_TYPES[lib_type]
         else:
-            dataset_data[record_id]['type'] = lib_type
-    if data_type.endswith('reads'):
+            dataset_data[record_id]["type"] = lib_type
+    if data_type.endswith("reads"):
         data, prefix = get_option_prefix(data)
         if prefix:
             options_storage.dict_of_prefixes[data] = '.' + prefix
@@ -558,28 +556,28 @@ def add_to_dataset(option, data, dataset_data):
 def correct_dataset(dataset_data):
     # removing empty reads libraries
     corrected_dataset_data = []
-    for reads_library in dataset_data:
+    for reads_library in dataset_data.values() if isinstance(dataset_data, dict) else dataset_data:
         if not reads_library:
             continue
         has_reads = False
         has_paired_reads = False
         for key in reads_library.keys():
-            if key.endswith('reads'):
+            if key.endswith("reads"):
                 has_reads = True
-            if key in ['interlaced reads', 'merged reads', 'left reads', 'right reads']:
+            if key in ["interlaced reads", "merged reads", "left reads", "right reads"]:
                 has_paired_reads = True
                 break
         if not has_reads:
             continue
-        if not has_paired_reads and reads_library['type'] == 'paired-end':
-            reads_library['type'] = 'single'
-            if 'orientation' in reads_library:
-                del reads_library['orientation']
-        if 'orientation' not in reads_library:
-            if reads_library['type'] == 'paired-end' or reads_library['type'] == 'hq-mate-pairs':
-                reads_library['orientation'] = 'fr'
-            elif reads_library['type'] == 'mate-pairs':
-                reads_library['orientation'] = 'rf'
+        if not has_paired_reads and reads_library["type"] == "paired-end":
+            reads_library["type"] = "single"
+            if "orientation" in reads_library:
+                del reads_library["orientation"]
+        if "orientation" not in reads_library:
+            if reads_library["type"] == "paired-end" or reads_library["type"] == "hq-mate-pairs":
+                reads_library["orientation"] = "fr"
+            elif reads_library["type"] == "mate-pairs":
+                reads_library["orientation"] = "rf"
         corrected_dataset_data.append(reads_library)
     return corrected_dataset_data
 
@@ -589,7 +587,7 @@ def relative2abs_paths(dataset_data, dirname):
     abs_paths_dataset_data = []
     for reads_library in dataset_data:
         for key, value in reads_library.items():
-            if key.endswith('reads'):
+            if key.endswith("reads"):
                 abs_paths_reads = []
                 for reads_file in value:
                     abs_path = abspath(join(dirname, expanduser(reads_file)))
@@ -604,77 +602,87 @@ def relative2abs_paths(dataset_data, dirname):
 
 
 def get_reads_length(dataset_data, log, ignored_types, num_checked=10 ** 4, diff_len_allowable=25):
-    max_reads_lenghts = [get_max_reads_length(reads_file, log, num_checked) for reads_file in get_reads_files(dataset_data, log, ignored_types)]
+    max_reads_lenghts = [get_max_reads_length(reads_file, log, num_checked) for reads_file in
+                         get_reads_files(dataset_data, log, ignored_types)]
 
     avg_len = sum(max_reads_lenghts) / len(max_reads_lenghts)
     for max_len in max_reads_lenghts:
         if math.fabs(max_len - avg_len) > diff_len_allowable:
-            warning('Read lengths differ more than allowable. Length: ' + str(max_len) + '. Avg. length: ' + str(avg_len) + '.', log)
+            warning("read lengths differ more than allowable. Length: %f. Avg. length: %f." % (max_len, avg_len), log)
     reads_length = min(max_reads_lenghts)
-    log.info('\nReads length: ' + str(reads_length) + '\n')
+    log.info("\nReads length: %d\n" % reads_length)
     return reads_length
 
 
-def get_reads_files(dataset_data, log, ignored_types):
+def get_primary_max_reads_length(dataset_data, log, ignored_types, used_types, num_checked=10 ** 4):
+    max_reads_lenghts = [get_max_reads_length(reads_file, log, num_checked) for reads_file in
+                         get_reads_files(dataset_data, log, ignored_types, used_types)]
+
+    reads_length = max(max_reads_lenghts)
+    log.info("\nReads length: %d\n" % reads_length)
+    return reads_length
+
+
+def get_reads_files(dataset_data, log, ignored_types, used_types=None):
     for reads_library in dataset_data:
+        if (used_types is not None) and reads_library["type"] not in used_types:
+            continue
         for key, value in reads_library.items():
             if key in ignored_types:
-                log.info('Files with ' + key + ' were ignored.')
+                log.info("Files with %s were ignored." % key)
                 continue
-            elif key.endswith('reads'):
+            elif key.endswith("reads"):
                 for reads_file in value:
                     yield reads_file
 
 
 def get_max_reads_length(reads_file, log, num_checked):
-    file_type = SeqIO.get_read_file_type(reads_file)
-    if not file_type:
-        error('Incorrect extension of reads file: ' + reads_file, log)
+    if reads_file in options_storage.dict_of_prefixes:
+        ext = options_storage.dict_of_prefixes[reads_file]
+        file_type = SeqIO.get_read_file_type(ext)
+    else:
+        file_type = SeqIO.get_read_file_type(reads_file)
 
-    max_reads_length = max([len(rec) for rec in itertools.islice(SeqIO.parse(SeqIO.Open(reads_file, "r"), file_type), num_checked)])
-    log.info(reads_file + ': max reads length: ' + str(max_reads_length))
+    if not file_type:
+        error("incorrect extension of reads file: %s" % reads_file, log)
+
+    max_reads_length = max(
+        [len(rec) for rec in itertools.islice(SeqIO.parse(SeqIO.Open(reads_file, "r"), file_type), num_checked)])
+    log.info("%s: max reads length: %s" % (reads_file, str(max_reads_length)))
     return max_reads_length
 
 
-def check_dataset_reads(dataset_data, only_assembler, log):
+def check_dataset_reads(dataset_data, only_assembler, iontorrent, log):
     all_files = []
     for id, reads_library in enumerate(dataset_data):
         left_number = 0
         right_number = 0
         for key, value in reads_library.items():
-            if key.endswith('reads'):
+            if key.endswith("reads"):
                 for reads_file in value:
-                    check_file_existence(reads_file, key + ', library number: ' + str(id + 1) +
-                                         ', library type: ' + reads_library['type'], log)
-                    check_reads_file_format(reads_file, key + ', library number: ' + str(id + 1) +
-                                            ', library type: ' + reads_library['type'], only_assembler, reads_library['type'], log)
+                    check_file_existence(reads_file,
+                                         "%s, library number: %d, library type: %s" %
+                                         (key, id + 1, reads_library["type"]), log)
+                    check_reads_file_format(reads_file, "%s, library number: %d, library type: %s" %
+                                            (key, id + 1, reads_library["type"]), only_assembler, iontorrent,
+                                            reads_library["type"], log)
                     all_files.append(reads_file)
-                if key == 'left reads':
+                if key == "left reads":
                     left_number = len(value)
-                elif key == 'right reads':
+                elif key == "right reads":
                     right_number = len(value)
         if left_number != right_number:
-            error('the number of files with left paired reads is not equal to the number of files '
-                  'with right paired reads (library number: ' + str(id + 1) +
-                  ', library type: ' + reads_library['type'] + ')!', log)
+            error("the number of files with left paired reads is not equal to the number of files "
+                  "with right paired reads (library number: %d, library type: %s)!" %
+                  (id + 1, reads_library["type"]), log)
     if not len(all_files):
-        error("You should specify at least one file with reads!", log)
+        error("you should specify at least one file with reads!", log)
     check_files_duplication(all_files, log)
 
 
-def check_single_reads_in_options(options, log):
-    only_old_style_options = True
-    old_style_single_reads = False
-    for option in options:
-        if option not in options_storage.reads_options:
-            continue
-        if option in options_storage.OLD_STYLE_READS_OPTIONS:
-            if option == '-s':
-                old_style_single_reads = True
-        else:
-            only_old_style_options = False
+def check_single_reads_in_options(log):
     if not only_old_style_options and old_style_single_reads:
-        warning("It is recommended to specify single reads with --pe<#>-s, --mp<#>-s, --hqmp<#>-s, "
+        warning("it is recommended to specify single reads with --pe<#>-s, --mp<#>-s, --hqmp<#>-s, "
                 "or --s<#> option instead of -s!", log)
 
 
@@ -683,7 +691,7 @@ def get_lib_ids_by_type(dataset_data, types):
         types = [types]
     lib_ids = []
     for id, reads_library in enumerate(dataset_data):
-        if reads_library['type'] in types:
+        if reads_library["type"] in types:
             lib_ids.append(id)
     return lib_ids
 
@@ -713,221 +721,62 @@ def dataset_is_empty(dataset_data):
 def dataset_has_gzipped_reads(dataset_data):
     for reads_library in dataset_data:
         for key in reads_library:
-            if key.endswith('reads'):
+            if key.endswith("reads"):
                 for reads_file in reads_library[key]:
-                    if reads_file.endswith('.gz'):
+                    if reads_file.endswith(".gz"):
                         return True
     return False
 
 
 def dataset_has_interlaced_reads(dataset_data):
     for reads_library in dataset_data:
-        if 'interlaced reads' in reads_library:
+        if "interlaced reads" in reads_library:
             return True
     return False
 
 
 def dataset_has_additional_contigs(dataset_data):
     for reads_library in dataset_data:
-        if reads_library['type'].endswith('contigs'):
+        if reads_library["type"].endswith("contigs"):
             return True
     return False
 
 
 def dataset_has_nxmate_reads(dataset_data):
     for reads_library in dataset_data:
-        if reads_library['type'] == 'nxmate':
+        if reads_library["type"] == "nxmate":
             return True
     return False
 
 
-def process_Ns_in_additional_contigs(dataset_data, dst, log):
-    new_dataset_data = list()
-    for reads_library in dataset_data:
-        new_reads_library = dict(reads_library)
-        if reads_library["type"].endswith("contigs"):
-            new_entry = []
-            for contigs in reads_library["single reads"]:
-                if contigs in options_storage.dict_of_prefixes:
-                    ext = options_storage.dict_of_prefixes[contigs]
-                    basename = contigs
-                else:
-                    basename, ext = os.path.splitext(contigs)
-                gzipped = False
-                if ext.endswith('.gz'):
-                    gzipped = True
-                    if contigs not in options_storage.dict_of_prefixes:
-                        basename, _ = os.path.splitext(basename)
-                modified, new_fasta = break_scaffolds(contigs, options_storage.THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS,
-                    replace_char='A', gzipped=gzipped)
-                if modified:
-                    if not os.path.isdir(dst):
-                        os.makedirs(dst)
-                    new_filename = os.path.join(dst, os.path.basename(basename) + '.fasta')
-                    if contigs in options_storage.dict_of_prefixes:
-                        del options_storage.dict_of_prefixes[contigs]
-                    log.info("== Processing additional contigs (%s): changing Ns to As and "
-                             "splitting by continues (>= %d) Ns fragments (results are in %s directory)" % (contigs,
-                             options_storage.THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS, dst))
-                    write_fasta(new_filename, new_fasta)
-                    new_entry.append(new_filename)
-                else:
-                    new_entry.append(contigs)
-            new_reads_library["single reads"] = new_entry
-        new_dataset_data.append(new_reads_library)
-    return new_dataset_data
-
-
-def split_interlaced_reads(dataset_data, dst, log):
-    def write_single_read(in_file, out_file, read_name=None, is_fastq=False, is_python3=False):
-        if read_name is None:
-            read_name = process_readline(in_file.readline(), is_python3)
-        if not read_name:
-            return ''  # no next read
-        read_value = process_readline(in_file.readline(), is_python3)
-        line = process_readline(in_file.readline(), is_python3)
-        fpos = in_file.tell()
-        while (is_fastq and not line.startswith('+')) or (not is_fastq and not line.startswith('>')):
-            read_value += line
-            line = process_readline(in_file.readline(), is_python3)
-            if not line:
-                if fpos == in_file.tell():
-                    break
-                fpos = in_file.tell()
-        out_file.write(read_name + '\n')
-        out_file.write(read_value + '\n')
-
-        if is_fastq:
-            read_quality = process_readline(in_file.readline(), is_python3)
-            line = process_readline(in_file.readline(), is_python3)
-            while not line.startswith('@'):
-                read_quality += line
-                line = process_readline(in_file.readline(), is_python3)
-                if not line:
-                    if fpos == in_file.tell():
-                        break
-                    fpos = in_file.tell()
-            if len(read_value) != len(read_quality):
-                error('The length of sequence and quality lines should be the same! '
-                      'Check read %s (SEQ length is %d, QUAL length is %d)' %
-                      (read_name, len(read_value), len(read_quality)), log)
-            out_file.write('+\n')
-            out_file.write(read_quality + '\n')
-        return line  # next read name or empty string
-
-    new_dataset_data = list()
-    for reads_library in dataset_data:
-        new_reads_library = dict(reads_library)
-        for key, value in reads_library.items():
-            if key == 'interlaced reads':
-                if 'left reads' not in new_reads_library:
-                    new_reads_library['left reads'] = []
-                    new_reads_library['right reads'] = []
-                for interlaced_reads in value:
-                    if interlaced_reads in options_storage.dict_of_prefixes:
-                        ext = options_storage.dict_of_prefixes[interlaced_reads]
-                    else:
-                        ext = os.path.splitext(interlaced_reads)[1]
-                    was_compressed = False
-                    if ext.endswith('.gz'):
-                        was_compressed = True
-                        input_file = gzip.open(interlaced_reads, 'r')
-                        ungzipped = os.path.splitext(interlaced_reads)[0]
-                        out_basename, ext = os.path.splitext(os.path.basename(ungzipped))
-                    else:
-                        input_file = open(interlaced_reads, 'r')
-                        out_basename, ext = os.path.splitext(os.path.basename(interlaced_reads))
-
-                    if interlaced_reads in options_storage.dict_of_prefixes:
-                        ext = options_storage.dict_of_prefixes[interlaced_reads]
-                    if ext.lower().startswith('.fq') or ext.lower().startswith('.fastq'):
-                        is_fastq = True
-                        ext = '.fastq'
-                    else:
-                        is_fastq = False
-                        ext = '.fasta'
-
-                    out_left_filename = os.path.join(dst, out_basename + "_1" + ext)
-                    out_right_filename = os.path.join(dst, out_basename + "_2" + ext)
-
-                    if not (options_storage.continue_mode and os.path.isfile(out_left_filename) and os.path.isfile(out_right_filename)):
-                        options_storage.continue_mode = False
-                        log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
-                        out_files = [open(out_left_filename, 'w'), open(out_right_filename, 'w')]
-                        i = 0
-                        next_read_name = write_single_read(input_file, out_files[i], None, is_fastq,
-                                                           sys.version.startswith('3.') and was_compressed)
-                        while next_read_name:
-                            i = (i + 1) % 2
-                            next_read_name = write_single_read(input_file, out_files[i], next_read_name, is_fastq,
-                                                               sys.version.startswith('3.') and was_compressed)
-                        if i == 0:
-                            error("The number of reads in file with interlaced reads (" + interlaced_reads + ") should be EVEN!", log)
-                        out_files[0].close()
-                        out_files[1].close()
-                    input_file.close()
-                    new_reads_library['left reads'].append(out_left_filename)
-                    new_reads_library['right reads'].append(out_right_filename)
-                    if interlaced_reads in options_storage.dict_of_prefixes:
-                        del options_storage.dict_of_prefixes[interlaced_reads]
-                del new_reads_library['interlaced reads']
-        new_dataset_data.append(new_reads_library)
-    return new_dataset_data
-
-
-def process_nxmate_reads(dataset_data, dst, log):
-    try:
-        import lucigen_nxmate
-        new_dataset_data = list()
-        for reads_library in dataset_data:
-            new_reads_library = dict(reads_library)
-            if new_reads_library['type'] == 'nxmate':
-                raw_left_reads = new_reads_library['left reads']
-                raw_right_reads = new_reads_library['right reads']
-                new_reads_library['left reads'] = []
-                new_reads_library['right reads'] = []
-                new_reads_library['single reads'] = []
-                for id, left_reads_fpath in enumerate(raw_left_reads):
-                    right_reads_fpath = raw_right_reads[id]
-                    processed_left_reads_fpath, processed_right_reads_fpath, single_reads_fpath = \
-                        lucigen_nxmate.process_reads(left_reads_fpath, right_reads_fpath, dst, log)
-                    new_reads_library['left reads'].append(processed_left_reads_fpath)
-                    new_reads_library['right reads'].append(processed_right_reads_fpath)
-                    new_reads_library['single reads'].append(single_reads_fpath)
-                new_reads_library['type'] = 'mate-pairs'
-                new_reads_library['orientation'] = 'fr'
-            new_dataset_data.append(new_reads_library)
-        return new_dataset_data
-    except ImportError:
-        error("Can't process Lucigen NxMate reads! lucigen_nxmate.py is missing!", log)
-
-
-def pretty_print_reads(dataset_data, log, indent='    '):
-    READS_TYPES = ['left reads', 'right reads', 'interlaced reads', 'single reads', 'merged reads']
+def pretty_print_reads(dataset_data, log, indent="    "):
+    READS_TYPES = ["left reads", "right reads", "interlaced reads", "single reads", "merged reads"]
     for id, reads_library in enumerate(dataset_data):
-        log.info(indent + 'Library number: ' + str(id + 1) + ', library type: ' + reads_library['type'])
-        if 'orientation' in reads_library:
-            log.info(indent + '  orientation: ' + reads_library['orientation'])
+        log.info(indent + "Library number: %d, library type: %s" % (id + 1, reads_library["type"]))
+        if "orientation" in reads_library:
+            log.info("%s  orientation: %s" % (indent, reads_library["orientation"]))
         for reads_type in READS_TYPES:
             if reads_type not in reads_library:
-                value = 'not specified'
+                value = "not specified"
             else:
                 value = str(reads_library[reads_type])
-            log.info(indent + '  ' + reads_type + ': ' + value)
-### END: for processing YAML files
+            log.info("%s  %s: %s" % (indent, reads_type, value))
+
+
+# END: for processing YAML files
 
 
 def read_fasta(filename, gzipped=False):
     res_name = []
     res_seq = []
     first = True
-    seq = ''
+    seq = ""
     if gzipped:
         file_handler = gzip.open(filename)
     else:
         file_handler = open(filename)
     for line in file_handler:
-        line = process_readline(line, gzipped and sys.version.startswith('3.'))
+        line = process_readline(line, gzipped and sys.version.startswith("3."))
         if not line:
             continue
         if line[0] == '>':
@@ -936,7 +785,7 @@ def read_fasta(filename, gzipped=False):
                 res_seq.append(seq)
             else:
                 first = False
-            seq = ''
+            seq = ""
         else:
             seq += line.strip()
     res_seq.append(seq)
@@ -945,12 +794,11 @@ def read_fasta(filename, gzipped=False):
 
 
 def write_fasta(filename, fasta):
-    outfile = open(filename, 'w')
-    for name, seq in fasta:
-        outfile.write(name + '\n')
-        for i in range(0, len(seq), 60):
-            outfile.write(seq[i : i + 60] + '\n')
-    outfile.close()
+    with open(filename, 'w') as outfile:
+        for name, seq in fasta:
+            outfile.write(name + '\n')
+            for i in range(0, len(seq), 60):
+                outfile.write(seq[i: i + 60] + '\n')
 
 
 def break_scaffolds(input_filename, threshold, replace_char="N", gzipped=False):
@@ -987,16 +835,16 @@ def comp(letter):
 
 
 def rev_comp(seq):
-    return ''.join(itertools.imap(comp, seq[::-1]))
+    return "".join(itertools.imap(comp, seq[::-1]))
 
 
 def get_contig_id(s):
     values = s.split("_")
     if len(values) < 2 or (values[0] != ">NODE" and values[0] != "NODE"):
-        warning("Contig %s has unknown ID format" % (s))
+        warning("contig %s has unknown ID format" % (s))
         return None
-    if s.find("'") != -1:
-        return (values[1] + "'")
+    if "'" in s:
+        return values[1] + "'"
     return values[1]
 
 

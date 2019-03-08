@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
 ############################################################################
-# Copyright (c) 2015 Saint Petersburg State University
+# Copyright (c) 2015-2019 Saint Petersburg State University
 # Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
 
 
-import sys
 import support
+
 
 class cfg_placeholder:
     pass
@@ -32,7 +32,7 @@ def skip_double_quotes(line):
 
 
 def check_property(prop_line):
-    if len(prop_line.split()) > 1: # property is set, i.e. has value
+    if len(prop_line.split()) > 1:  # property is set, i.e. has value
         if prop_line.split()[1] != "N/A":
             return True
     return False
@@ -88,14 +88,14 @@ def substitute_params(filename, var_dict, log):
 
     for var, value in var_dict.items():
         if var not in vars_in_file:
-            support.error("Couldn't find " + var + " in " + filename, log)
+            support.error("Couldn't find %s in %s" % (var, filename), log)
 
         meta = vars_in_file[var]
         lines[meta.line_num] = meta.indent + str(var) + " " + str(value) + "\n"
 
-    file = open(filename, "w")
-    file.writelines(lines)
-    file.close()
+    f = open(filename, "w")
+    f.writelines(lines)
+    f.close()
 
 
 # configs with more priority should go first in parameters
@@ -119,7 +119,7 @@ def load_config_from_vars(cfg_vars):
         elif value.isdigit():
             return int(value)
         else:
-            return value #string as-is
+            return value  # string as-is
 
     def load_value_list(value_list):
         if len(value_list) > 1:

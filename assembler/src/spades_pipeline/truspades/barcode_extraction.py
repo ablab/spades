@@ -9,8 +9,6 @@ import sys
 import logging
 
 from id_generation import generate_ids
-from string_dist_utils import lcs, dist
-
 
 __author__ = 'anton'
 
@@ -30,6 +28,7 @@ class Barcode:
     def __str__(self):
         return self.id + " " + " ".join([" ".join(lib) for lib in self.libs])
 
+
 def RemoveLabel(s, code, code_range):
     for pos in range(len(s)):
         if s[pos:].startswith(code):
@@ -40,12 +39,15 @@ def RemoveLabel(s, code, code_range):
                     return s[:pos] + s[new_pos + len(tmp):]
     return s
 
+
 def NormalizeR(s):
-    return RemoveLabel(s, "R", [1,2])
+    return RemoveLabel(s, "R", [1, 2])
+
 
 def NormalizeLR(s):
     s = NormalizeR(s)
     return RemoveLabel(s, "L", range(1, 20))
+
 
 def check_int_ids(ids):
     for id in ids:
@@ -53,25 +55,29 @@ def check_int_ids(ids):
             return False
     return True
 
+
 def generate_barcode_list(barcodes):
     ids = list(zip(barcodes, generate_ids(barcodes)))
     if check_int_ids(ids):
         ids = sorted(ids, key=lambda barcode: int(barcode[1]))
     return [(bid, "BC_" + short_id) for bid, short_id in ids]
 
+
 def Normalize(file_path):
     return NormalizeLR(os.path.basename(file_path))
+
 
 def GroupBy(norm, l):
     result = dict()
     for line in l:
         key = norm(line)
-        if not key in result:
+        if key not in result:
             result[key] = []
         result[key].append(line)
     return result
 
-def CheckSameSize(iter, size = -1):
+
+def CheckSameSize(iter, size=-1):
     for vl in iter:
         if size == -1:
             size = len(vl)
@@ -79,11 +85,13 @@ def CheckSameSize(iter, size = -1):
             return False
     return True
 
-#todo: write better code
+
+# todo: write better code
 def ExtractBarcodes(dirs):
     files = []
     for dir in dirs:
-        for file in [os.path.abspath(os.path.join(dir, file)) for file in os.listdir(dir) if os.path.isfile(os.path.join(dir, file))]:
+        for file in [os.path.abspath(os.path.join(dir, file)) for file in os.listdir(dir) if
+                     os.path.isfile(os.path.join(dir, file))]:
             files.append(file)
     barcode_dict = GroupBy(Normalize, files)
     if not CheckSameSize(barcode_dict.values()):
@@ -95,7 +103,8 @@ def ExtractBarcodes(dirs):
     short_barcodes = generate_barcode_list(list(barcode_dict.keys()))
     return [Barcode(short, barcode_dict[bid]) for bid, short in short_barcodes]
 
-def ReadDataset(file, log = logging.getLogger("ReadDataset")):
+
+def ReadDataset(file, log=logging.getLogger("ReadDataset")):
     log.info("Reading dataset from " + file + "\n")
     if os.path.exists(file) and os.path.isfile(file):
         result = []
@@ -117,7 +126,7 @@ def ReadDataset(file, log = logging.getLogger("ReadDataset")):
         log.info("Error: Dataset file does not exist\n" + file + "\n")
         sys.exit(1)
 
+
 def print_dataset(dataset, output_file, log):
     log.info("Printing dataset to " + output_file)
     open(output_file, "w").write("\n".join([str(line).strip() for line in dataset]) + "\n")
-

@@ -4,19 +4,20 @@
 # See file LICENSE for details.
 ############################################################################
 
-import itertools
-import sys
-import gzip
 import codecs
+import gzip
+import sys
 
 fasta_ext = ['.fa', '.fas', '.fasta', '.seq', '.fsa', '.fna', '.ffn', '.frn']
 fastq_ext = ['.fq', 'fastq']
+
 
 def Open(f, mode):
     if f.endswith(".gz"):
         return codecs.getreader('UTF-8')(gzip.open(f, mode))
     else:
         return codecs.open(f, mode, encoding='utf-8')
+
 
 class Reader:
     def __init__(self, handler):
@@ -57,17 +58,15 @@ class Reader:
             result.append(self.Top().strip())
             cnt += len(self.Top().strip())
             self.TrashCash()
-        assert(cnt == buf_size)
+        assert (cnt == buf_size)
         return "".join(result)
-            
-
 
     def EOF(self):
         return self.Top() == ""
 
 
 class SeqRecord:
-    def __init__(self, seq, id, qual = None):
+    def __init__(self, seq, id, qual=None):
         if qual != None and len(qual) != len(seq):
             sys.stdout.write("oppa" + id + "oppa")
         assert qual == None or len(qual) == len(seq)
@@ -88,9 +87,10 @@ class SeqRecord:
 
     def subseq(self, l, r):
         if l != 0 or r != len(self.seq):
-            return SeqRecord(self.seq[l:r], self.id + "(" + str(l + 1) +"-" + str(r) + ")", self.QualSubseq(l, r))
+            return SeqRecord(self.seq[l:r], self.id + "(" + str(l + 1) + "-" + str(r) + ")", self.QualSubseq(l, r))
         else:
             return self
+
 
 def parse(handler, file_type):
     assert file_type in ["fasta", "fastq"]
@@ -99,30 +99,34 @@ def parse(handler, file_type):
     if file_type == "fastq":
         return parse_fastq(handler)
 
+
 def parse_fasta(handler):
     reader = Reader(handler)
     while not reader.EOF():
         rec_id = reader.readline().strip()
-        assert(rec_id[0] == '>')
+        assert (rec_id[0] == '>')
         rec_seq = reader.ReadUntill(lambda s: s.startswith(">"))
         yield SeqRecord(rec_seq, rec_id[1:])
+
 
 def parse_fastq(handler):
     reader = Reader(handler)
     while not reader.EOF():
         rec_id = reader.readline().strip()
-        assert(rec_id[0] == '@')
+        assert (rec_id[0] == '@')
         rec_seq = reader.ReadUntill(lambda s: s.startswith("+"))
         tmp = reader.readline()
-        assert(tmp[0] == '+')
+        assert (tmp[0] == '+')
         rec_qual = reader.ReadUntillFill(len(rec_seq))
         yield SeqRecord(rec_seq, rec_id[1:], rec_qual)
+
 
 def parse(handler, file_type):
     if file_type == "fasta":
         return parse_fasta(handler)
     elif file_type == "fastq":
         return parse_fastq(handler)
+
 
 def write(rec, handler, file_type):
     if file_type == "fasta":
@@ -139,6 +143,7 @@ def FilterContigs(input_handler, output_handler, f, file_type):
     for contig in parse(input_handler, file_type):
         if f(contig):
             write(contig, output_handler, file_type)
+
 
 def RemoveNs(input_handler, output_handler):
     for contig in parse(input_handler, "fasta"):

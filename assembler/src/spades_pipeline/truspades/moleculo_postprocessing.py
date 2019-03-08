@@ -4,15 +4,15 @@
 # See file LICENSE for details.
 ############################################################################
 
-from common import SeqIO
-from common import sam_parser
-import moleculo_filter_contigs
 import break_by_coverage
 import generate_quality
-
+import moleculo_filter_contigs
+from common import SeqIO
+from common import sam_parser
 
 pattern = "TACGCTTGCAT"
 rc_pattern = "ATGCAAGCGTA"
+
 
 def SplitAndFilter(contigs, coverage_breaker, length_filter, n_breaker, pattern_breaker, pattern_filter):
     result = []
@@ -49,4 +49,3 @@ def moleculo_postprocessing(contigs_file, output_file, sam_files, log):
     OutputResults(output_file, "fasta", result)
     OutputResults(output_file, "fastq", result)
     log.info("===== Postprocessing finished. Results can be found in " + output_file + ".fastq")
-

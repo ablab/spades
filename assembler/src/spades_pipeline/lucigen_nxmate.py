@@ -11,36 +11,37 @@
 # by Scott Monsma, Copyright (c) Lucigen Corp July 2014 - based on NxSeqFOS-SplitBfa4.py
 # Splits 'mates_ICC4_' files into left and right insert sequences by finding the Junction Code(s)
 # usage: copy IlluminaNxSeqJunction-Split6.py and ParseFastq.py into a directory with your fastq files to process
-#cd into directory with .py and .fastq
-#make sure your read 1 filename contains '_R1_' and read 2 filename contains '_R2_'
-#at command prompt type 'python IlluminaNxSeqJunction-Split7.py 'mates_ICC4_your-R1-filename.fastq' and hit enter
-#split sequences are saved if longer than minseq
-#output files are named 'R1_IJS7_mates_ICC4_your-R1-filename.fastq' and 'R2_IJS7_mates_ICC4_your-R2-filename.fastq' which are the trimmed mate pairs, and
-#'unsplit_IJS7_yourfilename.fastq' which contains interleaved reads where no junction was found.
+# cd into directory with .py and .fastq
+# make sure your read 1 filename contains '_R1_' and read 2 filename contains '_R2_'
+# at command prompt type 'python IlluminaNxSeqJunction-Split7.py 'mates_ICC4_your-R1-filename.fastq' and hit enter
+# split sequences are saved if longer than minseq
+# output files are named 'R1_IJS7_mates_ICC4_your-R1-filename.fastq' and 'R2_IJS7_mates_ICC4_your-R2-filename.fastq' which are the trimmed mate pairs, and
+# 'unsplit_IJS7_yourfilename.fastq' which contains interleaved reads where no junction was found.
 
-#IlluminaChimera-Clean4 by Scott Monsma, Lucigen Corp Copyright (C) July 2014
+# IlluminaChimera-Clean4 by Scott Monsma, Lucigen Corp Copyright (C) July 2014
 # usage: copy IlluminaChimera-Clean4.py and ParseFastq.py into a directory with your fastq file to process
-#cd into directory with .py and .fastq
-#at command prompt type 'python IlluminaChimera-Clean4.py yourfilename.fastq' and hit enter
-#four new files will be created, 'mates_ICC4_your-R1-filename.fastq' and 'mates_ICC4_your-R2-filename.fastq' containing the
-#true mate pairs with matching chimera codes, and 'non-mates_ICC4_your-R1-filename.fastq' and 'non-mates_ICC4_your-R2-filename.fastq'
-#containing the chimera read pairs and unidentified read pairs
+# cd into directory with .py and .fastq
+# at command prompt type 'python IlluminaChimera-Clean4.py yourfilename.fastq' and hit enter
+# four new files will be created, 'mates_ICC4_your-R1-filename.fastq' and 'mates_ICC4_your-R2-filename.fastq' containing the
+# true mate pairs with matching chimera codes, and 'non-mates_ICC4_your-R1-filename.fastq' and 'non-mates_ICC4_your-R2-filename.fastq'
+# containing the chimera read pairs and unidentified read pairs
 
 
-import os
-import time
-import support
 import gzip
 import itertools
+import os
 import sys
+import time
 from site import addsitedir
+
+import support
+
 import spades_init
-import options_storage
 
 try:
     import regex
 except ImportError:
-    support.error("Can't process Lucigen NxMate reads! Python module regex is not installed!")
+    support.error("can't process Lucigen NxMate reads! Python module regex is not installed!")
 
 addsitedir(spades_init.ext_python_modules_home)
 if sys.version.startswith('2.'):
@@ -48,10 +49,10 @@ if sys.version.startswith('2.'):
 elif sys.version.startswith('3.'):
     from joblib3 import Parallel, delayed
 
-    
 # CONSTANTS
 READS_PER_THREAD = 25000
-READS_PER_BATCH = READS_PER_THREAD * options_storage.threads  # e.g. 100000 for 4 threads
+THREADS = 1
+READS_PER_BATCH = READS_PER_THREAD * THREADS  # e.g. 100000 for 4 threads
 minseq = 25  # minimum length sequence to keep after trimming
 
 
@@ -68,10 +69,11 @@ class ParseFastQ(object):
 
         rec is tuple: (seqHeader,seqStr,qualHeader,qualStr)
         """
+
         if filePath.endswith('.gz'):
             self._file = gzip.open(filePath)
         else:
-            self._file = open(filePath, 'rU')  #filePath, 'rU') test with explicit filename
+            self._file = open(filePath, 'rU')  # filePath, 'rU') test with explicit filename
         self._currentLineNumber = 0
         self._hdSyms = headerSymbols
 
@@ -104,20 +106,20 @@ class ParseFastQ(object):
         assert trues == 4, \
             "** ERROR: It looks like I encountered a premature EOF or empty line.\n\
             Please check FastQ file near line number %s (plus or minus ~4 lines) and try again**" % (
-            self._currentLineNumber)
+                self._currentLineNumber)
         # -- Make sure we are in the correct "register" --
         assert elemList[0].startswith(self._hdSyms[0]), \
             "** ERROR: The 1st line in fastq element does not start with '%s'.\n\
             Please check FastQ file near line number %s (plus or minus ~4 lines) and try again**" % (
-            self._hdSyms[0], self._currentLineNumber)
+                self._hdSyms[0], self._currentLineNumber)
         assert elemList[2].startswith(self._hdSyms[1]), \
             "** ERROR: The 3rd line in fastq element does not start with '%s'.\n\
             Please check FastQ file near line number %s (plus or minus ~4 lines) and try again**" % (
-            self._hdSyms[1], self._currentLineNumber)
+                self._hdSyms[1], self._currentLineNumber)
         # -- Make sure the seq line and qual line have equal lengths --
         assert len(elemList[1]) == len(elemList[3]), "** ERROR: The length of Sequence data and Quality data of the last record aren't equal.\n\
                Please check FastQ file near line number %s (plus or minus ~4 lines) and try again**" % (
-        self._currentLineNumber)
+            self._currentLineNumber)
 
         # ++++ Return fatsQ data as tuple ++++
         return tuple(elemList)
@@ -168,11 +170,11 @@ def chimera_clean_process_batch(reads, csslist1, csslist2):
     processed_slag1 = []
     processed_slag2 = []
 
-    #rec is tuple: (seqHeader,seqStr,qualHeader,qualStr)
+    # rec is tuple: (seqHeader,seqStr,qualHeader,qualStr)
     for recR1, recR2 in reads:
         stats.readcounter += 1
 
-        #check if rec.seqStr contains match to chimera pattern
+        # check if rec.seqStr contains match to chimera pattern
         for cssindex, css1 in enumerate(csslist1):
             m = regex.search(css1, recR1[1])
             css2 = csslist2[cssindex]
@@ -180,26 +182,26 @@ def chimera_clean_process_batch(reads, csslist1, csslist2):
 
             if m and n:  # a true mate pair! write out to mates files
                 stats.TOTALmatecounter += 1
-                #NOTE  TAKE THIS OPPORTUNITY TO RECORD CSS CODE AND TRUNCATE READS
-                #need to trim additional 9+4 nts from end of match to remove css, Bst, barcode (9) and CGAT (4) linker
-                stats.csscounter[cssindex] += 1  #increment the appropriate css counter
+                # NOTE  TAKE THIS OPPORTUNITY TO RECORD CSS CODE AND TRUNCATE READS
+                # need to trim additional 9+4 nts from end of match to remove css, Bst, barcode (9) and CGAT (4) linker
+                stats.csscounter[cssindex] += 1  # increment the appropriate css counter
                 R1matches = m.span()
                 mend = R1matches[1]
                 mend = mend + 13
                 mySeq = recR1[1]
-                myR1 = mySeq[mend:]  #trim the left end off of Read1
+                myR1 = mySeq[mend:]  # trim the left end off of Read1
                 myQual1 = recR1[3]
-                myR1Qual = myQual1[mend:]  #trim the left end off of Read1 quality string
+                myR1Qual = myQual1[mend:]  # trim the left end off of Read1 quality string
 
                 R2matches = n.span()
                 nend = R2matches[1]
                 nend = nend + 13
                 mySeq2 = recR2[1]
-                myR2 = mySeq2[nend:]  #trim the left end off of Read2
+                myR2 = mySeq2[nend:]  # trim the left end off of Read2
                 myQual2 = recR2[3]
-                myR2Qual = myQual2[nend:]  #trim the left end off of Read2 quality string
+                myR2Qual = myQual2[nend:]  # trim the left end off of Read2 quality string
 
-                if (len(myR1) >= minseq) and (len(myR2) >= minseq):  #and if one or other is too short, toss both
+                if (len(myR1) >= minseq) and (len(myR2) >= minseq):  # and if one or other is too short, toss both
                     stats.matecounter += 1
                     processed_out1.append([recR1[0], myR1, recR1[2], myR1Qual])
                     processed_out2.append([recR2[0], myR2, recR2[2], myR2Qual])
@@ -221,7 +223,7 @@ def chimera_clean(infilename1, infilename2, dst, log, silent=True):
     basename2 = os.path.basename(infilename2)
     if os.path.splitext(basename2)[1] == '.gz':
         basename2 = os.path.splitext(basename2)[0]
-    #open four outfiles
+    # open four outfiles
     outfilename1 = os.path.join(dst, 'mates_ICC4_' + basename1)
     outfile1 = open(outfilename1, 'w')
 
@@ -234,7 +236,7 @@ def chimera_clean(infilename1, infilename2, dst, log, silent=True):
     slagfilename2 = os.path.join(dst, 'non-mates_ICC4_' + basename2)
     slagfile2 = open(slagfilename2, 'w')
 
-    #set up regular expression patterns for chimera codes- for illumin use the  reverse complements of right codes
+    # set up regular expression patterns for chimera codes- for illumin use the  reverse complements of right codes
     csslist1 = ['(TGGACTCCACTGTG){e<=1}', '(ACTTCGCCACTGTG){e<=1}', '(TGAGTCCCACTGTG){e<=1}', '(TGACTGCCACTGTG){e<=1}',
                 '(TCAGGTCCACTGTG){e<=1}', '(ATGTCACCACTGTG){e<=1}', '(GTATGACCACTGTG){e<=1}', '(GTCTACCCACTGTG){e<=1}',
                 '(GTTGGACCACTGTG){e<=1}', '(CGATTCCCACTGTG){e<=1}', '(GGTTACCCACTGTG){e<=1}', '(TCACCTCCACTGTG){e<=1}']
@@ -243,12 +245,12 @@ def chimera_clean(infilename1, infilename2, dst, log, silent=True):
                 '(AACCTCCCAATGTG){e<=1}', '(ACAACTCCAATGTG){e<=1}', '(GTCTAACCAATGTG){e<=1}', '(TACACGCCAATGTG){e<=1}',
                 '(GAGAACCCAATGTG){e<=1}', '(GAGATTCCAATGTG){e<=1}', '(GACCTACCAATGTG){e<=1}', '(AGACTCCCAATGTG){e<=1}']
 
-    #PARSE both files in tuples of 4 lines
+    # PARSE both files in tuples of 4 lines
     parserR1 = ParseFastQ(infilename1)
     parserR2 = ParseFastQ(infilename2)
 
     all_stats = CleanStats()
-    n_jobs = options_storage.threads
+    n_jobs = THREADS
     while True:
         # prepare input
         reads1 = list(itertools.islice(parserR1, READS_PER_BATCH))
@@ -284,7 +286,7 @@ def chimera_clean(infilename1, infilename2, dst, log, silent=True):
     if all_stats.readcounter == 0:
         support.error("lucigen_nxmate.py, chimera_clean: error in input data! Number of processed reads is 0!", log)
     if not silent:
-        #print some stats
+        # print some stats
         percentmates = 100. * all_stats.matecounter / all_stats.readcounter
         percentslag = 100. * all_stats.slagcounter / all_stats.readcounter
         log.info("==== chimera_clean info: processing finished!")
@@ -331,29 +333,29 @@ def nx_seq_junction_process_batch(reads, jctstr):
 
         m = regex.search(jctstr, recR1[1])
         n = regex.search(jctstr, recR2[1])
-        if m and n:  #found jctstr in both reads; need to save left part of R1 and LEFT part of R2
+        if m and n:  # found jctstr in both reads; need to save left part of R1 and LEFT part of R2
             stats.bothjctcounter += 1
             matches = m.span()
             start = matches[0]
-            mySeq = recR1[1]  #get the left part of Read1
+            mySeq = recR1[1]  # get the left part of Read1
             myLeft = mySeq[:start]
             myQual = recR1[3]
-            myLeftQual = myQual[:start]  #get left part of Read1 quality string
+            myLeftQual = myQual[:start]  # get left part of Read1 quality string
 
             nmatches = n.span()
             nstart = nmatches[0]
             mySeq2 = recR2[1]
-            myRight2 = mySeq2[:nstart]  #get left part of Read2
+            myRight2 = mySeq2[:nstart]  # get left part of Read2
             myQual2 = recR2[3]
-            myRightQual2 = myQual2[:nstart]  #get left part of Read2 quality string
+            myRightQual2 = myQual2[:nstart]  # get left part of Read2 quality string
 
-            #only write out as split if both pieces are big enough
+            # only write out as split if both pieces are big enough
             if (len(myLeft) > minseq) and (len(myRight2) > minseq):
                 stats.splitcounter += 1
                 stats.R1R2jctcounter += 1
                 processed_split1.append([recR1[0], myLeft, recR1[2], myLeftQual])
                 processed_split2.append([recR2[0], myRight2, recR2[2], myRightQual2])
-        elif n:  #junction only in R2, so save entire R1 and LEFT part of R2 IFF R2 long enough
+        elif n:  # junction only in R2, so save entire R1 and LEFT part of R2 IFF R2 long enough
             nmatches = n.span()
             nstart = nmatches[0]
             mySeq2 = recR2[1]
@@ -366,7 +368,7 @@ def nx_seq_junction_process_batch(reads, jctstr):
                 processed_split1.append([recR1[0], recR1[1], recR1[2], recR1[3]])
                 stats.jctcounter += 1
                 stats.R2jctcounter += 1
-        elif m:  #junction only in R1, save left part of R1 and entire R2, IFF R1 is long enough
+        elif m:  # junction only in R1, save left part of R1 and entire R2, IFF R1 is long enough
             matches = m.span()
             start = matches[0]
             mySeq = recR1[1]
@@ -379,7 +381,7 @@ def nx_seq_junction_process_batch(reads, jctstr):
                 processed_split2.append([recR2[0], recR2[1], recR2[2], recR2[3]])
                 stats.jctcounter += 1
                 stats.R1jctcounter += 1
-        else:  #no junctions, save for frag use, as is 'unsplit'; note this file will be interleaved R1 R2 R1 R2...
+        else:  # no junctions, save for frag use, as is 'unsplit'; note this file will be interleaved R1 R2 R1 R2...
             processed_unsplit.append([recR1[0], recR1[1], recR1[2], recR1[3]])
             processed_unsplit.append([recR2[0], recR2[1], recR2[2], recR2[3]])
     return [processed_split1, processed_split2, processed_unsplit], stats
@@ -394,7 +396,7 @@ def nx_seq_junction(infilename1, infilename2, dst, log, silent=True):
     basename2 = os.path.basename(infilename2)
     if os.path.splitext(basename2)[1] == '.gz':
         basename2 = os.path.splitext(basename2)[0]
-    #open three outfiles
+    # open three outfiles
     splitfilenameleft = os.path.join(dst, 'R1_IJS7_' + basename1)
     splitfile1 = open(splitfilenameleft, 'w')
 
@@ -404,16 +406,16 @@ def nx_seq_junction(infilename1, infilename2, dst, log, silent=True):
     unsplitfilename = os.path.join(dst, 'unsplit_IJS7_' + basename1.replace('_R1_', '_R1R2_'))
     unsplitfile = open(unsplitfilename, 'w')
 
-    #jctstr = '(GGTTCATCGTCAGGCCTGACGATGAACC){e<=4}' # JS7 24/28 required results in ~92% detected in ion torrent
+    # jctstr = '(GGTTCATCGTCAGGCCTGACGATGAACC){e<=4}' # JS7 24/28 required results in ~92% detected in ion torrent
     # from NextClip: --adaptor_sequence GTTCATCGTCAGG -e --strict_match 22,11 --relaxed_match 20,10 eg strict 22/26 = 4 errors, relaxed 20/26 = 6 errors
     jctstr = '(GTTCATCGTCAGGCCTGACGATGAAC){e<=4}'  # try 22/26 to match NextClip strict (e<=6 for relaxed)
 
-    #PARSE both files in tuples of 4 lines
+    # PARSE both files in tuples of 4 lines
     parserR1 = ParseFastQ(infilename1)
     parserR2 = ParseFastQ(infilename2)
 
     all_stats = JunctionStats()
-    n_jobs = options_storage.threads
+    n_jobs = THREADS
     while True:
         # prepare input
         reads1 = list(itertools.islice(parserR1, READS_PER_BATCH))
@@ -448,7 +450,7 @@ def nx_seq_junction(infilename1, infilename2, dst, log, silent=True):
     if all_stats.splitcounter == 0:
         support.error("lucigen_nxmate.py, nx_seq_junction: error in input data! Number of split pairs is 0!", log)
     if not silent:
-        #print some stats
+        # print some stats
         percentsplit = 100 * all_stats.splitcounter / all_stats.readcounter
         percentR1R2 = 100 * all_stats.R1R2jctcounter / all_stats.splitcounter
         percentR1 = 100 * all_stats.R1jctcounter / all_stats.splitcounter
@@ -470,9 +472,18 @@ def nx_seq_junction(infilename1, infilename2, dst, log, silent=True):
     return splitfilenameleft, splitfilenameright, unsplitfilename
 
 
-def process_reads(left_reads_fpath, right_reads_fpath, dst, log):
+def process_reads(left_reads_fpath, right_reads_fpath, dst, log, threads):
+    left_reads_fpath = left_reads_fpath.strip()
+    right_reads_fpath = right_reads_fpath.strip()
+
+    global READS_PER_BATCH
+    global THREADS
+    THREADS = threads
+    READS_PER_BATCH = READS_PER_THREAD * threads  # e.g. 100000 for 4 threads
+
     log.info("== Processing Lucigen NxMate reads (" + left_reads_fpath + " and " +
              os.path.basename(right_reads_fpath) + " (results are in " + dst + " directory)")
     cleaned_filename1, cleaned_filename2 = chimera_clean(left_reads_fpath, right_reads_fpath, dst, log, silent=False)
-    split_filename1, split_filename2, unsplit_filename = nx_seq_junction(cleaned_filename1, cleaned_filename2, dst, log, silent=False)
+    split_filename1, split_filename2, unsplit_filename = nx_seq_junction(cleaned_filename1, cleaned_filename2, dst, log,
+                                                                         silent=False)
     return split_filename1, split_filename2, unsplit_filename

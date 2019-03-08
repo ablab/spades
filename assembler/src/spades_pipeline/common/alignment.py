@@ -4,11 +4,13 @@
 # See file LICENSE for details.
 ############################################################################
 
-import support
 import os
 import shutil
 
-def align_bwa_pe_lib(command, index, reads_file1, reads_file2, work_dir, log, threads = 1):
+import support
+
+
+def align_bwa_pe_lib(command, index, reads_file1, reads_file2, work_dir, log, threads=1):
     log.info("Aligning paired-end library")
     log.info("Left reads: " + reads_file1)
     log.info("Right reads: " + reads_file2)
@@ -21,12 +23,13 @@ def align_bwa_pe_lib(command, index, reads_file1, reads_file2, work_dir, log, th
     result = os.path.join(work_dir, "alignment.sam")
     log.info("Starting alignment of reads using bwa. See detailed log in " + log_file)
     log.info("Starting read alignment. See detailed log in " + log_file)
-    support.universal_sys_call([command, "mem", "-t", str(threads), "-S", "-M", index, reads_file1, reads_file2], log, result, err_log_file)
+    support.universal_sys_call([command, "mem", "-t", str(threads), "-S", "-M", index, reads_file1, reads_file2], log,
+                               result, err_log_file)
     log.info("Done. See result in " + result)
     return result
 
 
-def index_bwa(command, log, reference, work_dir, algorithm = "is"):
+def index_bwa(command, log, reference, work_dir, algorithm="is"):
     if os.path.exists(work_dir):
         shutil.rmtree(work_dir)
     os.makedirs(work_dir)
@@ -53,8 +56,7 @@ def align_bwa_pe_libs(command, index, reads, work_dir, log, threads):
     return result
 
 
-
-def align_bwa(command, reference, dataset, work_dir, log = None, threads = 1):
+def align_bwa(command, reference, dataset, work_dir, log=None, threads=1):
     if log == None:
         log = logging.getLogger('')
     if os.path.exists(work_dir):

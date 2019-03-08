@@ -7,12 +7,10 @@
 ############################################################################
 
 
-import sys
 import os
 import shutil
-import itertools
+
 from common import SeqIO
-from common import sam_parser
 
 
 def ConstructCoverage(sam, contigs, k):
@@ -34,6 +32,7 @@ def ConstructCoverage(sam, contigs, k):
             reads = []
     return cov
 
+
 def ConstructCoverageSingle(sam, contigs, k):
     cov = dict()
     for contig in range(len(contigs)):
@@ -44,6 +43,7 @@ def ConstructCoverageSingle(sam, contigs, k):
                 cov[rec.tid][rec.pos + k - 1] += 1
                 cov[rec.tid][rec.pos + rec.alen - k] -= 1
     return cov
+
 
 def OutputHist(cov, contigs, folder):
     if os.path.exists(folder):
@@ -57,6 +57,7 @@ def OutputHist(cov, contigs, folder):
             f.write(str(i) + " " + str(cur) + "\n")
         f.close()
 
+
 def ConstructSimpleCoverage(sam, contigs, k):
     simple_cov = dict()
     for contig in range(len(contigs)):
@@ -66,6 +67,7 @@ def ConstructSimpleCoverage(sam, contigs, k):
             simple_cov[rec.tid][rec.pos] += 1
             simple_cov[rec.tid][rec.pos + rec.alen] -= 1
     return simple_cov
+
 
 def BreakContig(cov, k, min0):
     l = len(cov) - 1
@@ -89,6 +91,7 @@ def BreakContig(cov, k, min0):
     result.append([prev_break, min(l, l - cur_len0 + k)])
     return result
 
+
 class ContigBreaker:
     def __init__(self, contigs, sam, k, min0):
         self.part_list_ = []
@@ -103,8 +106,8 @@ class ContigBreaker:
 
     def Break(self, contig):
         result = []
-        #print contig.id
-        #print self.sam.gettid(contig.id)
+        # print contig.id
+        # print self.sam.gettid(contig.id)
         for part in self.part_list_[self.sam.gettid(contig.id)]:
             result.append(contig.subseq(part[0], part[1]))
         return result
@@ -115,6 +118,7 @@ class ContigBreaker:
             for subcontig in self.Break(contig):
                 SeqIO.write(subcontig, output, "fasta")
         output.close()
+
 
 class PatternBreaker:
     def __init__(self, pattern, rc_pattern, max_cut):
@@ -151,8 +155,9 @@ class PatternBreaker:
     def Break(self, contig):
         if len(contig) < 2 * self.max_cut:
             return []
-        l,r = self.FindLeftPos(contig.seq), self.FindRightPos(contig.seq)
+        l, r = self.FindLeftPos(contig.seq), self.FindRightPos(contig.seq)
         return [contig.subseq(l, r)]
+
 
 class NBreaker:
     def __init__(self, min_N):
@@ -160,13 +165,13 @@ class NBreaker:
 
     def Break(self, contig):
         result = []
-        last_break = 0;
+        last_break = 0
         pos = 0
-        while(pos < len(contig) and contig[pos] == 'N'):
+        while (pos < len(contig) and contig[pos] == 'N'):
             pos += 1
-        while pos <len(contig):
+        while pos < len(contig):
             rpos = pos
-            while(rpos < len(contig) and contig[rpos] == 'N'):
+            while (rpos < len(contig) and contig[rpos] == 'N'):
                 rpos += 1
             if rpos - pos >= self.min_N:
                 result.append(contig.subseq(last_break, pos))
@@ -176,5 +181,5 @@ class NBreaker:
             result.append(contig.subseq(last_break, len(contig)))
         return result
 
-#if __name__ == '__main__':
+# if __name__ == '__main__':
 #    ContigBreaker(sys.argv[1], sys.argv[3], int(sys.argv[4]), int(sys.argv[5])).OutputBroken(sys.argv[2])

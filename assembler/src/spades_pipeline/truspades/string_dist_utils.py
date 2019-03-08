@@ -5,7 +5,7 @@
 ############################################################################
 
 __author__ = 'anton'
-import sys
+
 
 def calculate_dist_table(s1, s2):
     n1 = len(s1)
@@ -22,6 +22,7 @@ def calculate_dist_table(s1, s2):
         t.append(t_line)
     return t
 
+
 def calculate_lcs_table(s1, s2):
     n1 = len(s1)
     n2 = len(s2)
@@ -37,13 +38,14 @@ def calculate_lcs_table(s1, s2):
             t.append(t_line)
     return t
 
+
 def lcs(s1, s2):
     t = calculate_dist_table(s1, s2)
     i = len(s1)
     j = len(s2)
     res = ""
     while i > 0 and j > 0:
-        if t[i][j] == t[i - 1][j -1] + 1:
+        if t[i][j] == t[i - 1][j - 1] + 1:
             i -= 1
             j -= 1
         elif t[i][j] == t[i - 1][j] + 1:
@@ -55,6 +57,7 @@ def lcs(s1, s2):
             j -= 1
             res = s1[i] + res
     return res
+
 
 def dist(s1, s2):
     return calculate_dist_table(s1, s2)[len(s1)][len(s2)]

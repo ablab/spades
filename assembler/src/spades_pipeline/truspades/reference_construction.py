@@ -11,6 +11,7 @@ import logging
 import os
 import shutil
 import sys
+
 import support
 from common import SeqIO
 from common import alignment
@@ -39,7 +40,7 @@ class Record:
 
     def __str__(self):
         return str(self.rname) + "(" + str(self.Coverage()) + "): [" + str(self.left) + ", " + str(self.right) + "]"
-    
+
     def __cmp__(self, other):
         if other == None:
             return -1
@@ -51,6 +52,7 @@ class Record:
         if self.left != other.left:
             return self.left - other.left
         return self.right - other.right
+
 
 def CollectParts(recs, step, mincov, minlen):
     res = []
@@ -66,9 +68,11 @@ def CollectParts(recs, step, mincov, minlen):
         res.append(cur)
     return res
 
+
 def PrintParts(recs, out):
     for rec in recs:
         out.write(str(rec) + "\n")
+
 
 def ReadReference(file):
     result = dict()
@@ -78,8 +82,8 @@ def ReadReference(file):
 
 
 def ConstructSubreferenceFromSam(sam_files):
-    #todo: make online
-    #todo: use config
+    # todo: make online
+    # todo: use config
     recs = []
     for sam_file in sam_files:
         sam = sam_parser.Samfile(sam_file)
@@ -98,10 +102,11 @@ def PrintResults(recs, reference, references_file, coordinates_file):
     for rec in recs:
         aln.write(str(rec) + "\n")
         sequence = reference[rec.rname][rec.left:rec.right]
-        rec_id = str(rec.rname) + "_(" + str(rec.left) + "-" + str(rec.right)+")"
+        rec_id = str(rec.rname) + "_(" + str(rec.left) + "-" + str(rec.right) + ")"
         SeqIO.write(SeqIO.SeqRecord(sequence, rec_id), fasta, "fasta")
     aln.close()
     fasta.close()
+
 
 def PrintAll(subreferences, reference, output_dir):
     references_dir = os.path.join(output_dir, "references")
@@ -110,9 +115,11 @@ def PrintAll(subreferences, reference, output_dir):
     os.mkdir(coordinates_dir)
     for id, subreference in subreferences:
         if subreference != None:
-            PrintResults(subreference, reference, os.path.join(references_dir, str(id) + ".fasta"), os.path.join(coordinates_dir, str(id) + ".aln"))
+            PrintResults(subreference, reference, os.path.join(references_dir, str(id) + ".fasta"),
+                         os.path.join(coordinates_dir, str(id) + ".aln"))
 
-def AlignToReference(datasets, sam_dir, bwa_command, log, index, threads = 1):
+
+def AlignToReference(datasets, sam_dir, bwa_command, log, index, threads=1):
     if os.path.exists(sam_dir):
         shutil.rmtree(sam_dir)
     os.makedirs(sam_dir)
@@ -122,6 +129,7 @@ def AlignToReference(datasets, sam_dir, bwa_command, log, index, threads = 1):
         sam_files = alignment.align_bwa_pe_libs(bwa_command, index, reads, dataset_work_dir, log, threads)
         yield (dataset_id, sam_files)
 
+
 def ReadDataset(dataset_file):
     dataset_file = dataset_file.split(":")
     dataset_lines = [line.strip().split(" ") for line in open(dataset_file[0], "r").readlines() if line.strip()]
@@ -130,7 +138,8 @@ def ReadDataset(dataset_file):
         datasets = filter(lambda x, y: x.startswith(dataset_file[1]), datasets)
     return datasets
 
-def ConstructSubreferences(datasets, reference_file, output_dir, index = None, threads = 1, log = None):
+
+def ConstructSubreferences(datasets, reference_file, output_dir, index=None, threads=1, log=None):
     bwa_command = "bin/spades-bwa"
     if log == None:
         log = logging.getLogger('reference_construction')
@@ -153,13 +162,16 @@ def ConstructSubreferences(datasets, reference_file, output_dir, index = None, t
     support.recreate_dir(subreference_dir)
     support.recreate_dir(filtered_dir)
     log.info("Constructing subreferences")
-    subreferences_list = [(barcode_id, ConstructSubreferenceFromSam(barcode_sam)) for barcode_id, barcode_sam in sam_files]
+    subreferences_list = [(barcode_id, ConstructSubreferenceFromSam(barcode_sam)) for barcode_id, barcode_sam in
+                          sam_files]
     log.info("Reading reference")
     reference = ReadReference(reference_file)
     log.info("Printing output")
     PrintAll([(barcode, filtered) for barcode, (filtered, subreference) in subreferences_list], reference, filtered_dir)
-    PrintAll([(barcode, subreference) for barcode, (filtered, subreference) in subreferences_list], reference, subreference_dir)
+    PrintAll([(barcode, subreference) for barcode, (filtered, subreference) in subreferences_list], reference,
+             subreference_dir)
     log.info("Subreference construction finished. See results in " + output_dir)
+
 
 if __name__ == '__main__':
     # ConstructSubreference(sys.argv[1], "r", ReadReference(sys.argv[2]), sys.argv[3])
