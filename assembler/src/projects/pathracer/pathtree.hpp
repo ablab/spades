@@ -312,6 +312,26 @@ public:
     }
   }
 
+  size_t has_sequence(const std::string &seq, typename GraphCursor::Context context) const {
+    std::vector<const This*> links;
+    const_cast<This*>(this)->apply([&links](const This &r){ links.push_back(&r); });
+
+    for (size_t i = seq.length() - 1; i + 1 > 0; --i) {
+      std::vector<const This*> new_links;
+      for (const This *p : links) {
+        for (const auto &kv : p->scores_) {
+          const GraphCursor &cursor = kv.first;
+          const This* next = kv.second.second.get();
+          if (!cursor.is_empty() && cursor.letter(context) == seq[i]) {
+            new_links.push_back(next);
+          }
+        }
+      }
+      links = std::move(new_links);
+    }
+    return links.size();
+  }
+
 private:
   // std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
   std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> scores_;
@@ -368,6 +388,10 @@ class PathSet {
   std::string best_path_string() const { return path_container::str(best_path().path); }
 
   path_container top_k(size_t k) const { return path_container(pathlink_, k); }
+
+  const PathLink<GraphCursor> *pathlink() const {
+    return pathlink_.get();
+  }
 
  private:
   PathLinkRef<GraphCursor> pathlink_;
