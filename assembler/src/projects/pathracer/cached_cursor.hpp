@@ -19,12 +19,12 @@
 #include <cereal/types/vector.hpp>
 #include <cereal/types/common.hpp>
 
-using Index = uint32_t;
-
 class CachedCursorContext;
 
 class CachedCursor {
 public:
+    using Index = uint32_t;
+
     using Context = const CachedCursorContext *;
     CachedCursor(Index index = Index(-1)) : index_{index} {}
     bool is_empty() const { return index_ == Index(-1); }
@@ -62,6 +62,8 @@ inline std::ostream &operator<<(std::ostream &os, const CachedCursor &c) {
 
 class CachedCursorContext {
 public:
+    using Index = CachedCursor::Index;
+
     template <typename Cursor>
     static std::vector<Cursor> UnpackPath(const std::vector<CachedCursor> &path, const std::vector<Cursor> &cursors) {
         std::vector<Cursor> result;
