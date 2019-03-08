@@ -147,3 +147,17 @@ inline std::string compress_alignment(const std::string &alignment, bool x_as_m 
 inline void to_upper_case(std::string &s) {
     for (char &c: s) c = static_cast<char>(std::toupper(c));
 }
+
+template <typename Pred>
+int int_max_binsearch(const Pred &pred, int surely_true, int surely_false) {
+    while (surely_true + 1 < surely_false) {
+        int mid = (surely_true + surely_false) / 2;
+        if (pred(mid)) {
+            surely_true = mid;
+        } else {
+            surely_false = mid;
+        }
+    }
+
+    return surely_true;
+}
