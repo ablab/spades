@@ -124,28 +124,27 @@ int main(int argc, char *argv[]) {
 
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
-        bool x_as_m_in_alignment = mode == Mode::aa;
+        // bool x_as_m_in_alignment = mode == Mode::aa;
         if (!top_paths.empty()) {
             INFO("Best score in the current component: " << result.best_score());
             INFO("Best sequence in the current component");
             INFO(top_paths.str(0, &ccc));
-            INFO(top_paths.str(1, &ccc));
             // INFO("Alignment: " << compress_alignment(top_paths.alignment(0, fees, &ccc), x_as_m_in_alignment));
         }
 
+        size_t count = 0;
         for (const auto& annotated_path : top_paths) {
             VERIFY(annotated_path.path.size());
             std::string seq = annotated_path.str(&ccc);
             auto unpacked_path = ccc.UnpackPath(annotated_path.path, cursors);
-            // auto alignment = compress_alignment(annotated_path.alignment(fees, &ccc), x_as_m_in_alignment);
             auto nucl_path = to_nucl_path(unpacked_path);
-            std::string nucl_seq = pathtree::path2string(nucl_path, &graph);
             auto edge_path = to_path(nucl_path);
-            auto edge_path_aas = to_path(unpacked_path);
-            size_t pos = nucl_path[0].position();
-            // INFO(seq);
-            // INFO(edge_path);
-            INFO(annotated_path.score);
+            if (count % 1000 == 0) {
+                size_t pos = nucl_path[0].position();
+                INFO(annotated_path.score);
+                INFO(seq);
+                INFO(edge_path << " position = " << pos);
+            }
             of << ">Score=" << annotated_path.score << "|edges=" << edge_path << "\n";
             io::WriteWrapped(seq, of);
         }
