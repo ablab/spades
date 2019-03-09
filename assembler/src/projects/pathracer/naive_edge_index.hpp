@@ -7,7 +7,7 @@
 
 #include "aa_cursor.hpp"
 #include "assembly_graph/core/graph.hpp"
-#include "omnigraph_wrapper.hpp"
+#include "debruijn_graph_cursor.hpp"
 #include "sequence/aa.hpp"
 
 using debruijn_graph::EdgeId;

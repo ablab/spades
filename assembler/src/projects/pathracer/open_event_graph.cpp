@@ -23,7 +23,7 @@
 #include "pathtree.hpp"
 #include "aa_cursor.hpp"
 #include "cached_cursor.hpp"
-#include "omnigraph_wrapper.hpp"
+#include "debruijn_graph_cursor.hpp"
 
 #include "cursor_conn_comps.hpp"  // For to_nucl_path --- FIXME factor out this fnc
 
