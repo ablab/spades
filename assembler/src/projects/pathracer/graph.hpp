@@ -5,6 +5,7 @@
 
 #include "utils.hpp"
 #include "cursor.hpp"
+#include "reversed_cursor.hpp"
 #include "pathtree.hpp"
 
 #include "utils/logger/log_writers.hpp"
@@ -921,11 +922,11 @@ namespace hmm {
 struct Fees;
 };
 
-PathSet<ReversalGraphCursor<Graph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
-                                                                    const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial,
+PathSet<ReversedGraphCursor<Graph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
+                                                                    const std::vector<ReversedGraphCursor<Graph::GraphCursor>> &initial,
                                                                     const void *context);
-PathSet<ReversalGraphCursor<DBGraph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
-                                                                      const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial,
+PathSet<ReversedGraphCursor<DBGraph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
+                                                                      const std::vector<ReversedGraphCursor<DBGraph::GraphCursor>> &initial,
                                                                       const void *context);
 PathSet<DBGraph::GraphCursor> find_best_path(const hmm::Fees &fees,
                                              const std::vector<DBGraph::GraphCursor> &initial,

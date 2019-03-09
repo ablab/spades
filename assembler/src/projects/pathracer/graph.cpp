@@ -14,14 +14,14 @@ std::vector<DBGraph::GraphCursor> DBGraph::all() const {
   return std::vector<GraphCursor>(result.cbegin(), result.cend());
 }
 
-PathSet<ReversalGraphCursor<Graph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
-                                                                    const std::vector<ReversalGraphCursor<Graph::GraphCursor>> &initial,
+PathSet<ReversedGraphCursor<Graph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
+                                                                    const std::vector<ReversedGraphCursor<Graph::GraphCursor>> &initial,
                                                                     const void *context) {
   return impl::find_best_path(fees, initial, context);
 }
 
-PathSet<ReversalGraphCursor<DBGraph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
-                                                                      const std::vector<ReversalGraphCursor<DBGraph::GraphCursor>> &initial,
+PathSet<ReversedGraphCursor<DBGraph::GraphCursor>> find_best_path_rev(const hmm::Fees &fees,
+                                                                      const std::vector<ReversedGraphCursor<DBGraph::GraphCursor>> &initial,
                                                                       const void *context) {
   return impl::find_best_path(fees, initial, context);
 }

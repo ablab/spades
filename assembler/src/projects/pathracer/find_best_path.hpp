@@ -12,6 +12,7 @@
 #include "string_cursor.hpp"
 #include "cached_cursor.hpp"
 #include "debruijn_graph_cursor.hpp"
+#include "reversed_cursor.hpp"
 
 namespace hmm {
 struct Fees;
@@ -20,21 +21,13 @@ struct Fees;
 PathSet<DebruijnGraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<DebruijnGraphCursor> &initial,
                                             DebruijnGraphCursor::Context context);
 
-PathSet<RestrictedGraphCursor<DebruijnGraphCursor>> find_best_path(
-    const hmm::Fees &fees, const std::vector<RestrictedGraphCursor<DebruijnGraphCursor>> &initial,
-    RestrictedGraphCursor<DebruijnGraphCursor>::Context context);
-
-PathSet<ReversalGraphCursor<DebruijnGraphCursor>> find_best_path_rev(
-    const hmm::Fees &fees, const std::vector<ReversalGraphCursor<DebruijnGraphCursor>> &initial,
-    ReversalGraphCursor<DebruijnGraphCursor>::Context context);
+PathSet<ReversedGraphCursor<DebruijnGraphCursor>> find_best_path_rev(
+    const hmm::Fees &fees, const std::vector<ReversedGraphCursor<DebruijnGraphCursor>> &initial,
+    ReversedGraphCursor<DebruijnGraphCursor>::Context context);
 
 PathSet<AAGraphCursor<DebruijnGraphCursor>> find_best_path(
     const hmm::Fees &fees, const std::vector<AAGraphCursor<DebruijnGraphCursor>> &initial,
     AAGraphCursor<DebruijnGraphCursor>::Context context);
-
-PathSet<AAGraphCursor<RestrictedGraphCursor<DebruijnGraphCursor>>> find_best_path(
-    const hmm::Fees &fees, const std::vector<AAGraphCursor<RestrictedGraphCursor<DebruijnGraphCursor>>> &initial,
-    AAGraphCursor<RestrictedGraphCursor<DebruijnGraphCursor>>::Context context);
 
 PathSet<OptimizedRestrictedGraphCursor<DebruijnGraphCursor>> find_best_path(
     const hmm::Fees &fees, const std::vector<OptimizedRestrictedGraphCursor<DebruijnGraphCursor>> &initial,
