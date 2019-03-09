@@ -1255,6 +1255,15 @@ int pathracer_main(int argc, char* argv[]) {
 
 #include "string_cursor.hpp"
 
+
+double score_sequence(const hmm::Fees &fees, const std::string &seq) {
+    StringCursor start(0), finish(seq.length() - 1);
+
+    auto result = find_best_path(fees, {start}, &seq);
+    result.pathlink_mutable()->set_finishes({finish});
+    return result.best_score();
+}
+
 int aling_kmers_main(int argc, char* argv[]) {
     create_console_logger("");
     using namespace clipp;
@@ -1300,34 +1309,9 @@ int aling_kmers_main(int argc, char* argv[]) {
         }
         // remove -
         seq.erase(std::remove(seq.begin(), seq.end(), '-'), seq.end());
-
-        StringCursor cursor(0);
-        // auto lg_bak = logging::__logger();
-        // logging::logger *lg = logging::create_logger("");
-        // logging::attach_logger(lg);
-
-        auto result = find_best_path(fees, {cursor}, &seq);
-        result.pathlink_mutable()->set_finishes({StringCursor(seq.length() - 1)});
-        // logging::__logger() = lg_bak;
-
-        auto top_paths = result.top_k(1);
-        if (top_paths.empty()) {
-            INFO("ID: " << id);
-            INFO("EMPTY: " << seq);
-            continue;
-        }
-        VERIFY(!top_paths.empty());
-        INFO("Best score: " << result.best_score());
-        best_scores.push_back(result.best_score());
-        std::string aligned = top_paths.str(0, &seq);
-
-        INFO("Aligned string: " << aligned);
-        INFO("Aligned length: " << aligned.size() << " from " << seq.size());
-        if (aligned.size() + 5 >= seq.size()) {
-            of << ">" << id << "|Score=" << result.best_score() <<  "\n";
-            io::WriteWrapped(seq, of);
-        }
-
+        double score = score_sequence(fees, seq);
+        of << ">" << id << "|Score=" << score <<  "\n";
+        io::WriteWrapped(seq, of);
 
         hmmer::HMMMatcher matcher(hmm, hcfg);
         // Split into k-mers
