@@ -370,22 +370,22 @@ public:
   }
 
   size_t has_sequence(const std::string &seq, typename GraphCursor::Context context) const {
-    std::vector<This*> links = const_cast<This*>(this)->collect();
+    std::vector<const This*> pointers = collect_const();
 
     for (size_t i = seq.length() - 1; i + 1 > 0; --i) {
-      std::vector<This*> new_links;
-      for (const This *p : links) {
+      std::vector<const This*> new_pointers;
+      for (const This *p : pointers) {
         for (const auto &kv : p->scores_) {
           const GraphCursor &cursor = kv.first;
-          This* next = kv.second.second.get();
+          const This* next = kv.second.second.get();
           if (!cursor.is_empty() && cursor.letter(context) == seq[i]) {
-            new_links.push_back(next);
+            new_pointers.push_back(next);
           }
         }
       }
-      links = std::move(new_links);
+      pointers = std::move(new_pointers);
     }
-    return links.size();
+    return pointers.size();
   }
 
   template <class Archive>
