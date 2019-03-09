@@ -9,7 +9,7 @@
 
 TEST( Quality, Test ) {
     Quality q("0123456789");
-    ASSERT_EQ('0', q[0]);
-    ASSERT_EQ('6', q[6]);
-    ASSERT_EQ('9', q[9]);
+    EXPECT_EQ('0', q[0]);
+    EXPECT_EQ('6', q[6]);
+    EXPECT_EQ('9', q[9]);
 }

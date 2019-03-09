@@ -20,21 +20,21 @@ void CompareContainers(const T &lhs, const T &rhs) {
     auto i = lhs.begin();
     auto j = rhs.begin();
     for (; i != lhs.end() && j != rhs.end(); ++i, ++j) {
-        ASSERT_EQ(*i, *j);
+        EXPECT_EQ(*i, *j);
     }
-    ASSERT_EQ(i, lhs.end());
-    ASSERT_EQ(j, lhs.end());
+    EXPECT_EQ(i, lhs.end());
+    EXPECT_EQ(j, lhs.end());
 }
 
 template<typename I>
 void CompareGraphIterators(I it1, I it2) {
     while(!it1.IsEnd() && !it2.IsEnd()) {
-        ASSERT_EQ((*it1).int_id(), (*it2).int_id());
+        EXPECT_EQ((*it1).int_id(), (*it2).int_id());
         ++it1;
         ++it2;
     }
-    ASSERT_TRUE(it1.IsEnd());
-    ASSERT_TRUE(it2.IsEnd());
+    EXPECT_TRUE(it1.IsEnd());
+    EXPECT_TRUE(it2.IsEnd());
 }
 
 const Graph &CommonGraph() {
@@ -81,17 +81,17 @@ TEST(Io, PairedInfo) {
     Index ni(graph);
     Load(file_name, ni);
 
-    ASSERT_EQ(pi.size(), ni.size());
+    EXPECT_EQ(pi.size(), ni.size());
     for (auto pit = omnigraph::de::pair_begin(pi), nit = omnigraph::de::pair_begin(ni);
          pit != omnigraph::de::pair_end(pi); ++pit, ++nit) {
-        ASSERT_EQ(pit.first(), nit.first());
-        ASSERT_EQ(pit.second(), nit.second());
-        ASSERT_EQ(pit->size(), nit->size());
+        EXPECT_EQ(pit.first(), nit.first());
+        EXPECT_EQ(pit.second(), nit.second());
+        EXPECT_EQ(pit->size(), nit->size());
 
         for (auto ppit = pit->begin(), npit = nit->begin();
              ppit != pit->end(); ++ppit, ++npit) {
-            ASSERT_EQ(ppit->weight, npit->weight);
-            ASSERT_EQ(ppit->d, npit->d);
+            EXPECT_EQ(ppit->weight, npit->weight);
+            EXPECT_EQ(ppit->d, npit->d);
         }
     }
 }

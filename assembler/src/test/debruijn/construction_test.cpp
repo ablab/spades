@@ -81,7 +81,7 @@ void CheckIndex(const std::vector<std::string> &reads, const std::string &tmpdir
         RtSeq kmer = read.sequence().start<RtSeq>(k + 1) >> 'A';
         for (size_t i = k; i < read.size(); i++) {
             kmer = kmer << read[i];
-            ASSERT_TRUE(index.contains(kmer));
+            EXPECT_TRUE(index.contains(kmer));
         }
     }
 }

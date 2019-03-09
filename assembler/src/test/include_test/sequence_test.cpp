@@ -11,34 +11,34 @@
 
 TEST( Sequence, Selector ) {
     Sequence s("TTATTAGGGAT");
-    ASSERT_EQ('G', nucl(Sequence("ACGTACGTAC")[2]));
-    ASSERT_EQ('A', nucl(Sequence("A")[0]));
+    EXPECT_EQ('G', nucl(Sequence("ACGTACGTAC")[2]));
+    EXPECT_EQ('A', nucl(Sequence("A")[0]));
 }
 
 TEST( Sequence, ZeroLength ) {
     Sequence s("");
-    ASSERT_EQ(0, s.size());
+    EXPECT_EQ(0, s.size());
 }
 
 TEST( Sequence, NullValue ) {
         Sequence s("");
-    ASSERT_EQ("", (!s).str());
+    EXPECT_EQ("", (!s).str());
 }
 
 TEST( Sequence, Sum ) {
-    ASSERT_EQ("ACG", (Sequence("A") + Sequence("CG")).str());
-    ASSERT_EQ("ACGTTGCA", (Sequence("ACGT") + Sequence("TGCA")).str());
-    ASSERT_EQ("ACGTACGTTGCATGCA", (Sequence("ACGTACGT") + Sequence("TGCATGCA")).str());
+    EXPECT_EQ("ACG", (Sequence("A") + Sequence("CG")).str());
+    EXPECT_EQ("ACGTTGCA", (Sequence("ACGT") + Sequence("TGCA")).str());
+    EXPECT_EQ("ACGTACGTTGCATGCA", (Sequence("ACGTACGT") + Sequence("TGCATGCA")).str());
 }
 
 TEST( Sequence, Str ) {
-    ASSERT_EQ("ACGTACGTAC", Sequence("ACGTACGTAC").str());
-    ASSERT_EQ("ACG", Sequence("ACG").str());
+    EXPECT_EQ("ACGTACGTAC", Sequence("ACGTACGTAC").str());
+    EXPECT_EQ("ACG", Sequence("ACG").str());
 }
 
 TEST( Sequence, ReverseComplement ) {
     Sequence s = Sequence("AACCGGTTAA");
-    ASSERT_EQ("TTAACCGGTT", (!s).str());
+    EXPECT_EQ("TTAACCGGTT", (!s).str());
     Sequence s2 = Sequence("ACG");
-    ASSERT_EQ("CGT", (!s2).str());
+    EXPECT_EQ("CGT", (!s2).str());
 }

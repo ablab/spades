@@ -28,23 +28,23 @@ TEST(Histogram, StrongWeakPtrBasic) {
     using Ptr = StrongWeakPtr<Counter>;
     //Empty
     Ptr p1;
-    ASSERT_FALSE(p1.owning());
-    ASSERT_EQ(p1.get(), static_cast<Counter *>(nullptr));
+    EXPECT_FALSE(p1.owning());
+    EXPECT_EQ(p1.get(), static_cast<Counter *>(nullptr));
     {
         //Owning
         Ptr p2(new Counter());
         auto ptr = p2.get();
-        ASSERT_TRUE(p2.owning());
-        ASSERT_EQ(Counter::Count(), 1);
+        EXPECT_TRUE(p2.owning());
+        EXPECT_EQ(1, Counter::Count());
         //Moving
         Ptr p3 = std::move(p2);
-        ASSERT_EQ(p3.get(), ptr);
-        ASSERT_EQ(Counter::Count(), 1);
+        EXPECT_EQ(p3.get(), ptr);
+        EXPECT_EQ(1, Counter::Count());
         //Non-owning
         Ptr p4(p3.get(), false);
-        ASSERT_EQ(p4.get(), ptr);
-        ASSERT_EQ(Counter::Count(), 1);
+        EXPECT_EQ(p4.get(), ptr);
+        EXPECT_EQ(1, Counter::Count());
     }
     //Free
-    ASSERT_EQ(Counter::Count(), 0);
+    EXPECT_EQ(Counter::Count(), 0);
 }

@@ -59,11 +59,11 @@ inline void CheckPaths(const Graph &g,
     std::set<size_t> poss;
     for (const auto &ids: path_ids) {
         auto pos = FindPath(paths, AsPath(g, finder, ids));
-        ASSERT_FALSE(pos.empty());
+        EXPECT_FALSE(pos.empty());
         utils::insert_all(poss, pos);
     }
-    ASSERT_EQ(poss.size(), paths.size());
-    ASSERT_EQ(path_ids.size(), paths.size());
+    EXPECT_EQ(poss.size(), paths.size());
+    EXPECT_EQ(path_ids.size(), paths.size());
 }
 
 inline PathContainer RemoveOverlaps(const Graph &g,
@@ -91,7 +91,7 @@ inline PathContainer RemoveOverlaps(const Graph &g,
 TEST( OverlapRemoval, BasicNoDiff ) {
     Graph g(13);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g));
     GraphCoverageMap cov_map(g);
     PathContainer container;
 
@@ -105,19 +105,19 @@ TEST( OverlapRemoval, BasicNoDiff ) {
     size_t min_edge_len = 0;
     size_t max_diff = 0;
     OverlapFindingHelper finding_helper(g, cov_map, min_edge_len, max_diff);
-    ASSERT_TRUE(finding_helper.IsEqual(path1, path2));
-    ASSERT_FALSE(finding_helper.IsEqual(path1, path3));
-    ASSERT_FALSE(finding_helper.IsEqual(path1, path4));
-    ASSERT_TRUE(finding_helper.IsSubpath(path3, path1));
-    ASSERT_TRUE(finding_helper.IsSubpath(path4, path1));
-    ASSERT_TRUE(finding_helper.IsSubpath(path2, path1));
-    ASSERT_FALSE(finding_helper.IsSubpath(path3, path4));
+    EXPECT_TRUE(finding_helper.IsEqual(path1, path2));
+    EXPECT_FALSE(finding_helper.IsEqual(path1, path3));
+    EXPECT_FALSE(finding_helper.IsEqual(path1, path4));
+    EXPECT_TRUE(finding_helper.IsSubpath(path3, path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(path4, path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(path2, path1));
+    EXPECT_FALSE(finding_helper.IsSubpath(path3, path4));
 }
 
 TEST( OverlapRemoval, BasicDiff ) {
     Graph g(13);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g));
     GraphCoverageMap cov_map(g);
     PathContainer container;
 
@@ -132,36 +132,36 @@ TEST( OverlapRemoval, BasicDiff ) {
     size_t min_edge_len = 0;
     size_t max_diff = 1;
     OverlapFindingHelper finding_helper(g, cov_map, min_edge_len, max_diff);
-    ASSERT_TRUE(finding_helper.IsEqual(path1, path2));
-    ASSERT_TRUE(finding_helper.IsEqual(path2, path1));
+    EXPECT_TRUE(finding_helper.IsEqual(path1, path2));
+    EXPECT_TRUE(finding_helper.IsEqual(path2, path1));
 
-    ASSERT_TRUE(finding_helper.IsEqual(path1, path3));
-    ASSERT_TRUE(finding_helper.IsEqual(path3, path1));
+    EXPECT_TRUE(finding_helper.IsEqual(path1, path3));
+    EXPECT_TRUE(finding_helper.IsEqual(path3, path1));
 
-    ASSERT_TRUE(finding_helper.IsEqual(path1, path4));
-    ASSERT_TRUE(finding_helper.IsEqual(path4, path1));
+    EXPECT_TRUE(finding_helper.IsEqual(path1, path4));
+    EXPECT_TRUE(finding_helper.IsEqual(path4, path1));
 
-    ASSERT_TRUE(finding_helper.IsSubpath(path2, path1));
-    ASSERT_TRUE(finding_helper.IsSubpath(path1, path2));
-    ASSERT_TRUE(finding_helper.IsSubpath(path3, path1));
-    ASSERT_TRUE(finding_helper.IsSubpath(path1, path3));
-    ASSERT_TRUE(finding_helper.IsSubpath(path4, path1));
-    ASSERT_TRUE(finding_helper.IsSubpath(path1, path4));
+    EXPECT_TRUE(finding_helper.IsSubpath(path2, path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(path1, path2));
+    EXPECT_TRUE(finding_helper.IsSubpath(path3, path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(path1, path3));
+    EXPECT_TRUE(finding_helper.IsSubpath(path4, path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(path1, path4));
 
-    ASSERT_TRUE(finding_helper.IsSubpath(path3, path4));
-    ASSERT_TRUE(finding_helper.IsSubpath(path4, path3));
+    EXPECT_TRUE(finding_helper.IsSubpath(path3, path4));
+    EXPECT_TRUE(finding_helper.IsSubpath(path4, path3));
 
-    ASSERT_TRUE(finding_helper.IsSubpath(path5, path1));
-    ASSERT_TRUE(finding_helper.IsSubpath(path5, path2));
-    ASSERT_FALSE(finding_helper.IsSubpath(path3, path5));
-    ASSERT_FALSE(finding_helper.IsEqual(path2, path5));
-    ASSERT_FALSE(finding_helper.IsEqual(path5, path2));
+    EXPECT_TRUE(finding_helper.IsSubpath(path5, path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(path5, path2));
+    EXPECT_FALSE(finding_helper.IsSubpath(path3, path5));
+    EXPECT_FALSE(finding_helper.IsEqual(path2, path5));
+    EXPECT_FALSE(finding_helper.IsEqual(path5, path2));
 }
 
 TEST( OverlapRemoval, BasicRepeatConjugateEdges ) {
     Graph g(13);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g));
     GraphCoverageMap cov_map(g);
     PathContainer container;
 
@@ -186,7 +186,7 @@ TEST( OverlapRemoval, BasicRepeatConjugateEdges ) {
 TEST( OverlapRemoval, BasicRepeat ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {{17572, 1565},
                      {18066, 1565},
@@ -209,7 +209,7 @@ TEST( OverlapRemoval, BasicRepeat ) {
 TEST( OverlapRemoval, BasicRepeatUneven ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {{17572, 1565},
                           {18066, 1565},
@@ -231,7 +231,7 @@ TEST( OverlapRemoval, BasicRepeatUneven ) {
 TEST( OverlapRemoval, BasicRepeatAllDisconnected ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {{17572, 1565},
                           {18066, 1565},
@@ -255,7 +255,7 @@ TEST( OverlapRemoval, BasicRepeatAllDisconnected ) {
 TEST( OverlapRemoval, BasicRepeatNoEffect ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {
             {17572, 1565},
@@ -276,7 +276,7 @@ TEST( OverlapRemoval, BasicRepeatNoEffect ) {
 TEST( OverlapRemoval, BasicRepeatEnd ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {
                {17572, 1565},
@@ -297,7 +297,7 @@ TEST( OverlapRemoval, BasicRepeatEnd ) {
 TEST( OverlapRemoval, BasicRepeatEndRetain ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {
             {17572, 1565},
@@ -318,7 +318,7 @@ TEST( OverlapRemoval, BasicRepeatEndRetain ) {
 TEST( OverlapRemoval, BasicRepeatStart ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {
                {1565, 19391},
@@ -339,7 +339,7 @@ TEST( OverlapRemoval, BasicRepeatStart ) {
 TEST( OverlapRemoval, BasicRepeatStartRetain ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {
             {1565, 19391},
@@ -360,7 +360,7 @@ TEST( OverlapRemoval, BasicRepeatStartRetain ) {
 TEST( OverlapRemoval, BasicDeduplication ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {
             {17572, 1565},
@@ -389,7 +389,7 @@ TEST( OverlapRemoval, BasicDeduplication ) {
 TEST( OverlapRemoval, BasicDeduplicationEqual ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {
             {17572, 1565},
@@ -417,7 +417,7 @@ TEST( OverlapRemoval, BasicDeduplicationEqual ) {
 TEST( OverlapRemoval, DeduplicateDiff ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {
             {20129, 17993, 20131, 17993, 19506},
@@ -443,7 +443,7 @@ TEST( OverlapRemoval, DeduplicateDiff ) {
 TEST( OverlapRemoval, DeduplicateDiffGap ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {
             {20129, 17993, 20131, 17993, 19506},
@@ -470,7 +470,7 @@ TEST( OverlapRemoval, DeduplicateDiffGap ) {
 TEST( OverlapRemoval, DeduplicateMinEdgeLen1 ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {{2142, 4373, 20044},
                           {4373, 20044},
@@ -497,7 +497,7 @@ TEST( OverlapRemoval, DeduplicateMinEdgeLen1 ) {
 TEST( OverlapRemoval, DeduplicateMinEdgeLen2 ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {{2142, 4373, 20044},
                           {2142, 4373, 20044, 18816}};
@@ -521,7 +521,7 @@ TEST( OverlapRemoval, DeduplicateMinEdgeLen2 ) {
 TEST( OverlapRemoval, EndEndMinEdgeLen ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {{2142, 4373, 20044, 20385},
                           {2142, 4373, 20044, 18816}};
@@ -541,7 +541,7 @@ TEST( OverlapRemoval, EndEndMinEdgeLen ) {
 TEST( OverlapRemoval, Tricky0 ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {{2142, 4373, 20044, 20385},
                           {4373, 20044, 18816}};
@@ -561,7 +561,7 @@ TEST( OverlapRemoval, Tricky0 ) {
 TEST( OverlapRemoval, Tricky1 ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {{2142, 4373, 20044, 20385},
                           {4373, 20044, 18816}};
@@ -581,7 +581,7 @@ TEST( OverlapRemoval, Tricky1 ) {
 TEST( OverlapRemoval, Tricky2 ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {{2142, 4373, 20044, 20385},
                           {4373, 20044, 18816}};
@@ -601,7 +601,7 @@ TEST( OverlapRemoval, Tricky2 ) {
 TEST( OverlapRemoval, BasicMinEdgeLen ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {{20449, 2142, 4373, 20044},
                           {2142, 4373, 20044, 20385}};
@@ -621,7 +621,7 @@ TEST( OverlapRemoval, BasicMinEdgeLen ) {
 TEST( OverlapRemoval, OverlapWithMiddle ) {
     Graph g(55);
     omnigraph::GraphElementFinder<Graph> finder(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g));
 
     PathsInit path_ids = {{18953, 20449, 20129},
                           {20385, 20449},

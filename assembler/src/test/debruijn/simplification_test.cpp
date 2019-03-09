@@ -146,48 +146,48 @@ class Simplification : public ::testing::Test, public TmpFolderFixture {
 
 TEST_F( Simplification,  SimpleTipClipperTest ) {
     ConjugateDeBruijnGraph g(55);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_tip/simpliest_tip", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_tip/simpliest_tip", g));
 
     DefaultClipTips(g);
 
-    ASSERT_EQ(g.size(), 4u);
+    EXPECT_EQ(4, g.size());
 }
 
 TEST_F( Simplification,  SimpleBulgeRemovalTest ) {
     Graph g(55);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g));
 
     DefaultRemoveBulges(g);
 
-    ASSERT_EQ(g.size(), 4u);
+    EXPECT_EQ(4, g.size());
 }
 
 TEST_F( Simplification,  TipobulgeTest ) {
     Graph g(55);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/tipobulge/tipobulge", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/tipobulge/tipobulge", g));
 
     DefaultClipTips(g);
 
     DefaultRemoveBulges(g);
 
-    ASSERT_EQ(g.size(), 16u);
+    EXPECT_EQ(16, g.size());
 }
 
 TEST_F( Simplification,  SimpleECTest ) {
     Graph g(55);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g));
 
     debruijn_config::simplification::erroneous_connections_remover ec_config;
     ec_config.condition = "{ icb 7000 , ec_lb 20 }";
 
     debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info())->Run();
 
-    ASSERT_EQ(g.size(), 16u);
+    EXPECT_EQ(16, g.size());
 }
 
 TEST_F( Simplification,  SimpleIterECTest ) {
     Graph g(55);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g));
 
     debruijn_config::simplification::erroneous_connections_remover ec_config;
     ec_config.condition = "{ icb 7000 , ec_lb 20 }";
@@ -195,12 +195,12 @@ TEST_F( Simplification,  SimpleIterECTest ) {
     auto ec_remover_ptr = debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info());
 
     AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(*ec_remover_ptr, 2);
-    ASSERT_EQ(g.size(), 16u);
+    EXPECT_EQ(16, g.size());
 }
 
 TEST_F( Simplification,  IterECTest ) {
     Graph g(55);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g));
 
     debruijn_config::simplification::erroneous_connections_remover ec_config;
     ec_config.condition = "{ icb 7000 , ec_lb 20 }";
@@ -208,110 +208,103 @@ TEST_F( Simplification,  IterECTest ) {
     auto ec_remover_ptr = debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info());
 
     ec_remover_ptr->Run(false, 0.5);
-    ASSERT_EQ(g.size(), 20u);
+    EXPECT_EQ(20, g.size());
 
     ec_remover_ptr->Run(false, 1.0);
-    ASSERT_EQ(g.size(), 16u);
+    EXPECT_EQ(16, g.size());
 }
 
 TEST_F( Simplification,  IterUniquePath ) {
     Graph g(55);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g));
 
     auto tec_config = standard_tec_config();
     while(debruijn::simplification::TopologyRemoveErroneousEdges<Graph>(g, tec_config, 0)) {
     }
 
-    ASSERT_EQ(g.size(), 16u);
+    EXPECT_EQ(16, g.size());
 }
 
 //TEST( Simplification,  MFIterUniquePath ) {
 //    Graph g(55);
-//    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
+//    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g));
 //
 //    debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
 //    mfec_config.uniqueness_length = 500;
 //    MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
 //
-//    ASSERT_EQ(g.size(), 16u);
+//    EXPECT_EQ(g.size(), 16u);
 //}
 
 //todo very strange figure!!!
 TEST_F( Simplification,  MFUniquePath ) {
     Graph g(55);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g));
     debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
     mfec_config.uniqueness_length = 400;
     debruijn::simplification::MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
 
-    ASSERT_EQ(g.size(), 12u);
+    EXPECT_EQ(12, g.size());
 }
 
 //TEST( Simplification,  TopologyTC ) {
 //    Graph g(55);
-//    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g);
+//    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g));
 //    debruijn_config::simplification::max_flow_ec_remover tec_config = standard_mfec_config();
 //    tec_config.uniqueness_length = 400;
 //
 //    MaxFlowRemoveErroneousEdges<Graph>(g, tec_config, 0);
 //
-//    ASSERT_EQ(g.size(), 12u);
+//    EXPECT_EQ(g.size(), 12u);
 //}
 
 //TEST( Simplification,  SelfComp ) {
 //       Graph g(55);
-//       graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/self_comp", g);
+//       ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/self_comp", g));
 //       debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
 //       mfec_config.uniqueness_length = 1500;
 //       MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
 //
-//       ASSERT_EQ(g.size(), 4u);
+//       EXPECT_EQ(g.size(), 4u);
 //}
 
 TEST_F( Simplification,  ComplexBulgeRemoverOnSimpleBulge ) {
-       Graph g(55);
-       graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g);
-       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(g, g.k() * 5, 5, nullptr, 1);
-       remover.Run();
-       INFO("Done");
+    Graph g(55);
+    ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g));
+    omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(g, g.k() * 5, 5, nullptr, 1);
+    remover.Run();
+    INFO("Done");
 
 //       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
-       ASSERT_EQ(g.size(), 4u);
+    EXPECT_EQ(4, g.size());
 }
 
 TEST_F( Simplification,  ComplexBulge ) {
     GraphPack gp(55, tmp_folder(), 0);
-       graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp);
-       auto &graph = gp.get_mutable<Graph>();
+    ASSERT_TRUE(graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp));
+    auto &graph = gp.get_mutable<Graph>();
 
-//       OppositionLicvidator<Graph> licvidator(graph, graph.k() * 5, 5);
-//       licvidator.Licvidate();
+    omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(graph, graph.k() * 5, 5, nullptr, 1);
+    remover.Run();
 
-       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(graph, graph.k() * 5, 5, nullptr, 1);
-       remover.Run();
-
-//       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
-       ASSERT_EQ(graph.size(), 8u);
+    EXPECT_EQ(8, graph.size());
 }
 
 TEST_F( Simplification,  BigComplexBulge ) {
     GraphPack gp(55, tmp_folder(), 0);
-       graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp);
-       auto &graph = gp.get_mutable<Graph>();
+    ASSERT_TRUE(graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp));
+    auto &graph = gp.get_mutable<Graph>();
 
-//       OppositionLicvidator<Graph> licvidator(graph, graph.k() * 5, 5);
-//       licvidator.Licvidate();
-       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(graph, graph.k() * 5, 5, nullptr, 1);
-       remover.Run();
-//       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge_res.dot"));
-       ASSERT_EQ(graph.size(), 66u);
+    omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(graph, graph.k() * 5, 5, nullptr, 1);
+    remover.Run();
+    EXPECT_EQ(66, graph.size());
 }
 
 //Relative coverage removal tests
 
 void TestRelativeCoverageRemover(const std::string &path, const std::string &tmp_folder, size_t graph_size) {
     GraphPack gp(55, tmp_folder, 0);
-    graphio::ScanGraphPack(path, gp);
+    ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     INFO("Relative coverage component removal:");
     auto &graph = gp.get_mutable<Graph>();
     auto &flanking_cov = gp.get_mutable<omnigraph::FlankingCoverage<Graph>>();
@@ -320,7 +313,7 @@ void TestRelativeCoverageRemover(const std::string &path, const std::string &tmp
                                                                                    standard_rcc_config(),
                                                                                    standard_simplif_relevant_info());
     algo->Run();
-    ASSERT_EQ(graph.size(), graph_size);
+    EXPECT_EQ(graph_size, graph.size());
 }
 
 //todo review
@@ -351,11 +344,11 @@ TEST_F( Simplification,  CompressorTest ) {
     std::string path = "./src/test/debruijn/graph_fragments/compression/graph";
     size_t graph_size = 12;
     GraphPack gp(55, tmp_folder(), 0);
-    graphio::ScanGraphPack(path, gp);
+    ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     auto &graph = gp.get_mutable<Graph>();
 
     CompressAllVertices(graph, standard_simplif_relevant_info().chunk_cnt());
-    ASSERT_EQ(graph.size(), graph_size);
+    EXPECT_EQ(graph.size(), graph_size);
 }
 
 #if 0
@@ -363,64 +356,64 @@ TEST_F( Simplification,  ParallelCompressor1 ) {
     std::string path = "./src/test/debruijn/graph_fragments/compression/graph";
     size_t graph_size = 12;
     GraphPack gp(55, tmp_folder(), 0);
-    graphio::ScanGraphPack(path, gp);
+    ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     auto &graph = gp.get_mutable<Graph>();
 
     debruijn::simplification::ParallelCompress(graph, standard_simplif_relevant_info().chunk_cnt(), false);
-    ASSERT_EQ(graph.size(), graph_size);
+    EXPECT_EQ(graph_size, gp.g.size());
 }
 
 TEST_F( Simplification,  ParallelTipClipper1 ) {
     std::string path = "./src/test/debruijn/graph_fragments/tips/graph";
     size_t graph_size = 12;
     GraphPack gp(55, tmp_folder(), 0);
-    graphio::ScanGraphPack(path, gp);
+    ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     auto &graph = gp.get_mutable<Graph>();
     debruijn::simplification::ConditionParser<Graph> parser(graph, standard_tc_config().condition, standard_simplif_relevant_info());
     parser();
     debruijn::simplification::ParallelClipTips(graph, parser.max_length_bound(), parser.max_coverage_bound(), standard_simplif_relevant_info().chunk_cnt());
-    ASSERT_EQ(graph.size(), graph_size);
+    EXPECT_EQ(graph_size, gp.g.size());
 }
 
 TEST_F( Simplification,  ParallelECRemover ) {
     std::string path = graph_fragment_root() + "complex_bulge/complex_bulge";
     GraphPack gp(55, tmp_folder(), 0);
-    graphio::ScanGraphPack(path, gp);
+    ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     std::string condition = "{ cb 1000 , ec_lb 20 }";
     auto &graph = gp.get_mutable<Graph>();
     debruijn::simplification::ConditionParser<Graph> parser(graph, condition, standard_simplif_relevant_info());
     parser();
     debruijn::simplification::ParallelEC(graph, parser.max_length_bound(), parser.max_coverage_bound(), standard_simplif_relevant_info().chunk_cnt());
-    ASSERT_EQ(graph.size(), 16u);
+    EXPECT_EQ(gp.g.size(), 16u);
     debruijn::simplification::ParallelEC(graph, parser.max_length_bound(), parser.max_coverage_bound(), standard_simplif_relevant_info().chunk_cnt());
-    ASSERT_EQ(graph.size(), 12u);
+    EXPECT_EQ(gp.g.size(), 12u);
 }
 
 TEST_F( Simplification,  ParallelECRemover1 ) {
     std::string path = graph_fragment_root() + "complex_bulge_2/graph";
     std::string condition = "{ cb 100 , ec_lb 20 }";
     GraphPack gp(55, tmp_folder(), 0);
-    graphio::ScanGraphPack(path, gp);
+    ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     auto &graph = gp.get_mutable<Graph>();
     debruijn::simplification::ConditionParser<Graph> parser(graph, condition, standard_simplif_relevant_info());
     parser();
     debruijn::simplification::ParallelEC(graph, parser.max_length_bound(), parser.max_coverage_bound(), standard_simplif_relevant_info().chunk_cnt());
-    ASSERT_EQ(graph.size(), 20u);
+    EXPECT_EQ(gp.g.size(), 20u);
     debruijn::simplification::ParallelEC(graph, parser.max_length_bound(), parser.max_coverage_bound(), standard_simplif_relevant_info().chunk_cnt());
-    ASSERT_EQ(graph.size(), 4u);
-    ASSERT_EQ(GraphComponent<Graph>::WholeGraph(gp.g).e_size(), 2u);
+    EXPECT_EQ(gp.g.size(), 4u);
+    EXPECT_EQ(GraphComponent<Graph>::WholeGraph(gp.g).e_size(), 2u);
 }
 
 TEST_F( Simplification,  ParallelECRemover2 ) {
     std::string path = graph_fragment_root() + "rel_cov_ec/constructed_graph";
     std::string condition = "{ cb 100 , ec_lb 20 }";
     GraphPack gp(55, tmp_folder(), 0);
-    graphio::ScanGraphPack(path, gp);
+    ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     auto &graph = gp.get_mutable<Graph>();
     debruijn::simplification::ConditionParser<Graph> parser(graph, condition, standard_simplif_relevant_info());
     parser();
     debruijn::simplification::ParallelEC(graph, parser.max_length_bound(), parser.max_coverage_bound(), standard_simplif_relevant_info().chunk_cnt());
-    ASSERT_EQ(graph.size(), 20u);
+    EXPECT_EQ(gp.g.size(), 20u);
 }
 #endif
 
@@ -430,7 +423,7 @@ TEST_F( Simplification,  ParallelECRemover2 ) {
 //    GraphPack gp(55, tmp_folder(), 0);
 //    graphio::ScanGraphPack(path, gp);
 //    ParallelEC(graph, standard_ec_config().condition, standard_simplif_relevant_info());
-//    ASSERT_EQ(graph.size(), graph_size);
+//    EXPECT_EQ(gp.g.size(), graph_size);
 //}
 //
 //TEST( Simplification,  ComplexTipRemover2 ) {
@@ -439,5 +432,5 @@ TEST_F( Simplification,  ParallelECRemover2 ) {
 //    GraphPack gp(55, tmp_folder(), 0);
 //    graphio::ScanGraphPack(path, gp);
 //    ParallelEC(graph, standard_ec_config().condition, standard_simplif_relevant_info());
-//    ASSERT_EQ(graph.size(), graph_size);
+//    EXPECT_EQ(gp.g.size(), graph_size);
 //}

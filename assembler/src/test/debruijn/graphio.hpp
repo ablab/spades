@@ -18,8 +18,8 @@ class GraphPack;
 //Legacy wrappers
 namespace graphio {
 
-void ScanBasicGraph(const std::string &file_name, Graph &g);
-void ScanGraphPack(const std::string &file_name, GraphPack &gp);
+bool ScanBasicGraph(const std::string &file_name, Graph &g);
+bool ScanGraphPack(const std::string &file_name, GraphPack &gp);
 
 };
 

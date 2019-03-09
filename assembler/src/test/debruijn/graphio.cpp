@@ -36,12 +36,18 @@ inline void DeserializePoint(FILE* file, size_t& e1, size_t& e2, omnigraph::de::
 class LegacyTextIO {
 
 public:
-    void LoadGraph(const std::string &file_name, Graph &graph) {
+    bool LoadGraph(const std::string &file_name, Graph &graph) {
         INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
         FILE* file = fopen((file_name + ".grp").c_str(), "r");
-        VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
+        if (file == NULL) {
+            ERROR("Couldn't find file " << (file_name + ".grp"));
+            return false;
+        }
         FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
-        VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".sqn"));
+        if (sequence_file == NULL) {
+            ERROR("Couldn't find file " << (file_name + ".sqn"));
+            return false;
+        }
         INFO("Reading conjugate de bruijn  graph from " << file_name << " started");
         typename Graph::HelperT helper(graph);
         size_t vertex_count;
@@ -52,7 +58,10 @@ public:
             size_t vid, conj_vid;
             flag = fscanf(file, "Vertex %zu ~ %zu .\n", &vid, &conj_vid);
             TRACE("Vertex " << vid << " ~ " << conj_vid << " .");
-            VERIFY(flag == 2);
+            if (flag != 2) {
+                ERROR("Malformed saves");
+                return false;
+            }
 
             if (!graph.contains(VertexId(vid))) {
                 size_t needed = std::max(vid, conj_vid);
@@ -67,7 +76,6 @@ public:
         if (!edge_count) {
             fclose(file);
             fclose(sequence_file);
-            return;
         }
 
         char first_char = (char) getc(sequence_file);
@@ -78,8 +86,14 @@ public:
         if (!fasta) {
             size_t tmp_edge_count;
             flag = fscanf(sequence_file, "%zu", &tmp_edge_count);
-            VERIFY(flag == 1);
-            VERIFY(edge_count == tmp_edge_count);
+            if (flag != 1) {
+                ERROR("Malformed saves");
+                return false;
+            }
+            if (edge_count != tmp_edge_count) {
+                ERROR("Wrong edge count");
+                return false;
+            }
         }
 
         static const size_t longstring_size = 1000500; //Enough for tests
@@ -88,7 +102,10 @@ public:
             size_t eid, start_id, fin_id, length, conj_eid;
             flag = fscanf(file, "Edge %zu : %zu -> %zu, l = %zu ~ %zu .\n",
                           &eid, &start_id, &fin_id, &length, &conj_eid);
-            VERIFY(flag == 5);
+            if (flag != 5) {
+                ERROR("Malformed saves");
+                return false;
+            }
             VERIFY(length < longstring_size);
             size_t eid_tmp;
             if (fasta) {
@@ -97,7 +114,10 @@ public:
                 flag = fscanf(sequence_file, "%zu %s .", &eid_tmp, longstring);
             }
             VERIFY(eid == eid_tmp);
-            VERIFY(flag == 2);
+            if (flag != 2) {
+                ERROR("Malformed saves");
+                return false;
+            }
             TRACE("Edge " << eid << " : " << start_id << " -> "
                           << fin_id << " l = " << length << " ~ " << conj_eid);
             if (!graph.contains(EdgeId(eid))) {
@@ -113,12 +133,19 @@ public:
 
         fclose(file);
         fclose(sequence_file);
+        return true;
     }
 
-    void LoadCoverage(const std::string& file_name, omnigraph::CoverageIndex<Graph> &cov) {
+    bool LoadCoverage(const std::string& file_name, omnigraph::CoverageIndex<Graph> &cov) {
         INFO("Reading coverage from " << file_name);
         std::ifstream in(file_name + ".cvr");
+        if (!in.good()) {
+            ERROR("Failed to open: " << (file_name + ".cvr"));
+            return false;
+        }
+
         LoadEdgeAssociatedInfo(in, cov);
+        return true;
     }
 
     bool LoadFlankingCoverage(const std::string &file_name, omnigraph::FlankingCoverage<Graph> &flanking_cov) {
@@ -150,39 +177,6 @@ public:
 
         file.close();
         return true;
-    }
-
-    template<typename Index>
-    void LoadPaired(const std::string &file_name, Index &paired_index, bool force_exists = true) {
-        FILE* file = fopen((file_name + ".prd").c_str(), "r");
-        INFO((file_name + ".prd"));
-        if (force_exists) {
-            VERIFY(file != NULL);
-        } else if (file == NULL) {
-            INFO("Paired info not found, skipping");
-            return;
-        }
-        INFO("Reading paired info from " << file_name << " started");
-
-        size_t paired_count;
-        int read_count = fscanf(file, "%zu \n", &paired_count);
-        VERIFY(read_count == 1);
-        while (!feof(file)) {
-            size_t e1, e2;
-
-            typename Index::Point point;
-            DeserializePoint(file, e1, e2, point);
-
-            TRACE(e1 << " " << e2 << " " << point);
-            //Need to prevent doubling of self-conjugate edge pairs
-            //Their weight would be always even, so we don't lose precision
-            auto ep = std::make_pair(e1, e2);
-            if (ep == paired_index.ConjugatePair(ep))
-                point.weight = math::round(point.weight / 2);
-            paired_index.Add(e1, e2, point);
-        }
-        DEBUG("PII SIZE " << paired_index.size());
-        fclose(file);
     }
 
     bool LoadPositions(const std::string &file_name, omnigraph::EdgesPositionHandler<Graph> &edge_pos) {
@@ -219,19 +213,23 @@ public:
         return true;
     }
 
-    void LoadBasicGraph(const std::string &file_name, Graph &g) {
-        LoadGraph(file_name, g);
-        LoadCoverage(file_name, g.coverage_index());
+    bool LoadBasicGraph(const std::string &file_name, Graph &g) {
+        if (!LoadGraph(file_name, g))
+            return false;
+        if (!LoadCoverage(file_name, g.coverage_index()))
+            return false;
+        return true;
     }
 
-    void LoadGraphPack(const std::string &file_name, GraphPack &gp) {
+    bool LoadGraphPack(const std::string &file_name, GraphPack &gp) {
         auto &graph = gp.get_mutable<Graph>();
         auto &index = gp.get_mutable<EdgeIndex<Graph>>();
         auto &edge_pos = gp.get_mutable<omnigraph::EdgesPositionHandler<Graph>>();
         auto &flanking_cov = gp.get_mutable<omnigraph::FlankingCoverage<Graph>>();
         auto &kmer_mapper = gp.get_mutable<KmerMapper<Graph>>();
 
-        LoadBasicGraph(file_name, graph);
+        if (!LoadBasicGraph(file_name, graph))
+            return false;
         index.Attach();
         index.Refill();
 
@@ -244,6 +242,7 @@ public:
         if (!LoadFlankingCoverage(file_name, flanking_cov)) {
             FATAL_ERROR("Cannot load flanking coverage");
         }
+        return true;
     }
 
 private:
@@ -265,14 +264,14 @@ private:
 //Legacy wrappers
 namespace graphio {
 
-void ScanBasicGraph(const std::string &file_name, debruijn_graph::Graph &g) {
-    LegacyTextIO().LoadBasicGraph(file_name, g);
+bool ScanBasicGraph(const std::string &file_name, debruijn_graph::Graph &g) {
+    return LegacyTextIO().LoadBasicGraph(file_name, g);
 }
 
-void ScanGraphPack(const std::string &file_name, GraphPack &gp) {
-    LegacyTextIO().LoadGraphPack(file_name, gp);
+bool ScanGraphPack(const std::string &file_name, GraphPack &gp) {
+    return LegacyTextIO().LoadGraphPack(file_name, gp);
 }
 
 }
 
-} // namespace debruijn_graph
+} // Namespace debruijn_graph

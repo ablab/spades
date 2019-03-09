@@ -17,7 +17,7 @@ void SimpleCheck(const T &value = T()) {
     BinWrite(str, value);
     T result;
     BinRead(str, result);
-    ASSERT_EQ(value, result);
+    EXPECT_EQ(value, result);
 }
 
 TEST(Binary, Simple) {
@@ -76,8 +76,8 @@ TEST(Binary, Variadic) {
     BinWrite(str, c1, u1, f1, l1);
     BinRead(str, c2, u2, f2, l2);
 
-    ASSERT_EQ(c1, c2);
-    ASSERT_EQ(u1, u2);
-    ASSERT_EQ(f1, f2);
-    ASSERT_EQ(l1, l2);
+    EXPECT_EQ(c1, c2);
+    EXPECT_EQ(u1, u2);
+    EXPECT_EQ(f1, f2);
+    EXPECT_EQ(l1, l2);
 }

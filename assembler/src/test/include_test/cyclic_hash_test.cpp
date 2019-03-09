@@ -18,14 +18,14 @@ TEST( CyclicHash, TestBasic ) {
     auto h3 = hasher.hash(std::string("CGGT"));
     auto h4 = hasher.hash(std::string("GGTA"));
 
-    ASSERT_EQ((digest) h1, (digest) h1);
-    ASSERT_EQ((digest) h1, h1.value());
-    ASSERT_EQ((digest) h1, (digest) h2);
-    ASSERT_EQ((digest) h1, (digest) h3);
+    EXPECT_EQ((digest) h1, (digest) h1);
+    EXPECT_EQ((digest) h1, h1.value());
+    EXPECT_EQ((digest) h1, (digest) h2);
+    EXPECT_EQ((digest) h1, (digest) h3);
 
     ASSERT_NE((digest) h3, (digest) h4);
 
-    ASSERT_EQ((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
+    EXPECT_EQ((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
 }
 
 TEST( CyclicHash, TestBasicRtSeq ) {
@@ -37,14 +37,14 @@ TEST( CyclicHash, TestBasicRtSeq ) {
     auto h3 = hasher.hash(RtSeq(4, "CGGT"));
     auto h4 = hasher.hash(RtSeq(4, "GGTA"));
 
-    ASSERT_EQ((digest) h1, (digest) h1);
-    ASSERT_EQ((digest) h1, h1.value());
-    ASSERT_EQ((digest) h1, (digest) h2);
-    ASSERT_EQ((digest) h1, (digest) h3);
+    EXPECT_EQ((digest) h1, (digest) h1);
+    EXPECT_EQ((digest) h1, h1.value());
+    EXPECT_EQ((digest) h1, (digest) h2);
+    EXPECT_EQ((digest) h1, (digest) h3);
     ASSERT_NE((digest) h3, (digest) h4);
 
-    //ASSERT_EQ((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
-    ASSERT_EQ((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
+    //EXPECT_EQ((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
+    EXPECT_EQ((digest) hasher.hash_update(h3, 'C', 'A'), (digest) h4);
 
 }
 
@@ -57,7 +57,7 @@ TEST( CyclicHash, TestRC ) {
     Sequence s2 = !s;
     size_t kmer_cnt = s.size() - k + 1;
     for (size_t i = 0; i < kmer_cnt; ++i) {
-        ASSERT_EQ((digest) hasher(RtSeq(k, s, i)), (digest) hasher(RtSeq(k, s2, kmer_cnt - i - 1)));
+        EXPECT_EQ((digest) hasher(RtSeq(k, s, i)), (digest) hasher(RtSeq(k, s2, kmer_cnt - i - 1)));
     }
 }
 
@@ -71,6 +71,6 @@ TEST( CyclicHash, TestRoll ) {
     auto hash = hasher(s);
     for (size_t i = 1; i < kmer_cnt; ++i) {
         hash = hasher.hash_update(hash, s[i - 1], s[i - 1 + k]);
-        ASSERT_EQ((digest) hasher(RtSeq(k, s, i)), (digest) hash);
+        EXPECT_EQ((digest) hasher(RtSeq(k, s, i)), (digest) hash);
     }
 }

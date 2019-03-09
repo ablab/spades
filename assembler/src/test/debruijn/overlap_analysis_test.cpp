@@ -18,8 +18,8 @@ TEST( OverlapAnalysis, Trivial ) {
     Sequence s1("ACGTACGT");
     Sequence s2("ACGTACGT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_NE(overlap.match_cnt, 0) << overlap;
-    ASSERT_EQ(overlap.match_cnt, 8) << overlap;
+    EXPECT_NE(overlap.match_cnt, 0) << overlap;
+    EXPECT_EQ(overlap.match_cnt, 8) << overlap;
 }
 
 TEST( OverlapAnalysis, Mismatch ) {
@@ -28,7 +28,7 @@ TEST( OverlapAnalysis, Mismatch ) {
     Sequence s1("GTACTTACG");
     Sequence s2("GTACGTACG");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_EQ(overlap.match_cnt, 8) << overlap;
+    EXPECT_EQ(overlap.match_cnt, 8) << overlap;
 }
 
 TEST( OverlapAnalysis, Mismatch2 ) {
@@ -37,7 +37,7 @@ TEST( OverlapAnalysis, Mismatch2 ) {
     Sequence s1("GTACTTA");
     Sequence s2("GTACGTA");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_EQ(overlap.match_cnt, 4) << overlap;
+    EXPECT_EQ(overlap.match_cnt, 4) << overlap;
 }
 
 TEST( OverlapAnalysis, Deletion ) {
@@ -46,7 +46,7 @@ TEST( OverlapAnalysis, Deletion ) {
     Sequence s1("ACGTACTACGT");
     Sequence s2("ACGTACGTACGT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_EQ(overlap.match_cnt, 11) << overlap;
+    EXPECT_EQ(overlap.match_cnt, 11) << overlap;
 }
 
 TEST( OverlapAnalysis, Insertion ) {
@@ -55,7 +55,7 @@ TEST( OverlapAnalysis, Insertion ) {
     Sequence s1("ACGTACGTACGT");
     Sequence s2("ACGTACTACGT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_EQ(overlap.match_cnt, 11) << overlap;
+    EXPECT_EQ(overlap.match_cnt, 11) << overlap;
 }
 
 TEST( OverlapAnalysis, QueryLonger ) {
@@ -64,8 +64,8 @@ TEST( OverlapAnalysis, QueryLonger ) {
     Sequence s1("AACGTACGTT");
     Sequence s2("ACGTACGT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_NE(overlap.match_cnt, 0) << overlap;
-    ASSERT_EQ(overlap.match_cnt, 8) << overlap;
+    EXPECT_NE(overlap.match_cnt, 0) << overlap;
+    EXPECT_EQ(overlap.match_cnt, 8) << overlap;
 }
 
 TEST( OverlapAnalysis, RefLonger ) {
@@ -74,8 +74,8 @@ TEST( OverlapAnalysis, RefLonger ) {
     Sequence s1("ACGTACGT");
     Sequence s2("AACGTACGTT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_NE(overlap.match_cnt, 0) << overlap;
-    ASSERT_EQ(overlap.match_cnt, 8) << overlap;
+    EXPECT_NE(overlap.match_cnt, 0) << overlap;
+    EXPECT_EQ(overlap.match_cnt, 8) << overlap;
 }
 
 TEST( OverlapAnalysis, TrivialBoundedFlank ) {
@@ -84,8 +84,8 @@ TEST( OverlapAnalysis, TrivialBoundedFlank ) {
     Sequence s1("CCCCACGT");
     Sequence s2("ACGTAAAA");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_NE(overlap.match_cnt, 0) << overlap;
-    ASSERT_EQ(overlap.match_cnt, 4) << overlap;
+    EXPECT_NE(overlap.match_cnt, 0) << overlap;
+    EXPECT_EQ(overlap.match_cnt, 4) << overlap;
 }
 
 TEST( OverlapAnalysis, PartialPerfectAlignment ) {
@@ -94,8 +94,8 @@ TEST( OverlapAnalysis, PartialPerfectAlignment ) {
     Sequence s1("ACGTACGT");
     Sequence s2("ACGTACGT");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_NE(overlap.match_cnt, 0) << overlap;
-    ASSERT_EQ(overlap.match_cnt, 4) << overlap;
+    EXPECT_NE(overlap.match_cnt, 0) << overlap;
+    EXPECT_EQ(overlap.match_cnt, 4) << overlap;
 }
 
 TEST( OverlapAnalysis, Unalignable ) {
@@ -104,7 +104,7 @@ TEST( OverlapAnalysis, Unalignable ) {
     Sequence s1("CCCCCCCC");
     Sequence s2("AAAAAAAA");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_EQ(overlap, OverlapInfo()) << overlap;
+    EXPECT_EQ(overlap, OverlapInfo()) << overlap;
 }
 
 TEST( OverlapAnalysis, Large ) {
@@ -113,9 +113,9 @@ TEST( OverlapAnalysis, Large ) {
     Sequence s1("CCCCCCCCACGTTCGTACATACGTGGGGGGG");
     Sequence s2("AAAAAAAAACGTACGTACGTACGTCCCCCCC");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_EQ(overlap.match_cnt, 14) << overlap;
-    ASSERT_EQ(overlap.r1, Range(8, 24)) << overlap;
-    ASSERT_EQ(overlap.r2, Range(8, 24)) << overlap;
+    EXPECT_EQ(overlap.match_cnt, 14) << overlap;
+    EXPECT_EQ(overlap.r1, Range(8, 24)) << overlap;
+    EXPECT_EQ(overlap.r2, Range(8, 24)) << overlap;
 }
 
 inline path_extend::Gap MimicLAGapAnalyzer(size_t k, Sequence &s1, Sequence &s2) {
@@ -146,10 +146,10 @@ TEST( OverlapAnalysis, SimpleGap ) {
     Sequence s2("GGGGCGCGCTTTCGCTAAAAAAAAAA");
     size_t k = 5;
     path_extend::Gap g = MimicLAGapAnalyzer(k, s1, s2);
-    ASSERT_EQ(14, 14);
-    ASSERT_EQ(g.trash.current, 4);
-    ASSERT_EQ(g.trash.previous, 4);
-    ASSERT_EQ(g.gap, -15);
+    EXPECT_EQ(14, 14);
+    EXPECT_EQ(g.trash.current, 4);
+    EXPECT_EQ(g.trash.previous, 4);
+    EXPECT_EQ(g.gap, -15);
 }
 
 TEST( OverlapAnalysis, UndefinedBehavior ) {
@@ -157,7 +157,7 @@ TEST( OverlapAnalysis, UndefinedBehavior ) {
     Sequence s1("ACGCAAGTAAGTGACGAAGGACATCCTCCCGCCCTCCCTTCCTCCCTGTCTTCATTCGCCTCCCTTCCCCGGTCTTCGCATTTCTGCAAGCGCTTTACCGAGCGGTCAGCGTGCGATAGACTCGCGCCGATCGCTTCTGCTGGCCTCACGCAGGCTGGGGGTGTTT");
     Sequence s2("CTCCCTCCTCCCGTCCTCCCCCTCCCTGTCTTCATTCGCCTCCCTTCCCCGGTCTTCGCATTTCTGCAAGCGCTTTACCGAGCGGTCAGCGTGCGATAGACTCGCGCCGATCGCTTCTGCTGGCCTCACGCAGGCTGGGGGTGTTTGTGTTTCGTCTGGACGCCGA");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
-    ASSERT_EQ(overlap.match_cnt, 140) << overlap;
-    ASSERT_EQ(overlap.r1, Range(23, 166)) << overlap;
-    ASSERT_EQ(overlap.r2, Range(5, 146)) << overlap;
+    EXPECT_EQ(overlap.match_cnt, 140) << overlap;
+    EXPECT_EQ(overlap.r1, Range(23, 166)) << overlap;
+    EXPECT_EQ(overlap.r2, Range(5, 146)) << overlap;
 }
