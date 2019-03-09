@@ -10,6 +10,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(pathracer
                omnigraph_wrapper.cpp fees.cpp
+               find_best_path.cpp
                main.cpp
                fasta_reader.cpp
                pathracer.cpp)
@@ -19,6 +20,7 @@ target_link_libraries(pathracer graphio modules hmmercpp input utils pipeline ${
 add_executable(pathracer_align_kmers_test
                fasta_reader.cpp
                omnigraph_wrapper.cpp fees.cpp
+               find_best_path.cpp
                main.cpp
                align_kmers.cpp)
 target_link_libraries(pathracer_align_kmers_test graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES} hattrie cityhash modules assembly_graph common_modules)
@@ -27,12 +29,14 @@ target_link_libraries(pathracer_align_kmers_test graphio modules hmmercpp input 
 add_executable(graph_exact_finder
                fasta_reader.cpp
                omnigraph_wrapper.cpp fees.cpp
+               find_best_path.cpp
                graph_exact_finder.cpp)
 target_link_libraries(graph_exact_finder graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES} hattrie cityhash modules assembly_graph common_modules)
 
 add_executable(open_event_graph
                fasta_reader.cpp
                omnigraph_wrapper.cpp fees.cpp
+               find_best_path.cpp
                open_event_graph.cpp)
 target_link_libraries(open_event_graph graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES} hattrie cityhash modules assembly_graph common_modules)
 

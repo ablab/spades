@@ -2,6 +2,7 @@
 
 #include <common/adt/concurrent_dsu.hpp>
 #include <unordered_map>
+#include <aa_cursor.hpp>
 
 template <typename GraphCursor>
 std::vector<std::vector<GraphCursor>> fake_cursor_connected_components(const std::vector<GraphCursor> &cursors,

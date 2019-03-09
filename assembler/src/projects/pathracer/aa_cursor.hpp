@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cursor.hpp"
+#include "utils.hpp"
 
 #include "sequence/aa.hpp"
 
