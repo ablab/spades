@@ -55,49 +55,10 @@ namespace cereal
   /*! @internal */
   template <class Archive, class T> inline
   typename std::enable_if<traits::has_load_and_construct<T, Archive>::value, void>::type
-  CEREAL_LOAD_FUNCTION_NAME( Archive & ar, memory_detail::PtrWrapper<llvm::IntrusiveRefCntPtr<T> &> & wrapper )
-  {
-    // UNIMPLEMENTED !!!!!
-    auto & ptr = wrapper.ptr;
-
-    uint32_t id;
-
-    ar( CEREAL_NVP_("id", id) );
-
-    if( id & detail::msb_32bit )
-    {
-      // Storage type for the pointer - since we can't default construct this type,
-      // we'll allocate it using std::aligned_storage and use a custom deleter
-      using ST = typename std::aligned_storage<sizeof(T), CEREAL_ALIGNOF(T)>::type;
-
-      // Valid flag - set to true once construction finishes
-      //  This prevents us from calling the destructor on
-      //  uninitialized data.
-      auto valid = std::make_shared<bool>( false );
-
-      // Allocate our storage, which we will treat as
-      //  uninitialized until initialized with placement new
-      ptr.reset( reinterpret_cast<T *>( new ST() ),
-          [=]( T * t )
-          {
-            if( *valid )
-              t->~T();
-
-            delete reinterpret_cast<ST *>( t );
-          } );
-
-      // Register the pointer
-      ar.registerSharedPointer( id, ptr );
-
-      // Perform the actual loading and allocation
-      memory_detail::loadAndConstructSharedPtr( ar, ptr.get(), typename ::cereal::traits::has_shared_from_this<T>::type() );
-
-      // Mark pointer as valid (initialized)
-      *valid = true;
-    }
-    else
-      ptr = std::static_pointer_cast<T>(ar.getSharedPointer(id));
-  }
+  CEREAL_LOAD_FUNCTION_NAME( Archive & ar, memory_detail::PtrWrapper<llvm::IntrusiveRefCntPtr<T> &> & wrapper );
+  // It makes no sense for intrusive_ptr. We have to have valid pointer BEFORE the actual deserialization (since the deserialized
+  // object could contain pointers to itself). But it's impossible (or, at least, hardly possible) to consturuct intrusive_ptr referring to
+  // a raw memory block
 
   //! Loading llvm::IntrusiveRefCntPtr, case when no user load and construct (wrapper implementation)
   /*! @internal */
