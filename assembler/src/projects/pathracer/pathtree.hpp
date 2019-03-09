@@ -454,6 +454,10 @@ class PathSet {
     return pathlink_.get();
   }
 
+  PathLinkRef<GraphCursor> pathlink_mutable() {
+    return pathlink_;
+  }
+
   template <class Archive>
   void serialize(Archive &archive) {
     archive(pathlink_);
