@@ -36,6 +36,7 @@ EdgeNamingF<Graph> BasicNamingF(const std::string &prefix = "EDGE") {
 template<class Graph>
 std::string ErrorNamingF(const Graph&, typename Graph::EdgeId e) {
     FATAL_ERROR("Unknown edge: " << e);
+    return "";
 }
 
 template<class Graph>
@@ -43,7 +44,7 @@ EdgeNamingF<Graph> MapNamingF(const io::IdMapper<std::string> &id_mapper,
                               EdgeNamingF<Graph> fallback = ErrorNamingF<Graph>) {
     using EdgeId = typename Graph::EdgeId;
     return [&id_mapper, fallback](const Graph &g, EdgeId e) {
-        if (!id_mapper.count(e))
+        if (!id_mapper.count(e.int_id()))
             return fallback(g, e);
         return id_mapper[g.int_id(e)];
     };

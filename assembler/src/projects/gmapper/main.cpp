@@ -144,12 +144,13 @@ static bool ends_with(const std::string &s, const std::string &p) {
     return (s.compare(s.size() - p.size(), p.size(), p) == 0);
 }
 
-void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename) {
+void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename,
+               io::IdMapper<std::string> *id_mapper) {
     using namespace debruijn_graph;
     if (ends_with(filename, ".gfa")) {
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(graph);
+        gfa.to_graph(graph, id_mapper);
     } else {
         io::binary::Load(filename, graph);
     }
@@ -182,9 +183,10 @@ int main(int argc, char* argv[]) {
         dataset.load(dataset_desc);
 
         debruijn_graph::conj_graph_pack gp(k, tmpdir, dataset.lib_count());
+        std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
 
         INFO("Loading de Bruijn graph from " << cfg.graph);
-        LoadGraph(gp.g, cfg.graph);
+        LoadGraph(gp.g, cfg.graph, id_mapper.get());
         {
             size_t sz = 0;
             for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it)
@@ -199,39 +201,40 @@ int main(int argc, char* argv[]) {
         gp.kmer_mapper.Attach();
         gp.EnsureBasicMapping();
 
-    for (size_t i = 0; i < dataset.lib_count(); ++i) {
-        auto &lib = dataset[i];
-        auto& path_storage = gp.single_long_reads[i];
-        if (lib.is_contig_lib()) {
-            INFO("Mapping contigs library #" << i);
-            ProcessSingleReads(gp, dataset, i, false);
-        } else if (lib.is_long_read_lib()) {
-            gap_closing::GapStorage gap_storage(gp.g);
+        for (size_t i = 0; i < dataset.lib_count(); ++i) {
+            auto &lib = dataset[i];
+            auto& path_storage = gp.single_long_reads[i];
+            if (lib.is_contig_lib()) {
+                INFO("Mapping contigs library #" << i);
+                ProcessSingleReads(gp, dataset, i, false);
+            } else if (lib.is_long_read_lib()) {
+                gap_closing::GapStorage gap_storage(gp.g);
 
-            debruijn_graph::config::pacbio_processor pb;
+                debruijn_graph::config::pacbio_processor pb;
 
-            PacbioAlignLibrary(gp, lib,
-                               path_storage, gap_storage,
-                               nthreads, pb);
-        } else {
-            WARN("Could only map contigs or long reads so far, skipping the library");
-            continue;
+                PacbioAlignLibrary(gp, lib,
+                                   path_storage, gap_storage,
+                                   nthreads, pb);
+            } else {
+                WARN("Could only map contigs or long reads so far, skipping the library");
+                continue;
+            }
+            INFO("Saving to " << cfg.outfile);
+
+            std::ofstream os(cfg.outfile);
+            path_extend::GFAPathWriter gfa_writer(gp.g, os,
+                                                  io::MapNamingF<debruijn_graph::ConjugateDeBruijnGraph>(*id_mapper));
+            gfa_writer.WriteSegmentsAndLinks();
+
+            std::vector<PathInfo<Graph>> paths;
+            path_storage.SaveAllPaths(paths);
+            size_t idx = 0;
+            for (const auto& entry : paths) {
+                idx += 1;
+                gfa_writer.WritePaths(entry.path(), std::string("PATH_") + std::to_string(idx) + "_length_" + std::to_string(entry.path().size()) + "_weigth_" + std::to_string(entry.weight()),
+                                      "Z:W:" + std::to_string(entry.weight()));
+            }
         }
-        INFO("Saving to " << cfg.outfile);
-
-        std::ofstream os(cfg.outfile);
-        path_extend::GFAPathWriter gfa_writer(gp.g, os);
-        gfa_writer.WriteSegmentsAndLinks();
-
-        std::vector<PathInfo<Graph>> paths;
-        path_storage.SaveAllPaths(paths);
-        size_t idx = 0;
-        for (const auto& entry : paths) {
-            idx += 1;
-            gfa_writer.WritePaths(entry.path(), std::string("PATH_") + std::to_string(idx) + "_length_" + std::to_string(entry.path().size()) + "_weigth_" + std::to_string(entry.weight()),
-                                  "Z:W:" + std::to_string(entry.weight()));
-        }
-    }
 
     } catch (const std::string &s) {
         std::cerr << s << std::endl;
