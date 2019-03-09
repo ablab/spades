@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
             auto unpacked_path = ccc.UnpackPath(annotated_path.path, cursors);
             auto nucl_path = to_nucl_path(unpacked_path);
             auto edge_path = to_path(nucl_path);
-            if (count % 1000 == 0) {
+            if (count % 10000 == 0) {
                 size_t pos = nucl_path[0].position();
                 INFO(annotated_path.score);
                 INFO(seq);
