@@ -30,6 +30,12 @@ add_executable(graph_exact_finder
                graph_exact_finder.cpp)
 target_link_libraries(graph_exact_finder graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES} hattrie cityhash modules assembly_graph common_modules)
 
+add_executable(open_event_graph
+               fasta_reader.cpp
+               omnigraph_wrapper.cpp fees.cpp
+               open_event_graph.cpp)
+target_link_libraries(open_event_graph graphio modules hmmercpp input utils pipeline ${COMMON_LIBRARIES} hattrie cityhash modules assembly_graph common_modules)
+
 install(TARGETS pathracer
         DESTINATION bin
         COMPONENT runtime)

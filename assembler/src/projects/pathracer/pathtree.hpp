@@ -109,9 +109,11 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
   using This = PathLink<GraphCursor>;
   using ThisRef = llvm::IntrusiveRefCntPtr<This>;
 
+  // Make it private
   void* operator new (size_t sz) {
       return ::operator new(sz);
   }
+  friend class cereal::access;
 
 public:
   double score() const {
