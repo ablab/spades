@@ -14,6 +14,7 @@
 
 #include "utils/logger/logger.hpp"
 #include "utils/perf/memory.hpp"
+#include "utils/memory_limit.hpp"
 
 #include "config.hpp"
 
@@ -113,7 +114,7 @@ void logger::log(level desired_level, const char* file, size_t line_num, const c
   mem = (*cmem) / 1024;
   max_rss = (*cmem_max) / 1024;
 #else
-  max_rss = get_max_rss();
+  max_rss = utils::get_max_rss();
 #endif
 
   for (auto it = writers_.begin(); it != writers_.end(); ++it)
