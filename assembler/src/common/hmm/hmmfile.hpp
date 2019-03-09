@@ -10,6 +10,8 @@ namespace hmmer {
 
 class HMMFile;
 
+ErrorOr<HMMFile> open_file(const std::string &hmmfile);
+
 class HMM {
   public:
     HMM(P7_HMM *hmm = NULL,
@@ -18,7 +20,7 @@ class HMM {
     P7_HMM *get() const { return hmm_.get(); }
     ESL_ALPHABET *abc() const { return abc_.get(); }
     unsigned length() const;
-    
+
   private:
     friend class HMMFile;
     std::unique_ptr<P7_HMM, void(*)(P7_HMM*)> hmm_;
@@ -29,7 +31,7 @@ enum class OpenErrc {
     NoError = 0,
     NotFound,
     BadFormat,
-    UnknownError
+    Unknown
 };
 
 enum class ReadErrc {
@@ -49,11 +51,12 @@ std::error_code make_error_code(ReadErrc);
 class HMMFile {
   public:
     HMMFile(const std::string &name);
+    HMMFile(P7_HMMFILE *f);
 
     ErrorOr<HMM> read();
     bool valid() const { return (bool)hmmfile_; }
     P7_HMMFILE *get() const { return hmmfile_.get(); }
-    
+
   private:
     std::unique_ptr<P7_HMMFILE, void(*)(P7_HMMFILE*)> hmmfile_;
 };
@@ -83,7 +86,7 @@ class HMMSequenceBuilder {
 
     HMM from_string(const char *name, const char *seq, const char *desc) const;
     HMM from_string(ESL_SQ *dbsq) const;
-    
+
   private:
     std::unique_ptr<ESL_ALPHABET, void(*)(ESL_ALPHABET*)> abc_;
     std::unique_ptr<P7_BG, void(*)(P7_BG*)> bg_;
@@ -99,4 +102,3 @@ struct is_error_code_enum<hmmer::OpenErrc> : true_type {};
 template <>
 struct is_error_code_enum<hmmer::ReadErrc> : true_type {};
 }
-

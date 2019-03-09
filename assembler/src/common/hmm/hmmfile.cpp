@@ -5,21 +5,49 @@ extern "C" {
 };
 
 namespace hmmer {
-HMMFile::HMMFile(const std::string &hmmfile)
-        : hmmfile_(NULL, p7_hmmfile_Close) {
-    int status   = eslOK;
+
+static OpenErrc to_OpenErrc(int err) {
+    switch (err) {
+        case eslOK:
+            return OpenErrc::NoError;
+        case eslENOTFOUND:
+            return OpenErrc::NotFound;
+        case eslEFORMAT:
+            return OpenErrc::BadFormat;
+    };
+
+    return OpenErrc::Unknown;
+}
+
+ErrorOr<HMMFile> open_file(const std::string &hmmfile) {
+    int status  = eslOK;
     P7_HMMFILE *hfp  = NULL;
 
     status = p7_hmmfile_OpenE(hmmfile.c_str(), nullptr, &hfp, NULL);
+    if (status != eslOK)
+        return to_OpenErrc(status);
+
+    return HMMFile(hfp);
+}
+
+HMMFile::HMMFile(P7_HMMFILE *hfp)
+        : hmmfile_(hfp, p7_hmmfile_Close) {}
+
+HMMFile::HMMFile(const std::string &hmmfile)
+        : hmmfile_(NULL, p7_hmmfile_Close) {
+    int status  = eslOK;
+    P7_HMMFILE *hfp  = NULL;
+    char errbuf[eslERRBUFSIZE];
+
+    status = p7_hmmfile_OpenE(hmmfile.c_str(), nullptr, &hfp, errbuf);
     if (status == eslOK)
         hmmfile_.reset(hfp);
-    std::cerr << status << std::endl;
-    std::cerr << (status == eslOK) << std::endl;
-    std::cerr << (status == eslENOTFOUND) << std::endl;
-    std::cerr << (status == eslEFORMAT) << std::endl;
-    //if      (status == eslENOTFOUND) p7_Fail("File existence/permissions problem in trying to open HMM file %s.\n%s\n", cfg.hmmfile.c_str(), errbuf);
-    //else if (status == eslEFORMAT)   p7_Fail("File format problem in trying to open HMM file %s.\n%s\n",                cfg.hmmfile.c_str(), errbuf);
-    //maelse if (status != eslOK)        p7_Fail("Unexpected error %d in opening HMM file %s.\n%s\n",               status, cfg.hmmfile.c_str(), errbuf);
+    else if (status == eslENOTFOUND)
+        p7_Fail("File existence/permissions problem in trying to open HMM file %s.\n%s\n", hmmfile.c_str(), errbuf);
+    else if (status == eslEFORMAT)
+        p7_Fail("File format problem in trying to open HMM file %s.\n%s\n", hmmfile.c_str(), errbuf);
+    else
+        p7_Fail("Unexpected error %d in opening HMM file %s.\n%s\n", status, hmmfile.c_str(), errbuf);
 }
 
 HMM::HMM(P7_HMM *hmm, ESL_ALPHABET *abc)
@@ -166,10 +194,35 @@ std::string HMMReadErrCategory::message(int ev) const {
 
 const HMMReadErrCategory theHMMReadErrCategory {};
 
+struct HMMOpenErrCategory : std::error_category {
+  const char* name() const noexcept override;
+  std::string message(int ev) const override;
+};
+
+const char* HMMOpenErrCategory::name() const noexcept {
+  return "HMM open";
+}
+
+std::string HMMOpenErrCategory::message(int ev) const {
+    switch (static_cast<hmmer::OpenErrc>(ev)) {
+        case hmmer::OpenErrc::NotFound:
+            return "file existence/permissions problem in trying to open HMM file";
+        case hmmer::OpenErrc::BadFormat:
+            return "bad file format in HMM file";
+        default:
+            return "(unknown error)";
+    }
+}
+
+const HMMOpenErrCategory theHMMOpenErrCategory {};
+
 }  // namespace
 
 namespace hmmer {
 std::error_code make_error_code(ReadErrc e) {
   return {static_cast<int>(e), theHMMReadErrCategory};
+}
+std::error_code make_error_code(OpenErrc e) {
+  return {static_cast<int>(e), theHMMOpenErrCategory};
 }
 }

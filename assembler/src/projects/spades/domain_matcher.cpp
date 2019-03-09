@@ -100,10 +100,16 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::conj_graph_pack &gp,
 
     io::OFastaReadStream oss_contig(output_dir + "/temp_anti/restricted_edges.fasta");
     for (const auto &file : hmms) {
-        hmmer::HMMFile hmmfile(file);
-        if (!hmmfile.valid())
-        FATAL_ERROR("Error opening HMM file "<< file);
-        auto hmmw = hmmfile.read();
+        auto hmmf = hmmer::open_file(file);
+        if (std::error_code ec = hmmf.getError()) {
+            FATAL_ERROR("Error opening HMM file "<< file << ", reason: " << ec.message());
+        }
+
+        auto hmmw = hmmf->read();
+        if (std::error_code ec = hmmw.getError()) {
+            FATAL_ERROR("Error reading HMM file "<< file << ", reason: " << ec.message());
+        }
+
         INFO("Matching contigs with " << file);
 
         std::string type = fs::filename(file);
