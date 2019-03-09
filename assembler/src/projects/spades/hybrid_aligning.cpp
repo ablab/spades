@@ -201,7 +201,7 @@ class PacbioAligner {
         size_t aligned = 0;
         size_t nontrivial_aligned = 0;
 
-        #pragma omp parallel for reduction(+: longer_500, aligned, nontrivial_aligned)
+#       pragma omp parallel for reduction(+: longer_500, aligned, nontrivial_aligned) num_threads(thread_cnt)
         for (size_t i = 0; i < reads.size(); ++i) {
             size_t thread_num = omp_get_thread_num();
             DEBUG(reads[i].name());

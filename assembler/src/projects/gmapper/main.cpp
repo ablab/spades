@@ -168,6 +168,9 @@ int main(int argc, char* argv[]) {
 
     START_BANNER("SPAdes sequence-to-graph mapper");
 
+    cfg.nthreads = spades_set_omp_threads(cfg.nthreads);
+    INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg.nthreads);
+
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
