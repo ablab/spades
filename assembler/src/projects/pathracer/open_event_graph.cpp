@@ -145,7 +145,8 @@ int main(int argc, char *argv[]) {
             size_t pos = nucl_path[0].position();
             // INFO(seq);
             // INFO(edge_path);
-            of << ">Score=" <<annotated_path.score << "|edges=" << edge_path <<  "\n";
+            INFO(annotated_path.score);
+            of << ">Score=" << annotated_path.score << "|edges=" << edge_path << "\n";
             io::WriteWrapped(seq, of);
         }
     };
