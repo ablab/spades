@@ -7,7 +7,7 @@
 ############################################################################
 
 # Hard prerequisites
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
 
 # allow more human readable "if then else" constructs
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE) 
