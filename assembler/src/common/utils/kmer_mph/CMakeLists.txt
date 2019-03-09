@@ -1,13 +1,11 @@
 ############################################################################
-# Copyright (c) 2015 Saint Petersburg State University
-# Copyright (c) 2011-2014 Saint Petersburg Academic University
+# Copyright (c) 2018 Saint Petersburg State University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
 
 project(mph_index CXX)
 
-add_library(mph_index STATIC 1.cpp)
-
-target_link_libraries(mph_index cityhash)
+add_library(mph_index INTERFACE)
+target_link_libraries(mph_index INTERFACE cityhash)
 

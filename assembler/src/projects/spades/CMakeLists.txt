@@ -19,11 +19,12 @@ add_library(spades-stages STATIC
             chromosome_removal.cpp)
 target_link_libraries(spades-stages ConsensusCore)
 
-add_executable(spades-core main.cpp
-                           series_analysis.cpp
-                           ../mts/contig_abundance.cpp)
+add_executable(spades-core 
+               main.cpp
+               series_analysis.cpp
+               ../mts/contig_abundance.cpp)
 
-target_link_libraries(spades-core spades-stages graphio common_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
+target_link_libraries(spades-core spades-stages graphio common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades-core PROPERTIES LINK_SEARCH_END_STATIC 1)
