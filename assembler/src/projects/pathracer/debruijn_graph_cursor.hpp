@@ -56,7 +56,7 @@ public:
     using EdgeId = debruijn_graph::EdgeId;
     EdgeId edge() const { return holder_.e(); }
     size_t position() const { return holder_.pos(); }
-    bool is_empty() const { return !holder_; }
+    bool is_empty() const { return !holder_; }  //FIXME check it!!!!!
 
     char letter(Context context) const {
         return nucl2(g(context).EdgeNucls(edge())[position()]); }

@@ -110,6 +110,7 @@ struct PathracerConfig {
     size_t memory = 100;  // 100GB
     int use_experimental_i_loop_processing = 0;
     std::string known_sequences = "";
+    bool export_event_graph = false;
 
     hmmer::hmmer_cfg hcfg;
 };
@@ -189,7 +190,8 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
           (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
           (option("--extend-const") & integer("value", cfg.extend_const)) % "const addition to overhang values for neighbourhood search [default: 15]",
           (option("--state-limits-coef") & integer("x", cfg.state_limits_coef)) % "multiplier for default #state limit [default: 1]",
-          option("--experimental-i-loops").set(cfg.use_experimental_i_loop_processing, 1) % "use experimental I-loops processing"
+          option("--experimental-i-loops").set(cfg.use_experimental_i_loop_processing, 1) % "use experimental I-loops processing",
+          cfg.export_event_graph << option("--export-event-graph") % "export event graph in cereal format"
       )
   );
 
@@ -793,11 +795,10 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
         }
     }
 
-    INFO("Depth search on left");
-    // TODO Rename subset(...) -> ?
-    auto left_cursors = subset(left_queries, &graph, false);
-    INFO("Depth search on right");
-    auto right_cursors = subset(right_queries, &graph, true);
+    INFO("Getting leftside neighbourhoods");
+    auto left_cursors = neighbourhood(left_queries, &graph, /* forward */ false);
+    INFO("Getting rightside neighbourhoods");
+    auto right_cursors = neighbourhood(right_queries, &graph, /* forward */ true);
 
     INFO("Exporting cursors");
     cursors.insert(left_cursors.cbegin(), left_cursors.cend());
@@ -945,8 +946,12 @@ void TraceHMM(const hmmer::HMM &hmm,
         CachedCursorContext ccc(cursors, context);
         auto cached_initial = ccc.Cursors();
         auto result = find_best_path(fees, cached_initial, &ccc);
-        {
-            std::ofstream of(cfg.output_dir + "/event_graph_" + p7hmm->name + ".cereal");  // Add component id (hash)
+
+        if (cfg.export_event_graph) {
+            std::ofstream of(cfg.output_dir + "/event_graph_" + p7hmm->name +
+                             "_component_" + int_to_hex(hash_value(cursors)) +
+                             "_size_" + std::to_string(cursors.size()) +
+                             ".cereal");
             cereal::BinaryOutputArchive oarchive(of);
             oarchive(cursors, ccc, result);
         }
@@ -1060,12 +1065,12 @@ void TraceHMM(const hmmer::HMM &hmm,
         auto paths = process_component(component_cursors, component_name);
 
         INFO("Total " << paths.size() << " unique edge paths extracted");
-        size_t count = 0;  // FIXME this ad-hoc
-        for (const auto &path : paths) {
-            INFO("Path length : " << path.size() << " edges " << path);  // FIXME use id_mapper here as well
-            ++count;
-            if (count > 1000) break;
-        }
+        // size_t count = 0;  // FIXME this ad-hoc
+        // for (const auto &path : paths) {
+        //     INFO("Path length : " << path.size() << " edges " << path);  // FIXME use id_mapper here as well
+        //     ++count;
+        //     if (count > 1000) break;
+        // }
 
         if (cfg.draw) {
             auto component_name_with_hash = component_name + int_to_hex(hash_value(component_cursors));

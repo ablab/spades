@@ -4,9 +4,6 @@
 #include <cereal/types/memory.hpp>
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 
-//FIXME --- remove it
-// #include "utils/logger/logger.hpp"
-
 // Work around MSVC not having alignof
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #define CEREAL_ALIGNOF __alignof
