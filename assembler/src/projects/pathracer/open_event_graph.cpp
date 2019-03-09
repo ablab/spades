@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
         iarchive(cursors, ccc, result);
 
         INFO("Collapsing");
-        auto plinks = const_cast<pathtree::PathLink<CachedCursor>*>(result.pathlink())->collect_mutable();
+        auto plinks = result.pathlink_mutable()->collect_mutable();
         for (const auto &plink : plinks) {
             plink->collapse_and_trim();
         }
