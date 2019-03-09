@@ -1,6 +1,5 @@
 #pragma once
 
-#include "cursor.hpp"
 #include "fees.hpp"
 #include "pathtree.hpp"
 #include "depth_filter.hpp"

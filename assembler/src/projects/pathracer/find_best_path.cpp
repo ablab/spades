@@ -5,7 +5,6 @@
 //***************************************************************************
 
 #include "find_best_path.hpp"
-#include "cursor.hpp"
 #include "hmmpath.hpp"
 
 // PathSet<DebruijnGraphCursor> find_best_path(const hmm::Fees &fees, const std::vector<DebruijnGraphCursor> &initial,

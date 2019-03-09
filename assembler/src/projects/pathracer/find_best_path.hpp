@@ -7,7 +7,7 @@
 #pragma once
 
 #include "pathtree.hpp"
-#include "cursor.hpp"
+#include "restricted_cursor.hpp"
 #include "aa_cursor.hpp"
 #include "string_cursor.hpp"
 #include "cached_cursor.hpp"
