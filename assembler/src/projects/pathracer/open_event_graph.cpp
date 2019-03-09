@@ -125,12 +125,7 @@ int main(int argc, char *argv[]) {
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
         // bool x_as_m_in_alignment = mode == Mode::aa;
-        if (!top_paths.empty()) {
-            INFO("Best score in the current component: " << result.best_score());
-            INFO("Best sequence in the current component");
-            INFO(top_paths.str(0, &ccc));
-            // INFO("Alignment: " << compress_alignment(top_paths.alignment(0, fees, &ccc), x_as_m_in_alignment));
-        }
+        VERIFY(!top_paths.empty());
 
         size_t count = 0;
         for (const auto& annotated_path : top_paths) {
