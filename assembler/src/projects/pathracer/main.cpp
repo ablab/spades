@@ -9,6 +9,7 @@
 #include "debruijn_graph_cursor.hpp"
 #include "cursor_neighborhood.hpp"
 #include "cursor_conn_comps.hpp"
+#include "path_utils.hpp"
 #include "cached_cursor.hpp"
 #include "superpath_index.hpp"
 #include "fasta_reader.hpp"
@@ -222,37 +223,6 @@ void DrawComponent(const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBr
                    prefix + ".dot",
                    resulting_colorer,
                    labeler);
-}
-
-
-template <typename... Ts> using void_t = void;
-
-template <typename T, typename = void>
-struct has_edge_method : std::false_type {};
-
-template <typename T>
-struct has_edge_method<T, void_t<decltype(T{}.edge())>> : std::true_type {};
-
-template<class GraphCursor>
-std::enable_if_t<has_edge_method<GraphCursor>::value, std::vector<typename GraphCursor::EdgeId>> to_path(const std::vector<GraphCursor> &cpath) {
-    std::vector<typename GraphCursor::EdgeId> path;
-
-    size_t prev_position = 0;
-    for (auto cursor : cpath) {
-        const auto e = cursor.edge();
-        size_t position = cursor.position();
-        if (path.empty() || e != path.back() || prev_position >= position) {
-            path.push_back(e);
-        }
-        prev_position = position;
-    }
-
-    return path;
-}
-
-template<class GraphCursor>
-std::vector<typename GraphCursor::EdgeId> to_path(const std::vector<AAGraphCursor<GraphCursor>> &cpath) {
-    return to_path(to_nucl_path(cpath));
 }
 
 using debruijn_graph::EdgeId;
