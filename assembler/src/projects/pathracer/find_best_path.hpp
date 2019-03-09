@@ -14,6 +14,8 @@
 #include "debruijn_graph_cursor.hpp"
 #include "reversed_cursor.hpp"
 
+double score_sequence(const hmm::Fees &fees, const std::string &seq);
+
 namespace hmm {
 struct Fees;
 };
