@@ -1254,17 +1254,6 @@ int pathracer_main(int argc, char* argv[]) {
     return 0;
 }
 
-#include "string_cursor.hpp"
-
-
-double score_sequence(const hmm::Fees &fees, const std::string &seq) {
-    StringCursor start(0), finish(seq.length() - 1);
-
-    auto result = find_best_path(fees, {start}, &seq);
-    result.pathlink_mutable()->set_finishes({finish});
-    return result.best_score();
-}
-
 int aling_kmers_main(int argc, char* argv[]) {
     create_console_logger("");
     using namespace clipp;

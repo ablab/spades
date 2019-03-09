@@ -46,3 +46,11 @@ PathSet<CachedCursor> find_best_path(const hmm::Fees &fees, const std::vector<Ca
                                      CachedCursor::Context context) {
     return impl::find_best_path(fees, initial, context);
 }
+
+double score_sequence(const hmm::Fees &fees, const std::string &seq) {
+    StringCursor start(0), finish(seq.length() - 1);
+
+    auto result = find_best_path(fees, {start}, &seq);
+    result.pathlink_mutable()->set_finishes({finish});
+    return result.best_score();
+}
