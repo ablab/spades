@@ -1,4 +1,4 @@
-#include "omnigraph_wrapper.hpp"
+#include "debruijn_graph_cursor.hpp"
 
 #include "utils.hpp"
 

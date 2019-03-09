@@ -11,7 +11,7 @@
 #include "aa_cursor.hpp"
 #include "string_cursor.hpp"
 #include "cached_cursor.hpp"
-#include "omnigraph_wrapper.hpp"
+#include "debruijn_graph_cursor.hpp"
 
 namespace hmm {
 struct Fees;

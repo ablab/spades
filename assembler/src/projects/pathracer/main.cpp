@@ -6,7 +6,7 @@
 
 #include "fees.hpp"
 #include "find_best_path.hpp"
-#include "omnigraph_wrapper.hpp"
+#include "debruijn_graph_cursor.hpp"
 #include "cursor_neighborhood.hpp"
 #include "cursor_conn_comps.hpp"
 #include "cached_cursor.hpp"
