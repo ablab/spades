@@ -247,7 +247,7 @@ public:
         auto &be = best_edges[path_link];
         // Trimming
         if (prev_gp.is_empty()) {
-          // be[prev_gp] = prev_path_link;  // Strong trimming!
+          be[prev_gp] = prev_path_link;  // Strong trimming!
           // Check has non-empty cursor
           if (std::any_of(be.cbegin(), be.cend(), [](const auto& x){ return !x.first.is_empty(); })) {
             continue;
@@ -374,7 +374,7 @@ private:
     // 2) In case of some non-terminal refs still present, remove terminal ref as well
     // We add some tolerance. If two paths have almost equal scores we keep them both
     // const double eps = 1e-7;
-    // const_cast<This*>(this)->collapse_and_trim();
+    const_cast<This*>(this)->collapse_and_trim();
     return scores_;
   }
 

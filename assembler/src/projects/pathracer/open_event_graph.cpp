@@ -122,6 +122,9 @@ int main(int argc, char *argv[]) {
         cereal::BinaryInputArchive iarchive(ifs);
         iarchive(cursors, ccc, result);
 
+        // INFO("Collapsing");
+        // const_cast<pathtree::PathLink<CachedCursor>*>(result.pathlink())->apply([](auto &pl) { pl.collapse_and_trim(); });
+
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
         // bool x_as_m_in_alignment = mode == Mode::aa;
@@ -140,6 +143,7 @@ int main(int argc, char *argv[]) {
                 INFO(seq);
                 INFO(edge_path << " position = " << pos);
             }
+            ++count;
             of << ">Score=" << annotated_path.score << "|edges=" << edge_path << "\n";
             io::WriteWrapped(seq, of);
         }
