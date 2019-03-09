@@ -151,14 +151,14 @@ std::vector<GraphCursor> depth_subset_dirty_heap(const std::vector<std::pair<Gra
 }  // namespace impl
 
 template <typename GraphCursor>
-std::vector<GraphCursor> subset(const GraphCursor &cursor, size_t depth, typename GraphCursor::Context context,
+std::vector<GraphCursor> neighbourhood(const GraphCursor &cursor, size_t depth, typename GraphCursor::Context context,
                                 bool forward = true) {
     return impl::depth_subset_dirty_heap(std::vector<std::pair<GraphCursor, size_t>>({std::make_pair(cursor, depth)}), context,
                                          forward);
 }
 
 template <typename GraphCursor>
-std::vector<GraphCursor> subset(const std::vector<std::pair<GraphCursor, size_t>> &initial,
+std::vector<GraphCursor> neighbourhood(const std::vector<std::pair<GraphCursor, size_t>> &initial,
                                 typename GraphCursor::Context context, bool forward = true) {
     return impl::depth_subset_dirty_heap(initial, context, forward);
 }

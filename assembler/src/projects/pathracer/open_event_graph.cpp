@@ -88,10 +88,22 @@ int main(int argc, char *argv[]) {
         cereal::BinaryInputArchive iarchive(ifs);
         iarchive(cursors, ccc, result);
 
+        INFO("Check collapsing");
+        auto plinks = result.pathlink()->collect_const();
+        for (const auto *p : plinks) {
+            if (!p->is_collapsed()) {
+                auto event = p->emission();
+                const char *type = event.type == EventType::INSERTION ? "I" : "M";
+                INFO("Event " << event.m << "-" << type);
+            }
+        }
+
         INFO("Collapsing");
-        auto plinks = result.pathlink_mutable()->collect_mutable();
-        for (const auto &plink : plinks) {
-            plink->collapse_and_trim();
+        {
+            auto plinks = result.pathlink_mutable()->collect_mutable();
+            for (const auto &plink : plinks) {
+                plink->collapse_and_trim();
+            }
         }
 
         INFO("Extracting top paths");

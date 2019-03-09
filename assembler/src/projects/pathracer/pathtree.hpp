@@ -34,13 +34,14 @@ namespace pathtree {
 struct Event {
   unsigned m : 30;  // 30 bits are more than enough
   EventType type : 2;
-  static const unsigned m_mask = unsigned(-1) >> 2;
+  static const uint32_t m_mask = uint32_t(-1) >> 2;
 
   template <class Archive>
   void serialize(Archive &archive) {
     archive(*reinterpret_cast<uint32_t*>(this));
   }
 };
+static_assert(sizeof(Event) == sizeof(uint32_t), "Invalid Event structure size");
 
 template <class GraphCursor>
 std::string path2string(const std::vector<GraphCursor> &path,
@@ -156,27 +157,32 @@ public:
                             [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
   }
 
-  void collapse_and_trim() {
-    // Collapse left
-    sort_by(scores_.begin(), scores_.end(), [](const auto &p) { return std::make_tuple(p.first, p.second.first); }); // TODO prefer matchs to insertions in case of eveness
-    auto it = unique_copy_by(scores_.cbegin(), scores_.cend(), scores_.begin(),
+
+  static void collapse_scores_left(std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> &scores) {
+    sort_by(scores.begin(), scores.end(), [](const auto &p) { return std::make_tuple(p.first, p.second.first); }); // TODO prefer matchs to insertions in case of eveness
+    auto it = unique_copy_by(scores.cbegin(), scores.cend(), scores.begin(),
                              [](const auto &p){ return p.first; });
-    scores_.resize(std::distance(scores_.begin(), it));
+    scores.resize(std::distance(scores.begin(), it));
+  }
 
-    // Trim left
-    sort_by(scores_.begin(), scores_.end(), [](const auto &p) { return p.second.first; });
+  static void trim_scores_left(std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> &scores) {
+    sort_by(scores.begin(), scores.end(), [](const auto &p) { return p.second.first; });
 
-    for (size_t i = 0; i < scores_.size(); ++i) {
-      if (scores_[i].first.is_empty()) {
+    for (size_t i = 0; i < scores.size(); ++i) {
+      if (scores[i].first.is_empty()) {
         size_t new_len = i + 1;
         if (new_len > 1) {
           --new_len;
         }
-        scores_.resize(new_len);
+        scores.resize(new_len);
         break;
       }
     }
+  }
 
+  void collapse_and_trim() {
+    collapse_scores_left(scores_);
+    trim_scores_left(scores_);
     scores_.shrink_to_fit();
   }
 
@@ -302,9 +308,11 @@ public:
     return event_;
   }
 
-  // bool is_collapsed() const {
-  //
-  // }
+  bool is_collapsed() const {
+    auto scores = scores_;
+    collapse_scores_left(scores);
+    return scores.size() == scores_.size();
+  }
 
   std::vector<const This*> collect_const() const {
     std::unordered_set<const This *> checked;
