@@ -122,8 +122,11 @@ int main(int argc, char *argv[]) {
         cereal::BinaryInputArchive iarchive(ifs);
         iarchive(cursors, ccc, result);
 
-        // INFO("Collapsing");
-        // const_cast<pathtree::PathLink<CachedCursor>*>(result.pathlink())->apply([](auto &pl) { pl.collapse_and_trim(); });
+        INFO("Collapsing");
+        auto plinks = const_cast<pathtree::PathLink<CachedCursor>*>(result.pathlink())->collect_mutable();
+        for (const auto &plink : plinks) {
+            plink->collapse_and_trim();
+        }
 
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
