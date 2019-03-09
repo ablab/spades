@@ -108,8 +108,9 @@ int main(int argc, char *argv[]) {
 
     size_t top = 100;
 
-    if (mode == Mode::aa) {
-        std::vector<AAGraphCursor<DebruijnGraphCursor>> cursors;
+    auto process = [&](const auto &cursor) {
+        using Cursor = std::decay_t<decltype(cursor)>;
+        std::vector<Cursor> cursors;
         CachedCursorContext ccc(cursors, &graph);
         PathSet<CachedCursor> result(nullptr);
         std::ifstream ifs(cereal_file);
@@ -140,6 +141,11 @@ int main(int argc, char *argv[]) {
             INFO(seq);
             INFO(edge_path);
         }
+    };
+    if (mode == Mode::aa) {
+        process(AAGraphCursor<DebruijnGraphCursor>());
+    } else {
+        process(DebruijnGraphCursor());
     }
 
     return 0;
