@@ -1307,6 +1307,7 @@ int aling_kmers_main(int argc, char* argv[]) {
         // logging::attach_logger(lg);
 
         auto result = find_best_path(fees, {cursor}, &seq);
+        result.pathlink_mutable()->set_finishes({StringCursor(seq.length() - 1)});
         // logging::__logger() = lg_bak;
 
         auto top_paths = result.top_k(1);

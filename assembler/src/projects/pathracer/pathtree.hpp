@@ -342,32 +342,37 @@ public:
     return result;
   }
 
-
-  template <typename Function>
-  auto apply(const Function &function) {
-    std::unordered_set<const This *> checked;
-
-    std::queue<const This *> q;
-    q.push(this);
-    while (!q.empty()) {
-      const This *current = q.front();
-      q.pop();
-      if (!current || checked.count(current)) {
-        continue;
-      }
-
-      function(*current);
-
-      checked.insert(current);
-
-      for (const auto &kv : current->scores_) {
-        const This *p = kv.second.second.get();
-        if (p) {
-          q.push(p);
-        }
-      }
-    }
+  void set_finishes(const std::unordered_set<GraphCursor> &finishes) {
+    auto it = std::remove_if(scores_.begin(), scores_.end(),
+                             [&finishes](const auto &x){ return !finishes.count(x.first); });
+    scores_.erase(it, scores_.end());
   }
+
+  // template <typename Function>
+  // auto apply(const Function &function) {
+  //   std::unordered_set<const This *> checked;
+  //
+  //   std::queue<const This *> q;
+  //   q.push(this);
+  //   while (!q.empty()) {
+  //     const This *current = q.front();
+  //     q.pop();
+  //     if (!current || checked.count(current)) {
+  //       continue;
+  //     }
+  //
+  //     function(*current);
+  //
+  //     checked.insert(current);
+  //
+  //     for (const auto &kv : current->scores_) {
+  //       const This *p = kv.second.second.get();
+  //       if (p) {
+  //         q.push(p);
+  //       }
+  //     }
+  //   }
+  // }
 
   size_t has_sequence(const std::string &seq, typename GraphCursor::Context context) const {
     std::vector<const This*> pointers = collect_const();
