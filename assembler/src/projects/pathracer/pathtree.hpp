@@ -247,22 +247,22 @@ public:
         auto &be = best_edges[path_link];
         // Trimming
         if (prev_gp.is_empty()) {
-          be[prev_gp] = prev_path_link;  // Strong trimming!
+          // be[prev_gp] = prev_path_link;  // Strong trimming!
           // Check has non-empty cursor
           if (std::any_of(be.cbegin(), be.cend(), [](const auto& x){ return !x.first.is_empty(); })) {
             continue;
           }
         } else {
-          // if (be.count(GraphCursor())) {
-          //   continue;
-          // }
+          if (be.count(GraphCursor())) {
+            continue;
+          }
         }
 
         // Collapsing
         auto it = be.find(prev_gp);
-        if (it != be.cend() && it->second != prev_path_link) {
-          continue;
-        }
+        // if (it != be.cend() && it->second != prev_path_link) {
+        //   continue;
+        // }
         if (it == be.cend()) {
           be[prev_gp] = prev_path_link;
         }
