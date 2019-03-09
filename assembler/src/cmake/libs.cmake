@@ -1,7 +1,7 @@
 # -*- cmake -*-
 
 # Collect all the necessary common libraries
-set(COMMON_LIBRARIES ${ZLIB_LIBRARIES} ${SYSTEM_LIBRARIES})
+set(COMMON_LIBRARIES ${SYSTEM_LIBRARIES})
 
 if (SPADES_USE_JEMALLOC)
   if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")

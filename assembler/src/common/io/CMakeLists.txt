@@ -12,6 +12,7 @@ add_library(input STATIC
             sam/read.cpp
             sam/sam_reader.cpp)
 
-target_link_libraries(input BamTools samtools)
+include_directories(SYSTEM "${ZLIB_INCLUDE_DIRS}")
+target_link_libraries(input BamTools samtools ${ZLIB_LIBRARIES})
 
 add_subdirectory(graph)
