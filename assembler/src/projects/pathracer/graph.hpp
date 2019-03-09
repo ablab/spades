@@ -4,7 +4,7 @@
 #define ALL(x) std::begin(x), std::end(x)
 
 #include "utils.hpp"
-#include "cursor.hpp"
+#include "restricted_cursor.hpp"
 #include "reversed_cursor.hpp"
 #include "pathtree.hpp"
 
