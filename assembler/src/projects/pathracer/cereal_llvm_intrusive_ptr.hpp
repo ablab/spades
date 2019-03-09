@@ -4,6 +4,9 @@
 #include <cereal/types/memory.hpp>
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 
+//FIXME --- remove it
+// #include "utils/logger/logger.hpp"
+
 // Work around MSVC not having alignof
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #define CEREAL_ALIGNOF __alignof
@@ -54,6 +57,7 @@ namespace cereal
   typename std::enable_if<traits::has_load_and_construct<T, Archive>::value, void>::type
   CEREAL_LOAD_FUNCTION_NAME( Archive & ar, memory_detail::PtrWrapper<llvm::IntrusiveRefCntPtr<T> &> & wrapper )
   {
+    // UNIMPLEMENTED !!!!!
     auto & ptr = wrapper.ptr;
 
     uint32_t id;
@@ -109,12 +113,18 @@ namespace cereal
 
     if( id & detail::msb_32bit )
     {
-      ptr.reset( detail::Construct<T, Archive>::load_andor_construct() );
-      ar.registerSharedPointer( id, ptr );
+      ptr = detail::Construct<T, Archive>::load_andor_construct();
+      auto sptr = std::make_shared<llvm::IntrusiveRefCntPtr<T>>(ptr);
+      // INFO("Cached pointer: " << sptr.get() << "id " << id);
+      ar.registerSharedPointer( id, sptr );
       ar( CEREAL_NVP_("data", *ptr) );
     }
     else
-      ptr = std::static_pointer_cast<T>(ar.getSharedPointer(id));
+    {
+      // INFO("Loading existing pointer: " << ar.getSharedPointer(id).get() << " id " << id);
+      llvm::IntrusiveRefCntPtr<T> *pptr = static_cast<llvm::IntrusiveRefCntPtr<T>*>(ar.getSharedPointer(id).get());
+      ptr = pptr ? *pptr : nullptr;
+    }
   }
 
 } // namespace cereal
