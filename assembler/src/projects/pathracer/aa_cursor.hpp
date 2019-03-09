@@ -23,6 +23,10 @@ class AAGraphCursor {
   using Context = typename GraphCursor::Context;
   char letter(Context context) const { return to_one_letter(aa::to_aa(c0_.letter(context), c1_.letter(context), c2_.letter(context))); }
 
+  template <class Archive>
+  void serialize(Archive &archive) {
+    archive(c0_, c1_, c2_);
+  }
   AAGraphCursor() = default;
   AAGraphCursor(const GraphCursor &c0, const GraphCursor &c1, const GraphCursor &c2) : c0_{c0}, c1_{c1}, c2_{c2} {}
   ~AAGraphCursor() noexcept = default;

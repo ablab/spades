@@ -967,17 +967,17 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     INFO("Connected component sizes: " << cursor_conn_comps_sizes);
 
-    auto run_search = [&fees, &p7hmm, &cfg](const auto &initial, size_t top,
+    auto run_search = [&fees, &p7hmm, &cfg](const auto &cursors, size_t top,
                                             std::vector<HMMPathInfo> &local_results,
                                             const auto context,
                                             const std::string &component_name = "") -> void {
-        CachedCursorContext ccc(initial, context);
+        CachedCursorContext ccc(cursors, context);
         auto cached_initial = ccc.Cursors();
         auto result = find_best_path(fees, cached_initial, &ccc);
         {
-            std::ofstream of(cfg.output_dir + "/event_graph_" + component_name + ".cereal");
+            std::ofstream of(cfg.output_dir + "/event_graph_" + p7hmm->name + ".cereal");  // Add component id (hash)
             cereal::BinaryOutputArchive oarchive(of);
-            oarchive(ccc, result);
+            oarchive(cursors, ccc, result);
         }
 
         if (!cfg.known_sequences.empty()) {
@@ -1011,7 +1011,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         for (const auto& annotated_path : top_paths) {
             VERIFY(annotated_path.path.size());
             std::string seq = annotated_path.str(&ccc);
-            auto unpacked_path = ccc.UnpackPath(annotated_path.path, initial);
+            auto unpacked_path = ccc.UnpackPath(annotated_path.path, cursors);
             auto alignment = compress_alignment(annotated_path.alignment(fees, &ccc), x_as_m_in_alignment);
             auto nucl_path = to_nucl_path(unpacked_path);
             std::string nucl_seq = pathtree::path2string(nucl_path, context);

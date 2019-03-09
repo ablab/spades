@@ -34,6 +34,11 @@ struct IdHolder {
     size_t pos() const {
         return pos_;
     };
+
+    template <class Archive>
+    void serialize(Archive &archive) {
+        archive(*reinterpret_cast<uint64_t*>(this));
+    }
 };
 
 static_assert(sizeof(IdHolder) == sizeof(uint64_t), "Invalid packed id holder");
@@ -61,6 +66,10 @@ public:
     char letter(Context context) const {
         return nucl2(g(context).EdgeNucls(edge())[position()]); }
 
+    template <class Archive>
+    void serialize(Archive &archive) {
+        archive(holder_);
+    }
     // bool is_convergent(Context context) const {
     //     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
     //
