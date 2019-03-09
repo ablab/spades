@@ -18,7 +18,6 @@
 #include "fees.hpp"
 
 // Serialization
-#include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/common.hpp>
 #include <cereal/types/utility.hpp>
@@ -303,6 +302,47 @@ public:
     return event_;
   }
 
+  // bool is_collapsed() const {
+  //
+  // }
+
+  std::vector<const This*> collect_const() const {
+    std::unordered_set<const This *> checked;
+
+    std::queue<const This *> q;
+    q.push(this);
+    while (!q.empty()) {
+      const This *current = q.front();
+      q.pop();
+      if (!current || checked.count(current)) {
+        continue;
+      }
+
+      checked.insert(current);
+
+      for (const auto &kv : current->scores_) {
+        const This *p = kv.second.second.get();
+        if (p) {
+          q.push(p);
+        }
+      }
+    }
+    return std::vector<const This*>(std::make_move_iterator(checked.begin()),
+                                    std::make_move_iterator(checked.end()));
+  }
+
+  std::vector<ThisRef> collect_mutable() {
+    std::vector<const This*> const_pointers = collect_const();
+    std::vector<ThisRef> result;
+
+    result.reserve(const_pointers.size());
+    for (const This *p : const_pointers) {
+      result.push_back(ThisRef(const_cast<This*>(p)));
+    }
+    return result;
+  }
+
+
   template <typename Function>
   auto apply(const Function &function) {
     std::unordered_set<const This *> checked;
@@ -330,15 +370,14 @@ public:
   }
 
   size_t has_sequence(const std::string &seq, typename GraphCursor::Context context) const {
-    std::vector<const This*> links;
-    const_cast<This*>(this)->apply([&links](const This &r){ links.push_back(&r); });
+    std::vector<This*> links = const_cast<This*>(this)->collect();
 
     for (size_t i = seq.length() - 1; i + 1 > 0; --i) {
-      std::vector<const This*> new_links;
+      std::vector<This*> new_links;
       for (const This *p : links) {
         for (const auto &kv : p->scores_) {
           const GraphCursor &cursor = kv.first;
-          const This* next = kv.second.second.get();
+          This* next = kv.second.second.get();
           if (!cursor.is_empty() && cursor.letter(context) == seq[i]) {
             new_links.push_back(next);
           }
