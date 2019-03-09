@@ -18,6 +18,7 @@
 
 #include <cereal/archives/binary.hpp>
 #include <fstream>
+#include "io/reads/osequencestream.hpp"
 
 #include "pathtree.hpp"
 #include "aa_cursor.hpp"
@@ -76,7 +77,9 @@ enum class Mode { none, nt, aa };
 int main(int argc, char *argv[]) {
     std::string graph_file;
     std::string cereal_file;
-    std::string hmm_file;
+    std::string output_file;
+    size_t top = 100;
+    // std::string hmm_file;
     // std::string sequence_file;
     // std::string output_file;
     size_t k;
@@ -87,6 +90,8 @@ int main(int argc, char *argv[]) {
          cereal_file << value("cerealized event graph"),
          graph_file << value("graph file in GFA"),
          k << integer("k-mer size"),
+         required("--output", "-o") & value("output file", output_file)    % "output file",
+         (option("--top") & integer("N", top)) % "extract top N paths",
          // required("--output", "-o") & value("output file", output_file) % "output file",
          (option("--nt").set(mode, Mode::nt) % "match against nucleotide string(s)" |
           option("--aa").set(mode, Mode::aa) % "match agains amino acid string(s)"));
@@ -106,7 +111,7 @@ int main(int argc, char *argv[]) {
     gfa.to_graph(graph, nullptr);
     INFO("Graph loaded");
 
-    size_t top = 100;
+    std::ofstream of(output_file);
 
     auto process = [&](const auto &cursor) {
         using Cursor = std::decay_t<decltype(cursor)>;
@@ -138,8 +143,10 @@ int main(int argc, char *argv[]) {
             auto edge_path = to_path(nucl_path);
             auto edge_path_aas = to_path(unpacked_path);
             size_t pos = nucl_path[0].position();
-            INFO(seq);
-            INFO(edge_path);
+            // INFO(seq);
+            // INFO(edge_path);
+            of << ">Score=" <<annotated_path.score << "|edges=" << edge_path <<  "\n";
+            io::WriteWrapped(seq, of);
         }
     };
     if (mode == Mode::aa) {

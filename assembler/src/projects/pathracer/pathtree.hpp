@@ -239,7 +239,7 @@ public:
       const double &cost = qe.cost;
 
       TRACE("Extracting path with cost " << cost);
-      if (false) {{{  // FIXME fix collapsing and trimming
+      // if (false) {{{  // FIXME fix collapsing and trimming
       // Check
       if (!qe.path->is_root()) {
         const GraphCursor &prev_gp = qe.path->parent()->data().gp;
@@ -253,9 +253,9 @@ public:
             continue;
           }
         } else {
-          if (be.count(GraphCursor())) {
-            continue;
-          }
+          // if (be.count(GraphCursor())) {
+          //   continue;
+          // }
         }
 
         // Collapsing
@@ -267,7 +267,7 @@ public:
           be[prev_gp] = prev_path_link;
         }
       }
-      }}}
+      // }}}
 
       // Check if path started with SOURCE: TODO implement it properly
       if (gp.is_empty() && !qe.path->is_root()) {
