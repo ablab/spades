@@ -286,7 +286,8 @@ public:
       for (const auto &cdp : path_link->get_cursor_delta_trimmed_left()) {
         Event new_event{cdp.first, const_cast<const This *>(cdp.second.second.get())};
         auto new_path = qe.path->child(new_event);
-        q.push({new_path, cost + cdp.second.first - path_link->score()});
+        double delta = cdp.second.first - path_link->score();
+        q.push({new_path, cost + delta});
       }
     }
 
