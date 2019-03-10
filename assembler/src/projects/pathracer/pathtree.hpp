@@ -288,7 +288,7 @@ public:
         continue;
       }
 
-      for (const auto &cdp : path_link->get_cursor_delta_trimmed_left()) {
+      for (const auto &cdp : path_link->scores_) {
         Event new_event{cdp.first, const_cast<const This *>(cdp.second.second.get())};
         auto new_path = qe.path->child(new_event);
         double delta = cdp.second.first - path_link->score();
@@ -356,6 +356,13 @@ public:
     scores_.erase(it, scores_.end());
   }
 
+  void collapse_all() {
+    auto plinks = collect_mutable();
+    for (const auto &plink : plinks) {
+      plink->collapse_and_trim();
+    }
+  }
+
   // template <typename Function>
   // auto apply(const Function &function) {
   //   std::unordered_set<const This *> checked;
@@ -412,23 +419,23 @@ private:
   score_t score_;
   Event event_;
 
-  const auto& get_cursor_delta_trimmed_left() const { // FIXME rename
-    // TODO Check and fix this description
-    // the idea is in the following:
-    // if a path is a prefix or suffix of another one,
-    // we do not consider them as DIFFERENT paths. We leave only one (the best) of them
-    // In order to implement this we do not allow to link to be "left-terminal" (contain backref to "empty cursor") and
-    // "transit" (contain backrefs to other nontrivial links).
-    // Here we just remove ref to empty cursor or refs to nontrivial links dependent on what is better
-
-    // If terminal ref is present:
-    // 1) Remove all other refs worse than it
-    // 2) In case of some non-terminal refs still present, remove terminal ref as well
-    // We add some tolerance. If two paths have almost equal scores we keep them both
-    // const double eps = 1e-7;
-    const_cast<This*>(this)->collapse_and_trim();
-    return scores_;
-  }
+  // const auto& get_cursor_delta_trimmed_left() const { // FIXME rename
+  //   // TODO Check and fix this description
+  //   // the idea is in the following:
+  //   // if a path is a prefix or suffix of another one,
+  //   // we do not consider them as DIFFERENT paths. We leave only one (the best) of them
+  //   // In order to implement this we do not allow to link to be "left-terminal" (contain backref to "empty cursor") and
+  //   // "transit" (contain backrefs to other nontrivial links).
+  //   // Here we just remove ref to empty cursor or refs to nontrivial links dependent on what is better
+  //
+  //   // If terminal ref is present:
+  //   // 1) Remove all other refs worse than it
+  //   // 2) In case of some non-terminal refs still present, remove terminal ref as well
+  //   // We add some tolerance. If two paths have almost equal scores we keep them both
+  //   // const double eps = 1e-7;
+  //   const_cast<This*>(this)->collapse_and_trim();
+  //   return scores_;
+  // }
 
 };
 

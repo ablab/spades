@@ -946,6 +946,8 @@ void TraceHMM(const hmmer::HMM &hmm,
         CachedCursorContext ccc(cursors, context);
         auto cached_initial = ccc.Cursors();
         auto result = find_best_path(fees, cached_initial, &ccc);
+        INFO("Collapsing event graph");
+        result.pathlink_mutable()->collapse_all();
 
         if (cfg.export_event_graph) {
             std::ofstream of(cfg.output_dir + "/event_graph_" + p7hmm->name +
