@@ -99,12 +99,7 @@ int main(int argc, char *argv[]) {
         }
 
         INFO("Collapsing");
-        {
-            auto plinks = result.pathlink_mutable()->collect_mutable();
-            for (const auto &plink : plinks) {
-                plink->collapse_and_trim();
-            }
-        }
+        result.pathlink_mutable()->collapse_all();
 
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);

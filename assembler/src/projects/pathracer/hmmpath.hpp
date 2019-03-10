@@ -387,6 +387,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   auto i_loop_processing_negative = [&transfer_upd, &fees](StateSet &I, size_t m) {
     // TODO Review it
+    // FIXME add proper collapsing
     const size_t max_insertions = 30;
 
     std::unordered_set<GraphCursor> updated;
