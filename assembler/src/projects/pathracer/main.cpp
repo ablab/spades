@@ -186,7 +186,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
           (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3"
       ),
       "Developer options:" % (
-          (option("--known-sequences") & value("filename", cfg.known_sequences)) % "FASTA file with known sequnces that should be found",
+          (option("--known-sequences") & value("filename", cfg.known_sequences)) % "FASTA file with known sequnces that should be definitely found",
           (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
           (option("--extend-const") & integer("value", cfg.extend_const)) % "const addition to overhang values for neighbourhood search [default: 15]",
           (option("--state-limits-coef") & integer("x", cfg.state_limits_coef)) % "multiplier for default #state limit [default: 1]",
