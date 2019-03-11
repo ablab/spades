@@ -28,6 +28,7 @@
 #include "contig_output_stage.hpp"
 #include "extract_domains.hpp"
 #include "domain_graph_construction.hpp"
+#include "restricted_edges_filling.hpp"
 
 namespace spades {
 
@@ -137,6 +138,8 @@ void assemble_genome() {
 
             SPAdes.add<debruijn_graph::ContigOutput>()
                   .add<debruijn_graph::SecondPhaseSetup>();
+            if (cfg::get().biosynthetic_mode)
+                SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();
         }
     }
 

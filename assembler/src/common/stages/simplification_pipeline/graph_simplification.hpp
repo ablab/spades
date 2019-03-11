@@ -474,14 +474,14 @@ template<class Graph>
 AlgoPtr<Graph> ComplexBRInstance(
     Graph &g,
     config::debruijn_config::simplification::complex_bulge_remover cbr_config,
-    DynamicEdgeSet<Graph>& a_domain_edges,
+    const SmartEdgeSet<std::unordered_set<typename Graph::EdgeId>, Graph>& restricted_edges,
     const SimplifInfoContainer &info) {
     if (!cbr_config.enabled)
         return nullptr;
     size_t max_length = (size_t) ((double) g.k() * cbr_config.max_relative_length);
     size_t max_diff = cbr_config.max_length_difference;
     return std::make_shared<omnigraph::complex_br::ComplexBulgeRemover<Graph>>(g, max_length, max_diff,
-                                                                               a_domain_edges, info.chunk_cnt());
+                                                                               restricted_edges, info.chunk_cnt());
 }
 
 template<class Graph>

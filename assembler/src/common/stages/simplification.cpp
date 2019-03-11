@@ -49,6 +49,7 @@ SimplifInfoContainer CreateInfoContainer(const conj_graph_pack &gp) {
 
 class GraphSimplifier {
     typedef std::function<void(EdgeId)> HandlerF;
+    typedef SmartEdgeSet<std::unordered_set<EdgeId>, Graph> RestrictedEdgeSet;
 
     conj_graph_pack& gp_;
     Graph& g_;
@@ -56,7 +57,6 @@ class GraphSimplifier {
     const debruijn_config::simplification simplif_cfg_;
     HandlerF removal_handler_;
     stats::detail_info_printer& printer_;
-    DynamicEdgeSet<Graph> restricted_edges_;
     CountingCallback<Graph> cnt_callback_;
 
     bool PerformInitCleaning() {
@@ -122,11 +122,7 @@ public:
               info_container_(info_container),
               simplif_cfg_(simplif_cfg),
               removal_handler_(removal_handler),
-              printer_(printer),
-              restricted_edges_(gp.g) {
-
-        restricted_edges_.Fill(FillRestrictedEdges());
-
+              printer_(printer) {
     }
 
     void InitialCleaning() {
@@ -221,7 +217,17 @@ public:
         //    std::cout << "Edge:" << g_.str(e) << "; cov: " << g_.coverage(e) << "; start " << g_.str(g_.EdgeStart(e)) << "; end " << g_.str(g_.EdgeEnd(e)) << std::endl;
         //};
         //auto extensive_handler = [&] (EdgeId e) {removal_handler_(e) ; printing_handler(e); drawing_handler.HandleDelete(e);};
+        std::unordered_set<EdgeId> placeholder_set;
+        SmartEdgeSet<std::unordered_set<EdgeId>, Graph> placeholder_smartset = make_smart_edge_set(gp_.g, placeholder_set);
 
+        if (gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>()) {
+            DEBUG("RestrictedEdgeSet is attached");
+        }
+
+        auto restricted_check = [this](EdgeId e, const std::vector<EdgeId>&){
+            DEBUG("Checking if " << e << " is in restricted edge set");
+            return gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>() ? gp_.get_const<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0 : 0;
+        };
 
         typename ComponentRemover<Graph>::HandlerF set_removal_handler_f;
         if (removal_handler_) {
@@ -241,9 +247,6 @@ public:
                     "Topology tip clipper");
         }
 
-        auto restricted_check = [this](EdgeId e, const std::vector<EdgeId>&){
-            return restricted_edges_.count(e) > 0;
-        };
         algo.AddAlgo(
                 RelativeECRemoverInstance(gp_.g,
                                           simplif_cfg_.rcec, info_container_, removal_handler_),
@@ -265,7 +268,7 @@ public:
                 "Complex tip clipper");
 
         algo.AddAlgo(
-                ComplexBRInstance(gp_.g, simplif_cfg_.cbr, restricted_edges_, info_container_),
+                ComplexBRInstance(gp_.g, simplif_cfg_.cbr, gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>() ? gp_.get_const<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>() : placeholder_smartset, info_container_),
                 "Complex bulge remover");
 
         algo.AddAlgo(
@@ -364,12 +367,12 @@ public:
     void SimplifyGraph() {
         bool rna_mode = (info_container_.mode() == config::pipeline_type::rna);
 
+        auto restricted_check = [this](EdgeId e, const std::vector<EdgeId>&){
+            return gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>() ? gp_.get_const<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0 : 0;
+        };
+
         INFO("Graph simplification started");
         printer_(info_printer_pos::before_simplification);
-
-        auto restricted_check = [this](EdgeId e, const std::vector<EdgeId>&) {
-            return restricted_edges_.count(e) > 0;
-        };
 
         size_t iteration = 0;
         auto message_callback = [&] () {
@@ -406,26 +409,6 @@ public:
                                                               /*all_primary*/rna_mode);
 
         AlgorithmRunningHelper<Graph>::LoopedRun(algo, /*min it count*/1, /*max it count*/10);
-    }
-
-    std::vector<EdgeId> FillRestrictedEdges() {
-        if (!fs::check_existence(cfg::get().output_dir + "temp_anti/restricted_edges.fasta"))
-            return std::vector<EdgeId>();
-
-        auto mapper = MapperInstance(gp_);
-        auto reader = std::make_shared<io::FixingWrapper>(std::make_shared<io::FileReadStream>(cfg::get().output_dir + "temp_anti/restricted_edges.fasta"));
-
-        std::vector<EdgeId> a_domain_edges;
-        while (!reader->eof()) {
-            io::SingleRead read;
-            (*reader) >> read;
-            std::vector<EdgeId> edges = mapper->MapSequence(read.sequence()).simple_path();
-            for (auto edge : edges) {
-                a_domain_edges.push_back(edge);
-                a_domain_edges.push_back(g_.conjugate(edge));
-            }
-        }
-        return a_domain_edges;
     }
 };
 

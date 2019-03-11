@@ -503,12 +503,14 @@ typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::GlueEd
     VertexId end = base::EdgeEnd(edge1);
     base::HiddenDeleteEdge(edge1);
     base::HiddenDeleteEdge(edge2);
+
     if (base::IsDeadStart(start) && base::IsDeadEnd(start)) {
         DeleteVertex(start);
     }
     if (base::IsDeadStart(end) && base::IsDeadEnd(end)) {
         DeleteVertex(end);
     }
+    DEBUG("Delete vertex");
     return new_edge;
 }
 
