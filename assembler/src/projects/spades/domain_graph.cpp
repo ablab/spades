@@ -289,16 +289,6 @@ void DomainGraph::OutputStat(std::set<std::shared_ptr<Vertex>> &preliminary_visi
 
     stat_file << "# strong/weak edges in the component - ";
     stat_file << strong_edge_count << "/" << weak_edge_count << std::endl;
-
-    if (preliminary_visited.size() <= 5) {
-        //                stat_file << "Warning: small number of domains, possible
-        //                fragmentation" << std::endl;
-    }
-
-    if (strong_edge_count < (int)preliminary_visited.size() / 2) {
-        //                stat_file << "Warning: small number of strong edges,
-        //                unlikely to recover complete BGC" << std::endl;
-    }
 }
 
 void DomainGraph::FindAllPossibleArrangements(const Graph &g, std::shared_ptr<Vertex> v,

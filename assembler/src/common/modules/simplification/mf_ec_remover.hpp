@@ -472,8 +472,8 @@ public:
     }
 
     bool Process() {
-        for (std::shared_ptr<GraphSplitter<Graph>> splitter_ptr = LongEdgesExclusiveSplitter<Graph>(g_,
-                uniqueness_length_); splitter_ptr->HasNext();) {
+        for (std::shared_ptr<GraphSplitter<Graph>> splitter_ptr =
+                     LongEdgesExclusiveSplitter<Graph>(g_, uniqueness_length_); splitter_ptr->HasNext();) {
             auto component = splitter_ptr->Next().vertices();
             FlowGraph<Graph> fg;
             ConstructFlowGraph(fg, component);
