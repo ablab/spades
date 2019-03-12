@@ -20,6 +20,7 @@ simp
             max_length                  0 ; will be taken max with read_length if option above is set
             max_coverage                0
             max_length_any_cov          0 ; will be taken max with read_length if option above is set
+            rl_threshold_increase       0 ; add this value to read length if used, i.e. flags above are set
         }
 
         tip_condition   "{ tc_lb 3.5, cb auto }"
@@ -160,6 +161,7 @@ simp
         max_length                  0 ; will be taken max with read_length if option above is set
         max_coverage                2
         max_length_any_cov          150 ; will be taken max with read_length if option above is set
+        rl_threshold_increase       0 ; add this value to read length if used, i.e. flags above are set
     }
 
     ; hidden ec remover

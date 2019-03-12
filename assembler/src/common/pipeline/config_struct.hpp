@@ -213,6 +213,7 @@ struct debruijn_config {
             double max_coverage;
             bool use_rl_for_max_length_any_cov;
             size_t max_length_any_cov;
+            size_t rl_threshold_increase; // add this value to read length if used, i.e. flags above are set
         };
 
         struct complex_bulge_remover {

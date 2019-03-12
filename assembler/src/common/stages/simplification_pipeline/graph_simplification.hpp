@@ -505,9 +505,11 @@ AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
         return nullptr;
     }
     size_t max_length_any_cov = ier.use_rl_for_max_length_any_cov ?
-                                std::max(info.read_length(), ier.max_length_any_cov) : ier.max_length_any_cov;
+                                std::max(info.read_length() + ier.rl_threshold_increase, ier.max_length_any_cov) :
+                                ier.max_length_any_cov;
     size_t max_length = ier.use_rl_for_max_length ?
-                                std::max(info.read_length(), ier.max_length) : ier.max_length;
+                                std::max(info.read_length() + ier.rl_threshold_increase, ier.max_length) :
+                                ier.max_length;
 
 
     auto condition = func::And(IsolatedEdgeCondition<Graph>(g),
