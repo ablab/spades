@@ -274,6 +274,7 @@ void load(debruijn_config::simplification::isolated_edge_remover& ier,
   load(ier.max_coverage, pt, "max_coverage", complete);
   load(ier.max_length_any_cov, pt, "max_length_any_cov", complete);
   load(ier.use_rl_for_max_length_any_cov, pt, "use_rl_for_max_length_any_cov", complete);
+  load(ier.rl_threshold_increase, pt, "rl_threshold_increase", complete);
 }
 
 void load(debruijn_config::simplification::low_covered_edge_remover& lcer,
