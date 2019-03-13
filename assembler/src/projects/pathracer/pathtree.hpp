@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pathtrie.hpp"
+#include "trie.hpp"
 #include "object_counter.hpp"
 
 #include "utils/logger/logger.hpp"
@@ -236,6 +237,8 @@ public:
 
     std::unordered_map<const This*, std::unordered_map<GraphCursor, const This*>> best_edges;
 
+    trie::Trie<GraphCursor> trie;
+
     while (!q.empty() && result.size() < k) {
       auto qe = q.top();
       q.pop();
@@ -284,7 +287,11 @@ public:
           WARN("Empty path reconstructed by top_k algorithm!");
           break;
         }
-        result.push_back(get_annotated_path(qe.path, qe.cost));
+
+        if (trie.try_add(annotated_path.path)) {
+          result.push_back(annotated_path);
+        }
+
         continue;
       }
 
