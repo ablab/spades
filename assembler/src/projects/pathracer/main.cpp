@@ -643,6 +643,20 @@ public:
         return key() < that.key();
     }
 
+    size_t trim_first_edges(const ConjugateDeBruijnGraph &graph) {
+        size_t edges_to_trim = 0;
+        for (;edges_to_trim < path.size() - 1; ++edges_to_trim) {  // We cannot remove the last edge
+            size_t edge_length_before_overlap = graph.length(path[edges_to_trim]);
+            if (pos < edge_length_before_overlap) {
+                break;
+            }
+            pos -= edge_length_before_overlap;
+        }
+
+        path.erase(path.begin(), path.begin() + edges_to_trim);
+        return edges_to_trim;
+    }
+
     HMMPathInfo(std::string name, double sc, std::string s, std::string nuc_s, std::vector<EdgeId> p, std::string alignment,
                 std::string label, size_t pos)
             : hmmname(std::move(name)), score(sc),

@@ -26,7 +26,56 @@
 #include "debruijn_graph_cursor.hpp"
 
 #include "path_utils.hpp"
+#include "pathtree.hpp"
 
+using debruijn_graph::EdgeId;
+using debruijn_graph::VertexId;
+using debruijn_graph::ConjugateDeBruijnGraph;
+
+class HMMPathInfo {
+private:
+    double rounded_score() const {
+        return round(score * 1000.0) / 1000.0;
+    }
+
+    auto key() const {
+        return std::make_tuple(rounded_score(), nuc_seq, label, path);
+    }
+
+public:
+    std::string hmmname;
+    double score;
+    std::string seq;
+    std::string nuc_seq;
+    std::vector<EdgeId> path;
+    std::string alignment;
+    std::string label;
+    size_t pos;
+
+    bool operator<(const HMMPathInfo &that) const {
+        return key() < that.key();
+    }
+
+    size_t trim_first_edges(const ConjugateDeBruijnGraph &graph) {
+        size_t edges_to_trim = 0;
+        for (;edges_to_trim < path.size() - 1; ++edges_to_trim) {  // We cannot remove the last edge
+            size_t edge_length_before_overlap = graph.length(path[edges_to_trim]);
+            if (pos < edge_length_before_overlap) {
+                break;
+            }
+            pos -= edge_length_before_overlap;
+        }
+
+        path.erase(path.begin(), path.begin() + edges_to_trim);
+        return edges_to_trim;
+    }
+
+    HMMPathInfo(std::string name, double sc, std::string s, std::string nuc_s, std::vector<EdgeId> p, std::string alignment,
+                std::string label, size_t pos)
+            : hmmname(std::move(name)), score(sc),
+              seq(std::move(s)), nuc_seq{std::move(nuc_s)},
+              path(std::move(p)), alignment(std::move(alignment)), label{std::move(label)}, pos{pos} {}
+};
 void create_console_logger(const std::string &filename = "") {
     using namespace logging;
 
@@ -103,24 +152,20 @@ int main(int argc, char *argv[]) {
 
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
-        // bool x_as_m_in_alignment = mode == Mode::aa;
         VERIFY(!top_paths.empty());
-
-        size_t count = 0;
         for (const auto& annotated_path : top_paths) {
             VERIFY(annotated_path.path.size());
             std::string seq = annotated_path.str(&ccc);
             auto unpacked_path = ccc.UnpackPath(annotated_path.path, cursors);
             auto nucl_path = to_nucl_path(unpacked_path);
+            std::string nucl_seq = pathtree::path2string(nucl_path, &graph);
             auto edge_path = to_path(nucl_path);
-            if (count % 10000 == 0) {
-                size_t pos = nucl_path[0].position();
-                INFO(annotated_path.score);
-                INFO(seq);
-                INFO(edge_path << " position = " << pos);
-            }
-            ++count;
-            of << ">Score=" << annotated_path.score << "|edges=" << edge_path << "\n";
+            auto edge_path_aas = to_path(unpacked_path);
+            size_t pos = nucl_path[0].position();
+            HMMPathInfo info("hmmname", annotated_path.score, seq, nucl_seq, std::move(edge_path), "",
+                             "", pos);
+            info.trim_first_edges(graph);
+            of << ">Score=" << annotated_path.score << "|edges=" << info.path << "|pos=" << info.pos << "\n";
             io::WriteWrapped(seq, of);
         }
     };
