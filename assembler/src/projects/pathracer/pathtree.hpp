@@ -196,7 +196,7 @@ public:
     return result;
   }
 
-  std::vector<AnnotatedPath<GraphCursor>> top_k(size_t k) const {
+  std::vector<AnnotatedPath<GraphCursor>> top_k(size_t k, double min_score = 0) const {
     struct Event {
       GraphCursor gp; // PathLink does not know its own position!
       const This *path_link;
@@ -279,6 +279,10 @@ public:
 
       // Check if path started with SOURCE: TODO implement it properly
       if (gp.is_empty() && !qe.path->is_root()) {
+        if (-qe.cost < min_score) {  // FIXME remember about the sign!!!
+          break;
+        }
+
         // Report path
         auto annotated_path = get_annotated_path(qe.path, qe.cost);
         if (annotated_path.empty()) {
@@ -454,7 +458,7 @@ class PathSet {
  public:
   class path_container {
    public:
-    path_container(const pathtree::PathLinkRef<GraphCursor> &paths, size_t k) : paths_(paths->top_k(k)) {}
+    path_container(const pathtree::PathLinkRef<GraphCursor> &paths, size_t k, double min_score = 0) : paths_(paths->top_k(k, min_score)) {}
 
     auto begin() const { return paths_.begin(); }
     auto end() const { return paths_.end(); }
@@ -472,10 +476,10 @@ class PathSet {
   PathSet(const PathLinkRef<GraphCursor> &pathlink) : pathlink_{pathlink} {}
 
   double best_score() const { return -pathlink_->score(); }  // FIXME sign
-  AnnotatedPath<GraphCursor> best_path() const { return top_k(1)[0]; }
+  AnnotatedPath<GraphCursor> best_path() const { return top_k(1, -std::numeric_limits<double>::infinity())[0]; }
   std::string best_path_string() const { return path_container::str(best_path().path); }
 
-  path_container top_k(size_t k) const { return path_container(pathlink_, k); }
+  path_container top_k(size_t k, double min_score = 0) const { return path_container(pathlink_, k, min_score); }
 
   const PathLink<GraphCursor> *pathlink() const {
     return pathlink_.get();
