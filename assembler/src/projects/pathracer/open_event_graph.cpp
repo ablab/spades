@@ -106,6 +106,7 @@ int main(int argc, char *argv[]) {
 
         INFO("Collapsing");
         result.pathlink_mutable()->collapse_all();
+        std::unordered_set<std::tuple<std::vector<EdgeId>, size_t, size_t>> extracted_paths;
 
         INFO("Extracting top paths");
         auto top_paths = result.top_k(top);
@@ -122,6 +123,12 @@ int main(int argc, char *argv[]) {
             HMMPathInfo info("hmmname", annotated_path.score, seq, nucl_seq, std::move(edge_path), "",
                              "", pos);
             info.trim_first_edges(graph);
+            auto tpl = std::make_tuple(info.path, info.pos, info.nuc_seq.length());
+            if (extracted_paths.count(tpl)) {
+                continue;
+            }
+            extracted_paths.insert(tpl);
+
             of << ">Score=" << annotated_path.score << "|edges=" << info.path << "|pos=" << info.pos << "\n";
             io::WriteWrapped(seq, of);
         }
