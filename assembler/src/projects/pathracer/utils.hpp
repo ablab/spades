@@ -78,6 +78,26 @@ struct hash<std::vector<T>> {
         return result;
     }
 };
+
+namespace impl {
+template <size_t N, typename... Ts>
+struct _hash {
+    size_t operator()(const std::tuple<Ts...> &t) const {
+        return hash_size_t_pair(_hash<N - 1, Ts...>()(t), hash_value(std::get<N - 1>(t)));
+    }
+};
+
+template <typename... Ts>
+struct _hash<0, Ts...> {
+    size_t operator()(const std::tuple<Ts...> &) const { return 0xDEADBEEF; }
+};
+}  // namespace impl
+
+template <typename... Ts>
+struct hash<std::tuple<Ts...>> {
+    std::size_t operator()(const std::tuple<Ts...> &t) const { return impl::_hash<sizeof...(Ts), Ts...>{}(t); }
+};
+
 }  // namespace std
 
 template <typename Iter, typename Key>
