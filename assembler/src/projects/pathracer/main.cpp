@@ -924,6 +924,8 @@ void TraceHMM(const hmmer::HMM &hmm,
             INFO("Alignment: " << compress_alignment(top_paths.alignment(0, fees, &ccc), x_as_m_in_alignment));
         }
 
+        std::unordered_set<std::tuple<std::vector<EdgeId>, size_t, size_t>> extracted_paths;
+
         for (const auto& annotated_path : top_paths) {
             VERIFY(annotated_path.path.size());
             std::string seq = annotated_path.str(&ccc);
@@ -941,8 +943,13 @@ void TraceHMM(const hmmer::HMM &hmm,
             }
             DEBUG_ASSERT(edge_path == edge_path_aas, main_assert{}, debug_assert::level<2>{});
             size_t pos = nucl_path[0].position();
-            local_results.emplace_back(p7hmm->name, annotated_path.score, seq, nucl_seq, std::move(edge_path), std::move(alignment),
-                                       component_name, pos);
+            HMMPathInfo info(p7hmm->name, annotated_path.score, seq, nucl_seq, std::move(edge_path), std::move(alignment),
+                             component_name, pos);
+            auto tpl = std::make_tuple(info.path, info.pos, info.nuc_seq.length());
+            if (!extracted_paths.count(tpl)) {
+                local_results.push_back(std::move(info));
+                extracted_paths.insert(tpl);
+            }
         }
     };
 
