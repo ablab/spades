@@ -12,7 +12,11 @@
 template <typename GraphCursor>
 std::vector<std::vector<GraphCursor>> fake_cursor_connected_components(const std::vector<GraphCursor> &cursors,
                                                                        typename GraphCursor::Context) {
-  return {cursors};
+  if (cursors.size()) {
+    return {cursors};
+  } else {
+    return {};
+  }
 }
 
 template <typename GraphCursor>
