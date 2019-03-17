@@ -99,6 +99,14 @@ def show_prd(file, clustered=False):
 def show_sqn(file):
     show_grp(file, True)
 
+#---- Edge coverage ------------------------------------------------------------
+def show_cvr(file):
+    while True:
+        try:
+            edge, coverage = read_int(file), read_int(file)
+            print(edge, coverage, ".")
+        except EOFError:
+            break
 
 #---- Long reads paths ---------------------------------------------------------
 def show_mpr(file):
@@ -120,6 +128,8 @@ def show_mpr(file):
 showers = {".grp" : show_grp,
            ".prd" : show_prd,
            ".sqn" : show_sqn,
+           ".cvr" : show_cvr,
+           ".flcvr" : show_cvr,
            ".mpr" : show_mpr }
 
 basename, ext = os.path.splitext(sys.argv[1])
