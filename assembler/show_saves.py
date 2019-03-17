@@ -96,17 +96,31 @@ def show_prd(file, clustered=False):
                 print(e1, e2, *p, ".")
 
 #---- Edge sequences -----------------------------------------------------------
-def show_sqn_old(file):
-    while True:
-        seq = read_seq(file)
-        print(">", seq.id, "_length_", seq.length, sep="")
-        print(seq.seq)
-
 def show_sqn(file):
     show_grp(file, True)
 
+
+#---- Long reads paths ---------------------------------------------------------
+def show_mpr(file):
+    size = read_int(file)
+    for _ in range(size):
+        count = read_int(file)
+        print(count)
+        for _ in range(count):
+            weight = read_int(file)
+            length = read_int(file)
+            print(" Weight:", weight, "length:", length, end=' ')
+            for _ in range(length):
+                edge = read_int(file)
+                print(edge, end=' ')
+            print()
+        print()
+
 #-------------------------------------------------------------------------------
-showers = {".grp": show_grp, ".prd": show_prd, ".sqn": show_sqn}
+showers = {".grp" : show_grp,
+           ".prd" : show_prd,
+           ".sqn" : show_sqn,
+           ".mpr" : show_mpr }
 
 basename, ext = os.path.splitext(sys.argv[1])
 target = ext
