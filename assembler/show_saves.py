@@ -54,7 +54,7 @@ def read_seq(file):
 
 #---- De Bruijn graph ----------------------------------------------------------
 def show_grp(file, show_seq=False):
-    _ = read_int(file) #max_id
+    _, _ = read_int(file), read_int(file) # max_vid, max_eid
     while True:
         try:
             start = read_int(file)
