@@ -275,16 +275,17 @@ def usage(spades_version, show_hidden=False, mode=None):
     sys.stderr.write("" + "\n")
     sys.stderr.write("Pipeline options:" + "\n")
 
-    sys.stderr.write("--only-error-correction\truns only read error correction"\
-                         " (without assembling)" + "\n")
-    sys.stderr.write("--only-assembler\truns only assembling (without read error"\
-                         " correction)" + "\n")
+    if mode != "rna":
+        sys.stderr.write("--only-error-correction\truns only read error correction"\
+                             " (without assembling)" + "\n")
+        sys.stderr.write("--only-assembler\truns only assembling (without read error"\
+                             " correction)" + "\n")
 
     if mode not in ["rna", "meta"]:
         sys.stderr.write("--careful\t\ttries to reduce number of mismatches and short indels" + "\n")
     sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
     if mode == "rna":
-        sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'last')" + "\n")
+        sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('as', 'k<int>', 'last')" + "\n")
     else:
         sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc', 'last')" + "\n")
     sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
@@ -513,6 +514,14 @@ def enable_truseq_mode():
     correct_scaffolds = True
     run_truseq_postprocessing = True
     only_assembler = True
+
+def enable_rnaseq_mode():
+    global rna
+    global only_assembler
+    global iontorrent
+    rna = True
+    if not iontorrent:
+        only_assembler = True
 
 
 def will_rerun(options):

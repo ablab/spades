@@ -240,9 +240,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.large_genome = True
         elif opt == "--plasmid":
             options_storage.plasmid = True
-
         elif opt == "--rna":
-            options_storage.rna = True
+            options_storage.enable_rnaseq_mode()
         elif opt.startswith("--ss-"):  # strand specificity, RNA-Seq only
             if opt == "--ss-rf":
                 options_storage.strand_specificity = 'rf'
@@ -250,6 +249,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                 options_storage.strand_specificity = 'fr'
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
+            if options_storage.rna:
+                options_storage.only_assembler = False
         elif opt == "--disable-gzip-output":
             options_storage.disable_gzip_output = True
         elif opt == "--disable-gzip-output:false":
@@ -392,8 +393,10 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     if options_storage.rna:
         if options_storage.careful:
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
-        if options_storage.restart_from and options_storage.restart_from.startswith('k'):
-            support.error("you cannot restart rnaSPAdes from a certain k-mer size, use --restart-from as", log)
+        if options_storage.only_error_correction:
+            support.error('you cannot specify --only-error-correction in RNA-Seq mode!')
+        if options_storage.restart_from and (options_storage.restart_from.startswith('ec') or options_storage.restart_from.startswith('mc')):
+            support.error("you cannot restart rnaSPAdes from error correction or mismatch correction (since both are disabled in RNA-Seq mode), use --restart-from as", log)
     if [options_storage.meta, options_storage.large_genome, options_storage.truseq_mode,
        options_storage.rna, options_storage.plasmid, options_storage.single_cell].count(True) > 1:
         support.error("you cannot simultaneously use more than one mode out of "
