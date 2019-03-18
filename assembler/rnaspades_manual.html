@@ -13,9 +13,8 @@
 1. <a href="#sec1">About rnaSPAdes</a><br>
 2. <a href="#sec2">rnaSPAdes specifics</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;2.1. <a href="#sec2.1">Running rnaSPAdes</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">rnaSPAdes-specific options</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.3">Assemblying strand-specific RNA-Seq</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.3. <a href="#sec2.4">rnaSPAdes output</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">Assemblying strand-specific RNA-Seq</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.3. <a href="#sec2.3">rnaSPAdes output</a><br>
 3. <a href="#sec3">Assembly evaluation</a><br>
 4. <a href="#sec4">Citation</a><br>
 5. <a href="#sec5">Feedback and bug reports</a><br>
@@ -57,15 +56,9 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
         <li>By default rnaSPAdes uses 2 k-mer sizes, which are automatically detected using read length (approximately one third and half of the maximal read length). We recommend not to change this parameter because smaller k-mer sizes typically result in multiple chimeric (misassembled) transcripts. In case you have any doubts about your run, do not hesitate to contact us using e-mail given below.</li>
     </ul>
 
-<a name="sec2.2"></a>
-<h3>2.2 rnaSPAdes-specific options</h3>
-<p>
-    <code>--fast</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Uses only a single k-mer size (detected automatically) and removes short low-covered isolated edges from the graph. Note, that very short and low-expressed transcripts may be missing when this option is used.
-</p>
 
-<a name="sec2.3"></a>
-<h3>2.3 Assemblying strand-specific RNA-Seq</h3>
+<a name="sec2.2"></a>
+<h3>2.2 Assemblying strand-specific RNA-Seq</h3>
 <p>rnaSPAdes supports strand-specific RNA-Seq dataset. You can indicate that the dataset is strand-specific using one of the following options:
 
 <p>
@@ -84,8 +77,8 @@ If the data set is single-end use <code>--ss-fr</code> option in case when reads
 
 
 
-<a name="sec2.4"></a>
-<h3>2.4 rnaSPAdes output</h3>
+<a name="sec2.3"></a>
+<h3>2.3 rnaSPAdes output</h3>
 <p>
 rnaSPAdes outputs one main FASTA file named <code>transcripts.fasta</code>. The corresponding file with paths in the <code>assembly_graph.fastg</code> is <code>transcripts.paths</code>.
 
