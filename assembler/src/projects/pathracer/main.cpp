@@ -149,7 +149,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
              option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
              option("--aa").set(cfg.mode, Mode::aa) % "match agains amino acid string(s)"),
       "Seeding options:" % (
-          (option("--edges") & values("edges", cfg.edges)) % "match around edges",
+          (option("--edges") & values("edges", cfg.edges)) % "match around particular edges",
           "Seeding mode:" %
           one_of(option("--seed-edges").set(cfg.seed_mode, SeedMode::edges) % "use graph edges as seeds",
                  option("--seed-scaffolds").set(cfg.seed_mode, SeedMode::scaffolds) % "use scaffolds paths as seeds",
