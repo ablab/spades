@@ -409,7 +409,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   size_t not_cool_global_n_const = size_t(-1);
   auto i_loop_processing_non_negative_formally_correct_but_slow_and_potentially_leaking = [&fees, &code, context, &not_cool_global_n_const](StateSet &I, size_t m, const auto &filter) {
-    INFO("Experimental I-loops processing called");
+    DEBUG("Experimental I-loops processing called");
     const auto &emission_fees = fees.ins[m];
     const auto &transfer_fee = fees.t[m][p7H_II];
 
