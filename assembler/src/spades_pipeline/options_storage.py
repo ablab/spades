@@ -119,7 +119,6 @@ restart_developer_mode = None
 restart_reference = None
 restart_configs_dir = None
 restart_read_buffer_size = None
-restart_fast = None
 
 # for running to specific check-point
 stop_after = None
@@ -132,14 +131,12 @@ run_truseq_postprocessing = False
 
 #rna options
 strand_specificity = None  # None, 'rf', 'fr' are possible
-fast = None
-
 dict_of_prefixes = dict()
 dict_of_rel2abs = dict()
 
 # list of spades.py options
 long_options = "12= merged= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent meta large-genome rna plasmid "\
-               "ss-fr ss-rf fast fast:false "\
+               "ss-fr ss-rf "\
                "only-error-correction only-assembler "\
                "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
                "help version test debug debug:false reference= series-analysis= config-file= dataset= "\
@@ -298,8 +295,6 @@ def usage(spades_version, show_hidden=False, mode=None):
     sys.stderr.write("" + "\n")
     sys.stderr.write("Advanced options:" + "\n")
     sys.stderr.write("--dataset\t<filename>\tfile with dataset description in YAML format" + "\n")
-    if mode == "rna":
-        sys.stderr.write("--fast\t\t\t\tspeeds up isoform detection, but may miss short and low-expressed isoforms\n")
     sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
     sys.stderr.write("\t\t\t\t[default: %s]\n" % THREADS)
     sys.stderr.write("-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
@@ -368,7 +363,6 @@ def set_default_values():
     global qvoffset
     global cov_cutoff
     global tmp_dir
-    global fast
 
     if threads is None:
         threads = THREADS
@@ -395,9 +389,6 @@ def set_default_values():
         cov_cutoff = 'off'
     if tmp_dir is None:
         tmp_dir = os.path.join(output_dir, TMP_DIR)
-    if fast is None:
-        fast = False
-
 
 def set_test_options():
     global output_dir
@@ -441,7 +432,6 @@ def save_restart_options(log):
     global restart_reference
     global restart_configs_dir
     global restart_read_buffer_size
-    global restart_fast
 
     restart_k_mers = k_mers
     restart_careful = careful
@@ -457,7 +447,6 @@ def save_restart_options(log):
     restart_reference = reference
     restart_configs_dir = configs_dir
     restart_read_buffer_size = read_buffer_size
-    restart_fast = fast
 
 
 def load_restart_options():
@@ -476,7 +465,6 @@ def load_restart_options():
     global configs_dir
     global read_buffer_size
     global original_k_mers
-    global fast
 
     if restart_k_mers:
         original_k_mers = k_mers
@@ -510,8 +498,6 @@ def load_restart_options():
         configs_dir = restart_configs_dir
     if restart_read_buffer_size is not None:
         read_buffer_size = restart_read_buffer_size
-    if restart_fast is not None:
-        fast = restart_fast
 
 
 def enable_truseq_mode():

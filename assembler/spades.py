@@ -248,11 +248,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                 options_storage.strand_specificity = 'rf'
             elif opt == "--ss-fr":
                 options_storage.strand_specificity = 'fr'
-        elif opt == "--fast":  # fast run, RNA-Seq only
-            options_storage.fast = True
-        elif opt == "--fast:false":
-            options_storage.fast = False
-
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
         elif opt == "--disable-gzip-output":
@@ -584,7 +579,7 @@ def rna_k_values(support, option_storage, dataset_data, log):
                  % (options_storage.MAX_K, options_storage.MAX_K))
         upper_k = options_storage.MAX_K
 
-    if options_storage.fast or (not use_iterative):
+    if not use_iterative:
         return [upper_k]
     return [lower_k, upper_k]
 

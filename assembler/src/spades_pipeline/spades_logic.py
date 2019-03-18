@@ -155,10 +155,6 @@ def add_configs(command, configs_dir):
         else:
             command.append(os.path.join(configs_dir, "careful_mode.info"))
 
-    # special case: extra config
-    if options_storage.rna and options_storage.fast:
-        command.append(os.path.join(configs_dir, "rna_fast_mode.info"))
-    
 
 def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     data_dir = os.path.join(cfg.output_dir, "K%d" % K)
