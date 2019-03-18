@@ -38,7 +38,7 @@ struct Fees {
 
   double cleavage_cost;
   bool local = false;
-  size_t minimal_match_length = 100;
+  size_t minimal_match_length = 50;
 
   bool use_experimental_i_loop_processing = false;
 

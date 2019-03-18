@@ -579,6 +579,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   if (fees.local) {
     required_cursor_depth = fees.minimal_match_length;
   }
+  required_cursor_depth = std::max<double>(required_cursor_depth, fees.minimal_match_length);
   INFO("Depth required: " << required_cursor_depth);
   std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
                [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, required_cursor_depth,
