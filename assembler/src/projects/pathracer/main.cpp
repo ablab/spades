@@ -112,6 +112,7 @@ struct PathracerConfig {
     int use_experimental_i_loop_processing = 0;
     std::string known_sequences = "";
     bool export_event_graph = false;
+    size_t minimal_match_length = 50;
 
     hmmer::hmmer_cfg hcfg;
 };
@@ -190,6 +191,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
           (option("--known-sequences") & value("filename", cfg.known_sequences)) % "FASTA file with known sequnces that should be definitely found",
           (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
           (option("--extend-const") & integer("value", cfg.extend_const)) % "const addition to overhang values for neighbourhood search [default: 15]",
+          (option("--minimal-match-length") & integer("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence [default: 50]",
           (option("--state-limits-coef") & integer("x", cfg.state_limits_coef)) % "multiplier for default #state limit [default: 1]",
           option("--experimental-i-loops").set(cfg.use_experimental_i_loop_processing, 1) % "use experimental I-loops processing",
           cfg.export_event_graph << option("--export-event-graph") % "export event graph in cereal format"
@@ -771,6 +773,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     fees.state_limits.l500 = 10000 * cfg.state_limits_coef;
     fees.absolute_threshold *= cfg.state_limits_coef;
     fees.depth_filter_constant *= cfg.state_limits_coef;
+    fees.minimal_match_length = cfg.minimal_match_length;
 
     fees.local = cfg.local;
     fees.use_experimental_i_loop_processing = cfg.use_experimental_i_loop_processing;
