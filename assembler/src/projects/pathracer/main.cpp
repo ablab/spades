@@ -138,7 +138,8 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       cfg.load_from  << value("load from"),
       cfg.k          << integer("k-mer size"),
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
-      cfg.local << option("--local") % "perform local-local HMM matching",
+      (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
+      (cfg.local << option("--local") % "perform local-local HMM matching"),
       (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 1000]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "number of threads",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
