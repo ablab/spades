@@ -284,7 +284,7 @@ def usage(spades_version, show_hidden=False, mode=None):
         sys.stderr.write("--careful\t\ttries to reduce number of mismatches and short indels" + "\n")
     sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
     if mode == "rna":
-        sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'last')" + "\n")
+        sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'last')" + "\n")
     else:
         sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc', 'last')" + "\n")
     sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
@@ -302,13 +302,10 @@ def usage(spades_version, show_hidden=False, mode=None):
     sys.stderr.write("\t\t\t\t[default: %s]\n" % MEMORY)
     sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for temporary files" + "\n")
     sys.stderr.write("\t\t\t\t[default: <output_dir>/tmp]" + "\n")
-    if mode != 'rna':
-        sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes" \
-                         " (must be odd and" + "\n")
-        sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n")
-    else:
-        sys.stderr.write("-k\t\t<int>\t\tk-mer size (must be odd and less than " + str(MAX_K + 1) + ") " \
-                         "[default: 'auto']\n")
+
+    sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes" \
+                     " (must be odd and" + "\n")
+    sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n")
 
     if mode not in ["rna", "meta"]:
         sys.stderr.write("--cov-cutoff\t<float>\t\tcoverage cutoff value (a positive float number, "

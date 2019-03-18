@@ -392,8 +392,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     if options_storage.rna:
         if options_storage.careful:
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
-#        if options_storage.k_mers and options_storage.k_mers != 'auto' and len(options_storage.k_mers) > 1:
-#            support.error("you cannot specify multiple k-mer sizes in RNA-Seq mode!", log)
         if options_storage.restart_from and options_storage.restart_from.startswith('k'):
             support.error("you cannot restart rnaSPAdes from a certain k-mer size, use --restart-from as", log)
     if [options_storage.meta, options_storage.large_genome, options_storage.truseq_mode,
