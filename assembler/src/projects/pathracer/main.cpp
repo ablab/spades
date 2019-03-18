@@ -147,7 +147,6 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       "Query type:" %
       one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
              option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
-             option("--nucl").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s) [deprecated, use --nt instead]",
              option("--aa").set(cfg.mode, Mode::aa) % "match agains amino acid string(s)"),
       "Seeding options:" % (
           (option("--edges") & values("edges", cfg.edges)) % "match around edges",
