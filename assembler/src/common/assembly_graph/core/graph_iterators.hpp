@@ -60,6 +60,138 @@ SmartContainer<Container, Graph> make_smart_container(const Graph &g, Args&&... 
     return SmartContainer<Container, Graph>(g, std::forward<Args>(args)...);
 }
 
+template<class SetContainer, class Graph>
+class SmartEdgeSetWrapper : public GraphActionHandler<Graph> {
+    typedef GraphActionHandler<Graph> handler;
+    typedef typename SetContainer::key_type EdgeId;
+public:
+    template<typename... Args>
+    SmartEdgeSetWrapper(const Graph &graph, SetContainer &container)
+            : handler(graph, "SmartEdgeSetWrapper"),
+              container_(container) {}
+
+    void HandleDelete(EdgeId e) override {
+        container_.erase(e);
+    }
+
+    void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) override {
+        bool removed = false;
+        for (auto edge : old_edges) {
+            auto it = container_.find(edge);
+            if (it == container_.end())
+                continue;
+
+            container_.erase(it);
+            removed = true;
+        }
+        if (removed)
+            container_.insert(new_edge);
+    }
+
+    void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) override {
+        auto it1 = container_.find(edge1), it2 = container_.find(edge2);
+        if (it1 != container_.end())
+            container_.erase(it1);
+        if (it2 != container_.end())
+            container_.erase(it2);
+
+        if (it1 != container_.end() || it2 != container_.end())
+            container_.insert(new_edge);
+    }
+
+    void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
+                     EdgeId new_edge2) override {
+        auto it = container_.find(old_edge);
+        if (it == container_.end())
+            return;
+
+        container_.erase(it);
+        container_.insert(new_edge1);
+        container_.insert(new_edge2);
+    }
+
+    void Fill(const std::vector<EdgeId> &container) {
+        for (auto elem : container)
+            container_.insert(elem);
+    }
+
+private:
+    SetContainer &container_;
+    
+    DECL_LOGGER("SmartEdgeSetWrapper");
+};
+
+template<class Container, class Graph>
+SmartEdgeSetWrapper<Container, Graph> make_smart_edge_set(const Graph &g, Container &c) {
+    return SmartEdgeSetWrapper<Container, Graph>(g, c);
+}
+
+template<class SetContainer, class Graph>
+class SmartEdgeSet : public GraphActionHandler<Graph>, public SetContainer {
+    typedef GraphActionHandler<Graph> handler;
+    typedef SetContainer container;
+    typedef typename SetContainer::key_type EdgeId;
+public:
+    template<typename... Args>
+    SmartEdgeSet(const Graph &graph, Args&&... args)
+            : handler(graph, "SmartEdgeSet"),
+              container(std::forward<Args>(args)...) {}
+
+    void HandleDelete(EdgeId e) override {
+        container::erase(e);
+    }
+
+    void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) override {
+        bool removed = false;
+        for (auto edge : old_edges) {
+            auto it = container::find(edge);
+            if (it == container::end())
+                continue;
+
+            container::erase(it);
+            removed = true;
+        }
+        if (removed)
+            container::insert(new_edge);
+    }
+
+    void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) override {
+        auto it1 = container::find(edge1), it2 = container::find(edge2);
+        if (it1 != container::end())
+            container::erase(it1);
+        if (it2 != container::end())
+            container::erase(it2);
+
+        if (it1 != container::end() || it2 != container::end())
+            container::insert(new_edge);
+    }
+
+    void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
+                     EdgeId new_edge2) override {
+        auto it = container::find(old_edge);
+        if (it == container::end())
+            return;
+
+        container::erase(it);
+        container::insert(new_edge1);
+        container::insert(new_edge2);
+    }
+
+    void Fill(const std::vector<EdgeId> &container) {
+        for (auto elem : container) {
+            container::insert(elem);
+        }
+    }
+
+private:
+    DECL_LOGGER("SmartEdgeSet");
+};
+
+template<class Container, class Graph, typename... Args>
+SmartEdgeSet<Container, Graph> make_smart_edge_set(const Graph &g, Args&&... args) {
+    return SmartEdgeSet<Container, Graph>(g, std::forward<Args>(args)...);
+}
+
 /**
  * SmartIterator is able to iterate through collection content of which can be changed in process of
  * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
