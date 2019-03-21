@@ -52,7 +52,7 @@ Or, if you dislike scripts:
 - . venv/bin/activate #if it wasn't activated already
 - python index.py
 It listens on *localhost:<port>* (default port is 5000) which can be visited, well, locally. If you plan to install and run it on the remote server and don't want to (or may not) configure ports, you can use an SSH tunnel. Run this command on your machine:
-- ssh -p 23 -L <port>:localhost:<port> <server-login>@<server-ip>
+- ssh -L <port>:localhost:<port> <server-login>@<server-ip>
 Then you can visit *localhost:<port>* just as if WebVis was installed on your local machine.
 
 Using
