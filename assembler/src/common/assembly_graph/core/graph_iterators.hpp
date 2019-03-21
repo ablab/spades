@@ -16,15 +16,38 @@
 namespace omnigraph {
 
 template<class Container, class Graph>
-class SmartWrapper : public GraphActionHandler<Graph>, public Container {
+class SmartWrapper : public GraphActionHandler<Graph> {
+    typedef GraphActionHandler<Graph> handler;
+    typedef typename Container::key_type Element;
+
+public:
+    SmartWrapper(const Graph &g, Container &c)
+            : handler(g, "SmartWrapper"),
+              container_(c) {}
+
+    void HandleDelete(Element e) override {
+        container_.erase(e);
+    }
+
+  private:
+    Container &container_;
+};
+
+template<class Container, class Graph>
+SmartWrapper<Container, Graph> make_smart_wrapper(const Graph &g, Container &c) {
+    return SmartWrapper<Container, Graph>(g, c);
+}
+
+template<class Container, class Graph>
+class SmartContainer : public GraphActionHandler<Graph>, public Container {
     typedef GraphActionHandler<Graph> handler;
     typedef Container container;
     typedef typename Container::key_type Element;
 
 public:
     template<typename... Args>
-    SmartWrapper(const Graph &g, Args&&... args)
-            : handler(g, "SmartWrapper"),
+    SmartContainer(const Graph &g, Args&&... args)
+            : handler(g, "SmartContainer"),
               container(std::forward<Args>(args)...) {}
 
     void HandleDelete(Element e) override {
@@ -33,8 +56,8 @@ public:
 };
 
 template<class Container, class Graph, typename... Args>
-SmartWrapper<Container, Graph> make_smart_wrapper(const Graph &g, Args&&... args) {
-    return SmartWrapper<Container, Graph>(g, std::forward<Args>(args)...);
+SmartContainer<Container, Graph> make_smart_container(const Graph &g, Args&&... args) {
+    return SmartContainer<Container, Graph>(g, std::forward<Args>(args)...);
 }
 
 /**
