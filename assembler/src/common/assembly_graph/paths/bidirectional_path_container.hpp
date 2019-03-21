@@ -145,6 +145,17 @@ public:
         });
     }
 
+    void SortByCoverageAndLength() {
+        std::stable_sort(data_.begin(), data_.end(), [=](const PathPair& p1, const PathPair& p2) {
+            if (p1.first->Empty() || p2.first->Empty() || p1.first->Length() != p2.first->Length()) {
+                return p1.first->Length() > p2.first->Length()
+
+            }
+            const Graph& g = p1.first->graph();
+            return g.int_id(p1.first->Front()) < g.int_id(p2.first->Front());
+        });
+    }
+
     Iterator begin() {
         return Iterator(data_.begin());
     }

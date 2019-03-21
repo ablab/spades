@@ -267,7 +267,8 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(GraphCoverageMa
                                                                  const pe_config::LongReads &lr_config) {
     for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
         EdgeId e = *iter;
-        if (ConservativeByLength(e) && ConservativeByPaths(e, long_reads_cov_map, lr_config)) {
+//FIXME - constant, this should be only in meta.
+        if (gp_.g.length(e) > 5000 || (ConservativeByLength(e) && ConservativeByPaths(e, long_reads_cov_map, lr_config))) {
             unique_storage_pb.unique_edges_.insert(e);
         }
     }
