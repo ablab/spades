@@ -21,4 +21,4 @@ install(TARGETS spaligner
         COMPONENT spaligner)
 
 install(FILES spaligner_config.yaml
-        DESTINATION share/spaligner/configs)
+        DESTINATION share/spaligner)
