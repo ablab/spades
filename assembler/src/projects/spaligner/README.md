@@ -2,9 +2,10 @@
 
 Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, coding sequences, etc.) to assembly graphs. 
 
-##Main pipeline
 
-Sequence-to-graph alignment with SPAligner. Overview of the alignment of query sequence S (orange bar) to assembly graph G. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
+## Main pipeline
+
+Overview of the alignment of query sequence S (orange bar) to assembly graph G. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
 ![pipeline](pipeline.png)
 
 1. Hit search. Hits (regions of high similarity) between the query and the edge labels are identified with BWA-MEM G. 
