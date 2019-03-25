@@ -16,13 +16,13 @@ Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, c
 
 To align PacBio reads realpb.fasta (accepts fasta/fastq files) to *E.coli* assembly graph built for K=77 (dataset is available [here](https://figshare.com/s/004baf22fc1bfd758f5b "Figshare DB")):
 ``` 
-./build/bin/longreads_aligner ./src/projects/spaligner/config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli > test_ecoli.log
+longreads_aligner config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli > test_ecoli.log
 ```
 Alignments will be saved to test_ecoli.tsv. 
 
 Run *help* to see full list of options:
 ```
-./build/release/bin/longreads_aligner -h
+longreads_aligner -h
 ```
 
 
@@ -39,27 +39,28 @@ Each line in tsv-file represents alignments of a single read.
 name    0      24911  53661  11429  24911	444-,30+,494-,264-,342-,264-,342-,264-,342-,264-,361-,224+,225+,1+,386-	9096,23,157,41,140,41,140,41,140,41,1573,4,1156,1,11429	AAACTTTTATTGTGCATACGGCGATTAAGACGGGAAAAGTCGGTGAT...
 ```
 
-Description:
-name -- read name
-0 -- start position of alignment on read
-24911 -- end position of alignment on read
-53661 -- start position of alignment on the first edge of the Path (here on conjugate edge to edge with id=444)
-11429 --  end position of alignment on the last edge of the Path (here on conjugate edge to edge with id=386)
-24911 -- read length
-444-,30+,494-,264-,342-,264-,342-,264-,342-,264-,361-,224+,225+,1+,386- -- Path of the alignment
-9096,23,157,41,140,41,140,41,140,41,1573,4,1156,1,11429 -- lengths of the alignment on each edge of the Path respectively (444-,30+,494-,264-,342-,...)
-AGGTTGTTTTTTGTTTCTTCCGC... -- sequence of alignment Path
+Description:<br/>
+name — read name<br/>
+0 — start position of alignment on read<br/>
+24911 — end position of  alignment on read<br/>
+53661 — start position of alignment on the first edge of the Path (here on conjugate edge to edge with id=444)<br/>
+11429 —  end position of alignment on the last edge of the Path (here on conjugate edge to edge with id=386)<br/>
+24911 — read length<br/>
+444-,30+,494-,264-,342-,264-,342-,264-,342-,264-,361-,224+,225+,1+,386- — Path of the alignment <br/>
+9096,23,157,41,140,41,140,41,140,41,1573,4,1156,1,11429 — lengths of the alignment on each edge of the Path respectively (444-,30+,494-,264-,342-,...) <br/>
+AGGTTGTTTTTTGTTTCTTCCGC... — sequence of alignment Path <br/>
 
 
-* Example2
+* Example2<br/>
+
 Sometimes read alignment on the graph can be represented as several non-overlapping subpaths (if there is no alignment with appropriate score between two consecutive bwa hits).
 So, there can be several unconnected alignments of read onto assembly graph and several start positions, end positions, paths etc.:
 
 ```
-name2     4,10  7,19       2,7   5,6       19    123+;288-,128+       3;3,6 GAT;TTATCCGGG
+name     4,10  7,19       2,7   5,6       19    123+;288-,128+       3;3,6 GAT;TTATCCGGG
 ```
 
-The read *name2* has two alignments on the graph:
+The read *name* has two alignments on the graph:
 
 1. The first alignment starts on read on position 4 and ends on position 7.
 Corresponding path consists of a single edge 123+ (i.e. 123+) with start on position 2 and end on position 5.
