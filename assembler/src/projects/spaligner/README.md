@@ -6,7 +6,7 @@ Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, c
 ## Main pipeline
 
 Overview of the alignment of query sequence S (orange bar) to assembly graph G. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
-![pipeline](pipeline.png)
+![pipeline](pipeline.jpg)
 
 1. Hit search. Hits (regions of high similarity) between the query and the edge labels are identified with BWA-MEM G. 
 2. Hit filtering. Hits shorter than K (hits 5, 6, 9),hits “in the middle” of long edge (hit 4) or ambiguous hits (hit 7 mostly covered by hit 2, both hits 11 and 12) are discarded.
