@@ -39,16 +39,18 @@ SmartWrapper<Container, Graph> make_smart_wrapper(const Graph &g, Container &c) 
 }
 
 template<class Container, class Graph>
-class SmartContainer : public Container, public SmartWrapper<SmartContainer<Container, Graph>, Graph> {
+class SmartContainer : public Container {
     typedef SmartWrapper<SmartContainer<Container, Graph>, Graph> wrapper;
     typedef Container container;
-    typedef typename Container::key_type Element;
-
 public:
+    using typename container::key_type;
+
     template<typename... Args>
     SmartContainer(const Graph &g, Args&&... args)
             : container(std::forward<Args>(args)...),
-              wrapper(g, *this) {}
+              wrapper_(g, *this) {}
+private:
+    wrapper wrapper_;
 };
 
 template<class Container, class Graph, typename... Args>
@@ -113,7 +115,7 @@ public:
 
 private:
     SetContainer &container_;
-    
+
     DECL_LOGGER("SmartEdgeSetWrapper");
 };
 
@@ -123,17 +125,20 @@ SmartEdgeSetWrapper<Container, Graph> make_smart_edge_set(const Graph &g, Contai
 }
 
 template<class SetContainer, class Graph>
-class SmartEdgeSet :  public SetContainer, public SmartEdgeSetWrapper<SmartEdgeSet<SetContainer, Graph>, Graph> {
+class SmartEdgeSet : public SetContainer {
     typedef SmartEdgeSetWrapper<SmartEdgeSet<SetContainer, Graph>, Graph> wrapper;
     typedef SetContainer container;
-    typedef typename SetContainer::key_type EdgeId;
 public:
+    using typename container::key_type;
+
     template<typename... Args>
     SmartEdgeSet(const Graph &graph, Args&&... args)
             : container(std::forward<Args>(args)...),
-              wrapper(graph, *this) {}
-    
+              wrapper_(graph, *this) {}
+
 private:
+    wrapper wrapper_;
+
     DECL_LOGGER("SmartEdgeSet");
 };
 
