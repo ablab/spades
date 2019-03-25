@@ -29,7 +29,7 @@ To align PacBio reads realpb.fasta (accepts fasta/fastq files) to *E.coli* assem
 ``` 
 spaligner spaligner_config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli
 ```
-By default, spaligner_config.yaml will be installed into /usr/share/spaligner. Alignments will be saved to test_ecoli.tsv.
+By default, spaligner_config.yaml will be installed into /usr/share/spaligner/. Alignments will be saved to test_ecoli.tsv.
 
 Run *help* to see full list of options:
 ```
