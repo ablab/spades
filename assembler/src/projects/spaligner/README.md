@@ -16,7 +16,7 @@ Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, c
 
 To align PacBio reads realpb.fasta (accepts fasta/fastq files) to *E.coli* assembly graph built for K=77 (dataset is available [here](https://figshare.com/s/004baf22fc1bfd758f5b "Figshare DB")):
 ``` 
-longreads_aligner config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli > test_ecoli.log
+longreads_aligner config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli
 ```
 Alignments will be saved to test_ecoli.tsv. 
 
@@ -35,17 +35,17 @@ Each line in tsv-file represents alignments of a single read.
 **Example 1**
 
 ```
-name    0      24911  53661  11429  24911	444-,224+,225+,1+,386-	9096,4,1156,1,11429	AAACTTTTATTGTGCATACGGCGATTAAGACGGGAAAAGTCGGTGAT...
+name    0      2491  536  1142  2491	44+,24+,22+,1+,38-	909,4,115,1,1142	AAACTTTTATTGTGCATACGGCGATTAAGACGGGAAAAGTCGGTGAT...
 ```
 
 name — read name<br/>
 0 — start position of alignment on read<br/>
-24911 — end position of  alignment on read<br/>
-53661 — start position of alignment on the first edge of the Path (here on conjugate edge to edge with id=444)<br/>
-11429 —  end position of alignment on the last edge of the Path (here on conjugate edge to edge with id=386)<br/>
-24911 — read length<br/>
-444-,224+,225+,1+,386- — Path of the alignment <br/>
-9096,4,1156,1,11429 — lengths of the alignment on each edge of the Path respectively (444-,30+,494-,264-,342-,...) <br/>
+2491 — end position of  alignment on read<br/>
+536 — start position of alignment on the first edge of the Path (here on edge with id=44)<br/>
+1142 —  end position of alignment on the last edge of the Path (here on conjugate edge to edge with id=38)<br/>
+2491 — read length<br/>
+44+,24+,22+,1+,38- — Path of the alignment <br/>
+909,4,115,1,1142 — lengths of the alignment on each edge of the Path respectively (44+,24+,22+,1+,38-) <br/>
 AGGTTGTTTTTTGTTTCTTCCGC... — sequence of alignment Path <br/>
 
 
