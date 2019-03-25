@@ -191,6 +191,7 @@ public:
         return answer;
     }
 
+    virtual ~ReadCountWeightCounter() = default;
 };
 
 class PathCoverWeightCounter: public WeightCounter {
@@ -284,6 +285,8 @@ public:
         }
         return answer;
     }
+
+    virtual ~PathCoverWeightCounter() = default;
 };
 
 class CoverageAwareIdealInfoProvider : public BasicIdealInfoProvider {
