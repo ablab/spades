@@ -93,7 +93,7 @@ void assemble_genome() {
     SPAdes.add<debruijn_graph::RawSimplification>(two_step_rr);
 
     if (cfg::get().gap_closer_enable &&
-            cfg::get().gc.before_simplify)
+        cfg::get().gc.before_simplify)
         SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
 
     if (two_step_rr) {
