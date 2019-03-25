@@ -8,7 +8,7 @@ Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, c
     git clone https://github.com/ablab/spades.git
     cd algorithmic-biology/assembler/
     mkdir build && cd build && cmake ../src && cd ../
-    make -C build/projects/spaligner/ -j4 longreads_aligner
+    make -C build/projects/spaligner/ -j4 spaligner
 
 
 ## Running SPAligner
@@ -16,13 +16,13 @@ Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, c
 
 To align PacBio reads realpb.fasta (accepts fasta/fastq files) to *E.coli* assembly graph built for K=77 (dataset is available [here](https://figshare.com/s/004baf22fc1bfd758f5b "Figshare DB")):
 ``` 
-longreads_aligner config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli
+spaligner config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli
 ```
 Alignments will be saved to test_ecoli.tsv. 
 
 Run *help* to see full list of options:
 ```
-longreads_aligner -h
+spaligner -h
 ```
 
 
@@ -52,7 +52,7 @@ AGGTTGTTTTTTGTTTCTTCCGC... — sequence of alignment Path <br/>
 
 **Example 2**<br/>
 
-Sometimes read alignment on the graph can be represented as several non-overlapping subpaths (if there is no alignment with appropriate score between two consecutive bwa hits).
+Sometimes read alignment on the graph can be represented as several non-overlapping subpaths (if there is no alignment with appropriate score between two consecutive bwa hits). <br/>
 So, there can be several unconnected alignments of read onto assembly graph and several start positions, end positions, paths etc.:
 
 ```
@@ -63,12 +63,12 @@ The read *name* has two alignments on the graph:
 
 1. The first alignment starts on read on position 4 and ends on position 7.
 Corresponding path consists of a single edge 123+ (i.e. 123+) with start on position 2 and end on position 5.
-Path sequence: GAT
+Path sequence: GAT.
 2. While the second alignment covers the end of the read, starting on read on position 10 and ending on position 19. 
 Corresponding path consists of two edges 288- and 128+ (i.e. 288-,128+) with start on position 7 (on 288-) and end on position 6 (on 128+).
-Path sequence: TTATCCGGG
+Path sequence: TTATCCGGG.
 
-If read was not fully aligned, SPAligner tries to prolong the longest alignment subpath in order to reconstruct full alignment path. In Example 2 SPAligner was not ably to prolong any of two given alignments.
+If a read was not fully aligned, SPAligner tries to prolong the longest alignment subpath in order to reconstruct a full alignment path. In **Example 2** SPAligner was not able to prolong any of two given alignments.
 
 
 ## Future plans 
