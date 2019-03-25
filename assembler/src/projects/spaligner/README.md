@@ -5,13 +5,14 @@ Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, c
 
 ## Main pipeline
 
-Overview of the alignment of query sequence S (orange bar) to assembly graph G. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
+Overview of the alignment of query sequence *S* (orange bar) to assembly graph *G*. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
+
 ![pipeline](pipeline.jpg)
 
-1. Hit search. Hits (regions of high similarity) between the query and the edge labels are identified with BWA-MEM G. 
-2. Hit filtering. Hits shorter than K (hits 5, 6, 9),hits “in the middle” of long edge (hit 4) or ambiguous hits (hit 7 mostly covered by hit 2, both hits 11 and 12) are discarded.
-3. Hit chaining. Heaviest chain of compatible hits (chain 1->3->2) is determined.
-4. Reconstruction of filling paths. Paths for fragments of the query between the consecutive chain hits (as well as left- and right-most fragments) are reconstructed.
+1. **Hit search.* Hits (regions of high similarity) between the query and the edge labels are identified with BWA-MEM. 
+2. **Hit filtering.** Hits shorter than *K*, assembly graph *K*-mer size,(hits 5, 6, 9), hits “in the middle” of long edge (hit 4) or ambiguous hits (hit 7 mostly covered by hit 2, both hits 11 and 12) are discarded.
+3. **Hit chaining.** Heaviest chain of compatible hits (chain 1->3->2) is determined.
+4. **Reconstruction of filling paths.** Paths for fragments of the query between the consecutive chain hits (as well as left- and right-most fragments) are reconstructed.
 
 ## Compilation
 
