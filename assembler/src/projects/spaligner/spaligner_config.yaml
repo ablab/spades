@@ -1,4 +1,4 @@
-output_format: tsv
+output_format: tsv,fasta
 run_dijkstra: true
 restore_ends: true
 

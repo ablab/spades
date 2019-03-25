@@ -18,8 +18,8 @@ Overview of the alignment of query sequence *S* (orange bar) to assembly graph *
 
     git clone https://github.com/ablab/spades.git
     cd algorithmic-biology/assembler/
-    mkdir build && cd build && cmake ../src && cd ../
-    make -C build/projects/spaligner/ -j4 spaligner
+    mkdir build && cd build && cmake ../src
+    make spaligner
 
 
 ## Running SPAligner
@@ -27,7 +27,7 @@ Overview of the alignment of query sequence *S* (orange bar) to assembly graph *
 
 To align PacBio reads realpb.fasta (accepts fasta/fastq files) to *E.coli* assembly graph built for K=77 (dataset is available [here](https://figshare.com/s/004baf22fc1bfd758f5b "Figshare DB")):
 ``` 
-spaligner config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli
+spaligner spaligner_config.yaml -K 77 -d pacbio -g ecoli.gfa -s realpb.fasta -o test_ecoli
 ```
 Alignments will be saved to test_ecoli.tsv. 
 

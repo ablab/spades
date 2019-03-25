@@ -19,3 +19,6 @@ target_link_libraries(form_truealignments common_modules cityhash bwa edlib grap
 install(TARGETS spaligner
         DESTINATION bin
         COMPONENT spaligner)
+
+install(FILES spaligner_config.yaml
+        DESTINATION share/spaligner/configs)

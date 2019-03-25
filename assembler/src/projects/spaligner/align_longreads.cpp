@@ -264,6 +264,7 @@ int main(int argc, char **argv) {
     }
 
     create_console_logger();
+    INFO("Loading config from " << cfg)
     auto buf = llvm::MemoryBuffer::getFile(cfg);
     VERIFY_MSG(buf, "Failed to load config file " + cfg);
     llvm::yaml::Input yin(*buf.get());
