@@ -1,6 +1,5 @@
-#pragma once
-
-#include <boost/test/unit_test.hpp>
+#include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/core/coverage.hpp"
 
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
@@ -8,44 +7,42 @@
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/config_struct.hpp"
 
-#include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
-
-#include "io/reads/io_helper.hpp"
-#include "common/assembly_graph/core/coverage.hpp"
-
-#include "edlib/edlib.h"
 #include "modules/alignment/pacbio/g_aligner.hpp"
 
+#include "io/reads/io_helper.hpp"
+#include "edlib/edlib.h"
 
-namespace debruijn_graph {
+#include "graphio.hpp"
 
-BOOST_AUTO_TEST_SUITE(graph_alignment_tests)
+#include <gtest/gtest.h>
 
 
-BOOST_AUTO_TEST_CASE( EdlibSHWFULLTest  ) {
+using namespace debruijn_graph;
+
+TEST(GraphAligner, EdlibSHWFULLTest) {
 
     std::string target = "abcd";
     std::string query = "ac";
-    edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), (int) query.size(), target.c_str(), (int) target.size()
-                                                   , edlib::edlibNewAlignConfig(10, edlib::EDLIB_MODE_SHW_EXTENDED, edlib::EDLIB_TASK_DISTANCE,
-                                                                         NULL, 0));
-    BOOST_CHECK_EQUAL(result.status, edlib::EDLIB_STATUS_OK);
-    BOOST_CHECK_NE(result.status, -1);
+    edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), (int) query.size(), target.c_str(), (int) target.size(),
+                                                       edlib::edlibNewAlignConfig(10, edlib::EDLIB_MODE_SHW_EXTENDED, edlib::EDLIB_TASK_DISTANCE,
+                                                                                  NULL, 0));
+    EXPECT_EQ(result.status, edlib::EDLIB_STATUS_OK);
+    EXPECT_NE(result.status, -1);
     INFO("Edlib: Result status = " << result.status)
     if (result.status == edlib::EDLIB_STATUS_OK) {
         for (int i = 0; i < result.numLocations; ++ i) {
             if (result.endLocations[i] == 0) {
-                BOOST_CHECK_EQUAL(result.endScores[i], 1);           
+                EXPECT_EQ(result.endScores[i], 1);           
             }
             if (result.endLocations[i] == 1) {
-                BOOST_CHECK_EQUAL(result.endScores[i], 1);           
+                EXPECT_EQ(result.endScores[i], 1);           
             }
             if (result.endLocations[i] == 2) {
-                BOOST_CHECK_EQUAL(result.endScores[i], 1);           
+                EXPECT_EQ(result.endScores[i], 1);           
             }
             if (result.endLocations[i] == 3) {
-                BOOST_CHECK_EQUAL(result.endScores[i], 2);           
+                EXPECT_EQ(result.endScores[i], 2);           
             }
         }
     }
@@ -53,22 +50,22 @@ BOOST_AUTO_TEST_CASE( EdlibSHWFULLTest  ) {
 }
 
 
-BOOST_AUTO_TEST_CASE( EdlibSHWFULLTestZero  ) {
+TEST(GraphAligner, EdlibSHWFULLTestZero  ) {
 
     std::string target = "abcd";
     std::string query = "";
     edlib::EdlibAlignResult result = edlib::edlibAlign(query.c_str(), (int) query.size(), target.c_str(), (int) target.size()
                                                    , edlib::edlibNewAlignConfig(10, edlib::EDLIB_MODE_SHW_EXTENDED, edlib::EDLIB_TASK_DISTANCE,
                                                                          NULL, 0));
-    BOOST_CHECK_EQUAL(result.status, edlib::EDLIB_STATUS_OK);
-    BOOST_CHECK_NE(result.status, -1);
+    EXPECT_EQ(result.status, edlib::EDLIB_STATUS_OK);
+    EXPECT_NE(result.status, -1);
     INFO("Edlib: Result status = " << result.status)
     if (result.status == edlib::EDLIB_STATUS_OK) {
         INFO("Edlib: Result ed = " << result.editDistance)
         for (int i = 0; i < result.numLocations; ++ i) {
             INFO("Edlib: Result loc = " << result.endScores[i])
             if (result.endLocations[i] == 0) {
-                BOOST_CHECK_EQUAL(result.endScores[i], 1);           
+                EXPECT_EQ(result.endScores[i], 1);           
             }
         }
     }
@@ -90,7 +87,7 @@ debruijn_graph::config::pacbio_processor InitializePacBioProcessor() {
     return pb;
 }
 
-BOOST_AUTO_TEST_CASE( TrivialTest ) {
+TEST(GraphAligner, TrivialTest ) {
     size_t K = 55;
     Graph g(K);
     graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
@@ -134,14 +131,14 @@ BOOST_AUTO_TEST_CASE( TrivialTest ) {
                 VertexId v2 = g.EdgeEnd(edgeid);
                 pathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(v1.int_id()) + "," + std::to_string(v2.int_id()) + ") ";
             }
-            BOOST_CHECK_EQUAL(idealMapping, pathStr);
+            EXPECT_EQ(idealMapping, pathStr);
         }
     }
     
 }
 
 
-BOOST_AUTO_TEST_CASE( DijkstraOneEdgeTest ) {
+TEST(GraphAligner, DijkstraOneEdgeTest ) {
     size_t K = 55;
     Graph g(K);
     graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
@@ -168,11 +165,11 @@ BOOST_AUTO_TEST_CASE( DijkstraOneEdgeTest ) {
     sensitive_aligner::DijkstraGapFiller gap_filler = sensitive_aligner::DijkstraGapFiller(g, gap_cfg, s, eid, eid, 0, (int) s.size(), path_maxlen, vertex_pathlen);
     gap_filler.CloseGap();
     int score = gap_filler.edit_distance();
-    BOOST_CHECK_EQUAL(ideal_score, score);
+    EXPECT_EQ(ideal_score, score);
 }
 
 
-BOOST_AUTO_TEST_CASE( DijkstraGrowEndsTest ) {
+TEST(GraphAligner, DijkstraGrowEndsTest ) {
     size_t K = 55;
     Graph g(K);
     graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
@@ -197,10 +194,5 @@ BOOST_AUTO_TEST_CASE( DijkstraGrowEndsTest ) {
     sensitive_aligner::DijkstraEndsReconstructor ends_filler = sensitive_aligner::DijkstraEndsReconstructor(g, gap_cfg, s, eid, 0, path_maxlen);
     ends_filler.CloseGap();
     int score = ends_filler.edit_distance();
-    BOOST_CHECK_EQUAL(ideal_score, score);
-}
-
-
-BOOST_AUTO_TEST_SUITE_END()
-
+    EXPECT_EQ(ideal_score, score);
 }
