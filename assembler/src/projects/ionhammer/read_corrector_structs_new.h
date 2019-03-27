@@ -379,8 +379,7 @@ class HRunSizeSearcher {
     results.reserve(max_error_size);
 
     const char nucl = hkmer_[K - 1].nucl;
-
-    const char start = (const char)std::max(1, observed_size_ - max_error_size);
+    const char start = (char)std::max(1, observed_size_ - max_error_size);
 
     for (char i = (char)(observed_size_ - 1); i >= start; --i) {
       hkmer_[K - 1].len = i & 0x3F;
@@ -405,7 +404,7 @@ class HRunSizeSearcher {
       }
     }
     return IonEvent(nucl, observed_size_,
-                     (const char)(found ? hkmer_[K - 1].len : observed_size_ + 1),
+                     (char)(found ? hkmer_[K - 1].len : observed_size_ + 1),
                      found);
   }
 
@@ -413,8 +412,7 @@ class HRunSizeSearcher {
     const char nucl = hkmer_[K - 1].nucl;
     bool found = false;
 
-    const char start = (const char)std::max(1, observed_size_ - max_error_size);
-
+    const char start = (char)std::max(1, observed_size_ - max_error_size);
     for (char i = (char)(observed_size_ - 1); i >= start; --i) {
       hkmer_[K - 1].len = i & 0x3F;
       if (is_good_func(hkmer_)) {
@@ -423,8 +421,8 @@ class HRunSizeSearcher {
       }
     }
     return IonEvent(nucl, observed_size_,
-                     (const char)(found ? hkmer_[K - 1].len : observed_size_ - 1),
-                     found);
+                    (char)(found ? hkmer_[K - 1].len : observed_size_ - 1),
+                    found);
   }
 
   inline std::vector<IonEvent> Find(const char max_error_size = 3) {

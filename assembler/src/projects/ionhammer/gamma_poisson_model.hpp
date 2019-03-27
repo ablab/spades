@@ -144,14 +144,14 @@ class ParametricClusterModel {
   double ErrorRate(const int runSize) const {
     auto idx = runSize - 1;
     idx = std::max(idx, 0);
-    idx = std::min(idx, (const int)(alphas_.size() - 1));
+    idx = std::min(idx, (int)(alphas_.size() - 1));
     return alphas_[idx] * (runSize == 0 ? 0.5 : 1);
   }
 
   double ExpectedErrorRate(const hammer::HKMer& from,
                            const hammer::HKMer& to) const {
     double errRate = 0;
-    for (uint i = 0; i < hammer::K; ++i) {
+    for (unsigned i = 0; i < hammer::K; ++i) {
       errRate +=
           std::abs(from[i].len - to[i].len) * log(ErrorRate(from[i].len));
       //      errRate += std::abs(from[i].len - to[i].len) *
@@ -166,7 +166,7 @@ class ParametricClusterModel {
                          const std::array<double, RunSizeLimit>& alphas)
       : prior_(prior), qual_func_(qualFunc), count_threshold_(countThreshold) {
     std::copy(alphas.begin(), alphas.end(), alphas_.begin());
-    for (uint i = 0; i < RunSizeLimit; ++i) {
+    for (unsigned i = 0; i < RunSizeLimit; ++i) {
       INFO("Run length " << i << " estimated error rate " << alphas_[i]);
     }
   }
@@ -214,7 +214,7 @@ class TClusterModelEstimator {
  private:
   const KMerData& data_;
   double threshold_;
-  uint num_threads_;
+  unsigned num_threads_;
   size_t max_terations_;
   bool calc_likelihood_;
 
@@ -249,7 +249,7 @@ class TClusterModelEstimator {
                                0.035, 0.05,  0.09, 0.11};
 
       std::array<double, RunSizeLimit> alphas;
-      for (uint i = 0; i < RunSizeLimit; ++i) {
+      for (unsigned i = 0; i < RunSizeLimit; ++i) {
         alphas[i] = (error_counts_[i] + priors[i] * (double)priorSize) /
                     (total_count_[i] + (double)priorSize);
       }
@@ -259,7 +259,7 @@ class TClusterModelEstimator {
 
     TRunErrorStats& operator+=(const TRunErrorStats& other) {
       if (this != &other) {
-        for (uint i = 0; i < RunSizeLimit; ++i) {
+        for (unsigned i = 0; i < RunSizeLimit; ++i) {
           error_counts_[i] += other.error_counts_[i];
           total_count_[i] += other.total_count_[i];
         }
@@ -276,7 +276,7 @@ class TClusterModelEstimator {
         }
         double errKmerCount = (double)(*data_)[idx].count;
         const auto& errKmer = (*data_)[idx].kmer;
-        for (uint i = 0; i < hammer::K; ++i) {
+        for (unsigned i = 0; i < hammer::K; ++i) {
           if (center[i].len > RunSizeLimit) {
             continue;
           }
@@ -287,7 +287,7 @@ class TClusterModelEstimator {
           }
         }
       }
-      for (uint i = 0; i < hammer::K; ++i) {
+      for (unsigned i = 0; i < hammer::K; ++i) {
         if (center[i].len > RunSizeLimit) {
           continue;
         }
@@ -606,7 +606,7 @@ class TClusterModelEstimator {
 
  public:
   TClusterModelEstimator(const KMerData& data, double threshold,
-                         uint num_threads = 16,
+                         unsigned num_threads = 16,
                          size_t maxIterations = 40,
                          bool calcLikelihood = false)
       : data_(data),
@@ -647,7 +647,7 @@ class TClusterModelEstimator {
 
       QualFunc cursor = {-1e-5, 0.0};
 
-      for (uint i = 0; i < 15; ++i) {
+      for (unsigned i = 0; i < 15; ++i) {
         const auto qualDerStats =
             n_computation_utils::TAdditiveStatisticsCalcer<
                 TQualityStat, TQualityLogitLinearRegressionPoint>(qualStats,
@@ -729,7 +729,7 @@ class TClusterModelEstimator {
       return GammaDistribution(shape, rate);
     }();
 
-    for (uint i = 0, steps = 0; i < max_terations_; ++i, ++steps) {
+    for (unsigned i = 0, steps = 0; i < max_terations_; ++i, ++steps) {
       auto gammaDerStats =
           n_computation_utils::TAdditiveStatisticsCalcer<TClusterSufficientStat,
                                                        TGammaDerivativesStats>(
@@ -843,7 +843,7 @@ class TClusterModelEstimator {
     GammaDistribution prior =
         TClusterModelEstimator::MomentMethodEstimator(sum, sum2, (double)observations);
 
-    for (uint i = 0, steps = 0; i < 10; ++i, ++steps) {
+    for (unsigned i = 0, steps = 0; i < 10; ++i, ++steps) {
       double digammaSum = 0;
       double trigammaSum = 0;
       for (auto count : counts) {

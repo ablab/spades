@@ -156,9 +156,9 @@ class GammaPoissonLikelihoodCalcer {
     const size_t last_kmer_count = last_kmer_stats ? last_kmer_stats->count : 0;
 
     const int bits = 4;
-    const uint dist =
-        min((const uint)std::abs(event.fixed_size_ - event.overserved_size_),
-            (uint)(1 << bits) - 1);
+    const unsigned dist =
+            std::min((unsigned)std::abs(event.fixed_size_ - event.overserved_size_),
+                     (unsigned)(1 << bits) - 1);
 
     {
       state.hkmer_distance_to_read_ += dist;
@@ -215,7 +215,7 @@ class GammaPoissonLikelihoodCalcer {
     return [this](const HKMer& hkMer) { return this->IsGood(hkMer); };
   }
 
-  static PenaltyState CreateState(const bool, const uint) {
+  static PenaltyState CreateState(const bool, const unsigned) {
     return PenaltyState();
   }
 

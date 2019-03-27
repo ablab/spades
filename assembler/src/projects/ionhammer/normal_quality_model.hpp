@@ -128,7 +128,7 @@ class Binarizer {
 
   double GetBorder(int bin) {
     --bin;
-    bin = std::min(bin, (const int)(borders_.size() - 1));
+    bin = std::min(bin, (int)(borders_.size() - 1));
     if (bin < 0) {
       return 0;
     }
