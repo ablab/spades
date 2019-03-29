@@ -55,7 +55,9 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
         EdgeId e = helper.AddEdge(edata);
         if (id_mapper) {
             (*id_mapper)[e.int_id()] = seg->name;
-            (*id_mapper)[g.conjugate(e).int_id()] = std::string(seg->name) + '\'';
+            if (e != g.conjugate(e)) {
+                (*id_mapper)[g.conjugate(e).int_id()] = std::string(seg->name) + '\'';
+            }
         }
         edges.push_back(e);
     }
