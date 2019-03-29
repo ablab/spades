@@ -495,6 +495,26 @@ public:
         return data_.end();
     }
 
+    float MedianCoverage() const {
+        std::vector<std::pair<float, int>> len_cov;
+        VERIFY_DEV(data_.size() > 0);
+        size_t total_l = 0;
+        for (size_t i = 0; i < data_.size(); ++i) {
+            len_cov.push_back(std::make_pair(g_.coverage(data_[i]), g_.length(data_[i])));
+            total_l += g_.length(data_[i]);
+        }
+        std::sort(len_cov.begin(), len_cov.end());
+        size_t cur_l = 0;
+        size_t ind = 0;
+        while (true) {
+            if (cur_l * 2 >= total_l) {
+                return len_cov[ind].first;
+            }
+            cur_l += len_cov[ind].second;
+            ind++;
+        }
+    }
+
 private:
     std::vector<std::string> PrintLines() const {
         auto as_str = str();

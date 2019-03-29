@@ -145,13 +145,18 @@ public:
         });
     }
 
-    void SortByCoverageAndLength() {
+    void SortByCoverageAndLength(size_t long_edge_limit) {
+        //Order: long (> long_edge_limit) -- by coverage, short - by length.
         std::stable_sort(data_.begin(), data_.end(), [=](const PathPair& p1, const PathPair& p2) {
-            if (p1.first->Empty() || p2.first->Empty() || p1.first->Length() != p2.first->Length()) {
-                return p1.first->Length() > p2.first->Length()
-
-            }
+            VERIFY_DEV(p1.first->Size() == 1 && p2.first->Size() == 1);
             const Graph& g = p1.first->graph();
+            if (p1.first->Length() > long_edge_limit && p2.first->Length() > long_edge_limit) {
+                return g.coverage(p1.first->Front()) > g.coverage(p2.first->Front());
+            }
+            if (p1.first->Empty() || p2.first->Empty() || p1.first->Length() != p2.first->Length()) {
+                return p1.first->Length() > p2.first->Length();
+            }
+
             return g.int_id(p1.first->Front()) < g.int_id(p2.first->Front());
         });
     }

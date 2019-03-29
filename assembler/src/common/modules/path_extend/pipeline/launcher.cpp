@@ -493,7 +493,7 @@ void PathExtendLauncher::Launch() {
     PathExtendResolver resolver(gp_.g);
 
     auto seeds = resolver.MakeSimpleSeeds();
-    seeds.SortByLength();
+    seeds.SortByCoverageAndLength(5000);
     DebugOutputPaths(seeds, "init_paths");
 
     GraphCoverageMap cover_map(gp_.g);
