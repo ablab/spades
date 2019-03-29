@@ -50,9 +50,9 @@ inline std::string human_readable_time(double time_in_sec) {
 
 inline std::string human_readable_memory(size_t max_rss) {
     if (max_rss < 1024 * 1024) {
-        return fmt::format("{:d}M", (max_rss / 1024));
+        return fmt::format("{:d}M", ((max_rss + 1023) / 1024));
     } else {
-        return fmt::format("{:d}G", (max_rss / (1024 * 1024)));
+        return fmt::format("{:d}G", ((max_rss + 1024*1024 - 1) / (1024 * 1024)));
     }
 }
 
