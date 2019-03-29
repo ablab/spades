@@ -80,6 +80,10 @@ public:
     init(InputData.begin(), InputData.end(), RequiresNullTerminator);
   }
 
+  /// Disable sized deallocation for MemoryBufferMem, because it has
+  /// tail-allocated data.
+  void operator delete(void *p) { ::operator delete(p); }
+
   const char *getBufferIdentifier() const override {
      // The name is stored after the class itself.
     return reinterpret_cast<const char*>(this + 1);
