@@ -4,11 +4,7 @@
 set(COMMON_LIBRARIES ${SYSTEM_LIBRARIES})
 
 if (SPADES_USE_JEMALLOC)
-  if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set(COMMON_LIBRARIES "-Wl,-force_load" jemalloc ${COMMON_LIBRARIES})
-  else()
-    set(COMMON_LIBRARIES jemalloc ${COMMON_LIBRARIES})
-  endif()
+  set(COMMON_LIBRARIES jemalloc-static ${COMMON_LIBRARIES})
 endif()
 
 # Add TCMalloc

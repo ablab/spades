@@ -106,13 +106,17 @@ void logger::log(level desired_level, const char* file, size_t line_num, const c
   size_t max_rss;
 
 #ifdef SPADES_USE_JEMALLOC
-  const size_t *cmem = 0, *cmem_max = 0;
+  size_t cmem = 0;
   size_t clen = sizeof(cmem);
 
-  je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  je_mallctl("stats.cactive_max", &cmem_max, &clen, NULL, 0);
-  mem = (*cmem) / 1024;
-  max_rss = (*cmem_max) / 1024;
+  int res = je_mallctl("stats.active", &cmem, &clen, NULL, 0);
+  // Cannot use FATAL_ERROR here, we're inside logger
+  if (res != 0) {
+      fprintf(stderr, "mallctl() call failed, errno = %d", errno);
+      exit(-1);
+  }
+  mem = (cmem + 1023)/ 1024;
+  max_rss = utils::get_max_rss();
 #else
   max_rss = utils::get_max_rss();
 #endif

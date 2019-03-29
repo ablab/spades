@@ -1,212 +1,444 @@
-# -*- cmake -*-
-
-############################################################################
-# Copyright (c) 2015 Saint Petersburg State University
-# Copyright (c) 2011-2014 Saint Petersburg Academic University
-# All Rights Reserved
-# See file LICENSE for details.
-############################################################################
+cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+# Require CMake >= 3.0 for check_c_compiler_flag support
 
 project(jemalloc C CXX)
 
-include(CheckIncludeFiles)
-include(CheckSymbolExists)
-include(CheckFunctionExists)
-include(CheckCSourceCompiles)
-include(CheckTypeSize)
+set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${EXT_DIR}/include)
-include_directories(${SPADES_BUILT_INCLUDE_DIR})
+include(CTest)
 
-check_include_files(features.h HAVE_FEATURES_H)
-check_include_files(sys/cdefs.h HAVE_SYS_CDEFS_H)
+include(${PROJECT_SOURCE_DIR}/build-aux/Utilities.cmake)
+include(${PROJECT_SOURCE_DIR}/build-aux/GetSystemSizes.cmake)
+include(${PROJECT_SOURCE_DIR}/build-aux/GetSystemAddrBits.cmake)
+include(${PROJECT_SOURCE_DIR}/build-aux/DetectOSFeatures.cmake) # 1
+include(${PROJECT_SOURCE_DIR}/build-aux/DetectCompilerFeatures.cmake) # 2
 
-set(JEMALLOC_VERSION "3.2.0-0-g87499f6748ebe4817571e817e9f680ccb5bf54a9")
-set(JEMALLOC_VERSION_MAJOR "3")
-set(JEMALLOC_VERSION_MINOR "2")
-set(JEMALLOC_VERSION_BUGFIX "0")
-set(JEMALLOC_VERSION_NREV "0")
-set(JEMALLOC_VERSION_GID "87499f6748ebe4817571e817e9f680ccb5bf54a9")
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_BINARY_DIR}/include)
+include_directories(${PROJECT_BINARY_DIR}/include/jemalloc)
 
-set(TARGET_ARCHITECTURE "generic")
-set(_vendor_id)
-set(_cpu_family)
-set(_cpu_model)
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  file(READ "/proc/cpuinfo" _cpuinfo)
-  string(REGEX REPLACE ".*vendor_id[ \t]*:[ \t]+([a-zA-Z0-9_-]+).*" "\\1" _vendor_id "${_cpuinfo}")
-  string(REGEX REPLACE ".*cpu family[ \t]*:[ \t]+([a-zA-Z0-9_-]+).*" "\\1" _cpu_family "${_cpuinfo}")
-  string(REGEX REPLACE ".*model[ \t]*:[ \t]+([a-zA-Z0-9_-]+).*" "\\1" _cpu_model "${_cpuinfo}")
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  exec_program("/usr/sbin/sysctl -n machdep.cpu.vendor" OUTPUT_VARIABLE _vendor_id)
-  exec_program("/usr/sbin/sysctl -n machdep.cpu.model"  OUTPUT_VARIABLE _cpu_model)
-  exec_program("/usr/sbin/sysctl -n machdep.cpu.family" OUTPUT_VARIABLE _cpu_family)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-  get_filename_component(_vendor_id "[HKEY_LOCAL_MACHINE\\Hardware\\Description\\System\\CentralProcessor\\0;VendorIdentifier]" NAME CACHE)
-  get_filename_component(_cpu_id "[HKEY_LOCAL_MACHINE\\Hardware\\Description\\System\\CentralProcessor\\0;Identifier]" NAME CACHE)
-  mark_as_advanced(_vendor_id _cpu_id)
-  string(REGEX REPLACE ".* Family ([0-9]+) .*" "\\1" _cpu_family "${_cpu_id}")
-  string(REGEX REPLACE ".* Model ([0-9]+) .*" "\\1" _cpu_model "${_cpu_id}")
+# User configuration options are maintained in an include for cleanliness:
+include(${PROJECT_SOURCE_DIR}/build-aux/UserCompileOptions.cmake)
+
+# Enable smallocx by default too
+set(JEMALLOC_EXPERIMENTAL_SMALLOCX_API 1)
+
+# install_prefix - installation directory prefix
+# with-xslroot=<path>  XSL stylesheet root path
+
+# Installation
+# Munge install path variables.
+# All of these can simply we be passed as
+# Cmake arguments
+if(NOT install_prefix)
+    set(install_prefix "/usr/local")
 endif()
 
-if(_vendor_id STREQUAL "GenuineIntel" OR
-   _vendor_id STREQUAL "AuthenticAMD")
- set(JEMALLOC_CPU_SPINWAIT "__asm__ volatile(\"pause\")")
+# We do not support exec_prefix until we find it is necessary
+if(NOT exec_prefix)
+    set(exec_prefix ${install_prefix})
 endif()
 
-check_symbol_exists(atomic_fetchadd_long "sys/types.h;machine/atomic.h;inttypes.h" JEMALLOC_ATOMIC9)
-check_symbol_exists(OSAtomicAdd64 "libkern/OSAtomic.h;inttypes.h" JEMALLOC_OSATOMIC)
-check_symbol_exists(OSSpinLockLock "libkern/OSAtomic.h;inttypes.h" JEMALLOC_OSSPIN)
-check_function_exists(_malloc_thread_cleanup JEMALLOC_MALLOC_THREAD_CLEANUP)
+set(PREFIX ${install_prefix})
 
-check_function_exists(_pthread_mutex_init_calloc_cb, JEMALLOC_MUTEX_INIT_CB)
-check_function_exists(sbrk JEMALLOC_HAVE_SBRK)
-
-set(CMAKE_REQUIRED_FLAGS "-Werror")
-check_c_source_compiles("static __thread int
-__attribute__((tls_model(\"initial-exec\"))) foo = 0; int main(void) { return 0; }" JEMALLOC_TLS_MODEL_SUPPORTED)
-set(CMAKE_REQUIRED_FLAGS)
-
-if (JEMALLOC_TLS_MODEL_SUPPORTED)
-  set(JEMALLOC_TLS_MODEL "__attribute__((tls_model(\"initial-exec\")))")
+if(enable-prefixed-jemalloc-library)
+    set(with-jemalloc-prefix ON)
 endif()
 
-check_type_size(void* JEMALLOC_SIZEOF_PTR)
-if (JEMALLOC_SIZEOF_PTR EQUAL 8)
-  set(JEMALLOC_LG_SIZEOF_PTR 3)
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+# If user's compiler supports compileFlag, add it to our build settings
+macro(setCompileFlag compileFlag)
+	# We have to remove all dashes and equals because the test
+    # addes defines of -D${flag}, so obviously when a flag has dashes and
+    # equals the set won't work (like #define -std=gnu11).
+    # So we use the built-in C-conforming generator to fix our input.
+    # 
+    # Sadly, this makes some configure output ugly because CMake doesn't
+    # translate anything until build time (also check_c_compiler_flag doesn't
+    # have an option for an alternative pretty print string).
+    # Alternatively, manually replace bad characters with with:
+    #	string(REGEX REPLACE "^-|=|-" "" removeDashEQ ${compileFlag})
+    set(removeDashEQ $<MAKE_C_IDENTIFIER:${compileFlag}>)
+    check_c_compiler_flag(${compileFlag} ${removeDashEQ})
+
+	if(${removeDashEQ})
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${compileFlag}")
+	endif()
+endmacro()
+
+setCompileFlag("-std=gnu11")
+
+setCompileFlag("-Wall")
+setCompileFlag("-Wextra")
+setCompileFlag("-Wshorten-64-to-32")
+setCompileFlag("-Wsign-compare")
+setCompileFlag("-Wundef")
+setCompileFlag("-Wno-format-zero-length")
+
+setCompileFlag("-pipe")
+setCompileFlag("-g3")
+
+setCompileFlag("-O3")
+setCompileFlag("-funroll-loops")
+setCompileFlag("-D_GNU_SOURCE")
+
+# If we can't be gnu11 for some reason, try gnu99 instead
+if(NOT (${CMAKE_C_FLAGS} MATCHES "std=gnu11"))
+	setCompileFlag("-std=gnu99")
+endif()
+
+# If we are gnu11 or gnu99, we know we can use restrict/__restrict__
+if((${CMAKE_C_FLAGS} MATCHES "std=gnu11") OR
+   (${CMAKE_C_FLAGS} MATCHES "std=gnu99"))
+	set(JEMALLOC_HAS_RESTRICT 1)
+endif()
+
+# Ask clang to not complain about clearly okay things
+if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+	setCompileFlag("-Wno-tautological-pointer-compare")
+endif()
+
+# Check for C++14 support too
+# Original comment from configure.ac about C++ support:
+#   Require at least c++14, which is the first version to support sized
+#   deallocation.  C++ support is not compiled otherwise.
+check_cxx_compiler_flag("-std=gnu++14" HAS_CXX14)
+if(HAS_CXX14)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14")
 else()
-  message(FATAL_ERROR "Unsupported pointer size")
-endif()
-
-set(JEMALLOC_USABLE_SIZE_CONST "const")
-set(JEMALLOC_TCACHE ON)
-set(JEMALLOC_MUNMAP ON)
-set(JEMALLOC_IVSALLOC OFF)
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  set(JEMALLOC_PURGE_MADVISE_DONTNEED ON)
-  set(JEMALLOC_THREADED_INIT ON)
-  set(JEMALLOC_USABLE_SIZE_CONST "")
-  add_definitions(-D_GNU_SOURCE)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-  set(JEMALLOC_LAZY_LOCK ON)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  set(JEMALLOC_PURGE_MADVISE_FREE ON)
-  set(JEMALLOC_ZONE ON)
-
-  set(CMAKE_EXTRA_INCLUDE_FILES "malloc/malloc.h")
-  check_type_size(malloc_zone_t JEMALLOC_MZONE_SIZE)
-  check_type_size(malloc_introspection_t JEMALLOC_MINT_SIZE)
-  set(CMAKE_EXTRA_INCLUDE_FILES)
-
-  if (JEMALLOC_MZONE_SIZE EQUAL 112)
-    set(JEMALLOC_ZONE_VERSION "3")
-  elseif(JEMALLOC_MZONE_SIZE EQUAL 120)
-    set(JEMALLOC_ZONE_VERSION "5")
-  elseif(JEMALLOC_MZONE_SIZE EQUAL 128)
-    if (JEMALLOC_MINT_SIZE EQUAL 72)
-      set(JEMALLOC_ZONE_VERSION "6")
-    elseif (JEMALLOC_MINT_SIZE EQUAL 112)
-      set(JEMALLOC_ZONE_VERSION "7")
+    check_cxx_compiler_flag("-std=c++14" HAS_CXX14)
+    if(HAS_CXX14)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
     else()
-      message(FATAL_ERROR "Unsupported malloc zone version")
+        message(STATUS "C++14 compiler not found. Not building C++ wrapper.")
+
+        # C++14 support not available. Disable C++ support.
+        set(JEMALLOC_CXX_DISABLE TRUE CACHE INTERNAL "Disable CXX")
     endif()
-  elseif(JEMALLOC_MZONE_SIZE EQUAL 136)
-    set(JEMALLOC_ZONE_VERSION "8")
-  elseif(JEMALLOC_MZONE_SIZE GREATER 136)
-    set(JEMALLOC_ZONE_VERSION "8")
-  else()
-    message(FATAL_ERROR "Unsupported malloc zone version")
-  endif()
-  set(JEMALLOC_IVSALLOC ON)
 endif()
 
-add_definitions(-D_REENTRANT)
-add_compile_options(-O3 -funroll-loops)
-
-# TLS on Darwin is "fake". We cannot use it with jemalloc, because
-# emulated tls wants to use calloc() and friends
-if (APPLE)
+if(JEMALLOC_VERSION)
+    # If user requested specific version number, use directly
+    set(jemalloc_version ${JEMALLOC_VERSION})
 else()
-  set(CMAKE_REQUIRED_FLAGS "-Werror")
-  check_c_source_compiles("__thread int x;
-  int main(void) { x = 42; return 0; }" JEMALLOC_TLS)
-  set(CMAKE_REQUIRED_FLAGS)
-endif()
-check_function_exists(memalign JEMALLOC_OVERRIDE_MEMALIGN)
-check_function_exists(valloc JEMALLOC_OVERRIDE_VALLOC)
+    # else, introspect the current git repo to find numbers and hashes
+    set(jemalloc_version "0.0.0-0-g0000000000000000000000000000000000000000")
+    set(jemalloc_version_major 0)
+    set(jemalloc_version_minor 0)
+    set(jemalloc_version_bugfix 0)
+    set(jemalloc_version_nrev 0)
+    set(jemalloc_version_gid "0")
 
-check_type_size(int JEMALLOC_SIZEOF_INT)
-if (JEMALLOC_SIZEOF_INT EQUAL 8)
-  set(JEMALLOC_LG_SIZEOF_INT 3)
-elseif (JEMALLOC_SIZEOF_INT EQUAL 4)
-  set(JEMALLOC_LG_SIZEOF_INT 2)
-else()
-  message(FATAL_ERROR "Unsupported integer size")
+    find_package(Git)
+    GetAndParseVersion()
 endif()
 
-check_type_size(long JEMALLOC_SIZEOF_LONG)
-if (JEMALLOC_SIZEOF_LONG EQUAL 8)
-  set(JEMALLOC_LG_SIZEOF_LONG 3)
-elseif (JEMALLOC_SIZEOF_LONG EQUAL 4)
-  set(JEMALLOC_LG_SIZEOF_LONG 2)
-else()
-  message(FATAL_ERROR "Unsupported long size")
+if(with-mangling)
+    # We are expecting entries separated by a comma
+    # with individual entries split by a ':' as in n:m
+    # Convert that into a CMake list of ';' separated pairs
+    string(REPLACE "," ";" MANGLING_MAP  ${with-mangling})
 endif()
 
-check_type_size(intmax_t JEMALLOC_SIZEOF_INTMAX_T)
-if (JEMALLOC_SIZEOF_INTMAX_T EQUAL 16)
-  set(JEMALLOC_LG_SIZEOF_INTMAX_T 4)
-elseif (JEMALLOC_SIZEOF_INTMAX_T EQUAL 8)
-  set(JEMALLOC_LG_SIZEOF_INTMAX_T 3)
-elseif (JEMALLOC_SIZEOF_INTMAX_T EQUAL 4)
-  set(JEMALLOC_LG_SIZEOF_INTMAX_T 2)
-else()
-  message(FATAL_ERROR "Unsupported intmax_t size")
+# Set the default API prefix for public
+# Need quotes so the preprocessor concats two strings
+set(JEMALLOC_PREFIX "\"je_\"")
+set(je_ je_) # in-header prefix for je_blahblah
+
+if(with-jemalloc-prefix)
+    set(JEMALLOC_PREFIX ${JEMALLOC_PREFIX})
+    set(JEMALLOC_PRIVATE_NAMESPACE ${JEMALLOC_PREFIX})
 endif()
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckPageSize.c.in"
-               "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/CheckPageSize.c"
-                IMMEDIATE @ONLY)
-try_run(JEMALLOC_CHECK_PAGE_SIZE JEMALLOC_HAVE_PAGE_SIZE
-        ${CMAKE_BINARY_DIR}
-        "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/CheckPageSize.c"
-        RUN_OUTPUT_VARIABLE JEMALLOC_STATIC_PAGE_SHIFT)
-
-configure_file(${EXT_DIR}/include/jemalloc/jemalloc.h.in
-               ${SPADES_BUILT_INCLUDE_DIR}/jemalloc/jemalloc.h)
-
-configure_file(${EXT_DIR}/include/jemalloc/jemalloc_defs.h.in
-               ${SPADES_BUILT_INCLUDE_DIR}/jemalloc/jemalloc_defs.h)
-
-
-set(JEMALLOC_SRC arena.c
-                 base.c
-                 chunk.c
-                 chunk_mmap.c
-                 ctl.c
-                 hash.c
-                 jemalloc.c
-                 mutex.c
-                 quarantine.c
-                 stats.c
-                 tsd.c
-                 atomic.c
-                 bitmap.c
-                 chunk_dss.c
-                 ckh.c
-                 extent.c
-                 huge.c
-                 mb.c
-                 prof.c
-                 rtree.c
-                 tcache.c
-                 util.c)
-
-
-if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  set(JEMALLOC_SRC ${JEMALLOC_SRC} zone.c)
+# Uppercase copy of the JEMALLOC_PREFIX
+if(JEMALLOC_PREFIX)
+    string(TOUPPER ${JEMALLOC_PREFIX} JEMALLOC_CPREFIX)
 endif()
 
-add_library(jemalloc STATIC
-            ${JEMALLOC_SRC})
+# Disable exporting jemalloc public APIs
+# We need to define the var to whitespace string
+# as empty strings will not be defined in CMake
+# Non-empty definition is necessary so
+if(without-export)
+    set(JEMALLOC_EXPORT " ")
+endif()
+
+if(with-install-suffix)
+    set(INSTALL_SUFFIX ${with-install-suffix})
+    set(install_suffix ${with-install-suffix})
+endif()
+
+# Build debugging code (implies --enable-ivsalloc)
+if(enable-debug)
+    set(JEMALLOC_DEBUG 1)
+endif()
+
+set(JEMALLOC_PREFIX_JET jet_)
+
+# Support xmalloc option
+set(JEMALLOC_XMALLOC 0)
+if(enable-xmalloc)
+    set(JEMALLOC_XMALLOC 1)
+endif()
+
+# Support cache-oblivious allocation alignment by default.
+# If defined, explicitly attempt to more uniformly distribute large allocation
+# pointer alignments across all cache indices.
+set(JEMALLOC_CACHE_OBLIVIOUS 1)
+if(disable-cache-oblivious)
+    set(JEMALLOC_CACHE_OBLIVIOUS 0)
+endif()
+
+# Base 2 log of minimum tiny size class to support
+set(LG_TINY_MIN 3)
+if(with-lg-tiny-min)
+    set(LG_TINY_MIN ${with-lg-tiny-min})
+endif()
+
+# Base 2 log of minimum allocation alignment
+set(LG_QUANTA "3 4")
+
+#if(with-lg-quantum)
+# Convert to a CMake list
+#string(REPLACE "," ";" LG_QUANTA  ${with-lg-quantum})
+#  set(LG_QUANTA ${with-lg-quantum})
+#set(LG_QUANTUM ${LG_QUANTA})
+#endif()
+
+# Base 2 log of system page size
+
+if(with-lg-page)
+    set(LG_PAGE ${with-lg-page})
+endif()
+
+# Base 2 logs of system page sizes to support
+set(LG_PAGE_SIZES ${LG_PAGE})
+if(with-lg-page-sizes)
+    string(REPLACE "," ";" LG_PAGE_SIZES  ${with-lg-page-sizes})
+endif()
+
+# Base 2 log of size classes per doubling
+set(LG_SIZE_CLASS_GROUP 2)
+if(with-lg-size-class-group)
+    set(LG_SIZE_CLASS_GROUP ${with-lg-size-class-group})
+endif()
+
+set(JEMALLOC_HAVE_ISSETUGID 0)
+set(JEMALLOC_MALLOC_THREAD_CLEANUP 0)
+
+set(JEMALLOC_MUTEX_INIT_CB 0)
+
+##############################################################################
+# enable-lazy-lock
+set(JEMALLOC_LAZY_LOCK 0)
+if(NOT enable-lazy-lock)
+    if(force_lazy_lock)
+        message(STATUS "Forcing lazy-lock to avoid allocator/threading bootstrap issues")
+        set(enable-lazy-lock ON)
+    endif()
+endif()
+
+if(enable-lazy-lock)
+    if(${abi} STREQUAL "pecoff")
+        message(STATUS "Forcing no lazy-lock because thread creation monitoring is unimplemented")
+        set(enable-lazy-lock OFF)
+    endif()
+endif()
+
+if(enable-lazy-lock)
+endif()
+
+##############################################################################
+
+# On linux, can detect by parsing :
+# hpsk=`cat /proc/meminfo 2>/dev/null | \
+#          grep -e '^Hugepagesize:[[:space:]]\+[0-9]\+[[:space:]]kB$' | \
+#          awk '{print $2}'`
+# then adding 1 to the result
+set(LG_HUGEPAGE 21)
+
+##############################################################################
+# Generate configured public headers for concatenation
+# Public Headers in for configuring
+set(PUBLIC_SYM
+    aligned_alloc
+    calloc
+    dallocx
+    free
+    mallctl
+    mallctlbymib
+    mallctlnametomib
+    malloc
+    malloc_conf
+    malloc_message
+    malloc_stats_print
+    malloc_usable_size
+    mallocx
+    nallocx
+    posix_memalign
+    rallocx
+    realloc
+    sallocx
+    sdallocx
+    xallocx
+    valloc
+)
+
+if(JEMALLOC_SMALLOCX_ENABLE)
+    list(APPEND PUBLIC_SYM
+        smallocx_${jemalloc_version_gid}
+    )
+endif()
+
+# Generate prefixed symbol names for awk nm extractors
+foreach(sym ${PUBLIC_SYM})
+    list(APPEND PREFIXED_JE  "${je_}${sym}")
+    list(APPEND PREFIXED_JET "jet_${sym}")
+endforeach()
+
+macro(createSymbolsAwk end syms)
+add_custom_command(
+    OUTPUT
+    "${PROJECT_BINARY_DIR}/include/jemalloc/internal/private_symbols${end}.awk"
+    COMMAND
+    "${PROJECT_SOURCE_DIR}/include/jemalloc/internal/private_symbols.sh"
+    "${NM_PREFIX}"
+    ${syms}
+    >
+    "${PROJECT_BINARY_DIR}/include/jemalloc/internal/private_symbols${end}.awk"
+    DEPENDS
+    "${PROJECT_SOURCE_DIR}/include/jemalloc/internal/private_symbols.sh"
+    VERBATIM
+)
+endmacro()
+
+createSymbolsAwk("" "${PREFIXED_JE}")
+createSymbolsAwk("_jet" "${PREFIXED_JET}")
+
+add_custom_target(jemalloc-private-symbols-awk DEPENDS
+    "${PROJECT_BINARY_DIR}/include/jemalloc/internal/private_symbols.awk")
+
+add_custom_target(jemalloc-private-symbols-awk-jet DEPENDS
+    "${PROJECT_BINARY_DIR}/include/jemalloc/internal/private_symbols_jet.awk")
+
+set(PUBLIC_SYM_FILE
+    "${PROJECT_BINARY_DIR}/include/jemalloc/internal/public_symbols.txt")
+GeneratePublicSymbolsList(
+    "${PUBLIC_SYM}"
+    "${MANGLING_MAP}"
+    ${je_}
+    "${PUBLIC_SYM_FILE}")
+
+foreach(public_in jemalloc_macros.h
+                  jemalloc_defs.h
+                  jemalloc_protos.h
+                  jemalloc_typedefs.h)
+    ConfigureFile("${PROJECT_SOURCE_DIR}/include/jemalloc/${public_in}.in"
+                  "${PROJECT_BINARY_DIR}/include/jemalloc/${public_in}" True)
+endforeach()
+
+# Generate main public header
+set(JEMALLOC_HDR
+    "${PROJECT_BINARY_DIR}/include/jemalloc/jemalloc${install_suffix}.h")
+
+# These are headers compiled by jemalloc.sh
+set(JEMALLOC_HDR_LIST
+    jemalloc_defs.h
+    jemalloc_rename.h
+    jemalloc_macros.h
+    jemalloc_protos.h
+    jemalloc_typedefs.h
+    jemalloc_mangle.h
+)
+
+CreateJemallocHeader("${PUBLIC_SYM_FILE}"
+                     "${JEMALLOC_HDR_LIST}"
+                     "${JEMALLOC_HDR}")
+
+##############################################################################
+## Internal headers generation
+set(PUBLIC_NAMESPACE_FILE
+    "${PROJECT_BINARY_DIR}/include/jemalloc/internal/public_namespace.h")
+PublicNamespace(${PUBLIC_SYM_FILE} "${PUBLIC_NAMESPACE_FILE}")
+
+set(PUBLIC_UNNAMESPACE_FILE
+    "${PROJECT_BINARY_DIR}/include/jemalloc/internal/public_unnamespace.h")
+PublicUnnamespace(${PUBLIC_SYM_FILE} "${PUBLIC_UNNAMESPACE_FILE}")
+
+# Configure internal headers
+ConfigureFile(
+    "${PROJECT_SOURCE_DIR}/include/jemalloc/internal/jemalloc_preamble.h.in"
+    "${PROJECT_BINARY_DIR}/include/jemalloc/internal/jemalloc_preamble.h" True)
+
+foreach(internal_in jemalloc_internal_defs.h)
+    ConfigureFile(
+        "${PROJECT_SOURCE_DIR}/include/jemalloc/internal/${internal_in}.in"
+        "${PROJECT_BINARY_DIR}/include/jemalloc/internal/${internal_in}" True)
+endforeach()
+
+# Headers for test running
+#ConfigureFile(
+#    "${PROJECT_SOURCE_DIR}/test/include/test/jemalloc_test_defs.h.in"
+#    "${PROJECT_BINARY_DIR}/test/include/test/jemalloc_test_defs.h" True)
+
+#ConfigureFile(
+#    "${PROJECT_SOURCE_DIR}/test/include/test/jemalloc_test.h.in"
+#    "${PROJECT_BINARY_DIR}/test/include/test/jemalloc_test.h" False)
+
+# Use jet_ generate protos_jet
+set(je_ jet_)
+
+# replace prefix only
+ConfigureFile(
+    "${PROJECT_SOURCE_DIR}/include/jemalloc/jemalloc_protos.h.in"
+    "${PROJECT_BINARY_DIR}/include/jemalloc/jemalloc_protos_jet.h" True)
+
+# revert
+set(je_ je_)
+
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    set(enable-prefixed-jemalloc-library ON)
+    include_directories(${PROJECT_BINARY_DIR}/test/include)
+endif()
+
+# TODO: all of these variables need to be refactored (here and src/ and test/).
+# All these things are from the original jemalloc-cmake repo which had
+# some oddities we are still trying to flush out.
+if(enable-prefixed-jemalloc-library)
+    # jet builds use header in jemalloc/internal binary path
+    include_directories(${PROJECT_BINARY_DIR}/include/jemalloc/internal)
+    set(C_JETLIB_DEFS "JEMALLOC_JET")
+
+    set(C_UTIL_INTEGRATION_DEFS "")
+    set(C_TESTLIB_INTEGRATION_DEFS "JEMALLOC_INTEGRATION_TEST")
+    set(C_TESTLIB_INTEGRATION ${PROJECT_NAME}IntegrationTest${install_suffix})
+
+    set(C_TESTLIB_UNIT_DEFS "JEMALLOC_UNIT_TEST")
+    set(C_TESTLIB_STRESS_DEF "JEMALLOC_STRESS_TEST;JEMALLOC_STRESS_TESTLIB")
+    set(C_TESTLIB_STRESS ${PROJECT_NAME}TestStress${install_suffix})
+
+    set(C_UNITETEST_DEFS "JEMALLOC_UNIT_TEST")
+
+    if(with-jemalloc-prefix)
+        set(C_JETLIB_DEFS  "${C_JETLIB_DEFS};JEMALLOC_MANGLE")
+        set(C_UTIL_INTEGRATION_DEFS
+            "${C_UTIL_INTEGRATION_DEFS};JEMALLOC_MANGLE")
+    endif()
+endif()
+
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    enable_testing()
+
+    # check target is scoped with -jemalloc because when jemalloc
+    # is included as cmake dependency in other projects, we don't
+    # want to conflict with any other 'check' targets
+    add_custom_target(check-jemalloc COMMAND ${CMAKE_CTEST_COMMAND})
+
+    add_subdirectory(test)
+endif()
+
+add_subdirectory(src)

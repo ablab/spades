@@ -83,11 +83,13 @@ size_t get_max_rss() {
 
 size_t get_used_memory() {
 #ifdef SPADES_USE_JEMALLOC
-    const size_t *cmem = 0;
+    size_t cmem = 0;
     size_t clen = sizeof(cmem);
 
-    je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-    return *cmem;
+    int res = je_mallctl("stats.active", &cmem, &clen, NULL, 0);
+    if (res != 0)
+        FATAL_ERROR("mallctl() call failed, errno = " << errno);
+    return cmem;
 #else
     return get_max_rss();
 #endif
