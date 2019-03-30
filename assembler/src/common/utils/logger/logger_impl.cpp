@@ -106,20 +106,31 @@ void logger::log(level desired_level, const char* file, size_t line_num, const c
   size_t max_rss;
 
 #ifdef SPADES_USE_JEMALLOC
-  size_t cmem = 0;
-  size_t clen = sizeof(cmem);
-
-  int res = je_mallctl("stats.active", &cmem, &clen, NULL, 0);
   // Cannot use FATAL_ERROR here, we're inside logger
-  if (res != 0) {
-      fprintf(stderr, "mallctl() call failed, errno = %d", errno);
-      exit(-1);
+
+  // Update statisitcs cached by mallctl
+  {
+      uint64_t epoch = 1;
+      size_t sz = sizeof(epoch);
+      if (je_mallctl("epoch", &epoch, &sz, &epoch, sz) != 0) {
+          fprintf(stderr, "mallctl() call failed, errno = %d", errno);
+          exit(-1);
+      }
   }
-  mem = (cmem + 1023)/ 1024;
-  max_rss = utils::get_max_rss();
-#else
-  max_rss = utils::get_max_rss();
+
+  {
+      size_t cmem = 0;
+      size_t clen = sizeof(cmem);
+
+      int res = je_mallctl("stats.active", &cmem, &clen, NULL, 0);
+      if (res != 0) {
+          fprintf(stderr, "mallctl() call failed, errno = %d", errno);
+          exit(-1);
+      }
+      mem = (cmem + 1023)/ 1024;
+  }
 #endif
+  max_rss = utils::get_max_rss();
 
   for (auto it = writers_.begin(); it != writers_.end(); ++it)
     (*it)->write_msg(time, mem, max_rss, desired_level, file, line_num, source, msg);
