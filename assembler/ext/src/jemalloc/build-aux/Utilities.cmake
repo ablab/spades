@@ -7,52 +7,52 @@ include(CheckCSourceCompiles)
 
 ##############################################################################
 # CheckTypeSizeValid
-# Given C type 'type', populate lg(sizeof(type)) in '_RESULT_LG' after validing
-# at least one numeric argument given after '_RESULT_LG' equals sizeof(type).
-function(UtilCheckTypeSizeValid type _RESULT_LG)
+# Given C type 'type', populate lg(sizeof(type)) in 'result' after validing
+# at least one numeric argument given after 'result' equals sizeof(type).
+function(UtilCheckTypeSizeValid type result)
     # The variable for 'check_type_size' must be unique because it's
     # globally cached across all invocations.
-    check_type_size(${type} ${_RESULT_LG}foundSize)
+    check_type_size(${type} ${result}foundSize)
 
     set(sizeOk False)
 
-    # Iterate over vararg parameters after _RESULT_LG (the size checks)
+    # Iterate over vararg parameters after result (the size checks)
     foreach(sizeCompare ${ARGN})
-        if(${_RESULT_LG}foundSize EQUAL sizeCompare)
+        if(${result}foundSize EQUAL sizeCompare)
             set(sizeOk True)
-            lg(${${_RESULT_LG}foundSize} LG_OF_FOUND_SIZE)
-            set(${_RESULT_LG} ${LG_OF_FOUND_SIZE} PARENT_SCOPE)
+            lg(${${result}foundSize} LG_OF_FOUND_SIZE)
+            set(${result} ${LG_OF_FOUND_SIZE} PARENT_SCOPE)
             break()
         endif()
     endforeach()
 
     if (NOT sizeOk)
-        message(FATAL_ERROR "Unsupported ${type} size: ${${_RESULT_LG}foundSize}")
+        message(FATAL_ERROR "Unsupported ${type} size: ${${result}foundSize}")
     endif()
 endfunction()
 
 ##############################################################################
 # Power of two
-# returns result in a VAR whose name is in RESULT_NAME
-function(pow2 e RESULT_NAME)
+# returns result in a VAR whose name is in result
+function(pow2 e result)
     set(pow2_result 1)
     while(${e} GREATER 0)
         math(EXPR pow2_result "${pow2_result} + ${pow2_result}")
         math(EXPR e "${e} - 1")
     endwhile()
-    set(${RESULT_NAME} ${pow2_result} PARENT_SCOPE)
+    set(${result} ${pow2_result} PARENT_SCOPE)
 endfunction()
 
 ##############################################################################
 # Logarithm base 2
-# returns result in a VAR whose name is in RESULT_NAME
-function(lg x RESULT_NAME)
+# returns result in a VAR whose name is in result
+function(lg x result)
     set(lg_result 0)
     while (${x} GREATER 1)
         math(EXPR lg_result "${lg_result} + 1")
         math(EXPR x "${x} / 2")
     endwhile ()
-    set(${RESULT_NAME} ${lg_result} PARENT_SCOPE)
+    set(${result} ${lg_result} PARENT_SCOPE)
 endfunction()
 
 ##############################################################################
@@ -65,20 +65,14 @@ endfunction()
 ##############################################################################
 # Generate public symbols list
 function(GeneratePublicSymbolsList public_sym_list mangling_map symbol_prefix output_file)
-    set(JEMALLOC_RENAME_HDR "${PROJECT_BINARY_DIR}/include/jemalloc/jemalloc_rename.h")
-    set(JEMALLOC_MANGLE_HDR "${PROJECT_BINARY_DIR}/include/jemalloc/jemalloc_mangle.h")
-    set(JEMALLOC_MANGLE_JET_HDR "${PROJECT_BINARY_DIR}/include/jemalloc/jemalloc_mangle_jet.h")
-
-    # If requested file already exists, don't rebuild it!
-    # Note: this means if you update the ingput public_sym_list, the result
-    # won't show up until you manually deelete ${output_file}
+    # Re-generate headers when the root CMakeLists.txt file changes beacuse
+    # the input to this function is a static list of function names.
     if(EXISTS "${output_file}" AND
-            ${output_file} IS_NEWER_THAN ${JEMALLOC_RENAME_HDR} AND
-            ${output_file} IS_NEWER_THAN ${JEMALLOC_MANGLE_HDR} AND
-            ${output_file} IS_NEWER_THAN ${JEMALLOC_MANGLE_JET_HDR})
+        ("${output_file}" IS_NEWER_THAN "${PROJECT_SOURCE_DIR}/CMakeLists.txt"))
         return()
     endif()
 
+    # message("Generating public symbols list... ${output_file}")
     file(REMOVE "${output_file}")
 
     # First remove from public symbols those that appear in the mangling map
@@ -89,16 +83,23 @@ function(GeneratePublicSymbolsList public_sym_list mangling_map symbol_prefix ou
             list(REMOVE_ITEM  public_sym_list ${sym})
             file(APPEND "${output_file}" "${map_entry}\n")
         endforeach()
-    endif()  
+    endif()
 
     foreach(pub_sym ${public_sym_list})
         file(APPEND "${output_file}" "${pub_sym}:${symbol_prefix}${pub_sym}\n")
     endforeach()
 
+    set(JEMALLOC_RENAME_HDR
+        "${PROJECT_BINARY_DIR}/include/jemalloc/jemalloc_rename.h")
+    set(JEMALLOC_MANGLE_HDR
+        "${PROJECT_BINARY_DIR}/include/jemalloc/jemalloc_mangle.h")
+    set(JEMALLOC_MANGLE_JET_HDR
+        "${PROJECT_BINARY_DIR}/include/jemalloc/jemalloc_mangle_jet.h")
+
     # Generate files depending on symbols list
     GenerateJemallocRename("${PUBLIC_SYM_FILE}"
                            "${JEMALLOC_RENAME_HDR}")
-    GenerateJemallocMangle("${PUBLIC_SYM_FILE}" ${je_}
+    GenerateJemallocMangle("${PUBLIC_SYM_FILE}" ${symbol_prefix}
                            "${JEMALLOC_MANGLE_HDR}")
 
     # Needed for tests
@@ -131,7 +132,7 @@ function(GenerateJemallocMangle public_sym_list symbol_prefix output_file)
     file(STRINGS "${public_sym_list}" INPUT_STRINGS)
 
     foreach(line ${INPUT_STRINGS})
-        string(REGEX REPLACE "([^ \t]*):[^ \t]*" "#  define \\1 ${symbol_prefix}\\1" output ${line})      
+        string(REGEX REPLACE "([^ \t]*):[^ \t]*" "#  define \\1 ${symbol_prefix}\\1" output ${line})
         file(APPEND "${output_file}" "${output}\n")
     endforeach()
 
@@ -148,7 +149,7 @@ function(GenerateJemallocMangle public_sym_list symbol_prefix output_file)
         )
 
     foreach(line ${INPUT_STRINGS})
-        string(REGEX REPLACE "([^ \t]*):[^ \t]*" "#  undef ${symbol_prefix}\\1" output ${line})      
+        string(REGEX REPLACE "([^ \t]*):[^ \t]*" "#  undef ${symbol_prefix}\\1" output ${line})
         file(APPEND "${output_file}" "${output}\n")
     endforeach()
 
@@ -160,7 +161,7 @@ endfunction()
 # Generate jemalloc_rename.h per jemalloc_rename.sh
 function(GenerateJemallocRename public_sym_list_file file_path)
     if(EXISTS "${file_path}" AND
-	   "${file_path}" IS_NEWER_THAN "${public_sym_list_file}")
+       "${file_path}" IS_NEWER_THAN "${public_sym_list_file}")
         return()
     endif()
 
@@ -170,7 +171,7 @@ function(GenerateJemallocRename public_sym_list_file file_path)
         " * --with-jemalloc-prefix.  With" "default settings the je_" "prefix is stripped by\n"
         " * these macro definitions.\n"
         " */\n#ifndef JEMALLOC_NO_RENAME\n\n"
-        )
+    )
 
     file(STRINGS "${public_sym_list_file}" INPUT_STRINGS)
     foreach(line ${INPUT_STRINGS})
@@ -181,29 +182,33 @@ function(GenerateJemallocRename public_sym_list_file file_path)
     # Footer
     file(APPEND "${file_path}"
         "#endif\n"
-        )
+    )
 endfunction()
 
 ##############################################################################
 # Create a jemalloc.h header by concatenating the following headers
 # Mimic processing from jemalloc.sh
 function(CreateJemallocHeader pubsyms header_list output_file)
-    if(EXISTS "${output_file}")
-    foreach(pub_hdr ${header_list})
-        set(HDR_PATH "${PROJECT_BINARY_DIR}/include/jemalloc/${pub_hdr}")
-        if(EXISTS "${HDR_PATH}" AND
-                "${HDR_PATH}" IS_NEWER_THAN "${output_file}")
-            # If header is newer than created header, re-create header.
-            break()
-        endif()
+    if(EXISTS "${output_file}" AND
+        ("${output_file}" IS_NEWER_THAN "${PROJECT_BINARY_DIR}/CMakeCache.txt"))
+        foreach(pub_hdr ${header_list})
+            set(GENERATED_HDR_PATH
+                "${PROJECT_BINARY_DIR}/include/jemalloc/${pub_hdr}")
+            if(EXISTS "${GENERATED_HDR_PATH}" AND
+                    "${GENERATED_HDR_PATH}" IS_NEWER_THAN "${output_file}")
+                # If source header is newer than generated header, re-create.
+                # message(STATUS "${GENERATED_HDR_PATH} NEWER THAN ${output_file}")
+                break()
+            endif()
 
-        # If we get here, then the generated pub_header is newer than all
-        # source headers, so we don't need to regenerate it.
-        return()
-    endforeach()
+            # message("Not updating ${output_file}")
+            # If we get here, then the generated pub_header is newer than all
+            # source headers, so we don't need to regenerate it.
+            return()
+        endforeach()
     endif()
 
-    message(STATUS "Generating API header ${output_file}")
+    # message(STATUS "Generating API header ${output_file} with ${jemalloc_version}")
 
     file(TO_NATIVE_PATH "${output_file}" ntv_output_file)
 
@@ -231,17 +236,20 @@ function(CreateJemallocHeader pubsyms header_list output_file)
         "}\n"
         "#endif\n"
         "#endif /* JEMALLOC_H_ */\n"
-        )
+    )
 endfunction()
 
 ##############################################################################
 # Redefines public symbols prefxied with je_ via a macro
 # Based on public_namespace.sh which echoes the result to a stdout
 function(PublicNamespace public_sym_list_file output_file)
-    if(EXISTS ${output_file})
+    if(EXISTS "${output_file}" AND
+        ("${output_file}" IS_NEWER_THAN "${public_sym_list_file}"))
         return()
     endif()
 
+    # message(STATUS "Generating public namespace... ${output_file} ${public_sym_list_file}")
+    file(REMOVE "${output_file}")
     file(STRINGS "${public_sym_list_file}" INPUT_STRINGS)
     foreach(line ${INPUT_STRINGS})
         string(REGEX REPLACE "([^ \t]*):[^ \t]*" "#define    je_\\1 JEMALLOC_N(\\1)" output ${line})
@@ -253,10 +261,12 @@ endfunction()
 # #undefs public je_prefixed symbols
 # Based on public_unnamespace.sh which echoes the result to a stdout
 function(PublicUnnamespace public_sym_list_file output_file)
-    if(EXISTS ${output_file})
+    if(EXISTS "${output_file}" AND
+       "${output_file}" IS_NEWER_THAN "${public_sym_list_file}")
         return()
     endif()
 
+    file(REMOVE "${output_file}")
     file(STRINGS "${public_sym_list_file}" INPUT_STRINGS)
     foreach(line ${INPUT_STRINGS})
         string(REGEX REPLACE "([^ \t]*):[^ \t]*" "#undef    je_\\1" output ${line})
@@ -269,11 +279,12 @@ endfunction()
 # Redefines a private symbol via a macro
 # Based on private_namespace.sh
 function(PrivateNamespace private_sym_list_file output_file)
-    if(EXISTS ${output_file} AND
-            ${output_file} IS_NEWER_THAN ${private_sym_list_file})
+    if(EXISTS "${output_file}" AND
+        "${output_file}" IS_NEWER_THAN "${private_sym_list_file}")
         return()
     endif()
 
+    file(REMOVE "${output_file}")
     file(STRINGS ${private_sym_list_file} INPUT_STRINGS)
     foreach(line ${INPUT_STRINGS})
         file(APPEND ${output_file} "#define    ${line} JEMALLOC_N(${line})\n")
@@ -284,6 +295,11 @@ endfunction()
 # Redefines a private symbol via a macro
 # Based on private_namespace.sh
 function(PrivateUnnamespace private_sym_list_file output_file)
+    if(EXISTS "${output_file}" AND
+        "${output_file}" IS_NEWER_THAN "${private_sym_list_file}")
+        return()
+    endif()
+
     file(REMOVE "${output_file}")
     file(STRINGS ${private_sym_list_file} INPUT_STRINGS)
     foreach(line ${INPUT_STRINGS})
@@ -298,7 +314,14 @@ endfunction()
 # ExpandDefine True/False if we want to process the file and expand
 # lines that start with #undef DEFINE into what is defined in CMAKE
 function(ConfigureFile file_path output_path ExpandDefine)
-    if(EXISTS ${output_path} AND ${output_path} IS_NEWER_THAN ${file_path})
+    # This looks hacky checking CMakeCache.txt because when we commit, the hash
+    # of experimental namespaced features changes, so we need to re-generate
+    # our output so symbols can be properly re-generated.
+    # Also, re-generate if the upstream CMakeLists.txt gets updated too.
+    if(EXISTS "${output_path}" AND
+        (("${output_path}" IS_NEWER_THAN "${file_path}") AND
+         ("${output_path}" IS_NEWER_THAN "${PROJECT_BINARY_DIR}/CMakeCache.txt") AND
+         ("${output_path}" IS_NEWER_THAN "${PROJECT_SOURCE_DIR}/CMakeLists.txt")))
         # If generated file is newer than source file, don't re-generate
         # Note: this means if ONLY variables change in CMake configurations,
         # the files are ALSO not regenerated. You'll need to erase your build/
@@ -308,9 +331,8 @@ function(ConfigureFile file_path output_path ExpandDefine)
     endif()
 
     file(REMOVE "${output_path}")
-
     # Convert autoconf .in files to .cmake files to generate proper .h files
-    if(EXISTS ${file_path})
+    if(EXISTS "${file_path}")
         get_filename_component(fname ${file_path} NAME)
         get_filename_component(oname ${output_path} NAME)
         if(NOT ${ExpandDefine})
@@ -338,16 +360,20 @@ endfunction()
 ##############################################################################
 ## Run Git and parse the output to populate version settings above
 function(GetAndParseVersion)
-    if (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+    # This runs every time CMake re-runs because we don't have
+    # an easy check for "only run after a new git commit happens"
+    if (GIT_FOUND AND (EXISTS "${PROJECT_SOURCE_DIR}/.git"))
         execute_process(COMMAND ${GIT_EXECUTABLE}
             describe --long --abbrev=40
             HEAD
             WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
             OUTPUT_VARIABLE jemalloc_version)
 
-        # Figure out version components    
         string (REPLACE "\n" "" jemalloc_version  ${jemalloc_version})
+
+        # Figure out version components
         set(jemalloc_version ${jemalloc_version} PARENT_SCOPE)
+
         #        message(STATUS "Version is ${jemalloc_version}")
 
         # replace in this order to get a valid cmake list

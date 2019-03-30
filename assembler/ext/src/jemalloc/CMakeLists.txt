@@ -1,21 +1,21 @@
-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
-# Require CMake >= 3.0 for check_c_compiler_flag support
+cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 
 project(jemalloc C CXX)
 
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-include(CTest)
-
+# Order of includes matters here. Modify at your own risk.
 include(${PROJECT_SOURCE_DIR}/build-aux/Utilities.cmake)
 include(${PROJECT_SOURCE_DIR}/build-aux/GetSystemSizes.cmake)
 include(${PROJECT_SOURCE_DIR}/build-aux/GetSystemAddrBits.cmake)
 include(${PROJECT_SOURCE_DIR}/build-aux/DetectOSFeatures.cmake) # 1
 include(${PROJECT_SOURCE_DIR}/build-aux/DetectCompilerFeatures.cmake) # 2
 
+# Tell CMake where to find default headers:
 include_directories(${PROJECT_SOURCE_DIR}/include)
+
+# Also tell CMake where to find out-of-source generated headers:
 include_directories(${PROJECT_BINARY_DIR}/include)
 include_directories(${PROJECT_BINARY_DIR}/include/jemalloc)
 
@@ -25,50 +25,28 @@ include(${PROJECT_SOURCE_DIR}/build-aux/UserCompileOptions.cmake)
 # Enable smallocx by default too
 set(JEMALLOC_EXPERIMENTAL_SMALLOCX_API 1)
 
-# install_prefix - installation directory prefix
-# with-xslroot=<path>  XSL stylesheet root path
-
-# Installation
-# Munge install path variables.
-# All of these can simply we be passed as
-# Cmake arguments
-if(NOT install_prefix)
-    set(install_prefix "/usr/local")
-endif()
-
-# We do not support exec_prefix until we find it is necessary
-if(NOT exec_prefix)
-    set(exec_prefix ${install_prefix})
-endif()
-
-set(PREFIX ${install_prefix})
-
-if(enable-prefixed-jemalloc-library)
-    set(with-jemalloc-prefix ON)
-endif()
-
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
 # If user's compiler supports compileFlag, add it to our build settings
-macro(setCompileFlag compileFlag)
-	# We have to remove all dashes and equals because the test
-    # addes defines of -D${flag}, so obviously when a flag has dashes and
+function(setCompileFlag compileFlag)
+    # We have to remove all dashes and equals because the test
+    # adds defines of -D${flag}, so obviously when a flag has dashes and
     # equals the set won't work (like #define -std=gnu11).
     # So we use the built-in C-conforming generator to fix our input.
-    # 
+    #
     # Sadly, this makes some configure output ugly because CMake doesn't
     # translate anything until build time (also check_c_compiler_flag doesn't
     # have an option for an alternative pretty print string).
     # Alternatively, manually replace bad characters with with:
-    #	string(REGEX REPLACE "^-|=|-" "" removeDashEQ ${compileFlag})
-    set(removeDashEQ $<MAKE_C_IDENTIFIER:${compileFlag}>)
+    #    string(REGEX REPLACE "^-|=|-" "" removeDashEQ ${compileFlag})
+    string(MAKE_C_IDENTIFIER ${compileFlag} removeDashEQ)
     check_c_compiler_flag(${compileFlag} ${removeDashEQ})
 
-	if(${removeDashEQ})
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${compileFlag}")
-	endif()
-endmacro()
+    if(${removeDashEQ})
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${compileFlag}" PARENT_SCOPE)
+    endif()
+endfunction()
 
 setCompileFlag("-std=gnu11")
 
@@ -84,22 +62,23 @@ setCompileFlag("-g3")
 
 setCompileFlag("-O3")
 setCompileFlag("-funroll-loops")
-setCompileFlag("-D_GNU_SOURCE")
+
+add_definitions(-D_GNU_SOURCE)
 
 # If we can't be gnu11 for some reason, try gnu99 instead
 if(NOT (${CMAKE_C_FLAGS} MATCHES "std=gnu11"))
-	setCompileFlag("-std=gnu99")
+    setCompileFlag("-std=gnu99")
 endif()
 
 # If we are gnu11 or gnu99, we know we can use restrict/__restrict__
 if((${CMAKE_C_FLAGS} MATCHES "std=gnu11") OR
    (${CMAKE_C_FLAGS} MATCHES "std=gnu99"))
-	set(JEMALLOC_HAS_RESTRICT 1)
+    set(JEMALLOC_HAS_RESTRICT 1)
 endif()
 
 # Ask clang to not complain about clearly okay things
 if(CMAKE_C_COMPILER_ID MATCHES "Clang")
-	setCompileFlag("-Wno-tautological-pointer-compare")
+    setCompileFlag("-Wno-tautological-pointer-compare")
 endif()
 
 # Check for C++14 support too
@@ -121,9 +100,9 @@ else()
     endif()
 endif()
 
-if(JEMALLOC_VERSION)
+if(JEMALLOC_VERSION_USER)
     # If user requested specific version number, use directly
-    set(jemalloc_version ${JEMALLOC_VERSION})
+    set(jemalloc_version ${JEMALLOC_VERSION_USER})
 else()
     # else, introspect the current git repo to find numbers and hashes
     set(jemalloc_version "0.0.0-0-g0000000000000000000000000000000000000000")
@@ -134,6 +113,8 @@ else()
     set(jemalloc_version_gid "0")
 
     find_package(Git)
+
+    # GetAndParseVersion() populates jemalloc_version when it returns
     GetAndParseVersion()
 endif()
 
@@ -144,54 +125,57 @@ if(with-mangling)
     string(REPLACE "," ";" MANGLING_MAP  ${with-mangling})
 endif()
 
-# Set the default API prefix for public
-# Need quotes so the preprocessor concats two strings
-set(JEMALLOC_PREFIX "\"je_\"")
-set(je_ je_) # in-header prefix for je_blahblah
-
-if(with-jemalloc-prefix)
-    set(JEMALLOC_PREFIX ${JEMALLOC_PREFIX})
-    set(JEMALLOC_PRIVATE_NAMESPACE ${JEMALLOC_PREFIX})
-endif()
-
-# Uppercase copy of the JEMALLOC_PREFIX
+# JEMALLOC_PREFIX needs two forms for building:
+# JEMALLOC_PREFIX itself is a quoted string: "\"je_\""
+# but ALSO the headers use 'je_' as a non-quoted string for
+# appending to other symbols directly (and we also use it for
+# this purpose and for generating prefixed filenames)
 if(JEMALLOC_PREFIX)
-    string(TOUPPER ${JEMALLOC_PREFIX} JEMALLOC_CPREFIX)
+    string(REPLACE "\"" "" je_ ${JEMALLOC_PREFIX})
+else()
+    set(je_ "je_")
 endif()
 
-# Disable exporting jemalloc public APIs
-# We need to define the var to whitespace string
-# as empty strings will not be defined in CMake
-# Non-empty definition is necessary so
-if(without-export)
-    set(JEMALLOC_EXPORT " ")
+include(CheckFunctionExists)
+# function: a function name
+# collection: if `function` exists, list for appending function names
+# enableOverride: variable created when `function` exists
+macro(checkFunctionAppendSyms function collection enableOverride)
+    check_function_exists(${function} exists-${function})
+    if(exists-${function})
+        list(APPEND ${collection} ${function})
+        set(${enableOverride} 1)
+    endif()
+endmacro()
+
+if(NOT JEMALLOC_PREFIX)
+    # if no prefix, wrap native allocator functions
+    checkFunctionAppendSyms(__libc_calloc wrap_syms
+        JEMALLOC_OVERRIDE___LIBC_CALLOC)
+    checkFunctionAppendSyms(__libc_free wrap_syms
+        JEMALLOC_OVERRIDE___LIBC_FREE)
+    checkFunctionAppendSyms(__libc_malloc wrap_syms
+        JEMALLOC_OVERRIDE___LIBC_MALLOC)
+    checkFunctionAppendSyms(__libc_memalign wrap_syms
+        JEMALLOC_OVERRIDE___LIBC_MEMALIGN)
+    checkFunctionAppendSyms(__libc_realloc wrap_syms
+        JEMALLOC_OVERRIDE___LIBC_REALLOC)
+    checkFunctionAppendSyms(__libc_valloc wrap_syms
+        JEMALLOC_OVERRIDE___LIBC_VALLOC)
+    checkFunctionAppendSyms(__libc_posix_memalign wrap_syms
+        JEMALLOC_OVERRIDE___POSIX_MEMALIGN)
+
+    if(JEMALLOC_GLIBC_MALLOC_HOOK)
+        list(APPEND wrap_syms __free_hook __malloc_hook __realloc_hook)
+    endif()
+
+    if(has_memalign_hook AND NOT JEMALLOC_PREFIX)
+        set(JEMALLOC_GLIBC_MEMALIGN_HOOK 1)
+        list(APPEND wrap_syms __memalign_hook)
+    endif()
 endif()
 
-if(with-install-suffix)
-    set(INSTALL_SUFFIX ${with-install-suffix})
-    set(install_suffix ${with-install-suffix})
-endif()
-
-# Build debugging code (implies --enable-ivsalloc)
-if(enable-debug)
-    set(JEMALLOC_DEBUG 1)
-endif()
-
-set(JEMALLOC_PREFIX_JET jet_)
-
-# Support xmalloc option
-set(JEMALLOC_XMALLOC 0)
-if(enable-xmalloc)
-    set(JEMALLOC_XMALLOC 1)
-endif()
-
-# Support cache-oblivious allocation alignment by default.
-# If defined, explicitly attempt to more uniformly distribute large allocation
-# pointer alignments across all cache indices.
-set(JEMALLOC_CACHE_OBLIVIOUS 1)
-if(disable-cache-oblivious)
-    set(JEMALLOC_CACHE_OBLIVIOUS 0)
-endif()
+set(JEMALLOC_PREFIX_JET "jet_")
 
 # Base 2 log of minimum tiny size class to support
 set(LG_TINY_MIN 3)
@@ -209,51 +193,7 @@ set(LG_QUANTA "3 4")
 #set(LG_QUANTUM ${LG_QUANTA})
 #endif()
 
-# Base 2 log of system page size
-
-if(with-lg-page)
-    set(LG_PAGE ${with-lg-page})
-endif()
-
-# Base 2 logs of system page sizes to support
-set(LG_PAGE_SIZES ${LG_PAGE})
-if(with-lg-page-sizes)
-    string(REPLACE "," ";" LG_PAGE_SIZES  ${with-lg-page-sizes})
-endif()
-
-# Base 2 log of size classes per doubling
-set(LG_SIZE_CLASS_GROUP 2)
-if(with-lg-size-class-group)
-    set(LG_SIZE_CLASS_GROUP ${with-lg-size-class-group})
-endif()
-
-set(JEMALLOC_HAVE_ISSETUGID 0)
-set(JEMALLOC_MALLOC_THREAD_CLEANUP 0)
-
-set(JEMALLOC_MUTEX_INIT_CB 0)
-
 ##############################################################################
-# enable-lazy-lock
-set(JEMALLOC_LAZY_LOCK 0)
-if(NOT enable-lazy-lock)
-    if(force_lazy_lock)
-        message(STATUS "Forcing lazy-lock to avoid allocator/threading bootstrap issues")
-        set(enable-lazy-lock ON)
-    endif()
-endif()
-
-if(enable-lazy-lock)
-    if(${abi} STREQUAL "pecoff")
-        message(STATUS "Forcing no lazy-lock because thread creation monitoring is unimplemented")
-        set(enable-lazy-lock OFF)
-    endif()
-endif()
-
-if(enable-lazy-lock)
-endif()
-
-##############################################################################
-
 # On linux, can detect by parsing :
 # hpsk=`cat /proc/meminfo 2>/dev/null | \
 #          grep -e '^Hugepagesize:[[:space:]]\+[0-9]\+[[:space:]]kB$' | \
@@ -261,9 +201,6 @@ endif()
 # then adding 1 to the result
 set(LG_HUGEPAGE 21)
 
-##############################################################################
-# Generate configured public headers for concatenation
-# Public Headers in for configuring
 set(PUBLIC_SYM
     aligned_alloc
     calloc
@@ -288,16 +225,23 @@ set(PUBLIC_SYM
     valloc
 )
 
+checkFunctionAppendSyms(memalign PUBLIC_SYM JEMALLOC_OVERRIDE_MEMALIGN)
+checkFunctionAppendSyms(valloc PUBLIC_SYM JEMALLOC_OVERRIDE_VALLOC)
+
 if(JEMALLOC_SMALLOCX_ENABLE)
-    list(APPEND PUBLIC_SYM
-        smallocx_${jemalloc_version_gid}
-    )
+    list(APPEND PUBLIC_SYM smallocx_${jemalloc_version_gid})
 endif()
 
 # Generate prefixed symbol names for awk nm extractors
 foreach(sym ${PUBLIC_SYM})
     list(APPEND PREFIXED_JE  "${je_}${sym}")
     list(APPEND PREFIXED_JET "jet_${sym}")
+endforeach()
+
+# system API overrides (these don't get prefixed)
+foreach(sym ${wrap_syms})
+    list(APPEND PREFIXED_JE  "${sym}")
+    list(APPEND PREFIXED_JET "${sym}")
 endforeach()
 
 macro(createSymbolsAwk end syms)
@@ -310,9 +254,12 @@ add_custom_command(
     ${syms}
     >
     "${PROJECT_BINARY_DIR}/include/jemalloc/internal/private_symbols${end}.awk"
-    DEPENDS
-    "${PROJECT_SOURCE_DIR}/include/jemalloc/internal/private_symbols.sh"
     VERBATIM
+    # Add a depends on the source file itself because ${syms} is a static list
+    # of function names defined here in CMakeLists.txt, so we can't tell the
+    # input to this command is newer than the output file or not.
+    DEPENDS
+    "${PROJECT_SOURCE_DIR}/CMakeLists.txt"
 )
 endmacro()
 
@@ -327,6 +274,7 @@ add_custom_target(jemalloc-private-symbols-awk-jet DEPENDS
 
 set(PUBLIC_SYM_FILE
     "${PROJECT_BINARY_DIR}/include/jemalloc/internal/public_symbols.txt")
+
 GeneratePublicSymbolsList(
     "${PUBLIC_SYM}"
     "${MANGLING_MAP}"
@@ -343,7 +291,8 @@ endforeach()
 
 # Generate main public header
 set(JEMALLOC_HDR
-    "${PROJECT_BINARY_DIR}/include/jemalloc/jemalloc${install_suffix}.h")
+    "${PROJECT_BINARY_DIR}/include/jemalloc/jemalloc${install_suffix}.h"
+    CACHE INTERNAL "jemalloc public header")
 
 # These are headers compiled by jemalloc.sh
 set(JEMALLOC_HDR_LIST
@@ -381,16 +330,16 @@ foreach(internal_in jemalloc_internal_defs.h)
 endforeach()
 
 # Headers for test running
-#ConfigureFile(
-#    "${PROJECT_SOURCE_DIR}/test/include/test/jemalloc_test_defs.h.in"
-#    "${PROJECT_BINARY_DIR}/test/include/test/jemalloc_test_defs.h" True)
+ConfigureFile(
+    "${PROJECT_SOURCE_DIR}/test/include/test/jemalloc_test_defs.h.in"
+    "${PROJECT_BINARY_DIR}/test/include/test/jemalloc_test_defs.h" True)
 
-#ConfigureFile(
-#    "${PROJECT_SOURCE_DIR}/test/include/test/jemalloc_test.h.in"
-#    "${PROJECT_BINARY_DIR}/test/include/test/jemalloc_test.h" False)
+ConfigureFile(
+    "${PROJECT_SOURCE_DIR}/test/include/test/jemalloc_test.h.in"
+    "${PROJECT_BINARY_DIR}/test/include/test/jemalloc_test.h" False)
 
 # Use jet_ generate protos_jet
-set(je_ jet_)
+set(je_ "jet_")
 
 # replace prefix only
 ConfigureFile(
@@ -398,45 +347,24 @@ ConfigureFile(
     "${PROJECT_BINARY_DIR}/include/jemalloc/jemalloc_protos_jet.h" True)
 
 # revert
-set(je_ je_)
+if(JEMALLOC_PREFIX)
+    string(REPLACE "\"" "" je_ ${JEMALLOC_PREFIX})
+else()
+    set(je_ "je_")
+endif()
 
+# Enable testing when in Debug mode
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-    set(enable-prefixed-jemalloc-library ON)
     include_directories(${PROJECT_BINARY_DIR}/test/include)
-endif()
-
-# TODO: all of these variables need to be refactored (here and src/ and test/).
-# All these things are from the original jemalloc-cmake repo which had
-# some oddities we are still trying to flush out.
-if(enable-prefixed-jemalloc-library)
-    # jet builds use header in jemalloc/internal binary path
     include_directories(${PROJECT_BINARY_DIR}/include/jemalloc/internal)
-    set(C_JETLIB_DEFS "JEMALLOC_JET")
 
-    set(C_UTIL_INTEGRATION_DEFS "")
-    set(C_TESTLIB_INTEGRATION_DEFS "JEMALLOC_INTEGRATION_TEST")
-    set(C_TESTLIB_INTEGRATION ${PROJECT_NAME}IntegrationTest${install_suffix})
-
-    set(C_TESTLIB_UNIT_DEFS "JEMALLOC_UNIT_TEST")
-    set(C_TESTLIB_STRESS_DEF "JEMALLOC_STRESS_TEST;JEMALLOC_STRESS_TESTLIB")
-    set(C_TESTLIB_STRESS ${PROJECT_NAME}TestStress${install_suffix})
-
-    set(C_UNITETEST_DEFS "JEMALLOC_UNIT_TEST")
-
-    if(with-jemalloc-prefix)
-        set(C_JETLIB_DEFS  "${C_JETLIB_DEFS};JEMALLOC_MANGLE")
-        set(C_UTIL_INTEGRATION_DEFS
-            "${C_UTIL_INTEGRATION_DEFS};JEMALLOC_MANGLE")
-    endif()
-endif()
-
-if(CMAKE_BUILD_TYPE MATCHES Debug)
+    include(CTest)
     enable_testing()
 
-    # check target is scoped with -jemalloc because when jemalloc
+    # check target is scoped with jemalloc- because when jemalloc
     # is included as cmake dependency in other projects, we don't
     # want to conflict with any other 'check' targets
-    add_custom_target(check-jemalloc COMMAND ${CMAKE_CTEST_COMMAND})
+    add_custom_target(${PROJECT_NAME}-check COMMAND ${CMAKE_CTEST_COMMAND})
 
     add_subdirectory(test)
 endif()

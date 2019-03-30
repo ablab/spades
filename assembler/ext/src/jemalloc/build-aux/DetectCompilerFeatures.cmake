@@ -1,31 +1,56 @@
 # This file configures features based on compiler and library availability
-include(CheckFunctionExists)
+include(CheckLibraryExists)
 include(CheckSymbolExists)
+include(CheckFunctionExists)
+
 include(CheckCCompilerFlag)
 include(CheckCSourceCompiles)
 include(CheckCSourceRuns)
+
 include(CheckIncludeFiles)
+
 include(TestBigEndian)
 
 check_include_files(alloca.h JEMALLOC_HAS_ALLOCA_H)
 
+check_library_exists(m log "math.h" has_libm)
+
+check_include_files("pthread.h" has_pthread_h)
+if(has_pthread_h)
+    set(JEMALLOC_HAVE_PTHREAD 1)
+    check_library_exists(pthread pthread_create "pthread.h" has_libpthread)
+    if(NOT has_libpthread)
+        check_library_exists(c pthread_create "pthread.h" has_libc_pthread)
+        if(NOT has_libc_pthread)
+            message(WARNING "libpthread is missing")
+            unset(JEMALLOC_HAVE_PTHREAD)
+        endif()
+    endif()
+
+    if(JEMALLOC_HAVE_PTHREAD)
+        list(APPEND wrap_syms pthread_create)
+    endif()
+else()
+    message(WARNING "pthread.h is missing")
+endif()
+
 # Whether malloc_usable_size definition can use const argument
-check_include_files(malloc.h HAVE_MALLOC_H)
-set(JEMALLOC_USABLE_SIZE_CONST const)
-if(HAVE_MALLOC_H)
+check_include_files(malloc.h has_malloc_h)
+set(JEMALLOC_USABLE_SIZE_CONST " ")
+if(has_malloc_h)
     set(CMAKE_REQUIRED_FLAGS "-Werror -Wall -Wextra -std=gnu11")
-    check_c_source_compiles("#include <malloc.h>
+    check_c_source_compiles("
+    #include <malloc.h>
     #include <stddef.h>
     size_t malloc_usable_size(const void *ptr);
     int main(void) {
         return 0;
-    }" HAVE_MALLOC_H_CONST)
+    }" malloc_usable_size_const)
 
-    if (HAVE_MALLOC_H_CONST)
+    if (malloc_usable_size_const)
         set(JEMALLOC_USABLE_SIZE_CONST const)
-    else()
-        set(JEMALLOC_USABLE_SIZE_CONST " ")
     endif()
+
     set(CMAKE_REQUIRED_FLAGS)
 endif()
 
@@ -38,11 +63,12 @@ int main() {
     foo();
     return 0;
 }" JEMALLOC_HAVE_ATTR)
-if(JEMALLOC_HAVE_ATTR)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
-endif()
-
+# configure.ac has a section I don't see the relevance of here:
+#   if test "x${GCC}" = "xyes" -a "x${abi}" = "xelf"; then
+#    JE_CFLAGS_ADD([-fvisibility=hidden])
+#    JE_CXXFLAGS_ADD([-fvisibility=hidden])
+#  fi
+# If those conditions are still necessary, re-implement here too.
 check_c_source_compiles("
 int main(void) {
     static __thread int __attribute__((tls_model(\"initial-exec\"), unused)) f;
@@ -55,16 +81,22 @@ else()
     set(JEMALLOC_TLS_MODEL " ")
 endif()
 
-check_c_source_compiles("#include <stdlib.h>
-void *foo(size_t size) __attribute__((alloc_size(1))) {
-    return NULL;
-}
-int main() {
-    (void)foo(100);
+check_c_source_compiles("
+#include <stdlib.h>
+void *foo(size_t size) __attribute__((alloc_size(1)));
+int main(void) {
     return 0;
 }" JEMALLOC_HAVE_ATTR_ALLOC_SIZE)
 
-check_c_source_compiles("#include <stdlib.h>
+check_c_source_compiles("
+#include <stdlib.h>
+void *foo(const char *format, ...) __attribute__((format(gnu_printf, 1, 2)));
+int main(void) {
+    return 0;
+}" JEMALLOC_HAVE_ATTR_FORMAT_GNU_PRINTF)
+
+check_c_source_compiles("
+#include <stdlib.h>
 void *foo(const char *format, ...) __attribute__((format(printf, 1, 2)));
 __attribute__((format(printf, 1, 2))) void *foo(const char *format, ...) {
     return (void *)format;
@@ -74,56 +106,73 @@ int main() {
     return 0;
 }" JEMALLOC_HAVE_ATTR_FORMAT_PRINTF)
 
-check_c_source_compiles("#include <stdlib.h>
+check_c_source_compiles("
+#include <stddef.h>
 int main() {
     void *restrict abc = NULL;
     (void)abc;
     return 0;
 }" JEMALLOC_HAS_RESTRICT)
 
-check_c_source_compiles("#include <time.h>
+# clock_gettime() moved from librt to libc in glibc 2.17 (2012-12-25),
+# but for backwards compat, still look inside librt.
+check_library_exists(rt clock_gettime "time.h" clock_gettime_in_librt)
+if(clock_gettime_in_librt)
+    set(CMAKE_REQUIRED_LIBRARIES "-lrt")
+endif()
+check_c_source_runs("
+#include <unistd.h>
+/* _POSIX_MONOTONIC_CLOCK is one of: -1, 0, or 200809.
+ * -1 indicates the facility isn't reliable and shouldn't be trusted. */
+#if !defined(_POSIX_MONOTONIC_CLOCK) || _POSIX_MONOTONIC_CLOCK < 0
+#error _POSIX_MONOTONIC_CLOCK missing/invalid
+#endif
+
+#include <time.h>
 int main(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return 0;
 }" JEMALLOC_HAVE_CLOCK_MONOTONIC)
 
-check_c_source_compiles("#include <time.h>
+check_c_source_runs("
+#include <time.h>
 int main(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
     return 0;
 }" JEMALLOC_HAVE_CLOCK_MONOTONIC_COARSE)
+set(CMAKE_REQUIRED_FLAGS)
+set(CMAKE_REQUIRED_LIBRARIES)
 
-check_c_source_compiles("#include <mach/mach_time.h>
+check_c_source_compiles("
+#include <mach/mach_time.h>
 int main(void) {
     mach_absolute_time();
     return 0;
 }" JEMALLOC_HAVE_MACH_ABSOLUTE_TIME)
 
-check_c_source_compiles("#include <stdlib.h>
-#include <stdio.h>
+check_c_source_runs("
+#include <assert.h>
 #include <strings.h>
-#include <string.h>
 int main() {
     int rv = __builtin_ffsl(0x08);
-    printf(\"%d\", rv);
-    return !(rv == 4);
+    assert(rv == 4);
+    return 0;
 }" HAS_BUILTIN_FFSL)
 
 if(HAS_BUILTIN_FFSL)
-    set(JEMALLOC_INTERNAL_FFSLL "__builtin_ffsll")
-    set(JEMALLOC_INTERNAL_FFSL "__builtin_ffsl")
-    set(JEMALLOC_INTERNAL_FFS "__builtin_ffs")
+    set(JEMALLOC_INTERNAL_FFSLL __builtin_ffsll)
+    set(JEMALLOC_INTERNAL_FFSL __builtin_ffsl)
+    set(JEMALLOC_INTERNAL_FFS __builtin_ffs)
 else()
-    check_c_source_compiles("#include <stdlib.h>
-    #include <stdio.h>
+    check_c_source_runs("
+    #include <assert.h>
     #include <strings.h>
-    #include <string.h>
     int main() {
         int rv = ffsl(0x08);
-        printf(\"%d\", rv);
-        return !(rv == 4);
+        assert(rv == 4);
+        return 0);
     }" HAS_FFSL)
 
     if(HAS_FFSL)
@@ -136,18 +185,43 @@ else()
 endif()
 set(CMAKE_REQUIRED_FLAGS)
 
-check_function_exists(memalign JEMALLOC_OVERRIDE_MEMALIGN)
-check_function_exists(valloc JEMALLOC_OVERRIDE_VALLOC)
-check_function_exists(secure_getenv JEMALLOC_HAVE_SECURE_GETENV)
-check_function_exists(sched_getcpu JEMALLOC_HAVE_SCHED_GETCPU)
-check_function_exists(sched_setaffinity JEMALLOC_HAVE_SCHED_SETAFFINITY)
-check_function_exists(issetugid JEMALLOC_HAVE_ISSETUGID)
+check_c_source_compiles("
+int main(void) {
+    __builtin_popcount(0x08);
+    return 0;
+}" JEMALLOC_INTERNAL_POPCOUNT)
+if(JEMALLOC_INTERNAL_POPCOUNT)
+    set(JEMALLOC_INTERNAL_POPCOUNT __builtin_popcount)
+endif()
 
-# If set, implies force_tls=1 AND should append wrap_syms _malloc_thread_cleanup
+check_c_source_compiles("
+int main(void) {
+    __builtin_popcountl(0x08);
+    return 0;
+}" JEMALLOC_INTERNAL_POPCOUNTL)
+if(JEMALLOC_INTERNAL_POPCOUNTL)
+    set(JEMALLOC_INTERNAL_POPCOUNTL __builtin_popcountl)
+endif()
+
+set(CMAKE_REQUIRED_FLAGS "-D_GNU_SOURCE")
+check_symbol_exists(memalign "stdlib.h" JEMALLOC_OVERRIDE_MEMALIGN)
+check_symbol_exists(valloc "stdlib.h" JEMALLOC_OVERRIDE_VALLOC)
+check_symbol_exists(secure_getenv "stdlib.h" JEMALLOC_HAVE_SECURE_GETENV)
+check_symbol_exists(sched_getcpu "sched.h" JEMALLOC_HAVE_SCHED_GETCPU)
+check_symbol_exists(sched_setaffinity "sched.h" JEMALLOC_HAVE_SCHED_SETAFFINITY)
+check_symbol_exists(issetugid "unistd.h" JEMALLOC_HAVE_ISSETUGID)
+set(CMAKE_REQUIRED_FLAGS)
+
 check_function_exists(_malloc_thread_cleanup JEMALLOC_MALLOC_THREAD_CLEANUP)
+if(JEMALLOC_MALLOC_THREAD_CLEANUP)
+    set(force_tls YES)
+    list(APPEND wrap_syms _malloc_thread_cleanup)
+endif()
 
-# If set, should wrap_syms _malloc_prefork _malloc_postfork
 check_function_exists(_pthread_mutex_init_calloc_cb JEMALLOC_MUTEX_INIT_CB)
+if(JEMALLOC_MUTEX_INIT_CB)
+    list(APPEND wrap_syms _malloc_prefork _malloc_postfork)
+endif()
 
 if(NOT SBRK_DEPRECATED)
     set(JEMALLOC_DSS 1)
@@ -247,8 +321,10 @@ int main(void) {
     if (__free_hook && ptr) __free_hook(ptr);
     return 0;
 }" JEMALLOC_GLIBC_MALLOC_HOOK)
-# if no JEMALLOC_PREFIX,
-# needs wrap syms  __free_hook __malloc_hook __realloc_hook
+# The wrap_syms append for the malloc hooks are in ../CMakeLists.txt because
+# it depends on whether or not JEMALLOC_PREFIX is enabled, which we don't
+# know at this point in the configuration.
+# Potential refactor: move user configuration parsing before compiler detection.
 
 check_c_source_compiles("
 #include <stddef.h>
@@ -260,9 +336,29 @@ int main(void) {
         ptr = __memalign_hook(16, 7);
     }
     return 0;
-}" JEMALLOC_GLIBC_MEMALIGN_HOOK)
-# if no JEMALLOC_PREFIX,
-# needs wrap syms  __memalign_hook
+}" has_memalign_hook)
+
+set(CMAKE_REQUIRED_LIBRARIES "-lpthread")
+check_c_source_compiles("
+#include <pthread.h>
+
+int main(void) {
+    pthread_atfork((void *)0, (void *)0, (void *)0);
+    return 0;
+}" JEMALLOC_HAVE_PTHREAD_ATFORK)
+
+set(CMAKE_REQUIRED_FLAGS "-D_GNU_SOURCE")
+# pthread_setname_np() on macOS only has one argument (the name),
+# so even though the function exists on macOS, it fails due to having
+# an unexpected prototype.
+check_c_source_compiles("
+#include <pthread.h>
+
+int main(void) {
+    pthread_setname_np(pthread_self(), \"setname_test\");
+    return 0;
+}" JEMALLOC_HAVE_PTHREAD_SETNAME_NP)
+set(CMAKE_REQUIRED_FLAGS)
 
 check_c_source_compiles("
 #include <pthread.h>
@@ -288,19 +384,20 @@ int main(void) {
     return 0;
 }" JEMALLOC_STRERROR_R_RETURNS_CHAR_WITH_GNU_SOURCE)
 set(CMAKE_REQUIRED_FLAGS)
+set(CMAKE_REQUIRED_LIBRARIES)
 
 check_c_source_compiles("
 #include <libkern/OSAtomic.h>
 #include <inttypes.h>
 
 int main(void) {
-    {   
-        int32_t x32 = 0; 
+    {
+        int32_t x32 = 0;
         volatile int32_t *x32p = &x32;
         OSAtomicAdd32(1, x32p);
-    }   
-    {   
-        int64_t x64 = 0; 
+    }
+    {
+        int64_t x64 = 0;
         volatile int64_t *x64p = &x64;
         OSAtomicAdd64(1, x64p);
     }
@@ -319,12 +416,14 @@ int main(void) {
     return 0;
 }" JEMALLOC_GCC_ATOMIC_ATOMICS)
 
-check_c_source_compiles("
-__thread int x;
-int main(void) {
-    x = 42;
-    return 0;
-}" JEMALLOC_TLS)
+if(force_tls)
+    check_c_source_compiles("
+    __thread int x;
+    int main(void) {
+        x = 42;
+        return 0;
+    }" JEMALLOC_TLS)
+endif()
 
 check_c_source_runs("
 #include <assert.h>
@@ -340,6 +439,17 @@ int main(void) {
 
 check_c_source_runs("
 #include <assert.h>
+int main(void) {
+    int x = 0;
+    int before_add = __sync_fetch_and_add(&x, 1);
+    int after_add = x;
+    assert(before_add == 0);
+    assert(after_add == 1);
+    return 0;
+}" JEMALLOC_GCC_SYNC_ATOMICS)
+
+check_c_source_runs("
+#include <assert.h>
 #include <stdint.h>
 int main(void) {
     uint8_t x = 0;
@@ -350,7 +460,6 @@ int main(void) {
     return 0;
 }" JEMALLOC_GCC_U8_SYNC_ATOMICS)
 
-set(JEMALLOC_INTERNAL_UNREACHABLE abort)
 check_c_source_compiles("
 void foo(void) {
   __builtin_unreachable();
@@ -358,11 +467,12 @@ void foo(void) {
 
 int main(void) {
     return 0;
-}" HAS_BUILTIN_UNREACHABLE)
-if(HAS_BUILTIN_UNREACHABLE)
-    set(JEMALLOC_INTERNAL_UNREACHABLE __builtin_unreachable CACHE INTERNAL "BU")
+}" has__builtin_unreachable)
+if(has__builtin_unreachable)
+    set(JEMALLOC_INTERNAL_UNREACHABLE __builtin_unreachable)
+else()
+    set(JEMALLOC_INTERNAL_UNREACHABLE abort)
 endif()
-
 
 set(CMAKE_REQUIRED_FLAGS "-Werror -Wall -Wextra -std=c11")
 check_c_source_runs("
@@ -385,20 +495,15 @@ int main() {
 " JEMALLOC_C11_ATOMICS)
 set(CMAKE_REQUIRED_FLAGS)
 
-if(NOT JEMALLOC_DLSYM_DISABLE)
-    check_include_files(dlfcn.h HAVE_DLFCN_H)
-    if(HAVE_DLFCN_H)
-        set(CMAKE_REQUIRED_LIBRARIES "dl")
-        CHECK_FUNCTION_EXISTS(dlsym JEMALLOC_HAVE_DLSYM)
-        set(CMAKE_REQUIRED_LIBRARIES)
-    else()
-        set(JEMALLOC_HAVE_DLSYM 0)
-    endif()
-endif()
-
-
 UtilCheckTypeSizeValid("void *" LG_SIZEOF_PTR 8 4)
 UtilCheckTypeSizeValid("int" LG_SIZEOF_INT 8 4)
 UtilCheckTypeSizeValid("long" LG_SIZEOF_LONG 8 4)
 UtilCheckTypeSizeValid("long long" LG_SIZEOF_LONG_LONG 8 4)
 UtilCheckTypeSizeValid("intmax_t" LG_SIZEOF_INTMAX_T 16 8 4)
+
+# Enable background threads if possible
+if(JEMALLOC_HAVE_PTHREAD AND NOT JEMALLOC_OS_UNFAIR_LOCK)
+    set(JEMALLOC_BACKGROUND_THREAD 1)
+endif()
+
+

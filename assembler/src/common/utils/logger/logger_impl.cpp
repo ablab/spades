@@ -129,8 +129,12 @@ void logger::log(level desired_level, const char* file, size_t line_num, const c
       }
       mem = (cmem + 1023)/ 1024;
   }
-#endif
   max_rss = utils::get_max_rss();
+  if (mem > max_rss)
+      max_rss = mem;
+#else
+  max_rss = utils::get_max_rss();
+#endif
 
   for (auto it = writers_.begin(); it != writers_.end(); ++it)
     (*it)->write_msg(time, mem, max_rss, desired_level, file, line_num, source, msg);
