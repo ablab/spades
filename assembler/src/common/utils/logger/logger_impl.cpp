@@ -122,7 +122,7 @@ void logger::log(level desired_level, const char* file, size_t line_num, const c
       size_t cmem = 0;
       size_t clen = sizeof(cmem);
 
-      int res = je_mallctl("stats.active", &cmem, &clen, NULL, 0);
+      int res = je_mallctl("stats.resident", &cmem, &clen, NULL, 0);
       if (res != 0) {
           fprintf(stderr, "mallctl() call failed, errno = %d", errno);
           exit(-1);
