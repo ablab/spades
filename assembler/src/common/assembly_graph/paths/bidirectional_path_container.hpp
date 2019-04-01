@@ -174,7 +174,7 @@ public:
     }
 
     void FilterPaths(const func::TypedPredicate<const BidirectionalPath&>& pred) {
-        DEBUG("Removing empty paths");
+        DEBUG("Filtering paths based on predicate");
         for (auto &pp : data_) {
             if (pred(*pp.first)) {
                 VERIFY(pred(*pp.second)); //do we need it?
@@ -184,10 +184,11 @@ public:
 
         const PathPair empty_pp(nullptr, nullptr);
         data_.erase(std::remove(data_.begin(), data_.end(), empty_pp), data_.end());
-        DEBUG("Empty paths removed");
+        DEBUG("Paths filtered");
     }
 
     void FilterEmptyPaths() {
+        DEBUG("Removing empty paths");
         FilterPaths(EmptyPathCondition());
     }
 
