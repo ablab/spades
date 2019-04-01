@@ -180,6 +180,11 @@ private:
             return CoverageUpperBound<Graph>(g_, cov_bound);
         } else if (next_token_ == "nbr") {
             return NotBulgeECCondition<Graph>(g_);
+        } else if (next_token_ == "rcec_cb") {
+            ReadNext();
+            double rcec_ratio = std::stod(next_token_);
+            INFO("Creating relative coverage EC condition with threshold " << rcec_ratio);
+            return RelativeCoverageECCondition<Graph>(g_, rcec_ratio);
         } else if (next_token_ == "rctc") {
             ReadNext();
             DEBUG("Creating relative cov tip cond " << next_token_);

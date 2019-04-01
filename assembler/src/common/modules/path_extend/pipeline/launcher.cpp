@@ -522,6 +522,7 @@ void PathExtendLauncher::Launch() {
     DebugOutputPaths(gp_.contig_paths, "overlap_removed");
 
     if (params_.ss.ss_enabled) {
+        INFO("Paths will be printed according to strand-specific coverage");
         PathContainerCoverageSwitcher switcher(gp_.g, gp_.ss_coverage.front(), params_.ss.antisense);
         switcher.Apply(gp_.contig_paths);
     }
