@@ -136,7 +136,7 @@ void assemble_genome() {
             if (cfg::get().biosynthetic_mode)
                 SPAdes.add<debruijn_graph::ExtractDomains>();
 
-            SPAdes.add<debruijn_graph::ContigOutput>()
+            SPAdes.add<debruijn_graph::ContigOutput>(false)
                   .add<debruijn_graph::SecondPhaseSetup>();
             if (cfg::get().biosynthetic_mode)
                 SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();

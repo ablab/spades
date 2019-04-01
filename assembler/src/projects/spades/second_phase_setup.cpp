@@ -5,13 +5,10 @@
 //***************************************************************************
 
 #include "io/dataset_support/dataset_readers.hpp"
-#include "io/dataset_support/read_converter.hpp"
 
-#include "paired_info/paired_info.hpp"
-
-#include "assembly_graph/stats/picture_dump.hpp"
-#include "pair_info_count.hpp"
 #include "second_phase_setup.hpp"
+
+#include <unordered_set>
 
 namespace debruijn_graph {
 
@@ -19,7 +16,7 @@ void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
     INFO("Preparing second phase");
     gp.ClearRRIndices();
     gp.ClearPaths();
-    //Clearing used edges for plasmids
+    // Clearing used edges for plasmids
     if (gp.count<SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges"))
         gp.get_mutable<SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges").clear();
 

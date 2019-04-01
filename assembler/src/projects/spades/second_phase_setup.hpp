@@ -17,8 +17,6 @@ public:
             : AssemblyStage("Second Phase Setup", "second_phase_setup") { }
 
     void run(conj_graph_pack &gp, const char *);
-private:
-    void loaddomains(conj_graph_pack &gp);
 };
 
 }

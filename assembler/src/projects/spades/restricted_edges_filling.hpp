@@ -17,8 +17,6 @@ namespace debruijn_graph {
                 : AssemblyStage("Restricted Edges Filling", "restricted_edges_filling") {}
 
         void run(conj_graph_pack &gp, const char*);
-
-        void FillRestrictedEdges(conj_graph_pack &gp);
     };
 
 }

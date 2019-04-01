@@ -1087,7 +1087,7 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
 
     size_t max_length_;
     size_t length_diff_;
-    RestrictedEdgeSet a_domain_edges_;
+    const RestrictedEdgeSet &a_domain_edges_;
     std::string pics_folder_;
 
     bool ProcessComponent(LocalizedComponent<Graph>& component,
@@ -1166,7 +1166,7 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
 public:
 
     //track_changes=false leads to every iteration run from scratch
-    ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff, RestrictedEdgeSet a_domain_edges,
+    ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff, const RestrictedEdgeSet& a_domain_edges,
                         size_t chunk_cnt, const std::string& pics_folder = "") :
             base(g, std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph, VertexId>>(
                 CandidateFinder<Graph>(g, max_length, length_diff), chunk_cnt),

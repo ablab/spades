@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "utils/verify.hpp"
+
 #include <set>
 #include <string>
 

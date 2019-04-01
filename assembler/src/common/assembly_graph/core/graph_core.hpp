@@ -467,7 +467,6 @@ private:
 
     EdgeId AddSingleEdge(VertexId v1, VertexId v2,
                          const EdgeData &data, EdgeId id = 0) {
-        DEBUG("Add single edge");
         EdgeId eid = (id ?
                       estorage_.emplace(id.int_id(), v2, data) :
                       estorage_.create(v2, data));
