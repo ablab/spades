@@ -83,7 +83,9 @@ public:
     PathContainer(ConstIterator begin, ConstIterator end) {
         DeleteAllPaths();
         for (ConstIterator it = begin; it != end; ++it) {
-            AddPair(new BidirectionalPath(*it.get()), new BidirectionalPath(*it.getConjugate()));
+            BidirectionalPath * path = new BidirectionalPath(*(it.get()));
+            BidirectionalPath * conjugatePath = new BidirectionalPath(*(it.getConjugate()));
+            AddPair(path, conjugatePath);
         }
     }
 
@@ -131,7 +133,7 @@ public:
         cp->SetConjPath(p);
         p->Subscribe(cp);
         cp->Subscribe(p);
-        data_.push_back(std::make_pair(p, cp));
+        data_.emplace_back(p, cp);
         return true;
     }
 
