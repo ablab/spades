@@ -27,13 +27,14 @@ void path_extend::TranscriptToGeneJoiner::JoinTrees(size_t x, size_t y) {
 
 void path_extend::TranscriptToGeneJoiner::Init(const PathContainer &paths) {
     DEBUG("Initializing parents and ranks");
-    parents_.resize(paths.size());
-    ranks_.resize(paths.size());
-
+    path_id_.clear();
+    parents_.resize(paths.size(), 0);
+    ranks_.resize(paths.size(), 0);
+    TRACE("Path size " << paths.size());
     size_t path_num = 0;
     for (auto iter = paths.begin(); iter != paths.end(); ++iter, ++path_num) {
-        path_id_[iter.get()] = path_num;
-        path_id_[iter.getConjugate()] = path_num;
+        path_id_.emplace(iter.get(), path_num);
+        path_id_.emplace(iter.getConjugate(), path_num);
         MakeSet(path_num);
     }
 

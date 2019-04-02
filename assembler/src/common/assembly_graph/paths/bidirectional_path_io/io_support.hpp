@@ -49,7 +49,7 @@ private:
     const Graph &g_;
     size_t min_edge_len_; //minimal length for joining transcripts into a gene
 
-    std::map<BidirectionalPath *, size_t, PathComparator> path_id_; //path ids
+    std::unordered_map<BidirectionalPath *, size_t> path_id_; //path ids
     std::vector<size_t> parents_; //node parents in
     std::vector<size_t> ranks_; //tree depth
 
@@ -58,6 +58,8 @@ private:
     void JoinTrees(size_t x, size_t y);
 
     void Init(const PathContainer &paths);
+
+    DECL_LOGGER("TranscriptToGeneJoiner");
 public:
     TranscriptToGeneJoiner(const Graph &g, size_t min_edge_len): g_(g), min_edge_len_(min_edge_len) {}
 
@@ -113,11 +115,16 @@ public:
         transcript_joiner_(g, min_edge_len),
         isoform_num_(),
         gene_ids_(),
-        gene_num_(0) {
+        gene_num_(0) {}
 
+    void Clear() {
+        isoform_num_.clear();
+        gene_ids_.clear();
+        gene_num_ = 0;
     }
 
-    void Preprocess(const PathContainer &paths) override {
+    void Preprocess(const PathContainer& paths) override {
+        Clear();
         transcript_joiner_.Construct(paths);
     }
 

@@ -82,7 +82,9 @@ public:
     PathContainer(ConstIterator begin, ConstIterator end) {
         DeleteAllPaths();
         for (ConstIterator it = begin; it != end; ++it) {
-            AddPair(new BidirectionalPath(*it.get()), new BidirectionalPath(*it.getConjugate()));
+            BidirectionalPath * path = new BidirectionalPath(*(it.get()));
+            BidirectionalPath * conjugatePath = new BidirectionalPath(*(it.getConjugate()));
+            AddPair(path, conjugatePath);
         }
     }
 
