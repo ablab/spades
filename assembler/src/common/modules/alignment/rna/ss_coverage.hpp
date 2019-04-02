@@ -18,6 +18,10 @@ private:
 
     InnerMap storage_;
 
+    void SetCoverage(EdgeId e, double cov) {
+        storage_[e] = cov;
+    }
+
 public:
     SSCoverageStorage(const Graph& g): g_(g), storage_() {}
 
@@ -54,6 +58,16 @@ public:
 
     InnerMap::const_iterator end() const {
         return storage_.end();
+    }
+
+    void Save(EdgeId e, ostream& out) const {
+        out << GetCoverage(e);
+    }
+
+    void Load(EdgeId e, istream& in) {
+        double cov;
+        in >> cov;
+        SetCoverage(e, cov);
     }
 };
 

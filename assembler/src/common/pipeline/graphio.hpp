@@ -18,6 +18,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "modules/alignment/long_read_storage.hpp"
+#include "modules/alignment/rna/ss_coverage.hpp"
 
 #include "assembly_graph/core/order_and_law.hpp"
 
@@ -235,6 +236,14 @@ class DataPrinter {
         SaveEdgeAssociatedInfo(flanking_cov, out);
     }
 
+    void SaveSSCoverage(const string& file_name, const vector<SSCoverageStorage>& ss_coverage) const {
+        for (size_t i = 0; i < ss_coverage.size(); ++i) {
+            ofstream out(file_name + "_" + std::to_string(i) + ".sscvr");
+            DEBUG("Saving strand-specific RNA coverage, " << file_name <<" created");
+            SaveEdgeAssociatedInfo(ss_coverage[i], out);
+        }
+    }
+
     template<class Index>
     void SavePaired(const string& file_name,
                     Index const& paired_index) const {
@@ -422,6 +431,20 @@ class DataScanner {
         INFO("Reading flanking coverage from " << file_name);
         ifstream in(file_name + ".flcvr");
         LoadEdgeAssociatedInfo(flanking_cov, in);
+        return true;
+    }
+
+    bool LoadSSCoverage(const string& file_name, vector<SSCoverageStorage>& ss_coverage) {
+        for (size_t i = 0; i < ss_coverage.size(); ++i) {
+            std::string fname_i = file_name + "_" + std::to_string(i) + ".sscvr";
+            if (!fs::FileExists(fname_i)) {
+                INFO("SS coverage saves are absent");
+                return false;
+            }
+            INFO("Reading strand-specific RNA coverage from " << fname_i);
+            ifstream in(fname_i);
+            LoadEdgeAssociatedInfo(ss_coverage[i], in);
+        }
         return true;
     }
 
@@ -676,6 +699,8 @@ void PrintGraphPack(const std::string& file_name,
         SaveKmerMapper(file_name, gp.kmer_mapper);
     if (gp.flanking_cov.IsAttached())
         printer.SaveFlankingCoverage(file_name, gp.flanking_cov);
+    printer.SaveSSCoverage(file_name, gp.ss_coverage);
+
 }
 
 template<class graph_pack>
@@ -881,6 +906,9 @@ void ScanGraphPack(const string& file_name,
     if (!scanner.LoadFlankingCoverage(file_name, gp.flanking_cov)) {
         WARN("Cannot load flanking coverage, flanking coverage will be recovered from index");
         gp.flanking_cov.Fill(gp.index.inner_index());
+    }
+    if (!scanner.LoadSSCoverage(file_name, gp.ss_coverage)) {
+        WARN("Cannot load SS RNA coverage");
     }
 }
 
