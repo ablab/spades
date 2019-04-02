@@ -495,7 +495,7 @@ public:
         return data_.end();
     }
 
-    float MedianCoverage() const {
+    float GetMedianCoverage() const {
         std::vector<std::pair<float, int>> len_cov;
         VERIFY_DEV(data_.size() > 0);
         size_t total_l = 0;

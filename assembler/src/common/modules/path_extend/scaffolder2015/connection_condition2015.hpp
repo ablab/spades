@@ -47,6 +47,7 @@ public:
 //TODO  performance issue: think about inside filtering. Return only unique connected edges?
     virtual Connections ConnectedWith(EdgeId e) const = 0;
     virtual Connections ConnectedWith(EdgeId e, const ScaffoldingUniqueEdgeStorage &storage) const;
+    virtual Connections ConnectedWith(EdgeId e, const ScaffoldingUniqueEdgeStorage &storage, const EdgeSet &forbidden) const;
     virtual int GetMedianGap(EdgeId e1, EdgeId e2) const = 0;
     virtual size_t GetLibIndex() const = 0;
     virtual ~ConnectionCondition() {
@@ -95,8 +96,10 @@ public:
                                  size_t min_read_count, const GraphCoverageMap& cov_map);
     size_t GetLibIndex() const override;
     Connections ConnectedWith(EdgeId e) const override;
-    Connections ConnectedWith(EdgeId e, const ScaffoldingUniqueEdgeStorage &storage) const override;
-// Returns median gap size
+    Connections ConnectedWith(EdgeId e, const ScaffoldingUniqueEdgeStorage &storage, const EdgeSet &forbidden) const override;
+
+
+        // Returns median gap size
     int GetMedianGap (EdgeId e1, EdgeId e2) const override;
 
 };

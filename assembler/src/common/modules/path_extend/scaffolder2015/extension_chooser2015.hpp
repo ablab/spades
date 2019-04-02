@@ -24,11 +24,11 @@ class ExtensionChooser2015: public ScaffoldingExtensionChooser {
     // multiplicator for the pairs which are connected in graph.
     double graph_connection_bonus_;
     bool use_graph_connectivity_;
-
     //If path contains no unique edges return -1
     std::pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path) const;
     //Find all possible next unique edges confirmed with mate-pair information. (absolute/relative)_weight_threshold_ used for filtering
     EdgeContainer FindNextUniqueEdge(const EdgeId from) const;
+    mutable std::set<debruijn_graph::EdgeId> local_forbidden_;
 public:
     ExtensionChooser2015(const Graph& g,
                          std::shared_ptr<WeightCounter> wc,
@@ -47,7 +47,8 @@ public:
             //TODO to config!
             absolute_weight_threshold_(2),
             graph_connection_bonus_(2),
-            use_graph_connectivity_(use_graph_connectivity) {
+            use_graph_connectivity_(use_graph_connectivity),
+            local_forbidden_() {
         INFO("ExtensionChooser2015 created");
     }
 

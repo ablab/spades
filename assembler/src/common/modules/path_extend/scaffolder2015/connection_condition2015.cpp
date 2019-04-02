@@ -1,7 +1,7 @@
 #include "connection_condition2015.hpp"
+using namespace debruijn_graph;
 
 namespace path_extend {
-
 Connections ConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e,
                                                const ScaffoldingUniqueEdgeStorage &storage) const {
     auto all_edges = this->ConnectedWith(e);
@@ -12,6 +12,12 @@ Connections ConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e,
         }
     }
     return res;
+}
+
+Connections ConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e,
+                                               const ScaffoldingUniqueEdgeStorage &storage, const EdgeSet &forbidden) const {
+
+    return ConnectedWith(e, storage);
 }
 
 PairedLibConnectionCondition::PairedLibConnectionCondition(const debruijn_graph::Graph &graph,
@@ -82,7 +88,7 @@ bool LongReadsLibConnectionCondition::CheckPath(BidirectionalPath *path, EdgeId 
 }
 
 Connections LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e,
-                                                           const ScaffoldingUniqueEdgeStorage &storage) const {
+                                                           const ScaffoldingUniqueEdgeStorage &storage, const EdgeSet &forbidden) const {
     Connections res;
     auto cov_paths = cov_map_.GetCoveringPaths(e);
     DEBUG("Got cov paths " << cov_paths.size());
@@ -95,7 +101,7 @@ Connections LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeI
         size_t pos = pos1[0];
         pos++;
         while (pos < path->Size()){
-            if (storage.IsUnique(path->At(pos))) {
+            if (storage.IsUnique(path->At(pos)) && forbidden.find(path->At(pos)) == forbidden.end()) {
                 if (CheckPath(path, path->At(pos1[0]), path->At(pos))) {
                     res[path->At(pos)] += path->GetWeight();
                 }

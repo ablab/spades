@@ -8,9 +8,18 @@ namespace path_extend {
 using namespace std;
 
 std::pair<EdgeId, int> ExtensionChooser2015::FindLastUniqueInPath(const BidirectionalPath& path) const {
+    double median = path.GetMedianCoverage();
+    local_forbidden_.clear();
     for (int i =  (int)path.Size() - 1; i >= 0; --i) {
         if (unique_edges_.IsUnique(path.At(i))) {
-            return std::make_pair(path.At(i), i);
+//FIXME:: constant
+            if (g_.coverage(path.At(i)) <= 1.7 * median) {
+                return std::make_pair(path.At(i), i);
+            } else {
+                local_forbidden_.insert(path.At(i));
+                local_forbidden_.insert(g_.conjugate(path.At(i)));
+                DEBUG("FORBIDDING edges " << path.At(i) << " and " << g_.conjugate(path.At(i)) << " because of coverage " << g_.coverage(path.At(i)) << " and path median coverage " << median);
+            }
         }
     }
     return std::make_pair(EdgeId(), -1);
@@ -19,7 +28,7 @@ std::pair<EdgeId, int> ExtensionChooser2015::FindLastUniqueInPath(const Bidirect
 ExtensionChooser::EdgeContainer ExtensionChooser2015::FindNextUniqueEdge(const EdgeId from) const {
     VERIFY(unique_edges_.IsUnique(from));
     EdgeContainer result;
-    map<EdgeId, double> candidate_edges = lib_connection_condition_->ConnectedWith(from, unique_edges_);
+    map<EdgeId, double> candidate_edges = lib_connection_condition_->ConnectedWith(from, unique_edges_, local_forbidden_);
     DEBUG(candidate_edges.size() << " candidate edges");
     vector<pair<double, pair<EdgeId, int >>> to_sort;
     for (const auto& pair: candidate_edges) {
