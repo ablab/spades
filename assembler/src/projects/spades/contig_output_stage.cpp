@@ -36,6 +36,11 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     using namespace path_extend;
     auto output_dir = cfg::get().output_dir;
 
+    if (!final_iteration_) {
+        OutputEdgeSequences(gp.g, output_dir + "simplified_contigs");
+        return;
+    }
+
     std::string gfa_fn = output_dir + "assembly_graph_with_scaffolds.gfa";
     INFO("Writing GFA to " << gfa_fn);
 
@@ -99,8 +104,6 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
         });
         writer.OutputPaths(gp.contig_paths, writers);
     } else {
-        //FIXME weird logic
-        OutputEdgeSequences(gp.g, output_dir + "simplified_contigs");
         OutputEdgeSequences(gp.g, output_dir + contigs_name_);
     }
 }

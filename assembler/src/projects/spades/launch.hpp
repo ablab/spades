@@ -104,7 +104,7 @@ void assemble_genome() {
             SPAdes.add<debruijn_graph::PairInfoCount>(true)
                     .add<debruijn_graph::DistanceEstimation>(true)
                     .add<debruijn_graph::RepeatResolution>(true)
-                    .add<debruijn_graph::ContigOutput>()
+                    .add<debruijn_graph::ContigOutput>(true)
                     .add<debruijn_graph::SecondPhaseSetup>();
         }
     }
@@ -131,15 +131,13 @@ void assemble_genome() {
 
         //No graph modification allowed after HybridLibrariesAligning stage!
 
-        SPAdes.add<debruijn_graph::ContigOutput>(false, "intermediate_contigs")
+        SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration, false)
                .add<debruijn_graph::PairInfoCount>()
                .add<debruijn_graph::DistanceEstimation>()
                .add<debruijn_graph::RepeatResolution>();
-    } else {
-        SPAdes.add<debruijn_graph::ContigOutput>(false);
     }
 
-    SPAdes.add<debruijn_graph::ContigOutput>();
+    SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
 
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 
