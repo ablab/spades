@@ -227,8 +227,12 @@ public:
     }
 
 protected:
+    double IdealInfo(EdgeId e1, EdgeId e2, size_t dist, bool additive = false) const {
+        return wc_->PairedLibrary().IdealPairedInfo(e1, e2, (int) dist, additive);
+    }
+
     bool HasIdealInfo(EdgeId e1, EdgeId e2, size_t dist) const {
-        return math::gr(wc_->PairedLibrary().IdealPairedInfo(e1, e2, (int) dist), 0.);
+        return math::gr(IdealInfo(e1, e2, dist), 0.);
     }
 
     bool HasIdealInfo(const BidirectionalPath& p, EdgeId e, size_t gap) const {
@@ -237,6 +241,7 @@ protected:
                 return true;
         return false;
     }
+
 
 private:
     DECL_LOGGER("ExtensionChooser");
@@ -329,7 +334,7 @@ public:
 
 private:
     EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges, bool reverse) const {
-        DEBUG("COVERAGE extension chooser");
+        DEBUG("Coverage extension chooser");
         VERIFY(edges.size() == 2);
         if (!IsEnoughCoverage(edges.front().e_, edges.back().e_, reverse)) {
             DEBUG("Candidates are not covered enough: e1 = " << coverage_storage_.GetCoverage(edges.front().e_, reverse) <<
@@ -355,6 +360,10 @@ private:
             DEBUG("Split found at " << index);
             EdgeId path_edge_at_split = path[index - 1];
             EdgeId other_edge_at_split = GetOtherEdgeAtSplit(g_.EdgeEnd(path_edge_at_split), path_edge_at_split);
+
+            EdgeId candidate1 = edges.front().e_;
+            EdgeId candidate2 = edges.back().e_;
+
             VERIFY(other_edge_at_split != EdgeId());
 
             if (IsCoverageSimilar(path_edge_at_split, other_edge_at_split, reverse)) {
@@ -366,22 +375,16 @@ private:
             if (!IsEnoughCoverage(path_edge_at_split, other_edge_at_split, reverse)) {
                 DEBUG("Path edge and alternative  coverage is too low: path = " << coverage_storage_.GetCoverage(path_edge_at_split, reverse) <<
                     ", other = " << coverage_storage_.GetCoverage(other_edge_at_split, reverse));
-
                 return EdgeContainer();
             }
-
-            EdgeId candidate1 = edges.front().e_;
-            EdgeId candidate2 = edges.back().e_;
 
             if (math::gr(coverage_storage_.GetCoverage(path_edge_at_split, reverse), coverage_storage_.GetCoverage(other_edge_at_split, reverse))) {
                 DEBUG("path coverage is high, edge " << g_.int_id(path_edge_at_split) << ", path cov = "
                           << coverage_storage_.GetCoverage(path_edge_at_split, reverse) << ", other " << coverage_storage_.GetCoverage(other_edge_at_split, reverse));
-
                 result.emplace_back(math::gr(coverage_storage_.GetCoverage(candidate1, reverse), coverage_storage_.GetCoverage(candidate2, reverse)) ? candidate1 : candidate2, 0);
             } else {
                 DEBUG("path coverage is low, edge " << g_.int_id(path_edge_at_split) << ", path cov = "
                           << coverage_storage_.GetCoverage(path_edge_at_split, reverse) << ", other " << coverage_storage_.GetCoverage(other_edge_at_split, reverse));
-
                 result.emplace_back(math::ls(coverage_storage_.GetCoverage(candidate1, reverse), coverage_storage_.GetCoverage(candidate2, reverse)) ? candidate1 : candidate2, 0);
             }
 
@@ -668,6 +671,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
     double raw_weight_threshold_;
     double cl_weight_threshold_;
     const double is_scatter_coeff_ = 3.0;
+    double relative_cutoff_;
 
     void AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, 
                          std::vector<pair<int, double>>& histogram, size_t len_to_path_end) const {
@@ -706,6 +710,8 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
         }
     }
 
+
+
     void FindBestFittedEdgesForClustered(const BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) const {
         for (EdgeId e : edges) {
             DEBUG("Analyzing edge " << g_.int_id(e))
@@ -716,11 +722,20 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
                 sum += histogram[j].second;
             }
             DEBUG("Weight for scaffolding = " << sum << ", threshold = " << cl_weight_threshold_)
+
             if (math::ls(sum, cl_weight_threshold_)) {
                 continue;
             }
 
             int gap = CountMean(histogram);
+            if (math::gr(relative_cutoff_, 0.0)) {
+                //double avg_cov = (g_.coverage(path.Back()) + g_.coverage(e)) / 2.0;
+                double iw = CountIdealInfo(path, e, gap);
+                if (math::ls(sum / iw, relative_cutoff_)) {
+                    continue;
+                }
+            }
+
             DEBUG("Gap = " << gap)
             if (HasIdealInfo(path, e, gap)) {
                 DEBUG("scaffolding " << g_.int_id(e) << " gap " << gap);
@@ -759,10 +774,11 @@ public:
 
     ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc,
                                 double cl_weight_threshold,
-                                double is_scatter_coeff) :
+                                double is_scatter_coeff,
+                                double relative_cutoff = 0.0) :
         ExtensionChooser(g, wc), raw_weight_threshold_(0.0),
         cl_weight_threshold_(cl_weight_threshold),
-        is_scatter_coeff_(is_scatter_coeff) {
+        is_scatter_coeff_(is_scatter_coeff), relative_cutoff_(relative_cutoff) {
     }
 
     EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
@@ -782,6 +798,18 @@ public:
         FindBestFittedEdgesForClustered(path, candidates, result);
         DEBUG("Detected possible edges to scaffold: " << result.size())
         return result;
+    }
+
+public:
+    double CountIdealInfo(const BidirectionalPath& path, EdgeId edge, size_t gap) const {
+        double sum = 0.0;
+        for (int i = (int) path.Size() - 1; i >= 0; --i) {
+            double w = IdealInfo(path[i], edge, (int) path.LengthAt(i) + gap);
+            sum += w;
+        }
+        double avg_cov = (g_.coverage(path.Back()) + g_.coverage(edge)) / 2.0;
+        double correction_coeff = avg_cov / ((double(wc_->PairedLibrary().GetRL()) - double(g_.k())) * 2);
+        return sum * correction_coeff;
     }
 
 private:

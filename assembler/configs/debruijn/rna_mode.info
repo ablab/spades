@@ -117,6 +117,7 @@ params {
     scaffolder {
         cutoff        1
         hard_cutoff   5
+        rel_cov_cutoff    0.1
         cluster_info false
         min_overlap_for_rna_scaffolding 8
     }

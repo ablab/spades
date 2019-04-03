@@ -125,11 +125,13 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeRNAScaffoldingExtender(size_t l
     auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp_.g,
                                                                        counter,
                                                                        pset.scaffolder_options.cutoff,
-                                                                       pset.scaffolder_options.var_coeff);
+                                                                       pset.scaffolder_options.var_coeff,
+                                                                       pset.scaffolder_options.rel_cov_cutoff);
     auto scaff_chooser2 = std::make_shared<ScaffoldingExtensionChooser>(gp_.g,
                                                                         counter,
                                                                         pset.scaffolder_options.hard_cutoff,
-                                                                        pset.scaffolder_options.var_coeff);
+                                                                        pset.scaffolder_options.var_coeff,
+                                                                        pset.scaffolder_options.rel_cov_cutoff);
 
 
     VERIFY(pset.scaffolder_options.min_overlap_for_rna_scaffolding.is_initialized());

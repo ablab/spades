@@ -30,19 +30,20 @@ using omnigraph::de::Point;
 
 class PairedInfoLibrary {
 public:
-    PairedInfoLibrary(const Graph& g, size_t read_size, size_t is,
+    PairedInfoLibrary(const Graph& g, size_t read_length, size_t is,
                       size_t is_min, size_t is_max, double is_var,
                       bool is_mp,
                       const std::map<int, size_t>& is_distribution)
             : g_(g),
               k_(g.k()),
+              rl_(read_length),
               is_(is),
               is_min_(is_min),
               is_max_(is_max),
               is_var_(is_var),
               is_mp_(is_mp),
               ideal_pi_counter_(g, (int) is_min, (int) is_max,
-                                read_size, is_distribution) {
+                                read_length, is_distribution) {
     }
 
     virtual ~PairedInfoLibrary() {}
@@ -59,12 +60,15 @@ public:
     size_t GetIS() const { return is_; }
     size_t GetISMin() const { return is_min_; }
     size_t GetISMax() const { return is_max_; }
+    size_t GetRL() const { return rl_; }
     double GetIsVar() const { return is_var_; }
     bool IsMp() const { return is_mp_; }
 
 protected:
     const Graph& g_;
     size_t k_;
+    size_t rl_;
+
     size_t is_;
     size_t is_min_;
     size_t is_max_;
@@ -79,10 +83,10 @@ class PairedInfoLibraryWithIndex : public PairedInfoLibrary {
     const Index& index_;
 
 public:
-    PairedInfoLibraryWithIndex(const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, double is_div,
+    PairedInfoLibraryWithIndex(const Graph& g, size_t read_length, size_t is, size_t is_min, size_t is_max, double is_div,
                                const Index& index, bool is_mp,
                                const std::map<int, size_t>& is_distribution)
-        : PairedInfoLibrary(g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
+        : PairedInfoLibrary(g, read_length, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
 
     size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist, int max_dist, size_t min_len = 0) const override {
