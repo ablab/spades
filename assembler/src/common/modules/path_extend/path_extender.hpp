@@ -1327,7 +1327,7 @@ protected:
             DEBUG("Gap after fixing " << gap.gap << " (was " << candidates.back().d_ << ")");
 
             if (must_overlap && !CheckGap(gap)) {
-                DEBUG("Overlap is not large enough")
+                DEBUG("Overlap is not large enough");
                 return false;
             }
         } else {

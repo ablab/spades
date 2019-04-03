@@ -95,7 +95,7 @@ struct pe_config {
             bool enabled;
             int cutoff;
             int hard_cutoff;
-            double rel_cutoff;
+            double rel_cov_cutoff;
             double sum_threshold;
 
             bool cluster_info;

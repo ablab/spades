@@ -96,7 +96,7 @@ void load(pe_config::ParamSetT::ScaffolderOptionsT& so,
     load(so.enabled, pt, "enabled"      , complete);
     load(so.cutoff      , pt, "cutoff", complete);
     load(so.hard_cutoff      , pt, "hard_cutoff", complete);
-    load(so.rel_cutoff      , pt, "rel_cutoff", complete);
+    load(so.rel_cov_cutoff      , pt, "rel_cov_cutoff", complete);
     load(so.sum_threshold      , pt, "sum_threshold", complete);
 
     load(so.cluster_info      , pt, "cluster_info", complete);

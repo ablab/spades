@@ -50,7 +50,7 @@ params {
         enabled       true
         cutoff        2
         hard_cutoff   0
-        rel_cutoff    0.1
+        rel_cov_cutoff    0.0
         sum_threshold 3  
 
         cluster_info  true
