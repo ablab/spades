@@ -84,7 +84,7 @@ public:
         if (r > l) {
             result.join(this->MapSequence(Sequence(s.substr(l, r - l))), int(l));
         }
-        DEBUG(read.name() << " is mapped");
+        DEBUG(read.name() <<" of length "<< s.size()<< " is mapped");
         DEBUG("Number of edges is " << result.size());
 
         return result;

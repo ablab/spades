@@ -507,12 +507,17 @@ public:
         size_t cur_l = 0;
         size_t ind = 0;
         while (true) {
+            cur_l += len_cov[ind].second;
             if (cur_l * 2 >= total_l) {
+                for (size_t i = 0; i < data_.size(); ++i) 
+                    DEBUG(g_.coverage(data_[i]) << " " << g_.length(data_[i]));
+                DEBUG("Median is " << len_cov[ind].first);
+                VERIFY(ind < data_.size());
                 return len_cov[ind].first;
             }
-            cur_l += len_cov[ind].second;
             ind++;
         }
+        VERIFY(false);
     }
 
 private:

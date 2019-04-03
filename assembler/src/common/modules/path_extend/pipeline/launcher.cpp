@@ -367,13 +367,15 @@ void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
                                                                      support_.GetLongReadsConfig(dataset_info_.reads[lib_index].type()));
             }
         }
+//FIXME meta only! non suitable for strains
+/*
         INFO("Removing fake unique with paired-end libs");
         for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
             if (dataset_info_.reads[lib_index].type() == io::LibraryType::PairedEnd) {
                 unique_edge_analyzer_pb.ClearLongEdgesWithPairedLib(lib_index, unique_data_.unique_pb_storage_);
             }
         }
-
+*/
     } else {
         INFO(" with coverage")
         unique_edge_analyzer_pb.FillUniqueEdgeStorage(unique_data_.unique_pb_storage_);
