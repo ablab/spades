@@ -164,8 +164,10 @@ void load(pe_config::ParamSetT::SimpleCoverageResolver& scr,
 {
     using config_common::load;
     load(scr.enabled      , pt, "enabled"      , complete);
-    load(scr.coverage_delta      , pt, "coverage_delta"      , complete);
+    load(scr.coverage_margin      , pt, "coverage_margin"      , complete);
     load(scr.min_upper_coverage      , pt, "min_upper_coverage"      , complete);
+    load(scr.max_coverage_variation      , pt, "max_coverage_variation"      , complete);
+
 }
 
 void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool complete) {

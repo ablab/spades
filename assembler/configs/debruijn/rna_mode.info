@@ -175,8 +175,9 @@ params {
 
     simple_coverage_resolver {
         enabled true
-        coverage_delta 0.5
+        coverage_margin 2  
         min_upper_coverage 2
+        max_coverage_variation 10
     }
 }
 }

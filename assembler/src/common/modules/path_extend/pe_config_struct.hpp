@@ -77,8 +77,9 @@ struct pe_config {
 
         struct SimpleCoverageResolver {
             bool enabled;
-            double coverage_delta;
+            double coverage_margin;
             double min_upper_coverage;
+            double max_coverage_variation;
         } simple_coverage_resolver;
 
         struct ExtensionOptionsT {
