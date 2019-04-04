@@ -86,8 +86,9 @@ params {
 
     simple_coverage_resolver {
         enabled false
-        coverage_delta 0.5
+        coverage_margin 2
         min_upper_coverage 5
+        max_coverage_variation 5
     }
 
 

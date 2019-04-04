@@ -250,7 +250,8 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeSimpleCoverageExtender(size_t
 
     auto extension =
         make_shared<SimpleCoverageExtensionChooser>(gp_.ss_coverage[lib_index], gp_.g,
-                                                    params_.pset.simple_coverage_resolver.coverage_delta,
+                                                    params_.pset.simple_coverage_resolver.coverage_margin,
+                                                    params_.pset.simple_coverage_resolver.max_coverage_variation,
                                                     params_.pset.simple_coverage_resolver.min_upper_coverage);
 
     return make_shared<SimpleExtender>(gp_, cover_map_,
