@@ -41,6 +41,8 @@ class PathDistanceEstimator {
 
  public:
     boost::optional<size_t> GetLongEdgeDistance(const ScaffoldVertex &first, const ScaffoldVertex &second) const;
+
+    DECL_LOGGER("PathDistanceEstimator");
 };
 
 class PathScaffolderAnalyzer {

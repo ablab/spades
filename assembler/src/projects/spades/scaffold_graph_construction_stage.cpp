@@ -94,8 +94,13 @@ void debruijn_graph::ScaffoldGraphConstructionStage::run(debruijn_graph::conj_gr
     size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
                                                                           ultralong_edge_length_percentile);
     INFO("Length upper bound: " << length_upper_bound);
+
     path_extend::ScaffoldGraphStorageConstructor storage_constructor(unique_length_threshold, length_upper_bound,
                                                                      graph_pack);
+
+//    const size_t temp_ultralong_threshold = 13000;
+//    path_extend::ScaffoldGraphStorageConstructor storage_constructor(unique_length_threshold, temp_ultralong_threshold,
+//                                                                     graph_pack);
     auto storage = storage_constructor.ConstructStorage();
     graph_pack.scaffold_graph_storage = storage;
 }

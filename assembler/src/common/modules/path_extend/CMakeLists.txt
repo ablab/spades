@@ -56,7 +56,13 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     read_cloud_path_extend/statistics/perfect_transitions.cpp
                     read_cloud_path_extend/statistics/perfect_clouds.cpp
                     read_cloud_path_extend/statistics/coverage_break_analysis.cpp
-                    read_cloud_path_extend/statistics/path_scaffolder_analyzer.cpp read_cloud_path_extend/contracted_graph_scaffolding/contracted_graph_scaffolder.cpp read_cloud_path_extend/contracted_graph_scaffolding/contracted_graph_scaffolder.hpp read_cloud_path_extend/contracted_graph_scaffolding/contracted_gfa_writer.cpp read_cloud_path_extend/contracted_graph_scaffolding/contracted_gfa_writer.hpp)
+                    read_cloud_path_extend/statistics/path_scaffolder_analyzer.cpp
+                    read_cloud_path_extend/contracted_graph_scaffolding/contracted_graph_scaffolder.cpp
+                    read_cloud_path_extend/contracted_graph_scaffolding/contracted_graph_scaffolder.hpp
+                    read_cloud_path_extend/contracted_graph_scaffolding/contracted_gfa_writer.cpp
+                    read_cloud_path_extend/contracted_graph_scaffolding/contracted_gfa_writer.hpp
+                    read_cloud_path_extend/statistics/short_edge_dataset.cpp
+                    read_cloud_path_extend/statistics/short_edge_dataset.hpp read_cloud_path_extend/statistics/split_index_statistics.cpp read_cloud_path_extend/statistics/split_index_statistics.hpp)
 
 target_link_libraries(path_extend assembly_graph ssw)
 

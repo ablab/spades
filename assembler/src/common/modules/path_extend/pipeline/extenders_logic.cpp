@@ -360,7 +360,7 @@ Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdge
 
         if (lib.type() == io::LibraryType::Clouds10x) {
             result.emplace_back(lib.type(), lib_index, MakeScaffoldGraphExtender());
-            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index));
+//            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index));
         }
     }
     std::stable_sort(result.begin(), result.end());
@@ -560,9 +560,10 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
 
     auto barcode_extractor =
         std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-    auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor, reliable_edge_length,
-                                                                         seed_edge_length, tail_threshold,
-                                                                         relative_coverage_threshold);
+    RelativeUniquePredicateGetter predicate_getter(gp_.g, reliable_edge_length,
+                                                   seed_edge_length, relative_coverage_threshold);
+    auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor, predicate_getter,
+                                                                         tail_threshold);
     auto edge_selector_factory = std::make_shared<SimpleReachableEdgesSelectorFactory>(gp_.g, barcode_extractor,
                                                                                        barcode_threshold,
                                                                                        reliable_edge_length,
@@ -586,6 +587,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
                                                               investigate_short_loops,
                                                               use_short_loops_cov_resolver,
                                                               weight_threshold,
+                                                              predicate_getter,
                                                               entry_collector,
                                                               edge_selector_factory,
                                                               seed_edge_length);

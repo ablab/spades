@@ -232,6 +232,9 @@ vector<SimpleSearcher::ScaffoldVertex> SimpleSearcher::GetReachableVertices(cons
     std::queue<VertexWithDistance> vertex_queue;
     vertex_queue.push(new_vertex);
     unordered_set<ScaffoldVertex> visited;
+    visited.insert(vertex);
+    visited.insert(vertex.GetConjugateFromGraph(g_));
+    visited.insert(restricted_edge.getEnd().GetConjugateFromGraph(g_));
     while (not vertex_queue.empty()) {
         auto current_vertex = vertex_queue.front();
         vertex_queue.pop();

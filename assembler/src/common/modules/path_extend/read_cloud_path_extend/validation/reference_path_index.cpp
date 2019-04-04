@@ -32,5 +32,22 @@ ReferencePathIndex ReferencePathIndexBuilder::BuildReferencePathIndex(
     }
     return result;
 }
+
+ReferencePathIndex ReferencePathIndexBuilder::BuildReferencePathIndexForSet(
+    const vector<vector<EdgeWithMapping>> &reference_paths, const std::unordered_set<EdgeId> &edges) {
+    ReferencePathIndex result;
+    for (size_t i = 0; i < reference_paths.size(); ++i) {
+        for (size_t j = 0; j < reference_paths[i].size(); ++j) {
+            EdgeId current_edge = reference_paths[i][j].edge_;
+            if (edges.find(current_edge) != edges.end()) {
+                size_t start_pos = reference_paths[i][j].mapping_.start_pos;
+                size_t end_pos = reference_paths[i][j].mapping_.end_pos;
+                size_t rev_pos = reference_paths[i].size() - j - 1;
+                result.Insert(current_edge, j, rev_pos, start_pos, end_pos, i);
+            }
+        }
+    }
+    return result;
+}
 }
 }

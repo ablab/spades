@@ -12,6 +12,7 @@ boost::optional<size_t> PathDistanceEstimator::GetLongEdgeDistance(const PathDis
     auto last_unique_in_first = first.GetLastEdgeWithPredicate(unique_predicate);
     auto first_unique_in_second = second.GetFirstEdgeWithPredicate(unique_predicate);
     if (not first_unique_in_second.is_initialized() or not last_unique_in_first.is_initialized()) {
+        DEBUG("No unique edges");
         return result;
     }
     auto first_index_entry = reference_path_index_.at(last_unique_in_first.get());
@@ -19,12 +20,18 @@ boost::optional<size_t> PathDistanceEstimator::GetLongEdgeDistance(const PathDis
     size_t first_path = first_index_entry.path_;
     size_t second_path = second_index_entry.path_;
     if (first_path != second_path) {
+        DEBUG("Different paths");
         return result;
     }
-    size_t first_pos = first_index_entry.end_pos_;
-    size_t second_pos = second_index_entry.start_pos_;
-    if (second_pos >= first_pos) {
-        result = second_pos - first_pos;
+    size_t first_start = first_index_entry.start_pos_;
+    size_t first_end = first_index_entry.end_pos_;
+    size_t second_start = second_index_entry.start_pos_;
+    size_t second_end = second_index_entry.end_pos_;
+    if (second_start >= first_end) {
+        result = second_start - first_end;
+    } else {
+        DEBUG("First edge: " << "[" << first_start << ", " << first_end << "]");
+        DEBUG("Second edge: " << "[" << second_start << ", " << second_end << "]");
     }
     return result;
 }
@@ -68,14 +75,16 @@ PathPairDataset PathScaffolderAnalyzer::GetFalseNegativeDataset(const PathContai
     auto index = ConstructIndex(scaffold_vertices);
     auto graph = ConstructScaffoldGraph(scaffold_vertices, index);
     INFO("Graph contains " << graph.VertexCount() << " vertices and " << graph.EdgeCount() << " edges");
-    const double score_threshold = 1.0;
+    const double score_threshold = 0.1;
     auto false_negative_edges = GetFalseNegativeEdges(graph, reference_transitions, score_threshold);
     INFO("False negative edges: " << false_negative_edges.size());
 
     validation::ReferencePathIndexBuilder path_index_builder;
     auto reference_path_index = path_index_builder.BuildReferencePathIndex(filtered_reference_paths);
     PathDistanceEstimator distance_estimator(gp_.g, reference_path_index, long_edge_length_threshold_);
-    const size_t distance_threshold = 5000;
+//    const size_t distance_threshold = 5000;
+
+    PathPairDataset result;
 
     for (const auto &edge: false_negative_edges) {
         boost::optional<size_t> distance_result = distance_estimator.GetLongEdgeDistance(edge.getStart(), edge.getEnd());
@@ -83,11 +92,9 @@ PathPairDataset PathScaffolderAnalyzer::GetFalseNegativeDataset(const PathContai
             INFO("Distance: " << distance_result.get());
             INFO("Score: " << edge.getWeight());
         } else {
-            INFO("Distance undefined");
+            DEBUG("Distance undefined");
         }
     }
-
-    PathPairDataset result;
     return result;
 
 }

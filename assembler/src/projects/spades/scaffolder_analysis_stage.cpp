@@ -16,6 +16,8 @@
 #include "common/modules/path_extend/read_cloud_path_extend/statistics/path_cluster_statistics.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/statistics/cloud_check_statistics.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/statistics/long_edge_dataset.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/statistics/short_edge_dataset.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/statistics/split_index_statistics.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/statistics/perfect_clouds.hpp"
 
 void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
@@ -30,6 +32,15 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
     if (not read_cloud_lib_present) {
         return;
     }
+
+//    path_extend::SplitStatisticsExtractor split_stats_extractor(graph_pack);
+//    split_stats_extractor.ConstructAndSerialize(cfg::get().ts_res.statistics.genome_path, cfg::get().output_dir, 10000);
+
+//    path_extend::LongEdgePairDatasetExtractor long_edge_pair_extractor(graph_pack);
+//    long_edge_pair_extractor.ConstructAndSerialize(cfg::get().ts_res.statistics.genome_path, cfg::get().output_dir);
+
+//    path_extend::ShortEdgeDatasetExtractor short_edge_pair_extractor(graph_pack);
+//    short_edge_pair_extractor.ConstructAndSerialize(cfg::get().ts_res.statistics.genome_path, cfg::get().output_dir);
 
 //    path_extend::PathClusterStorageChecker path_cluster_storage_checker(graph_pack, cfg::get().max_threads);
 //    path_cluster_storage_checker.CheckPathClusters(graph_pack.scaffold_graph_storage);
@@ -86,9 +97,6 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 //        thresholds.push_back(i);
 //    }
 //    statistics_extractor.GetMeanWeights(thresholds, output_name);
-
-//    path_extend::LongEdgePairDatasetExtractor long_edge_pair_extractor(graph_pack);
-//    long_edge_pair_extractor.ConstructAndSerialize(cfg::get().ts_res.statistics.genome_path, cfg::get().output_dir);
 
 
 //    path_extend::GraphBreakAnalyzer graph_break_analyzer(graph_pack);

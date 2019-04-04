@@ -37,7 +37,6 @@ void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
         INFO("False positive: " << stats.false_positive_);
         INFO("Single false transition: " << stats.single_false_transition_);
         INFO("False univocal edges: " << stats.false_univocal_edges_);
-
         //fixme remove
         ScaffoldGraphSerializer scaffold_graph_serializer;
         const string output_path(fs::append_path(cfg::get().output_dir, "path_scaffold_graph.scg"));
