@@ -316,6 +316,9 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
 
     //TODO implement better universal logic
     size_t edge_length_threshold = cfg::get().mode == config::pipeline_type::meta ? 900 : stats::Nx(gp.g, 50);
+    if (cfg::get().mode == config::pipeline_type::rna)
+        edge_length_threshold = std::max(edge_length_threshold, size_t(500));
+
     INFO("Min edge length for estimation: " << edge_length_threshold);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         auto &lib = cfg::get_writable().ds.reads[i];
