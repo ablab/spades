@@ -938,7 +938,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         for (const auto& annotated_path : top_paths) {
             VERIFY(annotated_path.path.size());
             std::string seq = annotated_path.str(&ccc);
-            if (seq.length() < cfg.minimal_match_length) {
+            if (seq.length() < fees.minimal_match_length) {
                 continue;
             }
             auto unpacked_path = ccc.UnpackPath(annotated_path.path, cursors);

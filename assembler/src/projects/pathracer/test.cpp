@@ -1,14 +1,18 @@
 #include <gtest/gtest.h>
 
-#include "graph.hpp"
+#include "find_best_path.hpp"
 #include "fees.hpp"
+
+double levenshtein_string_score(const std::string &s, const std::string &query) {
+  auto fees = hmm::levenshtein_fees(query);
+  fees.minimal_match_length = 0;
+  return -score_sequence(fees, s);
+}
 
 double levenshtein_substring_score(const std::string &s, const std::string &query) {
   auto fees = hmm::levenshtein_fees(query);
-  auto graph = Graph({s});
-  auto result = find_best_path(fees, graph.all(), nullptr);
-  auto paths = result.top_k(5);
-  return paths[0].score;
+  fees.minimal_match_length = 0; // TODO Automatically reduce required mathed string length for short HMM
+  return -score_subsequence(fees, s);
 }
 
 TEST(LevenshteinZero, LEVENSHTEIN_SUBSTRING) {
