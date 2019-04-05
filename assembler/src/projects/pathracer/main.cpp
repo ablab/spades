@@ -775,8 +775,6 @@ void TraceHMM(const hmmer::HMM &hmm,
     fees.state_limits.l25 = 1000000 * cfg.state_limits_coef;
     fees.state_limits.l100 = 50000 * cfg.state_limits_coef;
     fees.state_limits.l500 = 10000 * cfg.state_limits_coef;
-    fees.absolute_threshold *= cfg.state_limits_coef;
-    fees.depth_filter_constant *= cfg.state_limits_coef;
     fees.minimal_match_length = cfg.minimal_match_length;
 
     fees.local = cfg.local;
