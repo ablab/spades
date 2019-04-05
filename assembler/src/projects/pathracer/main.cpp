@@ -932,6 +932,9 @@ void TraceHMM(const hmmer::HMM &hmm,
         for (const auto& annotated_path : top_paths) {
             VERIFY(annotated_path.path.size());
             std::string seq = annotated_path.str(&ccc);
+            if (seq.length() < cfg.minimal_match_length) {
+                continue;
+            }
             auto unpacked_path = ccc.UnpackPath(annotated_path.path, cursors);
             auto alignment = compress_alignment(annotated_path.alignment(fees, &ccc), x_as_m_in_alignment);
             auto nucl_path = to_nucl_path(unpacked_path);
