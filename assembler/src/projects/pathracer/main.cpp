@@ -108,6 +108,8 @@ struct PathracerConfig {
     int extend_const = 20;
     size_t state_limits_coef = 1;
     bool local = false;
+    bool parallel_component_processing = false;
+    bool disable_depth_filter = false;
     size_t memory = 100;  // 100GB
     int use_experimental_i_loop_processing = 0;
     std::string known_sequences = "";
@@ -194,6 +196,8 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
           (option("--minimal-match-length") & integer("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence [default: 50]",
           (option("--state-limits-coef") & integer("x", cfg.state_limits_coef)) % "multiplier for default #state limit [default: 1]",
           option("--experimental-i-loops").set(cfg.use_experimental_i_loop_processing, 1) % "use experimental I-loops processing",
+          cfg.disable_depth_filter << option("--disable-depth-filter") % "disable depth filter",
+          cfg.parallel_component_processing << option("--parallel component processing") % "enable parallel component processing",
           cfg.export_event_graph << option("--export-event-graph") % "export event graph in cereal format"
       )
   );
@@ -705,7 +709,7 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
 using GraphCursor = DebruijnGraphCursor;
 
-auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef, int extend_const) {
+auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef, int extend_const, bool parallel_component_processing) {
     INFO("ConnCompsFromEdgesMatches started");
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
@@ -745,7 +749,7 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
     cursors.insert(right_cursors.cbegin(), right_cursors.cend());
 
     std::vector<GraphCursor> cursors_vector(cursors.cbegin(), cursors.cend());
-    auto cursor_conn_comps = fake_cursor_connected_components(cursors_vector, &graph);  // FIXME
+    auto cursor_conn_comps = parallel_component_processing ? cursor_connected_components(cursors_vector, &graph) : fake_cursor_connected_components(cursors_vector, &graph);
     std::stable_sort(cursor_conn_comps.begin(), cursor_conn_comps.end(),
                      [](const auto &c1, const auto &c2) { return c1.size() > c2.size(); });
 
@@ -778,6 +782,10 @@ void TraceHMM(const hmmer::HMM &hmm,
     fees.local = cfg.local;
     fees.use_experimental_i_loop_processing = cfg.use_experimental_i_loop_processing;
 
+    if (cfg.disable_depth_filter) {
+        fees.depth_filter_constant = 10005000;
+    }
+
     INFO("HMM consensus: " << fees.consensus);
     INFO("HMM " << p7hmm->name << " has " << fees.count_negative_loops() << " positive-score I-loops over " << fees.ins.size());
     INFO("All-matches consensus sequence score: " << fees.all_matches_score());
@@ -802,7 +810,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                 continue;
             }
             auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const);
+            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const, cfg.parallel_component_processing);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
                 // TODO add cmp_idx? (it could not be trivial!!!)
@@ -819,7 +827,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                 continue;
             }
             auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const);
+            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const, cfg.parallel_component_processing);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
                 // TODO add cmp_idx? (it could not be trivial!!!)
@@ -834,14 +842,14 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const, cfg.parallel_component_processing);
     } else if (cfg.seed_mode == SeedMode::scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by paths read from GFA
         paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const, cfg.parallel_component_processing);
     } else if (cfg.seed_mode == SeedMode::edges_scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by single edges
@@ -852,7 +860,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const, cfg.parallel_component_processing);
     } else if (cfg.seed_mode == SeedMode::exhaustive) {
         cursor_conn_comps.resize(1);
         auto &cursors = cursor_conn_comps[0];
