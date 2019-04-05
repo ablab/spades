@@ -54,3 +54,13 @@ double score_sequence(const hmm::Fees &fees, const std::string &seq) {
     result.pathlink_mutable()->set_finishes({finish});
     return result.best_score();
 }
+
+double score_subsequence(const hmm::Fees &fees, const std::string &seq) {
+    std::vector<StringCursor> initial;
+    for (size_t i = 0; i < seq.length(); ++i) {
+        initial.emplace_back(i);
+    }
+
+    auto result = find_best_path(fees, initial, &seq);
+    return result.best_score();
+}
