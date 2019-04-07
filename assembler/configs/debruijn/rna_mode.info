@@ -8,6 +8,16 @@ strand_specificity {
     antisense false
 }
 
+ss_coverage_splitter {
+    enabled           true
+    bin_size          50   
+    min_edge_len      200
+    min_edge_coverage 5
+    min_flanking_coverage 2
+    coverage_margin   5
+}
+
+
 contig_output {
     scaffolds_name  transcripts
     ; none  --- do not output broken scaffolds | break_gaps --- break only by N steches | break_all --- break all with overlap < k

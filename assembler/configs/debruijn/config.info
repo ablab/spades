@@ -175,3 +175,12 @@ bwa_aligner
 flanking_range 55
 series_analysis ""
 save_gp false
+
+ss_coverage_splitter {
+    enabled           false
+    bin_size          50
+    min_edge_len      200
+    min_edge_coverage 5
+    min_flanking_coverage 2
+    coverage_margin   5
+}

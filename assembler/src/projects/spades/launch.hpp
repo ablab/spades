@@ -14,6 +14,7 @@
 #include "pipeline/genomic_info_filler.hpp"
 #include "gap_closer.hpp"
 #include "stages/simplification.hpp"
+#include "stages/ss_edge_split.hpp"
 #include "mismatch_correction.hpp"
 #include "pair_info_count.hpp"
 #include "second_phase_setup.hpp"
@@ -118,6 +119,9 @@ void assemble_genome() {
 
     if (cfg::get().correct_mismatches)
         SPAdes.add<debruijn_graph::MismatchCorrection>();
+
+    if (cfg::get().ss_coverage_splitter.enabled)
+        SPAdes.add<debruijn_graph::SSEdgeSplit>();
 
     if (cfg::get().rr_enable) {
         if (!cfg::get().series_analysis.empty())

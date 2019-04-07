@@ -8,5 +8,5 @@
 project(stages CXX)
 
 add_library(stages STATIC
-            construction.cpp simplification.cpp)
+            construction.cpp simplification.cpp ss_edge_split.cpp)
 target_link_libraries(stages gqf)
