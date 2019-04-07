@@ -26,6 +26,8 @@ private:
             tmp_storages_[thread_index].IncreaseKmerCount(read[i].first, kmer_count, symmetric_);
         }
     }
+
+    DECL_LOGGER("SSCoverageFiller");
 public:
     SSCoverageFiller(const Graph& g, SSCoverageStorage& storage, bool symmertic = false):
         g_(g), storage_(storage), tmp_storages_(), symmetric_(symmertic) {}
@@ -55,6 +57,53 @@ public:
     void MergeBuffer(size_t thread_index) override {
         for (const auto& it : tmp_storages_[thread_index])
             storage_.IncreaseKmerCount(it.first, size_t(it.second));
+        tmp_storages_[thread_index].Clear();
+    }
+};
+
+
+class SSBinCoverageFiller: public SequenceMapperListener {
+private:
+    SSCoverageSplitter& storage_;
+
+    std::vector<SSCoverageSplitter> tmp_storages_;
+
+    void ProcessRange(size_t thread_index, const MappingPath<EdgeId>& read) {
+        for (size_t i = 0; i < read.size(); ++i) {
+            auto range = read.mapping_at(i).mapped_range;
+            tmp_storages_[thread_index].IncreaseKmerCount(read.edge_at(i), range);
+        }
+    }
+
+    DECL_LOGGER("SSCoverageFiller");
+public:
+    explicit SSBinCoverageFiller(SSCoverageSplitter& storage):
+        storage_(storage), tmp_storages_() {}
+
+    void StartProcessLibrary(size_t threads_count) override {
+        tmp_storages_.clear();
+
+        for (size_t i = 0; i < threads_count; ++i) {
+            tmp_storages_.emplace_back(storage_.g(), storage_.bin_size(), storage_.min_edge_len(),
+                storage_.min_edge_coverage(), storage_.coverage_margin(), storage_.min_flanking_coverage());
+        }
+    }
+
+    void StopProcessLibrary() override {
+        for (auto& storage : tmp_storages_)
+            storage.Clear();
+    }
+
+    void ProcessSingleRead(size_t thread_index, const io::SingleRead& /* r */, const MappingPath<EdgeId>& read) override {
+        ProcessRange(thread_index, read);
+    }
+
+    void ProcessSingleRead(size_t thread_index, const io::SingleReadSeq& /* r */, const MappingPath<EdgeId>& read) override {
+        ProcessRange(thread_index, read);
+    }
+
+    void MergeBuffer(size_t thread_index) override {
+        storage_.MergeOther(tmp_storages_[thread_index]);
         tmp_storages_[thread_index].Clear();
     }
 };

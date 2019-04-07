@@ -446,6 +446,17 @@ void load(debruijn_config::gap_closer& gc,
   load(gc.weight_threshold, pt, "weight_threshold");
 }
 
+void load(debruijn_config::ss_coverage_splitter_t& ss_cs,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(ss_cs.enabled, pt, "enabled");
+    load(ss_cs.bin_size, pt, "bin_size");
+    load(ss_cs.min_edge_len, pt, "min_edge_len");
+    load(ss_cs.min_edge_coverage, pt, "min_edge_coverage");
+    load(ss_cs.coverage_margin, pt, "coverage_margin");
+    load(ss_cs.min_flanking_coverage, pt, "min_flanking_coverage");
+}
+
 void load(debruijn_config::contig_output& co,
           boost::property_tree::ptree const& pt, bool complete) {
     using config_common::load;
@@ -688,6 +699,7 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
 
     load(cfg.con, pt, "construction", complete);
     load(cfg.gc, pt, "gap_closer", complete);
+    load(cfg.ss_coverage_splitter, pt, "ss_coverage_splitter", complete);
     load(cfg.simp, pt, "simp", complete);
     load(cfg.flanking_range, pt, "flanking_range", complete);
     load(cfg.graph_read_corr, pt, "graph_read_corr", complete);
@@ -785,12 +797,15 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
         cfg.pe_params.viz.DisableAll();
         cfg.pe_params.output.DisableAll();
     }
+    cfg.ss_coverage_splitter.enabled = cfg.ss_coverage_splitter.enabled && cfg.ss.ss_enabled && cfg.main_iteration;
 
     if (!cfg.use_scaffolder) {
         cfg.pe_params.param_set.scaffolder_options.enabled = false;
     }
+
     cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches
-                       || cfg.gap_closer_enable || cfg.rr_enable;
+                       || cfg.gap_closer_enable || cfg.rr_enable ||
+                       cfg.ss_coverage_splitter.enabled;
 
     cfg.output_dir = cfg.output_base + "/K" + std::to_string(cfg.K) + "/";
 

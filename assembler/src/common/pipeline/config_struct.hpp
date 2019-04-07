@@ -358,6 +358,15 @@ struct debruijn_config {
         double weight_threshold;
     };
 
+    struct ss_coverage_splitter_t {
+        bool enabled;
+        size_t bin_size;
+        size_t min_edge_len;
+        double min_edge_coverage;
+        double coverage_margin;
+        double min_flanking_coverage;
+    };
+
     struct info_printer {
         bool basic_stats;
         bool lib_info;
@@ -479,6 +488,7 @@ struct debruijn_config {
     dataset ds;
     position_handler pos;
     gap_closer gc;
+    ss_coverage_splitter_t ss_coverage_splitter;
     graph_read_corr_cfg graph_read_corr;
     info_printers_t info_printers;
     kmer_coverage_model kcm;
