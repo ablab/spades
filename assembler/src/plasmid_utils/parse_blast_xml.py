@@ -96,7 +96,7 @@ def parser(f, out_dir):
     xml_file = open(f,"r")
     name = os.path.basename(f)
     name = os.path.join(out_dir, name)
-    print(name)
+   # print(name)
     nosig = open(name[:-4]+"_no_significant.names", "w")
     chrom = open(name[:-4]+"_chromosome.names", "w")
     plasmids = open(name[:-4]+"_plasmid.names", "w")
@@ -111,7 +111,7 @@ def parser(f, out_dir):
         pl_len = item.query_length
 	###### No alignment - put in non-significant
         if len(item.alignments) == 0:
-            print ("No Significant")
+           # print ("No Significant")
             nosig.write(item.query + '\n\n')
             continue
 
@@ -128,7 +128,7 @@ def parser(f, out_dir):
                 continue
             alignments.append([get_query_coverage(alignment), alignment.title, parse_name(alignment.title), get_total_len(alignment), get_identity(alignment), get_hsp_count(alignment), pl_len])
         if len(alignments)== 0:
-            print ("No Significant")
+           # print ("No Significant")
             nosig.write(item.query + '\n')
             al = item.alignments[0]
             nosig.write(al.title + "\t" + "total query cov " + str(get_query_coverage(al)) + " of " + str(pl_len))
@@ -146,11 +146,11 @@ def parser(f, out_dir):
                     ambigous = i
                     break
             if ambigous != 0:
-                print ("Ambiguous")
+               # print ("Ambiguous")
                 amb_file.write(item.query + '\n')
                 amb_file.write (alignments[0][1] + '\t' + str(best_query_cov) + '\t' + alignments[ambigous][1] + '\t' + str(alignments[ambigous][0]) + '\n')
             else:
-                print (type)
+               # print (type)
                 report_file(files[type], item.query,alignments[0])
     return
 

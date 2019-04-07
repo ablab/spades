@@ -24,7 +24,7 @@ In order to work properly, plasmidVerify require Prodigal and hmmsearch in your 
 
 ### Optional BLAST verification
 
-You can verify your output by BLAST to check if you found novel plasmid. In this case you need to have blastn in your $PATH and provide path to local copy of nr database. 
+You can verify your output by BLAST to check if you found novel plasmid. In this case you need to have blastn in your $PATH, Biopython installed, and provide path to local copy of nt database. 
 
 ## Usage 
 
@@ -35,8 +35,8 @@ You can verify your output by BLAST to check if you found novel plasmid. In this
 
             Optional arguments:
             -h, --help  Show the help message and exit
-            -b          Run BLAST on input contigs
-            --db DB      Path to BLAST db
+            --db DB     Run BLAST on input contigs against provided db
 
 
-Output file input_file_result_table.csv contains comma-separated table with predicted HMMs and verification result.
+Output file: comma-separated table <input_file>_result_table.csv
+Output format: contig name, prediction result, log-likelihood ratio, list of predicted HMMs

@@ -11,7 +11,6 @@ from math import exp
 import csv
 import operator
 
-from parse_blast_xml import parser
 
 
 def parse_args(args):
@@ -22,9 +21,11 @@ def parse_args(args):
         sys.exit(1)
     parser.add_argument('-f', required = True, help='Input fasta file')
     parser.add_argument('-o', required = True, help='Output directory')
-    parser.add_argument('-b', help='Run BLAST on input contigs', action='store_true')
-    parser.add_argument('--db', help='Path to BLAST db')
+#    parser.add_argument('-b', help='Run BLAST on input contigs', action='store_true')
+    parser.add_argument('--db', help='Run BLAST on input contigs with provided database')
     parser.add_argument('--hmm', help='Path to Pfam-A HMM database')    
+    parser.add_argument('-t', help='Number of threads')    
+
     return parser.parse_args()
 
 
@@ -58,10 +59,15 @@ else:
     print ("No HMM database provided") 
     exit(1)    
 
+
 if args.db:
+    from parse_blast_xml import parser
     blastdb = args.db
+
+if args.t:
+    threads = str(args.t)
 else:
-    blastdb = ("/Bmo/ncbi_nt_database/nt")
+    threads = str(20)
 
 
 # run hmm
@@ -71,7 +77,7 @@ if res != 0:
     print ("Prodigal run failed")
     exit(1)    
 print ("HMM domains prediction...")
-res = os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --domtblout "+name+"_domtblout --cpu 20 "+ hmm + " "+name+"_proteins.fa")
+res = os.system ("hmmsearch  --noali --cut_nc  -o "+name+"_out_pfam --domtblout "+name+"_domtblout --cpu "+ threads + " " + hmm + " "+name+"_proteins.fa")
 if res != 0:
     print ("hmmsearch run failed")
     exit(2)    
@@ -191,13 +197,19 @@ for i in ids:
         final_table.append([i, "Chromosome", "--"])
 
 
-with open(name + '_result_table.csv', 'w') as output:
+result_file = name + "_result_table.csv"
+with open(result_file, 'w') as output:
     writer = csv.writer(output, lineterminator='\n')
     writer.writerows(final_table)
 
-print ("Done!")
 
-if args.b:
+if args.db:
     #run blast
-    os.system ("blastn  -query " + args.f + " -db " + blastdb + " -evalue 0.0001 -outfmt 5 -out "+name+".xml -num_threads 20 -num_alignments 50")
+    print ("Running BLAST...")
+
+    os.system ("blastn  -query " + args.f + " -db " + blastdb + " -evalue 0.0001 -outfmt 5 -out "+name+".xml -num_threads "+threads+" -num_alignments 50")
     parser(name+".xml", outdir)
+
+
+print ("Done!")
+print ("Verification results can be found in " + os.path.abspath(result_file))
