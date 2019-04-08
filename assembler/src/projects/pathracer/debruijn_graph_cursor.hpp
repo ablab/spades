@@ -4,6 +4,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 
+#include <cereal/archives/binary.hpp>
 #include <vector>
 
 struct IdHolder {
@@ -32,7 +33,7 @@ struct IdHolder {
 
     template <class Archive>
     void serialize(Archive &archive) {
-        archive(*reinterpret_cast<uint64_t*>(this));
+        archive(binary_pod(this));
     }
 };
 

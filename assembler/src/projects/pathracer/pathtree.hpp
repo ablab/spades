@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #include "fees.hpp"
+#include "utils.hpp"
 
 // Serialization
 #include <cereal/types/vector.hpp>
@@ -39,7 +40,7 @@ struct Event {
 
   template <class Archive>
   void serialize(Archive &archive) {
-    archive(*reinterpret_cast<uint32_t*>(this));
+    archive(binary_pod(this));
   }
 };
 static_assert(sizeof(Event) == sizeof(uint32_t), "Invalid Event structure size");
