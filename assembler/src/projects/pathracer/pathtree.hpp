@@ -40,7 +40,7 @@ struct Event {
 
   template <class Archive>
   void serialize(Archive &archive) {
-    archive(binary_pod(this));
+    archive(cereal_as_pod(*this));
   }
 };
 static_assert(sizeof(Event) == sizeof(uint32_t), "Invalid Event structure size");

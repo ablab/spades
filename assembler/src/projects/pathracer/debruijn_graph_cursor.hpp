@@ -33,7 +33,7 @@ struct IdHolder {
 
     template <class Archive>
     void serialize(Archive &archive) {
-        archive(binary_pod(this));
+        archive(cereal_as_pod(*this));
     }
 };
 
