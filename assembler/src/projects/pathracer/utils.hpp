@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 
 
+#include "utils/logger/log_writers.hpp"
+#include "utils/logger/log_writers_thread.hpp"
 #include "utils/stl_utils.hpp"
 using namespace utils;
 
@@ -180,4 +182,15 @@ int int_max_binsearch(const Pred &pred, int surely_true, int surely_false) {
     }
 
     return surely_true;
+}
+
+inline void create_console_logger(const std::string &filename = "") {
+    using namespace logging;
+
+    logger *lg = create_logger("");
+    lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<console_writer_thread>()));
+    if (filename != "") {
+        lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<file_writer_thread>(filename)));
+    }
+    attach_logger(lg);
 }

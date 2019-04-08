@@ -33,8 +33,6 @@
 #include "hmm/hmmmatcher.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
-#include "utils/logger/log_writers.hpp"
-#include "utils/logger/log_writers_thread.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/memory_limit.hpp"
 
@@ -62,17 +60,6 @@ extern "C" {
 
 struct main_assert : debug_assert::default_handler,
                      debug_assert::set_level<1> {};
-
-void create_console_logger(const std::string &filename = "") {
-    using namespace logging;
-
-    logger *lg = create_logger("");
-    lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<console_writer_thread>()));
-    if (filename != "") {
-        lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<file_writer_thread>(filename)));
-    }
-    attach_logger(lg);
-}
 
 enum class Mode {
     hmm,
