@@ -8,16 +8,22 @@
 #include <vector>
 
 struct IdHolder {
-    uint64_t id_ : 26;
-    uint64_t pos_ : 28;
+    static const int ID_LEN = 26;
+    static const int POS_LEN = 38;
+    static const size_t ID_MASK = (size_t(1) << ID_LEN) - 1;
+    static const size_t POS_MASK = (size_t(1) << POS_LEN) - 1;
+
+    uint64_t id_ : ID_LEN;
+    uint64_t pos_ : POS_LEN;
+
 
     IdHolder()
-            : id_(0), pos_(-1) {}
+            : id_(ID_MASK), pos_(POS_MASK) {}
 
     IdHolder(debruijn_graph::EdgeId id, uint64_t pos)
-            : id_(id.int_id()), pos_(pos) {}
+            : id_(id.int_id() & ID_MASK), pos_(pos & POS_MASK) {}
 
-    explicit operator bool() const { return id_; }
+    explicit operator bool() const { return id_ != ID_MASK && pos_ != POS_MASK; }
 
     bool operator==(const IdHolder &other) const {
         return (id_ == other.id_) && (pos_ == other.pos_);
@@ -57,7 +63,7 @@ public:
     using EdgeId = debruijn_graph::EdgeId;
     EdgeId edge() const { return holder_.e(); }
     size_t position() const { return holder_.pos(); }
-    bool is_empty() const { return !holder_; }  //FIXME check it!!!!!
+    bool is_empty() const { return !holder_; }
 
     char letter(Context context) const {
         return nucl2(g(context).EdgeNucls(edge())[position()]); }
