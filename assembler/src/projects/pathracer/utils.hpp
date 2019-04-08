@@ -12,6 +12,7 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/logger/log_writers_thread.hpp"
 #include "utils/stl_utils.hpp"
+#include <cereal/cereal.hpp>
 using namespace utils;
 
 // template <typename T>
@@ -193,4 +194,9 @@ inline void create_console_logger(const std::string &filename = "") {
         lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<file_writer_thread>(filename)));
     }
     attach_logger(lg);
+}
+
+template <typename T>
+auto binary_pod(T *p) {
+    return cereal::binary_data(p, sizeof(*p));
 }
