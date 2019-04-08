@@ -104,7 +104,7 @@ params {
     scaffolding_mode old
 
     overlap_removal {
-        enabled true
+        enabled false
         end_start_only  true
         cut_all true
     }
