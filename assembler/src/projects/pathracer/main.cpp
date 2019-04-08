@@ -298,6 +298,7 @@ PathAlnInfo GetOverhangs(const hmmer::HMMMatcher &matcher,
         int shift = hmm_in_aas ? static_cast<int>(std::strtol(name.c_str() + slash_pos + 1, nullptr, 10)) : 0;
         VERIFY(0 <= shift && shift < 3);  // shift should be 0, 1, or 3
         size_t seqlen = seqs[id].length();
+        VERIFY(seqlen >= 3);
 
         for (const auto &domain : hit.domains()) {
             // Calculate HMM overhang
@@ -312,7 +313,7 @@ PathAlnInfo GetOverhangs(const hmmer::HMMMatcher &matcher,
                 roverhang *= 3;
                 // Take shift and sequence length into account
                 int extra_left = shift;
-                int extra_right = (seqlen - shift) % 3;
+                int extra_right = static_cast<int>(seqlen - shift) % 3;
                 loverhang -= extra_left;
                 roverhang -= extra_right;
             }
@@ -899,12 +900,12 @@ void TraceHMM(const hmmer::HMM &hmm,
                 if (result.pathlink()->has_sequence(seq, &ccc)) {
                     INFO("Sequence " << kv.first << " found");
                 } else {
-                    auto has_prefix = [&](int l) -> bool { return result.pathlink()->has_sequence(seq.substr(0, l), &ccc); };
-                    auto has_suffix = [&](int l) -> bool { return result.pathlink()->has_sequence(seq.substr(seq.size() - l), &ccc); };
-                    auto has_infix = [&](int l) -> bool { return result.pathlink()->has_sequence(seq.substr((seq.size() - l) / 2, l), &ccc); };
-                    size_t max_prefix_size = int_max_binsearch(has_prefix, 0, seq.length() + 1);
-                    size_t max_suffix_size = int_max_binsearch(has_suffix, 0, seq.length() + 1);
-                    size_t max_infix_size = int_max_binsearch(has_infix, 0, seq.length() + 1);
+                    auto has_prefix = [&](size_t l) -> bool { return result.pathlink()->has_sequence(seq.substr(0, l), &ccc); };
+                    auto has_suffix = [&](size_t l) -> bool { return result.pathlink()->has_sequence(seq.substr(seq.size() - l), &ccc); };
+                    auto has_infix = [&](size_t l) -> bool { return result.pathlink()->has_sequence(seq.substr((seq.size() - l) / 2, l), &ccc); };
+                    size_t max_prefix_size = int_max_binsearch<size_t>(has_prefix, 0, seq.length() + 1);
+                    size_t max_suffix_size = int_max_binsearch<size_t>(has_suffix, 0, seq.length() + 1);
+                    size_t max_infix_size = int_max_binsearch<size_t>(has_infix, 0, seq.length() + 1);
                     INFO("Sequence " << kv.first << " not found, max prefix " << max_prefix_size << ", max suffix " << max_suffix_size << " max infix " << max_infix_size << " over " << seq.size());
                 }
             }
