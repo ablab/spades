@@ -132,7 +132,7 @@ inline char nucl(char c) {
 inline char nucl2(char c) {
     unsigned idx = c & 3;
     uint32_t res = 0x54474341; // 'TGCA'
-    return (res >> (8 * idx)) & 0xFF;
+    return static_cast<char>(res >> (8 * idx));
 }
 
 /**
