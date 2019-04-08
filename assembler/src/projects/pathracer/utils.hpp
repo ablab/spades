@@ -197,6 +197,6 @@ inline void create_console_logger(const std::string &filename = "") {
 }
 
 template <typename T>
-auto binary_pod(T *p) {
-    return cereal::binary_data(p, sizeof(*p));
+auto cereal_as_pod(T &ref) {
+    return cereal::binary_data(&ref, sizeof(ref));
 }
