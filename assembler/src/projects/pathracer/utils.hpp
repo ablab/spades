@@ -171,10 +171,10 @@ inline void to_upper_case(std::string &s) {
     for (char &c: s) c = static_cast<char>(std::toupper(c));
 }
 
-template <typename Pred>
-int int_max_binsearch(const Pred &pred, int surely_true, int surely_false) {
+template <typename IntType, typename Pred>
+IntType int_max_binsearch(const Pred &pred, IntType surely_true, IntType surely_false) {
     while (surely_true + 1 < surely_false) {
-        int mid = (surely_true + surely_false) / 2;
+        IntType mid = (surely_true + surely_false) / 2;
         if (pred(mid)) {
             surely_true = mid;
         } else {
