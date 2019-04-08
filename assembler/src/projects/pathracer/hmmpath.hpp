@@ -568,7 +568,18 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     transfer(M, preM, 0, fees.mat[m]);
   };
 
-  depth_filter::impl::DepthAtLeast<GraphCursor> depth;
+  depth_filter::DepthInt<GraphCursor> depth;
+  // if (true) {
+  //   depth_filter::impl::Depth<GraphCursor> depth_recursive;
+  //   for (const auto &cursor : initial_original) {
+  //     size_t di = depth.depth(cursor, context);
+  //     double dd = depth_recursive.depth(cursor, context);
+  //     size_t dd2di = dd == std::numeric_limits<double>::infinity() ? std::numeric_limits<size_t>::max() : static_cast<size_t>(dd);
+  //     if (di != dd2di) {
+  //       INFO(di << " " << dd2di);
+  //     }
+  //   }
+  // }
 
   INFO("Original (before filtering) initial set size: " << initial_original.size());
   // depth_filter::impl::Depth<GraphCursor> depth_naive;
@@ -577,9 +588,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   // }
   double required_cursor_depth = static_cast<double>(fees.M) * fees.depth_filter_rate - fees.depth_filter_constant;
   if (fees.local) {
-    required_cursor_depth = fees.minimal_match_length;
+    required_cursor_depth = static_cast<double>(fees.minimal_match_length);
   }
-  required_cursor_depth = std::max<double>(required_cursor_depth, fees.minimal_match_length);
+  required_cursor_depth = std::max<double>(required_cursor_depth, static_cast<double>(fees.minimal_match_length));
   INFO("Depth required: " << required_cursor_depth);
   std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
                [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, required_cursor_depth,

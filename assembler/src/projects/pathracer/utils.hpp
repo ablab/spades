@@ -200,3 +200,8 @@ template <typename T>
 auto cereal_as_pod(T &ref) {
     return cereal::binary_data(&ref, sizeof(ref));
 }
+
+template <typename T>
+T saturated_inc(T v, const T max = std::numeric_limits<T>::max()) {
+    return v == max ? v : v + 1;
+}
