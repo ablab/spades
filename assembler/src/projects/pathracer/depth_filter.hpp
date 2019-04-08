@@ -46,7 +46,7 @@ class Depth {
       return depth_[cursor] = std::numeric_limits<double>::infinity();
     }
 
-    if (cursor.letter(context) == '*' || cursor.letter(context) == 'X') {
+    if (cursor.letter(context) == '*' || cursor.letter(context) == 'X') {  // FIXME X is not stop codon
       // INFO("Empty depth " << cursor);
       return depth_[cursor] = 0;
     }
@@ -195,7 +195,7 @@ class DepthAtLeast {
       }
     }
 
-    if (cursor.letter(context) == '*' || cursor.letter(context) == 'X') {
+    if (cursor.letter(context) == '*' || cursor.letter(context) == 'X') {  // FIXME X is not stop codon
       return depth_[cursor] = {0, true};
     }
 
