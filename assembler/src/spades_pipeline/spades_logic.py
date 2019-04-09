@@ -163,7 +163,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     dst_configs = os.path.join(data_dir, "configs")
 
     if options_storage.continue_mode:
-        if os.path.isfile(os.path.join(data_dir, "final_contigs.fasta")) and not (options_storage.restart_from and
+        if os.path.isfile(os.path.join(data_dir, "simplified_contigs.fasta")) and not (options_storage.restart_from and
             (options_storage.restart_from == ("k%d" % K) or options_storage.restart_from.startswith("k%d:" % K))):
             log.info("\n== Skipping assembler: " + ("K%d" % K) + " (already processed)")
             return
@@ -268,7 +268,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
         processed_K = []
         for k in range(options_storage.MIN_K, options_storage.MAX_K, 2):
             cur_K_dir = os.path.join(cfg.output_dir, "K%d" % k)
-            if os.path.isdir(cur_K_dir) and os.path.isfile(os.path.join(cur_K_dir, "final_contigs.fasta")):
+            if os.path.isdir(cur_K_dir) and os.path.isfile(os.path.join(cur_K_dir, "simplified_contigs.fasta")):
                 processed_K.append(k)
         if processed_K:
             RL = get_read_length(cfg.output_dir, processed_K[0], ext_python_modules_home, log)

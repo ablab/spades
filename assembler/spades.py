@@ -539,7 +539,10 @@ def check_cfg_for_partial_run(cfg, type='restart-from'):  # restart-from ot stop
             k_to_check = options_storage.k_mers
             if not k_to_check:
                 if options_storage.auto_K_allowed():
-                    k_to_check = list(set(options_storage.K_MERS_SHORT + options_storage.K_MERS_150 + options_storage.K_MERS_250))
+                    if options_storage.rna:
+                        k_to_check = cfg["assembly"].__dict__["iterative_K"]
+                    else:
+                        k_to_check = list(set(options_storage.K_MERS_SHORT + options_storage.K_MERS_150 + options_storage.K_MERS_250))
                 else:
                     k_to_check = options_storage.K_MERS_SHORT
             for k in k_to_check:
@@ -652,6 +655,14 @@ def main(args):
         if err_msg:
             support.error(err_msg + " Please restart from the beginning or specify another output directory.")
         cfg, dataset_data = fill_cfg(options, log, secondary_filling=True)
+
+        if options_storage.rna and cfg["assembly"].__dict__["iterative_K"] == 'auto':
+            k_values = options_storage.K_MERS_RNA
+            if not options_storage.iontorrent:
+                k_values = rna_k_values(support, options_storage, dataset_data, log)
+            cfg["assembly"].__dict__["iterative_K"] = k_values
+            log.info("K values used in the previous run: " + str(k_values))
+
         if options_storage.restart_from:
             check_cfg_for_partial_run(cfg, type='restart-from')
         options_storage.continue_mode = True
