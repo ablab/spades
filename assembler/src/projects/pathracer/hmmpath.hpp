@@ -305,17 +305,17 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
     return copy;
   }
 
-  bool update(const GraphCursor &cursor, score_t score, const GraphCursor &from,
+  bool update(const GraphCursor &cursor, score_t score,
               const PathLinkRef<GraphCursor> &plink) {
     auto it_fl = this->insert({cursor, nullptr});
     auto it = it_fl.first;
     bool inserted = it_fl.second;
     if (inserted) {
-      it->second = PathLink<GraphCursor>::create();
+      it->second = PathLink<GraphCursor>::create(cursor);
     }
 
     score_t prev = inserted ? std::numeric_limits<score_t>::infinity() : it->second->score();
-    it->second->update(from, score, plink);
+    it->second->update(score, plink);
     return prev > score;
   }
 
@@ -360,7 +360,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     for (const auto &state : from.states()) {
       for (const auto &next : (state.cursor.is_empty() ? initial : state.cursor.next(context))) {
         double cost = state.score + transfer_fee + emission_fees[code(next.letter(context))];
-        to.update(next, cost, state.cursor, state.plink);
+        to.update(next, cost, state.plink);
       }
     }
   };
@@ -377,7 +377,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       for (const auto &next : cur.next(context)) {
         char letter = next.letter(context);
         double cost = fee + transfer_fee + emission_fees[code(letter)];
-        if (to.update(next, cost, cur, id)) {
+        if (to.update(next, cost, id)) {
           updated.insert(next);
         }
       }
@@ -458,7 +458,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
         char letter = next.letter(context);
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
         if (!filter(next)) {
-          bool updated = I.update(next, cost, elt.current_cursor, id);
+          bool updated = I.update(next, cost, id);
           // FIXME potential memory leak here!
           if (updated) {
             q.push({next, cost});
@@ -496,12 +496,12 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     for (const auto &kv : I) {
       const auto &current_cursor = kv.first;
       auto best = kv.second->best_ancestor();
-      const auto &score = best->second.first;
+      const auto &score = best->first;
       if (score > fees.absolute_threshold) {
         continue;
       }
       if (!filter(current_cursor)) {
-        q.push({current_cursor, score, best->first, best->second.second});
+        q.push({current_cursor, score, best->second->cursor(), best->second});
       }
     }
     TRACE(q.size() << " I values in queue m = " << m);
@@ -522,7 +522,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
         continue;
       }
 
-      I.update(elt.current_cursor, elt.score, elt.source_cursor, elt.source_state);  // TODO return iterator to inserted/updated elt
+      I.update(elt.current_cursor, elt.score, elt.source_state);  // TODO return iterator to inserted/updated elt
       const auto &id = I[elt.current_cursor];
       for (const auto &next : elt.current_cursor.next(context)) {
         if (processed.count(next)) {
@@ -589,11 +589,11 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   StateSet I, M;
   DeletionStateSet D;
   auto source = PathLink<GraphCursor>::create_source();
-  auto sink = PathLink<GraphCursor>::create();
+  auto sink = PathLink<GraphCursor>::create_sink();
   M[GraphCursor()] = source;
   auto update_sink = [&sink](const auto &S, double fee) {
     for (const auto &state : S.states()) {
-      sink->update(state.cursor, state.score + fee, state.plink);
+      sink->update(state.score + fee, state.plink);
     }
   };
 
