@@ -122,56 +122,43 @@ public:
     return score_;
   }
 
-  bool update(GraphCursor gp, score_t score, const ThisRef &pl) {
-    scores_.push_back({gp, {score, pl}});
+  bool update(score_t score, const ThisRef &pl) {
+    scores_.push_back({score, pl});
     if (score_ > score) {
       score_ = score;
       return true;
     } else {
       return false;
     }
-    // auto val = std::make_pair(score, pl);
-    // auto it_fl = scores_.insert({gp, val});
-    // bool inserted = it_fl.second;
-    // if (!inserted) {
-    //   const auto &it = it_fl.first;
-    //   if (it->second.first > score) {
-    //     it->second = std::move(val);
-    //     DEBUG_ASSERT(scores_.size(), pathtree_assert{});
-    //     return true;
-    //   } else {
-    //     DEBUG_ASSERT(scores_.size(), pathtree_assert{});
-    //     return false;
-    //   }
-    // } else {
-    //   DEBUG_ASSERT(scores_.size(), pathtree_assert{});
-    //   return true;
-    // }
   }
 
-  PathLink() : score_{std::numeric_limits<score_t>::infinity()} {
+  PathLink(const GraphCursor &cursor = GraphCursor()) : score_{std::numeric_limits<score_t>::infinity()}, cursor_{cursor} {
     scores_.reserve(8);
+  }
+
+  const GraphCursor &cursor() const {
+    return cursor_;
   }
 
   auto best_ancestor() const {
     DEBUG_ASSERT(scores_.size(), pathtree_assert{});
     return std::min_element(scores_.cbegin(), scores_.cend(),
-                            [](const auto &e1, const auto &e2) { return e1.second.first < e2.second.first; });
+                            [](const auto &e1, const auto &e2) { return e1.first < e2.first; });
   }
 
 
-  static void collapse_scores_left(std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> &scores) {
-    sort_by(scores.begin(), scores.end(), [](const auto &p) { return std::make_tuple(p.first, p.second.first); }); // TODO prefer matchs to insertions in case of eveness
+  static void collapse_scores_left(std::vector<std::pair<double, ThisRef>> &scores) {
+    sort_by(scores.begin(), scores.end(), [](const auto &p) { return std::make_tuple(p.second->cursor(), p.first); }); // TODO prefer matchs to insertions in case of eveness
     auto it = unique_copy_by(scores.cbegin(), scores.cend(), scores.begin(),
-                             [](const auto &p){ return p.first; });
+                             [](const auto &p){ return p.second->cursor(); });
     scores.resize(std::distance(scores.begin(), it));
   }
 
-  static void trim_scores_left(std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> &scores) {
-    sort_by(scores.begin(), scores.end(), [](const auto &p) { return p.second.first; });
+  static void trim_scores_left(std::vector<std::pair<double, ThisRef>> &scores) {
+    sort_by(scores.begin(), scores.end(), [](const auto &p) { return p.first; });
 
     for (size_t i = 0; i < scores.size(); ++i) {
-      if (scores[i].first.is_empty()) {
+      if (scores[i].second->cursor().is_empty()) {
         size_t new_len = i + 1;
         if (new_len > 1) {
           --new_len;
@@ -188,18 +175,25 @@ public:
     scores_.shrink_to_fit();
   }
 
-  static ThisRef create() { return new This(); }
+  static ThisRef create(const GraphCursor &cursor) { return new This(cursor); }
   ThisRef clone() const { return new This(*this); }
 
+  static ThisRef create_sink() {
+    return create(GraphCursor());
+  }
+
   static ThisRef create_source() {
-    ThisRef result = create();
-    result->update(GraphCursor(), 0, nullptr);  // SOURCE score should be 0
+    ThisRef result = create(GraphCursor());
+    result->score_ = 0;
     return result;
+  }
+
+  bool is_source() const {
+    return scores_.size() == 0 && score_ == 0;
   }
 
   std::vector<AnnotatedPath<GraphCursor>> top_k(size_t k, double min_score = 0) const {
     struct Event {
-      GraphCursor gp; // PathLink does not know its own position!
       const This *path_link;
     };
 
@@ -218,7 +212,7 @@ public:
     std::priority_queue<QueueElement, std::vector<QueueElement>, Comp> q;
 
     std::vector<AnnotatedPath<GraphCursor>> result;
-    auto SinkPath = pathtrie::make_root<Event>({GraphCursor(), this});
+    auto SinkPath = pathtrie::make_root<Event>({this});
     q.push({SinkPath, score()});
 
     auto get_annotated_path = [&](const EventPath &epath, double cost) -> AnnotatedPath<GraphCursor> {
@@ -226,10 +220,10 @@ public:
       std::vector<pathtree::Event> events;
 
       for (const auto &event : epath->collect()) {
-        if (event.gp.is_empty()) {
+        if (event.path_link->cursor().is_empty()) {
           continue;  // TODO Think about a better way to exclude empty cursors
         }
-        path.push_back(event.gp);
+        path.push_back(event.path_link->cursor());
         events.push_back(event.path_link->emission());
       }
 
@@ -243,7 +237,6 @@ public:
     while (!q.empty() && result.size() < k) {
       auto qe = q.top();
       q.pop();
-      const GraphCursor &gp = qe.path->data().gp;
       const This *path_link = qe.path->data().path_link;
       const double &cost = qe.cost;
 
@@ -251,8 +244,8 @@ public:
       // if (false) {{{  // FIXME fix collapsing and trimming
       // Check
       if (!qe.path->is_root()) {
-        const GraphCursor &prev_gp = qe.path->parent()->data().gp;
         const This *prev_path_link = qe.path->parent()->data().path_link;
+        const GraphCursor &prev_gp = prev_path_link->cursor();
         auto &be = best_edges[path_link];
         // Trimming
         if (prev_gp.is_empty()) {
@@ -278,8 +271,7 @@ public:
       }
       // }}}
 
-      // Check if path started with SOURCE: TODO implement it properly
-      if (gp.is_empty() && !qe.path->is_root()) {
+      if (path_link->is_source()) {
         if (-qe.cost < min_score) {  // FIXME remember about the sign!!!
           break;
         }
@@ -300,10 +292,10 @@ public:
         continue;
       }
 
-      for (const auto &cdp : path_link->scores_) {
-        Event new_event{cdp.first, const_cast<const This *>(cdp.second.second.get())};
+      for (const auto &score_pl : path_link->scores_) {
+        Event new_event{const_cast<const This *>(score_pl.second.get())};
         auto new_path = qe.path->child(new_event);
-        double delta = cdp.second.first - path_link->score();
+        double delta = score_pl.first - path_link->score();
         q.push({new_path, cost + delta});
       }
     }
@@ -341,7 +333,7 @@ public:
       checked.insert(current);
 
       for (const auto &kv : current->scores_) {
-        const This *p = kv.second.second.get();
+        const This *p = kv.second.get();
         if (p) {
           q.push(p);
         }
@@ -364,8 +356,9 @@ public:
 
   void set_finishes(const std::unordered_set<GraphCursor> &finishes) {
     auto it = std::remove_if(scores_.begin(), scores_.end(),
-                             [&finishes](const auto &x){ return !finishes.count(x.first); });
+                             [&finishes](const auto &x){ return !finishes.count(x.second->cursor()); });
     scores_.erase(it, scores_.end());
+    update_score();
   }
 
   void collapse_all() {
@@ -408,8 +401,8 @@ public:
       std::vector<const This*> new_pointers;
       for (const This *p : pointers) {
         for (const auto &kv : p->scores_) {
-          const GraphCursor &cursor = kv.first;
-          const This* next = kv.second.second.get();
+          const This* next = kv.second.get();
+          const GraphCursor &cursor = next->cursor();
           if (!cursor.is_empty() && cursor.letter(context) == seq[i]) {
             new_pointers.push_back(next);
           }
@@ -422,14 +415,25 @@ public:
 
   template <class Archive>
   void serialize(Archive &archive) {
-    archive(scores_, score_, event_);
+    archive(scores_, score_, event_, cursor_);
   }
 
 private:
   // std::unordered_map<GraphCursor, std::pair<double, ThisRef>> scores_;
-  std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> scores_;
+  // std::vector<std::pair<GraphCursor, std::pair<double, ThisRef>>> scores_;
+  std::vector<std::pair<double, ThisRef>> scores_;
   score_t score_;
+  GraphCursor cursor_;
   Event event_;
+
+  void update_score() {
+    if (!scores_.empty()) {
+      auto it = best_ancestor();
+      score_ = it->first;
+    } else {
+      score_ = std::numeric_limits<double>::infinity();
+    }
+  }
 
   // const auto& get_cursor_delta_trimmed_left() const { // FIXME rename
   //   // TODO Check and fix this description
