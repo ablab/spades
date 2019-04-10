@@ -230,7 +230,9 @@ public:
       return AnnotatedPath<GraphCursor>{path, -cost, events}; // FIXME sign!!!!!
     };
 
-    std::unordered_map<const This*, std::unordered_map<GraphCursor, const This*>> best_edges;
+    // TODO use one map instead of two sets
+    std::unordered_set<const This*> was_end_of_some_path;
+    std::unordered_set<const This*> was_nonend_of_some_path;
 
     trie::Trie<GraphCursor> trie;
 
@@ -241,35 +243,23 @@ public:
       const double &cost = qe.cost;
 
       TRACE("Extracting path with cost " << cost);
-      // if (false) {{{  // FIXME fix collapsing and trimming
-      // Check
       if (!qe.path->is_root()) {
         const This *prev_path_link = qe.path->parent()->data().path_link;
         const GraphCursor &prev_gp = prev_path_link->cursor();
-        auto &be = best_edges[path_link];
         // Trimming
         if (prev_gp.is_empty()) {
-          be[prev_gp] = prev_path_link;  // Strong trimming!
+          was_end_of_some_path.insert(path_link);  // Strong trimming!
           // Check has non-empty cursor
-          if (std::any_of(be.cbegin(), be.cend(), [](const auto& x){ return !x.first.is_empty(); })) {
+          if (was_nonend_of_some_path.count(path_link)) {
             continue;
           }
         } else {
-          if (be.count(GraphCursor())) {
+          if (was_end_of_some_path.count(path_link)) {
             continue;
           }
-        }
-
-        // Collapsing
-        auto it = be.find(prev_gp);
-        // if (it != be.cend() && it->second != prev_path_link) {
-        //   continue;
-        // }
-        if (it == be.cend()) {
-          be[prev_gp] = prev_path_link;
+          was_nonend_of_some_path.insert(path_link);
         }
       }
-      // }}}
 
       if (path_link->is_source()) {
         if (-qe.cost < min_score) {  // FIXME remember about the sign!!!
