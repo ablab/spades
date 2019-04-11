@@ -583,7 +583,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   auto i_loop_processing = [&](StateSet &I, size_t m, const auto &filter) {
-    return i_loop_processing_negative2(I, m);
+    // return i_loop_processing_negative2(I, m);
 
     if (fees.is_i_loop_non_negative(m)) {
       if (fees.use_experimental_i_loop_processing) {
@@ -610,7 +610,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     transfer(M, preM, 0, fees.mat[m]);
   };
 
-  depth_filter::DepthInt<GraphCursor> depth;
+  depth_filter::DepthInt<GraphCursor> depth_int;
+  depth_filter::impl::DepthAtLeast<GraphCursor> depth;
   // if (true) {
   //   depth_filter::impl::Depth<GraphCursor> depth_recursive;
   //   for (const auto &cursor : initial_original) {
@@ -619,6 +620,13 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   //     size_t dd2di = dd == std::numeric_limits<double>::infinity() ? std::numeric_limits<size_t>::max() : static_cast<size_t>(dd);
   //     if (di != dd2di) {
   //       INFO(di << " " << dd2di);
+  //     }
+  //     if (!depth_at_least.depth_at_least(cursor, di, context)) {
+  //       INFO("! depth_at_least");
+  //     }
+  //
+  //     if (di != depth.INF && depth_at_least.depth_at_least(cursor, di + 1, context)) {
+  //       INFO("depth_at_least + 1");
   //     }
   //   }
   // }
@@ -658,6 +666,12 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     if (fees.local) {
       required_cursor_depth = 0;
     }
+    bool dal = depth.depth_at_least(cursor, required_cursor_depth, context);
+    bool di = depth_int.depth_at_least(cursor, required_cursor_depth, context);
+    if (di != dal) {
+      INFO(di << " " << dal << " " << cursor << " " << required_cursor_depth << " " << depth_int.depth(cursor, context));
+    }
+    VERIFY(di == dal);
     return !depth.depth_at_least(cursor, required_cursor_depth, context);
   };
 
