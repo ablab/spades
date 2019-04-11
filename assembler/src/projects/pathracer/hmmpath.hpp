@@ -296,6 +296,11 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
     }
   }
 
+  score_t get_cost(const GraphCursor &cursor) const {
+    auto it = this->find(cursor);
+    return it != this->cend() ? it->second->score() : std::numeric_limits<score_t>::infinity();
+  }
+
   StateSet clone() const {
     StateSet copy{*this};
     for (auto &kv : copy) {
@@ -371,18 +376,53 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     DEBUG_ASSERT(&to != &from, hmmpath_assert{});
     std::unordered_set<GraphCursor> updated;
     for (const auto &state : from.states(keys)) {
-      const auto &cur = state.cursor;
-      const auto &fee = state.score;
-      const auto &id = state.plink;
-      for (const auto &next : cur.next(context)) {
-        char letter = next.letter(context);
-        double cost = fee + transfer_fee + emission_fees[code(letter)];
-        if (to.update(next, cost, id)) {
+      for (const auto &next : state.cursor.next(context)) {
+        double cost = state.score + transfer_fee + emission_fees[code(next.letter(context))];
+        if (to.update(next, cost, state.plink)) {
           updated.insert(next);
         }
       }
     }
     return updated;
+  };
+  auto loop_transfer_negative = [&code, context](StateSet &I, double transfer_fee,
+                                                 const std::vector<double> &emission_fees,
+                                                 const std::unordered_set<GraphCursor> &keys) {
+    StateSet Inext;
+    std::unordered_set<GraphCursor> updated;
+    for (const auto &state : I.states(keys)) {
+      for (const auto &next : state.cursor.next(context)) {
+        double cost = state.score + transfer_fee + emission_fees[code(next.letter(context))];
+        Inext.update(next, cost, state.plink);
+        if (cost < I.get_cost(next)) {
+          updated.insert(next);
+        }
+      }
+    }
+
+    for (const GraphCursor &cursor : updated) {
+      I[cursor] = std::move(Inext[cursor]);
+      I[cursor]->collapse_and_trim();
+    }
+
+    return updated;
+  };
+
+  auto i_loop_processing_negative2 = [&loop_transfer_negative, &fees](StateSet &I, size_t m) {
+    const size_t max_insertions = 30;
+
+    std::unordered_set<GraphCursor> updated;
+    for (const auto &kv : I) {
+      updated.insert(kv.first);
+    }
+    I.set_event(m, EventType::INSERTION);
+    for (size_t i = 0; i < max_insertions; ++i) {
+      updated = loop_transfer_negative(I, fees.t[m][p7H_II], fees.ins[m], updated);
+      INFO("Updated: " << updated.size() << " on i = " << i << " m = " << m);
+      for (const GraphCursor &cursor : updated) {
+        I[cursor]->set_emission(m, EventType::INSERTION);
+      }
+    }
   };
 
   auto i_loop_processing_negative = [&transfer_upd, &fees](StateSet &I, size_t m) {
@@ -543,6 +583,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   auto i_loop_processing = [&](StateSet &I, size_t m, const auto &filter) {
+    return i_loop_processing_negative2(I, m);
+
     if (fees.is_i_loop_non_negative(m)) {
       if (fees.use_experimental_i_loop_processing) {
         return i_loop_processing_non_negative_formally_correct_but_slow_and_potentially_leaking(I, m, filter);
