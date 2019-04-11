@@ -177,6 +177,14 @@ public:
     collapse_scores_left(scores_);
     trim_scores_left(scores_);
     scores_.shrink_to_fit();
+    update_max_prefix_size();
+  }
+
+  void update_max_prefix_size() {
+    max_prefix_size_ = 0;
+    for (const auto &p : scores_) {
+      max_prefix_size_ = std::max(max_prefix_size_, p.second->max_prefix_size() + 1);
+    }
   }
 
   static ThisRef create(const GraphCursor &cursor) { return new This(cursor); }
