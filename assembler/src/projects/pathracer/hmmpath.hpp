@@ -583,7 +583,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   auto i_loop_processing = [&](StateSet &I, size_t m, const auto &filter) {
-    // return i_loop_processing_negative2(I, m);
+    return i_loop_processing_negative2(I, m);
 
     if (fees.is_i_loop_non_negative(m)) {
       if (fees.use_experimental_i_loop_processing) {
