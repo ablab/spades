@@ -550,7 +550,7 @@ def load_info(dataset_path):
 # Get contig list to be assessed for this run
 def get_contigs_list(args, dataset_info, before_rr = False):
     contigs = [("contigs", "contigs", "", "", "fasta")]
-    contigs.append(("scaffolds", "scaffolds", "sc", " --scaffolds ", "fasta"))
+    contigs.append(("scaffolds", "scaffolds", "sc", " -s ", "fasta"))
     contigs.append(("contigs_paths", "contigs", "", "", "paths"))
     contigs.append(("scaffolds_paths", "scaffolds", "", "", "paths"))
 
