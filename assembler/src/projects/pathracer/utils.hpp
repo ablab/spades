@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <type_traits>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -204,4 +205,14 @@ auto cereal_as_pod(T &ref) {
 template <typename T>
 T saturated_inc(T v, const T max = std::numeric_limits<T>::max()) {
     return v == max ? v : v + 1;
+}
+
+template <typename T>
+T saturated_sum(T v1, T v2) {
+    static_assert(std::is_unsigned<T>::value, "T should be unsigned");
+    T result = v1 + v2;
+    if (result < v1) {  // overflow
+        result = std::numeric_limits<T>::max();
+    }
+    return result;
 }
