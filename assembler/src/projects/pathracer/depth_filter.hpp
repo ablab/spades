@@ -169,7 +169,7 @@ class DepthAtLeast {
     if (depth <= 0) {
       return true;
     }
-    return depth_at_least(cursor, static_cast<size_t>(depth), context);
+    return depth_at_least(cursor, static_cast<size_t>(ceil(depth)), context);
   }
 
   bool depth_at_least(const GraphCursor &cursor, size_t depth,
