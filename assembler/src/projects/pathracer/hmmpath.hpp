@@ -233,9 +233,9 @@ class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<Grap
     return {cursor, plink, score};
   }
 
-  bool update(const GraphCursor &cursor,
-              score_t score,
+  bool update(score_t score,
               const PathLinkRef<GraphCursor> &plink) {
+    const GraphCursor &cursor = plink->cursor();
     auto it_fl = this->insert({cursor, {plink, score}});
     auto it = it_fl.first;
     bool inserted = it_fl.second;
@@ -257,7 +257,7 @@ class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<Grap
     size_t count = 0;
 
     for (const auto &state : S.states()) {
-      count += update(state.cursor, state.score + fee, state.plink);
+      count += update(state.score + fee, state.plink);
     }
 
     return count;
@@ -616,7 +616,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     positions_left = fees.M - m;
 
     if (fees.local && m > 1) {
-      D.update(GraphCursor(), fees.cleavage_cost, source);
+      D.update(fees.cleavage_cost, source);
     }
     dm_new(D, M, I, m);
 
