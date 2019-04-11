@@ -366,7 +366,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   auto transfer_upd = [&code,context](StateSet &to, const StateSet &from, double transfer_fee,
-                                      const std::vector<double> &emission_fees, const std::string &,
+                                      const std::vector<double> &emission_fees,
                                       const std::unordered_set<GraphCursor> &keys) {
     DEBUG_ASSERT(&to != &from, hmmpath_assert{});
     std::unordered_set<GraphCursor> updated;
@@ -397,7 +397,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     I.set_event(m, EventType::INSERTION);
     StateSet Inew = I.clone();
     for (size_t i = 0; i < max_insertions; ++i) {
-      updated = transfer_upd(Inew, I, fees.t[m][p7H_II], fees.ins[m], "o", updated);
+      updated = transfer_upd(Inew, I, fees.t[m][p7H_II], fees.ins[m], updated);
       Inew.set_event(m, EventType::INSERTION);
       TRACE(updated.size() << " items updated");
       for (const auto &cur : updated) {
