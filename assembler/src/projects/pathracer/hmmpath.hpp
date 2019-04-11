@@ -472,7 +472,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       if (score > fees.absolute_threshold) {
         continue;
       }
-      if (!filter(current_cursor)) {
+      if (!filter(kv)) {
         q.push({current_cursor, score});
       }
     }
@@ -497,13 +497,13 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       for (const auto &next : elt.current_cursor.next(context)) {
         char letter = next.letter(context);
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
-        if (!filter(next)) {
+        // if (!filter(next)) {
           bool updated = I.update(next, cost, id);
           // FIXME potential memory leak here!
           if (updated) {
             q.push({next, cost});
           }
-        }
+        // }
       }
     }
 
@@ -540,7 +540,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       if (score > fees.absolute_threshold) {
         continue;
       }
-      if (!filter(current_cursor)) {
+      if (!filter(kv)) {
         q.push({current_cursor, score, best->second->cursor(), best->second});
       }
     }
@@ -570,9 +570,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
         }
         char letter = next.letter(context);
         double cost = elt.score + transfer_fee + emission_fees[code(letter)];
-        if (!filter(next)) {
+        // if (!filter(next)) {
           q.push({next, cost, elt.current_cursor, id});
-        }
+        // }
       }
     }
 
@@ -636,11 +636,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   // for (const auto &cursor : initial_original) {
   //   INFO("Cursor " << cursor << "Depth: " << depth_naive.depth(cursor, context));
   // }
-  double required_cursor_depth = static_cast<double>(fees.M) * fees.depth_filter_rate - fees.depth_filter_constant;
-  if (fees.local) {
-    required_cursor_depth = static_cast<double>(fees.minimal_match_length);
-  }
-  required_cursor_depth = std::max<double>(required_cursor_depth, static_cast<double>(fees.minimal_match_length));
+  double required_cursor_depth = static_cast<double>(fees.minimal_match_length);
   INFO("Depth required: " << required_cursor_depth);
   std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
                [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, required_cursor_depth,
@@ -661,11 +657,10 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   INFO("The number of links (M): " << fees.M);
 
   size_t positions_left = fees.M;
-  auto depth_filter_cursor = [&](const GraphCursor &cursor) -> bool {
-    double required_cursor_depth = static_cast<double>(positions_left) * fees.depth_filter_rate - fees.depth_filter_constant;
-    if (fees.local) {
-      required_cursor_depth = 0;
-    }
+  auto depth_filter_kv = [&](const auto &cursor_value) -> bool {
+    const GraphCursor &cursor = cursor_value.first;
+    size_t prefix_len = cursor_value.second->max_prefix_size();
+    double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - static_cast<double>(prefix_len);
     bool dal = depth.depth_at_least(cursor, required_cursor_depth, context);
     bool di = depth_int.depth_at_least(cursor, required_cursor_depth, context);
     if (di != dal) {
@@ -676,7 +671,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
-  i_loop_processing(I, 0, depth_filter_cursor);  // Do we really need I at the beginning???
+  i_loop_processing(I, 0, depth_filter_kv);  // Do we really need I at the beginning???
   I.set_event(0, EventType::INSERTION);
   size_t n = 1;
   for (size_t m = 1; m <= fees.M; ++m) {
@@ -689,7 +684,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
-    i_loop_processing(I, m, depth_filter_cursor);
+    i_loop_processing(I, m, depth_filter_kv);
 
     size_t n_of_states = D.size() + I.size() + M.size();
 
@@ -716,9 +711,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
     size_t depth_filtered = 0;
     if (m % 8 == 0) {
-      depth_filtered += I.filter_key(depth_filter_cursor);
-      depth_filtered += M.filter_key(depth_filter_cursor);
-      depth_filtered += D.filter_key(depth_filter_cursor);
+      depth_filtered += I.filter_key_value(depth_filter_kv);
+      depth_filtered += M.filter_key_value(depth_filter_kv);
+      // depth_filtered += D.filter_key_value(depth_filter_kv);  // depth filter for Ds is not required
     }
 
     I.set_event(m, EventType::INSERTION);

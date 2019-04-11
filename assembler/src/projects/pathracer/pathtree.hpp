@@ -124,6 +124,10 @@ public:
 
   bool update(score_t score, const ThisRef &pl) {
     scores_.push_back({score, pl});
+
+    // FIXME fix this for I loops
+    max_prefix_size_ = std::max(max_prefix_size_, pl->max_prefix_size_ + 1);
+
     if (score_ > score) {
       score_ = score;
       return true;
@@ -403,9 +407,13 @@ public:
     return pointers.size();
   }
 
+  size_t max_prefix_size() const {
+    return max_prefix_size_;
+  }
+
   template <class Archive>
   void serialize(Archive &archive) {
-    archive(scores_, score_, event_, cursor_);
+    archive(scores_, score_, event_, cursor_, max_prefix_size_);
   }
 
 private:
@@ -415,6 +423,7 @@ private:
   score_t score_;
   GraphCursor cursor_;
   Event event_;
+  size_t max_prefix_size_ = 0;
 
   void update_score() {
     if (!scores_.empty()) {
