@@ -1,5 +1,5 @@
 SPADES: SAINT-PETERSBURG GENOME ASSEMBLER
-Copyright (c) 2015-2018 Saint Petersburg State University
+Copyright (c) 2015-2019 Saint Petersburg State University
 Copyright (c) 2011-2014 Saint Petersburg Academic University
 
 SPAdes is free software; you can redistribute it and/or modify
@@ -27,14 +27,16 @@ Developed in Algorithmic Biology Lab of St. Petersburg Academic University of th
 Current SPAdes contributors:
 
     Dmitry Antipov,
-    Anton Bankevich,
     Elena Bushmanova,
     Vasisliy Ershov,
     Yuriy Gorshkov,
     Alexey Gurevich,
     Anton Korobeynikov,
+    Olga Kunyavskaya,
+    Dmitriy Meleshko,
     Sergey Nurk,
     Andrey Prjibelski,
+    Alexander Shlemov,
     Ivan Tolstoganov,
     Alla Lapidus and
     Pavel Pevzner
@@ -42,10 +44,10 @@ Current SPAdes contributors:
 Also contributed:
 
     Max Alekseyev,
+    Anton Bankevich,
     Mikhail Dvorkin,
     Alexander Kulikov,
     Valery Lesin,
-    Dmitriy Meleshko,
     Sergey Nikolenko,
     Son Pham,
     Alexey Pyshkin,
