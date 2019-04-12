@@ -102,6 +102,7 @@ struct PathracerConfig {
     std::string known_sequences = "";
     bool export_event_graph = false;
     double minimal_match_length = 0.9;
+    size_t max_insertion_length = 30;
 
     hmmer::hmmer_cfg hcfg;
 };
@@ -182,6 +183,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
           (option("--extend-const") & integer("value", cfg.extend_const)) % "const addition to overhang values for neighbourhood search [default: 15]",
           (option("--minimal-match-length") & value("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on HMM lenght [default: 0.9]",
           (option("--state-limits-coef") & integer("x", cfg.state_limits_coef)) % "multiplier for default #state limit [default: 1]",
+          (option("--max-insertion-length") & integer("x", cfg.max_insertion_length)) % "maximal allowed number of successive I-emissions [default: 30]",
           option("--experimental-i-loops").set(cfg.use_experimental_i_loop_processing, 1) % "use experimental I-loops processing",
           cfg.disable_depth_filter << option("--disable-depth-filter") % "disable depth filter",
           cfg.parallel_component_processing << option("--parallel component processing") % "enable parallel component processing",
@@ -769,6 +771,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         fees.minimal_match_length = static_cast<size_t>(cfg.minimal_match_length);
     }
 
+    fees.max_insertion_length = cfg.max_insertion_length;
     fees.local = cfg.local;
     fees.use_experimental_i_loop_processing = cfg.use_experimental_i_loop_processing;
 
