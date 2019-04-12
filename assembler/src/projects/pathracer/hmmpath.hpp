@@ -407,8 +407,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     }
 
     for (const GraphCursor &cursor : updated) {
-      I[cursor] = std::move(Inext[cursor]);
-      I[cursor]->collapse_and_trim();
+      auto plink = std::move(Inext[cursor]);
+      plink->collapse_and_trim();
+      I[cursor] = std::move(plink);
     }
 
     return updated;

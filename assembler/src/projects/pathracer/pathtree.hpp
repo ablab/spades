@@ -173,11 +173,13 @@ public:
     }
   }
 
-  void collapse_and_trim() {
+  bool collapse_and_trim() {
+    size_t prev_size = scores_.size();
     collapse_scores_left(scores_);
     trim_scores_left(scores_);
     scores_.shrink_to_fit();
     update_max_prefix_size();
+    return scores_.size() == prev_size;
   }
 
   void update_max_prefix_size() {
@@ -363,11 +365,13 @@ public:
     update_score();
   }
 
-  void collapse_all() {
+  size_t collapse_all() {
+    size_t count = 0;
     auto plinks = collect_mutable();
     for (const auto &plink : plinks) {
-      plink->collapse_and_trim();
+      count += plink->collapse_and_trim();
     }
+    return count;
   }
 
   // template <typename Function>
