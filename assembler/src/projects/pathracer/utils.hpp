@@ -216,3 +216,8 @@ T saturated_sum(T v1, T v2) {
     }
     return result;
 }
+
+template <typename T>
+constexpr bool is_power_of_two_or_zero(T v) {
+    return (v & (v - 1)) == 0;
+}
