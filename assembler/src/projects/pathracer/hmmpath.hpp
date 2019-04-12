@@ -680,13 +680,22 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   for (size_t m = 1; m <= fees.M; ++m) {
     positions_left = fees.M - m;
 
-    if (fees.local && m > 1) {
+    if (fees.local && m > 1) {  // FIXME check latter condition. Does it really make sense?
       D.update(fees.cleavage_cost, source);
     }
     dm_new(D, M, I, m);
+    for (auto &kv : M) {
+      kv.second->collapse_and_trim();
+    }
+    for (auto &kv : D) {
+      kv.second.plink->collapse_and_trim();
+    }
 
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
+    for (auto &kv : I) {
+      kv.second->collapse_and_trim();
+    }
     i_loop_processing(I, m, depth_filter_kv);
 
     size_t n_of_states = D.size() + I.size() + M.size();

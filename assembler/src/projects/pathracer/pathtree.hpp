@@ -25,7 +25,7 @@
 #include <cereal/types/utility.hpp>
 #include "cereal_llvm_intrusive_ptr.hpp"
 
-enum EventType { NONE, MATCH, INSERTION };
+enum EventType { NONE, MATCH, INSERTION, WARN };
 using score_t = double;
 
 struct pathtree_assert : debug_assert::default_handler,
@@ -179,7 +179,10 @@ public:
     trim_scores_left(scores_);
     scores_.shrink_to_fit();
     update_max_prefix_size();
-    return scores_.size() == prev_size;
+    // if (scores_.size() != prev_size) {
+    //   INFO("Collapsed:" << this->event_.m << " " << event_.type);
+    // }
+    return scores_.size() != prev_size;
   }
 
   void update_max_prefix_size() {
@@ -369,7 +372,11 @@ public:
     size_t count = 0;
     auto plinks = collect_mutable();
     for (const auto &plink : plinks) {
-      count += plink->collapse_and_trim();
+      // count += plink->collapse_and_trim();
+      if (plink->collapse_and_trim()) {
+        count++;
+        INFO("Collapsed:" << plink->event_.m << " " << (plink->event_.type == EventType::MATCH ? "MATCH" : "INSERTION") << plink->event_.type);
+      }
     }
     return count;
   }
