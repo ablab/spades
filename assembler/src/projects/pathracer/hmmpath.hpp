@@ -224,6 +224,14 @@ template <typename GraphCursor>
 class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<GraphCursor>>,
                          public StateMap<DeletionStateSet<GraphCursor>> {
  public:
+  size_t collapse_all() {
+    size_t count = 0;
+    for (auto &kv : *this) {
+      count += kv.second.plink->collapse_and_trim();
+    }
+    return count;
+  }
+
   template <typename KV>
   static State<GraphCursor> kv2state(const KV &kv) {
     const auto &cursor = kv.first;
@@ -279,6 +287,14 @@ template <typename GraphCursor>
 class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>>,
                  public StateMap<StateSet<GraphCursor>> {
  public:
+  size_t collapse_all() {
+    size_t count = 0;
+    for (auto &kv : *this) {
+      count += kv.second->collapse_and_trim();
+    }
+    return count;
+  }
+
   template <typename KV>
   static State<GraphCursor> kv2state(const KV &kv) {
     const auto &cursor = kv.first;
@@ -685,18 +701,12 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       D.update(fees.cleavage_cost, source);
     }
     dm_new(D, M, I, m);
-    for (auto &kv : M) {
-      kv.second->collapse_and_trim();
-    }
-    for (auto &kv : D) {
-      kv.second.plink->collapse_and_trim();
-    }
+    M.collapse_all();
+    D.collapse_all();
 
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
-    for (auto &kv : I) {
-      kv.second->collapse_and_trim();
-    }
+    I.collapse_all();
     i_loop_processing(I, m, depth_filter_kv);
 
     size_t n_of_states = D.size() + I.size() + M.size();
@@ -733,16 +743,12 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     M.set_event(m, EventType::MATCH);
 
     // collapse and trim
-    for (auto &kv : I) {
-      kv.second->collapse_and_trim();
-    }
-    for (auto &kv : M) {
-      kv.second->collapse_and_trim();
-    }
+    I.collapse_all();
+    M.collapse_all();
 
     if (fees.local) {
       update_sink(D, fees.cleavage_cost);
-      sink->collapse_and_trim();
+      sink->collapse_and_trim();  // FIXME subtract cost for transition -> D state ?
     }
 
     if (is_power_of_two_or_zero(m)) {
