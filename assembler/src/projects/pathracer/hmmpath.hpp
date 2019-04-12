@@ -678,7 +678,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
   i_loop_processing(I, 0, depth_filter_kv);  // Do we really need I at the beginning???
   I.set_event(0, EventType::INSERTION);
-  size_t n = 1;
   for (size_t m = 1; m <= fees.M; ++m) {
     positions_left = fees.M - m;
 
@@ -714,7 +713,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       not_cool_global_n_const = top = fees.state_limits.l500;
     }
 
-    if (m >= n) {
+    if (is_power_of_two_or_zero(m)) {
       INFO("Step #: " << m);
       INFO("# states " << m << " => " << n_of_states << ": I = " << I.size() << " M = " << M.size() << " D = " << D.size());
     }
@@ -746,7 +745,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       sink->collapse_and_trim();
     }
 
-    if (m >= n) {
+    if (is_power_of_two_or_zero(m)) {
       INFO("depth-filtered " << depth_filtered << ", positions left = " << positions_left << " states m = " << m);
       INFO("I = " << I.size() << " M = " << M.size() << " D = " << D.size());
       auto scores = M.scores();
@@ -756,7 +755,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
         score = -score;
       }
       INFO("Top scores: " << scores);
-      n <<= 1;
     }
   }
 
