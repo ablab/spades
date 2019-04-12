@@ -416,14 +416,12 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   auto i_loop_processing_negative2 = [&loop_transfer_negative, &fees](StateSet &I, size_t m) {
-    const size_t max_insertions = 30;
-
     std::unordered_set<GraphCursor> updated;
     for (const auto &kv : I) {
       updated.insert(kv.first);
     }
     I.set_event(m, EventType::INSERTION);
-    for (size_t i = 0; i < max_insertions; ++i) {
+    for (size_t i = 0; i < fees.max_insertion_length; ++i) {
       updated = loop_transfer_negative(I, fees.t[m][p7H_II], fees.ins[m], updated);
       INFO("Updated: " << updated.size() << " on i = " << i << " m = " << m);
       for (const GraphCursor &cursor : updated) {
