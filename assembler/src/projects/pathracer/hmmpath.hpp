@@ -357,8 +357,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     WARN("MODEL CONTAINS POSITIVE-SCORE I-LOOPS");
   }
 
-  depth_filter::DepthInt<GraphCursor> depth_int;
-  depth_filter::impl::DepthAtLeast<GraphCursor> depth;
+  depth_filter::DepthInt<GraphCursor> depth;
+  // depth_filter::impl::DepthAtLeast<GraphCursor> depth;
 
   std::vector<GraphCursor> initial;
 
@@ -664,12 +664,12 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     const GraphCursor &cursor = cursor_value.first;
     size_t prefix_len = cursor_value.second->max_prefix_size();
     double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - static_cast<double>(prefix_len);
-    bool dal = depth.depth_at_least(cursor, required_cursor_depth, context);
-    bool di = depth_int.depth_at_least(cursor, required_cursor_depth, context);
-    if (di != dal) {
-      INFO(di << " " << dal << " " << cursor << " " << required_cursor_depth << " " << depth_int.depth(cursor, context));
-    }
-    VERIFY(di == dal);
+    // bool dal = depth.depth_at_least(cursor, required_cursor_depth, context);
+    // bool di = depth_int.depth_at_least(cursor, required_cursor_depth, context);
+    // if (di != dal) {
+    //   INFO(di << " " << dal << " " << cursor << " " << required_cursor_depth << " " << depth_int.depth(cursor, context));
+    // }
+    // VERIFY(di == dal);
     return !depth.depth_at_least(cursor, required_cursor_depth, context);
   };
 
