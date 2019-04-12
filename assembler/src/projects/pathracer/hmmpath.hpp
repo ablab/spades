@@ -423,7 +423,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     I.set_event(m, EventType::INSERTION);
     for (size_t i = 0; i < fees.max_insertion_length; ++i) {
       updated = loop_transfer_negative(I, fees.t[m][p7H_II], fees.ins[m], updated);
-      INFO("Updated: " << updated.size() << " on i = " << i << " m = " << m);
+      if (is_power_of_two_or_zero(m)) {
+        INFO("Updated: " << updated.size() << " on i = " << i << " m = " << m);
+      }
       for (const GraphCursor &cursor : updated) {
         I[cursor]->set_emission(m, EventType::INSERTION);
       }
@@ -722,7 +724,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     D.score_filter(top, fees.absolute_threshold);
 
     size_t depth_filtered = 0;
-    if (m % 8 == 0) {
+    if (m % 1 == 0) {
       depth_filtered += I.filter_key_value(depth_filter_kv);
       depth_filtered += M.filter_key_value(depth_filter_kv);
       // depth_filtered += D.filter_key_value(depth_filter_kv);  // depth filter for Ds is not required
