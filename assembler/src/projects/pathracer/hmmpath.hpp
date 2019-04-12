@@ -357,6 +357,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     WARN("MODEL CONTAINS POSITIVE-SCORE I-LOOPS");
   }
 
+  depth_filter::DepthInt<GraphCursor> depth_int;
+  depth_filter::impl::DepthAtLeast<GraphCursor> depth;
+
   std::vector<GraphCursor> initial;
 
   auto transfer = [&code, &initial,context](StateSet &to, const auto &from, double transfer_fee,
@@ -385,14 +388,17 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     }
     return updated;
   };
-  auto loop_transfer_negative = [&code, context](StateSet &I, double transfer_fee,
-                                                 const std::vector<double> &emission_fees,
-                                                 const std::unordered_set<GraphCursor> &keys) {
+  auto loop_transfer_negative = [&code, context, &fees, &depth](StateSet &I, double transfer_fee,
+                                                                const std::vector<double> &emission_fees,
+                                                                const std::unordered_set<GraphCursor> &keys) {
     StateSet Inext;
     std::unordered_set<GraphCursor> updated;
     for (const auto &state : I.states(keys)) {
+      double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - 1 - state.plink->max_prefix_size();
       for (const auto &next : state.cursor.next(context)) {
         double cost = state.score + transfer_fee + emission_fees[code(next.letter(context))];
+        if (cost > fees.absolute_threshold) continue;
+        if (!depth.depth_at_least(next, required_cursor_depth, context)) continue;
         Inext.update(next, cost, state.plink);
         if (cost < I.get_cost(next)) {
           updated.insert(next);
@@ -610,8 +616,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     transfer(M, preM, 0, fees.mat[m]);
   };
 
-  depth_filter::DepthInt<GraphCursor> depth_int;
-  depth_filter::impl::DepthAtLeast<GraphCursor> depth;
   // if (true) {
   //   depth_filter::impl::Depth<GraphCursor> depth_recursive;
   //   for (const auto &cursor : initial_original) {
