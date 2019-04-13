@@ -474,7 +474,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   INFO("The number of links (M): " << fees.M);
 
-  size_t positions_left = fees.M;
   auto depth_filter_kv = [&](const auto &cursor_value) -> bool {
     const GraphCursor &cursor = cursor_value.first;
     size_t prefix_len = cursor_value.second->max_prefix_size();
@@ -492,8 +491,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   i_loop_processing_universal(I, 0);  // Do we really need I at the beginning???
   I.set_event(0, EventType::INSERTION);
   for (size_t m = 1; m <= fees.M; ++m) {
-    positions_left = fees.M - m;
-
     if (fees.local && m > 1) {  // FIXME check latter condition. Does it really make sense?
       D.update(fees.cleavage_cost, source);
     }
@@ -544,7 +541,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     }
 
     if (is_power_of_two_or_zero(m)) {
-      INFO("depth-filtered " << depth_filtered << ", positions left = " << positions_left << " states m = " << m);
+      INFO("depth-filtered " << depth_filtered << " position in HMM " << m);
       INFO("I = " << I.size() << " M = " << M.size() << " D = " << D.size());
       auto scores = M.scores();
       std::sort(scores.begin(), scores.end());
