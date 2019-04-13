@@ -406,21 +406,25 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
   auto loop_transfer_negative = [&code, context, &fees, &depth](StateSet &I, double transfer_fee,
                                                                 const std::vector<double> &emission_fees,
-                                                                const std::unordered_set<GraphCursor> &keys) {
+                                                                const auto &keys,
+                                                                bool just_all = false) {
     StateSet Inext;
     std::unordered_set<GraphCursor> updated;
-    for (const auto &state : I.states(keys)) {
-      double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - 1 - state.plink->max_prefix_size();
-      for (const auto &next : state.cursor.next(context)) {
-        double cost = state.score + transfer_fee + emission_fees[code(next.letter(context))];
-        if (cost > fees.absolute_threshold) continue;
-        if (!depth.depth_at_least(next, required_cursor_depth, context)) continue;
-        Inext.update(next, cost, state.plink);
-        if (cost < I.get_cost(next)) {
-          updated.insert(next);
+    auto process = [&](const auto &collection) -> void {
+      for (const auto &state : collection) {
+        double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - 1 - state.plink->max_prefix_size();
+        for (const auto &next : state.cursor.next(context)) {
+          double cost = state.score + transfer_fee + emission_fees[code(next.letter(context))];
+          if (cost > fees.absolute_threshold) continue;
+          if (!depth.depth_at_least(next, required_cursor_depth, context)) continue;
+          Inext.update(next, cost, state.plink);
+          if (cost < I.get_cost(next)) {
+            updated.insert(next);
+          }
         }
       }
-    }
+    };
+    just_all ? process(I.states()) : process(I.states(keys));
 
     for (const GraphCursor &cursor : updated) {
       auto plink = std::move(Inext[cursor]);
@@ -433,12 +437,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   auto i_loop_processing_negative2 = [&loop_transfer_negative, &fees](StateSet &I, size_t m) {
     std::unordered_set<GraphCursor> updated;
-    for (const auto &kv : I) {
-      updated.insert(kv.first);
-    }
     I.set_event(m, EventType::INSERTION);
     for (size_t i = 0; i < fees.max_insertion_length; ++i) {
-      updated = loop_transfer_negative(I, fees.t[m][p7H_II], fees.ins[m], updated);
+      updated = loop_transfer_negative(I, fees.t[m][p7H_II], fees.ins[m], updated, /*just_all*/ i == 0);
       if (is_power_of_two_or_zero(m)) {
         INFO("Updated: " << updated.size() << " on i = " << i << " m = " << m);
       }
