@@ -397,7 +397,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     std::vector<GraphCursor> updated;
     auto process = [&](const auto &collection) -> void {
       for (const auto &state : collection) {
-        double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - 1 - state.plink->max_prefix_size();
+        double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - 1 - static_cast<double>(state.plink->max_prefix_size());
         for (const auto &next : state.cursor.next(context)) {
           double cost = state.score + transfer_fee + emission_fees[code(next.letter(context))];
           if (cost > fees.absolute_threshold) continue;
