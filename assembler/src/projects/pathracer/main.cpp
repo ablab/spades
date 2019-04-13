@@ -886,8 +886,12 @@ void TraceHMM(const hmmer::HMM &hmm,
                                             const auto context,
                                             const std::string &component_name = "") -> void {
         CachedCursorContext ccc(cursors, context);
-        auto cached_initial = ccc.Cursors();
-        auto result = find_best_path(fees, cached_initial, &ccc);
+        auto cached_cursors = ccc.Cursors();
+        for (const auto &cursor : cached_cursors) {
+            DEBUG_ASSERT(check_cursor_symmetry(cursor, &ccc), main_assert{}, debug_assert::level<2>{});
+            // VERIFY(check_cursor_symmetry(cursor, &ccc));
+        }
+        auto result = find_best_path(fees, cached_cursors, &ccc);
         INFO("Collapsing event graph");
         size_t collapsed_count = result.pathlink_mutable()->collapse_all();
         INFO(collapsed_count << " eveng graph vertices modified");
