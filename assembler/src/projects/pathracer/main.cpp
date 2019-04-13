@@ -891,6 +891,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         INFO("Collapsing event graph");
         size_t collapsed_count = result.pathlink_mutable()->collapse_all();
         INFO(collapsed_count << " eveng graph vertices modified");
+        VERIFY(collapsed_count == 0);
 
         if (cfg.export_event_graph) {
             std::ofstream of(cfg.output_dir + "/event_graph_" + p7hmm->name +
