@@ -703,7 +703,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     }
     dm_new(D, M, I, m);
     M.collapse_all();
-    D.collapse_all();
 
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
