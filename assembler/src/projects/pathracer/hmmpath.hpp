@@ -742,10 +742,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     I.set_event(m, EventType::INSERTION);
     M.set_event(m, EventType::MATCH);
 
-    // collapse and trim
-    I.collapse_all();
-    M.collapse_all();
-
     if (fees.local) {
       update_sink(D, fees.cleavage_cost);
       sink->collapse_and_trim();  // FIXME subtract cost for transition -> D state ?
