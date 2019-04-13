@@ -444,7 +444,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     for (size_t i = 0; i < fees.max_insertion_length; ++i) {
       updated = loop_transfer_negative(I, fees.t[m][p7H_II], fees.ins[m], updated, /*just_all*/ i == 0);
       if (is_power_of_two_or_zero(m)) {
-        INFO("Updated: " << updated.size() << " on i = " << i << " m = " << m);
+        INFO("Updated: " << updated.size() << " over " << I.size() << " on i = " << i << " m = " << m);
       }
       for (const GraphCursor &cursor : updated) {
         I[cursor]->set_emission(m, EventType::INSERTION);
