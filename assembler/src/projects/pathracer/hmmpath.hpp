@@ -245,8 +245,8 @@ class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<Grap
               const PathLinkRef<GraphCursor> &plink) {
     const GraphCursor &cursor = plink->cursor();
     auto it_fl = this->insert({cursor, {plink, score}});
-    auto it = it_fl.first;
-    bool inserted = it_fl.second;
+    const auto &it = it_fl.first;
+    const bool &inserted = it_fl.second;
 
     if (inserted) {
       return true;
@@ -329,8 +329,8 @@ class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>
   bool update(const GraphCursor &cursor, score_t score,
               const PathLinkRef<GraphCursor> &plink) {
     auto it_fl = this->insert({cursor, nullptr});
-    auto it = it_fl.first;
-    bool inserted = it_fl.second;
+    const auto &it = it_fl.first;
+    const bool &inserted = it_fl.second;
     if (inserted) {
       it->second = PathLink<GraphCursor>::create(cursor);
     }
