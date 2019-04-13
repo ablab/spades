@@ -1,0 +1,43 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
+#pragma once
+
+
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+
+template <typename Cursor>
+auto vertex_cursors(const std::vector<Cursor> &cursors, typename Cursor::Context context) {
+    std::unordered_set<Cursor> result;
+
+    for (const Cursor &cursor : cursors) {
+        VERIFY(!cursor.is_empty());
+        if (cursor.prev(context).size() != 1 || cursor.next(context).size() != 1) {
+            result.insert(cursor);
+        }
+    }
+
+    INFO("Isolated loops detection");
+    // detect and break isolated loops
+    std::unordered_set<Cursor> processed;
+    for (const Cursor &cursor : cursors) {
+        if (!result.count(cursor) && !processed.count(cursor)) {
+            Cursor p = cursor.prev(context)[0];
+            while (!result.count(p) && !processed.count(p)) {
+               processed.insert(p);
+               p = p.prev(context)[0];
+            }
+            if (p == cursor) {
+                INFO("Isolated loop detected");
+                result.insert(cursor);
+            }
+        }
+    }
+    return result;
+}

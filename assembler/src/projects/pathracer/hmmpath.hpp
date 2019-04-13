@@ -3,6 +3,7 @@
 #include "fees.hpp"
 #include "pathtree.hpp"
 #include "depth_filter.hpp"
+#include "cursor_utils.hpp"
 
 #include "utils/logger/logger.hpp"
 
@@ -350,7 +351,7 @@ class StateSet : public phmap::flat_hash_map<GraphCursor, PathLinkRef<GraphCurso
 
 template <typename GraphCursor>
 PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
-                                    const std::vector<GraphCursor> &initial_original,
+                                    const std::vector<GraphCursor> &cursors,
                                     typename GraphCursor::Context context) {
   using StateSet = StateSet<GraphCursor>;
   using DeletionStateSet = DeletionStateSet<GraphCursor>;
@@ -373,6 +374,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   if (!fees.check_i_negative_loops()) {
     WARN("MODEL CONTAINS POSITIVE-SCORE I-LOOPS");
   }
+
+  auto vcursors = vertex_cursors(cursors, context);
+  INFO("Vertex cursors: " << vcursors.size() << "/" << cursors.size());
 
   depth_filter::DepthInt<GraphCursor> depth;
 
@@ -449,14 +453,14 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     transfer(M, preM, 0, fees.mat[m]);
   };
 
-  INFO("Original (before filtering) initial set size: " << initial_original.size());
+  INFO("Original (before filtering) initial set size: " << cursors.size());
   // depth_filter::impl::Depth<GraphCursor> depth_naive;
-  // for (const auto &cursor : initial_original) {
+  // for (const auto &cursor : cursors) {
   //   INFO("Cursor " << cursor << "Depth: " << depth_naive.depth(cursor, context));
   // }
   double required_cursor_depth = static_cast<double>(fees.minimal_match_length);
   INFO("Depth required: " << required_cursor_depth);
-  std::copy_if(initial_original.cbegin(), initial_original.cend(), std::back_inserter(initial),
+  std::copy_if(cursors.cbegin(), cursors.cend(), std::back_inserter(initial),
                [&](const GraphCursor &cursor) { return depth.depth_at_least(cursor, required_cursor_depth,
                                                                             context); });
   INFO("Initial set size: " << initial.size());
