@@ -41,3 +41,28 @@ auto vertex_cursors(const std::vector<Cursor> &cursors, typename Cursor::Context
     }
     return result;
 }
+
+template <typename Cursor>
+auto extract_leftmost_cursors(const std::unordered_set<Cursor> &cursors, const std::unordered_set<Cursor> &vertices, typename Cursor::Context context) {
+    // Exclude all trivial cursors having preceding cursor on the same edge in the input set
+    std::vector<Cursor> result;
+
+    for (const Cursor &cursor : cursors) {
+        VERIFY(!cursor.is_empty());
+        if (vertices.count(cursor)) {
+            result.push_back(cursor);
+            continue;
+        }
+
+        Cursor p = cursor;
+        do {
+            p = p.prev(context)[0];
+        } while (!cursors.count(p) && !vertices.count(p));
+
+        if (!cursors.count(p)) {
+            result.push_back(cursor);
+        }
+    }
+
+    return result;
+}
