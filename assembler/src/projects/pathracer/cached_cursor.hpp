@@ -103,11 +103,10 @@ public:
                 nexts_[i].push_back(cursor2index[c]);
                 nexts_[i].shrink_to_fit();
             }
-            // FIXME prev is not implemented for aa-cursor
-            // for (const auto &c : cursor.prev(context)) {
-            //     prevs_[i].push_back(cursor2index[c]);
-            //     prevs_[i].shrink_to_fit();
-            // }
+            for (const auto &c : cursor.prev(context)) {
+                prevs_[i].push_back(cursor2index[c]);
+                prevs_[i].shrink_to_fit();
+            }
         }
     }
 
@@ -129,7 +128,4 @@ inline char CachedCursor::letter(Context context) const { return context->letter
 
 inline const std::vector<CachedCursor> &CachedCursor::next(Context context) const { return context->nexts_[index_]; }
 
-// It is not required for find_best_path
-// inline const std::vector<CachedCursor> &CachedCursor::prev(Context context) const {
-//     return context->prevs_[index_];
-// }
+inline const std::vector<CachedCursor> &CachedCursor::prev(Context context) const { return context->prevs_[index_]; }
