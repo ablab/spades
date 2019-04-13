@@ -41,7 +41,7 @@ class AAGraphCursor {
 
   using EdgeId = std::decay_t<decltype(GraphCursor().edge())>;
 
-  std::vector<This> prev(Context) const;  // TODO implement it
+  std::vector<This> prev(Context context) const { return from_bases_prev(c0_.prev(context), context); }
 
   std::vector<This> next(Context context) const { return from_bases(c2_.next(context), context); }
 
@@ -70,6 +70,29 @@ class AAGraphCursor {
       assert(n.size() == 2);
       for (const auto &n2 : n.back().next(context)) {
         result.emplace_back(n[0], n[1], n2);
+      }
+    }
+
+    return result;
+  }
+
+  static std::vector<This> from_bases_prev(const std::vector<GraphCursor> &cursors,
+                                           Context context) {
+    llvm::SmallVector<llvm::SmallVector<GraphCursor, 2>, 16> prevs;
+    // prevs.reserve(16);
+
+    for (const auto &cursor : cursors) {
+      for (const auto &p : cursor.prev(context)) {
+        prevs.push_back({ cursor, p });
+      }
+    }
+
+    std::vector<This> result;
+    result.reserve(64);
+    for (const auto &p : prevs) {
+      assert(p.size() == 2);
+      for (const auto &p2 : p.back().prev(context)) {
+        result.emplace_back(p2, p[1], p[0]);
       }
     }
 
