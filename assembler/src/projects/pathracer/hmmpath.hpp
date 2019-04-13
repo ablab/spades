@@ -17,6 +17,7 @@
 #include <vector>
 #include <limits>
 
+#include <parallel_hashmap/phmap.h>
 
 extern "C" {
 #include "hmmer.h"
@@ -221,7 +222,7 @@ class StateMap : public ScoresFilterMapMixin<Map> {
 };
 
 template <typename GraphCursor>
-class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<GraphCursor>>,
+class DeletionStateSet : public phmap::flat_hash_map<GraphCursor, ScoredPLink<GraphCursor>>,
                          public StateMap<DeletionStateSet<GraphCursor>> {
  public:
   size_t collapse_all() {
@@ -284,7 +285,7 @@ class DeletionStateSet : public std::unordered_map<GraphCursor, ScoredPLink<Grap
 };
 
 template <typename GraphCursor>
-class StateSet : public std::unordered_map<GraphCursor, PathLinkRef<GraphCursor>>,
+class StateSet : public phmap::flat_hash_map<GraphCursor, PathLinkRef<GraphCursor>>,
                  public StateMap<StateSet<GraphCursor>> {
  public:
   size_t collapse_all() {
