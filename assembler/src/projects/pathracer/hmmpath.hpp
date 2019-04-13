@@ -393,6 +393,72 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     }
   };
 
+  auto loop_transfer_ff= [&code, context, &fees, &depth, &vcursors](StateSet &I, double transfer_fee,
+                                                                    const std::vector<double> &emission_fees,
+                                                                    const std::unordered_set<GraphCursor> &keys) {
+    DEBUG("loop_transfer_ff begins");
+    StateSet Inext;
+    std::vector<GraphCursor> updated_vertices;
+    std::vector<GraphCursor> updated_nonvertices;
+
+    std::vector<GraphCursor> stack = extract_leftmost_cursors(keys, vcursors, context);
+    while (!stack.empty()) {
+      GraphCursor cursor = stack.back(); stack.pop_back();
+      VERIFY(I.count(cursor));
+      const auto plink = I[cursor];  // Do not take reference here, we use flat map, reference would be invalidated after insertion!!!
+      VERIFY(plink);
+      double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - 1 - static_cast<double>(plink->max_prefix_size());
+      for (const auto &next : cursor.next(context)) {
+        double cost = plink->score() + transfer_fee + emission_fees[code(next.letter(context))];
+        if (!vcursors.count(next)) {
+          VERIFY(next.prev(context).size() == 1 && next.next(context).size() == 1);
+          DEBUG("FAST FORWARD");
+          bool successful_update = (cost <= fees.absolute_threshold) &&
+                                   (depth.depth_at_least(next, required_cursor_depth, context)) &&
+                                   (cost < I.get_cost(next));
+          if (successful_update) {
+            I[next] = PathLink<GraphCursor>::create(next);
+            I[next]->update(cost, plink);
+            updated_nonvertices.push_back(next);
+            stack.push_back(next);
+            DEBUG("next " << next << " added into stack, stack size " << stack.size());
+          } else {
+            // Go to the next key
+            DEBUG("Update inefficient; go forward along the edge to the next non-vertex key");
+            GraphCursor nn = next;
+            do {
+              nn = nn.next(context)[0];  // It's correct due to triviality of nn
+            } while (!vcursors.count(nn) && !keys.count(nn));
+            if (keys.count(nn) && !vcursors.count(nn)) {
+              stack.push_back(nn);
+            }
+          }
+        } else {
+          if (cost > fees.absolute_threshold) continue;
+          if (!depth.depth_at_least(next, required_cursor_depth, context)) continue;
+          Inext.update(next, cost, plink);
+          if (cost < I.get_cost(next)) {
+            updated_vertices.push_back(next);
+          }
+        }
+      }
+    }
+    remove_duplicates(updated_vertices);
+    // updated_nonvertices cannot contain duplicates TODO VERIFY it
+
+    for (const GraphCursor &cursor : updated_vertices) {
+      auto plink = std::move(Inext[cursor]);
+      plink->collapse_and_trim();
+      I[cursor] = std::move(plink);
+    }
+
+    std::unordered_set<GraphCursor> updated;
+    updated.insert(updated_vertices.cbegin(), updated_vertices.cend());
+    updated.insert(updated_nonvertices.cbegin(), updated_nonvertices.cend());
+
+    return updated;
+  };
+
   auto loop_transfer_negative = [&code, context, &fees, &depth](StateSet &I, double transfer_fee,
                                                                 const std::vector<double> &emission_fees,
                                                                 const auto &keys,
@@ -423,6 +489,24 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     }
 
     return updated;
+  };
+
+  auto i_loop_processing_ff = [&loop_transfer_ff, &fees](StateSet &I, size_t m) {
+    std::unordered_set<GraphCursor> updated;
+    for (const auto &kv : I) {
+      updated.insert(kv.first);
+    }
+    I.set_event(m, EventType::INSERTION);
+    for (size_t i = 0; i < fees.max_insertion_length; ++i) {
+      updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated);
+      if (is_power_of_two_or_zero(m)) {
+        INFO("Updated: " << updated.size() << " over " << I.size() << " on i = " << i << " m = " << m);
+      }
+      for (const GraphCursor &cursor : updated) {
+        VERIFY(I.count(cursor));
+        I[cursor]->set_emission(m, EventType::INSERTION);
+      }
+    }
   };
 
   auto i_loop_processing_universal = [&loop_transfer_negative, &fees](StateSet &I, size_t m) {
@@ -492,7 +576,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
-  i_loop_processing_universal(I, 0);  // Do we really need I at the beginning???
+  i_loop_processing_ff(I, 0);  // Do we really need I at the beginning???
   I.set_event(0, EventType::INSERTION);
   for (size_t m = 1; m <= fees.M; ++m) {
     if (fees.local && m > 1) {  // FIXME check latter condition. Does it really make sense?
@@ -504,7 +588,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
     I.collapse_all();
-    i_loop_processing_universal(I, m);
+    i_loop_processing_ff(I, m);
 
     size_t n_of_states = D.size() + I.size() + M.size();
 
