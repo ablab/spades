@@ -429,9 +429,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
             // Go to the next key
             DEBUG("Update inefficient; go forward along the edge to the next non-vertex key");
             GraphCursor nn = next;
-            do {
+            while (!vcursors.count(nn) && !keys.count(nn)) {
               nn = nn.next(context)[0];  // It's correct due to triviality of nn
-            } while (!vcursors.count(nn) && !keys.count(nn));
+            }
             if (keys.count(nn) && !vcursors.count(nn)) {
               stack.push_back(nn);
             }
