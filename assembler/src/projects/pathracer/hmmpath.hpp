@@ -560,7 +560,10 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       }
     }
 
-    phmap::flat_hash_set<GraphCursor> updated_vertices;
+    if (is_power_of_two_or_zero(m)) {
+      INFO("Vertices updated: " << updated.size() << " over " << vcursors.size() << " m = " << m);
+    }
+    phmap::flat_hash_set<GraphCursor> updated_vertices = updated;
     for (size_t i = 0; i < fees.max_insertion_length && !updated.empty(); ++i) {  // (2)
       updated = loop_transfer_vertices_only(I, fees.t[m][p7H_II], fees.ins[m], updated);
       if (is_power_of_two_or_zero(m)) {
