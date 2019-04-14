@@ -449,7 +449,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     }
     for (const GraphCursor &cursor : keys) {
       if (!relaxed.count(cursor)) {
-        INFO("Cursor not relaxed " << cursor << " hmm = " << fees.name << " M = " << fees.M);
+        WARN("Cursor not relaxed " << cursor << " is_vertex_cursor " << vcursors.count(cursor) << " hmm = " << fees.name << " M = " << fees.M);
       }
       VERIFY(relaxed.count(cursor));
     }
