@@ -11,6 +11,8 @@
 
 #include "common/utils/verify.hpp"
 
+#include "fees.hpp"
+
 template <typename Cursor>
 auto vertex_cursors(const std::vector<Cursor> &cursors, typename Cursor::Context context) {
     phmap::flat_hash_set<Cursor> result;
@@ -75,6 +77,20 @@ auto ultra_compression(const phmap::flat_hash_set<Cursor> &vertices, typename Cu
     struct Edge {
         Cursor end;
         std::vector<std::pair<char, size_t>> letters;
+        double emission_fee(const hmm::DigitalCodind &code, const std::vector<double> &emission_fees) const {  // TODO get rid of code!
+            double fee = 0;
+            for (const auto &letter_n : letters) {
+                fee += letter_n.second * emission_fees[code(letter_n.first)];
+            }
+            return fee;
+        }
+        size_t length() const {
+            size_t len = 0;
+            for (const auto &letter_n : letters) {
+                len += letter_n.second;
+            }
+            return len;
+        }
     };
 
     phmap::flat_hash_map<Cursor, std::vector<Edge>> outgoing;
