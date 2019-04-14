@@ -86,6 +86,7 @@ struct PathracerConfig {
     int threads = 4;
     size_t top = 1000;
     std::vector<std::string> edges;
+    std::vector<std::string> queries;
     size_t max_size = size_t(-1);
     bool debug = false;
     bool draw = false;
@@ -134,6 +135,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "number of threads",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
       (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
+      (option("--queries") & values("queries", cfg.queries)) % "quries names to lookup [default: all queries from input query file]",
       "Query type:" %
       one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
              option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
@@ -1064,6 +1066,14 @@ void hmm_main(const PathracerConfig &cfg,
         hmms = ParseFASTAFile(cfg.hmmfile, cfg.mode);
 
     SuperpathIndex scaffold_path_index(scaffold_paths);
+
+    // Filter input hmms
+    if (!cfg.queries.empty()) {
+        std::unordered_set<std::string> queries(cfg.queries.cbegin(), cfg.queries.cend());
+        hmms.erase(std::remove_if(hmms.begin(), hmms.end(),
+                                  [&queries](const auto &hmm) -> bool { return !queries.count(hmm.get()->name); }),
+                   hmms.end());
+    }
 
     // Outer loop: over each query HMM in <hmmfile>.
     omp_set_num_threads(cfg.threads);
