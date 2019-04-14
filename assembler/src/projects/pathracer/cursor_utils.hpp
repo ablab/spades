@@ -69,3 +69,33 @@ auto extract_leftmost_cursors(const phmap::flat_hash_set<Cursor> &cursors, const
 
     return result;
 }
+
+template <typename Cursor>
+auto ultra_compression(const phmap::flat_hash_set<Cursor> &vertices, typename Cursor::Context context) {
+    struct Edge {
+        Cursor end;
+        std::vector<std::pair<char, size_t>> letters;
+    };
+
+    phmap::flat_hash_map<Cursor, std::vector<Edge>> outgoing;
+    for (const Cursor &cursor : vertices) {
+        for (Cursor n : cursor.next(context)) {
+            phmap::flat_hash_map<char, size_t> letters;
+            do {
+                ++letters[n.letter(context)];
+                if (!vertices.count(n)) {
+                    n = n.next(context)[0];
+                } else {
+                    break;
+                }
+            } while (1);
+            VERIFY(vertices.count(n));
+            Edge e;
+            e.end = n;
+            e.letters = std::vector<std::pair<char, size_t>>(letters.cbegin(), letters.cend());
+            outgoing[cursor].push_back(e);
+        }
+    }
+
+    return outgoing;
+}
