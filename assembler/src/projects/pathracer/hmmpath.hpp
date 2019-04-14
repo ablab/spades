@@ -420,8 +420,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
                                    (depth.depth_at_least(next, required_cursor_depth, context)) &&
                                    (cost < I.get_cost(next));
           if (successful_update) {
-            I[next] = PathLink<GraphCursor>::create(next);
-            I[next]->update(cost, plink);
+            auto new_plink = PathLink<GraphCursor>::create(next);
+            new_plink->update(cost, plink);
+            I[next] = std::move(new_plink);
             updated_nonvertices.push_back(next);
             stack.push_back(next);
             DEBUG("next " << next << " added into stack, stack size " << stack.size());
