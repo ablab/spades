@@ -395,12 +395,12 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   auto loop_transfer_ff= [&code, context, &fees, &depth, &vcursors](StateSet &I, double transfer_fee,
                                                                     const std::vector<double> &emission_fees,
-                                                                    const std::unordered_set<GraphCursor> &keys) {
+                                                                    const phmap::flat_hash_set<GraphCursor> &keys) {
     DEBUG("loop_transfer_ff begins");
     StateSet Inext;
     std::vector<GraphCursor> updated_vertices;
     std::vector<GraphCursor> updated_nonvertices;
-    std::unordered_set<GraphCursor> relaxed;
+    phmap::flat_hash_set<GraphCursor> relaxed;
 
     std::vector<GraphCursor> stack = extract_leftmost_cursors(keys, vcursors, context);
     while (!stack.empty()) {
@@ -459,7 +459,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       I[cursor] = std::move(plink);
     }
 
-    std::unordered_set<GraphCursor> updated;
+    phmap::flat_hash_set<GraphCursor> updated;
     updated.insert(updated_vertices.cbegin(), updated_vertices.cend());
     updated.insert(updated_nonvertices.cbegin(), updated_nonvertices.cend());
 
@@ -499,12 +499,12 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   auto i_loop_processing_ff = [&loop_transfer_ff, &fees](StateSet &I, size_t m) {
-    std::unordered_set<GraphCursor> updated;
+    phmap::flat_hash_set<GraphCursor> updated;
     for (const auto &kv : I) {
       updated.insert(kv.first);
     }
     I.set_event(m, EventType::INSERTION);
-    for (size_t i = 0; i < fees.max_insertion_length; ++i) {
+    for (size_t i = 0; i < fees.max_insertion_length && !updated.empty(); ++i) {
       updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated);
       if (is_power_of_two_or_zero(m)) {
         INFO("Updated: " << updated.size() << " over " << I.size() << " on i = " << i << " m = " << m);
