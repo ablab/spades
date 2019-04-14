@@ -400,6 +400,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     StateSet Inext;
     std::vector<GraphCursor> updated_vertices;
     std::vector<GraphCursor> updated_nonvertices;
+    std::unordered_set<GraphCursor> relaxed;
 
     std::vector<GraphCursor> stack = extract_leftmost_cursors(keys, vcursors, context);
     while (!stack.empty()) {
@@ -407,6 +408,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       VERIFY(I.count(cursor));
       const auto plink = I[cursor];  // Do not take reference here, we use flat map, reference would be invalidated after insertion!!!
       VERIFY(plink);
+      relaxed.insert(cursor);
+
       double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - 1 - static_cast<double>(plink->max_prefix_size());
       for (const auto &next : cursor.next(context)) {
         double cost = plink->score() + transfer_fee + emission_fees[code(next.letter(context))];
@@ -443,6 +446,10 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
         }
       }
     }
+    for (const GraphCursor &cursor : keys) {
+      VERIFY(relaxed.count(cursor));
+    }
+
     remove_duplicates(updated_vertices);
     // updated_nonvertices cannot contain duplicates TODO VERIFY it
 
