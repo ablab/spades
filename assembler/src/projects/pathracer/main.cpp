@@ -894,7 +894,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         auto result = find_best_path(fees, cached_cursors, &ccc);
         INFO("Collapsing event graph");
         size_t collapsed_count = result.pathlink_mutable()->collapse_all();
-        INFO(collapsed_count << " eveng graph vertices modified");
+        INFO(collapsed_count << " event graph vertices modified");
         VERIFY(collapsed_count == 0);
 
         if (cfg.export_event_graph) {
