@@ -26,16 +26,18 @@ auto vertex_cursors(const std::vector<Cursor> &cursors, typename Cursor::Context
     // detect and break isolated loops
     phmap::flat_hash_set<Cursor> processed;
     for (const Cursor &cursor : cursors) {
-        if (!result.count(cursor) && !processed.count(cursor)) {
-            Cursor p = cursor.prev(context)[0];
-            while (!result.count(p) && !processed.count(p)) {
-                processed.insert(p);
-                p = p.prev(context)[0];
-            }
-            if (p == cursor) {
-                INFO("Isolated loop detected");
-                result.insert(cursor);
-            }
+        if (result.count(cursor) || processed.count(cursor)) {
+            continue;
+        }
+
+        Cursor p = cursor;
+        while (!result.count(p) && !processed.count(p)) {
+            processed.insert(p);
+            p = p.prev(context)[0];
+        }
+        if (p == cursor) {
+            INFO("Isolated loop detected");
+            result.insert(cursor);
         }
     }
     return result;
@@ -56,6 +58,7 @@ auto extract_leftmost_cursors(const phmap::flat_hash_set<Cursor> &cursors, const
 
         Cursor p = cursor;
         do {
+            VERIFY(p.prev(context).size() == 1 && p.next(context).size() == 1);
             p = p.prev(context)[0];
         } while (!cursors.count(p) && !vertices.count(p));
 
