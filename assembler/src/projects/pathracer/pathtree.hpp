@@ -174,6 +174,9 @@ public:
   }
 
   bool collapse_and_trim() {
+    if (scores_.size() <= 1) {
+      return false;
+    }
     size_t prev_size = scores_.size();
     collapse_scores_left(scores_);
     trim_scores_left(scores_);

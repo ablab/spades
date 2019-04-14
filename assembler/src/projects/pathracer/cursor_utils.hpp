@@ -6,15 +6,14 @@
 
 #pragma once
 
-
-#include <unordered_map>
-#include <unordered_set>
+#include <parallel_hashmap/phmap.h>
 #include <vector>
 
+#include "common/utils/verify.hpp"
 
 template <typename Cursor>
 auto vertex_cursors(const std::vector<Cursor> &cursors, typename Cursor::Context context) {
-    std::unordered_set<Cursor> result;
+    phmap::flat_hash_set<Cursor> result;
 
     for (const Cursor &cursor : cursors) {
         VERIFY(!cursor.is_empty());
@@ -25,13 +24,13 @@ auto vertex_cursors(const std::vector<Cursor> &cursors, typename Cursor::Context
 
     INFO("Isolated loops detection");
     // detect and break isolated loops
-    std::unordered_set<Cursor> processed;
+    phmap::flat_hash_set<Cursor> processed;
     for (const Cursor &cursor : cursors) {
         if (!result.count(cursor) && !processed.count(cursor)) {
             Cursor p = cursor.prev(context)[0];
             while (!result.count(p) && !processed.count(p)) {
-               processed.insert(p);
-               p = p.prev(context)[0];
+                processed.insert(p);
+                p = p.prev(context)[0];
             }
             if (p == cursor) {
                 INFO("Isolated loop detected");
@@ -43,7 +42,8 @@ auto vertex_cursors(const std::vector<Cursor> &cursors, typename Cursor::Context
 }
 
 template <typename Cursor>
-auto extract_leftmost_cursors(const std::unordered_set<Cursor> &cursors, const std::unordered_set<Cursor> &vertices, typename Cursor::Context context) {
+auto extract_leftmost_cursors(const phmap::flat_hash_set<Cursor> &cursors, const phmap::flat_hash_set<Cursor> &vertices,
+                              typename Cursor::Context context) {
     // Exclude all trivial cursors having preceding cursor on the same edge in the input set
     std::vector<Cursor> result;
 
