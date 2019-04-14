@@ -378,6 +378,8 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   auto vcursors = vertex_cursors(cursors, context);
   INFO("Vertex cursors: " << vcursors.size() << "/" << cursors.size());
 
+  auto outcoming_long_edges = ultra_compression(vcursors, context);
+
   depth_filter::DepthInt<GraphCursor> depth;
 
   std::vector<GraphCursor> initial;
@@ -470,6 +472,38 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     return updated;
   };
 
+
+  auto loop_transfer_vertices_only = [&code, context, &fees, &depth, &vcursors, &outcoming_long_edges](StateSet &I, double transfer_fee,
+                                                                                                       const std::vector<double> &emission_fees,
+                                                                                                       const auto &keys) {
+    StateSet Inext;
+    phmap::flat_hash_set<GraphCursor> updated;
+    for (const GraphCursor &cursor : keys) {
+      VERIFY(vcursors.count(cursor));
+      const auto &plink = I[cursor];  // We can take reference here since we will not update I in this loop
+      for (const auto &edge : outcoming_long_edges[cursor]) {  // TODO use const accessor here
+        double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - edge.length() - static_cast<double>(plink->max_prefix_size());
+        double cost = plink->score() + transfer_fee * edge.length() + edge.emission_fee(code, emission_fees);
+        if (cost > fees.absolute_threshold) continue;
+        if (!depth.depth_at_least(edge.end, required_cursor_depth, context)) continue;
+        Inext.update(edge.end, cost, plink);
+        if (cost < I.get_cost(edge.end)) {
+          updated.insert(edge.end);
+        }
+      }
+    }
+
+    for (const GraphCursor &cursor : updated) {
+      VERIFY(vcursors.count(cursor));
+      auto plink = std::move(Inext[cursor]);
+      plink->collapse_and_trim();
+      I[cursor] = std::move(plink);
+    }
+
+    return updated;
+  };
+
+
   auto loop_transfer_negative = [&code, context, &fees, &depth](StateSet &I, double transfer_fee,
                                                                 const std::vector<double> &emission_fees,
                                                                 const auto &keys,
@@ -502,7 +536,52 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     return updated;
   };
 
-  auto i_loop_processing_ff = [&loop_transfer_ff, &fees](StateSet &I, size_t m) {
+  auto i_loop_processing_ff = [&loop_transfer_ff, &loop_transfer_vertices_only, &fees, &vcursors](StateSet &I, size_t m) {
+    phmap::flat_hash_set<GraphCursor> updated;
+    for (const auto &kv : I) {
+      updated.insert(kv.first);
+    }
+    I.set_event(m, EventType::INSERTION);
+    updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated);  // (1)
+    if (is_power_of_two_or_zero(m)) {
+      INFO("Updated: " << updated.size() << " over " << I.size() << " m = " << m);
+    }
+    for (const GraphCursor &cursor : updated) {
+      VERIFY(I.count(cursor));
+      I[cursor]->set_emission(m, EventType::INSERTION);
+    }
+
+    auto it = updated.begin();
+    while (it != updated.end()) {
+		  if (!vcursors.count(*it)) {
+        it = updated.erase(it);
+      } else {
+        ++it;
+      }
+    }
+
+    for (size_t i = 0; i < fees.max_insertion_length && !updated.empty(); ++i) {  // (2)
+      updated = loop_transfer_vertices_only(I, fees.t[m][p7H_II], fees.ins[m], updated);
+      if (is_power_of_two_or_zero(m)) {
+        INFO("Updated: " << updated.size() << " over " << I.size() << " on i = " << i << " m = " << m);
+      }
+      for (const GraphCursor &cursor : updated) {
+        VERIFY(I.count(cursor));
+        I[cursor]->set_emission(m, EventType::INSERTION);
+      }
+    }
+
+    updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated);  // (1)
+    if (is_power_of_two_or_zero(m)) {
+      INFO("Updated: " << updated.size() << " over " << I.size() << " m = " << m);
+    }
+    for (const GraphCursor &cursor : updated) {
+      VERIFY(I.count(cursor));
+      I[cursor]->set_emission(m, EventType::INSERTION);
+    }
+  };
+
+  auto i_loop_processing_ff_simple = [&loop_transfer_ff, &fees](StateSet &I, size_t m) {
     phmap::flat_hash_set<GraphCursor> updated;
     for (const auto &kv : I) {
       updated.insert(kv.first);
