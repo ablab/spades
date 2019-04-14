@@ -177,6 +177,7 @@ Fees levenshtein_fees(const std::string &s, double mismatch, double gap_open, do
 Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc, double lambda) {
   size_t M = hmm->M;
   Fees fees;
+  fees.name = hmm->name;
   fees.consensus = hmm->consensus + 1;  // consensus residue line        1..M    (p7H_CONS)       */ /* String; 0=' ', M+1='\0'
   to_upper_case(fees.consensus);
   fees.code = DigitalCodind(abc);

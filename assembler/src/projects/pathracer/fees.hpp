@@ -30,6 +30,7 @@ struct Fees {
   std::vector<std::vector<double>> ins;
   DigitalCodind code;
   std::string consensus;
+  std::string name;
 
   struct {size_t l25 = 1000000, l100 = 50000, l500 = 10000; } state_limits;
   size_t max_insertion_length = 30;
