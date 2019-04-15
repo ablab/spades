@@ -122,11 +122,11 @@ public:
     return score_;
   }
 
-  bool update(score_t score, const ThisRef &pl) {
+  bool update(score_t score, const ThisRef &pl, size_t insertion_len = 1) {
     scores_.push_back({score, pl});
 
     // FIXME fix this for I loops
-    max_prefix_size_ = std::max(max_prefix_size_, pl->max_prefix_size_ + 1);
+    max_prefix_size_ = std::max(max_prefix_size_, pl->max_prefix_size_ + insertion_len);
 
     if (score_ > score) {
       score_ = score;
@@ -191,7 +191,7 @@ public:
   void update_max_prefix_size() {
     max_prefix_size_ = 0;
     for (const auto &p : scores_) {
-      max_prefix_size_ = std::max(max_prefix_size_, p.second->max_prefix_size() + 1);
+      max_prefix_size_ = std::max(max_prefix_size_, p.second->max_prefix_size() + 1);  // FIXME it could not be used for skipped I-s More one argument for counting M-s only!
     }
   }
 

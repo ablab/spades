@@ -221,3 +221,7 @@ template <typename T>
 constexpr bool is_power_of_two_or_zero(T v) {
     return (v & (v - 1)) == 0;
 }
+
+inline bool double_equal(double a, double b) {
+    return std::fabs(a - b) < 10 * std::numeric_limits<double>::epsilon() || (a == std::numeric_limits<double>::infinity() && b == std::numeric_limits<double>::infinity());
+}

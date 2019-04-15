@@ -945,6 +945,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                 continue;
             }
             auto unpacked_path = ccc.UnpackPath(annotated_path.path, cursors);
+            VERIFY(check_path_continuity(unpacked_path, context));
             auto alignment = compress_alignment(annotated_path.alignment(fees, &ccc), x_as_m_in_alignment);
             auto nucl_path = to_nucl_path(unpacked_path);
             std::string nucl_seq = pathtree::path2string(nucl_path, context);
