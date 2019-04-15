@@ -598,7 +598,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   auto i_loop_processing_universal = [&loop_transfer_negative, &fees](StateSet &I, size_t m) {
-    INFO("i_loop_processing_universal started");
     std::vector<GraphCursor> updated;
     I.set_event(m, EventType::INSERTION);
     for (size_t i = 0; i < fees.max_insertion_length && (i == 0 || !updated.empty()); ++i) {
@@ -615,7 +614,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     }
   };
 
-  auto i_loop_processing_ff = [&loop_transfer_ff, &loop_transfer_vertices_only, &i_loop_processing_ff_simple, &fees, &vcursors, &i_loop_processing_universal](StateSet &I, size_t m) {
+  auto i_loop_processing_ff = [&loop_transfer_ff, &loop_transfer_vertices_only, &fees, &vcursors](StateSet &I, size_t m) {
     phmap::flat_hash_set<GraphCursor> updated;
     for (const auto &kv : I) {
       updated.insert(kv.first);
@@ -638,7 +637,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       }
     }
 
-    auto Icopy = I;
     if (is_power_of_two_or_zero(m)) {
       INFO("Vertices updated: " << updated.size() << " over " << vcursors.size() << " m = " << m);
     }
@@ -655,16 +653,11 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       }
     }
 
-    VERIFY(I.not_worse(Icopy));
-
     if (is_power_of_two_or_zero(m)) {
       INFO("TOTAL vertices updated: " << updated_vertices.size() << " over " << vcursors.size() << " m = " << m);
     }
 
-    i_loop_processing_universal(I, m);
-    return;
-    updated = std::move(updated_vertices);
-    updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated);  // (3)
+    updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated_vertices);  // (3)
     if (is_power_of_two_or_zero(m)) {
       INFO("Updated (3): " << updated.size() << " over " << I.size() << " m = " << m);
     }
