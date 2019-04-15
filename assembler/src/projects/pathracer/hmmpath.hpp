@@ -719,10 +719,10 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     return !depth.depth_at_least(cursor, required_cursor_depth, context);
   };
 
-  auto i_loop_processing_checked =[&](StateSet &I, size_t m) {
+  auto i_loop_processing_checked = [&](StateSet &I, size_t m) {
     auto Icopy = I;
     i_loop_processing_ff(I, m);
-    i_loop_processing_universal(Icopy, m);
+    i_loop_processing_ff_simple(Icopy, m);
     VERIFY(I.equal(Icopy));
   };
 
