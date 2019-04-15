@@ -289,6 +289,43 @@ template <typename GraphCursor>
 class StateSet : public phmap::flat_hash_map<GraphCursor, PathLinkRef<GraphCursor>>,
                  public StateMap<StateSet<GraphCursor>> {
  public:
+  bool equal(const StateSet &S) const {
+    if (this->size() != S.size()) {
+      WARN(this->size() << " " << S.size());
+    }
+    for (const auto &kv : this->states()) {
+      const GraphCursor &cursor = kv.cursor;
+      if (!double_equal(get_cost(cursor), S.get_cost(cursor))) {
+        WARN(cursor << " " << get_cost(cursor) << " " << S.get_cost(cursor));
+        return false;
+      }
+    }
+    for (const auto &kv : S.states()) {
+      const GraphCursor &cursor = kv.cursor;
+      if (!double_equal(get_cost(cursor), S.get_cost(cursor))) {
+        WARN(cursor << " " << get_cost(cursor) << " " << S.get_cost(cursor));
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool not_worse(const StateSet &S) const {
+    if (this->size() < S.size()) {
+      WARN(this->size() << " < " << S.size());
+    }
+    for (const auto &kv : S.states()) {
+      const GraphCursor &cursor = kv.cursor;
+      if (get_cost(cursor) > S.get_cost(cursor)) {
+        WARN(cursor << " " << get_cost(cursor) << " > " << S.get_cost(cursor));
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   size_t collapse_all() {
     size_t count = 0;
     for (auto &kv : *this) {
@@ -329,7 +366,8 @@ class StateSet : public phmap::flat_hash_map<GraphCursor, PathLinkRef<GraphCurso
   }
 
   bool update(const GraphCursor &cursor, score_t score,
-              const PathLinkRef<GraphCursor> &plink) {
+              const PathLinkRef<GraphCursor> &plink,
+              size_t insertion_len = 1) {
     auto it_fl = this->insert({cursor, nullptr});
     const auto &it = it_fl.first;
     const bool &inserted = it_fl.second;
@@ -338,7 +376,7 @@ class StateSet : public phmap::flat_hash_map<GraphCursor, PathLinkRef<GraphCurso
     }
 
     score_t prev = inserted ? std::numeric_limits<score_t>::infinity() : it->second->score();
-    it->second->update(score, plink);
+    it->second->update(score, plink, insertion_len);
     return prev > score;
   }
 
@@ -412,7 +450,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       VERIFY(plink);
       relaxed.insert(cursor);
 
-      double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - 1 - static_cast<double>(plink->max_prefix_size());
+      double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - static_cast<double>(plink->max_prefix_size());
       for (const auto &next : cursor.next(context)) {
         double cost = plink->score() + transfer_fee + emission_fees[code(next.letter(context))];
         if (!vcursors.count(next)) {
@@ -461,7 +499,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
     for (const GraphCursor &cursor : updated_vertices) {
       auto plink = std::move(Inext[cursor]);
-      plink->collapse_and_trim();
+      // plink->collapse_and_trim();  // Not required, empty is not possible here, same origins also are not
       I[cursor] = std::move(plink);
     }
 
@@ -480,13 +518,15 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     phmap::flat_hash_set<GraphCursor> updated;
     for (const GraphCursor &cursor : keys) {
       VERIFY(vcursors.count(cursor));
+      VERIFY(I.count(cursor));
       const auto &plink = I[cursor];  // We can take reference here since we will not update I in this loop
       for (const auto &edge : outcoming_long_edges[cursor]) {  // TODO use const accessor here
-        double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - edge.length() - static_cast<double>(plink->max_prefix_size());
-        double cost = plink->score() + transfer_fee * edge.length() + edge.emission_fee(code, emission_fees);
+        size_t len = edge.length();
+        double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - len + 1 - static_cast<double>(plink->max_prefix_size());
+        double cost = plink->score() + transfer_fee * len + edge.emission_fee(code, emission_fees);
         if (cost > fees.absolute_threshold) continue;
         if (!depth.depth_at_least(edge.end, required_cursor_depth, context)) continue;
-        Inext.update(edge.end, cost, plink);
+        Inext.update(edge.end, cost, plink, len);
         if (cost < I.get_cost(edge.end)) {
           updated.insert(edge.end);
         }
@@ -496,13 +536,13 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     for (const GraphCursor &cursor : updated) {
       VERIFY(vcursors.count(cursor));
       auto plink = std::move(Inext[cursor]);
-      plink->collapse_and_trim();
+      // plink->collapse_and_trim();  // Not required, empty is not possible here, same origins also are not
+      VERIFY(I.get_cost(cursor) > plink->score());
       I[cursor] = std::move(plink);
     }
 
     return updated;
   };
-
 
   auto loop_transfer_negative = [&code, context, &fees, &depth](StateSet &I, double transfer_fee,
                                                                 const std::vector<double> &emission_fees,
@@ -512,7 +552,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     std::vector<GraphCursor> updated;
     auto process = [&](const auto &collection) -> void {
       for (const auto &state : collection) {
-        double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - 1 - static_cast<double>(state.plink->max_prefix_size());
+        double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - static_cast<double>(state.plink->max_prefix_size());
         for (const auto &next : state.cursor.next(context)) {
           double cost = state.score + transfer_fee + emission_fees[code(next.letter(context))];
           if (cost > fees.absolute_threshold) continue;
@@ -529,64 +569,11 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
     for (const GraphCursor &cursor : updated) {
       auto plink = std::move(Inext[cursor]);
-      plink->collapse_and_trim();
+      // plink->collapse_and_trim();  // Not required, empty is not possible here, same origins also are not
       I[cursor] = std::move(plink);
     }
 
     return updated;
-  };
-
-  auto i_loop_processing_ff = [&loop_transfer_ff, &loop_transfer_vertices_only, &fees, &vcursors](StateSet &I, size_t m) {
-    phmap::flat_hash_set<GraphCursor> updated;
-    for (const auto &kv : I) {
-      updated.insert(kv.first);
-    }
-    I.set_event(m, EventType::INSERTION);
-    updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated);  // (1)
-    if (is_power_of_two_or_zero(m)) {
-      INFO("Updated: " << updated.size() << " over " << I.size() << " m = " << m);
-    }
-    for (const GraphCursor &cursor : updated) {
-      VERIFY(I.count(cursor));
-      I[cursor]->set_emission(m, EventType::INSERTION);
-    }
-
-    auto it = updated.begin();
-    while (it != updated.end()) {
-		  if (!vcursors.count(*it)) {
-        it = updated.erase(it);
-      } else {
-        ++it;
-      }
-    }
-
-    if (is_power_of_two_or_zero(m)) {
-      INFO("Vertices updated: " << updated.size() << " over " << vcursors.size() << " m = " << m);
-    }
-    phmap::flat_hash_set<GraphCursor> updated_vertices = updated;
-    for (size_t i = 0; i < fees.max_insertion_length && !updated.empty(); ++i) {  // (2)
-      updated = loop_transfer_vertices_only(I, fees.t[m][p7H_II], fees.ins[m], updated);
-      if (is_power_of_two_or_zero(m)) {
-        INFO("Vertices updated: " << updated.size() << " over " << vcursors.size() << " on i = " << i << " m = " << m);
-      }
-      for (const GraphCursor &cursor : updated) {
-        VERIFY(I.count(cursor));
-        I[cursor]->set_emission(m, EventType::INSERTION);
-        updated_vertices.insert(cursor);
-      }
-    }
-
-    if (is_power_of_two_or_zero(m)) {
-      INFO("TOTAL vertices updated: " << updated_vertices.size() << " over " << vcursors.size() << " m = " << m);
-    }
-    updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated_vertices);  // (3)
-    if (is_power_of_two_or_zero(m)) {
-      INFO("Updated: " << updated.size() << " over " << I.size() << " m = " << m);
-    }
-    for (const GraphCursor &cursor : updated) {
-      VERIFY(I.count(cursor));
-      I[cursor]->set_emission(m, EventType::INSERTION);
-    }
   };
 
   auto i_loop_processing_ff_simple = [&loop_transfer_ff, &fees](StateSet &I, size_t m) {
@@ -605,12 +592,16 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
         I[cursor]->set_emission(m, EventType::INSERTION);
       }
     }
+    if (!updated.empty()) {
+      WARN("i_loop_processing_ff_simple has not been converged");
+    }
   };
 
   auto i_loop_processing_universal = [&loop_transfer_negative, &fees](StateSet &I, size_t m) {
+    INFO("i_loop_processing_universal started");
     std::vector<GraphCursor> updated;
     I.set_event(m, EventType::INSERTION);
-    for (size_t i = 0; i < fees.max_insertion_length; ++i) {
+    for (size_t i = 0; i < fees.max_insertion_length && (i == 0 || !updated.empty()); ++i) {
       updated = loop_transfer_negative(I, fees.t[m][p7H_II], fees.ins[m], updated, /*just_all*/ i == 0);
       if (is_power_of_two_or_zero(m)) {
         INFO("Updated: " << updated.size() << " over " << I.size() << " on i = " << i << " m = " << m);
@@ -618,6 +609,68 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       for (const GraphCursor &cursor : updated) {
         I[cursor]->set_emission(m, EventType::INSERTION);
       }
+    }
+    if (!updated.empty()) {
+      WARN("i_loop_processing_universal has not been converged");
+    }
+  };
+
+  auto i_loop_processing_ff = [&loop_transfer_ff, &loop_transfer_vertices_only, &i_loop_processing_ff_simple, &fees, &vcursors, &i_loop_processing_universal](StateSet &I, size_t m) {
+    phmap::flat_hash_set<GraphCursor> updated;
+    for (const auto &kv : I) {
+      updated.insert(kv.first);
+    }
+    I.set_event(m, EventType::INSERTION);
+    updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated);  // (1)
+    if (is_power_of_two_or_zero(m)) {
+      INFO("Updated (1):" << updated.size() << " over " << I.size() << " m = " << m);
+    }
+    for (const GraphCursor &cursor : updated) {
+      VERIFY(I.count(cursor));
+      I[cursor]->set_emission(m, EventType::INSERTION);
+    }
+    auto it = updated.begin();
+    while (it != updated.end()) {
+		  if (!vcursors.count(*it)) {
+        it = updated.erase(it);
+      } else {
+        ++it;
+      }
+    }
+
+    auto Icopy = I;
+    if (is_power_of_two_or_zero(m)) {
+      INFO("Vertices updated: " << updated.size() << " over " << vcursors.size() << " m = " << m);
+    }
+    phmap::flat_hash_set<GraphCursor> updated_vertices = updated;
+    for (size_t i = 0; i < fees.max_insertion_length && !updated.empty(); ++i) {  // (2)
+      updated = loop_transfer_vertices_only(I, fees.t[m][p7H_II], fees.ins[m], updated);
+      if (is_power_of_two_or_zero(m)) {
+        INFO("Vertices updated (2): " << updated.size() << " over " << vcursors.size() << " on i = " << i << " m = " << m);
+      }
+      for (const GraphCursor &cursor : updated) {
+        VERIFY(I.count(cursor));
+        I[cursor]->set_emission(m, EventType::INSERTION);
+        updated_vertices.insert(cursor);
+      }
+    }
+
+    VERIFY(I.not_worse(Icopy));
+
+    if (is_power_of_two_or_zero(m)) {
+      INFO("TOTAL vertices updated: " << updated_vertices.size() << " over " << vcursors.size() << " m = " << m);
+    }
+
+    i_loop_processing_universal(I, m);
+    return;
+    updated = std::move(updated_vertices);
+    updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated);  // (3)
+    if (is_power_of_two_or_zero(m)) {
+      INFO("Updated (3): " << updated.size() << " over " << I.size() << " m = " << m);
+    }
+    for (const GraphCursor &cursor : updated) {
+      VERIFY(I.count(cursor));
+      I[cursor]->set_emission(m, EventType::INSERTION);
     }
   };
 
@@ -663,7 +716,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   auto depth_filter_kv = [&](const auto &cursor_value) -> bool {
     const GraphCursor &cursor = cursor_value.first;
     size_t prefix_len = cursor_value.second->max_prefix_size();
-    double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - static_cast<double>(prefix_len);
+    double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - static_cast<double>(prefix_len) + 1;
     // bool dal = depth.depth_at_least(cursor, required_cursor_depth, context);
     // bool di = depth_int.depth_at_least(cursor, required_cursor_depth, context);
     // if (di != dal) {
@@ -673,8 +726,15 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     return !depth.depth_at_least(cursor, required_cursor_depth, context);
   };
 
+  auto i_loop_processing_checked =[&](StateSet &I, size_t m) {
+    auto Icopy = I;
+    i_loop_processing_ff(I, m);
+    i_loop_processing_universal(Icopy, m);
+    VERIFY(I.equal(Icopy));
+  };
+
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
-  i_loop_processing_ff(I, 0);  // Do we really need I at the beginning???
+  i_loop_processing_checked(I, 0);  // Do we really need I at the beginning???
   I.set_event(0, EventType::INSERTION);
   for (size_t m = 1; m <= fees.M; ++m) {
     if (fees.local && m > 1) {  // FIXME check latter condition. Does it really make sense?
@@ -685,8 +745,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
-    I.collapse_all();
-    i_loop_processing_ff(I, m);
+    i_loop_processing_checked(I, m);
 
     size_t n_of_states = D.size() + I.size() + M.size();
 
@@ -723,7 +782,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
     if (fees.local) {
       update_sink(D, fees.cleavage_cost);
-      sink->collapse_and_trim();  // FIXME subtract cost for transition -> D state ?
+      sink->collapse_and_trim();  // FIXME subtract cost for transition -> D state ?  // FIXME check it twice! I collapsing is dangerous
     }
 
     if (is_power_of_two_or_zero(m)) {
@@ -747,7 +806,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   update_sink(I, fees.t[fees.M][p7H_IM]);  // Do we really need I at the end?
   update_sink(M, fees.t[fees.M][p7H_MM]);
   sink->collapse_and_trim();
-  // sink.apply([](auto &p) { const_cast<PathLink<GraphCursor>&>(p).collapse_and_trim(); });
 
   DEBUG(sink->object_count_current() << " pathlink objects");
   DEBUG(sink->object_count_max() << " pathlink objects maximum");
