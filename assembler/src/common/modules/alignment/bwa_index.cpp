@@ -299,6 +299,17 @@ inline std::ostream& operator<<(std::ostream& os, const mem_alnreg_s& a) {
     return os;
 }
 
+static bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
+//  k-rb > re - k
+    if (rb < k && 2 * k  > re + rb)
+        return true;
+//  re - edge_len > edge_len - rb
+    if (re > edge_len && re + rb > 2 * edge_len)
+        return true;
+    return false;
+}
+
+
 omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
@@ -341,7 +352,10 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
 //FIXME: what about other scoring systems?
         double qual = double(a.score)/double(a.qe - a.qb);
         DEBUG("Edge: "<< ids_[a.rid] << " quality from score: " << qual);
-
+        
+        //Important for alignments shorter than K
+        if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
+            continue;
         if (!is_rev) {
             res.push_back(ids_[a.rid],
                           { { (size_t)a.qb, initial_range_end },
@@ -353,7 +367,6 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
 
         }
     }
-
     return res;
 }
 
