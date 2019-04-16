@@ -720,10 +720,10 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   auto i_loop_processing_checked = [&](StateSet &I, size_t m) {
-    auto Icopy = I;
+    // auto Icopy = I;
     i_loop_processing_ff(I, m);
-    i_loop_processing_ff_simple(Icopy, m);
-    VERIFY(I.equal(Icopy));
+    // i_loop_processing_ff_simple(Icopy, m);
+    // VERIFY(I.equal(Icopy));
   };
 
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
