@@ -416,7 +416,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   auto vcursors = vertex_cursors(cursors, context);
   INFO("Vertex cursors: " << vcursors.size() << "/" << cursors.size());
 
-  auto outcoming_long_edges = ultra_compression(vcursors, context);
+  // auto outcoming_long_edges = ultra_compression(vcursors, context);
 
   depth_filter::DepthInt<GraphCursor> depth;
 
@@ -511,38 +511,38 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
 
-  auto loop_transfer_vertices_only = [&code, context, &fees, &depth, &vcursors, &outcoming_long_edges](StateSet &I, double transfer_fee,
-                                                                                                       const std::vector<double> &emission_fees,
-                                                                                                       const auto &keys) {
-    StateSet Inext;
-    phmap::flat_hash_set<GraphCursor> updated;
-    for (const GraphCursor &cursor : keys) {
-      VERIFY(vcursors.count(cursor));
-      VERIFY(I.count(cursor));
-      const auto &plink = I[cursor];  // We can take reference here since we will not update I in this loop
-      for (const auto &edge : outcoming_long_edges[cursor]) {  // TODO use const accessor here
-        size_t len = edge.length();
-        double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - len + 1 - static_cast<double>(plink->max_prefix_size());
-        double cost = plink->score() + transfer_fee * len + edge.emission_fee(code, emission_fees);
-        if (cost > fees.absolute_threshold) continue;
-        if (!depth.depth_at_least(edge.end, required_cursor_depth, context)) continue;
-        Inext.update(edge.end, cost, plink, len);
-        if (cost < I.get_cost(edge.end)) {
-          updated.insert(edge.end);
-        }
-      }
-    }
-
-    for (const GraphCursor &cursor : updated) {
-      VERIFY(vcursors.count(cursor));
-      auto plink = std::move(Inext[cursor]);
-      // plink->collapse_and_trim();  // Not required, empty is not possible here, same origins also are not
-      VERIFY(I.get_cost(cursor) > plink->score());
-      I[cursor] = std::move(plink);
-    }
-
-    return updated;
-  };
+  // auto loop_transfer_vertices_only = [&code, context, &fees, &depth, &vcursors, &outcoming_long_edges](StateSet &I, double transfer_fee,
+  //                                                                                                      const std::vector<double> &emission_fees,
+  //                                                                                                      const auto &keys) {
+  //   StateSet Inext;
+  //   phmap::flat_hash_set<GraphCursor> updated;
+  //   for (const GraphCursor &cursor : keys) {
+  //     VERIFY(vcursors.count(cursor));
+  //     VERIFY(I.count(cursor));
+  //     const auto &plink = I[cursor];  // We can take reference here since we will not update I in this loop
+  //     for (const auto &edge : outcoming_long_edges[cursor]) {  // TODO use const accessor here
+  //       size_t len = edge.length();
+  //       double required_cursor_depth = static_cast<double>(fees.minimal_match_length) - len + 1 - static_cast<double>(plink->max_prefix_size());
+  //       double cost = plink->score() + transfer_fee * len + edge.emission_fee(code, emission_fees);
+  //       if (cost > fees.absolute_threshold) continue;
+  //       if (!depth.depth_at_least(edge.end, required_cursor_depth, context)) continue;
+  //       Inext.update(edge.end, cost, plink, len);
+  //       if (cost < I.get_cost(edge.end)) {
+  //         updated.insert(edge.end);
+  //       }
+  //     }
+  //   }
+  //
+  //   for (const GraphCursor &cursor : updated) {
+  //     VERIFY(vcursors.count(cursor));
+  //     auto plink = std::move(Inext[cursor]);
+  //     // plink->collapse_and_trim();  // Not required, empty is not possible here, same origins also are not
+  //     VERIFY(I.get_cost(cursor) > plink->score());
+  //     I[cursor] = std::move(plink);
+  //   }
+  //
+  //   return updated;
+  // };
 
   auto loop_transfer_negative = [&code, context, &fees, &depth](StateSet &I, double transfer_fee,
                                                                 const std::vector<double> &emission_fees,
@@ -614,58 +614,58 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     }
   };
 
-  auto i_loop_processing_ff = [&loop_transfer_ff, &loop_transfer_vertices_only, &fees, &vcursors](StateSet &I, size_t m) {
-    phmap::flat_hash_set<GraphCursor> updated;
-    for (const auto &kv : I) {
-      updated.insert(kv.first);
-    }
-    I.set_event(m, EventType::INSERTION);
-    updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated);  // (1)
-    if (is_power_of_two_or_zero(m)) {
-      INFO("Updated (1):" << updated.size() << " over " << I.size() << " m = " << m);
-    }
-    for (const GraphCursor &cursor : updated) {
-      VERIFY(I.count(cursor));
-      I[cursor]->set_emission(m, EventType::INSERTION);
-    }
-    auto it = updated.begin();
-    while (it != updated.end()) {
-		  if (!vcursors.count(*it)) {
-        it = updated.erase(it);
-      } else {
-        ++it;
-      }
-    }
-
-    if (is_power_of_two_or_zero(m)) {
-      INFO("Vertices updated: " << updated.size() << " over " << vcursors.size() << " m = " << m);
-    }
-    phmap::flat_hash_set<GraphCursor> updated_vertices = updated;
-    for (size_t i = 0; i < fees.max_insertion_length && !updated.empty(); ++i) {  // (2)
-      updated = loop_transfer_vertices_only(I, fees.t[m][p7H_II], fees.ins[m], updated);
-      if (is_power_of_two_or_zero(m)) {
-        INFO("Vertices updated (2): " << updated.size() << " over " << vcursors.size() << " on i = " << i << " m = " << m);
-      }
-      for (const GraphCursor &cursor : updated) {
-        VERIFY(I.count(cursor));
-        I[cursor]->set_emission(m, EventType::INSERTION);
-        updated_vertices.insert(cursor);
-      }
-    }
-
-    if (is_power_of_two_or_zero(m)) {
-      INFO("TOTAL vertices updated: " << updated_vertices.size() << " over " << vcursors.size() << " m = " << m);
-    }
-
-    updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated_vertices);  // (3)
-    if (is_power_of_two_or_zero(m)) {
-      INFO("Updated (3): " << updated.size() << " over " << I.size() << " m = " << m);
-    }
-    for (const GraphCursor &cursor : updated) {
-      VERIFY(I.count(cursor));
-      I[cursor]->set_emission(m, EventType::INSERTION);
-    }
-  };
+  // auto i_loop_processing_ff = [&loop_transfer_ff, &loop_transfer_vertices_only, &fees, &vcursors](StateSet &I, size_t m) {
+  //   phmap::flat_hash_set<GraphCursor> updated;
+  //   for (const auto &kv : I) {
+  //     updated.insert(kv.first);
+  //   }
+  //   I.set_event(m, EventType::INSERTION);
+  //   updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated);  // (1)
+  //   if (is_power_of_two_or_zero(m)) {
+  //     INFO("Updated (1):" << updated.size() << " over " << I.size() << " m = " << m);
+  //   }
+  //   for (const GraphCursor &cursor : updated) {
+  //     VERIFY(I.count(cursor));
+  //     I[cursor]->set_emission(m, EventType::INSERTION);
+  //   }
+  //   auto it = updated.begin();
+  //   while (it != updated.end()) {
+	// 	  if (!vcursors.count(*it)) {
+  //       it = updated.erase(it);
+  //     } else {
+  //       ++it;
+  //     }
+  //   }
+  //
+  //   if (is_power_of_two_or_zero(m)) {
+  //     INFO("Vertices updated: " << updated.size() << " over " << vcursors.size() << " m = " << m);
+  //   }
+  //   phmap::flat_hash_set<GraphCursor> updated_vertices = updated;
+  //   for (size_t i = 0; i < fees.max_insertion_length && !updated.empty(); ++i) {  // (2)
+  //     updated = loop_transfer_vertices_only(I, fees.t[m][p7H_II], fees.ins[m], updated);
+  //     if (is_power_of_two_or_zero(m)) {
+  //       INFO("Vertices updated (2): " << updated.size() << " over " << vcursors.size() << " on i = " << i << " m = " << m);
+  //     }
+  //     for (const GraphCursor &cursor : updated) {
+  //       VERIFY(I.count(cursor));
+  //       I[cursor]->set_emission(m, EventType::INSERTION);
+  //       updated_vertices.insert(cursor);
+  //     }
+  //   }
+  //
+  //   if (is_power_of_two_or_zero(m)) {
+  //     INFO("TOTAL vertices updated: " << updated_vertices.size() << " over " << vcursors.size() << " m = " << m);
+  //   }
+  //
+  //   updated = loop_transfer_ff(I, fees.t[m][p7H_II], fees.ins[m], updated_vertices);  // (3)
+  //   if (is_power_of_two_or_zero(m)) {
+  //     INFO("Updated (3): " << updated.size() << " over " << I.size() << " m = " << m);
+  //   }
+  //   for (const GraphCursor &cursor : updated) {
+  //     VERIFY(I.count(cursor));
+  //     I[cursor]->set_emission(m, EventType::INSERTION);
+  //   }
+  // };
 
   auto dm_new = [&](DeletionStateSet &D, StateSet &M, const StateSet &I, size_t m) {
     DeletionStateSet preM = D;
@@ -721,7 +721,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   auto i_loop_processing_checked = [&](StateSet &I, size_t m) {
     // auto Icopy = I;
-    i_loop_processing_ff(I, m);
+    i_loop_processing_ff_simple(I, m);
     // i_loop_processing_ff_simple(Icopy, m);
     // VERIFY(I.equal(Icopy));
   };
