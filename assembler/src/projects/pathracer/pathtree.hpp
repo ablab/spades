@@ -227,7 +227,8 @@ public:
     return scores_.size() == 0 && score_ == 0;
   }
 
-  std::vector<AnnotatedPath<GraphCursor>> top_k(size_t k, double min_score = 0) const {
+  std::vector<AnnotatedPath<GraphCursor>> top_k(typename GraphCursor::Context context,
+                                                size_t k, double min_score = 0) const {
     struct Event {
       const This *path_link;
     };
@@ -499,7 +500,9 @@ class PathSet {
  public:
   class path_container {
    public:
-    path_container(const pathtree::PathLinkRef<GraphCursor> &paths, size_t k, double min_score = 0) : paths_(paths->top_k(k, min_score)) {}
+    path_container(const pathtree::PathLinkRef<GraphCursor> &paths,
+                   typename GraphCursor::Context context,
+                   size_t k, double min_score = 0) : paths_(paths->top_k(context, k, min_score)) {}
 
     auto begin() const { return paths_.begin(); }
     auto end() const { return paths_.end(); }
@@ -517,10 +520,12 @@ class PathSet {
   PathSet(const PathLinkRef<GraphCursor> &pathlink) : pathlink_{pathlink} {}
 
   double best_score() const { return -pathlink_->score(); }  // FIXME sign
-  AnnotatedPath<GraphCursor> best_path() const { return top_k(1, -std::numeric_limits<double>::infinity())[0]; }
-  std::string best_path_string() const { return path_container::str(best_path().path); }
+  // AnnotatedPath<GraphCursor> best_path(typename GraphCursor::Context context) const { return top_k(context, 1, -std::numeric_limits<double>::infinity())[0]; }
+  // std::string best_path_string() const { return path_container::str(best_path().path); }
 
-  path_container top_k(size_t k, double min_score = 0) const { return path_container(pathlink_, k, min_score); }
+  path_container top_k(typename GraphCursor::Context context,
+                       size_t k,
+                       double min_score = 0) const { return path_container(pathlink_, context, k, min_score); }
 
   const PathLink<GraphCursor> *pathlink() const {
     return pathlink_.get();

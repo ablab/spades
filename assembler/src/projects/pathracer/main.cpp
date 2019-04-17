@@ -927,7 +927,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
 
         INFO("Extracting top paths");
-        auto top_paths = result.top_k(top);
+        auto top_paths = result.top_k(&ccc, top);
         bool x_as_m_in_alignment = fees.is_proteomic();
         if (!top_paths.empty()) {
             INFO("Best score in the current component: " << result.best_score());
