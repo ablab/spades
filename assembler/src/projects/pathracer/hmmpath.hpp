@@ -774,8 +774,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     M.set_event(m, EventType::MATCH);
 
     if (fees.local) {
-      update_sink(D, fees.cleavage_cost);
-      sink->collapse_and_trim();  // FIXME subtract cost for transition -> D state ?  // FIXME check it twice! I collapsing is dangerous
+      update_sink(D, fees.cleavage_cost);  // FIXME subtract cost for transition -> D state ?  // FIXME check it twice! I collapsing is dangerous
     }
 
     if (is_power_of_two_or_zero(m)) {
