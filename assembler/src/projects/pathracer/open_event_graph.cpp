@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
         std::unordered_set<std::tuple<std::vector<EdgeId>, size_t, size_t>> extracted_paths;
 
         INFO("Extracting top paths");
-        auto top_paths = result.top_k(top);
+        auto top_paths = result.top_k(&ccc, top);
         VERIFY(!top_paths.empty());
         for (const auto& annotated_path : top_paths) {
             VERIFY(annotated_path.path.size());
