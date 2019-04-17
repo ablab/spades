@@ -226,14 +226,6 @@ template <typename GraphCursor>
 class DeletionStateSet : public phmap::flat_hash_map<GraphCursor, ScoredPLink<GraphCursor>>,
                          public StateMap<DeletionStateSet<GraphCursor>> {
  public:
-  size_t collapse_all() {
-    size_t count = 0;
-    for (auto &kv : *this) {
-      count += kv.second.plink->collapse_and_trim();
-    }
-    return count;
-  }
-
   template <typename KV>
   static State<GraphCursor> kv2state(const KV &kv) {
     const auto &cursor = kv.first;
@@ -330,6 +322,14 @@ class StateSet : public phmap::flat_hash_map<GraphCursor, PathLinkRef<GraphCurso
     size_t count = 0;
     for (auto &kv : *this) {
       count += kv.second->collapse_and_trim();
+    }
+    return count;
+  }
+
+  size_t trim_all() {
+    size_t count = 0;
+    for (auto &kv : *this) {
+      count += kv.second->trim();
     }
     return count;
   }

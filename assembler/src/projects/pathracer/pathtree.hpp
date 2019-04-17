@@ -122,6 +122,10 @@ public:
     return score_;
   }
 
+  ThisRef get_unique_ancestor() const {
+    return scores_.size() == 1 ? scores_.front().second : nullptr;
+  }
+
   bool update(score_t score, const ThisRef &pl, size_t insertion_len = 1) {
     scores_.push_back({score, pl});
 
@@ -171,6 +175,17 @@ public:
         break;
       }
     }
+  }
+
+  bool trim() {
+    if (scores_.size() <= 1) {
+      return false;
+    }
+    size_t prev_size = scores_.size();
+    trim_scores_left(scores_);
+    scores_.shrink_to_fit();
+    update_max_prefix_size();
+    return scores_.size() != prev_size;
   }
 
   bool collapse_and_trim() {
