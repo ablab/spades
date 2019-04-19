@@ -187,7 +187,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
           (option("--state-limits-coef") & integer("x", cfg.state_limits_coef)) % "multiplier for default #state limit [default: 1]",
           (option("--max-insertion-length") & integer("x", cfg.max_insertion_length)) % "maximal allowed number of successive I-emissions [default: 30]",
           option("--experimental-i-loops").set(cfg.use_experimental_i_loop_processing, 1) % "use experimental I-loops processing",
-          cfg.disable_depth_filter << option("--disable-depth-filter") % "disable depth filter",
+          // cfg.disable_depth_filter << option("--disable-depth-filter") % "disable depth filter",
           cfg.parallel_component_processing << option("--parallel component processing") % "enable parallel component processing",
           cfg.export_event_graph << option("--export-event-graph") % "export event graph in cereal format"
       )
@@ -898,15 +898,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         size_t collapsed_count = result.pathlink_mutable()->collapse_all();
         INFO(collapsed_count << " event graph vertices modified");
         VERIFY(collapsed_count == 0);
-
-        if (cfg.export_event_graph) {
-            std::ofstream of(cfg.output_dir + "/event_graph_" + p7hmm->name +
-                             "_component_" + int_to_hex(hash_value(cursors)) +
-                             "_size_" + std::to_string(cursors.size()) +
-                             ".cereal");
-            cereal::BinaryOutputArchive oarchive(of);
-            oarchive(cursors, ccc, result);
-        }
+        INFO("Event graph depth " << result.pathlink()->max_prefix_size());
 
         if (!cfg.known_sequences.empty()) {
             auto seqs = read_fasta(cfg.known_sequences);
@@ -924,6 +916,16 @@ void TraceHMM(const hmmer::HMM &hmm,
                     INFO("Sequence " << kv.first << " not found, max prefix " << max_prefix_size << ", max suffix " << max_suffix_size << " max infix " << max_infix_size << " over " << seq.size());
                 }
             }
+        }
+
+        if (cfg.export_event_graph) {
+            std::ofstream of(cfg.output_dir + "/event_graph_" + p7hmm->name +
+                             "_component_" + int_to_hex(hash_value(cursors)) +
+                             "_size_" + std::to_string(cursors.size()) +
+                             ".cereal");
+            cereal::BinaryOutputArchive oarchive(of);
+            oarchive(cursors, ccc, result);
+            INFO("Event graph exported");
         }
 
         INFO("Extracting top paths");
