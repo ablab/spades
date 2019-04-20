@@ -953,16 +953,16 @@ void TraceHMM(const hmmer::HMM &hmm,
             auto alignment = compress_alignment(annotated_path.alignment(fees, &ccc), x_as_m_in_alignment);
             auto nucl_path = to_nucl_path(unpacked_path);
             std::string nucl_seq = pathtree::path2string(nucl_path, context);
-            DEBUG_ASSERT(check_path_continuity(nucl_path, context), main_assert{}, debug_assert::level<2>{});
-            VERIFY(check_path_continuity(nucl_path, context));
             auto edge_path = to_path(nucl_path);
-            DEBUG_ASSERT(!edge_path.empty(), main_assert{});
-            auto edge_path_aas = to_path(unpacked_path);
-            if (edge_path != edge_path_aas) {
-                ERROR("NT: " << edge_path);
-                ERROR("AA: " << edge_path_aas);
-            }
-            DEBUG_ASSERT(edge_path == edge_path_aas, main_assert{}, debug_assert::level<2>{});
+            DEBUG_ASSERT(check_path_continuity(nucl_path, context), main_assert{}, debug_assert::level<2>{});
+            // VERIFY(check_path_continuity(nucl_path, context));
+            // DEBUG_ASSERT(!edge_path.empty(), main_assert{});
+            // auto edge_path_aas = to_path(unpacked_path);
+            // if (edge_path != edge_path_aas) {
+            //     ERROR("NT: " << edge_path);
+            //     ERROR("AA: " << edge_path_aas);
+            // }
+            // DEBUG_ASSERT(edge_path == edge_path_aas, main_assert{}, debug_assert::level<2>{});
             size_t pos = nucl_path[0].position();
             HMMPathInfo info(p7hmm->name, annotated_path.score, seq, nucl_seq, std::move(edge_path), std::move(alignment),
                              component_name, pos);
