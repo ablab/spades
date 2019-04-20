@@ -42,6 +42,8 @@ struct Event {
   void serialize(Archive &archive) {
     archive(cereal_as_pod(*this));
   }
+
+  Event(size_t m = 0, EventType type = EventType::NONE) : m{static_cast<unsigned>(m & Event::m_mask)}, type{type} {};
 };
 static_assert(sizeof(Event) == sizeof(uint32_t), "Invalid Event structure size");
 
@@ -330,8 +332,7 @@ public:
   }
 
   void set_emission(size_t m, EventType type) {
-    event_.m = static_cast<unsigned>(m & Event::m_mask);
-    event_.type = type;
+    event_ = Event(m, type);
   }
 
   Event emission() const {
