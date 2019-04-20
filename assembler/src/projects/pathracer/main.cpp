@@ -15,6 +15,8 @@
 #include "hmm_path_info.hpp"
 #include "fasta_reader.hpp"
 
+#include "stack_limit.hpp"
+
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
@@ -1148,6 +1150,9 @@ int pathracer_main(int argc, char* argv[]) {
     // Set memory limit
     const size_t GB = 1 << 30;
     utils::limit_memory(cfg.memory * GB);
+
+    // Stack limit
+    INFO("Soft stack limit: " << stack_limit());
 
     using namespace debruijn_graph;
 
