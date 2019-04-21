@@ -721,7 +721,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   auto i_loop_processing_checked = [&](StateSet &I, size_t m) {
     // auto Icopy = I;
-    i_loop_processing_ff_simple(I, m);
+    fees.use_experimental_i_loop_processing ? i_loop_processing_ff_simple(I, m) : i_loop_processing_universal(I, m);
     // i_loop_processing_ff_simple(Icopy, m);
     // VERIFY(I.equal(Icopy));
   };
