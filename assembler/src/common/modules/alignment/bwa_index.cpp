@@ -51,7 +51,7 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
             memopt_->min_seed_len = 14;
             memopt_->mask_level = 20;
             memopt_->drop_ratio = 20;
-            memopt_->min_chain_weight = 10;
+            memopt_->min_chain_weight = 40;
             skip_secondary_ = false;
             break;
     };
