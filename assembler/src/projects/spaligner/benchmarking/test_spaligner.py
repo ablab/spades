@@ -8,12 +8,12 @@ import edlib
 
 import argparse
 
-TRUE_PERFORMANCE = {"ecoli": {"realpb": "90% 87%",
-                              "realnp": "87% 87%",
+TRUE_PERFORMANCE = {"ecoli": {"realpb": "89% 87%",
+                              "realnp": "86% 87%",
                               "simpb": "99% 83%",
                               "simnp": "96% 88%"}, 
-                    "scerevisiae": {"realpb": "63% 83%",
-                              "realnp": "63% 82%",
+                    "scerevisiae": {"realpb": "62% 83%",
+                              "realnp": "62% 83%",
                               "simpb": "99% 83%",
                               "simnp": "86% 83%"}, 
                     "celegans": {"realpb": "86% 87%",
@@ -118,6 +118,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     stat = "max"
+    failed = False
     for org in args.orgs:
         res = {}
         # print org
@@ -132,7 +133,9 @@ if __name__ == "__main__":
             # print res[read_type]
             if res[read_type] != TRUE_PERFORMANCE[org][read_type]:
                 print "Failed: ", org, read_type, res[read_type]
-                exit(-1)
+                failed = True
+    if failed:
+        exit(-1)
 
 
 
