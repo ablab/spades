@@ -26,8 +26,16 @@ inline const std::string Complement(const std::string &s) {
     return res;
 }
 
+std::string ConvertProtein2CanonicalNuc(const std::string &seq);
+std::string ConvertNuc2CanonicalNuc(const std::string &seq);
+std::string ConvertNuc2Protein(const std::string &seq);
+
+bool EqualTriplets(const std::string &a, const std::string &b);
+int BinaryScoreTriplets(const std::string &a, const std::string &b);
+
 //Uses edlib; returns std::numeric_limits<int>::max() for too distant string
 int StringDistance(const std::string &a, const std::string &b, int max_score = -1);
+int ProteinStringDistance(const std::string &a, const std::string &b, int max_score = -1);
 
 void SHWDistanceExtended(const std::string &target, const std::string &query, int max_score, std::vector<int> &positions, std::vector<int> &scores);
 
