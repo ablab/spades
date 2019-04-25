@@ -16,6 +16,7 @@
 #include "fasta_reader.hpp"
 
 #include "stack_limit.hpp"
+#include <unistd.h>  // getpid()
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
@@ -1153,6 +1154,7 @@ int pathracer_main(int argc, char* argv[]) {
 
     // Stack limit
     INFO("Soft stack limit: " << stack_limit());
+    INFO("Process ID: " << getpid());
 
     using namespace debruijn_graph;
 
