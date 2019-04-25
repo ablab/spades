@@ -593,7 +593,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       }
     }
     if (!updated.empty()) {
-      WARN("i_loop_processing_ff_simple has not been converged");
+      DEBUG("i_loop_processing_ff_simple has not been converged");
     }
   };
 
@@ -610,7 +610,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       }
     }
     if (!updated.empty()) {
-      WARN("i_loop_processing_universal has not been converged");
+      DEBUG("i_loop_processing_universal has not been converged");
     }
   };
 
