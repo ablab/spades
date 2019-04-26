@@ -139,7 +139,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "number of threads",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
       (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
-      (option("--queries") & values("queries", cfg.queries)) % "quries names to lookup [default: all queries from input query file]",
+      (option("--queries") & values("queries", cfg.queries)) % "queries names to lookup [default: all queries from input query file]",
       "Query type:" %
       one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
              option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
