@@ -241,6 +241,12 @@ int main(int argc, char **argv) {
     ("positional", "", cxxopts::value<string>(cfg));
 
     options.parse_positional("positional");
+    
+    std::string cmd_line = "";
+    for (int i = 0; i < argc; ++ i) {
+        cmd_line += std::string(argv[i]) + " ";
+    }
+
     options.parse(argc, argv);
     if (options.count("help")) {
         cout << options.help() << endl;
@@ -263,6 +269,9 @@ int main(int argc, char **argv) {
     }
 
     create_console_logger();
+    START_BANNER("SPAligner: long sequence to graph alignment");
+    INFO("Command line: " << cmd_line);
+
     INFO("Loading config from " << cfg)
     auto buf = llvm::MemoryBuffer::getFile(cfg);
     VERIFY_MSG(buf, "Failed to load config file " + cfg);
