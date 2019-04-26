@@ -184,7 +184,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
           (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3"
       ),
       "Developer options:" % (
-          cfg.parallel_component_processing << option("--parallel component processing") % "enable parallel component processing",
+          cfg.parallel_component_processing << option("--parallel-component-processing") % "enable parallel component processing",
           (option("--max-insertion-length") & integer("x", cfg.max_insertion_length)) % "maximal allowed number of successive I-emissions [default: 30]",
           (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
           (option("--expand-const") & integer("value", cfg.expand_const)) % "const addition to overhang values for neighbourhood search [default: 20]",
