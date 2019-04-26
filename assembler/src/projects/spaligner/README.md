@@ -1,18 +1,6 @@
 # SPAligner
 
-Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, coding sequences, etc.) to assembly graphs. 
-
-
-## Main pipeline
-
-Overview of the alignment of query sequence *S* (orange bar) to assembly graph *G*. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
-
-![pipeline](pipeline.jpg)
-
-1. **Hit search.** Hits (regions of high similarity) between the query and the edge labels are identified with [BWA-MEM](http://bio-bwa.sourceforge.net/). 
-2. **Hit filtering.** Hits shorter than *K*, assembly graph *K*-mer size,(hits 5, 6, 9), hits “in the middle” of long edge (hit 4) or ambiguous hits (hit 7 mostly covered by hit 2, both hits 11 and 12) are discarded.
-3. **Hit chaining.** Heaviest chain of compatible hits (chain 1->3->2) is determined.
-4. **Reconstruction of filling paths.** Paths for fragments of the query between the consecutive chain hits (as well as left- and right-most fragments) are reconstructed. The procedure is performed using fast library for sequence alignment [Edlib](https://github.com/Martinsos/edlib).
+Tool for fast and accurate alignment of molecular sequences (s.a. long reads, coding sequences, proteins etc.) to assembly graphs. 
 
 ## Compilation
 
@@ -40,8 +28,7 @@ spaligner -h
 ## Results interpretation
 
 SPAligner can represent the results in three formats: *.tsv (default), *.fasta and [*.gpa](https://github.com/ocxtal/gpa "GPA-format spec").
-Each line in tsv-file represents alignments of a single read.
-
+Each line in tsv-file represents alignments of a single sequence.
 
 **Example 1**
 
@@ -82,7 +69,24 @@ Path sequence: TTATCCGGG.
 If a read was not fully aligned, SPAligner tries to prolong the longest alignment subpath in order to reconstruct a full alignment path. In **Example 2** SPAligner was not able to prolong any of two given alignments.
 
 
-## Future plans 
+## Long nucleotide sequence alignment pipeline
 
-1. Add amino acid sequence support.
-2. Alignment speed-up.
+Overview of the alignment of the nucleotide query sequence *S* (orange bar) to assembly graph *G*. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
+
+![pipeline](pipeline.jpg)
+
+1. **Hit search.** Hits (regions of high similarity) between the query and the edge labels are identified with [BWA-MEM](http://bio-bwa.sourceforge.net/). 
+2. **Hit filtering.** Hits shorter than *K*, assembly graph *K*-mer size,(hits 5, 6, 9), hits “in the middle” of long edge (hit 4) or ambiguous hits (hit 7 mostly covered by hit 2, both hits 11 and 12) are discarded.
+3. **Hit chaining.** Heaviest chain of compatible hits (chain 1->3->2) is determined.
+4. **Reconstruction of filling paths.** Paths for fragments of the query between the consecutive chain hits (as well as left- and right-most fragments) are reconstructed. The procedure is performed using fast library for sequence alignment [Edlib](https://github.com/Martinsos/edlib).
+
+## Amino-acid sequence alignment pipeline
+
+Overview of the alignment of the amino-acid query sequence *S* (orange bar) to assembly graph *G*. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
+
+![pipeline_protein](pipeline_protein.jpg)
+
+1. **Hit search.** Hits (regions of high similarity) between the query and the edge labels are identified with [BWA-MEM](http://bio-bwa.sourceforge.net/). 
+2. **Hit filtering.** Hits shorter than *K*, assembly graph *K*-mer size,(hits 5, 6, 9), hits with a wrong frame shift of long edge (hits 1, 7, 8) are discarded.
+3. **Alignment extension.** Search of an optimal alignments extending each of the remaining hits.
+4. **Alignment scoring.** Obtained alignment paths are re-scored via [Parasail library](https://github.com/jeffdaily/parasail) for fast amino acid sequence alignment.
