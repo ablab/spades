@@ -124,7 +124,7 @@ class LongReadsAligner {
          cfg_(cfg),
          galigner_(g_, cfg),
          threads_(threads),
-         mapping_printer_hub_(g_, edge_namer, output_file, cfg.output_format) {
+         mapping_printer_hub_(g_, cfg.data_type, edge_namer, output_file, cfg.output_format) {
         aligned_reads_ = 0;
         processed_reads_ = 0;
     }

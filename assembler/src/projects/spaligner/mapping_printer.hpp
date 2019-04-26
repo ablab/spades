@@ -72,6 +72,22 @@ class MappingPrinterFasta: public MappingPrinter {
   }
 };
 
+class MappingPrinterAAFasta: public MappingPrinter {
+ public:
+  MappingPrinterAAFasta(const debruijn_graph::ConjugateDeBruijnGraph &g,
+                    const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
+                    const std::string &output_file_prefix)
+    : MappingPrinter(g, edge_namer, output_file_prefix) {
+    output_file_.open(output_file_prefix_ + "_protein.fasta", std::ofstream::out);
+  }
+
+  void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) override;
+
+  ~MappingPrinterAAFasta() {
+    output_file_.close();
+  }
+};
+
 class MappingPrinterGPA : public MappingPrinter {
  public:
   MappingPrinterGPA(const debruijn_graph::ConjugateDeBruijnGraph &g,
@@ -113,6 +129,7 @@ class MappingPrinterGPA : public MappingPrinter {
 class MappingPrinterHub {
  public:
   MappingPrinterHub(const debruijn_graph::ConjugateDeBruijnGraph &g,
+                    const alignment::BWAIndex::AlignmentMode mode,
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
                     const std::string &output_file_prefix,
                     const std::string formats) {
@@ -122,8 +139,11 @@ class MappingPrinterHub {
     if (formats.find("gpa") != std::string::npos) {
       mapping_printers_.push_back(new MappingPrinterGPA(g, edge_namer, output_file_prefix));
     }
-    if (formats.find("fasta") != std::string::npos) {
+    if (mode == alignment::BWAIndex::AlignmentMode::Protein || formats.find("fasta") != std::string::npos) {
       mapping_printers_.push_back(new MappingPrinterFasta(g, edge_namer, output_file_prefix));
+    }
+    if (mode == alignment::BWAIndex::AlignmentMode::Protein) {
+      mapping_printers_.push_back(new MappingPrinterAAFasta(g, edge_namer, output_file_prefix));
     }
   }
 

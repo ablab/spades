@@ -86,6 +86,36 @@ void MappingPrinterFasta::SaveMapping(const sensitive_aligner::OneReadMapping &a
     }
 }
 
+void MappingPrinterAAFasta::SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) {
+    string str = "";
+    for (size_t j = 0; j < aligned_mappings.edge_paths.size(); ++ j) {
+        auto &mappingpath = aligned_mappings.edge_paths[j];
+        string path_str = "";
+        string path_seq_str = "";
+        for (size_t i = 0; i < mappingpath.size(); ++ i) {
+            size_t mapping_start = i == 0 ? aligned_mappings.read_ranges[j].path_start.edge_pos : 0;
+            size_t mapping_end = i == mappingpath.size() - 1 ?  aligned_mappings.read_ranges[j].path_end.edge_pos : g_.length(mappingpath[i]);
+            string delim = i == mappingpath.size() - 1 ? "" : "_";
+            path_str += StrId(mappingpath[i]) + delim;
+            path_seq_str += g_.EdgeNucls(mappingpath[i]).Subseq(mapping_start, mapping_end).str();
+        }
+        if (path_seq_str.size() % 3 != 0) {
+            continue;
+        }
+        string path_seq_aa = ConvertNuc2Protein(path_seq_str);
+        str += ">" + read.name() + "|Edges=" + path_str
+                                 + "|start_g=" + to_string(aligned_mappings.read_ranges[j].path_start.edge_pos)
+                                 + "|end_g=" + to_string(aligned_mappings.read_ranges[j].path_end.edge_pos)
+                                 + "|start_s=" + to_string(aligned_mappings.read_ranges[j].path_start.seq_pos)
+                                 + "|end_s=" + to_string(aligned_mappings.read_ranges[j].path_end.seq_pos)
+                                 + "\n" + path_seq_aa + "\n";
+    }
+    #pragma omp critical
+    {
+        output_file_ << str;
+    }
+}
+
 string MappingPrinterGPA::Print(map<string, string> &line) const {
     vector<string> v = {"Ind", "Name", "ReadName", "StartR", "LenR", "DirR", "EdgeId", "StartE", "LenE", "DirE", "CIGAR", "Prev", "Next"};
     string outStr = "";
