@@ -134,7 +134,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
       (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
       (cfg.local << option("--local") % "perform local-local HMM matching"),
-      (option("--length", "-l") & value("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on HMM length [default: 0.9]",
+      (option("--length", "-l") & value("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on aligned HMM length [default: 0.9]",
       (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 10000]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "number of threads",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
@@ -184,9 +184,9 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
           (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3"
       ),
       "Developer options:" % (
-          cfg.parallel_component_processing << option("--parallel-component-processing") % "enable parallel component processing",
+          cfg.parallel_component_processing << option("--parallel-components") % "process neighbourhood subgraph connected components in parallel [default: false]",
           (option("--max-insertion-length") & integer("x", cfg.max_insertion_length)) % "maximal allowed number of successive I-emissions [default: 30]",
-          (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
+          (option("--expand-coef") & number("value", cfg.expand_coef)) % "overhang expansion coefficient for neighbourhood search [default: 2]",
           (option("--expand-const") & integer("value", cfg.expand_const)) % "const addition to overhang values for neighbourhood search [default: 20]",
           (option("--no-top-score-filter").set(cfg.state_limits_coef, size_t(100500))) % "disable top score Event Graph vertices filter [default: false]",
           option("--no-fast-forward").set(cfg.use_experimental_i_loop_processing, 0) % "disable fast forward in I-loops processing [default: false]",
