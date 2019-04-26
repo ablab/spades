@@ -720,10 +720,12 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   };
 
   auto i_loop_processing_checked = [&](StateSet &I, size_t m) {
-    // auto Icopy = I;
-    fees.use_experimental_i_loop_processing ? i_loop_processing_ff_simple(I, m) : i_loop_processing_universal(I, m);
-    // i_loop_processing_ff_simple(Icopy, m);
-    // VERIFY(I.equal(Icopy));
+    if (!fees.is_i_loop_non_negative(m)) {
+      INFO("Processing positive-score I-loop");
+      i_loop_processing_universal(I, m);
+    } else {
+      fees.use_experimental_i_loop_processing ? i_loop_processing_ff_simple(I, m) : i_loop_processing_universal(I, m);
+    }
   };
 
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
