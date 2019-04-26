@@ -11,6 +11,7 @@
 #include "bwa/rle.h"
 #include "bwa/rope.h"
 #include "bwa/utils.h"
+#include "sequence/sequence_tools.hpp"
 
 #include <string>
 #include <memory>
@@ -53,6 +54,17 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
             memopt_->drop_ratio = 20;
             memopt_->min_chain_weight = 40;
             skip_secondary_ = false;
+            break;
+        case AlignmentMode::Protein:
+            memopt_->o_del = 10000; memopt_->e_del = 10000;
+            memopt_->o_ins = 10000; memopt_->e_ins = 10000;
+            memopt_->b = 1;
+            memopt_->split_factor = 10.;
+            memopt_->pen_clip5 = 0; memopt_->pen_clip3 = 0;
+            memopt_->min_seed_len = 7;
+            memopt_->drop_ratio = 20;
+            memopt_->mask_level = 20;
+            memopt_->min_chain_weight = 40;
             break;
     };
 
@@ -112,6 +124,7 @@ static uint8_t* seqlib_add1(const std::string &seq, const std::string &name,
 
 static uint8_t* seqlib_make_pac(const debruijn_graph::Graph &g,
                                 const std::vector<debruijn_graph::EdgeId> &ids,
+                                BWAIndex::AlignmentMode mode,
                                 bool for_only) {
     bntseq_t * bns = (bntseq_t*)calloc(1, sizeof(bntseq_t));
     uint8_t *pac = 0;
@@ -127,12 +140,22 @@ static uint8_t* seqlib_make_pac(const debruijn_graph::Graph &g,
     q = bns->ambs;
 
     // Move through the sequences
+    int cur_len = 0;
     for (auto e : ids) {
         std::string ref = std::to_string(g.int_id(e));
-        std::string seq = g.EdgeNucls(e).str();
-
-        // make the forward only pac
-        pac = seqlib_add1(seq, ref, bns, pac, &m_pac, &m_seqs, &m_holes, &q);
+        if (mode == BWAIndex::AlignmentMode::Protein) {
+            std::string seq = g.EdgeNucls(e).str();
+            for (size_t i = 0; i < 3; ++ i) {
+                std::string cur_seq = ConvertNuc2CanonicalNuc(seq.substr(i));
+                cur_len += cur_seq.size();
+                pac = seqlib_add1(cur_seq, ref + "_" + std::to_string(i), bns, pac, &m_pac, &m_seqs, &m_holes, &q);
+            }
+        } else {
+            std::string seq = g.EdgeNucls(e).str();
+            // make the forward only pac
+            cur_len += seq.size();
+            pac = seqlib_add1(seq, ref, bns, pac, &m_pac, &m_seqs, &m_holes, &q);
+        }
     }
 
     if (!for_only) {
@@ -222,20 +245,34 @@ static bntann1_t* seqlib_add_to_anns(const std::string& name, const std::string&
 void BWAIndex::Init() {
     idx_.reset((bwaidx_t*)calloc(1, sizeof(bwaidx_t)));
     ids_.clear();
+    bool no_conjugate = true;
+    if (mode_ == AlignmentMode::Protein) {
+        no_conjugate = false;
+    }
 
-    for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+    for (auto it = g_.ConstEdgeBegin(no_conjugate); !it.IsEnd(); ++it) {
         ids_.push_back(*it);
     }
 
     // construct the forward-only pac
-    uint8_t* fwd_pac = seqlib_make_pac(g_, ids_, true); // true->for_only
+    uint8_t* fwd_pac = seqlib_make_pac(g_, ids_, mode_, true); // true->for_only
 
     // construct the forward-reverse pac ("packed" 2 bit sequence)
-    uint8_t* pac = seqlib_make_pac(g_, ids_, false); // don't write, because only used to make BWT
+    uint8_t* pac = seqlib_make_pac(g_, ids_, mode_, false); // don't write, because only used to make BWT
 
     size_t tlen = 0;
-    for (auto e : ids_)
-        tlen += g_.EdgeNucls(e).size();
+    if (mode_ == AlignmentMode::Protein) {
+        for (auto e : ids_) {
+            size_t sz = g_.EdgeNucls(e).size();
+            for (size_t i = 0; i < 3; ++ i) {
+                size_t protein_sz = (sz - i)/3;
+                tlen += 3 * protein_sz;
+            }
+        }
+    }else {
+        for (auto e : ids_)
+            tlen += g_.EdgeNucls(e).size();
+    }
 
     // make the bwt
     bwt_t *bwt;
@@ -250,19 +287,36 @@ void BWAIndex::Init() {
     // make the bns
     bntseq_t * bns = (bntseq_t*) calloc(1, sizeof(bntseq_t));
     bns->l_pac = tlen;
-    bns->n_seqs = int(ids_.size());
+    if (mode_ == AlignmentMode::Protein) {
+        bns->n_seqs = int(3*ids_.size());
+    } else {
+        bns->n_seqs = int(ids_.size());
+    }
     bns->seed = 11;
     bns->n_holes = 0;
 
     // make the anns
     // FIXME: Do we really need this?
-    bns->anns = (bntann1_t*)calloc(ids_.size(), sizeof(bntann1_t));
+     if (mode_ == AlignmentMode::Protein) {
+        bns->anns = (bntann1_t*)calloc(3*ids_.size(), sizeof(bntann1_t));
+    } else {
+        bns->anns = (bntann1_t*)calloc(ids_.size(), sizeof(bntann1_t));
+    }
     size_t offset = 0, k = 0;
     for (auto e: ids_) {
         std::string name = std::to_string(g_.int_id(e));
-        std::string seq = g_.EdgeNucls(e).str();
-        seqlib_add_to_anns(name, seq, &bns->anns[k++], offset);
-        offset += seq.length();
+        if (mode_ == AlignmentMode::Protein) {
+            std::string seq = g_.EdgeNucls(e).str();
+            for (size_t i = 0; i < 3; ++ i) {
+                std::string cur_seq = ConvertNuc2CanonicalNuc(seq.substr(i));
+                seqlib_add_to_anns(name + "_" + std::to_string(i), cur_seq, &bns->anns[k++], offset);
+                offset += cur_seq.length();
+            }
+        } else {
+            std::string seq = g_.EdgeNucls(e).str();
+            seqlib_add_to_anns(name, seq, &bns->anns[k++], offset);
+            offset += seq.length();
+        }   
     }
 
     // ambs is "holes", like N bases
@@ -310,6 +364,15 @@ static bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
 }
 
 
+inline void cut_interval(size_t &s_begin, size_t &s_end, size_t &e_begin, size_t &e_end){
+    size_t d3 = s_begin % 3;
+    s_begin += (3 - d3) % 3;
+    e_begin += (3 - d3) % 3;
+    d3 = s_end % 3;
+    s_end -= d3;
+    e_end -= d3;
+}
+
 omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
@@ -325,28 +388,53 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
 
         if (skip_secondary_ && a.secondary >= 0) continue; // skip secondary alignments
 
+        if (AlignmentMode::Protein == mode_) {
+            if (a.qe - a.qb != a.re - a.rb) {
+                WARN("Strange: " << a.rb << " " << a.re << " " << a.qb << " " << a.qe)
+                continue;
+            }
+        }
+
+
         if (is_short) {
 // skipping alignments shorter than half of read length
             if (size_t(a.qe - a.qb) * 2 <= seq_len ) continue;
             if (size_t(a.re - a.rb) * 2 <= seq_len) continue;
         } else {
-            if (size_t(a.qe - a.qb) <= g_.k()) continue; // skip short alignments
-            if (size_t(a.re - a.rb) <= g_.k()) continue;
+            size_t min_length = g_.k();
+            if (AlignmentMode::Protein == mode_) {
+                min_length = std::min(seq_len/2, g_.k());
+            }
+            if (size_t(a.qe - a.qb) <= min_length) continue; // skip short alignments
+            if (size_t(a.re - a.rb) <= min_length) continue;
         }
         int is_rev = 0;
         size_t pos = bns_depos(idx_->bns, a.rb < idx_->bns->l_pac? a.rb : a.re - 1, &is_rev) - idx_->bns->anns[a.rid].offset;
         size_t initial_range_end;
         size_t mapping_range_end;
 
+        size_t edge_index = a.rid;
+        size_t offset = 0;
+        if (mode_ == AlignmentMode::Protein) {
+            edge_index /= 3;
+            offset = a.rid % 3;
+        }
+
         // Reduce the range to kmer-based
-        if (is_short) {
-            initial_range_end = a.qb + 1;
-            mapping_range_end = pos + 1;
-            if (mapping_range_end > g_.length(ids_[a.rid]))
-                continue;
+        pos += offset;
+        if (AlignmentMode::Protein == mode_){
+            initial_range_end = a.qe;
+            mapping_range_end = pos + a.re - a.rb;
         } else {
-            initial_range_end = a.qe - g_.k();
-            mapping_range_end = pos + a.re - a.rb - g_.k();
+            if (is_short) {
+                initial_range_end = a.qb;
+                mapping_range_end = pos;
+                if (mapping_range_end > g_.length(ids_[edge_index]))
+                    continue;
+            } else {
+                initial_range_end = a.qe - g_.k();
+                mapping_range_end = pos + a.re - a.rb - g_.k();
+            }
         }
         DEBUG(a);
 //FIXME: what about other scoring systems?
@@ -356,14 +444,28 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
         //Important for alignments shorter than K
         if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
             continue;
+
+        size_t initial_range_start = a.qb;
+        if (AlignmentMode::Protein == mode_){
+            if ((pos - offset) % 3 != initial_range_start % 3) continue;
+            cut_interval(initial_range_start, initial_range_end, pos, mapping_range_end);
+        }
+
         if (!is_rev) {
-            res.push_back(ids_[a.rid],
-                          { { (size_t)a.qb, initial_range_end },
-                            { pos, mapping_range_end}, qual});
+            res.push_back(ids_[edge_index],
+                          { { (size_t)initial_range_start, initial_range_end },
+                            { pos, mapping_range_end }, qual});
+
         } else {
-            res.push_back(g_.conjugate(ids_[a.rid]),
-                          { { (size_t)a.qb, initial_range_end }, //.Invert(read_length),
-                            Range(pos,  mapping_range_end).Invert(g_.length(ids_[a.rid])) , qual});
+            if (AlignmentMode::Protein == mode_){
+                res.push_back(g_.conjugate(ids_[edge_index]),
+                              { { (size_t)initial_range_start, initial_range_end }, //.Invert(read_length),
+                                Range(pos,  mapping_range_end ).Invert(g_.length(ids_[edge_index]) + g_.k() - 1) , qual});
+            } else {
+                res.push_back(g_.conjugate(ids_[edge_index]),
+                              { { (size_t)initial_range_start, initial_range_end }, //.Invert(read_length),
+                                Range(pos,  mapping_range_end ).Invert(g_.length(ids_[edge_index])) , qual});
+            }
 
         }
     }
