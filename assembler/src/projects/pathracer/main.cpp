@@ -1238,10 +1238,12 @@ int aling_kmers_main(int argc, char* argv[]) {
     for (const auto &hmm : hmms) {
     const P7_HMM *p7hmm = hmm.get();
     auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
-    const size_t state_limits_coef = 1;
+    const size_t state_limits_coef = 100500;
     fees.state_limits.l25 = 1000000 * state_limits_coef;
     fees.state_limits.l100 = 50000 * state_limits_coef;
     fees.state_limits.l500 = 10000 * state_limits_coef;
+    fees.minimal_match_length = static_cast<size_t>(0.9 * static_cast<double>(fees.M));
+    fees.use_experimental_i_loop_processing = true;
 
     std::ofstream of(output_file + hmm.get()->name);
     std::vector<double> best_scores;
@@ -1256,6 +1258,9 @@ int aling_kmers_main(int argc, char* argv[]) {
         // remove -
         seq.erase(std::remove(seq.begin(), seq.end(), '-'), seq.end());
         double score = score_sequence(fees, seq);
+        if (score < 0) {
+            continue;
+        }
         of << ">" << id << "|Score=" << score <<  "\n";
         io::WriteWrapped(seq, of);
 
