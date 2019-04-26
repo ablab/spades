@@ -229,7 +229,7 @@ public:
     return scores_.size() == 0 && score_ == 0;
   }
 
-  std::vector<AnnotatedPath<GraphCursor>> top_k(typename GraphCursor::Context context,
+  std::vector<AnnotatedPath<GraphCursor>> top_k(typename GraphCursor::Context /*context*/,
                                                 size_t k, double min_score = 0) const {
     struct Event {
       const This *path_link;
