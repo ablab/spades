@@ -40,6 +40,7 @@ class PacBioMappingIndex {
                        alignment::BWAIndex::AlignmentMode mode)
         : g_(g),
           pb_config_(pb_config),
+          mode_(mode),
           bwa_mapper_(g, mode) {
         DEBUG("PB Mapping Index construction started");
         DEBUG("Index constructed");
@@ -79,6 +80,15 @@ class PacBioMappingIndex {
         return res;
     }
 
+    std::vector<QualityRange> GetHits(const io::SingleRead &read) const {
+        RangeSet mapping_descr = GetBWAClusters(read);
+        std::vector<QualityRange> res;
+        for ( auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end(); ++i_iter) {
+            res.push_back(*i_iter);
+        }
+        return res;
+    }
+
   private:
     DECL_LOGGER("PacIndex")
 
@@ -90,6 +100,7 @@ class PacBioMappingIndex {
     mutable std::map<std::pair<VertexId, VertexId>, size_t> distance_cashed_;
     size_t read_count_;
     debruijn_graph::config::pacbio_processor pb_config_;
+    const alignment::BWAIndex::AlignmentMode mode_;
 
     alignment::BWAReadMapper<Graph> bwa_mapper_;
 
@@ -126,8 +137,10 @@ class PacBioMappingIndex {
         if (s.size() < g_.k()) {
             return res;
         }
-
-        omnigraph::MappingPath<EdgeId> mapped_path = FilterShortAlignments(FilterSpuriousAlignments(bwa_mapper_.MapSequence(s), s.size()));
+        omnigraph::MappingPath<EdgeId> mapped_path = bwa_mapper_.MapSequence(s);
+        if (mode_ != alignment::BWAIndex::AlignmentMode::Protein){
+            mapped_path = FilterShortAlignments(FilterSpuriousAlignments(mapped_path, s.size()));
+        }
 
         TRACE(read_count_ << " read_count_");
         TRACE("BWA ended")
