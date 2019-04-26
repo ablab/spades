@@ -137,6 +137,104 @@ bool GAligner::TopologyGap(EdgeId first, EdgeId second, bool oriented) const {
     return res;
 }
 
+OneReadMapping GAligner::GetAlignment(const io::SingleRead &read) const {
+    if (alignment::BWAIndex::AlignmentMode::Protein == mode_) {
+        return GetProteinAlignment(read);
+    } else {
+        return GetReadAlignment(read);
+    }
+}
+
+int GAligner::FindScore(const PathRange &range, const vector<debruijn_graph::EdgeId> &edges, const Sequence &s) const {
+    string read_seq = s.Subseq(range.path_start.seq_pos, range.path_end.seq_pos).str();
+    string cur_string = "";
+    if (edges.size() == 1) {
+        cur_string = g_.EdgeNucls(edges[0]).Subseq(range.path_start.edge_pos, range.path_end.edge_pos).str();
+    } else {
+        int i = 0, j = 1;
+        int start = range.path_start.edge_pos, end = range.path_end.edge_pos;
+        while (g_.length(edges[i]) < start){
+           start -= g_.length(edges[i]);
+           ++ i;
+        }
+        while (end < g_.k()){
+           end += g_.length(edges[edges.size() - j - 1]);
+           ++ j;
+        }
+        string s_add = g_.EdgeNucls(edges[i]).Subseq(start, g_.length(edges[i])).str();
+        string e_add = g_.EdgeNucls(edges[edges.size() - j]).Subseq(0, end).str();
+        DEBUG("i=" << i << " j=" << j << " sadd=" << s_add.size() << " eadd=" << e_add.size())
+        for (auto e: edges) {
+            DEBUG(e.int_id() << " len=" << g_.length(e))
+        }
+        if (i + 1 > edges.size() - j - 1) {
+            cur_string = s_add + e_add;
+        } else {
+            vector<debruijn_graph::EdgeId> inside_edges(edges.begin() + i + 1, edges.end() - j);
+            cur_string = s_add + PathToString(inside_edges, g_) + e_add;
+        }
+    }
+    DEBUG("cur_string=" << cur_string.size() << " read=" << read_seq.size())
+    int cur_score = ProteinStringDistance(cur_string, read_seq);
+    DEBUG("Total score=" << cur_score);
+    return cur_score;
+}
+
+bool IsDuplicate(vector<debruijn_graph::EdgeId> cur_sorted_edges, PathRange &cur_range,
+                 vector<vector<debruijn_graph::EdgeId>> &sorted_edges, vector<PathRange> &read_ranges) {
+    bool is_duplicate = false;
+    for (int i = 0; i < sorted_edges.size(); ++ i) {
+        if (sorted_edges[i] == cur_sorted_edges) {
+            if (cur_range == read_ranges[i]) {
+                is_duplicate = true;
+                break;
+            }
+        }
+    }
+    return is_duplicate;
+}
+
+OneReadMapping GAligner::GetProteinAlignment(const io::SingleRead &read) const {
+    auto hits  = pac_index_.GetHits(read);
+    vector<vector<debruijn_graph::EdgeId>> sorted_edges;
+    vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> sorted_bwa_hits;
+    Sequence s = read.sequence();
+    vector<PathRange> read_ranges;
+    vector<int> scores;
+    size_t i = 0;
+    for (auto &hit: hits) {
+        EdgeId cur_edge = hit.edgeId;
+        MappingInstance cur_first_index = hit.sorted_positions[hit.first_trustable_index];
+        MappingInstance cur_last_index = hit.sorted_positions[hit.last_trustable_index];
+        PathRange cur_range(MappingPoint(cur_first_index.read_position
+                                         , cur_first_index.edge_position),
+                            MappingPoint(cur_last_index.read_position
+                                         , cur_last_index.edge_position));
+        vector<debruijn_graph::EdgeId> cur_sorted_edges;
+        omnigraph::MappingPath<debruijn_graph::EdgeId> cur_sorted_bwa_hits;
+        cur_sorted_edges.push_back(cur_edge);
+        cur_sorted_bwa_hits.push_back(cur_edge, omnigraph::MappingRange(
+                                      Range(cur_first_index.read_position, cur_last_index.read_position),
+                                      Range(cur_first_index.edge_position, cur_last_index.edge_position)));
+        RestoreEndsF(s, (int) s.size(), cur_sorted_edges, cur_range);
+        RestoreEndsB(s, 0, cur_sorted_edges, cur_range);
+
+        if (!IsDuplicate(cur_sorted_edges, cur_range, sorted_edges, read_ranges) && cur_range.path_end.seq_pos - cur_range.path_start.seq_pos >= 0.8*read.size() ) {
+            DEBUG("cur hit: " << hit.str(g_))
+            read_ranges.push_back(cur_range);
+            sorted_edges.push_back(cur_sorted_edges);
+            sorted_bwa_hits.push_back(cur_sorted_bwa_hits);
+            scores.push_back(FindScore(cur_range, cur_sorted_edges, s));
+        } else {
+            DEBUG("cur hit: " << hit.str(g_) << " " << cur_range.path_end.seq_pos - cur_range.path_start.seq_pos << " " << read.size())
+        }
+        ++ i;
+    }
+    DEBUG("Paths num=" << sorted_edges.size())
+    vector<GapDescription> illumina_gaps;
+    return OneReadMapping(sorted_edges, sorted_bwa_hits, illumina_gaps, read_ranges, scores);
+}
+
 
 OneReadMapping GAligner::GetReadAlignment(const io::SingleRead &read) const {
     auto paths  = pac_index_.GetChainingPaths(read);

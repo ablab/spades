@@ -21,33 +21,47 @@ struct OneReadMapping {
   std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> bwa_paths;
   std::vector<GapDescription> gaps;
   std::vector<PathRange> read_ranges;
+  std::vector<int> scores;
+
   OneReadMapping(const std::vector<std::vector<debruijn_graph::EdgeId>> &edge_paths_,
                  const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> &bwa_paths_,
                  const std::vector<GapDescription>& gaps_,
-                 const std::vector<PathRange> &read_ranges_) :
-    edge_paths(edge_paths_), bwa_paths(bwa_paths_), gaps(gaps_), read_ranges(read_ranges_) {}
+                 const std::vector<PathRange> &read_ranges_,
+                 const std::vector<int> &scores_ = std::vector<int>()) :
+    edge_paths(edge_paths_), bwa_paths(bwa_paths_), gaps(gaps_), read_ranges(read_ranges_), scores(scores_) {}
 };
 
 typedef std::pair<QualityRange, int> ColoredRange;
 
 class GAligner {
  public:
+  OneReadMapping GetAlignment(const io::SingleRead &read) const;
+  OneReadMapping GetProteinAlignment(const io::SingleRead &read) const;
   OneReadMapping GetReadAlignment(const io::SingleRead &read) const;
   
   GAligner(const debruijn_graph::Graph &g,
            const GAlignerConfig &cfg)
-    : pac_index_(g, cfg.pb, cfg.data_type), g_(g), pb_config_(cfg.pb), restore_ends_(cfg.restore_ends), gap_filler_(g, cfg) {}
+    : pac_index_(g, cfg.pb, cfg.data_type), g_(g), pb_config_(cfg.pb), mode_(cfg.data_type), restore_ends_(cfg.restore_ends), gap_filler_(g, cfg) {
+      if (alignment::BWAIndex::AlignmentMode::Protein == cfg.data_type) {
+        gap_filler_.ProteinModeOn();
+      }
+    }
 
   GAligner(const debruijn_graph::Graph &g,
            const debruijn_graph::config::pacbio_processor &pb_config,
            const alignment::BWAIndex::AlignmentMode &mode)
-    : pac_index_(g, pb_config, mode), g_(g), pb_config_(pb_config), restore_ends_(false), gap_filler_(g, GAlignerConfig(pb_config, mode)) {}
+    : pac_index_(g, pb_config, mode), g_(g), pb_config_(pb_config), mode_(mode), restore_ends_(false), gap_filler_(g, GAlignerConfig(pb_config, mode)) {
+      if (alignment::BWAIndex::AlignmentMode::Protein == mode) {
+        gap_filler_.ProteinModeOn();
+      }
+    }
 
 
  private:
   PacBioMappingIndex pac_index_;
   const debruijn_graph::Graph &g_;
   const debruijn_graph::config::pacbio_processor pb_config_;
+  const alignment::BWAIndex::AlignmentMode mode_;
   bool restore_ends_;
   GapFiller gap_filler_;
 
@@ -86,5 +100,7 @@ class GAligner {
                    int start,
                    std::vector<debruijn_graph::EdgeId> &sorted_edges,
                    PathRange &cur_range) const;
+
+  int FindScore(const PathRange &range, const std::vector<debruijn_graph::EdgeId> &edges, const Sequence &s) const;
 };
 }

@@ -13,10 +13,10 @@ namespace sensitive_aligner {
 using namespace std;
 
 
-string GapFiller::PathToString(std::vector<EdgeId> &path) const {
-    Sequence merged_seq = MergeSequences(g_, path);  
+string PathToString(const std::vector<EdgeId> &path, const debruijn_graph::Graph &g){
+    Sequence merged_seq = MergeSequences(g, path);
     if (merged_seq.size() > 0) {
-        return merged_seq.Subseq(0, merged_seq.size() - g_.k()).str(); 
+        return merged_seq.Subseq(0, merged_seq.size() - g.k()).str();
     } else {
         return "";
     }
@@ -65,7 +65,7 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
         }
         return dijkstra_res;
     }
-    DijkstraGapFiller gap_filler(g_, gap_cfg, s,
+    sensitive_aligner_old::DijkstraGapFiller gap_filler(g_, gap_cfg, s,
                                  start_pos.edgeid, end_pos.edgeid,
                                  (int) start_pos.position, (int) end_pos.position,
                                  ed_limit, vertex_pathlen);
@@ -119,7 +119,7 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
             DEBUG ("Pathprocessor returns path with size = 0")
         }
         
-        string cur_string = s_add + PathToString(paths[i]) + e_add;
+        string cur_string = s_add + PathToString(paths[i], g_) + e_add;
         TRACE("cur_string: " << cur_string << "\n seq_string " << seq_string);
         int cur_score = StringDistance(cur_string, seq_string);
         //DEBUG only
@@ -144,7 +144,7 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
         if (paths.size() < 10) {
             for (size_t i = 0; i < paths.size(); i++) {
                 DEBUG ("failed with strings " << seq_string <<
-                        " " << s_add + PathToString(paths[i]) + e_add);
+                        " " << s_add + PathToString(paths[i], g_) + e_add);
             }
         }
         DEBUG (paths.size() << " paths available");
@@ -193,8 +193,11 @@ GapFillerResult GapFiller::Run(const string &s,
 GraphPosition GapFiller::ConjugatePosition(const GraphPosition &start_pos) const {
     GraphPosition cstart_pos;
     cstart_pos.edgeid = g_.conjugate(start_pos.edgeid);
-    cstart_pos.position = min((int) g_.length(start_pos.edgeid),
-                             (int) g_.length(start_pos.edgeid) + (int) g_.k() - (int) start_pos.position);
+    cstart_pos.position = (int) g_.length(start_pos.edgeid) + (int) g_.k() - (int) start_pos.position;
+    if (!is_protein_) {
+        cstart_pos.position = min((int) g_.length(start_pos.edgeid),
+                                 (int) g_.length(start_pos.edgeid) + (int) g_.k() - (int) start_pos.position);
+    }
     DEBUG("Backward e=" << cstart_pos.edgeid.int_id() << " sp=" << cstart_pos.position);
     return cstart_pos;
 }
@@ -236,7 +239,7 @@ void GapFiller::UpdatePath(vector<debruijn_graph::EdgeId> &path,
             return;
         }
         path = cur_sorted;
-        range.path_start.seq_pos = 0;
+        range.path_start.seq_pos = p.seq_pos;
         range.path_start.edge_pos = start;
     }
 }
@@ -269,18 +272,36 @@ GapFillerResult GapFiller::Run(Sequence &s,
         return res;
     }
     utils::perf_counter pc;
-    DijkstraEndsReconstructor algo(g_, ends_cfg, s.str(), start_pos.edgeid, (int) start_pos.position, score);
-    algo.CloseGap();
-    score = algo.edit_distance();
-    res.return_code = algo.return_code();
-    if (score == numeric_limits<int>::max()) {
-        DEBUG("EdgeDijkstra didn't find anything edge=" << start_pos.edgeid.int_id()
-              << " s_start=" << start_pos.position << " seq_len=" << s.size())
-        return res;
+    if (is_protein_){
+        score = 200;
+        DijkstraProteinEndsReconstructor algo(g_, ends_cfg, s.str(), start_pos.edgeid, (int) start_pos.position, score, !forward);
+        algo.CloseGap();
+        score = algo.edit_distance();
+        res.return_code = algo.return_code();
+        if (score == numeric_limits<int>::max()) {
+            DEBUG("EdgeDijkstra didn't find anything edge=" << start_pos.edgeid.int_id()
+                  << " s_start=" << start_pos.position << " seq_len=" << s.size())
+            return res;
+        }
+        vector<EdgeId> ans = algo.path();
+        MappingPoint p(forward ? algo.seq_end_position() + range.path_end.seq_pos :
+                                 range.path_start.seq_pos - algo.seq_end_position(), algo.path_end_position());
+        UpdatePath(path, ans, p, range, forward, old_start_pos);
+    } else {
+        sensitive_aligner_old::DijkstraEndsReconstructor algo(g_, ends_cfg, s.str(), start_pos.edgeid, (int) start_pos.position, score);
+        algo.CloseGap();
+        score = algo.edit_distance();
+        res.return_code = algo.return_code();
+        if (score == numeric_limits<int>::max()) {
+            DEBUG("EdgeDijkstra didn't find anything edge=" << start_pos.edgeid.int_id()
+                  << " s_start=" << start_pos.position << " seq_len=" << s.size())
+            return res;
+        }
+        vector<EdgeId> ans = algo.path();
+        MappingPoint p(forward ? algo.seq_end_position() + range.path_end.seq_pos :
+                                 range.path_start.seq_pos - algo.seq_end_position(), algo.path_end_position());
+        UpdatePath(path, ans, p, range, forward, old_start_pos);
     }
-    vector<EdgeId> ans = algo.path();
-    MappingPoint p(forward ? algo.seq_end_position() + range.path_end.seq_pos : 0, algo.path_end_position());
-    UpdatePath(path, ans, p, range, forward, old_start_pos);
     return res;
 }
 

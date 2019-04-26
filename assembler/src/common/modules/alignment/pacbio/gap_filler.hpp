@@ -13,6 +13,7 @@
 
 #include "modules/alignment/bwa_index.hpp"
 #include "modules/alignment/pacbio/gap_dijkstra.hpp"
+#include "modules/alignment/pacbio/gap_dijkstra_edlib.hpp"
 
 namespace sensitive_aligner {
 using debruijn_graph::EdgeId;
@@ -61,6 +62,9 @@ struct MappingPoint {
     MappingPoint(size_t seq_pos_, size_t edge_pos_):
         seq_pos(seq_pos_), edge_pos(edge_pos_) {}
 
+    bool operator == (const MappingPoint &point) const {
+        return (this->seq_pos == point.seq_pos && this->edge_pos == point.edge_pos);
+    }
 };
 
 struct PathRange {
@@ -71,6 +75,10 @@ struct PathRange {
 
     PathRange(MappingPoint a, MappingPoint b):
         path_start(a), path_end(b) {}
+
+    bool operator == (const PathRange &range) const {
+        return (this->path_start == range.path_start && this->path_end == range.path_end);
+    }
 };
 
 struct GraphPosition {
@@ -81,12 +89,16 @@ struct GraphPosition {
         edgeid(edgeid_), position(position_) {}
 };
 
+std::string PathToString(const std::vector<EdgeId> &path, const debruijn_graph::Graph &g);
+
 class GapFiller {
   public:
 
     GapFiller(const debruijn_graph::Graph &g,
               const GAlignerConfig &cfg):
-        g_(g), cfg_(cfg) {}
+        g_(g), cfg_(cfg), is_protein_(false) {}
+
+    void ProteinModeOn() {is_protein_ = true;}
 
     GapFillerResult Run(const std::string &s,
                         const GraphPosition &start_pos,
@@ -100,8 +112,6 @@ class GapFiller {
                         PathRange &range) const;
 
   private:
-
-    std::string PathToString(std::vector<EdgeId> &path) const;
 
     GapFillerResult BestScoredPathDijkstra(const std::string &s,
                                            const GraphPosition &start_pos,
@@ -121,6 +131,7 @@ class GapFiller {
 
     const debruijn_graph::Graph &g_;
     const GAlignerConfig &cfg_;
+    bool is_protein_;
 };
 
 
