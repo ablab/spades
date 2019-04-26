@@ -13,7 +13,7 @@ add_library(modules STATIC
             alignment/bwa_index.cpp
             alignment/pacbio/gap_filler.cpp
             alignment/pacbio/gap_dijkstra.cpp 
-            alignment/pacbio/g_aligner.cpp 
+            alignment/pacbio/gap_dijkstra_edlib.cpp 
             alignment/pacbio/g_aligner.cpp)
 
 target_link_libraries(modules sequence bwa)

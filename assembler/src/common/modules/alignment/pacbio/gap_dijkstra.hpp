@@ -6,15 +6,18 @@
 
 #pragma once
 
+#include <deque>
+
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 
 #include "sequence/sequence_tools.hpp"
 #include "utils/perf/perfcounter.hpp"
 
-namespace sensitive_aligner {
 
+namespace sensitive_aligner {
 using debruijn_graph::EdgeId;
+using debruijn_graph::VertexId;
 
 union DijkstraReturnCode {
     struct {
@@ -29,10 +32,10 @@ union DijkstraReturnCode {
 };
 
 struct DijkstraParams {
-    size_t queue_limit = 1000000;
-    size_t iteration_limit = 1000000;
-    size_t updates_limit = 1000000;
-    bool find_shortest_path = true;
+    size_t queue_limit = 0;
+    size_t iteration_limit = 0;
+    size_t updates_limit = 0;
+    bool find_shortest_path = false;
     bool restore_mapping = false;
     float penalty_ratio = 200;
 
@@ -47,16 +50,25 @@ struct GapClosingConfig: public DijkstraParams {
 };
 
 struct EndsClosingConfig: public DijkstraParams {
+    bool restore_ends = false;
     int max_restorable_length = 0;
 };
 
 
+struct ProteinAlignmentConfig: public DijkstraParams {
+    float min_alignment_length = 0.2;
+    std::string penalty_matrix_name = "blosum120";
+    int max_penalty_proportion = 6;
+    int penalty_lower_bound = 100;
+    int penalty_upper_bound = 2000;
+};
+
 struct GraphState {
-    EdgeId e;
+    debruijn_graph::EdgeId e;
     int start_pos;
     int end_pos;
 
-    GraphState(EdgeId e_, int start_pos_, int end_pos_)
+    GraphState(debruijn_graph::EdgeId e_, int start_pos_, int end_pos_)
         : e(e_), start_pos(start_pos_), end_pos(end_pos_)
     {}
 
@@ -92,10 +104,10 @@ struct QueueState {
     bool is_empty;
 
     QueueState()
-        : gs(EdgeId(), 0, 0), i(0), is_empty(true)
+        : gs(debruijn_graph::EdgeId(), 0, 0), i(0), is_empty(true)
     {}
 
-    QueueState(EdgeId e_, int start_pos_, int end_pos_, int i_)
+    QueueState(debruijn_graph::EdgeId &e_, int start_pos_, int end_pos_, int i_)
         : gs(e_, start_pos_, end_pos_), i(i_), is_empty(false)
     {}
 
@@ -103,14 +115,16 @@ struct QueueState {
         : gs(gs_), i(i_), is_empty(false)
     {}
 
-    QueueState(const QueueState &state) = default;
+    QueueState(const QueueState &state):
+        gs(state.gs), i(state.i), is_empty(state.is_empty)
+    {}
 
     bool operator == (const QueueState &state) const {
         return (this->gs == state.gs && this->i == state.i);
     }
 
     bool operator != (const QueueState &state) const {
-        return !(*this == state);
+        return (this->gs != state.gs || this->i != state.i);
     }
 
     bool operator < (const QueueState &state) const {
@@ -126,7 +140,45 @@ struct QueueState {
     }
 };
 
-} // namespace sensitive_aligner
+struct ProteinQueueState: public QueueState {
+    std::string offset;
+    
+    ProteinQueueState()
+        : offset("")
+    {}  
+
+    ProteinQueueState(debruijn_graph::EdgeId e_, int start_pos_, int end_pos_, int i_, std::string offset_)
+        : QueueState(e_, start_pos_, end_pos_, i_), offset(offset_)
+    {}
+
+    ProteinQueueState(GraphState gs_, int i_, std::string offset_)
+        : QueueState(gs_, i_), offset(offset_)
+    {} 
+
+    bool operator == (const ProteinQueueState &state) const {
+        return (this->gs == state.gs && this->i == state.i && this->offset == state.offset);
+    }
+
+    bool operator != (const ProteinQueueState &state) const {
+        return (this->gs != state.gs || this->i != state.i || this->offset != state.offset);
+    }
+
+    bool operator < (const ProteinQueueState &state) const {
+        return (this->gs < state.gs || (this->gs == state.gs && this->i < state.i)
+               || (this->gs == state.gs && this->i < state.i && this->offset < state.offset) );
+    }
+
+    bool empty() const {
+        return is_empty;
+    }
+
+    std::string str() const {
+        return gs.str() + " seq_ind=" + std::to_string(i) + " empty=" + std::to_string(is_empty) + " offset=" + offset;
+    }
+
+};
+
+}
 
 namespace std {
 
@@ -145,16 +197,34 @@ struct hash<sensitive_aligner::QueueState> {
     }
 };
 
+template <>
+struct hash<sensitive_aligner::ProteinQueueState> {
+    inline size_t hash_size_t_pair(size_t s0, size_t s1) const {
+         s1 ^= s1 << 23;  // a
+         return (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26)) + s0;
+    }
+
+    size_t operator()(const sensitive_aligner::ProteinQueueState& k) const {
+        return std::hash<size_t>()(hash_size_t_pair(
+                                    hash_size_t_pair(
+                                        hash_size_t_pair(k.gs.e.int_id(), k.gs.start_pos), 
+                                        hash_size_t_pair(k.gs.end_pos, k.i)),
+                                    k.offset.size()
+                                 ));
+    }
+};
+
 }  // namespace std
 
 namespace sensitive_aligner {
 
+template<class T, typename U>
 class DijkstraGraphSequenceBase {
-  public:
+public:
     DijkstraGraphSequenceBase(const debruijn_graph::Graph &g,
                               const DijkstraParams &gap_cfg,
-                              const std::string &ss,
-                              EdgeId start_e, int start_p, int path_max_length)
+                              std::string ss,
+                              debruijn_graph::EdgeId start_e, int start_p, int path_max_length)
         : g_(g)
         , gap_cfg_(gap_cfg)
         , ss_(ss)
@@ -165,17 +235,21 @@ class DijkstraGraphSequenceBase {
         , queue_limit_(gap_cfg_.queue_limit)
         , iter_limit_(gap_cfg_.iteration_limit)
         , updates_(0) {
-        best_ed_.resize(ss_.size(), path_max_length_);
-        AddNewEdge(GraphState(start_e_, start_p_, (int) g_.length(start_e_)), QueueState(), 0);
-    }
+        best_ed_.resize(ss_.size() + 1, std::pair<T, int> (T(), path_max_length_));
+        state_time =0;
+        newstates_time = 0;
+        m_time = 0;
+        d_time = 0;
+        i_time = 0;
+    }   
 
     void CloseGap();
 
-    std::vector<EdgeId> path() const {
+    std::vector<debruijn_graph::EdgeId> path() const {
         return mapping_path_.simple_path();
     }
 
-    omnigraph::MappingPath<EdgeId> mapping_path() const {
+    omnigraph::MappingPath<debruijn_graph::EdgeId> mapping_path() const {
         return mapping_path_;
     }
 
@@ -204,122 +278,217 @@ class DijkstraGraphSequenceBase {
         return end_qstate_.i;
     }
 
-    ~DijkstraGraphSequenceBase() {}
+protected:
 
-  protected:
-    bool IsBetter(int seq_ind, int ed);
+    virtual bool DetermineBestPrefix(bool found_path) = 0;
 
-    void Update(const QueueState &state, const QueueState &prev_state, int score);
-
-    void AddNewEdge(const GraphState &gs, const QueueState &prev_state, int ed);
+    virtual void AddNewStatesFrom(const T &state, int score) = 0;
 
     bool QueueLimitsExceeded(size_t iter);
 
     bool RunDijkstra();
 
-    virtual bool AddState(const QueueState &cur_state, EdgeId e, int ed) = 0;
+    virtual bool IsEndPosition(const T &cur_state) = 0;
 
-    virtual bool IsEndPosition(const QueueState &cur_state) = 0;
+    virtual bool IsGoodEdge(const EdgeId e) = 0;
 
-    omnigraph::MappingPath<EdgeId> mapping_path_;
+    virtual void PopFront() = 0;
 
+    U q_;
+    std::unordered_map<T, int> visited_;
+    std::unordered_map<T, T> prev_states_;
+
+    omnigraph::MappingPath<debruijn_graph::EdgeId> mapping_path_;
+
+    std::vector<std::pair<T, int>> best_ed_;
 
     const debruijn_graph::Graph &g_;
     const DijkstraParams gap_cfg_;
+    
     const std::string ss_;
-    const EdgeId start_e_;
+    const debruijn_graph::EdgeId start_e_;
     const int start_p_;
-
-    QueueState end_qstate_;
-
     int path_max_length_;
     int min_score_;
+    T end_qstate_;
     DijkstraReturnCode return_code_;
-
-  private:
-    static const int SHORT_SEQ_LENGTH = 100;
-    static const int ED_DEVIATION = 20;
-
-    std::set<std::pair<int, QueueState>> q_;
-    std::unordered_map<QueueState, int> visited_;
-    std::unordered_map<QueueState, QueueState> prev_states_;
-    std::vector<int> best_ed_;
 
     const size_t queue_limit_;
     const size_t iter_limit_;
     size_t updates_;
+    double state_time;
+    double newstates_time;
+    double m_time;
+    double i_time;
+    double d_time;
+};
+////
+class DijkstraReadGraph: public DijkstraGraphSequenceBase<QueueState, std::deque<std::pair<int, QueueState> > > {
+
+public:
+    DijkstraReadGraph(const debruijn_graph::Graph &g,
+                              const DijkstraParams &gap_cfg,
+                              std::string ss,
+                              debruijn_graph::EdgeId start_e, int start_p, int path_max_length)
+    : DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length)
+    {
+        AddState(QueueState(GraphState(start_e_, start_p_, start_p_), 0), 0, QueueState(), true);
+    }
+
+    ~DijkstraReadGraph() {}
+
+protected:
+
+    void AddState(const QueueState &state, int score, const QueueState &prev_state, bool front);
+
+    virtual void AddNewStatesFrom(const QueueState &state, int score);
+
+    virtual void PopFront() {
+        q_.pop_front();
+    };
+};
+
+
+
+class DijkstraProteinGraph: public DijkstraGraphSequenceBase<ProteinQueueState, std::set<std::pair<int, ProteinQueueState> > > {
+
+public:
+    DijkstraProteinGraph(const debruijn_graph::Graph &g,
+                              const DijkstraParams &gap_cfg,
+                              std::string ss,
+                              debruijn_graph::EdgeId start_e, int start_p, int path_max_length, bool is_reverse)
+    :DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length),
+    is_reverse_(is_reverse),
+    //matrix_(NULL),
+    min_value_(0)
+    {
+        // const parasail_matrix_t *matrix = NULL;
+        // matrix = parasail_matrix_lookup("blosum62");
+        // matrix_ = parasail_matrix_copy(matrix);
+        // const int proteins_num = 24;
+        // for (int i = 0; i < proteins_num; ++ i){
+        //     for (int j = 0; j < proteins_num; ++ j){
+        //         if (-matrix_->matrix[i*proteins_num + j] < min_value_) {
+        //             min_value_ = -matrix_->matrix[i*proteins_num + j];
+        //         }
+        //     }
+        // }
+        // min_value_ = abs(min_value_);
+        // DEBUG("min_value=" << min_value_)
+        // path_max_length_ = (min_value_-4)*(ss_.size()/3);
+        // DEBUG("max_path_len=" << path_max_length_)
+        // for (int i = 0; i < best_ed_.size(); ++ i) {
+        //     best_ed_[i].second = path_max_length_;
+        // }
+        AddState(ProteinQueueState(GraphState(start_e_, start_p_, start_p_), 0, ""), 0, ProteinQueueState());
+    }
+
+    ~DijkstraProteinGraph() {
+        //parasail_matrix_free(matrix_);
+    }
+
+protected:
+
+    void AddState(const ProteinQueueState &state, int score, const ProteinQueueState &prev_state);
+
+    void AddNewStatesFrom(const ProteinQueueState &state, int score);
+
+    int deletion_score() { return min_value_ + 5;}
+
+    int insertion_score() { return 5;}
+
+    int mm_score(const std::string &a, const std::string &b) const {
+        if (!is_reverse_) {
+            return min_value_ + BinaryScoreTriplets(a, b); //PenaltyMatrixTriplets(a, b, matrix_);
+        }
+        std::string new_a = (!Sequence(a)).str();
+        std::string new_b = (!Sequence(b)).str();
+        return min_value_ + BinaryScoreTriplets(a, b); //PenaltyMatrixTriplets(new_a, new_b, matrix_);
+    }
+
+    virtual void PopFront() {
+        q_.erase(q_.begin());
+    };
+
+    bool is_reverse_;
+    //parasail_matrix_t *matrix_;
+    int min_value_;
 };
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-class DijkstraGapFiller: public DijkstraGraphSequenceBase {
-  public:
-    DijkstraGapFiller(const debruijn_graph::Graph &g,
-                      const GapClosingConfig &gap_cfg,
-                      const std::string &ss,
-                      EdgeId start_e, EdgeId end_e,
+class DijkstraGapFiller: public DijkstraReadGraph {
+
+public:
+    DijkstraGapFiller(const debruijn_graph::Graph &g, const GapClosingConfig &gap_cfg, std::string ss,
+                      debruijn_graph::EdgeId start_e, debruijn_graph::EdgeId end_e,
                       int start_p, int end_p, int path_max_length,
-                      const std::unordered_map<debruijn_graph::VertexId, size_t> &reachable_vertex)
-        : DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length)
+                      const std::map<debruijn_graph::VertexId, size_t> &reachable_vertex)
+        : DijkstraReadGraph(g, gap_cfg, ss, start_e, start_p, path_max_length)
         , end_e_(end_e) , end_p_(end_p)
         , reachable_vertex_(reachable_vertex) {
         GraphState end_gstate(end_e_, 0, end_p_);
         end_qstate_ = QueueState(end_gstate, (int) ss_.size());
-        if (start_e_ == end_e_ && end_p_ - start_p_ > 0) {
-            std::string edge_str = g_.EdgeNucls(start_e_).Subseq(start_p_, end_p_).str();
-            int score = StringDistance(ss_, edge_str, path_max_length_);
-            if (score != std::numeric_limits<int>::max()) {
-                path_max_length_ = std::min(path_max_length_, score);
-                QueueState state(GraphState(start_e_, start_p_, end_p_), (int) ss_.size());
-                Update(state, QueueState(), score);
-                if (score == path_max_length_) {
-                    end_qstate_ = state;
-                }
-            }
-        }
     }
 
-  private:
+private:
 
-    bool AddState(const QueueState &cur_state, EdgeId e, int ed) override;
+    bool DetermineBestPrefix(bool found_path) override;
 
-    bool IsEndPosition(const QueueState &cur_state) override;
+    virtual bool IsEndPosition(const QueueState &cur_state);
 
-    EdgeId end_e_;
+    virtual bool IsGoodEdge(const EdgeId e) {
+        return reachable_vertex_.count(g_.EdgeEnd(e)) > 0 || end_e_ == e;
+    }
+
+    debruijn_graph::EdgeId end_e_;
     const int end_p_;
-    const std::unordered_map<debruijn_graph::VertexId, size_t> &reachable_vertex_;
+    const std::map<debruijn_graph::VertexId, size_t> &reachable_vertex_;
 };
 
 
 
-class DijkstraEndsReconstructor: public DijkstraGraphSequenceBase {
-  public:
-    DijkstraEndsReconstructor(const debruijn_graph::Graph &g,
-                              const EndsClosingConfig &gap_cfg,
-                              const std::string &ss,
-                              EdgeId start_e, int start_p, int path_max_length)
-        : DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length) {
+class DijkstraEndsReconstructor: public DijkstraReadGraph {
+public:
+    DijkstraEndsReconstructor(const debruijn_graph::Graph &g, const EndsClosingConfig &gap_cfg, std::string ss,
+                              debruijn_graph::EdgeId start_e, int start_p, int path_max_length)
+        : DijkstraReadGraph(g, gap_cfg, ss, start_e, start_p, path_max_length) {
         end_qstate_ = QueueState();
-        if (g_.length(start_e_) + g_.k() - start_p_ + path_max_length_ > ss_.size()) {
-            std::string edge_str = g_.EdgeNucls(start_e_).Subseq(start_p_).str();
-            int position = -1;
-            int score = SHWDistance(ss_, edge_str, path_max_length, position);
-            if (score != std::numeric_limits<int>::max()) {
-                path_max_length_ = score;
-                QueueState state(GraphState(start_e_, start_p_, start_p_ + position + 1), (int) ss_.size() );
-                Update(state, QueueState(), score);
-                end_qstate_ = state;
-            }
-        }
-
     }
 
-  private:
-    bool AddState(const QueueState &cur_state, EdgeId e, int ed) override;
+ private:
 
-    bool IsEndPosition(const QueueState &cur_state) override;
+    bool DetermineBestPrefix(bool found_path) override;
+
+    virtual bool IsEndPosition(const QueueState &cur_state);
+
+    virtual bool IsGoodEdge(const EdgeId e) {
+        (void) e;
+        return true;
+    }
+};
+
+
+class DijkstraProteinEndsReconstructor: public DijkstraProteinGraph {
+public:
+    DijkstraProteinEndsReconstructor(const debruijn_graph::Graph &g, const EndsClosingConfig &gap_cfg, std::string ss,
+                              debruijn_graph::EdgeId start_e, int start_p, int path_max_length, bool is_reverse = false)
+        : DijkstraProteinGraph(g, gap_cfg, ss, start_e, start_p, path_max_length, is_reverse) {
+        end_qstate_ = ProteinQueueState();
+    }
+
+ private:
+
+    bool DetermineBestPrefix(bool found_path) override;
+
+    virtual bool IsEndPosition(const ProteinQueueState &cur_state);
+
+    virtual bool IsGoodEdge(const EdgeId e) {
+        (void) e;
+        return true;
+    }
 };
 
 } // namespace sensitive_aligner
