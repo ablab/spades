@@ -87,7 +87,7 @@ struct PathracerConfig {
     enum SeedMode seed_mode = SeedMode::edges_scaffolds;
     size_t k = 0;
     int threads = 4;
-    size_t top = 1000;
+    size_t top = 10000;
     std::vector<std::string> edges;
     std::vector<std::string> queries;
     size_t max_size = size_t(-1);
@@ -96,13 +96,13 @@ struct PathracerConfig {
     bool rescore = false;
     bool annotate_graph = true;
     double expand_coef = 2.;
-    int extend_const = 20;
+    int expand_const = 20;
     size_t state_limits_coef = 1;
     bool local = false;
     bool parallel_component_processing = false;
     bool disable_depth_filter = false;
     size_t memory = 100;  // 100GB
-    int use_experimental_i_loop_processing = 0;
+    int use_experimental_i_loop_processing = true;
     std::string known_sequences = "";
     bool export_event_graph = false;
     double minimal_match_length = 0.9;
@@ -134,7 +134,8 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
       (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
       (cfg.local << option("--local") % "perform local-local HMM matching"),
-      (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 1000]",
+      (option("--length", "-l") & value("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on HMM lenght [default: 0.9]",
+      (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 10000]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "number of threads",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
       (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
@@ -185,12 +186,11 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       "Developer options:" % (
           (option("--known-sequences") & value("filename", cfg.known_sequences)) % "FASTA file with known sequnces that should be definitely found",
           (option("--expand-coef") & number("value", cfg.expand_coef)) % "expansion coefficient for neighbourhood search [default: 2]",
-          (option("--extend-const") & integer("value", cfg.extend_const)) % "const addition to overhang values for neighbourhood search [default: 15]",
-          (option("--minimal-match-length") & value("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on HMM lenght [default: 0.9]",
-          (option("--state-limits-coef") & integer("x", cfg.state_limits_coef)) % "multiplier for default #state limit [default: 1]",
+          (option("--expand-const") & integer("value", cfg.expand_const)) % "const addition to overhang values for neighbourhood search [default: 20]",
+          (option("--no-top-score-filter").set(cfg.state_limits_coef, size_t(100500))) % "disable top score Event Graph vertices filter [default: false]",
           (option("--max-insertion-length") & integer("x", cfg.max_insertion_length)) % "maximal allowed number of successive I-emissions [default: 30]",
-          option("--experimental-i-loops").set(cfg.use_experimental_i_loop_processing, 1) % "use experimental I-loops processing",
-          // cfg.disable_depth_filter << option("--disable-depth-filter") % "disable depth filter",
+          option("--no-fast-forward").set(cfg.use_experimental_i_loop_processing, 0) % "disable fast forward in I-loops processing [default: false]",
+          // cfg.disable_depth_filter << option("--disable-depth-filter") % "disable depth filter",  // TODO restore this option
           cfg.parallel_component_processing << option("--parallel component processing") % "enable parallel component processing",
           cfg.export_event_graph << option("--export-event-graph") % "export event graph in cereal format"
       )
@@ -704,15 +704,15 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
 using GraphCursor = DebruijnGraphCursor;
 
-auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef, int extend_const, bool parallel_component_processing) {
+auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef, int expand_const, bool parallel_component_processing) {
     INFO("ConnCompsFromEdgesMatches started");
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
     std::unordered_set<GraphCursor> cursors;
     for (const auto &kv : matched_edges) {
         EdgeId e = kv.first;
-        int loverhang = kv.second.first + extend_const;
-        int roverhang = kv.second.second + extend_const;
+        int loverhang = kv.second.first + expand_const;
+        int roverhang = kv.second.second + expand_const;
 
         if (loverhang > 0) {
             for (const auto &start : GraphCursor::get_cursors(graph, e, 0)) {
@@ -780,10 +780,6 @@ void TraceHMM(const hmmer::HMM &hmm,
     fees.local = cfg.local;
     fees.use_experimental_i_loop_processing = cfg.use_experimental_i_loop_processing;
 
-    if (cfg.disable_depth_filter) {
-        fees.depth_filter_constant = 10005000;
-    }
-
     INFO("HMM consensus: " << fees.consensus);
     INFO("HMM " << p7hmm->name << " has " << fees.count_negative_loops() << " positive-score I-loops over " << fees.ins.size());
     INFO("All-matches consensus sequence score: " << fees.all_matches_score());
@@ -808,7 +804,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                 continue;
             }
             auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const, cfg.parallel_component_processing);
+            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.expand_const, cfg.parallel_component_processing);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
                 // TODO add cmp_idx? (it could not be trivial!!!)
@@ -825,7 +821,7 @@ void TraceHMM(const hmmer::HMM &hmm,
                 continue;
             }
             auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const, cfg.parallel_component_processing);
+            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.expand_const, cfg.parallel_component_processing);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
                 // TODO add cmp_idx? (it could not be trivial!!!)
@@ -840,14 +836,14 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const, cfg.parallel_component_processing);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.expand_const, cfg.parallel_component_processing);
     } else if (cfg.seed_mode == SeedMode::scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by paths read from GFA
         paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const, cfg.parallel_component_processing);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.expand_const, cfg.parallel_component_processing);
     } else if (cfg.seed_mode == SeedMode::edges_scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by single edges
@@ -858,7 +854,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.extend_const, cfg.parallel_component_processing);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.expand_const, cfg.parallel_component_processing);
     } else if (cfg.seed_mode == SeedMode::exhaustive) {
         cursor_conn_comps.resize(1);
         auto &cursors = cursor_conn_comps[0];

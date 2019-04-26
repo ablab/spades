@@ -34,8 +34,6 @@ struct Fees {
 
   struct {size_t l25 = 1000000, l100 = 50000, l500 = 10000; } state_limits;
   size_t max_insertion_length = 30;
-  double depth_filter_rate = 0.66;
-  double depth_filter_constant;
   double absolute_threshold;
 
   double cleavage_cost;
@@ -63,8 +61,6 @@ struct Fees {
     state_limits.l25 = 1000000;
     state_limits.l100 = 50000;
     state_limits.l500 = 10000;
-    depth_filter_rate = 0.66;
-    depth_filter_constant = 20;
     absolute_threshold = 250.0;
     cleavage_cost = 0;
   }
