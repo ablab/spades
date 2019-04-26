@@ -114,7 +114,7 @@ class LongReadsAligner {
 
     void RunAligner() {
         io::ReadStreamList<io::SingleRead> streams;
-        streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(cfg_.path_to_sequences)));
+        streams.push_back(make_shared<io::FileReadStream>(cfg_.path_to_sequences));
         io::SingleStreamPtr read_stream = io::MultifileWrap(streams);
         size_t n = 0;
         size_t buffer_no = 0;
@@ -124,29 +124,34 @@ class LongReadsAligner {
             io::SingleRead read;
             for (size_t buf_size = 0; buf_size < read_buffer_size && !read_stream->eof(); ++buf_size) {
                 *read_stream >> read;
+                if (alignment::BWAIndex::AlignmentMode::Protein == cfg_.data_type) {
+                    io::SingleRead read_nuc;
+                    read_nuc = io::SingleRead(read.name(), ConvertProtein2CanonicalNuc(read.GetSequenceString()));
+                    read = read_nuc;
+                }
                 read_buffer.push_back(move(read));
             }
-            INFO("Prepared batch " << buffer_no << " of " << read_buffer.size() << " reads.");
+            INFO("Prepared batch " << buffer_no << " of " << read_buffer.size() << " sequences");
             AlignBatch(read_buffer);
             ++buffer_no;
             n += read_buffer.size();
-            INFO("Processed " << n << " reads");
+            INFO("Processed " << n << " sequences");
         }
     }
 
   private:
 
     OneReadMapping AlignRead(const io::SingleRead &read) const {
-        DEBUG("Read " << read.name() << ". Current Read")
+        DEBUG("Sequence " << read.name() << ". Current Sequence")
         utils::perf_counter pc;
-        auto current_read_mapping = galigner_.GetReadAlignment(read);
+        auto current_read_mapping = galigner_.GetAlignment(read);
         const auto& aligned_mappings = current_read_mapping.edge_paths;
         if (aligned_mappings.size() > 0) {
-            DEBUG("Read " << read.name() << " is aligned");
+            DEBUG("Sequence " << read.name() << " is aligned");
         }  else {
-            DEBUG("Read " << read.name() << " wasn't aligned and length=" << read.sequence().size());
+            DEBUG("Sequence " << read.name() << " wasn't aligned and length=" << read.sequence().size());
         }
-        DEBUG("Read " << read.name() << " read_time=" << pc.time())
+        DEBUG("Sequence " << read.name() << " seq_time=" << pc.time())
         return current_read_mapping;
     }
 
@@ -167,8 +172,8 @@ class LongReadsAligner {
                 }
                 processed_reads_ ++;
                 if (processed_reads_ * 100 / reads.size() >= step) {
-                    INFO("Processed \% reads: " << processed_reads_ * 100 / reads.size() <<
-                         "\%, Aligned reads: " << aligned_reads_ * 100 / processed_reads_ <<
+                    INFO("Processed \% sequences: " << processed_reads_ * 100 / reads.size() <<
+                         "\%, Aligned sequences: " << aligned_reads_ * 100 / processed_reads_ <<
                          "\% (" << aligned_reads_ << " out of " << processed_reads_ << ")")
                     step += 10;
                 }
@@ -213,9 +218,9 @@ void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
     INFO("Loaded graph with " << g.size() << " vertices");
 
     LongReadsAligner aligner(g, edge_namer, cfg, output_file, threads);
-    INFO("LongReadsAligner created");
+    INFO("LongSequenceAligner created");
 
-    INFO("Process reads from " << cfg.path_to_sequences);
+    INFO("Process sequences from " << cfg.path_to_sequences);
     aligner.RunAligner();
     INFO("Finished")
     fs::remove_dir(tmpdir);
@@ -228,13 +233,13 @@ int main(int argc, char **argv) {
     string cfg, output_file, seq_type;
     sensitive_aligner::GAlignerConfig config;
 
-    cxxopts::Options options(argv[0], " <YAML-config sequences and graph description> - Tool for sequence alignment on graph");
+    cxxopts::Options options(argv[0], " <YAML-config alignment parameters> - Tool for long sequence onto graph alignment");
     options.add_options()
     ("K,k-mer", "graph k-mer size (odd value)", cxxopts::value<int>(config.K))
-    ("d,datatype", "type of sequences: nanopore, pacbio", cxxopts::value<string>(seq_type))
+    ("d,datatype", "type of sequences: nanopore, pacbio or protein", cxxopts::value<string>(seq_type))
     ("s,seq", "path to fasta/fastq file with sequences", cxxopts::value<string>(config.path_to_sequences))
     ("g,graph", "path to gfa-file or SPAdes saves folder", cxxopts::value<string>(config.path_to_graphfile))
-    ("o,outfile", "Output file prefix", cxxopts::value<string>(output_file)->default_value("./galigner_output"), "prefix")
+    ("o,outfile", "Output file prefix", cxxopts::value<string>(output_file)->default_value("./spaligner_output"), "prefix")
     ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(to_string(min(omp_get_max_threads(), 16))), "threads")
     ("h,help", "Print help");
 
@@ -257,8 +262,10 @@ int main(int argc, char **argv) {
         config.data_type = alignment::BWAIndex::AlignmentMode::Ont2D;
     else if (seq_type == "pacbio")
         config.data_type = alignment::BWAIndex::AlignmentMode::PacBio;
+    else if (seq_type == "protein")
+        config.data_type = alignment::BWAIndex::AlignmentMode::Protein;
     else {
-        cerr << "ERROR: Unsupported data type - nanopore, pacbio" << endl;
+        cerr << "ERROR: Unsupported data type. Please choose: nanopore, pacbio or protein" << endl;
         cout << options.help() << endl;
         exit(-1);
     }

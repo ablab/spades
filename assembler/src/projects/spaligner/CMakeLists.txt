@@ -10,7 +10,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(mapping_printer STATIC mapping_printer.cpp)
 
-add_executable(spaligner align_longreads.cpp)
+add_executable(spaligner align_longsequences.cpp)
 target_link_libraries(spaligner mapping_printer common_modules cityhash bwa edlib graphio ${COMMON_LIBRARIES})
 
 add_executable(form_truealignments form_truealignments.cpp)
