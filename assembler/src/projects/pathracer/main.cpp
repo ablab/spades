@@ -184,10 +184,10 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
           (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3"
       ),
       "Developer options:" % (
-          cfg.parallel_component_processing << option("--parallel-components") % "process neighbourhood subgraph connected components in parallel [default: false]",
+          cfg.parallel_component_processing << option("--parallel-components") % "process neighborhood subgraph connected components in parallel [default: false]",
           (option("--max-insertion-length") & integer("x", cfg.max_insertion_length)) % "maximal allowed number of successive I-emissions [default: 30]",
-          (option("--expand-coef") & number("value", cfg.expand_coef)) % "overhang expansion coefficient for neighbourhood search [default: 2]",
-          (option("--expand-const") & integer("value", cfg.expand_const)) % "const addition to overhang values for neighbourhood search [default: 20]",
+          (option("--expand-coef") & number("value", cfg.expand_coef)) % "overhang expansion coefficient for neighborhood search [default: 2]",
+          (option("--expand-const") & integer("value", cfg.expand_const)) % "const addition to overhang values for neighborhood search [default: 20]",
           (option("--no-top-score-filter").set(cfg.state_limits_coef, size_t(100500))) % "disable top score Event Graph vertices filter [default: false]",
           option("--no-fast-forward").set(cfg.use_experimental_i_loop_processing, 0) % "disable fast forward in I-loops processing [default: false]",
           // cfg.disable_depth_filter << option("--disable-depth-filter") % "disable depth filter",  // TODO restore this option
@@ -735,9 +735,9 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
     }
 
     INFO("Getting leftside neighbourhoods");
-    auto left_cursors = neighbourhood(left_queries, &graph, /* forward */ false);
+    auto left_cursors = neighborhood(left_queries, &graph, /* forward */ false);
     INFO("Getting rightside neighbourhoods");
-    auto right_cursors = neighbourhood(right_queries, &graph, /* forward */ true);
+    auto right_cursors = neighborhood(right_queries, &graph, /* forward */ true);
 
     INFO("Exporting cursors");
     cursors.insert(left_cursors.cbegin(), left_cursors.cend());
