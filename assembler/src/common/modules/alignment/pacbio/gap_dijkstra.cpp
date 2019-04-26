@@ -10,6 +10,9 @@ namespace sensitive_aligner {
 
 using namespace std;
 
+const set<string> DijkstraProteinGraph::stop_codons = {"TAA", "TAG", "TGA"};
+const set<string> DijkstraProteinGraph::cstop_codons = {"TTA", "CTA", "TCA"};
+
 void DijkstraReadGraph::AddState(const QueueState &state, int ed,const QueueState &prev, bool front) {
     utils::perf_counter pc;
     if (ed < path_max_length_) {
@@ -191,15 +194,19 @@ void DijkstraProteinGraph::AddNewStatesFrom(const ProteinQueueState &state, int 
 
     if (state.offset.size() == 3) {
         // insertion
-        AddState(ProteinQueueState(state.gs, state.i, ""), ed + insertion_score(), state);
-        i_time += pc.time();
-        pc.reset();
+        if (!StopCodon(state.offset)) {
+            AddState(ProteinQueueState(state.gs, state.i, ""), ed + insertion_score(), state);
+            i_time += pc.time();
+            pc.reset();
+        }
 
         //match/mismatch
         if (state.i + 3 <= (int) ss_.size()) {
             string aa = ss_.substr(state.i, 3);
             int score = mm_score(aa, state.offset);
-            AddState(ProteinQueueState(state.gs, state.i + 3, ""), ed + score, state);
+            if (state.i + 3 == ss_.size() || !StopCodon(state.offset)) {
+                AddState(ProteinQueueState(state.gs, state.i + 3, ""), ed + score, state);
+            }
         }
         m_time += pc.time();
         pc.reset();

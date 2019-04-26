@@ -393,6 +393,13 @@ protected:
 
     void AddNewStatesFrom(const ProteinQueueState &state, int score);
 
+    bool StopCodon(const std::string &a) const {
+        if (!is_reverse_) {
+            return stop_codons.count(a) > 0;
+        }
+        return cstop_codons.count(a) > 0;
+    }
+
     int deletion_score() { return min_value_ + 5;}
 
     int insertion_score() { return 5;}
@@ -413,6 +420,8 @@ protected:
     bool is_reverse_;
     parasail_matrix_t *matrix_;
     int min_value_;
+    static const std::set<std::string> stop_codons;
+    static const std::set<std::string> cstop_codons;
 };
 
 
