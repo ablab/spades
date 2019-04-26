@@ -12,6 +12,9 @@
 #include <string>
 #include <vector>
 
+#include "parasail/parasail.h"
+#include "parasail/parasail/matrix_lookup.h"
+
 #include "nucl.hpp"
 #include "sequence.hpp"
 #include "levenshtein.hpp"
@@ -32,10 +35,12 @@ std::string ConvertNuc2Protein(const std::string &seq);
 
 bool EqualTriplets(const std::string &a, const std::string &b);
 int BinaryScoreTriplets(const std::string &a, const std::string &b);
+int PenaltyMatrixTriplets(const std::string &a, const std::string &b, const parasail_matrix_t *matrix);
 
 //Uses edlib; returns std::numeric_limits<int>::max() for too distant string
 int StringDistance(const std::string &a, const std::string &b, int max_score = -1);
 int ProteinStringDistance(const std::string &a, const std::string &b, int max_score = -1);
+int ProteinStringDistanceMatrix(const std::string &a, const std::string &b, int max_score = -1);
 
 void SHWDistanceExtended(const std::string &target, const std::string &query, int max_score, std::vector<int> &positions, std::vector<int> &scores);
 

@@ -88,6 +88,13 @@ int BinaryScoreTriplets(const std::string &a, const std::string &b) {
     return nuc_canonical[a] == nuc_canonical[b] ? 0 : 1;
 }
 
+int PenaltyMatrixTriplets(const std::string &a, const std::string &b, const parasail_matrix_t *matrix) {
+    if (a.size() < 3 or b.size() < 3){
+        return 100;
+    }
+    return -matrix->matrix[proteins[nuc_canonical[a][0]]*proteins.size() + proteins[nuc_canonical[b][0]]];
+}
+
 int ProteinStringDistance(const std::string &a, const std::string &b, int max_score) {
     int score = std::numeric_limits<int>::max();
     if (a.size() % 3 != 0 || b.size() % 3 != 0) return score;
@@ -119,6 +126,35 @@ int ProteinStringDistance(const std::string &a, const std::string &b, int max_sc
     return score;
 }
 
+int ProteinStringDistanceMatrix(const std::string &a, const std::string &b, int max_score) {
+    int score = std::numeric_limits<int>::max();
+    if (a.size() % 3 != 0 || b.size() % 3 != 0) return score;
+
+    std::string p_a = ConvertNuc2Protein(a);
+    std::string p_b = ConvertNuc2Protein(b);
+    int a_len = (int) p_a.length();
+    int b_len = (int) p_b.length();
+
+
+    parasail_result_t *result = NULL;
+    const parasail_matrix_t *matrix = NULL;
+    matrix = parasail_matrix_lookup("blosum62");
+    const int proteins_num = 24;
+    int min_value_ = 0;
+    for (int i = 0; i < proteins_num; ++ i){
+        for (int j = 0; j < proteins_num; ++ j){
+            if (-matrix->matrix[i*proteins_num + j] < min_value_) {
+                min_value_ = -matrix->matrix[i*proteins_num + j];
+            }
+        }
+    }
+    min_value_ = abs(min_value_);
+    /* note the address-of operator '&' */
+    result = parasail_nw(p_a.c_str(), a_len, p_b.c_str(), b_len, 5, 1, matrix);
+    score = min_value_*p_a.size() + (-result->score);
+    parasail_result_free(result);
+    return score;
+}
 
 int StringDistance(const std::string &a, const std::string &b, int max_score) {
     int a_len = (int) a.length();

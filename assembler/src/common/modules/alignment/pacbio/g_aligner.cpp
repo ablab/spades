@@ -175,7 +175,7 @@ int GAligner::FindScore(const PathRange &range, const vector<debruijn_graph::Edg
         }
     }
     DEBUG("cur_string=" << cur_string.size() << " read=" << read_seq.size())
-    int cur_score = ProteinStringDistance(cur_string, read_seq);
+    int cur_score = ProteinStringDistanceMatrix(cur_string, read_seq);
     DEBUG("Total score=" << cur_score);
     return cur_score;
 }

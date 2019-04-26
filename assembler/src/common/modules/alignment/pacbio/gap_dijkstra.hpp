@@ -359,32 +359,32 @@ public:
                               debruijn_graph::EdgeId start_e, int start_p, int path_max_length, bool is_reverse)
     :DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length),
     is_reverse_(is_reverse),
-    //matrix_(NULL),
+    matrix_(NULL),
     min_value_(0)
     {
-        // const parasail_matrix_t *matrix = NULL;
-        // matrix = parasail_matrix_lookup("blosum62");
-        // matrix_ = parasail_matrix_copy(matrix);
-        // const int proteins_num = 24;
-        // for (int i = 0; i < proteins_num; ++ i){
-        //     for (int j = 0; j < proteins_num; ++ j){
-        //         if (-matrix_->matrix[i*proteins_num + j] < min_value_) {
-        //             min_value_ = -matrix_->matrix[i*proteins_num + j];
-        //         }
-        //     }
-        // }
-        // min_value_ = abs(min_value_);
-        // DEBUG("min_value=" << min_value_)
-        // path_max_length_ = (min_value_-4)*(ss_.size()/3);
-        // DEBUG("max_path_len=" << path_max_length_)
-        // for (int i = 0; i < best_ed_.size(); ++ i) {
-        //     best_ed_[i].second = path_max_length_;
-        // }
+        const parasail_matrix_t *matrix = NULL;
+        matrix = parasail_matrix_lookup("blosum62");
+        matrix_ = parasail_matrix_copy(matrix);
+        const int proteins_num = 24;
+        for (int i = 0; i < proteins_num; ++ i){
+            for (int j = 0; j < proteins_num; ++ j){
+                if (-matrix_->matrix[i*proteins_num + j] < min_value_) {
+                    min_value_ = -matrix_->matrix[i*proteins_num + j];
+                }
+            }
+        }
+        min_value_ = abs(min_value_);
+        DEBUG("min_value=" << min_value_)
+        path_max_length_ = (min_value_-4)*(ss_.size()/3);
+        DEBUG("max_path_len=" << path_max_length_)
+        for (int i = 0; i < best_ed_.size(); ++ i) {
+            best_ed_[i].second = path_max_length_;
+        }
         AddState(ProteinQueueState(GraphState(start_e_, start_p_, start_p_), 0, ""), 0, ProteinQueueState());
     }
 
     ~DijkstraProteinGraph() {
-        //parasail_matrix_free(matrix_);
+        parasail_matrix_free(matrix_);
     }
 
 protected:
@@ -399,11 +399,11 @@ protected:
 
     int mm_score(const std::string &a, const std::string &b) const {
         if (!is_reverse_) {
-            return min_value_ + BinaryScoreTriplets(a, b); //PenaltyMatrixTriplets(a, b, matrix_);
+            return min_value_ + PenaltyMatrixTriplets(a, b, matrix_);
         }
         std::string new_a = (!Sequence(a)).str();
         std::string new_b = (!Sequence(b)).str();
-        return min_value_ + BinaryScoreTriplets(a, b); //PenaltyMatrixTriplets(new_a, new_b, matrix_);
+        return min_value_ + PenaltyMatrixTriplets(new_a, new_b, matrix_);
     }
 
     virtual void PopFront() {
@@ -411,7 +411,7 @@ protected:
     };
 
     bool is_reverse_;
-    //parasail_matrix_t *matrix_;
+    parasail_matrix_t *matrix_;
     int min_value_;
 };
 
