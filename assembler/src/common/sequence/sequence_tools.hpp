@@ -40,7 +40,7 @@ int PenaltyMatrixTriplets(const std::string &a, const std::string &b, const para
 //Uses edlib; returns std::numeric_limits<int>::max() for too distant string
 int StringDistance(const std::string &a, const std::string &b, int max_score = -1);
 int ProteinStringDistance(const std::string &a, const std::string &b, int max_score = -1);
-int ProteinStringDistanceMatrix(const std::string &a, const std::string &b, int max_score = -1);
+int ProteinStringDistanceMatrix(const std::string &a, const std::string &b, const std::string &matrix_name, int max_score = -1);
 
 void SHWDistanceExtended(const std::string &target, const std::string &query, int max_score, std::vector<int> &positions, std::vector<int> &scores);
 

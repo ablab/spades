@@ -250,7 +250,6 @@ GapFillerResult GapFiller::Run(Sequence &s,
                                vector<debruijn_graph::EdgeId> &path,
                                PathRange &range) const {
     VERIFY(path.size() > 0);
-    EndsClosingConfig ends_cfg = cfg_.ends_cfg;
     GraphPosition old_start_pos = start_pos;
     if (!forward) {
         s = !s;
@@ -258,11 +257,8 @@ GapFillerResult GapFiller::Run(Sequence &s,
     }
     GapFillerResult res;
     size_t s_len = int(s.size());
-    int score =  min(min(
-                        max(ends_cfg.ed_lower_bound, (int) s_len / ends_cfg.max_ed_proportion),
-                        ends_cfg.ed_upper_bound),
-                    (int) s_len);
-    if ((int) s_len >  ends_cfg.max_restorable_length && s_len >  g_.length(start_pos.edgeid) - start_pos.position + g_.k()) {
+    int max_restorable_length = is_protein_? cfg_.protein_cfg.max_restorable_length : cfg_.ends_cfg.max_restorable_length;
+    if ((int) s_len > max_restorable_length && s_len >  g_.length(start_pos.edgeid) - start_pos.position + g_.k()) {
         DEBUG("EdgeDijkstra: sequence is too long " << s_len)
         res.return_code.long_gap = true;
         return res;
@@ -273,7 +269,8 @@ GapFillerResult GapFiller::Run(Sequence &s,
     }
     utils::perf_counter pc;
     if (is_protein_){
-        score = 200;
+        int score = 200;
+        ProteinAlignmentConfig ends_cfg = cfg_.protein_cfg;
         DijkstraProteinEndsReconstructor algo(g_, ends_cfg, s.str(), start_pos.edgeid, (int) start_pos.position, score, !forward);
         algo.CloseGap();
         score = algo.edit_distance();
@@ -288,6 +285,11 @@ GapFillerResult GapFiller::Run(Sequence &s,
                                  range.path_start.seq_pos - algo.seq_end_position(), algo.path_end_position());
         UpdatePath(path, ans, p, range, forward, old_start_pos);
     } else {
+        EndsClosingConfig ends_cfg = cfg_.ends_cfg;
+        int score =  min(min(
+                        max(ends_cfg.ed_lower_bound, (int) s_len / ends_cfg.max_ed_proportion),
+                        ends_cfg.ed_upper_bound),
+                    (int) s_len);
         sensitive_aligner_old::DijkstraEndsReconstructor algo(g_, ends_cfg, s.str(), start_pos.edgeid, (int) start_pos.position, score);
         algo.CloseGap();
         score = algo.edit_distance();

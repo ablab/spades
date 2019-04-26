@@ -32,15 +32,18 @@ struct GAlignerConfig {
     debruijn_graph::config::pacbio_processor pb;
     GapClosingConfig gap_cfg;
     EndsClosingConfig ends_cfg;
+    ProteinAlignmentConfig protein_cfg;
 
     GAlignerConfig(const debruijn_graph::config::pacbio_processor &pb_,
                    const alignment::BWAIndex::AlignmentMode &data_type_,
                    const GapClosingConfig &gap_cfg_ = GapClosingConfig(),
-                   const EndsClosingConfig &ends_cfg_ = EndsClosingConfig())
+                   const EndsClosingConfig &ends_cfg_ = EndsClosingConfig(),
+                   const ProteinAlignmentConfig &protein_cfg_ = ProteinAlignmentConfig())
     :data_type(data_type_),
      pb(pb_),
      gap_cfg(gap_cfg_),
-     ends_cfg(ends_cfg_)
+     ends_cfg(ends_cfg_),
+     protein_cfg(protein_cfg_)
     {}
 
     GAlignerConfig(){}

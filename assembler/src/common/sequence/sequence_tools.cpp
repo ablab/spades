@@ -126,7 +126,7 @@ int ProteinStringDistance(const std::string &a, const std::string &b, int max_sc
     return score;
 }
 
-int ProteinStringDistanceMatrix(const std::string &a, const std::string &b, int max_score) {
+int ProteinStringDistanceMatrix(const std::string &a, const std::string &b, const std::string &matrix_name, int max_score) {
     int score = std::numeric_limits<int>::max();
     if (a.size() % 3 != 0 || b.size() % 3 != 0) return score;
 
@@ -138,7 +138,7 @@ int ProteinStringDistanceMatrix(const std::string &a, const std::string &b, int 
 
     parasail_result_t *result = NULL;
     const parasail_matrix_t *matrix = NULL;
-    matrix = parasail_matrix_lookup("blosum62");
+    matrix = parasail_matrix_lookup(matrix_name.c_str());
     const int proteins_num = 24;
     int min_value_ = 0;
     for (int i = 0; i < proteins_num; ++ i){

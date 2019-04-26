@@ -41,7 +41,7 @@ class GAligner {
   
   GAligner(const debruijn_graph::Graph &g,
            const GAlignerConfig &cfg)
-    : pac_index_(g, cfg.pb, cfg.data_type), g_(g), pb_config_(cfg.pb), mode_(cfg.data_type), restore_ends_(cfg.restore_ends), gap_filler_(g, cfg) {
+    : pac_index_(g, cfg.pb, cfg.data_type), g_(g), cfg_(cfg), mode_(cfg.data_type), restore_ends_(cfg.restore_ends), gap_filler_(g, cfg) {
       if (alignment::BWAIndex::AlignmentMode::Protein == cfg.data_type) {
         gap_filler_.ProteinModeOn();
       }
@@ -50,7 +50,7 @@ class GAligner {
   GAligner(const debruijn_graph::Graph &g,
            const debruijn_graph::config::pacbio_processor &pb_config,
            const alignment::BWAIndex::AlignmentMode &mode)
-    : pac_index_(g, pb_config, mode), g_(g), pb_config_(pb_config), mode_(mode), restore_ends_(false), gap_filler_(g, GAlignerConfig(pb_config, mode)) {
+    : pac_index_(g, pb_config, mode), g_(g), cfg_(GAlignerConfig(pb_config, mode)), mode_(mode), restore_ends_(false), gap_filler_(g, GAlignerConfig(pb_config, mode)) {
       if (alignment::BWAIndex::AlignmentMode::Protein == mode) {
         gap_filler_.ProteinModeOn();
       }
@@ -60,7 +60,7 @@ class GAligner {
  private:
   PacBioMappingIndex pac_index_;
   const debruijn_graph::Graph &g_;
-  const debruijn_graph::config::pacbio_processor pb_config_;
+  const GAlignerConfig cfg_;
   const alignment::BWAIndex::AlignmentMode mode_;
   bool restore_ends_;
   GapFiller gap_filler_;

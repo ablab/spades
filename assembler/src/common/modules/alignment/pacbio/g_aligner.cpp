@@ -35,7 +35,7 @@ void GAligner::FillGapsInCluster(const vector<QualityRange> &cur_cluster,
 //FIXME:: is g_.k() relevant
             double stretched_graph_len = (double) (cur_first_index.edge_position + g_.k()) +
                                          ((int) g_.length(prev_edge) - prev_last_index.edge_position) *
-                                         pb_config_.path_limit_stretching;
+                                         cfg_.pb.path_limit_stretching;
             if (start_v != end_v || (start_v == end_v && read_gap_len > stretched_graph_len)) {
                 if (start_v == end_v) {
                     DEBUG("looking for path from vertex to itself, read pos"
@@ -117,8 +117,8 @@ pair<int, int> GAligner::GetPathLimits(const QualityRange &a,
     int end_pos = b.sorted_positions[b.first_trustable_index].read_position;
     int seq_len = -start_pos + end_pos;
 //TODO::something more reasonable
-    int path_min_len = max(int(floor((seq_len - int(g_.k())) * pb_config_.path_limit_pressing)), 0);
-    int path_max_len = (int) ((double) (seq_len + g_.k() * 2) * pb_config_.path_limit_stretching);
+    int path_min_len = max(int(floor((seq_len - int(g_.k())) * cfg_.pb.path_limit_pressing)), 0);
+    int path_max_len = (int) ((double) (seq_len + g_.k() * 2) * cfg_.pb.path_limit_stretching);
     if (seq_len < 0) {
         DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
         if (path_max_len < 0)
@@ -175,7 +175,7 @@ int GAligner::FindScore(const PathRange &range, const vector<debruijn_graph::Edg
         }
     }
     DEBUG("cur_string=" << cur_string.size() << " read=" << read_seq.size())
-    int cur_score = ProteinStringDistanceMatrix(cur_string, read_seq);
+    int cur_score = ProteinStringDistanceMatrix(cur_string, read_seq, cfg_.protein_cfg.penalty_matrix);
     DEBUG("Total score=" << cur_score);
     return cur_score;
 }
@@ -219,7 +219,8 @@ OneReadMapping GAligner::GetProteinAlignment(const io::SingleRead &read) const {
         RestoreEndsF(s, (int) s.size(), cur_sorted_edges, cur_range);
         RestoreEndsB(s, 0, cur_sorted_edges, cur_range);
 
-        if (!IsDuplicate(cur_sorted_edges, cur_range, sorted_edges, read_ranges) && cur_range.path_end.seq_pos - cur_range.path_start.seq_pos >= 0.8*read.size() ) {
+        if (!IsDuplicate(cur_sorted_edges, cur_range, sorted_edges, read_ranges) && 
+                cur_range.path_end.seq_pos - cur_range.path_start.seq_pos >= cfg_.protein_cfg.min_alignment_len*read.size() ) {
             DEBUG("cur hit: " << hit.str(g_))
             read_ranges.push_back(cur_range);
             sorted_edges.push_back(cur_sorted_edges);

@@ -79,6 +79,22 @@ template<> struct MappingTraits<sensitive_aligner::EndsClosingConfig> {
     }
 };
 
+template<> struct MappingTraits<sensitive_aligner::ProteinAlignmentConfig> {
+    static void mapping(IO& io, sensitive_aligner::ProteinAlignmentConfig& cfg) {
+        io.mapRequired("queue_limit", cfg.queue_limit);
+        io.mapRequired("iteration_limit", cfg.iteration_limit);
+        io.mapRequired("updates_limit", cfg.updates_limit);
+        io.mapRequired("find_shortest_path", cfg.find_shortest_path);
+        io.mapRequired("restore_mapping", cfg.restore_mapping);
+        io.mapRequired("max_ed_proportion", cfg.max_ed_proportion);
+        io.mapRequired("max_restorable_length", cfg.max_restorable_length);
+        io.mapRequired("stop_codon", cfg.stop_codon);
+        io.mapRequired("min_alignment_len", cfg.min_alignment_len);
+        io.mapRequired("penalty_matrix", cfg.penalty_matrix);
+        io.mapRequired("indel_score", cfg.indel_score);
+    }
+};
+
 template<> struct MappingTraits<sensitive_aligner::GAlignerConfig> {
     static void mapping(IO& io, sensitive_aligner::GAlignerConfig& cfg) {
         io.mapRequired("output_format", cfg.output_format);
@@ -88,6 +104,7 @@ template<> struct MappingTraits<sensitive_aligner::GAlignerConfig> {
         io.mapRequired("pb", cfg.pb);
         io.mapRequired("gap_closing", cfg.gap_cfg);
         io.mapRequired("ends_recovering", cfg.ends_cfg);
+        io.mapRequired("aminoacid_mode", cfg.protein_cfg);
     }
 };
 

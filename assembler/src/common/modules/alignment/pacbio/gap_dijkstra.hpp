@@ -54,13 +54,12 @@ struct EndsClosingConfig: public DijkstraParams {
     int max_restorable_length = 0;
 };
 
-
 struct ProteinAlignmentConfig: public DijkstraParams {
-    float min_alignment_length = 0.2;
-    std::string penalty_matrix_name = "blosum120";
-    int max_penalty_proportion = 6;
-    int penalty_lower_bound = 100;
-    int penalty_upper_bound = 2000;
+    float min_alignment_len = 0.2;
+    std::string penalty_matrix = "blosum62";
+    bool stop_codon = true;
+    int max_restorable_length = 1000;
+    int indel_score = 5;
 };
 
 struct GraphState {
@@ -354,16 +353,18 @@ class DijkstraProteinGraph: public DijkstraGraphSequenceBase<ProteinQueueState, 
 
 public:
     DijkstraProteinGraph(const debruijn_graph::Graph &g,
-                              const DijkstraParams &gap_cfg,
+                              const ProteinAlignmentConfig &gap_cfg,
                               std::string ss,
                               debruijn_graph::EdgeId start_e, int start_p, int path_max_length, bool is_reverse)
     :DijkstraGraphSequenceBase(g, gap_cfg, ss, start_e, start_p, path_max_length),
     is_reverse_(is_reverse),
+    stop_stop_codon_(gap_cfg.stop_codon),
+    indel_score_(gap_cfg.indel_score),
     matrix_(NULL),
     min_value_(0)
     {
         const parasail_matrix_t *matrix = NULL;
-        matrix = parasail_matrix_lookup("blosum62");
+        matrix = parasail_matrix_lookup(gap_cfg.penalty_matrix.c_str());
         matrix_ = parasail_matrix_copy(matrix);
         const int proteins_num = 24;
         for (int i = 0; i < proteins_num; ++ i){
@@ -375,7 +376,7 @@ public:
         }
         min_value_ = abs(min_value_);
         DEBUG("min_value=" << min_value_)
-        path_max_length_ = (min_value_-4)*(ss_.size()/3);
+        path_max_length_ = (min_value_-4)*(ss_.size()/gap_cfg.max_ed_proportion);
         DEBUG("max_path_len=" << path_max_length_)
         for (int i = 0; i < best_ed_.size(); ++ i) {
             best_ed_[i].second = path_max_length_;
@@ -394,15 +395,14 @@ protected:
     void AddNewStatesFrom(const ProteinQueueState &state, int score);
 
     bool StopCodon(const std::string &a) const {
-        if (!is_reverse_) {
-            return stop_codons.count(a) > 0;
-        }
+        if (!stop_stop_codon_) return false;
+        if (!is_reverse_) return stop_codons.count(a) > 0;
         return cstop_codons.count(a) > 0;
     }
 
-    int deletion_score() { return min_value_ + 5;}
+    int deletion_score() { return min_value_ + indel_score_;}
 
-    int insertion_score() { return 5;}
+    int insertion_score() { return indel_score_;}
 
     int mm_score(const std::string &a, const std::string &b) const {
         if (!is_reverse_) {
@@ -417,7 +417,9 @@ protected:
         q_.erase(q_.begin());
     };
 
-    bool is_reverse_;
+    const bool is_reverse_;
+    const bool stop_stop_codon_;
+    const int indel_score_;
     parasail_matrix_t *matrix_;
     int min_value_;
     static const std::set<std::string> stop_codons;
@@ -482,7 +484,7 @@ public:
 
 class DijkstraProteinEndsReconstructor: public DijkstraProteinGraph {
 public:
-    DijkstraProteinEndsReconstructor(const debruijn_graph::Graph &g, const EndsClosingConfig &gap_cfg, std::string ss,
+    DijkstraProteinEndsReconstructor(const debruijn_graph::Graph &g, const ProteinAlignmentConfig &gap_cfg, std::string ss,
                               debruijn_graph::EdgeId start_e, int start_p, int path_max_length, bool is_reverse = false)
         : DijkstraProteinGraph(g, gap_cfg, ss, start_e, start_p, path_max_length, is_reverse) {
         end_qstate_ = ProteinQueueState();
