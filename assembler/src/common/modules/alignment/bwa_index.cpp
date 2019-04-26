@@ -64,7 +64,7 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
             memopt_->min_seed_len = 7;
             memopt_->drop_ratio = 20;
             memopt_->mask_level = 20;
-            memopt_->min_chain_weight = 40;
+            memopt_->min_chain_weight = 10;
             break;
     };
 
@@ -297,7 +297,7 @@ void BWAIndex::Init() {
 
     // make the anns
     // FIXME: Do we really need this?
-     if (mode_ == AlignmentMode::Protein) {
+    if (mode_ == AlignmentMode::Protein) {
         bns->anns = (bntann1_t*)calloc(3*ids_.size(), sizeof(bntann1_t));
     } else {
         bns->anns = (bntann1_t*)calloc(ids_.size(), sizeof(bntann1_t));
@@ -316,7 +316,7 @@ void BWAIndex::Init() {
             std::string seq = g_.EdgeNucls(e).str();
             seqlib_add_to_anns(name, seq, &bns->anns[k++], offset);
             offset += seq.length();
-        }   
+        }
     }
 
     // ambs is "holes", like N bases
@@ -382,7 +382,6 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
     if (seq_len <= g_.k()) {
         is_short = true;
     }
-
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
 
@@ -394,7 +393,6 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
                 continue;
             }
         }
-
 
         if (is_short) {
 // skipping alignments shorter than half of read length
@@ -440,9 +438,8 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
 //FIXME: what about other scoring systems?
         double qual = double(a.score)/double(a.qe - a.qb);
         DEBUG("Edge: "<< ids_[a.rid] << " quality from score: " << qual);
-        
         //Important for alignments shorter than K
-        if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
+        if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[edge_index]), g_.k()))
             continue;
 
         size_t initial_range_start = a.qb;
