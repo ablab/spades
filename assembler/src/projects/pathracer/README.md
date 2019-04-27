@@ -21,7 +21,8 @@ fragmented metagenome assemblies.
 For this moment the tool supports only _de Bruijn_ graphs in GFA format produced by **SPAdes**.
 Contact us if you need some other format support.
 
-Profile HMM should be in **HMMer3** format, but one can pass nucleotide or amino acid sequence(s) to be converted to pHMM(s) automatically.
+Profile HMM should be in **HMMer3** format, but one can pass nucleotide or amino acid sequence(s) to be converted to pHMM(s) that would be equivalent
+to performing Levenshtein search for each input sequence.
 
 ### Output
 For each pHMM (gene) the tool reports:
