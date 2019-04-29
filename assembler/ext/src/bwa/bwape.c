@@ -6,10 +6,10 @@
 #include <string.h>
 #include "bwtaln.h"
 #include "kvec.h"
-#include "bntseq.h"
-#include "utils.h"
+#include "bwa/bntseq.h"
+#include "bwa/utils.h"
 #include "bwase.h"
-#include "bwa.h"
+#include "bwa/bwa.h"
 #include "ksw.h"
 
 #ifdef USE_MALLOC_WRAPPERS

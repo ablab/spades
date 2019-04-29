@@ -18,9 +18,7 @@
 #  include "malloc_wrap.h"
 #endif
 
-#ifdef _WIN32
 #define _KO_NO_NET
-#endif
 
 #ifndef _KO_NO_NET
 static int socket_wait(int fd, int is_read)
@@ -267,6 +265,7 @@ void *kopen(const char *fn, int *_fd)
 {
 	koaux_t *aux = 0;
 	*_fd = -1;
+#ifndef _KO_NO_NET    
 	if (strstr(fn, "http://") == fn) {
 		aux = calloc(1, sizeof(koaux_t));
 		aux->type = KO_HTTP;
@@ -275,7 +274,9 @@ void *kopen(const char *fn, int *_fd)
 		aux = calloc(1, sizeof(koaux_t));
 		aux->type = KO_FTP;
 		aux->fd = ftp_open(fn);
-	} else if (strcmp(fn, "-") == 0) {
+	} else
+#endif        
+        if (strcmp(fn, "-") == 0) {
 		aux = calloc(1, sizeof(koaux_t));
 		aux->type = KO_STDIN;
 		aux->fd = STDIN_FILENO;

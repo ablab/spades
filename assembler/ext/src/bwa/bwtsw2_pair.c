@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "utils.h"
-#include "bwt.h"
-#include "bntseq.h"
+#include "bwa/utils.h"
+#include "bwa/bwt.h"
+#include "bwa/bntseq.h"
 #include "bwtsw2.h"
 #include "kstring.h"
 #include "ksw.h"

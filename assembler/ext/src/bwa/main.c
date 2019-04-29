@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "kstring.h"
-#include "utils.h"
+#include "bwa/utils.h"
 
 #ifndef PACKAGE_VERSION
 #define PACKAGE_VERSION "0.7.16a-r1181"

@@ -6,11 +6,11 @@
 #include <limits.h>
 #include <ctype.h>
 #include <math.h>
-#include "bwa.h"
-#include "bwamem.h"
+#include "bwa/bwa.h"
+#include "bwa/bwamem.h"
 #include "kvec.h"
-#include "utils.h"
-#include "bntseq.h"
+#include "bwa/utils.h"
+#include "bwa/bntseq.h"
 #include "kseq.h"
 KSEQ_DECLARE(gzFile)
 

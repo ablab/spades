@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
-#include "bwa.h"
+#include "bwa/bwa.h"
 
 int bwa_shm_stage(bwaidx_t *idx, const char *hint, const char *_tmpfn)
 {

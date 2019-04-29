@@ -7,10 +7,10 @@
 #include <assert.h>
 #include "bwase.h"
 #include "bwtaln.h"
-#include "bntseq.h"
-#include "utils.h"
+#include "bwa/bntseq.h"
+#include "bwa/utils.h"
 #include "kstring.h"
-#include "bwa.h"
+#include "bwa/bwa.h"
 #include "ksw.h"
 
 #ifdef USE_MALLOC_WRAPPERS

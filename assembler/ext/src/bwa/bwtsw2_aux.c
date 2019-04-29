@@ -7,12 +7,12 @@
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
 #endif
-#include "bntseq.h"
+#include "bwa/bntseq.h"
 #include "bwt_lite.h"
-#include "utils.h"
+#include "bwa/utils.h"
 #include "bwtsw2.h"
 #include "kstring.h"
-#include "bwa.h"
+#include "bwa/bwa.h"
 #include "ksw.h"
 
 #include "kseq.h"
