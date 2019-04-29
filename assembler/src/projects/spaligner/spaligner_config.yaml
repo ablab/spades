@@ -1,6 +1,8 @@
-output_format: tsv,fasta
+output_format: tsv
 run_dijkstra: true
 restore_ends: true
+
+################## nucleotide sequences alignment parameters
 
 pb:
   internal_length_cutoff: 200
@@ -36,3 +38,18 @@ ends_recovering:
   ed_lower_bound: 500
   ed_upper_bound: 2000
   max_restorable_length: 5000
+
+################## amino acid sequences alignment parameters
+
+aminoacid_mode:
+  queue_limit: 1000000
+  iteration_limit: 1000000
+  updates_limit: 1000000
+  find_shortest_path: true
+  restore_mapping: false
+  max_ed_proportion: 3
+  max_restorable_length: 5000
+  stop_codon: true
+  min_alignment_len: 0.8 # min percent of restorable length
+  penalty_matrix: blosum62 # substitution matrix name
+  indel_score: 5
