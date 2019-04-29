@@ -4,8 +4,8 @@
 #include <limits.h>
 #include <string.h>
 #include <unistd.h>
-#include "bwa.h"
-#include "bwamem.h"
+#include "bwa/bwa.h"
+#include "bwa/bwamem.h"
 #include "kseq.h"
 KSEQ_DECLARE(gzFile)
 

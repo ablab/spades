@@ -29,3 +29,16 @@ target_link_libraries(bwa z m)
 if (HAVE_SHM_OPEN_IN_RT)
   target_link_libraries(bwa rt)
 endif()
+
+add_executable(spades-bwa
+               main.c
+               fastmap.c pemerge.c maxk.c kopen.c bwtaln.c bwtgap.c bwaseqio.c
+               bamlite.c bwtsw2_main.c bwashm.c bwtsw2_main.c bwtsw2_aux.c
+               bwtsw2_core.c bwtsw2_chain.c bwt_lite.c bwape.c bwase.c bwtsw2_pair.c)
+target_link_libraries(spades-bwa bwa)
+if (SPADES_STATIC_BUILD)
+  set_target_properties(spades-bwa PROPERTIES LINK_SEARCH_START_STATIC 1)
+endif()
+
+install(TARGETS spades-bwa
+        RUNTIME DESTINATION bin)

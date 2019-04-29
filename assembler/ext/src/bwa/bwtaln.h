@@ -2,7 +2,7 @@
 #define BWTALN_H
 
 #include <stdint.h>
-#include "bwt.h"
+#include "bwa/bwt.h"
 
 #define BWA_TYPE_NO_MATCH 0
 #define BWA_TYPE_UNIQUE 1

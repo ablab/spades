@@ -8,8 +8,8 @@
 #include "ksw.h"
 #include "kseq.h"
 #include "kstring.h"
-#include "bwa.h"
-#include "utils.h"
+#include "bwa/bwa.h"
+#include "bwa/utils.h"
 KSEQ_DECLARE(gzFile)
 
 #ifdef USE_MALLOC_WRAPPERS

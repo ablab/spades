@@ -2,9 +2,9 @@
 #define LH3_BWTSW2_H
 
 #include <stdint.h>
-#include "bntseq.h"
+#include "bwa/bntseq.h"
 #include "bwt_lite.h"
-#include "bwt.h"
+#include "bwa/bwt.h"
 
 #define BSW2_FLAG_MATESW  0x100
 #define BSW2_FLAG_TANDEM  0x200

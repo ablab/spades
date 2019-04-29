@@ -5,7 +5,7 @@
 #include <assert.h>
 #include "bwt_lite.h"
 #include "bwtsw2.h"
-#include "bwt.h"
+#include "bwa/bwt.h"
 #include "kvec.h"
 
 #ifdef USE_MALLOC_WRAPPERS
