@@ -21,10 +21,10 @@ using debruijn_graph::VertexId;
 struct GAlignerConfig {
     // general
     int K = -1;
-    std::string path_to_graphfile;
-    std::string path_to_sequences;
-    alignment::BWAIndex::AlignmentMode data_type; // pacbio, nanopore, 16S
-    std::string output_format = "tsv"; // default: tsv and gpa without CIGAR
+    std::string path_to_graphfile = "";
+    std::string path_to_sequences = "";
+    alignment::BWAIndex::AlignmentMode data_type = alignment::BWAIndex::AlignmentMode::Default; // pacbio, nanopore, 16S
+    std::string output_format = "tsv"; // default: tsv
     bool restore_ends = false;
 
     //path construction

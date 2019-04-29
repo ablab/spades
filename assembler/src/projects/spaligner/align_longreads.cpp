@@ -216,7 +216,7 @@ void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
 
     INFO("Process reads from " << cfg.path_to_sequences);
     aligner.RunAligner();
-    INFO("Finished")
+    INFO("Thank you for using SPAligner! Results can be found: " + output_file + ".tsv")
     fs::remove_dir(tmpdir);
 }
 } // namespace sensitive_aligner
@@ -254,6 +254,23 @@ int main(int argc, char **argv) {
     }
     if (!options.count("positional")) {
         cerr << "ERROR: No input YAML was specified" << endl << endl;
+        cout << options.help() << endl;
+        exit(-1);
+    }
+    if (config.K == -1) {
+        cerr << "ERROR: K-mer value is not provided" << endl << endl;
+        cout << options.help() << endl;
+        exit(-1);
+    }
+
+    if (config.path_to_sequences.size() == 0) {
+        cerr << "ERROR: Path to sequences is not provided" << endl << endl;
+        cout << options.help() << endl;
+        exit(-1);
+    }
+
+    if (config.path_to_graphfile.size() == 0) {
+        cerr << "ERROR: Path to file with graph is not provided" << endl << endl;
         cout << options.help() << endl;
         exit(-1);
     }
