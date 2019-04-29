@@ -152,13 +152,14 @@ int GAligner::FindScore(const PathRange &range, const vector<debruijn_graph::Edg
         cur_string = g_.EdgeNucls(edges[0]).Subseq(range.path_start.edge_pos, range.path_end.edge_pos).str();
     } else {
         int i = 0, j = 1;
-        int start = range.path_start.edge_pos, end = range.path_end.edge_pos;
-        while (g_.length(edges[i]) < start){
-           start -= g_.length(edges[i]);
+        int start = (int) range.path_start.edge_pos;
+        int end = (int) range.path_end.edge_pos;
+        while ((int) g_.length(edges[i]) < start){
+           start -= (int) g_.length(edges[i]);
            ++ i;
         }
-        while (end < g_.k()){
-           end += g_.length(edges[edges.size() - j - 1]);
+        while (end < (int) g_.k()){
+           end += (int) g_.length(edges[edges.size() - j - 1]);
            ++ j;
         }
         string s_add = g_.EdgeNucls(edges[i]).Subseq(start, g_.length(edges[i])).str();
@@ -167,7 +168,7 @@ int GAligner::FindScore(const PathRange &range, const vector<debruijn_graph::Edg
         for (auto e: edges) {
             DEBUG(e.int_id() << " len=" << g_.length(e))
         }
-        if (i + 1 > edges.size() - j - 1) {
+        if (i + 1 > (int) edges.size() - j - 1) {
             cur_string = s_add + e_add;
         } else {
             vector<debruijn_graph::EdgeId> inside_edges(edges.begin() + i + 1, edges.end() - j);
@@ -183,7 +184,7 @@ int GAligner::FindScore(const PathRange &range, const vector<debruijn_graph::Edg
 bool IsDuplicate(vector<debruijn_graph::EdgeId> cur_sorted_edges, PathRange &cur_range,
                  vector<vector<debruijn_graph::EdgeId>> &sorted_edges, vector<PathRange> &read_ranges) {
     bool is_duplicate = false;
-    for (int i = 0; i < sorted_edges.size(); ++ i) {
+    for (size_t i = 0; i < sorted_edges.size(); ++ i) {
         if (sorted_edges[i] == cur_sorted_edges) {
             if (cur_range == read_ranges[i]) {
                 is_duplicate = true;
@@ -220,7 +221,7 @@ OneReadMapping GAligner::GetProteinAlignment(const io::SingleRead &read) const {
         RestoreEndsB(s, 0, cur_sorted_edges, cur_range);
 
         if (!IsDuplicate(cur_sorted_edges, cur_range, sorted_edges, read_ranges) && 
-                cur_range.path_end.seq_pos - cur_range.path_start.seq_pos >= cfg_.protein_cfg.min_alignment_len*read.size() ) {
+                cur_range.path_end.seq_pos - cur_range.path_start.seq_pos >= (size_t) (cfg_.protein_cfg.min_alignment_len*(double) read.size())) {
             DEBUG("cur hit: " << hit.str(g_))
             read_ranges.push_back(cur_range);
             sorted_edges.push_back(cur_sorted_edges);

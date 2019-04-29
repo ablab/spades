@@ -45,7 +45,7 @@ void DijkstraReadGraph::AddNewStatesFrom(const QueueState &state, int ed) {
     if ((int) g_.length(state.gs.e) <= state.gs.end_pos) {
         for (const debruijn_graph::EdgeId &e : g_.OutgoingEdges(g_.EdgeEnd(state.gs.e))) {
             if (IsGoodEdge(e) > 0) {
-                int new_pos = state.gs.end_pos - g_.length(state.gs.e);
+                int new_pos = state.gs.end_pos - (int) g_.length(state.gs.e);
                 AddState(QueueState(GraphState(e, new_pos, new_pos), state.i), ed, state, false);
             }
         }
@@ -103,8 +103,8 @@ bool DijkstraGraphSequenceBase<T,U>::RunDijkstra() {
 
 bool DijkstraProteinEndsReconstructor::DetermineBestPrefix(bool found_path) {
     bool res = false;
-    for (int i = 1; i < best_ed_.size(); ++ i) {
-        if (i % 3 == 0 && best_ed_[i].second < (min_value_ - 4)*(i/3)) {
+    for (size_t i = 1; i < best_ed_.size(); ++ i) {
+        if (i % 3 == 0 && best_ed_[i].second < (min_value_ - 4)*((int) i/3)) {
             end_qstate_ = best_ed_[i].first;
             res = true;
         }
@@ -116,8 +116,8 @@ bool DijkstraEndsReconstructor::DetermineBestPrefix(bool found_path) {
     double t = (double) path_max_length_/(double) ss_.size();
     bool res = false;
     if (!found_path) {
-        for (int i = 1; i < best_ed_.size(); ++ i) {
-            if (best_ed_[i].second < t*i) {
+        for (size_t i = 1; i < best_ed_.size(); ++ i) {
+            if (best_ed_[i].second < t*(int)i) {
                 end_qstate_ = best_ed_[i].first;
                 res = true;
             }
@@ -204,7 +204,7 @@ void DijkstraProteinGraph::AddNewStatesFrom(const ProteinQueueState &state, int 
         if (state.i + 3 <= (int) ss_.size()) {
             string aa = ss_.substr(state.i, 3);
             int score = mm_score(aa, state.offset);
-            if (state.i + 3 == ss_.size() || !StopCodon(state.offset)) {
+            if (state.i + 3 == (int) ss_.size() || !StopCodon(state.offset)) {
                 AddState(ProteinQueueState(state.gs, state.i + 3, ""), ed + score, state);
             }
         }
@@ -216,7 +216,7 @@ void DijkstraProteinGraph::AddNewStatesFrom(const ProteinQueueState &state, int 
         if ((int) g_.length(state.gs.e) <= state.gs.end_pos) {
             for (const debruijn_graph::EdgeId &e : g_.OutgoingEdges(g_.EdgeEnd(state.gs.e))) {
                 if (IsGoodEdge(e) > 0) {
-                    int new_pos = state.gs.end_pos - g_.length(state.gs.e);
+                    int new_pos = state.gs.end_pos - (int) g_.length(state.gs.e);
                     AddState(ProteinQueueState(
                         GraphState(e, new_pos, new_pos), state.i, state.offset), ed, state);
                 }

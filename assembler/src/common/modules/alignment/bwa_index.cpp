@@ -140,20 +140,17 @@ static uint8_t* seqlib_make_pac(const debruijn_graph::Graph &g,
     q = bns->ambs;
 
     // Move through the sequences
-    int cur_len = 0;
     for (auto e : ids) {
         std::string ref = std::to_string(g.int_id(e));
         if (mode == BWAIndex::AlignmentMode::Protein) {
             std::string seq = g.EdgeNucls(e).str();
             for (size_t i = 0; i < 3; ++ i) {
                 std::string cur_seq = ConvertNuc2CanonicalNuc(seq.substr(i));
-                cur_len += cur_seq.size();
                 pac = seqlib_add1(cur_seq, ref + "_" + std::to_string(i), bns, pac, &m_pac, &m_seqs, &m_holes, &q);
             }
         } else {
             std::string seq = g.EdgeNucls(e).str();
             // make the forward only pac
-            cur_len += seq.size();
             pac = seqlib_add1(seq, ref, bns, pac, &m_pac, &m_seqs, &m_holes, &q);
         }
     }

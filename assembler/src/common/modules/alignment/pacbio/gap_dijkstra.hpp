@@ -55,7 +55,7 @@ struct EndsClosingConfig: public DijkstraParams {
 };
 
 struct ProteinAlignmentConfig: public DijkstraParams {
-    float min_alignment_len = 0.2;
+    double min_alignment_len = 0.2;
     std::string penalty_matrix = "blosum62";
     bool stop_codon = true;
     int max_restorable_length = 1000;
@@ -376,9 +376,9 @@ public:
         }
         min_value_ = abs(min_value_);
         DEBUG("min_value=" << min_value_)
-        path_max_length_ = (min_value_-4)*(ss_.size()/gap_cfg.max_ed_proportion);
+        path_max_length_ = (min_value_-4)*((int) ss_.size()/gap_cfg.max_ed_proportion);
         DEBUG("max_path_len=" << path_max_length_)
-        for (int i = 0; i < best_ed_.size(); ++ i) {
+        for (size_t i = 0; i < best_ed_.size(); ++ i) {
             best_ed_[i].second = path_max_length_;
         }
         AddState(ProteinQueueState(GraphState(start_e_, start_p_, start_p_), 0, ""), 0, ProteinQueueState());
