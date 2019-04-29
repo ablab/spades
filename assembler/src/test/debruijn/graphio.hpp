@@ -114,7 +114,7 @@ public:
                 if (graph.ereserved() <= needed)
                     graph.ereserve(needed * 2 + 1);
                 Sequence tmp(longstring);
-                EdgeId new_id = graph.AddEdge(start_id, fin_id, Graph::EdgeData(tmp), eid, conj_eid);
+                EdgeId new_id = graph.AddEdge(start_id, fin_id, tmp, eid, conj_eid);
                 VERIFY(new_id == eid);
                 VERIFY(graph.conjugate(new_id) == conj_eid);
             }

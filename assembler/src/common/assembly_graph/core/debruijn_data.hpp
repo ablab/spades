@@ -15,10 +15,10 @@
 #include <cstring>
 
 namespace debruijn_graph {
-class DeBruijnDataMaster;
+class DeBruijnMaster;
 
 class DeBruijnVertexData {
-    friend class DeBruijnDataMaster;
+    friend class DeBruinMaster;
 public:
     DeBruijnVertexData() {
 
@@ -50,13 +50,13 @@ class CoverageData {
 };
 
 class DeBruijnEdgeData {
-    friend class DeBruijnDataMaster;
+    friend class DeBruinMaster;
     CoverageData coverage_;
     CoverageData flanking_cov_;
     Sequence nucls_;
 public:
 
-    explicit DeBruijnEdgeData(const Sequence &nucls) :
+    DeBruijnEdgeData(const Sequence &nucls) :
             nucls_(nucls) {
     }
 
@@ -117,10 +117,7 @@ public:
     }
 
     EdgeData conjugate(const EdgeData &data) const {
-        VERIFY(data.flanking_coverage() == 0);
-        EdgeData cdata = data;
-        cdata.nucls_ = !cdata.nucls_;
-        return cdata;
+        return EdgeData(!(data.nucls()));
     }
 
     VertexData conjugate(const VertexData & /*data*/) const {
