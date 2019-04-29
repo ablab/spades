@@ -78,6 +78,7 @@ void MappingPrinterFasta::SaveMapping(const sensitive_aligner::OneReadMapping &a
                                  + "|end_g=" + to_string(aligned_mappings.read_ranges[j].path_end.edge_pos)
                                  + "|start_s=" + to_string(aligned_mappings.read_ranges[j].path_start.seq_pos)
                                  + "|end_s=" + to_string(aligned_mappings.read_ranges[j].path_end.seq_pos)
+                                 + (aligned_mappings.scores.size() > j? "|score=" + to_string(aligned_mappings.scores[j]): "")
                                  + "\n" + path_seq_str + "\n";
     }
     #pragma omp critical
@@ -108,6 +109,7 @@ void MappingPrinterAAFasta::SaveMapping(const sensitive_aligner::OneReadMapping 
                                  + "|end_g=" + to_string(aligned_mappings.read_ranges[j].path_end.edge_pos)
                                  + "|start_s=" + to_string(aligned_mappings.read_ranges[j].path_start.seq_pos)
                                  + "|end_s=" + to_string(aligned_mappings.read_ranges[j].path_end.seq_pos)
+                                 + (aligned_mappings.scores.size() > j? "|score=" + to_string(aligned_mappings.scores[j]): "")
                                  + "\n" + path_seq_aa + "\n";
     }
     #pragma omp critical
