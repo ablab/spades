@@ -4,9 +4,9 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "index/edge_index_builders.hpp"
-#include "index/edge_multi_index.hpp"
-#include "core/graph.hpp"
+#include "assembly_graph/index/edge_index_builders.hpp"
+#include "assembly_graph/index/edge_multi_index.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "utils/filesystem/temporary.hpp"
 
 #include "edge_index_refiller.hpp"

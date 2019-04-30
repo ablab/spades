@@ -28,7 +28,7 @@
 #include "single_read.hpp"
 #include "fasta_fastq_gz_parser.hpp"
 #include "parser.hpp"
-#include "sam/bam_parser.hpp"
+#include "io/sam/bam_parser.hpp"
 
 namespace io {
 
