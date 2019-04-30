@@ -882,10 +882,10 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     INFO("Connected component sizes: " << cursor_conn_comps_sizes);
 
-    auto run_search = [&fees, &p7hmm, &cfg](const auto &cursors, size_t top,
-                                            std::vector<HMMPathInfo> &local_results,
-                                            const auto context,
-                                            const std::string &component_name = "") -> void {
+    auto run_search = [&fees, &p7hmm, &cfg, &graph](const auto &cursors, size_t top,
+                                                    std::vector<HMMPathInfo> &local_results,
+                                                    const auto context,
+                                                    const std::string &component_name = "") -> void {
         CachedCursorContext ccc(cursors, context);
         auto cached_cursors = ccc.Cursors();
         for (const auto &cursor : cached_cursors) {
@@ -963,6 +963,7 @@ void TraceHMM(const hmmer::HMM &hmm,
             size_t pos = nucl_path[0].position();
             HMMPathInfo info(p7hmm->name, annotated_path.score, seq, nucl_seq, std::move(edge_path), std::move(alignment),
                              component_name, pos);
+            info.trim_first_edges(graph);
             auto tpl = std::make_tuple(info.path, info.pos, info.nuc_seq.length());
             if (!extracted_paths.count(tpl)) {
                 local_results.push_back(std::move(info));
