@@ -77,8 +77,8 @@ struct properties
     properties(level default_level = L_INFO);
 
     std::unordered_map<std::string, level> levels;
-    level    def_level;
-  bool  all_default;
+    level  def_level;
+    bool   all_default;
 };
 
 ////////////////////////////////////////////////////
@@ -91,12 +91,20 @@ struct logger
     void log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg);
 
     //
-    void add_writer(writer_ptr ptr);
+    void add_writer(writer_ptr ptr) {
+        writers_.push_back(ptr);
+    }
+
+    template<class Writer, typename... Args>
+    void add_writer(Args&&... args) {
+        writers_.push_back(std::make_shared<Writer>(std::forward<Args>(args)...));
+    }
+    
 
 private:
     properties                 props_  ;
     std::vector<writer_ptr>    writers_;
-    utils::perf_counter            timer_  ;
+    utils::perf_counter        timer_  ;
 };
 
 std::shared_ptr<logger>& __logger();

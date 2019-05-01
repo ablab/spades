@@ -140,12 +140,6 @@ void logger::log(level desired_level, const char* file, size_t line_num, const c
     (*it)->write_msg(time, mem, max_rss, desired_level, file, line_num, source, msg);
 }
 
-//
-void logger::add_writer(writer_ptr ptr)
-{
-    writers_.push_back(ptr);
-}
-
 ////////////////////////////////////////////////////
 std::shared_ptr<logger> &__logger() {
   static std::shared_ptr<logger> l;
