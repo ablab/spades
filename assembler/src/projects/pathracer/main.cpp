@@ -1150,7 +1150,8 @@ int pathracer_main(int argc, char* argv[]) {
     utils::limit_memory(cfg.memory * GB);
 
     // Stack limit
-    INFO("Soft stack limit: " << stack_limit());
+    size_t stacklimit = stack_limit();
+    INFO("Soft stack limit: " << (stacklimit == size_t(-1) ? "UNLIMITED" : std::to_string(stacklimit)));
     INFO("Process ID: " << getpid());
 
     using namespace debruijn_graph;
