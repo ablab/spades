@@ -1261,12 +1261,15 @@ int aling_kmers_main(int argc, char* argv[]) {
         }
         // remove -
         seq.erase(std::remove(seq.begin(), seq.end(), '-'), seq.end());
-        double score = score_sequence(fees, seq);
+        // double score = score_sequence(fees, seq);  //FIXME initial cursor in score_sequence
+        /*
+        double score = score_subsequence(fees, seq);
         if (score < 0) {
             continue;
         }
         of << ">" << id << "|Score=" << score <<  "\n";
         io::WriteWrapped(seq, of);
+        */
 
         hmmer::HMMMatcher matcher(hmm, hcfg);
         // Split into k-mers
