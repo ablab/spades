@@ -252,7 +252,7 @@ template <typename StringArray>
 auto ScoreSequences(const StringArray &seqs,
                     const std::vector<std::string> &refs,
                     const hmmer::HMM &hmm, const PathracerConfig &cfg) {
-    INFO("ScoreSequences started");
+    DEBUG("ScoreSequences started");
     bool hmm_in_aas = hmm.abc()->K == 20;
     hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
 
@@ -353,7 +353,7 @@ std::string PathToString(const std::vector<EdgeId>& path,
 PathAlnInfo MatchedPaths(const std::vector<std::vector<EdgeId>> &paths,
                          const ConjugateDeBruijnGraph &graph,
                          const hmmer::HMM &hmm, const PathracerConfig &cfg) {
-    INFO("MatchedPaths started");
+    DEBUG("MatchedPaths started");
     // std::vector<std::string> seqs;
     // seqs.reserve(paths.size());
     // for (const auto &path : paths) {
@@ -368,6 +368,7 @@ PathAlnInfo MatchedPaths(const std::vector<std::vector<EdgeId>> &paths,
     auto matcher = ScoreSequences(seqs, {}, hmm, cfg);
 
     auto matched = GetOverhangs(matcher, seqs, hmm);
+    INFO(matched.size() << " matched edges found");
 
     if (matched.size() && cfg.debug) {
         int textw = 120;
@@ -401,7 +402,7 @@ size_t path_length(const graph_t &graph, const std::vector<EdgeId> &path) {
 EdgeAlnInfo PathAlignments2EdgeAlignments(const PathAlnInfo &painfo,
                                           const std::vector<std::vector<EdgeId>> &paths,
                                           const graph_t &graph) {
-    INFO("PathAlignments2EdgeAlignments started");
+    DEBUG("PathAlignments2EdgeAlignments started");
     EdgeAlnInfo result;
     size_t k = graph.k();
 
@@ -705,7 +706,7 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 using GraphCursor = DebruijnGraphCursor;
 
 auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef, int expand_const, bool parallel_component_processing) {
-    INFO("ConnCompsFromEdgesMatches started");
+    DEBUG("ConnCompsFromEdgesMatches started");
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
     std::unordered_set<GraphCursor> cursors;
@@ -1160,7 +1161,12 @@ int pathracer_main(int argc, char* argv[]) {
     std::vector<std::vector<EdgeId>> scaffold_paths;
     std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
     LoadGraph(graph, scaffold_paths, cfg.load_from, id_mapper.get());
-    INFO("Graph loaded. Total vertices: " << graph.size());
+    size_t letters = 0;
+    for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+        EdgeId edge = *it;
+        letters += (graph.length(edge) + graph.k()) * (graph.conjugate(edge) ? 1 : 2);
+    }
+    INFO("Graph loaded. Total vertices: " << graph.size() << ", letters: " << letters);
 
     INFO("Total paths " << scaffold_paths.size());
 
