@@ -1096,15 +1096,11 @@ void hmm_main(const PathracerConfig &cfg,
         SaveResults(hmm, graph, cfg, results, scaffold_path_index, mapping_f);
 
         if (cfg.annotate_graph) {
-            std::unordered_set<std::vector<EdgeId>> unique_paths;
-            for (const auto &result : results)
-                unique_paths.insert(result.path);
-
             size_t idx = 0;
-            for (const auto &path : unique_paths) {
+            for (const auto &result : results) {
                 #pragma omp critical
                 {
-                    gfa_paths.insert({ std::string(hmm.get()->name) + "_" + std::to_string(idx++) + "_length_" + std::to_string(path.size()), path });
+                    gfa_paths.insert({ std::string(hmm.get()->name) + "_" + std::to_string(idx++) + "_score_" + std::to_string(result.score), result.path });
                 }
             }
         }
