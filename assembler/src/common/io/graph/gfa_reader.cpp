@@ -51,8 +51,10 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
         if (kc && kc[0] == 'i')
             cov = *(int32_t*)(kc+1);
         DeBruijnEdgeData edata(Sequence(seg->seq));
-        edata.set_raw_coverage(cov);
         EdgeId e = helper.AddEdge(edata);
+        g.coverage_index().SetRawCoverage(e, cov);
+        g.coverage_index().SetRawCoverage(g.conjugate(e), cov);
+
         if (id_mapper) {
             (*id_mapper)[e.int_id()] = seg->name;
             if (e != g.conjugate(e)) {
