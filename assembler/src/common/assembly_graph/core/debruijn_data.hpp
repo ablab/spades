@@ -15,10 +15,10 @@
 #include <cstring>
 
 namespace debruijn_graph {
-class DeBruijnMaster;
+class DeBruijnDataMaster;
 
 class DeBruijnVertexData {
-    friend class DeBruinMaster;
+    friend class DeBruijnDataMaster;
 public:
     DeBruijnVertexData() {
 
@@ -50,13 +50,13 @@ class CoverageData {
 };
 
 class DeBruijnEdgeData {
-    friend class DeBruinMaster;
+    friend class DeBruijnDataMaster;
     CoverageData coverage_;
     CoverageData flanking_cov_;
     Sequence nucls_;
 public:
 
-    DeBruijnEdgeData(const Sequence &nucls) :
+    explicit DeBruijnEdgeData(const Sequence &nucls) :
             nucls_(nucls) {
     }
 

@@ -74,7 +74,8 @@ private:
                               << end_ids[0] << " l = " << seq.size() << " ~ " << edge_ids[1]);
                 TryAddVertex(end_ids);
 
-                auto new_id = graph.AddEdge(start_ids[0], end_ids[0], seq, edge_ids[0], edge_ids[1]);
+                auto new_id = graph.AddEdge(start_ids[0], end_ids[0],
+                        typename Graph::EdgeData(seq), edge_ids[0], edge_ids[1]);
                 VERIFY(new_id == edge_ids[0]);
                 VERIFY(graph.conjugate(new_id) == edge_ids[1]);
             }
