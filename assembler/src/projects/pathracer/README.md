@@ -13,7 +13,7 @@ MANUAL
 assembly graph (performing the codon translation on fly for amino acid pHMMs).
 The tool provides the set of most probable paths traversed by a HMM through the
 whole assembly graph, regardless whether the sequence of interested is encoded
-on the single contig or scattered across the set of edges, therefore 
+on the single contig or scattered across the set of edges, therefore
 significantly improving the recovery of sequences of interest even from
 fragmented metagenome assemblies.
 
@@ -21,7 +21,9 @@ fragmented metagenome assemblies.
 Currently the tool supports only _de Bruijn_ graphs in GFA format as produced by **SPAdes** or compatible assembler in this matter (e.g. **MEGAHIT**).
 Contact us if you need some other format support.
 
-Profile HMM should be in **HMMer3** format, but one can pass nucleotide or amino acid sequences as well. These sequences will be converted to proxy pHMM. Aligning of these pHMMs would be equivalent to performing alignment using Levenshtein distance for each input sequence.
+Profile HMM should be in **HMMer3** format, but one can pass nucleotide or amino acid sequences as well.
+These sequences will be converted to proxy pHMMs.
+Aligning of these pHMMs would be equivalent to performing alignment using Levenshtein distance for each input sequence.
 
 
 ### Command line options
@@ -64,7 +66,7 @@ For each input pHMM (genemode ) PathRacer reports:
 
 - **&lt;gene\_name&gt;.seqs.fa**: sequences correspondent to _N_ best scored paths ordered by score along with their alignment in CIGAR format
 - **&lt;gene\_name&gt;.nucls.fa**: _(for amino acids pHHMs only)_ the same sequences in nucleotides
-- **&lt;gene\_name&gt;.edges.fa**: unique graph edge paths sequences corresponding to best scored paths 
+- **&lt;gene\_name&gt;.edges.fa**: unique graph edge paths sequences corresponding to best scored paths
 - **&lt;gene\_name&gt;.{domtblout, pfamtblout, tblout}**: _(optional)_ edge paths realignment by **HMMer** in various default output formats
 - **event\_graph\_&lt;gene\_name&gt;\_component\_&lt;component\_id&gt;\_size\_&lt;component\_size&gt;.cereal**: _(optional, debug output)_ connected components of the event graph graph
 - **&lt;component\_id&gt;.dot**: _(optional, plot)_ connected component of matched neighborhood subgraph
