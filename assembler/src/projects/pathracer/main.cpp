@@ -1160,7 +1160,7 @@ int pathracer_main(int argc, char* argv[]) {
     size_t letters = 0;
     for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         EdgeId edge = *it;
-        letters += (graph.length(edge) + graph.k()) * (graph.conjugate(edge) ? 1 : 2);
+        letters += (graph.length(edge) + graph.k()) * (graph.conjugate(edge) == edge ? 1 : 2);
     }
     INFO("Graph loaded. Total vertices: " << graph.size() << ", letters: " << letters);
 
