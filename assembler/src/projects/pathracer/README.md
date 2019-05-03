@@ -44,7 +44,7 @@ Main options:
 - `--rescore`: rescore resulting paths by **HMMer** and produce output tables in **HMMer** standard formats
 - `--threads`, `-t` T: the total number of CPU threads to use [default: 16]
 - `--parallel-components`: process connected components of neighborhood subgraph in parallel
-- `--memory`, `-m` M: RAM limit in GB (PathRacer terminates if the limit is exceeded) [default: 100]
+- `--memory`, `-m` M: RAM limit in GB (**PathRacer** terminates if the limit is exceeded) [default: 100]
 - `--annotate-graph`: emit paths in GFA graph
 
 Heuristics options:
@@ -62,7 +62,7 @@ Debug output control:
 _In addition:_ Some other developer options that are not supposed to be tuned by end-user. Could be removed in further releases.
 
 ### Output
-For each input pHMM (genemode ) PathRacer reports:
+For each input pHMM (genemode ) **PathRacer** reports:
 
 - **&lt;gene\_name&gt;.seqs.fa**: sequences correspondent to _N_ best scored paths ordered by score along with their alignment in CIGAR format
 - **&lt;gene\_name&gt;.nucls.fa**: _(for amino acids pHHMs only)_ the same sequences in nucleotides
