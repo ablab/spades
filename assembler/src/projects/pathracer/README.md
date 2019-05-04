@@ -144,7 +144,7 @@ P/"-" &mdash; one nucleotide insertion, G/"=" &mdash; two nucleotides insertion
 
 
 ### Examples
-One can download example datasets from here <http://cab.spbu.ru/software/pathracer/>
+One can download example datasets from <http://cab.spbu.ru/software/pathracer/>
 
 - **urban_strain.gfa**: strain assembly graph of Singapore clinical isolation ward wastewater metagenome (SRA accession SRR5997548, dataset H1)
 - **bla\_all.hmm**: 159 beta-lactamase family pHMMs from **AMRFinder** database <https://www.ncbi.nlm.nih.gov/pathogens/antimicrobial-resistance/AMRFinder/>
