@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <fstream>
 
 class EncoderKMer {
 public:

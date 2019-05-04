@@ -19,7 +19,7 @@ add_executable(spades-hammer
                read_corrector.cpp
                expander.cpp)
 
-target_link_libraries(spades-hammer input utils mph_index pipeline gqf ${COMMON_LIBRARIES})
+target_link_libraries(spades-hammer common_modules input utils mph_index pipeline gqf ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades-hammer PROPERTIES LINK_SEARCH_END_STATIC 1)

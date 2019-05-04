@@ -8,19 +8,16 @@
 #ifndef CONCURRENTDSU_HPP_
 #define CONCURRENTDSU_HPP_
 
-#include "io/kmers/mmapped_writer.hpp"
+#include <algorithm>
+#include <atomic>
+#include <string>
+#include <vector>
 
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <cstdarg>
 #include <cstdint>
-
-#include <algorithm>
-#include <vector>
-#include <unordered_map>
-#include <atomic>
-#include <fstream>
 
 // Silence bogus gcc warnings
 #pragma GCC diagnostic push
@@ -40,7 +37,6 @@ class ConcurrentDSU {
 public:
     ConcurrentDSU(size_t size)
             : data_(size) {
-
         for (size_t i = 0; i < size; i++)
             data_[i] = {.data = 1, .aux = 0, .root = true};
     }
@@ -202,74 +198,7 @@ public:
         }
     }
 
-    size_t extract_to_file(const std::string &Prefix) {
-        // First, touch all the sets to make them directly connect to the root
-#   pragma omp parallel for
-        for (size_t x = 0; x < data_.size(); ++x)
-            (void) find_set(x);
-
-        std::unordered_map<size_t, size_t> sizes;
-
-#if 0
-        for (size_t x = 0; x < size; ++x) {
-            if (data_[x].parent != x) {
-                size_t t = data_[x].parent;
-                VERIFY(data_[t].parent == t)
-            }
-        }
-#endif
-
-        // Insert all the root elements into the map
-        sizes.reserve(num_sets());
-        for (size_t x = 0; x < data_.size(); ++x) {
-            if (is_root(x))
-                sizes[x] = 0;
-        }
-
-        // Now, calculate the counts. We can do this in parallel, because we know no
-        // insertion can occur.
-#   pragma omp parallel for
-        for (size_t x = 0; x < data_.size(); ++x) {
-            size_t &entry = sizes[parent(x)];
-#       pragma omp atomic
-            entry += 1;
-        }
-
-        // Now we know the sizes of each cluster. Go over again and calculate the
-        // file-relative (cumulative) offsets.
-        size_t off = 0;
-        for (size_t x = 0; x < data_.size(); ++x) {
-            if (is_root(x)) {
-                size_t &entry = sizes[x];
-                size_t noff = off + entry;
-                entry = off;
-                off = noff;
-            }
-        }
-
-        // Write down the entries
-        std::vector<size_t> out(off);
-        for (size_t x = 0; x < data_.size(); ++x) {
-            size_t &entry = sizes[parent(x)];
-            out[entry++] = x;
-        }
-        std::ofstream os(Prefix, std::ios::binary | std::ios::out);
-        os.write((char *) &out[0], out.size() * sizeof(out[0]));
-        os.close();
-
-        // Write down the sizes
-        MMappedRecordWriter <size_t> index(Prefix + ".idx");
-        index.reserve(sizes.size());
-        size_t *idx = index.data();
-        for (size_t x = 0, i = 0, sz = 0; x < data_.size(); ++x) {
-            if (is_root(x)) {
-                idx[i++] = sizes[x] - sz;
-                sz = sizes[x];
-            }
-        }
-
-        return sizes.size();
-    }
+    size_t extract_to_file(const std::string &Prefix);
 
     void get_sets(std::vector<std::vector<size_t> > &otherWay) {
         otherWay.resize(data_.size());

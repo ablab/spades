@@ -1,6 +1,8 @@
-//
-// Created by Vasiliy Ershov on 10/07/16.
-//
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #ifndef PROJECT_QUALITY_METRICS_H
 #define PROJECT_QUALITY_METRICS_H
@@ -8,6 +10,8 @@
 #include "kmer_data.hpp"
 #include "reference.h"
 #include "subcluster.hpp"
+
+#include <fstream>
 
 namespace hammer {
 

@@ -152,7 +152,7 @@ int main(int argc, char * argv[]) {
           TauOneKMerHamClusterer().cluster(ham_prefix, *Globals::kmer_data, uf);
         }
 
-        INFO("Extracting clusters");
+        INFO("Extracting clusters:");
         size_t num_classes = uf.extract_to_file(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"));
 
 #if 0
