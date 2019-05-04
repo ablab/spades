@@ -60,7 +60,7 @@ Debug output control:
 _In addition:_ Some other developer options that are not supposed to be tuned by end-user. Could be removed in further releases.
 
 ### Output
-For each input pHMM (genemode ) PathRacer reports:
+For each input pHMM (gene model) PathRacer reports:
 
 - **&lt;gene\_name&gt;.seqs.fa**: sequences correspondent to _N_ best scored paths ordered by score along with their alignment in CIGAR format
 - **&lt;gene\_name&gt;.nucls.fa**: _(for amino acids pHHMs only)_ the same sequences in nucleotides
@@ -78,7 +78,7 @@ In addition:
 
 
 ### Examples
-One can download example datasets from here <http://cab.spbu.ru/software/pathracer/>
+One can download example datasets from <http://cab.spbu.ru/software/pathracer/>
 
 - **urban_strain.gfa**: strain assembly graph of Singapore clinical isolation ward wastewater metagenome (SRA accession SRR5997548, dataset H1)
 - **bla\_all.hmm**: 159 beta-lactamase family pHMMs from **AMRFinder** database <https://www.ncbi.nlm.nih.gov/pathogens/antimicrobial-resistance/AMRFinder/>
