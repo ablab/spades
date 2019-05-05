@@ -8,7 +8,6 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
-#include <boost/algorithm/string.hpp>
 #include <algorithm>
 #include <atomic>
 #include <deque>
@@ -252,9 +251,9 @@ public:
     }
 
     void PopBack() {
-        if (data_.empty()) {
+        if (data_.empty())
             return;
-        }
+
         debruijn_graph::EdgeId e = data_.back();
         DecreaseLengths();
         gap_len_.pop_back();
@@ -439,40 +438,6 @@ public:
         return std::vector<debruijn_graph::EdgeId>(data_.begin(), data_.end());
     }
 
-    void PrintDEBUG() const {
-        for (const auto& s: PrintLines()) {
-            DEBUG(s);
-        }
-    }
-
-    void PrintINFO() const {
-        for (const auto& s: PrintLines()) {
-            INFO(s);
-        }
-    }
-
-    void Print(std::ostream &os) const {
-        if (Empty()) {
-            return;
-        }
-        os << "Path " << GetId() << "\n";
-        os << "Length " << Length() << "\n";
-        os << "Weight " << weight_ << "\n";
-        os << "#, edge (length), gap info, total length, total length from start" << "\n";
-        for (size_t i = 0; i < Size(); ++i) {
-            os << i << ", " << g_.str(At(i))
-               << ", " << GapAt(i)
-               << ", " << LengthAt(i)
-               << ", " << ((Length() < LengthAt(i)) ? 0 : Length() - LengthAt(i)) << "\n";
-        }
-    }
-
-    std::string str() const {
-        std::stringstream ss;
-        Print(ss);
-        return ss.str();
-    }
-
     auto begin() const -> decltype(data_.begin()) {
         return data_.begin();
     }
@@ -481,14 +446,13 @@ public:
         return data_.end();
     }
 
+    void PrintDEBUG() const;
+    void PrintINFO() const;
+    void Print(std::ostream &os) const;
+    std::string str() const;
+
 private:
-    std::vector<std::string> PrintLines() const {
-        auto as_str = str();
-        boost::trim(as_str);
-        std::vector<std::string> result;
-        boost::split(result, as_str, boost::is_any_of("\n"), boost::token_compress_on);
-        return result;
-    }
+    std::vector<std::string> PrintLines() const;
 
     void IncreaseLengths(size_t length, int gap) {
         for (auto iter = cumulative_len_.begin(); iter != cumulative_len_.end(); ++iter) {
