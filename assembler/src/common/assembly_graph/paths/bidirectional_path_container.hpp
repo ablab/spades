@@ -142,7 +142,7 @@ public:
                 return desc ? p1.first->Length() > p2.first->Length()
                             : p1.first->Length() < p2.first->Length();
             }
-            const Graph& g = p1.first->graph();
+            const debruijn_graph::Graph& g = p1.first->graph();
             return g.int_id(p1.first->Front()) < g.int_id(p2.first->Front());
         });
     }

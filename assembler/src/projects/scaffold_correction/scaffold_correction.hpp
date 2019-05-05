@@ -20,7 +20,7 @@
 
 namespace scaffold_correction {
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
-    typedef std::vector<EdgeId> Path;
+    typedef std::vector<debruijn_graph::EdgeId> Path;
 
     class PathSideSimilarityComparator {
     private:

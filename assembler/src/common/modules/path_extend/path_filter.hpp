@@ -41,11 +41,12 @@ public:
 };
 
 class CoveragePathCondition: public AbstractPathCondition {
-    const Graph& g_;
+    const debruijn_graph::Graph& g_;
     double cov_;
 
 public:
-    CoveragePathCondition(const Graph& g, double cov): g_(g), cov_(cov) {}
+    CoveragePathCondition(const debruijn_graph::Graph& g, double cov)
+            : g_(g), cov_(cov) {}
 
     bool Check(checked_type p) const override {
         for (size_t i = 0; i < p.Size(); ++i) {
@@ -57,9 +58,9 @@ public:
 };
 
 class IsolatedPathCondition: public AbstractPathCondition {
-    const Graph& g_;
+    const debruijn_graph::Graph& g_;
 public:
-    IsolatedPathCondition(const Graph& g): g_(g) {}
+    IsolatedPathCondition(const debruijn_graph::Graph& g): g_(g) {}
 
     bool Check(checked_type p) const override {
         if (p.Empty())
