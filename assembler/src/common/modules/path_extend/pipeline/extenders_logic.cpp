@@ -434,7 +434,7 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
                 } else {
                     basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
                 }
-            } else if (pset.sm == sm_2015) {
+            } else if (pset.sm == scaffolding_mode::sm_2015) {
                 basic_extenders.emplace_back(lib.type(), lib_index,
                                              MakeMatePairScaffoldingExtender(lib_index,
                                                                              unique_data_.main_unique_storage_));
@@ -452,7 +452,7 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
                 scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeRNAScaffoldingExtender(lib_index));
             } else {
                 scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeScaffoldingExtender(lib_index));
-                if (pset.sm == sm_combined) {
+                if (pset.sm == scaffolding_mode::sm_combined) {
                     scaffolding_extenders.emplace_back(lib.type(), lib_index,
                                                        MakeMatePairScaffoldingExtender(lib_index,
                                                                                        unique_data_.main_unique_storage_));

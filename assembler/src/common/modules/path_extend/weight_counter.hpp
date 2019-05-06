@@ -5,20 +5,12 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * weight_counter.hpp
- *
- *  Created on: Feb 19, 2012
- *      Author: andrey
- */
-
 #ifndef WEIGHT_COUNTER_HPP_
 #define WEIGHT_COUNTER_HPP_
 
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "paired_library.hpp"
 #include <algorithm>
-#include <boost/math/special_functions/fpclassify.hpp>
 
 namespace path_extend {
 

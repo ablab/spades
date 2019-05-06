@@ -49,15 +49,6 @@ enum class pipeline_type : char {
 
 std::vector<std::string> PipelineTypeNames();
 
-enum class construction_mode : char {
-    old = 0,
-    extention,
-
-    total
-};
-
-std::vector<std::string> ConstructionModeNames();
-
 enum class resolving_mode : char {
     none = 0,
     path_extend,
@@ -298,13 +289,11 @@ struct debruijn_config {
             early_tip_clipper() : enable(false) {}
         };
 
-        construction_mode con_mode;
         early_tip_clipper early_tc;
         bool keep_perfect_loops;
         unsigned read_cov_threshold;
         size_t read_buffer_size;
         construction() :
-                con_mode(construction_mode::extention),
                 keep_perfect_loops(true),
                 read_cov_threshold(0),
                 read_buffer_size(0) {}

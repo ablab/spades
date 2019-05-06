@@ -399,7 +399,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
 
     //long reads scaffolding extenders.
     if (support_.HasLongReads()) {
-        if (params_.pset.sm == sm_old) {
+        if (params_.pset.sm == scaffolding_mode::sm_old) {
             INFO("Will not use new long read scaffolding algorithm in this mode");
         } else {
             utils::push_back_all(extenders, ConstructPBExtenders(generator));
@@ -407,7 +407,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
     }
 
     if (support_.HasMPReads()) {
-        if (params_.pset.sm == sm_old) {
+        if (params_.pset.sm == scaffolding_mode::sm_old) {
             INFO("Will not use mate-pairs is this mode");
         } else {
             utils::push_back_all(extenders, ConstructMPExtenders(generator));

@@ -8,6 +8,8 @@
 #include "pe_config_struct.hpp"
 #include "pipeline/config_common.hpp"
 
+#include <llvm/ADT/StringSwitch.h>
+
 namespace path_extend {
 
 //convert string to vector of words separated by space
@@ -35,7 +37,13 @@ std::vector<std::string> StringToVector(const std::string& s) {
 void load(scaffolding_mode &sm, boost::property_tree::ptree const& pt, std::string const& key, bool complete) {
     if (complete || pt.find(key) != pt.not_found()) {
         std::string ep = pt.get<std::string>(key);
-        sm = pe_config::scaffolding_mode_id(ep);
+        sm = llvm::StringSwitch<scaffolding_mode>(ep)
+             .Case("old", scaffolding_mode::sm_old)
+             .Case("2015", scaffolding_mode::sm_2015)
+             .Case("combined", scaffolding_mode::sm_combined)
+             .Case("old_pe_2015", scaffolding_mode::sm_old_pe_2015)
+             .Default(scaffolding_mode::undefined);
+        VERIFY_MSG(sm != scaffolding_mode::undefined, "Invalid scaffolding mode");
     }
 }
 
