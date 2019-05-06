@@ -78,12 +78,6 @@ std::vector<std::string> PipelineTypeNames() {
                     }, pipeline_type::total);
 }
 
-std::vector<std::string> ConstructionModeNames() {
-    return CheckedNames<construction_mode>({
-                    {"old", construction_mode::old},
-                    {"extension", construction_mode::extention}}, construction_mode::total);
-}
-
 std::vector<std::string> ResolveModeNames() {
     return CheckedNames<resolving_mode>({
                     {"none", resolving_mode::none},
@@ -165,14 +159,6 @@ void load(output_broken_scaffolds &obs, boost::property_tree::ptree const &pt,
     }
 }
 
-void load(construction_mode& con_mode,
-          boost::property_tree::ptree const& pt, std::string const& key,
-          bool complete) {
-    if (complete || pt.find(key) != pt.not_found()) {
-        con_mode = ModeByName<construction_mode>(pt.get<std::string>(key), ConstructionModeNames());
-    }
-}
-
 void load(debruijn_config::construction::early_tip_clipper& etc,
           boost::property_tree::ptree const& pt, bool) {
     using config_common::load;
@@ -183,7 +169,6 @@ void load(debruijn_config::construction::early_tip_clipper& etc,
 void load(debruijn_config::construction& con,
           boost::property_tree::ptree const& pt, bool complete) {
     using config_common::load;
-    load(con.con_mode, pt, "mode", complete);
     load(con.keep_perfect_loops, pt, "keep_perfect_loops", complete);
     load(con.read_buffer_size, pt, "read_buffer_size", complete);
     load(con.read_cov_threshold, pt, "read_cov_threshold", complete);

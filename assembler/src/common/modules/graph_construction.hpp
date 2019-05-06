@@ -5,12 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * graph_construction.hpp
- *
- *  Created on: Aug 12, 2011
- *      Author: sergey
- */
 #pragma once
 
 #include "pipeline/graph_pack.hpp"
@@ -111,7 +105,6 @@ template<class Graph, class Index, class Streams>
 void ConstructGraph(const config::debruijn_config::construction &params,
                     fs::TmpDir workdir, Streams& streams, Graph& g,
                     Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-    VERIFY(params.con_mode == config::construction_mode::extention);
     ConstructGraphUsingExtensionIndex(params, workdir, streams, g, index, contigs_stream);
 //  ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 }

@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * lc_config_struct.hpp
- *
- *  Created on: Aug 16, 2011
- *      Author: Alexey.Gurevich
- */
-
 #ifndef LC_CONFIG_STRUCT_HPP_
 #define LC_CONFIG_STRUCT_HPP_
 
@@ -20,66 +13,33 @@
 
 #include <boost/optional.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
-#include <boost/bimap.hpp>
 
 #include <string>
 #include <vector>
+#include <map>
 
 namespace path_extend {
 
-enum scaffolding_mode {
+enum class scaffolding_mode {
     sm_old,
     sm_2015,
     sm_combined,
-    sm_old_pe_2015
+    sm_old_pe_2015,
+    undefined
 };
 
 //Both this functions return always true, right?
 //still necessary?
 inline bool IsScaffolder2015Enabled(const scaffolding_mode mode) {
-    return (mode == sm_old_pe_2015 || mode == sm_2015 || mode == sm_combined);
+    return (mode == scaffolding_mode::sm_old_pe_2015 || mode == scaffolding_mode::sm_2015 || mode == scaffolding_mode::sm_combined);
 }
 
 inline bool IsOldPEEnabled(const scaffolding_mode mode) {
-    return (mode == sm_old_pe_2015 || mode == sm_old || mode == sm_combined);
+    return (mode == scaffolding_mode::sm_old_pe_2015 || mode == scaffolding_mode::sm_old || mode == scaffolding_mode::sm_combined);
 }
 
 // struct for path extend subproject's configuration file
 struct pe_config {
-    typedef boost::bimap<std::string, scaffolding_mode> scaffolding_mode_id_mapping;
-
-    static const scaffolding_mode_id_mapping FillSMInfo() {
-        scaffolding_mode_id_mapping::value_type info[] = {
-            scaffolding_mode_id_mapping::value_type("old", sm_old),
-            scaffolding_mode_id_mapping::value_type("2015", sm_2015),
-            scaffolding_mode_id_mapping::value_type("combined", sm_combined),
-            scaffolding_mode_id_mapping::value_type("old_pe_2015", sm_old_pe_2015)
-        };
-
-        return scaffolding_mode_id_mapping(info, utils::array_end(info));
-    }
-
-    static const scaffolding_mode_id_mapping &scaffolding_mode_info() {
-        static scaffolding_mode_id_mapping scaffolding_mode_info = FillSMInfo();
-        return scaffolding_mode_info;
-    }
-
-    static const std::string &scaffolding_mode_name(scaffolding_mode sm) {
-        auto it = scaffolding_mode_info().right.find(sm);
-        VERIFY_MSG(it != scaffolding_mode_info().right.end(),
-                   "No name for scaffolding mode id = " << sm);
-
-        return it->second;
-    }
-
-    static scaffolding_mode scaffolding_mode_id(std::string name) {
-        auto it = scaffolding_mode_info().left.find(name);
-        VERIFY_MSG(it != scaffolding_mode_info().left.end(),
-                   "There is no scaffolding mode with name = " << name);
-
-        return it->second;
-    }
-
     struct OutputParamsT {
         bool write_overlaped_paths;
         bool write_paths;

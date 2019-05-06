@@ -126,7 +126,7 @@ size_t PELaunchSupport::TotalNuclsInGraph() const {
 
 
 bool PELaunchSupport::NeedsUniqueEdgeStorage() const {
-    return !(params_.pset.sm == sm_old ||
-        (params_.pset.sm == sm_old_pe_2015 && !HasLongReadsScaffolding() && !HasMPReads()));
+    return !(params_.pset.sm == scaffolding_mode::sm_old ||
+             (params_.pset.sm == scaffolding_mode::sm_old_pe_2015 && !HasLongReadsScaffolding() && !HasMPReads()));
 }
 }
