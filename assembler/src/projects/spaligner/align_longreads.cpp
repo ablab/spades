@@ -39,14 +39,10 @@ namespace yaml {
 template<> struct MappingTraits<debruijn_graph::config::pacbio_processor> {
     static void mapping(IO& io, debruijn_graph::config::pacbio_processor& cfg) {
         io.mapRequired("internal_length_cutoff", cfg.internal_length_cutoff);
-        io.mapRequired("compression_cutoff", cfg.compression_cutoff);
         io.mapRequired("path_limit_stretching", cfg.path_limit_stretching);
         io.mapRequired("path_limit_pressing", cfg.path_limit_pressing);
-        io.mapRequired("max_path_in_dijkstra", cfg.max_path_in_dijkstra);
-        io.mapRequired("max_vertex_in_dijkstra", cfg.max_vertex_in_dijkstra);
-        io.mapRequired("long_seq_limit", cfg.long_seq_limit);
-        io.mapRequired("pacbio_min_gap_quantity", cfg.pacbio_min_gap_quantity);
-        io.mapRequired("contigs_min_gap_quantity", cfg.contigs_min_gap_quantity);
+        io.mapRequired("max_path_in_chaining", cfg.max_path_in_dijkstra);
+        io.mapRequired("max_vertex_in_chaining", cfg.max_vertex_in_dijkstra);
     }
 };
 
@@ -86,7 +82,7 @@ template<> struct MappingTraits<sensitive_aligner::GAlignerConfig> {
         io.mapRequired("run_dijkstra", cfg.gap_cfg.run_dijkstra);
         io.mapRequired("restore_ends", cfg.restore_ends);
 
-        io.mapRequired("pb", cfg.pb);
+        io.mapRequired("hits_generation", cfg.pb);
         io.mapRequired("gap_closing", cfg.gap_cfg);
         io.mapRequired("ends_recovering", cfg.ends_cfg);
     }
@@ -216,7 +212,7 @@ void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
 
     INFO("Process reads from " << cfg.path_to_sequences);
     aligner.RunAligner();
-    INFO("Thank you for using SPAligner! Results can be found: " + output_file + ".tsv")
+    INFO("Thank you for using SPAligner! Results can be found: " + output_file + ".*")
     fs::remove_dir(tmpdir);
 }
 } // namespace sensitive_aligner

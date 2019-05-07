@@ -1,17 +1,16 @@
-output_format: tsv,fasta
+output_format: tsv
+
+hits_generation:
+  internal_length_cutoff: 200
+  path_limit_stretching: 1.3
+  path_limit_pressing: 0.6
+  max_path_in_chaining: 15000
+  max_vertex_in_chaining: 5000
+
+################## nucleotide sequences alignment parameters
+
 run_dijkstra: true
 restore_ends: true
-
-pb:
-  internal_length_cutoff: 200
-  compression_cutoff: 0.6
-  path_limit_stretching: 1.3
-  path_limit_pressing: 0.7
-  max_path_in_dijkstra: 15000
-  max_vertex_in_dijkstra: 5000
-  long_seq_limit: 400
-  pacbio_min_gap_quantity: 2
-  contigs_min_gap_quantity: 1
 
 gap_closing:
   queue_limit: 1000000
