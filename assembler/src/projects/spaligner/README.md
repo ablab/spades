@@ -4,26 +4,21 @@ SPAligner performs fast and accurate alignment of molecular sequences to assembl
 
 It can be used to align both nucleotide and amino acid sequences, e.g. long reads, coding sequences and proteins.
 
-## Compilation
+## <a name="started"></a>Getting started
 
-    git clone https://github.com/ablab/spades.git
-    cd algorithmic-biology/assembler/
-    mkdir build && cd build && cmake ../src
-    make spaligner
+### <a name="running"></a>Running SPAligner
 
-
-## Running SPAligner
-
-    spaligner spaligner_config.yaml \
-              -K 77 -d pacbio \
-              -g assembly_graph.gfa \
-              -s pacbio_reads.fastq.gz
+    spaligner spaligner_config.yaml # config file \ 
+              -d pacbio # data type: pacbio, nanopore or protein \
+              -g assembly_graph.gfa # gfa-file with assembly graph \
+              -K 77 # graph K-mer size \
+              -s pacbio_reads.fastq.gz # sequences to align in fasta/fastq formats
 
 By default, spaligner_config.yaml will be installed into /usr/share/spaligner/. 
-For nucleotide sequences alignments will be saved to spaligner_output.tsv by default.
-For amino acid sequences SPAligner will also produce files in fasta format with nucleotide and amino acid alignments representation.
+For nucleotide sequences, alignments will be saved to spaligner_output.tsv by default.
+For amino acid sequences, SPAligner will also produce files in fasta format with nucleotide and amino acid alignments representation.
 
-## Output
+### <a name="output"></a>Output
 
 SPAligner can represent the results in three formats: *.tsv (default), *.fasta and [*.gpa](https://github.com/ocxtal/gpa "GPA-format spec").
 
@@ -33,7 +28,30 @@ SPAligner can represent the results in three formats: *.tsv (default), *.fasta a
     spaligner_output.gpa              alignment stored in gpa-format
 
 
-## Results interpretation
+## Table of Contents
+- [Getting started](#started)
+    - [Running SPAligner](#running)
+    - [Output](#output)
+- [Compilation](#compilation)
+- [Results interpretation](#interpretation)
+- [Algorithm overview](#algorithm)
+    - [Long nucleotide sequence alignment pipeline](#longnuc)
+    - [Amino-acid sequence alignment pipeline](#longaa)
+- [Parameters tuning](#parameters)
+    - [Nucleotide sequence alignment](#nucparams)
+    - [Amino acid sequence alignment](#aaparams)
+    - [Dijskstra run parameters](#dparams)
+- [Contacts](#contacts)
+
+## <a name="compilation"></a>Compilation
+
+    git clone https://github.com/ablab/spades.git
+    cd algorithmic-biology/assembler/
+    mkdir build && cd build && cmake ../src
+    make spaligner
+
+
+## <a name="interpretation"></a>Results interpretation
 
 Name of each record in fasta files shows information about alignment position on graph and on sequence. 
 
@@ -94,8 +112,8 @@ Path sequence: TTATCCGGG.
 
 If a sequence was not fully aligned, SPAligner tries to prolong the longest alignment subpath in order to reconstruct a full alignment path. In **Example 2** SPAligner was not able to prolong any of two given alignments.
 
-
-## Long nucleotide sequence alignment pipeline
+## <a name="algorithm"></a>Algorithm overview
+### <a name="longnuc"></a>Long nucleotide sequence alignment pipeline
 
 Overview of the alignment of the nucleotide query sequence *S* (orange bar) to assembly graph *G*. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
 
@@ -106,7 +124,7 @@ Overview of the alignment of the nucleotide query sequence *S* (orange bar) to a
 3. **Hit chaining.** Heaviest chain of compatible hits (chain 1->3->2) is determined.
 4. **Reconstruction of filling paths.** Paths for fragments of the query between the consecutive chain hits (as well as left- and right-most fragments) are reconstructed. The procedure is performed using fast library for sequence alignment [Edlib](https://github.com/Martinsos/edlib).
 
-## Amino-acid sequence alignment pipeline
+### <a name="longaa"></a>Amino-acid sequence alignment pipeline
 
 Overview of the alignment of the amino-acid query sequence *S* (orange bar) to assembly graph *G*. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
 
@@ -117,11 +135,11 @@ Overview of the alignment of the amino-acid query sequence *S* (orange bar) to a
 3. **Alignment extension.** Search of an optimal alignments extending each of the remaining hits.
 4. **Alignment scoring.** Obtained alignment paths are re-scored via [Parasail library](https://github.com/jeffdaily/parasail) for fast amino acid sequence alignment.
 
-## Parameters tuning
+## <a name="parameters"></a>Parameters tuning
 
 Full list of parameters can be found in spaligner_config.yaml. 
 
-### Nucleotide sequence alignment
+### <a name="nucparams"></a> Nucleotide sequence alignment
 
 * `run_dijkstra: true` Run Dijkstra algorithm to find alignment between hits, if `run_dijkstra=false`, SPAligner will check limited number of paths and return the best one.
 * `restore_ends: true` Restore alignment path before leftmost hit and after rightmost hit.
@@ -129,40 +147,40 @@ Full list of parameters can be found in spaligner_config.yaml.
 
 * `internal_length_cutoff: 200` BWA hits with length < internal_length_cutoff will be filtered out.
 * `path_limit_stretching: 1.3` Pair of hits is considered to be compatible if (the minimal distance between them in graph) 
-                                < path_limit_stretching * (the distance between their positions on sequence).
+                                < `path_limit_stretching` * (the distance between their positions on sequence).
 * `path_limit_pressing: 0.7` Pair of hits is considered to be compatible if (the minimal distance between them in graph) 
-                                > path_limit_pressing * (the distance between their positions on sequence).
+                                > `path_limit_pressing` * (the distance between their positions on sequence).
 * `max_path_in_chaining: 15000` Limit on number of paths to consider between two hits on hits chaining step.
 * `max_vertex_in_chaining: 5000` Limit on number of vertices to consider between two hits on hits chaining step.
 
 
-### Amino acid sequence alignment
+### <a name="aaparams"></a>Amino acid sequence alignment
 
 * `stop_codon: true` Algorithm doesn't extend alignment from states with stop codon triplets.
-* `min_alignment_len: 0.8` Return only alignment with length > min_alignment_len * (query sequence length).
+* `min_alignment_len: 0.8` Return only alignment with `length > min_alignment_len * (query sequence length)`.
 * `penalty_matrix: blosum62` Substitution matrix name (supports BLOSUM and PAM matrices).
-* `indel_score: 5` Penalty for insertions and deletions equals to (max value in penalty_matrix) + indel_score.
+* `indel_score: 5` Penalty for insertions and deletions equals to `(max value in penalty_matrix) + indel_score`.
 
 
-### Dijskstra run parameters
+### <a name="dparams"></a>Dijskstra run parameters
 
 * `queue_limit: 1000000` Limit on queue length. 
 * `iteration_limit: 1000000` Limit on total number of queue extraction. 
 * `updates_limit: 1000000` Limit on number of updates of shortest distance for all states.
 * `find_shortest_path: true` If `find_shortest_path=false` Dijkstra algorithm will stop when it reaches finish state without searching for shortest path.
 * `restore_mapping: false` If `restore_mapping=true` Dijkstra algorithm will return full alignment information (used by for developers).
-* `penalty_ratio: 0.1` Algorithm never considers states representing an alignment of a prefix S[0:i] with score more than min_score(i) + i*penalty_ratio (for nucleotide sequence alignment only).
-* `max_ed_proportion: 3` Maximal edit distance is bounded by a fraction of the query sequence length |S|/max_ed_proportion. Increase of max_ed_proportion leads to shorter alignments but with higer identity.
+* `penalty_ratio: 0.1` Algorithm never considers states representing an alignment of a prefix `S[0:i]` with score more than `min_score(i) + i*penalty_ratio` (for nucleotide sequence alignment only).
+* `max_ed_proportion: 3` Maximal edit distance is bounded by a fraction of the query sequence length `|S|/max_ed_proportion`. Increase of `max_ed_proportion` leads to shorter alignments but with higer identity.
 * `ed_lower_bound: 500` Minimal penalty score of alignment.
 * `ed_upper_bound: 2000` Maximal penalty score of alignment.
-* `max_gs_states: 120000000` If number of queue states exceeds max_gs_limit then shortest path search is not performed (for nucleotide sequence alignment only).
-* `max_restorable_length: 5000` If distance between two hits or between leftmost/rightmost hit and start/end exceeds max_restorable_length then shortest path search is not performed.
+* `max_gs_states: 120000000` If number of queue states exceeds `max_gs_limit` then shortest path search is not performed (for nucleotide sequence alignment only).
+* `max_restorable_length: 5000` If distance between two hits or between leftmost/rightmost hit and start/end exceeds `max_restorable_length` then shortest path search is not performed.
 
-Increase of max_gs_states, max_restorable_length, queue_limit, iteration_limit or updates_limit may lead to longer alignments with the same identity level, but slows down the process and can use much more memory.
+Increase of `max_gs_states`, `max_restorable_length`, `queue_limit`, `iteration_limit` or `updates_limit` may lead to longer alignments with the same identity level, but slows down the process and can use much more memory.
 
-Turning off restore_ends or run_dijkstra in nucleotide sequence alignment mode leads to shorter alignments, but considerable speed-up.
+Turning off `restore_ends` or `run_dijkstra` in nucleotide sequence alignment mode leads to shorter alignments, but considerable speed-up.
 
 
-## Contacts
+## <a name="contacts"></a> Contacts
 
-For any questions or suggestions please create an issue or do not hesitate to contact Tatiana Dvorkina <tanunia@gmail.com> directly.
+For any questions or suggestions please do not hesitate to contact Tatiana Dvorkina <tanunia@gmail.com>.
