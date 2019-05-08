@@ -235,7 +235,7 @@ void Launch(GAlignerConfig &cfg, const string output_dir, int threads) {
 
     INFO("Process sequences from " << cfg.path_to_sequences);
     aligner.RunAligner();
-    INFO("Thank you for using SPAligner! Results can be found: " + output_dir )
+    INFO("Thank you for using SPAligner! Results can be found here: " + output_dir )
     fs::remove_dir(tmpdir);
 }
 } // namespace sensitive_aligner
