@@ -114,13 +114,13 @@ class LongReadsAligner {
     LongReadsAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
                      const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
                      const GAlignerConfig &cfg,
-                     const string output_file,
+                     const string output_dir,
                      const int threads)
         :g_(g),
          cfg_(cfg),
          galigner_(g_, cfg),
          threads_(threads),
-         mapping_printer_hub_(g_, cfg.data_type, edge_namer, output_file, cfg.output_format) {
+         mapping_printer_hub_(g_, cfg.data_type, edge_namer, output_dir, cfg.output_format) {
         aligned_reads_ = 0;
         processed_reads_ = 0;
     }
@@ -222,7 +222,7 @@ void LoadGraph(const string &saves_path, debruijn_graph::ConjugateDeBruijnGraph 
     }
 }
 
-void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
+void Launch(GAlignerConfig &cfg, const string output_dir, int threads) {
     string tmpdir = fs::make_temp_dir(fs::current_dir(), "tmp");
     debruijn_graph::ConjugateDeBruijnGraph g(cfg.K);
     io::IdMapper<std::string> id_mapper;
@@ -230,12 +230,12 @@ void Launch(GAlignerConfig &cfg, const string output_file, int threads) {
     io::CanonicalEdgeHelper<debruijn_graph::Graph> edge_namer(g, io::MapNamingF<debruijn_graph::Graph>(id_mapper));
     INFO("Loaded graph with " << g.size() << " vertices");
 
-    LongReadsAligner aligner(g, edge_namer, cfg, output_file, threads);
+    LongReadsAligner aligner(g, edge_namer, cfg, output_dir, threads);
     INFO("LongSequenceAligner created");
 
     INFO("Process sequences from " << cfg.path_to_sequences);
     aligner.RunAligner();
-    INFO("Thank you for using SPAligner! Results can be found: " + output_file + ".*")
+    INFO("Thank you for using SPAligner! Results can be found: " + output_dir )
     fs::remove_dir(tmpdir);
 }
 } // namespace sensitive_aligner
@@ -252,8 +252,8 @@ int main(int argc, char **argv) {
     ("d,datatype", "type of sequences: nanopore, pacbio or protein", cxxopts::value<string>(seq_type))
     ("s,seq", "path to fasta/fastq file with sequences", cxxopts::value<string>(config.path_to_sequences))
     ("g,graph", "path to gfa-file or SPAdes saves folder", cxxopts::value<string>(config.path_to_graphfile))
-    ("o,outfile", "Output file prefix", cxxopts::value<string>(output_file)->default_value("./spaligner_output"), "prefix")
-    ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(to_string(min(omp_get_max_threads(), 16))), "threads")
+    ("o,outdir", "Output directory", cxxopts::value<string>(output_file)->default_value("./spaligner_result"))
+    ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(to_string(min(omp_get_max_threads(), 8))), "threads")
     ("h,help", "Print help");
 
     options.add_options("Input")

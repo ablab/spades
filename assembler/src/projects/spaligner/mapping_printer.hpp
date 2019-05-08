@@ -11,7 +11,6 @@
 #include "modules/alignment/pacbio/g_aligner.hpp"
 #include "io/id_mapper.hpp"
 
-
 #include <fstream>
 
 namespace sensitive_aligner {
@@ -21,8 +20,8 @@ class MappingPrinter {
 
   MappingPrinter(const debruijn_graph::ConjugateDeBruijnGraph &g,
                  const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                 const std::string &output_file_prefix)
-    : g_(g), edge_namer_(edge_namer), output_file_prefix_(output_file_prefix)
+                 const std::string &output_dir)
+    : g_(g), edge_namer_(edge_namer), output_dir_(output_dir)
   {}
 
   virtual void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) = 0;
@@ -35,7 +34,7 @@ class MappingPrinter {
 
   const debruijn_graph::ConjugateDeBruijnGraph &g_;
   const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer_;
-  std::string output_file_prefix_;
+  std::string output_dir_;
   std::ofstream output_file_;
 };
 
@@ -43,9 +42,10 @@ class MappingPrinterTSV: public MappingPrinter {
  public:
   MappingPrinterTSV(const debruijn_graph::ConjugateDeBruijnGraph &g,
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                    const std::string &output_file_prefix)
-    : MappingPrinter(g, edge_namer, output_file_prefix) {
-    output_file_.open(output_file_prefix_ + ".tsv", std::ofstream::out);
+                    const std::string &output_dir)
+    : MappingPrinter(g, edge_namer, output_dir) {
+    fs::make_dirs(output_dir_);
+    output_file_.open(output_dir_ + "/alignment.tsv", std::ofstream::out);
   }
 
   void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) override;
@@ -60,9 +60,10 @@ class MappingPrinterFasta: public MappingPrinter {
  public:
   MappingPrinterFasta(const debruijn_graph::ConjugateDeBruijnGraph &g,
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                    const std::string &output_file_prefix)
-    : MappingPrinter(g, edge_namer, output_file_prefix) {
-    output_file_.open(output_file_prefix_ + ".fasta", std::ofstream::out);
+                    const std::string &output_dir)
+    : MappingPrinter(g, edge_namer, output_dir) {
+    fs::make_dirs(output_dir_);
+    output_file_.open(output_dir_ + "/alignment.fasta", std::ofstream::out);
   }
 
   void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) override;
@@ -76,9 +77,10 @@ class MappingPrinterAAFasta: public MappingPrinter {
  public:
   MappingPrinterAAFasta(const debruijn_graph::ConjugateDeBruijnGraph &g,
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                    const std::string &output_file_prefix)
-    : MappingPrinter(g, edge_namer, output_file_prefix) {
-    output_file_.open(output_file_prefix_ + "_protein.fasta", std::ofstream::out);
+                    const std::string &output_dir)
+    : MappingPrinter(g, edge_namer, output_dir) {
+    fs::make_dirs(output_dir_);
+    output_file_.open(output_dir_ + "/alignment_protein.fasta", std::ofstream::out);
   }
 
   void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) override;
@@ -92,9 +94,10 @@ class MappingPrinterGPA : public MappingPrinter {
  public:
   MappingPrinterGPA(const debruijn_graph::ConjugateDeBruijnGraph &g,
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                    const std::string &output_file_prefix)
-    : MappingPrinter(g, edge_namer, output_file_prefix) {
-    output_file_.open(output_file_prefix_ + ".gpa", std::ofstream::out);
+                    const std::string &output_dir)
+    : MappingPrinter(g, edge_namer, output_dir) {
+    fs::make_dirs(output_dir_);
+    output_file_.open(output_dir_ + "/alignment.gpa", std::ofstream::out);
     output_file_ << "H\n";
   }
 
@@ -131,19 +134,19 @@ class MappingPrinterHub {
   MappingPrinterHub(const debruijn_graph::ConjugateDeBruijnGraph &g,
                     const alignment::BWAIndex::AlignmentMode mode,
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                    const std::string &output_file_prefix,
+                    const std::string &output_dir,
                     const std::string formats) {
     if (formats.find("tsv") != std::string::npos) {
-      mapping_printers_.push_back(new MappingPrinterTSV(g, edge_namer, output_file_prefix));
+      mapping_printers_.push_back(new MappingPrinterTSV(g, edge_namer, output_dir));
     }
     if (formats.find("gpa") != std::string::npos) {
-      mapping_printers_.push_back(new MappingPrinterGPA(g, edge_namer, output_file_prefix));
+      mapping_printers_.push_back(new MappingPrinterGPA(g, edge_namer, output_dir));
     }
     if (mode == alignment::BWAIndex::AlignmentMode::Protein || formats.find("fasta") != std::string::npos) {
-      mapping_printers_.push_back(new MappingPrinterFasta(g, edge_namer, output_file_prefix));
+      mapping_printers_.push_back(new MappingPrinterFasta(g, edge_namer, output_dir));
     }
     if (mode == alignment::BWAIndex::AlignmentMode::Protein) {
-      mapping_printers_.push_back(new MappingPrinterAAFasta(g, edge_namer, output_file_prefix));
+      mapping_printers_.push_back(new MappingPrinterAAFasta(g, edge_namer, output_dir));
     }
   }
 
