@@ -59,7 +59,7 @@ Name of each record in fasta files shows information about alignment position on
 **Example 1**
 
 ```
->name|Edges=1-,2+,5+|start_g=3283|end_g=35|start_s=0|end_s=291|score=570
+>name|Edges=1-,2+,5+|start_g=3283|end_g=35|start_s=0|end_s=291|score=570|type=EXACT
 ATGAAAATCACTCCTGAACAGGCTCGTGAGGCTCTGGATGCCTGGATATGTCGACCAGGAATGACACAGGAGCAGGCGACGATATTAATCACTGAAGCATTCTGGGCTTTGAAAGAGCGCCCGAACATCGATGTTCAGCGTGTCACATATGAAGGTGGCGCGATTGATCAGCGAGCGCTTGGCGTTAATCGAGTGAAGATATTTGAACGCTGGAAGGCTATCGACACCAGGGATAAGC
 GTGAAAAGTTCACGGCGCTAGTGCCTGCAATTATGGAGGCTACCACTGGATGA
 ```
@@ -70,7 +70,8 @@ name — sequence name<br/>
 35 —  end position of alignment on the last edge of the path (here on edge with id=5)<br/>
 0 — start position of alignment on sequence<br/>
 291 — end position of  alignment on sequence<br/>
-570 — alignment score (for amino acid sequences)<br/>
+570 — alignment score (only for amino acid alignment)<br/>
+EXACT — type of resulting alignment: EXACT if amino acid sequence is identical to amino acid alignment sequence, FULL if sequence aligned fully but not indetically and PARTIAL if only a part of sequence aligned (only for amino acid alignment) <br/>
 
 
 Each line in tsv-file represents alignments of a single sequence.

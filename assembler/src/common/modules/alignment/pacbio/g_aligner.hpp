@@ -22,13 +22,15 @@ struct OneReadMapping {
   std::vector<GapDescription> gaps;
   std::vector<PathRange> read_ranges;
   std::vector<int> scores;
+  std::vector<std::string> aln_type;
 
   OneReadMapping(const std::vector<std::vector<debruijn_graph::EdgeId>> &edge_paths_,
                  const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> &bwa_paths_,
                  const std::vector<GapDescription>& gaps_,
                  const std::vector<PathRange> &read_ranges_,
-                 const std::vector<int> &scores_ = std::vector<int>()) :
-    edge_paths(edge_paths_), bwa_paths(bwa_paths_), gaps(gaps_), read_ranges(read_ranges_), scores(scores_) {}
+                 const std::vector<int> &scores_ = std::vector<int>(),
+                 const std::vector<std::string> &aln_type_ = std::vector<std::string>()) :
+    edge_paths(edge_paths_), bwa_paths(bwa_paths_), gaps(gaps_), read_ranges(read_ranges_), scores(scores_), aln_type(aln_type_) {}
 };
 
 typedef std::pair<QualityRange, int> ColoredRange;
@@ -101,6 +103,6 @@ class GAligner {
                    std::vector<debruijn_graph::EdgeId> &sorted_edges,
                    PathRange &cur_range) const;
 
-  int FindScore(const PathRange &range, const std::vector<debruijn_graph::EdgeId> &edges, const Sequence &s) const;
+  std::pair<int, std::string> FindScore(const PathRange &range, const std::vector<debruijn_graph::EdgeId> &edges, const Sequence &s) const;
 };
 }
