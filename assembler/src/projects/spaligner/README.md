@@ -4,32 +4,33 @@ SPAligner performs fast and accurate alignment of molecular sequences to assembl
 
 It can be used to align both nucleotide and amino acid sequences, e.g. long reads, coding sequences and proteins.
 
-## <a name="started"></a>Getting started
+## <a name="started"></a>TL;DR
 
 ### <a name="running"></a>Running SPAligner
 
-    spaligner spaligner_config.yaml # config file \ 
-              -d pacbio # data type: pacbio, nanopore or protein \
-              -g assembly_graph.gfa # gfa-file with assembly graph \
-              -K 77 # graph K-mer size \
-              -s pacbio_reads.fastq.gz # sequences to align in fasta/fastq formats
+    spaligner spaligner_config.yaml \    # config file 
+              -d pacbio \                # data type: pacbio, nanopore or protein
+              -g assembly_graph.gfa \    # gfa-file with assembly graph 
+              -K 77 \                    # graph K-mer size
+              -s pacbio_reads.fastq.gz \ # sequences to align in fasta/fastq formats
+              -t 8                       # number of threads
 
 By default, spaligner_config.yaml will be installed into /usr/share/spaligner/. 
-For nucleotide sequences, alignments will be saved to spaligner_output.tsv by default.
+For nucleotide sequences, alignments will be saved to spaligner_result/alignment.tsv by default.
 For amino acid sequences, SPAligner will also produce files in fasta format with nucleotide and amino acid alignments representation.
 
 ### <a name="output"></a>Output
 
 SPAligner can represent the results in three formats: *.tsv (default), *.fasta and [*.gpa](https://github.com/ocxtal/gpa "GPA-format spec").
 
-    spaligner_output.tsv              tab-separated file with alignments information, each line represents an alignment of a single sequence
-    spaligner_output.fasta            each record represents alignment of a sequence onto assembly graph
-    spaligner_output_protein.fasta    each record represents translated alignment of a sequence onto assembly graph
-    spaligner_output.gpa              alignment stored in gpa-format
+    spaligner_result/alignment.tsv              tab-separated file with alignments information, each line represents an alignment of a single sequence
+    spaligner_result/alignment.fasta            each record represents alignment of a sequence onto assembly graph
+    spaligner_result/alignment_protein.fasta    each record represents translated alignment of a sequence onto assembly graph
+    spaligner_result/alignment.gpa              alignment stored in gpa-format
 
 
 ## Table of Contents
-- [Getting started](#started)
+- [TL;DR](#started)
     - [Running SPAligner](#running)
     - [Output](#output)
 - [Compilation](#compilation)
@@ -40,7 +41,7 @@ SPAligner can represent the results in three formats: *.tsv (default), *.fasta a
 - [Parameters tuning](#parameters)
     - [Nucleotide sequence alignment](#nucparams)
     - [Amino acid sequence alignment](#aaparams)
-    - [Dijskstra run parameters](#dparams)
+    - [Internal run parameters](#dparams)
 - [Contacts](#contacts)
 
 ## <a name="compilation"></a>Compilation
@@ -141,11 +142,11 @@ Full list of parameters can be found in spaligner_config.yaml.
 
 ### <a name="nucparams"></a> Nucleotide sequence alignment
 
-* `run_dijkstra: true` Run Dijkstra algorithm to find alignment between hits, if `run_dijkstra=false`, SPAligner will check limited number of paths and return the best one.
+* `run_dijkstra: true` Run Dijkstra algorithm to find alignment between hits, if `run_dijkstra: false`, SPAligner will check limited number of paths and return the best one.
 * `restore_ends: true` Restore alignment path before leftmost hit and after rightmost hit.
 
 
-* `internal_length_cutoff: 200` BWA hits with length < internal_length_cutoff will be filtered out.
+* `internal_length_cutoff: 200` Hits with length < `internal_length_cutoff` will be filtered out.
 * `path_limit_stretching: 1.3` Pair of hits is considered to be compatible if (the minimal distance between them in graph) 
                                 < `path_limit_stretching` * (the distance between their positions on sequence).
 * `path_limit_pressing: 0.7` Pair of hits is considered to be compatible if (the minimal distance between them in graph) 
@@ -156,19 +157,19 @@ Full list of parameters can be found in spaligner_config.yaml.
 
 ### <a name="aaparams"></a>Amino acid sequence alignment
 
-* `stop_codon: true` Algorithm doesn't extend alignment from states with stop codon triplets.
+* `stop_codon: true` Algorithm do not try to extend the alignment through stop codons.
 * `min_alignment_len: 0.8` Return only alignment with `length > min_alignment_len * (query sequence length)`.
-* `penalty_matrix: blosum62` Substitution matrix name (supports BLOSUM and PAM matrices).
+* `penalty_matrix: blosum62` Substitution matrix name (supports a number of [BLOSUM and PAM matrices](https://github.com/jeffdaily/parasail/tree/master/parasail/matrices)).
 * `indel_score: 5` Penalty for insertions and deletions equals to `(max value in penalty_matrix) + indel_score`.
 
 
-### <a name="dparams"></a>Dijskstra run parameters
+### <a name="dparams"></a>Internal run parameters
 
 * `queue_limit: 1000000` Limit on queue length. 
 * `iteration_limit: 1000000` Limit on total number of queue extraction. 
 * `updates_limit: 1000000` Limit on number of updates of shortest distance for all states.
-* `find_shortest_path: true` If `find_shortest_path=false` Dijkstra algorithm will stop when it reaches finish state without searching for shortest path.
-* `restore_mapping: false` If `restore_mapping=true` Dijkstra algorithm will return full alignment information (used by for developers).
+* `find_shortest_path: true` If `find_shortest_path: false` Dijkstra algorithm will stop when it reaches finish state without searching for shortest path.
+* `restore_mapping: false` If `restore_mapping: true` Dijkstra algorithm will return full alignment information (used by for developers).
 * `penalty_ratio: 0.1` Algorithm never considers states representing an alignment of a prefix `S[0:i]` with score more than `min_score(i) + i*penalty_ratio` (for nucleotide sequence alignment only).
 * `max_ed_proportion: 3` Maximal edit distance is bounded by a fraction of the query sequence length `|S|/max_ed_proportion`. Increase of `max_ed_proportion` leads to shorter alignments but with higer identity.
 * `ed_lower_bound: 500` Minimal penalty score of alignment.
@@ -176,7 +177,7 @@ Full list of parameters can be found in spaligner_config.yaml.
 * `max_gs_states: 120000000` If number of queue states exceeds `max_gs_limit` then shortest path search is not performed (for nucleotide sequence alignment only).
 * `max_restorable_length: 5000` If distance between two hits or between leftmost/rightmost hit and start/end exceeds `max_restorable_length` then shortest path search is not performed.
 
-Increase of `max_gs_states`, `max_restorable_length`, `queue_limit`, `iteration_limit` or `updates_limit` may lead to longer alignments with the same identity level, but slows down the process and can use much more memory.
+Increase of `max_gs_states`, `max_restorable_length`, `queue_limit`, `iteration_limit` or `updates_limit` may lead to longer alignments with the same identity level, but slows down the process and can use much more memory. Please change them if you 100% confident in what you are doing.
 
 Turning off `restore_ends` or `run_dijkstra` in nucleotide sequence alignment mode leads to shorter alignments, but considerable speed-up.
 
