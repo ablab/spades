@@ -58,7 +58,8 @@ void assemble_genome() {
 
     INFO("Starting from stage: " << cfg::get().entry_point);
 
-    StageManager SPAdes(SavesPolicy(cfg::get().checkpoints, cfg::get().output_saves));
+    StageManager SPAdes(SavesPolicy(cfg::get().checkpoints,
+                                    cfg::get().output_saves, cfg::get().load_from));
 
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
     INFO("Two-step RR enabled: " << two_step_rr);

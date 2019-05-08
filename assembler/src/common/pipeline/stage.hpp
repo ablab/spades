@@ -155,12 +155,15 @@ public:
             : checkpoints_(Checkpoints::None), saves_path_("") {
     }
 
-    SavesPolicy(Checkpoints checkpoints, const std::string &saves_path)
+    SavesPolicy(Checkpoints checkpoints,
+                const std::string &saves_path, const std::string &load_path = "")
             : checkpoints_(checkpoints), saves_path_(saves_path) {
+        load_path_ = (load_path == "" ? saves_path_ : load_path);
     }
 
     Checkpoints EnabledCheckpoints() const { return checkpoints_; }
     const std::string & SavesPath() const { return saves_path_; }
+    const std::string & LoadPath() const { return load_path_; }
 
     std::string GetLastCheckpoint() const {
         std::string res;
@@ -177,6 +180,7 @@ private:
 
     Checkpoints checkpoints_;
     std::string saves_path_;
+    std::string load_path_;
 };
 
 class StageManager {

@@ -100,7 +100,7 @@ void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
             std::string composite_id(id());
             composite_id += ":";
             composite_id += prev_phase->id();
-            prev_phase->load(gp, parent_->saves_policy().SavesPath(), composite_id.c_str());
+            prev_phase->load(gp, parent_->saves_policy().LoadPath(), composite_id.c_str());
 
         }
     }
@@ -150,7 +150,7 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
             }
         }
         if (start_stage != stages_.begin())
-            (*std::prev(start_stage))->load(g, saves_policy_.SavesPath());
+            (*std::prev(start_stage))->load(g, saves_policy_.LoadPath());
     }
 
     for (; start_stage != stages_.end(); ++start_stage) {
