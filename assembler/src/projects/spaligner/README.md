@@ -15,7 +15,7 @@ It can be used to align both nucleotide and amino acid sequences, e.g. long read
               -s pacbio_reads.fastq.gz \ # sequences to align in fasta/fastq formats
               -t 8                       # number of threads
 
-By default, spaligner_config.yaml will be installed into /usr/share/spaligner/. 
+By default, spaligner_config.yaml will be installed into /usr/share/spaligner/ or can be found in algorithmic-biology/assembler/projects/spaligner/.
 For nucleotide sequences, alignments will be saved to spaligner_result/alignment.tsv by default.
 For amino acid sequences, SPAligner will also produce files in fasta format with nucleotide and amino acid alignments representation.
 
