@@ -1,3 +1,10 @@
+//***************************************************************************
+//* Copyright (c) 2015-2019 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "scaffold_graph_construction_pipeline.hpp"
 #include "barcode_index/scaffold_vertex_index_builder.hpp"
 #include "containment_index_threshold_finder.hpp"

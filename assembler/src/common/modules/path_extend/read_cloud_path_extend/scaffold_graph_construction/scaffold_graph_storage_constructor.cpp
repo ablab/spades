@@ -1,3 +1,10 @@
+//***************************************************************************
+//* Copyright (c) 2015-2019 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "read_cloud_path_extend/statistics/cloud_check_statistics.hpp"
 #include "scaffold_graph_storage_constructor.hpp"
 #include "read_cloud_path_extend/validation/scaffold_graph_validation.hpp"

@@ -1,3 +1,10 @@
+//***************************************************************************
+//* Copyright (c) 2015-2019 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "common/barcode_index/cluster_storage/cluster_storage_helper.hpp"
 #include "cloud_check_statistics.hpp"
 #include "component_validation.hpp"

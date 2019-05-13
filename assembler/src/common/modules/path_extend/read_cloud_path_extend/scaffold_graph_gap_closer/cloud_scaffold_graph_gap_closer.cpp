@@ -1,3 +1,10 @@
+//***************************************************************************
+//* Copyright (c) 2015-2019 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "cloud_scaffold_graph_gap_closer.hpp"
 #include "pipeline/extenders_logic.hpp"
 

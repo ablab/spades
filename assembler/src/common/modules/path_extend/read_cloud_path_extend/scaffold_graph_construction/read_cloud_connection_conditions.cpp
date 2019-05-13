@@ -1,3 +1,10 @@
+//***************************************************************************
+//* Copyright (c) 2015-2019 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "read_cloud_connection_conditions.hpp"
 #include "read_cloud_path_extend/read_cloud_dijkstras.hpp"
 #include "read_cloud_path_extend/path_extend_dijkstras.hpp"
@@ -306,10 +313,6 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
                                                                                          short_edge_score_function);
     auto scaffold_vertex_predicate = ConstructScaffoldVertexPredicate(start, end, pair_entry_processor);
 
-//    auto recording_pair_entry_processor = make_shared<path_extend::RecordingPairEntryProcessor>(start_entry, end_entry,
-//                                                                                                pair_entry_processor);
-//    auto recording_scaffold_vertex_predicate = ConstructScaffoldVertexPredicate(start, end, recording_pair_entry_processor);
-
     path_extend::QueueContainer paths_container;
     BidirectionalPath* initial_path = start.ToPath(gp_.g);
     DEBUG("Initial path id: " << initial_path->GetId());
@@ -328,8 +331,6 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
     searching_extenders.push_back(basic_extender);
     if (scaffolding_mode_) {
         auto scaffolding_chooser = ConstructScaffoldingExtensionChooser();
-//        auto scaffolding_multi_chooser =
-//            make_shared<path_extend::PredicateExtensionChooser>(gp_.g, recording_scaffold_vertex_predicate, scaffolding_chooser);
         auto scaffolding_extender = ConstructScaffoldingSearchingExtender(paths_container, cover_map,
                                                                           scaffolding_chooser);
         DEBUG("Constructed scaffolding extender");

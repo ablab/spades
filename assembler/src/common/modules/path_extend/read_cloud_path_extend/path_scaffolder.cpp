@@ -1,3 +1,10 @@
+//***************************************************************************
+//* Copyright (c) 2015-2019 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "common/assembly_graph/contracted_graph/contracted_statistics.hpp"
 #include "common/assembly_graph/contracted_graph/graph_condensation.hpp"
 #include "common/pipeline/config_struct.hpp"

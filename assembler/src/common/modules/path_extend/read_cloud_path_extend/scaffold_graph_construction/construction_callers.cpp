@@ -1,3 +1,10 @@
+//***************************************************************************
+//* Copyright (c) 2015-2019 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "read_cloud_path_extend/scaffold_graph_extractor.hpp"
 #include "common/pipeline/graph_pack.hpp"
 #include "common/assembly_graph/graph_support/scaff_supplementary.hpp"

@@ -1,3 +1,10 @@
+//***************************************************************************
+//* Copyright (c) 2015-2019 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "read_cloud_path_extend/validation/transition_extractor.hpp"
 #include "perfect_clouds.hpp"
 #include "common/barcode_index/cluster_storage/cluster_storage_helper.hpp"
