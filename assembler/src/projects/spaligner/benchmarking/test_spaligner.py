@@ -8,18 +8,18 @@ import edlib
 
 import argparse
 
-TRUE_PERFORMANCE = {"ecoli": {"realpb": "89% 87%",
+TRUE_PERFORMANCE = {"ecoli": {"realpb": "88% 87%",
                               "realnp": "86% 87%",
                               "simpb": "99% 83%",
                               "simnp": "96% 88%"}, 
-                    "scerevisiae": {"realpb": "62% 83%",
-                              "realnp": "62% 83%",
-                              "simpb": "99% 83%",
-                              "simnp": "86% 83%"}, 
-                    "celegans": {"realpb": "86% 87%",
-                              "realnp": "66% 87%",
+                    "scerevisiae": {"realpb": "56% 83%",
+                              "realnp": "61% 83%",
                               "simpb": "98% 83%",
-                              "simnp": "89% 87%"} }
+                              "simnp": "85% 83%"},
+                    "celegans": {"realpb": "84% 87%",
+                              "realnp": "65% 87%",
+                              "simpb": "98% 83%",
+                              "simnp": "88% 88%"} }
 
 def edist(lst):
     result = edlib.align(str(lst[0]), str(lst[1]), mode="NW", additionalEqualities=[('U', 'T')
