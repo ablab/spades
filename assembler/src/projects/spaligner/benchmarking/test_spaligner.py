@@ -8,18 +8,18 @@ import edlib
 
 import argparse
 
-TRUE_PERFORMANCE = {"ecoli": {"realpb": "89% 87%",
+TRUE_PERFORMANCE = {"ecoli": {"realpb": "88% 87%",
                               "realnp": "86% 87%",
                               "simpb": "99% 83%",
                               "simnp": "96% 88%"}, 
-                    "scerevisiae": {"realpb": "62% 83%",
-                              "realnp": "62% 83%",
-                              "simpb": "99% 83%",
-                              "simnp": "86% 83%"}, 
-                    "celegans": {"realpb": "86% 87%",
-                              "realnp": "66% 87%",
+                    "scerevisiae": {"realpb": "56% 87%",
+                              "realnp": "61% 83%",
                               "simpb": "98% 83%",
-                              "simnp": "89% 87%"} }
+                              "simnp": "85% 83%"},
+                    "celegans": {"realpb": "84% 87%",
+                              "realnp": "65% 87%",
+                              "simpb": "98% 83%",
+                              "simnp": "88% 88%"} }
 
 def edist(lst):
     result = edlib.align(str(lst[0]), str(lst[1]), mode="NW", additionalEqualities=[('U', 'T')
@@ -121,16 +121,13 @@ if __name__ == "__main__":
     failed = False
     for org in args.orgs:
         res = {}
-        # print org
         for read_type in ["realnp", "realpb", "simpb", "simnp"]:
             reads_file = args.input + "/" + org+ "/input/" + read_type + "2000.fasta"
             dl = DataLoader()
             reads = dl.load_reads(reads_file)
-            spaligner_res_file = args.path + "/" + org + "_" + read_type + ".tsv"
+            spaligner_res_file = args.path + "/" + org + "_" + read_type + "/alignment.tsv"
             spaligner_res = dl.load_spaligner_paths(spaligner_res_file, reads, stat)
             res[read_type] = save_stats(reads, spaligner_res)
-            # print read_type
-            # print res[read_type]
             if res[read_type] != TRUE_PERFORMANCE[org][read_type]:
                 print "Failed: ", org, read_type, res[read_type]
                 failed = True
