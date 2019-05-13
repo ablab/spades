@@ -275,20 +275,18 @@ if __name__ == "__main__":
             for al in aligners.keys():
                 if aligners[al] == 1:
                     if al.startswith("SPAligner"):
-                        spaligner_res_file = org_path + al + "/output/aln_" + read_type + ".tsv"
+                        spaligner_res_file = org_path + al + "/output/aln_" + read_type + "/alignment.tsv"
                         spaligner_res = dl.load_spaligner_paths(spaligner_res_file, reads, stat)
                         log_files = [org_path + al + "/benchmark/align_" + read_type + ".tsv"]
                         mp[al] = {"time": get_time(log_files), "memory": get_memory(log_files)}
                         mp[al]["res"] = spaligner_res
 
                     if al.startswith("GraphAligner"):
-                        graphaligner_edges_gfa = org_path + al + "/tmp/graph_idfix.gfa"
-                        graphaligner_res_file = org_path + al + "/output/aln_" + read_type + "_selected.json"
+                        graphaligner_edges_gfa =  org_path + "/input/graph.gfa"
+                        graphaligner_res_file = org_path + al + "/output/aln_" + read_type + ".json"
                         [graphaligner_edges, graphaligner_graph] = dl.load_gfa_edges(graphaligner_edges_gfa)
                         graphaligner_res = dl.load_json_paths(graphaligner_res_file, graphaligner_edges, graphaligner_graph, reads, stat)
-                        log_files = [org_path + al + "/benchmark/mummer_pipe_" + read_type + ".tsv",\
-                                    org_path + al + "/benchmark/align_" + read_type + ".tsv",\
-                                    org_path + al + "/benchmark/posprocess_" + read_type + ".tsv"]
+                        log_files = [org_path + al + "/benchmark/align_" + read_type + ".tsv"]
                         mp[al] = {"time": get_time(log_files), "memory": get_memory(log_files)}
                         mp[al]["res"] = graphaligner_res
 
