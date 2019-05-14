@@ -449,6 +449,9 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                           '(optionally accompanied by a single library of '
                           'TSLR-contigs, or PacBio reads, or Nanopore reads) in metaSPAdes mode!')
 
+    if len(support.get_lib_ids_by_type(dataset_data, ["clouds10x"])) >= 1 and len(dataset_data) > 1:
+            support.error('SLR library cannot be accompanied by any other libraries!')
+
     if existing_dataset_data is None:
         pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'),
                     default_flow_style=False, default_style='"', width=float("inf"))
