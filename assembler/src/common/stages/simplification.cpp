@@ -247,7 +247,7 @@ public:
                 "Relative coverage component remover");
 
         algo.AddAlgo(
-                RelativelyLowCoverageDisconnectorInstance(gp_.g, gp_.flanking_cov,
+                RelativelyLowCoverageDisconnectorInstance(gp_.g,
                                                           simplif_cfg_.red, info_container_),
                 "Disconnecting edges with relatively low coverage");
 
