@@ -163,6 +163,59 @@ public:
     }
 };
 
+//FIXME unify with the flanking cov helper
+template<class Graph>
+class RelativeAvgCovHelper {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    const Graph& g_;
+    double min_coverage_gap_;
+
+public:
+    RelativeAvgCovHelper(const Graph& g,
+                   double min_coverage_gap)
+            : g_(g),
+              min_coverage_gap_(min_coverage_gap) {
+        VERIFY(math::gr(min_coverage_gap, 1.));
+    }
+
+    template<class EdgeContainer>
+    double MaxCoverage(const EdgeContainer& edges) const {
+        double answer = 0.0;
+        for (EdgeId e : edges) {
+            answer = std::max(answer, g_.coverage(e));
+        }
+        return answer;
+    }
+
+    template<class EdgeContainer>
+    bool CheckAnyHighlyCovered(const EdgeContainer& edges,
+                               double base_coverage) const {
+        return math::gr(MaxCoverage(edges),
+                        base_coverage * min_coverage_gap_);
+    }
+
+    bool AnyHighlyCoveredOnBothSides(VertexId v, double base_coverage) const {
+        return CheckAnyHighlyCovered(g_.IncomingEdges(v), base_coverage) &&
+               CheckAnyHighlyCovered(g_.OutgoingEdges(v), base_coverage);
+    }
+
+    bool AnyHighlyCoveredOnFourSides(EdgeId e) const {
+        return AnyHighlyCoveredOnBothSides(g_.EdgeStart(e), LocalCoverage(e, g_.EdgeStart(e))) &&
+               AnyHighlyCoveredOnBothSides(g_.EdgeEnd(e), LocalCoverage(e, g_.EdgeEnd(e)));
+    }
+
+    double RelativeCoverageToReport(VertexId v, double base_coverage) const {
+        return std::min(MaxCoverage(g_.OutgoingEdges(v)),
+                        MaxCoverage(g_.IncomingEdges(v)))
+               / base_coverage;
+    }
+
+private:
+    DECL_LOGGER("RelativeAvgCovHelper");
+};
+
 template<class Graph>
 class RelativeCoverageHelper {
     typedef typename Graph::EdgeId EdgeId;
@@ -229,7 +282,7 @@ class RelativeCovDisconnectionCondition : public EdgeCondition<Graph> {
     typedef EdgeCondition<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    const RelativeCoverageHelper<Graph> rel_helper_;
+    const RelativeAvgCovHelper<Graph> rel_helper_;
     const double diff_mult_;
 
     //Total length of highly-covered neighbourhood
@@ -237,22 +290,20 @@ class RelativeCovDisconnectionCondition : public EdgeCondition<Graph> {
     const size_t min_neighbourhood_size_;
 public:
     RelativeCovDisconnectionCondition(const Graph& g,
-                                      const FlankingCoverage<Graph>& flanking_cov,
                                       double diff_mult,
                                       size_t min_neighbourhood_size) :
             base(g),
-            rel_helper_(g, flanking_cov, diff_mult),
+            rel_helper_(g, diff_mult),
             diff_mult_(diff_mult),
             min_neighbourhood_size_(min_neighbourhood_size) {
     }
 
     bool Check(EdgeId e) const override {
         VertexId v = this->g().EdgeStart(e);
-        double coverage_edge_around_v = rel_helper_.LocalCoverage(e, v);
-        DEBUG("Local flanking coverage - " << coverage_edge_around_v);
-        DEBUG("Max local coverage incoming  - " << rel_helper_.MaxLocalCoverage(this->g().IncomingEdges(v), v));
-        DEBUG("Max local coverage outgoing  - " << rel_helper_.MaxLocalCoverage(this->g().OutgoingEdges(v), v));
-        return rel_helper_.AnyHighlyCoveredOnBothSides(v, coverage_edge_around_v) &&
+        DEBUG("Coverage - " << this->g().coverage(e));
+        DEBUG("Max local coverage incoming  - " << rel_helper_.MaxCoverage(this->g().IncomingEdges(v)));
+        DEBUG("Max local coverage outgoing  - " << rel_helper_.MaxCoverage(this->g().OutgoingEdges(v)));
+        return rel_helper_.AnyHighlyCoveredOnBothSides(v, this->g().coverage(e)) &&
                 HighCoverageComponentFinder<Graph>(this->g(), this->g().coverage(e) * diff_mult_, min_neighbourhood_size_)
                        .CumulativeEdgeLength(v) >= min_neighbourhood_size_;
     }

@@ -159,7 +159,7 @@ static void Simplify(GraphPack &gp,
                                                                  simplif_info, set_removal_handler_f),
                  "Removing subgraphs based on relative coverage");
 
-    algo.AddAlgo(RelativelyLowCoverageDisconnectorInstance<Graph>(graph, flanking_cov,
+    algo.AddAlgo(RelativelyLowCoverageDisconnectorInstance<Graph>(graph,
                                                                   red_config(rel_cov_proc_enabled),
                                                                   simplif_info, removal_handler),
                  "Disconnecting relatively low covered edges");

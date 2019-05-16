@@ -441,7 +441,6 @@ AlgoPtr<Graph> RelativeCoverageComponentRemoverInstance (
 
 template<class Graph>
 AlgoPtr<Graph> RelativelyLowCoverageDisconnectorInstance(Graph &g,
-        const FlankingCoverage<Graph> &flanking_cov,
         const config::debruijn_config::simplification::relative_coverage_edge_disconnector &rced_config,
         const SimplifInfoContainer &info,
         EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
@@ -452,10 +451,10 @@ AlgoPtr<Graph> RelativelyLowCoverageDisconnectorInstance(Graph &g,
 
     using Condition=omnigraph::simplification::relative_coverage::RelativeCovDisconnectionCondition<Graph>;
 
-    func::TypedPredicate<EdgeId> condition = Condition(g, flanking_cov, rced_config.diff_mult, rced_config.edge_sum);
+    func::TypedPredicate<EdgeId> condition = Condition(g, rced_config.diff_mult, rced_config.edge_sum);
 
     if (math::gr(rced_config.unconditional_diff_mult, 0.))
-        condition = func::Or(Condition(g, flanking_cov, rced_config.unconditional_diff_mult, 0), condition);
+        condition = func::Or(Condition(g, rced_config.unconditional_diff_mult, 0), condition);
 
     return std::make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g,
             condition,
