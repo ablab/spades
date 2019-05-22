@@ -225,7 +225,7 @@ int main(int argc, char **argv) {
 
     cxxopts::Options options(argv[0], " <YAML-config sequences and graph description> - Tool for sequence alignment on graph");
     options.add_options()
-    ("K,k-mer", "graph k-mer size (odd value)", cxxopts::value<int>(config.K))
+    ("k,k-mer", "graph k-mer size (odd value)", cxxopts::value<int>(config.K))
     ("d,datatype", "type of sequences: nanopore, pacbio", cxxopts::value<string>(seq_type))
     ("s,seq", "path to fasta/fastq file with sequences", cxxopts::value<string>(config.path_to_sequences))
     ("g,graph", "path to gfa-file or SPAdes saves folder", cxxopts::value<string>(config.path_to_graphfile))
