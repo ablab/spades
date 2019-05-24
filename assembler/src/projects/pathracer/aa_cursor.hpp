@@ -21,7 +21,11 @@ class AAGraphCursor {
 
  public:
   using Context = typename GraphCursor::Context;
-  char letter(Context context) const { return to_one_letter(aa::to_aa(c0_.letter(context), c1_.letter(context), c2_.letter(context))); }
+  char letter(Context context) const {
+      return c0_.is_empty() || c1_.is_empty() || c2_.is_empty() ?
+          '*' :  // FIXME use special sign for frame shift
+          to_one_letter(aa::to_aa(c0_.letter(context), c1_.letter(context), c2_.letter(context)));
+  }
 
   template <class Archive>
   void serialize(Archive &archive) {
@@ -44,6 +48,7 @@ class AAGraphCursor {
   std::vector<This> prev(Context context) const { return from_bases_prev(c0_.prev(context), context); }
 
   std::vector<This> next(Context context) const { return from_bases_next(c2_.next(context), context); }
+  std::vector<This> next_frame_shift(Context context) const { return from_bases_next12(c2_.next(context), context); }
 
   std::vector<GraphCursor> nucl_cursors() const { return {c0_, c1_, c2_}; }
 
@@ -53,8 +58,23 @@ class AAGraphCursor {
   friend auto make_aa_cursors<GraphCursor>(const std::vector<GraphCursor> &cursors, Context context);
   friend std::ostream &operator<<<GraphCursor>(std::ostream &os, const AAGraphCursor<GraphCursor> &cursor);
 
+  static std::vector<This> from_bases_next12(const std::vector<GraphCursor> &cursors,
+                                             Context context) {
+    std::vector<This> result;
+    result.reserve(20);
+
+    for (const auto &cursor : cursors) {
+      result.emplace_back(GraphCursor(), GraphCursor(), cursor);
+      for (const auto &n : cursor.next(context)) {
+        result.emplace_back(GraphCursor(), cursor, n);
+      }
+    }
+
+    return result;
+  }
+
   static std::vector<This> from_bases_next(const std::vector<GraphCursor> &cursors,
-                                      Context context) {
+                                           Context context) {
     llvm::SmallVector<llvm::SmallVector<GraphCursor, 2>, 16> nexts;
     // nexts.reserve(16);
 
@@ -129,3 +149,5 @@ struct hash<AAGraphCursor<GraphCursor>> {
   }
 };
 }  // namespace std
+
+// vim: set ts=2 sw=2 et :
