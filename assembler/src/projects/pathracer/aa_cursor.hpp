@@ -75,46 +75,26 @@ class AAGraphCursor {
 
   static std::vector<This> from_bases_next(const std::vector<GraphCursor> &cursors,
                                            Context context) {
-    llvm::SmallVector<llvm::SmallVector<GraphCursor, 2>, 16> nexts;
-    // nexts.reserve(16);
-
-    for (const auto &cursor : cursors) {
-      for (const auto &n : cursor.next(context)) {
-        nexts.push_back({ cursor, n });
-      }
-    }
-
     std::vector<This> result;
     result.reserve(64);
-    for (const auto &n : nexts) {
-      assert(n.size() == 2);
-      for (const auto &n2 : n.back().next(context)) {
-        result.emplace_back(n[0], n[1], n2);
-      }
-    }
+
+    for (const auto &cursor : cursors)
+      for (const auto &n1 : cursor.next(context))
+        for (const auto &n2 : n1.next(context))
+          nexts.push_back({ cursor, n1, n2 });
 
     return result;
   }
 
   static std::vector<This> from_bases_prev(const std::vector<GraphCursor> &cursors,
                                            Context context) {
-    llvm::SmallVector<llvm::SmallVector<GraphCursor, 2>, 16> prevs;
-    // prevs.reserve(16);
-
-    for (const auto &cursor : cursors) {
-      for (const auto &p : cursor.prev(context)) {
-        prevs.push_back({ cursor, p });
-      }
-    }
-
     std::vector<This> result;
     result.reserve(64);
-    for (const auto &p : prevs) {
-      assert(p.size() == 2);
-      for (const auto &p2 : p.back().prev(context)) {
-        result.emplace_back(p2, p[1], p[0]);
-      }
-    }
+
+    for (const auto &cursor : cursors)
+      for (const auto &p1 : cursor.prev(context))
+        for (const auto &p2 : p1.prev(context))
+          result.emplace_back(p2, p1, cursor);
 
     return result;
   }
