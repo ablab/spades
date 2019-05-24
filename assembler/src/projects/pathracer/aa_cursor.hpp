@@ -37,7 +37,7 @@ class AAGraphCursor {
 
   bool operator==(const AAGraphCursor &other) const { return c0_ == other.c0_ && c1_ == other.c1_ && c2_ == other.c2_; }
 
-  bool is_empty() const { return c0_.is_empty() || c1_.is_empty() || c2_.is_empty(); }
+  bool is_empty() const { return c0_.is_empty() && c1_.is_empty() && c2_.is_empty(); }
 
   using EdgeId = std::decay_t<decltype(GraphCursor().edge())>;
 
