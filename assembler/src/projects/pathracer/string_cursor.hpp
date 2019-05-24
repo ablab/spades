@@ -19,6 +19,7 @@ public:
     }
 
     bool is_empty() const { return pos_ == size_t(-1); }
+    size_t edge() const { return 0; }  // FIXME this method is required for AAGraphCursor wrapper only
     bool operator==(const StringCursor &other) const { return pos_ == other.pos_; }
 
     StringCursor(const StringCursor &) = default;

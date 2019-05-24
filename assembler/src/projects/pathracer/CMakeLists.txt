@@ -28,6 +28,12 @@ if (SPADES_STATIC_BUILD)
   set_target_properties(pathracer PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
+add_executable(align_fs
+               main.cpp align_fs.cpp)
+target_link_libraries(align_fs
+                      pathracer-core
+                      graphio utils ${COMMON_LIBRARIES})
+
 add_executable(pathracer_align_kmers_test
                main.cpp align_kmers.cpp)
 target_link_libraries(pathracer_align_kmers_test

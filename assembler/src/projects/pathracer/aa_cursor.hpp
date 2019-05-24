@@ -40,6 +40,7 @@ class AAGraphCursor {
   This &operator=(const This &) = default;
 
   bool operator==(const AAGraphCursor &other) const { return c0_ == other.c0_ && c1_ == other.c1_ && c2_ == other.c2_; }
+  bool operator<(const AAGraphCursor &other) const { return std::make_tuple(c0_, c1_, c2_) < std::make_tuple(other.c0_, other.c1_, other.c2_); }
 
   bool is_empty() const { return c0_.is_empty() && c1_.is_empty() && c2_.is_empty(); }
 
