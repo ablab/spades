@@ -43,7 +43,7 @@ class AAGraphCursor {
 
   std::vector<This> prev(Context context) const { return from_bases_prev(c0_.prev(context), context); }
 
-  std::vector<This> next(Context context) const { return from_bases(c2_.next(context), context); }
+  std::vector<This> next(Context context) const { return from_bases_next(c2_.next(context), context); }
 
   std::vector<GraphCursor> nucl_cursors() const { return {c0_, c1_, c2_}; }
 
@@ -53,7 +53,7 @@ class AAGraphCursor {
   friend auto make_aa_cursors<GraphCursor>(const std::vector<GraphCursor> &cursors, Context context);
   friend std::ostream &operator<<<GraphCursor>(std::ostream &os, const AAGraphCursor<GraphCursor> &cursor);
 
-  static std::vector<This> from_bases(const std::vector<GraphCursor> &cursors,
+  static std::vector<This> from_bases_next(const std::vector<GraphCursor> &cursors,
                                       Context context) {
     llvm::SmallVector<llvm::SmallVector<GraphCursor, 2>, 16> nexts;
     // nexts.reserve(16);
@@ -111,7 +111,7 @@ inline std::ostream &operator<<(std::ostream &os, const AAGraphCursor<GraphCurso
 
 template <class GraphCursor>
 auto make_aa_cursors(const std::vector<GraphCursor> &cursors, typename GraphCursor::Context context) {
-  return AAGraphCursor<GraphCursor>::from_bases(cursors, context);
+  return AAGraphCursor<GraphCursor>::from_bases_next(cursors, context);
 }
 
 template <class GraphCursor>
