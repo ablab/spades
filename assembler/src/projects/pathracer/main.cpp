@@ -1232,7 +1232,9 @@ int aling_fs(int argc, char* argv[]) {
     auto hmms = ParseHMMFile(hmm_file);
     auto seqs = read_fasta(sequence_file);
 
-    for (const auto &hmm : hmms) {
+    #pragma omp parallel for
+    for (size_t i = 0; i < hmms.size(); ++i) {
+        const auto &hmm = hmms[i];
         const P7_HMM *p7hmm = hmm.get();
         auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
         VERIFY(fees.is_proteomic());
