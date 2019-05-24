@@ -1241,6 +1241,8 @@ int aling_fs(int argc, char* argv[]) {
         fees.state_limits.l100 = 50000 * state_limits_coef;
         fees.state_limits.l500 = 10000 * state_limits_coef;
         fees.minimal_match_length = 0;  // FIXME fix depth filter for frame shifts
+        const double indel_rate = 0.01;
+        fees.frame_shift_cost = fees.all_matches_score() / fees.M / indel_rate / 3;
         fees.use_experimental_i_loop_processing = true;
 
         std::ofstream of(output_file + "_" + hmm.get()->name);
@@ -1255,11 +1257,11 @@ int aling_fs(int argc, char* argv[]) {
             auto aa_cursors = make_aa_cursors(cursors, &seq);
 
             auto result = find_best_path(fees, aa_cursors, &seq);
-            INFO("Collapsing event graph");
-            size_t collapsed_count = result.pathlink_mutable()->collapse_all();
-            INFO(collapsed_count << " event graph vertices modified");
-            VERIFY(collapsed_count == 0);
-            INFO("Event graph depth " << result.pathlink()->max_prefix_size());
+            // INFO("Collapsing event graph");
+            // size_t collapsed_count = result.pathlink_mutable()->collapse_all();
+            // INFO(collapsed_count << " event graph vertices modified");
+            // VERIFY(collapsed_count == 0);
+            // INFO("Event graph depth " << result.pathlink()->max_prefix_size());
 
             INFO("Extracting top paths");
             auto top_paths = result.top_k(&seq, 1);

@@ -34,9 +34,10 @@ struct Fees {
 
   struct {size_t l25 = 1000000, l100 = 50000, l500 = 10000; } state_limits;
   size_t max_insertion_length = 30;
-  double absolute_threshold;
+  double absolute_threshold = 250;
+  double frame_shift_cost = 0;
 
-  double cleavage_cost;
+  double cleavage_cost = 0;
   bool local = false;
   size_t minimal_match_length = 50;
 
@@ -55,14 +56,6 @@ struct Fees {
 
   bool is_nucleotide() const {
     return !is_proteomic();
-  }
-
-  Fees() {
-    state_limits.l25 = 1000000;
-    state_limits.l100 = 50000;
-    state_limits.l500 = 10000;
-    absolute_threshold = 250.0;
-    cleavage_cost = 0;
   }
 
   bool check_i_loop(size_t i) const;

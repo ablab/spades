@@ -699,7 +699,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     preM.increment(fees.t[m - 1][p7H_DM]);
     preM.merge(M, fees.t[m - 1][p7H_MM]);
     preM.merge(I, fees.t[m - 1][p7H_IM]);
-    preM.merge(F, 0);  // FIXME add fee
+    preM.merge(F, fees.frame_shift_cost);
 
     M.clear();
     transfer(M, preM, 0, fees.mat[m]);
@@ -756,7 +756,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
   i_loop_processing_checked(I, 0);  // Do we really need I at the beginning???
   I.set_event(0, EventType::INSERTION);
-  transfer_frame_shift(F, M, 0);  // FIXME add fee
+  transfer_frame_shift(F, M, fees.frame_shift_cost);
 
   I.set_event(0, EventType::FRAME_SHIFT);
 
@@ -772,7 +772,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     i_loop_processing_checked(I, m);
 
     F.clear();
-    transfer_frame_shift(F, M, 0);  // FIXME add fee
+    transfer_frame_shift(F, M, fees.frame_shift_cost);
 
     size_t n_of_states = D.size() + I.size() + M.size();
 
@@ -831,7 +831,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   update_sink(D, fees.t[fees.M][p7H_DM]);
   update_sink(I, fees.t[fees.M][p7H_IM]);  // Do we really need I at the end?
-  update_sink(F, 0);  // FIXME add fee Do we really need F at the end?
+  update_sink(F, fees.frame_shift_cost);  // Do we really need F at the end?
   update_sink(M, fees.t[fees.M][p7H_MM]);
   sink->collapse_and_trim();
 
