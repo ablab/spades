@@ -32,6 +32,18 @@ struct hmmpath_assert : debug_assert::default_handler,
 using pathtree::PathLink;
 using pathtree::PathLinkRef;
 
+template <typename GraphCursor>
+const std::vector<GraphCursor> next_frame_shift(const GraphCursor&, typename GraphCursor::Context) {
+  return {};
+}
+
+template <typename GraphCursor>
+const std::vector<AAGraphCursor<GraphCursor>> next_frame_shift(const AAGraphCursor<GraphCursor> &cursor,
+                                                               typename AAGraphCursor<GraphCursor>::Context context) {
+  return cursor.next_frame_shift(context);
+}
+
+
 template <typename Map>
 class FilterMapMixin {
  public:
@@ -422,12 +434,23 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   std::vector<GraphCursor> initial;
 
-  auto transfer = [&code, &initial,context](StateSet &to, const auto &from, double transfer_fee,
-                                            const std::vector<double> &emission_fees) {
+  auto transfer = [&code, &initial, context](StateSet &to, const auto &from, double transfer_fee,
+                                             const std::vector<double> &emission_fees) {
     DEBUG_ASSERT((void*)(&to) != (void*)(&from), hmmpath_assert{});
     for (const auto &state : from.states()) {
       for (const auto &next : (state.cursor.is_empty() ? initial : state.cursor.next(context))) {
         double cost = state.score + transfer_fee + emission_fees[code(next.letter(context))];
+        to.update(next, cost, state.plink);
+      }
+    }
+  };
+
+  auto transfer_frame_shift = [context](StateSet &to, const auto &from, double transfer_fee) {
+    DEBUG_ASSERT((void*)(&to) != (void*)(&from), hmmpath_assert{});
+    for (const auto &state : from.states()) {
+      if (state.cursor.is_empty()) continue;
+      for (const auto &next : next_frame_shift(state.cursor, context)) {
+        double cost = state.score + transfer_fee;
         to.update(next, cost, state.plink);
       }
     }
@@ -667,7 +690,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   //   }
   // };
 
-  auto dm_new = [&](DeletionStateSet &D, StateSet &M, const StateSet &I, size_t m) {
+  auto dm_new = [&](DeletionStateSet &D, StateSet &M, const StateSet &I, const StateSet &F, size_t m) {
     DeletionStateSet preM = D;
 
     D.increment(fees.t[m - 1][p7H_DD]);
@@ -676,6 +699,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     preM.increment(fees.t[m - 1][p7H_DM]);
     preM.merge(M, fees.t[m - 1][p7H_MM]);
     preM.merge(I, fees.t[m - 1][p7H_IM]);
+    preM.merge(F, 0);  // FIXME add fee
 
     M.clear();
     transfer(M, preM, 0, fees.mat[m]);
@@ -695,6 +719,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   StateSet I, M;
   DeletionStateSet D;
+  StateSet F;  // F for frame shift
   auto source = PathLink<GraphCursor>::create_source();
   auto sink = PathLink<GraphCursor>::create_sink();
   M[GraphCursor()] = source;
@@ -731,16 +756,23 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
   i_loop_processing_checked(I, 0);  // Do we really need I at the beginning???
   I.set_event(0, EventType::INSERTION);
+  transfer_frame_shift(F, M, 0);  // FIXME add fee
+
+  I.set_event(0, EventType::FRAME_SHIFT);
+
   for (size_t m = 1; m <= fees.M; ++m) {
     if (fees.local && m > 1) {  // FIXME check latter condition. Does it really make sense?
       D.update(fees.cleavage_cost, source);
     }
-    dm_new(D, M, I, m);
+    dm_new(D, M, I, F, m);
     M.trim_all();
 
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
     i_loop_processing_checked(I, m);
+
+    F.clear();
+    transfer_frame_shift(F, M, 0);  // FIXME add fee
 
     size_t n_of_states = D.size() + I.size() + M.size();
 
@@ -774,6 +806,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
     I.set_event(m, EventType::INSERTION);
     M.set_event(m, EventType::MATCH);
+    F.set_event(m, EventType::FRAME_SHIFT);
 
     if (fees.local) {
       update_sink(D, fees.cleavage_cost);  // FIXME subtract cost for transition -> D state ?  // FIXME check it twice! I collapsing is dangerous
@@ -798,6 +831,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   update_sink(D, fees.t[fees.M][p7H_DM]);
   update_sink(I, fees.t[fees.M][p7H_IM]);  // Do we really need I at the end?
+  update_sink(F, 0);  // FIXME add fee Do we really need F at the end?
   update_sink(M, fees.t[fees.M][p7H_MM]);
   sink->collapse_and_trim();
 

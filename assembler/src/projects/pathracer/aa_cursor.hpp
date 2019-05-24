@@ -81,7 +81,7 @@ class AAGraphCursor {
     for (const auto &cursor : cursors)
       for (const auto &n1 : cursor.next(context))
         for (const auto &n2 : n1.next(context))
-          nexts.push_back({ cursor, n1, n2 });
+          result.push_back({ cursor, n1, n2 });
 
     return result;
   }

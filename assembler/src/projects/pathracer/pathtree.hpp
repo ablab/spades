@@ -25,7 +25,7 @@
 #include <cereal/types/utility.hpp>
 #include "cereal_llvm_intrusive_ptr.hpp"
 
-enum EventType { NONE, MATCH, INSERTION, WARN };
+enum EventType { NONE, MATCH, INSERTION, FRAME_SHIFT };
 using score_t = double;
 
 struct pathtree_assert : debug_assert::default_handler,
@@ -92,7 +92,22 @@ struct AnnotatedPath {
         s += '-';
       }
       prev_position = events[i].m;
-      s += events[i].type == EventType::MATCH ? (fees.consensus[events[i].m - 1] == path[i].letter(context) ? 'M' : 'X') : 'I';
+      char event_symbol = '?';
+      switch (events[i].type) {
+        case EventType::INSERTION:
+          event_symbol = 'I';
+          break;
+        case EventType::FRAME_SHIFT:
+          event_symbol = 'F';
+          break;
+        case EventType::MATCH:
+          event_symbol = fees.consensus[events[i].m - 1] == path[i].letter(context) ? 'M' : 'X';
+          break;
+        case EventType::NONE:
+          VERIFY(false);
+          break;
+      }
+      s += event_symbol;
     }
 
     // Add trailing gaps (-)
