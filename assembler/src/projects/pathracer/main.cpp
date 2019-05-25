@@ -1217,10 +1217,12 @@ int aling_fs(int argc, char* argv[]) {
     std::string hmm_file;
     std::string sequence_file;
     std::string output_file;
+    double indel_rate = 0.05;
 
     auto cli =
         (sequence_file << value("input sequence file"),
          hmm_file << value("HMM file"),
+         (option("--indel-rate") & number("value", indel_rate))        % "indel rate",
          required("--output", "-o") & value("output file", output_file) % "output file"
          );
 
@@ -1248,7 +1250,6 @@ int aling_fs(int argc, char* argv[]) {
         fees.state_limits.l100 = 50000 * state_limits_coef;
         fees.state_limits.l500 = 10000 * state_limits_coef;
         fees.minimal_match_length = 0;  // FIXME fix depth filter for frame shifts
-        const double indel_rate = 0.01;
         fees.frame_shift_cost = fees.all_matches_score() / fees.M / indel_rate / 3;
         fees.use_experimental_i_loop_processing = true;
 
