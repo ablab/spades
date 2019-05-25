@@ -1253,7 +1253,6 @@ int aling_fs(int argc, char* argv[]) {
         fees.frame_shift_cost = fees.all_matches_score() / fees.M / indel_rate / 3;
         fees.use_experimental_i_loop_processing = true;
 
-        std::ofstream of(output_file + "_" + hmm.get()->name);
         hmmer::HMMMatcher matcher(hmm, hcfg);
 
         for (size_t j = 0; j < seqs.size(); ++j) {
@@ -1281,6 +1280,7 @@ int aling_fs(int argc, char* argv[]) {
         }
         INFO("HMMer finished. Matched: " << matched.size() << " over " << seqs.size());
 
+        std::ofstream of(output_file + "_" + hmm.get()->name);
         for (size_t j = 0; j < seqs.size(); ++j) {
             if (!matched.count(j)) {
                 continue;
@@ -1313,6 +1313,7 @@ int aling_fs(int argc, char* argv[]) {
                 INFO("Alignment: " << alignment);
                 of << ">" << id << "|Score=" << result.best_score() << "|Alignment=" << alignment << "\n";
                 io::WriteWrapped(top_string, of);
+                of.flush();
             }
         }
     }
