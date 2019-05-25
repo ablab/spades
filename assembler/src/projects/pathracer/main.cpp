@@ -1231,7 +1231,12 @@ int aling_fs(int argc, char* argv[]) {
 
     auto hmms = ParseHMMFile(hmm_file);
     auto seqs = read_fasta(sequence_file);
+    seqs.reserve(seqs.size() * 2);
+    for (size_t i = 0, n = seqs.size(); i < n; ++i) {
+        seqs.push_back({"RC" + seqs[i].first, rev_comp(seqs[i].second)});
+    }
 
+    hmmer::hmmer_cfg hcfg;
     #pragma omp parallel for
     for (size_t i = 0; i < hmms.size(); ++i) {
         const auto &hmm = hmms[i];
@@ -1248,10 +1253,39 @@ int aling_fs(int argc, char* argv[]) {
         fees.use_experimental_i_loop_processing = true;
 
         std::ofstream of(output_file + "_" + hmm.get()->name);
+        hmmer::HMMMatcher matcher(hmm, hcfg);
 
-        for (const auto &kv : seqs) {
-            const auto &id = kv.first;
-            const auto &seq = kv.second;
+        for (size_t j = 0; j < seqs.size(); ++j) {
+            const auto &seq = seqs[j].second;
+            for (size_t shift = 0; shift < 3; ++shift) {
+                std::string ref = std::to_string(j) + std::string("/") + std::to_string(shift);
+                std::string seq_aas = aa::translate(seq.c_str() + shift);
+                matcher.match(ref.c_str(), seq_aas.c_str());
+            }
+        }
+
+        std::unordered_set<size_t> matched;
+
+        size_t hit_count = 0;
+
+        matcher.summarize();
+        for (const auto &hit : matcher.hits()) {
+            if (!hit.reported() || !hit.included())
+                continue;
+
+            ++hit_count;
+            const std::string name = hit.name();
+            size_t id = std::stoull(name);  // Slash and everything after is ignored automatically
+            matched.insert(id);
+        }
+        INFO("HMMer finished. Matched: " << matched.size() << " over " << seqs.size());
+
+        for (size_t j = 0; j < seqs.size(); ++j) {
+            if (!matched.count(j)) {
+                continue;
+            }
+            const auto &id = seqs[j].first;
+            const auto &seq = seqs[j].second;
             std::vector<StringCursor> cursors;
             for (size_t i = 0; i < seq.length(); ++i) {
                 cursors.push_back(StringCursor(i));
