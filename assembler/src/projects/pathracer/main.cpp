@@ -1281,8 +1281,9 @@ int aling_fs(int argc, char* argv[]) {
                 int roverhang = over.second.second + expand_const;
                 size_t start = -std::min(loverhang, 0);
                 size_t finish = int(seq.length()) + std::min(roverhang, 0);
+                INFO("Overhangs: " << loverhang << " " << roverhang);
                 INFO("START " << start << " FINISH " << finish);
-                for (size_t i = start; i <= finish; ++i) {
+                for (size_t i = start; i < finish; ++i) {
                     indices.insert(i);
                 }
             }
