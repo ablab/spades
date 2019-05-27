@@ -1275,9 +1275,12 @@ int aling_fs(int argc, char* argv[]) {
 
             PseudoVector<std::string> local_seqs(seqs.size(), get);
             auto overs = GetOverhangs(matcher, local_seqs, hmm);
+            const int expand_const = 20;
             for (const auto &over : overs) {
-                size_t start = -std::min(over.second.first, 0);
-                size_t finish = int(seq.length()) + std::min(over.second.second, 0);
+                int loverhang = kv.second.first + expand_const;
+                int roverhang = kv.second.second + expand_const;
+                size_t start = -std::min(loverhang, 0);
+                size_t finish = int(seq.length()) + std::min(loverhang, 0);
                 INFO("START " << start << " FINISH " << finish);
                 for (size_t i = start; i <= finish; ++i) {
                     indices.insert(i);
