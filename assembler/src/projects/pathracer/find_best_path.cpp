@@ -52,6 +52,11 @@ PathSet<AAGraphCursor<StringCursor>> find_best_path(const hmm::Fees &fees, const
     return impl::find_best_path(fees, initial, context);
 }
 
+PathSet<AAGraphCursor<OptimizedRestrictedGraphCursor<StringCursor>>> find_best_path(const hmm::Fees &fees, const std::vector<AAGraphCursor<OptimizedRestrictedGraphCursor<StringCursor>>> &initial,
+                                                                                    AAGraphCursor<OptimizedRestrictedGraphCursor<StringCursor>>::Context context) {
+    return impl::find_best_path(fees, initial, context);
+}
+
 double score_sequence(const hmm::Fees &fees, const std::string &seq) {
     StringCursor start(0), finish(seq.length() - 1);
 

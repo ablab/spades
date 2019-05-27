@@ -1253,47 +1253,49 @@ int aling_fs(int argc, char* argv[]) {
         fees.frame_shift_cost = fees.all_matches_score() / fees.M / indel_rate / 3;
         fees.use_experimental_i_loop_processing = true;
 
-        hmmer::HMMMatcher matcher(hmm, hcfg);
 
+        std::ofstream of(output_file + "_" + hmm.get()->name);
         for (size_t j = 0; j < seqs.size(); ++j) {
+            const auto &id = seqs[j].first;
             const auto &seq = seqs[j].second;
+
+            hmmer::HMMMatcher matcher(hmm, hcfg);
+
             for (size_t shift = 0; shift < 3; ++shift) {
                 std::string ref = std::to_string(j) + std::string("/") + std::to_string(shift);
                 std::string seq_aas = aa::translate(seq.c_str() + shift);
                 matcher.match(ref.c_str(), seq_aas.c_str());
             }
-        }
 
-        std::unordered_set<size_t> matched;
+            matcher.summarize();
+            std::unordered_set<size_t> indices;
+            auto get = [&](size_t i) -> const std::string& {
+                return seqs[i].second;
+            };
 
-        size_t hit_count = 0;
-
-        matcher.summarize();
-        for (const auto &hit : matcher.hits()) {
-            if (!hit.reported() || !hit.included())
-                continue;
-
-            ++hit_count;
-            const std::string name = hit.name();
-            size_t id = std::stoull(name);  // Slash and everything after is ignored automatically
-            matched.insert(id);
-        }
-        INFO("HMMer finished. Matched: " << matched.size() << " over " << seqs.size());
-
-        std::ofstream of(output_file + "_" + hmm.get()->name);
-        for (size_t j = 0; j < seqs.size(); ++j) {
-            if (!matched.count(j)) {
-                continue;
+            PseudoVector<std::string> local_seqs(seqs.size(), get);
+            auto overs = GetOverhangs(matcher, local_seqs, hmm);
+            for (const auto &over : overs) {
+                size_t start = -std::min(over.second.first, 0);
+                size_t finish = int(seq.length()) + std::min(over.second.second, 0);
+                INFO("START " << start << " FINISH " << finish);
+                for (size_t i = start; i <= finish; ++i) {
+                    indices.insert(i);
+                }
             }
-            const auto &id = seqs[j].first;
-            const auto &seq = seqs[j].second;
+
             std::vector<StringCursor> cursors;
-            for (size_t i = 0; i < seq.length(); ++i) {
+            for (size_t i : indices) {
                 cursors.push_back(StringCursor(i));
             }
-            auto aa_cursors = make_aa_cursors(cursors, &seq);
+            std::unordered_set<StringCursor> cursor_set(cursors.cbegin(), cursors.cend());
 
-            auto result = find_best_path(fees, aa_cursors, &seq);
+            auto restricted_context = make_optimized_restricted_cursor_context(cursor_set, &seq);
+            auto restricted_component_cursors = make_optimized_restricted_cursors(cursors);
+
+            auto aa_cursors = make_aa_cursors(restricted_component_cursors, &restricted_context);
+
+            auto result = find_best_path(fees, aa_cursors, &restricted_context);
             // INFO("Collapsing event graph");
             // size_t collapsed_count = result.pathlink_mutable()->collapse_all();
             // INFO(collapsed_count << " event graph vertices modified");
@@ -1301,15 +1303,15 @@ int aling_fs(int argc, char* argv[]) {
             // INFO("Event graph depth " << result.pathlink()->max_prefix_size());
 
             INFO("Extracting top paths");
-            auto top_paths = result.top_k(&seq, 1);
+            auto top_paths = result.top_k(&restricted_context, 1);
 
             bool x_as_m_in_alignment = fees.is_proteomic();
             if (!top_paths.empty()) {
                 INFO("Best score in the current component: " << result.best_score());
                 INFO("Best sequence in the current component");
-                const auto top_string = top_paths.str(0, &seq);
+                const auto top_string = top_paths.str(0, &restricted_context);
                 INFO(top_string);
-                const auto alignment = compress_alignment(top_paths.alignment(0, fees, &seq), x_as_m_in_alignment);
+                const auto alignment = compress_alignment(top_paths.alignment(0, fees, &restricted_context), x_as_m_in_alignment);
                 INFO("Alignment: " << alignment);
                 of << ">" << id << "|Score=" << result.best_score() << "|Alignment=" << alignment << "\n";
                 io::WriteWrapped(top_string, of);

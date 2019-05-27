@@ -46,5 +46,9 @@ PathSet<StringCursor> find_best_path(const hmm::Fees &fees, const std::vector<St
 
 PathSet<CachedCursor> find_best_path(const hmm::Fees &fees, const std::vector<CachedCursor> &initial,
                                      CachedCursor::Context context);
+
 PathSet<AAGraphCursor<StringCursor>> find_best_path(const hmm::Fees &fees, const std::vector<AAGraphCursor<StringCursor>> &initial,
                                                     AAGraphCursor<StringCursor>::Context context);
+
+PathSet<AAGraphCursor<OptimizedRestrictedGraphCursor<StringCursor>>> find_best_path(const hmm::Fees &fees, const std::vector<AAGraphCursor<OptimizedRestrictedGraphCursor<StringCursor>>> &initial,
+                                                                                    AAGraphCursor<OptimizedRestrictedGraphCursor<StringCursor>>::Context context);
