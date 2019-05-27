@@ -1218,11 +1218,13 @@ int aling_fs(int argc, char* argv[]) {
     std::string sequence_file;
     std::string output_file;
     double indel_rate = 0.05;
+    int expand_const = 20;
 
     auto cli =
         (sequence_file << value("input sequence file"),
          hmm_file << value("HMM file"),
          (option("--indel-rate") & number("value", indel_rate))        % "indel rate",
+         (option("--expand-const") & integer("value", expand_const))        % "overhang expand const",
          required("--output", "-o") & value("output file", output_file) % "output file"
          );
 
@@ -1275,7 +1277,6 @@ int aling_fs(int argc, char* argv[]) {
 
             PseudoVector<std::string> local_seqs(seqs.size(), get);
             auto overs = GetOverhangs(matcher, local_seqs, hmm);
-            const int expand_const = 20;
             for (const auto &over : overs) {
                 int loverhang = over.second.first + expand_const;
                 int roverhang = over.second.second + expand_const;
