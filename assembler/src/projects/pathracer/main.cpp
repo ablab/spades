@@ -1277,8 +1277,8 @@ int aling_fs(int argc, char* argv[]) {
             auto overs = GetOverhangs(matcher, local_seqs, hmm);
             const int expand_const = 20;
             for (const auto &over : overs) {
-                int loverhang = kv.second.first + expand_const;
-                int roverhang = kv.second.second + expand_const;
+                int loverhang = over.second.first + expand_const;
+                int roverhang = over.second.second + expand_const;
                 size_t start = -std::min(loverhang, 0);
                 size_t finish = int(seq.length()) + std::min(loverhang, 0);
                 INFO("START " << start << " FINISH " << finish);
