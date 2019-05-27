@@ -1288,6 +1288,11 @@ int aling_fs(int argc, char* argv[]) {
             for (size_t i : indices) {
                 cursors.push_back(StringCursor(i));
             }
+
+            if (!cursors.size()) {
+                continue;
+            }
+
             std::unordered_set<StringCursor> cursor_set(cursors.cbegin(), cursors.cend());
 
             auto restricted_context = make_optimized_restricted_cursor_context(cursor_set, &seq);
