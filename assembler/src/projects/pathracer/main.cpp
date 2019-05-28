@@ -1211,27 +1211,59 @@ int pathracer_main(int argc, char* argv[]) {
 }
 
 int aling_fs(int argc, char* argv[]) {
-    create_console_logger("");
     using namespace clipp;
 
     std::string hmm_file;
     std::string sequence_file;
-    std::string output_file;
+    std::string output_dir;
     double indel_rate = 0.05;
     int expand_const = 20;
+    size_t top = 100;
 
     auto cli =
         (sequence_file << value("input sequence file"),
          hmm_file << value("HMM file"),
          (option("--indel-rate") & number("value", indel_rate))        % "indel rate",
          (option("--expand-const") & integer("value", expand_const))        % "overhang expand const",
-         required("--output", "-o") & value("output file", output_file) % "output file"
+         (option("--top") & integer("value", top))        % "maximal number of matches extracted from one sequence",
+         required("--output", "-o") & value("output file", output_dir) % "output file"
          );
 
     if (!parse(argc, argv, cli)) {
         std::cout << make_man_page(cli, argv[0]);
         exit(1);
     }
+
+    utils::segfault_handler sh;
+    utils::perf_counter pc;
+
+    srand(42);
+    srandom(42);
+
+    int status = mkdir(output_dir.c_str(), 0775);
+    create_console_logger(output_dir + "/align_fs.log");
+
+    if (status != 0) {
+        if (errno == EEXIST) {
+            WARN("Output directory exists: " << output_dir);
+        } else {
+            ERROR("Cannot create output directory: " << output_dir);
+            std::exit(1);
+        }
+    }
+
+    START_BANNER("Sequence HMM aligning engine");
+    std::string cmd_line = join(llvm::make_range(argv, argv + argc), " ");
+    INFO("Command line: " << cmd_line);
+
+    // // Set memory limit
+    // const size_t GB = 1 << 30;
+    // utils::limit_memory(cfg.memory * GB);
+
+    // Stack limit
+    size_t stacklimit = stack_limit();
+    INFO("Soft stack limit: " << (stacklimit == size_t(-1) ? "UNLIMITED" : std::to_string(stacklimit)));
+    INFO("Process ID: " << getpid());
 
     auto hmms = ParseHMMFile(hmm_file);
     auto seqs = read_fasta(sequence_file);
@@ -1256,7 +1288,9 @@ int aling_fs(int argc, char* argv[]) {
         fees.use_experimental_i_loop_processing = true;
 
 
-        std::ofstream of(output_file + "_" + hmm.get()->name);
+        std::ofstream o_seqs(output_dir + "/" + hmm.get()->name + ".seqs.fa");
+        std::ofstream o_nucs(output_dir + "/" + hmm.get()->name + ".nucs.fa");
+
         for (size_t j = 0; j < seqs.size(); ++j) {
             const auto &id = seqs[j].first;
             const auto &seq = seqs[j].second;
@@ -1313,7 +1347,7 @@ int aling_fs(int argc, char* argv[]) {
             // INFO("Event graph depth " << result.pathlink()->max_prefix_size());
 
             INFO("Extracting top paths");
-            auto top_paths = result.top_k(&restricted_context, 1);
+            auto top_paths = result.top_k(&restricted_context, top);
 
             bool x_as_m_in_alignment = fees.is_proteomic();
             if (!top_paths.empty()) {
@@ -1323,9 +1357,32 @@ int aling_fs(int argc, char* argv[]) {
                 INFO(top_string);
                 const auto alignment = compress_alignment(top_paths.alignment(0, fees, &restricted_context), x_as_m_in_alignment);
                 INFO("Alignment: " << alignment);
-                of << ">" << id << "|Score=" << result.best_score() << "|Alignment=" << alignment << "\n";
-                io::WriteWrapped(top_string, of);
-                of.flush();
+            }
+            auto &ccc = restricted_context;
+            auto &context = restricted_context;
+            for (const auto& annotated_path : top_paths) {
+                VERIFY(annotated_path.path.size());
+                std::string seq = annotated_path.str(&ccc);
+                if (seq.length() < fees.minimal_match_length) {
+                    continue;
+                }
+                // auto unpacked_path = ccc.UnpackPath(annotated_path.path, cursors);
+                auto unpacked_path = annotated_path.path;
+                auto alignment = compress_alignment(annotated_path.alignment(fees, &ccc), x_as_m_in_alignment);
+                auto nucl_path = to_nucl_path(unpacked_path);
+                std::string nucl_seq = pathtree::path2string(nucl_path, &context);
+                size_t pos = nucl_path[0].position();
+                HMMPathInfo info(p7hmm->name, annotated_path.score, seq, nucl_seq, {}, std::move(alignment),
+                                 "NA", pos);
+
+                std::stringstream header;
+                header << ">Score=" << info.score << "|Seq=" << id << "|Position=" << info.pos << "|Alignment=" << info.alignment << '\n';
+                o_seqs << header.str();
+                io::WriteWrapped(info.seq, o_seqs);
+                o_seqs.flush();
+                o_nucs << header.str();
+                io::WriteWrapped(info.nuc_seq, o_nucs);
+                o_nucs.flush();
             }
         }
     }

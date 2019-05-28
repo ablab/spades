@@ -699,7 +699,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     preM.increment(fees.t[m - 1][p7H_DM]);
     preM.merge(M, fees.t[m - 1][p7H_MM]);
     preM.merge(I, fees.t[m - 1][p7H_IM]);
-    preM.merge(F, fees.frame_shift_cost);
+    preM.merge(F, fees.t[m - 1][p7H_MM]);
 
     M.clear();
     transfer(M, preM, 0, fees.mat[m]);
@@ -831,7 +831,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   update_sink(D, fees.t[fees.M][p7H_DM]);
   update_sink(I, fees.t[fees.M][p7H_IM]);  // Do we really need I at the end?
-  update_sink(F, fees.frame_shift_cost);  // Do we really need F at the end?
+  update_sink(F, fees.t[fees.M][p7H_MM]);  // Do we really need F at the end?
   update_sink(M, fees.t[fees.M][p7H_MM]);
   sink->collapse_and_trim();
 
