@@ -22,9 +22,24 @@ class AAGraphCursor {
  public:
   using Context = typename GraphCursor::Context;
   char letter(Context context) const {
-      return c0_.is_empty() || c1_.is_empty() || c2_.is_empty() ?
-          '*' :  // FIXME use special sign for frame shift
-          to_one_letter(aa::to_aa(c0_.letter(context), c1_.letter(context), c2_.letter(context)));
+    switch (empty_count_()) {
+      case 0:
+        return to_one_letter(aa::to_aa(c0_.letter(context), c1_.letter(context), c2_.letter(context)));
+      case 1:
+        return '=';
+      case 2:
+        return '-';
+      default:
+        return '*';
+    }
+  }
+
+  char empty_count_() const {
+    char count = 0;
+    if (c0_.is_empty()) ++count;
+    if (c1_.is_empty()) ++count;
+    if (c2_.is_empty()) ++count;
+    return count;
   }
 
   template <class Archive>

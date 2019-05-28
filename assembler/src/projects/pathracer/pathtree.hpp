@@ -98,7 +98,7 @@ struct AnnotatedPath {
           event_symbol = 'I';
           break;
         case EventType::FRAME_SHIFT:
-          event_symbol = 'F';
+          event_symbol = path[i].letter(context) == '=' ? 'G' : 'P';
           break;
         case EventType::MATCH:
           event_symbol = fees.consensus[events[i].m - 1] == path[i].letter(context) ? 'M' : 'X';
