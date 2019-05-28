@@ -1269,7 +1269,10 @@ int aling_fs(int argc, char* argv[]) {
     auto seqs = read_fasta(sequence_file);
     seqs.reserve(seqs.size() * 2);
     for (size_t i = 0, n = seqs.size(); i < n; ++i) {
-        seqs.push_back({"RC" + seqs[i].first, rev_comp(seqs[i].second)});
+        std::string rc = rev_comp(seqs[i].second);
+        if (rc != seqs[i].second) {
+            seqs.push_back({seqs[i].first + "'", std::move(rc)});
+        }
     }
 
     hmmer::hmmer_cfg hcfg;
