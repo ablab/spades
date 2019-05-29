@@ -1290,6 +1290,13 @@ int aling_fs(int argc, char* argv[]) {
         fees.frame_shift_cost = fees.all_matches_score() / fees.M / indel_rate / 3;
         fees.use_experimental_i_loop_processing = true;
 
+        INFO("Query:         " << p7hmm->name << "  [M=" << p7hmm->M << "]");
+        if (p7hmm->acc) {
+            INFO("Accession:     " << p7hmm->acc);
+        }
+        if (p7hmm->desc) {
+            INFO("Description:   " << p7hmm->desc);
+        }
 
         std::ofstream o_seqs(output_dir + "/" + hmm.get()->name + ".seqs.fa");
         std::ofstream o_nucs(output_dir + "/" + hmm.get()->name + ".nucs.fa");
