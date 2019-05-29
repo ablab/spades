@@ -10,6 +10,7 @@
 #include <debug_assert/debug_assert.hpp>
 
 #include <memory>
+#include <cmath>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
@@ -303,7 +304,7 @@ public:
       const This *path_link = qe.path->data().path_link;
       const double &cost = qe.cost;
 
-      if (!is_finite(cost)) {
+      if (!std::isfinite(cost)) {
         break;
       }
 
