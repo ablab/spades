@@ -303,6 +303,10 @@ public:
       const This *path_link = qe.path->data().path_link;
       const double &cost = qe.cost;
 
+      if (!is_finite(cost)) {
+        break;
+      }
+
       TRACE("Extracting path with cost " << cost);
       if (!qe.path->is_root()) {
         const This *prev_path_link = qe.path->parent()->data().path_link;
