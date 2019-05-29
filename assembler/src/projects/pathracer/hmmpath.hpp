@@ -800,6 +800,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     I.score_filter(top, fees.absolute_threshold);
     M.score_filter(top, fees.absolute_threshold);
     D.score_filter(top, fees.absolute_threshold);
+    F.score_filter(top, fees.absolute_threshold);
 
     size_t depth_filtered = 0;
     if (m % 1 == 0) {
