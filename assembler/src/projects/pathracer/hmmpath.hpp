@@ -774,6 +774,10 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     F.clear();
     transfer_frame_shift(F, M, fees.frame_shift_cost);
 
+    I.set_event(m, EventType::INSERTION);
+    M.set_event(m, EventType::MATCH);
+    F.set_event(m, EventType::FRAME_SHIFT);
+
     size_t n_of_states = D.size() + I.size() + M.size() + F.size();
 
     TRACE("# states " << m << " => " << n_of_states);
@@ -803,10 +807,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
       depth_filtered += M.filter_key_value(depth_filter_kv);
       // depth_filtered += D.filter_key_value(depth_filter_kv);  // depth filter for Ds is not required
     }
-
-    I.set_event(m, EventType::INSERTION);
-    M.set_event(m, EventType::MATCH);
-    F.set_event(m, EventType::FRAME_SHIFT);
 
     if (fees.local) {
       update_sink(D, fees.cleavage_cost);  // FIXME subtract cost for transition -> D state ?  // FIXME check it twice! I collapsing is dangerous
