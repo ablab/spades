@@ -1217,7 +1217,7 @@ int aling_fs(int argc, char* argv[]) {
     std::string sequence_file;
     std::string output_dir;
     double indel_rate = 0.05;
-    int expand_const = 20;
+    int expand_const = 50;
     size_t top = 100;
 
     auto cli =
@@ -1373,7 +1373,6 @@ int aling_fs(int argc, char* argv[]) {
             auto &context = restricted_context;
             for (const auto& annotated_path : top_paths) {
                 VERIFY(annotated_path.path.size());
-                INFO(annotated_path.path);
                 std::string seq = annotated_path.str(&ccc);
                 if (seq.length() < fees.minimal_match_length) {
                     continue;
@@ -1382,7 +1381,6 @@ int aling_fs(int argc, char* argv[]) {
                 auto unpacked_path = annotated_path.path;
                 auto alignment = compress_alignment(annotated_path.alignment(fees, &ccc), x_as_m_in_alignment);
                 auto nucl_path = to_nucl_path(unpacked_path);
-                INFO(nucl_path);
                 VERIFY(check_path_continuity(nucl_path, &context));
                 std::string nucl_seq = pathtree::path2string(nucl_path, &context);
                 size_t pos = nucl_path[0].position();
