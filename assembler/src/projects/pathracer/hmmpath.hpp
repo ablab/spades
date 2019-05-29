@@ -756,9 +756,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   transfer(I, M, fees.t[0][p7H_MI], fees.ins[0]);
   i_loop_processing_checked(I, 0);  // Do we really need I at the beginning???
   I.set_event(0, EventType::INSERTION);
-  transfer_frame_shift(F, M, fees.frame_shift_cost);
 
-  I.set_event(0, EventType::FRAME_SHIFT);
+  transfer_frame_shift(F, M, fees.frame_shift_cost);
+  F.set_event(0, EventType::FRAME_SHIFT);
 
   for (size_t m = 1; m <= fees.M; ++m) {
     if (fees.local && m > 1) {  // FIXME check latter condition. Does it really make sense?
@@ -838,7 +838,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   DEBUG(sink->object_count_max() << " pathlink objects maximum");
   DEBUG(sink->object_count_constructed() << " pathlink objects constructed");
 
-  INFO("Sink size:" << sink->size());
+  INFO("Sink size: " << sink->size());
 
   PathSet<GraphCursor> result(sink);
   return result;
