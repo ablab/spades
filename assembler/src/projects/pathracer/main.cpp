@@ -1341,6 +1341,7 @@ int aling_fs(int argc, char* argv[]) {
             if (!cursors.size()) {
                 continue;
             }
+            INFO("Sequence: " << id);
 
             std::unordered_set<StringCursor> cursor_set(cursors.cbegin(), cursors.cend());
 

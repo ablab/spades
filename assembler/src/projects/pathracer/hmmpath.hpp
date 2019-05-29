@@ -774,7 +774,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     F.clear();
     transfer_frame_shift(F, M, fees.frame_shift_cost);
 
-    size_t n_of_states = D.size() + I.size() + M.size();
+    size_t n_of_states = D.size() + I.size() + M.size() + F.size();
 
     TRACE("# states " << m << " => " << n_of_states);
     size_t top = n_of_states;
@@ -790,7 +790,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
     if (is_power_of_two_or_zero(m)) {
       INFO("Step #: " << m);
-      INFO("# states " << m << " => " << n_of_states << ": I = " << I.size() << " M = " << M.size() << " D = " << D.size());
+      INFO("# states " << m << " => " << n_of_states << ": I = " << I.size() << " M = " << M.size() << " D = " << D.size() << " F = " << F.size());
     }
 
     I.score_filter(top, fees.absolute_threshold);
@@ -826,7 +826,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   }
 
   INFO("Max stack size in Depth: " << depth.max_stack_size());
-
 
   update_sink(D, fees.t[fees.M][p7H_DM]);
   update_sink(I, fees.t[fees.M][p7H_IM]);  // Do we really need I at the end?
