@@ -827,7 +827,6 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
   INFO("Max stack size in Depth: " << depth.max_stack_size());
 
-  PathSet<GraphCursor> result(sink);
 
   update_sink(D, fees.t[fees.M][p7H_DM]);
   update_sink(I, fees.t[fees.M][p7H_IM]);  // Do we really need I at the end?
@@ -839,6 +838,9 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   DEBUG(sink->object_count_max() << " pathlink objects maximum");
   DEBUG(sink->object_count_constructed() << " pathlink objects constructed");
 
+  INFO("Sink size:" << sink->size());
+
+  PathSet<GraphCursor> result(sink);
   return result;
 }
 

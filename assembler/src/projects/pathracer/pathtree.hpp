@@ -157,6 +157,14 @@ public:
     }
   }
 
+  size_t size() const {
+    return scores_.size();
+  }
+
+  bool empty() const {
+    return scores_.empty();
+  }
+
   PathLink(const GraphCursor &cursor = GraphCursor()) : score_{std::numeric_limits<score_t>::infinity()}, cursor_{cursor} {
     scores_.reserve(8);
   }
