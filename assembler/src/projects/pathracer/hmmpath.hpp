@@ -338,6 +338,14 @@ class StateSet : public phmap::flat_hash_map<GraphCursor, PathLinkRef<GraphCurso
     return count;
   }
 
+  size_t collapse_all_to_one() {
+    size_t count = 0;
+    for (auto &kv : *this) {
+      count += kv.second->collapse_and_trim_to_one();
+    }
+    return count;
+  }
+
   size_t trim_all() {
     size_t count = 0;
     for (auto &kv : *this) {
@@ -758,6 +766,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
   I.set_event(0, EventType::INSERTION);
 
   transfer_frame_shift(F, M, fees.frame_shift_cost);
+  F.collapse_all_to_one();  // FIXME implement proper collapsing for F state
   F.set_event(0, EventType::FRAME_SHIFT);
 
   for (size_t m = 1; m <= fees.M; ++m) {
@@ -766,6 +775,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
     }
     dm_new(D, M, I, F, m);
     M.trim_all();
+    M.collapse_all();
 
     I.clear();
     transfer(I, M, fees.t[m][p7H_MI], fees.ins[m]);
@@ -773,6 +783,7 @@ PathSet<GraphCursor> find_best_path(const hmm::Fees &fees,
 
     F.clear();
     transfer_frame_shift(F, M, fees.frame_shift_cost);
+    F.collapse_all_to_one();  // FIXME Implement proper collapsing for F state OR split F and G states
 
     I.set_event(m, EventType::INSERTION);
     M.set_event(m, EventType::MATCH);

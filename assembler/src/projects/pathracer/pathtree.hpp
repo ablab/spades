@@ -188,6 +188,13 @@ public:
     scores.resize(std::distance(scores.begin(), it));
   }
 
+  static void trim_scores_left_to_one(std::vector<std::pair<double, ThisRef>> &scores) {
+    sort_by(scores.begin(), scores.end(), [](const auto &p) { return p.first; });
+    if (scores.size() > 1) {
+      scores.resize(1);
+    }
+  }
+
   static void trim_scores_left(std::vector<std::pair<double, ThisRef>> &scores) {
     sort_by(scores.begin(), scores.end(), [](const auto &p) { return p.first; });
 
@@ -221,6 +228,21 @@ public:
     size_t prev_size = scores_.size();
     collapse_scores_left(scores_);
     trim_scores_left(scores_);
+    scores_.shrink_to_fit();
+    update_max_prefix_size();
+    // if (scores_.size() != prev_size) {
+    //   INFO("Collapsed:" << this->event_.m << " " << event_.type);
+    // }
+    return scores_.size() != prev_size;
+  }
+
+  bool collapse_and_trim_to_one() {
+    if (scores_.size() <= 1) {
+      return false;
+    }
+    size_t prev_size = scores_.size();
+    collapse_scores_left(scores_);
+    trim_scores_left_to_one(scores_);
     scores_.shrink_to_fit();
     update_max_prefix_size();
     // if (scores_.size() != prev_size) {
