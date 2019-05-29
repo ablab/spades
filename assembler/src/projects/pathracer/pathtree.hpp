@@ -26,6 +26,8 @@
 #include <cereal/types/utility.hpp>
 #include "cereal_llvm_intrusive_ptr.hpp"
 
+#include "aa_cursor.hpp"
+
 enum EventType { NONE, MATCH, INSERTION, FRAME_SHIFT };
 using score_t = double;
 
@@ -33,6 +35,48 @@ struct pathtree_assert : debug_assert::default_handler,
                          debug_assert::set_level<1> {};
 
 namespace pathtree {
+
+template <typename GraphCursor>
+struct _NuclCursor {
+  using type = GraphCursor;
+};
+
+template <typename GraphCursor>
+struct _NuclCursor<AAGraphCursor<GraphCursor>> {
+  using type = GraphCursor;
+};
+
+template <typename GraphCursor>
+using NuclCursor = typename _NuclCursor<GraphCursor>::type;
+
+template <typename GraphCursor>
+std::vector<GraphCursor> get_graph_cursors(const GraphCursor &cursor) {
+  return {cursor};
+}
+
+template <typename GraphCursor>
+auto get_graph_cursors(const AAGraphCursor<GraphCursor> &cursor) {
+  return cursor.nucl_cursors();
+}
+
+// TODO remove copy-paste
+template <typename GraphCursor>
+std::vector<GraphCursor> _to_nucl_path(const std::vector<GraphCursor> &path) {
+    return path;
+}
+
+template <typename GraphCursor>
+std::vector<GraphCursor> _to_nucl_path(const std::vector<AAGraphCursor<GraphCursor>> &path) {
+    std::vector<GraphCursor> result;
+    for (const auto aa_cursor : path) {
+        for (const GraphCursor &cursor : aa_cursor.masked_cursors()) {
+            if (!cursor.is_empty()) {  // Skip empty cursors, required for frame-shifts processing
+                result.push_back(cursor);
+            }
+        }
+    }
+    return result;
+}
 
 struct Event {
   unsigned m : 30;  // 30 bits are more than enough
@@ -182,9 +226,9 @@ public:
 
 
   static void collapse_scores_left(std::vector<std::pair<double, ThisRef>> &scores) {
-    sort_by(scores.begin(), scores.end(), [](const auto &p) { return std::make_tuple(p.second->cursor(), p.first); }); // TODO prefer matchs to insertions in case of eveness
+    sort_by(scores.begin(), scores.end(), [](const auto &p) { return std::make_tuple(get_graph_cursors(p.second->cursor()), p.first); }); // TODO prefer matchs to insertions in case of eveness
     auto it = unique_copy_by(scores.cbegin(), scores.cend(), scores.begin(),
-                             [](const auto &p){ return p.second->cursor(); });
+                             [](const auto &p){ return get_graph_cursors(p.second->cursor()); });
     scores.resize(std::distance(scores.begin(), it));
   }
 
@@ -318,7 +362,7 @@ public:
     std::unordered_set<const This*> was_end_of_some_path;
     std::unordered_set<const This*> was_nonend_of_some_path;
 
-    trie::Trie<GraphCursor> trie;
+    trie::Trie<NuclCursor<GraphCursor>> trie;
 
     while (!q.empty() && result.size() < k) {
       auto qe = q.top();
@@ -363,7 +407,8 @@ public:
           break;
         }
 
-        if (trie.try_add(annotated_path.path)) {
+        auto nucl_path = _to_nucl_path(annotated_path.path);
+        if (trie.try_add(nucl_path)) {
           result.push_back(annotated_path);
         }
 
