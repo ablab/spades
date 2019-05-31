@@ -1219,6 +1219,8 @@ int aling_fs(int argc, char* argv[]) {
     double indel_rate = 0.05;
     int expand_const = 50;
     size_t top = 100;
+    size_t threads = 16;
+    bool no_log = false;
 
     auto cli =
         (sequence_file << value("input sequence file"),
@@ -1226,6 +1228,8 @@ int aling_fs(int argc, char* argv[]) {
          (option("--indel-rate") & number("value", indel_rate))        % "indel rate",
          (option("--expand-const") & integer("value", expand_const))        % "overhang expand const",
          (option("--top") & integer("value", top))        % "maximal number of matches extracted from one sequence",
+         (option("-t,--threads") & integer("value", threads))        % "# of parallel threads",
+         no_log << option("--no-log") % "disable logging",
          required("--output", "-o") & value("output file", output_dir) % "output file"
          );
 
@@ -1241,7 +1245,9 @@ int aling_fs(int argc, char* argv[]) {
     srandom(42);
 
     int status = mkdir(output_dir.c_str(), 0775);
-    create_console_logger(output_dir + "/align_fs.log");
+    if (!no_log) {
+        create_console_logger(output_dir + "/align_fs.log");
+    }
 
     if (status != 0) {
         if (errno == EEXIST) {
@@ -1276,7 +1282,9 @@ int aling_fs(int argc, char* argv[]) {
     }
 
     hmmer::hmmer_cfg hcfg;
-    #pragma omp parallel for
+
+    omp_set_num_threads(threads);
+    #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < hmms.size(); ++i) {
         const auto &hmm = hmms[i];
         const P7_HMM *p7hmm = hmm.get();
