@@ -75,8 +75,8 @@ class AAGraphCursor {
     return result;
   }
 
-  std::vector<GraphCursor> nucl_cursors() const { return {c0_, c1_, c2_}; }
-  std::vector<GraphCursor> masked_cursors() const {
+  std::vector<GraphCursor> triplet_cursors() const { return {c0_, c1_, c2_}; }
+  std::vector<GraphCursor> nucl_cursors() const {
     std::vector<GraphCursor> result;
     if (mask_ & 1) result.push_back(c0_);
     if ((mask_ >> 1) & 1) result.push_back(c1_);

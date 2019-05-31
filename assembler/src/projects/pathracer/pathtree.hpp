@@ -38,19 +38,6 @@ struct pathtree_assert : debug_assert::default_handler,
 namespace pathtree {
 
 template <typename GraphCursor>
-struct _NuclCursor {
-  using type = GraphCursor;
-};
-
-template <typename GraphCursor>
-struct _NuclCursor<AAGraphCursor<GraphCursor>> {
-  using type = GraphCursor;
-};
-
-template <typename GraphCursor>
-using NuclCursor = typename _NuclCursor<GraphCursor>::type;
-
-template <typename GraphCursor>
 auto triplet_form(const GraphCursor &cursor) {
   return cursor;
 }
@@ -65,20 +52,49 @@ inline auto triplet_form(const CachedAACursor &cursor) {
   return cursor.triplet_form();
 }
 
+template <typename GraphCursor>
+struct _NuclCursor {
+  using type = GraphCursor;
+};
+
+template <typename GraphCursor>
+struct _NuclCursor<AAGraphCursor<GraphCursor>> {
+  using type = GraphCursor;
+};
+
+template <>
+struct _NuclCursor<CachedAACursor> {
+  using type = size_t;
+};
+
+template <typename GraphCursor>
+using NuclCursor = typename _NuclCursor<GraphCursor>::type;
+
 // TODO remove copy-paste
 template <typename GraphCursor>
-std::vector<GraphCursor> _to_nucl_path(const std::vector<GraphCursor> &path) {
+auto _to_nucl_path(const std::vector<GraphCursor> &path, typename GraphCursor::Context) {
     return path;
 }
 
 template <typename GraphCursor>
-std::vector<GraphCursor> _to_nucl_path(const std::vector<AAGraphCursor<GraphCursor>> &path) {
+auto _to_nucl_path(const std::vector<AAGraphCursor<GraphCursor>> &path, typename GraphCursor::Context) {
     std::vector<GraphCursor> result;
     for (const auto aa_cursor : path) {
-        for (const GraphCursor &cursor : aa_cursor.masked_cursors()) {
+        for (const GraphCursor &cursor : aa_cursor.nucl_cursors()) {
             if (!cursor.is_empty()) {  // Skip empty cursors, required for frame-shifts processing
                 result.push_back(cursor);
             }
+        }
+    }
+    return result;
+}
+
+template <>
+inline auto _to_nucl_path(const std::vector<CachedAACursor> &path, CachedAACursor::Context context) {
+    std::vector<size_t> result;
+    for (const auto aa_cursor : path) {
+        for (const auto &cursor : aa_cursor.nucl_cursor_indices(context)) {
+            result.push_back(cursor);
         }
     }
     return result;
@@ -325,7 +341,7 @@ public:
     return scores_.size() == 0 && score_ == 0;
   }
 
-  std::vector<AnnotatedPath<GraphCursor>> top_k(typename GraphCursor::Context /*context*/,
+  std::vector<AnnotatedPath<GraphCursor>> top_k(typename GraphCursor::Context context,
                                                 size_t k, double min_score = 0) const {
     struct Event {
       const This *path_link;
@@ -413,7 +429,7 @@ public:
           break;
         }
 
-        auto nucl_path = _to_nucl_path(annotated_path.path);
+        auto nucl_path = _to_nucl_path(annotated_path.path, context);
         if (trie.try_add(nucl_path)) {
           result.push_back(annotated_path);
         }

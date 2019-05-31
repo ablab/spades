@@ -55,7 +55,7 @@ template <typename GraphCursor>
 std::vector<GraphCursor> to_nucl_path(const std::vector<AAGraphCursor<GraphCursor>> &path) {
     std::vector<GraphCursor> result;
     for (const auto aa_cursor : path) {
-        for (const GraphCursor &cursor : aa_cursor.masked_cursors()) {
+        for (const GraphCursor &cursor : aa_cursor.nucl_cursors()) {
             if (!cursor.is_empty()) {  // Skip empty cursors, required for frame-shifts processing
                 result.push_back(cursor);
             }

@@ -42,6 +42,8 @@ public:
         return result;
     }
 
+    std::vector<size_t> nucl_cursor_indices(Context context) const;
+
     bool operator<(const CachedAACursor &other) const { return to_size_t() < other.to_size_t(); }
 
     template <class Archive>
@@ -111,7 +113,7 @@ public:
         std::unordered_map<AAGraphCursor<Cursor>, size_t> aa_cursor2index;
         auto get_or_create = [&](const auto &aa_cursor) -> size_t {
             auto triplet_form = aa_cursor.triplet_form();
-            auto triplet = aa_cursor.nucl_cursors();
+            auto triplet = aa_cursor.triplet_cursors();
             if (!aa_cursor2index.count(triplet_form)) {
                 aa_cursor2index[triplet_form] = triplets_.size();
                 triplets_.push_back({cursor2index[triplet[0]], cursor2index[triplet[1]], cursor2index[triplet[2]]});
@@ -182,6 +184,16 @@ inline char CachedAACursor::letter(CachedAACursor::Context context) const {
         default:
             return '*';
     }
+}
+
+inline std::vector<size_t> CachedAACursor::nucl_cursor_indices(Context context) const {
+    if (is_empty()) return {};
+    std::vector<size_t> result;
+    const auto &triplet = context->triplets_[index_];
+    if (mask_ & 1) result.push_back(triplet[0]);
+    if ((mask_ >> 1) & 1) result.push_back(triplet[1]);
+    if ((mask_ >> 2) & 1) result.push_back(triplet[2]);
+    return result;
 }
 
 inline const std::vector<CachedAACursor> &CachedAACursor::next(CachedAACursor::Context context) const {
