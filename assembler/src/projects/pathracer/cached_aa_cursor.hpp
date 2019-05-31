@@ -33,7 +33,8 @@ public:
     char letter(Context context) const;
     size_t index() const { return index_; }
     unsigned char mask() const { return mask_; }
-    uint64_t to_size_t() const { return *reinterpret_cast<const uint64_t *>(this); }
+    // uint64_t to_size_t() const { return *reinterpret_cast<const uint64_t *>(this); }
+    uint64_t to_size_t() const { return (index_ << 3) + mask_; }
     const std::vector<CachedAACursor> &next_frame_shift(Context context) const;
 
     CachedAACursor triplet_form() const {
