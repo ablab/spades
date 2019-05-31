@@ -1358,13 +1358,8 @@ int aling_fs(int argc, char* argv[]) {
 
             CachedAACursorContext caacc(restricted_component_cursors, &restricted_context);
             auto all_cursors = caacc.Cursors();
-            auto result_aa = find_best_path(fees, all_cursors, &caacc);
+            auto result = find_best_path(fees, all_cursors, &caacc);
 
-
-            auto aa_cursors = make_aa_cursors(restricted_component_cursors, &restricted_context);
-
-            auto result = find_best_path(fees, aa_cursors, &restricted_context);
-            INFO(result_aa.best_score() << " " << result.best_score());
             // INFO("Collapsing event graph");
             // size_t collapsed_count = result.pathlink_mutable()->collapse_all();
             // INFO(collapsed_count << " event graph vertices modified");
@@ -1372,28 +1367,26 @@ int aling_fs(int argc, char* argv[]) {
             // INFO("Event graph depth " << result.pathlink()->max_prefix_size());
 
             INFO("Extracting top paths");
-            auto top_paths = result.top_k(&restricted_context, top);
+            auto top_paths = result.top_k(&caacc, top);
 
             bool x_as_m_in_alignment = fees.is_proteomic();
             if (!top_paths.empty()) {
                 INFO("Best score in the current component: " << result.best_score());
                 INFO("Best sequence in the current component");
-                const auto top_string = top_paths.str(0, &restricted_context);
+                const auto top_string = top_paths.str(0, &caacc);
                 INFO(top_string);
-                const auto alignment = compress_alignment(top_paths.alignment(0, fees, &restricted_context), x_as_m_in_alignment);
+                const auto alignment = compress_alignment(top_paths.alignment(0, fees, &caacc), x_as_m_in_alignment);
                 INFO("Alignment: " << alignment);
             }
-            auto &ccc = restricted_context;
             auto &context = restricted_context;
             for (const auto& annotated_path : top_paths) {
                 VERIFY(annotated_path.path.size());
-                std::string seq = annotated_path.str(&ccc);
+                std::string seq = annotated_path.str(&caacc);
                 if (seq.length() < fees.minimal_match_length) {
                     continue;
                 }
-                // auto unpacked_path = ccc.UnpackPath(annotated_path.path, cursors);
-                auto unpacked_path = annotated_path.path;
-                auto alignment = compress_alignment(annotated_path.alignment(fees, &ccc), x_as_m_in_alignment);
+                auto unpacked_path = caacc.UnpackPath(annotated_path.path, restricted_component_cursors);
+                auto alignment = compress_alignment(annotated_path.alignment(fees, &caacc), x_as_m_in_alignment);
                 auto nucl_path = to_nucl_path(unpacked_path);
                 VERIFY(check_path_continuity(nucl_path, &context));
                 std::string nucl_seq = pathtree::path2string(nucl_path, &context);
