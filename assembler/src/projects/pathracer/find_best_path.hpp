@@ -9,6 +9,7 @@
 #include "pathtree.hpp"
 #include "restricted_cursor.hpp"
 #include "aa_cursor.hpp"
+#include "cached_aa_cursor.hpp"
 #include "string_cursor.hpp"
 #include "cached_cursor.hpp"
 #include "debruijn_graph_cursor.hpp"
@@ -52,3 +53,6 @@ PathSet<AAGraphCursor<StringCursor>> find_best_path(const hmm::Fees &fees, const
 
 PathSet<AAGraphCursor<OptimizedRestrictedGraphCursor<StringCursor>>> find_best_path(const hmm::Fees &fees, const std::vector<AAGraphCursor<OptimizedRestrictedGraphCursor<StringCursor>>> &initial,
                                                                                     AAGraphCursor<OptimizedRestrictedGraphCursor<StringCursor>>::Context context);
+
+PathSet<CachedAACursor> find_best_path(const hmm::Fees &fees, const std::vector<CachedAACursor> &initial,
+                                       CachedAACursor::Context context);

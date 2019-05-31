@@ -1209,7 +1209,7 @@ int pathracer_main(int argc, char* argv[]) {
     INFO("Pathracer successfully finished! Thanks for flying us!");
     return 0;
 }
-
+#include "cached_aa_cursor.hpp"
 int aling_fs(int argc, char* argv[]) {
     using namespace clipp;
 
@@ -1356,9 +1356,15 @@ int aling_fs(int argc, char* argv[]) {
             auto restricted_context = make_optimized_restricted_cursor_context(cursor_set, &seq);
             auto restricted_component_cursors = make_optimized_restricted_cursors(cursors);
 
+            CachedAACursorContext caacc(restricted_component_cursors, &restricted_context);
+            auto all_cursors = caacc.Cursors();
+            auto result_aa = find_best_path(fees, all_cursors, &caacc);
+
+
             auto aa_cursors = make_aa_cursors(restricted_component_cursors, &restricted_context);
 
             auto result = find_best_path(fees, aa_cursors, &restricted_context);
+            INFO(result_aa.best_score() << " " << result.best_score());
             // INFO("Collapsing event graph");
             // size_t collapsed_count = result.pathlink_mutable()->collapse_all();
             // INFO(collapsed_count << " event graph vertices modified");

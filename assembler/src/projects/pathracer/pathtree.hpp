@@ -27,6 +27,7 @@
 #include "cereal_llvm_intrusive_ptr.hpp"
 
 #include "aa_cursor.hpp"
+#include "cached_aa_cursor.hpp"
 
 enum EventType { NONE, MATCH, INSERTION, FRAME_SHIFT };
 using score_t = double;
@@ -50,13 +51,18 @@ template <typename GraphCursor>
 using NuclCursor = typename _NuclCursor<GraphCursor>::type;
 
 template <typename GraphCursor>
-std::vector<GraphCursor> get_graph_cursors(const GraphCursor &cursor) {
-  return {cursor};
+auto triplet_form(const GraphCursor &cursor) {
+  return cursor;
 }
 
 template <typename GraphCursor>
-auto get_graph_cursors(const AAGraphCursor<GraphCursor> &cursor) {
-  return cursor.nucl_cursors();
+auto triplet_form(const AAGraphCursor<GraphCursor> &cursor) {
+  return cursor.triplet_form();
+}
+
+template <>
+inline auto triplet_form(const CachedAACursor &cursor) {
+  return cursor.triplet_form();
 }
 
 // TODO remove copy-paste
@@ -226,9 +232,9 @@ public:
 
 
   static void collapse_scores_left(std::vector<std::pair<double, ThisRef>> &scores) {
-    sort_by(scores.begin(), scores.end(), [](const auto &p) { return std::make_tuple(get_graph_cursors(p.second->cursor()), p.first); }); // TODO prefer matchs to insertions in case of eveness
+    sort_by(scores.begin(), scores.end(), [](const auto &p) { return std::make_tuple(triplet_form(p.second->cursor()), p.first); }); // TODO prefer matchs to insertions in case of eveness
     auto it = unique_copy_by(scores.cbegin(), scores.cend(), scores.begin(),
-                             [](const auto &p){ return get_graph_cursors(p.second->cursor()); });
+                             [](const auto &p){ return triplet_form(p.second->cursor()); });
     scores.resize(std::distance(scores.begin(), it));
   }
 

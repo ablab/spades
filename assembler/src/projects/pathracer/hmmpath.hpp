@@ -32,6 +32,27 @@ struct hmmpath_assert : debug_assert::default_handler,
 using pathtree::PathLink;
 using pathtree::PathLinkRef;
 
+// template <typename... Ts> using void_t = void;
+//
+// template <typename T, typename = void>
+// struct has_next_frame_shift_method : std::false_type {};
+//
+// template <typename T>
+// struct has_next_frame_shift_method<T, void_t<decltype(std::declval<T>().next_frame_shift(std::declval<T::Context>()))>> : std::true_type {};
+//
+// template <class GraphCursor>
+// std::enable_if_t<has_next_frame_shift_method<GraphCursor>::value, const std::vector<GraphCursor>>
+// next_frame_shift(const GraphCursor &cursor, typename GraphCursor::Context context) {
+//   return cursor.next_frame_shift(context);
+// }
+//
+// template <class GraphCursor>
+// std::enable_if_t<!has_next_frame_shift_method<GraphCursor>::value, const std::vector<GraphCursor>>
+// next_frame_shift(const GraphCursor&, typename GraphCursor::Context) {
+//   return {};
+// }
+// FIXME use SFINAE
+
 template <typename GraphCursor>
 const std::vector<GraphCursor> next_frame_shift(const GraphCursor&, typename GraphCursor::Context) {
   return {};
@@ -43,6 +64,11 @@ const std::vector<AAGraphCursor<GraphCursor>> next_frame_shift(const AAGraphCurs
   return cursor.next_frame_shift(context);
 }
 
+template <>
+const std::vector<CachedAACursor> next_frame_shift(const CachedAACursor &cursor,
+                                                   typename CachedAACursor::Context context) {
+  return cursor.next_frame_shift(context);
+}
 
 template <typename Map>
 class FilterMapMixin {

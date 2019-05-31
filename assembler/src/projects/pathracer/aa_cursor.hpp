@@ -34,9 +34,13 @@ class AAGraphCursor {
     }
   }
 
+  unsigned char mask() const {
+    return mask_;
+  }
+
   template <class Archive>
   void serialize(Archive &archive) {
-    archive(c0_, c1_, c2_);
+    archive(c0_, c1_, c2_, mask_);
   }
   AAGraphCursor() = default;
   AAGraphCursor(const GraphCursor &c0, const GraphCursor &c1, const GraphCursor &c2,
@@ -77,6 +81,12 @@ class AAGraphCursor {
     if (mask_ & 1) result.push_back(c0_);
     if ((mask_ >> 1) & 1) result.push_back(c1_);
     if ((mask_ >> 2) & 1) result.push_back(c2_);
+    return result;
+  }
+
+  auto triplet_form() const {
+    This result = *this;
+    result.mask_ = 0b111;
     return result;
   }
 
@@ -141,5 +151,4 @@ struct hash<AAGraphCursor<GraphCursor>> {
   }
 };
 }  // namespace std
-
 // vim: set ts=2 sw=2 et :
