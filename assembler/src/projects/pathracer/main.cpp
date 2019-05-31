@@ -1358,6 +1358,9 @@ int aling_fs(int argc, char* argv[]) {
 
             CachedAACursorContext caacc(restricted_component_cursors, &restricted_context);
             auto all_cursors = caacc.Cursors();
+            for (const auto &cursor : all_cursors) {
+                VERIFY(check_cursor_symmetry(cursor, &caacc));
+            }
             auto result = find_best_path(fees, all_cursors, &caacc);
 
             // INFO("Collapsing event graph");
