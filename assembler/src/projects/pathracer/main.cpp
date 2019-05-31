@@ -1228,7 +1228,7 @@ int aling_fs(int argc, char* argv[]) {
          (option("--indel-rate") & number("value", indel_rate))        % "indel rate",
          (option("--expand-const") & integer("value", expand_const))        % "overhang expand const",
          (option("--top") & integer("value", top))        % "maximal number of matches extracted from one sequence",
-         (option("-t,--threads") & integer("value", threads))        % "# of parallel threads",
+         (option("-t", "--threads") & integer("value", threads))        % "# of parallel threads",
          no_log << option("--no-log") % "disable logging",
          required("--output", "-o") & value("output file", output_dir) % "output file"
          );

@@ -27,13 +27,13 @@ public:
     CachedAACursor(size_t index, unsigned char mask = 0b111) : index_{index}, mask_{mask} {}
     CachedAACursor() : index_{size_t(-1)}, mask_{0b000} {}
     bool is_empty() const { return mask_ == 0b000; }
-    bool operator==(const CachedAACursor &other) const { return index_ == other.index_ && mask_ == other.mask_; }
+    bool operator==(const CachedAACursor &other) const { return to_size_t() == other.to_size_t(); }
     const std::vector<CachedAACursor> &next(Context context) const;
     const std::vector<CachedAACursor> &prev(Context context) const;
     char letter(Context context) const;
     size_t index() const { return index_; }
     unsigned char mask() const { return mask_; }
-    size_t to_size_t() const { return *reinterpret_cast<const size_t *>(this); }
+    uint64_t to_size_t() const { return *reinterpret_cast<const uint64_t *>(this); }
     const std::vector<CachedAACursor> &next_frame_shift(Context context) const;
 
     CachedAACursor triplet_form() const {
@@ -197,12 +197,15 @@ inline std::vector<size_t> CachedAACursor::nucl_cursor_indices(Context context) 
 }
 
 inline const std::vector<CachedAACursor> &CachedAACursor::next(CachedAACursor::Context context) const {
+    VERIFY(!is_empty());
     return context->nexts_[index_];
 }
 inline const std::vector<CachedAACursor> &CachedAACursor::prev(CachedAACursor::Context context) const {
+    VERIFY(!is_empty());
     return context->prevs_[index_];
 }
 inline const std::vector<CachedAACursor> &CachedAACursor::next_frame_shift(CachedAACursor::Context context) const {
+    VERIFY(!is_empty());
     return context->nexts_frame_shift_[index_];
 }
 
