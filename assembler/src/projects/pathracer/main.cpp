@@ -1219,7 +1219,7 @@ int aling_fs(int argc, char* argv[]) {
     double indel_rate = 0.05;
     int expand_const = 50;
     size_t top = 100;
-    size_t threads = 16;
+    int threads = 16;
     bool no_log = false;
 
     auto cli =
@@ -1295,7 +1295,7 @@ int aling_fs(int argc, char* argv[]) {
         fees.state_limits.l100 = 50000 * state_limits_coef;
         fees.state_limits.l500 = 10000 * state_limits_coef;
         fees.minimal_match_length = 0;  // FIXME fix depth filter for frame shifts
-        fees.frame_shift_cost = fees.all_matches_score() / fees.M / indel_rate / 3;
+        fees.frame_shift_cost = fees.all_matches_score() / static_cast<double>(fees.M) / indel_rate / 3;
         fees.use_experimental_i_loop_processing = true;
 
         INFO("Query:         " << p7hmm->name << "  [M=" << p7hmm->M << "]");
