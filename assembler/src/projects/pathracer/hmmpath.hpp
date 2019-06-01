@@ -65,8 +65,8 @@ const std::vector<AAGraphCursor<GraphCursor>> next_frame_shift(const AAGraphCurs
 }
 
 template <>
-const std::vector<CachedAACursor> next_frame_shift(const CachedAACursor &cursor,
-                                                   typename CachedAACursor::Context context) {
+inline const std::vector<CachedAACursor> next_frame_shift(const CachedAACursor &cursor,
+                                                          typename CachedAACursor::Context context) {
   return cursor.next_frame_shift(context);
 }
 
