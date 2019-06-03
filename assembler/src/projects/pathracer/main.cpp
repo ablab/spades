@@ -1323,6 +1323,15 @@ int aling_fs(int argc, char* argv[]) {
             }
 
             matcher.summarize();
+            float seq_bitscore = -std::numeric_limits<float>::infinity();
+            for (const auto &hit : matcher.hits()) {
+                if (!hit.reported() || !hit.included())
+                    continue;
+
+                for (const auto &domain : hit.domains()) {
+                    seq_bitscore = std::max(seq_bitscore, domain.bitscore());
+                }
+            }
             std::unordered_set<size_t> indices;
             auto get = [&](size_t i) -> const std::string& {
                 return seqs[i].second;
@@ -1398,8 +1407,25 @@ int aling_fs(int argc, char* argv[]) {
                 HMMPathInfo info(p7hmm->name, annotated_path.score, seq, nucl_seq, {}, std::move(alignment),
                                  "NA", pos);
 
+                std::string seq_without_gaps = seq;
+                seq_without_gaps.erase(std::remove_if(seq_without_gaps.begin(), seq_without_gaps.end(), [](char ch) {return ch == '-' || ch == '=';}),
+                                       seq_without_gaps.end());
+                matcher.reset();
+                matcher.match("seq", seq_without_gaps.c_str());
+                matcher.summarize();
+                float bitscore = -std::numeric_limits<float>::infinity();
+                for (const auto &hit : matcher.hits()) {
+                    if (!hit.reported() || !hit.included())
+                        continue;
+
+                    for (const auto &domain : hit.domains()) {
+                        bitscore = std::max(bitscore, domain.bitscore());
+                        INFO("bitscore:" << domain.bitscore());
+                    }
+                }
                 std::stringstream header;
-                header << ">Score=" << info.score << "|Seq=" << id << "|Position=" << info.pos << "|Alignment=" << info.alignment << '\n';
+                // FIXME report PartialScore correspondent to the currunt much rather than just maximal partial score
+                header << ">Score=" << info.score << "|Bitscore=" << bitscore << "|PartialBitscore=" << seq_bitscore << "|Seq=" << id << "|Position=" << info.pos << "|Alignment=" << info.alignment << '\n';
                 o_seqs << header.str();
                 io::WriteWrapped(info.seq, o_seqs);
                 o_seqs.flush();
