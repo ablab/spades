@@ -49,6 +49,10 @@ HMMMatcher::HMMMatcher(const HMM &hmmw,
 
     p7_pli_NewModel(pli, om, bg);
 
+    reset();
+}
+
+void HMMMatcher::reset() {
     th_.reset(p7_tophits_Create());
 }
 

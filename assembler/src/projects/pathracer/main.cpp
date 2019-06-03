@@ -1309,11 +1309,12 @@ int aling_fs(int argc, char* argv[]) {
         std::ofstream o_seqs(output_dir + "/" + hmm.get()->name + ".seqs.fa");
         std::ofstream o_nucs(output_dir + "/" + hmm.get()->name + ".nucs.fa");
 
+        hmmer::HMMMatcher matcher(hmm, hcfg);
         for (size_t j = 0; j < seqs.size(); ++j) {
             const auto &id = seqs[j].first;
             const auto &seq = seqs[j].second;
 
-            hmmer::HMMMatcher matcher(hmm, hcfg);
+            matcher.reset();
 
             for (size_t shift = 0; shift < 3; ++shift) {
                 std::string ref = std::to_string(j) + std::string("/") + std::to_string(shift);

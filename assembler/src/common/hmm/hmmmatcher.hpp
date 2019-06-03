@@ -130,6 +130,7 @@ class HMMMatcher {
                const hmmer_cfg &cfg);
     void match(const char *name, const char *seq, const char *desc = NULL);
 
+    void reset();
     void summarize();
     P7_TOPHITS *top_hits() const;
     P7_PIPELINE *pipeline() const;
