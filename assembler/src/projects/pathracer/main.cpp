@@ -1221,6 +1221,8 @@ int aling_fs(int argc, char* argv[]) {
     size_t top = 100;
     int threads = 16;
     bool no_log = false;
+    bool exhaustive = false;
+    bool local = false;
 
     auto cli =
         (sequence_file << value("input sequence file"),
@@ -1230,6 +1232,8 @@ int aling_fs(int argc, char* argv[]) {
          (option("--top") & integer("value", top))        % "maximal number of matches extracted from one sequence",
          (option("-t", "--threads") & integer("value", threads))        % "# of parallel threads",
          no_log << option("--no-log") % "disable logging",
+         exhaustive << option("--exhaustive") % "run in exhaustive mode, disable HMM filter",
+         local << option("--local") % "perform local-local search",
          required("--output", "-o") & value("output file", output_dir) % "output file"
          );
 
@@ -1297,6 +1301,7 @@ int aling_fs(int argc, char* argv[]) {
         fees.minimal_match_length = 0;  // FIXME fix depth filter for frame shifts
         fees.frame_shift_cost = fees.all_matches_score() / static_cast<double>(fees.M) / indel_rate / 3;
         fees.use_experimental_i_loop_processing = true;
+        fees.local = local;
 
         INFO("Query:         " << p7hmm->name << "  [M=" << p7hmm->M << "]");
         if (p7hmm->acc) {
@@ -1354,6 +1359,12 @@ int aling_fs(int argc, char* argv[]) {
             std::vector<StringCursor> cursors;
             for (size_t i : indices) {
                 cursors.push_back(StringCursor(i));
+            }
+
+            if (exhaustive) {
+                for (size_t i = 0; i < seq.size(); ++i) {
+                    cursors.push_back(StringCursor(i));
+                }
             }
 
             if (!cursors.size()) {
@@ -1420,7 +1431,6 @@ int aling_fs(int argc, char* argv[]) {
 
                     for (const auto &domain : hit.domains()) {
                         bitscore = std::max(bitscore, domain.bitscore());
-                        INFO("bitscore:" << domain.bitscore());
                     }
                 }
                 std::stringstream header;
