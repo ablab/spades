@@ -3,42 +3,38 @@
 Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, coding sequences, etc.) to assembly graphs. 
 
 
-## Main pipeline
+## Running SPAligner
 
-Overview of the alignment of query sequence *S* (orange bar) to assembly graph *G*. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
+    spaligner spaligner_config.yaml \    # config file 
+              -d pacbio \                # data type: pacbio, nanopore
+              -g assembly_graph.gfa \    # gfa-file with assembly graph 
+              -k 77 \                    # graph K-mer size
+              -s pacbio_reads.fastq.gz \ # sequences to align in fasta/fastq formats
+              -t 8                       # number of threads
 
-![pipeline](pipeline.jpg)
+By default, spaligner_config.yaml will be installed into /usr/share/spaligner/ or can be found in assembler/projects/spaligner/.
 
-1. **Hit search.** Hits (regions of high similarity) between the query and the edge labels are identified with [BWA-MEM](http://bio-bwa.sourceforge.net/). 
-2. **Hit filtering.** Hits shorter than *K*, assembly graph *K*-mer size,(hits 5, 6, 9), hits “in the middle” of long edge (hit 4) or ambiguous hits (hit 7 mostly covered by hit 2, both hits 11 and 12) are discarded.
-3. **Hit chaining.** Heaviest chain of compatible hits (chain 1->3->2) is determined.
-4. **Reconstruction of filling paths.** Paths for fragments of the query between the consecutive chain hits (as well as left- and right-most fragments) are reconstructed. The procedure is performed using fast library for sequence alignment [Edlib](https://github.com/Martinsos/edlib).
+Alignments will be saved to spaligner_result/alignment.tsv by default.
+
 
 ## Compilation
 
     git clone https://github.com/ablab/spades.git
-    cd algorithmic-biology/assembler/
+    cd spades/assembler/
     mkdir build && cd build && cmake ../src
     make spaligner
 
+Now to run SPAligner move to folder `assembler/` and execute
 
-## Running SPAligner
-
-    spaligner spaligner_config.yaml \
-              -k 77 -d pacbio \
-              -g assembly_graph.gfa \
-              -s pacbio_reads.fastq.gz
-
-By default, spaligner_config.yaml will be installed into /usr/share/spaligner/. 
-For nucleotide sequences alignments will be saved to spaligner_output.tsv by default.
+    build/bin/spaligner
 
 ## Output
 
 SPAligner can represent the results in three formats: *.tsv (default), *.fasta and [*.gpa](https://github.com/ocxtal/gpa "GPA-format spec").
 
-    spaligner_output.tsv              tab-separated file with alignments information, each line represents an alignment of a single sequence
-    spaligner_output.fasta            each record represents alignment of a sequence onto assembly graph
-    spaligner_output.gpa              alignment stored in gpa-format
+    spaligner_result/alignment.tsv              tab-separated file with alignments information, each line represents an alignment of a single sequence
+    spaligner_result/alignment.fasta            each record represents alignment of a sequence onto assembly graph
+    spaligner_result/alignment.gpa              alignment stored in gpa-format
 
 
 ## Results interpretation
@@ -84,7 +80,7 @@ AGGTTGTTTTTTGTTTCTTCCGC... — sequence of alignment Path <br/>
 
 **Example 3**<br/>
 
-Sometimes sequence alignment on the graph can be represented as several non-overlapping subpaths (if there is no alignment with appropriate score between two consecutive bwa hits). <br/>
+Sometimes sequence alignment on the graph can be represented as several non-overlapping subpaths (if there is no alignment with appropriate score between two consecutive bwa anchors). <br/>
 So, there can be several unconnected alignments of sequence onto assembly graph and several start positions, end positions, paths etc.:
 
 ```
@@ -102,43 +98,55 @@ Path sequence: TTATCCGGG.
 
 If a sequence was not fully aligned, SPAligner tries to prolong the longest alignment subpath in order to reconstruct a full alignment path. In **Example 2** SPAligner was not able to prolong any of two given alignments.
 
+
+## Algorithm overview
+
+Overview of the alignment of the nucleotide query sequence *S* (orange bar) to assembly graph *G*. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
+
+![pipeline](pipeline.jpg)
+
+1. **Anchor search.** Anchors (regions of high similarity) between the query and the edge labels are identified with [BWA-MEM](http://bio-bwa.sourceforge.net/). 
+2. **Anchor filtering.** Anchors shorter than *K*, assembly graph *K*-mer size,(anchors 2, 6, 11), anchors “in the middle” of long edge (anchor 7) or ambiguous anchors (anchor 10 mostly covered by anchor 9, both anchors 4 and 5) are discarded.
+3. **Anchor chaining.** Heaviest chain of compatible anchors (chain 3->8->9) is determined.
+4. **Reconstruction of filling paths.** Paths for fragments of the query between the consecutive chain anchors (as well as left- and right-most fragments) are reconstructed. The procedure is performed using fast library for sequence alignment [Edlib](https://github.com/Martinsos/edlib).
+
 ## Parameters tuning
 
 Full list of parameters can be found in spaligner_config.yaml. 
 
-### Nucleotide sequence alignment
+### General alignment parameters
 
-* `run_dijkstra: true` Run Dijkstra algorithm to find alignment between hits, if `run_dijkstra=false`, SPAligner will check limited number of paths and return the best one.
-* `restore_ends: true` Restore alignment path before leftmost hit and after rightmost hit.
+* `run_dijkstra: true` Run Dijkstra algorithm to find alignment between anchors, if `run_dijkstra: false`, SPAligner will check limited number of paths and return the best one.
+* `restore_ends: true` Restore alignment path before leftmost anchor and after rightmost anchor.
 
 
-* `internal_length_cutoff: 200` BWA hits with length < internal_length_cutoff will be filtered out.
-* `path_limit_stretching: 1.3` Pair of hits is considered to be compatible if (the minimal distance between them in graph) 
-                                < path_limit_stretching * (the distance between their positions on sequence).
-* `path_limit_pressing: 0.7` Pair of hits is considered to be compatible if (the minimal distance between them in graph) 
-                                > path_limit_pressing * (the distance between their positions on sequence).
-* `max_path_in_chaining: 15000` Limit on number of paths to consider between two hits on hits chaining step.
-* `max_vertex_in_chaining: 5000` Limit on number of vertices to consider between two hits on hits chaining step.
+* `internal_length_cutoff: 200` Anchors with length < `internal_length_cutoff` will be filtered out.
+* `path_limit_stretching: 1.3` Pair of anchors is considered to be compatible if (the minimal distance between them in graph) 
+                                < `path_limit_stretching` * (the distance between their positions on sequence).
+* `path_limit_pressing: 0.7` Pair of anchors is considered to be compatible if (the minimal distance between them in graph) 
+                                > `path_limit_pressing` * (the distance between their positions on sequence).
+* `max_path_in_chaining: 15000` Limit on number of paths to consider between two anchors on anchors chaining step.
+* `max_vertex_in_chaining: 5000` Limit on number of vertices to consider between two anchors on anchors chaining step.
 
-### Dijskstra run parameters
+### Internal run parameters
 
 * `queue_limit: 1000000` Limit on queue length. 
 * `iteration_limit: 1000000` Limit on total number of queue extraction. 
 * `updates_limit: 1000000` Limit on number of updates of shortest distance for all states.
-* `find_shortest_path: true` If `find_shortest_path=false` Dijkstra algorithm will stop when it reaches finish state without searching for shortest path.
-* `restore_mapping: false` If `restore_mapping=true` Dijkstra algorithm will return full alignment information (used by for developers).
+* `find_shortest_path: true` If `find_shortest_path: false` Dijkstra algorithm will stop when it reaches finish state without searching for shortest path.
+* `restore_mapping: false` If `restore_mapping: true` Dijkstra algorithm will return full alignment information (used by for developers).
 * `penalty_ratio: 0.1` Algorithm never considers states representing an alignment of a prefix S[0:i] with score more than min_score(i) + i*penalty_ratio (for nucleotide sequence alignment only).
 * `max_ed_proportion: 3` Maximal edit distance is bounded by a fraction of the query sequence length |S|/max_ed_proportion. Increase of max_ed_proportion leads to shorter alignments but with higer identity.
 * `ed_lower_bound: 500` Minimal penalty score of alignment.
 * `ed_upper_bound: 2000` Maximal penalty score of alignment.
-* `max_gs_states: 120000000` If number of queue states exceeds max_gs_limit then shortest path search is not performed (for nucleotide sequence alignment only).
-* `max_restorable_length: 5000` If distance between two hits or between leftmost/rightmost hit and start/end exceeds max_restorable_length then shortest path search is not performed.
+* `max_gs_states: 120000000` If number of queue states exceeds `max_gs_limit` then shortest path search is not performed (for nucleotide sequence alignment only).
+* `max_restorable_length: 5000` If distance between two anchors or between leftmost/rightmost anchor and start/end exceeds `max_restorable_length` then shortest path search is not performed.
 
-Increase of max_gs_states, max_restorable_length, queue_limit, iteration_limit or updates_limit may lead to longer alignments with the same identity level, but slows down the process and can use much more memory.
+Increase of `max_gs_states`, `max_restorable_length`, `queue_limit`, `iteration_limit` or `updates_limit` may lead to longer alignments with the same identity level, but slows down the process and can use much more memory. Please change them if you 100% confident in what you are doing.
 
 Turning off restore_ends or run_dijkstra in nucleotide sequence alignment mode leads to shorter alignments, but considerable speed-up.
 
 
 ## Contacts
 
-For any questions or suggestions please create an issue or do not hesitate to contact Tatiana Dvorkina <tedvorkina@gmail.com> directly.
+For any questions or suggestions please do not hesitate to contact Tatiana Dvorkina <tedvorkina@gmail.com>.
