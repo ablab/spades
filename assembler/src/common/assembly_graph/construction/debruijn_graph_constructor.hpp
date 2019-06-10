@@ -223,6 +223,15 @@ private:
         }
     }
 
+    bool StepRightIfPossible(KeyWithHash &kwh) const {
+        utils::InOutMask mask = origin_.get_value(kwh);
+        if (mask.CheckUniqueOutgoing() && mask.CheckUniqueIncoming()) {
+            kwh = origin_.GetOutgoing(kwh, mask.GetUniqueOutgoing());
+            return true;
+        }
+        return false;
+    }
+
     bool StepRightIfPossible(DeEdge &edge) const {
         utils::InOutMask mask = origin_.get_value(edge.end);
         if (mask.CheckUniqueOutgoing() && mask.CheckUniqueIncoming()) {
@@ -231,6 +240,22 @@ private:
             return true;
         }
         return false;
+    }
+
+    static const KeyWithHash& min(const KeyWithHash &k1, const KeyWithHash &k2) {
+        return k1.key() < k2.key() ? k1 : k2;
+    }
+
+    KeyWithHash FindMinimalKMerInLoop(const KeyWithHash &start) const {
+        KeyWithHash minimal = min(start, !start);
+        KeyWithHash kh = start;
+        StepRightIfPossible(kh);
+
+        for (; start != kh; StepRightIfPossible(kh)) {
+            minimal = min(minimal, kh);
+            minimal = min(minimal, !kh);
+        }
+        return minimal;
     }
 
     Sequence ConstructSequenceWithEdge(DeEdge edge, SequenceBuilder &builder) const {
@@ -327,7 +352,7 @@ private:
                 if (IsJunction(kwh))
                     continue;
 
-                for (Sequence s : ConstructLoopFromVertex(kwh, builder)) {
+                for (Sequence s : ConstructLoopFromVertex(FindMinimalKMerInLoop(kwh), builder)) {
                     Sequence s_rc = !s;
                     if (s < s_rc)
                         result.push_back(s_rc);
@@ -399,7 +424,7 @@ private:
 
     class LinkRecord {
     private:
-        size_t hash_and_mask_;
+        uint64_t hash_and_mask_;
         EdgeId edge_;
 
         size_t BitBool(bool flag) const {
@@ -409,23 +434,29 @@ private:
         }
 
     public:
-        size_t GetHash() const { return hash_and_mask_ >> 2; }
+        uint64_t GetHash() const { return hash_and_mask_ >> 2; }
         bool IsRC() const { return hash_and_mask_ & 2; }
         bool IsStart() const { return hash_and_mask_ & 1; }
         EdgeId GetEdge() const { return edge_; }
-        bool IsInvalid() { return hash_and_mask_ + 1 == 0 && edge_ == EdgeId(); }
+        bool IsInvalid() const { return hash_and_mask_ + 1 == 0 && edge_ == EdgeId(); }
 
-        LinkRecord(size_t hash, EdgeId edge, bool is_start, bool is_rc)
+        LinkRecord(uint64_t hash, EdgeId edge, bool is_start, bool is_rc)
                 : hash_and_mask_((hash << 2) | (BitBool(is_rc) << 1)| BitBool(is_start)), edge_(edge) { }
 
         LinkRecord()
                 : hash_and_mask_(-1ul) {}
 
+        Sequence VertexSequence(const Graph &g) const {
+            if (IsInvalid()) {
+                return Sequence();
+            }
+            Sequence seq = g.EdgeNucls(edge_);
+            seq = IsStart() ? seq.First(g.k()) : seq.Last(g.k());
+            return IsRC() ? !seq : seq;
+        }
 
-        bool operator<(const LinkRecord &other) const {
-            if (this->hash_and_mask_ == other.hash_and_mask_)
-                return this->edge_ < other.edge_;
-            return this->hash_and_mask_ < other.hash_and_mask_;
+        uint64_t EdgeAndMask() const {
+            return (edge_.int_id() << 2) | (BitBool(IsRC()) << 1) | BitBool(IsStart());
         }
     };
 
@@ -488,29 +519,29 @@ public:
         graph.ereserve(size_t(2.01*sequences.size()));
         INFO("Collecting link records")
         CollectLinkRecords(helper, graph, records, sequences);
-        INFO("Ordering link records")
-        parallel::sort(records.begin(), records.end());
-        INFO("Sorting done");
-        std::vector<size_t> vertex_pos;
+        INFO("Sorting LinkRecords...");
+        parallel::sort(records.begin(), records.end(),
+                       [](const LinkRecord &r1, const LinkRecord& r2) { return std::make_tuple(r1.GetHash(), r1.EdgeAndMask()) < std::make_tuple(r2.GetHash(), r2.EdgeAndMask()); });
+        std::vector<size_t> unique_record_indices;
         for (size_t i = 0; i < records.size(); i++) {
-            if (i != 0 && records[i].GetHash() == records[i - 1].GetHash())
-                continue;
-            if (records[i].IsInvalid())
-                continue;
-            vertex_pos.push_back(i);
+            if (i == 0 || records[i].GetHash() != records[i - 1].GetHash()) {
+                if (!records[i].IsInvalid()) {
+                    unique_record_indices.push_back(i);
+                }
+            }
         }
-        size_t size = vertex_pos.size();
-        INFO("Total " << size << " vertices to create");
-        graph.vreserve(size_t(2.01*size));
-
-        INFO("Connecting the graph");
+        parallel::sort(unique_record_indices.begin(), unique_record_indices.end(),
+                       [&records](size_t i, size_t j) { return records[i].EdgeAndMask() < records[j].EdgeAndMask(); });
+        INFO("LinkRecords sorted");
+        size_t size = unique_record_indices.size();
+        graph.vreserve(size_t(2.01 * size));
         uint64_t min_id = graph.min_id();
 #       pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < size; i++) {
-            size_t pos = vertex_pos[i];
+        for (size_t vertex_num = 0; vertex_num < size; ++vertex_num) {
+            size_t i = unique_record_indices[vertex_num];
 
-            VertexId v = helper.CreateVertex(DeBruijnVertexData(), min_id + 2*i);
-            for (size_t j = pos; j < records.size() && records[j].GetHash() == records[pos].GetHash(); ++j) {
+            VertexId v = helper.CreateVertex(DeBruijnVertexData(), min_id + (vertex_num << 1));
+            for (size_t j = i; j < records.size() && records[j].GetHash() == records[i].GetHash(); j++) {
                 LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsStart(), records[j].IsRC());
             }
         }
@@ -544,6 +575,9 @@ public:
             edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops(nchunks);
         else
             edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPaths(nchunks);
+        INFO("Sorting edges...");
+        parallel::sort(edge_sequences.begin(), edge_sequences.end(), Sequence::RawCompare);
+        INFO("Edges sorted");
         FastGraphFromSequencesConstructor<Graph>(kmer_size_, origin_).ConstructGraph(graph_, edge_sequences);
     }
 

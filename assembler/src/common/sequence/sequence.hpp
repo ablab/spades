@@ -286,7 +286,27 @@ public:
         return true;
     }
 
-public:
+    static bool RawCompare(const Sequence &s1, const Sequence &s2) {
+        VERIFY_DEV(s1.from_ == 0);
+        VERIFY_DEV(s2.from_ == 0);
+        VERIFY_DEV(!s1.rtl_);
+        VERIFY_DEV(!s2.rtl_);
+
+        if (s1.size_ != s2.size_) {
+            return s1.size_ < s2.size_;
+        }
+        size_t szwords = (s1.size_ + STN - 1) / STN;
+
+        const ST *d1 = s1.data_->data();
+        const ST *d2 = s2.data_->data();
+        for (size_t i = 0; i < szwords; ++i) {
+            if (d1[i] != d2[i]) {
+                return d1[i] < d2[i];
+            }
+        }
+        return false;  // They are equal
+    }
+
     inline bool BinRead(std::istream &file);
     inline bool BinWrite(std::ostream &file) const;
 };
