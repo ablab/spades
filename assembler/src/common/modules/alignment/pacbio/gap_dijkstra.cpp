@@ -104,7 +104,7 @@ bool DijkstraGraphSequenceBase<T,U>::RunDijkstra() {
 bool DijkstraProteinEndsReconstructor::DetermineBestPrefix(bool found_path) {
     bool res = false;
     for (size_t i = 1; i < best_ed_.size(); ++ i) {
-        if (i % 3 == 0 && best_ed_[i].second < (min_value_ - 4)*((int) i/3)) {
+        if (i % 3 == 0 && best_ed_[i].second < min_value_ *((int) i/3)) {
             end_qstate_ = best_ed_[i].first;
             res = true;
         }

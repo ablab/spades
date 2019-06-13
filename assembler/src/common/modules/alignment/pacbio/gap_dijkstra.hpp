@@ -376,7 +376,7 @@ public:
         }
         min_value_ = abs(min_value_);
         DEBUG("min_value=" << min_value_)
-        path_max_length_ = (min_value_-4)*((int) ss_.size()/gap_cfg.max_ed_proportion);
+        path_max_length_ = min_value_* ((int) ss_.size());
         DEBUG("max_path_len=" << path_max_length_)
         for (size_t i = 0; i < best_ed_.size(); ++ i) {
             best_ed_[i].second = path_max_length_;
