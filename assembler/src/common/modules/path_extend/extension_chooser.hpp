@@ -741,7 +741,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
     }
 
 public:
-    ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc,
+    ScaffoldingExtensionChooser(const Graph& g, std::shared_ptr<WeightCounter> wc,
                                 double cl_weight_threshold,
                                 double is_scatter_coeff,
                                 double relative_cutoff = 0.0) :

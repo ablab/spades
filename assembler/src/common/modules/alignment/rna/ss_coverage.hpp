@@ -66,11 +66,11 @@ public:
         return storage_.end();
     }
 
-    void Save(EdgeId e, ostream& out) const {
+    void Save(EdgeId e, std::ostream& out) const {
         out << GetCoverage(e);
     }
 
-    void Load(EdgeId e, istream& in) {
+    void Load(EdgeId e, std::istream& in) {
         double cov;
         in >> cov;
         SetCoverage(e, cov);

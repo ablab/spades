@@ -109,6 +109,9 @@ public:
 
         //5. Save genome info
         gp.ginfo.Save(basename + ".ginfo");
+
+        //6. Save SS coverage
+
     }
 
     bool Load(const std::string &basename, Type &gp) override {
