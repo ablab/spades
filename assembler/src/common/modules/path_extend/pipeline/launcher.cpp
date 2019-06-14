@@ -458,11 +458,14 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 void PathExtendLauncher::FilterPaths() {
     auto default_filtration = params_.pset.path_filtration.end();
     for (auto it = params_.pset.path_filtration.begin(); it != params_.pset.path_filtration.end(); ++it) {
+        if (!it->second.enabled)
+            continue;
+
         const auto& filtration_name = it->first;
-        if (filtration_name == "default" && it->second.enabled) {
+        if (filtration_name == "default") {
             default_filtration = it;
         }
-        else if (filtration_name != "default" && it->second.enabled) {
+        else {
             INFO("Finalizing paths - " + filtration_name);
             PathContainer to_clean(gp_.contig_paths.begin(), gp_.contig_paths.end());
             CleanPaths(to_clean, it->second);
