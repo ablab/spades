@@ -1,6 +1,7 @@
 mode rna
 
 preserve_raw_paired_index true
+min_edge_length_for_is_count 500
 
 calculate_coverage_for_each_lib true
 strand_specificity {

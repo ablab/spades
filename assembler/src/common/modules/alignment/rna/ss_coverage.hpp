@@ -1,6 +1,9 @@
-//
-// Created by andrey on 22.05.17.
-//
+//***************************************************************************
+//* Copyright (c) 2015-2019 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #pragma once
 
@@ -106,7 +109,6 @@ private:
         }
 
         if (math::gr(cov1, cov2)) {
-
             return  math::ge(cov1, min_flanking_coverage_) && math::ge(cov1, cov2 * coverage_margin_);
         }
         else {
@@ -121,60 +123,19 @@ private:
         auto conj_it = storage_.find(g_.conjugate(e));
         VERIFY(conj_it != storage_.end());
         const EdgeBucketT& conj_cov_bins = conj_it->second;
+        VERIFY(cov_bins.size() == conj_cov_bins.size());
 
-        size_t last_whole_bin = cov_bins.size() - 2;
-        double fwd_front_cov = double(cov_bins.front()) / double(bin_size_);
-        double fwd_back_cov = double(cov_bins[last_whole_bin]) / double(bin_size_);
-
-        double bcwd_front_cov = double(conj_cov_bins[1]) / double(bin_size_);
-        double bcwd_back_cov = double(conj_cov_bins[cov_bins.size() - 1]) / double(bin_size_);
-
-        if (!IsCoverageDifferent(fwd_front_cov, fwd_back_cov) ||
-            !IsCoverageDifferent(bcwd_front_cov, bcwd_back_cov) ||
-            !IsCoverageDifferent(fwd_front_cov, bcwd_back_cov)  ||
-            !IsCoverageDifferent(bcwd_front_cov, fwd_back_cov)) {
-            DEBUG("Coverage is NOT different: " << fwd_front_cov << "->" << fwd_back_cov <<
-                 "; " << bcwd_front_cov << " ->" << bcwd_back_cov);
+        if (!CheckCoverageCondition(cov_bins, conj_cov_bins))
             return 0;
-        }
-        DEBUG("Coverage is different: " << fwd_front_cov << "->" << fwd_back_cov <<
-                                           "; " << bcwd_front_cov << " ->" << bcwd_back_cov);
 
-        bool e_coverage_descends = math::gr(fwd_front_cov, fwd_back_cov);
-
-        if (e_coverage_descends) {
-            if (math::ls(fwd_front_cov, bcwd_back_cov) || math::ls(bcwd_front_cov, fwd_back_cov)) {
-                DEBUG("Coverage plots do not intersect");
-                return 0;
-            }
-        } else {
-            if (math::gr(fwd_front_cov, bcwd_back_cov) || math::gr(bcwd_front_cov, fwd_back_cov)) {
-                DEBUG("Coverage plots do not intersect");
-                return 0;
-            }
-        }
-
+        bool e_coverage_descends = IsCoverageDescending(cov_bins);
         size_t index = 0;
-        if (e_coverage_descends) {
-            DEBUG("Coverage descending")
-            while (index < cov_bins.size()) {
-                DEBUG(cov_bins[index] << " : " << conj_cov_bins[cov_bins.size() - 1 - index]);
-                if (cov_bins[index] < conj_cov_bins[cov_bins.size() - 1 - index])
-                    break;
-                ++index;
-            }
-        } else {
-            while (index < cov_bins.size()) {
-                TRACE(cov_bins[index] << " : " << conj_cov_bins[cov_bins.size() - 1 - index]);
-                if (cov_bins[index] > conj_cov_bins[cov_bins.size() - 1 - index])
-                    break;
-                ++index;
-            }
+        while (index < cov_bins.size() &&
+            !HasCoverageIntersected(e_coverage_descends, index, cov_bins, conj_cov_bins)) {
+            TRACE(cov_bins[index] << " : " << conj_cov_bins[cov_bins.size() - 1 - index]);
+            ++index;
         }
         DEBUG("Index found " << index);
-        for (size_t i = index + 1; i < cov_bins.size(); ++i) {
-            TRACE(cov_bins[i] << " : " << conj_cov_bins[cov_bins.size() - 1 - i]);
-        }
 
         if (index == cov_bins.size()) {
             DEBUG("Did not find coverage intersection");
@@ -185,6 +146,60 @@ private:
         DEBUG("Index = " << index << ", pos = " << pos);
         VERIFY(pos < g_.length(e));
         return pos;
+    }
+
+    bool IsCoverageDescending(const EdgeBucketT& cov_bins) const {
+        size_t last_whole_bin = cov_bins.size() - 2;
+        double fwd_front_cov = double(cov_bins.front()) / double(bin_size_);
+        double fwd_back_cov = double(cov_bins[last_whole_bin]) / double(bin_size_);
+        return math::gr(fwd_front_cov, fwd_back_cov);
+    }
+
+    bool CheckCoverageCondition(const EdgeBucketT& cov_bins, const EdgeBucketT& conj_cov_bins) const {
+        size_t last_whole_bin = cov_bins.size() - 2;
+        double fwd_front_cov = double(cov_bins.front()) / double(bin_size_);
+        double fwd_back_cov = double(cov_bins[last_whole_bin]) / double(bin_size_);
+
+        double bcwd_front_cov = double(conj_cov_bins[1]) / double(bin_size_);
+        double bcwd_back_cov = double(conj_cov_bins.back()) / double(bin_size_);
+
+        if (!IsCoverageDifferent(fwd_front_cov, fwd_back_cov) ||
+            !IsCoverageDifferent(bcwd_front_cov, bcwd_back_cov) ||
+            !IsCoverageDifferent(fwd_front_cov, bcwd_back_cov)  ||
+            !IsCoverageDifferent(bcwd_front_cov, fwd_back_cov)) {
+            DEBUG("Coverage is NOT different: " << fwd_front_cov << "->" << fwd_back_cov <<
+                                                "; " << bcwd_front_cov << " ->" << bcwd_back_cov);
+            return false;
+        }
+        DEBUG("Coverage is different: " << fwd_front_cov << "->" << fwd_back_cov <<
+                                        "; " << bcwd_front_cov << " ->" << bcwd_back_cov);
+
+        bool e_coverage_descends = IsCoverageDescending(cov_bins);
+
+        if (e_coverage_descends) {
+            if (math::ls(fwd_front_cov, bcwd_back_cov) || math::ls(bcwd_front_cov, fwd_back_cov)) {
+                DEBUG("Coverage plots do not intersect");
+                return false;
+            }
+        } else {
+            if (math::gr(fwd_front_cov, bcwd_back_cov) || math::gr(bcwd_front_cov, fwd_back_cov)) {
+                DEBUG("Coverage plots do not intersect");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool HasCoverageIntersected(bool e_coverage_descends, size_t index,
+        const EdgeBucketT& cov_bins, const EdgeBucketT& conj_cov_bins) const {
+        if (e_coverage_descends)
+            return cov_bins[index] < conj_cov_bins[cov_bins.size() - 1 - index];
+        else
+            return cov_bins[index] > conj_cov_bins[cov_bins.size() - 1 - index];
+    }
+
+    bool IsEdgeValid(EdgeId e) const {
+        return e != g_.conjugate(e) && g_.length(e) >= min_edge_len_ && math::ge(g_.coverage(e), min_edge_coverage_);
     }
 
 public:
@@ -227,7 +242,7 @@ public:
         first_bin_size_.clear();
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             EdgeId e = *iter;
-            if (e == g_.conjugate(e) || g_.length(e) < min_edge_len_ || math::ls(g_.coverage(e), min_edge_coverage_))
+            if (!IsEdgeValid(e))
                 continue;
             storage_.emplace(e, std::vector<size_t>(g_.length(e) / bin_size_ + 1, 0));
             if (e < g_.conjugate(e)) {
@@ -239,7 +254,7 @@ public:
     }
 
     void IncreaseKmerCount(EdgeId e, Range mapped_range) {
-        if (e == g_.conjugate(e) || g_.length(e) < min_edge_len_ || math::ls(g_.coverage(e), min_edge_coverage_))
+        if (!IsEdgeValid(e))
             return;
 
         int lpos = (int) mapped_range.start_pos - (int) first_bin_size_[e];
@@ -259,7 +274,7 @@ public:
             size_t right_kmers = size_t(rpos % bin_size_);
             bins[left_bin] += left_kmers;
             bins[right_bin] += right_kmers;
-            for (size_t i = left_bin + 1; i < left_bin; ++i) {
+            for (size_t i = left_bin + 1; i < right_bin; ++i) {
                 bins[i] += bin_size_;
             }
         }

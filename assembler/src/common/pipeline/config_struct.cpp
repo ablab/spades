@@ -683,6 +683,8 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.two_step_rr, pt, "two_step_rr", complete);
     load(cfg.use_intermediate_contigs, pt, "use_intermediate_contigs", complete);
     load(cfg.single_reads_rr, pt, "single_reads_rr", complete);
+    load(cfg.min_edge_length_for_is_count, pt, "min_edge_length_for_is_count", complete);
+
 
     load(cfg.preserve_raw_paired_index, pt, "preserve_raw_paired_index", complete);
 

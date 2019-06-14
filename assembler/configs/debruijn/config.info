@@ -43,6 +43,8 @@ scaffold_correction_mode false
 
 ; enabled (1) or disabled (0) repeat resolution (former "paired_mode")
 rr_enable true
+; 0 for graph N50
+min_edge_length_for_is_count 0
 
 ;preserve raw paired index after distance estimation
 preserve_raw_paired_index false

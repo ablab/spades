@@ -239,7 +239,7 @@ public:
         algo.AddAlgo(
                 RelativeECRemoverInstance(gp_.g,
                                           simplif_cfg_.rcec, info_container_, removal_handler_),
-                "Relative coverage EC remover");
+                "Relative coverage erroneous connection remover");
 
         algo.AddAlgo(
                 RelativeCoverageComponentRemoverInstance(gp_.g, gp_.flanking_cov,
