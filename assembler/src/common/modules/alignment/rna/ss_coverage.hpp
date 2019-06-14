@@ -9,6 +9,8 @@
 
 #include <assembly_graph/core/graph.hpp>
 #include <sequence/range.hpp>
+#include "io/binary.hpp"
+
 
 namespace debruijn_graph {
 
@@ -75,8 +77,61 @@ public:
         in >> cov;
         SetCoverage(e, cov);
     }
+
+    void BinWrite(std::ostream &str) const {
+        using io::binary::BinWrite;
+        BinWrite(str, storage_.size());
+        for (const auto &it : storage_) {
+            BinWrite(str, it.first.int_id());
+            BinWrite(str, it.second);
+        }
+    }
+
+    void BinRead(std::istream &str) {
+        Clear();
+        using io::binary::BinRead;
+        auto size = BinRead<size_t>(str);
+        while (size--) {
+            auto eid = BinRead<uint64_t>(str);
+            auto cov = BinRead<double>(str);
+            SetCoverage(eid, cov);
+        }
+    }
 };
 
+class SSCoverageContainer {
+    std::vector<SSCoverageStorage> data_;
+
+public:
+    typedef SSCoverageStorage value_type;
+
+    SSCoverageContainer(Graph& g, size_t count = 0) {
+        for (size_t i = 0; i < count; ++i) {
+            data_.emplace_back(g);
+        }
+    }
+
+    SSCoverageStorage& operator[](size_t index) {
+        return data_[index];
+    }
+
+    const SSCoverageStorage& operator[](size_t index) const {
+        return data_[index];
+    }
+
+
+
+    size_t size() const {
+        return data_.size();
+    }
+
+    void clear() {
+        for (auto& storage : data_) {
+            storage.Clear();
+        }
+    }
+
+};
 
 
 class SSCoverageSplitter {

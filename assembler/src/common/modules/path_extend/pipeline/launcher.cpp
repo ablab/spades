@@ -526,7 +526,7 @@ void PathExtendLauncher::Launch() {
 
     if (params_.ss.ss_enabled) {
         INFO("Paths will be printed according to strand-specific coverage");
-        PathContainerCoverageSwitcher switcher(gp_.g, gp_.ss_coverage.front(), params_.ss.antisense);
+        PathContainerCoverageSwitcher switcher(gp_.g, gp_.ss_coverage[0], params_.ss.antisense);
         switcher.Apply(gp_.contig_paths);
     }
 

@@ -52,7 +52,7 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
     PairedInfoIndicesT &clustered_indices;
     PairedInfoIndicesT &scaffolding_indices;
     LongReadContainerT &single_long_reads;
-    std::vector<SSCoverageStorage> &ss_coverage;
+    SSCoverageContainer &ss_coverage;
     GenomicInfo &ginfo;
 
     GenomeStorage &genome;
@@ -77,7 +77,7 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
               clustered_indices(adt::pack::emplace_with_key<PairedInfoIndicesT>("clustered_indices", g, lib_count)),
               scaffolding_indices(adt::pack::emplace_with_key<PairedInfoIndicesT>("scaffolding_indices", g, lib_count)),
               single_long_reads(adt::pack::emplace<LongReadContainerT>(g, lib_count)),
-              ss_coverage(adt::pack::add(std::vector<SSCoverageStorage>(lib_count, SSCoverageStorage(g)))),
+              ss_coverage(adt::pack::emplace<SSCoverageContainer>(g, lib_count)),
               ginfo(adt::pack::emplace<GenomicInfo>()),
               genome(adt::pack::emplace<GenomeStorage>(genome)),
               edge_qual(adt::pack::emplace<EdgeQuality<Graph>>(g)),

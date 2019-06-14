@@ -15,6 +15,7 @@
 #include "edge_index.hpp"
 #include "kmer_mapper.hpp"
 #include "long_reads.hpp"
+#include "ss_coverage.hpp"
 #include "paired_index.hpp"
 #include "positions.hpp"
 #include "pipeline/graph_pack.hpp"
@@ -111,7 +112,7 @@ public:
         gp.ginfo.Save(basename + ".ginfo");
 
         //6. Save SS coverage
-
+        io::binary::Save(basename, gp.ss_coverage);
     }
 
     bool Load(const std::string &basename, Type &gp) override {
@@ -132,6 +133,9 @@ public:
 
         //5. Load genome info
         gp.ginfo.Load(basename + ".ginfo");
+
+        //6. Save SS coverage
+        io::binary::Load(basename, gp.ss_coverage);
 
         return true;
     }
