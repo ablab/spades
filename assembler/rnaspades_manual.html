@@ -13,7 +13,7 @@
 1. <a href="#sec1">About rnaSPAdes</a><br>
 2. <a href="#sec2">rnaSPAdes specifics</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;2.1. <a href="#sec2.1">Running rnaSPAdes</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">Assemblying strand-specific RNA-Seq</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">RNA-specific options</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;2.3. <a href="#sec2.3">rnaSPAdes output</a><br>
 3. <a href="#sec3">Assembly evaluation</a><br>
 4. <a href="#sec4">Citation</a><br>
@@ -51,31 +51,48 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 <p>Here are several notes regarding rnaSPAdes options:
     <ul>
         <li>rnaSPAdes can take as an input only paired-end and single-end libraries.</li>
+        <!--<li>rnaSPAdes take as an input at least one paired-end or single-end library. For hybrid assembly you can use PacBio or Oxford Nanopore reads.</li>-->
         <li>rnaSPAdes does not support <code>--careful</code> and <code>--cov-cutoff</code> options.</li>
         <li>rnaSPAdes is not compatible with other pipeline options such as <code>--meta</code>, <code>--sc</code> and <code>--plasmid</code>. If you wish to assemble metatranscriptomic data just run rnaSPAdes as it is.</li>
         <li>By default rnaSPAdes uses 2 k-mer sizes, which are automatically detected using read length (approximately one third and half of the maximal read length). We recommend not to change this parameter because smaller k-mer sizes typically result in multiple chimeric (misassembled) transcripts. In case you have any doubts about your run, do not hesitate to contact us using e-mail given below.</li>
+        <li>Although rnaSPAdes supports IonTorrent reads, it was not sufficiently tested on such kind of data.</li>
     </ul>
 
 
 <a name="sec2.2"></a>
-<h3>2.2 Assemblying strand-specific RNA-Seq</h3>
-<p>rnaSPAdes supports strand-specific RNA-Seq dataset. You can indicate that the dataset is strand-specific using one of the following options:
+<h3>2.2 RNA-specific options</h3>
+
+<b>Assembling strand-specific data</b>
+<p>rnaSPAdes supports strand-specific RNA-Seq datasets. You can set strand-specific type using the following option:
 
 <p>
-    <code>--ss-fr</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;The data set is strand-specific and first read in pair corresponds to <b>actual</b> gene strand.
+    <code>--ss &lt;type></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Use <code>&lt;type> = rf</code> when first read in pair corresponds to <b>reverse</b> gene strand 
+(antisense data, e.g. obtained via dUTP protocol) and <code>&lt;type> = fr</code> otherwise (forward).
+ Older deprecated syntax is <code>--ss-rf</code> and <code>--ss-fr</code>.
 </p>
 
 <p>
-    <code>--ss-rf</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;The data set is strand-specific and first read in pair corresponds to <b>reverse</b> gene strand (antisense).
+Note, that strand-specificity is not related and should not be confused with FR and RF orientation of paired reads. RNA-Seq paired-end reads typically have forward-reverse orientation (--> &lt;--), which is assumed by default and no additional options are needed (see <a href="manual.html#inputdata" target="_blank">main manual</a> for deatails).
+<p>
+If the data set is single-end use <code>--ss rf</code> option in case when reads are antisense and <code>--ss fr</code> otherwise.
+<br>
+<!--
+<p><b>Hybrid transcriptome assembly</b>
+<p>rnaSPAdes now supports conventional <code>--pacbio</code> and <code>--nanopore</code> options (see <a href="manual.html" target="_blank">SPAdes manual</a>). Moreover, in addition to
+long reads you may also provide a separate file with reads capturing the entire transcript sequences using the following options. Full-length transcripts in such reads can be 
+typically detected using the adapters. Note, that FL reads should be trimmed so that the adapters are excluded.
+<p>
+    <code>--fl-pacbio &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with PacBio reads that capture full-length transcripts. 
 </p>
-<p>
-Note, that strand-specificity is not realated and should not be confused with FR and RF orientation of paired reads. RNA-Seq paired-end reads typically have forward-reverse orientation (--> &lt;--), which is assumed by default and no additional options are needed (see <a href="manual.html#inputdata" target="_blank">main manual</a> for deatails).
-<p>
-If the data set is single-end use <code>--ss-fr</code> option in case when reads correspond to gene strand and <code>--ss-rf</code> otherwise.
 
 
+<p>
+    <code>--fl-nanopore &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with Oxford Nanopore reads that capture full-length transcripts. 
+</p>
+-->
 
 <a name="sec2.3"></a>
 <h3>2.3 rnaSPAdes output</h3>
