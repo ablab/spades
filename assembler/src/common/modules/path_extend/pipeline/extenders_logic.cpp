@@ -146,6 +146,38 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeRNAScaffoldingExtender(size_t l
                                                    *pset.scaffolder_options.min_overlap_for_rna_scaffolding);
 }
 
+std::shared_ptr<ExtensionChooser> ExtendersGenerator::MakeLongReadsRNAExtensionChooser(size_t lib_index,
+                                                                                  const GraphCoverageMap &read_paths_cov_map) const {
+    auto long_reads_config = support_.GetLongReadsConfig(dataset_info_.reads[lib_index].type());
+    INFO("Creating long read rna chooser")
+    return std::make_shared<LongReadsRNAExtensionChooser>(gp_.g, read_paths_cov_map,
+                                                     long_reads_config.filtering,
+                                                     long_reads_config.min_significant_overlap);
+}
+
+
+std::shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongReadsRNAExtender(size_t lib_index,
+                                                                        const GraphCoverageMap& read_paths_cov_map) const {
+    const auto& lib = dataset_info_.reads[lib_index];
+    //TODO params
+    size_t resolvable_repeat_length_bound = 10000ul;
+    if (!dataset_info_.reads[lib_index].is_contig_lib()) {
+        resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().unmerged_read_length);
+    }
+    INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
+    bool investigate_short_loop = false;
+
+    auto long_read_ec = MakeLongReadsRNAExtensionChooser(lib_index, read_paths_cov_map);
+    INFO("Creating long read rna extender")
+    return std::make_shared<MultiExtender>(gp_, cover_map_,
+                                           used_unique_storage_,
+                                           long_read_ec,
+                                           resolvable_repeat_length_bound,
+                                           investigate_short_loop, /* investigate short loops */
+                                           false,
+                                           0.0);
+}
+
 shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(size_t lib_index,
                                                                              const ScaffoldingUniqueEdgeStorage &storage) const {
 
@@ -419,9 +451,15 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
 
         //TODO: scaff2015 does not need any single read libs?
         if (support_.IsForSingleReadExtender(lib)) {
-            basic_extenders.emplace_back(lib.type(), lib_index,
-                                         MakeLongReadsExtender(lib_index,
-                                                               unique_data_.long_reads_cov_map_[lib_index]));
+            if (pset.multi_path_extend) {
+                basic_extenders.emplace_back(lib.type(), lib_index, MakeLongReadsRNAExtender(lib_index,
+                                                                                             unique_data_.long_reads_cov_map_[lib_index]));
+                INFO("Created for lib #" << lib_index);
+            } else {
+                basic_extenders.emplace_back(lib.type(), lib_index,
+                                             MakeLongReadsExtender(lib_index,
+                                                                   unique_data_.long_reads_cov_map_[lib_index]));
+            }
             ++single_read_libs;
         }
         if (support_.IsForPEExtender(lib)) {

@@ -196,6 +196,7 @@ struct pe_config {
         LongReads pacbio_reads;
         LongReads contigs;
         LongReads meta_contigs;
+        LongReads rna_long_reads;
     };
 
 

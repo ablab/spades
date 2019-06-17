@@ -30,7 +30,7 @@ MAX_LIBS_NUMBER = 9
 OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s", "--merged"]
 SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs", "nxmate": "nxmate"}
 # other libs types:
-LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "tslr", "trusted-contigs", "untrusted-contigs"]
+LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "tslr", "trusted-contigs", "untrusted-contigs", "fl-pacbio", "fl-nanopore"]
 
 SHORT_STAGES_NAME = ["ec", "as", "mc", "scc", "tpp"]
 
@@ -69,7 +69,7 @@ ITERATIONS = 1
 TMP_DIR = "tmp"
 
 READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
-READS_TYPES_USED_IN_RNA_SEQ = ["paired-end", "single", "trusted-contigs", "untrusted-contigs"]
+READS_TYPES_USED_IN_RNA_SEQ = ["paired-end", "single", "trusted-contigs", "untrusted-contigs", "pacbio", "nanopore", "fl-pacbio", "fl-nanopore"]
 
 BASE_STAGE = "read_conversion"
 LAST_STAGE = "last"

@@ -415,15 +415,15 @@ def add_input_data_args(pgroup_input_data):
     pgroup_input_data.add_argument("--pacbio",
                                    metavar="<filename>",
                                    nargs=1,
-                                   help="file with PacBio reads"
-                                   if not help_hidden else argparse.SUPPRESS,
+                                   help="file with PacBio reads",
                                    action=AddToDatasetAction)
     pgroup_input_data.add_argument("--nanopore",
                                    metavar="<filename>",
                                    nargs=1,
-                                   help="file with Nanopore reads"
-                                   if not help_hidden else argparse.SUPPRESS,
+                                   help="file with Nanopore reads",
                                    action=AddToDatasetAction)
+
+    help_hidden = (mode == "rna")
     pgroup_input_data.add_argument("--tslr",
                                    metavar="<filename>",
                                    nargs=1,
@@ -447,6 +447,18 @@ def add_input_data_args(pgroup_input_data):
                                    action=AddToDatasetAction)
 
     help_hidden = (mode != "rna")
+    pgroup_input_data.add_argument("--fl-pacbio",
+                                   metavar="<filename>",
+                                   nargs=1,
+                                   help="file with PacBio reads that capture full-length transcripts"
+                                   if not help_hidden else argparse.SUPPRESS,
+                                   action=AddToDatasetAction)
+    pgroup_input_data.add_argument("--fl-nanopore",
+                                   metavar="<filename>",
+                                   nargs=1,
+                                   help="file with Nanopore reads that capture full-length transcripts"
+                                   if not help_hidden else argparse.SUPPRESS,
+                                   action=AddToDatasetAction)
     pgroup_input_data.add_argument("--ss",
                                    metavar="<type>",
                                    dest="strand_specificity",
@@ -468,7 +480,6 @@ def add_input_data_args(pgroup_input_data):
                                    const="rf",
                                    help=argparse.SUPPRESS,
                                    action="store_const")
-
 
 def add_pipeline_args(pgroup_pipeline):
     mode = get_mode()

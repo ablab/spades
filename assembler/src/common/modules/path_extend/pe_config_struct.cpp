@@ -243,6 +243,7 @@ void load(pe_config::AllLongReads& p, boost::property_tree::ptree const& pt,
     load(p.single_reads, pt, "single_reads", complete);
     load(p.contigs, pt, "contigs", complete);
     load(p.meta_contigs, pt, "meta_untrusted_contigs", complete);
+    load(p.rna_long_reads, pt, "rna_long_reads", complete);
 }
 
 void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,

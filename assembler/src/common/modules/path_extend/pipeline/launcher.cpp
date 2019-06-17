@@ -480,6 +480,32 @@ void PathExtendLauncher::FilterPaths() {
     }
 }
 
+void PathExtendLauncher::AddFLPaths(PathContainer &paths) {
+    for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
+        if (dataset_info_.reads[lib_index].is_full_length_rna_lib()) {
+            INFO("Extracting FL paths for lib #" << lib_index);
+            std::vector <PathInfo<Graph>> raw_paths;
+            gp_.single_long_reads[lib_index].SaveAllPaths(raw_paths);
+            for (const auto& path: raw_paths) {
+                const auto& edges = path.path();
+
+                BidirectionalPath *new_path = new BidirectionalPath(gp_.g, edges);
+                BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
+                new_path->SetWeight((float) path.weight());
+                conj_path->SetWeight((float) path.weight());
+                paths.AddPair(new_path, conj_path);
+            }
+            INFO("Total " << paths.size() << " FL paths were extracted for lib #" << lib_index);
+        }
+    }
+
+    INFO("Deduplicating FL paths");
+    GraphCoverageMap cover_map(gp_.g, paths);
+    Deduplicate(gp_.g, paths, cover_map, params_.min_edge_len,  params_.max_path_diff);
+    paths.SortByLength();
+    INFO("FL Paths deduplicated");
+}
+
 void PathExtendLauncher::Launch() {
     INFO("ExSPAnder repeat resolving tool started");
     fs::make_dir(params_.output_dir);
@@ -492,6 +518,11 @@ void PathExtendLauncher::Launch() {
     }
 
     MakeAndOutputScaffoldGraph();
+
+    PathContainer fl_paths;
+    AddFLPaths(fl_paths);
+    if (fl_paths.size() > 0)
+        writer_.OutputPaths(fl_paths, params_.output_dir + "fl_transcripts" + ".fasta");
 
     PathExtendResolver resolver(gp_.g);
 
@@ -523,6 +554,8 @@ void PathExtendLauncher::Launch() {
 
     RemoveOverlapsAndArtifacts(gp_.contig_paths, polished_map, resolver);
     DebugOutputPaths(gp_.contig_paths, "overlap_removed");
+
+    AddFLPaths(gp_.contig_paths);
 
     if (params_.ss.ss_enabled) {
         INFO("Paths will be printed according to strand-specific coverage");

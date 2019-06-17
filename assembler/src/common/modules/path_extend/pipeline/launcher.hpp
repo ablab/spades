@@ -77,6 +77,8 @@ class PathExtendLauncher {
 
     void FilterPaths();
 
+    void AddFLPaths(PathContainer& paths);
+
 public:
 
     PathExtendLauncher(const config::dataset& dataset_info,

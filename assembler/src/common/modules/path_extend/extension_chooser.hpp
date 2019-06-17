@@ -1017,6 +1017,107 @@ private:
 //    const Graph& g_;
 //};
 
+class LongReadsRNAExtensionChooser : public ExtensionChooser {
+public:
+    LongReadsRNAExtensionChooser(const Graph& g,
+                                 const GraphCoverageMap& read_paths_cov_map,
+                                 double filtering_threshold,
+                                 size_t min_significant_overlap)
+        : ExtensionChooser(g),
+          filtering_threshold_(filtering_threshold),
+          min_significant_overlap_(min_significant_overlap),
+          cov_map_(read_paths_cov_map)
+    {
+        DEBUG("Created LongReadsRNAExtensionChooser with params: filtering_threshold_ = " << filtering_threshold_ << ", min_significant_overlap_ = " << min_significant_overlap_);
+    }
+
+    /* Choose extension as correct only if we have reads that traverse a unique edge from the path and this extension.
+     * Edge is unique if all reads mapped to this edge are consistent.
+     * Two reads are consistent if they can form one path in the graph.
+     */
+    EdgeContainer Filter(const BidirectionalPath& path,
+                         const EdgeContainer& edges) const override {
+        if (edges.empty()) {
+            return edges;
+        }
+        DEBUG("We are in Filter of LongReadsRNAExtensionChooser");
+        path.PrintDEBUG();
+
+        std::map<EdgeId, double> weights_candidates;
+        DEBUG("Candidates")
+        for (auto it = edges.begin(); it != edges.end(); ++it) {
+            DEBUG(g_.int_id(it->e_));
+            weights_candidates.emplace(it->e_, 0.0);
+        }
+
+        std::set<EdgeId> filtered_candidates;
+        auto support_paths = cov_map_.GetCoveringPaths(path.Back());
+        DEBUG("Found " << support_paths.size() << " supporting paths");
+        for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
+            auto supporting_path = *it;
+            auto positions = supporting_path->FindAll(path.Back());
+
+            for (size_t i = 0; i < positions.size(); ++i) {
+                if ((int) positions[i] < (int) supporting_path->Size() - 1
+                    && EqualBegins(path, path.Size() - 1, *supporting_path, positions[i], false)) {
+                    DEBUG("Supporting path matches, Checking unique path_back for " << supporting_path->GetId());
+
+                    if (UniqueBackPath(*supporting_path, positions[i])) {
+                        DEBUG("Success");
+
+                        EdgeId next = supporting_path->At(positions[i] + 1);
+                        weights_candidates[next] += supporting_path->GetWeight();
+                        filtered_candidates.insert(next);
+                    }
+                }
+            }
+        }
+        DEBUG("Supported candidates");
+        for (auto iter = weights_candidates.begin(); iter != weights_candidates.end(); ++iter) {
+            DEBUG("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
+        }
+        std::vector<std::pair<EdgeId, double> > sort_res = MapToSortVector(weights_candidates);
+        if (sort_res.size() < 1 || sort_res[0].second < filtering_threshold_) {
+            filtered_candidates.clear();
+        }
+        EdgeContainer result;
+        for (auto it = edges.begin(); it != edges.end(); ++it) {
+            if (filtered_candidates.find(it->e_) != filtered_candidates.end()) {
+                result.push_back(*it);
+                DEBUG("Inserting to results: " << g_.int_id(it->e_));
+            }
+        }
+        if (result.size() == 0) {
+            DEBUG("Long reads don't help =(");
+        }
+        return result;
+    }
+
+private:
+
+    bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
+        int int_pos = (int) pos;
+        while (int_pos >= 0) {
+            if (g_.length(path.At(int_pos)) >= min_significant_overlap_)
+                return true;
+            int_pos--;
+        }
+        return false;
+    }
+
+    std::vector<std::pair<EdgeId, double> > MapToSortVector(const std::map<EdgeId, double>& map) const {
+        std::vector<std::pair<EdgeId, double> > result(map.begin(), map.end());
+        std::sort(result.begin(), result.end(), EdgeWithWeightCompareReverse);
+        return result;
+    }
+
+    double filtering_threshold_;
+    size_t min_significant_overlap_;
+    const GraphCoverageMap& cov_map_;
+
+    DECL_LOGGER("LongReadsRNAExtensionChooser");
+};
+
 class LongReadsExtensionChooser : public ExtensionChooser {
 public:
     LongReadsExtensionChooser(const Graph& g,
@@ -1046,7 +1147,7 @@ public:
         if (edges.empty()) {
             return edges;
         }
-        DEBUG("We in Filter of LongReadsExtensionChooser");
+        DEBUG("We are in Filter of LongReadsExtensionChooser");
         path.PrintDEBUG();
         std::map<EdgeId, double> weights_cands;
         for (const auto &edge : edges) {

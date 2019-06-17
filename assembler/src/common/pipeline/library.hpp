@@ -190,7 +190,14 @@ public:
         return type == io::LibraryType::PacBioReads ||
                type == io::LibraryType::SangerReads ||
                type == io::LibraryType::NanoporeReads ||
-               type == io::LibraryType::TSLReads;
+               type == io::LibraryType::TSLReads ||
+               type == io::LibraryType::FLPacBioReads ||
+               type == io::LibraryType::FLNanoporeReads;
+    }
+
+    static bool is_full_length_rna_lib(LibraryType type) {
+        return type == io::LibraryType::FLPacBioReads ||
+            type == io::LibraryType::FLNanoporeReads;
     }
 
     bool is_contig_lib() const {
@@ -199,6 +206,10 @@ public:
 
     bool is_long_read_lib() const {
         return is_long_read_lib(type_);
+    }
+
+    bool is_full_length_rna_lib() const {
+        return is_full_length_rna_lib(type_);
     }
 
     bool is_repeat_resolvable() const {

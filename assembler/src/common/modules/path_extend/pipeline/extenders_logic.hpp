@@ -107,6 +107,10 @@ private:
 
     std::shared_ptr<SimpleExtender> MakeSimpleCoverageExtender(size_t lib_index) const;
 
+    std::shared_ptr<ExtensionChooser> MakeLongReadsRNAExtensionChooser(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
+
+    std::shared_ptr<SimpleExtender> MakeLongReadsRNAExtender(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
+
     void PrintExtenders(const std::vector<std::shared_ptr<PathExtender>> &extenders) const;
 
 };

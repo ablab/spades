@@ -18,6 +18,21 @@ ss_coverage_splitter {
     coverage_margin   5
 }
 
+pacbio_processor
+{
+    internal_length_cutoff 100
+;align and traverse.
+    compression_cutoff 0.6
+    path_limit_stretching 1.3
+    path_limit_pressing 0.7
+    max_path_in_dijkstra 5000
+    max_vertex_in_dijkstra 1000
+;gap_closer
+    long_seq_limit 100
+    pacbio_min_gap_quantity 1
+    contigs_min_gap_quantity 1
+    max_contigs_gap_length 10000
+}
 
 contig_output {
     scaffolds_name  transcripts

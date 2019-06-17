@@ -50,8 +50,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 
 <p>Here are several notes regarding rnaSPAdes options:
     <ul>
-        <li>rnaSPAdes can take as an input only paired-end and single-end libraries.</li>
-        <!--<li>rnaSPAdes take as an input at least one paired-end or single-end library. For hybrid assembly you can use PacBio or Oxford Nanopore reads.</li>-->
+        <li>rnaSPAdes take as an input at least one paired-end or single-end library. For hybrid assembly you can use PacBio or Oxford Nanopore reads.</li>
         <li>rnaSPAdes does not support <code>--careful</code> and <code>--cov-cutoff</code> options.</li>
         <li>rnaSPAdes is not compatible with other pipeline options such as <code>--meta</code>, <code>--sc</code> and <code>--plasmid</code>. If you wish to assemble metatranscriptomic data just run rnaSPAdes as it is.</li>
         <li>By default rnaSPAdes uses 2 k-mer sizes, which are automatically detected using read length (approximately one third and half of the maximal read length). We recommend not to change this parameter because smaller k-mer sizes typically result in multiple chimeric (misassembled) transcripts. In case you have any doubts about your run, do not hesitate to contact us using e-mail given below.</li>
@@ -77,7 +76,7 @@ Note, that strand-specificity is not related and should not be confused with FR 
 <p>
 If the data set is single-end use <code>--ss rf</code> option in case when reads are antisense and <code>--ss fr</code> otherwise.
 <br>
-<!--
+
 <p><b>Hybrid transcriptome assembly</b>
 <p>rnaSPAdes now supports conventional <code>--pacbio</code> and <code>--nanopore</code> options (see <a href="manual.html" target="_blank">SPAdes manual</a>). Moreover, in addition to
 long reads you may also provide a separate file with reads capturing the entire transcript sequences using the following options. Full-length transcripts in such reads can be 
@@ -92,7 +91,7 @@ typically detected using the adapters. Note, that FL reads should be trimmed so 
     <code>--fl-nanopore &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;File with Oxford Nanopore reads that capture full-length transcripts. 
 </p>
--->
+
 
 <a name="sec2.3"></a>
 <h3>2.3 rnaSPAdes output</h3>

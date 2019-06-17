@@ -167,5 +167,13 @@ long_reads {
         min_significant_overlap 200
     }
 
+    rna_long_reads {
+        filtering   0.1
+        weight_priority    1.1
+        unique_edge_priority 2.0
+        min_significant_overlap 0
+    }
+
+
 }
 }
