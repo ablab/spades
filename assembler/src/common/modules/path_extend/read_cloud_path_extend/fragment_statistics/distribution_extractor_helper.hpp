@@ -5,7 +5,7 @@
 #include "common/barcode_index/cluster_storage/initial_cluster_storage_builder.hpp"
 
 namespace path_extend {
-namespace cluster_model {
+namespace fragment_statistics {
 
 class MinTrainingLengthEstimator {
     const Graph& g_;
@@ -89,6 +89,9 @@ struct DistributionStatistics {
 };
 
 struct StatisticsPack {
+  typedef DistributionPack::ClusterLength ClusterLength;
+  typedef DistributionPack::ClusterCoverage ClusterCoverage;
+
   DistributionStatistics<ClusterLength> length_statistics_;
   DistributionStatistics<ClusterCoverage> coverage_statistics_;
 
@@ -99,30 +102,6 @@ struct StatisticsPack {
 
 typedef std::map<size_t, StatisticsPack> StatisticsContainer;
 
-class StatisticsSerializer {
-
- public:
-    void PrintDistributions(const string& path, const DistributionPack& distributions) {
-        auto length_stream = std::ofstream(fs::append_path(path, "length"));
-        auto coverage_stream = std::ofstream(fs::append_path(path, "coverage"));
-        length_stream << distributions.length_distribution_;
-        coverage_stream << distributions.coverage_distribution_;
-    }
-
-
-    void PrintStatistics(const StatisticsContainer& statistics, const string& output_path) {
-        auto stats_stream = ofstream(fs::append_path(output_path, "statistics"));
-        for (const auto& entry: statistics) {
-            stats_stream << "Distance " << entry.first << ':' << std::endl;
-            stats_stream << "Length" << std::endl;
-            stats_stream << entry.second.length_statistics_ << std::endl;
-            stats_stream << "Coverage" << std::endl;
-            stats_stream << entry.second.coverage_statistics_;
-            stats_stream << std::endl << "------------" << std::endl;
-        }
-    }
-};
-
 class ClusterDistributionExtractor {
  private:
     const conj_graph_pack& gp_;
@@ -131,6 +110,11 @@ class ClusterDistributionExtractor {
     size_t min_cluster_offset_;
     size_t max_threads_;
  public:
+    typedef DistributionPack::ClusterLength ClusterLength;
+    typedef DistributionPack::ClusterCoverage ClusterCoverage;
+    typedef DistributionPack::ClusterLengthDistribution ClusterLengthDistribution;
+    typedef DistributionPack::ClusterCoverageDistribution ClusterCoverageDistribution;
+
     ClusterDistributionExtractor(const conj_graph_pack &gp_,
                                  size_t min_read_threshold_,
                                  size_t min_edge_length_,
@@ -145,10 +129,8 @@ class ClusterDistributionExtractor {
     DistributionPack GetDistributionsForDistance(size_t distance_threshold) {
         auto cluster_storage = GetInitialClusterStorage(distance_threshold);
 
-//fixme remove code duplication by using boost::variant or smh else
-//fixme lambdas everywhere
         auto cluster_predicate = [this](const cluster_storage::Cluster& cluster) {
-          VERIFY_MSG(cluster.Size() == 1, "Cluster covers multiple edges!");
+          VERIFY_DEV(cluster.Size() == 1);
           path_extend::scaffold_graph::EdgeGetter edge_getter;
           auto map_info = cluster.GetMappings()[0];
           EdgeId cluster_edge = edge_getter.GetEdgeFromScaffoldVertex(map_info.GetEdge());
@@ -177,12 +159,12 @@ class ClusterDistributionExtractor {
         SimpleDistributionExtractor distribution_extractor;
 
         DEBUG("Constructed extractors");
-
-        auto length_distribution = distribution_extractor.ExtractDistribution(cluster_storage, length_extractor);
-        auto coverage_distribution = distribution_extractor.ExtractDistribution(cluster_storage, coverage_extractor);
+        auto length_distribution = distribution_extractor.ExtractDistribution<ClusterLengthDistribution>(cluster_storage,
+            length_extractor);
+        auto coverage_distribution =
+            distribution_extractor.ExtractDistribution<ClusterCoverageDistribution>(cluster_storage, coverage_extractor);
 
         DEBUG("Extracted distributions");
-
         DistributionPack result(length_distribution, coverage_distribution);
         cluster_storage.Clear();
         return result;
@@ -190,11 +172,11 @@ class ClusterDistributionExtractor {
 
     DistributionPack GetClusterDistributions() {
         INFO("Extracting read cloud cluster statistics");
-        const size_t min_distance = 5000;
-        const size_t max_distance = 41000;
-        const size_t distance_step = 5000;
+        const size_t MIN_DISTANCE = 5000;
+        const size_t MAX_DISTANCE = 41000;
+        const size_t DISTANCE_STEP = 5000;
         vector<size_t> distances;
-        for (size_t distance = min_distance; distance <= max_distance; distance += distance_step) {
+        for (size_t distance = MIN_DISTANCE; distance <= MAX_DISTANCE; distance += DISTANCE_STEP) {
             distances.push_back(distance);
         }
         StatisticsContainer statistics_container;
@@ -221,23 +203,35 @@ class ClusterDistributionExtractor {
     }
 
  private:
-    template<class T>
-    DistributionStatistics<T> GetDistributionStatistics(SimpleDistribution<T>& distribution) const {
-        T min_element = std::numeric_limits<T>::max();
-        T max_element = 0;
-        T element_sum = 0;
-        if (not distribution.is_sorted()) {
-            distribution.sort();
+    template<class DistributionT>
+    DistributionStatistics<typename DistributionT::key_type> GetDistributionStatistics(const DistributionT &distribution) const {
+        typedef typename DistributionT::key_type KeyT;
+        KeyT min_element = std::numeric_limits<KeyT>::max();
+        KeyT max_element = 0;
+        KeyT element_sum = 0;
+        size_t fragments_num = 0;
+        for (const auto &value_mult: distribution) {
+            KeyT value = value_mult.first;
+            size_t mult = value_mult.second;
+            min_element = std::min(min_element, value);
+            max_element = std::max(max_element, value);
+            element_sum += static_cast<KeyT>(mult) * value;
+            fragments_num += mult;
         }
-        for (const T& element: distribution) {
-            min_element = std::min(min_element, element);
-            max_element = std::max(max_element, element);
-            element_sum += element;
+        KeyT mean = 0;
+        if (fragments_num != 0) {
+            mean = element_sum / static_cast<KeyT>(fragments_num);
         }
-        T mean = element_sum / static_cast<T>(distribution.size());
-        T median = distribution.at(distribution.size() / 2);
+        KeyT median = 0;
+        size_t current_index = 0;
+        for (const auto &value_mult: distribution) {
+            current_index += value_mult.second;
+            if (current_index >= fragments_num / 2) {
+                median = value_mult.first;
+            }
+        }
 
-        DistributionStatistics<T> result(min_element, max_element, mean, median);
+        DistributionStatistics<KeyT> result(min_element, max_element, mean, median);
         return result;
     }
 
@@ -282,6 +276,29 @@ class ClusterDistributionExtractor {
     DECL_LOGGER("ClusterDistributionExtractor");
 };
 
+class PercentileGetter {
+ public:
+    template<class DistributionT>
+    typename DistributionT::key_type GetPercentile(const DistributionT &distribution, double percent) {
+        size_t num_fragments = std::accumulate(distribution.begin(), distribution.end(), 0,
+                                               [](const size_t prev, const auto &key_and_mult) {
+                                                 return prev + key_and_mult.second;
+                                               });
+
+        auto index = static_cast<size_t>(static_cast<double>(num_fragments) * percent);
+        size_t current_index = 0;
+        typename DistributionT::key_type current_key = 0;
+        for (const auto &key_and_mult: distribution) {
+            current_index += key_and_mult.second;
+            current_key = key_and_mult.first;
+            if (current_index >= index) {
+                return current_key;
+            }
+        }
+        return current_key;
+    }
+};
+
 class ClusterStatisticsExtractor {
     DistributionPack cluster_distributions_;
 
@@ -294,22 +311,16 @@ class ClusterStatisticsExtractor {
     }
 
     size_t GetLengthPercentile(double percent) {
-        return GetPercentile(cluster_distributions_.length_distribution_, percent);
+        PercentileGetter percentile_getter;
+        return percentile_getter.GetPercentile(cluster_distributions_.length_distribution_, percent);
     }
 
     double GetCoveragePercentile(double percent) {
-        return GetPercentile(cluster_distributions_.coverage_distribution_, percent);
+        PercentileGetter percentile_getter;
+        return percentile_getter.GetPercentile(cluster_distributions_.coverage_distribution_, percent);
     }
 
- private:
-    template<class T>
-    T GetPercentile(SimpleDistribution<T>& distribution, double percent) {
-        if (not distribution.is_sorted()) {
-            distribution.sort();
-        }
-        size_t index = static_cast<size_t>(static_cast<double>(distribution.size()) * percent);
-        return distribution.at(index);
-    }
+
 };
 
 class ClusterStatisticsExtractorHelper {
@@ -335,13 +346,13 @@ class ClusterStatisticsExtractorHelper {
 
         const size_t min_cluster_offset = std::min(MIN_CLUSTER_OFFSET, min_training_length / LENGTH_TO_OFFSET);
 
-        path_extend::cluster_model::ClusterDistributionExtractor distribution_analyzer(gp_,
+        path_extend::fragment_statistics::ClusterDistributionExtractor distribution_analyzer(gp_,
                                                                                        MIN_READ_THRESHOLD,
                                                                                        min_training_length,
                                                                                        min_cluster_offset,
                                                                                        cfg::get().max_threads);
         auto cluster_distribution_pack = distribution_analyzer.GetClusterDistributions();
-        cluster_model::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
+        fragment_statistics::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
         return primary_parameters_extractor;
     }
 };

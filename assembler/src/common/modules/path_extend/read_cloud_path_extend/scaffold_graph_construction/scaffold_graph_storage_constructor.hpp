@@ -7,14 +7,17 @@ namespace path_extend {
 class ScaffoldGraphStorageConstructor {
  public:
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> LibraryT;
  private:
     const size_t small_length_threshold_;
     const size_t large_length_threshold_;
+    const LibraryT lib_;
     const conj_graph_pack &gp_;
 
  public:
     ScaffoldGraphStorageConstructor(size_t small_length_threshold_,
                                     size_t large_length_threshold_,
+                                    const LibraryT &lib,
                                     const conj_graph_pack &gp_);
 
     ScaffoldGraphStorage ConstructStorage() const;
@@ -47,14 +50,18 @@ class CloudScaffoldGraphConstructor {
     typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef path_extend::scaffold_graph::ScaffoldGraphConstructor ScaffoldGraphConstructor;
     typedef path_extend::ScaffoldingUniqueEdgeStorage ScaffoldingUniqueEdgeStorage;
+    typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> LibraryT;
  private:
     const size_t max_threads_;
     const debruijn_graph::conj_graph_pack &gp_;
+    const LibraryT lib_;
     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
+
 
  public:
     CloudScaffoldGraphConstructor(size_t max_threads_,
                                   const debruijn_graph::conj_graph_pack &gp,
+                                  const LibraryT &lib,
                                   shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
     ScaffoldGraph ConstructScaffoldGraphFromMinLength(size_t min_length,
                                                       scaffold_graph_construction_pipeline_type::Type type) const;
