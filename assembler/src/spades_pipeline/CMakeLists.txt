@@ -8,7 +8,7 @@
 project(spades_pipeline)
 
 # SPAdes pipeline scripts
-install(FILES hammer_logic.py process_cfg.py spades_logic.py corrector_logic.py support.py options_storage.py lucigen_nxmate.py
+install(FILES hammer_logic.py process_cfg.py spades_logic.py corrector_logic.py support.py options_storage.py lucigen_nxmate.py plasmid_glue_contigs.py
         DESTINATION share/spades/spades_pipeline
         COMPONENT runtime)
 # TruSpades module
