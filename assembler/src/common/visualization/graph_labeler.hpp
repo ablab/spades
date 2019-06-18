@@ -316,7 +316,7 @@ class ReadCloudLabeler : public visualization::graph_labeler::StrGraphLabeler<Gr
     typedef visualization::graph_labeler::StrGraphLabeler <Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef barcode_index::FrameBarcodeIndexInfoExtractor extractor_t;
+    typedef barcode_index::FrameBarcodeIndexInfoExtractorTemplate<Graph> extractor_t;
     typedef std::set <EdgeId> edge_set_t;
 private:
     shared_ptr<extractor_t> barcode_extractor_ptr_;
@@ -330,8 +330,8 @@ public:
     }
 
     //fixme refactor barcode index to avoid this
-    void UpdateExtractor(shared_ptr<barcode_index::AbstractBarcodeIndex> index_ptr, const Graph& g) {
-        barcode_extractor_ptr_ = make_shared<extractor_t>(index_ptr, g);
+    void UpdateExtractor(std::shared_ptr<barcode_index::AbstractBarcodeIndex<Graph>> index_ptr, const Graph& g) {
+        barcode_extractor_ptr_ = std::make_shared<extractor_t>(index_ptr, g);
     }
 
     virtual ~ReadCloudLabeler() {

@@ -9,13 +9,11 @@
 namespace path_extend {
 
 void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
-    auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-    ScaffoldGraphStorageConstructor
-        storage_constructor(small_path_length_threshold_, large_path_length_threshold_, gp_);
+    auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
     bool scaffolding_mode = true;
     size_t num_threads = cfg::get().max_threads;
-    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-    CloudScaffoldGraphConstructor constructor(num_threads, gp_, extractor);
+    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    CloudScaffoldGraphConstructor constructor(num_threads, gp_, lib_, extractor);
     auto path_scaffold_graph =
         constructor.ConstructScaffoldGraphFromPathContainer(old_paths, small_path_length_threshold_, scaffolding_mode);
 
@@ -58,11 +56,11 @@ void PathScaffolder::MergePaths(const PathContainer &old_paths) const {
     MergeUnivocalEdges(univocal_edges);
 }
 
-PathScaffolder::PathScaffolder(const conj_graph_pack &gp_,
-                               const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                               size_t small_path_length_threshold_, size_t large_path_length_threshold)
-    : gp_(gp_), unique_storage_(unique_storage_),
-      small_path_length_threshold_(small_path_length_threshold_),
+PathScaffolder::PathScaffolder(const conj_graph_pack &gp, const LibraryT &lib,
+                               const ScaffoldingUniqueEdgeStorage &unique_storage,
+                               size_t small_path_length_threshold, size_t large_path_length_threshold)
+    : gp_(gp), lib_(lib), unique_storage_(unique_storage),
+      small_path_length_threshold_(small_path_length_threshold),
       large_path_length_threshold_(large_path_length_threshold) {}
 void PathScaffolder::ExtendPathAlongConnections(const PathScaffolder::ScaffoldVertex &start,
                                                 const unordered_map<PathScaffolder::ScaffoldVertex,

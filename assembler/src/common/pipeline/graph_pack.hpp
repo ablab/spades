@@ -23,6 +23,7 @@ public:
               size_t flanking_range = 50,
               size_t max_mapping_gap = 0,
               size_t max_gap_diff = 0,
+              size_t barcode_frame_size = 0,
               bool detach_indices = true);
 
     unsigned k() const { return k_; }

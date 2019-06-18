@@ -5,7 +5,6 @@
 //***************************************************************************
 
 #include "read_cloud_path_extend/statistics/path_scaffolder_analyzer.hpp"
-#include "read_cloud_path_extend/fragment_model/secondary_stats_estimators.hpp"
 #include "launcher.hpp"
 
 #include "alignment/long_read_storage.hpp"
@@ -23,6 +22,8 @@
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
 #include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor.hpp"
+#include "read_cloud_path_extend/fragment_statistics/secondary_stats_estimators.hpp"
 #include "read_cloud_path_extend/fragment_model/distribution_extractor.hpp"
 
 #include <unordered_set>
@@ -516,8 +517,9 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
                 std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
             path_extend::ScaffolderParamsConstructor params_constructor;
             size_t max_threads = cfg::get().max_threads;
-            auto cluster_distribution_pack = gp_.read_cloud_distribution_pack;
-            cluster_model::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
+            typedef fragment_statistics::DistributionPack DistributionPackT;
+            DistributionPackT cluster_distribution_pack(lib.data().read_cloud_info.fragment_length_distribution);
+            fragment_statistics::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
 
             const size_t unique_length = cfg::get().ts_res.long_edge_length_lower_bound;
 
@@ -744,9 +746,21 @@ void PathExtendLauncher::Launch() {
 
     if (support_.HasReadClouds() and cfg::get().ts_res.read_cloud_resolution_on and
             cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
+        //fixme move this to separate class, make PathScaffolder analagous to Extender (construct for every lib)
+        fragment_statistics::DistributionPack distribution_pack;
+        std::vector<io::SequencingLibrary<debruijn_graph::config::LibraryData>> cloud_libs;
+        for (const auto &lib: dataset_info_.reads) {
+            if (lib.type() == io::LibraryType::Clouds10x) {
+                distribution_pack.length_distribution_ = lib.data().read_cloud_info.fragment_length_distribution;
+                cloud_libs.push_back(lib);
+            }
+        }
+        VERIFY_DEV(cloud_libs.size() == 1);
+        auto cloud_lib = cloud_libs.front();
+        VERIFY_DEV(not distribution_pack.length_distribution_.empty());
         const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
-        cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor(gp_.read_cloud_distribution_pack);
-        cluster_model::UpperLengthBoundEstimator length_bound_estimator;
+        fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
+        fragment_statistics::UpperLengthBoundEstimator length_bound_estimator;
         const double cluster_length_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
         size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
                                                                               cluster_length_percentile);
@@ -756,7 +770,7 @@ void PathExtendLauncher::Launch() {
 //
 //        return;
 
-        PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_,
+        PathScaffolder path_scaffolder(gp_, cloud_lib, unique_data_.main_unique_storage_,
                                        small_path_length_threshold,
                                        length_upper_bound);
         path_scaffolder.MergePaths(polished_paths);
