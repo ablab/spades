@@ -77,7 +77,9 @@ class PathExtendLauncher {
 
     void FilterPaths();
 
-    void AddFLPaths(PathContainer& paths);
+    void AddFLPaths(PathContainer& paths) const;
+
+    void SelectStrandSpecificPaths(PathContainer &paths) const;
 
 public:
 

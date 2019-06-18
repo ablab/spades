@@ -480,7 +480,8 @@ void PathExtendLauncher::FilterPaths() {
     }
 }
 
-void PathExtendLauncher::AddFLPaths(PathContainer &paths) {
+void PathExtendLauncher::AddFLPaths(PathContainer &paths) const {
+    bool fl_paths_added = false;
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
         if (dataset_info_.reads[lib_index].is_full_length_rna_lib()) {
             INFO("Extracting FL paths for lib #" << lib_index);
@@ -495,16 +496,31 @@ void PathExtendLauncher::AddFLPaths(PathContainer &paths) {
                 conj_path->SetWeight((float) path.weight());
                 paths.AddPair(new_path, conj_path);
             }
+            fl_paths_added = true;
             INFO("Total " << paths.size() << " FL paths were extracted for lib #" << lib_index);
         }
     }
-
-    INFO("Deduplicating FL paths");
-    GraphCoverageMap cover_map(gp_.g, paths);
-    Deduplicate(gp_.g, paths, cover_map, params_.min_edge_len,  params_.max_path_diff);
-    paths.SortByLength();
-    INFO("FL Paths deduplicated");
+    if (fl_paths_added) {
+        INFO("Deduplicating FL paths");
+        GraphCoverageMap cover_map(gp_.g, paths);
+        Deduplicate(gp_.g, paths, cover_map, params_.min_edge_len,  params_.max_path_diff);
+        paths.SortByLength();
+        INFO("FL Paths deduplicated");
+    }
 }
+
+void PathExtendLauncher::SelectStrandSpecificPaths(PathContainer &paths) const {
+    if (params_.ss.ss_enabled) {
+        INFO("Paths will be printed according to strand-specific coverage");
+        size_t lib_index = 0;
+        while (lib_index < dataset_info_.reads.lib_count() && !dataset_info_.reads[lib_index].is_graph_contructable()) {
+            ++lib_index;
+        }
+        PathContainerCoverageSwitcher switcher(gp_.g, gp_.ss_coverage[lib_index], params_.ss.antisense);
+        switcher.Apply(gp_.contig_paths);
+    }
+}
+
 
 void PathExtendLauncher::Launch() {
     INFO("ExSPAnder repeat resolving tool started");
@@ -557,11 +573,7 @@ void PathExtendLauncher::Launch() {
 
     AddFLPaths(gp_.contig_paths);
 
-    if (params_.ss.ss_enabled) {
-        INFO("Paths will be printed according to strand-specific coverage");
-        PathContainerCoverageSwitcher switcher(gp_.g, gp_.ss_coverage[0], params_.ss.antisense);
-        switcher.Apply(gp_.contig_paths);
-    }
+    SelectStrandSpecificPaths(gp_.contig_paths);
 
     FilterPaths();
 
