@@ -50,6 +50,8 @@ add_library(path_extend STATIC
             read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.cpp
             read_cloud_path_extend/scaffold_graph_gap_closer/scaffold_graph_gap_closer.cpp
             read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.cpp
+            read_cloud_path_extend/contracted_graph_scaffolding/contracted_graph_scaffolder.cpp
+            read_cloud_path_extend/contracted_graph_scaffolding/contracted_gfa_writer.cpp
             read_cloud_path_extend/fragment_model/distribution_extractor.cpp
             read_cloud_path_extend/extender_support/candidate_selectors.cpp
             read_cloud_path_extend/extender_support/entry_collectors.cpp
@@ -59,6 +61,8 @@ add_library(path_extend STATIC
             read_cloud_path_extend/statistics/perfect_transitions.cpp
             read_cloud_path_extend/statistics/perfect_clouds.cpp
             read_cloud_path_extend/statistics/coverage_break_analysis.cpp
+            read_cloud_path_extend/statistics/short_edge_dataset.cpp
+        read_cloud_path_extend/statistics/split_index_statistics.cpp
             read_cloud_path_extend/validation/path_cluster_validation.cpp
             read_cloud_path_extend/validation/reference_path_index.cpp
             read_cloud_path_extend/validation/transition_subgraph_validation.cpp)

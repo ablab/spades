@@ -1,7 +1,7 @@
 #include "secondary_stats_estimators.hpp"
 
 namespace path_extend {
-namespace cluster_model {
+namespace fragment_statistics {
 size_t UpperLengthBoundEstimator::EstimateUpperBound(ClusterStatisticsExtractor cluster_statistics_extractor,
                                                      double cluster_length_percentile) const {
     const size_t max_upper_bound = cfg::get().ts_res.long_edge_length_max_upper_bound;

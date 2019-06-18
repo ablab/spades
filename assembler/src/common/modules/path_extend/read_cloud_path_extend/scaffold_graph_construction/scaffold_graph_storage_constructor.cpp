@@ -9,8 +9,8 @@ namespace path_extend {
 
 ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorage() const {
     const size_t num_threads = cfg::get().max_threads;
-    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-    CloudScaffoldGraphConstructor constructor(num_threads, gp_, extractor);
+    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    CloudScaffoldGraphConstructor constructor(num_threads, gp_, lib_, extractor);
     scaffold_graph_construction_pipeline_type::Type type = scaffold_graph_construction_pipeline_type::Basic;
     auto large_scaffold_graph = constructor.ConstructScaffoldGraphFromMinLength(large_length_threshold_, type);
 
@@ -39,15 +39,17 @@ ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorage() const {
 }
 ScaffoldGraphStorageConstructor::ScaffoldGraphStorageConstructor(size_t small_length_threshold_,
                                                                  size_t large_length_threshold_,
-                                                                 const conj_graph_pack& gp_) : small_length_threshold_(
-    small_length_threshold_), large_length_threshold_(large_length_threshold_), gp_(gp_) {}
+                                                                 const LibraryT &lib,
+                                                                 const conj_graph_pack& gp_) :
+     small_length_threshold_(small_length_threshold_), large_length_threshold_(large_length_threshold_),
+     lib_(lib), gp_(gp_) {}
 
 ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorageFromPaths(const PathContainer &paths,
                                                                                 bool scaffolding_mode) const {
 
     const size_t num_threads = cfg::get().max_threads;
-    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-    CloudScaffoldGraphConstructor constructor(num_threads, gp_, extractor);
+    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    CloudScaffoldGraphConstructor constructor(num_threads, gp_, lib_, extractor);
     ScaffoldGraphStorage storage(constructor.ConstructScaffoldGraphFromPathContainer(paths, large_length_threshold_,
                                                                                      scaffolding_mode),
                                  constructor.ConstructScaffoldGraphFromPathContainer(paths, small_length_threshold_,
@@ -113,8 +115,9 @@ ScaffoldGraphPolisherHelper::ScaffoldGraph ScaffoldGraphPolisherHelper::GetScaff
 
 CloudScaffoldGraphConstructor::CloudScaffoldGraphConstructor(const size_t max_threads_,
                                                              const debruijn_graph::conj_graph_pack &gp,
+                                                             const LibraryT &lib,
                                                              shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor)
-    : max_threads_(max_threads_), gp_(gp), barcode_extractor_(barcode_extractor) {}
+    : max_threads_(max_threads_), gp_(gp), lib_(lib), barcode_extractor_(barcode_extractor) {}
 
 CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::ConstructScaffoldGraphFromMinLength(
     size_t min_length, scaffold_graph_construction_pipeline_type::Type type) const {
@@ -160,21 +163,21 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     shared_ptr<ScaffoldGraphPipelineConstructor> pipeline_constructor;
     switch(type) {
         case scaffold_graph_construction_pipeline_type::Basic: {
-            pipeline_constructor = make_shared<FullScaffoldGraphPipelineConstructor>(gp_, unique_storage,
+            pipeline_constructor = make_shared<FullScaffoldGraphPipelineConstructor>(gp_, lib_, unique_storage,
                                                                                      barcode_extractor_,
                                                                                      max_threads_, min_length);
             INFO("Constructing scaffold graph in basic mode");
             break;
         }
         case scaffold_graph_construction_pipeline_type::Scaffolding: {
-            pipeline_constructor = make_shared<MergingScaffoldGraphPipelineConstructor>(gp_, unique_storage,
+            pipeline_constructor = make_shared<MergingScaffoldGraphPipelineConstructor>(gp_, lib_, unique_storage,
                                                                                         barcode_extractor_,
                                                                                         max_threads_, min_length);
             INFO("Constructing scaffold graph in scaffolding mode");
             break;
         }
         case scaffold_graph_construction_pipeline_type::Binning: {
-            pipeline_constructor = make_shared<BinningScaffoldGraphPipelineConstructor>(gp_, unique_storage,
+            pipeline_constructor = make_shared<BinningScaffoldGraphPipelineConstructor>(gp_, lib_, unique_storage,
                                                                                         barcode_extractor_,
                                                                                         max_threads_, min_length);
             INFO("Constructing scaffold graph in binning mode");

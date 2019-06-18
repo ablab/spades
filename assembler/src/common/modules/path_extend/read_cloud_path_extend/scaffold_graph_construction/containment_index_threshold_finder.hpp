@@ -2,7 +2,7 @@
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 #include "read_cloud_connection_conditions.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/fragment_model/distribution_extractor.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor.hpp"
 
 namespace path_extend {
     class ReadCloudScoreFunctionThresholdEstimator {
@@ -44,7 +44,7 @@ namespace path_extend {
     class AbstractScoreHistogramConstructor {
      protected:
         typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
-        typedef cluster_model::SimpleDistribution<double> ScoreDistribution;
+        typedef fragment_statistics::DistributionPack::ClusterCoverageDistribution ScoreDistribution;
 
         const double step_;
         const double min_score_;
@@ -142,13 +142,7 @@ namespace path_extend {
         DECL_LOGGER("LongEdgeScoreHistogramConstructor");
     };
 
-    class PercentileGetter {
-     public:
-
-        double GetPercentile (cluster_model::SimpleDistribution<double> distribution, double percent);
-    };
-
-    class LabeledDistributionThresholdEstimator: public ReadCloudScoreFunctionThresholdEstimator {
+class LabeledDistributionThresholdEstimator: public ReadCloudScoreFunctionThresholdEstimator {
         const Graph& g_;
         shared_ptr<SegmentBarcodeScoreFunction> segment_score_function_;
         size_t edge_length_threshold_;

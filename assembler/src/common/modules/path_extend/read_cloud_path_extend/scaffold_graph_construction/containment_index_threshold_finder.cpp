@@ -1,4 +1,5 @@
 #include <random>
+#include <read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp>
 #include "containment_index_threshold_finder.hpp"
 
 namespace path_extend {
@@ -6,22 +7,15 @@ AbstractScoreHistogramConstructor::ScoreDistribution AbstractScoreHistogramConst
     const std::multiset<double> &scores) const {
     ScoreDistribution result;
     for (const auto& score: scores) {
-        result.add(score);
+        ++result[score];
     }
-    result.sort();
     return result;
 }
 AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConstructor::ConstructScoreDistribution() const {
-    VERIFY(interesting_edges_.size() > 0);
+    VERIFY_DEV(interesting_edges_.size() > 0);
     auto distance_values = ConstructDistanceDistribution(min_distance_, max_distance_);
     size_t left_block_start_offset = max_distance_ + left_block_length_ + right_block_length_;
     size_t block_size = interesting_edges_.size() / 10;
-//    const size_t TOTAL_SAMPLE_SIZE = 20000;
-//    //todo why constant?
-//    const size_t edge_sample_size = TOTAL_SAMPLE_SIZE / interesting_edges_.size();
-//    std::random_device rd;
-//    std::mt19937 gen(rd());
-//    std::uniform_int_distribution<size_t> distance_distribution(0, distance_values.size() - 1);
     std::multiset<double> scores;
     for (size_t i = 0; i < interesting_edges_.size(); ++i) {
         EdgeId edge = interesting_edges_[i];
@@ -31,11 +25,6 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
             size_t max_left_block_start = g_.length(edge) - left_block_start_offset;
             std::uniform_int_distribution<size_t> left_start_distribution(0, max_left_block_start);
             vector<pair<size_t, size_t>> starts_and_distances;
-//            for (size_t i = 0; i < edge_sample_size; ++i) {
-//                size_t left_block_start = left_start_distribution(gen);
-//                size_t distance = distance_values[distance_distribution(gen)];
-//                starts_and_distances.emplace_back(left_block_start, distance);
-//            }
               for (const size_t distance: distance_values) {
                   starts_and_distances.emplace_back(0, distance);
               }
@@ -91,23 +80,13 @@ LongEdgeScoreHistogramConstructor::LongEdgeScoreHistogramConstructor(
 
 vector<size_t> LongEdgeScoreHistogramConstructor::ConstructDistanceDistribution(size_t min_distance,
                                                                                 size_t max_distance) const {
-    VERIFY(max_distance >= min_distance);
+    VERIFY_DEV(max_distance >= min_distance);
     size_t distance_step = (max_distance - min_distance) / 10;
     vector<size_t> result;
     for (size_t dist = min_distance; dist <= max_distance; dist += distance_step) {
         result.push_back(dist);
     }
     return result;
-}
-double PercentileGetter::GetPercentile(cluster_model::SimpleDistribution<double> distribution, double percent) {
-    //fixme code duplication with PrimaryParametersExtractor
-    VERIFY(math::ge(percent, 0.0));
-    VERIFY(math::le(percent, 1.0));
-    if (not distribution.is_sorted()) {
-        distribution.sort();
-    }
-    size_t index = static_cast<size_t>(static_cast<double>(distribution.size()) * percent);
-    return distribution.at(index);
 }
 LabeledDistributionThresholdEstimator::LabeledDistributionThresholdEstimator(
         const Graph &g,
@@ -158,7 +137,7 @@ double LabeledDistributionThresholdEstimator::GetThreshold() const {
                                                             right_block_length_, min_distance_,
                                                             max_distance_, max_threads_);
     auto score_histogram = histogram_constructor.ConstructScoreDistribution();
-    PercentileGetter percentile_getter;
+    fragment_statistics::PercentileGetter percentile_getter;
     const double debug_percentile_step = 0.1;
     for (double i = 0.0; math::le(i, 1.0); i += debug_percentile_step) {
         DEBUG(i << " percentile value: " << percentile_getter.GetPercentile(score_histogram, i));
@@ -170,13 +149,11 @@ double LabeledDistributionThresholdEstimator::GetThreshold() const {
 
 SegmentBarcodeScoreFunction::SegmentBarcodeScoreFunction(shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor)
     : barcode_extractor_(barcode_extractor) {}
-optional<double> ContainmentIndexFunction::GetScoreFromTwoFragments(EdgeId edge,
-                                                                    size_t left_start,
-                                                                    size_t left_end,
-                                                                    size_t right_start,
-                                                                    size_t right_end) const {
-    VERIFY(left_start < left_end);
-    VERIFY(right_start < right_end);
+boost::optional<double> ContainmentIndexFunction::GetScoreFromTwoFragments(EdgeId edge, size_t left_start,
+                                                                           size_t left_end, size_t right_start,
+                                                                           size_t right_end) const {
+    VERIFY_DEV(left_start < left_end);
+    VERIFY_DEV(right_start < right_end);
     boost::optional<double> result;
     const size_t LOCAL_COUNT_THRESHOLD = 1;
 
@@ -205,13 +182,11 @@ ContainmentIndexFunction::ContainmentIndexFunction(
 ShortEdgeScoreFunction::ShortEdgeScoreFunction(shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor)
     : SegmentBarcodeScoreFunction(barcode_extractor) {}
 
-optional<double> ShortEdgeScoreFunction::GetScoreFromTwoFragments(EdgeId edge,
-                                                                  size_t left_start,
-                                                                  size_t left_end,
-                                                                  size_t right_start,
-                                                                  size_t right_end) const {
-    VERIFY(left_start < left_end);
-    VERIFY(right_start < right_end);
+boost::optional<double> ShortEdgeScoreFunction::GetScoreFromTwoFragments(EdgeId edge, size_t left_start,
+                                                                         size_t left_end, size_t right_start,
+                                                                         size_t right_end) const {
+    VERIFY_DEV(left_start < left_end);
+    VERIFY_DEV(right_start < right_end);
     boost::optional<double> result;
     const size_t LOCAL_COUNT_THRESHOLD = 1;
 

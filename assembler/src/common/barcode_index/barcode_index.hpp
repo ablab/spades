@@ -5,6 +5,7 @@
 #include "io/reads/paired_readers.hpp"
 #include <common/assembly_graph/paths/mapping_path.hpp>
 #include <common/assembly_graph/core/graph.hpp>
+#include <common/io/binary.hpp>
 #include "common/pipeline/config_struct.hpp"
 #include "common/assembly_graph/index/edge_index_builders.hpp"
 #include "common/sequence/range.hpp"
@@ -14,18 +15,13 @@ using std::istringstream;
 using namespace omnigraph;
 
 namespace barcode_index {
-    typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
-    typedef Graph::EdgeId EdgeId;
-    typedef Graph::VertexId VertexId;
-    typedef omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
     typedef RtSeq Kmer;
 
-    template<class barcode_entry_t>
+    template<class Graph, class BarcodeEntryT>
     class BarcodeIndexBuilder;
 
-    template <class barcode_entry_t>
+    template <class Graph, class BarcodeEntryT>
     class BarcodeIndexInfoExtractor;
-
 
     enum BarcodeLibraryType {
         TSLR,
@@ -108,8 +104,11 @@ namespace barcode_index {
     /**
      This class provides partial interface to BarcodeIndex.
     */
+    template <class Graph>
     class AbstractBarcodeIndex {
     public:
+        typedef typename Graph::EdgeId EdgeId;
+
     protected:
         const Graph& g_;
     public:
@@ -123,10 +122,9 @@ namespace barcode_index {
         //Number of barcodes on the beginning/end of the edge
         virtual size_t GetBarcodeNumber(const EdgeId &edge) const = 0;
 
-        //fixme this should be moved to DataScanner
-        virtual void ReadEntry(ifstream& fin, const EdgeId& edge) = 0;
+        virtual void ReadEntry(std::ifstream& fin, const EdgeId& edge) = 0;
 
-        virtual void WriteEntry(ofstream& fin, const EdgeId& edge) = 0;
+        virtual void WriteEntry(std::ofstream& fin, const EdgeId& edge) = 0;
 
         //Remove low abundant barcodes
         virtual void Filter(size_t abundancy_threshold, size_t gap_threshold) = 0;
@@ -144,19 +142,19 @@ namespace barcode_index {
      * The edge contains the cloud if there is a read barcoded by cloud's barcode which is aligned to the edge.
      * Info example: FrameBarcodeInfo
      */
-    template <class EdgeEntryT>
-    class BarcodeIndex : public AbstractBarcodeIndex {
-    friend class BarcodeIndexBuilder<EdgeEntryT>;
-    friend class BarcodeIndexInfoExtractor<EdgeEntryT>;
-    protected:
-        typedef std::unordered_map <EdgeId, EdgeEntryT> barcode_map_t;
-        using AbstractBarcodeIndex::g_;
-        barcode_map_t edge_to_entry_;
-        size_t number_of_barcodes_;
+    template <class Graph, class EdgeEntryT>
+    class BarcodeIndex : public AbstractBarcodeIndex<Graph> {
+    friend class BarcodeIndexBuilder<Graph, EdgeEntryT>;
+    friend class BarcodeIndexInfoExtractor<Graph, EdgeEntryT>;
 
     public:
+        typedef typename Graph::EdgeId EdgeId;
+        typedef typename Graph::VertexId VertexId;
+        typedef typename omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
+        typedef std::unordered_map <EdgeId, EdgeEntryT> barcode_map_t;
+
         BarcodeIndex (const Graph &g) :
-                AbstractBarcodeIndex(g),
+                AbstractBarcodeIndex<Graph>(g),
                 edge_to_entry_(),
                 number_of_barcodes_(0)
         {}
@@ -165,16 +163,12 @@ namespace barcode_index {
 
         virtual ~BarcodeIndex() {}
 
-        void InitialFillMap() {
-            edge_it_helper helper(g_);
-            for (auto it = helper.begin(); it != helper.end(); ++it) {
-                EdgeEntryT set(*it);
-                edge_to_entry_.insert({*it, set});
-            }
-        }
-
         size_t size() const {
             return edge_to_entry_.size();
+        }
+
+        bool empty() const {
+            return size() == 0;
         }
 
         typename barcode_map_t::const_iterator cbegin() const noexcept {
@@ -200,16 +194,37 @@ namespace barcode_index {
             }
         }
 
-        void ReadEntry (ifstream& fin, const EdgeId& edge) override {
+        void ReadEntry (std::ifstream& fin, const EdgeId& edge) override {
             DEBUG("Reading entry")
             DEBUG("Edge: " << edge.int_id());
             DEBUG("Length: " << g_.length(edge));
             edge_to_entry_[edge].Deserialize(fin);
         }
 
-        void WriteEntry (ofstream& fout, const EdgeId& edge) override {
+        void WriteEntry (std::ofstream& fout, const EdgeId& edge) override {
             fout << g_.int_id(edge) << std::endl;
             GetEntry(edge).Serialize(fout);
+        }
+
+        void BinRead(std::istream &str) {
+            using io::binary::BinRead;
+
+            edge_to_entry_.clear();
+            size_t size;
+            BinRead(str, size);
+            for (size_t i = 0; i < size; ++i) {
+                EdgeId edge_id = BinRead<uint64_t>(str);
+                auto entry = BinRead<EdgeEntryT>(str);
+                edge_to_entry_.insert({std::move(edge_id), std::move(entry)});
+            }
+        }
+
+        void BinWrite(std::ostream &str) const {
+            using io::binary::BinWrite;
+            BinWrite(str, edge_to_entry_.size());
+            for (const auto &edge_and_entry: edge_to_entry_) {
+                BinWrite(str, edge_and_entry.first.int_id(), edge_and_entry.second);
+            }
         }
 
         typename barcode_map_t::const_iterator GetEntryTailsIterator(const EdgeId& edge) const {
@@ -218,6 +233,10 @@ namespace barcode_index {
 
         typename barcode_map_t::const_iterator GetEntryHeadsIterator(const EdgeId& edge) const {
             return edge_to_entry_.find(edge);
+        }
+
+        void InsertEntry(const EdgeId &edge, const EdgeEntryT &entry) {
+            edge_to_entry_.insert({edge, entry});
         }
 
         const EdgeEntryT& GetEntry(const EdgeId &edge) const {
@@ -231,6 +250,15 @@ namespace barcode_index {
         size_t GetNumberOfBarcodes() {
             return number_of_barcodes_;
         }
+
+        const Graph& GetGraph() const {
+            return g_;
+        }
+
+     protected:
+        using AbstractBarcodeIndex<Graph>::g_;
+        barcode_map_t edge_to_entry_;
+        size_t number_of_barcodes_;
 
         DECL_LOGGER("BarcodeIndex");
     };
@@ -262,17 +290,17 @@ namespace barcode_index {
         Range GetRange() const {
             return range_;
         }
-        friend ostream& operator <<(ostream& os, const SimpleBarcodeInfo& info);
-        friend istream& operator >>(istream& is, SimpleBarcodeInfo& info);
+        friend std::ostream& operator <<(std::ostream& os, const SimpleBarcodeInfo& info);
+        friend std::istream& operator >>(std::istream& is, SimpleBarcodeInfo& info);
     };
 
-    inline ostream& operator <<(ostream& os, const SimpleBarcodeInfo& info)
+    inline std::ostream& operator <<(std::ostream& os, const SimpleBarcodeInfo& info)
     {
         os << info.count_ << " " << info.range_.start_pos << " " << info.range_.end_pos;
         return os;
     }
 
-    inline istream& operator >>(istream& os, SimpleBarcodeInfo& info)
+    inline std::istream& operator >>(std::istream& os, SimpleBarcodeInfo& info)
     {
         size_t range_start;
         size_t range_end;
@@ -291,23 +319,8 @@ namespace barcode_index {
      * We store the set of barcoded bins and the number of reads aligned to the edge.
      */
     class FrameBarcodeInfo {
-        /**
-         * Number of reads aligned to the edge
-         */
-        size_t count_;
-        /**
-         * `is_on_frame[i]` is true iff ith bin is barcoded
-         */
-        boost::dynamic_bitset<> is_on_frame_;
-        /**
-         * Leftmost barcoded bin
-         */
-        size_t leftmost_index_;
-        /**
-         * Rightmost barcoded bin
-         */
-        size_t rightmost_index_;
     public:
+        typedef boost::dynamic_bitset<> IsOnFrameT;
 
         /**
          *
@@ -359,7 +372,7 @@ namespace barcode_index {
             return rightmost_index_;
         }
 
-        const boost::dynamic_bitset<>& GetBitSet() const {
+        const IsOnFrameT& GetBitSet() const {
             return is_on_frame_;
         }
 
@@ -387,22 +400,86 @@ namespace barcode_index {
             return is_on_frame_.count();
         }
 
-        friend ostream& operator <<(ostream& os, const FrameBarcodeInfo& info);
-        friend istream& operator >>(istream& is, FrameBarcodeInfo& info);
+        void SetCount(size_t count) {
+            count_ = count;
+        }
+
+        void SetLeftMost(size_t index) {
+            leftmost_index_ = index;
+        }
+
+        void SetRightMost(size_t index) {
+            rightmost_index_ = index;
+        }
+
+        void SetBitSet(const IsOnFrameT &bitset) {
+            is_on_frame_ = bitset;
+        }
+
+        void BinRead(std::istream &str) {
+            //fixme very ineffective!
+            using io::binary::BinRead;
+
+            auto count = BinRead<size_t>(str);
+            SetCount(count);
+            auto bitset_str = BinRead<std::string>(str);
+            IsOnFrameT bitset(bitset_str);
+            SetBitSet(bitset);
+            SetLeftMost(bitset.find_first());
+            size_t rightmost = 0;
+            for (size_t i = bitset.size() - 1; i > 0; --i) {
+                if (bitset.test(i)) {
+                    rightmost = i;
+                    break;
+                }
+            }
+            SetRightMost(rightmost);
+        }
+
+        void BinWrite(std::ostream &str) const {
+            using io::binary::BinWrite;
+
+            BinWrite(str, GetCount());
+            std::string bitset_string;
+            boost::to_string(GetBitSet(), bitset_string);
+            BinWrite(str, bitset_string);
+        }
+
+
+        friend std::ostream& operator <<(std::ostream& os, const FrameBarcodeInfo& info);
+        friend std::istream& operator >>(std::istream& is, FrameBarcodeInfo& info);
+
+     private:
+        /**
+         * Number of reads aligned to the edge
+         */
+        size_t count_;
+        /**
+         * `is_on_frame[i]` is true iff ith bin is barcoded
+         */
+        boost::dynamic_bitset<> is_on_frame_;
+        /**
+         * Leftmost barcoded bin
+         */
+        size_t leftmost_index_;
+        /**
+         * Rightmost barcoded bin
+         */
+        size_t rightmost_index_;
 
         DECL_LOGGER("FrameBarcodeInfo");
     };
 
-    inline ostream& operator <<(ostream& os, const FrameBarcodeInfo& info)
+    inline std::ostream& operator <<(std::ostream& os, const FrameBarcodeInfo& info)
     {
         os << info.count_ << " " << info.is_on_frame_;
         return os;
     }
 
-    inline istream& operator >>(istream& os, FrameBarcodeInfo& info)
+    inline std::istream& operator >>(std::istream& is, FrameBarcodeInfo& info)
     {
-        os >> info.count_;
-        os >> info.is_on_frame_;
+        is >> info.count_;
+        is >> info.is_on_frame_;
         info.leftmost_index_ = info.is_on_frame_.find_first();
         size_t rightmost = 0;
         for (size_t i = info.is_on_frame_.size() - 1; i > 0; --i) {
@@ -412,16 +489,15 @@ namespace barcode_index {
             }
         }
         info.rightmost_index_ = rightmost;
-        return os;
+        return is;
     }
 
-
-
-    template <class entry_info_t>
+    template <class Graph, class EntryInfoT>
     class EdgeEntry {
     public:
-        typedef std::map <BarcodeId, entry_info_t> barcode_distribution_t;
-        typedef entry_info_t barcode_info_t;
+        typedef typename Graph::EdgeId EdgeId;
+        typedef std::map <BarcodeId, EntryInfoT> barcode_distribution_t;
+        typedef EntryInfoT barcode_info_t;
 
     protected:
         EdgeId edge_;
@@ -464,11 +540,11 @@ namespace barcode_index {
             return barcode_distribution_.size();
         }
 
-        virtual void Serialize(ofstream& fout) const {
+        virtual void Serialize(std::ofstream& fout) const {
             SerializeDistribution(fout);
         }
 
-        virtual void Deserialize(ifstream& fin) {
+        virtual void Deserialize(std::ifstream& fin) {
             DeserializeDistribution(fin);
         }
 
@@ -496,20 +572,28 @@ namespace barcode_index {
             return barcode_distribution_.find(barcode);
         }
 
+        void BinRead(std::istream &str) {
+            barcode_distribution_ = io::binary::BinRead<barcode_distribution_t>(str);
+        }
+
+        void BinWrite(std::ostream &str) const {
+            io::binary::BinWrite(str, barcode_distribution_);
+        }
+
     protected:
-        void SerializeDistribution(ofstream &fout) const {
-            fout << barcode_distribution_.size() << endl;
+        void SerializeDistribution(std::ofstream &fout) const {
+            fout << barcode_distribution_.size() << std::endl;
             for (auto entry : barcode_distribution_) {
-                fout << entry.first << ' ' << entry.second << endl;
+                fout << entry.first << ' ' << entry.second << std::endl;
             }
         }
 
-        void DeserializeDistribution(ifstream &fin) {
+        void DeserializeDistribution(std::ifstream &fin) {
             size_t distr_size;
             fin >> distr_size;
             for (size_t i = 0; i < distr_size; ++i) {
                 uint64_t int_id;
-                entry_info_t info;
+                EntryInfoT info;
                 fin >> int_id >> info;
                 BarcodeId bid(int_id);
                 InsertInfo(bid, info);
@@ -520,20 +604,22 @@ namespace barcode_index {
         virtual void InsertBarcode(const BarcodeId& code, const size_t count, const Range& range) = 0;
     };
 
-    class SimpleEdgeEntry : public EdgeEntry<SimpleBarcodeInfo> {
-        friend class BarcodeIndex<SimpleEdgeEntry>;
-        friend class BarcodeIndexBuilder<SimpleEdgeEntry>;
-        friend class BarcodeIndexInfoExtractor<SimpleEdgeEntry>;
+    template<class Graph>
+    class SimpleEdgeEntry : public EdgeEntry<Graph, SimpleBarcodeInfo> {
+        friend class BarcodeIndex<Graph, SimpleEdgeEntry>;
+        friend class BarcodeIndexBuilder<Graph, SimpleEdgeEntry>;
+        friend class BarcodeIndexInfoExtractor<Graph, SimpleEdgeEntry>;
     protected:
-        using EdgeEntry::barcode_distribution_t;
-        using EdgeEntry::barcode_distribution_;
-        using EdgeEntry::edge_;
+        typedef typename Graph::EdgeId EdgeId;
+        using EdgeEntry<Graph, SimpleBarcodeInfo>::barcode_distribution_t;
+        using EdgeEntry<Graph, SimpleBarcodeInfo>::barcode_distribution_;
+        using EdgeEntry<Graph, SimpleBarcodeInfo>::edge_;
 
     public:
         SimpleEdgeEntry():
-            EdgeEntry() {}
+            EdgeEntry<Graph, SimpleBarcodeInfo>() {}
         SimpleEdgeEntry(const EdgeId& edge) :
-            EdgeEntry(edge) {}
+            EdgeEntry<Graph, SimpleBarcodeInfo>(edge) {}
 
         ~SimpleEdgeEntry() {}
 
@@ -579,26 +665,28 @@ namespace barcode_index {
         }
     };
 
-    class FrameEdgeEntry : public EdgeEntry<FrameBarcodeInfo> {
-        friend class BarcodeIndex<FrameEdgeEntry>;
-        friend class BarcodeIndexBuilder<FrameEdgeEntry>;
-        friend class BarcodeIndexInfoExtractor<FrameEdgeEntry>;
+    template<class Graph>
+    class FrameEdgeEntry : public EdgeEntry<Graph, FrameBarcodeInfo> {
+        friend class BarcodeIndex<Graph, FrameEdgeEntry>;
+        friend class BarcodeIndexBuilder<Graph, FrameEdgeEntry>;
+        friend class BarcodeIndexInfoExtractor<Graph, FrameEdgeEntry>;
     protected:
-        using EdgeEntry::barcode_distribution_t;
-        using EdgeEntry::barcode_distribution_;
-        using EdgeEntry::edge_;
+        typedef typename Graph::EdgeId EdgeId;
+        using EdgeEntry<Graph, FrameBarcodeInfo>::barcode_distribution_t;
+        using EdgeEntry<Graph, FrameBarcodeInfo>::barcode_distribution_;
+        using EdgeEntry<Graph, FrameBarcodeInfo>::edge_;
         size_t edge_length_;
         size_t frame_size_;
         size_t number_of_frames_;
 
     public:
         FrameEdgeEntry():
-            EdgeEntry(),
+            EdgeEntry<Graph, FrameBarcodeInfo>(),
             edge_length_(0),
             frame_size_(0),
             number_of_frames_(0) {}
         FrameEdgeEntry(const EdgeId& edge, size_t edge_length, size_t frame_size) :
-            EdgeEntry(edge),
+            EdgeEntry<Graph, FrameBarcodeInfo>(edge),
             edge_length_(edge_length),
             frame_size_(frame_size),
             number_of_frames_(edge_length / frame_size + 1) {}
@@ -626,7 +714,7 @@ namespace barcode_index {
         }
 
     protected:
-        void InsertInfo(const BarcodeId& barcode, const FrameBarcodeInfo &info) {
+        void InsertInfo(const BarcodeId& barcode, const FrameBarcodeInfo &info) override {
             if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
                 barcode_distribution_.insert({barcode, info});
             }
@@ -635,7 +723,8 @@ namespace barcode_index {
             }
         }
 
-        void InsertBarcode(const BarcodeId& barcode, const size_t count, const Range& range) {
+        void InsertBarcode(const BarcodeId& barcode, const size_t count, const Range& range) override {
+            DEBUG("Inserting barcode");
             if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
                 FrameBarcodeInfo info(number_of_frames_);
                 barcode_distribution_.insert({barcode, info});
@@ -644,6 +733,8 @@ namespace barcode_index {
             size_t right_frame = GetFrameFromPos(range.end_pos);
             DEBUG("Range: " << range);
             DEBUG("Frames: " << left_frame << " " << right_frame);
+            DEBUG("Count: " << count);
+            VERIFY_DEV(barcode_distribution_.find(barcode) != barcode_distribution_.end());
             barcode_distribution_.at(barcode).Update(count, left_frame, right_frame);
         }
 
@@ -662,5 +753,44 @@ namespace barcode_index {
             return pos / frame_size_;
         }
 
+        DECL_LOGGER("FrameEdgeEntry");
+    };
+
+    template<class Graph>
+    class FrameBarcodeIndex: public BarcodeIndex<Graph, FrameEdgeEntry<Graph>> {
+        friend class BarcodeIndexBuilder<Graph, FrameEdgeEntry<Graph>>;
+        friend class BarcodeIndexInfoExtractor<Graph, FrameEdgeEntry<Graph>>;
+     public:
+        using BarcodeIndex<Graph, FrameEdgeEntry<Graph>>::barcode_map_t;
+        typedef typename Graph::EdgeId EdgeId;
+        typedef typename omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
+
+        FrameBarcodeIndex(const Graph &g, size_t frame_size):
+            BarcodeIndex<Graph, FrameEdgeEntry<Graph>>(g), frame_size_(frame_size) {
+        }
+
+        size_t GetFrameSize() const {
+            return frame_size_;
+        }
+
+        void SetFrameSize(size_t frame_size) {
+            VERIFY_DEV(frame_size_ == 0);
+            frame_size_ = frame_size;
+        }
+
+        void InitialFillMap() {
+            VERIFY_DEV(frame_size_ != 0);
+            VERIFY_DEV(edge_to_entry_.empty());
+            edge_it_helper helper(g_);
+            for (auto it = helper.begin(); it != helper.end(); ++it) {
+                FrameEdgeEntry<Graph> entry(*it, g_.length(*it), frame_size_);
+                this->InsertEntry(*it, entry);
+            }
+        }
+
+     private:
+        using BarcodeIndex<Graph, FrameEdgeEntry<Graph>>::g_;
+        using BarcodeIndex<Graph, FrameEdgeEntry<Graph>>::edge_to_entry_;
+        size_t frame_size_;
     };
 } //barcode_index

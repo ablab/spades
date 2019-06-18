@@ -23,17 +23,20 @@ class PathScaffolder {
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
+    typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> LibraryT;
 
     const debruijn_graph::conj_graph_pack& gp_;
+    const LibraryT lib_;
     const ScaffoldingUniqueEdgeStorage& unique_storage_;
     size_t small_path_length_threshold_;
     size_t large_path_length_threshold_;
 
  public:
-    PathScaffolder(const conj_graph_pack &gp_,
-                   const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                   size_t small_path_length_threshold_,
-                   size_t large_path_length_threshold_);
+    PathScaffolder(const conj_graph_pack &gp,
+                   const LibraryT &lib,
+                   const ScaffoldingUniqueEdgeStorage &unique_storage,
+                   size_t small_path_length_threshold,
+                   size_t large_path_length_threshold);
 
     void MergePaths(const PathContainer &paths) const;
 

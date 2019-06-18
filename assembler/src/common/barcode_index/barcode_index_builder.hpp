@@ -6,37 +6,30 @@
 #include "common/modules/alignment/kmer_mapper.hpp"
 #include "common/modules/alignment/sequence_mapper.hpp"
 
-
 namespace barcode_index {
-    typedef debruijn_graph::EdgeIndex<Graph> Index;
-    typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
-    typedef typename debruijn_graph::KmerFreeEdgeIndex<Graph, utils::DefaultStoring> InnerIndex;
-    typedef typename InnerIndex::KeyWithHash KeyWithHash;
-    typedef typename debruijn_graph::EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
 
-
-    template<class barcode_entry_t>
+    template<class Graph, class BarcodeEntryT>
     class BarcodeIndexBuilder {
-    protected:
-        const Graph &g_;
-        shared_ptr <barcode_index::BarcodeIndex<barcode_entry_t>> index_ptr_;
-        size_t tail_threshold_;
-        BarcodeEncoder barcode_codes_;
-        typedef vector<io::SequencingLibrary<debruijn_graph::config::LibraryData>> lib_vector_t;
-
     public:
-        BarcodeIndexBuilder(const Graph &g, size_t tail_threshold) :
-                g_(g),
-                index_ptr_(make_shared<barcode_index::BarcodeIndex<barcode_entry_t>>(g)),
+        typedef debruijn_graph::EdgeIndex<Graph> Index;
+        typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
+        typedef debruijn_graph::KmerFreeEdgeIndex<Graph, utils::DefaultStoring> InnerIndex;
+        typedef typename InnerIndex::KeyWithHash KeyWithHash;
+        typedef typename debruijn_graph::EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
+        typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> LibraryT;
+        typedef typename barcode_index::BarcodeIndex<Graph, BarcodeEntryT> BarcodeIndexT;
+        typedef typename Graph::EdgeId EdgeId;
+
+        BarcodeIndexBuilder(BarcodeIndexT &index, size_t tail_threshold) :
+                g_(index.GetGraph()),
+                index_(index),
                 tail_threshold_(tail_threshold),
                 barcode_codes_() {}
 
         ~BarcodeIndexBuilder() {}
 
-        DECL_LOGGER("BarcodeMapperBuilder")
-
-        shared_ptr <barcode_index::BarcodeIndex<barcode_entry_t>> GetMapper() {
-            return index_ptr_;
+        BarcodeIndexT GetMapper() {
+            return index_;
         }
 
         void FillMapFromDemultiplexedDataset(const Index &index, const KmerSubs &kmer_mapper) {
@@ -44,17 +37,15 @@ namespace barcode_index {
             std::string tslr_dataset = cfg::get().ts_res.tslr_dataset;
 
             auto lib_vec = GetLibrary(tslr_dataset);
-            auto mapper = std::make_shared < debruijn_graph::BasicSequenceMapper < Graph, Index> >
-            (g_, index, kmer_mapper);
-
+            auto mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph,Index>>(g_, index, kmer_mapper);
             //Process every barcode from truspades dataset
             for (size_t i = 0; i < lib_vec.size(); ++i) {
                 std::string barcode_string = lib_vec[i].barcode_;
                 uint64_t barcode_int = barcode_codes_.GetCode(barcode_string);
                 BarcodeId barcode(barcode_int);
 
-                std::shared_ptr <io::ReadStream<io::PairedRead>> paired_stream =
-                        make_shared<io::SeparatePairedReadStream>(lib_vec[i].left_, lib_vec[i].right_, 1);
+                std::shared_ptr<io::ReadStream<io::PairedRead>> paired_stream =
+                        std::make_shared<io::SeparatePairedReadStream>(lib_vec[i].left_, lib_vec[i].right_, 1);
                 io::PairedRead read;
                 while (!paired_stream->eof()) {
                     *paired_stream >> read;
@@ -79,8 +70,7 @@ namespace barcode_index {
             std::string tslr_dataset = cfg::get().ts_res.tslr_dataset;
 
             const auto &lib_vec = GetLibrary(tslr_dataset);
-            auto mapper = std::make_shared < debruijn_graph::BasicSequenceMapper < Graph, Index> >
-            (g_, index, kmer_mapper);
+            auto mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index>>(g_, index, kmer_mapper);
             const auto &bucket_vec = SplitLibrary(lib_vec, n_threads);
             INFO("Library splitted");
             for (size_t i = 0; i < bucket_vec.size(); ++i) {
@@ -90,11 +80,9 @@ namespace barcode_index {
                     std::string barcode_string = lib.barcode_;
                     uint64_t barcode_int = barcode_codes_.GetCode(barcode_string);
                     BarcodeId barcode(barcode_int);
-
-                    std::shared_ptr <io::ReadStream<io::PairedRead>> paired_stream =
-                            make_shared<io::SeparatePairedReadStream>(lib.left_, lib.right_, 1);
+                    ReadStreamPtr paired_stream = std::make_shared<io::SeparatePairedReadStream>(lib.left_,
+                                                                                                 lib.right_, 1);
                     const KmerMultiset &kmer_multiset = BuildKmerMultisetFromStream(paired_stream);
-
                     for (auto it = kmer_multiset.cbegin(); it != kmer_multiset.cend(); ++it) {
                         size_t count = it->second;
                         const auto &edge_and_offset = index.get(it->first);
@@ -112,17 +100,17 @@ namespace barcode_index {
             }
         }
 
-        void FillMapFrom10XReads(const lib_vector_t& libs_10x, const Index &index, const KmerSubs &kmer_mapper) {
+        void FillMapFrom10XReads(const LibraryT& lib_10x, const Index &index, const KmerSubs &kmer_mapper) {
             INFO("Starting barcode index construction from 10X reads")
 //            auto mapper = std::make_shared < alignment::BWAReadMapper < Graph > > (g_);
             auto mapper = std::make_shared < debruijn_graph::BasicSequenceMapper < Graph, Index> >
                     (g_, index, kmer_mapper);
 
-            auto streams = GetStreamsFromLibs(libs_10x);
+            auto streams = GetStreamsFromLib(lib_10x);
             //Process every read from 10X dataset
             io::SingleRead read;
             size_t counter = 0;
-            const vector<string> barcode_prefixes = {"BC:Z:", "BX:Z:"};
+            const std::vector<string> barcode_prefixes = {"BC:Z:", "BX:Z:"};
             for (auto stream: streams) {
                 while (!stream->eof()) {
                     *stream >> read;
@@ -132,7 +120,6 @@ namespace barcode_index {
                         barcode_codes_.AddBarcode(barcode_string);
                         uint64_t barcode_int = barcode_codes_.GetCode(barcode_string);
                         BarcodeId barcode(barcode_int);
-
                         const auto &path = mapper->MapRead(read);
                         InsertMappingPath(barcode, path);
                     }
@@ -140,26 +127,26 @@ namespace barcode_index {
                     VERBOSE_POWER_T2(counter, 100, "Processed " << counter << " reads.");
                 }
             }
-            index_ptr_->SetNumberOfBarcodes(barcode_codes_.GetSize());
+            index_.SetNumberOfBarcodes(barcode_codes_.GetSize());
             INFO("FillMap finished")
         }
 
-        void FillMap(const lib_vector_t& libs_10x, const Index &index, const KmerSubs &kmer_mapper) {
+        void FillMap(const LibraryT& lib_10x, const Index &index, const KmerSubs &kmer_mapper) {
             InitialFillMap();
-            FillMapFrom10XReads(libs_10x, index, kmer_mapper);
+            FillMapFrom10XReads(lib_10x, index, kmer_mapper);
             return;
         }
-
         virtual void InitialFillMap() = 0;
+        DECL_LOGGER("BarcodeMapperBuilder");
 
     protected:
+        typedef std::shared_ptr<io::ReadStream<io::PairedRead>> ReadStreamPtr;
 
-        void InsertEntry(const EdgeId &edge, barcode_entry_t &entry) {
-            auto key_and_value = std::make_pair(edge, entry);
-            index_ptr_->edge_to_entry_.insert({edge, entry});
+        void InsertEntry(const EdgeId &edge, BarcodeEntryT &entry) {
+            index_.InsertEntry(edge, entry);
         }
 
-        string GetTenXBarcodeFromRead(const io::SingleRead &read, const vector<string>& barcode_prefixes) {
+        string GetTenXBarcodeFromRead(const io::SingleRead &read, const std::vector<string>& barcode_prefixes) {
             for (const auto& prefix: barcode_prefixes) {
                 size_t prefix_len = prefix.size();
                 size_t start_pos = read.name().find(prefix);
@@ -183,7 +170,7 @@ namespace barcode_index {
             return result;
         }
 
-        KmerMultiset BuildKmerMultisetFromStream(shared_ptr <io::ReadStream<io::PairedRead>> read_stream) {
+        KmerMultiset BuildKmerMultisetFromStream(ReadStreamPtr read_stream) {
             KmerMultiset kmer_multiset;
             size_t read_counter = 0;
             io::PairedRead read;
@@ -197,8 +184,7 @@ namespace barcode_index {
             return kmer_multiset;
         }
 
-        void ExtractKmersFromSeq(KmerMultiset &kmer_multiset,
-                                 const io::SingleRead &read, size_t kmer_len) {
+        void ExtractKmersFromSeq(KmerMultiset &kmer_multiset, const io::SingleRead &read, size_t kmer_len) {
             if (read.IsValid()) {
                 const Sequence &seq = read.sequence();
                 Kmer kmer = seq.start<Kmer>(kmer_len);
@@ -212,7 +198,8 @@ namespace barcode_index {
 
 
         void InsertBarcode(const BarcodeId &barcode, const EdgeId &edge, size_t count, const Range &range) {
-            index_ptr_->edge_to_entry_.at(edge).InsertBarcode(barcode, count, range);
+            VERIFY_DEV(index_.edge_to_entry_.find(edge) != index_.edge_to_entry_.end());
+            index_.edge_to_entry_.at(edge).InsertBarcode(barcode, count, range);
         }
 
         bool IsAtEdgeTail(const EdgeId &edge, const Range &range) {
@@ -257,29 +244,27 @@ namespace barcode_index {
             return lib_vec;
         }
 
-        vector <io::SingleStreamPtr> GetStreamsFromLibs(const lib_vector_t& libs_10x) { ;
-            vector <io::SingleStreamPtr> result;
-            for (const auto& lib: libs_10x) {
-                VERIFY(lib.type() == io::LibraryType::Clouds10x);
-                for (auto it = lib.reads_begin(); it != lib.reads_end(); ++it) {
-                    auto stream = io::EasyStream(*it, false);
-                    result.push_back(stream);
-                }
+        std::vector <io::SingleStreamPtr> GetStreamsFromLib(const LibraryT &lib) { ;
+            std::vector <io::SingleStreamPtr> result;
+            VERIFY_DEV(lib.type() == io::LibraryType::Clouds10x);
+            for (const auto &read: lib.reads()) {
+                auto stream = io::EasyStream(read, false);
+                result.push_back(stream);
             }
             return result;
         }
 
-        vector <vector<tslr_barcode_library>> SplitLibrary(const vector <tslr_barcode_library> &lib_vec,
-                                                           size_t bucket_size) {
+        std::vector <std::vector<tslr_barcode_library>> SplitLibrary(const std::vector <tslr_barcode_library> &lib_vec,
+                                                                     size_t bucket_size) {
             size_t lib_size = lib_vec.size();
             size_t buckets = lib_size / bucket_size;
-            vector <vector<tslr_barcode_library>> bucket_vec(buckets);
+            std::vector <std::vector<tslr_barcode_library>> bucket_vec(buckets);
             for (size_t i = 0; i < buckets; ++i) {
                 for (size_t j = 0; j < bucket_size; ++j) {
                     bucket_vec[i].push_back(lib_vec[i * bucket_size + j]);
                 }
             }
-            vector <tslr_barcode_library> last_bucket;
+            std::vector <tslr_barcode_library> last_bucket;
             size_t last_elem = (lib_size / bucket_size) * bucket_size;
             for (size_t i = 0; i < lib_size % bucket_size; ++i) {
                 last_bucket.push_back(lib_vec[last_elem + i]);
@@ -287,7 +272,6 @@ namespace barcode_index {
             if (last_bucket.size() > 0) {
                 bucket_vec.push_back(last_bucket);
             }
-
             size_t sum_size = 0;
             for (const auto &vec : bucket_vec) {
                 sum_size += vec.size();
@@ -295,39 +279,31 @@ namespace barcode_index {
             VERIFY(lib_size == sum_size);
             return bucket_vec;
         }
+
+        const Graph &g_;
+        BarcodeIndexT &index_;
+        size_t tail_threshold_;
+        BarcodeEncoder barcode_codes_;
     };
 
-    class SimpleMapperBuilder : public BarcodeIndexBuilder<SimpleEdgeEntry> {
-        using BarcodeIndexBuilder::g_;
-        using BarcodeIndexBuilder::index_ptr_;
+    template<class Graph>
+    class FrameMapperBuilder : public BarcodeIndexBuilder<Graph, FrameEdgeEntry<Graph>> {
     public:
-        SimpleMapperBuilder(const Graph &g, const size_t tail_threshold) :
-                BarcodeIndexBuilder(g, tail_threshold) {}
+        typedef typename Graph::EdgeId EdgeId;
+        typedef typename barcode_index::FrameBarcodeIndex<Graph> FrameBarcodeIndexT;
 
-        void InitialFillMap() override {
-            edge_it_helper helper(g_);
-            for (auto it = helper.begin(); it != helper.end(); ++it) {
-                SimpleEdgeEntry entry(*it);
-                InsertEntry(*it, entry);
-            }
-        }
-    };
-
-    class FrameMapperBuilder : public BarcodeIndexBuilder<FrameEdgeEntry> {
-        using BarcodeIndexBuilder::g_;
-        using BarcodeIndexBuilder::index_ptr_;
-        const size_t frame_size_;
-    public:
-        FrameMapperBuilder(const Graph &g, const size_t tail_threshold, const size_t frame_size) :
-                BarcodeIndexBuilder(g, tail_threshold),
+        FrameMapperBuilder(FrameBarcodeIndexT &index, const size_t tail_threshold, const size_t frame_size) :
+                BarcodeIndexBuilder<Graph, FrameEdgeEntry<Graph>>(index, tail_threshold),
                 frame_size_(frame_size) {}
 
         void InitialFillMap() override {
-            edge_it_helper helper(g_);
-            for (auto it = helper.begin(); it != helper.end(); ++it) {
-                FrameEdgeEntry entry(*it, g_.length(*it), frame_size_);
-                InsertEntry(*it, entry);
-            }
+            FrameBarcodeIndexT& frame_index = dynamic_cast<FrameBarcodeIndexT&>(index_);
+            frame_index.SetFrameSize(frame_size_);
+            frame_index.InitialFillMap();
         }
+     protected:
+        using BarcodeIndexBuilder<Graph, FrameEdgeEntry<Graph>>::g_;
+        using BarcodeIndexBuilder<Graph, FrameEdgeEntry<Graph>>::index_;
+        const size_t frame_size_;
     };
 }
