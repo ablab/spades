@@ -6,9 +6,10 @@
 namespace path_extend {
 
 ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParams(
-        const Graph& g, size_t min_length, cluster_model::ClusterStatisticsExtractor primary_extractor) const {
+        const Graph& g, size_t min_length, fragment_statistics::ClusterStatisticsExtractor primary_extractor) const {
     size_t length_threshold = min_length;
     size_t tail_threshold = min_length;
+    //fixme get rid of cfg::get()
     size_t count_threshold = cfg::get().ts_res.scaff_con.count_threshold;
     double split_procedure_strictness = cfg::get().ts_res.scaff_con.split_procedure_strictness;
     size_t transitive_distance_threshold = cfg::get().ts_res.scaff_con.transitive_distance_threshold;
@@ -65,7 +66,7 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
                                        normalize_using_cov);
 }
 ScaffolderParams::ScoreEstimationParams ScaffolderParamsConstructor::GetScoreEstimationParams(
-        const Graph &g, cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor,
+        const Graph &g, fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor,
         double score_percentile, double cluster_length_percentile, size_t block_length) const {
     size_t max_training_gap = cluster_statistics_extractor.GetLengthPercentile(cluster_length_percentile);
 //    double length_normalizer = static_cast<double>(cfg::get().ts_res.long_edge_length_max_upper_bound);
@@ -115,7 +116,9 @@ vector<std::pair<shared_ptr<path_extend::scaffold_graph::ScaffoldGraph>, string>
     return intermediate_results_;
 }
 
-ScaffoldGraphPipelineConstructor::ScaffoldGraphPipelineConstructor(const conj_graph_pack &gp) : gp_(gp) {}
+ScaffoldGraphPipelineConstructor::ScaffoldGraphPipelineConstructor(const conj_graph_pack &gp,
+                                                                   const LibraryT &lib) :
+                                                                   gp_(gp), lib_(lib) {}
 shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> ScaffoldGraphPipelineConstructor::ConstructSimpleEdgeIndex(
         const set<ScaffoldGraphPipelineConstructor::ScaffoldVertex> &scaffold_vertices,
         ScaffoldGraphPipelineConstructor::BarcodeIndexPtr barcode_extractor,
@@ -137,8 +140,9 @@ ScaffoldGraphConstructionPipeline BasicScaffoldGraphPipelineConstructor::Constru
         const set<ScaffoldGraphPipelineConstructor::ScaffoldVertex> &scaffold_vertices) const {
     INFO("Constructing scaffold graph with length threshold " << min_length_);
     path_extend::ScaffolderParamsConstructor params_constructor;
-
-    path_extend::cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor(gp_.read_cloud_distribution_pack);
+    typedef fragment_statistics::DistributionPack DistributionPackT;
+    DistributionPackT distribution_pack(lib_.data().read_cloud_info.fragment_length_distribution);
+    path_extend::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
     auto params = params_constructor.ConstructScaffolderParams(gp_.g, min_length_, cluster_statistics_extractor);
     auto initial_constructor =
         make_shared<path_extend::scaffold_graph::UniqueScaffoldGraphConstructor>(gp_.g,
@@ -156,11 +160,12 @@ ScaffoldGraphConstructionPipeline BasicScaffoldGraphPipelineConstructor::Constru
 }
 BasicScaffoldGraphPipelineConstructor::BasicScaffoldGraphPipelineConstructor(
         const conj_graph_pack &gp,
+        const LibraryT &lib,
         const ScaffoldingUniqueEdgeStorage &unique_storage,
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_,
         size_t max_threads_,
         size_t min_length_)
-    : ScaffoldGraphPipelineConstructor(gp),
+    : ScaffoldGraphPipelineConstructor(gp, lib),
       unique_storage_(unique_storage),
       barcode_extractor_(barcode_extractor_),
       max_threads_(max_threads_),
@@ -170,7 +175,9 @@ ScaffoldGraphConstructionPipeline GapScaffoldGraphPipelineConstructor::Construct
         const set<ScaffoldGraphPipelineConstructor::ScaffoldVertex> &scaffold_vertices) const {
     INFO("Constructing scaffold graph with length threshold " << min_length_);
     path_extend::ScaffolderParamsConstructor params_constructor;
-    path_extend::cluster_model::ClusterStatisticsExtractor cluster_statistics_extractor(gp_.read_cloud_distribution_pack);
+    typedef fragment_statistics::DistributionPack DistributionPackT;
+    DistributionPackT distribution_pack(lib_.data().read_cloud_info.fragment_length_distribution);
+    path_extend::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
     auto params = params_constructor.ConstructScaffolderParams(gp_.g, min_length_, cluster_statistics_extractor);
     auto initial_constructor = GetInitialConstructor(params, scaffold_vertices);
     auto iterative_constructor_callers = ConstructStages(params, scaffold_vertices);
@@ -183,11 +190,12 @@ ScaffoldGraphConstructionPipeline GapScaffoldGraphPipelineConstructor::Construct
 }
 GapScaffoldGraphPipelineConstructor::GapScaffoldGraphPipelineConstructor(
         const conj_graph_pack &gp,
+        const LibraryT &lib,
         const ScaffoldingUniqueEdgeStorage& unique_storage,
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_,
         size_t max_threads_,
         size_t min_length_)
-    : ScaffoldGraphPipelineConstructor(gp),
+    : ScaffoldGraphPipelineConstructor(gp, lib),
       unique_storage_(unique_storage),
       barcode_extractor_(barcode_extractor_),
       max_threads_(max_threads_),
@@ -213,11 +221,12 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GapScaffoldGraphPipelineCon
 }
 FullScaffoldGraphPipelineConstructor::FullScaffoldGraphPipelineConstructor(
         const conj_graph_pack &gp,
+        const LibraryT &lib,
         const ScaffoldingUniqueEdgeStorage &unique_storage,
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_,
         size_t max_threads_,
         size_t min_length_)
-    : BasicScaffoldGraphPipelineConstructor(gp, unique_storage, barcode_extractor_, max_threads_, min_length_) {}
+    : BasicScaffoldGraphPipelineConstructor(gp, lib, unique_storage, barcode_extractor_, max_threads_, min_length_) {}
 
 vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffoldGraphPipelineConstructor::ConstructStages(
         path_extend::ScaffolderParams params,
@@ -262,11 +271,12 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffoldGraphPip
 }
 BinningScaffoldGraphPipelineConstructor::BinningScaffoldGraphPipelineConstructor(
         const conj_graph_pack &gp,
+        const LibraryT &lib,
         const ScaffoldingUniqueEdgeStorage &unique_storage,
-        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_,
-        size_t max_threads_,
-        size_t min_length_)
-    : GapScaffoldGraphPipelineConstructor(gp, unique_storage, barcode_extractor_, max_threads_, min_length_) {}
+        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+        size_t max_threads,
+        size_t min_length)
+    : GapScaffoldGraphPipelineConstructor(gp, lib, unique_storage, barcode_extractor, max_threads, min_length) {}
 
 vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> BinningScaffoldGraphPipelineConstructor::ConstructStages(
         path_extend::ScaffolderParams params,
@@ -277,11 +287,12 @@ vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> BinningScaffoldGraph
 }
 MergingScaffoldGraphPipelineConstructor::MergingScaffoldGraphPipelineConstructor(
         const conj_graph_pack &gp,
+        const LibraryT &lib,
         const ScaffoldingUniqueEdgeStorage &unique_storage,
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_,
         size_t max_threads_,
         size_t min_length_)
-    : GapScaffoldGraphPipelineConstructor(gp, unique_storage, barcode_extractor_, max_threads_, min_length_) {}
+    : GapScaffoldGraphPipelineConstructor(gp, lib, unique_storage, barcode_extractor_, max_threads_, min_length_) {}
 
 vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> MergingScaffoldGraphPipelineConstructor::ConstructStages(
         path_extend::ScaffolderParams params,

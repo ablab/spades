@@ -21,6 +21,10 @@ void MappingTraits<LibraryData::BinaryReadsInfo>::mapping(IO &io, LibraryData::B
     io.mapRequired("chunk num", info.chunk_num);
 }
 
+void MappingTraits<LibraryData::ReadCloudInfo>::mapping(IO &io, LibraryData::ReadCloudInfo &info) {
+    io.mapRequired("length distribution", info.fragment_length_distribution);
+}
+
 void MappingTraits<LibraryData>::mapping(IO &io, debruijn_graph::config::LibraryData &data) {
     io.mapRequired("unmerged read length", data.unmerged_read_length);
     io.mapRequired("merged read length", data.merged_read_length);
