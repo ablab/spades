@@ -1055,13 +1055,13 @@ TARGET_LINK_LIBRARIES( test_isa parasail )
 ADD_EXECUTABLE( test_matrix tests/test_matrix.c )
 TARGET_LINK_LIBRARIES( test_matrix parasail )
 
-INSTALL( FILES parasail.h DESTINATION include )
-INSTALL( DIRECTORY parasail DESTINATION include )
-INSTALL( TARGETS parasail parasail_aligner parasail_stats
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-)
+#INSTALL( FILES ../../include/parasail/parasail.h DESTINATION include )
+#INSTALL( DIRECTORY parasail DESTINATION include )
+#INSTALL( TARGETS parasail parasail_aligner parasail_stats
+#    RUNTIME DESTINATION bin
+#    LIBRARY DESTINATION lib
+#    ARCHIVE DESTINATION lib
+#)
 
 SET( CPACK_PACKAGE_VERSION_MAJOR ${MAJOR} )
 SET( CPACK_PACKAGE_VERSION_MINOR ${MINOR} )
