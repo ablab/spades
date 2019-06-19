@@ -51,6 +51,9 @@ SPAligner can represent the results in three formats: *.tsv (default), *.fasta a
     mkdir build && cd build && cmake ../src
     make spaligner
 
+Now to run SPAligner print move to folder `algorithmic-biology/assembler/` and execute
+     
+    build/bin/spaligner
 
 ## <a name="interpretation"></a>Results interpretation
 
@@ -122,8 +125,8 @@ Overview of the alignment of the nucleotide query sequence *S* (orange bar) to a
 ![pipeline](pipeline.jpg)
 
 1. **Anchor search.** Anchors (regions of high similarity) between the query and the edge labels are identified with [BWA-MEM](http://bio-bwa.sourceforge.net/). 
-2. **Anchor filtering.** Anchors shorter than *K*, assembly graph *K*-mer size,(anchors 5, 6, 9), anchors “in the middle” of long edge (anchor 4) or ambiguous anchors (anchor 7 mostly covered by anchor 2, both anchors 11 and 12) are discarded.
-3. **Anchor chaining.** Heaviest chain of compatible anchors (chain 1->3->2) is determined.
+2. **Anchor filtering.** Anchors shorter than *K*, assembly graph *K*-mer size,(anchors 2, 6, 11), anchors “in the middle” of long edge (anchor 7) or ambiguous anchors (anchor 10 mostly covered by anchor 9, both anchors 4 and 5) are discarded.
+3. **Anchor chaining.** Heaviest chain of compatible anchors (chain 3->8->9) is determined.
 4. **Reconstruction of filling paths.** Paths for fragments of the query between the consecutive chain anchors (as well as left- and right-most fragments) are reconstructed. The procedure is performed using fast library for sequence alignment [Edlib](https://github.com/Martinsos/edlib).
 
 ### <a name="longaa"></a>Amino-acid sequence alignment pipeline
@@ -133,9 +136,9 @@ Overview of the alignment of the amino-acid query sequence *S* (orange bar) to a
 ![pipeline_protein](pipeline_protein.jpg)
 
 1. **Anchor search.** Anchors (regions of high similarity) between the query and the edge labels are identified with [BWA-MEM](http://bio-bwa.sourceforge.net/). 
-2. **Anchor filtering.** Anchors shorter than *K*, assembly graph *K*-mer size,(anchors 5, 6, 9), anchors with a wrong frame shift of long edge (anchors 1, 7, 8) are discarded.
+2. **Anchor filtering.** Anchors shorter than *K*, assembly graph *K*-mer size,(anchors 1, 4, 8), anchors with a wrong frame shift (anchors 2, 7, 9) are discarded.
 3. **Alignment extension.** Search of an optimal alignments extending each of the remaining anchors.
-4. **Alignment scoring.** Obtained alignment paths are re-scored via [Parasail library](https://github.com/jeffdaily/parasail) for fast amino acid sequence alignment.
+4. **Alignment scoring.** Obtained alignment paths are re-scored via [Parasail library](https://github.com/jeffdaily/parasail) for fast amino acid sequence alignment and are stored to resulting fasta-file.
 
 ## <a name="parameters"></a>Parameters tuning
 
