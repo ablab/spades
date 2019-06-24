@@ -186,29 +186,6 @@ def check_cfg_for_partial_run(cfg, partial_run_type="restart-from"):  # restart-
         if "assembly" not in cfg:
             support.error(
                 "failed to %s 'assembling' ('%s') because this stage %s not specified!" % (action, check_point, verb))
-        if check_point.startswith("k"):
-            correct_k = False
-            k_to_check = options_storage.args.k_mers
-            if not k_to_check:
-                if options_storage.auto_K_allowed():
-                    if options_storage.args.rna:
-                        k_to_check = cfg["assembly"].__dict__["iterative_K"]
-                    else:
-                        k_to_check = list(set(options_storage.K_MERS_SHORT +
-                                              options_storage.K_MERS_150 +
-                                              options_storage.K_MERS_250))
-                else:
-                    k_to_check = options_storage.K_MERS_SHORT
-            for k in k_to_check:
-                if check_point == ("k%d" % k) or check_point.startswith("k%d:" % k):
-                    correct_k = True
-                    break
-            if not correct_k:
-                k_str = check_point[1:]
-                if ":" in k_str:
-                    k_str = k_str[:k_str.find(":")]
-                support.error("failed to %s K=%s because this K %s not specified!" % (action, k_str, verb))
-
 
 def get_options_from_params(params_filename, running_script):
     command_line = None
