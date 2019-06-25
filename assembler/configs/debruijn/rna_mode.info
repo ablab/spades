@@ -75,7 +75,7 @@ simp
        ; to_ec_lb: max_ec_length = 2*tip_length(to_ec_lb) - 1
        ; nbr: use not bulge erroneous connections remover 
        ; condition               "{ ec_lb 9, icb 40.0, nbr }"
-       condition               "{ ec_lb 30, icb 50, rcec_cb 1.0 }"
+       condition               "{ ec_lb 30, icb 200, rcec_cb 1.0 }"
     }
 
     ; relative coverage erroneous connections remover:
