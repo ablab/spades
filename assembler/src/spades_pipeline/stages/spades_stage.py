@@ -106,16 +106,18 @@ def rna_k_values(support, dataset_data, log):
 
 
 def generateK_for_rna(cfg, dataset_data, log):
-    if options_storage.args.rna and cfg["assembly"].__dict__["iterative_K"] == "auto":
+    if cfg.iterative_K == "auto":
         k_values = options_storage.K_MERS_RNA
         if not options_storage.args.iontorrent:
             k_values = rna_k_values(support, dataset_data, log)
-        cfg["assembly"].__dict__["iterative_K"] = k_values
+        cfg.iterative_K = k_values
         log.info("K values to be used: " + str(k_values))
 
 
 def generateK(cfg, log, dataset_data, silent=False):
-    if not options_storage.args.iontorrent:
+    if options_storage.args.rna:
+        generateK_for_rna(cfg, dataset_data, log)
+    elif not options_storage.args.iontorrent:
         RL = support.get_primary_max_reads_length(dataset_data, log, ["merged reads"],
                                                   options_storage.READS_TYPES_USED_IN_CONSTRUCTION)
         if options_storage.auto_K_allowed():
@@ -229,7 +231,6 @@ class SpadesStage(stage.Stage):
         super(SpadesStage, self).__init__(*args)
         self.get_stage = get_stage
 
-        generateK_for_rna(cfg, self.dataset_data, self.log)
         self.generate_cfg(cfg, self.output_files)
 
         # creating dataset
