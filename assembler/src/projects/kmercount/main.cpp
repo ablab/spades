@@ -20,6 +20,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
+#include <iostream>
+#include <cstdio>
+#include <cstring>
+#include <cerrno>
 
 using namespace std;
 void create_console_logger() {
@@ -171,7 +175,11 @@ int main(int argc, char* argv[]) {
         utils::KMerDiskCounter<RtSeq> counter(workdir, splitter);
         counter.CountAll(16, nthreads);
         auto final_kmers = counter.final_kmers_file();
-        INFO("K-mer counting done, kmers saved to " << final_kmers->file());
+
+        std::string outputfile_name = fs::append_path(workdir, "final_kmers");
+        std::rename(final_kmers->file().c_str(), outputfile_name.c_str());
+
+        INFO("K-mer counting done, kmers saved to " << outputfile_name);
     } catch (std::string const &s) {
         std::cerr << s;
         return EINTR;
