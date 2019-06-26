@@ -601,9 +601,11 @@ def relative2abs_paths(dataset_data, dirname):
     return abs_paths_dataset_data
 
 
-def get_reads_length(dataset_data, log, ignored_types, num_checked=10 ** 4, diff_len_allowable=25):
+def get_reads_length(dataset_data, log, ignored_types,
+                     used_types=options_storage.READS_TYPES_USED_IN_CONSTRUCTION,
+                     num_checked=10 ** 4, diff_len_allowable=25):
     max_reads_lenghts = [get_max_reads_length(reads_file, log, num_checked) for reads_file in
-                         get_reads_files(dataset_data, log, ignored_types)]
+                         get_reads_files(dataset_data, log, ignored_types, used_types)]
 
     avg_len = sum(max_reads_lenghts) / len(max_reads_lenghts)
     for max_len in max_reads_lenghts:
