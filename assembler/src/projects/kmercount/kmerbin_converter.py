@@ -7,10 +7,6 @@
 ############################################################################
 
 import argparse
-import os
-import sys
-from os.path import abspath, dirname, realpath, join
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert binary output of spades-kmercount to fasta format')
