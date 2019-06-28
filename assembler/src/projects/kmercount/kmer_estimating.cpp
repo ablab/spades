@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
         size_t buff_size = 512;
         buff_size <<= 20;
 
-        cxxopts::Options options(argv[0], " kmer count read filter");
+        cxxopts::Options options(argv[0], " kmer number estimating");
         options.add_options()
             ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("21"), "K")
             ("d,dataset", "Dataset description (in YAML)", cxxopts::value<std::string>(dataset_desc), "file")
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
 
         nthreads = spades_set_omp_threads(nthreads);
 
-        INFO("Starting kmer count based read filtering, built from " << version::refspec() << ", git revision " << version::gitrev());
+        INFO("Starting kmer number estimating, built from " << version::refspec() << ", git revision " << version::gitrev());
 
         INFO("K-mer length set to " << k);
         INFO("# of threads to use: " << nthreads);

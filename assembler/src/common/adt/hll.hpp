@@ -44,8 +44,18 @@ public:
       double res = alpha(precision) * m_ * m_;
       double E = std::accumulate(data_.begin(), data_.end(),
                                  0.0, [](double a, uint8_t b) { return a + exp2(-(double) b); });
+      uint64_t zeros_bucket_cnt = std::accumulate(data_.begin(), data_.end(), 0,
+          [](uint64_t a, uint8_t b) {return a + (b == 0);});
       res /= E;
-      return {res, res > 5.0 * m_ / 2};
+      if (res <= 5.0 * m_/2) {
+          if (zeros_bucket_cnt > 0) {
+              return {m_ * (std::log2((double)m_) - std::log2((double)zeros_bucket_cnt)), true};
+          } else {
+              return {res, false};
+          }
+      } else {
+          return {res, true};
+      }
     }
 
     void clear() {
