@@ -27,6 +27,8 @@
 #include "version.hpp"
 
 using namespace std;
+typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;
+
 void create_console_logger() {
     using namespace logging;
 
@@ -35,12 +37,45 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
-template<class IS, class OS>
-void Transfer(IS &input, OS &output) {
-    typename OS::ReadT read;
+template<class IS, class OS, class Filter>
+void filter_reads(IS &input, OS &output, const Filter& filter, unsigned buffer_size, unsigned nthreads) {
+    std::vector<typename OS::ReadT> reads_buffer(buffer_size);
+    std::vector<uint8_t> need_to_out(buffer_size);
+    std::vector<unsigned> chunk_start(nthreads), chunk_end(nthreads);
+
     while (!input.eof()) {
-        input >> read;
-        output << read;
+        unsigned reads_cnt = 0;
+        while (!input.eof() && reads_cnt < reads_buffer.size()) {
+            input >> reads_buffer[reads_cnt];
+            ++reads_cnt;
+        }
+
+        unsigned reads_per_thread = reads_cnt/nthreads;
+        chunk_start[0] = 0;
+        chunk_end[0] = reads_per_thread;
+        for (unsigned i = 1; i < nthreads; ++i) {
+            chunk_start[i] = chunk_end[i - 1];
+            chunk_end[i] = chunk_start[i] + reads_per_thread;
+        }
+        chunk_end[nthreads - 1] = reads_cnt;
+
+#       pragma omp parallel for
+        for (unsigned i = 0; i < nthreads; ++i) {
+            for (unsigned j = chunk_start[i]; j < chunk_end[i]; ++j) {
+                if (!filter(reads_buffer[j])) {
+                    need_to_out[j] = 1;
+                } else {
+                    need_to_out[j] = 0;
+                }
+            }
+        }
+
+        for (size_t i = 0; i < reads_cnt; ++i) {
+            if (need_to_out[i] == 1) {
+                output << reads_buffer[i];
+            }
+            need_to_out[i] = 0;
+        }
     }
 }
 
@@ -115,7 +150,6 @@ int main(int argc, char* argv[]) {
         io::BinarySingleStreams single_readers = io::single_binary_readers_for_libs(dataset, libs,
                                                                                     /*followed by rc*/false, /*including paired*/true);
         INFO("Estimating kmer cardinality");
-        typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;
         SeqHasher hasher(k);
 
         size_t kmers_cnt_est = utils::EstimateCardinality(k, single_readers, hasher);
@@ -125,27 +159,29 @@ int main(int argc, char* argv[]) {
         utils::FillCoverageHistogram(cqf, k, hasher, single_readers, thr + 1);
         INFO("Kmer coverage filled");
 
+        const unsigned FILTER_READS_BUFF_SIZE = 1 << 20;
+
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
             INFO("Filtering library " << i);
             if (dataset[i].has_paired()) {
-                auto filtered = io::CovFilteringWrap<io::PairedRead>(
-                        io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0),
-                        k, hasher, cqf, thr);
+                io::PairedStreamPtr paired_reads_stream =
+                    io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0);
                 io::OFastqPairedStream ostream(workdir + "/" + to_string(i + 1) + ".1.fastq",
-                                              workdir + "/" + to_string(i + 1) + ".2.fastq");
-                Transfer(*filtered, ostream);
+                                               workdir + "/" + to_string(i + 1) + ".2.fastq");
+                io::CoverageFilter<io::PairedRead, SeqHasher> filter(k, hasher, cqf, thr);
+                filter_reads(*paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, nthreads);
             }
 
             if (dataset[i].has_single()) {
-                auto filtered = io::CovFilteringWrap<io::SingleRead>(
-                        io::single_easy_reader(dataset[i], /*followed_by_rc*/ false,
-                                               /*including_paired_reads*/ false),
-                        k, hasher, cqf, thr);
+                io::SingleStreamPtr single_reads_stream = io::single_easy_reader(dataset[i],
+                    /*followed_by_rc*/ false, /*including_paired_reads*/ false);
+                io::CoverageFilter<io::SingleRead, SeqHasher> filter(k, hasher, cqf, thr);
 
                 io::OFastqReadStream ostream(workdir + "/" + to_string(i + 1) + ".s.fastq");
-                Transfer(*filtered, ostream);
+                filter_reads(*single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, nthreads);
             }
         }
+        INFO("Filtering finished")
     } catch (std::string const &s) {
         std::cerr << s;
         return EINTR;
