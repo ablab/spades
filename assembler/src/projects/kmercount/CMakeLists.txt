@@ -31,3 +31,11 @@ endif()
 install(TARGETS spades-kmercount
         DESTINATION bin
         COMPONENT runtime)
+
+install(TARGETS spades-read-filter
+        DESTINATION bin
+        COMPONENT runtime)
+
+install(TARGETS spades-kmer-estimating
+        DESTINATION bin
+        COMPONENT runtime)
