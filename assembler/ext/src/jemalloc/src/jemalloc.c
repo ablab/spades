@@ -65,7 +65,12 @@ bool	opt_junk_free =
     ;
 
 bool	opt_utrace = false;
+/* SPADES LOCAL */
+#ifdef JEMALLOC_XMALLOC
+bool	opt_xmalloc = true;
+#else
 bool	opt_xmalloc = false;
+#endif
 bool	opt_zero = false;
 unsigned	opt_narenas = 0;
 
