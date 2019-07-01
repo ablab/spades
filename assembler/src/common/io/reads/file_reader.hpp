@@ -34,17 +34,16 @@ public:
      */
     explicit FileReadStream(const std::string &filename,
                             OffsetType offset_type = PhredOffset)
-            : filename_(filename), offset_type_(offset_type), parser_(NULL) {
+            : filename_(filename), offset_type_(offset_type), parser_(nullptr) {
         fs::CheckFileExistenceFATAL(filename_);
-        parser_ = SelectParser(filename_, offset_type_);
+        parser_.reset(SelectParser(filename_, offset_type_));
     }
 
     /*
      * Default destructor.
      */
-    /* virtual */ ~FileReadStream() {
+    ~FileReadStream() {
         close();
-        delete parser_;
     }
 
     /*
@@ -52,12 +51,11 @@ public:
      *
      * @return true of the stream is opened and false otherwise.
      */
-    /* virtual */ bool is_open() {
-        if (parser_ != NULL) {
+    bool is_open() override {
+        if (parser_)
             return parser_->is_open();
-        } else {
-            return false;
-        }
+
+        return false;
     }
 
     /*
@@ -66,12 +64,11 @@ public:
      * @return true if the end of stream is reached and false
      * otherwise.
      */
-    /* virtual */ bool eof() {
-        if (parser_ != NULL) {
+    bool eof() override {
+        if (parser_)
             return parser_->eof();
-        } else {
-            return true;
-        }
+
+        return true;
     }
 
     /*
@@ -81,44 +78,36 @@ public:
      *
      * @return Reference to this stream.
      */
-    /* virtual */ FileReadStream &operator>>(SingleRead &singleread) {
-        if (parser_ != NULL) {
+    FileReadStream &operator>>(SingleRead &singleread) override {
+        if (parser_)
             (*parser_) >> singleread;
-        }
+
         return *this;
     }
 
     /*
      * Close the stream.
      */
-    /* virtual */ void close() {
-        if (parser_ != NULL) {
+    void close() override {
+        if (parser_)
             parser_->close();
-        }
     }
 
     /*
      * Close the stream and open it again.
      */
-    /* virtual */ void reset() {
-        if (parser_ != NULL) {
+    void reset() override {
+        if (parser_)
             parser_->reset();
-        }
     }
 
 private:
-    /*
-     * @variable The name of the file which stream reads from.
-     */
+    /* @variable The name of the file which stream reads from. */
     std::string filename_;
-    /*
-     * @variable Quality offset type.
-     */
+    /* @variable Quality offset type. */
     OffsetType offset_type_;
-    /*
-     * @variable Internal stream that reads from file.
-     */
-    Parser *parser_;
+    /* @variable Internal stream that reads from file. */
+    std::unique_ptr<Parser> parser_;
 
 };
 
