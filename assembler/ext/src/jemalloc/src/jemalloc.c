@@ -2103,7 +2103,7 @@ imalloc_body(static_opts_t *sopts, dynamic_opts_t *dopts, tsd_t *tsd) {
 
 label_oom:
 	if (unlikely(sopts->slow) && config_xmalloc && unlikely(opt_xmalloc)) {
-		malloc_printf("%s, requested: %zu\n", sopts->oom_string, size); /* SPADES LOCAL */
+		malloc_printf("%s Requested: %zu\n", sopts->oom_string, size); /* SPADES LOCAL */
 		abort();
 	}
 
