@@ -49,7 +49,7 @@ public:
       res /= E;
       if (res <= 5.0 * m_/2) {
           if (zeros_bucket_cnt > 0) {
-              return {m_ * (std::log2((double)m_) - std::log2((double)zeros_bucket_cnt)), true};
+              return {m_ * (std::log((double)m_) - std::log((double)zeros_bucket_cnt)), true};
           } else {
               return {res, false};
           }
