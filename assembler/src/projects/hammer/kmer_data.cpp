@@ -255,7 +255,7 @@ class KMerCountEstimator {
       return false;
   }
 
-  std::pair<double, bool> cardinality() const {
+  double cardinality() const {
       return hll_[0].cardinality();
   }
 
@@ -298,14 +298,9 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
           }
           INFO("Total " << processed << " reads processed");
           mcounter.merge();
-          std::pair<double, bool> res = mcounter.cardinality();
-          if (res.second == false) {
-              buffer_size = cfg::get().count_split_buffer;
-              if (buffer_size == 0) buffer_size = 512ull * 1024 * 1024;
-          } else {
-              INFO("Estimated " << size_t(res.first) << " distinct kmers");
-              buffer_size = size_t(res.first);
-          }
+          double res = mcounter.cardinality();
+          INFO("Estimated " << size_t(res) << " distinct kmers");
+          buffer_size = size_t(res);
       }
 
       INFO("Filtering singleton k-mers");

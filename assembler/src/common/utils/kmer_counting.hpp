@@ -135,10 +135,10 @@ size_t EstimateCardinality(unsigned k, ReadStream &streams, const Hasher &hasher
         hlls[i].clear();
     }
 
-    std::pair<double, bool> res = hlls[0].cardinality();
+    double res = hlls[0].cardinality();
 
-    INFO("Estimated " << size_t(res.first) << " distinct kmers");
-    return size_t(res.first);
+    INFO("Estimated " << size_t(res) << " distinct kmers");
+    return size_t(res);
 }
 
 template<class Hasher, class ReadStream, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>

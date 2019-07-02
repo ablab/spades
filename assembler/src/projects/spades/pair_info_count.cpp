@@ -106,7 +106,7 @@ class EdgePairCounterFiller : public SequenceMapperListener {
         ProcessPairedRead(buf_[idx], read1, read2);
     }
 
-    std::pair<double, bool> cardinality() const {
+    double cardinality() const {
         return counter_.cardinality();
     }
   private:
@@ -204,9 +204,8 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
     //Check read length after lib processing since mate pairs a not used until this step
     VERIFY(reads.data().unmerged_read_length != 0);
 
-    auto pres = pcounter.cardinality();
-    edgepairs = (!pres.second ? 64ull * 1024 * 1024 : size_t(pres.first));
-    INFO("Edge pairs: " << edgepairs << (!pres.second ? " (rough upper limit)" : ""));
+    edgepairs = size_t(pcounter.cardinality());
+    INFO("Edge pairs: " << edgepairs);
 
     INFO(hist_counter.mapped() << " paired reads (" <<
          ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) <<

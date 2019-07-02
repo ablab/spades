@@ -38,7 +38,7 @@ public:
         data_[i] = std::max(data_[i], other.data_[i]);
     }
 
-    std::pair<double, bool> cardinality() const {
+    double cardinality() const {
       // FIXME: Precision loss?
       // FIXME: Bias correction!
       double res = alpha(precision) * m_ * m_;
@@ -49,12 +49,12 @@ public:
       res /= E;
       if (res <= 5.0 * m_/2) {
           if (zeros_bucket_cnt > 0) {
-              return {m_ * (std::log((double)m_) - std::log((double)zeros_bucket_cnt)), true};
+              return m_ * (std::log((double)m_) - std::log((double)zeros_bucket_cnt));
           } else {
-              return {res, false};
+              return res;
           }
       } else {
-          return {res, true};
+          return res;
       }
     }
 
