@@ -734,6 +734,10 @@ def check_options_for_restart_from(log):
         support.error("you cannot specify --sc with --restart-from option!", log)
     if options_storage.args.meta:
         support.error("you cannot specify --meta with --restart-from option!", log)
+    if options_storage.args.plasmid:
+        support.error("you cannot specify --plasmid with --restart-from option!", log)
+    if options_storage.args.rna:
+        support.error("you cannot specify --rna with --restart-from option!", log)
     if options_storage.args.iontorrent:
         support.error("you cannot specify --iontorrent with --restart-from option!", log)
     if options_storage.args.only_assembler:
@@ -743,10 +747,11 @@ def check_options_for_restart_from(log):
     if options_storage.args.strand_specificity is not None:
         support.error("you cannot specify strand specificity (--ss-rf or --ss-fr) with --restart-from option!", log)
 
-
 def add_to_option(args, log, skip_output_dir):
     if args.restart_from:
         check_options_for_restart_from(log)
+
+    add_mode_to_args(options_storage.args)
 
     if args.test_mode:
         if not skip_output_dir:
@@ -976,7 +981,7 @@ def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False
     load_processed_dataset = secondary_filling
 
     options_storage.args, argv = parser.parse_known_args(options)
-    add_mode_to_args(options_storage.args)
+
     if argv:
         msg = "Please specify option (e.g. -1, -2, -s, etc)) for the following paths: %s"
         parser.error(msg % ", ".join(argv))
