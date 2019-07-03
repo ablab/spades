@@ -83,13 +83,23 @@ size_t get_max_rss() {
 
 size_t get_used_memory() {
 #ifdef SPADES_USE_JEMALLOC
-    size_t cmem = 0;
-    size_t clen = sizeof(cmem);
+    // Update statistics cached by mallctl
+    {
+        uint64_t epoch = 1;
+        size_t sz = sizeof(epoch);
+        if (je_mallctl("epoch", &epoch, &sz, &epoch, sz) != 0)
+            FATAL_ERROR("mallctl() call failed, errno = " << errno);
+    }
 
-    int res = je_mallctl("stats.active", &cmem, &clen, NULL, 0);
-    if (res != 0)
-        FATAL_ERROR("mallctl() call failed, errno = " << errno);
-    return cmem;
+    {
+        size_t cmem = 0;
+        size_t clen = sizeof(cmem);
+
+        int res = je_mallctl("stats.active", &cmem, &clen, NULL, 0);
+        if (res != 0)
+            FATAL_ERROR("mallctl() call failed, errno = " << errno);
+        return cmem;
+    }
 #else
     return get_max_rss();
 #endif
