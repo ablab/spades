@@ -23,8 +23,6 @@ def main(args):
     for inputfilename, outputfilename in zip(args[1::2], args[2::2]):
         if os.path.isfile(inputfilename):
             shutil.copyfile(inputfilename, outputfilename)
-        else:
-            log.warning("can't copy %s: file not found!" % inputfilename)
 
 
 if __name__ == "__main__":
