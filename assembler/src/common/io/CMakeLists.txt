@@ -9,6 +9,9 @@ project(input CXX)
 
 add_library(input STATIC
             reads/parser.cpp
+            reads/paired_readers.cpp
+            reads/binary_converter.cpp
+            reads/binary_streams.cpp
             sam/read.cpp
             sam/sam_reader.cpp)
 

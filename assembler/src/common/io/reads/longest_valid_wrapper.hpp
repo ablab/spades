@@ -6,7 +6,6 @@
 //***************************************************************************
 #pragma once
 #include "filtering_reader_wrapper.hpp"
-#include "pipeline/library.hpp"
 
 namespace io {
 

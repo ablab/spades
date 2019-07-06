@@ -9,9 +9,7 @@
 
 #include "ireader.hpp"
 #include "paired_read.hpp"
-#include "file_reader.hpp"
 #include "orientation.hpp"
-#include "utils/logger/logger.hpp"
 
 #include <string>
 
@@ -28,13 +26,8 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    * @param offset The offset of the read quality.
    */
   explicit SeparatePairedReadStream(const std::string& filename1, const std::string& filename2,
-         size_t insert_size,
-         OffsetType offset_type = PhredOffset)
-      : insert_size_(insert_size),
-        first_(new FileReadStream(filename1, offset_type)),
-        second_(new FileReadStream(filename2, offset_type)),
-        filename1_(filename1),
-        filename2_(filename2){}
+                                    size_t insert_size,
+                                    OffsetType offset_type = PhredOffset);
 
   /*
    * Check whether the stream is opened.
@@ -51,18 +44,7 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    * @return true if the end of stream is reached and false
    * otherwise.
    */
-  bool eof() override {
-
-    if (first_->eof() != second_->eof()) {
-        if (first_->eof()) {
-            ERROR("The number of right read-pairs is larger than the number of left read-pairs");
-        } else {
-            ERROR("The number of left read-pairs is larger than the number of right read-pairs");
-        }
-        FATAL_ERROR("Unequal number of read-pairs detected in the following files: " << filename1_ << "  " << filename2_ << "");
-    }
-    return first_->eof();
-  }
+  bool eof() override;
 
   /*
    * Read PairedRead from stream.
@@ -71,12 +53,7 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    *
    * @return Reference to this stream.
    */
-  SeparatePairedReadStream& operator>>(PairedRead& pairedread) override {
-    pairedread.set_orig_insert_size(insert_size_);
-    (*first_) >> pairedread.first();
-    (*second_) >> pairedread.second();
-    return *this;
-  }
+  SeparatePairedReadStream& operator>>(PairedRead& pairedread) override;
 
   /*
    * Close the stream.
@@ -122,10 +99,7 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    */
   explicit InterleavingPairedReadStream(const std::string& filename,
                                         size_t insert_size,
-                                        OffsetType offset_type = PhredOffset)
-      : filename_(filename), insert_size_(insert_size),
-        single_(new FileReadStream(filename_, offset_type)) {}
-
+                                        OffsetType offset_type = PhredOffset);
   /*
    * Check whether the stream is opened.
    *
@@ -152,12 +126,7 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    *
    * @return Reference to this stream.
    */
-  InterleavingPairedReadStream& operator>>(PairedRead& pairedread) override {
-    pairedread.set_orig_insert_size(insert_size_);
-    (*single_) >> pairedread.first();
-    (*single_) >> pairedread.second();
-    return *this;
-  }
+  InterleavingPairedReadStream& operator>>(PairedRead& pairedread) override;
 
   /*
    * Close the stream.
