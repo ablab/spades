@@ -1233,8 +1233,8 @@ int aling_fs(int argc, char* argv[]) {
     bool local = false;
 
     auto cli =
-        (sequence_file << value("input sequence file"),
-         hmm_file << value("HMM file"),
+        (hmm_file << value("HMM file"),
+         sequence_file << value("input sequence file"),
          (option("--indel-rate") & number("value", indel_rate))        % "indel rate",
          (option("--expand-const") & integer("value", expand_const))        % "overhang expand const",
          (option("--top") & integer("value", top))        % "maximal number of matches extracted from one sequence",
