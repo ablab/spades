@@ -19,8 +19,8 @@ SeparatePairedReadStream::SeparatePairedReadStream(const std::string& filename1,
                                                    size_t insert_size,
                                                    OffsetType offset_type)
         : insert_size_(insert_size),
-          first_(new FileReadStream(filename1, offset_type)),
-          second_(new FileReadStream(filename2, offset_type)),
+          first_(make_async_stream<FileReadStream>(filename1, offset_type)),
+          second_(make_async_stream<FileReadStream>(filename2, offset_type)),
           filename1_(filename1),
           filename2_(filename2)
 {}
