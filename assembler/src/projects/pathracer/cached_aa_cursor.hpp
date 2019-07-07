@@ -78,13 +78,13 @@ public:
     using Index = uint32_t;
 
     template <typename Cursor>
-    auto UnpackCursor(const CachedAACursor &cursor, const std::vector<Cursor> &cursors) {
+    auto UnpackCursor(const CachedAACursor &cursor, const std::vector<Cursor> &cursors) const {
         const auto &triplet = triplets_[cursor.index()];
         return AAGraphCursor<Cursor>(cursors[triplet[0]], cursors[triplet[1]], cursors[triplet[2]], cursor.mask());
     }
 
     template <typename Cursor>
-    std::vector<AAGraphCursor<Cursor>> UnpackPath(const std::vector<CachedAACursor> &path, const std::vector<Cursor> &cursors) {
+    std::vector<AAGraphCursor<Cursor>> UnpackPath(const std::vector<CachedAACursor> &path, const std::vector<Cursor> &cursors) const {
         std::vector<AAGraphCursor<Cursor>> result;
         result.reserve(path.size());
         for (const auto &cursor : path) {

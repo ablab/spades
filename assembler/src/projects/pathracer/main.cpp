@@ -107,6 +107,7 @@ struct PathracerConfig {
     bool export_event_graph = false;
     double minimal_match_length = 0.9;
     size_t max_insertion_length = 30;
+    double indel_rate = 0;
 
     hmmer::hmmer_cfg hcfg;
 };
@@ -135,6 +136,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
       (cfg.local << option("--local") % "perform local-local HMM matching"),
       (option("--length", "-l") & value("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on aligned HMM length [default: 0.9]",
+      (option("--indel-rate", "-r") & value("value", cfg.indel_rate)) % "expected rate of nucleotides indels in graph edges [default: 0]",
       (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 10000]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "the number of parallel threads [default: 16]",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
@@ -780,6 +782,7 @@ void TraceHMM(const hmmer::HMM &hmm,
     fees.max_insertion_length = cfg.max_insertion_length;
     fees.local = cfg.local;
     fees.use_experimental_i_loop_processing = cfg.use_experimental_i_loop_processing;
+    fees.frame_shift_cost = fees.all_matches_score() / static_cast<double>(fees.M) / cfg.indel_rate / 3;
 
     INFO("HMM consensus: " << fees.consensus);
     INFO("HMM " << p7hmm->name << " has " << fees.count_negative_loops() << " positive-score I-loops over " << fees.ins.size());
@@ -883,17 +886,18 @@ void TraceHMM(const hmmer::HMM &hmm,
     }
     INFO("Connected component sizes: " << cursor_conn_comps_sizes);
 
-    auto run_search = [&fees, &p7hmm, &cfg, &graph](const auto &cursors, size_t top,
-                                                    std::vector<HMMPathInfo> &local_results,
+    auto run_search = [&fees, &p7hmm, &cfg, &graph](const auto &cached_context,
+                                                    const auto &cursors,
                                                     const auto context,
+                                                    size_t top,
+                                                    std::vector<HMMPathInfo> &local_results,
                                                     const std::string &component_name = "") -> void {
-        CachedCursorContext ccc(cursors, context);
-        auto cached_cursors = ccc.Cursors();
+        auto cached_cursors = cached_context.Cursors();
         for (const auto &cursor : cached_cursors) {
-            DEBUG_ASSERT(check_cursor_symmetry(cursor, &ccc), main_assert{}, debug_assert::level<2>{});
-            // VERIFY(check_cursor_symmetry(cursor, &ccc));
+            DEBUG_ASSERT(check_cursor_symmetry(cursor, &cached_context), main_assert{}, debug_assert::level<2>{});
+            // VERIFY(check_cursor_symmetry(cursor, &cached_context));
         }
-        auto result = find_best_path(fees, cached_cursors, &ccc);
+        auto result = find_best_path(fees, cached_cursors, &cached_context);
         INFO("Collapsing event graph");
         size_t collapsed_count = result.pathlink_mutable()->collapse_all();
         INFO(collapsed_count << " event graph vertices modified");
@@ -904,12 +908,12 @@ void TraceHMM(const hmmer::HMM &hmm,
             auto seqs = read_fasta(cfg.known_sequences);
             for (const auto &kv : seqs) {
                 const std::string seq = kv.second;
-                if (result.pathlink()->has_sequence(seq, &ccc)) {
+                if (result.pathlink()->has_sequence(seq, &cached_context)) {
                     INFO("Sequence " << kv.first << " found");
                 } else {
-                    auto has_prefix = [&](size_t l) -> bool { return result.pathlink()->has_sequence(seq.substr(0, l), &ccc); };
-                    auto has_suffix = [&](size_t l) -> bool { return result.pathlink()->has_sequence(seq.substr(seq.size() - l), &ccc); };
-                    auto has_infix = [&](size_t l) -> bool { return result.pathlink()->has_sequence(seq.substr((seq.size() - l) / 2, l), &ccc); };
+                    auto has_prefix = [&](size_t l) -> bool { return result.pathlink()->has_sequence(seq.substr(0, l), &cached_context); };
+                    auto has_suffix = [&](size_t l) -> bool { return result.pathlink()->has_sequence(seq.substr(seq.size() - l), &cached_context); };
+                    auto has_infix = [&](size_t l) -> bool { return result.pathlink()->has_sequence(seq.substr((seq.size() - l) / 2, l), &cached_context); };
                     size_t max_prefix_size = int_max_binsearch<size_t>(has_prefix, 0, seq.length() + 1);
                     size_t max_suffix_size = int_max_binsearch<size_t>(has_suffix, 0, seq.length() + 1);
                     size_t max_infix_size = int_max_binsearch<size_t>(has_infix, 0, seq.length() + 1);
@@ -924,31 +928,31 @@ void TraceHMM(const hmmer::HMM &hmm,
                              "_size_" + std::to_string(cursors.size()) +
                              ".cereal");
             cereal::BinaryOutputArchive oarchive(of);
-            oarchive(cursors, ccc, result);
+            oarchive(cursors, result);
             INFO("Event graph exported");
         }
 
         INFO("Extracting top paths");
-        auto top_paths = result.top_k(&ccc, top);
+        auto top_paths = result.top_k(&cached_context, top);
         bool x_as_m_in_alignment = fees.is_proteomic();
         if (!top_paths.empty()) {
             INFO("Best score in the current component: " << result.best_score());
             INFO("Best sequence in the current component");
-            INFO(top_paths.str(0, &ccc));
-            INFO("Alignment: " << compress_alignment(top_paths.alignment(0, fees, &ccc), x_as_m_in_alignment));
+            INFO(top_paths.str(0, &cached_context));
+            INFO("Alignment: " << compress_alignment(top_paths.alignment(0, fees, &cached_context), x_as_m_in_alignment));
         }
 
         std::unordered_set<std::tuple<std::vector<EdgeId>, size_t, size_t>> extracted_paths;
 
         for (const auto& annotated_path : top_paths) {
             VERIFY(annotated_path.path.size());
-            std::string seq = annotated_path.str(&ccc);
+            std::string seq = annotated_path.str(&cached_context);
             if (seq.length() < fees.minimal_match_length) {
                 continue;
             }
-            auto unpacked_path = ccc.UnpackPath(annotated_path.path, cursors);
+            auto unpacked_path = cached_context.UnpackPath(annotated_path.path, cursors);
             VERIFY(check_path_continuity(unpacked_path, context));
-            auto alignment = compress_alignment(annotated_path.alignment(fees, &ccc), x_as_m_in_alignment);
+            auto alignment = compress_alignment(annotated_path.alignment(fees, &cached_context), x_as_m_in_alignment);
             auto nucl_path = to_nucl_path(unpacked_path);
             std::string nucl_seq = pathtree::path2string(nucl_path, context);
             auto edge_path = to_path(nucl_path);
@@ -1010,9 +1014,13 @@ void TraceHMM(const hmmer::HMM &hmm,
 
         bool hmm_in_aas = hmm.abc()->K == 20;
         if (hmm_in_aas) {
-            run_search(make_aa_cursors(restricted_component_cursors, &restricted_context), cfg.top, local_results, &restricted_context, component_name);
+            CachedAACursorContext caacc(restricted_component_cursors, &restricted_context);
+            run_search(caacc, restricted_component_cursors, &restricted_context, cfg.top, local_results, component_name);
+            // run_search(make_aa_cursors(restricted_component_cursors, &restricted_context), cfg.top, local_results, &restricted_context, component_name);
         } else {
-            run_search(restricted_component_cursors, cfg.top, local_results, &restricted_context, component_name);
+            // run_search(restricted_component_cursors, cfg.top, local_results, &restricted_context, component_name);
+            CachedCursorContext ccc(restricted_component_cursors, &restricted_context);
+            run_search(ccc, restricted_component_cursors, &restricted_context, cfg.top, local_results, component_name);
         }
 
         results.insert(results.end(), local_results.begin(), local_results.end());
@@ -1250,7 +1258,7 @@ int aling_fs(int argc, char* argv[]) {
 
     int status = mkdir(output_dir.c_str(), 0775);
     if (!no_log) {
-        create_console_logger(output_dir + "/align_fs.log");
+        create_console_logger(output_dir + "/phramme-shifter.log");
     }
 
     if (status != 0) {
