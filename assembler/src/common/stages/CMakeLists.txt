@@ -9,4 +9,4 @@ project(stages CXX)
 
 add_library(stages STATIC
             read_conversion.cpp construction.cpp simplification.cpp)
-target_link_libraries(stages gqf)
+target_link_libraries(stages gqf input)
