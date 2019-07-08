@@ -951,13 +951,12 @@ void TraceHMM(const hmmer::HMM &hmm,
                 continue;
             }
             auto unpacked_path = cached_context.UnpackPath(annotated_path.path, cursors);
-            VERIFY(check_path_continuity(unpacked_path, context));
             auto alignment = compress_alignment(annotated_path.alignment(fees, &cached_context), x_as_m_in_alignment);
             auto nucl_path = to_nucl_path(unpacked_path);
             std::string nucl_seq = pathtree::path2string(nucl_path, context);
             auto edge_path = to_path(nucl_path);
-            DEBUG_ASSERT(check_path_continuity(nucl_path, context), main_assert{}, debug_assert::level<2>{});
-            // VERIFY(check_path_continuity(nucl_path, context));
+            // DEBUG_ASSERT(check_path_continuity(nucl_path, context), main_assert{}, debug_assert::level<2>{});
+            VERIFY(check_path_continuity(nucl_path, context));
             // DEBUG_ASSERT(!edge_path.empty(), main_assert{});
             // auto edge_path_aas = to_path(unpacked_path);
             // if (edge_path != edge_path_aas) {
@@ -1294,6 +1293,10 @@ int aling_fs(int argc, char* argv[]) {
     }
 
     hmmer::hmmer_cfg hcfg;
+    // hcfg.E = hcfg.domE = hcfg.incdomE = hcfg.incE = 1e+9;
+    // hcfg.T = hcfg.domT = hcfg.incT = hcfg.incdomT = -10000;
+    // hcfg.F1 = hcfg.F2 = hcfg.F3 = 1e+9;
+    // hcfg.max = true;
 
     omp_set_num_threads(threads);
     #pragma omp parallel for schedule(dynamic)
