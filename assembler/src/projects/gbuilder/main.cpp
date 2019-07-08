@@ -137,9 +137,11 @@ int main(int argc, char* argv[]) {
         debruijn_graph::config::init_libs(dataset, nthreads, buff_size, tmpdir + "/");
 
         std::vector<size_t> libs_for_construction;
-        for (size_t i = 0; i < dataset.lib_count(); ++i)
+        for (size_t i = 0; i < dataset.lib_count(); ++i) {
             if (dataset[i].is_graph_contructable())
                 libs_for_construction.push_back(i);
+            io::ReadConverter::ConvertToBinary(dataset[i]);
+        }
 
         auto read_streams = io::single_binary_readers_for_libs(dataset, libs_for_construction, true, true);
 
