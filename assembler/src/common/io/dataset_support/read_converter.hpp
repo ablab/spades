@@ -74,23 +74,20 @@ public:
 
         INFO("Converting reads to binary format for library #" << data.lib_index << " (takes a while)");
         INFO("Converting paired reads");
-        BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix,
-                                      data.binary_reads_info.buffer_size);
+        BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix);
 
         PairedStreamPtr paired_reader = paired_easy_reader(lib, false, 0, false, PhredOffset);
         ReadStreamStat read_stat = paired_converter.ToBinary(*paired_reader, lib.orientation());
         read_stat.read_count *= 2;
 
         INFO("Converting single reads");
-        BinaryWriter single_converter(data.binary_reads_info.single_read_prefix,
-                                      data.binary_reads_info.buffer_size);
+        BinaryWriter single_converter(data.binary_reads_info.single_read_prefix);
         SingleStreamPtr single_reader = single_easy_reader(lib, false, false);
         read_stat.merge(single_converter.ToBinary(*single_reader));
 
         data.unmerged_read_length = read_stat.max_len;
         INFO("Converting merged reads");
-        BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix,
-                                      data.binary_reads_info.buffer_size);
+        BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix);
         SingleStreamPtr merged_reader = merged_easy_reader(lib, false);
         auto merged_stats = merged_converter.ToBinary(*merged_reader);
 

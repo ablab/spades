@@ -19,7 +19,6 @@ void MappingTraits<LibraryData::BinaryReadsInfo>::mapping(IO &io, LibraryData::B
     io.mapRequired("merged read prefix", info.merged_read_prefix);
     io.mapRequired("single read prefix", info.single_read_prefix);
     io.mapRequired("chunk num", info.chunk_num);
-    io.mapRequired("buffer size", info.buffer_size);
 }
 
 void MappingTraits<LibraryData>::mapping(IO &io, debruijn_graph::config::LibraryData &data) {

@@ -144,7 +144,7 @@ static void Run(const std::string &graph_path, const std::string &dataset_desc, 
     LoadGraph(gp, graph_path);
 
     // FIXME: Get rid of this "/" junk
-    config::init_libs(dataset, nthreads, 512ULL << 20, tmpdir + "/");
+    config::init_libs(dataset, nthreads, tmpdir + "/");
 
     gp.EnsureBasicMapping();
 

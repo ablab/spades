@@ -196,7 +196,7 @@ int main(int argc, char* argv[]) {
         }
 
         // FIXME: Get rid of this "/" junk
-        debruijn_graph::config::init_libs(dataset, nthreads, 512ULL << 20, tmpdir + "/");
+        debruijn_graph::config::init_libs(dataset, nthreads, tmpdir + "/");
 
         gp.kmer_mapper.Attach();
         gp.EnsureBasicMapping();

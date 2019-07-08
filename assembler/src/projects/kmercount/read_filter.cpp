@@ -117,8 +117,6 @@ int main(int argc, char* argv[]) {
     srandom(42);
     try {
         std::vector<std::string> input;
-        size_t buff_size = 512;
-        buff_size <<= 20;
 
         read_filter::Args args;
         process_cmdline(argc, argv, args);
@@ -137,7 +135,7 @@ int main(int argc, char* argv[]) {
         dataset.load(args.dataset_desc);
 
         fs::make_dirs(args.workdir + "/tmp/");
-        debruijn_graph::config::init_libs(dataset, args.nthreads, buff_size, args.workdir + "/tmp/");
+        debruijn_graph::config::init_libs(dataset, args.nthreads, args.workdir + "/tmp/");
 
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
             io::ReadConverter::ConvertToBinary(dataset[i]);

@@ -51,9 +51,8 @@ template<class Writer, class Read>
 ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read> &stream) {
     ThreadPool::ThreadPool pool{1};
     std::vector<Read> buf, flush_buf;
-    const size_t buf_reads = 50000; // buf_size_ / (sizeof(Read) * 4);
-    DEBUG("Reserving a buffer for " << buf_reads << " reads");
-    buf.reserve(buf_reads); flush_buf.reserve(buf_reads);
+    DEBUG("Reserving a buffer for " << BUF_SIZE << " reads");
+    buf.reserve(BUF_SIZE); flush_buf.reserve(BUF_SIZE);
 
     // Reserve space for stats
     ReadStreamStat read_stats;
@@ -109,10 +108,10 @@ ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read>
     return read_stats;
 }
 
-BinaryWriter::BinaryWriter(const std::string &file_name_prefix, size_t buf_size)
-            : file_name_prefix_(file_name_prefix), buf_size_(buf_size),
-              file_ds_(new std::ofstream(file_name_prefix_ + ".seq", std::ios_base::binary)),
-              offset_ds_(new std::ofstream(file_name_prefix_ + ".off", std::ios_base::binary))
+BinaryWriter::BinaryWriter(const std::string &file_name_prefix)
+            : file_name_prefix_(file_name_prefix),
+              file_ds_(std::make_unique<std::ofstream>(file_name_prefix_ + ".seq", std::ios_base::binary)),
+              offset_ds_(std::make_unique<std::ofstream>(file_name_prefix_ + ".off", std::ios_base::binary))
 {}
 
 ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::SingleReadSeq>& stream) {

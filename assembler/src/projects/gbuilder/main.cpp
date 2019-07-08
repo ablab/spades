@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
         io::DataSet<debruijn_graph::config::LibraryData> dataset;
         dataset.load(dataset_desc);
         // FIXME: Get rid of this "/" junk
-        debruijn_graph::config::init_libs(dataset, nthreads, buff_size, tmpdir + "/");
+        debruijn_graph::config::init_libs(dataset, nthreads, tmpdir + "/");
 
         std::vector<size_t> libs_for_construction;
         for (size_t i = 0; i < dataset.lib_count(); ++i) {

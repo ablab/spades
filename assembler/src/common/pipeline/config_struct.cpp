@@ -636,9 +636,6 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
 
     load(cfg.rr_enable, pt, "rr_enable");
 
-    load(cfg.buffer_size, pt, "buffer_size");
-    cfg.buffer_size <<= 20; //turn MB to bytes
-
     load(cfg.temp_bin_reads_dir, pt, "temp_bin_reads_dir");
     if (cfg.temp_bin_reads_dir[cfg.temp_bin_reads_dir.length() - 1] != '/')
         cfg.temp_bin_reads_dir += '/';
@@ -750,13 +747,12 @@ void load(debruijn_config &cfg, const std::string &cfg_fns) {
 }
 
 void init_libs(io::DataSet<LibraryData> &dataset, size_t max_threads,
-               size_t buffer_size, const std::string &temp_bin_reads_path) {
+               const std::string &temp_bin_reads_path) {
     for (size_t i = 0; i < dataset.lib_count(); ++i) {
         auto& lib = dataset[i];
         lib.data().lib_index = i;
         auto& bin_info = lib.data().binary_reads_info;
         bin_info.chunk_num = max_threads;
-        bin_info.buffer_size = buffer_size;
         bin_info.bin_reads_info_file = temp_bin_reads_path + "INFO_" + std::to_string(i);
         bin_info.paired_read_prefix = temp_bin_reads_path + "paired_" + std::to_string(i);
         bin_info.merged_read_prefix = temp_bin_reads_path + "merged_" + std::to_string(i);
@@ -806,7 +802,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
     cfg.temp_bin_reads_path = cfg.output_base + "/" + cfg.temp_bin_reads_dir;
     //cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
 
-    init_libs(cfg.ds.reads, cfg.max_threads, cfg.buffer_size, cfg.temp_bin_reads_path);
+    init_libs(cfg.ds.reads, cfg.max_threads, cfg.temp_bin_reads_path);
 }
 
 }

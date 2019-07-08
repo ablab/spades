@@ -35,16 +35,14 @@ struct LibraryData {
     double pi_threshold;
 
     struct BinaryReadsInfo {
-        BinaryReadsInfo()
-                : binary_converted(false), chunk_num(0), buffer_size(0) {}
+        BinaryReadsInfo() {}
 
-        bool binary_converted;
+        bool binary_converted = false;
         std::string bin_reads_info_file;
         std::string paired_read_prefix;
         std::string merged_read_prefix;
         std::string single_read_prefix;
-        size_t chunk_num;
-        size_t buffer_size;
+        size_t chunk_num = 0;
     } binary_reads_info;
 
     LibraryData()

@@ -18,7 +18,6 @@ namespace io {
 
 class BinaryWriter {
     const std::string file_name_prefix_;
-    size_t buf_size_;
     std::unique_ptr<std::ofstream> file_ds_, offset_ds_;
 
     template<class Writer, class Read>
@@ -27,8 +26,9 @@ class BinaryWriter {
 public:
     typedef size_t CountType;
     static constexpr size_t CHUNK = 100;
+    static constexpr size_t BUF_SIZE = 50000;
 
-    BinaryWriter(const std::string &file_name_prefix, size_t buf_size);
+    BinaryWriter(const std::string &file_name_prefix);
 
     ~BinaryWriter() = default;
 
