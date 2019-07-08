@@ -10,10 +10,12 @@
 #include "single_read.hpp"
 #include "paired_read.hpp"
 #include "orientation.hpp"
-#include "pipeline/library.hpp"
 
+#include "pipeline/library.hpp"
 #include "utils/logger/logger.hpp"
 #include "utils/verify.hpp"
+
+#include "threadpool/threadpool.hpp"
 
 namespace io {
 
@@ -47,26 +49,38 @@ public:
 
 template<class Writer, class Read>
 ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read> &stream) {
-    std::vector<Read> buf;
-    const size_t buf_reads = buf_size_ / (sizeof(Read) * 4);
+    ThreadPool::ThreadPool pool{1};
+    std::vector<Read> buf, flush_buf;
+    const size_t buf_reads = 50000; // buf_size_ / (sizeof(Read) * 4);
     DEBUG("Reserving a buffer for " << buf_reads << " reads");
-    buf.reserve(buf_reads);
+    buf.reserve(buf_reads); flush_buf.reserve(buf_reads);
 
     // Reserve space for stats
     ReadStreamStat read_stats;
     read_stats.write(*file_ds_);
 
     size_t rest = 1;
-    auto flush_buffer = [&](){
-        for (const Read &read : buf) {
-            if (!--rest) {
-                auto offset = (size_t)file_ds_->tellp();
-                offset_ds_->write(reinterpret_cast<const char*>(&offset), sizeof(offset));
-                rest = CHUNK;
-            }
-            writer.Write(*file_ds_, read);
-        }
-        buf.clear();
+    std::future<void> flush_task;
+    auto flush_buffer = [&]() {
+        // Wait for completion of the current flush task
+        if (flush_task.valid())
+            flush_task.wait();
+
+        std::swap(buf, flush_buf);
+        VERIFY(buf.size() == 0);
+
+        flush_task =
+            pool.run([&] {
+                for (const Read &read : flush_buf) {
+                    if (!--rest) {
+                        auto offset = (size_t)file_ds_->tellp();
+                        offset_ds_->write(reinterpret_cast<const char*>(&offset), sizeof(offset));
+                        rest = CHUNK;
+                    }
+                    writer.Write(*file_ds_, read);
+                }
+                flush_buf.clear();
+            });
     };
 
     size_t read_count = 0;
@@ -82,6 +96,10 @@ ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read>
             flush_buffer();
     }
     flush_buffer(); //Write leftovers
+    // Wait for completion of the current final task
+    if (flush_task.valid())
+        flush_task.wait();
+    VERIFY(flush_buf.size() == 0);
 
     // Rewrite the reserved space with actual stats
     file_ds_->seekp(0);

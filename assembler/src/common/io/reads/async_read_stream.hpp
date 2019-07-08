@@ -18,12 +18,12 @@ class AsyncReadStream : public ReadStream<typename ReadStreamType::ReadT> {
     using ReadType = typename ReadStreamType::ReadT;
     
       AsyncReadStream(ReadStream<ReadType> *stream)
-              : stream_(stream), pool_(2) {
+              : stream_(stream), pool_(1) {
           init();
       }
 
       AsyncReadStream(ReadStream<ReadType> &&stream)
-              : stream_(stream), pool_(2) {
+              : stream_(stream), pool_(1) {
           init();
       }
 
