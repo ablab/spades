@@ -15,7 +15,7 @@ It can be used to align both nucleotide and amino acid sequences, e.g. long read
               -s pacbio_reads.fastq.gz \ # sequences to align in fasta/fastq formats
               -t 8                       # number of threads
 
-By default, spaligner_config.yaml will be installed into /usr/share/spaligner/ or can be found in algorithmic-biology/assembler/projects/spaligner/.
+By default, spaligner_config.yaml will be installed into /usr/share/spaligner/ or can be found in assembler/projects/spaligner/.
 For nucleotide sequences, alignments will be saved to spaligner_result/alignment.tsv by default.
 For amino acid sequences, SPAligner will also produce files in fasta format with nucleotide and amino acid alignments representation.
 
@@ -47,11 +47,11 @@ SPAligner can represent the results in three formats: *.tsv (default), *.fasta a
 ## <a name="compilation"></a>Compilation
 
     git clone https://github.com/ablab/spades.git
-    cd algorithmic-biology/assembler/
+    cd spades/assembler/
     mkdir build && cd build && cmake ../src
     make spaligner
 
-Now to run SPAligner print move to folder `algorithmic-biology/assembler/` and execute
+Now to run SPAligner print move to folder `assembler/` and execute
      
     build/bin/spaligner
 
@@ -164,7 +164,7 @@ Full list of parameters can be found in spaligner_config.yaml.
 * `stop_codon: true` Algorithm do not try to extend the alignment through stop codons.
 * `min_alignment_len: 0.8` Return only alignment with `length > min_alignment_len * (query sequence length)`.
 * `penalty_matrix: blosum62` Substitution matrix name (supports a number of [BLOSUM and PAM matrices](https://github.com/jeffdaily/parasail/tree/master/parasail/matrices)).
-* `indel_score: 5` Penalty for insertions and deletions equals to `(max value in penalty_matrix) + indel_score`.
+* `indel_score: 5` Penalty for insertions and deletions equals.
 
 
 ### <a name="dparams"></a>Internal run parameters
