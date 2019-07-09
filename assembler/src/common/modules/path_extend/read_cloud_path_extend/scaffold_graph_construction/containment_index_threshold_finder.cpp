@@ -19,6 +19,7 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
     std::multiset<double> scores;
     for (size_t i = 0; i < interesting_edges_.size(); ++i) {
         EdgeId edge = interesting_edges_[i];
+        DEBUG("Edge: " << edge.int_id());
         DEBUG("Edge length: " << g_.length(edge));
         DEBUG("Offset: " << left_block_start_offset);
         if (g_.length(edge) > left_block_start_offset) {
@@ -36,14 +37,15 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
                 size_t left_block_end = left_block_start + left_block_length_;
                 size_t right_block_start = left_block_end + distance;
                 size_t right_block_end = right_block_start + right_block_length_;
+                DEBUG("[" << left_block_start << ", " << left_block_end << "], ["
+                          << right_block_start << ", " << right_block_end << "]");
                 boost::optional<double> score =
                     segment_score_function_->GetScoreFromTwoFragments(edge, left_block_start, left_block_end,
                                                                       right_block_start, right_block_end);
+                DEBUG("Score initialized: " << score.is_initialized());
 #pragma omp critical
                 {
                     if (score.is_initialized()) {
-                        DEBUG("[" << left_block_start << ", " << left_block_end << "], ["
-                                  << right_block_start << ", " << right_block_end << "]");
                         DEBUG("Inserting score: " << score.get());
                         scores.insert(score.get());
                     }

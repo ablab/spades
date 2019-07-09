@@ -149,7 +149,7 @@ private:
 
     std::shared_ptr<SimpleExtender> MakeLongReadsRNAExtender(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
 
-    shared_ptr<PathExtender> MakeScaffoldGraphExtender() const;
+    shared_ptr<PathExtender> MakeScaffoldGraphExtender(size_t lib_index) const;
 
     shared_ptr<PathExtender> MakeReadCloudExtender(size_t lib_index) const;
 

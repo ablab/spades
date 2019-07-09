@@ -9,6 +9,8 @@ namespace path_extend {
 
 vector<SubgraphInfo> PathClusterStatisticsExtractor::GetAllSubgraphInfo(const ScaffoldGraphStorage &storage) {
     VERIFY_DEV(cfg::get().ts_res.debug_mode);
+    //fixme remove cfg::get()
+    //fixme too long
     vector<SubgraphInfo> result;
     ScaffoldGraphGapCloserParamsConstructor params_constructor;
     auto subgraph_extractor_params =
@@ -43,9 +45,10 @@ vector<SubgraphInfo> PathClusterStatisticsExtractor::GetAllSubgraphInfo(const Sc
     ScaffoldGraphExtractor scaffold_graph_extractor;
     auto univocal_edges = scaffold_graph_extractor.ExtractUnivocalEdges(storage.GetLargeScaffoldGraph());
     CloudScaffoldSubgraphExtractor subgraph_extractor(gp_.g, scaffold_index_extractor, subgraph_extractor_params);
+    size_t unique_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
     PathClusterExtractionParams path_cluster_extraction_params {gp_.g, initial_cluster_storage,
                                                                 barcode_extractor_ptr, linkage_distance};
-    validation::SimpleTransitionGraphValidatorConstructor validator_constructor(gp_);
+    validation::SimpleTransitionGraphValidatorConstructor validator_constructor(gp_, unique_length_threshold);
     auto validator = validator_constructor.GetValidator(cfg::get().ts_res.statistics.genome_path);
     const bool reference_validation_on = true;
 

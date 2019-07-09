@@ -9,6 +9,8 @@
 
 #include "alignment/kmer_mapper.hpp"
 #include "assembly_graph/core/graph.hpp"
+#include "barcode_index/barcode_index.hpp"
+#include "modules/alignment/kmer_mapper.hpp"
 #include "paired_info/index_point.hpp"
 #include "paired_info/paired_info_helpers.hpp"
 
@@ -209,5 +211,22 @@ private:
         }
     }
 };
+
+//template<typename Graph>
+//class RandomBarcodeIndex: public RandomConstructor<barcode_index::FrameBarcodeIndex<Graph>>,
+//                          private RandomGraphAccessor<Graph> {
+//
+// public:
+//    typedef barcode_index::FrameBarcodeIndex<Graph> Type;
+//
+//    RandomBarcodeIndex(Type &index, size_t max_size = 100)
+//        : RandomConstructor<Type>("barcode index", index, max_size) {
+//    }
+//
+// private:
+//    void PerformRandomOperation() override {
+//
+//    }
+//};
 
 }

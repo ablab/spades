@@ -16,6 +16,7 @@ namespace debruijn_graph {
 static void PEResolving(graph_pack::GraphPack& gp) {
     path_extend::PathExtendParamsContainer params(cfg::get().ds,
                                                   cfg::get().pe_params,
+                                                  cfg::get().ts_res,
                                                   cfg::get().ss,
                                                   cfg::get().output_dir,
                                                   cfg::get().mode,

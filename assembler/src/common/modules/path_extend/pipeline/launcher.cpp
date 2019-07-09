@@ -355,7 +355,7 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
     return generator.MakeMPExtenders();
 }
 
-Extenders PathExtendLauncher::ConstructReadCloudExtender(const ExtendersGenerator& generator) {
+Extenders PathExtendLauncher::ConstructReadCloudExtenders(const ExtendersGenerator &generator) {
     return generator.MakeReadCloudExtenders(unique_data_.unique_read_cloud_storage_);
 }
 
@@ -462,14 +462,14 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
         }
     }
 
-    if (support_.HasReadClouds() and cfg::get().ts_res.read_cloud_resolution_on) {
+    if (support_.HasReadClouds() and params_.read_cloud_configs.read_cloud_resolution_on) {
         if (params_.pset.sm == sm_old) {
             INFO("Will not use read cloud path extend in this mode");
         } else {
             //Creating read cloud unique storage
             FillReadCloudUniqueEdgeStorage();
             INFO("Creating read cloud extenders");
-            utils::push_back_all(extenders, ConstructReadCloudExtender(generator));
+            utils::push_back_all(extenders, ConstructReadCloudExtenders(generator));
         }
     }
 
@@ -749,7 +749,7 @@ void PathExtendLauncher::Launch() {
 
     if (support_.HasReadClouds() and cfg::get().ts_res.read_cloud_resolution_on and
             cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
-        //fixme move this to separate class, make PathScaffolder analagous to Extender (construct for every lib)
+        //fixme move this to separate class, make PathScaffolder analogous to Extender (construct for every lib)
         fragment_statistics::DistributionPack distribution_pack;
         std::vector<io::SequencingLibrary<debruijn_graph::config::LibraryData>> cloud_libs;
         for (const auto &lib: dataset_info_.reads) {

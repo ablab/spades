@@ -18,9 +18,11 @@ shared_ptr<ScaffoldGraphGapCloser> ReadCloudScaffoldGraphGapCloserConstructor::C
     auto gap_closer = make_shared<TipFinderGapCloser>(tip_searcher);
     return gap_closer;
 }
+//fixme omg remove this
 shared_ptr<PathExtender> ReadCloudScaffoldGraphGapCloserConstructor::ConstructExtender(size_t seed_edge_length) const {
     path_extend::PathExtendParamsContainer params(cfg::get().ds,
                                                   cfg::get().pe_params,
+                                                  cfg::get().ts_res,
                                                   cfg::get().ss,
                                                   cfg::get().output_dir,
                                                   cfg::get().mode,
