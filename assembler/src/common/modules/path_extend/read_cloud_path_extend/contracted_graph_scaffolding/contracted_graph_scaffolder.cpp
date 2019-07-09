@@ -1,9 +1,10 @@
-#include <read_cloud_path_extend/path_scaffolder.hpp>
-#include <common/assembly_graph/contracted_graph/contracted_statistics.hpp>
-#include <read_cloud_path_extend/scaffold_graph_extractor.hpp>
-#include <common/assembly_graph/contracted_graph/graph_condensation.hpp>
 #include "contracted_graph_scaffolder.hpp"
+
+#include "common/assembly_graph/contracted_graph/contracted_statistics.hpp"
+#include "common/assembly_graph/contracted_graph/graph_condensation.hpp"
 #include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
+#include "read_cloud_path_extend/path_scaffolder.hpp"
+#include "read_cloud_path_extend/scaffold_graph_extractor.hpp"
 
 namespace path_extend {
 

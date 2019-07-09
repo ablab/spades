@@ -152,7 +152,8 @@ class FilteredReferencePathHelper {
  public:
     explicit FilteredReferencePathHelper(const conj_graph_pack& gp_);
 
-    vector<vector<EdgeWithMapping>> GetFilteredReferencePathsFromLength(const string& path_to_reference, size_t length_threshold);
+    vector<vector<EdgeWithMapping>> GetFilteredReferencePathsFromLength(const string &path_to_reference,
+                                                                        size_t length_threshold);
 };
 
 class TransitionStorageBuilder {

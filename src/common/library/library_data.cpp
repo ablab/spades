@@ -23,7 +23,7 @@ void MappingTraits<LibraryData::BinaryReadsInfo>::mapping(IO &io, LibraryData::B
 }
 
 void MappingTraits<LibraryData::ReadCloudInfo>::mapping(IO &io, LibraryData::ReadCloudInfo &info) {
-    io.mapRequired("length distribution", info.fragment_length_distribution);
+    io.mapRequired("fragment length distribution", info.fragment_length_distribution);
 }
 
 void MappingTraits<LibraryData>::mapping(IO &io, debruijn_graph::config::LibraryData &data) {
@@ -42,6 +42,7 @@ void MappingTraits<LibraryData>::mapping(IO &io, debruijn_graph::config::Library
     io.mapRequired("library index", data.lib_index);
     io.mapRequired("number of reads", data.read_count);
     io.mapRequired("total nucleotides", data.total_nucls);
+    io.mapRequired("read cloud info", data.read_cloud_info);
 }
 
 } }

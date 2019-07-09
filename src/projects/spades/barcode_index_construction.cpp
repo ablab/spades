@@ -22,6 +22,7 @@ namespace debruijn_graph {
             INFO("Read cloud libraries have not been found. Skipping barcode index construction.")
             return;
         }
+        size_t num_threads = cfg::get().max_threads;
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
             auto &lib = cfg::get_writable().ds.reads[i];
             if (lib.type() == io::LibraryType::Clouds10x) {
@@ -36,7 +37,7 @@ namespace debruijn_graph {
                 FrameBarcodeIndexInfoExtractor extractor(graph_pack.barcode_mapper, graph_pack.g);
                 INFO("Average barcode coverage: " + std::to_string(extractor.AverageBarcodeCoverage()));
                 path_extend::fragment_statistics::ClusterStatisticsExtractorHelper cluster_extractor_helper(graph_pack,
-                                                                                                            cfg::get().max_threads);
+                                                                                                            num_threads);
                 auto cluster_statistics_extractor = cluster_extractor_helper.GetStatisticsExtractor();
                 auto distribution_pack = cluster_statistics_extractor.GetDistributionPack();
                 lib.data().read_cloud_info.fragment_length_distribution = distribution_pack.length_distribution_;

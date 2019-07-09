@@ -41,19 +41,20 @@ boost::optional<vector<SimpleTransitionGraphValidator::ScaffoldVertex>> SimpleTr
     result = intermediate_result;
     return result;
 }
-SimpleTransitionGraphValidator::SimpleTransitionGraphValidator(const ContigTransitionStorage &reference_transition_storage)
-    : reference_transition_storage_(reference_transition_storage) {}
+SimpleTransitionGraphValidator::SimpleTransitionGraphValidator(const ContigTransitionStorage &reference_transition_storage,
+                                                               size_t length_threshold)
+        : reference_transition_storage_(reference_transition_storage), length_threshold_(length_threshold) {}
 SimpleTransitionGraphValidator SimpleTransitionGraphValidatorConstructor::GetValidator(
         const string &path_to_reference) const {
     GeneralTransitionStorageBuilder reference_storage_builder(gp_.g, 1, false, false);
     validation::FilteredReferencePathHelper path_helper(gp_);
-    size_t length_threshold = gp_.scaffold_graph_storage.GetSmallLengthThreshold();
-    auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
+    auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold_);
     auto reference_transition_storage = reference_storage_builder.GetTransitionStorage(reference_paths);
-    SimpleTransitionGraphValidator transition_graph_validator(reference_transition_storage);
+    SimpleTransitionGraphValidator transition_graph_validator(reference_transition_storage, length_threshold_);
     return transition_graph_validator;
 }
-SimpleTransitionGraphValidatorConstructor::SimpleTransitionGraphValidatorConstructor(const conj_graph_pack &gp) :
-    gp_(gp) {}
+SimpleTransitionGraphValidatorConstructor::SimpleTransitionGraphValidatorConstructor(const conj_graph_pack &gp,
+                                                                                     size_t length_threshold) :
+    gp_(gp), length_threshold_(length_threshold) {}
 }
 }

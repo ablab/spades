@@ -206,12 +206,14 @@ namespace barcode_index {
             GetEntry(edge).Serialize(fout);
         }
 
-        void BinRead(std::istream &str) {
+        virtual void BinRead(std::istream &str) {
             using io::binary::BinRead;
 
             edge_to_entry_.clear();
+            INFO("Reading size");
             size_t size;
             BinRead(str, size);
+            INFO("Size: " << size);
             for (size_t i = 0; i < size; ++i) {
                 EdgeId edge_id = BinRead<uint64_t>(str);
                 auto entry = BinRead<EdgeEntryT>(str);
@@ -219,7 +221,7 @@ namespace barcode_index {
             }
         }
 
-        void BinWrite(std::ostream &str) const {
+        virtual void BinWrite(std::ostream &str) const {
             using io::binary::BinWrite;
             BinWrite(str, edge_to_entry_.size());
             for (const auto &edge_and_entry: edge_to_entry_) {
@@ -434,6 +436,8 @@ namespace barcode_index {
                 }
             }
             SetRightMost(rightmost);
+            TRACE("Leftmost: " << GetLeftMost());
+            TRACE("Rightmost: " << GetRightMost());
         }
 
         void BinWrite(std::ostream &str) const {
@@ -572,11 +576,11 @@ namespace barcode_index {
             return barcode_distribution_.find(barcode);
         }
 
-        void BinRead(std::istream &str) {
+        virtual void BinRead(std::istream &str) {
             barcode_distribution_ = io::binary::BinRead<barcode_distribution_t>(str);
         }
 
-        void BinWrite(std::ostream &str) const {
+        virtual void BinWrite(std::ostream &str) const {
             io::binary::BinWrite(str, barcode_distribution_);
         }
 
@@ -713,6 +717,22 @@ namespace barcode_index {
             return number_of_frames_;
         }
 
+        void BinRead(std::istream &str) override {
+            using io::binary::BinRead;
+            BinRead(str, barcode_distribution_);
+            edge_length_ = BinRead<size_t>(str);
+            frame_size_ = BinRead<size_t>(str);
+            number_of_frames_ = BinRead<size_t>(str);
+        }
+
+        void BinWrite(std::ostream &str) const override {
+            using io::binary::BinWrite;
+            BinWrite(str, barcode_distribution_);
+            BinWrite(str, edge_length_);
+            BinWrite(str, frame_size_);
+            BinWrite(str, number_of_frames_);
+        }
+
     protected:
         void InsertInfo(const BarcodeId& barcode, const FrameBarcodeInfo &info) override {
             if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
@@ -745,6 +765,10 @@ namespace barcode_index {
 
         bool IsLowReadCount(size_t trimming_threshold, const FrameBarcodeInfo& info) {
             return info.GetCount() < trimming_threshold;
+        }
+
+        void SetFrameSize(size_t frame_size) {
+            frame_size_ = frame_size;
         }
 
     private:

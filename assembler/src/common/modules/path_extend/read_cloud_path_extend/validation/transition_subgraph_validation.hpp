@@ -9,9 +9,10 @@ class SimpleTransitionGraphValidator {
     typedef SimpleGraph<ScaffoldVertex> SimpleTransitionGraph;
 
     const ContigTransitionStorage reference_transition_storage_;
+    const size_t length_threshold_;
 
  public:
-    SimpleTransitionGraphValidator(const ContigTransitionStorage &reference_transition_storage);
+    SimpleTransitionGraphValidator(const ContigTransitionStorage &reference_transition_storage, size_t length_threshold);
 
     boost::optional<vector<ScaffoldVertex>> GetCorrectPath(const SimpleTransitionGraph& graph,
                                                            ScaffoldVertex source, ScaffoldVertex sink) const;
@@ -22,9 +23,10 @@ class SimpleTransitionGraphValidator {
 
 class SimpleTransitionGraphValidatorConstructor {
     const conj_graph_pack& gp_;
+    const size_t length_threshold_;
 
  public:
-    SimpleTransitionGraphValidatorConstructor(const conj_graph_pack &gp);
+    SimpleTransitionGraphValidatorConstructor(const conj_graph_pack &gp, size_t length_threshold);
 
     SimpleTransitionGraphValidator GetValidator(const string &path_to_reference) const;
 };

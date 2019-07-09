@@ -466,7 +466,12 @@ public:
             BarcodeId barcode = it->first;
             size_t left_pos = it->second.GetLeftMost() *  bin_length;
             size_t right_pos = it->second.GetRightMost() * bin_length;
+            TRACE("Bin length: " << bin_length);
+            TRACE("Left raw: " << left_pos);
+            TRACE("Leftmost position: " << left_pos);
+            TRACE("Rightmost position: " << right_pos);
             size_t reads = it->second.GetCount();
+            TRACE("Reads: " << reads);
             if (left_pos <= right and right_pos >= left and reads >= count_threshold) {
                 barcodes.push_back(barcode);
             }

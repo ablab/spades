@@ -29,7 +29,9 @@ public:
         size_t frame_size;
         str >> frame_size;
         mapper.SetFrameSize(frame_size);
-        mapper.InitialFillMap();
+        INFO("Setting frame size to " << mapper.GetFrameSize());
+//        mapper.InitialFillMap();
+        INFO("Filled map");
         str >> mapper;
     }
 };

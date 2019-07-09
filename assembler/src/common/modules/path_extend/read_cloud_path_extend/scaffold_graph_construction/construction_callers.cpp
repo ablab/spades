@@ -104,7 +104,7 @@ shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> CompositeConne
         const path_extend::ScaffolderParams &params,
         const IterativeScaffoldGraphConstructorCaller::ScaffoldGraph &scaffold_graph) const {
     path_extend::PathExtendParamsContainer path_extend_params
-        (cfg::get().ds, cfg::get().pe_params, cfg::get().ss, cfg::get().output_dir, cfg::get().mode,
+        (cfg::get().ds, cfg::get().pe_params, cfg::get().ts_res, cfg::get().ss, cfg::get().output_dir, cfg::get().mode,
          cfg::get().uneven_depth, cfg::get().avoid_rc_connections, cfg::get().use_scaffolder);
 
     const auto &dataset_info = cfg::get().ds;
