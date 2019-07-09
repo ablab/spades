@@ -67,10 +67,12 @@ class ShortEdgeDatasetExtractor {
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor BarcodeExtractor;
 
     const conj_graph_pack &gp_;
+    const ScaffoldGraphStorage &scaffold_graph_storage_;
 
  public:
 
-    explicit ShortEdgeDatasetExtractor(const conj_graph_pack &gp_) : gp_(gp_) {}
+    ShortEdgeDatasetExtractor(const conj_graph_pack &gp, const ScaffoldGraphStorage &scaffold_graph_storage) :
+        gp_(gp), scaffold_graph_storage_(scaffold_graph_storage) {}
 
     ShortEdgeDataset GetShortEdgeDataset(const vector<vector<EdgeWithMapping>> &reference_paths,
                                          const vector<vector<EdgeWithMapping>> &filtered_reference_paths) const;

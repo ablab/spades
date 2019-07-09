@@ -119,7 +119,7 @@ LongEdgePairEntry LongEdgePairDatasetExtractor::GetLongEdgePairEntry(
         shared_ptr<LongEdgePairDatasetExtractor::BarcodeExtractor> long_edge_extractor,
         const EdgeId &first, const EdgeId &second,
         size_t distance, size_t path_id, bool correct) const {
-    const size_t tail_threshold = gp_.scaffold_graph_storage.GetSmallLengthThreshold();
+    const size_t tail_threshold = scaffold_graph_storage_.GetSmallLengthThreshold();
     barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor(gp_.barcode_mapper_ptr, gp_.g);
 
     LongEdgeEntry first_entry(first.int_id(), gp_.g.length(first), gp_.g.coverage(first),
@@ -149,7 +149,7 @@ bool LongEdgePairDatasetExtractor::AreNotClose(const validation::ContigTransitio
     return not are_close;
 }
 shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> LongEdgePairDatasetExtractor::ConstructLongEdgeExtractor() const {
-    size_t min_length = gp_.scaffold_graph_storage.GetSmallLengthThreshold();
+    size_t min_length = scaffold_graph_storage_.GetSmallLengthThreshold();
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr,
                                                                                         gp_.g);
@@ -157,7 +157,7 @@ shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> LongEdgePairDa
     const size_t length_threshold = 500;
     const size_t count_threshold = 1;
     auto tail_threshold_getter = make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
-    const auto &scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
+    const auto &scaffold_graph = scaffold_graph_storage_.GetSmallScaffoldGraph();
     set<scaffold_graph::ScaffoldVertex> vertices;
     for (const auto &vertex: scaffold_graph.vertices()) {
         vertices.insert(vertex);
@@ -169,7 +169,10 @@ shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> LongEdgePairDa
         make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
     return scaffold_index_extractor;
 }
-LongEdgePairDatasetExtractor::LongEdgePairDatasetExtractor(const conj_graph_pack &gp) : gp_(gp) {}
+LongEdgePairDatasetExtractor::LongEdgePairDatasetExtractor(const conj_graph_pack &gp,
+                                                           const ScaffoldGraphStorage &scaffold_graph_storage):
+    gp_(gp),
+    scaffold_graph_storage_(scaffold_graph_storage) {}
 LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(size_t length_threshold,
                                                                      const string &path_to_reference) const {
     path_extend::validation::FilteredReferencePathHelper path_helper(gp_);
@@ -177,15 +180,14 @@ LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(size_t leng
     return GetLongEdgeDataset(reference_paths);
 }
 void LongEdgePairDatasetExtractor::ConstructAndSerialize(const string &path_to_reference, const string &output_base) const {
-    path_extend::LongEdgePairDatasetExtractor long_pair_extractor(gp_);
     const string reference_path = path_to_reference;
-    size_t long_threshold = gp_.scaffold_graph_storage.GetSmallLengthThreshold();
+    size_t long_threshold = scaffold_graph_storage_.GetSmallLengthThreshold();
 //    size_t ultralong_threshold = gp_.scaffold_graph_storage.GetLargeLengthThreshold();
     size_t ultralong_threshold = 10000;
-    INFO(gp_.scaffold_graph_storage.GetSmallScaffoldGraph().VertexCount() << " long edges");
-    auto long_edge_dataset = long_pair_extractor.GetLongEdgeDataset(long_threshold, reference_path);
-    INFO(gp_.scaffold_graph_storage.GetLargeScaffoldGraph().VertexCount() << " ultralong edges");
-    auto ultralong_edge_dataset = long_pair_extractor.GetLongEdgeDataset(ultralong_threshold, reference_path);
+    INFO(scaffold_graph_storage_.GetSmallScaffoldGraph().VertexCount() << " long edges");
+    auto long_edge_dataset = GetLongEdgeDataset(long_threshold, reference_path);
+    INFO(scaffold_graph_storage_.GetLargeScaffoldGraph().VertexCount() << " ultralong edges");
+    auto ultralong_edge_dataset = GetLongEdgeDataset(ultralong_threshold, reference_path);
     const string output_name = "long_edge_dataset_";
     const string long_output_path = fs::append_path(output_base, output_name + std::to_string(long_threshold));
     const string ultralong_output_path = fs::append_path(output_base, output_name +

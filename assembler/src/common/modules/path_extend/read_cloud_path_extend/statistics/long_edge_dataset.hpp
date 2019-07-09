@@ -49,9 +49,10 @@ class LongEdgePairDatasetExtractor {
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor BarcodeExtractor;
 
     const conj_graph_pack &gp_;
+    const ScaffoldGraphStorage &scaffold_graph_storage_;
 
  public:
-    LongEdgePairDatasetExtractor(const conj_graph_pack &gp);
+    LongEdgePairDatasetExtractor(const conj_graph_pack &gp, const ScaffoldGraphStorage &scaffold_graph_storage);
 
     LongEdgePairDataset GetLongEdgeDataset(const vector<vector<validation::EdgeWithMapping>>& reference_paths) const;
 
