@@ -11,7 +11,10 @@
 
 #include "extenders_logic.hpp"
 #include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
-#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.hpp"
+#include "read_cloud_path_extend/scaffold_graph_gap_closer/cloud_scaffold_graph_gap_closer.hpp"
+#include "read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
+#include "read_cloud_path_extend/fragment_statistics/secondary_stats_estimators.hpp"
+#include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp"
 #include "read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 
 namespace path_extend {
@@ -419,15 +422,15 @@ Extenders ExtendersGenerator::MakeMPExtenders(const ScaffoldingUniqueEdgeStorage
     return ExtractExtenders(result);
 }
 
-Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdgeStorage &/*storage*/) const {
+Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdgeStorage &storage) const {
     ExtenderTriplets result;
 
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
         const auto &lib = dataset_info_.reads[lib_index];
 
         if (lib.type() == io::LibraryType::Clouds10x) {
-            result.emplace_back(lib.type(), lib_index, MakeScaffoldGraphExtender());
-//            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index));
+            result.emplace_back(lib.type(), lib_index, MakeScaffoldGraphExtender(lib_index));
+            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index));
         }
     }
     std::stable_sort(result.begin(), result.end());
@@ -596,25 +599,39 @@ shared_ptr<ExtensionChooser> ExtendersGenerator::MakeSimpleExtensionChooser(size
 
     return extension_chooser;
 }
-shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender() const {
-    const auto &scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
-    bool validate_using_reference = cfg::get().ts_res.debug_mode;
+shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size_t lib_index) const {
+    const auto &lib = dataset_info_.reads[lib_index];
+    INFO("Scaffold graph construction started");
+    const size_t unique_length_threshold = params_.read_cloud_configs.long_edge_length_lower_bound;
+    typedef path_extend::fragment_statistics::DistributionPack DistributionPackT;
+    DistributionPackT distribution_pack(lib.data().read_cloud_info.fragment_length_distribution);
+    INFO(distribution_pack.length_distribution_.size() << " clusters loaded");
+    VERIFY_DEV(distribution_pack.length_distribution_.size() != 0);
+    path_extend::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
+    path_extend::fragment_statistics::UpperLengthBoundEstimator length_bound_estimator;
+    //fixme configs
+    const double ultralong_edge_length_percentile = 0.35;
+    size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
+                                                                          ultralong_edge_length_percentile);
+    INFO("Length upper bound: " << length_upper_bound);
+    path_extend::ScaffoldGraphStorageConstructor storage_constructor(unique_length_threshold, length_upper_bound,
+                                                                     lib, gp_);
+    auto storage = storage_constructor.ConstructStorage();
+    path_extend::ScaffoldGraphPolisherHelper scaffold_graph_polisher(gp_, params_.read_cloud_configs,
+                                                                     cfg::get().max_threads);
+    bool path_scaffolding = false;
+    auto polished_scaffold_graph = scaffold_graph_polisher.GetScaffoldGraphFromStorage(storage, path_scaffolding);
+
+    bool validate_using_reference = params_.read_cloud_configs.debug_mode;
     if (validate_using_reference) {
         INFO("Resulting scaffold graph stats");
-        const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
-        DEBUG("Path to reference: " << path_to_reference);
-        DEBUG("Path exists: " << fs::check_existence(path_to_reference));
-        validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
-        validation::FilteredReferencePathHelper path_helper(gp_);
-        size_t length_threshold = gp_.scaffold_graph_storage.GetSmallLengthThreshold();
-        auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
-
-        auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
-        stats.Serialize(std::cout);
+        const string path_to_reference = params_.read_cloud_configs.statistics.genome_path;
+        scaffold_graph_polisher.PrintScaffoldGraphReferenceInfo(polished_scaffold_graph, path_to_reference,
+                                                                unique_length_threshold);
     }
-    INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount()
+    INFO(polished_scaffold_graph.VertexCount() << " vertices and " << polished_scaffold_graph.EdgeCount()
                                      << " edges in scaffold graph");
-    shared_ptr<ScaffoldGraphExtender> extender = make_shared<ScaffoldGraphExtender>(gp_.g, scaffold_graph);
+    shared_ptr<ScaffoldGraphExtender> extender = make_shared<ScaffoldGraphExtender>(gp_.g, polished_scaffold_graph);
     return extender;
 }
 shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_index) const {
