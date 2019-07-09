@@ -103,7 +103,7 @@ ShortEdgeEntry ShortEdgeDatasetExtractor::GetShortEdgeEntry(EdgeId short_edge,
 
 std::unordered_set<EdgeId> ShortEdgeDatasetExtractor::GetReachableEdges(const EdgeId &long_edge) const {
     const size_t DISTANCE_BOUND = 40000;
-    size_t min_length = gp_.scaffold_graph_storage.GetSmallLengthThreshold();
+    size_t min_length = scaffold_graph_storage_.GetSmallLengthThreshold();
     unordered_set<EdgeId> reached_edges;
     DijkstraHelper<Graph> helper;
     auto unique_dijkstra = helper.CreateLengthBoundedDijkstra(gp_.g, DISTANCE_BOUND, min_length);
@@ -128,7 +128,7 @@ std::unordered_set<EdgeId> ShortEdgeDatasetExtractor::GetEdgesBetweenPair(size_t
     return correct_edges;
 }
 shared_ptr<ShortEdgeDatasetExtractor::BarcodeExtractor> ShortEdgeDatasetExtractor::ConstructLongEdgeExtractor() const {
-    size_t min_length = gp_.scaffold_graph_storage.GetSmallLengthThreshold();
+    size_t min_length = scaffold_graph_storage_.GetSmallLengthThreshold();
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr,
                                                                                         gp_.g);
@@ -136,7 +136,7 @@ shared_ptr<ShortEdgeDatasetExtractor::BarcodeExtractor> ShortEdgeDatasetExtracto
     const size_t length_threshold = 500;
     const size_t count_threshold = 1;
     auto tail_threshold_getter = make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
-    const auto &scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
+    const auto &scaffold_graph = scaffold_graph_storage_.GetSmallScaffoldGraph();
     set<scaffold_graph::ScaffoldVertex> vertices;
     for (const auto &vertex: scaffold_graph.vertices()) {
         vertices.insert(vertex);
@@ -161,12 +161,12 @@ ShortEdgeDataset ShortEdgeDatasetExtractor::GetShortEdgeDataset(size_t length_th
 void ShortEdgeDatasetExtractor::ConstructAndSerialize(const string &path_to_reference,
                                                       const string &output_base) const {
     const string reference_path = path_to_reference;
-    size_t long_threshold = gp_.scaffold_graph_storage.GetSmallLengthThreshold();
+    size_t long_threshold = scaffold_graph_storage_.GetSmallLengthThreshold();
 //    size_t ultralong_threshold = gp_.scaffold_graph_storage.GetLargeLengthThreshold();
     size_t ultralong_threshold = 10000;
-    INFO(gp_.scaffold_graph_storage.GetSmallScaffoldGraph().VertexCount() << " long edges");
+    INFO(scaffold_graph_storage_.GetSmallScaffoldGraph().VertexCount() << " long edges");
     auto short_long_edge_dataset = GetShortEdgeDataset(long_threshold, reference_path);
-    INFO(gp_.scaffold_graph_storage.GetLargeScaffoldGraph().VertexCount() << " ultralong edges");
+    INFO(scaffold_graph_storage_.GetLargeScaffoldGraph().VertexCount() << " ultralong edges");
     auto short_ultralong_edge_dataset = GetShortEdgeDataset(ultralong_threshold, reference_path);
     const string output_name = "short_edge_dataset_";
     const string long_output_path = fs::append_path(output_base, output_name + std::to_string(long_threshold));
