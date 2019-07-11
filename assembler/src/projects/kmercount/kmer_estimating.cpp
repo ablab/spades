@@ -33,15 +33,6 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
-template<class IS, class OS>
-void Transfer(IS &input, OS &output) {
-    typename OS::ReadT read;
-    while (!input.eof()) {
-        input >> read;
-        output << read;
-    }
-}
-
 int main(int argc, char* argv[]) {
     typedef qf::cqf CQFKmerFilter;
     utils::perf_counter pc;
@@ -61,7 +52,6 @@ int main(int argc, char* argv[]) {
             ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("21"), "K")
             ("d,dataset", "Dataset description (in YAML)", cxxopts::value<std::string>(dataset_desc), "file")
             ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(omp_get_max_threads() / 2)), "num")
-            ("o,outdir", "Output directory to use", cxxopts::value<std::string>(workdir)->default_value("."), "dir")
             ("h,help", "Print help");
 
         options.parse(argc, argv);
