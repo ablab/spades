@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
         size_t buff_size = 512;
         buff_size <<= 20;
 
-        cxxopts::Options options(argv[0], " kmer number estimating");
+        cxxopts::Options options(argv[0], " kmer number estimating.  Kmers from reverse-complementary reads aren't taken into account.");
         options.add_options()
             ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("21"), "K")
             ("d,dataset", "Dataset description (in YAML)", cxxopts::value<std::string>(dataset_desc), "file")

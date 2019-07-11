@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
         size_t read_buffer_size;
 
         cxxopts::Options options(argv[0], " <input files> - SPAdes k-mer counting engine\n\n"
-            "Output: <output_dir>/final_kmers - set of kmers in binary format. \n\n"
+            "Output: <output_dir>/final_kmers - set of kmers in binary format. Kmers from both forward and reverse-complementary reads are taken into account.\n\n"
             "Output format: All kmers are written in a row without any separation. Each kmer takes the equal number of bits. One kmer of length K takes 2*K bits. Kmers are aligned by 64 bits. For example, one kmer with length=21 takes 8 bytes, with 33 takes 16 bytes, and with 55 takes 16 bytes. Kmers are written in big-endian order on bytes level, but written in little-endian order inside the byte. Each nucleotide is coding by 2 bits: 00 - A, 01 - C, 10 - G, 11 - T.\n\n"
             "Example: For kmer: AGCTCT\n"
             "\tMemory: 6 bits * 2 = 12, 64 bits(8 bytes)\n"
