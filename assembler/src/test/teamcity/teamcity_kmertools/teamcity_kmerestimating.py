@@ -121,8 +121,15 @@ def make_kmerestimating_cmd(args, dataset_info, working_dir, output_dir):
         cmd += " --kmer " + dataset_info["K"]
 
     cmd += " --dataset " + dataset_info["dataset_path"]
+    cmd += " > " + os.path.join(output_dir, "log")
     return cmd
 
+def parse_log(output_dir):
+    with open(os.path.join(output_dir, "log")) as f:
+        lines = f.readlines()
+        kmernum = lines[-1].split()[-1]
+    with open(os.path.join(output_dir, "log"), "w") as fw:
+        fw.write(kmernum)
 
 def run_kmerestimating(working_dir, args, dataset_info, output_dir):
     if args.path:
@@ -136,6 +143,20 @@ def run_kmerestimating(working_dir, args, dataset_info, output_dir):
     if ecode != 0:
         log.err("spades-kmer-estimating finished abnormally with exit code " + str(ecode))
         return 4
+    parse_log(output_dir)
+    return 0
+
+
+def etalon_saves(dataset_info, output_dir):
+    if 'etalon_saves' in dataset_info:
+        log.log("Comparing etalon saves now")
+        etalon_folder = dataset_info["etalon_saves"]
+
+        dircmp = filecmp.dircmp(output_dir, os.path.join(etalon_folder))
+
+        if dircmp.diff_files != []:
+            log.err("Comparing etalon saves did not pass")
+            return 12
     return 0
 
 
@@ -166,6 +187,8 @@ try:
         sys.exit(ecode)
 
     #compare_etalon
+    ecode = etalon_saves(dataset_info, output_dir)
+    sys.exit(ecode)
 
 except SystemExit:
     raise
