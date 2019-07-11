@@ -121,6 +121,7 @@ def make_kmerestimating_cmd(args, dataset_info, working_dir, output_dir):
         cmd += " --kmer " + dataset_info["K"]
 
     cmd += " --dataset " + dataset_info["dataset_path"]
+    cmd += " -o " + output_dir
     cmd += " > " + os.path.join(output_dir, "log")
     return cmd
 

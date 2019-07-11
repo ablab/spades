@@ -52,6 +52,7 @@ int main(int argc, char* argv[]) {
             ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("21"), "K")
             ("d,dataset", "Dataset description (in YAML)", cxxopts::value<std::string>(dataset_desc), "file")
             ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(omp_get_max_threads() / 2)), "num")
+            ("o,outdir", "Output directory to use", cxxopts::value<std::string>(workdir)->default_value("."), "dir")
             ("h,help", "Print help");
 
         options.parse(argc, argv);
