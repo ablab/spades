@@ -173,13 +173,13 @@ bool IsNontrivialAlignment(const std::vector<std::vector<EdgeId>>& aligned_edges
     return false;
 }
 
-io::SingleStreamPtr GetReadsStream(const io::SequencingLibrary<config::LibraryData>& lib) {
+io::SingleStream GetReadsStream(const io::SequencingLibrary<config::LibraryData>& lib) {
     io::ReadStreamList<io::SingleRead> streams;
     for (const auto& reads : lib.single_reads())
         //do we need input_file function here?
         //TODO add decent support for N-s?
-        streams.push_back(std::make_shared<io::FixingWrapper>(std::make_shared<io::FileReadStream>(reads)));
-    return io::MultifileWrap(streams);
+        streams.push_back(io::FixingWrapper(io::FileReadStream(reads)));
+    return io::MultifileWrap(std::move(streams));
 }
 
 class PacbioAligner {
@@ -300,7 +300,7 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
     PacbioAligner aligner(galigner, path_storage, gap_storage);
 
     auto stream = GetReadsStream(lib);
-    aligner(*stream, thread_cnt);
+    aligner(stream, thread_cnt);
 
     INFO("For library of " << lib_for_info);
     aligner.stats().Report();

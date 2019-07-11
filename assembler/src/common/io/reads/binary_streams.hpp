@@ -20,7 +20,7 @@
 namespace io {
 
 template<typename SeqT>
-class BinaryFileStream: public ReadStream<SeqT> {
+class BinaryFileStream {
 protected:
     std::ifstream stream_;
 
@@ -100,27 +100,27 @@ public:
     BinaryFileStream(const std::string &file_name_prefix)
             : BinaryFileStream(file_name_prefix, 1, 0) {}
 
-    BinaryFileStream<SeqT>& operator>>(SeqT &read) override {
+    BinaryFileStream<SeqT>& operator>>(SeqT &read) {
         ReadImpl(read);
         VERIFY(current_ < count_);
         ++current_;
         return *this;
     }
 
-    bool is_open() override {
+    bool is_open() {
         return stream_.is_open();
     }
 
-    bool eof() override {
+    bool eof() {
         return current_ >= count_;
     }
 
-    void close() override {
+    void close() {
         current_ = 0;
         stream_.close();
     }
 
-    void reset() override {
+    void reset() {
         Init();
     }
 
@@ -143,7 +143,7 @@ public:
 };
 
 // returns FF oriented paired reads
-class BinaryUnmergingPairedStream: public ReadStream<PairedReadSeq> {
+class BinaryUnmergingPairedStream {
     BinaryFileSingleStream stream_;
     size_t insert_size_;
     size_t read_length_;
@@ -154,23 +154,12 @@ public:
     BinaryUnmergingPairedStream(const std::string& file_name_prefix, size_t insert_size, size_t read_length,
                                 size_t portion_count, size_t portion_num);
 
-    bool is_open() override {
-        return stream_.is_open();
-    }
+    bool is_open() { return stream_.is_open(); }
+    bool eof() { return stream_.eof(); }
+    void close() { stream_.close(); }
+    void reset() { stream_.reset(); }
 
-    bool eof() override {
-        return stream_.eof();
-    }
-
-    BinaryUnmergingPairedStream& operator>>(PairedReadSeq& read) override;
-
-    void close() override {
-        stream_.close();
-    }
-
-    void reset() override {
-        stream_.reset();
-    }
+    BinaryUnmergingPairedStream& operator>>(PairedReadSeq& read);
 
 };
 

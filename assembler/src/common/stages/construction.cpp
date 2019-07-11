@@ -46,7 +46,7 @@ struct ConstructionStorage {
     std::unique_ptr<CoverageMap> coverage_map;
     config::debruijn_config::construction params;
     io::ReadStreamList<io::SingleReadSeq> read_streams;
-    io::SingleStreamPtr contigs_stream;
+    io::SingleStream contigs_stream;
     fs::TmpDir workdir;
 };
 
@@ -78,7 +78,7 @@ void Construction::init(debruijn_graph::conj_graph_pack &gp, const char *) {
     if (AddTrustedContigs(cfg::get().ds.reads, trusted_contigs))
         INFO("Trusted contigs will be used in graph construction");
 
-    storage().contigs_stream = MultifileWrap(trusted_contigs);
+    storage().contigs_stream = MultifileWrap(std::move(trusted_contigs));
 
     // FIXME: indices here are awful
     auto& dataset = cfg::get_writable().ds;
@@ -132,7 +132,7 @@ class CoverageFilter: public Construction::Phase {
     virtual ~CoverageFilter() = default;
 
     void run(debruijn_graph::conj_graph_pack &, const char*) override {
-        auto read_streams = storage().read_streams;
+        auto &read_streams = storage().read_streams;
         const auto &index = storage().ext_index;
         using storing_type = decltype(storage().ext_index)::storing_type;
 
@@ -155,7 +155,7 @@ class CoverageFilter: public Construction::Phase {
         FillCoverageHistogram(*storage().cqf, kplusone, hasher, read_streams, rthr, KmerFilter());
 
         // Replace input streams with wrapper ones
-        storage().read_streams = io::CovFilteringWrap(read_streams, kplusone, hasher, *storage().cqf, rthr);
+        storage().read_streams = io::CovFilteringWrap(std::move(read_streams), kplusone, hasher, *storage().cqf, rthr);
     }
 
     void load(debruijn_graph::conj_graph_pack&,
@@ -182,7 +182,7 @@ public:
     virtual ~KMerCounting() = default;
 
     void run(debruijn_graph::conj_graph_pack &, const char*) override {
-        auto read_streams = storage().read_streams;
+        auto &read_streams = storage().read_streams;
         auto &contigs_stream = storage().contigs_stream;
         const auto &index = storage().ext_index;
         size_t buffer_size = storage().params.read_buffer_size;
@@ -194,7 +194,7 @@ public:
         utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
                                         utils::StoringTypeFilter<storing_type>>
                 splitter(storage().workdir, index.k() + 1, 0,
-                         read_streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
+                         read_streams, contigs_stream ? &contigs_stream : nullptr,
                          buffer_size);
         storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
         storage().counter->CountAll(nthreads, nthreads, /* merge */false);

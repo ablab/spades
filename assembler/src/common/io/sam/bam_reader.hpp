@@ -53,8 +53,10 @@ public:
     }
 };
 
-class UnmappedBamStream : public ReadStream<BamRead> {
+class UnmappedBamStream {
 public:
+    typedef BamRead ReadT;
+    
     UnmappedBamStream(const std::string &filename)
             : filename_(filename) {
         open();

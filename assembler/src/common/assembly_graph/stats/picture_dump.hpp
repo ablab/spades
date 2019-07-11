@@ -193,10 +193,10 @@ void WriteGraphComponentsAlongContigs(const Graph &g,
                                       const visualization::graph_labeler::GraphLabeler<Graph> &labeler) {
     INFO("Writing graph components along contigs");
     auto contigs_to_thread = io::EasyStream(cfg::get().pos.contigs_to_analyze, false);
-    contigs_to_thread->reset();
+    contigs_to_thread.reset();
     io::SingleRead read;
-    while (!contigs_to_thread->eof()) {
-        (*contigs_to_thread) >> read;
+    while (!contigs_to_thread.eof()) {
+        contigs_to_thread >> read;
         fs::make_dir(folder + read.name());
         visualization::visualization_utils::WriteComponentsAlongPath(g, mapper.MapSequence(read.sequence()).simple_path(),
                                                                      folder + read.name() + "/", colorer, labeler);

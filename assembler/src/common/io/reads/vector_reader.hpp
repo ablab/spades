@@ -13,35 +13,33 @@ namespace io {
  * Use vector<T> as input-stream with operator>>(T& t)
  */
 template <typename T>
-class VectorReadStream : public ReadStream<T> {
+class VectorReadStream  {
        std::vector<T> data_;
        size_t pos_;
        bool closed_;
 public:
-       VectorReadStream(const std::vector<T>& data) : data_(data), pos_(0), closed_(false) {
+       VectorReadStream(const std::vector<T>& data)
+                     : data_(data), pos_(0), closed_(false) {}
+       
+       VectorReadStream(const T& item)
+                     : data_({item}), pos_(0), closed_(false) {}
 
-       }
-
-       VectorReadStream(const T& item) : data_({item}), pos_(0), closed_(false) {
-
-       }
-
-       virtual bool eof() /*const */{
-               return pos_ == data_.size();
+       bool eof() /*const */{
+              return pos_ == data_.size();
        }
 
        VectorReadStream<T>& operator>>(T& t) {
-           VERIFY(!eof());
-           t = data_[pos_++];
-           return *this;
+              VERIFY(!eof());
+              t = data_[pos_++];
+              return *this;
        }
 
        void close() {
-               closed_ = true;
+              closed_ = true;
        }
 
-       virtual bool is_open() /*const */{
-               return !closed_;
+       bool is_open() /*const */{
+              return !closed_;
        }
 
        void reset() {

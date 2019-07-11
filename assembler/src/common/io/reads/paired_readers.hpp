@@ -15,8 +15,10 @@
 
 namespace io {
 
-class SeparatePairedReadStream : public ReadStream<PairedRead> {
+class SeparatePairedReadStream {
  public:
+  typedef PairedRead ReadT;
+   
   /*
    * Default constructor.
    *
@@ -34,8 +36,8 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    *
    * @return true of the stream is opened and false otherwise.
    */
-  bool is_open() override {
-    return first_->is_open() && second_->is_open();
+  bool is_open() {
+    return first_.is_open() && second_.is_open();
   }
 
   /*
@@ -44,7 +46,7 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    * @return true if the end of stream is reached and false
    * otherwise.
    */
-  bool eof() override;
+  bool eof();
 
   /*
    * Read PairedRead from stream.
@@ -53,22 +55,22 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    *
    * @return Reference to this stream.
    */
-  SeparatePairedReadStream& operator>>(PairedRead& pairedread) override;
+  SeparatePairedReadStream& operator>>(PairedRead& pairedread);
 
   /*
    * Close the stream.
    */
-  void close() override {
-    first_->close();
-    second_->close();
+  void close() {
+    first_.close();
+    second_.close();
   }
 
   /*
    * Close the stream and open it again.
    */
-  void reset() override {
-    first_->reset();
-    second_->reset();
+  void reset() {
+    first_.reset();
+    second_.reset();
   }
 
  private:
@@ -77,18 +79,18 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
   /*
    * @variable The first stream (reads from first file).
    */
-  const std::unique_ptr<ReadStream<SingleRead>> first_;
+  ReadStream<SingleRead> first_;
   /*
    * @variable The second stream (reads from second file).
    */
-  const std::unique_ptr<ReadStream<SingleRead>> second_;
+  ReadStream<SingleRead> second_;
 
   //Only for providing information about error for users
   const std::string filename1_;
   const std::string filename2_;
 };
 
-class InterleavingPairedReadStream : public ReadStream<PairedRead> {
+class InterleavingPairedReadStream {
  public:
   /*
    * Default constructor.
@@ -105,8 +107,8 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    *
    * @return true of the stream is opened and false otherwise.
    */
-  bool is_open() override {
-    return single_->is_open();
+  bool is_open() {
+    return single_.is_open();
   }
 
   /*
@@ -115,8 +117,8 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    * @return true if the end of stream is reached and false
    * otherwise.
    */
-  bool eof() override {
-    return single_->eof();
+  bool eof() {
+    return single_.eof();
   }
 
   /*
@@ -126,20 +128,20 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    *
    * @return Reference to this stream.
    */
-  InterleavingPairedReadStream& operator>>(PairedRead& pairedread) override;
+  InterleavingPairedReadStream& operator>>(PairedRead& pairedread);
 
   /*
    * Close the stream.
    */
-  void close() override {
-    single_->close();
+  void close() {
+    single_.close();
   }
 
   /*
    * Close the stream and open it again.
    */
-  void reset() override {
-    single_->reset();
+  void reset() {
+    single_.reset();
   }
 
  private:
@@ -152,7 +154,6 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
   /*
    * @variable The single read stream.
    */
-  const std::unique_ptr<ReadStream<SingleRead>> single_;
-
+  ReadStream<SingleRead> single_;
 };
 }

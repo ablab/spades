@@ -60,10 +60,9 @@ class LongestValidRetainingWrapper : public DelegatingWrapper<ReadType> {
     typedef DelegatingWrapper<ReadType> base;
 public:
     LongestValidRetainingWrapper(typename base::ReadStreamPtrT reader_ptr) :
-                base(reader_ptr) {
-    }
+            base(std::move(reader_ptr)) {}
 
-    LongestValidRetainingWrapper& operator>>(ReadType& read) override {
+    LongestValidRetainingWrapper& operator>>(ReadType& read) {
         this->reader() >> read;
         read = LongestValid(read);
         return *this;
@@ -71,16 +70,16 @@ public:
 };
 
 template<class ReadType>
-std::shared_ptr<ReadStream<ReadType>> LongestValidWrap(std::shared_ptr<ReadStream<ReadType>> reader_ptr) {
-    return FilteringWrap<ReadType>(std::make_shared<LongestValidRetainingWrapper<ReadType>>(reader_ptr));
+ReadStream<ReadType> LongestValidWrap(ReadStream<ReadType> reader_ptr) {
+    return FilteringWrap<ReadType>(LongestValidRetainingWrapper<ReadType>(std::move(reader_ptr)));
 }
 
 template<class ReadType>
-ReadStreamList<ReadType> LongestValidWrap(const ReadStreamList<ReadType> &readers) {
+ReadStreamList<ReadType> LongestValidWrap(ReadStreamList<ReadType> readers) {
     ReadStreamList<ReadType> answer;
-    for (size_t i = 0; i < readers.size(); ++i) {
-        answer.push_back(LongestValidWrap<ReadType>(readers.ptr_at(i)));
-    }
+    for (auto &reader : readers)
+        answer.push_back(LongestValidWrap<ReadType>(reader));
+
     return FilteringWrap<ReadType>(answer);
 }
 

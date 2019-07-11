@@ -13,17 +13,17 @@
 namespace io {
 
 inline
-PairedStreamPtr paired_easy_reader(const SequencingLibraryBase &lib,
-                                   bool followed_by_rc,
-                                   size_t insert_size,
-                                   bool use_orientation = true,
-                                   OffsetType offset_type = PhredOffset) {
+PairedStream paired_easy_reader(const SequencingLibraryBase &lib,
+                                bool followed_by_rc,
+                                size_t insert_size,
+                                bool use_orientation = true,
+                                OffsetType offset_type = PhredOffset) {
     ReadStreamList<PairedRead> streams;
     for (const auto &read_pair : lib.paired_reads()) {
         streams.push_back(PairedEasyStream(read_pair.first, read_pair.second, followed_by_rc, insert_size,
                                            use_orientation, lib.orientation(), offset_type));
     }
-    return MultifileWrap<PairedRead>(streams);
+    return MultifileWrap<PairedRead>(std::move(streams));
 }
 
 inline
@@ -47,11 +47,11 @@ ReadStreamList<SingleRead> single_easy_readers(const SequencingLibraryBase &lib,
 }
 
 inline
-SingleStreamPtr single_easy_reader(const SequencingLibraryBase &lib,
-                                   bool followed_by_rc,
-                                   bool including_paired_reads,
-                                   bool handle_Ns = true,
-                                   OffsetType offset_type = PhredOffset) {
+SingleStream single_easy_reader(const SequencingLibraryBase &lib,
+                                bool followed_by_rc,
+                                bool including_paired_reads,
+                                bool handle_Ns = true,
+                                OffsetType offset_type = PhredOffset) {
     return MultifileWrap<io::SingleRead>(
            single_easy_readers(lib, followed_by_rc, including_paired_reads, handle_Ns, offset_type));
 }
@@ -69,10 +69,10 @@ ReadStreamList<SingleRead> merged_easy_readers(const SequencingLibraryBase &lib,
 }
 
 inline
-SingleStreamPtr merged_easy_reader(const SequencingLibraryBase &lib,
-                                   bool followed_by_rc,
-                                   bool handle_Ns = true,
-                                   OffsetType offset_type = PhredOffset) {
+SingleStream merged_easy_reader(const SequencingLibraryBase &lib,
+                                bool followed_by_rc,
+                                bool handle_Ns = true,
+                                OffsetType offset_type = PhredOffset) {
     return MultifileWrap<io::SingleRead>(
             merged_easy_readers(lib, followed_by_rc, handle_Ns, offset_type));
 }

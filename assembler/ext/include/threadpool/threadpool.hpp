@@ -69,6 +69,8 @@ public:
    */
   ~ThreadPool();
 
+  ThreadPool(ThreadPool &&);
+  
   /*! \brief Run a task in the SingleQueue.
    *  \returns Returns a future containing the result of the task.
    *
@@ -268,7 +270,7 @@ private:
 
   /*! \brief Size of the pool.
    */
-  const std::size_t pool_size;
+  std::size_t pool_size;
 };
 
 // ThreadPool impl
@@ -301,6 +303,16 @@ inline ThreadPool::~ThreadPool()
 {
   stop();
   terminate();
+}
+
+inline ThreadPool::ThreadPool(ThreadPool &&that)
+    : waiting_threads(0),
+      working_threads(0),
+      stopped(false),
+      hooks(that.hooks),
+      pool_size(that.pool_size) {
+  that.stop();
+  start_pool();
 }
 
 template <typename Function, typename... Args>
@@ -353,7 +365,7 @@ inline void ThreadPool::stop()
   stopped = true;
   std::lock_guard<decltype(pool_lock)> pl(pool_lock);
   for (const auto& w : pool)
-  {
+  {    
     w.second->stop();
   }
 }

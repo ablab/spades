@@ -30,7 +30,7 @@ namespace debruijn_graph {
 
 template<class Graph, class Readers, class Index>
 size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
-        Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+        Index& index, io::SingleStream contigs_stream = io::SingleStream()) {
     INFO("Constructing DeBruijn graph");
 
     TRACE("Filling indices");
@@ -42,7 +42,7 @@ size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageFillingEdgeIndexBuilderT IndexBuilder;
     InnerIndex& debruijn = index.inner_index();
     //fixme hack
-    rl = IndexBuilder().BuildIndexFromStream(debruijn, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream));
+    rl = IndexBuilder().BuildIndexFromStream(debruijn, streams, contigs_stream ? contigs_stream : nullptr);
 
     VERIFY(g.k() + 1== debruijn.k());
     // FIXME: output_dir here is damn ugly!
@@ -73,7 +73,7 @@ template<class Graph, class Read, class Index>
 void ConstructGraphUsingExtensionIndex(const config::debruijn_config::construction &params,
                                        fs::TmpDir workdir,
                                        io::ReadStreamList<Read>& streams, Graph& g,
-                                       Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+                                       Index& index, io::SingleStream contigs_stream = io::SingleStream()) {
     unsigned k = unsigned(g.k());
     INFO("Constructing DeBruijn graph for k=" << k);
 
@@ -84,8 +84,8 @@ void ConstructGraphUsingExtensionIndex(const config::debruijn_config::constructi
     utils::DeBruijnExtensionIndex<> ext(k);
 
     utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext, streams,
-                                                          (contigs_stream == 0) ? 0 : &(*contigs_stream),
-                                                          params.read_buffer_size);
+                                                                         contigs_stream ? contigs_stream : nullptr,
+                                                                         params.read_buffer_size);
 
     EarlyClipTips(params, ext);
 
@@ -104,7 +104,7 @@ void ConstructGraphUsingExtensionIndex(const config::debruijn_config::constructi
 template<class Graph, class Index, class Streams>
 void ConstructGraph(const config::debruijn_config::construction &params,
                     fs::TmpDir workdir, Streams& streams, Graph& g,
-                    Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+                    Index& index, io::SingleStream contigs_stream = io::SingleStream()) {
     ConstructGraphUsingExtensionIndex(params, workdir, streams, g, index, contigs_stream);
 //  ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 }
@@ -114,7 +114,7 @@ template<class Graph, class Index, class Streams>
 void ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
                                 fs::TmpDir workdir, Streams &streams, Graph &g,
                                 Index &index, FlankingCoverage<Graph> &flanking_cov,
-                                io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+                                io::SingleStream contigs_stream = io::SingleStream()) {
     ConstructGraph(params, workdir, streams, g, index, contigs_stream);
 
     typedef typename Index::InnerIndex InnerIndex;

@@ -62,14 +62,14 @@ public:
     }
 };
 
-inline std::shared_ptr<ReadStream<SingleRead>> SplittingWrap(std::shared_ptr<ReadStream<SingleRead>> reader_ptr) {
-    return std::make_shared<SplittingWrapper>(reader_ptr);
+inline NewReadStream<SingleRead> SplittingWrap(NewReadStream<SingleRead> reader_ptr) {
+    return SplittingWrapper>(reader_ptr);
 }
 
-inline ReadStreamList<SingleRead> SplittingWrap(ReadStreamList<SingleRead>& readers) {
+inline ReadStreamList<SingleRead> SplittingWrap(ReadStreamList<SingleRead> readers) {
     ReadStreamList<SingleRead> answer;
-    for (size_t i = 0; i < readers.size(); ++i) {
-        answer.push_back(SplittingWrap(readers.ptr_at(i)));
+    for (auto &reader : readers) {
+        answer.push_back(SplittingWrap(reader));
     }
     return answer;
 }

@@ -103,27 +103,25 @@ class LongReadsAligner {
                      const GAlignerConfig &cfg,
                      const string output_file,
                      const int threads)
-        :g_(g),
-         cfg_(cfg),
-         galigner_(g_, cfg),
-         threads_(threads),
-         mapping_printer_hub_(g_, edge_namer, output_file, cfg.output_format) {
+        : g_(g),
+          cfg_(cfg),
+          galigner_(g_, cfg),
+          threads_(threads),
+          mapping_printer_hub_(g_, edge_namer, output_file, cfg.output_format) {
         aligned_reads_ = 0;
         processed_reads_ = 0;
     }
 
     void RunAligner() {
-        io::ReadStreamList<io::SingleRead> streams;
-        streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(cfg_.path_to_sequences)));
-        io::SingleStreamPtr read_stream = io::MultifileWrap(streams);
+        auto read_stream = io::FixingWrapper(io::FileReadStream(cfg_.path_to_sequences));
         size_t n = 0;
         size_t buffer_no = 0;
-        while (!read_stream->eof()) {
-            vector<io::SingleRead> read_buffer;
+        while (!read_stream.eof()) {
+            std::vector<io::SingleRead> read_buffer;
             read_buffer.reserve(read_buffer_size);
             io::SingleRead read;
-            for (size_t buf_size = 0; buf_size < read_buffer_size && !read_stream->eof(); ++buf_size) {
-                *read_stream >> read;
+            for (size_t buf_size = 0; buf_size < read_buffer_size && !read_stream.eof(); ++buf_size) {
+                read_stream >> read;
                 read_buffer.push_back(move(read));
             }
             INFO("Prepared batch " << buffer_no << " of " << read_buffer.size() << " reads.");

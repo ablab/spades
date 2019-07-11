@@ -26,14 +26,17 @@
 #ifndef COMMON_IO_FASTAFASTQGZPARSER_HPP
 #define COMMON_IO_FASTAFASTQGZPARSER_HPP
 
-#include <zlib.h>
-#include <string>
-#include "kseq/kseq.h"
-#include "utils/verify.hpp"
 #include "single_read.hpp"
+
+#include "utils/verify.hpp"
 #include "io/reads/parser.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/nucl.hpp"
+
+#include "kseq/kseq.h"
+
+#include <zlib.h>
+#include <string>
 
 namespace io {
 
@@ -105,14 +108,15 @@ public:
      */
     /* virtual */
     void close() {
-        if (is_open_) {
-            // STEP 5: destroy seq
-            fastafastqgz::kseq_destroy(seq_);
-            // STEP 6: close the file handler
-            gzclose(fp_);
-            is_open_ = false;
-            eof_ = true;
-        }
+        if (!is_open_)
+            return;
+
+        // STEP 5: destroy seq
+        fastafastqgz::kseq_destroy(seq_);
+        // STEP 6: close the file handler
+        gzclose(fp_);
+        is_open_ = false;
+        eof_ = true;
     }
 
 private:

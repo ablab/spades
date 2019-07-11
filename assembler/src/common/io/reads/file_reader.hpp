@@ -22,8 +22,10 @@
 
 namespace io {
 
-class FileReadStream : public ReadStream<SingleRead> {
+class FileReadStream {
 public:
+    typedef SingleRead ReadT;
+    
     /*
      * Default constructor.
      *
@@ -40,22 +42,15 @@ public:
     }
 
     /*
-     * Default destructor.
-     */
-    ~FileReadStream() {
-        close();
-    }
-
-    /*
      * Check whether the stream is opened.
      *
      * @return true of the stream is opened and false otherwise.
      */
-    bool is_open() override {
-        if (parser_)
-            return parser_->is_open();
+    bool is_open() {
+        if (!parser_)
+            return false;
 
-        return false;
+        return parser_->is_open();
     }
 
     /*
@@ -64,11 +59,11 @@ public:
      * @return true if the end of stream is reached and false
      * otherwise.
      */
-    bool eof() override {
-        if (parser_)
-            return parser_->eof();
+    bool eof() {
+        if (!parser_)
+            return true;
 
-        return true;
+        return parser_->eof();
     }
 
     /*
@@ -78,7 +73,7 @@ public:
      *
      * @return Reference to this stream.
      */
-    FileReadStream &operator>>(SingleRead &singleread) override {
+    FileReadStream &operator>>(SingleRead &singleread) {
         if (parser_)
             (*parser_) >> singleread;
 
@@ -88,17 +83,21 @@ public:
     /*
      * Close the stream.
      */
-    void close() override {
-        if (parser_)
-            parser_->close();
+    void close() {
+        if (!parser_)
+            return;
+
+        parser_->close();
     }
 
     /*
      * Close the stream and open it again.
      */
-    void reset() override {
-        if (parser_)
-            parser_->reset();
+    void reset() {
+        if (!parser_)
+            return;
+
+        parser_->reset();
     }
 
 private:

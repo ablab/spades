@@ -5,68 +5,77 @@
 //***************************************************************************
 
 #pragma once
-#include "io/reads/ireadstream.hpp"
+#include "io/reads/ireader.hpp"
 
 #include "threadpool/threadpool.hpp"
 
 namespace io {
 
-template <typename ReadStreamType>
-class AsyncReadStream : public ReadStream<typename ReadStreamType::ReadT> {
+template <typename ReadType>
+class AsyncReadStream {
     static constexpr size_t BUF_SIZE = 100000;
   public:
-    using ReadType = typename ReadStreamType::ReadT;
-    
-      AsyncReadStream(ReadStream<ReadType> *stream)
-              : stream_(stream), pool_(1) {
-          init();
-      }
-
-      AsyncReadStream(ReadStream<ReadType> &&stream)
-              : stream_(stream), pool_(1) {
-          init();
-      }
-
-      ~AsyncReadStream() { pool_.stop(); }
-
-      bool eof() override { return eof_; }
-
-      AsyncReadStream<ReadStreamType> &operator>>(ReadType &t) override {
-          VERIFY(!eof());
-
-          if (read_pos_ < read_buffer_.size()) t = std::move(read_buffer_[read_pos_++]);
-
-          if (read_pos_ == read_buffer_.size()) {
-              // Wait for completion of the write task, if any
-              bool has_more = false;
-              if (write_task_.valid())
-                  has_more = write_task_.get();
-
-              // Swap buffers
-              std::swap(read_buffer_, write_buffer_);
-              read_pos_ = 0;
-              write_buffer_.clear();
-
-              // See, if there is still something to read
-              eof_ = (read_buffer_.size() == 0);
-
-              // Submit new job
-              if (has_more) dispatch_write_job();
-          }
-
-          return *this;
+    AsyncReadStream(ReadStream<ReadType> stream, ThreadPool::ThreadPool* = nullptr)
+            : stream_(std::move(stream)), pool_(1) {
+        init();
     }
 
-    void close() override {
-        stream_->close();
+    AsyncReadStream(AsyncReadStream&& that)
+            : stream_(std::move(that.stream_)),
+              read_buffer_(std::move(that.read_buffer_)),
+              read_pos_(that.read_pos_),
+              write_buffer_(std::move(that.write_buffer_)),
+              eof_(that.eof_),
+              start_(that.start_),
+              write_task_(std::move(that.write_task_)),
+              pool_(std::move(that.pool_)) {
+    };
+    
+    ~AsyncReadStream() = default;
+
+    bool eof() { return eof_; }
+
+    AsyncReadStream<ReadType> &operator>>(ReadType &t) {
+        VERIFY(!eof());
+
+        if (start_) {
+            dispatch_write_job();
+            start_ = false;
+        }
+            
+        if (read_pos_ < read_buffer_.size()) t = std::move(read_buffer_[read_pos_++]);
+
+        if (read_pos_ == read_buffer_.size()) {
+            // Wait for completion of the write task, if any
+            bool has_more = false;
+            if (write_task_.valid())
+                has_more = write_task_.get();
+
+            // Swap buffers
+            std::swap(read_buffer_, write_buffer_);
+            read_pos_ = 0;
+            write_buffer_.clear();
+
+            // See, if there is still something to read
+            eof_ = (read_buffer_.size() == 0);
+
+            // Submit new job
+            if (has_more) dispatch_write_job();
+        }
+
+        return *this;
+    }
+
+    void close() {
+        stream_.close();
         pool_.stop();
     }
 
-    bool is_open() override {
-        return stream_->is_open();
+    bool is_open() {
+        return stream_.is_open();
     }
 
-    void reset() override {
+    void reset() {
         // Discard all write jobs
         pool_.stop();
         // Reset the stream
@@ -80,41 +89,41 @@ class AsyncReadStream : public ReadStream<typename ReadStreamType::ReadT> {
         read_buffer_.clear();
         write_buffer_.clear();
         read_pos_ = 0;
-        
+
         read_buffer_.reserve(BUF_SIZE);
         write_buffer_.reserve(BUF_SIZE);
         VERIFY(is_open());
-        dispatch_write_job();
     }
 
     void dispatch_write_job() {
         write_task_ =
                 pool_.run([this] {
-                              while (write_buffer_.size() < BUF_SIZE && !stream_->eof()) {
+                              while (write_buffer_.size() < BUF_SIZE && !stream_.eof()) {
                                   ReadType r;
-                                  *stream_ >> r;
+                                  stream_ >> r;
                                   write_buffer_.emplace_back(r);
                               }
 
-                              return !stream_->eof();
+                              return !stream_.eof();
                           });
     }
-    
-    std::unique_ptr<ReadStream<ReadType>> stream_;
+
+    ReadStream<ReadType> stream_;
 
     std::vector<ReadType> read_buffer_;
     size_t read_pos_ = 0;
     std::vector<ReadType> write_buffer_;
     bool eof_ = false;
+    bool start_ = true;
 
     std::future<bool> write_task_;
     ThreadPool::ThreadPool pool_;
 };
 
-template<typename ReadStream, typename... Args>
-std::unique_ptr<AsyncReadStream<ReadStream>> make_async_stream(Args&&... args) {
-    return std::make_unique<AsyncReadStream<ReadStream>>(new ReadStream{std::forward<Args>(args)...});
+template<class WrappedStream, typename... Args>
+ReadStream<typename WrappedStream::ReadT>
+make_async_stream(Args&&... args) {
+    return AsyncReadStream<typename WrappedStream::ReadT>(WrappedStream(std::forward<Args>(args)...), nullptr);
 }
-
 
 }

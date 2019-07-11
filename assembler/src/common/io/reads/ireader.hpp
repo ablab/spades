@@ -9,6 +9,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <istream>
+#include <memory>
 
 namespace io {
 
@@ -56,53 +57,73 @@ struct ReadStreamStat {
 
 };
 
-/**
- * Reader is the interface for all other readers and reader wrappers.
- */
-template<typename ReadType>
-class ReadStream: boost::noncopyable {
- public:
+inline namespace v2 {
+
+template<class ReadType>
+struct ReadStream {
   typedef ReadType ReadT;
 
-  /*
-   * Default destructor.
-   */
-  virtual ~ReadStream() {}
+  ReadStream() = default;
 
-  /*
-   * Check whether the stream is opened.
-   *
-   * @return true if the stream is opened and false otherwise.
-   */
-  virtual bool is_open() = 0;
+  template<class T>
+  ReadStream(T &&t) noexcept
+      : self(std::make_unique<ReadStreamModel<T>>(std::forward<T>(t))) {}
 
-  /*
-   * Check whether we've reached the end of stream.
-   *
-   * @return true if the end of the stream is reached and false
-   * otherwise.
-   */
-  virtual bool eof() = 0;
+  bool is_open() const { return self->is_open(); }
+  bool eof() const { return self->eof(); }
+  ReadStream& operator>>(ReadType& read) { (*self) >> read; return *this; }
+  void close() { self->close(); }
+  void reset() { self->reset(); }
 
-  /*
-   * Read SingleRead or PairedRead from stream (according to ReadType).
-   *
-   * @param read The SingleRead or PairedRead that will store read data.
-   *
-   * @return Reference to this stream.
-   */
-  virtual ReadStream& operator>>(ReadType& read) = 0;
+  explicit operator bool() const { return (bool)self; }
 
-  /*
-   * Close the stream.
-   */
-  virtual void close() = 0;
 
-  /*
-   * Close the stream and open it again.
-   */
-  virtual void reset() = 0;
+ private:
+  struct ReadStreamConcept {
+    virtual ~ReadStreamConcept() = default;
 
+    /*
+     * Check whether the stream is opened.
+     * @return true if the stream is opened and false otherwise.
+     */
+    virtual bool is_open() = 0;
+
+    /*
+     * Check whether we've reached the end of stream.
+     * @return true if the end of the stream is reached and false
+     * otherwise.
+     */
+    virtual bool eof() = 0;
+
+    /*
+     * Read SingleRead or PairedRead from stream (according to ReadType).
+     * @param read The SingleRead or PairedRead that will store read data.
+     * @return Reference to this stream.
+     */
+    virtual ReadStreamConcept& operator>>(ReadType& read) = 0;
+
+    /* Close the stream */
+    virtual void close() = 0;
+
+    /* Close the stream and open it again */
+    virtual void reset() = 0;
+  };
+
+  template<typename T>
+  struct ReadStreamModel : ReadStreamConcept {
+    explicit ReadStreamModel(T &&s) noexcept : self(std::move(s)) {}
+
+    bool is_open() { return self.is_open(); }
+    bool eof() { return self.eof(); }
+    ReadStreamModel& operator>>(ReadType& read) { self >> read; return *this; }
+    void close() { self.close(); }
+    void reset() { self.reset(); }
+
+    T self;
+  };
+
+  std::unique_ptr<ReadStreamConcept> self;
 };
+}
 
 }

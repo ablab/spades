@@ -72,7 +72,7 @@ public:
         return path;
     }
 
-    void Process(io::SingleStream &stream) const {
+    void Process(io::SingleStream stream) const {
         io::SingleRead read;
         while (!stream.eof()) {
             stream >> read;
@@ -87,9 +87,7 @@ private:
 template<class gp_t>
 void FillPos(gp_t &gp, const std::string &contig_file, const std::string &prefix, bool with_rc) {
     PosFiller<typename gp_t::graph_t> pos_filler(gp.g, debruijn_graph::MapperInstance(gp), gp.edge_pos);
-    auto irs = std::make_shared<io::PrefixAddingReaderWrapper>(io::EasyStream(contig_file, with_rc, false),
-                                                               prefix);
-    pos_filler.Process(*irs);
+    pos_filler.Process(io::PrefixAddingReaderWrapper(io::EasyStream(contig_file, with_rc, false), prefix));
 }
 
 template<class gp_t>

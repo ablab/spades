@@ -49,7 +49,7 @@ public:
    */
     explicit FilteringReaderWrapper(typename base::ReadStreamPtrT reader_ptr,
                                     FilterF filter = VALIDITY_FILTER) :
-            base(reader_ptr), filter_f_(filter), eof_(false) {
+            base(std::move(reader_ptr)), filter_f_(filter), eof_(false) {
         StepForward();
     }
 
@@ -59,7 +59,7 @@ public:
    * @return true if the end of stream is reached and false
    * otherwise.
    */
-    bool eof() override {
+    bool eof() {
         return eof_;
     }
 
@@ -71,7 +71,7 @@ public:
    *
    * @return Reference to this stream.
    */
-    FilteringReaderWrapper& operator>>(ReadType& read) override {
+    FilteringReaderWrapper& operator>>(ReadType& read) {
         read = next_read_;
         StepForward();
         return *this;
@@ -80,14 +80,13 @@ public:
     /*
      * Close the stream and open it again.
      */
-    void reset() override {
+    void reset() {
         base::reset();
         eof_ = false;
         StepForward();
     }
 
 private:
-
     FilterF filter_f_;
 
   /*
@@ -116,10 +115,10 @@ private:
 };
 
 template<class ReadType>
-std::shared_ptr<ReadStream<ReadType>> FilteringWrap(std::shared_ptr<ReadStream<ReadType>> reader_ptr,
-                                                    typename FilteringReaderWrapper<ReadType>::FilterF filter =
-                                                            FilteringReaderWrapper<ReadType>::VALIDITY_FILTER) {
-    return std::make_shared<FilteringReaderWrapper<ReadType>>(reader_ptr, filter);
+ReadStream<ReadType> FilteringWrap(ReadStream<ReadType> reader_ptr,
+                                   typename FilteringReaderWrapper<ReadType>::FilterF filter =
+                                   FilteringReaderWrapper<ReadType>::VALIDITY_FILTER) {
+    return FilteringReaderWrapper<ReadType>(std::move(reader_ptr), filter);
 }
 
 template<class ReadType>

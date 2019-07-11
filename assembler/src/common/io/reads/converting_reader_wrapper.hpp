@@ -17,22 +17,21 @@ namespace io {
 * one by one).
 */
 template<class PairedReadType>
-class SquashingWrapper : public ReadStream<typename PairedReadType::SingleReadT> {
+class SquashingWrapper {
     typedef typename PairedReadType::SingleReadT SingleReadT;
-    typedef std::shared_ptr<ReadStream<PairedReadType>> PairedReaderPtrT;
+    typedef ReadStream<PairedReadType> PairedReaderPtrT;
 public:
 
     explicit SquashingWrapper(PairedReaderPtrT reader)
-            : reader_(reader), pairedread_(), index_(0) {
-    }
+            : reader_(std::move(reader)), pairedread_(), index_(0) {}
 
     /*
      * Check whether the stream is opened.
      *
      * @return true if the stream is opened and false otherwise.
      */
-    /* virtual */ bool is_open() {
-        return reader_->is_open();
+    bool is_open() {
+        return reader_.is_open();
     }
 
     /*
@@ -41,8 +40,8 @@ public:
      * @return true if the end of the stream is reached and false
      * otherwise.
      */
-    /* virtual */ bool eof() {
-        return (index_ == 0) && (reader_->eof());
+    bool eof() {
+        return (index_ == 0) && (reader_.eof());
     }
 
     /*
@@ -53,29 +52,28 @@ public:
      *
      * @return Reference to this stream.
      */
-    /* virtual */ SquashingWrapper &operator>>(
-            SingleReadT &singleread) {
-        if (index_ == 0) {
-            (*reader_) >> pairedread_;
-        }
+    SquashingWrapper &operator>>(SingleReadT &singleread) {
+        if (index_ == 0)
+            reader_ >> pairedread_;
+
         singleread = pairedread_[index_];
         index_ = 1 - index_;
-        return (*this);
+        return *this;
     }
 
     /*
      * Close the stream.
      */
-    /* virtual */ void close() {
-        reader_->close();
+    void close() {
+        reader_.close();
     }
 
     /*
      * Close the stream and open it again.
      */
-    /* virtual */ void reset() {
+    void reset() {
         index_ = 0;
-        reader_->reset();
+        reader_.reset();
     }
 
 private:
@@ -96,22 +94,18 @@ private:
 };
 
 template<class PairedReadType>
-std::shared_ptr<ReadStream<typename PairedReadType::SingleReadT>> SquashingWrap(
-        std::shared_ptr<ReadStream<PairedReadType>> reader_ptr) {
-    return std::make_shared<SquashingWrapper<PairedReadType>>(reader_ptr);
+ReadStream<typename PairedReadType::SingleReadT>
+SquashingWrap(ReadStream<PairedReadType> reader_ptr) {
+    return SquashingWrapper<PairedReadType>(std::move(reader_ptr));
 }
 
 template<class PairedReadType>
-ReadStreamList<typename PairedReadType::SingleReadT> SquashingWrap(const ReadStreamList<PairedReadType> &readers) {
+ReadStreamList<typename PairedReadType::SingleReadT> SquashingWrap(ReadStreamList<PairedReadType> &readers) {
     ReadStreamList<typename PairedReadType::SingleReadT> answer;
-    for (size_t i = 0; i < readers.size(); ++i) {
-        answer.push_back(SquashingWrap<PairedReadType>(readers.ptr_at(i)));
-    }
+    for (auto &reader : readers)
+        answer.push_back(SquashingWrap<PairedReadType>(std::move(reader)));
+
     return answer;
 }
 
-//template<class ReaderPtrType>
-//std::shared_ptr<Reader<typename ReaderPtrType::element_type::ReadT::SingleReadT>> SquashingWrap(ReaderPtrType reader_ptr) {
-//    return std::make_shared<SquashingWrapper<typename ReaderPtrType::element_type::ReadT>>(reader_ptr);
-//}
 }

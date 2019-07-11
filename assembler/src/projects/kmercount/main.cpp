@@ -96,9 +96,9 @@ class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
         for (const auto &file : files_) {
             INFO("Processing " << file);
             auto irs = io::EasyStream(file, true, true);
-            while (!irs->eof()) {
+            while (!irs.eof()) {
                 hammer::ReadProcessor rp(nthreads);
-                rp.Run(*irs, filler);
+                rp.Run(irs, filler);
                 DumpBuffers(out);
                 VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 

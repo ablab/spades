@@ -52,7 +52,7 @@ class ModifyingWrapper<SingleRead>: public DelegatingWrapper<SingleRead> {
 
 public:
     ModifyingWrapper(base::ReadStreamPtrT reader, std::shared_ptr<SequenceModifier> modifier) :
-            base(reader), modifier_(modifier) {}
+            base(std::move(reader)), modifier_(modifier) {}
 
     ModifyingWrapper& operator>>(SingleRead& read) {
         this->reader() >> read;
@@ -68,7 +68,7 @@ class ModifyingWrapper<PairedRead>: public DelegatingWrapper<PairedRead> {
 
 public:
     ModifyingWrapper(base::ReadStreamPtrT reader, std::shared_ptr<SequenceModifier> modifier) :
-            base(reader), modifier_(modifier) {}
+            base(std::move(reader)), modifier_(modifier) {}
 
     ModifyingWrapper& operator>>(PairedRead& read) {
         this->reader() >> read;
@@ -85,8 +85,8 @@ class ModifyingWrapper<SingleReadSeq>: public DelegatingWrapper<SingleReadSeq> {
   std::shared_ptr<SequenceModifier> modifier_;
 
 public:
-  ModifyingWrapper(base::ReadStreamPtrT reader, std::shared_ptr<SequenceModifier> modifier) :
-      base(reader), modifier_(modifier) {}
+  ModifyingWrapper(base::ReadStreamPtrT reader, std::shared_ptr<SequenceModifier> modifier)
+          : base(std::move(reader)), modifier_(modifier) {}
 
     ModifyingWrapper& operator>>(SingleReadSeq& read) {
         this->reader() >> read;
@@ -101,8 +101,8 @@ class ModifyingWrapper<PairedReadSeq>: public DelegatingWrapper<PairedReadSeq> {
   std::shared_ptr<SequenceModifier> modifier_;
 
 public:
-  ModifyingWrapper(base::ReadStreamPtrT reader, std::shared_ptr<SequenceModifier> modifier) :
-            base(reader), modifier_(modifier) {}
+  ModifyingWrapper(base::ReadStreamPtrT reader, std::shared_ptr<SequenceModifier> modifier)
+          : base(std::move(reader)), modifier_(modifier) {}
 
     ModifyingWrapper& operator>>(PairedReadSeq& read) {
         this->reader() >> read;

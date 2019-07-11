@@ -20,64 +20,30 @@ class ReadStreamList {
 public:
     typedef ReadType ReadT;
     typedef ReadStream<ReadType> ReaderT;
-    typedef std::shared_ptr<ReaderT> ReaderPtrT;
 
 private:
-    std::vector<ReaderPtrT> readers_;
+    typedef std::vector<ReadStream<ReadType>> ReadersT;
+    ReadersT readers_;
 
 public:
+    using iterator = typename ReadersT::iterator;
+    using const_iterator = typename ReadersT::const_iterator;
 
-    explicit ReadStreamList(const std::vector<ReaderPtrT> &readers) : readers_(readers) {
+    ReadStreamList() = default;
+    ReadStreamList(const ReadStreamList&) = delete;
+    ReadStreamList(ReadStreamList&&) = default;
+    ReadStreamList &operator=(const ReadStreamList&) = delete;
+    ReadStreamList &operator=(ReadStreamList&&) = default;
+    
+    explicit ReadStreamList(ReaderT reader_ptr) {
+        readers_.emplace_back(reader_ptr);
     }
 
-    ReadStreamList() {
-    }
-
-    explicit ReadStreamList(ReaderT *reader_ptr) : readers_(1, ReaderPtrT(reader_ptr)) {
-    }
-
-    explicit ReadStreamList(ReaderPtrT reader_ptr) : readers_(1, reader_ptr) {
-    }
-
-    explicit ReadStreamList(size_t size) : readers_(size) {
-    }
-
-    //todo use boost iterator facade
-    class iterator : public std::iterator<std::input_iterator_tag, ReaderT> {
-        typedef typename std::vector<ReaderPtrT>::iterator vec_it;
-        vec_it it_;
-    public:
-
-        iterator(vec_it it) : it_(it) {
-        }
-
-        void operator++() {
-            ++it_;
-        }
-
-        bool operator==(const iterator &that) {
-            return it_ == that.it_;
-        }
-
-        bool operator!=(const iterator &that) {
-            return it_ != that.it_;
-        }
-
-        ReaderT &operator*() {
-            return *(*it_);
-        }
-    };
-
-    ReaderT &operator[](size_t i) {
-        return *readers_.at(i);
-    }
-
-    ReaderPtrT ptr_at(size_t i) const {
-        return readers_.at(i);
-    }
+    ReadStream<ReadType> &operator[](size_t i) { return readers_[i]; }
+    const ReadStream<ReadType> &operator[](size_t i) const { return readers_[i]; }
 
     ReaderT &back() {
-        return *readers_.back();
+        return readers_.back();
     }
 
     size_t size() const {
@@ -86,45 +52,35 @@ public:
 
     bool eof() const {
         for (size_t i = 0; i < readers_.size(); ++i) {
-            if (!readers_[i]->eof()) {
+            if (!readers_[i].eof()) {
                 return false;
             }
         }
         return true;
     }
 
-    iterator begin() {
-        return iterator(readers_.begin());
-    }
+    iterator begin() { return readers_.begin(); }
+    iterator end() { return iterator(readers_.end()); }
+    const_iterator begin() const { return readers_.begin(); }
+    const_iterator end() const { return iterator(readers_.end()); }
 
-    iterator end() {
-        return iterator(readers_.end());
-    }
-
-    void push_back(ReaderT *reader_ptr) {
-        readers_.push_back(ReaderPtrT(reader_ptr));
-    }
-
-    void push_back(ReaderPtrT reader_ptr) {
-        readers_.push_back(reader_ptr);
+    void push_back(ReadStream<ReadType> reader) {
+        readers_.emplace_back(std::move(reader));
     }
 
     void reset() {
-        for (size_t i = 0; i < readers_.size(); ++i) {
-            readers_[i]->reset();
-        }
+        for (auto &reader : readers_)
+            reader.reset();
     }
 
     void close() {
-        for (size_t i = 0; i < readers_.size(); ++i) {
-            readers_[i]->close();
-        }
+        for (auto &reader : readers_)
+            reader.close();
     }
 
     void clear() {
         readers_.clear();
     }
-
 };
 
 }
