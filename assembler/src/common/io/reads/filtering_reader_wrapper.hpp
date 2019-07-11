@@ -25,7 +25,6 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
 #include "delegating_reader_wrapper.hpp"
 #include "read_stream_vector.hpp"
 

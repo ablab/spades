@@ -67,7 +67,7 @@ private:
 
 template<class ReadType>
 std::shared_ptr<ReadStream<ReadType>> MultifileWrap(std::shared_ptr<ReadStream<ReadType>> reader_1,
-                                                  std::shared_ptr<ReadStream<ReadType>> reader_2) {
+                                                    std::shared_ptr<ReadStream<ReadType>> reader_2) {
     return std::make_shared<MultifileStream<ReadType>>(reader_1, reader_2);
 }
 
@@ -78,7 +78,7 @@ std::shared_ptr<ReadStream<ReadType>> MultifileWrap(const ReadStreamList<ReadTyp
 
 template<class ReadType>
 ReadStreamList<ReadType> WrapPairsInMultifiles(ReadStreamList<ReadType> readers_1,
-                                           ReadStreamList<ReadType> readers_2) {
+                                               ReadStreamList<ReadType> readers_2) {
     VERIFY(readers_1.size() == readers_2.size());
     ReadStreamList<ReadType> answer;
     for (size_t i = 0; i < readers_1.size(); ++i) {

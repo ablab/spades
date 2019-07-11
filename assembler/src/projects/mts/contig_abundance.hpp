@@ -3,6 +3,8 @@
 #include "utils/ph_map/perfect_hash_map_builder.hpp"
 #include "io/kmers/mmapped_reader.hpp"
 
+#include <boost/optional.hpp>
+
 namespace debruijn_graph {
 
 //Kmer multiplicities types: integral values
