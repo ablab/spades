@@ -82,14 +82,14 @@ int main(int argc, char* argv[]) {
         fs::make_dirs(workdir + "/tmp/");
         debruijn_graph::config::init_libs(dataset, nthreads, buff_size, workdir + "/tmp/");
 
-        for (size_t i = 0; i < dataset.lib_count(); ++i) {
-            io::ReadConverter::ConvertToBinary(dataset[i]);
-        }
-
         std::vector<size_t> libs(dataset.lib_count());
         std::iota(libs.begin(), libs.end(), 0);
-        io::BinarySingleStreams single_readers = io::single_binary_readers_for_libs(dataset, libs,
-            /*followed by rc*/false, /*including paired*/true);
+        io::SingleStreams single_readers;
+
+        for (size_t i = 0; i < dataset.lib_count(); ++i) {
+            single_readers.push_back(io::single_easy_reader(dataset[i], true, true));
+        }
+
         INFO("Estimating kmer cardinality");
         typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;
         SeqHasher hasher(k);
