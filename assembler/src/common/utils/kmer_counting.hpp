@@ -1,5 +1,6 @@
 #pragma once
 
+#include <common/io/reads/read_processor.hpp>
 #include "adt/cyclichash.hpp"
 #include "adt/hll.hpp"
 #include "adt/cqf.hpp"
@@ -51,6 +52,8 @@ public:
     }
 
 };
+
+
 
 template<class ReadStream, class SeqHasher, class Processor, class KmerFilter>
 size_t FillFromStream(ReadStream &stream, const SeqHasher &hasher,
@@ -108,24 +111,67 @@ public:
 
 };
 
+template<class Hasher, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
+class HllFiller {
+ private:
+    std::vector<HllProcessor> processors;
+    std::vector<KmerSequenceProcessor<Hasher, HllProcessor, KMerFilter>> kmer_seq_processors;
+    unsigned k;
+    std::vector<size_t> reads;
+ public:
+    HllFiller(std::vector<hll::hll<>>& hlls, const Hasher& hasher, const KMerFilter& filter,
+              unsigned k) {
+        size_t nthreads = hlls.size();
+        reads.resize(nthreads, 0);
+        processors.reserve(nthreads);
+        for (unsigned i = 0; i < nthreads; ++i) {
+            processors.push_back(HllProcessor(hlls[i]));
+            kmer_seq_processors.push_back(KmerSequenceProcessor<Hasher, HllProcessor, KMerFilter>
+                                              (hasher, processors[i], filter));
+            this->k = k;
+        }
+    }
+
+    template <class Read>
+    bool operator()(std::unique_ptr<Read> r) {
+        unsigned thread_id = (unsigned)omp_get_thread_num();
+        reads[thread_id] += 1;
+        const Sequence &seq = r->sequence();
+        if (seq.size() < k) {
+            return false;
+        }
+        kmer_seq_processors[thread_id].ProcessSequence(seq, k);
+        return true;
+    }
+
+    size_t getReads() {
+        size_t sum_reads = 0;
+        for (size_t i = 0; i < reads.size(); ++i) {
+            sum_reads += reads[i];
+        }
+        return sum_reads;
+    }
+};
+
 template<class ReadStream, class Hasher, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
 size_t EstimateCardinality(unsigned k, ReadStream &streams, const Hasher &hasher,
                            const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
-    unsigned stream_num = unsigned(streams.size());
-    std::vector<hll::hll<>> hlls(stream_num);
-
     streams.reset();
-    size_t reads = 0, n = 15;
-    while (!streams.eof()) {
-#       pragma omp parallel for reduction(+:reads)
-        for (unsigned i = 0; i < stream_num; ++i) {
-            HllProcessor processor(hlls[omp_get_thread_num()]);
-            reads += FillFromStream(streams[i], hasher, processor, k, 1000000, filter);
-        }
+    unsigned nthreads = (unsigned)omp_get_max_threads();
+    std::vector<hll::hll<>> hlls(nthreads);
+    size_t n = 15, reads = 0;
 
-        if (reads >> n) {
-            INFO("Processed " << reads << " reads");
-            n += 1;
+    for (size_t i = 0; i < streams.size(); ++i) {
+        while (!streams[i].eof()) {
+            HllFiller<Hasher, KMerFilter> hll_filler(hlls, hasher, filter, k);
+            hammer::ReadProcessor rp(nthreads);
+            rp.Run(streams[i], hll_filler);
+
+            reads += hll_filler.getReads();
+            if (reads >> n) {
+                INFO("Processed " << reads << " reads");
+                n += 1;
+            }
         }
     }
     INFO("Total " << reads << " reads processed");
