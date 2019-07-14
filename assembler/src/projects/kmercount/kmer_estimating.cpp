@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     try {
         unsigned nthreads;
         unsigned k;
-        std::string workdir, dataset_desc;
+        std::string dataset_desc;
         std::vector<std::string> input;
         size_t buff_size = 512;
         buff_size <<= 20;
@@ -51,7 +51,6 @@ int main(int argc, char* argv[]) {
             ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("21"), "K")
             ("d,dataset", "Dataset description (in YAML)", cxxopts::value<std::string>(dataset_desc), "file")
             ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(omp_get_max_threads() / 2)), "num")
-            ("o,outdir", "Output directory to use", cxxopts::value<std::string>(workdir)->default_value("."), "dir")
             ("h,help", "Print help");
 
         options.parse(argc, argv);
@@ -78,9 +77,6 @@ int main(int argc, char* argv[]) {
 
         io::DataSet<debruijn_graph::config::LibraryData> dataset;
         dataset.load(dataset_desc);
-
-        fs::make_dirs(workdir + "/tmp/");
-        debruijn_graph::config::init_libs(dataset, nthreads, buff_size, workdir + "/tmp/");
 
         std::vector<size_t> libs(dataset.lib_count());
         std::iota(libs.begin(), libs.end(), 0);

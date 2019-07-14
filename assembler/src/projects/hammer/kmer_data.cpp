@@ -300,7 +300,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
           mcounter.merge();
           double res = mcounter.cardinality();
           INFO("Estimated " << size_t(res) << " distinct kmers");
-          buffer_size = size_t(res);
+          buffer_size = size_t(1.1 * res);
       }
 
       INFO("Filtering singleton k-mers");
