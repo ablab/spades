@@ -47,12 +47,8 @@ public:
       uint64_t zeros_bucket_cnt = std::accumulate(data_.begin(), data_.end(), 0,
           [](uint64_t a, uint8_t b) {return a + (b == 0);});
       res /= E;
-      if (res <= 5.0 * m_/2) {
-          if (zeros_bucket_cnt > 0) {
-              return m_ * (std::log((double)m_) - std::log((double)zeros_bucket_cnt));
-          } else {
-              return res;
-          }
+      if (res <= 5.0 * m_/2 && zeros_bucket_cnt > 0) {
+          return m_ * (std::log((double)m_) - std::log((double)zeros_bucket_cnt));
       } else {
           return res;
       }
