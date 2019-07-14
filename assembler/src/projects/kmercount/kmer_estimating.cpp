@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 
         nthreads = spades_set_omp_threads(nthreads);
 
-        INFO("Starting kmer number estimating, built from " << version::refspec() << ", git revision " << version::gitrev());
+        INFO("Starting kmer spectra cardinality, built from " << version::refspec() << ", git revision " << version::gitrev());
 
         INFO("K-mer length set to " << k);
         INFO("# of threads to use: " << nthreads);
