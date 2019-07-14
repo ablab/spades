@@ -5,6 +5,15 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string>
+#include <iostream>
+#include <cstdio>
+#include <cstring>
+#include <cerrno>
+#include <cxxopts/cxxopts.hpp>
+
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/ph_map/perfect_hash_map.hpp"
@@ -14,16 +23,6 @@
 #include "io/reads/io_helper.hpp"
 
 #include "version.hpp"
-
-#include <cxxopts/cxxopts.hpp>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <string>
-#include <iostream>
-#include <cstdio>
-#include <cstring>
-#include <cerrno>
 
 using namespace std;
 void create_console_logger() {
