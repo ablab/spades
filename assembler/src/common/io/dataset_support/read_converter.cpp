@@ -140,9 +140,8 @@ BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
         paired_streams.push_back(std::move(stream));
     }
 
-    if (followed_by_rc) {
-        paired_streams = RCWrap<PairedReadSeq>(paired_streams);
-    }
+    if (followed_by_rc)
+        paired_streams = RCWrap<PairedReadSeq>(std::move(paired_streams));
 
     return paired_streams;
 }
@@ -173,11 +172,11 @@ BinarySingleStreams single_binary_readers(SequencingLibraryT &lib,
             paired_streams.push_back(BinaryFilePairedStream(data.binary_reads_info.paired_read_prefix,
                                                             0, n, i));
         single_streams = WrapPairsInMultifiles<SingleReadSeq>(std::move(single_streams),
-                                                              SquashingWrap<PairedReadSeq>(paired_streams));
+                                                              SquashingWrap<PairedReadSeq>(std::move(paired_streams)));
     }
 
     if (followed_by_rc) {
-        single_streams = RCWrap<SingleReadSeq>(single_streams);
+        single_streams = RCWrap<SingleReadSeq>(std::move(single_streams));
     }
 
     return single_streams;

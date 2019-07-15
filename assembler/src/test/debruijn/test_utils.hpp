@@ -144,7 +144,7 @@ void AssertGraph(size_t k, const std::vector<std::string>& reads, const std::vec
     graph_pack<Graph>::index_t index(g, *workdir);
     index.Detach();
 
-    io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(std::make_shared<RawStream>(MakeReads(reads))));
+    io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
     ConstructGraph(config::debruijn_config::construction(), workdir, streams, g, index);
 
     AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
@@ -205,21 +205,22 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
 
     DEBUG("Asserting graph with etalon data");
 
-    io::ReadStreamList<io::PairedRead> paired_streams(std::make_shared<RawStream>(MakePairedReads(paired_reads, insert_size)));
-    DEBUG("Streams initialized");
-
     conj_graph_pack gp(k, "tmp", 1);
     auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");
 
     DEBUG("Graph pack created");
 
-    io::ReadStreamList<io::SingleRead> single_stream_vector = io::SquashingWrap<io::PairedRead>(paired_streams);
+    io::ReadStreamList<io::SingleRead> single_stream_vector(io::SquashingWrap<io::PairedRead>(RawStream(MakePairedReads(paired_reads, insert_size))));
     ConstructGraphWithCoverage(config::debruijn_config::construction(), workdir,
                                single_stream_vector, gp.g, gp.index, gp.flanking_cov);
 
     gp.InitRRIndices();
     gp.kmer_mapper.Attach();
     gp.EnsureBasicMapping();
+
+    io::ReadStreamList<io::PairedRead> paired_streams(RawStream(MakePairedReads(paired_reads, insert_size)));
+    DEBUG("Streams initialized");
+
     SequenceMapperNotifier notifier(gp, 1);
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, 0, gp.paired_indices[0]);
     notifier.Subscribe(0, &pif);
@@ -237,14 +238,15 @@ void CheckIndex(const std::vector<std::string> &reads, size_t k) {
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     graph_pack gp(k, "tmp", 0);
     auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");
-    auto stream = io::RCWrap<io::SingleRead>(std::make_shared<RawStream>(MakeReads(reads)));
-    io::ReadStreamList<io::SingleRead> streams(stream);
+    io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
     ConstructGraph(config::debruijn_config::construction(), workdir,
                    streams, gp.g, gp.index);
-    stream->reset();
+
+    auto &stream = streams.back();
+    stream.reset();
     io::SingleRead read;
-    while(!(stream->eof())) {
-        (*stream) >> read;
+    while (stream.eof()) {
+        stream >> read;
         RtSeq kmer = read.sequence().start<RtSeq>(k + 1) >> 'A';
         for(size_t i = k; i < read.size(); i++) {
             kmer = kmer << read[i];

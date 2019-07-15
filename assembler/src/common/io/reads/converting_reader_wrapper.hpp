@@ -100,7 +100,7 @@ SquashingWrap(ReadStream<PairedReadType> reader_ptr) {
 }
 
 template<class PairedReadType>
-ReadStreamList<typename PairedReadType::SingleReadT> SquashingWrap(ReadStreamList<PairedReadType> &readers) {
+ReadStreamList<typename PairedReadType::SingleReadT> SquashingWrap(ReadStreamList<PairedReadType> readers) {
     ReadStreamList<typename PairedReadType::SingleReadT> answer;
     for (auto &reader : readers)
         answer.push_back(SquashingWrap<PairedReadType>(std::move(reader)));

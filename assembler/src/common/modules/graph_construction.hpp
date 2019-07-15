@@ -73,7 +73,7 @@ template<class Graph, class Read, class Index>
 void ConstructGraphUsingExtensionIndex(const config::debruijn_config::construction &params,
                                        fs::TmpDir workdir,
                                        io::ReadStreamList<Read>& streams, Graph& g,
-                                       Index& index, io::SingleStream contigs_stream = io::SingleStream()) {
+                                       Index& index, io::SingleStream *contigs_stream = nullptr) {
     unsigned k = unsigned(g.k());
     INFO("Constructing DeBruijn graph for k=" << k);
 
@@ -84,7 +84,7 @@ void ConstructGraphUsingExtensionIndex(const config::debruijn_config::constructi
     utils::DeBruijnExtensionIndex<> ext(k);
 
     utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext, streams,
-                                                                         contigs_stream ? contigs_stream : nullptr,
+                                                                         contigs_stream,
                                                                          params.read_buffer_size);
 
     EarlyClipTips(params, ext);
@@ -104,7 +104,7 @@ void ConstructGraphUsingExtensionIndex(const config::debruijn_config::constructi
 template<class Graph, class Index, class Streams>
 void ConstructGraph(const config::debruijn_config::construction &params,
                     fs::TmpDir workdir, Streams& streams, Graph& g,
-                    Index& index, io::SingleStream contigs_stream = io::SingleStream()) {
+                    Index& index, io::SingleStream *contigs_stream = nullptr) {
     ConstructGraphUsingExtensionIndex(params, workdir, streams, g, index, contigs_stream);
 //  ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 }
@@ -114,7 +114,7 @@ template<class Graph, class Index, class Streams>
 void ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
                                 fs::TmpDir workdir, Streams &streams, Graph &g,
                                 Index &index, FlankingCoverage<Graph> &flanking_cov,
-                                io::SingleStream contigs_stream = io::SingleStream()) {
+                                io::SingleStream *contigs_stream = nullptr) {
     ConstructGraph(params, workdir, streams, g, index, contigs_stream);
 
     typedef typename Index::InnerIndex InnerIndex;

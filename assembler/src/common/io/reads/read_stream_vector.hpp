@@ -36,7 +36,7 @@ public:
     ReadStreamList &operator=(ReadStreamList&&) = default;
     
     explicit ReadStreamList(ReaderT reader_ptr) {
-        readers_.emplace_back(reader_ptr);
+        readers_.emplace_back(std::move(reader_ptr));
     }
 
     ReadStream<ReadType> &operator[](size_t i) { return readers_[i]; }
