@@ -57,8 +57,10 @@ class AsyncReadStream {
     }
 
     void close() {
+        if (write_task_.valid())
+            write_task_.wait();
+
         stream_.close();
-        pool_.stop();
     }
 
     bool is_open() {
@@ -66,8 +68,9 @@ class AsyncReadStream {
     }
 
     void reset() {
-        // Discard all write jobs
-        pool_.stop();
+        if (write_task_.valid())
+            write_task_.wait();
+
         // Reset the stream
         stream_.reset();
         // Restart write jobs
@@ -83,6 +86,8 @@ class AsyncReadStream {
         read_buffer_.reserve(BUF_SIZE);
         write_buffer_.reserve(BUF_SIZE);
         VERIFY(is_open());
+
+        start_ = true;
     }
 
     void dispatch_write_job() {
