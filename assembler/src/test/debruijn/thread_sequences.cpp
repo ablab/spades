@@ -7,6 +7,7 @@
 #include "modules/alignment/sequence_mapper.hpp"
 #include "io/utils/edge_namer.hpp"
 #include "io/binary/graph_pack.hpp"
+#include "io/reads/file_reader.hpp"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 

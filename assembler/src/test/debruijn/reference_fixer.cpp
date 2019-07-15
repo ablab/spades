@@ -30,11 +30,11 @@ int main(int argc, char** argv) {
     string fn = argv[1];
     fs::CheckFileExistenceFATAL(fn);
     string out_fn = argv[2];
-    auto reader = make_shared<io::NonNuclCollapsingWrapper>(make_shared<io::FileReadStream>(fn));
+    auto reader = io::NonNuclCollapsingWrapper(io::FileReadStream(fn));
     io::SingleRead read;
     std::stringstream ss;
-    while (!reader->eof()) {
-        (*reader) >> read;
+    while (!reader.eof()) {
+        reader >> read;
         ss << read.GetSequenceString();
     }
     io::SingleRead concat("concat", ss.str());
