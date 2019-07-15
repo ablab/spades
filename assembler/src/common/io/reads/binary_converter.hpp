@@ -14,6 +14,10 @@
 #include "pipeline/library.hpp"
 #include <fstream>
 
+namespace ThreadPool {
+class ThreadPool;
+};
+
 namespace io {
 
 class BinaryWriter {
@@ -21,7 +25,8 @@ class BinaryWriter {
     std::unique_ptr<std::ofstream> file_ds_, offset_ds_;
 
     template<class Writer, class Read>
-    ReadStreamStat ToBinary(const Writer &writer, io::ReadStream<Read> &stream);
+    ReadStreamStat ToBinary(const Writer &writer, io::ReadStream<Read> &stream,
+                            ThreadPool::ThreadPool *pool = nullptr);
 
 public:
     typedef size_t CountType;
@@ -32,12 +37,16 @@ public:
 
     ~BinaryWriter() = default;
 
-    ReadStreamStat ToBinary(io::ReadStream<io::SingleReadSeq>& stream);
-    ReadStreamStat ToBinary(io::ReadStream<io::SingleRead>& stream);
+    ReadStreamStat ToBinary(io::ReadStream<io::SingleReadSeq>& stream,
+                            ThreadPool::ThreadPool *pool = nullptr);
+    ReadStreamStat ToBinary(io::ReadStream<io::SingleRead>& stream,
+                            ThreadPool::ThreadPool *pool = nullptr);
     ReadStreamStat ToBinary(io::ReadStream<io::PairedReadSeq>& stream,
-                            LibraryOrientation orientation = LibraryOrientation::Undefined);
+                            LibraryOrientation orientation = LibraryOrientation::Undefined,
+                            ThreadPool::ThreadPool *pool = nullptr);
     ReadStreamStat ToBinary(io::ReadStream<io::PairedRead>& stream,
-                            LibraryOrientation orientation = LibraryOrientation::Undefined);
+                            LibraryOrientation orientation = LibraryOrientation::Undefined,
+                            ThreadPool::ThreadPool *pool = nullptr);
 };
 
 }

@@ -15,22 +15,12 @@ template <typename ReadType>
 class AsyncReadStream {
     static constexpr size_t BUF_SIZE = 100000;
   public:
-    AsyncReadStream(ReadStream<ReadType> stream, ThreadPool::ThreadPool* = nullptr)
-            : stream_(std::move(stream)), pool_(1) {
+    AsyncReadStream(ReadStream<ReadType> stream, ThreadPool::ThreadPool &pool)
+            : stream_(std::move(stream)), pool_(pool) {
         init();
     }
 
-    AsyncReadStream(AsyncReadStream&& that)
-            : stream_(std::move(that.stream_)),
-              read_buffer_(std::move(that.read_buffer_)),
-              read_pos_(that.read_pos_),
-              write_buffer_(std::move(that.write_buffer_)),
-              eof_(that.eof_),
-              start_(that.start_),
-              write_task_(std::move(that.write_task_)),
-              pool_(std::move(that.pool_)) {
-    };
-    
+    AsyncReadStream(AsyncReadStream&& that) = default;
     ~AsyncReadStream() = default;
 
     bool eof() { return eof_; }
@@ -117,13 +107,13 @@ class AsyncReadStream {
     bool start_ = true;
 
     std::future<bool> write_task_;
-    ThreadPool::ThreadPool pool_;
+    ThreadPool::ThreadPool &pool_;
 };
 
 template<class WrappedStream, typename... Args>
 ReadStream<typename WrappedStream::ReadT>
-make_async_stream(Args&&... args) {
-    return AsyncReadStream<typename WrappedStream::ReadT>(WrappedStream(std::forward<Args>(args)...), nullptr);
+make_async_stream(ThreadPool::ThreadPool &pool, Args&&... args) {
+    return AsyncReadStream<typename WrappedStream::ReadT>(WrappedStream(std::forward<Args>(args)...), pool);
 }
 
 }

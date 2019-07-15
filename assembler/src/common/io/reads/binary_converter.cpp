@@ -48,8 +48,8 @@ public:
 };
 
 template<class Writer, class Read>
-ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read> &stream) {
-    ThreadPool::ThreadPool pool{1};
+ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read> &stream,
+                                      ThreadPool::ThreadPool *pool) {
     std::vector<Read> buf, flush_buf;
     DEBUG("Reserving a buffer for " << BUF_SIZE << " reads");
     buf.reserve(BUF_SIZE); flush_buf.reserve(BUF_SIZE);
@@ -68,18 +68,22 @@ ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read>
         std::swap(buf, flush_buf);
         VERIFY(buf.size() == 0);
 
-        flush_task =
-            pool.run([&] {
-                for (const Read &read : flush_buf) {
-                    if (!--rest) {
-                        auto offset = (size_t)file_ds_->tellp();
-                        offset_ds_->write(reinterpret_cast<const char*>(&offset), sizeof(offset));
-                        rest = CHUNK;
-                    }
-                    writer.Write(*file_ds_, read);
+        auto flush_job = [&] {
+            for (const Read &read : flush_buf) {
+                if (!--rest) {
+                    auto offset = (size_t)file_ds_->tellp();
+                    offset_ds_->write(reinterpret_cast<const char*>(&offset), sizeof(offset));
+                    rest = CHUNK;
                 }
-                flush_buf.clear();
-            });
+                writer.Write(*file_ds_, read);
+            }
+            flush_buf.clear();
+        };
+
+        if (pool)
+            flush_task = pool->run(flush_job);
+        else
+            flush_job();
     };
 
     size_t read_count = 0;
@@ -114,26 +118,30 @@ BinaryWriter::BinaryWriter(const std::string &file_name_prefix)
               offset_ds_(std::make_unique<std::ofstream>(file_name_prefix_ + ".off", std::ios_base::binary))
 {}
 
-ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::SingleReadSeq>& stream) {
+ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::SingleReadSeq>& stream,
+                                      ThreadPool::ThreadPool *pool) {
     ReadBinaryWriter<io::SingleReadSeq> read_writer;
-    return ToBinary(read_writer, stream);
+    return ToBinary(read_writer, stream, pool);
 }
 
-ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::SingleRead>& stream) {
+ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::SingleRead>& stream,
+                                      ThreadPool::ThreadPool *pool) {
     ReadBinaryWriter<io::SingleRead> read_writer;
-    return ToBinary(read_writer, stream);
+    return ToBinary(read_writer, stream, pool);
 }
 
 ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::PairedReadSeq>& stream,
-                                      LibraryOrientation orientation) {
+                                      LibraryOrientation orientation,
+                                      ThreadPool::ThreadPool *pool) {
     PairedReadBinaryWriter<io::PairedReadSeq> read_writer(orientation);
-    return ToBinary(read_writer, stream);
+    return ToBinary(read_writer, stream, pool);
 }
 
 ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::PairedRead>& stream,
-                                      LibraryOrientation orientation) {
+                                      LibraryOrientation orientation,
+                                      ThreadPool::ThreadPool *pool) {
     PairedReadBinaryWriter<io::PairedRead> read_writer(orientation);
-    return ToBinary(read_writer, stream);
+    return ToBinary(read_writer, stream, pool);
 }
 
 }

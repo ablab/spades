@@ -10,7 +10,8 @@
 namespace spades {
 
 void ReadConversion::run(debruijn_graph::conj_graph_pack &, const char *) {
-    io::ConvertIfNeeded(cfg::get_writable().ds.reads);
+    io::ConvertIfNeeded(cfg::get_writable().ds.reads,
+                        cfg::get().max_threads);
 }
 
 void ReadConversion::load(debruijn_graph::conj_graph_pack &,

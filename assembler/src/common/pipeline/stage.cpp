@@ -23,7 +23,8 @@ void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
     auto dir = fs::append_path(load_from, prefix);
     INFO("Loading current state from " << dir);
 
-    io::ConvertIfNeeded(cfg::get_writable().ds.reads);
+    io::ConvertIfNeeded(cfg::get_writable().ds.reads,
+                        cfg::get().max_threads);
 
     auto p = fs::append_path(dir, "graph_pack");
     io::binary::FullPackIO<Graph>().Load(p, gp);

@@ -17,12 +17,20 @@ namespace io {
 
 SeparatePairedReadStream::SeparatePairedReadStream(const std::string& filename1, const std::string& filename2,
                                                    size_t insert_size,
-                                                   OffsetType offset_type)
+                                                   OffsetType offset_type,
+                                                   ThreadPool::ThreadPool *pool)
         : insert_size_(insert_size),
-          first_{make_async_stream<FileReadStream>(filename1, offset_type)},
-          second_{make_async_stream<FileReadStream>(filename2, offset_type)},
           filename1_(filename1),
-          filename2_(filename2) {}
+          filename2_(filename2) {
+
+    if (pool) {
+        first_ = make_async_stream<FileReadStream>(*pool, filename1, offset_type);
+        second_ = make_async_stream<FileReadStream>(*pool, filename2, offset_type);
+    } else {
+        first_ = FileReadStream(filename1, offset_type);
+        second_ = FileReadStream(filename2, offset_type);
+    }
+}
 
 bool SeparatePairedReadStream::eof() {
     if (first_.eof() != second_.eof()) {
@@ -45,9 +53,16 @@ SeparatePairedReadStream& SeparatePairedReadStream::operator>>(PairedRead& paire
 
 InterleavingPairedReadStream::InterleavingPairedReadStream(const std::string& filename,
                                                            size_t insert_size,
-                                                           OffsetType offset_type)
-        : filename_(filename), insert_size_(insert_size),
-          single_{make_async_stream<FileReadStream>(filename_, offset_type)} {}
+                                                           OffsetType offset_type,
+                                                           ThreadPool::ThreadPool *pool)
+        : filename_(filename), insert_size_(insert_size)
+{
+    if (pool) {
+        single_ = make_async_stream<FileReadStream>(*pool, filename_, offset_type);
+    } else {
+        single_ = FileReadStream(filename_, offset_type);
+    }
+}
 
 InterleavingPairedReadStream& InterleavingPairedReadStream::operator>>(PairedRead& pairedread) {
     pairedread.set_orig_insert_size(insert_size_);

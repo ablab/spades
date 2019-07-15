@@ -13,6 +13,8 @@
 #include "dataset_readers.hpp"
 #include "utils/stl_utils.hpp"
 
+#include "threadpool/threadpool.hpp"
+
 #include <fstream>
 
 namespace io {
@@ -65,7 +67,8 @@ public:
         return true;
     }
 
-    static void ConvertToBinary(SequencingLibraryT& lib) {
+    static void ConvertToBinary(SequencingLibraryT& lib,
+                                ThreadPool::ThreadPool *pool = nullptr) {
         auto& data = lib.data();
         std::ofstream info;
         info.open(data.binary_reads_info.bin_reads_info_file.c_str(), std::ios_base::out);
@@ -76,20 +79,21 @@ public:
         INFO("Converting paired reads");
         BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix);
 
-        PairedStream paired_reader = paired_easy_reader(lib, false, 0, false, PhredOffset);
-        ReadStreamStat read_stat = paired_converter.ToBinary(paired_reader, lib.orientation());
+        PairedStream paired_reader = paired_easy_reader(lib, false, 0, false, PhredOffset, pool);
+        ReadStreamStat read_stat = paired_converter.ToBinary(paired_reader, lib.orientation(),
+                                                             pool);
         read_stat.read_count *= 2;
 
         INFO("Converting single reads");
         BinaryWriter single_converter(data.binary_reads_info.single_read_prefix);
-        SingleStream single_reader = single_easy_reader(lib, false, false);
-        read_stat.merge(single_converter.ToBinary(single_reader));
+        SingleStream single_reader = single_easy_reader(lib, false, false, true, PhredOffset, pool);
+        read_stat.merge(single_converter.ToBinary(single_reader, pool));
 
         data.unmerged_read_length = read_stat.max_len;
         INFO("Converting merged reads");
         BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix);
-        SingleStream merged_reader = merged_easy_reader(lib, false);
-        auto merged_stats = merged_converter.ToBinary(merged_reader);
+        SingleStream merged_reader = merged_easy_reader(lib, false, true, PhredOffset, pool);
+        auto merged_stats = merged_converter.ToBinary(merged_reader, pool);
 
         data.merged_read_length = merged_stats.max_len;
         read_stat.merge(merged_stats);
@@ -110,10 +114,17 @@ public:
     }
 };
 
-inline void ConvertIfNeeded(DataSet<LibraryData> &data) {
+// FIXME: Move to .cpp
+inline void ConvertIfNeeded(DataSet<LibraryData> &data,
+                            unsigned nthreads) {
+    std::unique_ptr<ThreadPool::ThreadPool> pool;
+
+    if (nthreads > 1)
+        pool = std::make_unique<ThreadPool::ThreadPool>(nthreads);
+
     for (auto &lib : data) {
         if (!ReadConverter::LoadLibIfExists(lib))
-            ReadConverter::ConvertToBinary(lib);
+            ReadConverter::ConvertToBinary(lib, pool.get());
     }
 }
 
@@ -123,7 +134,7 @@ BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
                                           size_t insert_size,
                                           bool include_merged) {
     const auto& data = lib.data();
-    CHECK_FATAL_ERROR(data.binary_reads_info.binary_converted, 
+    CHECK_FATAL_ERROR(data.binary_reads_info.binary_converted,
             "Lib was not converted to binary, cannot produce binary stream");
 
     ReadStreamList<PairedReadSeq> paired_streams;

@@ -13,6 +13,10 @@
 
 #include <string>
 
+namespace ThreadPool {
+class ThreadPool;
+};
+
 namespace io {
 
 class SeparatePairedReadStream {
@@ -29,7 +33,8 @@ class SeparatePairedReadStream {
    */
   explicit SeparatePairedReadStream(const std::string& filename1, const std::string& filename2,
                                     size_t insert_size,
-                                    OffsetType offset_type = PhredOffset);
+                                    OffsetType offset_type = PhredOffset,
+                                    ThreadPool::ThreadPool *pool = nullptr);
 
   /*
    * Check whether the stream is opened.
@@ -101,7 +106,8 @@ class InterleavingPairedReadStream {
    */
   explicit InterleavingPairedReadStream(const std::string& filename,
                                         size_t insert_size,
-                                        OffsetType offset_type = PhredOffset);
+                                        OffsetType offset_type = PhredOffset,
+                                        ThreadPool::ThreadPool *pool = nullptr);
   /*
    * Check whether the stream is opened.
    *
