@@ -8,42 +8,19 @@
 #ifndef __IO_LIBRARY_HPP__
 #define __IO_LIBRARY_HPP__
 
+#include "library_fwd.hpp"
+
 #include "adt/chained_iterator.hpp"
 #include "adt/iterator_range.hpp"
+
+#include "utils/verify.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
 
 #include <string>
 #include <vector>
-#include "utils/verify.hpp"
-
-// Forward decls for YAML API
-namespace llvm { namespace yaml { class IO; template<typename T> struct MappingTraits; } }
-namespace llvm { class StringRef;  }
 
 namespace io {
-
-enum class LibraryType {
-    SingleReads,
-    SangerReads,
-    PacBioReads,
-    NanoporeReads,
-    PairedEnd,
-    HQMatePairs,
-    MatePairs,
-    TrustedContigs,
-    TSLReads,
-    PathExtendContigs,
-    UntrustedContigs
-};
-
-enum class LibraryOrientation {
-  FR,
-  FF,
-  RF,
-  RR,
-  Undefined
-};
 
 class SequencingLibraryBase {
 public:
@@ -248,9 +225,7 @@ private:
     std::vector<std::string> single_reads_;
 };
 
-struct NoData {};
-
-template<class Data = NoData>
+template<class Data>
 class SequencingLibrary: public SequencingLibraryBase {
 public:
     const Data& data() const {
@@ -268,7 +243,7 @@ private:
 };
 
 // Just convenient wrapper to "unwrap" the iterators over libraries.
-template<class Data = NoData>
+template<class Data>
 class DataSet {
 public:
     typedef SequencingLibrary<Data> Library;
@@ -367,25 +342,5 @@ private:
 };
 
 }
-
-namespace llvm { namespace yaml {
-template <>
-struct MappingTraits<io::SequencingLibraryBase> {
-    static void mapping(llvm::yaml::IO &io, io::SequencingLibraryBase &lib);
-    static StringRef validate(llvm::yaml::IO &io, io::SequencingLibraryBase &lib);
-};
-
-template <class Data>
-struct MappingTraits<io::SequencingLibrary<Data> > {
-    static void mapping(llvm::yaml::IO &io, io::SequencingLibrary<Data> &lib);
-    static StringRef validate(llvm::yaml::IO &io, io::SequencingLibrary<Data> &lib);
-};
-
-template <class Data>
-struct MappingTraits<io::DataSet<Data> > {
-    static void mapping(llvm::yaml::IO &io, io::DataSet<Data> &lib);
-};
-
-}}
 
 #endif // __IO_LIBRARY_HPP__

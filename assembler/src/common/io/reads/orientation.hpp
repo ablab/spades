@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "pipeline/library.hpp"
+#include "pipeline/library_fwd.hpp"
 
 #include <functional>
 

@@ -11,7 +11,9 @@
 #include "single_read.hpp"
 #include "paired_read.hpp"
 #include "orientation.hpp"
-#include "pipeline/library.hpp"
+
+#include "pipeline/library_fwd.hpp"
+
 #include <fstream>
 
 namespace ThreadPool {

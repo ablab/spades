@@ -14,15 +14,17 @@
 #include "utils/segfault_handler.hpp"
 #include "utils/ph_map/perfect_hash_map.hpp"
 #include "utils/kmer_mph/kmer_index_builder.hpp"
+#include "pipeline/library.hpp"
 
 #include <clipp/clipp.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <string>
 #include <iostream>
 #include <cstdio>
 #include <cstring>
 #include <cerrno>
+
+#include <sys/types.h>
+#include <sys/stat.h>
 
 using namespace std;
 void create_console_logger() {

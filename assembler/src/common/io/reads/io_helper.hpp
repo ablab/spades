@@ -11,8 +11,7 @@
 #include "single_read.hpp"
 #include "paired_read.hpp"
 
-// FIXME: Factor out orientation
-#include "pipeline/library.hpp"
+#include "pipeline/library_fwd.hpp"
 
 #include <string>
 
