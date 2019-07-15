@@ -2,27 +2,31 @@
 
 #include "distribution_extractor.hpp"
 #include "common/pipeline/graph_pack.hpp"
-#include "common/barcode_index/cluster_storage/initial_cluster_storage_builder.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 namespace fragment_statistics {
 
 class MinTrainingLengthEstimator {
-    const Graph& g_;
+    const Graph &g_;
     size_t min_total_length_;
     size_t optimal_total_length_;
     size_t min_edges_;
 
- public:
+  public:
     MinTrainingLengthEstimator(const Graph &g, size_t min_total_length, size_t optimal_total_length, size_t min_edges)
-        : g_(g), min_total_length_(min_total_length), optimal_total_length_(optimal_total_length), min_edges_(min_edges) {}
+        : g_(g),
+          min_total_length_(min_total_length),
+          optimal_total_length_(optimal_total_length),
+          min_edges_(min_edges) {}
 
     boost::optional<size_t> EstimateTrainingLength() const {
         size_t min_length = 5000;
         vector<size_t> edge_length_initial_list;
         boost::optional<size_t> result;
         omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(g_);
-        for (const auto& edge: edge_it_helper) {
+        for (const auto &edge: edge_it_helper) {
             if (g_.length(edge) >= min_length) {
                 edge_length_initial_list.push_back(g_.length(edge));
             }
@@ -33,7 +37,7 @@ class MinTrainingLengthEstimator {
         vector<std::pair<size_t, size_t>> length_rev_cumulative_list;
         std::sort(edge_length_initial_list.begin(), edge_length_initial_list.end(), std::greater<size_t>());
         size_t current_sum = 0;
-        for (const auto& length: edge_length_initial_list) {
+        for (const auto &length: edge_length_initial_list) {
             current_sum += length;
             length_rev_cumulative_list.emplace_back(length, current_sum);
         }
@@ -56,16 +60,21 @@ class MinTrainingLengthEstimator {
 };
 
 class MinTrainingLengthEstimatorHelper {
- public:
+  public:
+    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver ReadCloudConfigs;
+
+    MinTrainingLengthEstimatorHelper(const ReadCloudConfigs &configs) : configs_(configs) {}
 
     boost::optional<size_t> EstimateTrainingLength(const Graph &g) const {
-        const size_t min_training_edges = cfg::get().ts_res.min_training_edges;
-        const size_t min_training_total_length = cfg::get().ts_res.min_training_total_length;
-        const size_t optimal_training_total_length = cfg::get().ts_res.optimal_training_total_length;
+        const size_t min_training_edges = configs_.min_training_edges;
+        const size_t min_training_total_length = configs_.min_training_total_length;
+        const size_t optimal_training_total_length = configs_.optimal_training_total_length;
         MinTrainingLengthEstimator training_length_estimator(g, min_training_total_length,
                                                              optimal_training_total_length, min_training_edges);
         return training_length_estimator.EstimateTrainingLength();
     }
+  private:
+    const ReadCloudConfigs &configs_;
 };
 
 template<class ClusterStatType>
@@ -78,8 +87,7 @@ struct DistributionStatistics {
   DistributionStatistics(ClusterStatType min_, ClusterStatType max_, ClusterStatType mean_, ClusterStatType median_) :
       min_(min_), max_(max_), mean_(mean_), median_(median_) {}
 
-  friend std::ostream& operator<< (std::ostream& stream, const DistributionStatistics<ClusterStatType> &statistics)
-  {
+  friend std::ostream &operator<<(std::ostream &stream, const DistributionStatistics<ClusterStatType> &statistics) {
       stream << "Min: " << statistics.min_ << std::endl
              << "Max: " << statistics.max_ << std::endl
              << "Mean: " << statistics.mean_ << std::endl
@@ -103,13 +111,13 @@ struct StatisticsPack {
 typedef std::map<size_t, StatisticsPack> StatisticsContainer;
 
 class ClusterDistributionExtractor {
- private:
-    const conj_graph_pack& gp_;
+  private:
+    const conj_graph_pack &gp_;
     size_t min_read_threshold_;
     size_t min_edge_length_;
     size_t min_cluster_offset_;
     size_t max_threads_;
- public:
+  public:
     typedef DistributionPack::ClusterLength ClusterLength;
     typedef DistributionPack::ClusterCoverage ClusterCoverage;
     typedef DistributionPack::ClusterLengthDistribution ClusterLengthDistribution;
@@ -129,40 +137,41 @@ class ClusterDistributionExtractor {
     DistributionPack GetDistributionsForDistance(size_t distance_threshold) {
         auto cluster_storage = GetInitialClusterStorage(distance_threshold);
 
-        auto cluster_predicate = [this](const cluster_storage::Cluster& cluster) {
+        auto cluster_predicate = [this](const cluster_storage::Cluster &cluster) {
           VERIFY_DEV(cluster.Size() == 1);
-          path_extend::scaffold_graph::EdgeGetter edge_getter;
           auto map_info = cluster.GetMappings()[0];
-          EdgeId cluster_edge = edge_getter.GetEdgeFromScaffoldVertex(map_info.GetEdge());
-          size_t edge_length = this->gp_.g.length(cluster_edge);
+          auto edge = map_info.GetEdge();
+          size_t edge_length = edge.GetLengthFromGraph(this->gp_.g);
           size_t left_pos = map_info.GetLeft();
           size_t right_pos = map_info.GetRight();
           return left_pos >= min_cluster_offset_ and right_pos + min_cluster_offset_ <= edge_length;
         };
 
-        std::function<boost::optional<ClusterLength>(const cluster_storage::Cluster&)> length_extractor =
+        std::function<boost::optional<ClusterLength>(const cluster_storage::Cluster &)> length_extractor =
             [cluster_predicate](const cluster_storage::Cluster &cluster) {
-                boost::optional<ClusterLength> result;
-                if (cluster_predicate(cluster)) {
-                    result = cluster.GetSpan();
-                }
-                return result;
+              boost::optional<ClusterLength> result;
+              if (cluster_predicate(cluster)) {
+                  result = cluster.GetSpan();
+              }
+              return result;
             };
-        std::function<boost::optional<ClusterCoverage>(const cluster_storage::Cluster&)> coverage_extractor =
+        std::function<boost::optional<ClusterCoverage>(const cluster_storage::Cluster &)> coverage_extractor =
             [cluster_predicate](const cluster_storage::Cluster &cluster) {
-                boost::optional<ClusterCoverage> result;
-                if (cluster_predicate(cluster)) {
-                    result = cluster.GetCoverage();
-                }
-                return result;
+              boost::optional<ClusterCoverage> result;
+              if (cluster_predicate(cluster)) {
+                  result = cluster.GetCoverage();
+              }
+              return result;
             };
         SimpleDistributionExtractor distribution_extractor;
 
         DEBUG("Constructed extractors");
-        auto length_distribution = distribution_extractor.ExtractDistribution<ClusterLengthDistribution>(cluster_storage,
-            length_extractor);
+        auto
+            length_distribution = distribution_extractor.ExtractDistribution<ClusterLengthDistribution>(cluster_storage,
+                                                                                                        length_extractor);
         auto coverage_distribution =
-            distribution_extractor.ExtractDistribution<ClusterCoverageDistribution>(cluster_storage, coverage_extractor);
+            distribution_extractor.ExtractDistribution<ClusterCoverageDistribution>(cluster_storage,
+                                                                                    coverage_extractor);
 
         DEBUG("Extracted distributions");
         DistributionPack result(length_distribution, coverage_distribution);
@@ -202,7 +211,7 @@ class ClusterDistributionExtractor {
         return GetDistributionsForDistance(optimal_distance);
     }
 
- private:
+  private:
     template<class DistributionT>
     DistributionStatistics<typename DistributionT::key_type> GetDistributionStatistics(const DistributionT &distribution) const {
         typedef typename DistributionT::key_type KeyT;
@@ -236,10 +245,10 @@ class ClusterDistributionExtractor {
     }
 
     cluster_storage::ClusterStorage GetInitialClusterStorage(size_t distance_threshold) {
-        auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+        auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
         omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(gp_.g);
         std::set<scaffold_graph::ScaffoldVertex> long_edges;
-        for (const auto& edge: edge_it_helper) {
+        for (const auto &edge: edge_it_helper) {
             if (gp_.g.length(edge) >= min_edge_length_) {
                 long_edges.insert(edge);
             }
@@ -255,15 +264,16 @@ class ClusterDistributionExtractor {
         return initial_cluster_storage.get_cluster_storage();
     }
 
-    size_t EstimateDistance(const StatisticsContainer& statistics) const {
+    size_t EstimateDistance(const StatisticsContainer &statistics) const {
         const double mean_growth_relative_threshold = 1.05;
         size_t prev_mean = 0;
         size_t current_distance = 0;
         VERIFY(statistics.size() > 0);
-        for (const auto& entry: statistics) {
+        for (const auto &entry: statistics) {
             current_distance = entry.first;
             size_t current_length_mean = entry.second.length_statistics_.mean_;
-            size_t length_mean_threshold = static_cast<size_t>(static_cast<double>(prev_mean) * mean_growth_relative_threshold);
+            size_t length_mean_threshold =
+                static_cast<size_t>(static_cast<double>(prev_mean) * mean_growth_relative_threshold);
             if (prev_mean != 0 and current_length_mean <= length_mean_threshold) {
                 INFO("Estimated fragment length median: " << current_length_mean);
                 return current_distance;
@@ -277,7 +287,7 @@ class ClusterDistributionExtractor {
 };
 
 class PercentileGetter {
- public:
+  public:
     template<class DistributionT>
     typename DistributionT::key_type GetPercentile(const DistributionT &distribution, double percent) {
         size_t num_fragments = std::accumulate(distribution.begin(), distribution.end(), 0,
@@ -302,7 +312,7 @@ class PercentileGetter {
 class ClusterStatisticsExtractor {
     DistributionPack cluster_distributions_;
 
- public:
+  public:
     explicit ClusterStatisticsExtractor(const DistributionPack &cluster_distributions) :
         cluster_distributions_(cluster_distributions) {}
 
@@ -320,16 +330,15 @@ class ClusterStatisticsExtractor {
         return percentile_getter.GetPercentile(cluster_distributions_.coverage_distribution_, percent);
     }
 
-
 };
 
 class ClusterStatisticsExtractorHelper {
-    const conj_graph_pack& gp_;
-    const size_t max_threads_;
+  public:
+    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver ReadCloudConfigs;
 
- public:
-    ClusterStatisticsExtractorHelper(const conj_graph_pack &gp, size_t max_threads)
-        : gp_(gp), max_threads_(max_threads) {}
+  public:
+    ClusterStatisticsExtractorHelper(const conj_graph_pack &gp, const ReadCloudConfigs &configs, size_t max_threads)
+        : gp_(gp), configs_(configs), max_threads_(max_threads) {}
 
     ClusterStatisticsExtractor GetStatisticsExtractor() const {
         const size_t DEFAULT_TRAINING_LENGTH = 10000;
@@ -337,7 +346,7 @@ class ClusterStatisticsExtractorHelper {
         const size_t LENGTH_TO_OFFSET = 5;
         const size_t MIN_READ_THRESHOLD = 5;
 
-        MinTrainingLengthEstimatorHelper training_length_estimator_helper;
+        MinTrainingLengthEstimatorHelper training_length_estimator_helper(configs_);
         const auto min_training_length_result = training_length_estimator_helper.EstimateTrainingLength(gp_.g);
         size_t min_training_length = DEFAULT_TRAINING_LENGTH;
         if (min_training_length_result.is_initialized()) {
@@ -346,15 +355,21 @@ class ClusterStatisticsExtractorHelper {
 
         const size_t min_cluster_offset = std::min(MIN_CLUSTER_OFFSET, min_training_length / LENGTH_TO_OFFSET);
 
-        path_extend::fragment_statistics::ClusterDistributionExtractor distribution_analyzer(gp_,
-                                                                                       MIN_READ_THRESHOLD,
-                                                                                       min_training_length,
-                                                                                       min_cluster_offset,
-                                                                                       cfg::get().max_threads);
+        ClusterDistributionExtractor distribution_analyzer(gp_,
+                                                           MIN_READ_THRESHOLD,
+                                                           min_training_length,
+                                                           min_cluster_offset,
+                                                           max_threads_);
         auto cluster_distribution_pack = distribution_analyzer.GetClusterDistributions();
         fragment_statistics::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
         return primary_parameters_extractor;
     }
+
+  private:
+    const conj_graph_pack &gp_;
+    const ReadCloudConfigs &configs_;
+    const size_t max_threads_;
 };
+}
 }
 }

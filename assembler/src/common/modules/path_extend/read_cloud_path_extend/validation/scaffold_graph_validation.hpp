@@ -7,6 +7,7 @@
 #include <iostream>
 
 namespace path_extend {
+namespace read_cloud {
 namespace validation {
 
 using debruijn_graph::EdgeId;
@@ -41,7 +42,7 @@ struct ScaffoldGraphStats {
       false_univocal_edges_ = 0;
   }
 
-  void Serialize(ostream& fout) const {
+  void Serialize(ostream &fout) const {
       fout << "Overall edges: " << edges_ << endl;
       fout << "Overall covered: " << true_positive_ + false_positive_ << endl;
       fout << "True positive: " << true_positive_ << endl;
@@ -59,22 +60,22 @@ struct ScaffoldGraphStats {
 };
 
 class ScaffoldGraphValidator {
- public:
+  public:
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
 
- private:
-    const Graph& g_;
+  private:
+    const Graph &g_;
 
- public:
+  public:
     ScaffoldGraphValidator(const Graph &g_);
 
     ScaffoldGraphStats GetScaffoldGraphStats(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
-                                             const vector <vector<EdgeWithMapping>> &reference_paths);
+                                             const vector<vector<EdgeWithMapping>> &reference_paths);
 
-    set <transitions::Transition> GetFalseNegativeTransitions(const ScaffoldGraphValidator::ScaffoldGraph &graph,
-                                                              const ContigTransitionStorage &genome_transitions) const;
+    set<transitions::Transition> GetFalseNegativeTransitions(const ScaffoldGraphValidator::ScaffoldGraph &graph,
+                                                             const ContigTransitionStorage &genome_transitions) const;
 
- private:
+  private:
 
     ScaffoldGraphStats GetScaffoldGraphStatsFromTransitions(const path_extend::scaffold_graph::ScaffoldGraph &graph,
                                                             const ContigTransitionStorage &reference_transitions,
@@ -89,5 +90,6 @@ class ScaffoldGraphValidator {
 
     DECL_LOGGER("ScaffoldGraphValidator");
 };
+}
 }
 }

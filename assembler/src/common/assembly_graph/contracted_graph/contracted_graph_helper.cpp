@@ -2,7 +2,7 @@
 
 namespace contracted_graph {
 
-ContractedGraph ContractedGraphFactoryHelper::ConstructFromUniqueStorage(const ContractedGraphFactoryHelper::UniqueStorage& unique_storage) const {
+ContractedGraph ContractedGraphFactoryHelper::ConstructFromUniqueStorage(const UniqueStorage& unique_storage) const {
     std::function<bool(EdgeId)> edge_predicate = [&unique_storage](EdgeId edge) {
       return unique_storage.IsUnique(edge);
     };
@@ -10,8 +10,7 @@ ContractedGraph ContractedGraphFactoryHelper::ConstructFromUniqueStorage(const C
     factory.Construct();
     return *(factory.GetGraph());
 }
-ContractedGraph ContractedGraphFactoryHelper::ConstructFromInternalGraph(
-    const cluster_storage::Cluster::InternalGraph& internal_graph) const {
+ContractedGraph ContractedGraphFactoryHelper::ConstructFromInternalGraph(const InternalGraph& internal_graph) const {
     SimpleContractedGraphFactory factory(g_, internal_graph);
     factory.Construct();
     return *(factory.GetGraph());

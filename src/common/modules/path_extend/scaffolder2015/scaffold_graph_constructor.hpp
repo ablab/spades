@@ -132,7 +132,7 @@ class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
 
 class PredicateScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
  public:
-    typedef path_extend::ScaffoldEdgePredicate EdgePairPredicate;
+    typedef read_cloud::ScaffoldEdgePredicate EdgePairPredicate;
  protected:
     const ScaffoldGraph& old_graph_;
     const shared_ptr<EdgePairPredicate> predicate_;
@@ -153,7 +153,7 @@ class PredicateScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
 };
 
 class ScoreFunctionScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
-    typedef path_extend::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
+    typedef read_cloud::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
  protected:
     const ScaffoldGraph &old_graph_;
     const shared_ptr<EdgePairScoreFunction> score_function_;
@@ -173,7 +173,7 @@ class ScoreFunctionScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
 };
 
 class InternalScoreScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
-    typedef path_extend::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
+    typedef read_cloud::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
  protected:
     const ScaffoldGraph &old_graph_;
@@ -193,7 +193,7 @@ class InternalScoreScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
 };
 
 class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
-    typedef path_extend::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
+    typedef read_cloud::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
 
  protected:
     const std::set<ScaffoldVertex> scaffold_vertices_;

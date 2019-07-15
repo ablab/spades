@@ -16,6 +16,8 @@ namespace debruijn_graph {
     }
 
     void BarcodeMapConstructionStage::run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
+        using path_extend::read_cloud::fragment_statistics::ClusterStatisticsExtractorHelper;
+
         INFO("Barcode index construction started...");
         const auto& dataset_info = cfg::get().ds;
         if (not HasReadClouds(dataset_info)) {
@@ -35,9 +37,9 @@ namespace debruijn_graph {
                 mapper_builder.FillMap(lib, graph_pack.index, graph_pack.kmer_mapper);
                 INFO("Barcode index construction finished.");
                 FrameBarcodeIndexInfoExtractor extractor(graph_pack.barcode_mapper, graph_pack.g);
-                INFO("Average barcode coverage: " + std::to_string(extractor.AverageBarcodeCoverage()));
-                path_extend::fragment_statistics::ClusterStatisticsExtractorHelper cluster_extractor_helper(graph_pack,
-                                                                                                            num_threads);
+                size_t length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
+                INFO("Average barcode coverage: " + std::to_string(extractor.AverageBarcodeCoverage(length_threshold)));
+                ClusterStatisticsExtractorHelper cluster_extractor_helper(graph_pack, cfg::get().ts_res, num_threads);
                 auto cluster_statistics_extractor = cluster_extractor_helper.GetStatisticsExtractor();
                 auto distribution_pack = cluster_statistics_extractor.GetDistributionPack();
                 lib.data().read_cloud_info.fragment_length_distribution = distribution_pack.length_distribution_;

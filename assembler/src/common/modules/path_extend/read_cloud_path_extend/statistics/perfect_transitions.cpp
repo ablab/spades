@@ -1,8 +1,10 @@
 #include "perfect_transitions.hpp"
 
 namespace path_extend {
+namespace read_cloud {
+
 scaffold_graph::ScaffoldGraph PerfectScaffoldGraphConstructor::ConstuctPerfectGraph(
-        const vector<vector<validation::EdgeWithMapping>> &reference_paths, size_t min_length) const {
+    const vector<vector<validation::EdgeWithMapping>> &reference_paths, size_t min_length) const {
     scaffold_graph::ScaffoldGraph result(gp_.g);
     vector<vector<EdgeId>> long_edge_paths;
     size_t total_length = 0;
@@ -19,7 +21,7 @@ scaffold_graph::ScaffoldGraph PerfectScaffoldGraphConstructor::ConstuctPerfectGr
         }
     }
     INFO("Long edge paths: " << long_edge_paths.size());
-    const size_t next_edges = 5;
+    const int next_edges = 5;
     for (const auto &path: long_edge_paths) {
         for (auto it1 = path.begin(); it1 != path.end(); ++it1) {
             for (auto it2 = std::next(it1); it2 != path.end() and it2 - it1 <= next_edges; ++it2) {
@@ -37,4 +39,5 @@ scaffold_graph::ScaffoldGraph PerfectScaffoldGraphConstructor::ConstuctPerfectGr
     return result;
 }
 PerfectScaffoldGraphConstructor::PerfectScaffoldGraphConstructor(const conj_graph_pack &gp) : gp_(gp) {}
+}
 }

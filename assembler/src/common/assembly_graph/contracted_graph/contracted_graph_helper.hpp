@@ -9,6 +9,7 @@ namespace contracted_graph {
 class ContractedGraphFactoryHelper {
  public:
     typedef path_extend::ScaffoldingUniqueEdgeStorage UniqueStorage;
+    typedef path_extend::read_cloud::cluster_storage::Cluster::InternalGraph InternalGraph;
  private:
     const Graph& g_;
  public:
@@ -16,9 +17,8 @@ class ContractedGraphFactoryHelper {
 
     ContractedGraph ConstructFromUniqueStorage(const UniqueStorage& unique_storage) const;
 
-    ContractedGraph ConstructFromInternalGraph(const cluster_storage::Cluster::InternalGraph& internal_graph) const;
-
-    ContractedGraph TransposeContractedGraph(const ContractedGraph& other) const;
+    //fixme move this somewhere (or better yet, get rid of SimpleGraphT)
+    ContractedGraph ConstructFromInternalGraph(const InternalGraph& internal_graph) const;
 
     ContractedGraph ExtractContractedSubgraph(const ContractedGraph& other,
                                               const std::unordered_set<VertexId>& vertices) const;

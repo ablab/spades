@@ -2,6 +2,8 @@
 #include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 
 namespace path_extend {
+namespace read_cloud {
+
 struct ShortEdgeEntry {
   const size_t id_;
   const size_t left_size_;
@@ -41,10 +43,10 @@ struct ShortEdgeEntry {
 };
 
 struct ShortEdgeDataset {
- private:
+  private:
     std::vector<ShortEdgeEntry> dataset_;
 
- public:
+  public:
     explicit ShortEdgeDataset(const std::vector<ShortEdgeEntry> &dataset_)
         : dataset_(dataset_) {}
 
@@ -63,16 +65,19 @@ struct ShortEdgeDataset {
 
 class ShortEdgeDatasetExtractor {
     typedef validation::EdgeWithMapping EdgeWithMapping;
-    typedef path_extend::transitions::Transition Transition;
+    typedef transitions::Transition Transition;
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor BarcodeExtractor;
 
     const conj_graph_pack &gp_;
     const ScaffoldGraphStorage &scaffold_graph_storage_;
+    const size_t max_threads_;
 
- public:
+  public:
 
-    ShortEdgeDatasetExtractor(const conj_graph_pack &gp, const ScaffoldGraphStorage &scaffold_graph_storage) :
-        gp_(gp), scaffold_graph_storage_(scaffold_graph_storage) {}
+    ShortEdgeDatasetExtractor(const conj_graph_pack &gp,
+                              const ScaffoldGraphStorage &scaffold_graph_storage,
+                              size_t max_threads) :
+        gp_(gp), scaffold_graph_storage_(scaffold_graph_storage), max_threads_(max_threads) {}
 
     ShortEdgeDataset GetShortEdgeDataset(const vector<vector<EdgeWithMapping>> &reference_paths,
                                          const vector<vector<EdgeWithMapping>> &filtered_reference_paths) const;
@@ -81,9 +86,9 @@ class ShortEdgeDatasetExtractor {
 
     void ConstructAndSerialize(const string &path_to_reference, const string &output_base) const;
 
- private:
+  private:
 
-    vector<ShortEdgeEntry> GetShortEdgeEntries(const path_extend::validation::ContigTransitionStorage &transition_storage,
+    vector<ShortEdgeEntry> GetShortEdgeEntries(const validation::ContigTransitionStorage &transition_storage,
                                                const validation::ReferencePathIndex &long_edge_path_index,
                                                const vector<vector<EdgeWithMapping>> &reference_paths) const;
 
@@ -102,4 +107,5 @@ class ShortEdgeDatasetExtractor {
     shared_ptr<BarcodeExtractor> ConstructLongEdgeExtractor() const;
 
 };
+}
 }

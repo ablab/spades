@@ -5,10 +5,11 @@
 #include "common/barcode_index/barcode_info_extractor.hpp"
 #include "common/assembly_graph/core/graph.hpp"
 namespace path_extend {
+namespace read_cloud {
 
 class ScaffoldVertexPredicate
     : public func::AbstractPredicate<const path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &> {
- public:
+  public:
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
@@ -18,22 +19,22 @@ class ScaffoldVertexPredicate
 class LengthChecker : public ScaffoldVertexPredicate {
     using ScaffoldVertexPredicate::ScaffoldGraph;
 
- private:
+  private:
     const size_t length_threshold_;
     const Graph &g_;
 
- public:
+  public:
     LengthChecker(const size_t length_threshold_, const Graph &g_);
 
     bool Check(const ScaffoldVertex &vertex) const override;
 };
 
 class AndPredicate : public ScaffoldVertexPredicate {
- private:
+  private:
     shared_ptr<ScaffoldVertexPredicate> first_;
     shared_ptr<ScaffoldVertexPredicate> second_;
 
- public:
+  public:
     AndPredicate(const shared_ptr<ScaffoldVertexPredicate> &first_, const shared_ptr<ScaffoldVertexPredicate> &second_);
 
     bool Check(const ScaffoldVertex &scaffold_vertex) const override;
@@ -56,16 +57,16 @@ struct LongEdgePairGapCloserParams {
 };
 
 class PairEntryProcessor {
- public:
+  public:
     typedef ScaffoldVertexPredicate::ScaffoldGraph ScaffoldGraph;
 
     virtual bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) = 0;
 };
 
-class LongEdgePairGapCloserPredicate: public ScaffoldVertexPredicate {
- public:
+class LongEdgePairGapCloserPredicate : public ScaffoldVertexPredicate {
+  public:
     using ScaffoldVertexPredicate::ScaffoldGraph;
- private:
+  private:
     const debruijn_graph::Graph &g_;
     shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_;
     const LongEdgePairGapCloserParams params_;
@@ -73,7 +74,7 @@ class LongEdgePairGapCloserPredicate: public ScaffoldVertexPredicate {
     const ScaffoldGraph::ScaffoldGraphVertex end_;
     shared_ptr<PairEntryProcessor> pair_entry_processor_;
 
- public:
+  public:
     LongEdgePairGapCloserPredicate(const debruijn_graph::Graph &g_,
                                    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_,
                                    const LongEdgePairGapCloserParams &params,
@@ -87,14 +88,14 @@ class LongEdgePairGapCloserPredicate: public ScaffoldVertexPredicate {
     DECL_LOGGER("LongEdgePairGapCloserPredicate");
 };
 
-class IntersectionBasedPairEntryProcessor: public PairEntryProcessor {
- private:
+class IntersectionBasedPairEntryProcessor : public PairEntryProcessor {
+  private:
     using PairEntryProcessor::ScaffoldGraph;
 
     const barcode_index::SimpleVertexEntry intersection_;
     shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_;
 
- public:
+  public:
     IntersectionBasedPairEntryProcessor(const barcode_index::SimpleVertexEntry &intersection_,
                                         const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> &barcode_extractor_);
 
@@ -103,44 +104,33 @@ class IntersectionBasedPairEntryProcessor: public PairEntryProcessor {
 };
 
 class VertexEntryScoreFunction {
- protected:
+  protected:
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
 
     shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_;
- public:
+  public:
     VertexEntryScoreFunction(shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_);
 
-    virtual double GetScore(const ScaffoldVertex& vertex, const SimpleVertexEntry& entry) const = 0;
+    virtual double GetScore(const ScaffoldVertex &vertex, const SimpleVertexEntry &entry) const = 0;
 };
 
 //short edge vs entry from unique edge
-class RepetitiveVertexEntryScoreFunction: public VertexEntryScoreFunction {
- protected:
+class RepetitiveVertexEntryScoreFunction : public VertexEntryScoreFunction {
+  protected:
     typedef barcode_index::SimpleIntersectingScaffoldVertexExtractor SimpleIntersectingScaffoldVertexExtractor;
     using VertexEntryScoreFunction::ScaffoldVertex;
     using VertexEntryScoreFunction::SimpleVertexEntry;
 
     using VertexEntryScoreFunction::barcode_extractor_;
- public:
+  public:
     RepetitiveVertexEntryScoreFunction(shared_ptr<SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_);
 
     double GetScore(const ScaffoldVertex &vertex, const SimpleVertexEntry &entry) const override;
 };
 
-//entry from unique edge vs unique edge
-//class UniqueVertexEntryScoreFunction: VertexEntryScoreFunction {
-// protected:
-//    using VertexEntryScoreFunction::ScaffoldVertex;
-//    using VertexEntryScoreFunction::SimpleVertexEntry;
-//    using VertexEntryScoreFunction::barcode_extractor_;
-// public:
-// private:
-//    double GetScore(const ScaffoldVertex &vertex, const SimpleVertexEntry &entry) const override;
-//};
-
-class TwoSetsBasedPairEntryProcessor: public PairEntryProcessor {
- private:
+class TwoSetsBasedPairEntryProcessor : public PairEntryProcessor {
+  private:
     using PairEntryProcessor::ScaffoldGraph;
     typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
 
@@ -148,22 +138,22 @@ class TwoSetsBasedPairEntryProcessor: public PairEntryProcessor {
     const SimpleVertexEntry second_;
     shared_ptr<VertexEntryScoreFunction> score_function_;
 
- public:
+  public:
     TwoSetsBasedPairEntryProcessor(const SimpleVertexEntry &first,
                                    const SimpleVertexEntry &second,
                                    shared_ptr<VertexEntryScoreFunction> score_function);
 
     bool CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex, double score_threshold) override;
 
- private:
-    bool CheckWithEntry(const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex& vertex,
-                        const SimpleVertexEntry& long_entry, double score_threshold) const;
+  private:
+    bool CheckWithEntry(const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &vertex,
+                        const SimpleVertexEntry &long_entry, double score_threshold) const;
 
     DECL_LOGGER("TwoSetsBasedPairEntryProcessor")
 };
 
-class RecordingPairEntryProcessor: public PairEntryProcessor {
- private:
+class RecordingPairEntryProcessor : public PairEntryProcessor {
+  private:
     using PairEntryProcessor::ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
     typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
@@ -173,11 +163,12 @@ class RecordingPairEntryProcessor: public PairEntryProcessor {
     shared_ptr<PairEntryProcessor> internal_processor_;
     unordered_map<ScaffoldVertex, bool> vertex_to_result_;
 
- public:
+  public:
     RecordingPairEntryProcessor(const SimpleVertexEntry &first_,
                                 const SimpleVertexEntry &second_,
                                 shared_ptr<PairEntryProcessor> internal_processor_);
 
     bool CheckMiddleEdge(const ScaffoldVertex &vertex, double score_threshold) override;
 };
+}
 }

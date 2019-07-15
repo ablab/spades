@@ -1,12 +1,13 @@
 #include "scaffold_graph_path_cleaner.hpp"
 
 namespace path_extend {
-vector<vector<ScaffoldGraphPathCleaner::ScaffoldVertex>> ScaffoldGraphPathCleaner::RemoveRepeats(
-        ScaffoldGraphPathCleaner::ScaffoldGraph &graph,
-        const vector<vector<ScaffoldGraphPathCleaner::ScaffoldVertex>> &paths) const {
-    vector<vector<ScaffoldVertex>> result;
-    set<ScaffoldVertex> repeats;
-    set<ScaffoldVertex> visited;
+namespace read_cloud {
+ScaffoldGraphPathCleaner::PathContainer ScaffoldGraphPathCleaner::RemoveRepeats(
+    ScaffoldGraphPathCleaner::ScaffoldGraph &graph,
+    const ScaffoldGraphPathCleaner::PathContainer &paths) const {
+    std::vector<std::vector<ScaffoldVertex>> result;
+    std::set<ScaffoldVertex> repeats;
+    std::set<ScaffoldVertex> visited;
     for (const auto &path: paths) {
         VERIFY_DEV(path.size() >= 2);
         for (size_t i = 1; i < path.size() - 1; ++i) {
@@ -17,7 +18,7 @@ vector<vector<ScaffoldGraphPathCleaner::ScaffoldVertex>> ScaffoldGraphPathCleane
         }
     }
     for (const auto &path: paths) {
-        vector<ScaffoldVertex> new_path;
+        std::vector<ScaffoldVertex> new_path;
         std::copy_if(path.begin(), path.end(), std::back_inserter(new_path), [&repeats](const ScaffoldVertex &vertex) {
           return repeats.find(vertex) == repeats.end();
         });
@@ -28,9 +29,8 @@ vector<vector<ScaffoldGraphPathCleaner::ScaffoldVertex>> ScaffoldGraphPathCleane
     }
     return result;
 }
-void ScaffoldGraphPathCleaner::CleanScaffoldGraphUsingPaths(
-        ScaffoldGraphPathCleaner::ScaffoldGraph &graph,
-        const vector<vector<ScaffoldGraphPathCleaner::ScaffoldVertex>> &paths) const {
+void ScaffoldGraphPathCleaner::CleanScaffoldGraphUsingPaths(ScaffoldGraphPathCleaner::ScaffoldGraph &graph,
+                                                            const ScaffoldGraphPathCleaner::PathContainer &paths) const {
     auto new_paths = RemoveRepeats(graph, paths);
     for (const auto &path: new_paths) {
         VERIFY_DEV(path.size() >= 2);
@@ -39,7 +39,7 @@ void ScaffoldGraphPathCleaner::CleanScaffoldGraphUsingPaths(
     }
 }
 void ScaffoldGraphPathCleaner::CleanOutcoming(ScaffoldGraphPathCleaner::ScaffoldGraph &graph,
-                                              const vector<ScaffoldGraphPathCleaner::ScaffoldVertex> &path) const {
+                                              const std::vector<ScaffoldGraphPathCleaner::ScaffoldVertex> &path) const {
     for (size_t i = 0; i < path.size() - 1; ++i) {
         auto current_vertex = path[i];
         auto next_vertex = path[i + 1];
@@ -47,8 +47,7 @@ void ScaffoldGraphPathCleaner::CleanOutcoming(ScaffoldGraphPathCleaner::Scaffold
         for (const auto &outcoming_edge: graph.OutgoingEdges(current_vertex)) {
             if (outcoming_edge.getEnd() != next_vertex) {
                 graph.RemoveEdge(outcoming_edge);
-            }
-            else {
+            } else {
                 connected_to_next = true;
             }
         }
@@ -56,7 +55,7 @@ void ScaffoldGraphPathCleaner::CleanOutcoming(ScaffoldGraphPathCleaner::Scaffold
     }
 }
 void ScaffoldGraphPathCleaner::CleanIncoming(ScaffoldGraphPathCleaner::ScaffoldGraph &graph,
-                                             const vector<ScaffoldGraphPathCleaner::ScaffoldVertex> &path) const {
+                                             const std::vector<ScaffoldGraphPathCleaner::ScaffoldVertex> &path) const {
     for (size_t i = 1; i < path.size(); ++i) {
         auto current_vertex = path[i];
         auto prev_vertex = path[i - 1];
@@ -64,12 +63,12 @@ void ScaffoldGraphPathCleaner::CleanIncoming(ScaffoldGraphPathCleaner::ScaffoldG
         for (const auto &incoming_edge: graph.IncomingEdges(current_vertex)) {
             if (incoming_edge.getStart() != prev_vertex) {
                 graph.RemoveEdge(incoming_edge);
-            }
-            else {
+            } else {
                 connected_to_prev = true;
             }
         }
         VERIFY_DEV(connected_to_prev);
     }
+}
 }
 }

@@ -205,7 +205,6 @@ protected:
 
 };
 
-//fixme leaks everywhere
 class QueueContainer {
     std::queue<BidirectionalPath*> path_storage_;
 

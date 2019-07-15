@@ -1,12 +1,13 @@
 #include "transition_subgraph_validation.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 namespace validation {
 
 boost::optional<vector<SimpleTransitionGraphValidator::ScaffoldVertex>> SimpleTransitionGraphValidator::GetCorrectPath(
-        const SimpleTransitionGraphValidator::SimpleTransitionGraph &graph,
-        scaffold_graph::ScaffoldVertex source,
-        scaffold_graph::ScaffoldVertex sink) const {
+    const SimpleTransitionGraphValidator::SimpleTransitionGraph &graph,
+    scaffold_graph::ScaffoldVertex source,
+    scaffold_graph::ScaffoldVertex sink) const {
     DEBUG("Getting correct path");
     boost::optional<vector<ScaffoldVertex>> result;
     vector<ScaffoldVertex> intermediate_result;
@@ -35,7 +36,7 @@ boost::optional<vector<SimpleTransitionGraphValidator::ScaffoldVertex>> SimpleTr
             return result;
         }
     }
-    if (not (current == sink)) {
+    if (not(current == sink)) {
         return result;
     }
     result = intermediate_result;
@@ -43,9 +44,9 @@ boost::optional<vector<SimpleTransitionGraphValidator::ScaffoldVertex>> SimpleTr
 }
 SimpleTransitionGraphValidator::SimpleTransitionGraphValidator(const ContigTransitionStorage &reference_transition_storage,
                                                                size_t length_threshold)
-        : reference_transition_storage_(reference_transition_storage), length_threshold_(length_threshold) {}
+    : reference_transition_storage_(reference_transition_storage), length_threshold_(length_threshold) {}
 SimpleTransitionGraphValidator SimpleTransitionGraphValidatorConstructor::GetValidator(
-        const string &path_to_reference) const {
+    const string &path_to_reference) const {
     GeneralTransitionStorageBuilder reference_storage_builder(gp_.g, 1, false, false);
     validation::FilteredReferencePathHelper path_helper(gp_);
     auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold_);
@@ -56,5 +57,6 @@ SimpleTransitionGraphValidator SimpleTransitionGraphValidatorConstructor::GetVal
 SimpleTransitionGraphValidatorConstructor::SimpleTransitionGraphValidatorConstructor(const conj_graph_pack &gp,
                                                                                      size_t length_threshold) :
     gp_(gp), length_threshold_(length_threshold) {}
+}
 }
 }

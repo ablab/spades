@@ -210,10 +210,8 @@ namespace barcode_index {
             using io::binary::BinRead;
 
             edge_to_entry_.clear();
-            INFO("Reading size");
             size_t size;
             BinRead(str, size);
-            INFO("Size: " << size);
             for (size_t i = 0; i < size; ++i) {
                 EdgeId edge_id = BinRead<uint64_t>(str);
                 auto entry = BinRead<EdgeEntryT>(str);

@@ -1,29 +1,31 @@
 #include "scaffold_graph_storage.hpp"
 
 namespace path_extend {
-ScaffoldGraphStorage::ScaffoldGraphStorage(ScaffoldGraphStorage::ScaffoldGraph&& large_scaffold_graph,
-                                           ScaffoldGraphStorage::ScaffoldGraph&& small_scaffold_graph,
+namespace read_cloud {
+
+ScaffoldGraphStorage::ScaffoldGraphStorage(ScaffoldGraphStorage::ScaffoldGraph &&large_scaffold_graph,
+                                           ScaffoldGraphStorage::ScaffoldGraph &&small_scaffold_graph,
                                            size_t large_length_threshold, size_t small_length_threshold)
     : large_scaffold_graph_(large_scaffold_graph), small_scaffold_graph_(small_scaffold_graph),
       large_length_threshold_(large_length_threshold), small_length_threshold_(small_length_threshold) {}
 
-const ScaffoldGraphStorage::ScaffoldGraph& ScaffoldGraphStorage::GetLargeScaffoldGraph() const {
+const ScaffoldGraphStorage::ScaffoldGraph &ScaffoldGraphStorage::GetLargeScaffoldGraph() const {
     return large_scaffold_graph_;
 }
 
-const ScaffoldGraphStorage::ScaffoldGraph& ScaffoldGraphStorage::GetSmallScaffoldGraph() const {
+const ScaffoldGraphStorage::ScaffoldGraph &ScaffoldGraphStorage::GetSmallScaffoldGraph() const {
     return small_scaffold_graph_;
 }
 
-void ScaffoldGraphStorage::SetSmallScaffoldGraph(const ScaffoldGraph& small_scaffold_graph) {
+void ScaffoldGraphStorage::SetSmallScaffoldGraph(const ScaffoldGraph &small_scaffold_graph) {
     ReplaceScaffoldGraph(small_scaffold_graph, small_scaffold_graph_);
 }
 
-void ScaffoldGraphStorage::SetLargeScaffoldGraph(const ScaffoldGraph& large_scaffold_graph) {
+void ScaffoldGraphStorage::SetLargeScaffoldGraph(const ScaffoldGraph &large_scaffold_graph) {
     ReplaceScaffoldGraph(large_scaffold_graph, large_scaffold_graph_);
 }
 
-ScaffoldGraphStorage::ScaffoldGraphStorage(const debruijn_graph::Graph& g) :
+ScaffoldGraphStorage::ScaffoldGraphStorage(const debruijn_graph::Graph &g) :
     large_scaffold_graph_(g), small_scaffold_graph_(g), large_length_threshold_(0), small_length_threshold_(0) {}
 
 void ScaffoldGraphStorage::ReplaceScaffoldGraph(const ScaffoldGraphStorage::ScaffoldGraph &from, ScaffoldGraph &to) {
@@ -33,21 +35,21 @@ void ScaffoldGraphStorage::ReplaceScaffoldGraph(const ScaffoldGraphStorage::Scaf
     INFO("Finished replacing");
 }
 
-void ScaffoldGraphStorage::Load(const string& path, const std::map<size_t, debruijn_graph::EdgeId>& edge_map) {
-    ifstream fin(path);
+void ScaffoldGraphStorage::Load(const std::string &path, const std::map<size_t, debruijn_graph::EdgeId> &edge_map) {
+    std::ifstream fin(path);
     ScaffoldGraphSerializer loader;
     fin >> small_length_threshold_ >> large_length_threshold_;
     loader.LoadScaffoldGraph(fin, large_scaffold_graph_, edge_map);
     loader.LoadScaffoldGraph(fin, small_scaffold_graph_, edge_map);
 }
-void ScaffoldGraphStorage::Save(const string& path) const {
-    ofstream fout(path);
+void ScaffoldGraphStorage::Save(const std::string &path) const {
+    std::ofstream fout(path);
     ScaffoldGraphSerializer saver;
     fout << small_length_threshold_ << " " << large_length_threshold_ << std::endl;
     saver.SaveScaffoldGraph(fout, large_scaffold_graph_);
     saver.SaveScaffoldGraph(fout, small_scaffold_graph_);
 }
-ScaffoldGraphStorage& ScaffoldGraphStorage::operator=(const ScaffoldGraphStorage &other) {
+ScaffoldGraphStorage &ScaffoldGraphStorage::operator=(const ScaffoldGraphStorage &other) {
     SetSmallScaffoldGraph(other.small_scaffold_graph_);
     small_length_threshold_ = other.small_length_threshold_;
     SetLargeScaffoldGraph(other.large_scaffold_graph_);
@@ -60,21 +62,21 @@ size_t ScaffoldGraphStorage::GetLargeLengthThreshold() const {
 size_t ScaffoldGraphStorage::GetSmallLengthThreshold() const {
     return small_length_threshold_;
 }
-void ScaffoldGraphSerializer::SaveScaffoldGraph(ofstream &fout,
+void ScaffoldGraphSerializer::SaveScaffoldGraph(std::ofstream &fout,
                                                 const ScaffoldGraphSerializer::ScaffoldGraph &graph) const {
     fout << graph.VertexCount() << std::endl;
-    for (const ScaffoldGraph::ScaffoldGraphVertex& vertex: graph.vertices()) {
+    for (const ScaffoldGraph::ScaffoldGraphVertex &vertex: graph.vertices()) {
         fout << vertex.int_id() << std::endl;
     }
     fout << graph.EdgeCount() << std::endl;
-    for (const ScaffoldGraph::ScaffoldEdge& edge: graph.edges()) {
+    for (const ScaffoldGraph::ScaffoldEdge &edge: graph.edges()) {
         fout << edge.getStart().int_id() << " " << edge.getEnd().int_id() << " " << edge.getColor() << " "
              << edge.getWeight() << " " << edge.getLength() << std::endl;
     }
 }
-void ScaffoldGraphSerializer::LoadScaffoldGraph(ifstream &fin,
-                                           ScaffoldGraphSerializer::ScaffoldGraph &graph,
-                                           const std::map<size_t, debruijn_graph::EdgeId> &edge_map) const {
+void ScaffoldGraphSerializer::LoadScaffoldGraph(std::ifstream &fin,
+                                                ScaffoldGraphSerializer::ScaffoldGraph &graph,
+                                                const std::map<size_t, debruijn_graph::EdgeId> &edge_map) const {
     size_t number_of_vertices = 0;
     fin >> number_of_vertices;
     for (size_t i = 0; i < number_of_vertices; ++i) {
@@ -87,7 +89,7 @@ void ScaffoldGraphSerializer::LoadScaffoldGraph(ifstream &fin,
     fin >> number_of_edges;
     DEBUG(number_of_edges << " edges");
     size_t block_size = number_of_edges / 20;
-    vector<ScaffoldGraph::ScaffoldEdge> edges;
+    std::vector<ScaffoldGraph::ScaffoldEdge> edges;
     for (size_t i = 0; i < number_of_edges; ++i) {
         TRACE("Start")
         size_t start_id = 0;
@@ -106,12 +108,13 @@ void ScaffoldGraphSerializer::LoadScaffoldGraph(ifstream &fin,
     DEBUG("Adding edges");
     size_t current = 0;
     block_size = edges.size() / 200;
-    for (const auto& edge: edges) {
+    for (const auto &edge: edges) {
         graph.AddEdgeSimple(edge);
         ++current;
         if (block_size != 0 and current % block_size == 0) {
             DEBUG("Added " << current << " edges out of " << edges.size());
         }
     }
+}
 }
 }

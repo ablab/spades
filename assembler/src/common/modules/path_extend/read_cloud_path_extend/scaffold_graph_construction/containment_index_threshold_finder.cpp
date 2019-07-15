@@ -3,10 +3,12 @@
 #include "containment_index_threshold_finder.hpp"
 
 namespace path_extend {
+namespace read_cloud {
+
 AbstractScoreHistogramConstructor::ScoreDistribution AbstractScoreHistogramConstructor::ConstructScoreDistributionFromMultiset(
     const std::multiset<double> &scores) const {
     ScoreDistribution result;
-    for (const auto& score: scores) {
+    for (const auto &score: scores) {
         ++result[score];
     }
     return result;
@@ -26,9 +28,9 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
             size_t max_left_block_start = g_.length(edge) - left_block_start_offset;
             std::uniform_int_distribution<size_t> left_start_distribution(0, max_left_block_start);
             vector<pair<size_t, size_t>> starts_and_distances;
-              for (const size_t distance: distance_values) {
-                  starts_and_distances.emplace_back(0, distance);
-              }
+            for (const size_t distance: distance_values) {
+                starts_and_distances.emplace_back(0, distance);
+            }
 
 #pragma omp parallel for num_threads(max_threads_)
             for (size_t i = 0; i < starts_and_distances.size(); ++i) {
@@ -60,17 +62,17 @@ AbstractScoreHistogramConstructor::ScoreDistribution LongEdgeScoreHistogramConst
     return ConstructScoreDistributionFromMultiset(scores);
 }
 LongEdgeScoreHistogramConstructor::LongEdgeScoreHistogramConstructor(
-        double tick_step,
-        double min_score,
-        double max_score,
-        const Graph &g,
-        shared_ptr<SegmentBarcodeScoreFunction> segment_score_function,
-        const vector<EdgeId> &interesting_edges,
-        size_t left_block_length,
-        size_t right_block_length,
-        size_t min_distance,
-        size_t max_distance,
-        size_t max_threads)
+    double tick_step,
+    double min_score,
+    double max_score,
+    const Graph &g,
+    shared_ptr<SegmentBarcodeScoreFunction> segment_score_function,
+    const vector<EdgeId> &interesting_edges,
+    size_t left_block_length,
+    size_t right_block_length,
+    size_t min_distance,
+    size_t max_distance,
+    size_t max_threads)
     : AbstractScoreHistogramConstructor(tick_step, min_score, max_score, g),
       segment_score_function_(segment_score_function),
       interesting_edges_(interesting_edges),
@@ -91,15 +93,15 @@ vector<size_t> LongEdgeScoreHistogramConstructor::ConstructDistanceDistribution(
     return result;
 }
 LabeledDistributionThresholdEstimator::LabeledDistributionThresholdEstimator(
-        const Graph &g,
-        shared_ptr<SegmentBarcodeScoreFunction> segment_score_function,
-        size_t edge_length_threshold,
-        size_t left_block_length,
-        size_t right_block_length,
-        size_t min_distance,
-        size_t max_distance,
-        double score_percentile,
-        size_t max_threads)
+    const Graph &g,
+    shared_ptr<SegmentBarcodeScoreFunction> segment_score_function,
+    size_t edge_length_threshold,
+    size_t left_block_length,
+    size_t right_block_length,
+    size_t min_distance,
+    size_t max_distance,
+    double score_percentile,
+    size_t max_threads)
     : g_(g),
       segment_score_function_(segment_score_function),
       edge_length_threshold_(edge_length_threshold),
@@ -123,7 +125,7 @@ double LabeledDistributionThresholdEstimator::GetThreshold() const {
 
     vector<EdgeId> long_edges;
     omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(g_);
-    for (const auto& edge: edge_it_helper) {
+    for (const auto &edge: edge_it_helper) {
         if (g_.length(edge) >= edge_length_threshold_) {
             long_edges.push_back(edge);
         }
@@ -178,7 +180,7 @@ boost::optional<double> ContainmentIndexFunction::GetScoreFromTwoFragments(EdgeI
     return result;
 }
 ContainmentIndexFunction::ContainmentIndexFunction(
-        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor)
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor)
     : SegmentBarcodeScoreFunction(barcode_extractor) {}
 
 ShortEdgeScoreFunction::ShortEdgeScoreFunction(shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor)
@@ -255,5 +257,5 @@ shared_ptr<LabeledDistributionThresholdEstimator> ShortEdgeScoreThresholdEstimat
     return threshold_estimator;
 }
 }
-
+}
 

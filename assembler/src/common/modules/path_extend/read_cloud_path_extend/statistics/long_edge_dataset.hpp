@@ -4,6 +4,8 @@
 #include "common/modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
 
 namespace path_extend {
+namespace read_cloud {
+
 struct LongEdgeEntry {
   size_t id_;
   size_t length_;
@@ -33,11 +35,11 @@ struct LongEdgePairEntry {
 };
 
 struct LongEdgePairDataset {
- private:
+  private:
     std::vector<LongEdgePairEntry> dataset_;
 
- public:
-    explicit LongEdgePairDataset(const vector<LongEdgePairEntry> &dataset_):
+  public:
+    explicit LongEdgePairDataset(const vector<LongEdgePairEntry> &dataset_) :
         dataset_(dataset_) {}
 
     void Serialize(const string &path);
@@ -45,36 +47,39 @@ struct LongEdgePairDataset {
 
 class LongEdgePairDatasetExtractor {
     typedef validation::EdgeWithMapping EdgeWithMapping;
-    typedef path_extend::transitions::Transition Transition;
+    typedef transitions::Transition Transition;
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor BarcodeExtractor;
 
     const conj_graph_pack &gp_;
     const ScaffoldGraphStorage &scaffold_graph_storage_;
+    size_t max_threads_;
 
- public:
-    LongEdgePairDatasetExtractor(const conj_graph_pack &gp, const ScaffoldGraphStorage &scaffold_graph_storage);
+  public:
+    LongEdgePairDatasetExtractor(const conj_graph_pack &gp, const ScaffoldGraphStorage &scaffold_graph_storage,
+                                 size_t max_threads);
 
-    LongEdgePairDataset GetLongEdgeDataset(const vector<vector<validation::EdgeWithMapping>>& reference_paths) const;
+    LongEdgePairDataset GetLongEdgeDataset(const vector<vector<validation::EdgeWithMapping>> &reference_paths) const;
 
-    LongEdgePairDataset GetLongEdgeDataset(size_t length_threshold, const string &path_to_reference) const;
+    LongEdgePairDataset GetLongEdgeDataset(const scaffold_graph::ScaffoldGraph &graph, const string &path_to_reference) const;
 
     void ConstructAndSerialize(const string &path_to_reference, const string &output_path) const;
 
- private:
+  private:
     shared_ptr<BarcodeExtractor> ConstructLongEdgeExtractor() const;
 
-    std::map<Transition, size_t> GetDistanceMap(const vector<vector<EdgeWithMapping>>& reference_paths) const;
+    std::map<Transition, size_t> GetDistanceMap(const vector<vector<EdgeWithMapping>> &reference_paths) const;
 
     vector<LongEdgePairEntry> GetCorrectEntries(shared_ptr<BarcodeExtractor> long_edge_extractor,
                                                 const validation::ContigTransitionStorage &reference_transition_storage,
                                                 const validation::ReferencePathIndex &long_edge_path_index,
                                                 const std::map<Transition, size_t> &distance_map) const;
 
-    LongEdgePairEntry GetLongEdgePairEntry (shared_ptr<BarcodeExtractor> long_edge_extractor,
-                                            const EdgeId& first, const EdgeId& second,
-                                            size_t distance, size_t path_id, bool correct) const;
+    LongEdgePairEntry GetLongEdgePairEntry(shared_ptr<BarcodeExtractor> long_edge_extractor,
+                                           const EdgeId &first, const EdgeId &second,
+                                           size_t distance, size_t path_id, bool correct) const;
 
-    bool AreNotClose(const validation::ContigTransitionStorage& close_transition_storage,
-                     const EdgeId& first, const EdgeId& second) const;
+    bool AreNotClose(const validation::ContigTransitionStorage &close_transition_storage,
+                     const EdgeId &first, const EdgeId &second) const;
 };
+}
 }

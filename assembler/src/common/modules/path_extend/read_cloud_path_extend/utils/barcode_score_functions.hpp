@@ -2,16 +2,18 @@
 #include "common/barcode_index/barcode_index.hpp"
 
 namespace path_extend {
+namespace read_cloud {
+
 class BarcodeScoreFunction {
- public:
+  public:
     virtual ~BarcodeScoreFunction() {}
 
     virtual double GetScoreFromSets(const std::set<barcode_index::BarcodeId> &first,
                                     const std::set<barcode_index::BarcodeId> &second) const = 0;
 };
 
-class ContainmentIndex: BarcodeScoreFunction {
- public:
+class ContainmentIndex : BarcodeScoreFunction {
+  public:
     double GetScoreFromSets(const std::set<barcode_index::BarcodeId> &first,
                             const std::set<barcode_index::BarcodeId> &second) const override {
         size_t first_size = first.size();
@@ -26,4 +28,5 @@ class ContainmentIndex: BarcodeScoreFunction {
         return static_cast<double>(intersection.size()) / static_cast<double>(min_size);
     }
 };
+}
 }

@@ -1,9 +1,11 @@
 #include "component_validation.hpp"
 #include <stack>
+
 namespace path_extend {
+namespace read_cloud {
 
 ScaffoldGraphComponentExtractor::TransitionGraph ScaffoldGraphComponentExtractor::UnorientTransitionGraph(
-        const ScaffoldGraphComponentExtractor::TransitionGraph &transition_graph) const {
+    const ScaffoldGraphComponentExtractor::TransitionGraph &transition_graph) const {
     TransitionGraph result;
     for (const auto &vertex: transition_graph) {
         result.AddVertex(vertex);
@@ -17,7 +19,7 @@ ScaffoldGraphComponentExtractor::TransitionGraph ScaffoldGraphComponentExtractor
     return result;
 }
 vector<ScaffoldGraphComponentExtractor::TransitionGraph> ScaffoldGraphComponentExtractor::GetConnectedComponents(
-        const ScaffoldGraphComponentExtractor::ScaffoldGraph &scaffold_graph) const {
+    const ScaffoldGraphComponentExtractor::ScaffoldGraph &scaffold_graph) const {
     TransitionGraph simple_graph;
     for (const auto &vertex: scaffold_graph.vertices()) {
         simple_graph.AddVertex(vertex);
@@ -28,7 +30,6 @@ vector<ScaffoldGraphComponentExtractor::TransitionGraph> ScaffoldGraphComponentE
     auto unoriented_graph = UnorientTransitionGraph(simple_graph);
     set<ScaffoldVertex> visited;
     vector<TransitionGraph> components;
-    size_t trivial_components = 0;
     for (const auto &vertex: unoriented_graph) {
         if (visited.find(vertex) == visited.end()) {
             auto component_vertices = GetVertexComponent(unoriented_graph, vertex);
@@ -88,7 +89,8 @@ bool ComponentEstimator::IsCorrect(const ComponentEstimator::TransitionGraph &tr
     }
     const auto &component_path = component_path_result.get();
     VERIFY_DEV(component_path.size() == transition_graph.size());
-    for (auto first = component_path.begin(), second = std::next(first); second != component_path.end(); ++first, ++second) {
+    for (auto first = component_path.begin(), second = std::next(first); second != component_path.end();
+         ++first, ++second) {
         if (not transition_graph.ContainsEdge(*first, *second)) {
             return false;
         }
@@ -170,5 +172,6 @@ bool ComponentEstimator::IsCovered(const ComponentEstimator::TransitionGraph &tr
 }
 bool ComponentEstimator::IsTrivial(const ComponentEstimator::TransitionGraph &transition_graph) const {
     return transition_graph.size() <= 2;
+}
 }
 }

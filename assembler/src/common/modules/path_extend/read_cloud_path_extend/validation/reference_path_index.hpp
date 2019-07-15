@@ -4,7 +4,9 @@
 #include "transition_extractor.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 namespace validation {
+
 class ReferencePathIndex {
     typedef debruijn_graph::EdgeId EdgeId;
     struct EdgeInfo {
@@ -25,18 +27,19 @@ class ReferencePathIndex {
 
     std::unordered_map<EdgeId, EdgeInfo> edge_to_info_;
 
- public:
+  public:
     void Insert(EdgeId edge, size_t edge_pos, size_t conj_edge_pos, size_t start_pos, size_t end_pos, size_t path);
     EdgeInfo at(const EdgeId &edge) const;
     bool Contains(const EdgeId &edge) const;
 };
 
 class ReferencePathIndexBuilder {
- public:
-    ReferencePathIndex BuildReferencePathIndex(const vector<vector<EdgeWithMapping>>& reference_paths);
+  public:
+    ReferencePathIndex BuildReferencePathIndex(const vector<vector<EdgeWithMapping>> &reference_paths);
 
     ReferencePathIndex BuildReferencePathIndexForSet(const vector<vector<EdgeWithMapping>> &reference_paths,
                                                      const std::unordered_set<EdgeId> &edges);
 };
+}
 }
 }

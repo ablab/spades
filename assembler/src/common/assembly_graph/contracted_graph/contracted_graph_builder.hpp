@@ -1,8 +1,7 @@
 #pragma once
-
 #include "common/assembly_graph/contracted_graph/contracted_graph.hpp"
 #include "adt/concurrent_dsu.hpp"
-#include <common/barcode_index/cluster_storage/cluster_storage.hpp>
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
 
 namespace contracted_graph {
 
@@ -86,7 +85,7 @@ class SimpleContractedGraphFactory: public PartsBasedContractedFactory {
     using PartsBasedContractedFactory::graph_ptr_;
     using PartsBasedContractedFactory::ContractedGraphParts;
     typedef dsu::ConcurrentDSU contracted_dsu_t;
-    typedef cluster_storage::Cluster::InternalGraph InternalGraph;
+    typedef path_extend::read_cloud::cluster_storage::Cluster::InternalGraph InternalGraph;
     typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
     const InternalGraph& internal_graph_;
 

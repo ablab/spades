@@ -3,37 +3,37 @@
 #include "short_edge_dataset.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 
 ShortEdgeDataset ShortEdgeDatasetExtractor::GetShortEdgeDataset(
-        const vector<vector<ShortEdgeDatasetExtractor::EdgeWithMapping>> &reference_paths,
-        const vector<vector<ShortEdgeDatasetExtractor::EdgeWithMapping>> &filtered_reference_paths) const {
+    const vector<vector<ShortEdgeDatasetExtractor::EdgeWithMapping>> &reference_paths,
+    const vector<vector<ShortEdgeDatasetExtractor::EdgeWithMapping>> &filtered_reference_paths) const {
     vector<vector<validation::EdgeWithMapping>> current_paths = reference_paths;
-//    path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
     INFO("Getting short_edge_dataset");
-    unordered_set <EdgeId> long_edges;
-    for (const auto& path: filtered_reference_paths) {
-        for (const auto& ewm: path) {
+    unordered_set<EdgeId> long_edges;
+    for (const auto &path: filtered_reference_paths) {
+        for (const auto &ewm: path) {
             long_edges.insert(ewm.edge_);
         }
     }
     validation::ReferencePathIndexBuilder path_index_builder;
     auto reference_index = path_index_builder.BuildReferencePathIndexForSet(reference_paths, long_edges);
-    path_extend::validation::StrictTransitionStorageBuilder transition_storage_builder;
+    validation::StrictTransitionStorageBuilder transition_storage_builder;
     auto transition_storage = transition_storage_builder.GetTransitionStorage(filtered_reference_paths);
     auto entries = GetShortEdgeEntries(transition_storage, reference_index, reference_paths);
     ShortEdgeDataset short_edge_dataset(entries);
     return short_edge_dataset;
 }
 vector<ShortEdgeEntry> ShortEdgeDatasetExtractor::GetShortEdgeEntries(
-        const path_extend::validation::ContigTransitionStorage &transition_storage,
-        const validation::ReferencePathIndex &long_edge_path_index,
-        const vector<vector<ShortEdgeDatasetExtractor::EdgeWithMapping>> &reference_paths) const {
+    const validation::ContigTransitionStorage &transition_storage,
+    const validation::ReferencePathIndex &long_edge_path_index,
+    const vector<vector<ShortEdgeDatasetExtractor::EdgeWithMapping>> &reference_paths) const {
     vector<ShortEdgeEntry> entries;
     INFO(transition_storage.size() << " correct long edge transitions");
     const size_t MAX_RANDOM_EDGES = 5000;
     size_t total_correct_edges = 0;
     size_t total_random_edges = 0;
-    for (const auto& transition: transition_storage) {
+    for (const auto &transition: transition_storage) {
         EdgeId first = transition.first_;
         EdgeId second = transition.second_;
         VERIFY(long_edge_path_index.Contains(first));
@@ -45,7 +45,7 @@ vector<ShortEdgeEntry> ShortEdgeDatasetExtractor::GetShortEdgeEntries(
 //                                                  << "belong to different references. Skipping.");
             continue;
         }
-        const vector <EdgeWithMapping>& reference_path = reference_paths[first_path_id];
+        const vector<EdgeWithMapping> &reference_path = reference_paths[first_path_id];
         size_t first_pos = long_edge_path_index.at(first).edge_pos_;
         size_t second_pos = long_edge_path_index.at(second).edge_pos_;
         auto long_edge_barcode_extractor = ConstructLongEdgeExtractor();
@@ -57,13 +57,13 @@ vector<ShortEdgeEntry> ShortEdgeDatasetExtractor::GetShortEdgeEntries(
         total_random_edges += random_edges.size();
         DEBUG(correct_edges.size() << " correct edges.");
         DEBUG(random_edges.size() << " random edges.");
-        for (const auto& edge: correct_edges) {
+        for (const auto &edge: correct_edges) {
             auto short_edge_entry = GetShortEdgeEntry(edge, first_entry, second_entry,
                                                       gp_.g.coverage(first), gp_.g.coverage(second), true);
             entries.push_back(short_edge_entry);
         }
         size_t current_random_edges = 0;
-        for (const auto& edge: random_edges) {
+        for (const auto &edge: random_edges) {
             if (correct_edges.find(edge) == correct_edges.end()) {
                 auto short_edge_entry = GetShortEdgeEntry(edge, first_entry, second_entry,
                                                           gp_.g.coverage(first), gp_.g.coverage(second), false);
@@ -108,9 +108,9 @@ std::unordered_set<EdgeId> ShortEdgeDatasetExtractor::GetReachableEdges(const Ed
     DijkstraHelper<Graph> helper;
     auto unique_dijkstra = helper.CreateLengthBoundedDijkstra(gp_.g, DISTANCE_BOUND, min_length);
     unique_dijkstra.Run(gp_.g.EdgeEnd(long_edge));
-    for (const auto& reached_vertex: unique_dijkstra.ReachedVertices()) {
-        const auto& outgoing_edges = gp_.g.OutgoingEdges(reached_vertex);
-        for (const auto& edge: outgoing_edges) {
+    for (const auto &reached_vertex: unique_dijkstra.ReachedVertices()) {
+        const auto &outgoing_edges = gp_.g.OutgoingEdges(reached_vertex);
+        for (const auto &edge: outgoing_edges) {
             reached_edges.insert(edge);
         }
     }
@@ -143,7 +143,7 @@ shared_ptr<ShortEdgeDatasetExtractor::BarcodeExtractor> ShortEdgeDatasetExtracto
     }
     auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor, tail_threshold_getter,
                                                                      count_threshold, length_threshold,
-                                                                     cfg::get().max_threads, vertices);
+                                                                     max_threads_, vertices);
     auto scaffold_index_extractor =
         make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
     return scaffold_index_extractor;
@@ -151,19 +151,19 @@ shared_ptr<ShortEdgeDatasetExtractor::BarcodeExtractor> ShortEdgeDatasetExtracto
 
 ShortEdgeDataset ShortEdgeDatasetExtractor::GetShortEdgeDataset(size_t length_threshold,
                                                                 const string &path_to_reference) const {
-    path_extend::validation::ContigPathBuilder contig_path_builder(gp_);
+    validation::ContigPathBuilder contig_path_builder(gp_);
     auto named_reference_paths = contig_path_builder.GetContigPaths(path_to_reference);
     auto reference_paths = contig_path_builder.StripNames(named_reference_paths);
-    path_extend::validation::FilteredReferencePathHelper path_helper(gp_);
-    auto filtered_reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
+    validation::FilteredReferencePathHelper path_helper(gp_);
+    auto
+        filtered_reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
     return GetShortEdgeDataset(reference_paths, filtered_reference_paths);
 }
 void ShortEdgeDatasetExtractor::ConstructAndSerialize(const string &path_to_reference,
                                                       const string &output_base) const {
     const string reference_path = path_to_reference;
     size_t long_threshold = scaffold_graph_storage_.GetSmallLengthThreshold();
-//    size_t ultralong_threshold = gp_.scaffold_graph_storage.GetLargeLengthThreshold();
-    size_t ultralong_threshold = 10000;
+    size_t ultralong_threshold = scaffold_graph_storage_.GetLargeLengthThreshold();
     INFO(scaffold_graph_storage_.GetSmallScaffoldGraph().VertexCount() << " long edges");
     auto short_long_edge_dataset = GetShortEdgeDataset(long_threshold, reference_path);
     INFO(scaffold_graph_storage_.GetLargeScaffoldGraph().VertexCount() << " ultralong edges");
@@ -174,5 +174,6 @@ void ShortEdgeDatasetExtractor::ConstructAndSerialize(const string &path_to_refe
         std::to_string(ultralong_threshold));
     short_long_edge_dataset.Serialize(long_output_path);
     short_ultralong_edge_dataset.Serialize(ultralong_output_path);
+}
 }
 }

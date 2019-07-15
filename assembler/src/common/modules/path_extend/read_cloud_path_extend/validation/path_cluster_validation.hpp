@@ -1,19 +1,20 @@
 #pragma once
 
 #include "reference_path_index.hpp"
-#include "common/barcode_index/cluster_storage/barcode_cluster.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/barcode_cluster.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 namespace validation {
 
 class PathClusterValidator {
     ReferencePathIndex ref_path_index_;
 
- public:
+  public:
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef std::vector<ScaffoldVertex> SimplePath;
 
- public:
+  public:
     PathClusterValidator(const ReferencePathIndex &ref_path_index);
 
     bool IsCorrect(const cluster_storage::Cluster &cluster) const;
@@ -31,5 +32,6 @@ class PathClusterValidator {
     boost::optional<SimplePath> GetReferencePath(const set<ScaffoldVertex> &vertices) const;
 };
 
+}
 }
 }

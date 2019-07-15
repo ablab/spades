@@ -1,13 +1,14 @@
 #pragma once
 
-#include "common/barcode_index/cluster_storage/cluster_storage.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 struct PathClusterStorage {
-    typedef std::set<scaffold_graph::ScaffoldVertex> VertexSet;
-    typedef std::map<VertexSet, double> ClusterToWeightT;
-    std::map<VertexSet, double> cluster_to_weight_;
+  typedef std::set<scaffold_graph::ScaffoldVertex> VertexSet;
+  typedef std::map<VertexSet, double> ClusterToWeightT;
+  std::map<VertexSet, double> cluster_to_weight_;
 
   PathClusterStorage(const map<VertexSet, double> &cluster_to_weight);
 
@@ -23,7 +24,7 @@ class PathClusterExtractorHelper {
     shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage_;
     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
     const size_t linkage_distance_;
- public:
+  public:
     PathClusterExtractorHelper(const Graph &g_,
                                shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage_,
                                shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_,
@@ -33,11 +34,11 @@ class PathClusterExtractorHelper {
 };
 
 class CorrectPathExtractor {
- protected:
+  protected:
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef SimpleGraph<scaffold_graph::ScaffoldVertex> SimpleTransitionGraph;
 
- public:
+  public:
     virtual ~CorrectPathExtractor() {}
 
     virtual vector<vector<ScaffoldVertex>> GetCorrectPaths(const SimpleTransitionGraph &graph,
@@ -55,11 +56,11 @@ class CloudBasedPathExtractor : public CorrectPathExtractor {
     const size_t linkage_distance_;
     const double relative_cluster_threshold_;
 
- public:
+  public:
     CloudBasedPathExtractor(const Graph &g,
-                              shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
-                              shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-                              size_t linkage_distance, double relative_cluster_threshold);
+                            shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
+                            shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+                            size_t linkage_distance, double relative_cluster_threshold);
 
     vector<vector<ScaffoldVertex>> GetCorrectPaths(const SimpleTransitionGraph &graph,
                                                    const ScaffoldVertex &source, const ScaffoldVertex &sink) const;
@@ -68,16 +69,16 @@ class CloudBasedPathExtractor : public CorrectPathExtractor {
 };
 
 class PathClusterNormalizer {
- public:
+  public:
     virtual ~PathClusterNormalizer() {}
 
     virtual PathClusterStorage GetNormalizedStorage(const vector<cluster_storage::Cluster> &path_clusters) const = 0;
 };
 
-class GraphBasedPathClusterNormalizer: public PathClusterNormalizer{
+class GraphBasedPathClusterNormalizer : public PathClusterNormalizer {
     const Graph &g_;
 
- public:
+  public:
     GraphBasedPathClusterNormalizer(const Graph &g_);
 
     PathClusterStorage GetNormalizedStorage(const vector<cluster_storage::Cluster> &path_clusters) const override;
@@ -92,14 +93,14 @@ class PathClusterConflictResolver {
     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
     const double relative_threshold_;
 
- public:
+  public:
     PathClusterConflictResolver(const Graph &g,
                                 shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
                                 double relative_threshold);
 
     vector<VertexSet> GetClusterSets(const SimpleTransitionGraph &graph, const PathClusterStorage &storage) const;
 
- private:
+  private:
 
     bool AreClustersConflicted(const VertexSet &first, const VertexSet &second,
                                const SimpleTransitionGraph &graph) const;
@@ -116,7 +117,7 @@ class PathClusterConflictResolver {
 };
 
 class CloudPathExtractor {
- public:
+  public:
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef std::set<ScaffoldVertex> VertexSet;
     typedef SimpleGraph<ScaffoldVertex> SimpleTransitionGraph;
@@ -130,15 +131,15 @@ class CloudPathExtractor {
       bool HasVertex(const ScaffoldVertex &vertex) const;
     };
 
- public:
+  public:
     vector<vector<ScaffoldVertex>> ExtractCorrectPaths(const SimpleTransitionGraph &graph,
                                                        const ScaffoldVertex &source, const ScaffoldVertex &sink,
                                                        const std::vector<VertexSet> &clouds) const;
 
- private:
+  private:
     bool IsPathCorrect(const InternalPathWithSet &path, const vector<VertexSet> &clouds) const;
 
- public:
+  public:
     vector<InternalPathWithSet> ExtractAllPaths(const SimpleTransitionGraph &graph,
                                                 const ScaffoldVertex &source,
                                                 const ScaffoldVertex &sink) const;
@@ -152,7 +153,7 @@ class PathClusterTransitionStorageHelper {
     const Graph &g_;
     PathClusterExtractorHelper cluster_extractor_helper_;
 
- public:
+  public:
     PathClusterTransitionStorageHelper(const Graph &g, const PathClusterExtractorHelper &cluster_extractor_helper)
         : g_(g), cluster_extractor_helper_(cluster_extractor_helper) {}
 
@@ -169,7 +170,7 @@ class ScaffoldGraphPathClusterHelper {
     shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage_;
     size_t max_threads_;
 
- public:
+  public:
     ScaffoldGraphPathClusterHelper(const Graph &g,
                                    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
                                    shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
@@ -191,7 +192,8 @@ class ScaffoldGraphPathClusterHelper {
     vector<set<ScaffoldVertex>> GetCorrectedClusters(const vector<Cluster> &path_clusters,
                                                      const TransitionGraph &graph) const;
 
- private:
+  private:
     TransitionGraph ScaffoldToTransition(const scaffold_graph::ScaffoldGraph &graph) const;
 };
+}
 }
