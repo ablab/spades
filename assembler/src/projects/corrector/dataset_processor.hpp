@@ -9,7 +9,7 @@
 
 #include "utils/filesystem/path_helper.hpp"
 #include "io/reads/file_reader.hpp"
-#include "pipeline/library.hpp"
+#include "pipeline/library_fwd.hpp"
 #include "utils/logger/logger.hpp"
 
 #include <string>

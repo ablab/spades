@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * contig_processor.hpp
- *
- *  Created on: Jun 27, 2014
- *      Author: lab42
- */
-
 #pragma once
 #include "interesting_pos_processor.hpp"
 #include "positional_read.hpp"
@@ -19,7 +12,7 @@
 
 #include <io/sam/sam_reader.hpp>
 #include <io/sam/read.hpp>
-#include "pipeline/library.hpp"
+#include "pipeline/library_fwd.hpp"
 
 #include <string>
 #include <vector>
