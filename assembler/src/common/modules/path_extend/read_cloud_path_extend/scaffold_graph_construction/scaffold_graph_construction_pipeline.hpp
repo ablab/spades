@@ -2,11 +2,13 @@
 
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
-#include "read_cloud_connection_conditions.hpp"
-#include "construction_callers.hpp"
 #include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/construction_callers.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/extender_searcher.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 
 namespace scaffold_graph_construction_pipeline_type {
 enum Type {
@@ -17,19 +19,16 @@ enum Type {
 }
 
 class ScaffolderParamsConstructor {
- public:
-    ScaffolderParams ConstructScaffolderParams(const Graph& g, size_t length_threshold,
+  public:
+    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver::scaffold_graph_construction ScaffConParamsT;
+
+    ScaffolderParams ConstructScaffolderParams(size_t length_threshold, const ScaffConParamsT &params,
                                                fragment_statistics::ClusterStatisticsExtractor primary_extractor) const;
 
-    LongEdgePairGapCloserParams ConstructGapCloserParamsFromMainParams(
-            const ScaffolderParams& params, const Graph& g,
-            shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-            size_t unique_edge_length,
-            size_t max_threads) const;
+    LongEdgePairGapCloserParams ConstructGapCloserParams(const ScaffConParamsT &params) const;
 
- private:
+  private:
     ScaffolderParams::ScoreEstimationParams GetScoreEstimationParams(
-        const Graph& g,
         fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor,
         double score_percentile,
         double cluster_length_percentile,
@@ -37,19 +36,19 @@ class ScaffolderParamsConstructor {
 
 };
 
-
 class ScaffoldGraphConstructionPipeline {
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef shared_ptr<scaffold_graph::ScaffoldGraphConstructor> ConstructorPtr;
 
-    shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> initial_constructor_;
+    ConstructorPtr initial_constructor_;
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> construction_stages_;
     vector<std::pair<shared_ptr<path_extend::scaffold_graph::ScaffoldGraph>, string>> intermediate_results_;
     const Graph &g_;
-    const path_extend::ScaffolderParams params_;
+    const read_cloud::ScaffolderParams params_;
 
- public:
-    ScaffoldGraphConstructionPipeline(shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> initial_constructor_,
-                                           const Graph &g, const path_extend::ScaffolderParams &params);
+  public:
+    ScaffoldGraphConstructionPipeline(ConstructorPtr initial_constructor, const Graph &g,
+                                      const read_cloud::ScaffolderParams &params);
 
     void AddStage(shared_ptr<IterativeScaffoldGraphConstructorCaller> stage);
 
@@ -61,30 +60,32 @@ class ScaffoldGraphConstructionPipeline {
 };
 
 class ScaffoldGraphPipelineConstructor {
- protected:
+  protected:
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
     typedef shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> BarcodeIndexPtr;
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor ScaffoldVertexExtractor;
     typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> LibraryT;
+    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver ReadCloudConfigsT;
 
     const conj_graph_pack &gp_;
     const LibraryT lib_;
+    const ReadCloudConfigsT read_cloud_configs_;
 
- public:
-    ScaffoldGraphPipelineConstructor(const conj_graph_pack &gp, const LibraryT &lib);
+  public:
+    ScaffoldGraphPipelineConstructor(const conj_graph_pack &gp, const LibraryT &lib, const ReadCloudConfigsT &configs);
 
     virtual ScaffoldGraphConstructionPipeline ConstructPipeline(const set<ScaffoldVertex> &scaffold_vertices) const = 0;
 
- protected:
+  protected:
     shared_ptr<ScaffoldVertexExtractor> ConstructSimpleEdgeIndex(const set<ScaffoldVertex> &scaffold_vertices,
                                                                  BarcodeIndexPtr barcode_extractor,
-                                                                 const ScaffolderParams& params,
+                                                                 const ScaffolderParams &params,
                                                                  size_t max_threads) const;
 };
 
-class BasicScaffoldGraphPipelineConstructor: public ScaffoldGraphPipelineConstructor {
- protected:
+class BasicScaffoldGraphPipelineConstructor : public ScaffoldGraphPipelineConstructor {
+  protected:
     using ScaffoldGraphPipelineConstructor::ScaffoldGraph;
     using ScaffoldGraphPipelineConstructor::ScaffoldVertex;
     using ScaffoldGraphPipelineConstructor::BarcodeIndexPtr;
@@ -95,22 +96,23 @@ class BasicScaffoldGraphPipelineConstructor: public ScaffoldGraphPipelineConstru
     size_t max_threads_;
     size_t min_length_;
 
- public:
+  public:
     BasicScaffoldGraphPipelineConstructor(const conj_graph_pack &gp,
                                           const LibraryT &lib,
+                                          const ReadCloudConfigsT &configs,
                                           const ScaffoldingUniqueEdgeStorage &unique_storage,
                                           shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_,
                                           size_t max_threads_,
                                           size_t min_length_);
 
     ScaffoldGraphConstructionPipeline ConstructPipeline(const set<ScaffoldVertex> &scaffold_vertices) const override;
- private:
+  private:
     virtual vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(
-            path_extend::ScaffolderParams params,
-            const set<ScaffoldVertex> &scaffold_vertices) const = 0;
+        read_cloud::ScaffolderParams params,
+        const set<ScaffoldVertex> &scaffold_vertices) const = 0;
 };
 
-class FullScaffoldGraphPipelineConstructor: public BasicScaffoldGraphPipelineConstructor {
+class FullScaffoldGraphPipelineConstructor : public BasicScaffoldGraphPipelineConstructor {
     using BasicScaffoldGraphPipelineConstructor::ScaffoldGraph;
     using BasicScaffoldGraphPipelineConstructor::ScaffoldVertex;
     using ScaffoldGraphPipelineConstructor::BarcodeIndexPtr;
@@ -120,52 +122,56 @@ class FullScaffoldGraphPipelineConstructor: public BasicScaffoldGraphPipelineCon
     using BasicScaffoldGraphPipelineConstructor::barcode_extractor_;
     using BasicScaffoldGraphPipelineConstructor::max_threads_;
     using BasicScaffoldGraphPipelineConstructor::min_length_;
+    const ReadCloudSearchParameterPack search_parameter_pack_;
 
- public:
+  public:
     FullScaffoldGraphPipelineConstructor(const conj_graph_pack &gp,
                                          const LibraryT &lib,
+                                         const ReadCloudConfigsT &configs,
                                          const ScaffoldingUniqueEdgeStorage &unique_storage,
                                          shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_,
                                          size_t max_threads_,
-                                         size_t min_length_);
+                                         size_t min_length_,
+                                         const ReadCloudSearchParameterPack &search_parameter_pack);
 
- private:
+  private:
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(
-        path_extend::ScaffolderParams params,
+        read_cloud::ScaffolderParams params,
         const set<ScaffoldVertex> &scaffold_vertices) const override;
 };
 
-class GapScaffoldGraphPipelineConstructor: public ScaffoldGraphPipelineConstructor {
- protected:
+class GapScaffoldGraphPipelineConstructor : public ScaffoldGraphPipelineConstructor {
+  protected:
     using ScaffoldGraphPipelineConstructor::ScaffoldGraph;
     using ScaffoldGraphPipelineConstructor::ScaffoldVertex;
     using ScaffoldGraphPipelineConstructor::BarcodeIndexPtr;
     using ScaffoldGraphPipelineConstructor::gp_;
     using ScaffoldGraphPipelineConstructor::lib_;
-    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
+    const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_;
     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
     size_t max_threads_;
     size_t min_length_;
 
- public:
+  public:
     GapScaffoldGraphPipelineConstructor(const conj_graph_pack &gp,
                                         const LibraryT &lib,
-                                        const ScaffoldingUniqueEdgeStorage& unique_storage,
+                                        const ReadCloudConfigsT &configs,
+                                        const ScaffoldingUniqueEdgeStorage &unique_storage,
                                         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_,
                                         size_t max_threads_,
                                         size_t min_length_);
 
     ScaffoldGraphConstructionPipeline ConstructPipeline(const set<ScaffoldVertex> &scaffold_vertices) const override;
 
- protected:
-    shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetInitialConstructor(path_extend::ScaffolderParams params,
-                                                                               const set<ScaffoldVertex>& scaffold_vertices) const;
+  protected:
+    shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetInitialConstructor(read_cloud::ScaffolderParams params,
+                                                                               const set<ScaffoldVertex> &scaffold_vertices) const;
 
     virtual vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(
-        path_extend::ScaffolderParams params, const set<ScaffoldVertex> &scaffold_vertices) const = 0;
+        read_cloud::ScaffolderParams params, const set<ScaffoldVertex> &scaffold_vertices) const = 0;
 };
 
-class MergingScaffoldGraphPipelineConstructor: public GapScaffoldGraphPipelineConstructor {
+class MergingScaffoldGraphPipelineConstructor : public GapScaffoldGraphPipelineConstructor {
     using GapScaffoldGraphPipelineConstructor::ScaffoldGraph;
     using GapScaffoldGraphPipelineConstructor::ScaffoldVertex;
     using ScaffoldGraphPipelineConstructor::BarcodeIndexPtr;
@@ -175,20 +181,21 @@ class MergingScaffoldGraphPipelineConstructor: public GapScaffoldGraphPipelineCo
     using GapScaffoldGraphPipelineConstructor::max_threads_;
     using GapScaffoldGraphPipelineConstructor::min_length_;
 
- public:
+  public:
     MergingScaffoldGraphPipelineConstructor(const conj_graph_pack &gp,
                                             const LibraryT &lib,
+                                            const ReadCloudConfigsT &configs,
                                             const ScaffoldingUniqueEdgeStorage &unique_storage,
                                             shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_,
                                             size_t max_threads_,
                                             size_t min_length_);
 
- protected:
-    vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(
-        path_extend::ScaffolderParams params, const set<ScaffoldVertex> &scaffold_vertices) const override;
+  protected:
+    vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(ScaffolderParams params,
+        const set<ScaffoldVertex> &scaffold_vertices) const override;
 };
 
-class BinningScaffoldGraphPipelineConstructor: public GapScaffoldGraphPipelineConstructor {
+class BinningScaffoldGraphPipelineConstructor : public GapScaffoldGraphPipelineConstructor {
     using GapScaffoldGraphPipelineConstructor::ScaffoldGraph;
     using GapScaffoldGraphPipelineConstructor::ScaffoldVertex;
     using ScaffoldGraphPipelineConstructor::BarcodeIndexPtr;
@@ -199,16 +206,18 @@ class BinningScaffoldGraphPipelineConstructor: public GapScaffoldGraphPipelineCo
     using GapScaffoldGraphPipelineConstructor::max_threads_;
     using GapScaffoldGraphPipelineConstructor::min_length_;
 
- public:
+  public:
     BinningScaffoldGraphPipelineConstructor(const conj_graph_pack &gp,
                                             const LibraryT &lib,
+                                            const ReadCloudConfigsT &configs,
                                             const ScaffoldingUniqueEdgeStorage &unique_storage,
                                             shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
                                             size_t max_threads,
                                             size_t min_length);
 
- private:
-    vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(path_extend::ScaffolderParams params,
-                                                                                const set<ScaffoldVertex> &scaffold_vertices) const override;
+  private:
+    vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> ConstructStages(ScaffolderParams params,
+        const set<ScaffoldVertex> &scaffold_vertices) const override;
 };
+}
 }

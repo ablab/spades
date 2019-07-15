@@ -15,14 +15,14 @@ namespace path_extend {
 using namespace debruijn_graph;
 
 struct ExtenderTriplet {
-    io::LibraryType lib_type_;
-    size_t lib_index_;
-    std::shared_ptr<PathExtender> extender_;
+  io::LibraryType lib_type_;
+  size_t lib_index_;
+  std::shared_ptr<PathExtender> extender_;
 
-    ExtenderTriplet(io::LibraryType lib_type, size_t lib_index, std::shared_ptr<PathExtender> extender):
-        lib_type_(lib_type), lib_index_(lib_index), extender_(extender) {
+  ExtenderTriplet(io::LibraryType lib_type, size_t lib_index, std::shared_ptr<PathExtender> extender) :
+      lib_type_(lib_type), lib_index_(lib_index), extender_(extender) {
 
-    }
+  }
 
     static int GetPriority(io::LibraryType type) {
         #define SET_PRIORITY(o) case o: --priority
@@ -37,6 +37,7 @@ struct ExtenderTriplet {
             SET_PRIORITY(LibraryType::TrustedContigs);
             SET_PRIORITY(LibraryType::SingleReads);
             SET_PRIORITY(LibraryType::PairedEnd);
+            SET_PRIORITY(LibraryType::Clouds10x);
             SET_PRIORITY(LibraryType::HQMatePairs);
             SET_PRIORITY(LibraryType::MatePairs);
             SET_PRIORITY(LibraryType::TSLReads);
@@ -64,13 +65,19 @@ typedef std::vector<ExtenderTriplet> ExtenderTriplets;
 
 typedef std::vector<std::shared_ptr<PathExtender>> Extenders;
 
-inline Extenders ExtractExtenders(const ExtenderTriplets& triplets) {
+inline Extenders ExtractExtenders(const ExtenderTriplets &triplets) {
     Extenders result;
-    for (const auto& triplet : triplets)
+    for (const auto &triplet : triplets)
         result.push_back(triplet.extender_);
 
     return result;
 }
+
+class SearchingExtenderConstructor {
+
+
+    shared_ptr<SearchingMultiExtender> ConstructMultiExtender() const;
+};
 
 class ExtendersGenerator {
     const config::dataset &dataset_info_;
@@ -84,14 +91,14 @@ class ExtendersGenerator {
 
     const PELaunchSupport &support_;
 
-public:
+  public:
     ExtendersGenerator(const config::dataset &dataset_info,
                        const PathExtendParamsContainer &params,
                        const graph_pack::GraphPack &gp,
                        const GraphCoverageMap &cover_map,
                        const UniqueData &unique_data,
                        UsedUniqueStorage &used_unique_storage,
-                       const PELaunchSupport& support) :
+                       const PELaunchSupport &support) :
         dataset_info_(dataset_info),
         params_(params),
         gp_(gp),
@@ -99,7 +106,7 @@ public:
         cover_map_(cover_map),
         unique_data_(unique_data),
         used_unique_storage_(used_unique_storage),
-        support_(support) { }
+        support_(support) {}
 
     Extenders MakePBScaffoldingExtenders() const;
 
@@ -107,15 +114,14 @@ public:
 
     Extenders MakeMPExtenders() const;
 
-    Extenders MakeReadCloudExtenders(const ScaffoldingUniqueEdgeStorage& storage) const;
+    Extenders MakeReadCloudExtenders() const;
 
     Extenders MakeCoverageExtenders() const;
 
     Extenders MakePEExtenders() const;
 
-    //fixme MakePEExtenders duplication
     shared_ptr<ExtensionChooser> MakeSimpleExtensionChooser(size_t lib_index) const;
-private:
+  private:
 
     std::shared_ptr<SimpleExtender> MakePEExtender(size_t lib_index, bool investigate_loops) const;
 
@@ -128,7 +134,7 @@ private:
                                                           const GraphCoverageMap &read_paths_cov_map) const;
 
     std::shared_ptr<SimpleExtender> MakeLongEdgePEExtender(size_t lib_index,
-                                                      bool investigate_loops) const;
+                                                           bool investigate_loops) const;
 
     std::shared_ptr<GapAnalyzer> MakeGapAnalyzer(double is_variation) const;
 
@@ -152,6 +158,8 @@ private:
     shared_ptr<PathExtender> MakeScaffoldGraphExtender(size_t lib_index) const;
 
     shared_ptr<PathExtender> MakeReadCloudExtender(size_t lib_index) const;
+
+    shared_ptr<SearchingMultiExtender> MakeSearchingExtender(size_t lib_index) const;
 
     void PrintExtenders(const std::vector<std::shared_ptr<PathExtender>> &extenders) const;
 

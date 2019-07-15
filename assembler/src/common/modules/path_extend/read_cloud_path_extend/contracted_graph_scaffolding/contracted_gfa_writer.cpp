@@ -1,7 +1,7 @@
 #include "contracted_gfa_writer.hpp"
 
 namespace path_extend {
-
+namespace read_cloud {
 void ContractedGFAWriter::WriteLinks() {
     for (const auto &vertex: graph_) {
         for (const auto &in_entry: graph_.incoming(vertex)) {
@@ -65,7 +65,10 @@ void ContractedGFAWriter::WriteSegments() {
         }
     }
 }
-void ContractedGFAWriter::WriteSegment(const std::string &edge_id, const string &seq, double cov, std::ostream &os) {
+void ContractedGFAWriter::WriteSegment(const std::string &edge_id,
+                                       const std::string &seq,
+                                       double cov,
+                                       std::ostream &os) {
     os << "S\t"
        << edge_id << '\t' << seq << '\t'
        << "KC:i:" << size_t(math::round(cov)) << '\n';
@@ -79,4 +82,5 @@ void ContractedGFAWriter::WriteSegmentsAndLinks() {
 //        graph_.GetAssemblyGraph().conjugate(vertex);
 //    }
 //}
+}
 }

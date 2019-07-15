@@ -51,6 +51,7 @@ struct PathExtendParamsContainer {
                               const config::debruijn_config::strand_specificity& strand_specificity,
                               const std::filesystem::path& output_dir_,
                               config::pipeline_type mode_,
+                              size_t threads,
                               bool uneven_depth_,
                               bool avoid_rc_connections_,
                               bool use_scaffolder_):
@@ -61,6 +62,7 @@ struct PathExtendParamsContainer {
         output_dir(output_dir_),
         etc_dir(output_dir / pe_cfg_.etc_dir),
         mode(mode_),
+        threads(threads),
         uneven_depth(uneven_depth_),
         avoid_rc_connections(avoid_rc_connections_),
         use_scaffolder(use_scaffolder_),
@@ -95,6 +97,9 @@ struct PathExtendParamsContainer {
     std::filesystem::path etc_dir;
 
     config::pipeline_type mode;
+
+    size_t threads;
+
     bool uneven_depth;
 
     bool avoid_rc_connections;

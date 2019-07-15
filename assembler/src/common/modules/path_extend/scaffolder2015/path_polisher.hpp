@@ -16,6 +16,7 @@
 #include "barcode_index/scaffold_vertex_index_builder.hpp"
 #include "modules/path_extend/paired_library.hpp"
 #include "modules/path_extend/path_extender.hpp"
+#include "pipeline/graph_pack.hpp"
 
 namespace path_extend {
 
@@ -83,14 +84,18 @@ public:
 };
 
 class ReadCloudGapExtensionChooserFactory : public GapExtensionChooserFactory {
+  public:
+    typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
+    typedef read_cloud::LongEdgePairGapCloserParams GapCloserParamsT;
+
+  private:
     const Graph& g_;
     const ScaffoldingUniqueEdgeStorage& unique_storage_;
     shared_ptr <barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor_;
-    typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
     size_t tail_threshold_;
     size_t count_threshold_;
     size_t length_threshold_;
-    const LongEdgePairGapCloserParams params_;
+    const GapCloserParamsT params_;
     size_t scan_bound_;
  public:
     ReadCloudGapExtensionChooserFactory(const Graph &g,
@@ -99,7 +104,7 @@ class ReadCloudGapExtensionChooserFactory : public GapExtensionChooserFactory {
                                         size_t tail_threshold_,
                                         size_t count_threshold_,
                                         size_t length_threshold_,
-                                        const LongEdgePairGapCloserParams &params_,
+                                        const GapCloserParamsT &params_,
                                         size_t scan_bound_)
         : GapExtensionChooserFactory(g),
           g_(g),
@@ -116,8 +121,9 @@ class ReadCloudGapExtensionChooserFactory : public GapExtensionChooserFactory {
 
  private:
 
-    shared_ptr<LongEdgePairGapCloserPredicate> ExtractPredicateFromPosition(const BidirectionalPath &path, const size_t position,
-                                                                            const LongEdgePairGapCloserParams &params) const;
+    shared_ptr<read_cloud::LongEdgePairGapCloserPredicate> GetPredicateFromPosition(const BidirectionalPath &path,
+                                                                                    const size_t position,
+                                                                                    const GapCloserParamsT &params) const;
 
     DECL_LOGGER("ReadCloudGapExtensionChooserFactory");
 };

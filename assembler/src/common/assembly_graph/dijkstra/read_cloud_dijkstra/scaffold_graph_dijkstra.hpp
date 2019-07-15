@@ -19,21 +19,21 @@ class SimpleScaffoldGraphLengthCalculator {
 };
 
 template <class Graph, typename distance_t = size_t>
-class DistanceBasedScaffoldGraphLengthCalculator: public LengthCalculator<Graph, distance_t> {
+class DistanceBasedScaffoldGraphLengthCalculator {
  protected:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
-    using LengthCalculator<Graph, distance_t>::graph_;
+    const Graph &graph_;
  public:
-    explicit DistanceBasedScaffoldGraphLengthCalculator(const Graph& graph) : LengthCalculator<Graph, distance_t>(graph) {}
-    distance_t GetLength(EdgeId edge) const override {
+    explicit DistanceBasedScaffoldGraphLengthCalculator(const Graph& graph) : graph_(graph) {}
+    distance_t GetLength(EdgeId edge) const {
         return graph_.length(edge) + graph_.length(edge.getEnd());
     }
 };
 
 template <>
-class ForwardNeighbourIterator<ScaffoldGraph> : public NeighbourIterator<ScaffoldGraph>{
+class ForwardNeighbourIterator<ScaffoldGraph> {
     typedef typename ScaffoldGraph::VertexId VertexId;
     typedef typename ScaffoldGraph::EdgeId EdgeId;
     typedef typename vector<ScaffoldGraph::EdgeId>::const_iterator edge_const_iterator;
@@ -41,14 +41,13 @@ class ForwardNeighbourIterator<ScaffoldGraph> : public NeighbourIterator<Scaffol
     edge_const_iterator current_;
  public:
     ForwardNeighbourIterator(const ScaffoldGraph &graph, VertexId vertex) :
-        NeighbourIterator<ScaffoldGraph>(graph, vertex),
         out_edges_(graph.OutgoingEdges(vertex)), current_(out_edges_.begin()) { }
 
-    bool HasNext() override {
+    bool HasNext() {
         return current_ != out_edges_.end();
     }
 
-    vertex_neighbour<ScaffoldGraph> Next() override {
+    vertex_neighbour<ScaffoldGraph> Next() {
         TRACE("Before increment");
         TRACE(current_->getStart().int_id() << ", " << current_->getEnd().int_id());
         vertex_neighbour<ScaffoldGraph> res(current_->getEnd(), *current_);
@@ -62,7 +61,7 @@ class ForwardNeighbourIterator<ScaffoldGraph> : public NeighbourIterator<Scaffol
 };
 
 template<>
-class BackwardNeighbourIterator<ScaffoldGraph> : public NeighbourIterator<ScaffoldGraph>{
+class BackwardNeighbourIterator<ScaffoldGraph> {
     typedef typename ScaffoldGraph::VertexId VertexId;
     typedef typename ScaffoldGraph::EdgeId EdgeId;
     typedef typename vector<EdgeId>::const_iterator edge_const_iterator;
@@ -71,14 +70,13 @@ class BackwardNeighbourIterator<ScaffoldGraph> : public NeighbourIterator<Scaffo
     edge_const_iterator current_;
  public:
     BackwardNeighbourIterator(const ScaffoldGraph &graph, VertexId vertex) :
-        NeighbourIterator<ScaffoldGraph>(graph, vertex),
         in_edges_(graph.IncomingEdges(vertex)), current_(in_edges_.begin()) { }
 
-    bool HasNext() override {
+    bool HasNext() {
         return current_ != in_edges_.end();
     }
 
-    vertex_neighbour<ScaffoldGraph> Next() override {
+    vertex_neighbour<ScaffoldGraph> Next() {
         vertex_neighbour<ScaffoldGraph> res(current_->getStart(), *current_);
         current_++;
         return res;
@@ -86,19 +84,18 @@ class BackwardNeighbourIterator<ScaffoldGraph> : public NeighbourIterator<Scaffo
 };
 
 template<class Graph, typename distance_t = size_t>
-class ScaffoldBarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t> {
+class ScaffoldBarcodedPathPutChecker {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph& g_;
     const VertexId first_;
     const VertexId second_;
-    shared_ptr<path_extend::ScaffoldVertexPredicate> predicate_;
+    shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate_;
 
  public:
     ScaffoldBarcodedPathPutChecker(const Graph& g, const VertexId& first, const VertexId& second,
-                                   shared_ptr<path_extend::ScaffoldVertexPredicate> predicate) :
-        VertexPutChecker<Graph, distance_t>(),
+                                   shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate) :
         g_(g),
         first_(first),
         second_(second),
@@ -108,7 +105,7 @@ class ScaffoldBarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t
         TRACE("Second id: " << second_.int_id());
     }
 
-    bool Check(VertexId vertex, EdgeId /*unused*/, distance_t distance) const override {
+    bool Check(VertexId vertex, EdgeId /*unused*/, distance_t distance) const {
         TRACE("Checking vertex " << g_.str(vertex));
         TRACE("Id: " << vertex.int_id());
         TRACE("First id: " << first_.int_id());
@@ -125,7 +122,7 @@ class ScaffoldBarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t
 };
 
 template<class Graph, typename distance_t = size_t>
-class StartPredicateProcessChecker : public VertexProcessChecker<Graph, distance_t> {
+class StartPredicateProcessChecker {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
@@ -138,39 +135,20 @@ class StartPredicateProcessChecker : public VertexProcessChecker<Graph, distance
                                  const func::TypedPredicate<VertexId>& predicate_)
         : g_(g_), start_(start_), predicate_(predicate_) {}
 
-    bool Check(VertexId vertex, distance_t /*distance*/) override {
+    bool Check(VertexId vertex, distance_t /*distance*/) {
         return vertex == start_ or not predicate_(vertex);
     }
 };
 
-
-//todo replace usages with predicate checker
 template<class Graph, typename distance_t = size_t>
-class LengthBasedProcessChecker : public VertexProcessChecker<Graph, distance_t> {
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-
-    const Graph& g_;
-    const VertexId start_;
-    const size_t length_bound_;
- public:
-    LengthBasedProcessChecker(const Graph &g_, const VertexId start_, const size_t length_bound_)
-        : g_(g_), start_(start_), length_bound_(length_bound_) {}
-
-    bool Check(VertexId vertex, distance_t /*distance*/) override {
-        return vertex == start_ or g_.length(vertex) <= length_bound_;
-    }
-};
-
-template<class Graph, typename distance_t = size_t>
-class TrivialScaffoldPutChecker : public VertexPutChecker<Graph, distance_t> {
+class TrivialScaffoldPutChecker {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
  public:
     TrivialScaffoldPutChecker() {}
 
-    bool Check(VertexId /*unused*/, EdgeId /*unused*/, distance_t /*unused*/) const override {
+    bool Check(VertexId /*unused*/, EdgeId /*unused*/, distance_t /*unused*/) const {
         return true;
     }
     DECL_LOGGER("TrivialScaffoldPutChecker");
@@ -215,7 +193,7 @@ class ScaffoldDijkstraHelper {
         const ScaffoldGraph::ScaffoldGraphVertex first,
         const ScaffoldGraph::ScaffoldGraphVertex second,
         size_t length_bound,
-        shared_ptr<path_extend::ScaffoldVertexPredicate> predicate,
+        shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate,
         size_t max_vertex_number = -1ul){
         return BackwardBoundedScaffoldDijkstra(graph, BackwardBoundedScaffoldDijkstraSettings(
             SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>(),
@@ -230,7 +208,7 @@ class ScaffoldDijkstraHelper {
         const ScaffoldGraph::ScaffoldGraphVertex& first,
         const ScaffoldGraph::ScaffoldGraphVertex& second,
         size_t length_bound,
-        shared_ptr<path_extend::ScaffoldVertexPredicate> predicate,
+        shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate,
         size_t max_vertex_number = -1ul){
         return ForwardBoundedScaffoldDijkstra(graph, ForwardBoundedScaffoldDijkstraSettings(
             SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>(),

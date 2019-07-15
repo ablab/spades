@@ -3,11 +3,12 @@
 #include "transition_extractor.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 namespace validation {
 
 ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStats(
-        const path_extend::scaffold_graph::ScaffoldGraph& scaffold_graph,
-        const vector<vector<EdgeWithMapping>>& reference_paths) {
+    const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
+    const vector<vector<EdgeWithMapping>> &reference_paths) {
     GeneralTransitionStorageBuilder reference_transition_builder(g_, 1, false, false);
     ReverseTransitionStorageBuilder reverse_transition_builder;
     ConjugateTransitionStorageBuilder conjugate_transition_builder(g_);
@@ -29,8 +30,8 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStats(
 }
 
 std::set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransitions(
-        const ScaffoldGraphValidator::ScaffoldGraph &graph,
-        const ContigTransitionStorage &genome_transitions) const {
+    const ScaffoldGraphValidator::ScaffoldGraph &graph,
+    const ContigTransitionStorage &genome_transitions) const {
 
     std::unordered_map<EdgeId, size_t> edge_to_vertex;
     for (const scaffold_graph::ScaffoldVertex &vertex: graph.vertices()) {
@@ -45,7 +46,7 @@ std::set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransi
         auto first_result = edge_to_vertex.find(transition.first_);
         auto second_result = edge_to_vertex.find(transition.second_);
         if (first_result != edge_to_vertex.end() and second_result != edge_to_vertex.end() and
-                first_result->first != second_result->first) {
+            first_result->first != second_result->first) {
             external_transitions.insert(transition);
         }
     }
@@ -54,7 +55,7 @@ std::set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransi
     INFO(external_transitions.size() << " external transitions");
 
     std::unordered_set<transitions::Transition> graph_transitions;
-    for (const ScaffoldGraph::ScaffoldEdge& edge: graph.edges()) {
+    for (const ScaffoldGraph::ScaffoldEdge &edge: graph.edges()) {
         auto is_covered = [&genome_transitions](const EdgeId &edge) {
           return genome_transitions.IsEdgeCovered(edge);
         };
@@ -67,8 +68,8 @@ std::set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransi
         graph_transitions.insert(t);
     }
     std::set<transitions::Transition> result;
-    for (const auto& transition: external_transitions) {
-        if (graph_transitions.find(transition) == graph_transitions.end()){
+    for (const auto &transition: external_transitions) {
+        if (graph_transitions.find(transition) == graph_transitions.end()) {
             result.insert(transition);
         }
     }
@@ -76,12 +77,12 @@ std::set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransi
 }
 
 ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
-        const path_extend::scaffold_graph::ScaffoldGraph &graph,
-        const ContigTransitionStorage &reference_transitions,
-        const ContigTransitionStorage &reverse_transitions,
-        const ContigTransitionStorage &conjugate_transitions,
-        const ContigTransitionStorage &near_in_both_strands_transitions,
-        const ContigTransitionStorage &forward_neighbouring_transitions) {
+    const path_extend::scaffold_graph::ScaffoldGraph &graph,
+    const ContigTransitionStorage &reference_transitions,
+    const ContigTransitionStorage &reverse_transitions,
+    const ContigTransitionStorage &conjugate_transitions,
+    const ContigTransitionStorage &near_in_both_strands_transitions,
+    const ContigTransitionStorage &forward_neighbouring_transitions) {
     ScaffoldGraphStats stats;
     DEBUG("Getting fn transitions");
     auto false_negative_transitions = GetFalseNegativeTransitions(graph, reference_transitions);
@@ -114,8 +115,8 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
         }
     }
 
-    path_extend::ScaffoldGraphExtractor extractor;
-    auto univocal_edges = extractor.ExtractUnivocalEdges(graph);
+    ScaffoldGraphExtractor extractor;
+    auto univocal_edges = extractor.ExtractReliableEdges(graph);
     stats.univocal_edges_ = univocal_edges.size();
     for (const auto &edge: univocal_edges) {
         auto start = edge.getStart();
@@ -128,10 +129,10 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
     }
     return stats;
 }
-size_t ScaffoldGraphValidator::CountStatsUsingTransitions(const ScaffoldGraphValidator::ScaffoldGraph& graph,
-                                                          const ContigTransitionStorage& transitions) {
+size_t ScaffoldGraphValidator::CountStatsUsingTransitions(const ScaffoldGraphValidator::ScaffoldGraph &graph,
+                                                          const ContigTransitionStorage &transitions) {
     size_t result = 0;
-    for (const ScaffoldGraph::ScaffoldEdge& edge: graph.edges()) {
+    for (const ScaffoldGraph::ScaffoldEdge &edge: graph.edges()) {
         if (transitions.CheckTransition(edge.getStart(), edge.getEnd())) {
             TRACE(edge.getStart().int_id() << ", " << edge.getEnd().int_id());
             ++result;
@@ -140,10 +141,10 @@ size_t ScaffoldGraphValidator::CountStatsUsingTransitions(const ScaffoldGraphVal
     return result;
 }
 
-size_t ScaffoldGraphValidator::CountFalsePositive(const ScaffoldGraphValidator::ScaffoldGraph& graph,
-                                                  const ContigTransitionStorage& reference_transtions) {
+size_t ScaffoldGraphValidator::CountFalsePositive(const ScaffoldGraphValidator::ScaffoldGraph &graph,
+                                                  const ContigTransitionStorage &reference_transtions) {
     size_t result = 0;
-    for (const ScaffoldGraph::ScaffoldEdge& edge: graph.edges()) {
+    for (const ScaffoldGraph::ScaffoldEdge &edge: graph.edges()) {
         auto start = edge.getStart();
         auto end = edge.getEnd();
         bool start_covered = reference_transtions.IsEdgeCovered(start);
@@ -156,5 +157,6 @@ size_t ScaffoldGraphValidator::CountFalsePositive(const ScaffoldGraphValidator::
 }
 ScaffoldGraphValidator::ScaffoldGraphValidator(const Graph &g_)
     : g_(g_) {}
+}
 }
 }

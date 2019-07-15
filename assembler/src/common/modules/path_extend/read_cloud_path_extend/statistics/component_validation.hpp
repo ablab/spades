@@ -4,6 +4,8 @@
 #include "read_cloud_path_extend/validation/path_cluster_validation.hpp"
 
 namespace path_extend {
+namespace read_cloud {
+
 class ScaffoldGraphComponentExtractor {
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
@@ -11,10 +13,10 @@ class ScaffoldGraphComponentExtractor {
     typedef std::unordered_set<ScaffoldVertex> VertexSet;
     typedef SimpleGraph<ScaffoldVertex> TransitionGraph;
 
- public:
+  public:
     vector<TransitionGraph> GetConnectedComponents(const ScaffoldGraph &scaffold_graph) const;
 
- private:
+  private:
     TransitionGraph UnorientTransitionGraph(const TransitionGraph &transition_graph) const;
 
     set<ScaffoldVertex> GetVertexComponent(const TransitionGraph &transition_graph, const ScaffoldVertex &start) const;
@@ -31,14 +33,15 @@ class ComponentEstimator {
     ScaffoldGraphPathClusterHelper path_cluster_helper_;
     validation::PathClusterValidator path_cluster_validator_;
 
- public:
+  public:
     ComponentEstimator(const Graph &g,
                        const ScaffoldGraphPathClusterHelper &path_cluster_helper,
                        const validation::PathClusterValidator &path_cluster_validator);
 
     void EstimateComponents(const ScaffoldGraph &scaffold_graph) const;
 
-    bool IsCorrect(const TransitionGraph &transition_graph, const std::vector<std::set<ScaffoldVertex>> &clusters) const;
+    bool IsCorrect(const TransitionGraph &transition_graph,
+                   const std::vector<std::set<ScaffoldVertex>> &clusters) const;
 
     bool IsSimple(const TransitionGraph &transition_graph, const std::vector<std::set<ScaffoldVertex>> &clusters) const;
 
@@ -48,4 +51,5 @@ class ComponentEstimator {
 
     DECL_LOGGER("ComponentEstimator")
 };
+}
 }

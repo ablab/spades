@@ -37,6 +37,9 @@ class PathExtendLauncher {
     std::shared_ptr<scaffold_graph::ScaffoldGraph>
         ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const;
 
+    std::shared_ptr<scaffold_graph::ScaffoldGraph> ConstructPathScaffoldGraphForReadCloudLib(
+        const PathContainer &path_container, size_t lib_index) const;
+
     void PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
                             const std::set<EdgeId> &main_edge_set,
                             const debruijn_graph::GenomeConsistenceChecker &genome_checker,
@@ -53,8 +56,6 @@ class PathExtendLauncher {
     void FillUniqueEdgeStorage();
 
     void FillPBUniqueEdgeStorages();
-
-    void FillReadCloudUniqueEdgeStorage();
 
     void FillPathContainer(size_t lib_index, size_t size_threshold = 1);
 
@@ -83,6 +84,8 @@ class PathExtendLauncher {
     Extenders ConstructReadCloudExtenders(const ExtendersGenerator &generator);
 
     void FilterPaths(PathContainer& paths);
+
+    void ScaffoldPaths(PathContainer &paths) const;
 
     void AddFLPaths(PathContainer& paths) const;
 

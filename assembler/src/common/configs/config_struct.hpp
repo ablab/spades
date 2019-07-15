@@ -494,11 +494,11 @@ struct debruijn_config {
 
         struct scaffold_polisher {
           size_t max_scaffold_dijkstra_distance;
-          double share_threshold;
           size_t read_count_threshold;
           size_t path_cluster_linkage_distance;
-          double path_cluster_relative_threshold;
           size_t path_cluster_min_reads;
+          double share_threshold;
+          double path_cluster_relative_threshold;
         };
 
         scaffold_polisher scaff_pol;
