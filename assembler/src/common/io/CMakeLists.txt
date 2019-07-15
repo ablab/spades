@@ -12,6 +12,9 @@ add_library(input STATIC
             reads/paired_readers.cpp
             reads/binary_converter.cpp
             reads/binary_streams.cpp
+            reads/io_helper.cpp
+            dataset_support/read_converter.cpp
+            dataset_support/dataset_readers.cpp
             sam/read.cpp
             sam/sam_reader.cpp)
 

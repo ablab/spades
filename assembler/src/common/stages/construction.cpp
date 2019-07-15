@@ -7,15 +7,15 @@
 
 #include "construction.hpp"
 
-#include "pipeline/graph_pack.hpp"
-#include "modules/graph_construction.hpp"
-/* #include "assembly_graph/construction/early_simplification.hpp" TODO use it */
-#include "assembly_graph/stats/picture_dump.hpp"
-
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
-#include "io/reads/vector_reader.hpp"
+#include "io/reads/multifile_reader.hpp"
+
+#include "modules/graph_construction.hpp"
+/* #include "assembly_graph/construction/early_simplification.hpp" TODO use it */
+
+#include "pipeline/graph_pack.hpp"
 
 #include "utils/filesystem/temporary.hpp"
 

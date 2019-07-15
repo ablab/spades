@@ -12,6 +12,7 @@
 #include "io/reads/io_helper.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "io/reads/multifile_reader.hpp"
+#include "io/reads/file_reader.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/graph/gfa_writer.hpp"
 

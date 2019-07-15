@@ -14,6 +14,7 @@
 #include "hybrid_aligning.hpp"
 #include "pair_info_count.hpp"
 #include "io/reads/multifile_reader.hpp"
+#include "io/reads/file_reader.hpp"
 
 namespace debruijn_graph {
 

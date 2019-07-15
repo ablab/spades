@@ -4,8 +4,9 @@
 #include "adt/hll.hpp"
 #include "adt/cqf.hpp"
 #include "ph_map/storing_traits.hpp"
-#include "common/utils/parallel/openmp_wrapper.h"
-#include "common/io/reads/read_processor.hpp"
+#include "io/reads/read_processor.hpp"
+#include "utils/parallel/openmp_wrapper.h"
+#include "utils/logger/logger.hpp"
 
 namespace utils {
 

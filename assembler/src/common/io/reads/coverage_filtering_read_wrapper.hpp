@@ -6,12 +6,13 @@
 
 #pragma once
 
-#include <memory>
-#include "io/reads/ireader.hpp"
+#include "filtering_reader_wrapper.hpp"
 
 #include "adt/cqf.hpp"
 #include "adt/cyclichash.hpp"
 #include "utils/kmer_counting.hpp"
+
+#include <memory>
 
 namespace io {
 
