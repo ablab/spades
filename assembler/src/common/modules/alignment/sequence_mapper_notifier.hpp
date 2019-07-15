@@ -61,7 +61,6 @@ public:
         streams.reset();
         NotifyStartProcessLibrary(lib_index, threads_count);
         size_t counter = 0, n = 15;
-        size_t fmem = utils::get_free_memory();
 
         #pragma omp parallel for num_threads(threads_count) shared(counter)
         for (size_t i = 0; i < streams.size(); ++i) {
@@ -69,10 +68,7 @@ public:
             ReadType r;
             auto& stream = streams[i];
             while (!stream.eof()) {
-                if (size == BUFFER_SIZE || 
-                    // Stop filling buffer if the amount of available is smaller
-                    // than half of free memory.
-                    (10 * utils::get_free_memory() / 4 < fmem && size > 10000)) {
+                if (size == BUFFER_SIZE) {
                     #pragma omp critical
                     {
                         counter += size;
