@@ -1,6 +1,7 @@
 #include "path_cluster_validation.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 namespace validation {
 PathClusterValidator::PathClusterValidator(const ReferencePathIndex &ref_path_index)
     : ref_path_index_(ref_path_index) {}
@@ -13,7 +14,7 @@ bool PathClusterValidator::IsCorrect(const cluster_storage::Cluster &cluster) co
 }
 bool PathClusterValidator::IsCovered(const cluster_storage::Cluster &cluster) const {
     set<scaffold_graph::ScaffoldVertex> cluster_vertices;
-    for (const auto& entry: cluster) {
+    for (const auto &entry: cluster) {
         cluster_vertices.insert(entry.first);
     }
     return IsCovered(cluster_vertices);
@@ -22,7 +23,7 @@ bool PathClusterValidator::IsCorrect(const set<scaffold_graph::ScaffoldVertex> &
     return GetReferencePath(scaffold_vertices).is_initialized();
 }
 bool PathClusterValidator::IsCovered(const set<scaffold_graph::ScaffoldVertex> &cluster_vertices) const {
-    for (const auto& vertex: cluster_vertices) {
+    for (const auto &vertex: cluster_vertices) {
         if (not IsCovered(vertex)) {
             return false;
         }
@@ -31,25 +32,23 @@ bool PathClusterValidator::IsCovered(const set<scaffold_graph::ScaffoldVertex> &
 }
 void PathClusterValidator::PrintRefIndexInfo(const set<scaffold_graph::ScaffoldVertex> &cluster_vertices) const {
     VERIFY_DEV(IsCovered(cluster_vertices));
-    path_extend::scaffold_graph::EdgeGetter edge_getter;
     for (const auto &vertex: cluster_vertices) {
-        auto edge = edge_getter.GetEdgeFromScaffoldVertex(vertex);
+        auto edge = vertex.GetFirstEdge();
         auto ref_info = ref_path_index_.at(edge);
-        TRACE("Path: " << ref_info.path_ << ", pos: " << ref_info.edge_pos_ << ", rev pos: " << ref_info.conj_edge_pos_);
+        TRACE(
+            "Path: " << ref_info.path_ << ", pos: " << ref_info.edge_pos_ << ", rev pos: " << ref_info.conj_edge_pos_);
     }
 }
 bool PathClusterValidator::IsCovered(const scaffold_graph::ScaffoldVertex &vertex) const {
-    path_extend::scaffold_graph::EdgeGetter edge_getter;
-    EdgeId edge = edge_getter.GetEdgeFromScaffoldVertex(vertex);
+    auto edge = vertex.GetFirstEdge();
     return ref_path_index_.Contains(edge);
 }
-optional<PathClusterValidator::SimplePath> PathClusterValidator::GetReferencePath(
-        const set<PathClusterValidator::ScaffoldVertex> &vertices) const {
+boost::optional<PathClusterValidator::SimplePath> PathClusterValidator::GetReferencePath(
+    const set<PathClusterValidator::ScaffoldVertex> &vertices) const {
     boost::optional<SimplePath> result;
     std::set<EdgeId> cluster_vertices;
-    path_extend::scaffold_graph::EdgeGetter edge_getter;
     for (const auto &vertex: vertices) {
-        cluster_vertices.insert(edge_getter.GetEdgeFromScaffoldVertex(vertex));
+        cluster_vertices.insert(vertex.GetFirstEdge());
     }
     VERIFY_DEV(cluster_vertices.size() >= 1);
     size_t first_path = ref_path_index_.at(*cluster_vertices.begin()).path_;
@@ -79,5 +78,6 @@ optional<PathClusterValidator::SimplePath> PathClusterValidator::GetReferencePat
     return result;
 }
 
+}
 }
 }

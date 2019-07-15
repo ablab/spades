@@ -1,14 +1,15 @@
 #include "candidate_selectors.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 
 DefaultCloudReachableEdgesSelector::DefaultCloudReachableEdgesSelector(
-        const Graph &g,
-        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-        const barcode_index::SimpleVertexEntry &target_barcodes,
-        size_t barcode_threshold,
-        size_t edge_length_threshold,
-        size_t distance_bound):
+    const Graph &g,
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+    const barcode_index::SimpleVertexEntry &target_barcodes,
+    size_t barcode_threshold,
+    size_t edge_length_threshold,
+    size_t distance_bound) :
     g_(g),
     barcode_extractor_(barcode_extractor),
     target_barcodes_(target_barcodes),
@@ -47,7 +48,7 @@ vector<EdgeWithDistance> DefaultCloudReachableEdgesSelector::SelectReachableEdge
 }
 
 shared_ptr<ReachableEdgesSelector> SimpleReachableEdgesSelectorFactory::ConstructReachableEdgesSelector(
-        const CloudReachableEdgesSelectorFactory::SimpleVertexEntry &barcodes) const {
+    const CloudReachableEdgesSelectorFactory::SimpleVertexEntry &barcodes) const {
     auto edges_selector = std::make_shared<DefaultCloudReachableEdgesSelector>(g_, barcode_extractor_,
                                                                                barcodes,
                                                                                barcode_threshold_,
@@ -56,14 +57,15 @@ shared_ptr<ReachableEdgesSelector> SimpleReachableEdgesSelectorFactory::Construc
     return edges_selector;
 }
 SimpleReachableEdgesSelectorFactory::SimpleReachableEdgesSelectorFactory(
-        const Graph &g,
-        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-        size_t barcode_threshold,
-        size_t edge_length_threshold,
-        size_t distance_bound)
+    const Graph &g,
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+    size_t barcode_threshold,
+    size_t edge_length_threshold,
+    size_t distance_bound)
     : g_(g),
       barcode_extractor_(barcode_extractor),
       barcode_threshold_(barcode_threshold),
       edge_length_threshold_(edge_length_threshold),
       distance_bound_(distance_bound) {}
+}
 }

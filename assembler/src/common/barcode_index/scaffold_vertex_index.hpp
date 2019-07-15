@@ -119,13 +119,13 @@ class BarcodeIndexInfoExtractorWrapper: public IntersectingScaffoldVertexIndexIn
         : g_(g), barcode_extractor_(barcode_index_) {}
 
     size_t GetHeadSize(const ScaffoldVertex &vertex) const override {
-        return barcode_extractor_->GetNumberOfBarcodes(GetEdge(vertex));
+        return barcode_extractor_->GetNumberOfBarcodes(vertex.GetFirstEdge());
     }
     size_t GetTailSize(const ScaffoldVertex &vertex) const override {
-        return barcode_extractor_->GetNumberOfBarcodes(g_.conjugate(GetEdge(vertex)));
+        return barcode_extractor_->GetNumberOfBarcodes(vertex.GetConjugateFromGraph(g_).GetFirstEdge());
     }
     size_t GetIntersectionSize(const ScaffoldVertex &first, const ScaffoldVertex &second) const override {
-        return barcode_extractor_->GetNumberOfSharedBarcodes(GetEdge(first), GetEdge(second));
+        return barcode_extractor_->GetNumberOfSharedBarcodes(first.GetLastEdge(), second.GetFirstEdge());
     }
     size_t GetIntersectionSize(const ScaffoldVertex &first,
                                const ScaffoldVertex &second,
@@ -141,38 +141,28 @@ class BarcodeIndexInfoExtractorWrapper: public IntersectingScaffoldVertexIndexIn
     }
 
     SimpleVertexEntry GetIntersection(const ScaffoldVertex &first, const ScaffoldVertex &second) const override {
-        auto intersection = barcode_extractor_->GetSharedBarcodes(GetEdge(first), GetEdge(second));
+        auto intersection = barcode_extractor_->GetSharedBarcodes(first.GetLastEdge(), second.GetFirstEdge());
         std::set<BarcodeId> result;
         std::copy(intersection.begin(), intersection.end(), std::inserter(result, result.begin()));
         return result;
     }
     size_t GetIntersectionSize(const ScaffoldVertex &middle, const SimpleVertexEntry &entry) const override {
-        auto barcodes = barcode_extractor_->GetBarcodes(GetEdge(middle));
+        auto barcodes = barcode_extractor_->GetBarcodes(middle.GetFirstEdge());
         SimpleVertexEntry intersection;
         std::set_intersection(barcodes.begin(), barcodes.end(), entry.begin(), entry.end(),
                               std::inserter(intersection, intersection.begin()));
         return intersection.size();
     }
 
-    //fixme Can not collect from part of the edge. Slow.
-    SimpleVertexEntry GetHeadEntry(const ScaffoldVertex &vertex) override {
+    SimpleVertexEntry GetHeadEntry(const ScaffoldVertex &/*vertex*/) override {
         VERIFY_MSG(false, "Head entry extractor from BarcodeIndexInfoExtractorWrapper is currently not supported");
         SimpleVertexEntry result;
-        auto edge = GetEdge(vertex);
-        auto barcodes = barcode_extractor_->GetBarcodes(edge);
-        std::copy(barcodes.begin(), barcodes.end(), std::inserter(result, result.begin()));
         return result;
     }
 
     SimpleVertexEntry GetTailEntry(const ScaffoldVertex &vertex) override {
         return GetHeadEntry(vertex);
     }
-
- private:
-        EdgeId GetEdge(const ScaffoldVertex& vertex) const {
-            path_extend::scaffold_graph::EdgeGetter edge_getter;
-            return edge_getter.GetEdgeFromScaffoldVertex(vertex);
-        }
     };
 
     class SimpleScaffoldVertexIndexInfoExtractor: public IntersectingScaffoldVertexIndexInfoExtractor<SimpleVertexEntry> {

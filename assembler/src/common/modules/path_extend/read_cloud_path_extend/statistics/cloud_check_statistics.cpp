@@ -1,8 +1,11 @@
-#include "common/barcode_index/cluster_storage/cluster_storage_helper.hpp"
 #include "cloud_check_statistics.hpp"
+
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
 #include "component_validation.hpp"
 
 namespace path_extend {
+namespace read_cloud {
+
 PathClusterChecker::PathClusterChecker(const Graph &g,
                                        const ScaffoldGraphPathClusterHelper &path_cluster_helper,
                                        const validation::PathClusterValidator &path_cluster_validator)
@@ -67,73 +70,62 @@ void PathClusterChecker::CheckComponents(const PathClusterChecker::ScaffoldGraph
     component_estimator.EstimateComponents(graph);
 }
 shared_ptr<PathClusterChecker> PathClusterCheckerFactory::ConstuctPathClusterChecker(
-        const set<scaffold_graph::ScaffoldVertex> &vertices,
-        size_t length_threshold) const {
-    const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
+        const scaffold_graph::ScaffoldGraph &scaffold_graph) const {
+    const string path_to_reference = path_to_reference_;
     DEBUG("Path to reference: " << path_to_reference);
     DEBUG("Path exists: " << fs::check_existence(path_to_reference));
     validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
     validation::FilteredReferencePathHelper path_helper(gp_);
-    auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
+    auto reference_paths = path_helper.GetFilteredReferencePathsFromGraph(path_to_reference, scaffold_graph);
 
     const size_t min_read_threshold = 2;
     validation::ReferencePathIndexBuilder path_index_builder;
     auto reference_index = path_index_builder.BuildReferencePathIndex(reference_paths);
     size_t covered_vertices = 0;
-    for (const auto& vertex: vertices) {
-        path_extend::scaffold_graph::EdgeGetter edge_getter;
-        if (reference_index.Contains(edge_getter.GetEdgeFromScaffoldVertex(vertex))) {
+
+    for (const scaffold_graph::ScaffoldVertex &vertex: scaffold_graph.vertices()) {
+        if (reference_index.Contains(vertex.GetFirstEdge())) {
             ++covered_vertices;
         }
     }
-    DEBUG(covered_vertices << " covered vertices out of " << vertices.size());
+    DEBUG(covered_vertices << " covered vertices out of " << scaffold_graph.VertexCount());
     cluster_storage::HalfEdgeClusterStorageHelper cluster_storage_helper(gp_.g, barcode_extractor_,
                                                                          min_read_threshold, max_threads_);
+    std::set<scaffold_graph::ScaffoldVertex> vertices;
+    std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(vertices, vertices.begin()));
     auto initial_storage_builder = cluster_storage_helper.GetInitialStorageBuilder(vertices);
     DEBUG("Constructing initial storage");
     auto initial_storage =
         make_shared<cluster_storage::InitialClusterStorage>(initial_storage_builder->ConstructInitialClusterStorage());
     ScaffoldGraphPathClusterHelper path_cluster_helper(gp_.g, barcode_extractor_, initial_storage, max_threads_);
     validation::PathClusterValidator path_cluster_validator(reference_index);
-    auto path_cluster_checker = make_shared<PathClusterChecker> (gp_.g, path_cluster_helper, path_cluster_validator);
+    auto path_cluster_checker = make_shared<PathClusterChecker>(gp_.g, path_cluster_helper, path_cluster_validator);
     return path_cluster_checker;
 }
-PathClusterCheckerFactory::PathClusterCheckerFactory(
-        const conj_graph_pack &gp,
-        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-        size_t max_threads)
-    : gp_(gp), barcode_extractor_(barcode_extractor), max_threads_(max_threads) {}
+PathClusterCheckerFactory::PathClusterCheckerFactory(const conj_graph_pack &gp, BarcodeIndexPtr barcode_extractor,
+                                                     const std::string &path_to_reference, size_t max_threads)
+    : gp_(gp), barcode_extractor_(barcode_extractor), path_to_reference_(path_to_reference), max_threads_(max_threads) {}
 
 void PathClusterStorageChecker::CheckPathClusters(const ScaffoldGraphStorage &storage) const {
-    const auto barcode_index = gp_.barcode_mapper_ptr;
-    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_index, gp_.g);
-    PathClusterCheckerFactory path_cluster_checker_factory(gp_, barcode_extractor, max_threads_);
+    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    PathClusterCheckerFactory path_cluster_checker_factory(gp_, barcode_extractor, path_to_reference_, max_threads_);
 
-    size_t small_length_threshold = storage.GetSmallLengthThreshold();
     const auto &small_scaffold_graph = storage.GetSmallScaffoldGraph();
-    set<ScaffoldVertex> small_vertices;
-    std::copy(small_scaffold_graph.vbegin(), small_scaffold_graph.vend(),
-              std::inserter(small_vertices, small_vertices.end()));
-    auto path_cluster_checker = path_cluster_checker_factory.ConstuctPathClusterChecker(small_vertices,
-                                                                                        small_length_threshold);
+    auto path_cluster_checker = path_cluster_checker_factory.ConstuctPathClusterChecker(small_scaffold_graph);
     INFO("Small scaffold graph path cluster stats");
     path_cluster_checker->CheckPathClusters(small_scaffold_graph);
     INFO("Checking components");
     path_cluster_checker->CheckComponents(small_scaffold_graph);
 
-    set<ScaffoldVertex> large_vertices;
-    size_t large_length_threshold = storage.GetLargeLengthThreshold();
     const auto &large_scaffold_graph = storage.GetLargeScaffoldGraph();
-    std::copy(large_scaffold_graph.vbegin(), large_scaffold_graph.vend(),
-              std::inserter(large_vertices, large_vertices.end()));
-    auto large_path_cluster_checker = path_cluster_checker_factory.ConstuctPathClusterChecker(large_vertices,
-                                                                                              large_length_threshold);
+    auto large_path_cluster_checker = path_cluster_checker_factory.ConstuctPathClusterChecker(large_scaffold_graph);
     INFO("Large scaffold graph path cluster stats");
     large_path_cluster_checker->CheckPathClusters(large_scaffold_graph);
     large_path_cluster_checker->CheckComponents(large_scaffold_graph);
 }
-PathClusterStorageChecker::PathClusterStorageChecker(
-        const conj_graph_pack &gp,
-        size_t max_threads)
-    : gp_(gp), max_threads_(max_threads) {}
+PathClusterStorageChecker::PathClusterStorageChecker(const conj_graph_pack &gp,
+                                                     const std::string &path_to_reference,
+                                                     size_t max_threads)
+    : gp_(gp), path_to_reference_(path_to_reference), max_threads_(max_threads) {}
+}
 }

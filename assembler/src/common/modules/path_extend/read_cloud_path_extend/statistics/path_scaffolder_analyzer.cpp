@@ -3,6 +3,8 @@
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
 #include "path_scaffolder_analyzer.hpp"
 namespace path_extend {
+namespace read_cloud {
+
 boost::optional<size_t> PathDistanceEstimator::GetLongEdgeDistance(const PathDistanceEstimator::ScaffoldVertex &first,
                                                                    const PathDistanceEstimator::ScaffoldVertex &second) const {
     boost::optional<size_t> result;
@@ -40,7 +42,10 @@ PathDistanceEstimator::PathDistanceEstimator(const Graph &g,
                                              size_t long_edge_threshold)
     : g_(g), reference_path_index_(reference_path_index), long_edge_threshold_(long_edge_threshold) {}
 PathPairInfo::PathPairInfo(size_t first_length, size_t second_length, size_t long_edge_distance, double score) :
-    first_length_(first_length), second_length_(second_length), long_edge_distance_(long_edge_distance), score_(score) {}
+    first_length_(first_length),
+    second_length_(second_length),
+    long_edge_distance_(long_edge_distance),
+    score_(score) {}
 
 ostream &operator<<(ostream &os, const PathPairInfo &info) {
     os << info.first_length_ << info.second_length_ << info.long_edge_distance_ << info.score_;
@@ -58,8 +63,8 @@ void PathPairDataset::Insert(const PathPairInfo &path_pair_info) {
     data_.push_back(path_pair_info);
 }
 PathPairDataset PathScaffolderAnalyzer::GetFalseNegativeDataset(const PathContainer &paths) const {
-    const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
-    path_extend::validation::ContigPathBuilder contig_path_builder(gp_);
+    const string path_to_reference = path_to_reference_;
+    validation::ContigPathBuilder contig_path_builder(gp_);
 
     auto named_reference_paths = contig_path_builder.GetContigPaths(path_to_reference);
     auto raw_reference_paths = contig_path_builder.StripNames(named_reference_paths);
@@ -87,7 +92,8 @@ PathPairDataset PathScaffolderAnalyzer::GetFalseNegativeDataset(const PathContai
     PathPairDataset result;
 
     for (const auto &edge: false_negative_edges) {
-        boost::optional<size_t> distance_result = distance_estimator.GetLongEdgeDistance(edge.getStart(), edge.getEnd());
+        boost::optional<size_t>
+            distance_result = distance_estimator.GetLongEdgeDistance(edge.getStart(), edge.getEnd());
         if (distance_result.is_initialized()) {
             INFO("Distance: " << distance_result.get());
             INFO("Score: " << edge.getWeight());
@@ -99,10 +105,10 @@ PathPairDataset PathScaffolderAnalyzer::GetFalseNegativeDataset(const PathContai
 
 }
 shared_ptr<PathScaffolderAnalyzer::BarcodeIndex> PathScaffolderAnalyzer::ConstructIndex(
-        const std::set<PathScaffolderAnalyzer::ScaffoldVertex> &vertices) const {
+    const std::set<PathScaffolderAnalyzer::ScaffoldVertex> &vertices) const {
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
-    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-    auto graph_construction_params = cfg::get().ts_res.scaff_con;
+    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    auto graph_construction_params = configs_.scaff_con;
     const size_t tail_threshold = long_edge_length_threshold_;
     const size_t length_threshold = graph_construction_params.min_edge_length_for_barcode_collection;
     const size_t count_threshold = graph_construction_params.count_threshold;
@@ -115,31 +121,30 @@ shared_ptr<PathScaffolderAnalyzer::BarcodeIndex> PathScaffolderAnalyzer::Constru
     return scaffold_index_extractor;
 }
 PathScaffolderAnalyzer::ScaffoldGraph PathScaffolderAnalyzer::ConstructScaffoldGraph(
-        const std::set<PathScaffolderAnalyzer::ScaffoldVertex> &vertices,
-        shared_ptr<PathScaffolderAnalyzer::BarcodeIndex> index) const {
-    auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(gp_.g, index);
+    const std::set<PathScaffolderAnalyzer::ScaffoldVertex> &vertices,
+    shared_ptr<PathScaffolderAnalyzer::BarcodeIndex> index) const {
+    auto score_function = make_shared<NormalizedBarcodeScoreFunction>(gp_.g, index);
 
     const double score_threshold = 0;
     INFO("Setting containment index threshold to " << score_threshold);
 
-    auto initial_constructor =
-        make_shared<path_extend::scaffold_graph::ScoreFunctionScaffoldGraphConstructor>(gp_.g,
-                                                                                        vertices,
-                                                                                        score_function,
-                                                                                        score_threshold,
-                                                                                        max_threads_);
+    auto initial_constructor = make_shared<scaffold_graph::ScoreFunctionScaffoldGraphConstructor>(gp_.g,
+                                                                                                  vertices,
+                                                                                                  score_function,
+                                                                                                  score_threshold,
+                                                                                                  max_threads_);
     return *(initial_constructor->Construct());
 }
 set<PathScaffolderAnalyzer::ScaffoldVertex> PathScaffolderAnalyzer::ConstructScaffoldVertices(
-        const PathContainer &paths,
-        const validation::ContigTransitionStorage &transitions) const {
+    const PathContainer &paths,
+    const validation::ContigTransitionStorage &transitions) const {
     std::set<ScaffoldVertex> path_set;
     for (const auto &path_pair: paths) {
         auto unique_predicate = [&transitions](const EdgeId &edge) {
           return transitions.IsEdgeCovered(edge);
         };
         if (std::any_of(path_pair.first->begin(), path_pair.first->end(), unique_predicate) or
-                std::any_of(path_pair.second->begin(), path_pair.second->end(), unique_predicate)) {
+            std::any_of(path_pair.second->begin(), path_pair.second->end(), unique_predicate)) {
             ScaffoldVertex first_vertex(path_pair.first);
             ScaffoldVertex second_vertex(path_pair.second);
             path_set.insert(first_vertex);
@@ -150,9 +155,9 @@ set<PathScaffolderAnalyzer::ScaffoldVertex> PathScaffolderAnalyzer::ConstructSca
     return path_set;
 }
 set<PathScaffolderAnalyzer::ScaffoldEdge> PathScaffolderAnalyzer::GetFalseNegativeEdges(
-        const PathScaffolderAnalyzer::ScaffoldGraph &graph,
-        const validation::ContigTransitionStorage &transitions,
-        double score_threshold) const {
+    const PathScaffolderAnalyzer::ScaffoldGraph &graph,
+    const validation::ContigTransitionStorage &transitions,
+    double score_threshold) const {
     validation::ScaffoldGraphValidator validator(gp_.g);
     auto is_covered = [&transitions](const EdgeId &edge) {
       return transitions.IsEdgeCovered(edge);
@@ -171,8 +176,14 @@ set<PathScaffolderAnalyzer::ScaffoldEdge> PathScaffolderAnalyzer::GetFalseNegati
     return false_negative_edges;
 }
 PathScaffolderAnalyzer::PathScaffolderAnalyzer(const conj_graph_pack &gp,
+                                               const ReadCloudConfigs &configs,
+                                               const std::string &path_to_reference,
                                                size_t long_edge_length_threshold,
                                                size_t max_threads)
-    : gp_(gp), long_edge_length_threshold_(long_edge_length_threshold), max_threads_(max_threads) {}
+    : gp_(gp),
+      configs_(configs),
+      path_to_reference_(path_to_reference),
+      long_edge_length_threshold_(long_edge_length_threshold),
+      max_threads_(max_threads) {}
 }
-
+}

@@ -4,7 +4,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "read_cloud_path_extend/statistics/path_scaffolder_analyzer.hpp"
 #include "launcher.hpp"
 
 #include "alignment/long_read_storage.hpp"
@@ -18,13 +17,15 @@
 #include "modules/path_extend/read_cloud_path_extend/extension_chooser_checker.hpp"
 #include "modules/path_extend/read_cloud_path_extend/path_scaffolder.hpp"
 #include "modules/path_extend/scaff_supplementary.hpp"
+#include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
 #include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
 #include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor.hpp"
-#include "read_cloud_path_extend/fragment_statistics/secondary_stats_estimators.hpp"
-#include "read_cloud_path_extend/fragment_model/distribution_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/secondary_stats_estimators.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/statistics/path_scaffolder_analyzer.hpp"
 
 #include <unordered_set>
 namespace path_extend {
@@ -88,6 +89,35 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaf
     INFO("Scaffold graph contains " << scaffold_graph->VertexCount() << " vertices and " << scaffold_graph->EdgeCount()
              << " edges");
     return scaffold_graph;
+}
+
+std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructPathScaffoldGraphForReadCloudLib(
+        const PathContainer &path_container, size_t lib_index) const {
+    read_cloud::fragment_statistics::DistributionPack distribution_pack;
+    const auto &cloud_lib = dataset_info_.reads[lib_index];
+    VERIFY_DEV(cloud_lib.type() == io::LibraryType::Clouds10x);
+    VERIFY_DEV(not distribution_pack.length_distribution_.empty());
+    const size_t small_path_length_threshold = params_.read_cloud_configs.long_edge_length_lower_bound;
+    size_t min_upper_bound = params_.read_cloud_configs.long_edge_length_min_upper_bound;
+    size_t max_upper_bound = params_.read_cloud_configs.long_edge_length_max_upper_bound;
+    read_cloud::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
+    read_cloud::fragment_statistics::UpperLengthBoundEstimator length_bound_estimator(min_upper_bound,
+                                                                                      max_upper_bound);
+    bool scaffolding_mode = true;
+    size_t num_threads = params_.threads;
+    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+
+    ScaffoldingUniqueEdgeStorage empty_storage;
+    shared_ptr<ExtensionChooser> empty_chooser;
+    read_cloud::SearchParams empty_params;
+    read_cloud::SearchingExtenderParams empty_searching_extender_params(empty_storage);
+    read_cloud::ReadCloudSearchParameterPack empty_pack{empty_chooser, empty_params, empty_searching_extender_params};
+
+    read_cloud::CloudScaffoldGraphConstructor constructor(num_threads, gp_, unique_data_.main_unique_storage_, cloud_lib,
+                                                          params_.read_cloud_configs, empty_pack, extractor);
+    auto path_scaffold_graph = std::make_shared<scaffold_graph::ScaffoldGraph>(
+        constructor.ConstructScaffoldGraphFromPathContainer(path_container,small_path_length_threshold,scaffolding_mode));
+    return path_scaffold_graph;
 }
 
 void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
@@ -368,7 +398,7 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
 }
 
 Extenders PathExtendLauncher::ConstructReadCloudExtenders(const ExtendersGenerator &generator) {
-    return generator.MakeReadCloudExtenders(unique_data_.unique_read_cloud_storage_);
+    return generator.MakeReadCloudExtenders();
 }
 
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
@@ -447,13 +477,6 @@ void PathExtendLauncher::FillPBUniqueEdgeStorages() {
     INFO(unique_data_.unique_pb_storage_.size() << " unique edges");
 }
 
-void PathExtendLauncher::FillReadCloudUniqueEdgeStorage() {
-    const size_t unique_edge_length = cfg::get().ts_res.long_edge_length_lower_bound;
-    INFO("Unique edge length: " << unique_edge_length);
-    ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp_, unique_edge_length, unique_data_.unique_variation_);
-    read_cloud_unique_edge_analyzer.FillUniqueEdgeStorage(unique_data_.unique_read_cloud_storage_);
-}
-
 Extenders PathExtendLauncher::ConstructPBExtenders(const ExtendersGenerator &generator) {
     FillPBUniqueEdgeStorages();
     return generator.MakePBScaffoldingExtenders();
@@ -486,8 +509,6 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
         if (params_.pset.sm == sm_old) {
             INFO("Will not use read cloud path extend in this mode");
         } else {
-            //Creating read cloud unique storage
-            FillReadCloudUniqueEdgeStorage();
             INFO("Creating read cloud extenders");
             utils::push_back_all(extenders, ConstructReadCloudExtenders(generator));
         }
@@ -510,12 +531,13 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
 
 void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &result,
                                      const GraphCoverageMap& cover_map) const {
+    using read_cloud::fragment_statistics::DistributionPack;
+    using read_cloud::fragment_statistics::ClusterStatisticsExtractor;
     TIME_TRACE_SCOPE("PathExtend::PolishPaths");
     //Fixes distances for paths gaps and tries to fill them in
     INFO("Closing gaps in paths");
 
     std::vector<std::shared_ptr<PathGapCloser>> gap_closers;
-
     gap_closers.push_back(std::make_shared<DijkstraGapCloser>(graph_, params_.max_polisher_gap));
 
     UniqueData unique_data;
@@ -530,44 +552,28 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             gap_closers.push_back(std::make_shared<MatePairGapCloser>(graph_, params_.max_polisher_gap, paired_lib,
                                                                       unique_data_.main_unique_storage_));
         }
-        bool read_cloud_polishing = cfg::get().ts_res.read_cloud_resolution_on and
-                                    cfg::get().ts_res.read_cloud_gap_closer_on;
+        auto read_cloud_configs = params_.read_cloud_configs;
+        bool read_cloud_polishing = read_cloud_configs.read_cloud_resolution_on and
+            read_cloud_configs.read_cloud_gap_closer_on;
         if (lib.type() == io::LibraryType::Clouds10x and read_cloud_polishing and params_.pset.sm != sm_old) {
             INFO("Using read cloud path polisher");
             auto barcode_extractor_ptr =
-                std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-            path_extend::ScaffolderParamsConstructor params_constructor;
-            size_t max_threads = cfg::get().max_threads;
-            typedef fragment_statistics::DistributionPack DistributionPackT;
-            DistributionPackT cluster_distribution_pack(lib.data().read_cloud_info.fragment_length_distribution);
-            fragment_statistics::ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
+                std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+            read_cloud::ScaffolderParamsConstructor params_constructor;
+            DistributionPack cluster_distribution_pack(lib.data().read_cloud_info.fragment_length_distribution);
+            ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
 
-            const size_t unique_length = cfg::get().ts_res.long_edge_length_lower_bound;
-
-            auto scaffolder_params =
-                params_constructor.ConstructScaffolderParams(gp_.g, unique_length, primary_parameters_extractor);
-            auto read_cloud_gap_closer_params =
-                params_constructor.ConstructGapCloserParamsFromMainParams(scaffolder_params, gp_.g,
-                                                                          barcode_extractor_ptr,
-                                                                          unique_length, max_threads);
-            size_t tail_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_tail_threshold;
-            size_t count_threshold = cfg::get().ts_res.scaff_con.path_scaffolder_count_threshold;
-            size_t length_threshold = cfg::get().ts_res.scaff_con.min_edge_length_for_barcode_collection;
-
+            auto read_cloud_gap_closer_params = params_constructor.ConstructGapCloserParams(
+                params_.read_cloud_configs.scaff_con);
+            size_t tail_threshold = read_cloud_configs.scaff_con.path_scaffolder_tail_threshold;
+            size_t count_threshold = read_cloud_configs.scaff_con.path_scaffolder_count_threshold;
+            size_t length_threshold = read_cloud_configs.scaff_con.min_edge_length_for_barcode_collection;
             //fixme move to configs
             const size_t scan_bound = 150;
-            INFO("Tail threshold: " << tail_threshold);
-            INFO("Count threshold: " << count_threshold);
-            INFO("Length threshold: " << length_threshold);
-            INFO("Connection score threshold: " << read_cloud_gap_closer_params.raw_score_threshold_);
-            INFO("Connection relative coverage threshold: " << read_cloud_gap_closer_params.relative_coverage_threshold_);
-            INFO("Connection length threshold: " << read_cloud_gap_closer_params.edge_length_threshold_);
             auto cloud_chooser_factory =
-                std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g,
-                                                                      unique_data_.main_unique_storage_,
-                                                                      barcode_extractor_ptr,
-                                                                      tail_threshold, count_threshold,
-                                                                      length_threshold,
+                std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g, unique_data_.main_unique_storage_,
+                                                                      barcode_extractor_ptr, tail_threshold,
+                                                                      count_threshold, length_threshold,
                                                                       read_cloud_gap_closer_params,
                                                                       scan_bound);
             auto simple_chooser = generator.MakeSimpleExtensionChooser(i);
@@ -713,6 +719,18 @@ void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const & graph) {
         out << e << ' ' << graph.conjugate(e) << '\n';
 }
 
+void PathExtendLauncher::ScaffoldPaths(PathContainer &paths) const {
+    const int default_gap = 500;
+    SimplePathScaffolder path_scaffolder(gp_, default_gap);
+    for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
+        const auto &lib = dataset_info_.reads[lib_index];
+        if (lib.type() == io::LibraryType::Clouds10x) {
+            auto path_scaffold_graph = ConstructPathScaffoldGraphForReadCloudLib(paths, lib_index);
+            path_scaffolder.MergePaths(*path_scaffold_graph);
+        }
+    }
+}
+
 void PathExtendLauncher::Launch() {
     TIME_TRACE_SCOPE("PathExtend");
 
@@ -777,7 +795,7 @@ void PathExtendLauncher::Launch() {
     if (support_.HasReadClouds() and cfg::get().ts_res.read_cloud_resolution_on and
             cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
         //fixme move this to separate class, make PathScaffolder analogous to Extender (construct for every lib)
-        fragment_statistics::DistributionPack distribution_pack;
+        read_cloud::fragment_statistics::DistributionPack distribution_pack;
         std::vector<io::SequencingLibrary<debruijn_graph::config::LibraryData>> cloud_libs;
         for (const auto &lib: dataset_info_.reads) {
             if (lib.type() == io::LibraryType::Clouds10x) {
@@ -789,27 +807,26 @@ void PathExtendLauncher::Launch() {
         auto cloud_lib = cloud_libs.front();
         VERIFY_DEV(not distribution_pack.length_distribution_.empty());
         const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
-        fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
-        fragment_statistics::UpperLengthBoundEstimator length_bound_estimator;
+        size_t min_upper_bound = params_.read_cloud_configs.long_edge_length_min_upper_bound;
+        size_t max_upper_bound = params_.read_cloud_configs.long_edge_length_max_upper_bound;
+        read_cloud::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
+        read_cloud::fragment_statistics::UpperLengthBoundEstimator length_bound_estimator(min_upper_bound,
+                                                                                          max_upper_bound);
         const double cluster_length_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
         size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
                                                                               cluster_length_percentile);
 
-//        PathScaffolderAnalyzer path_scaffolder_analyzer(gp_, small_path_length_threshold, cfg::get().max_threads);
-//        auto path_pair_dataset = path_scaffolder_analyzer.GetFalseNegativeDataset(polished_paths);
-//
-//        return;
-
-        PathScaffolder path_scaffolder(gp_, cloud_lib, unique_data_.main_unique_storage_,
-                                       small_path_length_threshold,
-                                       length_upper_bound);
+        //fixme move from read_cloud
+        read_cloud::PathScaffolder path_scaffolder(gp_, cloud_lib, params_.read_cloud_configs,
+                                                   unique_data_.main_unique_storage_,
+                                                   small_path_length_threshold,
+                                                   length_upper_bound, params_.threads);
         path_scaffolder.MergePaths(polished_paths);
 
-        PolishPaths(polished_paths, contig_paths, polished_map);
-        DebugOutputPaths(contig_paths, "merged_polished_paths");
+        PolishPaths(polished_paths, gp_.contig_paths, polished_map);
+        DebugOutputPaths(gp_.contig_paths, "merged_polished_paths");
 
-        GraphCoverageMap merged_polished_map(graph_, contig_paths, true);
-        DebugOutputPaths(gp_.contig_paths, "polished_paths");
+        GraphCoverageMap merged_polished_map(gp_.g,gp_.contig_paths, true);
 
         TraverseLoops(gp_.contig_paths, polished_map);
         DebugOutputPaths(gp_.contig_paths, "loop_traveresed");

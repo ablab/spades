@@ -4,9 +4,10 @@
 #include "simple_graph.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 class SubgraphGetter {
- public:
-    template <class VertexT>
+  public:
+    template<class VertexT>
     SimpleGraph<VertexT> GetSubgraph(const SimpleGraph<VertexT> &graph, const std::set<VertexT> &vertices) {
         SimpleGraph<VertexT> result;
         for (const VertexT &vertex: vertices) {
@@ -30,17 +31,17 @@ class SubgraphGetter {
 };
 
 class CondensationAnalyzer {
- public:
+  public:
     typedef contracted_graph::ContractedGraph ContractedGraph;
     typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
- private:
-    const contracted_graph::ContractedGraphFactoryHelper& contracted_builder_;
- public:
-    explicit CondensationAnalyzer(const contracted_graph::ContractedGraphFactoryHelper& contracted_builder):
+  private:
+    const contracted_graph::ContractedGraphFactoryHelper &contracted_builder_;
+  public:
+    explicit CondensationAnalyzer(const contracted_graph::ContractedGraphFactoryHelper &contracted_builder) :
         contracted_builder_(contracted_builder) {}
 
     template<class VertexT>
-    SimpleGraph<VertexT> GetCondensation(const SimpleGraph<VertexT>& graph) {
+    SimpleGraph<VertexT> GetCondensation(const SimpleGraph<VertexT> &graph) {
         auto components = GetStronglyConnectedComponents(graph);
         return GetCondensation(graph, components);
     }
@@ -49,9 +50,9 @@ class CondensationAnalyzer {
     SimpleGraph<VertexT> GetCondensation(const SimpleGraph<VertexT> &graph,
                                          const std::vector<unordered_set<VertexT>> &components) const {
         TRACE("Components: ")
-        for (const auto& component: components) {
+        for (const auto &component: components) {
             string component_string;
-            for (const auto& edge: component) {
+            for (const auto &edge: component) {
                 component_string += (std::to_string(edge.int_id()) + " ");
             }
             TRACE(component_string);
@@ -117,16 +118,16 @@ class CondensationAnalyzer {
         return components;
     }
 
- private:
+  private:
 
     template<class VertexT>
     SimpleGraph<VertexT> TransposeSimpleGraph(const SimpleGraph<VertexT> &graph) const {
         SimpleGraph<VertexT> result;
-        for (const auto& vertex: graph) {
+        for (const auto &vertex: graph) {
             result.AddVertex(vertex);
         }
 
-        for (const auto& start: graph) {
+        for (const auto &start: graph) {
             for (auto it = graph.outcoming_begin(start); it != graph.outcoming_end(start); ++it) {
                 VertexT end = *it;
                 result.AddEdge(end, start);
@@ -136,8 +137,8 @@ class CondensationAnalyzer {
     }
 
     template<class VertexT>
-    void GetExitTimeOrdering(const VertexT& vertex, const SimpleGraph<VertexT>& graph,
-                             std::unordered_map<VertexT, bool>& vertex_to_visited, vector<VertexT>& ordering) const {
+    void GetExitTimeOrdering(const VertexT &vertex, const SimpleGraph<VertexT> &graph,
+                             std::unordered_map<VertexT, bool> &vertex_to_visited, vector<VertexT> &ordering) const {
         vertex_to_visited.at(vertex) = true;
         for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
             VertexT next = *it;
@@ -150,7 +151,7 @@ class CondensationAnalyzer {
 
     template<class VertexT>
     void GetStrConComponent(const VertexT &vertex,
-                            const SimpleGraph<VertexT>& graph,
+                            const SimpleGraph<VertexT> &graph,
                             std::unordered_map<VertexT, bool> &vertex_to_visited,
                             unordered_set<VertexT> &component) const {
         vertex_to_visited.at(vertex) = true;
@@ -163,16 +164,16 @@ class CondensationAnalyzer {
         }
     }
 
-
     DECL_LOGGER("CondensationAnalyzer");
 };
 
 class TopSorter {
- public:
+  public:
 
-    template <class VertexT>
-    vector<VertexT> GetTopSort(const SimpleGraph<VertexT>& graph) {
+    template<class VertexT>
+    vector<VertexT> GetTopSort(const SimpleGraph<VertexT> &graph) {
 
     }
 };
+}
 }

@@ -5,55 +5,58 @@
 #include <fstream>
 
 namespace path_extend {
-    class ScaffoldGraphStorage {
-     public:
-        typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
-        typedef debruijn_graph::EdgeId EdgeId;
-     private:
-        ScaffoldGraph large_scaffold_graph_;
-        ScaffoldGraph small_scaffold_graph_;
+namespace read_cloud {
 
-        size_t large_length_threshold_;
-        size_t small_length_threshold_;
+class ScaffoldGraphStorage {
+  public:
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef debruijn_graph::EdgeId EdgeId;
+  private:
+    ScaffoldGraph large_scaffold_graph_;
+    ScaffoldGraph small_scaffold_graph_;
 
-     public:
-        ScaffoldGraphStorage(const debruijn_graph::Graph& g);
+    size_t large_length_threshold_;
+    size_t small_length_threshold_;
 
-        ScaffoldGraphStorage(ScaffoldGraph&& large_scaffold_graph, ScaffoldGraph&& small_scaffold_graph,
-                             size_t large_length_threshold, size_t small_length_threshold);
+  public:
+    ScaffoldGraphStorage(const debruijn_graph::Graph &g);
 
-        ScaffoldGraphStorage& operator= (const ScaffoldGraphStorage &other);
+    ScaffoldGraphStorage(ScaffoldGraph &&large_scaffold_graph, ScaffoldGraph &&small_scaffold_graph,
+                         size_t large_length_threshold, size_t small_length_threshold);
 
-        const ScaffoldGraph& GetLargeScaffoldGraph() const;
+    ScaffoldGraphStorage &operator=(const ScaffoldGraphStorage &other);
 
-        const ScaffoldGraph& GetSmallScaffoldGraph() const;
+    const ScaffoldGraph &GetLargeScaffoldGraph() const;
 
-        size_t GetLargeLengthThreshold() const;
+    const ScaffoldGraph &GetSmallScaffoldGraph() const;
 
-        size_t GetSmallLengthThreshold() const;
+    size_t GetLargeLengthThreshold() const;
 
-        void SetLargeScaffoldGraph(const ScaffoldGraph& large_scaffold_graph);
+    size_t GetSmallLengthThreshold() const;
 
-        void SetSmallScaffoldGraph(const ScaffoldGraph& small_scaffold_graph);
+    void SetLargeScaffoldGraph(const ScaffoldGraph &large_scaffold_graph);
 
-        void Save(const string& path) const;
+    void SetSmallScaffoldGraph(const ScaffoldGraph &small_scaffold_graph);
 
-        void Load(const string& path, const std::map<size_t, debruijn_graph::EdgeId>& edge_map);
+    void Save(const std::string &path) const;
 
-     private:
-        void ReplaceScaffoldGraph(const ScaffoldGraph &from, ScaffoldGraph &to);
-    };
+    void Load(const std::string &path, const std::map<size_t, debruijn_graph::EdgeId> &edge_map);
 
-    class ScaffoldGraphSerializer {
-     public:
-        typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
-        typedef debruijn_graph::EdgeId EdgeId;
+  private:
+    void ReplaceScaffoldGraph(const ScaffoldGraph &from, ScaffoldGraph &to);
+};
 
-        void SaveScaffoldGraph(ofstream& fout, const ScaffoldGraph& graph) const;
+class ScaffoldGraphSerializer {
+  public:
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef debruijn_graph::EdgeId EdgeId;
 
-        void LoadScaffoldGraph(ifstream& fin, ScaffoldGraph& graph,
-                               const std::map<size_t, debruijn_graph::EdgeId>& edge_map) const;
+    void SaveScaffoldGraph(std::ofstream &fout, const ScaffoldGraph &graph) const;
 
-        DECL_LOGGER("ScaffoldGraphSerializer");
-    };
+    void LoadScaffoldGraph(std::ifstream &fin, ScaffoldGraph &graph,
+                           const std::map<size_t, debruijn_graph::EdgeId> &edge_map) const;
+
+    DECL_LOGGER("ScaffoldGraphSerializer");
+};
+}
 }
