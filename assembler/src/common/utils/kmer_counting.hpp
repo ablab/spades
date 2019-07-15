@@ -154,24 +154,60 @@ class HllFiller {
 };
 
 template<class ReadStream, class Hasher, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
-size_t EstimateCardinality(unsigned k, ReadStream &streams, const Hasher &hasher,
+size_t EstimateCardinalityForOneStream(unsigned k, ReadStream &streams, const Hasher &hasher,
                            const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
     streams.reset();
     unsigned nthreads = (unsigned)omp_get_max_threads();
     std::vector<hll::hll<>> hlls(nthreads);
     size_t n = 15, reads = 0;
+    HllFiller<Hasher, KMerFilter> hll_filler(hlls, hasher, filter, k);
 
     for (size_t i = 0; i < streams.size(); ++i) {
         while (!streams[i].eof()) {
-            HllFiller<Hasher, KMerFilter> hll_filler(hlls, hasher, filter, k);
             hammer::ReadProcessor rp(nthreads);
             rp.Run(streams[i], hll_filler);
 
-            reads += hll_filler.getReads();
+            reads = hll_filler.getReads();
             if (reads >> n) {
                 INFO("Processed " << reads << " reads");
                 n += 1;
             }
+        }
+    }
+    INFO("Total " << reads << " reads processed");
+
+    for (size_t i = 1; i < hlls.size(); ++i) {
+        hlls[0].merge(hlls[i]);
+        hlls[i].clear();
+    }
+
+    double res = hlls[0].cardinality();
+
+    INFO("Estimated " << size_t(res) << " distinct kmers");
+    return size_t(res);
+}
+
+template<class ReadStream, class Hasher, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
+size_t EstimateCardinality(unsigned k, ReadStream &streams, const Hasher &hasher,
+                           const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
+    unsigned stream_num = unsigned(streams.size());
+    std::vector<hll::hll<>> hlls(stream_num);
+    std::vector<HllProcessor> processors;
+    for (size_t i = 0; i < hlls.size(); ++i) {
+        processors.push_back(HllProcessor(hlls[i]));
+    }
+
+    streams.reset();
+    size_t reads = 0, n = 15;
+    while (!streams.eof()) {
+#       pragma omp parallel for reduction(+:reads)
+        for (unsigned i = 0; i < stream_num; ++i) {
+            reads += FillFromStream(streams[i], hasher, processors[omp_get_thread_num()], k, 1000000, filter);
+        }
+
+        if (reads >> n) {
+            INFO("Processed " << reads << " reads");
+            n += 1;
         }
     }
     INFO("Total " << reads << " reads processed");

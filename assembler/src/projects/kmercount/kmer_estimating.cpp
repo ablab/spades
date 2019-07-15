@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
         typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;
         SeqHasher hasher(args.k);
 
-        size_t kmers_cnt_est = utils::EstimateCardinality(args.k, single_readers, hasher);
+        size_t kmers_cnt_est = utils::EstimateCardinalityForOneStream(args.k, single_readers, hasher);
         INFO("Kmer number estimation: " << kmers_cnt_est)
     } catch (std::string const &s) {
         std::cerr << s;
