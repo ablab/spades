@@ -12,7 +12,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cerrno>
-#include <cxxopts/cxxopts.hpp>
+#include <clipp/clipp.h>
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
@@ -116,91 +116,108 @@ class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
     }
 };
 
+namespace kmer_count {
+struct Args {
+    unsigned nthreads = omp_get_max_threads();
+    unsigned K = 21;
+    std::string workdir, dataset = "";
+    size_t read_buffer_size = 536870912;
+    std::vector<std::string> input;
+};
+}
+
+void process_cmdline(int argc, char **argv, kmer_count::Args &args) {
+    using namespace clipp;
+    bool print_help = false;
+
+    auto cli = (
+        (option("-k", "--kmer") & integer("value", args.K)) % "K-mer length",
+        (option("-d", "--dataset") & value("dir", args.dataset)) % "Dataset description (in YAML), input files ignored",
+        (option("-t", "--threads") & integer("value", args.nthreads)) % "# of threads to use",
+        (option("-w", "--workdir") & value("dir", args.workdir)) % "Working directory to use",
+        (option("-b", "--bufsize") & integer("value", args.read_buffer_size)) % "Sorting buffer size, per thread",
+        (option("-h", "--help").set(print_help)) % "Show help",
+        opt_values("input files", args.input)
+    );
+
+    auto help_message = make_man_page(cli, argv[0])
+        .prepend_section("DESCRIPTION",
+                         "SPAdes k-mer counting engine\n\n"
+                             "Output: <output_dir>/final_kmers - unordered set of kmers in binary format. "
+                             "Kmers from both forward and reverse-complementary reads are taken into account.\n\n"
+                             "Output format: All kmers are written sequentially without any separators. "
+                             "Each kmer takes the same number of bits. One kmer of length K takes 2*K bits. "
+                             "Kmers are aligned by 64 bits. "
+                             "For example, one kmer with length=21 takes 8 bytes, with length=33 takes 16 bytes, "
+                             "and with length=55 takes 16 bytes. "
+                             "Each nucleotide is coded with 2 bits: 00 - A, 01 - C, 10 - G, 11 - T.\n\n"
+                             "Example: For kmer: AGCTCT\n"
+                             "\tMemory: 6 bits * 2 = 12, 64 bits (8 bytes)\n"
+                             "\tLet’s describe bytes: \n"
+                             "\tdata[0] = AGCT -> 11 01 10 00 -> 0xd8\n"
+                             "\tdata[1] = CT00 -> 00 00 11 01 -> 0x0d\n"
+                             "\tdata[2] = 0000 -> 00 00 00 00 -> 0x00\n"
+                             "\tdata[3] = 0000 -> 00 00 00 00 -> 0x00\n"
+                             "\tdata[4] = 0000 -> 00 00 00 00 -> 0x00\n"
+                             "\tdata[5] = 0000 -> 00 00 00 00 -> 0x00\n"
+                             "\tdata[6] = 0000 -> 00 00 00 00 -> 0x00\n"
+                             "\tdata[7] = 0000 -> 00 00 00 00 -> 0x00\n");
+    auto result = parse(argc, argv, cli);
+    if (!result || print_help) {
+        std::cout << help_message;
+        if (print_help) {
+            exit(0);
+        } else {
+            exit(1);
+        }
+    }
+
+    if (args.input.size() == 0 && args.dataset == "") {
+        std::cerr << "ERROR: No input files were specified" << std::endl << std::endl;
+        std::cout << help_message << std::endl;
+        exit(-1);
+    }
+}
+
 int main(int argc, char* argv[]) {
     utils::perf_counter pc;
 
     srand(42);
     srandom(42);
     try {
-        unsigned nthreads;
-        unsigned K;
-        std::string workdir, dataset;
-        std::vector<std::string> input;
-        size_t read_buffer_size;
-
-        cxxopts::Options options(argv[0], " <input files> - SPAdes k-mer counting engine\n\n"
-            "Output: <output_dir>/final_kmers - unordered set of kmers in binary format. Kmers from both forward and reverse-complementary reads are taken into account.\n\n"
-            "Output format: All kmers are written sequentially without any separators. Each kmer takes the same number of bits. One kmer of length K takes 2*K bits. "
-            "Kmers are aligned by 64 bits. For example, one kmer with length=21 takes 8 bytes, with length=33 takes 16 bytes, and with length=55 takes 16 bytes. "
-            "Each nucleotide is coded with 2 bits: 00 - A, 01 - C, 10 - G, 11 - T.\n\n"
-            "Example: For kmer: AGCTCT\n"
-            "\tMemory: 6 bits * 2 = 12, 64 bits (8 bytes)\n"
-            "\tLet’s describe bytes: \n"
-            "\tdata[0] = AGCT -> 11 01 10 00 -> 0xd8\n"
-            "\tdata[1] = CT00 -> 00 00 11 01 -> 0x0d\n"
-            "\tdata[2] = 0000 -> 00 00 00 00 -> 0x00\n"
-            "\tdata[3] = 0000 -> 00 00 00 00 -> 0x00\n"
-            "\tdata[4] = 0000 -> 00 00 00 00 -> 0x00\n"
-            "\tdata[5] = 0000 -> 00 00 00 00 -> 0x00\n"
-            "\tdata[6] = 0000 -> 00 00 00 00 -> 0x00\n"
-            "\tdata[7] = 0000 -> 00 00 00 00 -> 0x00\n");
-
-        options.add_options()
-                ("k,kmer", "K-mer length", cxxopts::value<unsigned>(K)->default_value("21"), "K")
-                ("d,dataset", "Dataset description (in YAML), input files ignored", cxxopts::value<std::string>(dataset), "file")
-                ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(omp_get_max_threads())), "num")
-                ("w,workdir", "Working directory to use", cxxopts::value<std::string>(workdir)->default_value("."), "dir")
-                ("b,bufsize", "Sorting buffer size, per thread", cxxopts::value<size_t>(read_buffer_size)->default_value("536870912"))
-                ("h,help", "Print help");
-
-        options.add_options("Input")
-                ("positional", "", cxxopts::value<std::vector<std::string>>(input));
-
-        options.parse_positional("positional");
-        options.parse(argc, argv);
-        if (options.count("help")) {
-            std::cout << options.help() << std::endl;
-            exit(0);
-        }
-
-        if (!options.count("positional") && !options.count("dataset")) {
-            std::cerr << "ERROR: No input files were specified" << std::endl << std::endl;
-            std::cout << options.help() << std::endl;
-            exit(-1);
-        }
+        kmer_count::Args args;
+        process_cmdline(argc, argv, args);
 
         create_console_logger();
 
         START_BANNER("SPAdes k-mer counting engine");
 
-        INFO("K-mer length set to " << K);
-        INFO("# of threads to use: " << nthreads);
+        INFO("K-mer length set to " << args.K);
+        INFO("# of threads to use: " << args.nthreads);
 
-        SimplePerfectHashMap index(K);
-        ParallelSortingSplitter splitter(workdir, K, read_buffer_size);
-        if (options.count("dataset")) {
+        SimplePerfectHashMap index(args.K);
+        ParallelSortingSplitter splitter(args.workdir, args.K, args.read_buffer_size);
+        if (args.dataset != "") {
             io::DataSet<> idataset;
-            idataset.load(dataset);
+            idataset.load(args.dataset);
             for (const auto &s : idataset.reads())
                 splitter.push_back(s);
         } else {
-            for (const auto& s : input)
+            for (const auto& s : args.input)
                 splitter.push_back(s);
         }
-        utils::KMerDiskCounter<RtSeq> counter(workdir, splitter);
-        counter.CountAll(16, nthreads);
+
+        utils::KMerDiskCounter<RtSeq> counter(args.workdir, splitter);
+        counter.CountAll(16, args.nthreads);
         auto final_kmers = counter.final_kmers_file();
 
-        std::string outputfile_name = fs::append_path(workdir, "final_kmers");
+        std::string outputfile_name = fs::append_path(args.workdir, "final_kmers");
         std::rename(final_kmers->file().c_str(), outputfile_name.c_str());
 
         INFO("K-mer counting done, kmers saved to " << outputfile_name);
     } catch (std::string const &s) {
         std::cerr << s;
         return EINTR;
-    } catch (const cxxopts::OptionException &e) {
-        std::cerr << "error parsing options: " << e.what() << std::endl;
-        exit(1);
     }
 
     return 0;

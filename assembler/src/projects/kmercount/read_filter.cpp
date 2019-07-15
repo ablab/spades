@@ -7,7 +7,7 @@
 
 #include <sys/types.h>
 #include <string>
-#include <cxxopts/cxxopts.hpp>
+#include <clipp/clipp.h>
 
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/log_writers.hpp"
@@ -30,6 +30,38 @@ void create_console_logger() {
     logger *lg = create_logger("");
     lg->add_writer(std::make_shared<console_writer>());
     attach_logger(lg);
+}
+
+namespace read_filter { 
+struct Args {
+    unsigned thr = 2, k = 21;
+    std::string dataset_desc, workdir = ".";
+    unsigned nthreads = (omp_get_max_threads() / 2);
+};
+}
+
+void process_cmdline(int argc, char **argv, read_filter::Args &args) {
+    using namespace clipp;
+    bool print_help = false;
+    
+    auto cli = (
+        (option("-k", "--kmer") & integer("value", args.k)) % "K-mer length",
+        (option("-c", "--cov") & integer("value", args.thr)) % "Median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EQUAL to this value will be ignored)",
+        (required("-d", "--dataset") & value("dir", args.dataset_desc)) % "Dataset description (in YAML)",
+        (option("-t", "--threads") & integer("value", args.nthreads)) % "# of threads to use",
+        (option("-o", "--outdir") & value("dir", args.workdir)) %  "Output directory to use",
+        (option("-h", "--help").set(print_help)) % "Show help"
+    );
+
+    auto result = parse(argc, argv, cli);
+    if (!result || print_help) {
+        std::cout << make_man_page(cli, argv[0]).prepend_section("DESCRIPTION", " Kmer count read filter");
+        if (print_help) {
+            exit(0);
+        } else {
+            exit(1);
+        }
+    }
 }
 
 template<class IS, class OS, class Filter>
@@ -82,59 +114,28 @@ int main(int argc, char* argv[]) {
     srand(42);
     srandom(42);
     try {
-        unsigned nthreads;
-        unsigned thr, k;
-        std::string workdir, dataset_desc;
         std::vector<std::string> input;
         size_t buff_size = 512;
         buff_size <<= 20;
 
-        cxxopts::Options options(argv[0], " kmer count read filter");
-        options.add_options()
-                ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("21"), "K")
-                ("c,cov", "Median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EQUAL to this value will be ignored)", cxxopts::value<unsigned>(thr)->default_value("2"), "threshold")
-                ("d,dataset", "Dataset description (in YAML)", cxxopts::value<std::string>(dataset_desc), "file")
-                ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(omp_get_max_threads() / 2)), "num")
-                ("o,outdir", "Output directory to use", cxxopts::value<std::string>(workdir)->default_value("."), "dir")
-//                ("b,bufsize", "Sorting buffer size, per thread", cxxopts::value<size_t>(read_buffer_size)->default_value("536870912"))
-                ("h,help", "Print help");
-
-//        options.add_options("Input")
-//                ("positional", "", cxxopts::value<std::vector<std::string>>(input));
-//
-//        options.parse_positional("positional");
-        options.parse(argc, argv);
-        if (options.count("help")) {
-            std::cout << options.help() << std::endl;
-            exit(0);
-        }
-
-//        if (!options.count("positional") && !options.count("dataset")) {
-//            std::cerr << "ERROR: No input files were specified" << std::endl << std::endl;
-//            std::cout << options.help() << std::endl;
-//            exit(-1);
-//        }
-        if (!options.count("dataset")) {
-            std::cerr << "ERROR: No input files were specified" << std::endl << std::endl;
-            std::cout << options.help() << std::endl;
-            exit(-1);
-        }
+        read_filter::Args args;
+        process_cmdline(argc, argv, args);
 
         create_console_logger();
 
-        nthreads = spades_set_omp_threads(nthreads);
+        args.nthreads = spades_set_omp_threads(args.nthreads);
 
         INFO("Starting kmer count based read filtering, built from " << version::refspec() << ", git revision " << version::gitrev());
 
-        INFO("K-mer length set to " << k);
-        INFO("# of threads to use: " << nthreads);
-        INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << nthreads);
+        INFO("K-mer length set to " << args.k);
+        INFO("# of threads to use: " << args.nthreads);
+        INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << args.nthreads);
 
         io::DataSet<debruijn_graph::config::LibraryData> dataset;
-        dataset.load(dataset_desc);
+        dataset.load(args.dataset_desc);
 
-        fs::make_dirs(workdir + "/tmp/");
-        debruijn_graph::config::init_libs(dataset, nthreads, buff_size, workdir + "/tmp/");
+        fs::make_dirs(args.workdir + "/tmp/");
+        debruijn_graph::config::init_libs(dataset, args.nthreads, buff_size, args.workdir + "/tmp/");
 
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
             io::ReadConverter::ConvertToBinary(dataset[i]);
@@ -145,13 +146,13 @@ int main(int argc, char* argv[]) {
         io::BinarySingleStreams single_readers = io::single_binary_readers_for_libs(dataset, libs,
                                                                                     /*followed by rc*/false, /*including paired*/true);
         INFO("Estimating kmer cardinality");
-        SeqHasher hasher(k);
+        SeqHasher hasher(args.k);
 
-        size_t kmers_cnt_est = utils::EstimateCardinality(k, single_readers, hasher);
+        size_t kmers_cnt_est = utils::EstimateCardinality(args.k, single_readers, hasher);
 
         CQFKmerFilter cqf(kmers_cnt_est);
         INFO("Filling kmer coverage");
-        utils::FillCoverageHistogram(cqf, k, hasher, single_readers, thr + 1);
+        utils::FillCoverageHistogram(cqf, args.k, hasher, single_readers, args.thr + 1);
         INFO("Kmer coverage filled");
 
         const unsigned FILTER_READS_BUFF_SIZE = 1 << 20;
@@ -161,28 +162,25 @@ int main(int argc, char* argv[]) {
             if (dataset[i].has_paired()) {
                 io::PairedStreamPtr paired_reads_stream =
                     io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0);
-                io::OFastqPairedStream ostream(workdir + "/" + to_string(i + 1) + ".1.fastq",
-                                               workdir + "/" + to_string(i + 1) + ".2.fastq");
-                io::CoverageFilter<io::PairedRead, SeqHasher> filter(k, hasher, cqf, thr);
-                filter_reads(*paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, nthreads);
+                io::OFastqPairedStream ostream(args.workdir + "/" + to_string(i + 1) + ".1.fastq",
+                                               args.workdir + "/" + to_string(i + 1) + ".2.fastq");
+                io::CoverageFilter<io::PairedRead, SeqHasher> filter(args.k, hasher, cqf, args.thr);
+                filter_reads(*paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
             }
 
             if (dataset[i].has_single()) {
                 io::SingleStreamPtr single_reads_stream = io::single_easy_reader(dataset[i],
                     /*followed_by_rc*/ false, /*including_paired_reads*/ false);
-                io::CoverageFilter<io::SingleRead, SeqHasher> filter(k, hasher, cqf, thr);
+                io::CoverageFilter<io::SingleRead, SeqHasher> filter(args.k, hasher, cqf, args.thr);
 
-                io::OFastqReadStream ostream(workdir + "/" + to_string(i + 1) + ".s.fastq");
-                filter_reads(*single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, nthreads);
+                io::OFastqReadStream ostream(args.workdir + "/" + to_string(i + 1) + ".s.fastq");
+                filter_reads(*single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
             }
         }
         INFO("Filtering finished")
     } catch (std::string const &s) {
         std::cerr << s;
         return EINTR;
-    } catch (const cxxopts::OptionException &e) {
-        std::cerr << "error parsing options: " << e.what() << std::endl;
-        exit(1);
     }
 
     return 0;
