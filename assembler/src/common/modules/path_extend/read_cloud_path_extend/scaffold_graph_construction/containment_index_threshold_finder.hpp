@@ -5,210 +5,212 @@
 #include "common/modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor.hpp"
 
 namespace path_extend {
-    class ReadCloudScoreFunctionThresholdEstimator {
-     public:
-        virtual double GetThreshold() const = 0;
-    };
+namespace read_cloud {
 
-    class ScoreHistogram {
-        friend class UnlabeledDistributionThresholdEstimator;
-        typedef std::map<double, size_t>::const_iterator const_iterator;
-        typedef std::map<double, size_t>::const_reverse_iterator const_reverse_iterator;
-     private:
-        const std::map<double, size_t> score_to_number_;
+class ReadCloudScoreFunctionThresholdEstimator {
+  public:
+    virtual double GetThreshold() const = 0;
+};
 
-     public:
-        ScoreHistogram(const map<double, size_t> &score_to_number_);
+class ScoreHistogram {
+    friend class UnlabeledDistributionThresholdEstimator;
+    typedef std::map<double, size_t>::const_iterator const_iterator;
+    typedef std::map<double, size_t>::const_reverse_iterator const_reverse_iterator;
+  private:
+    const std::map<double, size_t> score_to_number_;
 
-        const_iterator begin() const {
-            return score_to_number_.begin();
-        }
+  public:
+    ScoreHistogram(const map<double, size_t> &score_to_number_);
 
-        const_iterator end() const {
-            return score_to_number_.end();
-        }
+    const_iterator begin() const {
+        return score_to_number_.begin();
+    }
 
-        const_reverse_iterator rbegin() const {
-            return score_to_number_.rbegin();
-        }
+    const_iterator end() const {
+        return score_to_number_.end();
+    }
 
-        const_reverse_iterator rend() const {
-            return score_to_number_.rend();
-        }
+    const_reverse_iterator rbegin() const {
+        return score_to_number_.rbegin();
+    }
 
-        size_t size() const {
-            return score_to_number_.size();
-        }
-    };
+    const_reverse_iterator rend() const {
+        return score_to_number_.rend();
+    }
 
-    class AbstractScoreHistogramConstructor {
-     protected:
-        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
-        typedef fragment_statistics::DistributionPack::ClusterCoverageDistribution ScoreDistribution;
+    size_t size() const {
+        return score_to_number_.size();
+    }
+};
 
-        const double step_;
-        const double min_score_;
-        const double max_score_;
+class AbstractScoreHistogramConstructor {
+  protected:
+    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+    typedef fragment_statistics::DistributionPack::ClusterCoverageDistribution ScoreDistribution;
 
-        const Graph& g_;
+    const double step_;
+    const double min_score_;
+    const double max_score_;
 
-     public:
-        AbstractScoreHistogramConstructor(const double tick_step_,
-                                          const double min_score_,
-                                          const double max_score_,
-                                          const Graph &g_)
-            : step_(tick_step_), min_score_(min_score_), max_score_(max_score_), g_(g_) {}
+    const Graph &g_;
 
-        virtual ~AbstractScoreHistogramConstructor() {}
+  public:
+    AbstractScoreHistogramConstructor(const double tick_step_,
+                                      const double min_score_,
+                                      const double max_score_,
+                                      const Graph &g_)
+        : step_(tick_step_), min_score_(min_score_), max_score_(max_score_), g_(g_) {}
 
-        virtual ScoreDistribution ConstructScoreDistribution() const = 0;
+    virtual ~AbstractScoreHistogramConstructor() {}
 
-     protected:
-        ScoreDistribution ConstructScoreDistributionFromMultiset(const std::multiset<double> &scores) const;
+    virtual ScoreDistribution ConstructScoreDistribution() const = 0;
 
-    };
+  protected:
+    ScoreDistribution ConstructScoreDistributionFromMultiset(const std::multiset<double> &scores) const;
 
-    class SegmentBarcodeScoreFunction {
-     protected:
-        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
+};
 
-     public:
-        explicit SegmentBarcodeScoreFunction(shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
+class SegmentBarcodeScoreFunction {
+  protected:
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
 
-        virtual boost::optional<double> GetScoreFromTwoFragments(EdgeId edge, size_t left_start,
-                                                                 size_t left_end, size_t right_start,
-                                                                 size_t right_end) const = 0;
-    };
+  public:
+    explicit SegmentBarcodeScoreFunction(shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
 
-    class ContainmentIndexFunction final: public SegmentBarcodeScoreFunction {
-        using SegmentBarcodeScoreFunction::barcode_extractor_;
-     public:
-        explicit ContainmentIndexFunction(shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
+    virtual boost::optional<double> GetScoreFromTwoFragments(EdgeId edge, size_t left_start,
+                                                             size_t left_end, size_t right_start,
+                                                             size_t right_end) const = 0;
+};
 
-        boost::optional<double> GetScoreFromTwoFragments(EdgeId edge,
-                                                         size_t left_start,
-                                                         size_t left_end,
-                                                         size_t right_start,
-                                                         size_t right_end) const override;
+class ContainmentIndexFunction final : public SegmentBarcodeScoreFunction {
+    using SegmentBarcodeScoreFunction::barcode_extractor_;
+  public:
+    explicit ContainmentIndexFunction(shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
 
-        DECL_LOGGER("ContainmentIndexFunction");
-    };
+    boost::optional<double> GetScoreFromTwoFragments(EdgeId edge,
+                                                     size_t left_start,
+                                                     size_t left_end,
+                                                     size_t right_start,
+                                                     size_t right_end) const override;
 
-    class ShortEdgeScoreFunction final: public SegmentBarcodeScoreFunction {
-        using SegmentBarcodeScoreFunction::barcode_extractor_;
-     public:
-        explicit ShortEdgeScoreFunction(shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
+    DECL_LOGGER("ContainmentIndexFunction");
+};
 
-        boost::optional<double> GetScoreFromTwoFragments(EdgeId edge,
-                                                         size_t left_start,
-                                                         size_t left_end,
-                                                         size_t right_start,
-                                                         size_t right_end) const override;
-    };
+class ShortEdgeScoreFunction final : public SegmentBarcodeScoreFunction {
+    using SegmentBarcodeScoreFunction::barcode_extractor_;
+  public:
+    explicit ShortEdgeScoreFunction(shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
 
-    class LongEdgeScoreHistogramConstructor: public AbstractScoreHistogramConstructor {
-     protected:
-        using AbstractScoreHistogramConstructor::step_;
-        using AbstractScoreHistogramConstructor::min_score_;
-        using AbstractScoreHistogramConstructor::max_score_;
-        using AbstractScoreHistogramConstructor::g_;
+    boost::optional<double> GetScoreFromTwoFragments(EdgeId edge,
+                                                     size_t left_start,
+                                                     size_t left_end,
+                                                     size_t right_start,
+                                                     size_t right_end) const override;
+};
 
-        shared_ptr<SegmentBarcodeScoreFunction> segment_score_function_;
-        vector<EdgeId> interesting_edges_;
-        size_t left_block_length_;
-        size_t right_block_length_;
-        size_t min_distance_;
-        size_t max_distance_;
-        size_t max_threads_;
+class LongEdgeScoreHistogramConstructor : public AbstractScoreHistogramConstructor {
+  protected:
+    using AbstractScoreHistogramConstructor::step_;
+    using AbstractScoreHistogramConstructor::min_score_;
+    using AbstractScoreHistogramConstructor::max_score_;
+    using AbstractScoreHistogramConstructor::g_;
 
-     public:
-        LongEdgeScoreHistogramConstructor(double tick_step,
-                                          double min_score,
-                                          double max_score,
-                                          const Graph &g,
-                                          shared_ptr<SegmentBarcodeScoreFunction> segment_score_function,
-                                          const vector<EdgeId> &interesting_edges,
+    shared_ptr<SegmentBarcodeScoreFunction> segment_score_function_;
+    vector<EdgeId> interesting_edges_;
+    size_t left_block_length_;
+    size_t right_block_length_;
+    size_t min_distance_;
+    size_t max_distance_;
+    size_t max_threads_;
+
+  public:
+    LongEdgeScoreHistogramConstructor(double tick_step,
+                                      double min_score,
+                                      double max_score,
+                                      const Graph &g,
+                                      shared_ptr<SegmentBarcodeScoreFunction> segment_score_function,
+                                      const vector<EdgeId> &interesting_edges,
+                                      size_t left_block_length,
+                                      size_t right_block_length,
+                                      size_t min_distance,
+                                      size_t max_distance,
+                                      size_t max_threads);
+
+    ScoreDistribution ConstructScoreDistribution() const override;
+
+  private:
+    vector<size_t> ConstructDistanceDistribution(size_t min_distance, size_t max_distance) const;
+
+    DECL_LOGGER("LongEdgeScoreHistogramConstructor");
+};
+
+class LabeledDistributionThresholdEstimator : public ReadCloudScoreFunctionThresholdEstimator {
+    const Graph &g_;
+    shared_ptr<SegmentBarcodeScoreFunction> segment_score_function_;
+    size_t edge_length_threshold_;
+    size_t left_block_length_;
+    size_t right_block_length_;
+    size_t min_distance_;
+    size_t max_distance_;
+    double score_percentile_;
+    size_t max_threads_;
+
+  public:
+    LabeledDistributionThresholdEstimator(const Graph &g_,
+                                          shared_ptr<SegmentBarcodeScoreFunction> segment_score_function_,
+                                          size_t edge_length_threshold_,
                                           size_t left_block_length,
                                           size_t right_block_length,
-                                          size_t min_distance,
-                                          size_t max_distance,
+                                          size_t min_distance_,
+                                          size_t max_distance_,
+                                          double score_percentile,
                                           size_t max_threads);
 
-        ScoreDistribution ConstructScoreDistribution() const override;
+    double GetThreshold() const override;
 
-     private:
-        vector<size_t> ConstructDistanceDistribution(size_t min_distance, size_t max_distance) const;
+    DECL_LOGGER("LabeledDistributionThresholdFinder");
+};
 
-        DECL_LOGGER("LongEdgeScoreHistogramConstructor");
-    };
+class LongEdgeScoreThresholdEstimatorFactory {
+    const Graph &g_;
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
+    size_t edge_length_threshold_;
+    size_t block_length_;
+    size_t max_distance_;
+    double score_percentile_;
+    size_t max_threads_;
 
-class LabeledDistributionThresholdEstimator: public ReadCloudScoreFunctionThresholdEstimator {
-        const Graph& g_;
-        shared_ptr<SegmentBarcodeScoreFunction> segment_score_function_;
-        size_t edge_length_threshold_;
-        size_t left_block_length_;
-        size_t right_block_length_;
-        size_t min_distance_;
-        size_t max_distance_;
-        double score_percentile_;
-        size_t max_threads_;
+  public:
+    LongEdgeScoreThresholdEstimatorFactory(const Graph &g,
+                                           shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+                                           size_t edge_length_threshold,
+                                           size_t block_length,
+                                           size_t max_distance,
+                                           double score_percentile,
+                                           size_t max_threads);
 
-     public:
-        LabeledDistributionThresholdEstimator(const Graph &g_,
-                                              shared_ptr<SegmentBarcodeScoreFunction> segment_score_function_,
-                                              size_t edge_length_threshold_,
-                                              size_t left_block_length,
-                                              size_t right_block_length,
-                                              size_t min_distance_,
-                                              size_t max_distance_,
-                                              double score_percentile,
-                                              size_t max_threads);
+    shared_ptr<LabeledDistributionThresholdEstimator> GetThresholdEstimator() const;
+};
 
-        double GetThreshold() const override;
+class ShortEdgeScoreThresholdEstimatorFactory {
+    const Graph &g_;
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
+    size_t edge_length_threshold_;
+    size_t block_length_;
+    size_t max_distance_;
+    double score_percentile_;
+    size_t max_threads_;
 
-        DECL_LOGGER("LabeledDistributionThresholdFinder");
-    };
+  public:
+    ShortEdgeScoreThresholdEstimatorFactory(const Graph &g,
+                                            shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+                                            size_t edge_length_threshold,
+                                            size_t block_length,
+                                            size_t max_distance,
+                                            double score_percentile,
+                                            size_t max_threads);
 
-    class LongEdgeScoreThresholdEstimatorFactory {
-        const Graph& g_;
-        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
-        size_t edge_length_threshold_;
-        size_t block_length_;
-        size_t max_distance_;
-        double score_percentile_;
-        size_t max_threads_;
-
-     public:
-        LongEdgeScoreThresholdEstimatorFactory(const Graph &g,
-                                               shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-                                               size_t edge_length_threshold,
-                                               size_t block_length,
-                                               size_t max_distance,
-                                               double score_percentile,
-                                               size_t max_threads);
-
-        shared_ptr<LabeledDistributionThresholdEstimator> GetThresholdEstimator() const;
-    };
-
-    class ShortEdgeScoreThresholdEstimatorFactory {
-        const Graph& g_;
-        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
-        size_t edge_length_threshold_;
-        size_t block_length_;
-        size_t max_distance_;
-        double score_percentile_;
-        size_t max_threads_;
-
-     public:
-        ShortEdgeScoreThresholdEstimatorFactory(const Graph &g,
-                                                shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-                                                size_t edge_length_threshold,
-                                                size_t block_length,
-                                                size_t max_distance,
-                                                double score_percentile,
-                                                size_t max_threads);
-
-        shared_ptr<LabeledDistributionThresholdEstimator> GetThresholdEstimator() const;
-    };
-
+    shared_ptr<LabeledDistributionThresholdEstimator> GetThresholdEstimator() const;
+};
+}
 }

@@ -2,6 +2,7 @@
 #include "read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 
 bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVertex &vertex) const {
     size_t vertex_length = vertex.GetLengthFromGraph(g_);
@@ -52,16 +53,16 @@ LongEdgePairGapCloserParams LongEdgePairGapCloserPredicate::GetParams() const {
 }
 
 AndPredicate::AndPredicate(const shared_ptr<ScaffoldVertexPredicate> &first_,
-                       const shared_ptr<ScaffoldVertexPredicate> &second_) : first_(first_), second_(second_) {}
+                           const shared_ptr<ScaffoldVertexPredicate> &second_) : first_(first_), second_(second_) {}
 bool AndPredicate::Check(const ScaffoldVertexPredicate::ScaffoldVertex &scaffold_vertex) const {
     return first_->Check(scaffold_vertex) and second_->Check(scaffold_vertex);
 }
-path_extend::LongEdgePairGapCloserParams::LongEdgePairGapCloserParams(size_t count_threshold_,
-                                                                      size_t length_normalizer_,
-                                                                      double raw_score_threshold_,
-                                                                      double relative_coverage_threshold_,
-                                                                      size_t edge_length_threshold_,
-                                                                      bool normalize_using_cov_)
+LongEdgePairGapCloserParams::LongEdgePairGapCloserParams(size_t count_threshold_,
+                                                         size_t length_normalizer_,
+                                                         double raw_score_threshold_,
+                                                         double relative_coverage_threshold_,
+                                                         size_t edge_length_threshold_,
+                                                         bool normalize_using_cov_)
     : count_threshold_(count_threshold_),
       length_normalizer_(length_normalizer_),
       raw_score_threshold_(raw_score_threshold_),
@@ -74,7 +75,7 @@ bool LengthChecker::Check(const ScaffoldVertexPredicate::ScaffoldVertex &vertex)
     return vertex.GetLengthFromGraph(g_) < length_threshold_;
 }
 bool IntersectionBasedPairEntryProcessor::CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex,
-                                                           double score_threshold) {
+                                                          double score_threshold) {
     size_t intersection_size = barcode_extractor_->GetIntersectionSize(vertex, intersection_);
     size_t min_size = std::min(intersection_.size(), barcode_extractor_->GetHeadSize(vertex));
     double containment_index = static_cast<double>(intersection_size) / static_cast<double>(min_size);
@@ -84,8 +85,8 @@ bool IntersectionBasedPairEntryProcessor::CheckMiddleEdge(const ScaffoldGraph::S
     return threshold_passed;
 }
 IntersectionBasedPairEntryProcessor::IntersectionBasedPairEntryProcessor(
-        const barcode_index::SimpleVertexEntry &intersection_,
-        const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> &barcode_extractor_)
+    const barcode_index::SimpleVertexEntry &intersection_,
+    const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> &barcode_extractor_)
     : intersection_(intersection_), barcode_extractor_(barcode_extractor_) {}
 
 bool TwoSetsBasedPairEntryProcessor::CheckWithEntry(const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &middle_vertex,
@@ -102,16 +103,16 @@ bool TwoSetsBasedPairEntryProcessor::CheckMiddleEdge(const scaffold_graph::Scaff
     return first_passed and second_passed;
 }
 TwoSetsBasedPairEntryProcessor::TwoSetsBasedPairEntryProcessor(
-        const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &first,
-        const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &second,
-        const shared_ptr<VertexEntryScoreFunction> score_function)
-            : first_(first), second_(second), score_function_(score_function) {}
+    const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &first,
+    const TwoSetsBasedPairEntryProcessor::SimpleVertexEntry &second,
+    const shared_ptr<VertexEntryScoreFunction> score_function)
+    : first_(first), second_(second), score_function_(score_function) {}
 
 RecordingPairEntryProcessor::RecordingPairEntryProcessor(
-        const RecordingPairEntryProcessor::SimpleVertexEntry &first_,
-        const RecordingPairEntryProcessor::SimpleVertexEntry &second_,
-        shared_ptr<PairEntryProcessor> internal_processor_)
-            : first_(first_), second_(second_), internal_processor_(internal_processor_), vertex_to_result_() {}
+    const RecordingPairEntryProcessor::SimpleVertexEntry &first_,
+    const RecordingPairEntryProcessor::SimpleVertexEntry &second_,
+    shared_ptr<PairEntryProcessor> internal_processor_)
+    : first_(first_), second_(second_), internal_processor_(internal_processor_), vertex_to_result_() {}
 
 bool RecordingPairEntryProcessor::CheckMiddleEdge(const ScaffoldVertex &vertex, double score_threshold) {
     auto result_it = vertex_to_result_.find(vertex);
@@ -134,10 +135,11 @@ double RepetitiveVertexEntryScoreFunction::GetScore(const scaffold_graph::Scaffo
     }
 }
 RepetitiveVertexEntryScoreFunction::RepetitiveVertexEntryScoreFunction(
-        shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_)
+    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_)
     : VertexEntryScoreFunction(barcode_extractor_) {}
 
 VertexEntryScoreFunction::VertexEntryScoreFunction(
-        shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_)
+    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_)
     : barcode_extractor_(barcode_extractor_) {}
+}
 }

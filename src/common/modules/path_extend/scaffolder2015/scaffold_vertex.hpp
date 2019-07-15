@@ -11,7 +11,7 @@ enum ScaffoldVertexT { Edge = 0, Path = 1 };
 
 class InnerScaffoldVertex {
  public:
-    virtual ~InnerScaffoldVertex() {};
+    virtual ~InnerScaffoldVertex() = default;
 
     virtual size_t GetId() const = 0;
     virtual ScaffoldVertexT GetType() const = 0;
@@ -23,10 +23,10 @@ class InnerScaffoldVertex {
     virtual boost::optional<debruijn_graph::EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const = 0;
     virtual boost::optional<debruijn_graph::EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const = 0;
     virtual string GetSequence(const debruijn_graph::Graph &g) const = 0;
+    virtual size_t GetSize() const = 0;
 
     virtual debruijn_graph::EdgeId GetLastEdge() const = 0;
     virtual EdgeId GetFirstEdge() const = 0;
-    //todo think about an iterator
     virtual std::unordered_set<EdgeId> GetAllEdges() const = 0;
 
     virtual BidirectionalPath* ToPath(const debruijn_graph::Graph &g) const = 0;
@@ -51,6 +51,7 @@ class EdgeIdVertex : public InnerScaffoldVertex {
     optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
     optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
     std::string GetSequence(const debruijn_graph::Graph &g) const override;
+    size_t GetSize() const override;
 
     EdgeId GetLastEdge() const override;
     EdgeId GetFirstEdge() const override;
@@ -80,6 +81,7 @@ class PathVertex : public InnerScaffoldVertex {
     optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
     optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
     std::string GetSequence(const debruijn_graph::Graph &g) const override;
+    size_t GetSize() const override;
 
     EdgeId GetLastEdge() const override;
     EdgeId GetFirstEdge() const override;
@@ -118,6 +120,7 @@ class ScaffoldVertex {
     boost::optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const;
     boost::optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const;
     std::string GetSequence(const debruijn_graph::Graph &g) const;
+    size_t GetSize() const;
 
     EdgeId GetLastEdge() const;
     EdgeId GetFirstEdge() const;
@@ -137,23 +140,11 @@ class ScaffoldVertex {
     bool operator>=(const ScaffoldVertex &rhs) const;
 };
 
-//fixme tmp solution to EdgeId-based scaffolder algorithms, should be removed
 class EdgeGetter {
  public:
-
     EdgeId GetEdgeFromScaffoldVertex(const ScaffoldVertex& vertex) {
-        VERIFY(vertex.GetType() == Edge);
+        VERIFY_DEV(vertex.GetType() == Edge);
         auto inner_vertex = std::static_pointer_cast<EdgeIdVertex>(vertex.GetInnerVertex());
-        return inner_vertex->get();
-    }
-};
-
-class PathGetter {
- public:
-
-    BidirectionalPath* GetPathFromScaffoldVertex(const ScaffoldVertex& vertex) {
-        VERIFY(vertex.GetType() == Path);
-        auto inner_vertex = std::static_pointer_cast<PathVertex>(vertex.GetInnerVertex());
         return inner_vertex->get();
     }
 };

@@ -380,10 +380,10 @@ Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
     }
 }
 
-shared_ptr<LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::ExtractPredicateFromPosition(
+shared_ptr<read_cloud::LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::GetPredicateFromPosition(
         const BidirectionalPath &path,
         const size_t position,
-        const LongEdgePairGapCloserParams &params) const {
+        const GapCloserParamsT &params) const {
     DEBUG("Extracting intersection between prefix and suffix");
     BidirectionalPath* prefix = new BidirectionalPath(path.SubPath(0, position));
     BidirectionalPath* prefix_conj = new BidirectionalPath(prefix->Conjugate());
@@ -398,16 +398,17 @@ shared_ptr<LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::
     DEBUG("Prefix length: " << prefix->Length());
     DEBUG("Suffix length: " << suffix->Length());
     auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, main_extractor_);
-    auto short_edge_score_function = make_shared<RepetitiveVertexEntryScoreFunction>(short_edge_extractor);
-    auto pair_entry_extractor = make_shared<path_extend::TwoSetsBasedPairEntryProcessor>(
-    prefix_entry, suffix_entry, short_edge_score_function);
-    auto predicate = make_shared<LongEdgePairGapCloserPredicate>(g_, short_edge_extractor, params,
-                                                                 prefix, suffix, pair_entry_extractor);
+    auto short_edge_score_function = make_shared<read_cloud::RepetitiveVertexEntryScoreFunction>(short_edge_extractor);
+    auto pair_entry_extractor = make_shared<read_cloud::TwoSetsBasedPairEntryProcessor>(prefix_entry, suffix_entry,
+                                                                                        short_edge_score_function);
+    auto predicate = make_shared<read_cloud::LongEdgePairGapCloserPredicate>(g_, short_edge_extractor, params,
+                                                                             prefix, suffix, pair_entry_extractor);
     return predicate;
 }
 shared_ptr<ExtensionChooser> ReadCloudGapExtensionChooserFactory::CreateChooser(const BidirectionalPath &original_path,
                                                                                     size_t position) const {
-    auto predicate = ExtractPredicateFromPosition(original_path, position, params_);
+    DEBUG("Creating predicate");
+    auto predicate = GetPredicateFromPosition(original_path, position, params_);
     DEBUG("Created predicate");
     VERIFY_MSG(position > 0, "Incorrect gap");
     EdgeId target_edge = original_path.At(position);

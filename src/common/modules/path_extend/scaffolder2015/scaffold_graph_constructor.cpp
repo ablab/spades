@@ -9,8 +9,8 @@
 // Created by andrey on 04.12.15.
 //
 
-#include <read_cloud_path_extend/scaffold_graph_dijkstra.hpp>
-#include "read_cloud_path_extend/read_cloud_dijkstras.hpp"
+#include <common/assembly_graph/dijkstra/read_cloud_dijkstra/scaffold_graph_dijkstra.hpp>
+#include "common/assembly_graph/dijkstra/read_cloud_dijkstra/read_cloud_dijkstras.hpp"
 #include "scaffold_graph_constructor.hpp"
 
 namespace path_extend {
@@ -54,9 +54,7 @@ void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const std::share
         if (use_terminal_vertices_only && graph_->OutgoingEdgeCount(v) > 0)
             continue;
 
-        //fixme connection conditions for paths?
-        EdgeGetter getter;
-        EdgeId e = getter.GetEdgeFromScaffoldVertex(v);
+        EdgeId e = v.GetFirstEdge();
         auto connected_with = condition->ConnectedWith(e);
         for (const auto& pair : connected_with) {
             EdgeId connected = pair.first;

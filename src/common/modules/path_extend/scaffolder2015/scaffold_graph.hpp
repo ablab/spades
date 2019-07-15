@@ -98,7 +98,7 @@ public:
         bool operator>=(const ScaffoldEdge& rhs) const;
     };
 
-    //typedef for possibility to use in templated graph visualizers
+    //typedef to use in templated graph algorithms
     typedef ScaffoldVertex VertexId;
     typedef ScaffoldEdge EdgeId;
 

@@ -1,11 +1,12 @@
 #include "entry_collectors.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 
 SimpleBarcodeEntryCollector::SimpleBarcodeEntryCollector(const Graph &g,
                                                          shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index,
                                                          const RelativeUniquePredicateGetter &predicate_getter,
-                                                         size_t distance):
+                                                         size_t distance) :
     g_(g),
     barcode_index_(barcode_index),
     predicate_getter_(predicate_getter),
@@ -22,12 +23,12 @@ barcode_index::SimpleVertexEntry SimpleBarcodeEntryCollector::CollectEntry(const
         //todo ineffective method
         auto barcodes_from_tail = barcode_index_->GetBarcodesFromRange(last_edge, 1,
                                                                        extra_prefix_length, g_.length(last_edge));
-        for (const auto& barcode: barcodes_from_tail) {
+        for (const auto &barcode: barcodes_from_tail) {
             result.insert(barcode);
         }
         unique_edges.pop_back();
     }
-    for (const auto& edge: unique_edges) {
+    for (const auto &edge: unique_edges) {
         auto barcode_it_begin = barcode_index_->barcode_iterator_begin(edge);
         auto barcode_it_end = barcode_index_->barcode_iterator_end(edge);
         for (auto it = barcode_it_begin; it != barcode_it_end; ++it) {
@@ -41,7 +42,7 @@ std::pair<vector<EdgeId>, size_t> SimpleBarcodeEntryCollector::GetUniqueEdges(co
                                                                               size_t distance) const {
     DEBUG("Getting unique edges");
     vector<EdgeId> result;
-    for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+    for (int i = (int) path.Size() - 1; i >= 0; --i) {
         DEBUG("Applying predicate");
         if (predicate(path.At(i))) {
             result.push_back(path.At(i));
@@ -60,10 +61,10 @@ func::TypedPredicate<EdgeId> RelativeUniquePredicateGetter::GetPredicate(const B
     double initial_coverage = GetInitialCoverage(path);
     DEBUG("Initial coverage: " << initial_coverage);
     double coverage_threshold = initial_coverage * relative_coverage_threshold_;
-    auto coverage_predicate = [this, coverage_threshold](const EdgeId& edge) {
+    auto coverage_predicate = [this, coverage_threshold](const EdgeId &edge) {
       return math::le(this->g_.coverage(edge), coverage_threshold);
     };
-    auto length_predicate = [this](const EdgeId& edge) {
+    auto length_predicate = [this](const EdgeId &edge) {
       return this->g_.length(edge) >= this->edge_length_threshold_;
     };
     auto edge_predicate = func::AndOperator<EdgeId>(coverage_predicate, length_predicate);
@@ -86,5 +87,6 @@ double RelativeUniquePredicateGetter::GetInitialCoverage(const BidirectionalPath
         }
     }
     return 0;
+}
 }
 }
