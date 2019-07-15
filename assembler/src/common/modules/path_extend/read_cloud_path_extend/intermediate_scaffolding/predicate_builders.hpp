@@ -3,29 +3,32 @@
 #include "common/barcode_index/scaffold_vertex_index.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 
 class GapCloserPredicateBuilder {
- protected:
+  protected:
     typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef SimpleGraph<ScaffoldVertex> SimpleTransitionGraph;
 
- public:
-    virtual shared_ptr<ScaffoldEdgePredicate> GetPredicate(const SimpleTransitionGraph& graph, const ScaffoldVertex& source,
-                                                           const ScaffoldVertex& sink) const = 0;
+  public:
+    virtual shared_ptr<ScaffoldEdgePredicate> GetPredicate(const SimpleTransitionGraph &graph,
+                                                           const ScaffoldVertex &source,
+                                                           const ScaffoldVertex &sink) const = 0;
 };
 
-class PathClusterPredicate: public ScaffoldEdgePredicate {
+class PathClusterPredicate : public ScaffoldEdgePredicate {
     using ScaffoldEdgePredicate::ScaffoldGraph;
     using ScaffoldEdgePredicate::ScaffoldEdge;
 
-    const Graph& g_;
+    const Graph &g_;
     const transitions::ClusterTransitionStorage cluster_transition_storage_;
     const double transition_score_threshold_;
- public:
-    PathClusterPredicate(const Graph& g_,
-                         const transitions::ClusterTransitionStorage& cluster_transition_storage_,
+  public:
+    PathClusterPredicate(const Graph &g_,
+                         const transitions::ClusterTransitionStorage &cluster_transition_storage_,
                          const double transition_score_threshold_);
 
-    bool Check(const ScaffoldEdge& scaffold_edge) const override;
+    bool Check(const ScaffoldEdge &scaffold_edge) const override;
 };
+}
 }

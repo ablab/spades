@@ -17,8 +17,7 @@
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "read_cloud_path_extend/read_cloud_dijkstra.hpp"
-
+#include "assembly_graph/dijkstra/read_cloud_path_extend/read_cloud_dijkstras.hpp"
 #include <cmath>
 #include "read_cloud_path_extend/extender_support/entry_collectors.hpp"
 #include "read_cloud_path_extend/extender_support/candidate_selectors.hpp"
@@ -581,12 +580,11 @@ private:
 
 };
 
-//fixme code duplication(MultiExtender)
-//todo add custom path predicate instead of length bound
+//todo use custom path predicate instead of length bound
 class SearchingMultiExtender: public SimpleExtender {
  protected:
     std::unordered_set<VertexId> visited_vertices_;
-    QueueContainer& path_container_;
+    std::shared_ptr<QueueContainer> path_container_;
     const size_t length_bound_;
 
  public:
@@ -599,7 +597,7 @@ class SearchingMultiExtender: public SimpleExtender {
                   bool use_short_loop_cov_resolver,
                   double weight_threshold,
                   size_t length_bound,
-                  QueueContainer& path_container) :
+                  std::shared_ptr<QueueContainer> path_container) :
         SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold),
         visited_vertices_(), path_container_(path_container), length_bound_(length_bound)
     {}
@@ -610,7 +608,8 @@ class SearchingMultiExtender: public SimpleExtender {
 
  protected:
     bool SearchingAddCandidates(BidirectionalPath& path, ExtensionChooser::EdgeContainer& candidates,
-                                QueueContainer& path_container, std::unordered_set<VertexId>& visited_vertices,
+                                std::shared_ptr<QueueContainer> path_container,
+                                std::unordered_set<VertexId>& visited_vertices,
                                 size_t length_bound) {
         if (candidates.size() == 0)
             return false;
@@ -634,9 +633,9 @@ class SearchingMultiExtender: public SimpleExtender {
         for (size_t i = 1; i < candidates.size(); ++i) {
             auto candidate = candidates[i];
             DEBUG("push other candidate " << candidate.e_.int_id());
-            BidirectionalPath* p = new BidirectionalPath(path);
-            p->PushBack(candidate.e_, Gap(candidate.d_));
-            path_container.push(p);
+            BidirectionalPath* path_copy_ptr = new BidirectionalPath(path);
+            path_copy_ptr->PushBack(candidate.e_, Gap(candidate.d_));
+            path_container->push(path_copy_ptr);
             DEBUG("Inserting vertex " << g_.EdgeEnd(candidate.e_));
             visited_vertices.insert(g_.EdgeEnd(candidate.e_));
         }
@@ -789,65 +788,12 @@ private:
 };
 
 
-//todo discuss this
-class ScaffoldingSearchingMultiExtender: public SearchingMultiExtender, public ScaffoldingPathExtender {
-    shared_ptr<ExtensionChooser> chooser_;
-    using SearchingMultiExtender::path_container_;
-    using SearchingMultiExtender::visited_vertices_;
-    using SearchingMultiExtender::length_bound_;
-
- public:
-    ScaffoldingSearchingMultiExtender(const conj_graph_pack &gp,
-                                      const GraphCoverageMap &cov_map,
-                                      UsedUniqueStorage &unique,
-                                      shared_ptr<ExtensionChooser> ec,
-                                      size_t is,
-                                      double weight_threshold,
-                                      const shared_ptr<GapAnalyzer> &gap_analyzer,
-                                      QueueContainer &path_container,
-                                      size_t length_bound,
-                                      bool avoid_rc_connections,
-                                      bool check_sink,
-                                      bool investigate_short_loops,
-                                      bool use_short_loop_cov_resolver) :
-                                                         SearchingMultiExtender(gp, cov_map, unique, ec, is,
-                                                                                investigate_short_loops,
-                                                                                use_short_loop_cov_resolver,
-                                                                                weight_threshold,
-                                                                                length_bound, path_container),
-                                                         ScaffoldingPathExtender(gp, cov_map, unique, ec,
-                                                                                 gap_analyzer, is,
-                                                                                 investigate_short_loops,
-                                                                                 avoid_rc_connections,
-                                                                                 check_sink),
-                                                         chooser_(ec) {}
-
-    bool MakeSimpleGrowStep(BidirectionalPath &path, PathContainer* /*paths_storage*/) override {
-        DEBUG("Getting candidates");
-        auto gap_candidates = GetCandidates(path, chooser_);
-        DEBUG("Found " << gap_candidates.size() << " candidates");
-        ExtensionChooser::EdgeContainer candidates;
-        for (const auto& candidate: gap_candidates) {
-            EdgeId e = candidate.edge_;
-            size_t distance = static_cast<size_t>(max(0, candidate.gap_.gap));
-            EdgeWithDistance ewd(e, distance);
-            candidates.push_back(ewd);
-        }
-        if (gap_candidates.size() > 0) {
-            DEBUG("Scaffold extender helped");
-        }
-        return SearchingAddCandidates(path, candidates, path_container_, visited_vertices_, length_bound_);
-    }
- private:
-    DECL_LOGGER("ScaffoldingSearchingMultiExtender");
-};
-
 class ReadCloudExtender : public SimpleExtender { //Traverse forward to find long edges
 using SimpleExtender::g_;
 protected:
-    RelativeUniquePredicateGetter predicate_getter_;
-    shared_ptr<BarcodeEntryCollector> entry_collector_;
-    shared_ptr<CloudReachableEdgesSelectorFactory> edge_selector_factory_;
+    read_cloud::RelativeUniquePredicateGetter predicate_getter_;
+    shared_ptr<read_cloud::BarcodeEntryCollector> entry_collector_;
+    shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory_;
     size_t min_path_length_;
  public:
     ReadCloudExtender(const conj_graph_pack &gp,
@@ -858,9 +804,9 @@ protected:
                       bool investigate_short_loops,
                       bool use_short_loop_cov_resolver,
                       double weight_threshold,
-                      RelativeUniquePredicateGetter predicate_getter,
-                      shared_ptr<BarcodeEntryCollector> entry_collector,
-                      shared_ptr<CloudReachableEdgesSelectorFactory> edge_selector_factory,
+                      read_cloud::RelativeUniquePredicateGetter predicate_getter,
+                      shared_ptr<read_cloud::BarcodeEntryCollector> entry_collector,
+                      shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory,
                       size_t min_path_length) :
         SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops,
                        use_short_loop_cov_resolver, weight_threshold),
@@ -961,8 +907,7 @@ class ScaffoldGraphExtender: public PathExtender {
             scaffold_graph::ScaffoldVertexT type = next_vertex.GetType();
             switch (type) {
                 case scaffold_graph::Edge: {
-                    scaffold_graph::EdgeGetter getter;
-                    EdgeId next = getter.GetEdgeFromScaffoldVertex(next_vertex);
+                    EdgeId next = next_vertex.GetFirstEdge();
                     return TryUseEdge(path, next, gap);
                 }
                 case scaffold_graph::Path: return false;
@@ -985,7 +930,6 @@ class ScaffoldGraphExtender: public PathExtender {
         return result;
     }
 
-    //fixme logical duplication with LoopDetectingPathExtender
     bool TryUseEdge(BidirectionalPath &path, EdgeId e, const Gap &gap) {
         bool success = scaffold_graph_vertices_.find(e) != scaffold_graph_vertices_.end() and
             visited_.find(e) == visited_.end();

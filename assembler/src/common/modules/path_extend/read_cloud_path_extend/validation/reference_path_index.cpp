@@ -3,8 +3,10 @@
 #include "reference_path_index.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 namespace validation {
-ReferencePathIndex::EdgeInfo path_extend::validation::ReferencePathIndex::at(const debruijn_graph::EdgeId &edge) const {
+
+ReferencePathIndex::EdgeInfo validation::ReferencePathIndex::at(const debruijn_graph::EdgeId &edge) const {
     return edge_to_info_.at(edge);
 }
 void ReferencePathIndex::Insert(EdgeId edge, size_t edge_pos, size_t conj_edge_pos,
@@ -19,7 +21,7 @@ bool ReferencePathIndex::Contains(const EdgeId &edge) const {
     return edge_to_info_.find(edge) != edge_to_info_.end();
 }
 ReferencePathIndex ReferencePathIndexBuilder::BuildReferencePathIndex(
-        const vector<vector<EdgeWithMapping>> &reference_paths) {
+    const vector<vector<EdgeWithMapping>> &reference_paths) {
     ReferencePathIndex result;
     for (size_t i = 0; i < reference_paths.size(); ++i) {
         for (size_t j = 0; j < reference_paths[i].size(); ++j) {
@@ -48,6 +50,7 @@ ReferencePathIndex ReferencePathIndexBuilder::BuildReferencePathIndexForSet(
         }
     }
     return result;
+}
 }
 }
 }

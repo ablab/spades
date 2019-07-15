@@ -3,13 +3,15 @@
 #include "common/assembly_graph/contracted_graph/contracted_statistics.hpp"
 #include "common/assembly_graph/contracted_graph/graph_condensation.hpp"
 #include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
-#include "read_cloud_path_extend/path_scaffolder.hpp"
-#include "read_cloud_path_extend/scaffold_graph_extractor.hpp"
+#include "common/modules/path_extend/path_scaffolder.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 
 void ContractedGraphSimplifier::SimplifyUsingTransitions(ContractedGraphSimplifier::ContractedGraph &graph,
-                                                         const std::unordered_map<ScaffoldVertex, ScaffoldVertex> &transition_map) const {
+                                                         const std::unordered_map<ScaffoldVertex,
+                                                                                  ScaffoldVertex> &transition_map) const {
     //add type check
     std::unordered_map<ScaffoldVertex, ContractedGraphTransition> edge_to_transition;
     for (const auto &vertex: graph) {
@@ -38,7 +40,6 @@ void ContractedGraphSimplifier::SimplifyUsingTransitions(ContractedGraphSimplifi
 
     StartFinder start_finder(g_);
     auto starts = start_finder.GetStarts(transition_map);
-    scaffold_graph::PathGetter path_getter;
 
     INFO(starts.size() << " starts");
     for (const auto &start: starts) {
@@ -48,10 +49,10 @@ void ContractedGraphSimplifier::SimplifyUsingTransitions(ContractedGraphSimplifi
             continue;
         }
         DEBUG("Start: " << start.int_id());
-        auto start_path = path_getter.GetPathFromScaffoldVertex(start);
+        auto start_path = start.ToPath(g_);
         while (next_found) {
             auto next = transition_map.at(current);
-            auto next_path = path_getter.GetPathFromScaffoldVertex(next);
+            auto next_path = next.ToPath(g_);
             auto contracted_transition = edge_to_transition.at(current);
             auto next_transition = edge_to_transition.at(next);
             auto conjugate = current.GetConjugateFromGraph(g_);
@@ -102,9 +103,10 @@ ContractedGraphSimplifier::ContractedGraphTransition::ContractedGraphTransition(
     : start_(start), end_(end) {}
 
 PathContractedGraph ContractedGraphScaffolder::GetSimplifiedContractedGraph(
-    const ContractedGraphScaffolder::ScaffoldGraph &scaffold_graph) const {
+        const ContractedGraphScaffolder::ScaffoldGraph &scaffold_graph) const {
     std::unordered_set<ScaffoldVertex> scaffold_vertices;
-    std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(scaffold_vertices, scaffold_vertices.end()));
+    std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(),
+              std::inserter(scaffold_vertices, scaffold_vertices.end()));
     auto edge_precidate = [&scaffold_vertices](const EdgeId &edge) {
       return scaffold_vertices.find(edge) != scaffold_vertices.end();
     };
@@ -113,18 +115,18 @@ PathContractedGraph ContractedGraphScaffolder::GetSimplifiedContractedGraph(
     auto contracted_graph = *(factory.GetGraph());
     PathContainer edge_paths;
     std::unordered_map<ScaffoldVertex, ScaffoldVertex> edge_to_path_vertex;
-    path_extend::scaffold_graph::EdgeGetter edge_getter;
     std::unordered_set<ScaffoldVertex> added_vertices;
     for (const auto &scaffold_vertex: scaffold_vertices) {
-        EdgeId edge = edge_getter.GetEdgeFromScaffoldVertex(scaffold_vertex);
-        if (added_vertices.find(edge) == added_vertices.end() and added_vertices.find(g_.conjugate(edge)) == added_vertices.end()) {
-            added_vertices.insert(edge);
-            added_vertices.insert(g_.conjugate(edge));
-            BidirectionalPath* edge_path = new BidirectionalPath(g_, edge);
-            BidirectionalPath* conj_path = new BidirectionalPath(g_, g_.conjugate(edge));
+        auto conjugate = scaffold_vertex.GetConjugateFromGraph(g_);
+        if (added_vertices.find(scaffold_vertex) == added_vertices.end()
+            and added_vertices.find(conjugate) == added_vertices.end()) {
+            added_vertices.insert(scaffold_vertex);
+            added_vertices.insert(conjugate);
+            BidirectionalPath *edge_path = new BidirectionalPath(scaffold_vertex.GetPath(g_));
+            BidirectionalPath *conj_path = new BidirectionalPath(conjugate.GetPath(g_));
             edge_paths.AddPair(edge_path, conj_path);
-            edge_to_path_vertex.insert({edge, edge_path});
-            edge_to_path_vertex.insert({g_.conjugate(edge), conj_path});
+            edge_to_path_vertex.insert({scaffold_vertex, edge_path});
+            edge_to_path_vertex.insert({conjugate, conj_path});
         }
     }
 
@@ -188,7 +190,7 @@ ContractedGraphScaffolder::TransitionMap ContractedGraphScaffolder::GetTransitio
     const ContractedGraphScaffolder::TransitionMap &vertex_map) const {
     TransitionMap transitions;
     ScaffoldGraphExtractor extractor;
-    auto reliable_edges = extractor.ExtractUnivocalEdges(scaffold_graph);
+    auto reliable_edges = extractor.ExtractReliableEdges(scaffold_graph);
     INFO(reliable_edges.size() << " reliable transitions");
     for (const auto &edge: reliable_edges) {
         ScaffoldVertex start = edge.getStart();
@@ -203,4 +205,5 @@ ContractedGraphScaffolder::ContractedGraphScaffolder(const Graph &g) : g_(g) {}
 PathContractedGraph::PathContractedGraph(PathContainer &&edges, const contracted_graph::ContractedGraph &graph)
     : edges_(std::move(edges)), graph_(graph) {}
 
+}
 }

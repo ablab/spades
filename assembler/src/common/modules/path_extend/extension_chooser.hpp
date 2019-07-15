@@ -14,8 +14,11 @@
 
 #include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/components/graph_component.hpp"
+#include "assembly_graph/dijkstra/read_cloud_dijkstra/read_cloud_dijkstras.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "barcode_index/barcode_mapper.hpp"
+#include "barcode_index/barcode_info_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
 #include "modules/alignment/rna/ss_coverage.hpp"
 #include "read_cloud_path_extend/paired_dijkstra.hpp"
 
@@ -1553,8 +1556,8 @@ private:
 
 class ReadCloudExtensionChooser: public ExtensionChooser {
     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index_;
-    shared_ptr<BarcodeEntryCollector> barcode_entry_collector_;
-    shared_ptr<CloudReachableEdgesSelectorFactory> edge_selector_factory_;
+    shared_ptr<read_cloud::BarcodeEntryCollector> barcode_entry_collector_;
+    shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory_;
     const double score_threshold_;
     const size_t tail_threshold_;
 
@@ -1565,8 +1568,8 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
                               shared_ptr<WeightCounter> wc,
                               double weight_threshold,
                               shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index,
-                              shared_ptr<BarcodeEntryCollector> barcode_entry_collector,
-                              shared_ptr<CloudReachableEdgesSelectorFactory> edge_selector_factory,
+                              shared_ptr<read_cloud::BarcodeEntryCollector> barcode_entry_collector,
+                              shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory,
                               double score_threshold_, size_t tail_threshold) :
         ExtensionChooser(g, wc, weight_threshold),
         barcode_index_(barcode_index),
@@ -1727,12 +1730,12 @@ class ReadCloudExtensionChooser: public ExtensionChooser {
 };
 
 class PredicateExtensionChooser: public ExtensionChooser {
-    shared_ptr<ScaffoldVertexPredicate> predicate_;
+    shared_ptr<read_cloud::ScaffoldVertexPredicate> predicate_;
     shared_ptr<ExtensionChooser> chooser_;
 
  public:
     PredicateExtensionChooser(const Graph& g,
-                          shared_ptr<ScaffoldVertexPredicate> intermediate_predicate,
+                          shared_ptr<read_cloud::ScaffoldVertexPredicate> intermediate_predicate,
                           shared_ptr<ExtensionChooser> pe_extension_chooser_) :
         ExtensionChooser(g),
         predicate_(intermediate_predicate),
@@ -1778,20 +1781,20 @@ class ReadCloudGapExtensionChooser : public ExtensionChooser {
     const debruijn_graph::Graph& g_;
     const ScaffoldingUniqueEdgeStorage& unique_storage_;
     EdgeId end_;
-    shared_ptr<LongEdgePairGapCloserPredicate> cloud_predicate_;
+    shared_ptr<read_cloud::LongEdgePairGapCloserPredicate> cloud_predicate_;
     const size_t scan_bound_;
 
  public:
     ReadCloudGapExtensionChooser(const Graph &g,
-                                     const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                                     const EdgeId &end_,
-                                     shared_ptr<LongEdgePairGapCloserPredicate> cloud_predicate,
-                                     const size_t scan_bound_) : ExtensionChooser(g),
-                                                                 g_(g),
-                                                                 unique_storage_(unique_storage_),
-                                                                 end_(end_),
-                                                                 cloud_predicate_(cloud_predicate),
-                                                                 scan_bound_(scan_bound_) {}
+                                 const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                 const EdgeId &end_,
+                                 shared_ptr<read_cloud::LongEdgePairGapCloserPredicate> cloud_predicate,
+                                 const size_t scan_bound_) : ExtensionChooser(g),
+                                                             g_(g),
+                                                             unique_storage_(unique_storage_),
+                                                             end_(end_),
+                                                             cloud_predicate_(cloud_predicate),
+                                                             scan_bound_(scan_bound_) {}
 
     virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
         const size_t GAP_UPPER_BOUND = 10000;

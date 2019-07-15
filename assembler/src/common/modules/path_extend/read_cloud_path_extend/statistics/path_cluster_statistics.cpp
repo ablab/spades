@@ -3,23 +3,25 @@
 #include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/transition_subgraph_validation.hpp"
-#include "common/barcode_index/cluster_storage/initial_cluster_storage_builder.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
 
 namespace path_extend {
+namespace read_cloud {
 
 vector<SubgraphInfo> PathClusterStatisticsExtractor::GetAllSubgraphInfo(const ScaffoldGraphStorage &storage) {
-    VERIFY_DEV(cfg::get().ts_res.debug_mode);
-    //fixme remove cfg::get()
+    VERIFY_DEV(configs_.debug_mode);
     //fixme too long
     vector<SubgraphInfo> result;
     ScaffoldGraphGapCloserParamsConstructor params_constructor;
-    auto subgraph_extractor_params =
-        params_constructor.ConstructSubgraphExtractorParamsFromConfig(storage.GetLargeLengthThreshold());
-    auto path_extractor_params = params_constructor.ConstructPathExtractorParamsFromConfig();
+    auto subgraph_extractor_params = params_constructor.ConstructSubgraphExtractorParamsFromConfig(
+        storage.GetLargeLengthThreshold(),
+        configs_);
+    auto path_extractor_params = params_constructor.ConstructPathExtractorParamsFromConfig(configs_);
     ScaffoldIndexInfoExtractorHelper scaffold_index_helper;
-    auto scaffold_index_extractor =
-        scaffold_index_helper.ConstructIndexExtractorFromParams(storage.GetSmallScaffoldGraph(), gp_,
-                                                                subgraph_extractor_params);
+    auto scaffold_index_extractor = scaffold_index_helper.ConstructIndexExtractorFromParams(storage.GetSmallScaffoldGraph(),
+                                                                                            gp_,
+                                                                                            subgraph_extractor_params,
+                                                                                            max_threads_);
 
     const size_t linkage_distance = path_extractor_params.linkage_distance_;
     const size_t min_read_threshold = path_extractor_params.min_read_threshold_;
@@ -28,8 +30,8 @@ vector<SubgraphInfo> PathClusterStatisticsExtractor::GetAllSubgraphInfo(const Sc
               std::inserter(target_edges, target_edges.begin()));
     DEBUG(target_edges.size() << " target edges.");
     auto barcode_extractor_ptr =
-        make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-    size_t cluster_storage_builder_threads = cfg::get().max_threads;
+        make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    size_t cluster_storage_builder_threads = max_threads_;
     auto edge_cluster_extractor =
         make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp_.g, barcode_extractor_ptr,
                                                                    linkage_distance, min_read_threshold);
@@ -43,16 +45,16 @@ vector<SubgraphInfo> PathClusterStatisticsExtractor::GetAllSubgraphInfo(const Sc
         cluster_storage_builder->ConstructInitialClusterStorage());
     INFO("Constructed initial cluster storage");
     ScaffoldGraphExtractor scaffold_graph_extractor;
-    auto univocal_edges = scaffold_graph_extractor.ExtractUnivocalEdges(storage.GetLargeScaffoldGraph());
+    auto univocal_edges = scaffold_graph_extractor.ExtractReliableEdges(storage.GetLargeScaffoldGraph());
     CloudScaffoldSubgraphExtractor subgraph_extractor(gp_.g, scaffold_index_extractor, subgraph_extractor_params);
-    size_t unique_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
-    PathClusterExtractionParams path_cluster_extraction_params {gp_.g, initial_cluster_storage,
-                                                                barcode_extractor_ptr, linkage_distance};
+    size_t unique_length_threshold = configs_.long_edge_length_lower_bound;
+    PathClusterExtractionParams path_cluster_extraction_params{gp_.g, initial_cluster_storage,
+                                                               barcode_extractor_ptr, linkage_distance};
     validation::SimpleTransitionGraphValidatorConstructor validator_constructor(gp_, unique_length_threshold);
-    auto validator = validator_constructor.GetValidator(cfg::get().ts_res.statistics.genome_path);
+    auto validator = validator_constructor.GetValidator(configs_.statistics.genome_path);
     const bool reference_validation_on = true;
 
-    for (const auto& edge: univocal_edges) {
+    for (const auto &edge: univocal_edges) {
         auto subgraph = subgraph_extractor.ExtractSubgraphBetweenVertices(storage.GetSmallScaffoldGraph(),
                                                                           edge.getStart(), edge.getEnd());
         auto pair_to_length = ConstructLengthMap(subgraph, storage.GetSmallScaffoldGraph());
@@ -68,12 +70,12 @@ vector<SubgraphInfo> PathClusterStatisticsExtractor::GetAllSubgraphInfo(const Sc
 }
 
 SubgraphInfo PathClusterStatisticsExtractor::GetSubgraphInfo(
-        const PathClusterStatisticsExtractor::SimpleTransitionGraph &graph,
-        const scaffold_graph::ScaffoldVertex &source, const scaffold_graph::ScaffoldVertex &sink,
-        const PathClusterStatisticsExtractor::ScaffoldEdgeMap &scaffold_edge_to_len,
-        const validation::SimpleTransitionGraphValidator &validator,
-        const PathClusterExtractionParams &path_cluster_extraction_params,
-        bool reference_validation_on) const {
+    const PathClusterStatisticsExtractor::SimpleTransitionGraph &graph,
+    const scaffold_graph::ScaffoldVertex &source, const scaffold_graph::ScaffoldVertex &sink,
+    const PathClusterStatisticsExtractor::ScaffoldEdgeMap &scaffold_edge_to_len,
+    const validation::SimpleTransitionGraphValidator &validator,
+    const PathClusterExtractionParams &path_cluster_extraction_params,
+    bool reference_validation_on) const {
     PathClusterExtractorHelper path_cluster_extractor_helper(path_cluster_extraction_params.g_,
                                                              path_cluster_extraction_params.init_cluster_storage_,
                                                              path_cluster_extraction_params.barcode_extractor_,
@@ -81,8 +83,8 @@ SubgraphInfo PathClusterStatisticsExtractor::GetSubgraphInfo(
     DEBUG("Source: " << source.int_id());
     DEBUG("Sink: " << sink.int_id());
     DEBUG("Printing graph");
-    for (const auto& vertex: graph) {
-        for(auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
+    for (const auto &vertex: graph) {
+        for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
             TRACE(vertex.int_id() << " -> " << (*it).int_id());
         }
     }
@@ -95,14 +97,15 @@ SubgraphInfo PathClusterStatisticsExtractor::GetSubgraphInfo(
     auto cluster_to_weight = path_cluster_normalizer.GetNormalizedStorage(path_clusters);
     INFO("Normalized");
     const double relative_threshold = 2;
-    PathClusterConflictResolver conflict_resolver(gp_.g, path_cluster_extraction_params.barcode_extractor_, relative_threshold);
+    PathClusterConflictResolver
+        conflict_resolver(gp_.g, path_cluster_extraction_params.barcode_extractor_, relative_threshold);
     auto final_clusters = conflict_resolver.GetClusterSets(graph, cluster_to_weight);
     INFO("Resolved conflicts");
 
     CloudPathExtractor correct_path_extractor;
     auto all_path_sets = correct_path_extractor.ExtractAllPaths(graph, source, sink);
     vector<vector<ScaffoldVertex>> all_paths;
-    for (const auto& path_set: all_path_sets) {
+    for (const auto &path_set: all_path_sets) {
         all_paths.push_back(path_set.path_);
     }
     auto resulting_paths = correct_path_extractor.ExtractCorrectPaths(graph, source, sink, final_clusters);
@@ -113,10 +116,10 @@ SubgraphInfo PathClusterStatisticsExtractor::GetSubgraphInfo(
         VERIFY_DEV(correct_path_result.is_initialized());
         correct_path = correct_path_result.get();
     }
-    auto id_map = GetIdMap(graph, correct_path);
+    auto id_map = GetIdMap(graph);
     std::map<ScaffoldVertex, size_t> vertex_to_len;
     std::map<ScaffoldVertex, double> vertex_to_cov;
-    for (const auto& vertex: graph) {
+    for (const auto &vertex: graph) {
         vertex_to_len[vertex] = vertex.GetLengthFromGraph(gp_.g);
         vertex_to_cov[vertex] = vertex.GetCoverageFromGraph(gp_.g);
     }
@@ -125,7 +128,11 @@ SubgraphInfo PathClusterStatisticsExtractor::GetSubgraphInfo(
     return result;
 }
 
-PathClusterStatisticsExtractor::PathClusterStatisticsExtractor(const conj_graph_pack &gp) : gp_(gp) {}
+PathClusterStatisticsExtractor::PathClusterStatisticsExtractor(const conj_graph_pack &gp,
+                                                               const ReadCloudConfigs &configs,
+                                                               size_t max_threads) :
+    gp_(gp), configs_(configs), max_threads_(max_threads) {}
+
 string PathClusterStatisticsExtractor::RequestCorrectPath(const PathClusterStatisticsExtractor::SimpleTransitionGraph &graph,
                                                           const scaffold_graph::ScaffoldVertex &source,
                                                           const scaffold_graph::ScaffoldVertex &sink,
@@ -136,7 +143,7 @@ string PathClusterStatisticsExtractor::RequestCorrectPath(const PathClusterStati
     if (not correct_path.is_initialized()) {
         path_string = "No correct path!";
     } else {
-        for (const auto& vertex: correct_path.get()) {
+        for (const auto &vertex: correct_path.get()) {
             path_string += std::to_string(vertex.int_id()) + " -> ";
         }
     }
@@ -150,7 +157,7 @@ bool PathClusterStatisticsExtractor::CheckSubgraph(const PathClusterStatisticsEx
     const size_t subgraph_size_threshold = 4;
     bool is_graph_large = graph.size() >= subgraph_size_threshold and graph.GetEdgesCount() >= graph.size();
     bool has_source_and_sink = graph.ContainsVertex(source) and graph.ContainsVertex(sink);
-    if (not (is_graph_large and has_source_and_sink)) {
+    if (not(is_graph_large and has_source_and_sink)) {
 //        INFO("Subgraph is too small");
         return false;
     }
@@ -179,18 +186,9 @@ bool PathClusterStatisticsExtractor::CheckSubgraph(const PathClusterStatisticsEx
     return true;
 }
 PathClusterStatisticsExtractor::IdMap PathClusterStatisticsExtractor::GetIdMap(
-        const PathClusterStatisticsExtractor::SimpleTransitionGraph &graph,
-        const vector<PathClusterStatisticsExtractor::ScaffoldVertex> &correct_path) const {
+        const PathClusterStatisticsExtractor::SimpleTransitionGraph &graph) const {
     size_t current_id = 1;
     IdMap result;
-//    if (not correct_path.empty()) {
-//        for (const auto& vertex: correct_path) {
-//            result.insert({vertex, std::to_string(current_id)});
-//            result.insert({vertex.GetConjugateFromGraph(gp_.g), std::to_string(current_id) + "'"});
-//            ++current_id;
-//        }
-//        return result;
-//    }
     for (const auto &vertex: graph) {
         result.insert({vertex, std::to_string(current_id)});
         ++current_id;
@@ -198,8 +196,8 @@ PathClusterStatisticsExtractor::IdMap PathClusterStatisticsExtractor::GetIdMap(
     return result;
 }
 PathClusterStatisticsExtractor::ScaffoldEdgeMap PathClusterStatisticsExtractor::ConstructLengthMap(
-        const PathClusterStatisticsExtractor::SimpleTransitionGraph &transition_graph,
-        const PathClusterStatisticsExtractor::ScaffoldGraph &graph) const {
+    const PathClusterStatisticsExtractor::SimpleTransitionGraph &transition_graph,
+    const PathClusterStatisticsExtractor::ScaffoldGraph &graph) const {
     PathClusterStatisticsExtractor::ScaffoldEdgeMap result;
     for (const auto &vertex: transition_graph) {
         if (result.find(vertex) == result.end()) {
@@ -242,7 +240,7 @@ ostream &operator<<(ostream &os, const SubgraphInfo &info) {
     os << "Source: " << info.id_map_.at(info.source_) << "\n";
     os << "Sink: " << info.id_map_.at(info.sink_) << "\n";
     os << "Graph: " << "\n";
-    for (const auto& vertex: graph) {
+    for (const auto &vertex: graph) {
         for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
             string current_short_id = info.id_map_.at(vertex);
             string next_short_id = info.id_map_.at(*it);
@@ -250,44 +248,44 @@ ostream &operator<<(ostream &os, const SubgraphInfo &info) {
                << info.scaffold_edge_to_dist_.at(vertex).at(*it) << "\n";
         }
     }
-    os <<"\nCorrect path\n";
-    for (const auto& vertex: info.correct_path_) {
+    os << "\nCorrect path\n";
+    for (const auto &vertex: info.correct_path_) {
         os << info.id_map_.at(vertex) << " -> ";
     }
-    os <<"\nVertex info:\n";
-    for (const auto& vertex: info.graph_) {
+    os << "\nVertex info:\n";
+    for (const auto &vertex: info.graph_) {
         os << info.id_map_.at(vertex) << ", len: " << info.vertex_to_len_.at(vertex)
            << ", coverage: " << info.vertex_to_cov_.at(vertex) << "\n";
     }
 
-    os <<"\nNormalized path clusters\n";
-    for (const auto& entry: info.path_cluster_to_weight_) {
-        const auto& vertex_set = entry.first;
+    os << "\nNormalized path clusters\n";
+    for (const auto &entry: info.path_cluster_to_weight_) {
+        const auto &vertex_set = entry.first;
         os << "{";
-        for (const auto& v: vertex_set) {
+        for (const auto &v: vertex_set) {
             os << info.id_map_.at(v) << ", ";
         }
         os << "}: " << entry.second << "\n";
     }
     os << "\nFinal path clusters\n";
-    for (const auto& cluster: info.final_clusters_) {
+    for (const auto &cluster: info.final_clusters_) {
         os << "{";
-        for (const auto& v: cluster) {
+        for (const auto &v: cluster) {
             os << info.id_map_.at(v) << ", ";
         }
         os << "}\n";
     }
 
-    os <<"\nAll paths\n";
-    for (const auto& path: info.all_paths_) {
+    os << "\nAll paths\n";
+    for (const auto &path: info.all_paths_) {
         for (const auto &vertex: path) {
             os << info.id_map_.at(vertex) << " -> ";
         }
         os << "\n";
     }
 
-    os <<"\nResulting paths\n";
-    for (const auto& path: info.resulting_paths_) {
+    os << "\nResulting paths\n";
+    for (const auto &path: info.resulting_paths_) {
         for (const auto &vertex: path) {
             os << info.id_map_.at(vertex) << " -> ";
         }
@@ -295,21 +293,23 @@ ostream &operator<<(ostream &os, const SubgraphInfo &info) {
     }
     return os;
 }
-void SubgraphInfoPrinter::PrintSubgraphInfo(const vector<SubgraphInfo> &info_collection, const string &output_path) const {
+void SubgraphInfoPrinter::PrintSubgraphInfo(const vector<SubgraphInfo> &info_collection,
+                                            const string &output_path) const {
     std::ofstream fout(fs::append_path(output_path, "cluster_statistics"));
-    for (const auto& info: info_collection) {
+    for (const auto &info: info_collection) {
         fout << "----\n";
         fout << info;
         fout << "----\n";
     }
 }
 PathClusterExtractionParams::PathClusterExtractionParams(
-        const Graph &g,
-        shared_ptr<cluster_storage::InitialClusterStorage> init_cluster_storage,
-        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-        size_t linkage_distance)
+    const Graph &g,
+    shared_ptr<cluster_storage::InitialClusterStorage> init_cluster_storage,
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+    size_t linkage_distance)
     : g_(g),
       init_cluster_storage_(init_cluster_storage),
       barcode_extractor_(barcode_extractor),
       linkage_distance_(linkage_distance) {}
+}
 }

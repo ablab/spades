@@ -34,7 +34,7 @@ string EdgeIdVertex::str(const debruijn_graph::Graph &g) const {
 double EdgeIdVertex::GetCoverageFromGraph(const debruijn_graph::Graph &g) const {
     return g.coverage(edge_);
 }
-//fixme change to smart ptr along with paths in PathContainer
+
 BidirectionalPath* EdgeIdVertex::ToPath(const debruijn_graph::Graph &g) const {
     BidirectionalPath* result = new BidirectionalPath (g);
     Gap gap(0);
@@ -74,6 +74,10 @@ std::unordered_set<EdgeId> EdgeIdVertex::GetAllEdges() const {
 }
 std::string EdgeIdVertex::GetSequence(const debruijn_graph::Graph &g) const {
     return g.EdgeNucls(edge_).str();
+}
+
+size_t EdgeIdVertex::GetSize() const {
+    return 1;
 }
 
 size_t PathVertex::GetId() const {
@@ -153,9 +157,12 @@ unordered_set<EdgeId> PathVertex::GetAllEdges() const {
     return result;
 }
 std::string PathVertex::GetSequence(const debruijn_graph::Graph &g) const {
-    //fixme might be ineffective
     path_extend::ScaffoldSequenceMaker sequence_maker(g);
     return sequence_maker.MakeSequence(*path_);
+}
+
+size_t PathVertex::GetSize() const {
+    return path_->Size();
 }
 
 ScaffoldVertex::ScaffoldVertex(shared_ptr<InnerScaffoldVertex> vertex_ptr_) : vertex_ptr_(vertex_ptr_) {}
@@ -232,6 +239,9 @@ std::unordered_set<EdgeId> ScaffoldVertex::GetAllEdges() const {
 }
 std::string ScaffoldVertex::GetSequence(const debruijn_graph::Graph &g) const {
     return vertex_ptr_->GetSequence(g);
+}
+size_t ScaffoldVertex::GetSize() const {
+    return vertex_ptr_->GetSize();
 }
 }
 

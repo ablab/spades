@@ -73,13 +73,12 @@ namespace barcode_index {
          *
          * @return Average number of barcodes contained on the long edges of the graph
          */
-        double AverageBarcodeCoverage() const {
+        double AverageBarcodeCoverage(size_t length_threshold) const {
             edge_it_helper helper(g_);
             size_t barcodes_overall = 0;
             size_t long_edges = 0;
-            size_t len_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
             for (auto it = helper.begin(); it != helper.end(); ++it) {
-                if (g_.length(*it) > len_threshold) {
+                if (g_.length(*it) > length_threshold) {
                     long_edges++;
                     barcodes_overall += GetNumberOfBarcodes(*it);
                 }
