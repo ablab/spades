@@ -7,10 +7,10 @@
 ############################################################################
 
 # Hard prerequisites
-cmake_minimum_required(VERSION 2.8.12)
+# cmake_minimum_required(VERSION 2.8.12)
 
 # allow more human readable "if then else" constructs
-set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE) 
+set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
 # modules to find additional libraries (like zlib, boost and etc)
 # Add path for custom modules
@@ -26,8 +26,8 @@ set(SPADES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(SPADES_TOOLS_BINARY_DIR ${SPADES_BINARY_DIR}/bin)
 set(SPADES_BUILT_INCLUDE_DIR ${SPADES_BINARY_DIR}/include)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${SPADES_TOOLS_BINARY_DIR})
-set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
-set(SPADES_CFG_DIR "${CMAKE_SOURCE_DIR}/../configs")
+set(EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../ext")
+set(SPADES_CFG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../configs")
 
 # Uncomment for gprof profiling
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
@@ -77,8 +77,8 @@ configure_file("${SPADES_MAIN_INCLUDE_DIR}/version.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/version.hpp")
 
 # Build external dependencies (if any)
-add_subdirectory("${EXT_DIR}/src" "${Project_BINARY_DIR}/ext")
-add_subdirectory("${EXT_DIR}/tools" "${Project_BINARY_DIR}/ext_tools")
+add_subdirectory("${EXT_DIR}/src" "${PROJECT_BINARY_DIR}/ext")
+add_subdirectory("${EXT_DIR}/tools" "${PROJECT_BINARY_DIR}/ext_tools")
 
 # Setup warnings
 add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-long-long -Wwrite-strings)
