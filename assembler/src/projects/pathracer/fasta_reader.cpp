@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <cctype>
+#include <locale>
 
 // to compile: gcc this_prog.c -lz
 #include <stdio.h>
@@ -66,6 +68,40 @@ std::vector<std::string> read_fasta_edges(const std::string &filename, bool add_
   return edges;
 }
 
+// https://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
+// trim from start (in place)
+static inline void ltrim(std::string &s) {
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+                                  return !std::isspace(ch);
+                                  }));
+}
+
+// trim from end (in place)
+static inline void rtrim(std::string &s) {
+  s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+                       return !std::isspace(ch);
+                       }).base(), s.end());
+}
+
+// trim from both ends (in place)
+static inline void trim(std::string &s) {
+  ltrim(s);
+  rtrim(s);
+}
+
+// trim from start (copying)
+static inline std::string ltrim_copy(std::string s) {
+  ltrim(s);
+  return s;
+}
+
+// trim from end (copying)
+static inline std::string rtrim_copy(std::string s) {
+  rtrim(s);
+  return s;
+}
+
+
 std::vector<std::pair<std::string, std::string>> read_fasta(const std::string &filename) {
   std::vector<std::pair<std::string, std::string>> records;
 
@@ -76,7 +112,11 @@ std::vector<std::pair<std::string, std::string>> read_fasta(const std::string &f
   assert(fp);
   seq = kseq_init(fp);
   while ((l = kseq_read(seq)) >= 0) {
-    records.push_back({seq->name.s, seq->seq.s});
+    std::string name(seq->name.s);
+    std::string s(seq->seq.s);
+    trim(name);
+    trim(s);
+    records.push_back({name, s});
   }
 
   kseq_destroy(seq);
