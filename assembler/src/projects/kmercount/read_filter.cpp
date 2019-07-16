@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
         INFO("Estimating kmer cardinality");
         SeqHasher hasher(args.k);
 
-        size_t kmers_cnt_est = utils::EstimateCardinality(args.k, single_readers, hasher);
+        size_t kmers_cnt_est = utils::EstimateCardinalityUpperBound(args.k, single_readers, hasher);
 
         CQFKmerFilter cqf(kmers_cnt_est);
         INFO("Filling kmer coverage");

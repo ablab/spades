@@ -188,7 +188,7 @@ size_t EstimateCardinalityForOneStream(unsigned k, ReadStream &streams, const Ha
 }
 
 template<class ReadStream, class Hasher, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
-size_t EstimateCardinality(unsigned k, ReadStream &streams, const Hasher &hasher,
+size_t EstimateCardinalityUpperBound(unsigned k, ReadStream &streams, const Hasher &hasher,
                            const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
     unsigned stream_num = unsigned(streams.size());
     std::vector<hll::hll<>> hlls(stream_num);
@@ -217,7 +217,7 @@ size_t EstimateCardinality(unsigned k, ReadStream &streams, const Hasher &hasher
         hlls[i].clear();
     }
 
-    double res = hlls[0].cardinality();
+    double res = hlls[0].upper_bound_cardinality();
 
     INFO("Estimated " << size_t(res) << " distinct kmers");
     return size_t(res);

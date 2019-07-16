@@ -145,7 +145,7 @@ class CoverageFilter: public Construction::Phase {
         rolling_hash::SymmetricCyclicHash<rolling_hash::NDNASeqHash> hasher(kplusone);
 
         INFO("Estimating k-mers cardinality");
-        size_t kmers = EstimateCardinality(kplusone, read_streams, hasher, KmerFilter());
+        size_t kmers = EstimateCardinalityUpperBound(kplusone, read_streams, hasher, KmerFilter());
 
         // Create main CQF using # of slots derived from estimated # of k-mers
         storage().cqf.reset(new qf::cqf(kmers));

@@ -255,8 +255,8 @@ class KMerCountEstimator {
       return false;
   }
 
-  double cardinality() const {
-      return hll_[0].cardinality();
+  double upper_bound_cardinality() const {
+      return hll_[0].upper_bound_cardinality();
   }
 
   void merge() {
@@ -298,9 +298,9 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
           }
           INFO("Total " << processed << " reads processed");
           mcounter.merge();
-          double res = mcounter.cardinality();
+          double res = mcounter.upper_bound_cardinality();
           INFO("Estimated " << size_t(res) << " distinct kmers");
-          buffer_size = size_t(1.1 * res);
+          buffer_size = size_t(res);
       }
 
       INFO("Filtering singleton k-mers");

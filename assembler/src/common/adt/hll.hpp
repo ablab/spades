@@ -54,6 +54,10 @@ public:
       }
     }
 
+    double upper_bound_cardinality() const {
+        return 1.1 * cardinality();
+    }
+
     void clear() {
       std::fill(data_.begin(), data_.end(), 0);
     }
