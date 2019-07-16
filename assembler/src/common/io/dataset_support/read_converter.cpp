@@ -175,9 +175,8 @@ BinarySingleStreams single_binary_readers(SequencingLibraryT &lib,
                                                               SquashingWrap<PairedReadSeq>(std::move(paired_streams)));
     }
 
-    if (followed_by_rc) {
+    if (followed_by_rc)
         single_streams = RCWrap<SingleReadSeq>(std::move(single_streams));
-    }
 
     return single_streams;
 }

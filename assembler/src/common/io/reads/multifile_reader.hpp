@@ -65,7 +65,7 @@ private:
 
 template<class ReadType>
 ReadStream<ReadType> MultifileWrap(ReadStream<ReadType> reader_1,
-                                      ReadStream<ReadType> reader_2) {
+                                   ReadStream<ReadType> reader_2) {
     return MultifileStream<ReadType>(std::move(reader_1), std::move(reader_2));
 }
 

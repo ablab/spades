@@ -60,7 +60,7 @@ template<class ReadType>
 ReadStreamList<ReadType> RCWrap(ReadStreamList<ReadType> readers) {
     ReadStreamList<ReadType> answer;
     for (auto &reader : readers)
-        answer.push_back(std::move(reader));
+        answer.push_back(RCWrap(std::move(reader)));
 
     return answer;
 }

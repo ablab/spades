@@ -22,7 +22,6 @@ SeparatePairedReadStream::SeparatePairedReadStream(const std::string& filename1,
         : insert_size_(insert_size),
           filename1_(filename1),
           filename2_(filename2) {
-
     if (pool) {
         first_ = make_async_stream<FileReadStream>(*pool, filename1, offset_type);
         second_ = make_async_stream<FileReadStream>(*pool, filename2, offset_type);
