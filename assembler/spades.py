@@ -337,14 +337,14 @@ def clear_configs(cfg, log, command_before_restart_from, stage_id_before_restart
         first_del = stage_id_before_restart_from + 1
 
     if restart_from_stage_id is not None:
-        stage_name = "stage_%d_%s" % (restart_from_stage_id, old_pipeline[restart_from_stage_id]["short_name"])
-        if os.path.isfile(os.path.join(cfg["common"].output_dir, stage_name)):
-            os.remove(os.path.join(cfg["common"].output_dir, stage_name))
+        stage_filename = options_storage.get_stage_filename(restart_from_stage_id, old_pipeline[restart_from_stage_id]["short_name"])
+        if os.path.isfile(stage_filename):
+            os.remove(stage_filename)
 
     for delete_id in range(first_del, len(old_pipeline)):
-        stage_name = "stage_%d_%s" % (delete_id, old_pipeline[delete_id]["short_name"])
-        if os.path.isfile(os.path.join(cfg["common"].output_dir, stage_name)):
-            os.remove(os.path.join(cfg["common"].output_dir, stage_name))
+        stage_filename = options_storage.get_stage_filename(delete_id, old_pipeline[delete_id]["short_name"])
+        if os.path.isfile(stage_filename):
+            os.remove(stage_filename)
 
         cfg_dir = old_pipeline[delete_id]["config_dir"]
         if cfg_dir != "" and os.path.isdir(os.path.join(cfg["common"].output_dir, cfg_dir)):
@@ -357,8 +357,8 @@ def get_first_incomplete_command(filename):
 
     first_incomplete_stage_id = 0
     while first_incomplete_stage_id < len(old_pipeline):
-        stage_name = "stage_%d_%s" % (first_incomplete_stage_id, old_pipeline[first_incomplete_stage_id]["short_name"])
-        if not os.path.isfile(os.path.join(get_stage.cfg["common"].output_dir, stage_name)):
+        stage_filename = options_storage.get_stage_filename(first_incomplete_stage_id, old_pipeline[first_incomplete_stage_id]["short_name"])
+        if not os.path.isfile(stage_filename):
             return old_pipeline[first_incomplete_stage_id]
         first_incomplete_stage_id += 1
 
@@ -391,8 +391,8 @@ def get_command_and_stage_id_before_restart_from(draft_commands, cfg, log):
         return draft_commands[restart_from_stage_id], restart_from_stage_id
 
     if restart_from_stage_id > 0:
-        stage_name = "stage_%d_%s" % (restart_from_stage_id - 1, draft_commands[restart_from_stage_id - 1].short_name)
-        if not os.path.isfile(os.path.join(cfg["common"].output_dir, stage_name)):
+        stage_filename = options_storage.get_stage_filename(restart_from_stage_id - 1, draft_commands[restart_from_stage_id - 1].short_name)
+        if not os.path.isfile(stage_filename):
             support.error(
                 "cannot restart from stage %s: previous stage was not complete." % options_storage.args.restart_from,
                 log)

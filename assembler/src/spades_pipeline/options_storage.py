@@ -7,6 +7,8 @@
 # See file LICENSE for details.
 ############################################################################
 
+import os
+
 # for restarting SPAdes
 original_k_mers = None
 
@@ -43,6 +45,8 @@ transcripts_name = "transcripts.fasta"
 transcripts_paths = "transcripts.paths"
 filtering_types = ["hard", "soft", "default"]
 
+pipeline_state_dir = "pipeline_state"
+
 # other constants
 MIN_K = 1
 MAX_K = 127
@@ -72,6 +76,13 @@ LAST_STAGE = "last"
 
 first_command_line = None
 args = None
+
+
+# get path to checkpoint stage file
+def get_stage_filename(stage_num, stage_short_name):
+    stage_file_name = "stage_%d_%s" % (stage_num, stage_short_name)
+    stage_checkpoint_path = os.path.join(args.output_dir, pipeline_state_dir, stage_file_name)
+    return stage_checkpoint_path
 
 
 # kmers were set by default, not SC, not IonTorrent data and not rna and temporary not meta
