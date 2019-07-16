@@ -265,7 +265,7 @@ def add_file_to_log(cfg, log):
     return log_filename, log_handler
 
 
-def get_restart_from_command_line(args, log):
+def get_restart_from_command_line(args):
     updated_params = ""
     for i in range(1, len(args)):
         if not args[i].startswith("-o") and not args[i].startswith("--restart-from") and \
@@ -273,9 +273,9 @@ def get_restart_from_command_line(args, log):
             updated_params += "\t" + args[i]
 
     updated_params = updated_params.strip()
-    log.info("Restart-from=" + options_storage.args.restart_from)
-    log.info("with updated parameters: " + updated_params)
-    return updated_params
+    restart_from_update_message = "Restart-from=" + options_storage.args.restart_from + "\n"
+    restart_from_update_message += "with updated parameters: " + updated_params
+    return updated_params, restart_from_update_message
 
 
 def get_command_line(args):
@@ -302,11 +302,12 @@ def print_params(log, log_filename, command_line, args, cfg):
     log.addHandler(params_handler)
 
     if not options_storage.args.continue_mode:
-        command_line = "Command line: " + get_command_line(args)
+        log.info("Command line: " + get_command_line(args))
     elif options_storage.args.restart_from:
-        command_line += "\t" + get_restart_from_command_line(args, log)
-
-    log.info(command_line)
+        update_params, restart_from_update_message = get_restart_from_command_line(args)
+        command_line += "\t" + update_params
+        log.info(command_line)
+        log.info(restart_from_update_message)
 
     print_used_values(cfg, log)
     log.removeHandler(params_handler)
