@@ -13,12 +13,20 @@
 KSEQ_INIT(gzFile, gzread)
 
 #include "fasta_reader.hpp"
+#include "utils/logger/logger.hpp"
 
 std::string rev_comp(const std::string &s) {
   std::string result;
-  std::unordered_map<char, char> rc = {{'A', 'T'}, {'T', 'A'}, {'G', 'C'}, {'C', 'G'}};
+  std::unordered_map<char, char> rc = {{'A', 'T'}, {'T', 'A'}, {'G', 'C'}, {'C', 'G'}, {'N', 'N'}};
+  result.reserve(s.length());
   for (auto it = s.rbegin(), end = s.rend(); it != end; ++it) {
-    result += rc[*it];
+    auto map_it = rc.find(*it);
+    if (map_it != rc.cend()) {
+      result += map_it->second;
+    } else {
+      result += 'N';
+      WARN("Unrecognized symbol: " << *it);
+    }
   }
   return result;
 }
