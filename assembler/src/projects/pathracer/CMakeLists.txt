@@ -28,9 +28,9 @@ if (SPADES_STATIC_BUILD)
   set_target_properties(pathracer PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
-add_executable(phramme-shifter
-               main.cpp phramme-shifter.cpp)
-target_link_libraries(phramme-shifter
+add_executable(pathracer-seq-fs
+               main.cpp pathracer-seq-fs.cpp)
+target_link_libraries(pathracer-seq-fs
                       pathracer-core
                       graphio utils ${COMMON_LIBRARIES})
 

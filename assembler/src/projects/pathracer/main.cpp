@@ -1257,7 +1257,7 @@ int aling_fs(int argc, char* argv[]) {
 
     int status = mkdir(output_dir.c_str(), 0775);
     if (!no_log) {
-        create_console_logger(output_dir + "/phramme-shifter.log");
+        create_console_logger(output_dir + "/pathracer-seq-fs.log");
     }
 
     if (status != 0) {
