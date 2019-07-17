@@ -86,7 +86,7 @@ struct PathracerConfig {
     enum Mode mode = Mode::hmm;
     enum SeedMode seed_mode = SeedMode::edges_scaffolds;
     size_t k = 0;
-    int threads = 4;
+    int threads = 16;
     size_t top = 10000;
     std::vector<std::string> edges;
     std::vector<std::string> queries;
@@ -1216,38 +1216,130 @@ int pathracer_main(int argc, char* argv[]) {
     INFO("Pathracer successfully finished! Thanks for flying us!");
     return 0;
 }
+
+
 #include "cached_aa_cursor.hpp"
-int aling_fs(int argc, char* argv[]) {
-    using namespace clipp;
-
-    std::string hmm_file;
-    std::string sequence_file;
-    std::string output_dir;
-    double indel_rate = 0.05;
-    int expand_const = 50;
-    size_t top = 100;
+struct PathracerSeqFsConfig {
+    // std::string load_from = "";
+    std::string sequence_file = "";
+    std::string hmmfile = "";
+    std::string output_dir = "";
+    // enum Mode mode = Mode::hmm;
+    // enum SeedMode seed_mode = SeedMode::edges_scaffolds;
+    // size_t k = 0;
     int threads = 16;
-    bool no_log = false;
-    bool exhaustive = false;
+    size_t top = 100;
+    // std::vector<std::string> edges;
+    std::vector<std::string> sequences;
+    std::vector<std::string> queries;
+    size_t max_size = size_t(-1);
+    bool debug = false;
+    bool draw = false;
+    bool rescore = false;
+    bool annotate_graph = true;
+    double expand_coef = 2.;
+    int expand_const = 50;
+    size_t state_limits_coef = 1;
     bool local = false;
+    bool parallel_component_processing = false;
+    bool disable_depth_filter = false;
+    size_t memory = 100;  // 100GB
+    int use_experimental_i_loop_processing = true;
+    std::string known_sequences = "";
+    bool export_event_graph = false;
+    // double minimal_match_length = 0;
+    size_t max_insertion_length = 30;
+    double indel_rate = 0.05;
 
-    auto cli =
-        (hmm_file << value("HMM file"),
-         sequence_file << value("input sequence file"),
-         (option("--indel-rate") & number("value", indel_rate))        % "indel rate",
-         (option("--expand-const") & integer("value", expand_const))        % "overhang expand const",
-         (option("--top") & integer("value", top))        % "maximal number of matches extracted from one sequence",
-         (option("-t", "--threads") & integer("value", threads))        % "# of parallel threads",
-         no_log << option("--no-log") % "disable logging",
-         exhaustive << option("--exhaustive") % "run in exhaustive mode, disable HMM filter",
-         local << option("--local") % "perform local-local search",
-         required("--output", "-o") & value("output file", output_dir) % "output file"
-         );
+    hmmer::hmmer_cfg hcfg;
+    bool exhaustive = false;
+};
 
-    if (!parse(argc, argv, cli)) {
-        std::cout << make_man_page(cli, argv[0]);
-        exit(1);
-    }
+void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
+  using namespace clipp;
+
+  auto cli = (
+      cfg.hmmfile    << value("input HMM file"),  // TODO support sequence mode
+      // cfg.load_from  << value("load from"),
+      cfg.sequence_file  << value("input sequence file"),
+      // cfg.k          << integer("k-mer size"),
+      required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
+      (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
+      (cfg.local << option("--local") % "perform local-local HMM matching"),
+      // (option("--length", "-l") & integer("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on aligned HMM length [default: 0.9]",
+      (option("--indel-rate", "-r") & value("value", cfg.indel_rate)) % "expected rate of nucleotides indels in graph edges [default: 0.05]",
+      (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 100]",
+      (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "the number of parallel threads [default: 16]",
+      (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
+      // (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
+      (option("--queries") & values("queries", cfg.queries)) % "queries names to lookup [default: all queries from input query file]",
+      cfg.exhaustive << option("--exhaustive") % "run in exhaustive mode, disable HMM filter",
+      (option("--sequences") & values("sequences", cfg.sequences)) % "process only specified sequences",
+      // "Query type:" %
+      // one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
+      //        option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
+      //        option("--aa").set(cfg.mode, Mode::aa) % "match agains amino acid string(s)"),
+      // "Seeding options:" % (
+      //     (option("--edges") & values("edges", cfg.edges)) % "match around particular edges",
+      //     "Seeding mode:" %
+      //     one_of(option("--seed-edges").set(cfg.seed_mode, SeedMode::edges) % "use graph edges as seeds",
+      //            option("--seed-scaffolds").set(cfg.seed_mode, SeedMode::scaffolds) % "use scaffolds paths as seeds",
+      //            option("--seed-edges-scaffolds").set(cfg.seed_mode, SeedMode::edges_scaffolds) % "use edges AND scaffolds paths as seeds [default]",
+      //            option("--seed-exhaustive").set(cfg.seed_mode, SeedMode::exhaustive) % "exhaustive mode, use ALL edges",
+      //            option("--seed-edges-1-by-1").set(cfg.seed_mode, SeedMode::edges_one_by_one) % "use edges as seeds (1 by 1)",
+      //            option("--seed-scaffolds-1-by-1").set(cfg.seed_mode, SeedMode::scaffolds_one_by_one) % "use scaffolds paths as seeds (1 by 1)")
+      // ),
+      // "Control of the output:" % (
+      //     cfg.debug << option("--debug") % "enable extensive debug output",
+      //     cfg.draw  << option("--draw")  % "draw pictures around the interesting edges",
+      //     cfg.rescore  << option("--rescore")  % "rescore paths via HMMer",
+      //     cfg.annotate_graph << option("--annotate-graph") % "emit paths in GFA graph"
+      // ),
+      "HMMER options (used for seeding and rescoring):" % (
+          cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
+          cfg.hcfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
+          // Control of reporting thresholds
+          (option("-E") & number("value", cfg.hcfg.E))        % "report sequences <= this E-value threshold in output",
+          (option("-T") & number("value", cfg.hcfg.T))        % "report sequences >= this score threshold in output",
+          (option("--domE") & number("value", cfg.hcfg.domE)) % "report domains <= this E-value threshold in output",
+          (option("--domT") & number("value", cfg.hcfg.domT)) % "report domains >= this score cutoff in output",
+          // Control of inclusion (significance) thresholds
+          (option("-incE") & number("value", cfg.hcfg.incE))       % "consider sequences <= this E-value threshold as significant",
+          (option("-incT") & number("value", cfg.hcfg.incT))       % "consider sequences >= this score threshold as significant",
+          (option("-incdomE") & number("value", cfg.hcfg.incdomE)) % "consider domains <= this E-value threshold as significant",
+          (option("-incdomT") & number("value", cfg.hcfg.incdomT)) % "consider domains >= this score threshold as significant",
+          // Model-specific thresholding for both reporting and inclusion
+          cfg.hcfg.cut_ga  << option("--cut_ga")       % "use profile's GA gathering cutoffs to set all thresholding",
+          cfg.hcfg.cut_nc  << option("--cut_nc")       % "use profile's NC noise cutoffs to set all thresholding",
+          cfg.hcfg.cut_tc  << option("--cut_tc")       % "use profile's TC trusted cutoffs to set all thresholding",
+          // Control of acceleration pipeline
+          cfg.hcfg.max     << option("--max")             % "Turn all heuristic filters off (less speed, more power)",
+          (option("--F1") & number("value", cfg.hcfg.F1)) % "Stage 1 (MSV) threshold: promote hits w/ P <= F1",
+          (option("--F2") & number("value", cfg.hcfg.F2)) % "Stage 2 (Vit) threshold: promote hits w/ P <= F2",
+          (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3"
+      ),
+      "Developer options:" % (
+          // cfg.parallel_component_processing << option("--parallel-components") % "process connected components of neighborhood subgraph in parallel [default: false]",
+          (option("--max-insertion-length") & integer("x", cfg.max_insertion_length)) % "maximal allowed number of successive I-emissions [default: 30]",
+          (option("--expand-coef") & number("value", cfg.expand_coef)) % "overhang expansion coefficient for neighborhood search [default: 2]",
+          (option("--expand-const") & integer("value", cfg.expand_const)) % "const addition to overhang values for neighborhood search [default: 20]",
+          (option("--no-top-score-filter").set(cfg.state_limits_coef, size_t(100500))) % "disable top score Event Graph vertices filter [default: false]",
+          option("--no-fast-forward").set(cfg.use_experimental_i_loop_processing, 0) % "disable fast forward in I-loops processing [default: false]"//,
+          // cfg.disable_depth_filter << option("--disable-depth-filter") % "disable depth filter",  // TODO restore this option
+          // (option("--known-sequences") & value("filename", cfg.known_sequences)) % "FASTA file with known sequnces that should be definitely found",
+          // cfg.export_event_graph << option("--export-event-graph") % "export event graph in cereal format"
+      )
+  );
+
+  if (!parse(argc, argv, cli)) {
+      std::cout << make_man_page(cli, argv[0]);
+      exit(1);
+  }
+}
+
+int aling_fs(int argc, char* argv[]) {
+    PathracerSeqFsConfig cfg;
+    process_cmdline_seq_fs(argc, argv, cfg);
 
     utils::segfault_handler sh;
     utils::perf_counter pc;
@@ -1255,16 +1347,17 @@ int aling_fs(int argc, char* argv[]) {
     srand(42);
     srandom(42);
 
-    int status = mkdir(output_dir.c_str(), 0775);
+    int status = mkdir(cfg.output_dir.c_str(), 0775);
+    bool no_log = false;
     if (!no_log) {
-        create_console_logger(output_dir + "/pathracer-seq-fs.log");
+        create_console_logger(cfg.output_dir + "/pathracer-seq-fs.log");
     }
 
     if (status != 0) {
         if (errno == EEXIST) {
-            WARN("Output directory exists: " << output_dir);
+            WARN("Output directory exists: " << cfg.output_dir);
         } else {
-            ERROR("Cannot create output directory: " << output_dir);
+            ERROR("Cannot create output directory: " << cfg.output_dir);
             std::exit(1);
         }
     }
@@ -1273,46 +1366,48 @@ int aling_fs(int argc, char* argv[]) {
     std::string cmd_line = join(llvm::make_range(argv, argv + argc), " ");
     INFO("Command line: " << cmd_line);
 
-    // // Set memory limit
-    // const size_t GB = 1 << 30;
-    // utils::limit_memory(cfg.memory * GB);
+    // Set memory limit
+    const size_t GB = 1 << 30;
+    utils::limit_memory(cfg.memory * GB);
 
     // Stack limit
     size_t stacklimit = stack_limit();
     INFO("Soft stack limit: " << (stacklimit == size_t(-1) ? "UNLIMITED" : std::to_string(stacklimit)));
     INFO("Process ID: " << getpid());
 
-    auto hmms = ParseHMMFile(hmm_file);
-    auto seqs = read_fasta(sequence_file);
-    seqs.reserve(seqs.size() * 2);
-    for (size_t i = 0, n = seqs.size(); i < n; ++i) {
-        std::string rc = rev_comp(seqs[i].second);
-        if (rc != seqs[i].second) {
-            seqs.push_back({seqs[i].first + "'", std::move(rc)});
+    auto hmms = ParseHMMFile(cfg.hmmfile);
+    auto all_seqs = read_fasta(cfg.sequence_file);
+    std::vector<std::pair<std::string, std::string>> seqs;
+
+    std::unordered_set<std::string> allowed_seqs(cfg.sequences.cbegin(), cfg.sequences.cend());
+    for (const auto &kv : all_seqs) {
+        if (!allowed_seqs.empty() && !allowed_seqs.count(kv.first)) {
+            continue;
+        }
+        seqs.push_back(kv);
+        std::string rc = rev_comp(kv.second);
+        if (rc != kv.second) {
+            seqs.push_back({kv.first + "'", std::move(rc)});
         }
     }
 
     hmmer::hmmer_cfg hcfg;
-    // hcfg.E = hcfg.domE = hcfg.incdomE = hcfg.incE = 1e+9;
-    // hcfg.T = hcfg.domT = hcfg.incT = hcfg.incdomT = -10000;
-    // hcfg.F1 = hcfg.F2 = hcfg.F3 = 1e+9;
-    // hcfg.max = true;
 
-    omp_set_num_threads(threads);
+    omp_set_num_threads(cfg.threads);
     #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < hmms.size(); ++i) {
         const auto &hmm = hmms[i];
         const P7_HMM *p7hmm = hmm.get();
         auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
         VERIFY(fees.is_proteomic());
-        const size_t state_limits_coef = 100500;
-        fees.state_limits.l25 = 1000000 * state_limits_coef;
-        fees.state_limits.l100 = 50000 * state_limits_coef;
-        fees.state_limits.l500 = 10000 * state_limits_coef;
+        fees.state_limits.l25 = 1000000 * cfg.state_limits_coef;
+        fees.state_limits.l100 = 50000 * cfg.state_limits_coef;
+        fees.state_limits.l500 = 10000 * cfg.state_limits_coef;
+        fees.max_insertion_length = cfg.max_insertion_length;
+        fees.local = cfg.local;
+        fees.use_experimental_i_loop_processing = cfg.use_experimental_i_loop_processing;
+        fees.frame_shift_cost = fees.all_matches_score() / static_cast<double>(fees.M) / cfg.indel_rate / 3;
         fees.minimal_match_length = 0;  // FIXME fix depth filter for frame shifts
-        fees.frame_shift_cost = fees.all_matches_score() / static_cast<double>(fees.M) / indel_rate / 3;
-        fees.use_experimental_i_loop_processing = true;
-        fees.local = local;
 
         INFO("Query:         " << p7hmm->name << "  [M=" << p7hmm->M << "]");
         if (p7hmm->acc) {
@@ -1322,8 +1417,8 @@ int aling_fs(int argc, char* argv[]) {
             INFO("Description:   " << p7hmm->desc);
         }
 
-        std::ofstream o_seqs(output_dir + "/" + hmm.get()->name + ".seqs.fa");
-        std::ofstream o_nucs(output_dir + "/" + hmm.get()->name + ".nucs.fa");
+        std::ofstream o_seqs(cfg.output_dir + "/" + hmm.get()->name + ".seqs.fa");
+        std::ofstream o_nucs(cfg.output_dir + "/" + hmm.get()->name + ".nucs.fa");
 
         hmmer::HMMMatcher matcher(hmm, hcfg);
         for (size_t j = 0; j < seqs.size(); ++j) {
@@ -1356,8 +1451,8 @@ int aling_fs(int argc, char* argv[]) {
             PseudoVector<std::string> local_seqs(seqs.size(), get);
             auto overs = GetOverhangs(matcher, local_seqs, hmm);
             for (const auto &over : overs) {
-                int loverhang = over.second.first + expand_const;
-                int roverhang = over.second.second + expand_const;
+                int loverhang = over.second.first + cfg.expand_const;
+                int roverhang = over.second.second + cfg.expand_const;
                 size_t start = -std::min(loverhang, 0);
                 size_t finish = int(seq.length()) + std::min(roverhang, 0);
                 INFO("Overhangs: " << loverhang << " " << roverhang);
@@ -1372,7 +1467,7 @@ int aling_fs(int argc, char* argv[]) {
                 cursors.push_back(StringCursor(i));
             }
 
-            if (exhaustive) {
+            if (cfg.exhaustive) {
                 for (size_t i = 0; i < seq.size(); ++i) {
                     cursors.push_back(StringCursor(i));
                 }
@@ -1402,7 +1497,7 @@ int aling_fs(int argc, char* argv[]) {
             // INFO("Event graph depth " << result.pathlink()->max_prefix_size());
 
             INFO("Extracting top paths");
-            auto top_paths = result.top_k(&caacc, top);
+            auto top_paths = result.top_k(&caacc, cfg.top);
 
             bool x_as_m_in_alignment = fees.is_proteomic();
             if (!top_paths.empty()) {
