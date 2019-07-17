@@ -1426,6 +1426,7 @@ int aling_fs(int argc, char* argv[]) {
 
         std::ofstream o_seqs(cfg.output_dir + "/" + hmm.get()->name + ".seqs.fa");
         std::ofstream o_nucs(cfg.output_dir + "/" + hmm.get()->name + ".nucs.fa");
+        bool at_least_one_match_found = false;
 
         hmmer::HMMMatcher matcher(hmm, hcfg);
         for (size_t j = 0; j < seqs.size(); ++j) {
@@ -1555,7 +1556,15 @@ int aling_fs(int argc, char* argv[]) {
                 o_nucs << header.str();
                 io::WriteWrapped(info.nuc_seq, o_nucs);
                 o_nucs.flush();
+                at_least_one_match_found = true;
             }
+        }
+
+        o_nucs.close();
+        o_seqs.close();
+        if (!at_least_one_match_found) {
+            remove((cfg.output_dir + "/" + hmm.get()->name + ".seqs.fa").c_str());
+            remove((cfg.output_dir + "/" + hmm.get()->name + ".nucs.fa").c_str());
         }
     }
     return 0;
