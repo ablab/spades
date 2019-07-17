@@ -16,6 +16,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <parallel_hashmap/phmap.h>
+
 namespace omnigraph {
 
 template<typename Graph, typename distance_t = size_t>
@@ -58,7 +60,7 @@ class Dijkstra {
     typedef distance_t DistanceType;
     using queue_element = element_t<Graph, distance_t>;
 
-    typedef std::unordered_map<VertexId, distance_t> distances_map;
+    typedef phmap::flat_hash_map<VertexId, distance_t> distances_map;
     typedef typename distances_map::const_iterator distances_map_ci;
     typedef typename std::priority_queue<queue_element,
                                          std::vector<queue_element>,
@@ -76,8 +78,8 @@ class Dijkstra {
 
     // accumulative structures
     distances_map distances_;
-    std::unordered_set<VertexId> processed_vertices_;
-    std::unordered_map<VertexId, std::pair<VertexId, EdgeId>> prev_vert_map_;
+    phmap::flat_hash_set<VertexId> processed_vertices_;
+    phmap::flat_hash_map<VertexId, std::pair<VertexId, EdgeId>> prev_vert_map_;
 
     void Init(VertexId start, queue_t &queue) {
         vertex_number_ = 0;
@@ -233,7 +235,7 @@ public:
         return result;
     }
 
-    const std::unordered_set<VertexId>& ProcessedVertices() const {
+    auto ProcessedVertices() const -> const decltype(processed_vertices_)& {
         return processed_vertices_;
     }
 
