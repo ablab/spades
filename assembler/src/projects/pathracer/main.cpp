@@ -1393,11 +1393,18 @@ int aling_fs(int argc, char* argv[]) {
 
     hmmer::hmmer_cfg hcfg;
 
+    std::unordered_set<std::string> queries(cfg.queries.cbegin(), cfg.queries.cend());
+
     omp_set_num_threads(cfg.threads);
     #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < hmms.size(); ++i) {
         const auto &hmm = hmms[i];
         const P7_HMM *p7hmm = hmm.get();
+
+        if (!queries.empty() && !queries.count(p7hmm->name)) {
+            continue;
+        }
+
         auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
         VERIFY(fees.is_proteomic());
         fees.state_limits.l25 = 1000000 * cfg.state_limits_coef;
