@@ -112,21 +112,21 @@ class Dijkstra {
     void AddNeighboursToQueue(VertexId cur_vertex, distance_t cur_dist, queue_t& queue) {
         auto neigh_iterator = settings_.GetIterator(cur_vertex);
         while (neigh_iterator.HasNext()) {
-            TRACE("Checking new neighbour of vertex " << graph_.str(cur_vertex) << " started");
+            // TRACE("Checking new neighbour of vertex " << graph_.str(cur_vertex) << " started");
             auto cur_pair = neigh_iterator.Next();
             if (!DistanceCounted(cur_pair.vertex)) {
-                TRACE("Adding new entry to queue");
+                // TRACE("Adding new entry to queue");
                 distance_t new_dist = GetLength(cur_pair.edge) + cur_dist;
-                TRACE("Entry: vertex " << graph_.str(cur_vertex) << " distance " << new_dist);
+                // TRACE("Entry: vertex " << graph_.str(cur_vertex) << " distance " << new_dist);
                 if (CheckPutVertex(cur_pair.vertex, cur_pair.edge, new_dist)) {
-                    TRACE("CheckPutVertex returned true and new entry is added");
+                    // TRACE("CheckPutVertex returned true and new entry is added");
                     queue.push(element_t<Graph, distance_t>(new_dist, cur_pair.vertex,
                                     cur_vertex, cur_pair.edge));
                 }
             }
-            TRACE("Checking new neighbour of vertex " << graph_.str(cur_vertex) << " finished");
+            // TRACE("Checking new neighbour of vertex " << graph_.str(cur_vertex) << " finished");
         }
-        TRACE("All neighbours of vertex " << graph_.str(cur_vertex) << " processed");
+        // TRACE("All neighbours of vertex " << graph_.str(cur_vertex) << " processed");
     }
 
 public:
@@ -165,32 +165,32 @@ public:
         TRACE("Priority queue initialized. Starting search");
 
         while (!queue.empty() && !finished()) {
-            TRACE("Dijkstra iteration started");
+            // TRACE("Dijkstra iteration started");
             const element_t<Graph, distance_t>& next = queue.top();
             distance_t distance = next.distance;
             VertexId vertex = next.curr_vertex;
 
             prev_vert_map_[vertex] = std::pair<VertexId, EdgeId>(next.prev_vertex, next.edge_between);
             queue.pop();
-            TRACE("Vertex " << graph_.str(vertex) << " with distance " << distance << " fetched from queue");
+            // TRACE("Vertex " << graph_.str(vertex) << " with distance " << distance << " fetched from queue");
 
             if (DistanceCounted(vertex)) {
-                TRACE("Distance to vertex " << graph_.str(vertex) << " already counted. Proceeding to next queue entry.");
+                // TRACE("Distance to vertex " << graph_.str(vertex) << " already counted. Proceeding to next queue entry.");
                 continue;
             }
             distances_.emplace(vertex, distance);
 
-            TRACE("Vertex " << graph_.str(vertex) << " is found to be at distance "
-                    << distance << " from vertex " << graph_.str(start));
+            // TRACE("Vertex " << graph_.str(vertex) << " is found to be at distance "
+            //       << distance << " from vertex " << graph_.str(start));
             if (!CheckProcessVertex(vertex, distance)) {
-                TRACE("Check for processing vertex failed. Proceeding to the next queue entry.");
+                // TRACE("Check for processing vertex failed. Proceeding to the next queue entry.");
                 continue;
             }
             processed_vertices_.insert(vertex);
             AddNeighboursToQueue(vertex, distance, queue);
         }
         set_finished(true);
-        TRACE("Finished dijkstra run from vertex " << graph_.str(start));
+        // TRACE("Finished dijkstra run from vertex " << graph_.str(start));
     }
 
     std::vector<EdgeId> GetShortestPathTo(VertexId vertex) {
