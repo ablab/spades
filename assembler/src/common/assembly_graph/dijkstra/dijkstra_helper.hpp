@@ -41,13 +41,16 @@ public:
     typedef Dijkstra<Graph, BoundedDijkstraSettings> BoundedDijkstra;
 
     static BoundedDijkstra CreateBoundedDijkstra(const Graph &graph, size_t length_bound,
-            size_t max_vertex_number = -1ul){
-        return BoundedDijkstra(graph, BoundedDijkstraSettings(
-                        LengthCalculator<Graph>(graph),
-                        BoundProcessChecker<Graph>(length_bound),
-                        BoundPutChecker<Graph>(length_bound),
-                        ForwardNeighbourIteratorFactory<Graph>(graph)),
-                max_vertex_number);
+                                                 size_t max_vertex_number = -1ul,
+                                                 bool collect_traceback = false) {
+        return BoundedDijkstra(graph,
+                               BoundedDijkstraSettings(
+                                   LengthCalculator<Graph>(graph),
+                                   BoundProcessChecker<Graph>(length_bound),
+                                   BoundPutChecker<Graph>(length_bound),
+                                   ForwardNeighbourIteratorFactory<Graph>(graph)),
+                               max_vertex_number,
+                               collect_traceback);
     }
 
     //------------------------------
@@ -62,13 +65,19 @@ public:
 
     typedef Dijkstra<Graph, BackwardBoundedDijkstraSettings> BackwardBoundedDijkstra;
 
-    static BackwardBoundedDijkstra CreateBackwardBoundedDijkstra(const Graph &graph,
-            size_t bound, size_t max_vertex_number = size_t(-1)){
-        return BackwardBoundedDijkstra(graph, BackwardBoundedDijkstraSettings(
-                LengthCalculator<Graph>(graph),
-                BoundProcessChecker<Graph>(bound),
-                BoundPutChecker<Graph>(bound),
-                BackwardNeighbourIteratorFactory<Graph>(graph)), max_vertex_number);
+    static BackwardBoundedDijkstra
+    CreateBackwardBoundedDijkstra(const Graph &graph,
+                                  size_t bound,
+                                  size_t max_vertex_number = size_t(-1),
+                                  bool collect_traceback = false) {
+        return BackwardBoundedDijkstra(graph,
+                                       BackwardBoundedDijkstraSettings(
+                                           LengthCalculator<Graph>(graph),
+                                           BoundProcessChecker<Graph>(bound),
+                                           BoundPutChecker<Graph>(bound),
+                                           BackwardNeighbourIteratorFactory<Graph>(graph)),
+                                       max_vertex_number,
+                                       collect_traceback);
     }
 
     //------------------------------
@@ -112,13 +121,16 @@ public:
     typedef Dijkstra<Graph, ShortEdgeDijkstraSettings> ShortEdgeDijkstra;
 
     static ShortEdgeDijkstra CreateShortEdgeDijkstra(const Graph &graph, size_t edge_length_bound,
-            size_t max_vertex_number = size_t(-1)){
-        return ShortEdgeDijkstra(graph, ShortEdgeDijkstraSettings(
-                        BoundedEdgeLenCalculator<Graph>(graph, edge_length_bound),
-                        ZeroLengthProcessChecker<Graph>(),
-                        VertexPutChecker<Graph>(),
-                        UnorientedNeighbourIteratorFactory<Graph>(graph)),
-                max_vertex_number);
+                                                     size_t max_vertex_number = size_t(-1),
+                                                     bool collect_traceback = false) {
+        return ShortEdgeDijkstra(graph,
+                                 ShortEdgeDijkstraSettings(
+                                     BoundedEdgeLenCalculator<Graph>(graph, edge_length_bound),
+                                     ZeroLengthProcessChecker<Graph>(),
+                                     VertexPutChecker<Graph>(),
+                                     UnorientedNeighbourIteratorFactory<Graph>(graph)),
+                                 max_vertex_number,
+                                 collect_traceback);
     }
 
     //------------------------------
@@ -130,10 +142,16 @@ public:
     typedef Dijkstra<Graph, UnorientCountingDijkstraSettings> CountingDijkstra;
 
     static CountingDijkstra CreateCountingDijkstra(const Graph &graph, size_t max_size,
-            size_t edge_length_bound, size_t max_vertex_number = size_t(-1)){
-        return CountingDijkstra(graph, UnorientCountingDijkstraSettings(graph,
-                        UnorientedNeighbourIteratorFactory<Graph>(graph),
-                        max_size, edge_length_bound), max_vertex_number);
+                                                   size_t edge_length_bound,
+                                                   size_t max_vertex_number = size_t(-1),
+                                                   bool collect_traceback = false) {
+        return CountingDijkstra(graph,
+                                UnorientCountingDijkstraSettings(
+                                    graph,
+                                    UnorientedNeighbourIteratorFactory<Graph>(graph),
+                                    max_size, edge_length_bound),
+                                max_vertex_number,
+                                collect_traceback);
     }
 
 
@@ -150,13 +168,16 @@ public:
     typedef Dijkstra<Graph, TargetedBoundedDijkstraSettings> TargetedBoundedDijkstra;
 
     static TargetedBoundedDijkstra CreateTargetedBoundedDijkstra(const Graph &graph,
-            VertexId target_vertex, size_t bound, size_t max_vertex_number = size_t(-1)){
+                                                                 VertexId target_vertex, size_t bound,
+                                                                 size_t max_vertex_number = size_t(-1),
+                                                                 bool collect_traceback = false) {
         return TargetedBoundedDijkstra(graph,
-                TargetedBoundedDijkstraSettings(LengthCalculator<Graph>(graph),
-                        BoundedVertexTargetedProcessChecker<Graph>(target_vertex, bound),
-                        BoundPutChecker<Graph>(bound),
-                        ForwardNeighbourIteratorFactory<Graph>(graph)),
-                max_vertex_number);
+                                       TargetedBoundedDijkstraSettings(LengthCalculator<Graph>(graph),
+                                                                       BoundedVertexTargetedProcessChecker<Graph>(target_vertex, bound),
+                                                                       BoundPutChecker<Graph>(bound),
+                                                                       ForwardNeighbourIteratorFactory<Graph>(graph)),
+                                       max_vertex_number,
+                                       collect_traceback);
     }
 };
 

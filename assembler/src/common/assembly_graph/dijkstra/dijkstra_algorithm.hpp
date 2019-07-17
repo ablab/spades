@@ -67,6 +67,7 @@ class Dijkstra {
     const Graph& graph_;
     DijkstraSettings settings_;
     const size_t max_vertex_number_;
+    bool collect_traceback_;
 
     // changeable parameters
     bool finished_;
@@ -86,7 +87,8 @@ class Dijkstra {
         set_finished(false);
         settings_.Init(start);
         queue.push(element_t<Graph, distance_t>(0, start, VertexId(), EdgeId()));
-        prev_vert_map_[start] = std::pair<VertexId, EdgeId>(VertexId(), EdgeId());
+        if (collect_traceback_)
+            prev_vert_map_[start] = std::pair<VertexId, EdgeId>(VertexId(), EdgeId());
     }
 
     void set_finished(bool state) {
@@ -131,13 +133,16 @@ class Dijkstra {
     }
 
 public:
-    Dijkstra(const Graph &graph, DijkstraSettings settings, size_t max_vertex_number = size_t(-1)) :
-        graph_(graph),
-        settings_(settings),
-        max_vertex_number_(max_vertex_number),
-        finished_(false),
-        vertex_number_(0),
-        vertex_limit_exceeded_(false) {}
+    Dijkstra(const Graph &graph, DijkstraSettings settings,
+             size_t max_vertex_number = size_t(-1),
+             bool collect_traceback = false)
+            : graph_(graph),
+              settings_(settings),
+              max_vertex_number_(max_vertex_number),
+              collect_traceback_(collect_traceback),
+              finished_(false),
+              vertex_number_(0),
+              vertex_limit_exceeded_(false) {}
 
     Dijkstra(Dijkstra&& /*other*/) = default;
     Dijkstra& operator=(Dijkstra&& /*other*/) = default;
@@ -171,7 +176,8 @@ public:
             distance_t distance = next.distance;
             VertexId vertex = next.curr_vertex;
 
-            prev_vert_map_[vertex] = std::pair<VertexId, EdgeId>(next.prev_vertex, next.edge_between);
+            if (collect_traceback_)
+                prev_vert_map_[vertex] = std::pair<VertexId, EdgeId>(next.prev_vertex, next.edge_between);
             queue.pop();
             // TRACE("Vertex " << graph_.str(vertex) << " with distance " << distance << " fetched from queue");
 
@@ -195,6 +201,7 @@ public:
     }
 
     std::vector<EdgeId> GetShortestPathTo(VertexId vertex) {
+        VERIFY_MSG(collect_traceback_, "GetShortestPathTo() is available only if traceback is collected");
         std::vector<EdgeId> path;
         if (prev_vert_map_.find(vertex) == prev_vert_map_.end())
             return path;

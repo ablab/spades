@@ -48,7 +48,10 @@ namespace alignment_analysis {
                 size_t pos = StepBack(result);
                 VertexId start = result[pos].EndVertex();
                 TRACE("Start vertex: " << start);
-                omnigraph::DijkstraHelper<Graph>::BoundedDijkstra d = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_, 3000 + graph_.k(), 1000);
+                omnigraph::DijkstraHelper<Graph>::BoundedDijkstra d =
+                        omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_, 3000 + graph_.k(),
+                                                                                1000,
+                                                                                true /* collect traceback */);
                 d.Run(start);
                 size_t best = i;
                 for (size_t j = i, cur_step = 0; j < path.size() && cur_step < step_; j++) {

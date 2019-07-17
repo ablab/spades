@@ -34,9 +34,11 @@ namespace alignment_analysis {
         if (alignments.empty()) {
             return vector<ConsistentMapping>();
         }
-        DijkstraHelper<Graph>::BoundedDijkstra d = DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_,
-                                                                                                3000 + graph_.k(),
-                                                                                                1000);
+        DijkstraHelper<Graph>::BoundedDijkstra d =
+                DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_,
+                                                             3000 + graph_.k(),
+                                                             1000,
+                                                             true  /* collect traceback */);
         vector <ConsistentMapping> result = {alignments.front()};
         for (size_t i = 0; i + 1 < alignments.size(); i++) {
             ConsistentMapping &prev = result.back();

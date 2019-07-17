@@ -139,7 +139,9 @@ class LoopTraverser {
             VertexId first_vertex = g_.EdgeStart(end_path.Front());
 
             if (first_vertex != last_vertex) {
-                auto dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, shortest_path_limit_, DIJKSTRA_LIMIT);
+                auto dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, shortest_path_limit_,
+                                                                             DIJKSTRA_LIMIT,
+                                                                             true /* collect traceback */);
                 dijkstra.Run(last_vertex);
                 auto shortest_path = dijkstra.GetShortestPathTo(first_vertex);
 

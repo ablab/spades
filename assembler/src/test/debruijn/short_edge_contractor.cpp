@@ -71,7 +71,8 @@ void Launch(size_t K, string saves_path, size_t edge_length_bound,
                     VertexPutChecker<Graph>(),
                     ForwardNeighbourIteratorFactory<Graph>(gp.g));
             ForwardShortEdgeDijkstra dijkstra(gp.g, settings,
-                                              std::numeric_limits<size_t>::max());
+                                              std::numeric_limits<size_t>::max(),
+                                              true /* collect traceback */);
             dijkstra.Run(gp.g.EdgeEnd(e));
 
             set<EdgeId> long_reachable;
