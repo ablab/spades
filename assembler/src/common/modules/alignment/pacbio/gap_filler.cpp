@@ -35,8 +35,8 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     auto path_searcher = omnigraph::DijkstraHelper<debruijn_graph::Graph>::
                                 CreateBoundedDijkstra(g_, path_max_length);
     path_searcher.Run(start_v);
-    auto reached_vertices_b = path_searcher_b.ProcessedVertices();
-    auto reached_vertices = path_searcher.ProcessedVertices();
+    const auto &reached_vertices_b = path_searcher_b.ProcessedVertices();
+    const auto &reached_vertices = path_searcher.ProcessedVertices();
 
     unordered_map<VertexId, size_t> vertex_pathlen;
     for (auto v : reached_vertices_b) {

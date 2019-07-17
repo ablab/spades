@@ -14,6 +14,8 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace omnigraph {
 
@@ -55,7 +57,7 @@ class Dijkstra {
     typedef typename Graph::EdgeId EdgeId;
     typedef distance_t DistanceType;
 
-    typedef std::map<VertexId, distance_t> distances_map;
+    typedef std::unordered_map<VertexId, distance_t> distances_map;
     typedef typename distances_map::const_iterator distances_map_ci;
     typedef typename std::priority_queue<element_t<Graph, distance_t>, std::vector<element_t<Graph, distance_t>>,
             ReverseDistanceComparator<element_t<Graph, distance_t>>> queue_t;
@@ -72,8 +74,8 @@ class Dijkstra {
 
     // accumulative structures
     distances_map distances_;
-    std::set<VertexId> processed_vertices_;
-    std::map<VertexId, std::pair<VertexId, EdgeId>> prev_vert_map_;
+    std::unordered_set<VertexId> processed_vertices_;
+    std::unordered_map<VertexId, std::pair<VertexId, EdgeId>> prev_vert_map_;
 
     void Init(VertexId start, queue_t &queue) {
         vertex_number_ = 0;
@@ -137,11 +139,9 @@ public:
         vertex_limit_exceeded_(false) {}
 
     Dijkstra(Dijkstra&& /*other*/) = default; 
-
     Dijkstra& operator=(Dijkstra&& /*other*/) = default;
 
     Dijkstra(const Dijkstra& /*other*/) = delete; 
-
     Dijkstra& operator=(const Dijkstra& /*other*/) = delete;
 
     bool finished() const {
@@ -149,18 +149,13 @@ public:
     }
 
     bool DistanceCounted(VertexId vertex) const {
-        return distances_.find(vertex) != distances_.end();
+        return distances_.count(vertex);
     }
 
     distance_t GetDistance(VertexId vertex) const {
-        VERIFY(DistanceCounted(vertex));
-        return distances_.find(vertex)->second;
-    }
-
-    std::pair<distances_map_ci, distances_map_ci> GetDistances() const {
-        distances_map_ci begin = distances_.begin();
-        distances_map_ci end = distances_.end();
-        return make_pair(begin, end);
+        auto it = distances_.find(vertex);
+        VERIFY(it != distances_.end());
+        return it->second;
     }
 
     void Run(VertexId start) {
@@ -228,7 +223,7 @@ public:
         return result;
     }
 
-    const std::set<VertexId>& ProcessedVertices() const {
+    const std::unordered_set<VertexId>& ProcessedVertices() const {
         return processed_vertices_;
     }
 
