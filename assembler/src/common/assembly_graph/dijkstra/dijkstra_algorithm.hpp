@@ -59,8 +59,9 @@ class Dijkstra {
 
     typedef std::unordered_map<VertexId, distance_t> distances_map;
     typedef typename distances_map::const_iterator distances_map_ci;
-    typedef typename std::priority_queue<element_t<Graph, distance_t>, std::vector<element_t<Graph, distance_t>>,
-            ReverseDistanceComparator<element_t<Graph, distance_t>>> queue_t;
+    typedef typename std::priority_queue<element_t<Graph, distance_t>,
+                                         std::vector<element_t<Graph, distance_t>>,
+                                         ReverseDistanceComparator<element_t<Graph, distance_t>>> queue_t;
 
     // constructor parameters
     const Graph& graph_;
@@ -138,10 +139,10 @@ public:
         vertex_number_(0),
         vertex_limit_exceeded_(false) {}
 
-    Dijkstra(Dijkstra&& /*other*/) = default; 
+    Dijkstra(Dijkstra&& /*other*/) = default;
     Dijkstra& operator=(Dijkstra&& /*other*/) = default;
 
-    Dijkstra(const Dijkstra& /*other*/) = delete; 
+    Dijkstra(const Dijkstra& /*other*/) = delete;
     Dijkstra& operator=(const Dijkstra& /*other*/) = delete;
 
     bool finished() const {
@@ -217,9 +218,12 @@ public:
 
     std::vector<VertexId> ReachedVertices() const {
         std::vector<VertexId> result;
-        for (auto it = distances_.begin(); it != distances_.end(); ++it) {
-            result.push_back(it->first);
-        }
+        result.reserve(distances_.size());
+
+        for (const auto &el : distances_)
+            result.push_back(el.first);
+        std::sort(result.begin(), result.end());
+
         return result;
     }
 
