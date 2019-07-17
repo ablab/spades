@@ -7,6 +7,9 @@
 
 #pragma once
 
+#include <cstdlib>
+#include <set>
+
 namespace omnigraph {
 
 template<class Graph, typename distance_t = size_t>
@@ -23,9 +26,9 @@ class EdgeComponentPutChecker {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
-    std::set<EdgeId> &edges_;
+    const std::set<EdgeId> &edges_;
 public:
-    EdgeComponentPutChecker(std::set<EdgeId> &edges) : VertexPutChecker<Graph, distance_t>(), edges_(edges) { }
+    EdgeComponentPutChecker(const std::set<EdgeId> &edges) : VertexPutChecker<Graph, distance_t>(), edges_(edges) { }
     bool Check(VertexId, EdgeId edge, distance_t) const {
         return edges_.count(edge) != 0;
     }

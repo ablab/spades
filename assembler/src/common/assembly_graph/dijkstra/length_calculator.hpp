@@ -37,7 +37,7 @@ public:
     ComponentLenCalculator(const Graph &graph, std::set<EdgeId> &component) :
         graph_(graph), component_(component) { }
 
-    distance_t GetLength(EdgeId edge) const{
+    distance_t GetLength(EdgeId edge) const {
         if (component_.count(edge) != 0)
             return 0;
         return graph_.length(edge);
@@ -72,7 +72,7 @@ class AlongPathLengthCalculator {
     std::set<VertexId> vertex_path_;
     distance_t bound_;
 
-    std::set<VertexId> CollectVertices(const std::vector<EdgeId> &edge_path){
+    std::set<VertexId> CollectVertices(const std::vector<EdgeId> &edge_path) const {
         std::set<VertexId> result;
         for(auto e = edge_path.begin(); e != edge_path.end(); e++){
             result.insert(this->graph_.EdgeStart(*e));
@@ -88,9 +88,10 @@ public:
         bound_(bound) { }
 
     distance_t GetLength(EdgeId edge) const{
-        if (vertex_path_.count(this->graph_.EdgeStart(edge))
-                && vertex_path_.count(this->graph_.EdgeEnd(edge)))
+        if (vertex_path_.count(this->graph_.EdgeStart(edge)) &&
+            vertex_path_.count(this->graph_.EdgeEnd(edge)))
             return std::min(int(graph_.length(edge)), 200);
+        
         return graph_.length(edge);
     }
 };
@@ -111,9 +112,9 @@ public:
             { }
 
     distance_t GetLength(EdgeId edge) const {
-        if (path_.find(edge) != path_.end()) {
+        if (path_.find(edge) != path_.end())
             return 0;
-        }
+
         return distance_t(graph_.length(edge));
     }
 };

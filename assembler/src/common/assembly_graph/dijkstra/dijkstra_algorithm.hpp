@@ -19,7 +19,7 @@
 namespace omnigraph {
 
 template<typename Graph, typename distance_t = size_t>
-struct element_t{
+struct element_t {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 

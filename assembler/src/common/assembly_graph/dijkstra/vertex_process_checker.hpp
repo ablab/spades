@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <cstdlib>
+
 namespace omnigraph {
 
 template<class Graph, typename distance_t = size_t>
@@ -15,7 +17,7 @@ class VertexProcessChecker {
     typedef typename Graph::EdgeId EdgeId;
 public:
     VertexProcessChecker() {}
-    bool Check(VertexId, distance_t) { return true; }
+    bool Check(VertexId, distance_t) const { return true; }
 };
 
 template<class Graph, typename distance_t = size_t>
@@ -27,7 +29,7 @@ public:
     BoundProcessChecker(distance_t distance_bound) :
         distance_bound_(distance_bound) {}
 
-    bool Check(VertexId, distance_t distance) {
+    bool Check(VertexId, distance_t distance) const {
         return distance <= distance_bound_;
     }
 };
@@ -39,7 +41,7 @@ class ZeroLengthProcessChecker {
 public:
     ZeroLengthProcessChecker() {}
 
-    bool Check(VertexId, distance_t distance) {
+    bool Check(VertexId, distance_t distance) const {
         return distance == 0;
     }
 };
@@ -59,7 +61,7 @@ public:
         target_reached_(false),
         distance_bound_(bound) { }
 
-    bool Check(VertexId vertex, distance_t distance) {
+    bool Check(VertexId vertex, distance_t distance) const {
         if (vertex == target_vertex_)
             target_reached_ = true;
         if (target_reached_)

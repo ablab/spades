@@ -29,6 +29,10 @@ public:
     const IteratorT& end() const { return end_iterator; }
     IteratorT& begin() { return begin_iterator; }
     IteratorT& end() { return end_iterator; }
+
+    operator std::pair<IteratorT, IteratorT>() const {
+        return  { begin_iterator, end_iterator };
+    }
 };
 
 template<class T>

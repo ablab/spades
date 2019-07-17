@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <utility>
+
 namespace omnigraph {
 
 template<class Graph>
@@ -19,8 +21,7 @@ public:
     EdgeId         edge;
 
     vertex_neighbour(VertexId new_vertex, EdgeId new_edge) :
-        vertex(new_vertex),
-        edge(new_edge) { }
+        vertex(new_vertex), edge(new_edge) { }
 };
 
 template<class Graph>
@@ -33,13 +34,11 @@ class ForwardNeighbourIterator {
     VertexId vertex_;
     std::pair<edge_const_iterator, edge_const_iterator> out_edges_;
 public:
-    ForwardNeighbourIterator(const Graph &graph, VertexId vertex) :
-        graph_(graph),
-        vertex_(vertex),
-        out_edges_{graph.OutgoingEdges(vertex).begin(),
-                   graph.OutgoingEdges(vertex).end()} { }
+    ForwardNeighbourIterator(const Graph &graph, VertexId vertex)
+            : graph_(graph), vertex_(vertex),
+              out_edges_(graph.OutgoingEdges(vertex)) {}
 
-    bool HasNext(){
+    bool HasNext() const {
         return out_edges_.first != out_edges_.second;
     }
 
@@ -63,10 +62,9 @@ public:
     BackwardNeighbourIterator(const Graph &graph, VertexId vertex) :
         graph_(graph),
         vertex_(vertex),
-        in_edges_{graph.IncomingEdges(vertex).begin(),
-                  graph.IncomingEdges(vertex).end()} { }
+        in_edges_{graph.IncomingEdges(vertex)} { }
 
-    bool HasNext(){
+    bool HasNext() const {
         return in_edges_.first != in_edges_.second;
     }
 
@@ -90,12 +88,10 @@ public:
     UnorientedNeighbourIterator(const Graph &graph, VertexId vertex) :
         graph_(graph),
         vertex_(vertex),
-        in_edges_{graph.IncomingEdges(vertex).begin(),
-                  graph.IncomingEdges(vertex).end()},
-        out_edges_{graph.OutgoingEdges(vertex).begin(),
-                   graph.OutgoingEdges(vertex).end()} { }
+        in_edges_{graph.IncomingEdges(vertex)},
+        out_edges_{graph.OutgoingEdges(vertex)} { }
 
-    bool HasNext(){
+    bool HasNext() const {
         return in_edges_.first != in_edges_.second;
     }
 
