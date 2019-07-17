@@ -19,6 +19,7 @@
 #include "pe_utils.hpp"
 //#include "scaff_supplementary.hpp"
 
+#include <queue>
 #include <cfloat>
 #include <iostream>
 #include <fstream>

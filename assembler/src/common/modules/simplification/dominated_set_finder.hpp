@@ -1,5 +1,7 @@
 #pragma once
 
+#include <queue>
+
 namespace omnigraph {
 template<class Graph>
 class DominatedSetFinder {

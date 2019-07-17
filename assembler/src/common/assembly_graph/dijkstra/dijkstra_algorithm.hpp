@@ -6,14 +6,13 @@
 //***************************************************************************
 #pragma once
 
-#include "utils/stl_utils.hpp"
 #include "dijkstra_settings.hpp"
+
+#include "utils/stl_utils.hpp"
 #include "utils/logger/logger.hpp"
 
 #include <queue>
 #include <vector>
-#include <set>
-#include <map>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -30,25 +29,26 @@ struct element_t{
     EdgeId edge_between;
 
     element_t(distance_t new_distance, VertexId new_cur_vertex, VertexId new_prev_vertex,
-            EdgeId new_edge_between) : distance(new_distance), curr_vertex(new_cur_vertex),
-                    prev_vertex(new_prev_vertex), edge_between(new_edge_between) { }
+              EdgeId new_edge_between) noexcept
+            : distance(new_distance),
+              curr_vertex(new_cur_vertex), prev_vertex(new_prev_vertex),
+              edge_between(new_edge_between) { }
 };
 
 template<typename T>
 class ReverseDistanceComparator {
 public:
-  ReverseDistanceComparator() {
-  }
+    ReverseDistanceComparator() {}
 
-  bool operator()(T obj1, T obj2){
-      if(obj1.distance != obj2.distance)
-          return obj2.distance < obj1.distance;
-      if(obj2.curr_vertex != obj1.curr_vertex)
-          return obj2.curr_vertex < obj1.curr_vertex;
-      if(obj2.prev_vertex != obj1.prev_vertex)
-          return obj2.prev_vertex < obj1.prev_vertex;
-      return obj2.edge_between < obj1.edge_between;
-  }
+    bool operator()(T obj1, T obj2) const {
+        if (obj1.distance != obj2.distance)
+            return obj2.distance < obj1.distance;
+        if (obj2.curr_vertex != obj1.curr_vertex)
+            return obj2.curr_vertex < obj1.curr_vertex;
+        if (obj2.prev_vertex != obj1.prev_vertex)
+            return obj2.prev_vertex < obj1.prev_vertex;
+        return obj2.edge_between < obj1.edge_between;
+    }
 };
 
 template<class Graph, class DijkstraSettings, typename distance_t = size_t>
@@ -56,13 +56,13 @@ class Dijkstra {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef distance_t DistanceType;
+    using queue_element = element_t<Graph, distance_t>;
 
     typedef std::unordered_map<VertexId, distance_t> distances_map;
     typedef typename distances_map::const_iterator distances_map_ci;
-    typedef typename std::priority_queue<element_t<Graph, distance_t>,
-                                         std::vector<element_t<Graph, distance_t>>,
-                                         ReverseDistanceComparator<element_t<Graph, distance_t>>> queue_t;
-
+    typedef typename std::priority_queue<queue_element,
+                                         std::vector<queue_element>,
+                                         ReverseDistanceComparator<queue_element>> queue_t;
     // constructor parameters
     const Graph& graph_;
     DijkstraSettings settings_;
@@ -86,7 +86,7 @@ class Dijkstra {
         prev_vert_map_.clear();
         set_finished(false);
         settings_.Init(start);
-        queue.push(element_t<Graph, distance_t>(0, start, VertexId(), EdgeId()));
+        queue.push(queue_element(0, start, VertexId(), EdgeId()));
         if (collect_traceback_)
             prev_vert_map_[start] = std::pair<VertexId, EdgeId>(VertexId(), EdgeId());
     }
@@ -123,8 +123,7 @@ class Dijkstra {
                 // TRACE("Entry: vertex " << graph_.str(cur_vertex) << " distance " << new_dist);
                 if (CheckPutVertex(cur_pair.vertex, cur_pair.edge, new_dist)) {
                     // TRACE("CheckPutVertex returned true and new entry is added");
-                    queue.push(element_t<Graph, distance_t>(new_dist, cur_pair.vertex,
-                                    cur_vertex, cur_pair.edge));
+                    queue.push(queue_element(new_dist, cur_pair.vertex, cur_vertex, cur_pair.edge));
                 }
             }
             // TRACE("Checking new neighbour of vertex " << graph_.str(cur_vertex) << " finished");
@@ -172,7 +171,7 @@ public:
 
         while (!queue.empty() && !finished()) {
             // TRACE("Dijkstra iteration started");
-            const element_t<Graph, distance_t>& next = queue.top();
+            const auto& next = queue.top();
             distance_t distance = next.distance;
             VertexId vertex = next.curr_vertex;
 
@@ -259,11 +258,12 @@ class DistanceCounter {
 public:
   DistanceCounter(const Graph& graph) :
     graph_(graph),
-    dijkstra_(graph, BaseDijkstraSettings(
-            LengthCalculator<Graph>(),
-            VertexProcessChecker<Graph>(),
-            VertexPutChecker<Graph>(),
-            ForwardNeighbourIteratorFactory<Graph>())),
+    dijkstra_(graph,
+              BaseDijkstraSettings(
+                  LengthCalculator<Graph>(),
+                  VertexProcessChecker<Graph>(),
+                  VertexPutChecker<Graph>(),
+                  ForwardNeighbourIteratorFactory<Graph>())),
     ready_(false) {
   }
 
