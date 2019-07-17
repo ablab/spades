@@ -11,12 +11,10 @@
 #include "utils/stl_utils.hpp"
 #include "utils/logger/logger.hpp"
 
+#include <parallel_hashmap/phmap.h>
+
 #include <queue>
 #include <vector>
-#include <unordered_map>
-#include <unordered_set>
-
-#include <parallel_hashmap/phmap.h>
 
 namespace omnigraph {
 

@@ -21,10 +21,9 @@
 #include "assembly_graph/graph_support/comparators.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "sequence/sequence_tools.hpp"
-#include <cmath>
-#include <stack>
-#include <unordered_set>
 #include "math/xmath.h"
+#include <stack>
+#include <cmath>
 
 namespace omnigraph {
 
@@ -462,7 +461,7 @@ private:
         return smart_set;
     }
 
-    bool CheckInteracting(const BulgeInfo &info, const std::unordered_set<EdgeId> &involved_edges) const {
+    bool CheckInteracting(const BulgeInfo &info, const phmap::flat_hash_set<EdgeId> &involved_edges) const {
         if (involved_edges.count(info.e))
             return true;
         for (EdgeId e : info.alternative)
@@ -471,7 +470,7 @@ private:
         return false;
     }
 
-    void AccountEdge(EdgeId e, std::unordered_set<EdgeId>& involved_edges) const {
+    void AccountEdge(EdgeId e, phmap::flat_hash_set<EdgeId>& involved_edges) const {
         TRACE("Pushing edge " << this->g().str(e));
         involved_edges.insert(e);
         EdgeId conj = this->g().conjugate(e);
@@ -479,7 +478,7 @@ private:
         involved_edges.insert(conj);
     }
 
-    void AccountEdges(const BulgeInfo& info, std::unordered_set<EdgeId>& involved_edges) const {
+    void AccountEdges(const BulgeInfo& info, phmap::flat_hash_set<EdgeId>& involved_edges) const {
         AccountEdge(info.e, involved_edges);
         for (EdgeId e : info.alternative) {
             AccountEdge(e, involved_edges);
@@ -574,7 +573,7 @@ private:
         std::vector<BulgeInfo> filtered;
         filtered.reserve(bulges.size());
         //fixme switch to involved vertices to bring fully parallel glueing closer
-        std::unordered_set<EdgeId> involved_edges;
+        phmap::flat_hash_set<EdgeId> involved_edges;
         SmartEdgeSet interacting_edges(this->g(), false, CoverageComparator<Graph>(this->g()));
 
         for (BulgeInfo& info : bulges) {
