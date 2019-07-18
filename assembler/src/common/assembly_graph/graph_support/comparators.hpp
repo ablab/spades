@@ -1,4 +1,7 @@
 #pragma once
+
+#include <functional>
+
 namespace omnigraph {
 
 template<class Graph>
@@ -6,57 +9,54 @@ struct CoverageComparator {
 private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    const Graph &graph_;
+    std::reference_wrapper<const Graph> graph_;
 public:
     CoverageComparator(const Graph &graph)
-            : graph_(graph) {
-    }
+            : graph_(graph) {}
 
     /**
      * Standard comparator function as used in collections.
      */
     bool operator()(EdgeId edge1, EdgeId edge2) const {
-        if (math::eq(graph_.coverage(edge1), graph_.coverage(edge2))) {
+        const Graph &g = graph_;
+
+        // uint64_t lhs = g.raw_coverage(edge1) * g.length(edge2),
+        //         rhs = g.raw_coverage(edge2) * g.length(edge1);
+        uint64_t lhs = g.raw_coverage(edge1) * g.length(edge2),
+                 rhs = g.raw_coverage(edge2) * g.length(edge1);
+        if (lhs < rhs)
+            return true;
+        else if (lhs == rhs)
             return edge1 < edge2;
-        }
-        return math::ls(graph_.coverage(edge1), graph_.coverage(edge2));
+
+        return false;
     }
 };
 
-/**
- * This class defines which edge is more likely to be tip. In this case we just assume shorter edges
- * are more likely tips then longer ones.
- */
-    template<class Graph>
-    struct LengthComparator {
-    private:
-        typedef typename Graph::EdgeId EdgeId;
-        typedef typename Graph::VertexId VertexId;
-        const Graph &graph_;
-    public:
-        /**
-         * TipComparator should never be created with default constructor but it is necessary on order for
-         * code to compile.
-         */
-        //  TipComparator() {
-        //    VERIFY(false);
-        //  }
-        /**
-         * Construct TipComparator for given graph
-         * @param graph graph for which comparator is created
-         */
-        LengthComparator(const Graph &graph)
-                : graph_(graph) {
-        }
+template<class Graph>
+struct LengthComparator {
+  private:
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    std::reference_wrapper<const Graph> graph_;
+  public:
+    LengthComparator(const Graph &graph)
+            : graph_(graph) {}
 
-        /**
-         * Standard comparator function as used in collections.
-         */
-        bool operator()(EdgeId edge1, EdgeId edge2) const {
-            if (graph_.length(edge1) == graph_.length(edge2)) {
-                return edge1 < edge2;
-            }
-            return graph_.length(edge1) < graph_.length(edge2);
-        }
-    };
+    /**
+     * Standard comparator function as used in collections.
+     */
+    bool operator()(EdgeId edge1, EdgeId edge2) const {
+        const Graph &g = graph_;
+
+        size_t l1 = g.length(edge1), l2 = g.length(edge2);
+
+        if (l1 < l2)
+            return true;
+        else if (l1 == l2)
+            return edge1 < edge2;
+
+        return false;
+    }
+};
 }
