@@ -1058,7 +1058,7 @@ class btree : public Params::key_compare {
 
   // Inserts a value into the btree.
   iterator insert_multi(const value_type &v) {
-    return insert_multi(params_type::key(v), &v);
+    return insert_multi(params_type::key(v), v);
   }
 
   // Insert with hint. Check to see if the value should be placed immediately

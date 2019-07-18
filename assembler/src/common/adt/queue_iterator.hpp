@@ -9,8 +9,8 @@
 #define QUEUE_ITERATOR_HPP_
 
 #include "utils/verify.hpp"
+#include "btree/btree_set.h"
 #include <set>
-
 
 namespace adt {
 
@@ -18,7 +18,7 @@ namespace adt {
 template<typename T, typename Comparator>
 class erasable_priority_queue {
 private:
-    std::set<T, Comparator> storage_;
+    btree::btree_set<T, Comparator> storage_;
 public:
     /*
      * Be careful! This constructor requires Comparator to have default constructor even if you call it with
