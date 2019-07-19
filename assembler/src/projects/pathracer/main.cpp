@@ -1597,7 +1597,7 @@ int aling_fs(int argc, char* argv[]) {
                 }
 
                 if (cfg.cutoff == -1.0) {  // Auto cutoff
-                    const double coef = 2;
+                    const double coef = 15.0;
                     double alpha = static_cast<double>(nindels) / p7hmm->M * coef;
                     cutoff = (1 - alpha) * p7hmm->cutoff[cfg.local ? p7_GA2 : p7_GA1];  // FIXME check global and local
                 }
