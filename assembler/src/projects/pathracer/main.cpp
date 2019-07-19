@@ -783,6 +783,11 @@ void TraceHMM(const hmmer::HMM &hmm,
     fees.local = cfg.local;
     fees.use_experimental_i_loop_processing = cfg.use_experimental_i_loop_processing;
     fees.frame_shift_cost = fees.all_matches_score() / static_cast<double>(fees.M) / cfg.indel_rate / 3;
+    if (cfg.indel_rate > 0.0 && fees.minimal_match_length) {
+        WARN("Current depth filter implementation does not support alignment with frame shifts! minimal_match_length will be set to 0");
+        fees.minimal_match_length = 0;
+        // FIXME Implement proper filter or at least disable it in more gentle way (leaving post-processing filter)
+    }
 
     INFO("HMM consensus: " << fees.consensus);
     INFO("HMM " << p7hmm->name << " has " << fees.count_negative_loops() << " positive-score I-loops over " << fees.ins.size());
