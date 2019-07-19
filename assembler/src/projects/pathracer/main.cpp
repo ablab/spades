@@ -135,7 +135,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
       (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
       (cfg.local << option("--local") % "perform local-local HMM matching"),
-      (option("--length", "-l") & integer("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on aligned HMM length [default: 0.9]",
+      (option("--length", "-l") & integer("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on the length of the pHMM [default: 0.9]",
       (option("--indel-rate", "-r") & value("value", cfg.indel_rate)) % "expected rate of nucleotides indels in graph edges [default: 0]",
       (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 10000]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "the number of parallel threads [default: 16]",
@@ -1255,7 +1255,7 @@ struct PathracerSeqFsConfig {
     // double minimal_match_length = 0;
     size_t max_insertion_length = 30;
     double indel_rate = 0.05;
-    double cutoff = 0.85;
+    double cutoff = 0.7;
 
     hmmer::hmmer_cfg hcfg;
     bool exhaustive = false;
@@ -1277,7 +1277,7 @@ void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
       (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 100]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "the number of parallel threads [default: 16]",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
-      (option("--cutoff") & value("CUTOFF", cfg.cutoff)) % "bitscore cutoff; if <= 1 then to be multiplied on GA HMM cutoff [default: 0.85]",
+      (option("--cutoff") & value("CUTOFF", cfg.cutoff)) % "bitscore cutoff; if <= 1 then to be multiplied on GA HMM cutoff [default: 0.7]",
       // (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
       (option("--queries") & values("queries", cfg.queries)) % "queries names to lookup [default: all queries from input query file]",
       cfg.exhaustive << option("--exhaustive") % "run in exhaustive mode, disable HMM filter",
