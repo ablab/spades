@@ -1234,6 +1234,7 @@ struct PathracerSeqFsConfig {
     // size_t k = 0;
     int threads = 16;
     size_t top = 100;
+    size_t max_fs = 10;
     // std::vector<std::string> edges;
     std::vector<std::string> sequences;
     std::vector<std::string> queries;
@@ -1275,6 +1276,7 @@ void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
       // (option("--length", "-l") & integer("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on aligned HMM length [default: 0.9]",
       (option("--indel-rate", "-r") & value("value", cfg.indel_rate)) % "expected rate of nucleotides indels in graph edges [default: 0.05]",
       (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 100]",
+      (option("--max-fs") & integer("MAX #FS", cfg.max_fs)) % "maximal allowed number of frameshifts in a reported sequence [default: 10]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "the number of parallel threads [default: 16]",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
       (option("--cutoff") & value("CUTOFF", cfg.cutoff)) % "bitscore cutoff; if <= 1 then to be multiplied on GA HMM cutoff [default: 0.7]",
@@ -1588,10 +1590,13 @@ int aling_fs(int argc, char* argv[]) {
                 float bitscore = max_bitscore(seq_without_gaps, matcher);
 
                 double cutoff = cfg.cutoff <= 1.0 ? cfg.cutoff * p7hmm->cutoff[cfg.local ? p7_GA2 : p7_GA1] : cfg.cutoff;  // FIXME check global and local
+                int nindels = subseqs.size() - 1;
+                VERIFY(nindels >= 0);
+                if (nindels > cfg.max_fs) {
+                    continue;
+                }
 
                 if (cfg.cutoff == -1.0) {  // Auto cutoff
-                    int nindels = subseqs.size() - 1;
-                    VERIFY(nindels >= 0);
                     const double coef = 2;
                     double alpha = static_cast<double>(nindels) / p7hmm->M * coef;
                     cutoff = (1 - alpha) * p7hmm->cutoff[cfg.local ? p7_GA2 : p7_GA1];  // FIXME check global and local
@@ -1602,7 +1607,7 @@ int aling_fs(int argc, char* argv[]) {
 
                 std::stringstream header;
                 // FIXME report PartialScore correspondent to the currunt much rather than just maximal partial score
-                header << ">Score=" << info.score << "|Bitscore=" << bitscore << "|PartialBitscore=" << max_subscore << "|Seq=" << id << "|Position=" << info.pos << "|Alignment=" << info.alignment << '\n';
+                header << ">Score=" << info.score << "|Bitscore=" << bitscore << "|PartialBitscore=" << max_subscore << "|Seq=" << id << "|Position=" << info.pos << "|Frameshifts=" << nindels << "|Alignment=" << info.alignment << '\n';
                 o_seqs << header.str();
                 io::WriteWrapped(info.seq, o_seqs);
                 o_seqs.flush();
