@@ -103,11 +103,11 @@ private:
             new_data = new_vector;
             new_sz = 0;
         } else {
-            // Otherwise, simply change the size of the allocated space
-            if (N) {
+            // Otherwise, simply change the size of the allocated space if we have to grow
+            if (N > sz) {
                 new_data = realloc(data, N * sizeof(T));
                 new_sz = N;
-            } else {
+            } else if (N == 0) {
                 free(data);
                 new_data = nullptr;
                 new_sz = 0;
