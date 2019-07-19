@@ -1250,6 +1250,7 @@ struct PathracerSeqFsConfig {
     // double minimal_match_length = 0;
     size_t max_insertion_length = 30;
     double indel_rate = 0.05;
+    double cutoff = 0.85;
 
     hmmer::hmmer_cfg hcfg;
     bool exhaustive = false;
@@ -1271,6 +1272,7 @@ void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
       (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 100]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "the number of parallel threads [default: 16]",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
+      (option("--cutoff") & value("CUTOFF", cfg.cutoff)) % "bitscore cutoff; if <= 1 then to be multiplied on GA HMM cutoff [default: 0.85]",
       // (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
       (option("--queries") & values("queries", cfg.queries)) % "queries names to lookup [default: all queries from input query file]",
       cfg.exhaustive << option("--exhaustive") % "run in exhaustive mode, disable HMM filter",
@@ -1336,6 +1338,51 @@ void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
       exit(1);
   }
 }
+
+
+float max_bitscore(const std::string &seq, hmmer::HMMMatcher &matcher) {
+    matcher.reset();
+    matcher.match("seq", seq.c_str());
+    matcher.summarize();
+    float bitscore = -std::numeric_limits<float>::infinity();
+    for (const auto &hit : matcher.hits()) {
+        if (!hit.reported() || !hit.included())
+            continue;
+
+        for (const auto &domain : hit.domains()) {
+            bitscore = std::max(bitscore, domain.bitscore());
+        }
+    }
+    return bitscore;
+}
+
+
+std::vector<std::string> split_seq(const std::string &s, const std::unordered_set<char> &delims) {
+    std::string current = "";
+    std::vector<std::string> result;
+    for (char ch : s) {
+        if (delims.count(ch) && !current.empty()) {
+            result.push_back(std::move(current));
+            current = "";
+        } else {
+            current += ch;
+        }
+    }
+    if (!current.empty()) {
+        result.push_back(std::move(current));
+    }
+    return result;
+}
+
+std::vector<float> max_bitscores(const std::vector<std::string> &seqs, hmmer::HMMMatcher &matcher) {
+    std::vector<float> result;
+    for (const std::string &seq : seqs) {
+        float score = max_bitscore(seq, matcher);
+        result.push_back(score);
+    }
+    return result;
+}
+
 
 int aling_fs(int argc, char* argv[]) {
     PathracerSeqFsConfig cfg;
@@ -1442,15 +1489,6 @@ int aling_fs(int argc, char* argv[]) {
             }
 
             matcher.summarize();
-            float seq_bitscore = -std::numeric_limits<float>::infinity();
-            for (const auto &hit : matcher.hits()) {
-                if (!hit.reported() || !hit.included())
-                    continue;
-
-                for (const auto &domain : hit.domains()) {
-                    seq_bitscore = std::max(seq_bitscore, domain.bitscore());
-                }
-            }
             std::unordered_set<size_t> indices;
             auto get = [&](size_t i) -> const std::string& {
                 return seqs[i].second;
@@ -1532,24 +1570,34 @@ int aling_fs(int argc, char* argv[]) {
                 HMMPathInfo info(p7hmm->name, annotated_path.score, seq, nucl_seq, {}, std::move(alignment),
                                  "NA", pos);
 
-                std::string seq_without_gaps = seq;
-                seq_without_gaps.erase(std::remove_if(seq_without_gaps.begin(), seq_without_gaps.end(), [](char ch) {return ch == '-' || ch == '=';}),
-                                       seq_without_gaps.end());
-                matcher.reset();
-                matcher.match("seq", seq_without_gaps.c_str());
-                matcher.summarize();
-                float bitscore = -std::numeric_limits<float>::infinity();
-                for (const auto &hit : matcher.hits()) {
-                    if (!hit.reported() || !hit.included())
-                        continue;
+                auto subseqs = split_seq(seq, {'=', '-'});
+                auto subscores = max_bitscores(subseqs, matcher);
+                float max_subscore = subscores.empty() ? -std::numeric_limits<float>::infinity() : *std::max_element(subscores.cbegin(), subscores.cend());
 
-                    for (const auto &domain : hit.domains()) {
-                        bitscore = std::max(bitscore, domain.bitscore());
-                    }
+                // std::string seq_without_gaps = seq;
+                // seq_without_gaps.erase(std::remove_if(seq_without_gaps.begin(), seq_without_gaps.end(), [](char ch) {return ch == '-' || ch == '=';}),
+                //                        seq_without_gaps.end());
+                //
+                std::string seq_without_gaps = join(subseqs, "");
+                // VERIFY(seq_without_gaps == seq_without_gaps2);
+                float bitscore = max_bitscore(seq_without_gaps, matcher);
+
+                double cutoff = cfg.cutoff <= 1.0 ? cfg.cutoff * p7hmm->cutoff[cfg.local ? p7_GA2 : p7_GA1] : cfg.cutoff;  // FIXME check global and local
+
+                if (cfg.cutoff == -1.0) {  // Auto cutoff
+                    int nindels = subseqs.size() - 1;
+                    VERIFY(nindels >= 0);
+                    const double coef = 2;
+                    double alpha = static_cast<double>(nindels) / p7hmm->M * coef;
+                    cutoff = (1 - alpha) * p7hmm->cutoff[cfg.local ? p7_GA2 : p7_GA1];  // FIXME check global and local
                 }
+                if (bitscore < cutoff) {
+                    continue;
+                }
+
                 std::stringstream header;
                 // FIXME report PartialScore correspondent to the currunt much rather than just maximal partial score
-                header << ">Score=" << info.score << "|Bitscore=" << bitscore << "|PartialBitscore=" << seq_bitscore << "|Seq=" << id << "|Position=" << info.pos << "|Alignment=" << info.alignment << '\n';
+                header << ">Score=" << info.score << "|Bitscore=" << bitscore << "|PartialBitscore=" << max_subscore << "|Seq=" << id << "|Position=" << info.pos << "|Alignment=" << info.alignment << '\n';
                 o_seqs << header.str();
                 io::WriteWrapped(info.seq, o_seqs);
                 o_seqs.flush();

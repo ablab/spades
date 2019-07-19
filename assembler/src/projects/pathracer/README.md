@@ -59,7 +59,7 @@ Debug output control:
 - `--draw`: draw pictures around the interesting edges
 - `--export-event-graph`: export Event Graph in .cereal format
 
-_In addition:_ Some other developer options that are not supposed to be tuned by end-user. Could be removed in further releases.
+_In addition:_ Some other developer options that are not supposed to be tuned by the end-user. Could be removed in further releases.
 
 ### Output
 For each input pHMM (gene model) **PathRacer** reports:
