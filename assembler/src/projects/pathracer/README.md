@@ -25,7 +25,7 @@ Both tool use extended pHMM model allowing frame shifts:
 ![Scheme of extended pHMM](./extra/pHMM_with_frameshifts.svg)
 
 but for `pathracer-seq-fs` this extension is crucial: for aligning amino-acid pHMMs without allowing indels in the nucleotide space
-`hmmsearch` from **HMMer** package is more than enough.
+six frame translation + `hmmsearch` from **HMMer** package is more than enough.
 
 ### Input
 Currently the tool supports only _de Bruijn_ graphs in GFA format as produced by **SPAdes** or compatible assembler in this matter (e.g., **MEGAHIT**).
