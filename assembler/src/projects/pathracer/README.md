@@ -128,7 +128,7 @@ E.g.
 > &gt;Score=494.396|Bitscore=539.274|PartialBitscore=247.027|Seq=RB12|Position=2935|Frameshifts=3|Alignment=55M1G1M1D20M1P30M3I27M
 
 For alignment with frameshifts the extemded CIGAR/FASTA is used:
-P/"-" -- one nucleotide insertion, G/"=" -- two nucleotides insertion
+P/"-" &mdash; one nucleotide insertion, G/"=" &mdash; two nucleotides insertion
 
 
 ### Examples
@@ -177,7 +177,12 @@ pathracer bac.hmm synth_strain_gbuilder.gfa 55 --queries 16S_rRNA -m 250 --top 1
 ```
 
 ### References
-If you are using **PathRacer** in your research, please cite to <https://www.biorxiv.org/content/10.1101/562579v1>
+If you are using **PathRacer** in your research, please cite:  
+A. Shlemov and A. Korobeynikov. PathRacer: racing profile HMM paths on assembly
+graph. In _Proceedings of International Conference on Algorithms for Computational Biology,
+AlCoB 2019. Berkeley, California, USA, May 28&ndash;30, 2019,_ volume 11488 LNCS, pages
+80&ndash;94, 2019.  
+<https://link.springer.com/chapter/10.1007/978-3-030-18174-1_6>
 
 In case of any problems running **PathRacer** please contact SPAdes support <spades.support@cab.spbu.ru> attaching the log file.
 Your suggestions are also very welcome!
