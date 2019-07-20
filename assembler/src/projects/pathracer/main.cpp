@@ -136,18 +136,18 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
       (cfg.local << option("--local") % "perform local-local HMM matching"),
       (option("--length", "-l") & integer("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on the length of the pHMM [default: 0.9]",
-      (option("--indel-rate", "-r") & value("value", cfg.indel_rate)) % "expected rate of nucleotides indels in graph edges [default: 0]",
+      (option("--indel-rate", "-r") & value("value", cfg.indel_rate)) % "expected rate of nucleotides indels in graph edges [default: 0]. Used for AA pHMM alignment with frame shifts",
       (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 10000]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "the number of parallel threads [default: 16]",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
       (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
-      (option("--queries") & values("queries", cfg.queries)) % "queries names to lookup [default: all queries from input query file]",
       "Query type:" %
       one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
              option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
              option("--aa").set(cfg.mode, Mode::aa) % "match agains amino acid string(s)"),
+      (option("--queries") & values("queries", cfg.queries)) % "queries names to lookup [default: all queries from input query file]",
+      (option("--edges") & values("edges", cfg.edges)) % "match around particular edges [default: all graph edges]",
       "Seeding options:" % (
-          (option("--edges") & values("edges", cfg.edges)) % "match around particular edges",
           "Seeding mode:" %
           one_of(option("--seed-edges").set(cfg.seed_mode, SeedMode::edges) % "use graph edges as seeds",
                  option("--seed-scaffolds").set(cfg.seed_mode, SeedMode::scaffolds) % "use scaffolds paths as seeds",
@@ -1279,11 +1279,11 @@ void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
       (option("--max-fs") & integer("MAX #FS", cfg.max_fs)) % "maximal allowed number of frameshifts in a reported sequence [default: 10]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "the number of parallel threads [default: 16]",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
-      (option("--cutoff") & value("CUTOFF", cfg.cutoff)) % "bitscore cutoff; if <= 1 then to be multiplied on GA HMM cutoff [default: 0.7]",
+      (option("--cutoff") & value("CUTOFF", cfg.cutoff)) % "bitscore cutoff for reported match; if <= 1 then to be multiplied on GA HMM cutoff [default: 0.7]",
       // (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
       (option("--queries") & values("queries", cfg.queries)) % "queries names to lookup [default: all queries from input query file]",
       cfg.exhaustive << option("--exhaustive") % "run in exhaustive mode, disable HMM filter",
-      (option("--sequences") & values("sequences", cfg.sequences)) % "process only specified sequences",
+      (option("--sequences") & values("sequences", cfg.sequences)) % "sequence IDs to process [default: all input sequences]",
       // "Query type:" %
       // one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
       //        option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",

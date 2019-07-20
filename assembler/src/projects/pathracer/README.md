@@ -9,24 +9,34 @@ MANUAL
 <!-- The tool finds all proper alignments rather than only the best one. -->
 <!-- That allows extracting all genes satisfying HMM gene model from the assembly. -->
 <!--  -->
-**PathRacer** is a standalone tool that performs profile HMM alignment directly to the
-assembly graph (performing the codon translation on fly for amino acid pHMMs).
-The tool provides the set of most probable paths traversed by a HMM through the
-whole assembly graph, regardless whether the sequence of interested is encoded
-on the single contig or scattered across the set of edges, therefore
-significantly improving the recovery of sequences of interest even from
-fragmented metagenome assemblies.
+
+**PathRacer** is a tool for alignment of assembly graph against pHMM. It provides
+the set of _k_ most probable paths traversed by a HMM through the whole assembly
+graph. It supports both nucleotide and amino-acid pHMMs performing nt-to-aa
+translation on-fly walking through frameshifts.
+
+**PathRacer** has two versions: main `pathracer` is for aliening both nucleotide and amino-acid pHMMs against assembly graphs and
+`pathracer-seq-fs` is for aligning amino-acid pHMMs against separate sequences allowing indels in the nucleotide space.
+`pathracer` is supposed to be used on complex metagenome assembly graphs for fragmented gens assembly and annotation.
+`pathracer-fs-seq` is supposed to be used as a replacement of original **HMMer** for sequences with high indel rate, e.g., PacBio/ONT contigs.
+
+Both tool use extended pHMM model allowing frame shifts:
+
+![Scheme of extended pHMM](./extra/pHMM_with_frameshifts.svg)
+
+but for `pathracer-seq-fs` this extension is crucial: for aligning amino-acid pHMMs without allowing indels in the nucleotide space
+`hmmsearch` from **HMMer** package is more than enough.
 
 ### Input
-Currently the tool supports only _de Bruijn_ graphs in GFA format as produced by **SPAdes** or compatible assembler in this matter (e.g. **MEGAHIT**).
-Contact us if you need some other format support.
+Currently the tool supports only _de Bruijn_ graphs in GFA format as produced by **SPAdes** or compatible assembler in this matter (e.g., **MEGAHIT**).
+Contact us if you need some other format support. Input sequences are supposed to be in FASTA/FASTQ format.
 
 Profile HMM should be in **HMMer3** format, but one can pass nucleotide or amino acid sequences as well.
 These sequences will be converted to proxy pHMMs.
 Aligning of these pHMMs would be equivalent to performing alignment using Levenshtein distance for each input sequence.
 
 
-### Command line options
+### `pathracer` command line options
 Required positional arguments:
 
 1. Query file (.hmm file or .fasta)
@@ -38,8 +48,10 @@ Main options:
 - `--output`, `-o` DIR: output directory
 - `--hmm` | `--nt` | `--aa`: perform match against pHMM(s) [default] | nucleotide sequences | amino acid sequences
 - `--queries` Q1 [Q2 [...]]: queries names to lookup [default: all queries from input query file]
+- `--edges` E1 [E2 [...]]: match around particular edges [default: all graph edges]
 - `--global` | `--local`: perform HMM-global, graph-local (aka _glocal_, default) or HMM-local, graph-local HMM matching
 - `--length`, `-l` L: minimal length of resultant matched sequence; if &le;1 then to be multiplied on aligned HMM length [default: 0.9]
+- `--indel-rate`, `-r` RATE: expected rate of nucleotides indels in graph edges [default: 0]. Used for AA pHMM aligning with frameshifts
 - `--top` N: extract up to _N_ top scored paths [default: 10000]; only unique paths are reported and therefore
 - `--rescore`: rescore resulting paths by **HMMer** and produce output tables in **HMMer** standard formats
 - `--threads`, `-t` T: the total number of CPU threads to use [default: 16]
@@ -61,8 +73,8 @@ Debug output control:
 
 _In addition:_ Some other developer options that are not supposed to be tuned by the end-user. Could be removed in further releases.
 
-### Output
-For each input pHMM (gene model) **PathRacer** reports:
+### `pathracer` output
+For each input pHMM (gene model) `pathracer` reports:
 
 - **&lt;gene\_name&gt;.seqs.fa**: sequences correspondent to _N_ best scored paths ordered by score along with their alignment in CIGAR format
 - **&lt;gene\_name&gt;.nucls.fa**: _(for amino acids pHHMs only)_ the same sequences in nucleotides
@@ -78,6 +90,46 @@ In addition:
 - **pathracer.log**: log file
 - **graph\_with\_hmm\_paths.gfa**: _(optional)_ input graph with top scored paths added
 
+### `pathracer-seq-fs` command line options
+Required positional arguments:
+
+1. Query .hmm file (.fasta is not supported yet)
+2. Sequence file (.fasta or .fastq)
+
+Main options:
+
+- `--output`, `--queries`, `--global | --local`, `--top`, `--threads`, `--memory`: the same as in main `pathracer`
+- `--sequences` S1 [S2 [...]]: sequence IDs to process [default: all input sequences]
+- `--indel-rate`, `-r` RATE: expected rate of nucleotides indels in graph edges [default: 0.05]. Used for AA pHMM aligning with frameshifts
+- `--max-fs` N: maximal allowed number of frameshifts in a reported sequence [default: 10]
+- `--cutoff` CUTOFF: bitscore cutoff for reported match; if <= 1 then to be multiplied on GA HMM cutoff [default: 0.7]",
+
+Heuristics options:
+_The same as in main `pathracer`_
+
+### `pathracer-seq-fs` output
+For each input pHMM (gene model): **&lt;gene\_name&gt;.seqs.fa** and **&lt;gene\_name&gt;.nucls.fa**, the same as in main `pathracer`
+
+
+### Output files format
+**&lt;gene\_name&gt;.seqs.fa** and **&lt;gene\_name&gt;.nucls.fa** files contain metainformation in FASTA headers.
+For main `pathracer` the header format is:
+> &gt;Score=_PathRacer score_|Edges=_edges path_|Position=_starting position on the first edge_|Alignment=_CIGAR alignment_
+
+E.g.:
+> &gt;Score=366.239|Edges=255162_24353'|Position=9210|Alignment=186M2D186M
+
+Prime (') after an edge ID means reverse complement
+
+For `pathracer-seq-fs` the header format is:
+> &gt;Score=_PathRacer score_|Bitscore=_HMMer bitscore for the whole sequence without incomplete codons_|PartialBitscore=_Maximal HMMer bitscore for fragment between frameshifts_|Seq=_Sequence ID_|Position=_Starting position in the sequence_|Frameshifts=_#Frameshifts_|Alignment=_CIGAR alignment_
+
+E.g.
+> &gt;Score=494.396|Bitscore=539.274|PartialBitscore=247.027|Seq=RB12|Position=2935|Frameshifts=3|Alignment=55M1G1M1D20M1P30M3I27M
+
+For alignment with frameshifts the extemded CIGAR/FASTA is used:
+P/"-" -- one nucleotide insertion, G/"=" -- two nucleotides insertion
+
 
 ### Examples
 One can download example datasets from here <http://cab.spbu.ru/software/pathracer/>
@@ -88,10 +140,16 @@ One can download example datasets from here <http://cab.spbu.ru/software/pathrac
 - **bac.hmm**: _16S_, _23S_, and _5S_ ribosomal subunit pHMMs
 - **synth\_strain\_gbuilder.gfa**: strain assembly graph of SYNTH mock metagenome dataset (SRA accession SRR606249)
 - **synth16S\_new.fa**: _16S_ rRNA sequences of SYNTH organisms obtained from [SILVA](https://www.arb-silva.de/) database
+- **plasmids-ONT.fa**: 7 ONT-assembled AMR-related plasmids from [Li et al, 2018](https://www.ncbi.nlm.nih.gov/pubmed/29325009)
 
 Lookup for beta-lactamase genes (amino acid pHMMs) in Singapore wastewater  
 ```
 pathracer bla_all.hmm urban_strain.gfa 55 --output pathracer_urban_strain_bla_all
+```
+
+Lookup for beta-lactamase genes (amino acid pHMMs) in AMR ONT plasmids (many indels!)   
+```
+pathracer-fs-seq bla_all.hmm plasmids-ONT.fa --output pathracer_plasmids_ont_bla_all
 ```
 
 Lookup for _16S_/_5S_/_23S_ (nucleotide HMMs) in _E.coli_ multicell assembly  
