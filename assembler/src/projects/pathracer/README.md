@@ -114,18 +114,31 @@ For each input pHMM (gene model): **&lt;gene\_name&gt;.seqs.fa** and **&lt;gene\
 ### Output files format
 **&lt;gene\_name&gt;.seqs.fa** and **&lt;gene\_name&gt;.nucls.fa** files contain metainformation in FASTA headers.
 For main `pathracer` the header format is:
-> &gt;Score=_PathRacer score_|Edges=_edges path_|Position=_starting position on the first edge_|Alignment=_CIGAR alignment_
+><code>
+<span>&gt;</span>Score=_PathRacer score_|Edges=_edges path_|Position=_starting position on the first edge_|Alignment=_CIGAR alignment_
+</code>
 
 E.g.:
-> &gt;Score=366.239|Edges=255162_24353'|Position=9210|Alignment=186M2D186M
+><code>
+<span>&gt;</span>Score=366.239|Edges=255162_24353'|Position=9210|Alignment=186M2D186M
+</code>
 
 Prime (') after an edge ID means reverse complement
 
 For `pathracer-seq-fs` the header format is:
-> &gt;Score=_PathRacer score_|Bitscore=_HMMer bitscore for the whole sequence without incomplete codons_|PartialBitscore=_Maximal HMMer bitscore for fragment between frameshifts_|Seq=_Sequence ID_|Position=_Starting position in the sequence_|Frameshifts=_#Frameshifts_|Alignment=_CIGAR alignment_
+><code>
+<span>&gt;</span>Score=_PathRacer score_|Bitscore=_HMMer bitscore for the whole sequence without incomplete codons_|PartialBitscore=_Maximal HMMer bitscore for fragment between frameshifts_|Seq=_Sequence ID_|Position=_Starting position in the sequence_|Frameshifts=_#Frameshifts_|Alignment=_CIGAR alignment_
+</code>
 
 E.g.
-> &gt;Score=494.396|Bitscore=539.274|PartialBitscore=247.027|Seq=RB12|Position=2935|Frameshifts=3|Alignment=55M1G1M1D20M1P30M3I27M
+><code>
+<span>&gt;</span>Score=342.689|Bitscore=539.274|PartialBitscore=238.41|Seq=RB12-N|Position=2935|Alignment=55M1G1M1D20M1D14M1I3M2D11M1P1M1D64M1D62M1D1M1G23M1D30M  
+MSLYRRLVLLSCLSWPLAGFSATALTNLVAEPFAKLEQDFGGSIGVYAMDTGSGA=CSYR  
+AEERFPLCSSFKGFLAAVLARSQQGRLAGHTHPLRQNALVPWSPIS-KYLTTGMTVAELS  
+AAAVQYSDNAAANLLLKELGGPAGLTAFMRSIGDTTFRLDRWELELNSAIRAMRAIPHRR  
+ARDGKLTKLTLGSALAAPQRQQFVDWLKGNTTGNHRIRAAVPADWAVGDKTGTCG=YGTA  
+NDYAVVWPTGRAPIVLAVYRAPNKDDKHSEAVIAAAARLALEDWASTAV
+</code>
 
 For alignment with frameshifts the extemded CIGAR/FASTA is used:
 P/"-" &mdash; one nucleotide insertion, G/"=" &mdash; two nucleotides insertion
