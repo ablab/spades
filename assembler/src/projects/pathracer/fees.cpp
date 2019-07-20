@@ -205,12 +205,12 @@ Fees fees_from_hmm(const P7_HMM *hmm, const ESL_ALPHABET *abc, double lambda) {
 
   for (size_t i = 0; i <= M; ++i) {
     for (size_t j = 0; j < p7H_NTRANSITIONS; ++j) {
-      fees.t[i][j] = -log(hmm->t[i][j]);
+      fees.t[i][j] = -log2(hmm->t[i][j]);
     }
 
     for (size_t j = 0; j < k; ++j) {
-      fees.mat[i][j] = -log(hmm->mat[i][j]) + log(prior_frequences[j]) + lambda;
-      fees.ins[i][j] = -log(hmm->ins[i][j]) + log(prior_frequences[j]) + lambda;
+      fees.mat[i][j] = -log2(hmm->mat[i][j]) + log2(prior_frequences[j]) + lambda;  // FIXME check lambda meaning
+      fees.ins[i][j] = -log2(hmm->ins[i][j]) + log2(prior_frequences[j]) + lambda;
     }
 
     if (all_k == 21) {
