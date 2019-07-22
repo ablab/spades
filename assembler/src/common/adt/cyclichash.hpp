@@ -1,7 +1,13 @@
 #pragma once
 
+#include "sequence/nucl.hpp"
+#include "utils/verify.hpp"
+
 #include <cstdint>
 #include <cstdlib>
+#include <string>
+#include <limits>
+#include <sstream>
 
 namespace rolling_hash {
 

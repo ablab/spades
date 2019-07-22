@@ -8,6 +8,7 @@
 #ifndef __HAMMER_READ_PROCESSOR_HPP__
 #define __HAMMER_READ_PROCESSOR_HPP__
 
+#include <bits/unique_ptr.h>
 #include "io/reads/mpmc_bounded.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"

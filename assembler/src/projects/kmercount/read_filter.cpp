@@ -5,21 +5,23 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <sys/types.h>
-#include <string>
-#include <clipp/clipp.h>
+#include "version.hpp"
+
+#include "adt/cyclichash.hpp"
+#include "adt/cqf.hpp"
+
+#include "io/dataset_support/read_converter.hpp"
+#include "io/reads/osequencestream.hpp"
+#include "io/reads/coverage_filtering_read_wrapper.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
-#include "io/dataset_support/read_converter.hpp"
-#include "adt/cyclichash.hpp"
-#include "adt/cqf.hpp"
-#include "io/reads/osequencestream.hpp"
 #include "utils/kmer_counting.hpp"
-#include "io/reads/coverage_filtering_read_wrapper.hpp"
 
-#include "version.hpp"
+#include <clipp/clipp.h>
+#include <sys/types.h>
+#include <string>
 
 using namespace std;
 typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;

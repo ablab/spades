@@ -4,10 +4,9 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <sys/types.h>
-#include <string>
-#include <clipp/clipp.h>
+#include "adt/cyclichash.hpp"
 
+#include "version.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
@@ -15,9 +14,10 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/kmer_counting.hpp"
-#include "adt/cyclichash.hpp"
 
-#include "version.hpp"
+#include <sys/types.h>
+#include <string>
+#include <clipp/clipp.h>
 
 using namespace std;
 void create_console_logger() {

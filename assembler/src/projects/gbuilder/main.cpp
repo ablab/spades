@@ -5,6 +5,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "assembly_graph/construction/debruijn_graph_constructor.hpp"
+
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/extension_index/kmer_extension_index_builder.hpp"
@@ -17,8 +19,6 @@
 #include "io/dataset_support/read_converter.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/reads/osequencestream.hpp"
-
-#include "assembly_graph/construction/debruijn_graph_constructor.hpp"
 #include "io/binary/basic.hpp"
 
 #include "version.hpp"

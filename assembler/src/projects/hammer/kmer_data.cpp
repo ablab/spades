@@ -6,18 +6,18 @@
 //***************************************************************************
 
 #include "kmer_data.hpp"
-#include "io/reads/read_processor.hpp"
 #include "valid_kmer_generator.hpp"
-
-#include "io/reads/ireadstream.hpp"
 #include "config_struct_hammer.hpp"
+
+#include "adt/cqf.hpp"
+#include "adt/hll.hpp"
+
+#include "io/reads/read_processor.hpp"
+#include "io/reads/ireadstream.hpp"
+#include "io/kmers/kmer_iterator.hpp"
 
 #include "utils/kmer_mph/kmer_index_builder.hpp"
 #include "utils/logger/logger.hpp"
-
-#include "io/kmers/kmer_iterator.hpp"
-#include "adt/cqf.hpp"
-#include "adt/hll.hpp"
 
 using namespace hammer;
 
