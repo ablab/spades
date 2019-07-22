@@ -1044,6 +1044,8 @@ def save_restart_options():
     options_storage.restart.continue_mode = None
     options_storage.restart.restart_from = None
     options_storage.restart.output_dir = None
+    options_storage.restart.only_assembler = None
+    options_storage.restart.only_error_correction = None
 
 
 def load_restart_options():
