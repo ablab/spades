@@ -715,8 +715,6 @@ def add_hidden_args(pgroup_hidden):
 
 def create_parser():
     global parser
-    #Please, don't use default in argparse. Use function set_default_values instead.
-    #If you use default in argparse make sure, that restart-from with this arg works properly.
     parser = argparse.ArgumentParser(prog="spades.py", formatter_class=SpadesHelpFormatter,
                                      usage="%(prog)s [options] -o <output_dir>", add_help=False)
 
@@ -988,6 +986,11 @@ def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False
     load_processed_dataset = secondary_filling
 
     options_storage.args, argv = parser.parse_known_args(options)
+
+    if options_storage.args.restart_from is not None and not secondary_filling:
+        for arg in options_storage.args.__dict__:
+            parser.set_defaults(**{arg: None})
+        options_storage.args, argv = parser.parse_known_args(options)
 
     if argv:
         msg = "Please specify option (e.g. -1, -2, -s, etc)) for the following paths: %s"
