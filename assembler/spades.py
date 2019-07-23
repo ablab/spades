@@ -308,6 +308,9 @@ def print_params(log, log_filename, command_line, args, cfg):
         command_line += "\t" + update_params
         log.info(command_line)
         log.info(restart_from_update_message)
+    else:
+        log.info(command_line)
+
 
     print_used_values(cfg, log)
     log.removeHandler(params_handler)
