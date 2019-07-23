@@ -538,7 +538,6 @@ def init_parser(args):
             os.path.join(options_parser.get_output_dir_from_args(), "params.txt"),
             args[0])
         options_storage.first_command_line = [script] + options
-    options_parser.create_parser()
 
 
 def main(args):

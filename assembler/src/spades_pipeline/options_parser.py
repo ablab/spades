@@ -714,7 +714,6 @@ def add_hidden_args(pgroup_hidden):
 
 
 def create_parser():
-    global parser
     parser = argparse.ArgumentParser(prog="spades.py", formatter_class=SpadesHelpFormatter,
                                      usage="%(prog)s [options] -o <output_dir>", add_help=False)
 
@@ -730,6 +729,8 @@ def create_parser():
     add_pipeline_args(pgroup_pipeline)
     add_advanced_args(pgroup_advanced)
     add_hidden_args(pgroup_hidden)
+
+    return parser
 
 
 def check_options_for_restart_from(log):
@@ -976,7 +977,7 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
 
 def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False, options=None):
     cfg = dict()
-    global parser
+    parser = create_parser()
 
     if secondary_filling:
         old_output_dir = options_storage.args.output_dir
@@ -1017,7 +1018,7 @@ def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False
 
 
 def usage(spades_version, show_hidden=False, mode=None):
-    global parser
+    parser = create_parser()
     parser.print_help()
 
 
