@@ -5,7 +5,7 @@
 #include <cmath>
 #include <cstring>
 #include <functional>
-#include <assert.h>
+#include <cassert>
 
 namespace qf {
 
