@@ -144,7 +144,7 @@ class HllFiller {
         return true;
     }
 
-    size_t getReads() {
+    size_t processed_reads() const {
         size_t sum_reads = 0;
         for (size_t i = 0; i < reads.size(); ++i) {
             sum_reads += reads[i];
@@ -167,7 +167,7 @@ size_t EstimateCardinalityForOneStream(unsigned k, ReadStream &streams, const Ha
             hammer::ReadProcessor rp(nthreads);
             rp.Run(streams[i], hll_filler);
 
-            reads = hll_filler.getReads();
+            reads = hll_filler.processed_reads();
             if (reads >> n) {
                 INFO("Processed " << reads << " reads");
                 n += 1;
