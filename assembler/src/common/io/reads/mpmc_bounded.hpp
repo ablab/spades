@@ -44,6 +44,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cstring>
 #include <unistd.h>
 #include <cassert>
+#include <utility>
 
 template<typename T>
 class mpmc_bounded_queue {
