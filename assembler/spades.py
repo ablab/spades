@@ -265,7 +265,7 @@ def add_file_to_log(cfg, log):
     return log_filename, log_handler
 
 
-def get_restart_from_command_line(args, log):
+def get_restart_from_command_line(args):
     updated_params = ""
     for i in range(1, len(args)):
         if not args[i].startswith("-o") and not args[i].startswith("--restart-from") and \
@@ -273,9 +273,9 @@ def get_restart_from_command_line(args, log):
             updated_params += "\t" + args[i]
 
     updated_params = updated_params.strip()
-    log.info("Restart-from=" + options_storage.args.restart_from)
-    log.info("with updated parameters: " + updated_params)
-    return updated_params
+    restart_from_update_message = "Restart-from=" + options_storage.args.restart_from + "\n"
+    restart_from_update_message += "with updated parameters: " + updated_params
+    return updated_params, restart_from_update_message
 
 
 def get_command_line(args):
@@ -302,11 +302,15 @@ def print_params(log, log_filename, command_line, args, cfg):
     log.addHandler(params_handler)
 
     if not options_storage.args.continue_mode:
-        command_line = "Command line: " + get_command_line(args)
+        log.info("Command line: " + get_command_line(args))
     elif options_storage.args.restart_from:
-        command_line += "\t" + get_restart_from_command_line(args, log)
+        update_params, restart_from_update_message = get_restart_from_command_line(args)
+        command_line += "\t" + update_params
+        log.info(command_line)
+        log.info(restart_from_update_message)
+    else:
+        log.info(command_line)
 
-    log.info(command_line)
 
     print_used_values(cfg, log)
     log.removeHandler(params_handler)
@@ -337,14 +341,14 @@ def clear_configs(cfg, log, command_before_restart_from, stage_id_before_restart
         first_del = stage_id_before_restart_from + 1
 
     if restart_from_stage_id is not None:
-        stage_name = "stage_%d_%s" % (restart_from_stage_id, old_pipeline[restart_from_stage_id]["short_name"])
-        if os.path.isfile(os.path.join(cfg["common"].output_dir, stage_name)):
-            os.remove(os.path.join(cfg["common"].output_dir, stage_name))
+        stage_filename = options_storage.get_stage_filename(restart_from_stage_id, old_pipeline[restart_from_stage_id]["short_name"])
+        if os.path.isfile(stage_filename):
+            os.remove(stage_filename)
 
     for delete_id in range(first_del, len(old_pipeline)):
-        stage_name = "stage_%d_%s" % (delete_id, old_pipeline[delete_id]["short_name"])
-        if os.path.isfile(os.path.join(cfg["common"].output_dir, stage_name)):
-            os.remove(os.path.join(cfg["common"].output_dir, stage_name))
+        stage_filename = options_storage.get_stage_filename(delete_id, old_pipeline[delete_id]["short_name"])
+        if os.path.isfile(stage_filename):
+            os.remove(stage_filename)
 
         cfg_dir = old_pipeline[delete_id]["config_dir"]
         if cfg_dir != "" and os.path.isdir(os.path.join(cfg["common"].output_dir, cfg_dir)):
@@ -357,8 +361,8 @@ def get_first_incomplete_command(filename):
 
     first_incomplete_stage_id = 0
     while first_incomplete_stage_id < len(old_pipeline):
-        stage_name = "stage_%d_%s" % (first_incomplete_stage_id, old_pipeline[first_incomplete_stage_id]["short_name"])
-        if not os.path.isfile(os.path.join(get_stage.cfg["common"].output_dir, stage_name)):
+        stage_filename = options_storage.get_stage_filename(first_incomplete_stage_id, old_pipeline[first_incomplete_stage_id]["short_name"])
+        if not os.path.isfile(stage_filename):
             return old_pipeline[first_incomplete_stage_id]
         first_incomplete_stage_id += 1
 
@@ -391,8 +395,8 @@ def get_command_and_stage_id_before_restart_from(draft_commands, cfg, log):
         return draft_commands[restart_from_stage_id], restart_from_stage_id
 
     if restart_from_stage_id > 0:
-        stage_name = "stage_%d_%s" % (restart_from_stage_id - 1, draft_commands[restart_from_stage_id - 1].short_name)
-        if not os.path.isfile(os.path.join(cfg["common"].output_dir, stage_name)):
+        stage_filename = options_storage.get_stage_filename(restart_from_stage_id - 1, draft_commands[restart_from_stage_id - 1].short_name)
+        if not os.path.isfile(stage_filename):
             support.error(
                 "cannot restart from stage %s: previous stage was not complete." % options_storage.args.restart_from,
                 log)
@@ -537,7 +541,6 @@ def init_parser(args):
             os.path.join(options_parser.get_output_dir_from_args(), "params.txt"),
             args[0])
         options_storage.first_command_line = [script] + options
-    options_parser.create_parser()
 
 
 def main(args):

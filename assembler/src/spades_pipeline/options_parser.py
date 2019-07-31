@@ -475,11 +475,13 @@ def add_pipeline_args(pgroup_pipeline):
     help_hidden = (mode == "rna")
     pgroup_pipeline.add_argument("--only-error-correction",
                                  dest="only_error_correction",
+                                 default=None,
                                  help="runs only read error correction (without assembling)"
                                  if not help_hidden else argparse.SUPPRESS,
                                  action="store_true")
     pgroup_pipeline.add_argument("--only-assembler",
                                  dest="only_assembler",
+                                 default=None,
                                  help="runs only assembling (without read error correction)"
                                  if not help_hidden else argparse.SUPPRESS,
                                  action="store_true")
@@ -586,7 +588,7 @@ def add_advanced_args(pgroup_advanced):
     pgroup_advanced.add_argument("--cov-cutoff",
                                  metavar="<float>",
                                  type=cov_cutoff,
-                                 default="off",
+                                 default=None,
                                  dest="cov_cutoff",
                                  help="coverage cutoff value (a positive float number, "
                                       "or 'auto', or 'off')\n[default: 'off']"
@@ -627,6 +629,7 @@ def add_hidden_args(pgroup_hidden):
                                action="store")
     pgroup_hidden.add_argument("--truseq",
                                dest="truseq_mode",
+                               default=None,
                                help="runs SPAdes in TruSeq mode"
                                if show_help_hidden else argparse.SUPPRESS,
                                action="store_true")
@@ -674,11 +677,13 @@ def add_hidden_args(pgroup_hidden):
                                action="store")
     pgroup_hidden.add_argument("--large-genome",
                                dest="large_genome",
+                               default=False,
                                help="Enables optimizations for large genomes"
                                if show_help_hidden else argparse.SUPPRESS,
                                action="store_true")
     pgroup_hidden.add_argument("--save-gp",
                                dest="save_gp",
+                               default=None,
                                help="Enables saving graph pack before repeat resolution (even without --debug)"
                                if show_help_hidden else argparse.SUPPRESS,
                                action="store_true")
@@ -709,7 +714,6 @@ def add_hidden_args(pgroup_hidden):
 
 
 def create_parser():
-    global parser
     parser = argparse.ArgumentParser(prog="spades.py", formatter_class=SpadesHelpFormatter,
                                      usage="%(prog)s [options] -o <output_dir>", add_help=False)
 
@@ -725,6 +729,8 @@ def create_parser():
     add_pipeline_args(pgroup_pipeline)
     add_advanced_args(pgroup_advanced)
     add_hidden_args(pgroup_hidden)
+
+    return parser
 
 
 def check_options_for_restart_from(log):
@@ -904,7 +910,7 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
                           "Please use '--restart-from last' if you need to change some "
                           "of the options from the initial run and continue from the last available checkpoint.", log)
     if args.meta:
-        if args.careful or args.mismatch_corrector or args.cov_cutoff != "off":
+        if args.careful or args.mismatch_corrector or (args.cov_cutoff != "off" and args.cov_cutoff is not None):
             support.error("you cannot specify --careful, --mismatch-correction or --cov-cutoff in metagenomic mode!",
                           log)
     if args.rna:
@@ -971,7 +977,7 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
 
 def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False, options=None):
     cfg = dict()
-    global parser
+    parser = create_parser()
 
     if secondary_filling:
         old_output_dir = options_storage.args.output_dir
@@ -981,6 +987,11 @@ def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False
     load_processed_dataset = secondary_filling
 
     options_storage.args, argv = parser.parse_known_args(options)
+
+    if options_storage.args.restart_from is not None and not secondary_filling:
+        for arg in options_storage.args.__dict__:
+            parser.set_defaults(**{arg: None})
+        options_storage.args, argv = parser.parse_known_args(options)
 
     if argv:
         msg = "Please specify option (e.g. -1, -2, -s, etc)) for the following paths: %s"
@@ -1007,7 +1018,7 @@ def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False
 
 
 def usage(spades_version, show_hidden=False, mode=None):
-    global parser
+    parser = create_parser()
     parser.print_help()
 
 
@@ -1037,6 +1048,16 @@ def set_default_values():
         options_storage.args.cov_cutoff = "off"
     if options_storage.args.tmp_dir is None:
         options_storage.args.tmp_dir = os.path.join(options_storage.args.output_dir, options_storage.TMP_DIR)
+    if options_storage.args.large_genome is None:
+        options_storage.args.large_genome = False
+    if options_storage.args.truseq_mode is None:
+        options_storage.args.truseq_mode = False
+    if options_storage.args.save_gp is None:
+        options_storage.args.save_gp = False
+    if options_storage.args.only_assembler is None:
+        options_storage.args.only_assembler = False
+    if options_storage.args.only_error_correction is None:
+        options_storage.args.only_error_correction = False
 
 
 def save_restart_options():
