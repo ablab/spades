@@ -20,8 +20,10 @@
     3.7. [Assembly evaluation](#sec3.7)</br>
 4. [Stand-alone binaries released within SPAdes package](#sec4)</br>
     4.1. [k-mer counting](#sec4.1)</br>
-    4.2. [Graph construction](#sec4.2)</br>
-    4.3. [Long read to graph aligner](#sec4.3)</br>
+    4.2. [k-mer count read filter](#sec4.2)</br>
+    4.3. [k-mer cardinality estimating](#sec4.3)</br>
+    4.4. [Graph construction](#sec4.4)</br>
+    4.5. [Long read to graph aligner](#sec4.5)</br>
 5. [Citation](#sec5)</br>
 6. [Feedback and bug reports](#sec6)</br>
 
@@ -966,6 +968,28 @@ plasmidSPAdes outputs only DNA sequences from putative plasmids. Output file nam
 
 To provide input data to SPAdes k-mer counting tool `spades-kmercounter ` you may just specify files in [SPAdes-supported formats](#sec3.1) without any flags (after all options) or provide dataset description file in [YAML format](#yaml).
 
+Output: <output_dir>/final_kmers - unordered set of kmers in binary format. Kmers from both forward a
+nd reverse-complementary reads are taken into account.
+
+Output format: All kmers are written sequentially without any separators. Each kmer takes the same nu
+mber of bits. One kmer of length K takes 2*K bits. Kmers are aligned by 64 bits. For example, one kme
+r with length=21 takes 8 bytes, with length=33 takes 16 bytes, and with length=55 takes 16 bytes. Eac
+h nucleotide is coded with 2 bits: 00 - A, 01 - C, 10 - G, 11 - T.
+                                                   
+Example:
+
+        For kmer: AGCTCT
+        Memory: 6 bits * 2 = 12, 64 bits (8 bytes)
+        Let’s describe bytes:
+        data[0] = AGCT -> 11 01 10 00 -> 0xd8                                
+        data[1] = CT00 -> 00 00 11 01 -> 0x0d
+        data[2] = 0000 -> 00 00 00 00 -> 0x00
+        data[3] = 0000 -> 00 00 00 00 -> 0x00
+        data[4] = 0000 -> 00 00 00 00 -> 0x00
+        data[5] = 0000 -> 00 00 00 00 -> 0x00
+        data[6] = 0000 -> 00 00 00 00 -> 0x00
+        data[7] = 0000 -> 00 00 00 00 -> 0x00
+
 Synopsis: `spades-kmercount [OPTION...] <input files>`
 
 The options are:
@@ -990,6 +1014,56 @@ The options are:
 
 
 <a name="sec4.2"></a>
+## k-mer count read filter
+
+To provide input data to SPAdes k-mer read filter tool `spades-read-filter ` you should provide dataset description file in [YAML format](#yaml).
+
+Synopsis: `spades-read-filter [OPTION...] -d <yaml>`
+
+The options are:
+
+`-d, --dataset file <file name> `
+    dataset description (in YAML format)
+
+`-k, --kmer <int> `
+    k-mer length (default: 21)
+
+`-t, --threads <int> `
+    number of threads to use (default: number of CPUs)
+
+`-o, --outdir <dir> `
+    output directory to use (default: current directory)
+
+`-c, --cov <value> `
+    median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EDUAL to this value will be ignored)
+
+`-h, --help `
+    print help message
+
+<a name="sec4.3"></a>
+## k-mer cardinality estimating
+
+To provide input data to SPAdes k-mer cardinality estimating tool `spades-kmer-estimating ` you should provide dataset description file in [YAML format](#yaml).
+
+Kmers from reverse-complementary reads aren't taken into account for k-mer cardinality estimating.
+
+Synopsis: `spades-kmer-estimating [OPTION...] -d <yaml>`
+
+The options are:
+
+`-d, --dataset file <file name> `
+    dataset description (in YAML format)
+
+`-k, --kmer <int> `
+    k-mer length (default: 21)
+
+`-t, --threads <int> `
+    number of threads to use (default: number of CPUs)
+
+`-h, --help `
+    print help message
+
+<a name="sec4.4"></a>
 ## Graph construction
 Graph construction tool `spades-gbuilder ` has two mandatory options: dataset description file in [YAML format](#yaml) and an output file name.
 
@@ -1003,7 +1077,7 @@ Additional options are:
 `-t <int> `
     number of threads
 
-`-tmpdir <dir_name>  `
+`-tmp-dir <dir_name>  `
     scratch directory to use
 
 `-b <int> `
@@ -1022,7 +1096,7 @@ Additional options are:
     output graph in SPAdes internal format
 
 
-<a name="sec4.3"></a>
+<a name="sec4.5"></a>
 ## Long read to graph aligner
 A tool for aligning long reads to the graph `spades-gmapper ` has three mandatory options: dataset description file in [YAML format](#yaml), graph file in GFA format and an output file name.
 
