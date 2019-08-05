@@ -226,6 +226,11 @@ public:
                type_ == io::LibraryType::UntrustedContigs;
     }
 
+    bool is_fl_lib() const {
+        return type_ == io::LibraryType::FLPacBioReads ||
+               type_ == io::LibraryType::FLNanoporeReads;
+    }
+
 private:
     LibraryType type_;
     LibraryOrientation orientation_;

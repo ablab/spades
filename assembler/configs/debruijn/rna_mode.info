@@ -29,7 +29,7 @@ pacbio_processor
     max_vertex_in_dijkstra 1000
 ;gap_closer
     long_seq_limit 100
-    pacbio_min_gap_quantity 1
+    pacbio_min_gap_quantity 2
     contigs_min_gap_quantity 1
     max_contigs_gap_length 10000
 }

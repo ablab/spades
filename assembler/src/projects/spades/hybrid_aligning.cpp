@@ -372,14 +372,16 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
                 gap_storage.DumpToFile(cfg::get().output_saves + "gaps.mpr");
             }
 
-            INFO("Padding gaps");
-            size_t min_gap_quantity = rtype ? cfg::get().pb.pacbio_min_gap_quantity
-                                            : cfg::get().pb.contigs_min_gap_quantity;
+            if (cfg::get().ds.reads[lib_id].is_fl_lib()) {
+              INFO("Padding gaps for FL lib");
+              size_t min_gap_quantity = rtype ? cfg::get().pb.pacbio_min_gap_quantity
+                                              : cfg::get().pb.contigs_min_gap_quantity;
 
-            INFO("Min gap weight set to " << min_gap_quantity);
-            gap_storage.PrepareGapsForClosure(min_gap_quantity, /*max flank length*/500);
+              INFO("Min gap weight set to " << min_gap_quantity);
+              gap_storage.PrepareGapsForClosure(min_gap_quantity, /*max flank length*/500);
 
-            gap_closing::CloseGaps(gp, rtype, gap_storage, min_gap_quantity);
+              gap_closing::CloseGaps(gp, rtype, gap_storage, min_gap_quantity);
+            }
         }
     }
 
