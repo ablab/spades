@@ -1,4 +1,11 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "component_validation.hpp"
+
 #include <stack>
 
 namespace path_extend {
@@ -18,8 +25,8 @@ ScaffoldGraphComponentExtractor::TransitionGraph ScaffoldGraphComponentExtractor
     }
     return result;
 }
-vector<ScaffoldGraphComponentExtractor::TransitionGraph> ScaffoldGraphComponentExtractor::GetConnectedComponents(
-    const ScaffoldGraphComponentExtractor::ScaffoldGraph &scaffold_graph) const {
+std::vector<ScaffoldGraphComponentExtractor::TransitionGraph> ScaffoldGraphComponentExtractor::GetConnectedComponents(
+        const ScaffoldGraphComponentExtractor::ScaffoldGraph &scaffold_graph) const {
     TransitionGraph simple_graph;
     for (const auto &vertex: scaffold_graph.vertices()) {
         simple_graph.AddVertex(vertex);
@@ -28,8 +35,8 @@ vector<ScaffoldGraphComponentExtractor::TransitionGraph> ScaffoldGraphComponentE
         simple_graph.AddEdge(edge.getStart(), edge.getEnd());
     }
     auto unoriented_graph = UnorientTransitionGraph(simple_graph);
-    set<ScaffoldVertex> visited;
-    vector<TransitionGraph> components;
+    std::set<ScaffoldVertex> visited;
+    std::vector<TransitionGraph> components;
     for (const auto &vertex: unoriented_graph) {
         if (visited.find(vertex) == visited.end()) {
             auto component_vertices = GetVertexComponent(unoriented_graph, vertex);
@@ -51,10 +58,10 @@ vector<ScaffoldGraphComponentExtractor::TransitionGraph> ScaffoldGraphComponentE
     }
     return components;
 }
-set<ScaffoldGraphComponentExtractor::ScaffoldVertex> ScaffoldGraphComponentExtractor::GetVertexComponent(
-    const ScaffoldGraphComponentExtractor::TransitionGraph &transition_graph,
-    const ScaffoldGraphComponentExtractor::ScaffoldVertex &start) const {
-    set<ScaffoldVertex> visited;
+std::set<ScaffoldGraphComponentExtractor::ScaffoldVertex> ScaffoldGraphComponentExtractor::GetVertexComponent(
+        const ScaffoldGraphComponentExtractor::TransitionGraph &transition_graph,
+        const ScaffoldGraphComponentExtractor::ScaffoldVertex &start) const {
+    std::set<ScaffoldVertex> visited;
     std::stack<ScaffoldVertex> current_stack;
     current_stack.push(start);
     visited.insert(start);
@@ -81,7 +88,7 @@ bool ComponentEstimator::IsCorrect(const ComponentEstimator::TransitionGraph &tr
             return false;
         }
     }
-    set<ScaffoldVertex> graph_vertices;
+    std::set<ScaffoldVertex> graph_vertices;
     std::copy(transition_graph.begin(), transition_graph.end(), std::inserter(graph_vertices, graph_vertices.end()));
     auto component_path_result = path_cluster_validator_.GetReferencePath(graph_vertices);
     if (not component_path_result.is_initialized()) {
@@ -100,11 +107,11 @@ bool ComponentEstimator::IsCorrect(const ComponentEstimator::TransitionGraph &tr
 void ComponentEstimator::EstimateComponents(const ComponentEstimator::ScaffoldGraph &scaffold_graph) const {
     ScaffoldGraphComponentExtractor component_extractor;
     auto components = component_extractor.GetConnectedComponents(scaffold_graph);
-    vector<TransitionGraph> covered_components;
-    vector<TransitionGraph> true_components;
-    vector<TransitionGraph> simple_components;
-    vector<TransitionGraph> false_components;
-    vector<TransitionGraph> trivial_components;
+    std::vector<TransitionGraph> covered_components;
+    std::vector<TransitionGraph> true_components;
+    std::vector<TransitionGraph> simple_components;
+    std::vector<TransitionGraph> false_components;
+    std::vector<TransitionGraph> trivial_components;
     for (const auto &component: components) {
         if (IsTrivial(component)) {
             trivial_components.push_back(component);
@@ -150,9 +157,9 @@ ComponentEstimator::ComponentEstimator(const Graph &g,
     : g_(g), path_cluster_helper_(path_cluster_helper), path_cluster_validator_(path_cluster_validator) {}
 bool ComponentEstimator::IsSimple(const ComponentEstimator::TransitionGraph &transition_graph,
                                   const std::vector<std::set<ScaffoldVertex>> &clusters) const {
-    vector<set<ScaffoldVertex>> doubletons;
+    std::vector<std::set<ScaffoldVertex>> doubletons;
     std::copy_if(clusters.begin(), clusters.end(), std::back_inserter(doubletons),
-                 [this](const set<ScaffoldVertex> &cluster) {
+                 [this](const std::set<ScaffoldVertex> &cluster) {
                    return cluster.size() == 2;
                  });
     for (const auto &cluster: doubletons) {

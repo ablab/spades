@@ -1,6 +1,13 @@
-#include <common/assembly_graph/core/graph.hpp>
-#include <common/assembly_graph/graph_support/scaff_supplementary.hpp>
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "reference_path_index.hpp"
+
+#include "common/assembly_graph/core/graph.hpp"
+#include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -20,8 +27,7 @@ void ReferencePathIndex::Insert(EdgeId edge, size_t edge_pos, size_t conj_edge_p
 bool ReferencePathIndex::Contains(const EdgeId &edge) const {
     return edge_to_info_.find(edge) != edge_to_info_.end();
 }
-ReferencePathIndex ReferencePathIndexBuilder::BuildReferencePathIndex(
-    const vector<vector<EdgeWithMapping>> &reference_paths) {
+ReferencePathIndex ReferencePathIndexBuilder::BuildReferencePathIndex(const ReferencePaths &reference_paths) {
     ReferencePathIndex result;
     for (size_t i = 0; i < reference_paths.size(); ++i) {
         for (size_t j = 0; j < reference_paths[i].size(); ++j) {
@@ -35,8 +41,8 @@ ReferencePathIndex ReferencePathIndexBuilder::BuildReferencePathIndex(
     return result;
 }
 
-ReferencePathIndex ReferencePathIndexBuilder::BuildReferencePathIndexForSet(
-    const vector<vector<EdgeWithMapping>> &reference_paths, const std::unordered_set<EdgeId> &edges) {
+ReferencePathIndex ReferencePathIndexBuilder::BuildReferencePathIndexForSet(const ReferencePaths &reference_paths,
+                                                                            const std::unordered_set<EdgeId> &edges) {
     ReferencePathIndex result;
     for (size_t i = 0; i < reference_paths.size(); ++i) {
         for (size_t j = 0; j < reference_paths[i].size(); ++j) {

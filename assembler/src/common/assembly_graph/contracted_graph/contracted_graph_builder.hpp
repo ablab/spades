@@ -1,22 +1,32 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
+
 #include "common/assembly_graph/contracted_graph/contracted_graph.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
+
 #include "adt/concurrent_dsu.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
+
+#include <memory>
 
 namespace contracted_graph {
 
 class ContractedGraphFactory {
  public:
     ContractedGraphFactory(const Graph &g) :
-        g_(g), graph_ptr_(make_shared<ContractedGraph>(g)) {}
+        g_(g), graph_ptr_(std::make_shared<ContractedGraph>(g)) {}
     virtual ~ContractedGraphFactory() = default;
     virtual void Construct() = 0;
-    shared_ptr<ContractedGraph> GetGraph() {
+    std::shared_ptr<ContractedGraph> GetGraph() {
         return graph_ptr_;
     }
  protected:
     const Graph &g_;
-    shared_ptr<ContractedGraph> graph_ptr_;
+    std::shared_ptr<ContractedGraph> graph_ptr_;
 };
 
 class PartsBasedContractedFactory : public ContractedGraphFactory{
@@ -27,10 +37,10 @@ class PartsBasedContractedFactory : public ContractedGraphFactory{
     typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
     struct ContractedGraphParts {
-      vector <ScaffoldVertex> long_edges_;
-      unordered_set <VertexId> long_edge_ends_;
-      unordered_map <VertexId, size_t> vertex_to_capacity_;
-      unordered_map <VertexId, VertexId> vertex_to_root_;
+      std::vector <ScaffoldVertex> long_edges_;
+      std::unordered_set <VertexId> long_edge_ends_;
+      std::unordered_map <VertexId, size_t> vertex_to_capacity_;
+      std::unordered_map <VertexId, VertexId> vertex_to_root_;
     };
 
     virtual ContractedGraphParts ConstructParts() const = 0;

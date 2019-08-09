@@ -6,8 +6,8 @@
 //***************************************************************************
 
 #include "scaffold_graph.hpp"
-#include "scaffold_vertex.hpp"
 
+#include "common/modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
 
 namespace path_extend {
 namespace scaffold_graph {

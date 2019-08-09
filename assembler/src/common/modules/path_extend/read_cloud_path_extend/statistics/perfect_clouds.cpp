@@ -1,6 +1,13 @@
-#include "read_cloud_path_extend/validation/transition_extractor.hpp"
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "perfect_clouds.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
+
+#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -12,15 +19,15 @@ PerfectClustersAnalyzer::SetDistribution PerfectClustersAnalyzer::ConstructPerfe
     auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
     cluster_storage::HalfEdgeClusterStorageHelper cluster_storage_helper(gp_.g, barcode_extractor,
                                                                          min_read_threshold, max_threads_);
-    set<scaffold_graph::ScaffoldVertex> vertices;
+    std::set<scaffold_graph::ScaffoldVertex> vertices;
     std::copy(perfect_graph.vbegin(), perfect_graph.vend(), std::inserter(vertices, vertices.end()));
     auto initial_storage_builder = cluster_storage_helper.GetInitialStorageBuilder(vertices);
     DEBUG("Constructing initial storage");
-    auto initial_storage =
-        make_shared<cluster_storage::InitialClusterStorage>(initial_storage_builder->ConstructInitialClusterStorage());
+    auto initial_storage = std::make_shared<cluster_storage::InitialClusterStorage>(
+        initial_storage_builder->ConstructInitialClusterStorage());
 
     ScaffoldGraphPathClusterHelper path_cluster_helper(gp_.g, barcode_extractor, initial_storage, max_threads_);
-    vector<Cluster> raw_clusters = path_cluster_helper.GetAllClusters(perfect_graph);
+    std::vector<Cluster> raw_clusters = path_cluster_helper.GetAllClusters(perfect_graph);
     SetDistribution result;
     for (const auto &cluster: raw_clusters) {
         VertexSet cluster_vertices;
@@ -31,17 +38,17 @@ PerfectClustersAnalyzer::SetDistribution PerfectClustersAnalyzer::ConstructPerfe
     }
     return result;
 }
-void PerfectClustersAnalyzer::AnalyzePerfectClouds(const string &path_to_reference, size_t min_length) const {
+void PerfectClustersAnalyzer::AnalyzePerfectClouds(const std::string &path_to_reference, size_t min_length) const {
     PerfectScaffoldGraphConstructor constructor(gp_);
     omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(gp_.g);
-    vector<EdgeId> long_edges;
+    std::vector<EdgeId> long_edges;
     for (const auto &edge: edge_it_helper) {
         if (gp_.g.length(edge) >= min_length) {
             long_edges.push_back(edge);
         }
     }
 
-    vector<size_t> length_thresholds;
+    std::vector<size_t> length_thresholds;
     const size_t max_length = 20000;
     const size_t step = 1000;
     for (size_t length = min_length; length <= max_length; length += step) {
@@ -52,8 +59,8 @@ void PerfectClustersAnalyzer::AnalyzePerfectClouds(const string &path_to_referen
     auto perfect_scaffold_graph = constructor.ConstuctPerfectGraph(reference_paths, min_length);
     auto perfect_clusters = ConstructPerfectClusters(perfect_scaffold_graph);
 
-    string output_path = fs::append_path(output_dir_, "perfect_cluster_stats");
-    ofstream fout(output_path);
+    std::string output_path = fs::append_path(output_dir_, "perfect_cluster_stats");
+    std::ofstream fout(output_path);
     fout << "length total_edges mean_in_cluster\n";
     for (const auto &length_threshold: length_thresholds) {
 
