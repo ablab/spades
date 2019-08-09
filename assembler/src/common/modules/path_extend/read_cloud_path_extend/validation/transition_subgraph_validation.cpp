@@ -1,20 +1,26 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "transition_subgraph_validation.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 namespace validation {
 
-boost::optional<vector<SimpleTransitionGraphValidator::ScaffoldVertex>> SimpleTransitionGraphValidator::GetCorrectPath(
+boost::optional<std::vector<scaffold_graph::ScaffoldVertex>> SimpleTransitionGraphValidator::GetCorrectPath(
     const SimpleTransitionGraphValidator::SimpleTransitionGraph &graph,
     scaffold_graph::ScaffoldVertex source,
     scaffold_graph::ScaffoldVertex sink) const {
     DEBUG("Getting correct path");
-    boost::optional<vector<ScaffoldVertex>> result;
-    vector<ScaffoldVertex> intermediate_result;
+    boost::optional<std::vector<ScaffoldVertex>> result;
+    std::vector<ScaffoldVertex> intermediate_result;
     ScaffoldVertex current = source;
     bool got_next = false;
     intermediate_result.push_back(current);
-    set<ScaffoldVertex> visited;
+    std::set<ScaffoldVertex> visited;
     while (current != sink and visited.find(current) == visited.end()) {
         visited.insert(current);
         for (auto it = graph.outcoming_begin(current); it != graph.outcoming_end(current); ++it) {

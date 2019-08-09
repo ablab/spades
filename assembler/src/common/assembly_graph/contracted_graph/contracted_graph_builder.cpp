@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "contracted_graph_builder.hpp"
 
 namespace contracted_graph {
@@ -77,7 +83,7 @@ PartsBasedContractedFactory::ContractedGraphParts SimpleContractedGraphFactory::
     TRACE("Found " << counter << " vertices");
     DEBUG("Extracted vertices");
 
-    unordered_set <VertexId> long_roots;
+    std::unordered_set <VertexId> long_roots;
     for (const auto& start: internal_graph_) {
         for (auto it = internal_graph_.outcoming_begin(start); it != internal_graph_.outcoming_end(start); ++it) {
             auto end = *it;

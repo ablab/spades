@@ -471,10 +471,13 @@ struct debruijn_config {
         double gap_closer_connection_score_threshold;
         double gap_closer_relative_coverage_threshold;
         size_t gap_closer_connection_length_threshold;
+        size_t gap_closer_scan_bound;
 
         size_t min_training_edges;
         size_t min_training_total_length;
         size_t optimal_training_total_length;
+
+        double relative_score_threshold;
 
         struct scaffold_graph_construction {
           double score_percentile;
@@ -488,6 +491,9 @@ struct debruijn_config {
           size_t path_scaffolder_tail_threshold;
           size_t path_scaffolder_count_threshold;
           size_t min_edge_length_for_barcode_collection;
+          double path_scaffolding_score;
+          double ultralong_edge_length_percentile;
+          double short_edge_threshold;
         };
 
         scaffold_graph_construction scaff_con;
@@ -503,10 +509,32 @@ struct debruijn_config {
 
         scaffold_polisher scaff_pol;
 
+        struct read_cloud_extender {
+            size_t reliable_edge_length;
+            size_t tail_threshold;
+            size_t distance_bound;
+            size_t seed_edge_length;
+            double extender_score_threshold;
+            double relative_coverage_threshold;
+            size_t barcode_threshold;
+            size_t score_function_tail_threshold;
+        };
+
+        read_cloud_extender read_ext;
+
+        struct path_searching {
+          size_t max_path_growing_iterations;
+          size_t max_paths_to_process;
+          size_t max_edge_visits;
+        };
+
+        path_searching path_search;
+
         struct stats {
             std::string genome_path;
             std::string base_contigs_path;
             std::string cloud_contigs_path;
+            std::string scaffold_graph_statistics;
         };
 
         stats statistics;

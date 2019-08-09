@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
@@ -6,41 +12,40 @@ namespace path_extend {
 namespace read_cloud {
 
 struct SplitEntry {
-  double split_index_;
-  string status_;
+  SplitEntry(double split_index, const std::string &status);
 
-  SplitEntry(double split_index, const string &status);
+  double split_index_;
+  std::string status_;
 };
 
 class SplitStatistics {
-    vector<SplitEntry> data_;
-
   public:
-    explicit SplitStatistics(const vector<SplitEntry> &data);
+    explicit SplitStatistics(const std::vector<SplitEntry> &data);
+    void Serialize(const std::string &path);
 
-    void Serialize(const string &path);
+  private:
+    std::vector<SplitEntry> data_;
 };
 
 class SplitStatisticsExtractor {
+  public:
     typedef validation::EdgeWithMapping EdgeWithMapping;
     typedef transitions::Transition Transition;
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor BarcodeExtractor;
     typedef validation::GeneralTransitionStorageBuilder TransitionBuilder;
 
-    const conj_graph_pack &gp_;
-    size_t max_threads_;
-
-  public:
     SplitStatisticsExtractor(const conj_graph_pack &gp, size_t max_threads);
 
-    SplitStatistics GetSplitStatistics(const string &path_to_reference, size_t length_threshold) const;
-
-    void ConstructAndSerialize(const string &path_to_reference,
-                               const string &output_base,
+    SplitStatistics GetSplitStatistics(const std::string &path_to_reference, size_t length_threshold) const;
+    void ConstructAndSerialize(const std::string &path_to_reference,
+                               const std::string &output_base,
                                size_t length_threshold) const;
 
   private:
-    double GetSplitIndex(const Transition &transition, shared_ptr<BarcodeExtractor> barcode_extractor) const;
+    double GetSplitIndex(const Transition &transition, std::shared_ptr<BarcodeExtractor> barcode_extractor) const;
+
+    const conj_graph_pack &gp_;
+    size_t max_threads_;
 };
 }
 }

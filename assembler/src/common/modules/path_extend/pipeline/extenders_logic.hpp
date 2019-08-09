@@ -73,11 +73,6 @@ inline Extenders ExtractExtenders(const ExtenderTriplets &triplets) {
     return result;
 }
 
-class SearchingExtenderConstructor {
-
-
-    shared_ptr<SearchingMultiExtender> ConstructMultiExtender() const;
-};
 
 class ExtendersGenerator {
     const config::dataset &dataset_info_;
@@ -120,7 +115,7 @@ class ExtendersGenerator {
 
     Extenders MakePEExtenders() const;
 
-    shared_ptr<ExtensionChooser> MakeSimpleExtensionChooser(size_t lib_index) const;
+    std::shared_ptr<ExtensionChooser> MakeSimpleExtensionChooser(size_t lib_index) const;
   private:
 
     std::shared_ptr<SimpleExtender> MakePEExtender(size_t lib_index, bool investigate_loops) const;
@@ -155,11 +150,11 @@ class ExtendersGenerator {
 
     std::shared_ptr<SimpleExtender> MakeLongReadsRNAExtender(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
 
-    shared_ptr<PathExtender> MakeScaffoldGraphExtender(size_t lib_index) const;
+    std::shared_ptr<PathExtender> MakeScaffoldGraphExtender(size_t lib_index) const;
 
-    shared_ptr<PathExtender> MakeReadCloudExtender(size_t lib_index) const;
+    std::shared_ptr<PathExtender> MakeReadCloudExtender(size_t lib_index) const;
 
-    shared_ptr<SearchingMultiExtender> MakeSearchingExtender(size_t lib_index) const;
+    std::shared_ptr<SearchingMultiExtender> MakeSearchingExtender(size_t lib_index) const;
 
     void PrintExtenders(const std::vector<std::shared_ptr<PathExtender>> &extenders) const;
 

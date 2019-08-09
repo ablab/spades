@@ -1,14 +1,20 @@
-//
-// Created by andrey on 17.09.15.
-//
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
-#include "utils/logger/logger.hpp"
+#include "connection_condition2015.hpp"
+#include "scaffold_vertex.hpp"
+
+#include "adt/iterator_range.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "modules/path_extend/paired_library.hpp"
-#include "connection_condition2015.hpp"
-#include "adt/iterator_range.hpp"
-#include "scaffold_vertex.hpp"
+#include "modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
+#include "utils/logger/logger.hpp"
+
 #include <utility>
 
 namespace path_extend {

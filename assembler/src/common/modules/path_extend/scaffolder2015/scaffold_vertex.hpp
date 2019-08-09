@@ -1,7 +1,17 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "common/assembly_graph/paths/bidirectional_path.hpp"
-#include "assembly_graph/core/graph.hpp"
+#include "common/assembly_graph/core/graph.hpp"
+
+#include "boost/optional/optional.hpp"
+
+#include <unordered_set>
 
 namespace path_extend {
 

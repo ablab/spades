@@ -1,15 +1,21 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "perfect_transitions.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 
-scaffold_graph::ScaffoldGraph PerfectScaffoldGraphConstructor::ConstuctPerfectGraph(
-    const vector<vector<validation::EdgeWithMapping>> &reference_paths, size_t min_length) const {
+scaffold_graph::ScaffoldGraph PerfectScaffoldGraphConstructor::ConstuctPerfectGraph(const ReferencePaths &reference_paths,
+                                                                                    size_t min_length) const {
     scaffold_graph::ScaffoldGraph result(gp_.g);
-    vector<vector<EdgeId>> long_edge_paths;
+    std::vector<std::vector<EdgeId>> long_edge_paths;
     size_t total_length = 0;
     for (const auto &path: reference_paths) {
-        vector<EdgeId> new_path;
+        std::vector<EdgeId> new_path;
         for (const auto &entry: path) {
             if (gp_.g.length(entry.edge_) >= min_length) {
                 new_path.push_back(entry.edge_);

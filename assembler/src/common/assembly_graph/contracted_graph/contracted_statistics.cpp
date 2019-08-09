@@ -1,5 +1,12 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "contracted_statistics.hpp"
-#include "contracted_graph_builder.hpp"
+
+#include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
 namespace contracted_graph {
 size_t ContractedStatisticsExtractor::CountLoops(const ContractedGraph &graph) const {
     size_t result = 0;
@@ -25,7 +32,8 @@ double ContractedStatisticsExtractor::GetMeanWeight(const ContractedGraph &graph
     INFO("Total capacity: " << total_capacity << ", Non isolated: " << non_isolated);
     return static_cast<double>(total_capacity) / static_cast<double>(non_isolated);
 }
-void ContractedStatisticsExtractor::GetMeanWeights(vector<size_t> thresholds, const string &output_path) const {
+void ContractedStatisticsExtractor::GetMeanWeights(std::vector<size_t> thresholds,
+                                                   const std::string &output_path) const {
     std::map<size_t, double> threshold_to_mean_weight;
     for (const size_t threshold: thresholds) {
         INFO("Constructing graph for " << threshold);
@@ -40,7 +48,7 @@ void ContractedStatisticsExtractor::GetMeanWeights(vector<size_t> thresholds, co
         INFO("Mean weight " << mean_weight);
         threshold_to_mean_weight.insert({threshold, mean_weight});
     }
-    ofstream fout(output_path);
+    std::ofstream fout(output_path);
     for (const auto &entry: threshold_to_mean_weight) {
         fout << entry.first << " " << entry.second << "\n";
     }

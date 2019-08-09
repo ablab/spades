@@ -52,31 +52,32 @@ public:
     }
 
     virtual ~GapExtensionChooserFactory() {}
-    virtual shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath &original_path, size_t position) const = 0;
+    virtual std::shared_ptr<ExtensionChooser> CreateChooser(
+        const BidirectionalPath &original_path, size_t position) const = 0;
 };
 
 class SameChooserFactory : public GapExtensionChooserFactory {
-    const shared_ptr<ExtensionChooser> chooser_;
+    const std::shared_ptr<ExtensionChooser> chooser_;
 
 public:
-    SameChooserFactory(const Graph& g, shared_ptr<ExtensionChooser> chooser) : GapExtensionChooserFactory(g),
-                                                                               chooser_(chooser) {}
+    SameChooserFactory(const Graph &g, std::shared_ptr<ExtensionChooser> chooser) : GapExtensionChooserFactory(g),
+                                                                                    chooser_(chooser) {}
 
-    shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& , size_t ) const override {
+    std::shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& , size_t ) const override {
         return chooser_;
     }
 };
 
 class CompositeChooserFactory : public GapExtensionChooserFactory {
-    const shared_ptr<GapExtensionChooserFactory> first_;
-    const shared_ptr<GapExtensionChooserFactory> second_;
+    const std::shared_ptr<GapExtensionChooserFactory> first_;
+    const std::shared_ptr<GapExtensionChooserFactory> second_;
 
 public:
-    CompositeChooserFactory(const Graph& g, shared_ptr<GapExtensionChooserFactory> first,
-                            shared_ptr<GapExtensionChooserFactory> second):
+    CompositeChooserFactory(const Graph& g, std::shared_ptr<GapExtensionChooserFactory> first,
+                            std::shared_ptr<GapExtensionChooserFactory> second):
             GapExtensionChooserFactory(g), first_(first), second_(second) {}
 
-    shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& path, size_t position) const override {
+    std::shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& path, size_t position) const override {
         auto extension_chooser = std::make_shared<CompositeExtensionChooser>(this->g(), first_->CreateChooser(path, position),
                                                                              second_->CreateChooser(path, position));
         return extension_chooser;
@@ -91,7 +92,7 @@ class ReadCloudGapExtensionChooserFactory : public GapExtensionChooserFactory {
   private:
     const Graph& g_;
     const ScaffoldingUniqueEdgeStorage& unique_storage_;
-    shared_ptr <barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor_;
+    std::shared_ptr <barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor_;
     size_t tail_threshold_;
     size_t count_threshold_;
     size_t length_threshold_;
@@ -100,7 +101,7 @@ class ReadCloudGapExtensionChooserFactory : public GapExtensionChooserFactory {
  public:
     ReadCloudGapExtensionChooserFactory(const Graph &g,
                                         const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                                        const shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor_,
+                                        const std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor_,
                                         size_t tail_threshold_,
                                         size_t count_threshold_,
                                         size_t length_threshold_,
@@ -117,13 +118,13 @@ class ReadCloudGapExtensionChooserFactory : public GapExtensionChooserFactory {
           scan_bound_(scan_bound_) {}
 
     virtual ~ReadCloudGapExtensionChooserFactory() {}
-    shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& original_path, size_t position) const override;
+    std::shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& original_path, size_t position) const override;
 
  private:
 
-    shared_ptr<read_cloud::LongEdgePairGapCloserPredicate> GetPredicateFromPosition(const BidirectionalPath &path,
-                                                                                    const size_t position,
-                                                                                    const GapCloserParamsT &params) const;
+    std::shared_ptr<read_cloud::LongEdgePairGapCloserPredicate> GetPredicateFromPosition(const BidirectionalPath &path,
+                                                                                         const size_t position,
+                                                                                         const GapCloserParamsT &params) const;
 
     DECL_LOGGER("ReadCloudGapExtensionChooserFactory");
 };
@@ -131,16 +132,16 @@ class ReadCloudGapExtensionChooserFactory : public GapExtensionChooserFactory {
 class GapExtenderFactory {
 public:
     virtual ~GapExtenderFactory() {}
-    virtual shared_ptr<PathExtender> CreateExtender(const BidirectionalPath &original_path, size_t position) const = 0;
+    virtual std::shared_ptr<PathExtender> CreateExtender(const BidirectionalPath &original_path, size_t position) const = 0;
 };
 
 class SameExtenderFactory : public GapExtenderFactory {
-    const shared_ptr<PathExtender> extender_;
+    const std::shared_ptr<PathExtender> extender_;
 public:
-    SameExtenderFactory(shared_ptr<PathExtender> extender) : extender_(extender) {
+    SameExtenderFactory(std::shared_ptr<PathExtender> extender) : extender_(extender) {
     }
 
-    shared_ptr<PathExtender> CreateExtender(const BidirectionalPath &, size_t) const override {
+    std::shared_ptr<PathExtender> CreateExtender(const BidirectionalPath &, size_t) const override {
         return extender_;
     }
 };
@@ -149,30 +150,30 @@ class SimpleExtenderFactory : public GapExtenderFactory {
     const conj_graph_pack &gp_;
     const GraphCoverageMap &cover_map_;
     UsedUniqueStorage& unique_;
-    const shared_ptr<GapExtensionChooserFactory> chooser_factory_;
+    const std::shared_ptr<GapExtensionChooserFactory> chooser_factory_;
     static const size_t MAGIC_LOOP_CONSTANT = 1000;
 public:
     SimpleExtenderFactory(const conj_graph_pack &gp,
                           const GraphCoverageMap &cover_map,
                           UsedUniqueStorage& unique,
-                          const shared_ptr<GapExtensionChooserFactory> chooser_factory):
+                          const std::shared_ptr<GapExtensionChooserFactory> chooser_factory):
             gp_(gp),
             cover_map_(cover_map),
             unique_(unique),
             chooser_factory_(chooser_factory) {
     }
 
-    shared_ptr<PathExtender> CreateExtender(const BidirectionalPath &original_path, size_t position) const override {
+    std::shared_ptr<PathExtender> CreateExtender(const BidirectionalPath &original_path, size_t position) const override {
         DEBUG("Creating extender");
         auto chooser = chooser_factory_->CreateChooser(original_path, position);
         DEBUG("Created chooser");
-        auto extender = make_shared<SimpleExtender>(gp_, cover_map_, unique_,
+        auto extender = std::make_shared<SimpleExtender>(gp_, cover_map_, unique_,
                                                     chooser_factory_->CreateChooser(original_path, position),
                                                     MAGIC_LOOP_CONSTANT,
                                                     false,
                                                     false);
         DEBUG("Returning extender");
-//        return make_shared<SimpleExtender>(gp_, cover_map_, unique_,
+//        return std::make_shared<SimpleExtender>(gp_, cover_map_, unique_,
 //                                           chooser_factory_->CreateChooser(original_path, position),
 //                                           MAGIC_LOOP_CONSTANT,
 //                                           false,
@@ -214,7 +215,7 @@ public:
     }
 
     PathExtenderGapCloser(const Graph& g, size_t max_path_len,
-                          shared_ptr<GapExtenderFactory> extender_factory):
+                          std::shared_ptr<GapExtenderFactory> extender_factory):
             PathGapCloser(g, max_path_len),
             extender_factory_(extender_factory) {
         DEBUG("ext factory added");

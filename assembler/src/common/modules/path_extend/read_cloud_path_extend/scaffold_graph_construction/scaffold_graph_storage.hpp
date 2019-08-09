@@ -1,7 +1,14 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "common/assembly_graph/core/graph.hpp"
-#include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+
 #include <fstream>
 
 namespace path_extend {
@@ -11,14 +18,7 @@ class ScaffoldGraphStorage {
   public:
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef debruijn_graph::EdgeId EdgeId;
-  private:
-    ScaffoldGraph large_scaffold_graph_;
-    ScaffoldGraph small_scaffold_graph_;
 
-    size_t large_length_threshold_;
-    size_t small_length_threshold_;
-
-  public:
     ScaffoldGraphStorage(const debruijn_graph::Graph &g);
 
     ScaffoldGraphStorage(ScaffoldGraph &&large_scaffold_graph, ScaffoldGraph &&small_scaffold_graph,
@@ -44,6 +44,11 @@ class ScaffoldGraphStorage {
 
   private:
     void ReplaceScaffoldGraph(const ScaffoldGraph &from, ScaffoldGraph &to);
+
+    ScaffoldGraph large_scaffold_graph_;
+    ScaffoldGraph small_scaffold_graph_;
+    size_t large_length_threshold_;
+    size_t small_length_threshold_;
 };
 
 class ScaffoldGraphSerializer {

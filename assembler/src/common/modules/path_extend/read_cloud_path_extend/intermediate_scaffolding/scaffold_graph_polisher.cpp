@@ -1,10 +1,18 @@
-#include <stack>
-#include "read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
+#include "scaffold_graph_polisher.hpp"
+
 #include "common/assembly_graph/dijkstra/read_cloud_dijkstra/scaffold_graph_dijkstra.hpp"
 #include "common/assembly_graph/dijkstra/read_cloud_dijkstra/path_extend_dijkstras.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_path_cleaner.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/path_cluster_storage_builder.hpp"
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
-#include "scaffold_graph_path_cleaner.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/path_cluster_storage_builder.hpp"
+
+#include <stack>
 
 namespace path_extend {
 namespace read_cloud {
@@ -51,9 +59,9 @@ CloudScaffoldSubgraphExtractor::SimpleGraphT CloudScaffoldSubgraphExtractor::Ext
     DEBUG("First coverage: " << first.GetCoverageFromGraph(g_));
     DEBUG("Second coverage: " << second.GetCoverageFromGraph(g_));
     SimpleGraphT result;
-    unordered_set<ScaffoldVertex> forward_vertices;
-    unordered_set<ScaffoldVertex> backward_vertices;
-    unordered_set<ScaffoldVertex> subgraph_vertices;
+    std::unordered_set<ScaffoldVertex> forward_vertices;
+    std::unordered_set<ScaffoldVertex> backward_vertices;
+    std::unordered_set<ScaffoldVertex> subgraph_vertices;
     ScaffoldGraph::ScaffoldEdge edge(first, second);
     LongEdgePairGapCloserParams params(params_.count_threshold_, params_.large_length_threshold_,
                                        params_.share_threshold_, params.relative_coverage_threshold_,
@@ -67,13 +75,13 @@ CloudScaffoldSubgraphExtractor::SimpleGraphT CloudScaffoldSubgraphExtractor::Ext
     DEBUG("Getting intersection");
     auto intersection_entry = scaff_vertex_extractor_->GetIntersection(start, end);
     DEBUG("Got intersection");
-    auto pair_entry_extractor = make_shared<IntersectionBasedPairEntryProcessor>(intersection_entry,
-                                                                                 scaff_vertex_extractor_);
+    auto pair_entry_extractor = std::make_shared<IntersectionBasedPairEntryProcessor>(intersection_entry,
+                                                                                      scaff_vertex_extractor_);
     DEBUG("Got extractor");
-    auto gap_closer_predicate = make_shared<LongEdgePairGapCloserPredicate>(g_,
-                                                                            scaff_vertex_extractor_,
-                                                                            params, start, end,
-                                                                            pair_entry_extractor);
+    auto gap_closer_predicate = std::make_shared<LongEdgePairGapCloserPredicate>(g_,
+                                                                                 scaff_vertex_extractor_,
+                                                                                 params, start, end,
+                                                                                 pair_entry_extractor);
     DEBUG("Constructed predicates");
     omnigraph::ScaffoldDijkstraHelper helper;
     auto forward_dijkstra = helper.CreateForwardBoundedScaffoldDijkstra(scaffold_graph, first, second,
@@ -103,7 +111,7 @@ CloudScaffoldSubgraphExtractor::SimpleGraphT CloudScaffoldSubgraphExtractor::Ext
     for (const auto &vertex: subgraph_vertices) {
         result.AddVertex(vertex);
     }
-    unordered_set<ScaffoldVertex> intersection;
+    std::unordered_set<ScaffoldVertex> intersection;
     for (const auto &vertex: forward_dijkstra.ReachedVertices()) {
         if (backward_dijkstra.DistanceCounted(vertex)) {
             intersection.insert(vertex);
@@ -132,7 +140,7 @@ CloudScaffoldSubgraphExtractor::SimpleGraphT CloudScaffoldSubgraphExtractor::Ext
 }
 CloudScaffoldSubgraphExtractor::CloudScaffoldSubgraphExtractor(
     const Graph &g,
-    shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> extractor,
+    std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> extractor,
     const CloudSubgraphExtractorParams &params)
     : g_(g),
       scaff_vertex_extractor_(extractor),
@@ -140,7 +148,7 @@ CloudScaffoldSubgraphExtractor::CloudScaffoldSubgraphExtractor(
 bool CloudScaffoldSubgraphExtractor::CheckSubgraphEdge(const ScaffoldEdge &edge,
                                                        const ScaffoldVertex &first,
                                                        const ScaffoldVertex &second,
-                                                       const unordered_set<ScaffoldVertex> &subgraph_vertices) const {
+                                                       const std::unordered_set<ScaffoldVertex> &subgraph_vertices) const {
     return subgraph_vertices.find(edge.getStart()) != subgraph_vertices.end() and
         subgraph_vertices.find(edge.getEnd()) != subgraph_vertices.end() and
         edge.getStart() != edge.getEnd() and edge.getStart() != second and edge.getEnd() != first;
@@ -168,8 +176,8 @@ ScaffoldGraph ScaffoldGraphPolisher::CleanSmallGraphUsingLargeGraph(
 }
 
 ScaffoldGraphPolisher::InternalPaths ScaffoldGraphPolisher::ExtractPathsWithinUnivocal(
-    const ScaffoldGraph &input_graph,
-    const vector<ScaffoldGraphPolisher::ScaffoldEdge> &univocal_edges) const {
+        const ScaffoldGraph &input_graph,
+        const std::vector<ScaffoldGraphPolisher::ScaffoldEdge> &univocal_edges) const {
     DEBUG("Getting inserted path connections");
     InternalPaths result;
     for (const auto &edge: univocal_edges) {
@@ -188,10 +196,10 @@ ScaffoldGraphPolisher::InternalPaths ScaffoldGraphPolisher::ExtractPathsWithinUn
 }
 
 ScaffoldGraphPolisher::ScaffoldGraphPolisher(
-    const Graph &g_,
-    shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> scaff_vertex_extractor,
-    shared_ptr<CorrectPathExtractor> path_extractor,
-    const CloudSubgraphExtractorParams &subgraph_extractor_params)
+        const Graph &g_,
+        std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> scaff_vertex_extractor,
+        std::shared_ptr<CorrectPathExtractor> path_extractor,
+        const CloudSubgraphExtractorParams &subgraph_extractor_params)
     : g_(g_),
       scaff_vertex_extractor_(scaff_vertex_extractor),
       path_extractor_(path_extractor),
@@ -242,7 +250,7 @@ bool ReachabilityChecker::ProcessVertex(const ReachabilityChecker::VertexT &vert
     }
     return result;
 }
-unordered_set<ReachabilityChecker::VertexT> ReachabilityChecker::GetPassedVertices() {
+std::unordered_set<ReachabilityChecker::VertexT> ReachabilityChecker::GetPassedVertices() {
     return passed_;
 }
 ReachabilityChecker::~ReachabilityChecker() =
@@ -305,8 +313,9 @@ ScaffoldGraph ScaffoldGraphPolisherLauncher::GetFinalScaffoldGraph(const conj_gr
     auto initial_cluster_storage = ConstructInitialStorage(graph_pack, small_scaffold_graph,
                                                            path_extractor_params, path_scaffolding);
     INFO("Initial cluster storage size: " << initial_cluster_storage->get_cluster_storage().Size());
-    auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(graph_pack.barcode_mapper_ptr,
-                                                                                            graph_pack.g);
+    auto barcode_extractor_ptr = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(
+        graph_pack.barcode_mapper,
+        graph_pack.g);
     const size_t linkage_distance = path_extractor_params.linkage_distance_;
     const double relative_threshold = path_extractor_params.path_cluster_relative_threshold_;
 
@@ -322,20 +331,20 @@ ScaffoldGraph ScaffoldGraphPolisherLauncher::GetFinalScaffoldGraph(const conj_gr
     return new_small_scaffold_graph;
 }
 
-shared_ptr<cluster_storage::InitialClusterStorage> ScaffoldGraphPolisherLauncher::ConstructInitialStorage(
+std::shared_ptr<cluster_storage::InitialClusterStorage> ScaffoldGraphPolisherLauncher::ConstructInitialStorage(
         const conj_graph_pack &gp, const ScaffoldGraph &scaffold_graph,
         const PathExtractionParams &params, bool path_scaffolding) const {
     INFO("Constructing initial cluster storage");
     size_t cluster_storage_builder_threads = max_threads_;
-    set<ScaffoldVertex> target_edges;
+    std::set<ScaffoldVertex> target_edges;
     std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(target_edges, target_edges.begin()));
-    auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp.barcode_mapper_ptr, gp.g);
+    auto barcode_extractor_ptr = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp.barcode_mapper, gp.g);
     size_t linkage_distance = params.linkage_distance_;
     size_t min_read_threshold = params.min_read_threshold_;
     if (not path_scaffolding) {
         auto edge_cluster_extractor =
-            make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp.g, barcode_extractor_ptr,
-                                                                       linkage_distance, min_read_threshold);
+            std::make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp.g, barcode_extractor_ptr,
+                                                                            linkage_distance, min_read_threshold);
         auto storage_builder =
             std::make_shared<cluster_storage::EdgeInitialClusterStorageBuilder>(gp.g, edge_cluster_extractor,
                                                                                 target_edges, linkage_distance,
@@ -348,8 +357,8 @@ shared_ptr<cluster_storage::InitialClusterStorage> ScaffoldGraphPolisherLauncher
 
     size_t edge_length_threshold = params.min_length_for_barcode_collection_;
     auto edge_cluster_extractor =
-        make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp.g, barcode_extractor_ptr,
-                                                                   linkage_distance, min_read_threshold);
+        std::make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp.g, barcode_extractor_ptr,
+                                                                        linkage_distance, min_read_threshold);
     auto storage_builder =
         std::make_shared<cluster_storage::PathInitialClusterStorageBuilder>(gp.g, edge_cluster_extractor,
                                                                             target_edges, linkage_distance,
@@ -437,9 +446,9 @@ bool CutVerticesExtractor::Check(const ScaffoldVertex &sink,
     }
     return processed.find(source) == processed.end();
 }
-vector<CutVerticesExtractor::ScaffoldVertex> CutVerticesExtractor::GetCutVertices(const ScaffoldVertex &source,
-                                                                                  const ScaffoldVertex &sink) {
-    vector<CutVerticesExtractor::ScaffoldVertex> result;
+std::vector<CutVerticesExtractor::ScaffoldVertex> CutVerticesExtractor::GetCutVertices(const ScaffoldVertex &source,
+                                                                                       const ScaffoldVertex &sink) {
+    std::vector<CutVerticesExtractor::ScaffoldVertex> result;
     TRACE("Source: " << source.int_id());
     TRACE("Sink: " << sink.int_id());
     TRACE("Current graph: ");
@@ -461,7 +470,7 @@ vector<CutVerticesExtractor::ScaffoldVertex> CutVerticesExtractor::GetCutVertice
 }
 CutVerticesExtractor::CutVerticesExtractor(const CutVerticesExtractor::SimpleTransitionGraph &graph_)
     : graph_(graph_) {}
-shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> ScaffoldIndexInfoExtractorHelper::ConstructIndexExtractorFromParams(
+std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> ScaffoldIndexInfoExtractorHelper::ConstructIndexExtractorFromParams(
         const scaffold_graph::ScaffoldGraph &scaffold_graph,
         const conj_graph_pack &gp,
         const CloudSubgraphExtractorParams &subgraph_extractor_params,
@@ -472,7 +481,7 @@ shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> ScaffoldIndexI
     const size_t length_threshold = subgraph_extractor_params.min_length_for_barcode_collection_;
     const size_t count_threshold = subgraph_extractor_params.count_threshold_;
 
-    auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp.barcode_mapper_ptr, gp.g);
+    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp.barcode_mapper, gp.g);
     auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
     auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp.g, *barcode_extractor, tail_threshold_getter,
                                                                      count_threshold, length_threshold, max_threads,

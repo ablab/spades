@@ -32,14 +32,14 @@ class UniquePutChecker {
         DEBUG("Is unique " << unique_storage_.IsUnique(edge));
 
         if (g_.length(edge) < unique_storage_.min_length()) {
-            DEBUG("Short edge, passed" << endl)  //todo use short edges to reduce number of candidates
+            DEBUG("Short edge, passed" << std::endl)  //todo use short edges to reduce number of candidates
             return true;
         }
         if (!unique_storage_.IsUnique(edge)) {
-            DEBUG("Long non-unique nearby edge, passed" << endl)
+            DEBUG("Long non-unique nearby edge, passed" << std::endl)
             return true;
         } else {
-            DEBUG("Long unique nearby edge, put to candidates list and stop" << endl)
+            DEBUG("Long unique nearby edge, put to candidates list and stop" << std::endl)
             return false;
         }
     }
@@ -62,8 +62,8 @@ class BarcodedPathPutChecker {
 
   public:
     BarcodedPathPutChecker(const Graph &g,
-                           shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor,
-                           const shared_ptr<path_extend::read_cloud::PairEntryProcessor> pair_entry_processor,
+                           std::shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor,
+                           std::shared_ptr<path_extend::read_cloud::PairEntryProcessor> pair_entry_processor,
                            const path_extend::scaffold_graph::ScaffoldVertex &start,
                            const path_extend::scaffold_graph::ScaffoldVertex &end,
                            const path_extend::read_cloud::LongEdgePairGapCloserParams &params) :
@@ -83,13 +83,13 @@ class SimpleBarcodePutChecker {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &g_;
-    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_;
+    std::shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor_;
     barcode_index::SimpleVertexEntry target_barcodes_;
     size_t threshold_;
 
   public:
     SimpleBarcodePutChecker(const Graph &g,
-                            shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor,
+                            std::shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor,
                             const barcode_index::SimpleVertexEntry &target_barcodes, size_t threshold) :
         g_(g),
         barcode_extractor_(barcode_extractor),
@@ -133,19 +133,17 @@ class ReadCloudDijkstraHelper {
 
     static AndPutChecker<GapCloserCheckerTuple, Graph>
     CreateLongGapCloserPutChecker(const Graph &g, const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
-                                  shared_ptr<BarcodeExtractor> short_edge_extractor,
-                                  shared_ptr<BarcodeExtractor> long_edge_extractor,
+                                  std::shared_ptr<BarcodeExtractor> short_edge_extractor,
+                                  std::shared_ptr<BarcodeExtractor> long_edge_extractor,
                                   const path_extend::scaffold_graph::ScaffoldVertex &start,
                                   const path_extend::scaffold_graph::ScaffoldVertex &end,
                                   const path_extend::read_cloud::LongEdgePairGapCloserParams &params) {
         auto score_function =
-            make_shared<path_extend::read_cloud::RepetitiveVertexEntryScoreFunction>(short_edge_extractor);
-        auto pair_entry_processor = make_shared<path_extend::read_cloud::TwoSetsBasedPairEntryProcessor>(
+            std::make_shared<path_extend::read_cloud::RepetitiveVertexEntryScoreFunction>(short_edge_extractor);
+        auto pair_entry_processor = std::make_shared<path_extend::read_cloud::TwoSetsBasedPairEntryProcessor>(
             long_edge_extractor->GetTailEntry(start),
             long_edge_extractor->GetHeadEntry(end),
             score_function);
-//    auto pair_entry_processor = make_shared<path_extend::IntersectionBasedPairEntryProcessor>(barcode_intersection,
-//                                                                                              short_edge_extractor);
         BarcodedPathPutChecker<Graph> barcode_put_checker(g, short_edge_extractor, pair_entry_processor,
                                                           start, end, params);
         UniquePutChecker<Graph> unique_put_checker(g, unique_storage);
@@ -165,8 +163,8 @@ class ReadCloudDijkstraHelper {
     static LongGapCloserDijkstra CreateLongGapCloserDijkstra(
         const Graph &graph, size_t length_bound,
         const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
-        shared_ptr<BarcodeExtractor> short_edge_extractor,
-        shared_ptr<BarcodeExtractor> long_edge_extractor,
+        std::shared_ptr<BarcodeExtractor> short_edge_extractor,
+        std::shared_ptr<BarcodeExtractor> long_edge_extractor,
         const path_extend::scaffold_graph::ScaffoldVertex &start,
         const path_extend::scaffold_graph::ScaffoldVertex &end,
         const path_extend::read_cloud::LongEdgePairGapCloserParams &vertex_predicate_params,
@@ -194,7 +192,7 @@ class ReadCloudDijkstraHelper {
 
     static LengthBoundedDijkstra CreateSimpleCloudBoundedDijkstra(
         const Graph &graph,
-        shared_ptr<BarcodeExtractor> barcode_extractor,
+        std::shared_ptr<BarcodeExtractor> barcode_extractor,
         const barcode_index::SimpleVertexEntry target_barcodes,
         size_t length_threshold,
         size_t distance_bound,

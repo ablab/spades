@@ -1,6 +1,8 @@
-//
-// Created by andrey on 04.12.15.
-//
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #include <common/assembly_graph/dijkstra/read_cloud_dijkstra/scaffold_graph_dijkstra.hpp>
 #include "common/assembly_graph/dijkstra/read_cloud_dijkstra/read_cloud_dijkstras.hpp"
@@ -74,19 +76,19 @@ std::shared_ptr<ScaffoldGraph> DefaultScaffoldGraphConstructor::Construct() {
     return graph_;
 }
 
-PredicateScaffoldGraphFilter::PredicateScaffoldGraphFilter(const Graph& assembly_graph,
-                                                                     const ScaffoldGraph& old_graph_,
-                                                                     shared_ptr<EdgePairPredicate> predicate_,
-                                                                     size_t max_threads)
-    : BaseScaffoldGraphConstructor(assembly_graph), old_graph_(old_graph_),
-      predicate_(predicate_), max_threads_(max_threads) {}
+PredicateScaffoldGraphFilter::PredicateScaffoldGraphFilter(const Graph &assembly_graph,
+                                                           const ScaffoldGraph &old_graph,
+                                                           std::shared_ptr<EdgePairPredicate> predicate,
+                                                           size_t max_threads)
+    : BaseScaffoldGraphConstructor(assembly_graph), old_graph_(old_graph),
+      predicate_(predicate), max_threads_(max_threads) {}
 
-void PredicateScaffoldGraphFilter::ConstructFromGraphAndPredicate(const ScaffoldGraph& old_graph,
-                                                                       shared_ptr<EdgePairPredicate> predicate) {
+void PredicateScaffoldGraphFilter::ConstructFromGraphAndPredicate(const ScaffoldGraph &old_graph,
+                                                                  std::shared_ptr<EdgePairPredicate> predicate) {
     for (const auto& vertex: old_graph.vertices()) {
         graph_->AddVertex(vertex);
     }
-    vector<ScaffoldGraph::ScaffoldEdge> scaffold_edges;
+    std::vector<ScaffoldGraph::ScaffoldEdge> scaffold_edges;
     for (const auto& edge: old_graph.edges()) {
         scaffold_edges.push_back(edge);
     }
@@ -107,32 +109,31 @@ void PredicateScaffoldGraphFilter::ConstructFromGraphAndPredicate(const Scaffold
             }
             ++counter;
             if (block_size != 0 and counter % block_size == 0) {
-                INFO("Processed " << counter << " edges out of " << scaffold_edges.size());
+                DEBUG("Processed " << counter << " edges out of " << scaffold_edges.size());
             }
         }
     }
 }
 
-shared_ptr<ScaffoldGraph> PredicateScaffoldGraphFilter::Construct() {
+std::shared_ptr<ScaffoldGraph> PredicateScaffoldGraphFilter::Construct() {
     ConstructFromGraphAndPredicate(old_graph_, predicate_);
     return graph_;
 }
-ScoreFunctionScaffoldGraphFilter::ScoreFunctionScaffoldGraphFilter(const Graph& assembly_graph,
-                                                                             const ScaffoldGraph& old_graph_,
-                                                                             shared_ptr<EdgePairScoreFunction> score_function_,
-                                                                             const double score_threshold, size_t num_threads)
-    : BaseScaffoldGraphConstructor(assembly_graph), old_graph_(old_graph_),
-      score_function_(score_function_), score_threshold_(score_threshold), num_threads_(num_threads) {}
+ScoreFunctionScaffoldGraphFilter::ScoreFunctionScaffoldGraphFilter(const Graph &assembly_graph,
+                                                                   const ScaffoldGraph &old_graph,
+                                                                   std::shared_ptr<EdgePairScoreFunction> score_function,
+                                                                   double score_threshold, size_t num_threads)
+    : BaseScaffoldGraphConstructor(assembly_graph), old_graph_(old_graph),
+      score_function_(score_function), score_threshold_(score_threshold), num_threads_(num_threads) {}
 
-void ScoreFunctionScaffoldGraphFilter::ConstructFromGraphAndScore(const ScaffoldGraph& graph,
-                                                                       shared_ptr<EdgePairScoreFunction> score_function,
-                                                                       double score_threshold, size_t threads) {
-    //fixme score overwrites previous weight!
+void ScoreFunctionScaffoldGraphFilter::ConstructFromGraphAndScore(const ScaffoldGraph &graph,
+                                                                  std::shared_ptr<EdgePairScoreFunction> score_function,
+                                                                  double score_threshold, size_t threads) {
     for (const auto& vertex: graph.vertices()) {
         graph_->AddVertex(vertex);
     }
     //fixme switch to tbb or use chunk splitter
-    vector<ScaffoldGraph::ScaffoldEdge> scaffold_edges;
+    std::vector<ScaffoldGraph::ScaffoldEdge> scaffold_edges;
     for (const auto& edge: graph.edges()) {
         scaffold_edges.push_back(edge);
     }
@@ -159,11 +160,11 @@ void ScoreFunctionScaffoldGraphFilter::ConstructFromGraphAndScore(const Scaffold
         }
     }
 }
-shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphFilter::Construct() {
+std::shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphFilter::Construct() {
     ConstructFromGraphAndScore(old_graph_, score_function_, score_threshold_, num_threads_);
     return graph_;
 }
-shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
+std::shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
     INFO("Scaffolding distance: " << distance_);
     //        auto bounded_dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
 
@@ -171,7 +172,7 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
         graph_->AddVertex(vertex);
     }
 
-    vector<ScaffoldVertex> vertices_copy;
+    std::vector<ScaffoldVertex> vertices_copy;
     std::copy(scaffold_vertices_.begin(), scaffold_vertices_.end(), std::back_inserter(vertices_copy));
 
     auto is_unique = [this](const EdgeId& edge) {
@@ -197,7 +198,7 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
         EdgeId last_edge = vertex.GetLastEdge();
         VertexId last_vertex = graph_->AssemblyGraph().EdgeEnd(last_edge);
         dij.Run(last_vertex);
-        vector<std::pair<ScaffoldVertex, size_t>> incident_vertices;
+        std::vector<std::pair<ScaffoldVertex, size_t>> incident_vertices;
         for (auto v: dij.ReachedVertices()) {
             size_t distance = dij.GetDistance(v);
             if (distance < distance_) {
@@ -225,18 +226,18 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
     return graph_;
 }
 UniqueScaffoldGraphConstructor::UniqueScaffoldGraphConstructor(const Graph &assembly_graph,
-                                                               const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                                                               const set<ScaffoldVertex> &scaffold_vertices_,
-                                                               const size_t distance_,
-                                                               const size_t max_threads_)
+                                                               const ScaffoldingUniqueEdgeStorage &unique_storage,
+                                                               const std::set<ScaffoldVertex> &scaffold_vertices,
+                                                               const size_t distance,
+                                                               const size_t max_threads)
     : BaseScaffoldGraphConstructor(assembly_graph),
-      unique_storage_(unique_storage_),
-      scaffold_vertices_(scaffold_vertices_),
-      distance_(distance_),
-      max_threads_(max_threads_) {}
+      unique_storage_(unique_storage),
+      scaffold_vertices_(scaffold_vertices),
+      distance_(distance),
+      max_threads_(max_threads) {}
 
 
-shared_ptr<ScaffoldGraph> ScaffoldSubgraphConstructor::Construct() {
+std::shared_ptr<ScaffoldGraph> ScaffoldSubgraphConstructor::Construct() {
     for (const ScaffoldVertex& vertex: large_graph_.vertices()) {
         if (vertex_condition_(vertex)) {
             graph_->AddVertex(vertex);
@@ -259,31 +260,31 @@ shared_ptr<ScaffoldGraph> ScaffoldSubgraphConstructor::Construct() {
     return graph_;
 }
 ScaffoldSubgraphConstructor::ScaffoldSubgraphConstructor(const Graph &assembly_graph,
-                                                         const func::TypedPredicate<ScaffoldVertex> &vertex_condition_,
-                                                         const ScaffoldGraph &large_graph_,
-                                                         const size_t distance_threshold_)
+                                                         const func::TypedPredicate<ScaffoldVertex> &vertex_condition,
+                                                         const ScaffoldGraph &large_graph,
+                                                         const size_t distance_threshold)
     : BaseScaffoldGraphConstructor(assembly_graph),
-      vertex_condition_(vertex_condition_),
-      large_graph_(large_graph_),
-      distance_threshold_(distance_threshold_) {}
+      vertex_condition_(vertex_condition),
+      large_graph_(large_graph),
+      distance_threshold_(distance_threshold) {}
 ScoreFunctionScaffoldGraphConstructor::ScoreFunctionScaffoldGraphConstructor(
         const Graph &assembly_graph,
-        const std::set<ScaffoldVertex> &scaffold_vertices_,
-        const shared_ptr<ScoreFunctionScaffoldGraphConstructor::EdgePairScoreFunction> &score_function_,
-        const double score_threshold_,
-        const size_t num_threads_)
+        const std::set<ScaffoldVertex> &scaffold_vertices,
+        const std::shared_ptr<ScoreFunctionScaffoldGraphConstructor::EdgePairScoreFunction> &score_function,
+        double score_threshold,
+        size_t num_threads)
     : BaseScaffoldGraphConstructor(assembly_graph),
-      scaffold_vertices_(scaffold_vertices_),
-      score_function_(score_function_),
-      score_threshold_(score_threshold_),
-      num_threads_(num_threads_) {}
+      scaffold_vertices_(scaffold_vertices),
+      score_function_(score_function),
+      score_threshold_(score_threshold),
+      num_threads_(num_threads) {}
 
-shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
+std::shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
     for (const auto& vertex: scaffold_vertices_) {
         graph_->AddVertex(vertex);
     }
     //fixme switch to tbb or use chunk splitter
-    vector<ScaffoldGraph::ScaffoldGraphVertex> scaffold_vertex_vec;
+    std::vector<ScaffoldGraph::ScaffoldGraphVertex> scaffold_vertex_vec;
     for (const auto& vertex: scaffold_vertices_) {
         scaffold_vertex_vec.push_back(vertex);
     }
@@ -310,14 +311,14 @@ shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
                 TRACE("Edge added");
                 ++counter;
                 if (block_size != 0 and counter % block_size == 0) {
-                    INFO("Processed " << counter << " edges out of " << edges_size);
+                    DEBUG("Processed " << counter << " edges out of " << edges_size);
                 }
             }
         }
     }
     return graph_;
 }
-shared_ptr<ScaffoldGraph> InternalScoreScaffoldGraphFilter::Construct() {
+std::shared_ptr<ScaffoldGraph> InternalScoreScaffoldGraphFilter::Construct() {
     for (const auto& vertex: old_graph_.vertices()) {
         graph_->AddVertex(vertex);
     }
@@ -330,7 +331,7 @@ shared_ptr<ScaffoldGraph> InternalScoreScaffoldGraphFilter::Construct() {
     return graph_;
 }
 boost::optional<ScaffoldGraph::ScaffoldEdge> InternalScoreScaffoldGraphFilter::GetWinnerVertex(
-        vector<ScaffoldGraph::ScaffoldEdge> &edges) const {
+        std::vector<ScaffoldGraph::ScaffoldEdge> &edges) const {
     boost::optional<ScaffoldEdge> result;
     if (edges.size() < 2) {
         return result;
@@ -345,7 +346,7 @@ boost::optional<ScaffoldGraph::ScaffoldEdge> InternalScoreScaffoldGraphFilter::G
     }
     return result;
 }
-void InternalScoreScaffoldGraphFilter::ProcessEdges(vector<InternalScoreScaffoldGraphFilter::ScaffoldEdge> &edges) {
+void InternalScoreScaffoldGraphFilter::ProcessEdges(std::vector<InternalScoreScaffoldGraphFilter::ScaffoldEdge> &edges) {
     boost::optional<ScaffoldEdge> incoming_winner = GetWinnerVertex(edges);
     if (incoming_winner.is_initialized()) {
         graph_->AddEdge(incoming_winner.get());
@@ -358,7 +359,7 @@ void InternalScoreScaffoldGraphFilter::ProcessEdges(vector<InternalScoreScaffold
 InternalScoreScaffoldGraphFilter::InternalScoreScaffoldGraphFilter(
         const Graph &assembly_graph,
         const ScaffoldGraph &old_graph,
-        shared_ptr<InternalScoreScaffoldGraphFilter::EdgePairScoreFunction> score_function,
+        std::shared_ptr<InternalScoreScaffoldGraphFilter::EdgePairScoreFunction> score_function,
         double relative_threshold)
     : BaseScaffoldGraphConstructor(assembly_graph),
       old_graph_(old_graph),
