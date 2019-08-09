@@ -1,10 +1,16 @@
-#pragma once
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
-#include <map>
+#pragma once
 
 #include "common/utils/stl_utils.hpp"
 #include "common/barcode_index/barcode_info_extractor.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
+
+#include <map>
 
 using namespace debruijn_graph;
 

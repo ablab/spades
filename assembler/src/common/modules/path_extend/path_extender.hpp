@@ -1,4 +1,3 @@
-//***************************************************************************
 //* Copyright (c) 2011-2014 Saint-Petersburg Academic University
 //* Copyright (c) 2014-2020 Saint Petersburg State University
 //* All Rights Reserved
@@ -591,7 +590,7 @@ class SearchingMultiExtender: public SimpleExtender {
     SearchingMultiExtender(const conj_graph_pack &gp,
                   const GraphCoverageMap &cov_map,
                   UsedUniqueStorage &unique,
-                  shared_ptr<ExtensionChooser> ec,
+                  std::shared_ptr<ExtensionChooser> ec,
                   size_t is,
                   bool investigate_short_loops,
                   bool use_short_loop_cov_resolver,
@@ -789,24 +788,24 @@ private:
 
 
 class ReadCloudExtender : public SimpleExtender { //Traverse forward to find long edges
-using SimpleExtender::g_;
-protected:
+    using SimpleExtender::g_;
+  protected:
     read_cloud::RelativeUniquePredicateGetter predicate_getter_;
-    shared_ptr<read_cloud::BarcodeEntryCollector> entry_collector_;
-    shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory_;
+    std::shared_ptr<read_cloud::BarcodeEntryCollector> entry_collector_;
+    std::shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory_;
     size_t min_path_length_;
- public:
+  public:
     ReadCloudExtender(const conj_graph_pack &gp,
                       const GraphCoverageMap &cov_map,
                       UsedUniqueStorage &unique,
-                      shared_ptr<ExtensionChooser> ec,
+                      std::shared_ptr<ExtensionChooser> ec,
                       size_t is,
                       bool investigate_short_loops,
                       bool use_short_loop_cov_resolver,
                       double weight_threshold,
                       read_cloud::RelativeUniquePredicateGetter predicate_getter,
-                      shared_ptr<read_cloud::BarcodeEntryCollector> entry_collector,
-                      shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory,
+                      std::shared_ptr<read_cloud::BarcodeEntryCollector> entry_collector,
+                      std::shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory,
                       size_t min_path_length) :
         SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops,
                        use_short_loop_cov_resolver, weight_threshold),
@@ -814,7 +813,7 @@ protected:
         entry_collector_(entry_collector),
         edge_selector_factory_(edge_selector_factory),
         min_path_length_(min_path_length) {}
- protected:
+  protected:
     void FindFollowingEdges(BidirectionalPath &path, ExtensionChooser::EdgeContainer *result) override {
         ExtensionChooser::EdgeContainer candidates;
         result->clear();
@@ -830,18 +829,18 @@ protected:
             return;
         }
         EdgeId last_unique = last_unique_result.get();
-        for (const auto& candidate: reached_edges) {
+        for (const auto &candidate: reached_edges) {
             if (candidate.e_ != last_unique and g_.conjugate(candidate.e_) != last_unique) {
                 result->push_back(candidate);
             }
         }
         DEBUG(result->size() << " reached edges");
     }
- private:
+  private:
     boost::optional<EdgeId> GetLastUnique(const BidirectionalPath &path) const {
         auto predicate = predicate_getter_.GetPredicate(path);
         boost::optional<EdgeId> result;
-        for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+        for (int i = (int) path.Size() - 1; i >= 0; --i) {
             if (predicate(path.At(i))) {
                 result = path.At(i);
                 return result;
@@ -853,31 +852,31 @@ protected:
     bool IsNotInPath(const BidirectionalPath &path, const EdgeId &edge) const {
         return path.FindFirst(edge) == -1 and path.FindFirst(g_.conjugate(edge)) == -1;
     }
-private:
+  private:
     DECL_LOGGER("ReadCloudExtender")
 };
 
-class ScaffoldGraphExtender: public PathExtender {
+class ScaffoldGraphExtender : public PathExtender {
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
- protected:
+  protected:
     ScaffoldGraph scaffold_graph_;
     std::unordered_set<EdgeId> visited_;
     std::unordered_set<ScaffoldVertex> scaffold_graph_vertices_;
 
- public:
+  public:
     ScaffoldGraphExtender(const Graph &g, const ScaffoldGraph &scaffold_graph_)
         : PathExtender(g), scaffold_graph_(scaffold_graph_), visited_() {
-        INFO("Constructing scaffold graph vertices");
+        DEBUG("Constructing scaffold graph vertices");
         for (const ScaffoldVertex &vertex: scaffold_graph_.vertices()) {
             scaffold_graph_vertices_.insert(vertex);
         }
-        INFO("Scaffold graph vertices: " << scaffold_graph_vertices_.size());
+        DEBUG("Scaffold graph vertices: " << scaffold_graph_vertices_.size());
     }
 
-    bool MakeGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
+    bool MakeGrowStep(BidirectionalPath &path, PathContainer * /*paths_storage*/) override {
         boost::optional<EdgeId> last_unique = FindLastUniqueInPath(path, scaffold_graph_vertices_);
         DEBUG("Found last unique");
         if (not last_unique.is_initialized()) {
@@ -886,7 +885,7 @@ class ScaffoldGraphExtender: public PathExtender {
             DEBUG("Last unique is " << last_unique.get().int_id());
             auto outgoing_edges = scaffold_graph_.OutgoingEdges(last_unique.get());
             DEBUG("Found " << outgoing_edges.size() << " candidates");
-            for (const auto& edge: outgoing_edges) {
+            for (const auto &edge: outgoing_edges) {
                 TRACE(edge.getEnd().int_id());
             }
             if (outgoing_edges.size() != 1) {
@@ -916,11 +915,11 @@ class ScaffoldGraphExtender: public PathExtender {
         }
     }
 
- protected:
-    boost::optional<EdgeId> FindLastUniqueInPath(const BidirectionalPath& path,
-                                                 const unordered_set<ScaffoldVertex>& target_edges) const {
+  protected:
+    boost::optional<EdgeId> FindLastUniqueInPath(const BidirectionalPath &path,
+                                                 const std::unordered_set<ScaffoldVertex> &target_edges) const {
         boost::optional<EdgeId> result;
-        for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+        for (int i = (int) path.Size() - 1; i >= 0; --i) {
             EdgeId current = path.At(i);
             if (target_edges.find(current) != target_edges.end()) {
                 result = path.At(i);
@@ -937,7 +936,8 @@ class ScaffoldGraphExtender: public PathExtender {
             visited_.insert(e);
             path.PushBack(e, gap);
             DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
-                                          << gap.gap << ", trash length: " << gap.trash.previous << "-" << gap.trash.current);
+                                          << gap.gap << ", trash length: " << gap.trash.previous << "-"
+                                          << gap.trash.current);
             DEBUG("Added edge " << e.int_id());
         }
         return success;

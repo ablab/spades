@@ -1,7 +1,13 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "common/assembly_graph/core/graph.hpp"
-#include "transition_extractor.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -35,9 +41,10 @@ class ReferencePathIndex {
 
 class ReferencePathIndexBuilder {
   public:
-    ReferencePathIndex BuildReferencePathIndex(const vector<vector<EdgeWithMapping>> &reference_paths);
+    typedef std::vector<std::vector<EdgeWithMapping>> ReferencePaths;
 
-    ReferencePathIndex BuildReferencePathIndexForSet(const vector<vector<EdgeWithMapping>> &reference_paths,
+    ReferencePathIndex BuildReferencePathIndex(const ReferencePaths &reference_paths);
+    ReferencePathIndex BuildReferencePathIndexForSet(const ReferencePaths &reference_paths,
                                                      const std::unordered_set<EdgeId> &edges);
 };
 }

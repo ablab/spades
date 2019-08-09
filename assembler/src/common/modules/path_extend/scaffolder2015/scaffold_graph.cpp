@@ -1,6 +1,12 @@
-#include "scaffold_graph.hpp"
-#include "scaffold_vertex.hpp"
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
+#include "scaffold_graph.hpp"
+
+#include "common/modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
 
 namespace path_extend {
 namespace scaffold_graph {

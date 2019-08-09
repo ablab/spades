@@ -1,20 +1,27 @@
-#include "read_cloud_path_extend/utils/barcode_score_functions.hpp"
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "path_cluster_helper.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/graph_cluster_storage_builder.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
+
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/graph_cluster_storage_builder.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph_utils.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/utils/barcode_score_functions.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "simple_graph_utils.hpp"
 
 namespace path_extend {
 namespace read_cloud {
-vector<cluster_storage::Cluster> PathClusterExtractorHelper::GetPathClusters(
+std::vector<cluster_storage::Cluster> PathClusterExtractorHelper::GetPathClusters(
     const PathClusterExtractorHelper::SimpleTransitionGraph &graph) const {
     cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_, linkage_distance_);
     DEBUG("Constructing cluster storage");
     auto cluster_storage = cluster_storage_builder.ConstructClusterStorage(*initial_cluster_storage_, graph);
     contracted_graph::ContractedGraphFactoryHelper contracted_helper(g_);
     cluster_storage::ClusterGraphAnalyzer cluster_graph_analyzer(contracted_helper);
-    auto path_cluster_filter_ptr = make_shared<cluster_storage::PathClusterFilter>(cluster_graph_analyzer);
+    auto path_cluster_filter_ptr = std::make_shared<cluster_storage::PathClusterFilter>(cluster_graph_analyzer);
     cluster_storage::ClusterStorageExtractor cluster_extractor;
     DEBUG("Processing");
     auto path_clusters = cluster_extractor.FilterClusterStorage(cluster_storage, path_cluster_filter_ptr);
@@ -22,17 +29,17 @@ vector<cluster_storage::Cluster> PathClusterExtractorHelper::GetPathClusters(
     return path_clusters;
 }
 PathClusterExtractorHelper::PathClusterExtractorHelper(
-    const Graph &g,
-    shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
-    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-    size_t linkage_distance)
+        const Graph &g,
+        std::shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
+        std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+        size_t linkage_distance)
     : g_(g),
       initial_cluster_storage_(initial_cluster_storage),
       barcode_extractor_(barcode_extractor),
       linkage_distance_(linkage_distance) {}
 
 PathClusterStorage GraphBasedPathClusterNormalizer::GetNormalizedStorage(
-    const vector<cluster_storage::Cluster> &path_clusters) const {
+    const std::vector<cluster_storage::Cluster> &path_clusters) const {
     typedef std::set<scaffold_graph::ScaffoldVertex> VertexSet;
     std::map<VertexSet, double> cluster_to_weight;
 
@@ -64,7 +71,7 @@ PathClusterStorage GraphBasedPathClusterNormalizer::GetNormalizedStorage(
 }
 GraphBasedPathClusterNormalizer::GraphBasedPathClusterNormalizer(const Graph &g_) : g_(g_) {}
 
-PathClusterStorage::PathClusterStorage(const map<PathClusterStorage::VertexSet, double> &cluster_to_weight)
+PathClusterStorage::PathClusterStorage(const std::map<PathClusterStorage::VertexSet, double> &cluster_to_weight)
     : cluster_to_weight_(cluster_to_weight) {}
 PathClusterStorage::ClusterToWeightT::const_iterator PathClusterStorage::begin() const {
     return cluster_to_weight_.begin();
@@ -96,8 +103,8 @@ bool PathClusterConflictResolver::AreClustersConflicted(
     SubgraphGetter subgraph_getter;
     auto first_subgraph = subgraph_getter.GetSubgraph(graph, first);
     auto second_subgraph = subgraph_getter.GetSubgraph(graph, second);
-    vector<vector<ScaffoldVertex>> first_ham_paths = graph_analyzer.GetHamiltonianPaths(first_subgraph);
-    vector<vector<ScaffoldVertex>> second_ham_paths = graph_analyzer.GetHamiltonianPaths(second_subgraph);
+    std::vector<std::vector<ScaffoldVertex>> first_ham_paths = graph_analyzer.GetHamiltonianPaths(first_subgraph);
+    std::vector<std::vector<ScaffoldVertex>> second_ham_paths = graph_analyzer.GetHamiltonianPaths(second_subgraph);
 
     for (const auto &first_path: first_ham_paths) {
         for (const auto &second_path: second_ham_paths) {
@@ -110,7 +117,7 @@ bool PathClusterConflictResolver::AreClustersConflicted(
     return true;
 }
 
-vector<PathClusterConflictResolver::VertexSet> PathClusterConflictResolver::GetClusterSets(
+std::vector<PathClusterConflictResolver::VertexSet> PathClusterConflictResolver::GetClusterSets(
     const PathClusterConflictResolver::SimpleTransitionGraph &graph, const PathClusterStorage &storage) const {
     std::set<VertexSet> result_set;
     //fixme move from here
@@ -124,7 +131,7 @@ vector<PathClusterConflictResolver::VertexSet> PathClusterConflictResolver::GetC
             }
         }
     }
-    set<ScaffoldVertex> vertices;
+    std::set<ScaffoldVertex> vertices;
     for (const auto &vertex: graph) {
         vertices.insert(vertex);
         vertices.insert(vertex.GetConjugateFromGraph(g_));
@@ -164,16 +171,17 @@ vector<PathClusterConflictResolver::VertexSet> PathClusterConflictResolver::GetC
         }
     }
     DEBUG("Returning");
-    vector<VertexSet> result;
+    std::vector<VertexSet> result;
     std::move(result_set.begin(), result_set.end(), std::back_inserter(result));
     return result;
 }
-PathClusterConflictResolver::PathClusterConflictResolver(const Graph &g,
-                                                         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-                                                         double relative_threshold) :
+PathClusterConflictResolver::PathClusterConflictResolver(
+        const Graph &g,
+        std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+        double relative_threshold) :
     g_(g), barcode_extractor_(barcode_extractor), relative_threshold_(relative_threshold) {}
-bool PathClusterConflictResolver::CheckOverlap(const vector<PathClusterConflictResolver::ScaffoldVertex> &first,
-                                               const vector<PathClusterConflictResolver::ScaffoldVertex> &second,
+bool PathClusterConflictResolver::CheckOverlap(const std::vector<PathClusterConflictResolver::ScaffoldVertex> &first,
+                                               const std::vector<PathClusterConflictResolver::ScaffoldVertex> &second,
                                                size_t overlap) const {
     VERIFY_DEV(first.size() >= overlap);
     for (size_t i = 0; i < overlap; ++i) {
@@ -183,22 +191,22 @@ bool PathClusterConflictResolver::CheckOverlap(const vector<PathClusterConflictR
     }
     return true;
 }
-double PathClusterConflictResolver::GetClashScore(const set<PathClusterConflictResolver::ScaffoldVertex> &first,
-                                                  const set<PathClusterConflictResolver::ScaffoldVertex> &second,
+double PathClusterConflictResolver::GetClashScore(const std::set<PathClusterConflictResolver::ScaffoldVertex> &first,
+                                                  const std::set<PathClusterConflictResolver::ScaffoldVertex> &second,
                                                   PathClusterConflictResolver::ScaffoldBarcodeIndex scaffold_vertex_index) const {
     //todo make one pass instead of three
-    //fixme deal with conjugates
-    set<ScaffoldVertex> intersection;
-    set<ScaffoldVertex> first_minus_second;
-    set<ScaffoldVertex> second_minus_first;
+    //todo deal with conjugates
+    std::set<ScaffoldVertex> intersection;
+    std::set<ScaffoldVertex> first_minus_second;
+    std::set<ScaffoldVertex> second_minus_first;
     std::set_intersection(first.begin(), first.end(), second.begin(), second.end(),
                           std::inserter(intersection, intersection.end()));
     std::set_difference(first.begin(), first.end(), second.begin(), second.end(),
                         std::inserter(first_minus_second, first_minus_second.end()));
     std::set_difference(first.begin(), first.end(), second.begin(), second.end(),
                         std::inserter(second_minus_first, second_minus_first.end()));
-    set<ScaffoldVertex> first_minus_second_inter;
-    set<ScaffoldVertex> second_minus_first_inter;
+    std::set<ScaffoldVertex> first_minus_second_inter;
+    std::set<ScaffoldVertex> second_minus_first_inter;
     auto intersection_barcodes = GetBarcodesFromSet(intersection, scaffold_vertex_index);
     auto first_minus_second_barcodes = GetBarcodesFromSet(first_minus_second, scaffold_vertex_index);
     auto second_minus_first_barcodes = GetBarcodesFromSet(second_minus_first, scaffold_vertex_index);
@@ -219,10 +227,10 @@ double PathClusterConflictResolver::GetClashScore(const set<PathClusterConflictR
     }
     return first_minus_second_ci / second_minus_first_ci;
 }
-set<barcode_index::BarcodeId> PathClusterConflictResolver::GetBarcodesFromSet(
-    const set<PathClusterConflictResolver::ScaffoldVertex> &vertices,
+std::set<barcode_index::BarcodeId> PathClusterConflictResolver::GetBarcodesFromSet(
+    const std::set<PathClusterConflictResolver::ScaffoldVertex> &vertices,
     PathClusterConflictResolver::ScaffoldBarcodeIndex scaffold_vertex_index) const {
-    set<barcode_index::BarcodeId> result;
+    std::set<barcode_index::BarcodeId> result;
     for (const auto &vertex: vertices) {
         auto head_barcodes_begin = scaffold_vertex_index->GetHeadBegin(vertex);
         auto head_barcodes_end = scaffold_vertex_index->GetHeadEnd(vertex);
@@ -234,12 +242,12 @@ set<barcode_index::BarcodeId> PathClusterConflictResolver::GetBarcodesFromSet(
     return result;
 }
 
-vector<CloudPathExtractor::InternalPathWithSet> CloudPathExtractor::ExtractAllPaths(
+std::vector<CloudPathExtractor::InternalPathWithSet> CloudPathExtractor::ExtractAllPaths(
     const CloudPathExtractor::SimpleTransitionGraph &graph,
     const ScaffoldVertex &source, const ScaffoldVertex &sink) const {
     DEBUG("Extracting all paths");
     TRACE(source.int_id() << " -> " << sink.int_id());
-    vector<InternalPathWithSet> result;
+    std::vector<InternalPathWithSet> result;
     std::queue<InternalPathWithSet> current_paths;
     InternalPathWithSet start;
     start.AddVertex(source);
@@ -274,7 +282,7 @@ vector<CloudPathExtractor::InternalPathWithSet> CloudPathExtractor::ExtractAllPa
         ++ops_counter;
         if (ops_counter > 200) {
             DEBUG("Too many operations!");
-            vector<InternalPathWithSet> empty;
+            std::vector<InternalPathWithSet> empty;
             return empty;
         }
     }
@@ -282,12 +290,12 @@ vector<CloudPathExtractor::InternalPathWithSet> CloudPathExtractor::ExtractAllPa
     return result;
 }
 bool CloudPathExtractor::IsPathCorrect(const InternalPathWithSet &path,
-                                       const vector<CloudPathExtractor::VertexSet> &clouds) const {
+                                       const std::vector<CloudPathExtractor::VertexSet> &clouds) const {
     DEBUG("Checking path");
     const auto vertex_path = path.path_;
     const auto &vertex_set = path.path_vertices_;
-    vector<vector<ScaffoldVertex>> supporting_clouds;
-    unordered_map<ScaffoldVertex, size_t> vertex_to_index;
+    std::vector<std::vector<ScaffoldVertex>> supporting_clouds;
+    std::unordered_map<ScaffoldVertex, size_t> vertex_to_index;
     for (size_t i = 0; i < vertex_path.size(); ++i) {
         vertex_to_index[vertex_path[i]] = i;
     }
@@ -312,7 +320,7 @@ bool CloudPathExtractor::IsPathCorrect(const InternalPathWithSet &path,
         if (not cloud_in_path) {
             continue;
         }
-        vector<ScaffoldVertex> cloud_vertices;
+        std::vector<ScaffoldVertex> cloud_vertices;
         std::copy(cloud.begin(), cloud.end(), std::back_inserter(cloud_vertices));
         std::sort(cloud_vertices.begin(), cloud_vertices.end(), path_compare_strong);
         for (size_t i = 1; i < cloud_vertices.size(); ++i) {
@@ -365,15 +373,15 @@ bool CloudPathExtractor::IsPathCorrect(const InternalPathWithSet &path,
     }
     return true;
 }
-vector<vector<CloudPathExtractor::ScaffoldVertex>> CloudPathExtractor::ExtractCorrectPaths(
+std::vector<std::vector<CloudPathExtractor::ScaffoldVertex>> CloudPathExtractor::ExtractCorrectPaths(
     const CloudPathExtractor::SimpleTransitionGraph &graph,
     const CloudPathExtractor::ScaffoldVertex &source,
     const CloudPathExtractor::ScaffoldVertex &sink,
-    const vector<CloudPathExtractor::VertexSet> &clouds) const {
+    const std::vector<CloudPathExtractor::VertexSet> &clouds) const {
     DEBUG("Extracting correct paths");
     const auto paths = ExtractAllPaths(graph, source, sink);
     DEBUG("Extracted all paths");
-    vector<vector<ScaffoldVertex>> result;
+    std::vector<std::vector<ScaffoldVertex>> result;
     if (paths.size() == 1) {
         DEBUG("Single path");
         result.push_back(paths[0].path_);
@@ -398,7 +406,7 @@ void CloudPathExtractor::InternalPathWithSet::AddVertex(const CloudPathExtractor
 bool CloudPathExtractor::InternalPathWithSet::HasVertex(const CloudPathExtractor::ScaffoldVertex &vertex) const {
     return path_vertices_.find(vertex) != path_vertices_.end();
 }
-vector<vector<CloudBasedPathExtractor::ScaffoldVertex>> CloudBasedPathExtractor::GetCorrectPaths(
+std::vector<std::vector<CloudBasedPathExtractor::ScaffoldVertex>> CloudBasedPathExtractor::GetCorrectPaths(
     const CloudBasedPathExtractor::SimpleTransitionGraph &graph,
     const CloudBasedPathExtractor::ScaffoldVertex &source,
     const CloudBasedPathExtractor::ScaffoldVertex &sink) const {
@@ -421,8 +429,8 @@ vector<vector<CloudBasedPathExtractor::ScaffoldVertex>> CloudBasedPathExtractor:
 }
 CloudBasedPathExtractor::CloudBasedPathExtractor(
     const Graph &g,
-    shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
-    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+    std::shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
+    std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
     size_t linkage_distance, double relative_cluster_threshold)
     : g_(g),
       initial_cluster_storage_(initial_cluster_storage),
@@ -430,7 +438,7 @@ CloudBasedPathExtractor::CloudBasedPathExtractor(
       linkage_distance_(linkage_distance),
       relative_cluster_threshold_(relative_cluster_threshold) {}
 
-vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetPathClusters(
+std::vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetPathClusters(
     const scaffold_graph::ScaffoldGraph &graph) const {
     const size_t linkage_distance = 10;
     TransitionGraph simple_graph;
@@ -446,15 +454,15 @@ vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetPathClusters
 }
 ScaffoldGraphPathClusterHelper::ScaffoldGraphPathClusterHelper(
     const Graph &g,
-    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-    shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
+    std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+    std::shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
     size_t max_threads)
     : g_(g), barcode_extractor_(barcode_extractor),
       initial_cluster_storage_(initial_cluster_storage), max_threads_(max_threads) {}
 
-vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetAllClusters(
-        const scaffold_graph::ScaffoldGraph &graph) const {
-        const size_t linkage_distance = 10;
+std::vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetAllClusters(
+    const scaffold_graph::ScaffoldGraph &graph) const {
+    const size_t linkage_distance = 10;
     cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_, linkage_distance);
     DEBUG("Constructing cluster storage");
     TransitionGraph simple_graph;
@@ -466,7 +474,7 @@ vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetAllClusters(
 
     }
     auto cluster_storage = cluster_storage_builder.ConstructClusterStorage(*initial_cluster_storage_, simple_graph);
-    vector<cluster_storage::Cluster> result;
+    std::vector<cluster_storage::Cluster> result;
     for (const auto &entry: cluster_storage) {
         if (entry.second.Size() >= 2) {
             result.push_back(entry.second);
@@ -474,21 +482,21 @@ vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetAllClusters(
     }
     return result;
 }
-vector<ScaffoldGraphPathClusterHelper::Cluster> ScaffoldGraphPathClusterHelper::GetPathClusters(
-    const vector<ScaffoldGraphPathClusterHelper::Cluster> &clusters) const {
+std::vector<ScaffoldGraphPathClusterHelper::Cluster> ScaffoldGraphPathClusterHelper::GetPathClusters(
+    const std::vector<ScaffoldGraphPathClusterHelper::Cluster> &clusters) const {
     contracted_graph::ContractedGraphFactoryHelper contracted_helper(g_);
     cluster_storage::ClusterGraphAnalyzer cluster_graph_analyzer(contracted_helper);
-    auto path_cluster_filter_ptr = make_shared<cluster_storage::PathClusterFilter>(cluster_graph_analyzer);
+    auto path_cluster_filter_ptr = std::make_shared<cluster_storage::PathClusterFilter>(cluster_graph_analyzer);
     cluster_storage::ClusterStorageExtractor cluster_extractor;
     return cluster_extractor.FilterClusters(clusters, path_cluster_filter_ptr);
 }
-vector<set<ScaffoldGraphPathClusterHelper::ScaffoldVertex>> ScaffoldGraphPathClusterHelper::GetCorrectedClusters(
-    const vector<ScaffoldGraphPathClusterHelper::Cluster> &path_clusters,
+std::vector<std::set<ScaffoldGraphPathClusterHelper::ScaffoldVertex>> ScaffoldGraphPathClusterHelper::GetCorrectedClusters(
+    const std::vector<ScaffoldGraphPathClusterHelper::Cluster> &path_clusters,
     const scaffold_graph::ScaffoldGraph &graph) const {
     auto transition_graph = ScaffoldToTransition(graph);
     return GetCorrectedClusters(path_clusters, transition_graph);
 }
-vector<set<ScaffoldGraphPathClusterHelper::ScaffoldVertex>> ScaffoldGraphPathClusterHelper::GetFinalClusters(
+std::vector<std::set<ScaffoldGraphPathClusterHelper::ScaffoldVertex>> ScaffoldGraphPathClusterHelper::GetFinalClusters(
     const scaffold_graph::ScaffoldGraph &graph) const {
     auto transition_graph = ScaffoldToTransition(graph);
     return GetFinalClusters(transition_graph);
@@ -504,7 +512,7 @@ ScaffoldGraphPathClusterHelper::TransitionGraph ScaffoldGraphPathClusterHelper::
     }
     return simple_graph;
 }
-vector<set<ScaffoldGraphPathClusterHelper::ScaffoldVertex>> ScaffoldGraphPathClusterHelper::GetFinalClusters(
+std::vector<std::set<ScaffoldGraphPathClusterHelper::ScaffoldVertex>> ScaffoldGraphPathClusterHelper::GetFinalClusters(
     const ScaffoldGraphPathClusterHelper::TransitionGraph &graph) const {
     const size_t linkage_distance = 10;
     PathClusterExtractorHelper cluster_extractor_helper(g_, initial_cluster_storage_,
@@ -512,8 +520,8 @@ vector<set<ScaffoldGraphPathClusterHelper::ScaffoldVertex>> ScaffoldGraphPathClu
     auto path_clusters = cluster_extractor_helper.GetPathClusters(graph);
     return GetCorrectedClusters(path_clusters, graph);
 }
-vector<set<ScaffoldGraphPathClusterHelper::ScaffoldVertex>> ScaffoldGraphPathClusterHelper::GetCorrectedClusters(
-    const vector<ScaffoldGraphPathClusterHelper::Cluster> &path_clusters,
+std::vector<std::set<ScaffoldGraphPathClusterHelper::ScaffoldVertex>> ScaffoldGraphPathClusterHelper::GetCorrectedClusters(
+    const std::vector<ScaffoldGraphPathClusterHelper::Cluster> &path_clusters,
     const ScaffoldGraphPathClusterHelper::TransitionGraph &graph) const {
     GraphBasedPathClusterNormalizer path_cluster_normalizer(g_);
     auto cluster_to_weight = path_cluster_normalizer.GetNormalizedStorage(path_clusters);

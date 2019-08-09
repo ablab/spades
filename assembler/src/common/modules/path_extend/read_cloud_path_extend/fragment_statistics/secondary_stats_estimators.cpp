@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "secondary_stats_estimators.hpp"
 
 namespace path_extend {

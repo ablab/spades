@@ -111,8 +111,11 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructPath
     read_cloud::SearchingExtenderParams empty_searching_extender_params(empty_storage);
     read_cloud::ReadCloudSearchParameterPack empty_pack{empty_chooser, empty_params, empty_searching_extender_params};
 
+    std::string scaffold_graph_stats_path = fs::append_path(params_.output_dir,
+                                                            params_.read_cloud_configs.statistics.scaffold_graph_statistics);
     read_cloud::CloudScaffoldGraphConstructor constructor(num_threads, gp_, unique_data_.main_unique_storage_, cloud_lib,
-                                                          params_.read_cloud_configs, empty_pack, extractor);
+                                                          params_.read_cloud_configs, empty_pack,
+                                                          scaffold_graph_stats_path, extractor);
     auto path_scaffold_graph = std::make_shared<scaffold_graph::ScaffoldGraph>(
         constructor.ConstructScaffoldGraphFromPathContainer(path_container,small_path_length_threshold,scaffolding_mode));
     return path_scaffold_graph;
@@ -546,8 +549,8 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             size_t tail_threshold = read_cloud_configs.scaff_con.path_scaffolder_tail_threshold;
             size_t count_threshold = read_cloud_configs.scaff_con.path_scaffolder_count_threshold;
             size_t length_threshold = read_cloud_configs.scaff_con.min_edge_length_for_barcode_collection;
-            //fixme move to configs
-            const size_t scan_bound = 150;
+
+            const size_t scan_bound = read_cloud_configs.gap_closer_scan_bound;
             auto cloud_chooser_factory =
                 std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g, unique_data_.main_unique_storage_,
                                                                       barcode_extractor_ptr, tail_threshold,
@@ -698,9 +701,10 @@ void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const & graph) {
 void PathExtendLauncher::ScaffoldPaths(PathContainer &paths) const {
     const int default_gap = 500;
     SimplePathScaffolder path_scaffolder(gp_, default_gap);
+    bool path_scaffolding_mode = params_.read_cloud_configs.path_scaffolding_on and params_.pset.sm != sm_old;
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
         const auto &lib = dataset_info_.reads[lib_index];
-        if (lib.type() == io::LibraryType::Clouds10x) {
+        if (lib.type() == io::LibraryType::Clouds10x and path_scaffolding_mode) {
             auto path_scaffold_graph = ConstructPathScaffoldGraphForReadCloudLib(paths, lib_index);
             path_scaffolder.MergePaths(*path_scaffold_graph);
         }

@@ -1,14 +1,21 @@
+//***************************************************************************
+//* Copyright (c) 2017-2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
-#include <boost/unordered_map.hpp>
-#include <boost/dynamic_bitset.hpp>
-#include "io/reads/paired_readers.hpp"
-#include <common/assembly_graph/paths/mapping_path.hpp>
-#include <common/assembly_graph/core/graph.hpp>
-#include <common/io/binary.hpp>
+#include "common/assembly_graph/paths/mapping_path.hpp"
+#include "common/assembly_graph/core/graph.hpp"
+#include "common/io/binary.hpp"
 #include "common/pipeline/config_struct.hpp"
 #include "common/assembly_graph/index/edge_index_builders.hpp"
 #include "common/sequence/range.hpp"
+#include "io/reads/paired_readers.hpp"
+
+#include <boost/unordered_map.hpp>
+#include <boost/dynamic_bitset.hpp>
 
 using std::string;
 using std::istringstream;

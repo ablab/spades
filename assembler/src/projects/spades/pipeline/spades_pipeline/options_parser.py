@@ -345,7 +345,7 @@ def add_basic_args(pgroup_basic):
                               dest="metaplasmid",
                               help="runs metaplasmidSPAdes pipeline for plasmid detection in metagenomic datasets (equivalent for --meta --plasmid)"
                               if not help_hidden else argparse.SUPPRESS,
-                              action="store_true")                              
+                              action="store_true")
     pgroup_basic.add_argument("--rnaviral",
                               dest="rnaviral",
                               help="this flag enables virus assembly module from RNA-Seq data"
@@ -533,7 +533,7 @@ def add_input_data_args(pgroup_input_data):
                                    help="file with assembly graph"
                                    if not help_hidden else argparse.SUPPRESS,
                                    action=AddToDatasetAction)
-    
+
 def add_pipeline_args(pgroup_pipeline):
     mode = get_mode()
     help_hidden = (mode == "rna" or mode == "rnaviral")
@@ -1105,7 +1105,7 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
 
     support.check_dataset_reads(dataset_data, (args.only_assembler or args.rna), args.iontorrent, log)
     if not support.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_CONSTRUCTION):
-        support.error("you should specify at least one unpaired, paired-end, or high-quality mate-pairs library!")
+        support.error("you should specify at least one unpaired, paired-end, linked-read, or high-quality mate-pairs library!")
     if args.rna:
         if len(dataset_data) != len(
                 support.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_RNA_SEQ)):
@@ -1114,12 +1114,12 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
             # if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
             #    support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
     if args.meta and not args.only_error_correction and not args.rnaviral:
-        paired_end_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, "paired-end")))
+        paired_end_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, ["paired-end", "clouds10x"])))
         graph_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, "assembly-graph")))
         long_read_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, ["pacbio", "nanopore"])))
-        
+
         if len(dataset_data) > paired_end_libs + graph_libs + long_read_libs:
-            support.error("you cannot specify any data types except a single paired-end library "
+            support.error("you cannot specify any data types except a single paired-end or linked-read library "
                           "(optionally accompanied by a single library of "
                           "PacBio reads or Nanopore reads) in metaSPAdes mode!")
 
@@ -1200,7 +1200,7 @@ def set_default_values():
     if options_storage.args.developer_mode is None:
         options_storage.args.developer_mode = False
     if options_storage.args.time_tracer is None:
-        options_storage.args.time_tracer = False        
+        options_storage.args.time_tracer = False
     if options_storage.args.qvoffset == "auto":
         options_storage.args.qvoffset = None
     if options_storage.args.cov_cutoff is None:
