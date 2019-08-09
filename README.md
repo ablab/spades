@@ -20,7 +20,7 @@
     3.7. [Assembly evaluation](#sec3.7)</br>
 4. [Stand-alone binaries released within SPAdes package](#sec4)</br>
     4.1. [k-mer counting](#sec4.1)</br>
-    4.2. [k-mer count read filter](#sec4.2)</br>
+    4.2. [k-mer coverage read filter](#sec4.2)</br>
     4.3. [k-mer cardinality estimating](#sec4.3)</br>
     4.4. [Graph construction](#sec4.4)</br>
     4.5. [Long read to graph aligner](#sec4.5)</br>
@@ -1014,7 +1014,7 @@ The options are:
 
 
 <a name="sec4.2"></a>
-## k-mer count read filter
+## k-mer coverage read filter
 
 To provide input data to SPAdes k-mer read filter tool `spades-read-filter ` you should provide dataset description file in [YAML format](#yaml).
 
@@ -1043,9 +1043,9 @@ The options are:
 <a name="sec4.3"></a>
 ## k-mer cardinality estimating
 
-To provide input data to SPAdes k-mer cardinality estimating tool `spades-kmer-estimating ` you should provide dataset description file in [YAML format](#yaml).
+`spades-kmer-estimating ` is a tool for estimating approximate number of unique k-mers in the provided reads. Kmers from reverse-complementary reads aren't taken into account for k-mer cardinality estimating.
 
-Kmers from reverse-complementary reads aren't taken into account for k-mer cardinality estimating.
+To provide input data to SPAdes k-mer cardinality estimating tool `spades-kmer-estimating ` you should provide dataset description file in [YAML format](#yaml).
 
 Synopsis: `spades-kmer-estimating [OPTION...] -d <yaml>`
 
