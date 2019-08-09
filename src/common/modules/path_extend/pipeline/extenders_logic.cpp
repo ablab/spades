@@ -574,11 +574,11 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
     PrintExtenders(result);
     return result;
 }
-shared_ptr<ExtensionChooser> ExtendersGenerator::MakeSimpleExtensionChooser(size_t lib_index) const {
+std::shared_ptr<ExtensionChooser> ExtendersGenerator::MakeSimpleExtensionChooser(size_t lib_index) const {
     auto pe_extender = MakePEExtender(lib_index, false);
     return pe_extender->GetExtensionChooser();
 }
-shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size_t lib_index) const {
+std::shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size_t lib_index) const {
     using read_cloud::fragment_statistics::DistributionPack;
     const auto &lib = dataset_info_.reads[lib_index];
     INFO("Scaffold graph construction started");
@@ -590,8 +590,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size_t li
     size_t min_upper_bound = params_.read_cloud_configs.long_edge_length_min_upper_bound;
     size_t max_upper_bound = params_.read_cloud_configs.long_edge_length_max_upper_bound;
     read_cloud::fragment_statistics::UpperLengthBoundEstimator length_bound_estimator(min_upper_bound, max_upper_bound);
-    //fixme configs
-    const double ultralong_edge_length_percentile = 0.35;
+    const double ultralong_edge_length_percentile = params_.read_cloud_configs.scaff_con.ultralong_edge_length_percentile;
     size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
                                                                           ultralong_edge_length_percentile);
     INFO("Length upper bound: " << length_upper_bound);
@@ -611,18 +610,21 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size_t li
     read_cloud::DefaultExtenderParamsConstructor default_params_constructor(gp_, dataset_info_, small_unique_storage);
     auto default_composite_extender_params = default_params_constructor.ConstructExtenderParams(
         lib_index, params_.pset.extension_options.weight_threshold);
-    //fixme configs
-    const size_t max_path_growing_iterations = 1000;
-    const size_t max_paths_to_process = 200;
-    const size_t max_edge_visits = 10;
+
+    const size_t max_path_growing_iterations = params_.read_cloud_configs.path_search.max_path_growing_iterations;
+    const size_t max_paths_to_process = params_.read_cloud_configs.path_search.max_paths_to_process;
+    const size_t max_edge_visits = params_.read_cloud_configs.path_search.max_edge_visits;
     read_cloud::SearchParams search_params {max_path_growing_iterations, max_paths_to_process, max_edge_visits};
     read_cloud::ReadCloudSearchParameterPack search_parameter_pack{pe_extender->GetExtensionChooser(), search_params,
                                                                    default_composite_extender_params};
 
+    std::string scaffold_graph_stats_path = fs::append_path(params_.output_dir,
+                                                            params_.read_cloud_configs.statistics.scaffold_graph_statistics);
     read_cloud::ScaffoldGraphStorageConstructor storage_constructor(small_unique_storage, large_unique_storage,
                                                                     unique_length_threshold, length_upper_bound,
                                                                     params_.threads, lib, params_.read_cloud_configs,
-                                                                    search_parameter_pack, gp_);
+                                                                    search_parameter_pack, scaffold_graph_stats_path,
+                                                                    gp_);
     auto storage = storage_constructor.ConstructStorage();
     read_cloud::ScaffoldGraphPolisherHelper scaffold_graph_polisher(gp_, params_.read_cloud_configs, params_.threads);
     bool path_scaffolding = false;
@@ -632,29 +634,27 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size_t li
     shared_ptr<ScaffoldGraphExtender> extender = make_shared<ScaffoldGraphExtender>(gp_.g, polished_scaffold_graph);
     return extender;
 }
-shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_index) const {
+std::shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_index) const {
     using read_cloud::SimpleBarcodeEntryCollector;
     using read_cloud::SimpleReachableEdgesSelectorFactory;
 
     const auto &lib = dataset_info_.reads[lib_index];
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-    shared_ptr<WeightCounter> weight_counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib);
+    std::shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+    std::shared_ptr<WeightCounter> weight_counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib);
     auto opts = params_.pset.extension_options;
     double weight_threshold = opts.weight_threshold;
 
-//    auto pe_extension_chooser = MakeSimpleExtensionChooser(lib_index);
     auto pe_extender = MakePEExtender(lib_index, false);
     auto pe_extension_chooser = pe_extender->GetExtensionChooser();
 
-    //fixme move to configs
-    const size_t reliable_edge_length = 200;
-    const size_t tail_threshold = 6000;
-    const size_t distance_bound = 6000;
-    const size_t seed_edge_length = 2000;
-    const double extender_score_threshold = 0.04;
-    const double relative_coverage_threshold = 1.5;
-    const size_t barcode_threshold = 1;
-    const size_t score_function_tail_threshold = 1000;
+    const size_t reliable_edge_length = params_.read_cloud_configs.read_ext.reliable_edge_length;
+    const size_t tail_threshold = params_.read_cloud_configs.read_ext.tail_threshold;
+    const size_t distance_bound = params_.read_cloud_configs.read_ext.distance_bound;
+    const size_t seed_edge_length = params_.read_cloud_configs.read_ext.seed_edge_length;
+    const double extender_score_threshold = params_.read_cloud_configs.read_ext.extender_score_threshold;
+    const double relative_coverage_threshold = params_.read_cloud_configs.read_ext.relative_coverage_threshold;
+    const size_t barcode_threshold = params_.read_cloud_configs.read_ext.barcode_threshold;
+    const size_t score_function_tail_threshold = params_.read_cloud_configs.read_ext.score_function_tail_threshold;
 
     auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
     read_cloud::RelativeUniquePredicateGetter predicate_getter(gp_.g, reliable_edge_length,

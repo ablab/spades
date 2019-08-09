@@ -1,63 +1,73 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
-#include "barcode_index/scaffold_vertex_index.hpp"
-#include "modules/path_extend/weight_counter.hpp"
+#include "common/barcode_index/scaffold_vertex_index.hpp"
+#include "common/modules/path_extend/weight_counter.hpp"
 #include "common/assembly_graph/dijkstra/read_cloud_dijkstra/read_cloud_dijkstras.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 
 class ReachableEdgesSelector {
- public:
-  virtual ~ReachableEdgesSelector() {}
+  public:
+    virtual ~ReachableEdgesSelector() {}
 
-  virtual vector<EdgeWithDistance> SelectReachableEdges(const EdgeId &edge) const = 0;
+    virtual std::vector<EdgeWithDistance> SelectReachableEdges(const EdgeId &edge) const = 0;
 };
 
 class CloudReachableEdgesSelectorFactory {
- protected:
-  typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
- public:
-  virtual ~CloudReachableEdgesSelectorFactory() {}
+  public:
+    typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
 
-  virtual shared_ptr<ReachableEdgesSelector> ConstructReachableEdgesSelector(const SimpleVertexEntry &barcodes) const = 0;
+    virtual ~CloudReachableEdgesSelectorFactory() {}
+
+    virtual std::shared_ptr<ReachableEdgesSelector> ConstructReachableEdgesSelector(const SimpleVertexEntry &barcodes) const = 0;
 };
 
 class DefaultCloudReachableEdgesSelector : public ReachableEdgesSelector {
-  const Graph &g_;
-  shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
+  public:
+    DefaultCloudReachableEdgesSelector(const Graph &g,
+                                       std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+                                       const barcode_index::SimpleVertexEntry &target_barcodes,
+                                       size_t barcode_threshold,
+                                       size_t edge_length_threshold,
+                                       size_t distance_bound);
 
-  barcode_index::SimpleVertexEntry target_barcodes_;
-  size_t barcode_threshold_;
-  size_t edge_length_threshold_;
-  size_t distance_bound_;
+    std::vector<EdgeWithDistance> SelectReachableEdges(const EdgeId &edge) const override;
 
- public:
-  DefaultCloudReachableEdgesSelector(const Graph &g,
-                                     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-                                     const barcode_index::SimpleVertexEntry &target_barcodes,
-                                     size_t barcode_threshold,
-                                     size_t edge_length_threshold,
-                                     size_t distance_bound);
+  private:
+    const Graph &g_;
+    std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
 
-  vector<EdgeWithDistance> SelectReachableEdges(const EdgeId &edge) const override;
+    barcode_index::SimpleVertexEntry target_barcodes_;
+    size_t barcode_threshold_;
+    size_t edge_length_threshold_;
+    size_t distance_bound_;
 };
 
 class SimpleReachableEdgesSelectorFactory : public CloudReachableEdgesSelectorFactory {
-  const Graph &g_;
-  shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
+  public:
+    SimpleReachableEdgesSelectorFactory(const Graph &g,
+                                        std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+                                        size_t barcode_threshold,
+                                        size_t edge_length_threshold,
+                                        size_t distance_bound);
 
-  size_t barcode_threshold_;
-  size_t edge_length_threshold_;
-  size_t distance_bound_;
- public:
-  SimpleReachableEdgesSelectorFactory(const Graph &g,
-                                      shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-                                      size_t barcode_threshold,
-                                      size_t edge_length_threshold,
-                                      size_t distance_bound);
+    std::shared_ptr<ReachableEdgesSelector> ConstructReachableEdgesSelector(
+        const SimpleVertexEntry &barcodes) const override;
 
-  shared_ptr<ReachableEdgesSelector> ConstructReachableEdgesSelector(const SimpleVertexEntry &barcodes) const override;
+  private:
+    const Graph &g_;
+    std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
+
+    size_t barcode_threshold_;
+    size_t edge_length_threshold_;
+    size_t distance_bound_;
 };
 }
 }

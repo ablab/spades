@@ -1,19 +1,27 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "read_cloud_connection_conditions.hpp"
+
 #include "common/assembly_graph/dijkstra/read_cloud_dijkstra/read_cloud_dijkstras.hpp"
 #include "common/assembly_graph/dijkstra/read_cloud_dijkstra/path_extend_dijkstras.hpp"
+
 namespace path_extend {
 namespace read_cloud {
 
-map<EdgeId, double> AssemblyGraphUniqueConnectionCondition::ConnectedWith(EdgeId e) const {
+std::map<EdgeId, double> AssemblyGraphUniqueConnectionCondition::ConnectedWith(EdgeId e) const {
     VERIFY_MSG(interesting_edge_set_.find(e) != interesting_edge_set_.end(),
                " edge " << e.int_id() << " not applicable for connection condition");
     if (stored_distances_.find(e) != stored_distances_.end()) {
         return stored_distances_[e];
     }
-    stored_distances_.insert(make_pair(e, map<debruijn_graph::EdgeId, double>()));
+    stored_distances_.insert(make_pair(e, std::map<debruijn_graph::EdgeId, double>()));
     for (auto connected: g_.OutgoingEdges(g_.EdgeEnd(e))) {
         if (interesting_edge_set_.find(connected) != interesting_edge_set_.end()) {
-            stored_distances_[e].insert(make_pair(connected, 1));
+            stored_distances_[e].insert(std::make_pair(connected, 1));
         }
     }
 
@@ -24,7 +32,7 @@ map<EdgeId, double> AssemblyGraphUniqueConnectionCondition::ConnectedWith(EdgeId
         for (auto connected: g_.OutgoingEdges(v)) {
             if (interesting_edge_set_.find(connected) != interesting_edge_set_.end() &&
                 dij.GetDistance(v) < max_connection_length_ && connected != g_.conjugate(e)) {
-                stored_distances_[e].insert(make_pair(connected, static_cast<double>(dij.GetDistance(v))));
+                stored_distances_[e].insert(std::make_pair(connected, static_cast<double>(dij.GetDistance(v))));
             }
         }
     }
@@ -67,16 +75,16 @@ double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGr
     return containment_index;
 }
 NormalizedBarcodeScoreFunction::NormalizedBarcodeScoreFunction(
-    const Graph &graph_,
-    shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_) :
+        const Graph &graph_,
+        std::shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_) :
     AbstractBarcodeScoreFunction(graph_, barcode_extractor_) {}
 
 ReadCloudMiddleDijkstraPredicate::ReadCloudMiddleDijkstraPredicate(
-    const Graph &g,
-    const ScaffoldingUniqueEdgeStorage &unique_storage_,
-    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
-    const shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor,
-    const ReadCloudMiddleDijkstraParams &params)
+        const Graph &g,
+        const ScaffoldingUniqueEdgeStorage &unique_storage_,
+        std::shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
+        const std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor,
+        const ReadCloudMiddleDijkstraParams &params)
     : g(g),
       unique_storage_(unique_storage_),
       short_edge_extractor_(short_edge_extractor),
@@ -102,22 +110,23 @@ bool ReadCloudMiddleDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph
     return false;
 }
 
-EdgeSplitPredicate::EdgeSplitPredicate(const Graph &g_,
-                                       shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor,
-                                       const size_t count_threshold_,
-                                       double strictness)
+EdgeSplitPredicate::EdgeSplitPredicate(
+        const Graph &g_,
+        std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor,
+        const size_t count_threshold,
+        double strictness)
     : g_(g_),
       barcode_extractor_(barcode_extractor),
-      count_threshold_(count_threshold_),
+      count_threshold_(count_threshold),
       strictness_(strictness) {}
 bool EdgeSplitPredicate::CheckOrderingForThreeSegments(const barcode_index::SimpleVertexEntry &first,
                                                        const barcode_index::SimpleVertexEntry &second,
                                                        const barcode_index::SimpleVertexEntry &third,
                                                        double strictness) const {
-    vector<BarcodeId> first_second_intersection;
+    std::vector<BarcodeId> first_second_intersection;
     std::set_intersection(first.begin(), first.end(), second.begin(), second.end(),
                           std::back_inserter(first_second_intersection));
-    vector<BarcodeId> first_third_intersection;
+    std::vector<BarcodeId> first_third_intersection;
     std::set_intersection(first.begin(), first.end(), third.begin(), third.end(),
                           std::back_inserter(first_third_intersection));
 
@@ -137,10 +146,10 @@ bool EdgeSplitPredicate::CheckOrderingForFourSegments(const barcode_index::Simpl
                                                       const barcode_index::SimpleVertexEntry &second,
                                                       const barcode_index::SimpleVertexEntry &third,
                                                       const barcode_index::SimpleVertexEntry &fourth) const {
-    vector<BarcodeId> first_fourth_intersection;
+    std::vector<BarcodeId> first_fourth_intersection;
     std::set_intersection(first.begin(), first.end(), fourth.begin(), fourth.end(),
                           std::back_inserter(first_fourth_intersection));
-    vector<BarcodeId> second_third_intersection;
+    std::vector<BarcodeId> second_third_intersection;
     std::set_intersection(second.begin(), second.end(), third.begin(), third.end(),
                           std::back_inserter(second_third_intersection));
     if (second_third_intersection.size() <= first_fourth_intersection.size()) {
@@ -178,22 +187,22 @@ bool EdgeSplitPredicate::Check(const ScaffoldEdge &scaffold_edge) const {
     return next_conjugate_check and previous_conjugate_check and previous_check;
 }
 EdgeInTheMiddlePredicate::EdgeInTheMiddlePredicate(const Graph &g_,
-                                                   const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                                                   const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor,
                                                    size_t count_threshold,
                                                    double shared_fraction_threshold)
-    : g_(g_), barcode_extractor_(barcode_extractor_), count_threshold_(count_threshold),
+    : g_(g_), barcode_extractor_(barcode_extractor), count_threshold_(count_threshold),
       shared_fraction_threshold_(shared_fraction_threshold) {}
 bool EdgeInTheMiddlePredicate::IsCorrectOrdering(const EdgeId &first, const EdgeId &second, const EdgeId &third) {
-    vector<BarcodeId>
+    std::vector<BarcodeId>
         first_barcodes = barcode_extractor_.GetBarcodesFromRange(first, count_threshold_, 0, g_.length(first));
-    vector<BarcodeId>
+    std::vector<BarcodeId>
         second_barcodes = barcode_extractor_.GetBarcodesFromRange(second, count_threshold_, 0, g_.length(second));
-    vector<BarcodeId>
+    std::vector<BarcodeId>
         third_barcodes = barcode_extractor_.GetBarcodesFromRange(third, count_threshold_, 0, g_.length(third));
-    vector<BarcodeId> first_third_intersection;
+    std::vector<BarcodeId> first_third_intersection;
     std::set_intersection(first_barcodes.begin(), first_barcodes.end(), third_barcodes.begin(), third_barcodes.end(),
                           std::back_inserter(first_third_intersection));
-    vector<BarcodeId> all_intersection;
+    std::vector<BarcodeId> all_intersection;
     std::set_intersection(first_third_intersection.begin(), first_third_intersection.end(), second_barcodes.begin(),
                           second_barcodes.end(), std::back_inserter(all_intersection));
     double shared_fraction =
@@ -224,15 +233,16 @@ bool TransitiveEdgesPredicate::Check(const ScaffoldEdgePredicate::ScaffoldEdge &
     DEBUG("True";)
     return true;
 }
-SimpleSearcher::SimpleSearcher(const scaffold_graph::ScaffoldGraph &graph_, const Graph &g, size_t distance_)
-    : scaff_graph_(graph_), g_(g), distance_threshold_(distance_) {}
-vector<SimpleSearcher::ScaffoldVertex> SimpleSearcher::GetReachableVertices(const SimpleSearcher::ScaffoldVertex &vertex,
-                                                                            const ScaffoldGraph::ScaffoldEdge &restricted_edge) {
-    vector<ScaffoldVertex> result;
+SimpleSearcher::SimpleSearcher(const scaffold_graph::ScaffoldGraph &graph, const Graph &g, size_t distance)
+    : scaff_graph_(graph), g_(g), distance_threshold_(distance) {}
+std::vector<SimpleSearcher::ScaffoldVertex> SimpleSearcher::GetReachableVertices(
+        const SimpleSearcher::ScaffoldVertex &vertex,
+        const ScaffoldGraph::ScaffoldEdge &restricted_edge) {
+    std::vector<ScaffoldVertex> result;
     VertexWithDistance new_vertex(vertex, 0);
     std::queue<VertexWithDistance> vertex_queue;
     vertex_queue.push(new_vertex);
-    unordered_set<ScaffoldVertex> visited;
+    std::unordered_set<ScaffoldVertex> visited;
     visited.insert(vertex);
     visited.insert(vertex.GetConjugateFromGraph(g_));
     visited.insert(restricted_edge.getEnd().GetConjugateFromGraph(g_));
@@ -276,14 +286,15 @@ bool SimpleSearcher::AreEqual(const scaffold_graph::ScaffoldGraph::ScaffoldEdge 
 SimpleSearcher::VertexWithDistance::VertexWithDistance(const SimpleSearcher::ScaffoldVertex &vertex, size_t distance)
     : vertex(vertex), distance(distance) {}
 
-AbstractBarcodeScoreFunction::AbstractBarcodeScoreFunction(const Graph &graph_,
-                                                           const shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_)
+AbstractBarcodeScoreFunction::AbstractBarcodeScoreFunction(
+        const Graph &graph_,
+        const std::shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor)
     :
     graph_(graph_),
-    barcode_extractor_(barcode_extractor_) {}
+    barcode_extractor_(barcode_extractor) {}
 TrivialBarcodeScoreFunction::TrivialBarcodeScoreFunction(
     const Graph &graph_,
-    shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
+    std::shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
     const size_t read_count_threshold_,
     const size_t tail_threshold_) : AbstractBarcodeScoreFunction(graph_,
                                                                  barcode_extractor_),
@@ -301,13 +312,13 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
     DEBUG("Checking edge " << start.int_id() << " -> " << end.int_id());
     const auto &start_entry = long_edge_extractor_->GetTailEntry(start);
     const auto &end_entry = long_edge_extractor_->GetHeadEntry(end);
-    auto short_edge_score_function = make_shared<RepetitiveVertexEntryScoreFunction>(short_edge_extractor_);
-    auto pair_entry_processor = make_shared<TwoSetsBasedPairEntryProcessor>(start_entry, end_entry,
-                                                                            short_edge_score_function);
+    auto short_edge_score_function = std::make_shared<RepetitiveVertexEntryScoreFunction>(short_edge_extractor_);
+    auto pair_entry_processor = std::make_shared<TwoSetsBasedPairEntryProcessor>(start_entry, end_entry,
+                                                                                 short_edge_score_function);
     auto scaffold_vertex_predicate = ConstructScaffoldVertexPredicate(start, end, pair_entry_processor);
     auto pe_extension_chooser = search_parameter_pack_.extension_chooser;
-    auto multi_chooser = make_shared<path_extend::PredicateExtensionChooser>(gp_.g, scaffold_vertex_predicate,
-                                                                             pe_extension_chooser);
+    auto multi_chooser = std::make_shared<path_extend::PredicateExtensionChooser>(gp_.g, scaffold_vertex_predicate,
+                                                                                  pe_extension_chooser);
     ExtenderSearcher extender_searcher(gp_, multi_chooser, search_parameter_pack_.search_params,
                                        search_parameter_pack_.searching_extender_params, length_bound_);
 
@@ -318,8 +329,8 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
 
 CompositeConnectionPredicate::CompositeConnectionPredicate(
         const conj_graph_pack &gp,
-        shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
-        shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor,
+        std::shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
+        std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor,
         const ScaffoldingUniqueEdgeStorage &unique_storage,
         const size_t length_bound,
         const ReadCloudSearchParameterPack &search_parameter_pack,
@@ -332,17 +343,17 @@ CompositeConnectionPredicate::CompositeConnectionPredicate(
     search_parameter_pack_(search_parameter_pack),
     predicate_params_(predicate_params),
     scaffolding_mode_(scaffolding_mode) {}
-shared_ptr<ScaffoldVertexPredicate> CompositeConnectionPredicate::ConstructScaffoldVertexPredicate(
+std::shared_ptr<ScaffoldVertexPredicate> CompositeConnectionPredicate::ConstructScaffoldVertexPredicate(
         const ScaffoldVertex &start, const ScaffoldVertex &end,
-        shared_ptr<PairEntryProcessor> entry_processor) const {
-    auto long_gap_cloud_predicate = make_shared<LongEdgePairGapCloserPredicate>(gp_.g, short_edge_extractor_,
-                                                                                predicate_params_,
-                                                                                start, end,
-                                                                                entry_processor);
+        std::shared_ptr<PairEntryProcessor> entry_processor) const {
+    auto long_gap_cloud_predicate = std::make_shared<LongEdgePairGapCloserPredicate>(gp_.g, short_edge_extractor_,
+                                                                                     predicate_params_,
+                                                                                     start, end,
+                                                                                     entry_processor);
     size_t length_threshold = unique_storage_.min_length();
 
-    auto length_predicate = make_shared<LengthChecker>(length_threshold, gp_.g);
-    auto scaffold_vertex_predicate = make_shared<AndPredicate>(length_predicate, long_gap_cloud_predicate);
+    auto length_predicate = std::make_shared<LengthChecker>(length_threshold, gp_.g);
+    auto scaffold_vertex_predicate = std::make_shared<AndPredicate>(length_predicate, long_gap_cloud_predicate);
     return scaffold_vertex_predicate;
 }
 

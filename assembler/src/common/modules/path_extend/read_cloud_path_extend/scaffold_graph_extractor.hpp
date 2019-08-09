@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
@@ -11,11 +17,8 @@ class ScaffoldGraphExtractor {
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef std::unordered_set<ScaffoldVertex> VertexSet;
 
-  public:
     std::vector<ScaffoldEdge> ExtractMaxScoreEdges(const ScaffoldGraph &scaffold_graph) const;
-
     std::vector<ScaffoldEdge> ExtractReliableEdges(const ScaffoldGraph &scaffold_graph) const;
-
     std::unordered_map<EdgeId, VertexSet> GetFirstEdgeMap(const ScaffoldGraph &scaffold_graph,
                                                           const func::TypedPredicate<EdgeId> &pred) const;
 };

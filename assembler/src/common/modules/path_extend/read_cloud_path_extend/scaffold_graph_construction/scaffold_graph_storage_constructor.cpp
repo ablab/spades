@@ -1,23 +1,29 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "scaffold_graph_storage_constructor.hpp"
 
-#include "read_cloud_path_extend/statistics/cloud_check_statistics.hpp"
-#include "read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
-#include "read_cloud_path_extend/validation/path_cluster_validation.hpp"
-#include "read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/statistics/cloud_check_statistics.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/validation/path_cluster_validation.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 
 ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorage() const {
-    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    auto extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
     CloudScaffoldGraphConstructor constructor(max_threads_, gp_, small_length_storage_, lib_, configs_, search_params_,
-                                              extractor);
+                                              scaffold_graph_path_, extractor);
     scaffold_graph_construction_pipeline_type::Type type = scaffold_graph_construction_pipeline_type::Basic;
     auto large_scaffold_graph = constructor.ConstructScaffoldGraphFromMinLength(large_length_storage_, type);
 
     //make sure that small scaffold graph contains vertices of large scaffold graph
-    set<scaffold_graph::ScaffoldVertex> small_graph_vertices;
+    std::set<scaffold_graph::ScaffoldVertex> small_graph_vertices;
     for (const auto &edge: small_length_storage_) {
         scaffold_graph::ScaffoldVertex sc_vertex(edge);
         small_graph_vertices.insert(sc_vertex);
@@ -41,18 +47,20 @@ ScaffoldGraphStorageConstructor::ScaffoldGraphStorageConstructor(const Scaffoldi
                                                                  const LibraryT &lib,
                                                                  const ReadCloudConfigsT &configs,
                                                                  const ReadCloudSearchParameterPack &search_params,
+                                                                 const std::string &scaffold_graph_path,
                                                                  const conj_graph_pack &gp) :
     small_length_storage_(small_length_storage), large_length_storage_(large_length_storage),
     small_length_threshold_(small_length_threshold), large_length_threshold_(large_length_threshold),
-    max_threads_(max_threads),lib_(lib), configs_(configs), search_params_(search_params), gp_(gp) {}
+    max_threads_(max_threads),lib_(lib), configs_(configs), search_params_(search_params),
+    scaffold_graph_path_(scaffold_graph_path), gp_(gp) {}
 
 ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorageFromPaths(const PathContainer &paths,
                                                                                 bool scaffolding_mode) const {
 
     const size_t num_threads = max_threads_;
-    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    auto extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
     CloudScaffoldGraphConstructor constructor(num_threads, gp_, small_length_storage_, lib_, configs_, search_params_,
-                                              extractor);
+                                              scaffold_graph_path_, extractor);
     ScaffoldGraphStorage storage(constructor.ConstructScaffoldGraphFromPathContainer(paths, large_length_threshold_,
                                                                                      scaffolding_mode),
                                  constructor.ConstructScaffoldGraphFromPathContainer(paths, small_length_threshold_,
@@ -85,7 +93,6 @@ void ScaffoldGraphPolisherHelper::PrintScaffoldGraphReferenceInfo(const scaffold
     validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
     validation::FilteredReferencePathHelper path_helper(gp_);
     auto reference_paths = path_helper.GetFilteredReferencePathsFromGraph(path_to_reference, scaffold_graph);
-
     auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
     stats.Serialize(std::cout);
 }
@@ -116,8 +123,7 @@ ScaffoldGraphPolisherHelper::ScaffoldGraph ScaffoldGraphPolisherHelper::GetScaff
         PrintScaffoldGraphReferenceInfo(polished_scaffold_graph, path_to_reference);
     }
 
-    //fixme move to configs
-    const double relative_threshold = 3;
+    const double relative_threshold = cloud_configs_.relative_score_threshold;
     auto final_scaffold_graph = ApplyRelativeThreshold(polished_scaffold_graph, storage.GetSmallLengthThreshold(),
                                                        relative_threshold);
 
@@ -129,22 +135,22 @@ ScaffoldGraphPolisherHelper::ScaffoldGraph ScaffoldGraphPolisherHelper::ApplyRel
     size_t unique_length_threshold,
     double relative_threshold) const {
     auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper,
-                                                                                             gp_.g);
+                                                                                                  gp_.g);
     auto params = cloud_configs_.scaff_con;
     const size_t tail_threshold = unique_length_threshold;
     const size_t length_threshold = params.min_edge_length_for_barcode_collection;
     const size_t count_threshold = params.count_threshold;
-    auto tail_threshold_getter = make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
+    auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
-    vector<scaffold_graph::ScaffoldVertex> scaffold_vertices;
+    std::vector<scaffold_graph::ScaffoldVertex> scaffold_vertices;
     std::move(graph.vbegin(), graph.vend(), std::back_inserter(scaffold_vertices));
     auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor, tail_threshold_getter,
                                                                      count_threshold, length_threshold,
                                                                      max_threads_, scaffold_vertices);
     auto scaffold_index_extractor =
-        make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
+        std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
 
-    auto score_function = make_shared<NormalizedBarcodeScoreFunction>(gp_.g, scaffold_index_extractor);
+    auto score_function = std::make_shared<NormalizedBarcodeScoreFunction>(gp_.g, scaffold_index_extractor);
     scaffold_graph::InternalScoreScaffoldGraphFilter filtered_graph_constructor(gp_.g, graph,
                                                                                 score_function,
                                                                                 relative_threshold);
@@ -158,13 +164,15 @@ CloudScaffoldGraphConstructor::CloudScaffoldGraphConstructor(const size_t max_th
                                                              const LibraryT &lib,
                                                              const ReadCloudConfigsT &configs,
                                                              const ReadCloudSearchParameterPack search_parameter_pack,
-                                                             shared_ptr<BarcodeExtractorT> barcode_extractor)
+                                                             const std::string &debug_output_path,
+                                                             std::shared_ptr<BarcodeExtractorT> barcode_extractor)
     : max_threads_(max_threads_), gp_(gp), unique_storage_(unique_storage),
-      lib_(lib), configs_(configs), search_parameter_pack_(search_parameter_pack), barcode_extractor_(barcode_extractor) {}
+      lib_(lib), configs_(configs), search_parameter_pack_(search_parameter_pack), debug_output_path_(debug_output_path),
+      barcode_extractor_(barcode_extractor) {}
 
 CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::ConstructScaffoldGraphFromMinLength(
     const ScaffoldingUniqueEdgeStorage &unique_storage, scaffold_graph_construction_pipeline_type::Type type) const {
-    set<ScaffoldVertex> scaffold_vertices;
+        std::set<ScaffoldVertex> scaffold_vertices;
     for (const auto &edge: unique_storage) {
         ScaffoldVertex sc_vertex(edge);
         scaffold_vertices.insert(sc_vertex);
@@ -177,7 +185,7 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
         size_t min_length,
         bool scaffolding_mode) const {
     DEBUG("Constructing path set");
-    set<ScaffoldVertex> path_set;
+    std::set<ScaffoldVertex> path_set;
     for (const auto &path_pair: paths) {
         if (path_pair.first->Length() >= min_length) {
             ScaffoldVertex first_vertex(path_pair.first);
@@ -200,33 +208,33 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     return ConstructScaffoldGraphFromVertices(path_set, unique_storage_, min_length, type);
 }
 CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::ConstructScaffoldGraphFromVertices(
-    const set<CloudScaffoldGraphConstructor::ScaffoldVertex> &scaffold_vertices,
-    const ScaffoldingUniqueEdgeStorage &unique_storage,
-    size_t min_length, scaffold_graph_construction_pipeline_type::Type type) const {
-    shared_ptr<ScaffoldGraphPipelineConstructor> pipeline_constructor;
+        const std::set<CloudScaffoldGraphConstructor::ScaffoldVertex> &scaffold_vertices,
+        const ScaffoldingUniqueEdgeStorage &unique_storage,
+        size_t min_length, scaffold_graph_construction_pipeline_type::Type type) const {
+    std::shared_ptr<ScaffoldGraphPipelineConstructor> pipeline_constructor;
     switch (type) {
         case scaffold_graph_construction_pipeline_type::Basic: {
-            pipeline_constructor = make_shared<FullScaffoldGraphPipelineConstructor>(gp_, lib_, configs_,
-                                                                                     unique_storage,
-                                                                                     barcode_extractor_,
-                                                                                     max_threads_, min_length,
-                                                                                     search_parameter_pack_);
+            pipeline_constructor = std::make_shared<FullScaffoldGraphPipelineConstructor>(gp_, lib_, configs_,
+                                                                                          unique_storage,
+                                                                                          barcode_extractor_,
+                                                                                          max_threads_, min_length,
+                                                                                          search_parameter_pack_);
             INFO("Constructing scaffold graph in basic mode");
             break;
         }
         case scaffold_graph_construction_pipeline_type::Scaffolding: {
-            pipeline_constructor = make_shared<MergingScaffoldGraphPipelineConstructor>(gp_, lib_, configs_,
-                                                                                        unique_storage,
-                                                                                        barcode_extractor_,
-                                                                                        max_threads_, min_length);
+            pipeline_constructor = std::make_shared<MergingScaffoldGraphPipelineConstructor>(gp_, lib_, configs_,
+                                                                                             unique_storage,
+                                                                                             barcode_extractor_,
+                                                                                             max_threads_, min_length);
             INFO("Constructing scaffold graph in scaffolding mode");
             break;
         }
         case scaffold_graph_construction_pipeline_type::Binning: {
-            pipeline_constructor = make_shared<BinningScaffoldGraphPipelineConstructor>(gp_, lib_, configs_,
-                                                                                        unique_storage,
-                                                                                        barcode_extractor_,
-                                                                                        max_threads_, min_length);
+            pipeline_constructor = std::make_shared<BinningScaffoldGraphPipelineConstructor>(gp_, lib_, configs_,
+                                                                                             unique_storage,
+                                                                                             barcode_extractor_,
+                                                                                             max_threads_, min_length);
             INFO("Constructing scaffold graph in binning mode");
             break;
         }
@@ -250,8 +258,8 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
             string name = result.second;
             auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
             INFO("Stats for " << name);
-            //fixme write to somewhere
-            stats.Serialize(std::cout);
+            std::ofstream fout(debug_output_path_);
+            stats.Serialize(fout);
         }
     }
     return *(pipeline.GetResult());

@@ -1,6 +1,12 @@
+//***************************************************************************
+//* Copyright (c) 2017-2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
-#include "barcode_index.hpp"
+#include "common/barcode_index/barcode_index.hpp"
 #include "common/pipeline/library.hpp"
 #include "common/modules/alignment/edge_index.hpp"
 #include "common/modules/alignment/kmer_mapper.hpp"

@@ -1,5 +1,12 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
-#include <common/modules/path_extend/scaffolder2015/scaffold_graph.hpp>
+
+#include "common/modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
 #include "common/adt/iterator_range.hpp"
 #include "common/assembly_graph/core/graph.hpp"
 
@@ -8,14 +15,10 @@ namespace contracted_graph {
      public:
         typedef debruijn_graph::VertexId VertexId;
         typedef debruijn_graph::EdgeId EdgeId;
-        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
-
-     private:
-        std::map<debruijn_graph::VertexId, std::unordered_set<ScaffoldVertex>> data_;
-
-    public:
+        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
         typedef std::map<VertexId, std::unordered_set<ScaffoldVertex>>::const_iterator const_iterator;
         typedef std::map<VertexId, std::unordered_set<ScaffoldVertex>>::value_type value_type;
+
         AdjacencyMap() = default;
         AdjacencyMap(const VertexId& vertex, const ScaffoldVertex& edge) : data_({{vertex, {edge}}}) {}
         void InsertPair(const VertexId& vertex, const ScaffoldVertex& edge);
@@ -24,6 +27,9 @@ namespace contracted_graph {
 
         const_iterator begin() const;
         const_iterator end() const;
+
+      private:
+        std::map<debruijn_graph::VertexId, std::unordered_set<ScaffoldVertex>> data_;
     };
 
     class ContractedGraph {
@@ -31,10 +37,9 @@ namespace contracted_graph {
         typedef debruijn_graph::VertexId VertexId;
         typedef std::map<VertexId, AdjacencyMap>::const_iterator const_iterator;
         typedef std::set<VertexId>::const_iterator vertex_iterator;
-        typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
         typedef ScaffoldVertex EdgeId;
 
-    public:
         ContractedGraph(const Graph &assembly_graph_);
         virtual ~ContractedGraph() = default;
 
@@ -43,8 +48,8 @@ namespace contracted_graph {
         void RemoveEdge(const VertexId& head, const VertexId& tail, const ScaffoldVertex& edge);
         size_t GetOutDegree(const VertexId &vertex) const;
         size_t GetInDegree(const VertexId &vertex) const;
-        vector <ScaffoldVertex> GetIncomingEdges(const VertexId &vertex) const;
-        vector <ScaffoldVertex> GetOutcomingEdges(const VertexId &vertex) const;
+        std::vector <ScaffoldVertex> GetIncomingEdges(const VertexId &vertex) const;
+        std::vector <ScaffoldVertex> GetOutcomingEdges(const VertexId &vertex) const;
         size_t GetCapacity(const VertexId &vertex) const;
         void InsertCapacity(const VertexId& vertex, size_t capacity);
         bool ContainsVertex(const VertexId& vertex) const;
@@ -61,8 +66,8 @@ namespace contracted_graph {
         size_t CountEdges() const;
 
         const Graph &GetAssemblyGraph() const;
-        string EdgeNucls(EdgeId edge) const;
-        string VertexNucls(VertexId vertex) const;
+        std::string EdgeNucls(EdgeId edge) const;
+        std::string VertexNucls(VertexId vertex) const;
         double coverage(EdgeId edge) const;
         size_t length(EdgeId edge) const;
         size_t int_id(EdgeId edge) const;

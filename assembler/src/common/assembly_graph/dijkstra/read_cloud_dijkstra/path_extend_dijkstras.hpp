@@ -1,9 +1,9 @@
 #pragma once
 
+#include "common/modules/path_extend/extension_chooser.hpp"
+
 #include <map>
 #include <vector>
-
-#include "common/modules/path_extend/extension_chooser.hpp"
 
 namespace omnigraph {
 template<class Graph, typename distance_t = size_t>
@@ -13,13 +13,13 @@ class PathBacktrackingPutChecker: public VertexPutChecker<Graph, distance_t> {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &g_;
-    const std::map<VertexId, pair<VertexId, EdgeId>> *prev_vert_map_;
+    const std::map<VertexId, std::pair<VertexId, EdgeId>> *prev_vert_map_;
 
  public:
     explicit PathBacktrackingPutChecker(const Graph &g) :
         VertexPutChecker<Graph, distance_t>(), g_(g), prev_vert_map_(nullptr) {}
 
-    void AddPrevVertexMap(const std::map<VertexId, pair<VertexId, EdgeId>> &prev_vert_map) {
+    void AddPrevVertexMap(const std::map<VertexId, std::pair<VertexId, EdgeId>> &prev_vert_map) {
         prev_vert_map_ = &prev_vert_map;
     }
 };
@@ -33,13 +33,13 @@ class ExtensionChooserBasedPutChecker: public PathBacktrackingPutChecker<Graph, 
 
     typedef path_extend::BidirectionalPath BidirectionalPath;
 
-    const shared_ptr<path_extend::ExtensionChooser> extension_chooser_;
+    const std::shared_ptr<path_extend::ExtensionChooser> extension_chooser_;
     const size_t path_prefix_length_;
     const VertexId init_vertex_;
     const EdgeId init_edge_;
  public:
     ExtensionChooserBasedPutChecker(const Graph &g,
-                                    const shared_ptr<path_extend::ExtensionChooser> extension_chooser_,
+                                    const std::shared_ptr<path_extend::ExtensionChooser> extension_chooser_,
                                     const size_t path_prefix_length_,
                                     const VertexId &init_vertex_,
                                     const EdgeId &init_edge_)

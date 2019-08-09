@@ -36,8 +36,8 @@ template <>
 class ForwardNeighbourIterator<ScaffoldGraph> {
     typedef typename ScaffoldGraph::VertexId VertexId;
     typedef typename ScaffoldGraph::EdgeId EdgeId;
-    typedef typename vector<ScaffoldGraph::EdgeId>::const_iterator edge_const_iterator;
-    vector<EdgeId> out_edges_;
+    typedef typename std::vector<ScaffoldGraph::EdgeId>::const_iterator edge_const_iterator;
+    std::vector<EdgeId> out_edges_;
     edge_const_iterator current_;
  public:
     ForwardNeighbourIterator(const ScaffoldGraph &graph, VertexId vertex) :
@@ -64,9 +64,9 @@ template<>
 class BackwardNeighbourIterator<ScaffoldGraph> {
     typedef typename ScaffoldGraph::VertexId VertexId;
     typedef typename ScaffoldGraph::EdgeId EdgeId;
-    typedef typename vector<EdgeId>::const_iterator edge_const_iterator;
+    typedef typename std::vector<EdgeId>::const_iterator edge_const_iterator;
 
-    vector<EdgeId> in_edges_;
+    std::vector<EdgeId> in_edges_;
     edge_const_iterator current_;
  public:
     BackwardNeighbourIterator(const ScaffoldGraph &graph, VertexId vertex) :
@@ -91,11 +91,11 @@ class ScaffoldBarcodedPathPutChecker {
     const Graph& g_;
     const VertexId first_;
     const VertexId second_;
-    shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate_;
+    std::shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate_;
 
  public:
     ScaffoldBarcodedPathPutChecker(const Graph& g, const VertexId& first, const VertexId& second,
-                                   shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate) :
+                                   std::shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate) :
         g_(g),
         first_(first),
         second_(second),
@@ -193,7 +193,7 @@ class ScaffoldDijkstraHelper {
         const ScaffoldGraph::ScaffoldGraphVertex first,
         const ScaffoldGraph::ScaffoldGraphVertex second,
         size_t length_bound,
-        shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate,
+        std::shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate,
         size_t max_vertex_number = -1ul){
         return BackwardBoundedScaffoldDijkstra(graph, BackwardBoundedScaffoldDijkstraSettings(
             SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>(),
@@ -208,7 +208,7 @@ class ScaffoldDijkstraHelper {
         const ScaffoldGraph::ScaffoldGraphVertex& first,
         const ScaffoldGraph::ScaffoldGraphVertex& second,
         size_t length_bound,
-        shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate,
+        std::shared_ptr<path_extend::read_cloud::ScaffoldVertexPredicate> predicate,
         size_t max_vertex_number = -1ul){
         return ForwardBoundedScaffoldDijkstra(graph, ForwardBoundedScaffoldDijkstraSettings(
             SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>(),

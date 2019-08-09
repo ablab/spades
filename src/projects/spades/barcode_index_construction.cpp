@@ -1,7 +1,10 @@
-#include <vector>
 #include "barcode_index_construction.hpp"
+
 #include "common/barcode_index/barcode_info_extractor.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
+
+#include <vector>
+
 namespace debruijn_graph {
     //todo remove from here!
 

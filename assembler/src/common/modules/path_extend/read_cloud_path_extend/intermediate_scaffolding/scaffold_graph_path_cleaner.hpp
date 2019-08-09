@@ -1,4 +1,11 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
+
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 
 namespace path_extend {
@@ -14,7 +21,6 @@ class ScaffoldGraphPathCleaner {
 
   private:
     PathContainer RemoveRepeats(ScaffoldGraph &graph, const PathContainer &paths) const;
-
     void CleanOutcoming(ScaffoldGraph &graph, const std::vector<ScaffoldVertex> &path) const;
     void CleanIncoming(ScaffoldGraph &graph, const std::vector<ScaffoldVertex> &path) const;
 };

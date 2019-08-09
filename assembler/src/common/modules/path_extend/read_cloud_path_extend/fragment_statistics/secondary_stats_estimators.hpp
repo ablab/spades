@@ -1,5 +1,12 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
-#include "distribution_extractor_helper.hpp"
+
+#include "common/modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
 
 namespace path_extend {
 namespace read_cloud {

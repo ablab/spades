@@ -380,7 +380,7 @@ Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
     }
 }
 
-shared_ptr<read_cloud::LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::GetPredicateFromPosition(
+std::shared_ptr<read_cloud::LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChooserFactory::GetPredicateFromPosition(
         const BidirectionalPath &path,
         const size_t position,
         const GapCloserParamsT &params) const {
@@ -397,16 +397,16 @@ shared_ptr<read_cloud::LongEdgePairGapCloserPredicate> ReadCloudGapExtensionChoo
     DEBUG("Suffix entry size: " << suffix_entry.size());
     DEBUG("Prefix length: " << prefix->Length());
     DEBUG("Suffix length: " << suffix->Length());
-    auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, main_extractor_);
-    auto short_edge_score_function = make_shared<read_cloud::RepetitiveVertexEntryScoreFunction>(short_edge_extractor);
-    auto pair_entry_extractor = make_shared<read_cloud::TwoSetsBasedPairEntryProcessor>(prefix_entry, suffix_entry,
-                                                                                        short_edge_score_function);
-    auto predicate = make_shared<read_cloud::LongEdgePairGapCloserPredicate>(g_, short_edge_extractor, params,
-                                                                             prefix, suffix, pair_entry_extractor);
+    auto short_edge_extractor = std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, main_extractor_);
+    auto short_edge_score_function = std::make_shared<read_cloud::RepetitiveVertexEntryScoreFunction>(short_edge_extractor);
+    auto pair_entry_extractor = std::make_shared<read_cloud::TwoSetsBasedPairEntryProcessor>(prefix_entry, suffix_entry,
+                                                                                             short_edge_score_function);
+    auto predicate = std::make_shared<read_cloud::LongEdgePairGapCloserPredicate>(g_, short_edge_extractor, params,
+                                                                                  prefix, suffix, pair_entry_extractor);
     return predicate;
 }
-shared_ptr<ExtensionChooser> ReadCloudGapExtensionChooserFactory::CreateChooser(const BidirectionalPath &original_path,
-                                                                                    size_t position) const {
+std::shared_ptr<ExtensionChooser> ReadCloudGapExtensionChooserFactory::CreateChooser(
+        const BidirectionalPath &original_path, size_t position) const {
     DEBUG("Creating predicate");
     auto predicate = GetPredicateFromPosition(original_path, position, params_);
     DEBUG("Created predicate");

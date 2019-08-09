@@ -1,6 +1,11 @@
-
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #include "extender_searcher.hpp"
+
 namespace path_extend {
 namespace read_cloud {
 
@@ -81,11 +86,11 @@ std::shared_ptr<SearchingMultiExtender> ExtenderSearcher::ConstructSearchingExte
     bool short_loop_resolver = extender_params_.use_short_loop_cov_resolver;
     double weight_threshold = extender_params_.weight_threshold;
 
-    auto multi_extender = make_shared<path_extend::SearchingMultiExtender>(gp_, cover_map, used_unique_storage,
-                                                                           extension_chooser_, insert_size,
-                                                                           investigate_loops, short_loop_resolver,
-                                                                           weight_threshold, length_bound_,
-                                                                           paths_container);
+    auto multi_extender = std::make_shared<path_extend::SearchingMultiExtender>(gp_, cover_map, used_unique_storage,
+                                                                                extension_chooser_, insert_size,
+                                                                                investigate_loops, short_loop_resolver,
+                                                                                weight_threshold, length_bound_,
+                                                                                paths_container);
     return multi_extender;
 }
 
@@ -100,7 +105,7 @@ SearchParams::SearchParams() :
 SearchingExtenderParams DefaultExtenderParamsConstructor::ConstructExtenderParams(size_t lib_index,
                                                                                   double weight_threshold) const {
     const auto &lib = dataset_info_.reads[lib_index];
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+    std::shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
     size_t insert_size = paired_lib->GetISMax();
     UsedUniqueStorage used_unique_storage(unique_storage_, gp_.g);
     const bool investigate_loops = true;

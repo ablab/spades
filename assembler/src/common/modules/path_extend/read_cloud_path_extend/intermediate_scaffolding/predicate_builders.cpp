@@ -1,6 +1,13 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "predicate_builders.hpp"
-#include "path_cluster_helper.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/graph_cluster_storage_builder.hpp"
+
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/graph_cluster_storage_builder.hpp"
 
 namespace path_extend {
 namespace read_cloud {

@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "path_cluster_validation.hpp"
 
 namespace path_extend {
@@ -13,16 +19,16 @@ bool PathClusterValidator::IsCorrect(const cluster_storage::Cluster &cluster) co
     return IsCorrect(cluster_vertices);
 }
 bool PathClusterValidator::IsCovered(const cluster_storage::Cluster &cluster) const {
-    set<scaffold_graph::ScaffoldVertex> cluster_vertices;
+    std::set<scaffold_graph::ScaffoldVertex> cluster_vertices;
     for (const auto &entry: cluster) {
         cluster_vertices.insert(entry.first);
     }
     return IsCovered(cluster_vertices);
 }
-bool PathClusterValidator::IsCorrect(const set<scaffold_graph::ScaffoldVertex> &scaffold_vertices) const {
+bool PathClusterValidator::IsCorrect(const std::set<scaffold_graph::ScaffoldVertex> &scaffold_vertices) const {
     return GetReferencePath(scaffold_vertices).is_initialized();
 }
-bool PathClusterValidator::IsCovered(const set<scaffold_graph::ScaffoldVertex> &cluster_vertices) const {
+bool PathClusterValidator::IsCovered(const std::set<scaffold_graph::ScaffoldVertex> &cluster_vertices) const {
     for (const auto &vertex: cluster_vertices) {
         if (not IsCovered(vertex)) {
             return false;
@@ -30,7 +36,7 @@ bool PathClusterValidator::IsCovered(const set<scaffold_graph::ScaffoldVertex> &
     }
     return true;
 }
-void PathClusterValidator::PrintRefIndexInfo(const set<scaffold_graph::ScaffoldVertex> &cluster_vertices) const {
+void PathClusterValidator::PrintRefIndexInfo(const std::set<scaffold_graph::ScaffoldVertex> &cluster_vertices) const {
     VERIFY_DEV(IsCovered(cluster_vertices));
     for (const auto &vertex: cluster_vertices) {
         auto edge = vertex.GetFirstEdge();
@@ -44,7 +50,7 @@ bool PathClusterValidator::IsCovered(const scaffold_graph::ScaffoldVertex &verte
     return ref_path_index_.Contains(edge);
 }
 boost::optional<PathClusterValidator::SimplePath> PathClusterValidator::GetReferencePath(
-    const set<PathClusterValidator::ScaffoldVertex> &vertices) const {
+        const std::set<PathClusterValidator::ScaffoldVertex> &vertices) const {
     boost::optional<SimplePath> result;
     std::set<EdgeId> cluster_vertices;
     for (const auto &vertex: vertices) {

@@ -1,3 +1,8 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #pragma once
 
@@ -40,7 +45,7 @@ class SimplePathScaffolder : public PathScaffolder {
 
   private:
 
-    void CondenseSimplePaths(const vector<ScaffoldEdge> &scaffold_edges) const;
+    void CondenseSimplePaths(const std::vector<ScaffoldEdge> &scaffold_edges) const;
     void ExtendPathAlongConnections(const ScaffoldVertex &start,
                                     const std::unordered_map<ScaffoldVertex, ScaffoldVertex> &merge_connections,
                                     const std::unordered_map<ScaffoldVertex, size_t> &start_to_length) const;

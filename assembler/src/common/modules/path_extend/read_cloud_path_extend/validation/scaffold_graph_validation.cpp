@@ -1,14 +1,21 @@
-#include "read_cloud_path_extend/scaffold_graph_extractor.hpp"
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "scaffold_graph_validation.hpp"
-#include "transition_extractor.hpp"
+
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 namespace validation {
 
 ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStats(
-    const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
-    const vector<vector<EdgeWithMapping>> &reference_paths) {
+        const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
+        const std::vector<std::vector<EdgeWithMapping>> &reference_paths) {
     GeneralTransitionStorageBuilder reference_transition_builder(g_, 1, false, false);
     ReverseTransitionStorageBuilder reverse_transition_builder;
     ConjugateTransitionStorageBuilder conjugate_transition_builder(g_);
@@ -30,9 +37,8 @@ ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStats(
 }
 
 std::set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransitions(
-    const ScaffoldGraphValidator::ScaffoldGraph &graph,
-    const ContigTransitionStorage &genome_transitions) const {
-
+        const ScaffoldGraphValidator::ScaffoldGraph &graph,
+        const ContigTransitionStorage &genome_transitions) const {
     std::unordered_map<EdgeId, size_t> edge_to_vertex;
     for (const scaffold_graph::ScaffoldVertex &vertex: graph.vertices()) {
         auto vertex_edges = vertex.GetAllEdges();

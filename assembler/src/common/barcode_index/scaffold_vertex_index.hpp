@@ -1,9 +1,15 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
-#include "modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
+#include "common/modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
 #include "common/assembly_graph/core/graph.hpp"
 #include "adt/iterator_range.hpp"
-#include "barcode_info_extractor.hpp"
+#include "common/barcode_index/barcode_info_extractor.hpp"
 
 namespace barcode_index {
 

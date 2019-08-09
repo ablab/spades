@@ -1,12 +1,20 @@
-#include <random>
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "long_edge_dataset.hpp"
+
 #include "common/modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
+
+#include <random>
 namespace path_extend {
 namespace read_cloud {
 
 void LongEdgePairDataset::Serialize(const string &path) {
-    ofstream fout(path);
+    std::ofstream fout(path);
     fout <<
          "LeftId,LeftLength,LeftCov,LeftSize,RightId,RightLength,RightCov,RightSize,Intersection,Distance,Genome,Correct"
          << std::endl;
@@ -19,7 +27,7 @@ void LongEdgePairDataset::Serialize(const string &path) {
     }
 }
 LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(
-    const vector<vector<validation::EdgeWithMapping>> &reference_paths) const {
+        const std::vector<std::vector<validation::EdgeWithMapping>> &reference_paths) const {
     INFO("Getting long edge dataset")
     validation::ReferencePathIndexBuilder path_index_builder;
     auto reference_index = path_index_builder.BuildReferencePathIndex(reference_paths);
@@ -31,9 +39,9 @@ LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(
     auto covered_edges_set = reference_transition_storage.GetCoveredEdges();
 
     auto distance_map = GetDistanceMap(reference_paths);
-    vector<EdgeId> reference_edges(covered_edges_set.begin(), covered_edges_set.end());
+    std::vector<EdgeId> reference_edges(covered_edges_set.begin(), covered_edges_set.end());
 
-    vector<LongEdgePairEntry> dataset;
+    std::vector<LongEdgePairEntry> dataset;
     auto long_edge_extractor = ConstructLongEdgeExtractor();
     auto correct_entries = GetCorrectEntries(long_edge_extractor, reference_transition_storage,
                                              reference_index, distance_map);
@@ -69,8 +77,8 @@ LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(
     LongEdgePairDataset result(dataset);
     return result;
 }
-map<LongEdgePairDatasetExtractor::Transition, size_t> LongEdgePairDatasetExtractor::GetDistanceMap(
-    const vector<vector<LongEdgePairDatasetExtractor::EdgeWithMapping>> &reference_paths) const {
+std::map<LongEdgePairDatasetExtractor::Transition, size_t> LongEdgePairDatasetExtractor::GetDistanceMap(
+        const std::vector<std::vector<LongEdgePairDatasetExtractor::EdgeWithMapping>> &reference_paths) const {
     std::map<transitions::Transition, size_t> result;
     for (const auto &path: reference_paths) {
         for (auto first = path.begin(), second = std::next(first); second != path.end(); ++first, ++second) {
@@ -86,12 +94,12 @@ map<LongEdgePairDatasetExtractor::Transition, size_t> LongEdgePairDatasetExtract
     INFO(result.size() << " distances counted");
     return result;
 }
-vector<LongEdgePairEntry> LongEdgePairDatasetExtractor::GetCorrectEntries(
-    shared_ptr<LongEdgePairDatasetExtractor::BarcodeExtractor> long_edge_extractor,
-    const validation::ContigTransitionStorage &reference_transition_storage,
-    const validation::ReferencePathIndex &long_edge_path_index,
-    const map<LongEdgePairDatasetExtractor::Transition, size_t> &distance_map) const {
-    vector<LongEdgePairEntry> correct_entries;
+std::vector<LongEdgePairEntry> LongEdgePairDatasetExtractor::GetCorrectEntries(
+        std::shared_ptr<LongEdgePairDatasetExtractor::BarcodeExtractor> long_edge_extractor,
+        const validation::ContigTransitionStorage &reference_transition_storage,
+        const validation::ReferencePathIndex &long_edge_path_index,
+        const std::map<LongEdgePairDatasetExtractor::Transition, size_t> &distance_map) const {
+    std::vector<LongEdgePairEntry> correct_entries;
 
     for (const auto &transition: reference_transition_storage) {
         DEBUG("Getting path ids");
@@ -116,11 +124,11 @@ vector<LongEdgePairEntry> LongEdgePairDatasetExtractor::GetCorrectEntries(
     return correct_entries;
 }
 LongEdgePairEntry LongEdgePairDatasetExtractor::GetLongEdgePairEntry(
-    shared_ptr<LongEdgePairDatasetExtractor::BarcodeExtractor> long_edge_extractor,
-    const EdgeId &first, const EdgeId &second,
-    size_t distance, size_t path_id, bool correct) const {
+        std::shared_ptr<LongEdgePairDatasetExtractor::BarcodeExtractor> long_edge_extractor,
+        const EdgeId &first, const EdgeId &second,
+        size_t distance, size_t path_id, bool correct) const {
     const size_t tail_threshold = scaffold_graph_storage_.GetSmallLengthThreshold();
-    barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor(gp_.barcode_mapper_ptr, gp_.g);
+    barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor(gp_.barcode_mapper, gp_.g);
 
     LongEdgeEntry first_entry(first.int_id(), gp_.g.length(first), gp_.g.coverage(first),
                               long_edge_extractor->GetTailSize(first));
@@ -132,7 +140,7 @@ LongEdgePairEntry LongEdgePairDatasetExtractor::GetLongEdgePairEntry(
     auto first_conj = gp_.g.conjugate(first);
     auto head_barcodes = barcode_extractor.GetBarcodesFromHead(first_conj, 1, tail_threshold);
     auto tail_barcodes = barcode_extractor.GetBarcodesFromHead(second, 1, tail_threshold);
-    vector<barcode_index::BarcodeId> intersection_b;
+    std::vector<barcode_index::BarcodeId> intersection_b;
     std::set_intersection(head_barcodes.begin(), head_barcodes.end(), tail_barcodes.begin(), tail_barcodes.end(),
                           std::back_inserter(intersection_b));
     VERIFY_DEV(first_entry.barcodes_ == head_barcodes.size());
@@ -148,17 +156,16 @@ bool LongEdgePairDatasetExtractor::AreNotClose(const validation::ContigTransitio
         close_transition_storage.CheckTransition(first, second);
     return not are_close;
 }
-shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> LongEdgePairDatasetExtractor::ConstructLongEdgeExtractor() const {
+std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> LongEdgePairDatasetExtractor::ConstructLongEdgeExtractor() const {
     size_t min_length = scaffold_graph_storage_.GetSmallLengthThreshold();
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
-    auto barcode_extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr,
-                                                                                        gp_.g);
+    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
     const size_t tail_threshold = min_length;
     const size_t length_threshold = 500;
     const size_t count_threshold = 1;
-    auto tail_threshold_getter = make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
+    auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
     const auto &scaffold_graph = scaffold_graph_storage_.GetSmallScaffoldGraph();
-    set<scaffold_graph::ScaffoldVertex> vertices;
+    std::set<scaffold_graph::ScaffoldVertex> vertices;
     for (const auto &vertex: scaffold_graph.vertices()) {
         vertices.insert(vertex);
     }
@@ -166,7 +173,7 @@ shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> LongEdgePairDa
                                                                      count_threshold, length_threshold,
                                                                      max_threads_, vertices);
     auto scaffold_index_extractor =
-        make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
+        std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
     return scaffold_index_extractor;
 }
 LongEdgePairDatasetExtractor::LongEdgePairDatasetExtractor(const conj_graph_pack &gp,
@@ -176,22 +183,22 @@ LongEdgePairDatasetExtractor::LongEdgePairDatasetExtractor(const conj_graph_pack
     scaffold_graph_storage_(scaffold_graph_storage),
     max_threads_(max_threads) {}
 LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(const scaffold_graph::ScaffoldGraph &graph,
-                                                                     const string &path_to_reference) const {
+                                                                     const std::string &path_to_reference) const {
     validation::FilteredReferencePathHelper path_helper(gp_);
     auto reference_paths = path_helper.GetFilteredReferencePathsFromGraph(path_to_reference, graph);
     return GetLongEdgeDataset(reference_paths);
 }
-void LongEdgePairDatasetExtractor::ConstructAndSerialize(const string &path_to_reference,
-                                                         const string &output_base) const {
-    const string reference_path = path_to_reference;
+void LongEdgePairDatasetExtractor::ConstructAndSerialize(const std::string &path_to_reference,
+                                                         const std::string &output_base) const {
+    const std::string reference_path = path_to_reference;
     size_t long_threshold = scaffold_graph_storage_.GetSmallLengthThreshold();
     size_t ultralong_threshold = scaffold_graph_storage_.GetLargeLengthThreshold();
     INFO(scaffold_graph_storage_.GetSmallScaffoldGraph().VertexCount() << " long edges");
     auto long_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetSmallScaffoldGraph(), reference_path);
     INFO(scaffold_graph_storage_.GetLargeScaffoldGraph().VertexCount() << " ultralong edges");
     auto ultralong_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetLargeScaffoldGraph(), reference_path);
-    const string output_name = "long_edge_dataset_";
-    const string long_output_path = fs::append_path(output_base, output_name + std::to_string(long_threshold));
+    const std::string output_name = "long_edge_dataset_";
+    const std::string long_output_path = fs::append_path(output_base, output_name + std::to_string(long_threshold));
     const string ultralong_output_path = fs::append_path(output_base, output_name +
         std::to_string(ultralong_threshold));
     long_edge_dataset.Serialize(long_output_path);

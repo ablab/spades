@@ -1,10 +1,16 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
-#include "contracted_graph.hpp"
+
+#include "common/assembly_graph/contracted_graph/contracted_graph.hpp"
 
 
 namespace contracted_graph {
 class ContractedStatisticsExtractor {
-    const Graph& assembly_graph_;
  public:
     explicit ContractedStatisticsExtractor(const Graph &assembly_graph);
 
@@ -12,6 +18,9 @@ class ContractedStatisticsExtractor {
     size_t CountNonIsolated(const ContractedGraph &graph) const;
     double GetMeanWeight(const ContractedGraph &graph) const;
 
-    void GetMeanWeights(vector<size_t> thresholds, const string &output_path) const;
+    void GetMeanWeights(std::vector<size_t> thresholds, const std::string &output_path) const;
+
+  private:
+    const Graph& assembly_graph_;
 };
 }

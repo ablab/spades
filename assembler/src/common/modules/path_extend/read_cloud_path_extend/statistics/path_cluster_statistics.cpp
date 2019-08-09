@@ -1,17 +1,23 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "path_cluster_statistics.hpp"
+
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 #include "common/barcode_index/scaffold_vertex_index_builder.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/transition_subgraph_validation.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 
-vector<SubgraphInfo> PathClusterStatisticsExtractor::GetAllSubgraphInfo(const ScaffoldGraphStorage &storage) {
+std::vector<SubgraphInfo> PathClusterStatisticsExtractor::GetAllSubgraphInfo(const ScaffoldGraphStorage &storage) {
     VERIFY_DEV(configs_.debug_mode);
-    //fixme too long
-    vector<SubgraphInfo> result;
+    std::vector<SubgraphInfo> result;
     ScaffoldGraphGapCloserParamsConstructor params_constructor;
     auto subgraph_extractor_params = params_constructor.ConstructSubgraphExtractorParamsFromConfig(
         storage.GetLargeLengthThreshold(),
@@ -30,11 +36,11 @@ vector<SubgraphInfo> PathClusterStatisticsExtractor::GetAllSubgraphInfo(const Sc
               std::inserter(target_edges, target_edges.begin()));
     DEBUG(target_edges.size() << " target edges.");
     auto barcode_extractor_ptr =
-        make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+        std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
     size_t cluster_storage_builder_threads = max_threads_;
     auto edge_cluster_extractor =
-        make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp_.g, barcode_extractor_ptr,
-                                                                   linkage_distance, min_read_threshold);
+        std::make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp_.g, barcode_extractor_ptr,
+                                                                        linkage_distance, min_read_threshold);
     auto cluster_storage_builder =
         std::make_shared<cluster_storage::EdgeInitialClusterStorageBuilder>(gp_.g, edge_cluster_extractor,
                                                                             target_edges, linkage_distance,
@@ -104,13 +110,13 @@ SubgraphInfo PathClusterStatisticsExtractor::GetSubgraphInfo(
 
     CloudPathExtractor correct_path_extractor;
     auto all_path_sets = correct_path_extractor.ExtractAllPaths(graph, source, sink);
-    vector<vector<ScaffoldVertex>> all_paths;
+    std::vector<std::vector<ScaffoldVertex>> all_paths;
     for (const auto &path_set: all_path_sets) {
         all_paths.push_back(path_set.path_);
     }
     auto resulting_paths = correct_path_extractor.ExtractCorrectPaths(graph, source, sink, final_clusters);
 
-    vector<ScaffoldVertex> correct_path;
+    std::vector<ScaffoldVertex> correct_path;
     if (reference_validation_on) {
         const auto correct_path_result = validator.GetCorrectPath(graph, source, sink);
         VERIFY_DEV(correct_path_result.is_initialized());
@@ -133,12 +139,12 @@ PathClusterStatisticsExtractor::PathClusterStatisticsExtractor(const conj_graph_
                                                                size_t max_threads) :
     gp_(gp), configs_(configs), max_threads_(max_threads) {}
 
-string PathClusterStatisticsExtractor::RequestCorrectPath(const PathClusterStatisticsExtractor::SimpleTransitionGraph &graph,
-                                                          const scaffold_graph::ScaffoldVertex &source,
-                                                          const scaffold_graph::ScaffoldVertex &sink,
-                                                          const validation::SimpleTransitionGraphValidator &validator) const {
-    string path_string = "";
-    boost::optional<vector<scaffold_graph::ScaffoldVertex>> correct_path =
+std::string PathClusterStatisticsExtractor::RequestCorrectPath(const PathClusterStatisticsExtractor::SimpleTransitionGraph &graph,
+                                                               const scaffold_graph::ScaffoldVertex &source,
+                                                               const scaffold_graph::ScaffoldVertex &sink,
+                                                               const validation::SimpleTransitionGraphValidator &validator) const {
+    std::string path_string = "";
+    boost::optional<std::vector<scaffold_graph::ScaffoldVertex>> correct_path =
         validator.GetCorrectPath(graph, source, sink);
     if (not correct_path.is_initialized()) {
         path_string = "No correct path!";
@@ -217,11 +223,11 @@ SubgraphInfo::SubgraphInfo(const SubgraphInfo::SimpleTransitionGraph &graph,
                            const SubgraphInfo::ScaffoldVertex &source,
                            const SubgraphInfo::ScaffoldVertex &sink,
                            const PathClusterStorage &path_cluster_to_weight,
-                           const vector<SubgraphInfo::VertexSet> &final_clusters,
-                           const vector<vector<ScaffoldVertex>> &resulting_paths,
-                           const vector<vector<ScaffoldVertex>> &all_paths,
-                           const vector<SubgraphInfo::ScaffoldVertex> &correct_path,
-                           const std::map<SubgraphInfo::ScaffoldVertex, string> &id_map,
+                           const std::vector<SubgraphInfo::VertexSet> &final_clusters,
+                           const std::vector<std::vector<ScaffoldVertex>> &resulting_paths,
+                           const std::vector<std::vector<ScaffoldVertex>> &all_paths,
+                           const std::vector<SubgraphInfo::ScaffoldVertex> &correct_path,
+                           const std::map<SubgraphInfo::ScaffoldVertex, std::string> &id_map,
                            const std::map<ScaffoldVertex, double> &vertex_to_cov,
                            const std::map<ScaffoldVertex, size_t> &vertex_to_len,
                            const ScaffoldEdgeMap &scaffold_edge_to_dist)
@@ -235,15 +241,15 @@ SubgraphInfo::SubgraphInfo(const SubgraphInfo::SimpleTransitionGraph &graph,
       vertex_to_len_(vertex_to_len),
       scaffold_edge_to_dist_(scaffold_edge_to_dist) {}
 
-ostream &operator<<(ostream &os, const SubgraphInfo &info) {
+std::ostream &operator<<(std::ostream &os, const SubgraphInfo &info) {
     const auto &graph = info.graph_;
     os << "Source: " << info.id_map_.at(info.source_) << "\n";
     os << "Sink: " << info.id_map_.at(info.sink_) << "\n";
     os << "Graph: " << "\n";
     for (const auto &vertex: graph) {
         for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
-            string current_short_id = info.id_map_.at(vertex);
-            string next_short_id = info.id_map_.at(*it);
+            std::string current_short_id = info.id_map_.at(vertex);
+            std::string next_short_id = info.id_map_.at(*it);
             os << current_short_id << " -> " << next_short_id << ", len: "
                << info.scaffold_edge_to_dist_.at(vertex).at(*it) << "\n";
         }
@@ -293,8 +299,8 @@ ostream &operator<<(ostream &os, const SubgraphInfo &info) {
     }
     return os;
 }
-void SubgraphInfoPrinter::PrintSubgraphInfo(const vector<SubgraphInfo> &info_collection,
-                                            const string &output_path) const {
+void SubgraphInfoPrinter::PrintSubgraphInfo(const std::vector<SubgraphInfo> &info_collection,
+                                            const std::string &output_path) const {
     std::ofstream fout(fs::append_path(output_path, "cluster_statistics"));
     for (const auto &info: info_collection) {
         fout << "----\n";
@@ -303,10 +309,10 @@ void SubgraphInfoPrinter::PrintSubgraphInfo(const vector<SubgraphInfo> &info_col
     }
 }
 PathClusterExtractionParams::PathClusterExtractionParams(
-    const Graph &g,
-    shared_ptr<cluster_storage::InitialClusterStorage> init_cluster_storage,
-    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
-    size_t linkage_distance)
+        const Graph &g,
+        std::shared_ptr<cluster_storage::InitialClusterStorage> init_cluster_storage,
+        std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
+        size_t linkage_distance)
     : g_(g),
       init_cluster_storage_(init_cluster_storage),
       barcode_extractor_(barcode_extractor),

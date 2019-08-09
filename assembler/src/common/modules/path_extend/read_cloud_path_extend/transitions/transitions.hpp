@@ -1,18 +1,22 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "common/assembly_graph/core/graph.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 namespace transitions {
 struct Transition {
+  public:
     typedef debruijn_graph::EdgeId EdgeId;
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
-    EdgeId first_;
-    EdgeId second_;
-  public:
     Transition(const EdgeId &first, const EdgeId &second) : first_(first), second_(second) {}
 
     Transition(const ScaffoldVertex &first, const ScaffoldVertex &second) :
@@ -28,6 +32,9 @@ struct Transition {
     }
 
     Transition &operator=(const Transition &other) = default;
+
+    EdgeId first_;
+    EdgeId second_;
 };
 }
 }
@@ -46,10 +53,7 @@ struct hash<path_extend::read_cloud::transitions::Transition> {
 namespace path_extend {
 namespace read_cloud {
 namespace transitions {
-
-
-typedef unordered_map<Transition, size_t> ClusterTransitionStorage;
-
+typedef std::unordered_map<Transition, size_t> ClusterTransitionStorage;
 }
 }
 }
