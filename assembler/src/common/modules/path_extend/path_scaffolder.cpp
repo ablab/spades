@@ -1,5 +1,11 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #include "path_scaffolder.hpp"
+
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
 
 namespace path_extend {

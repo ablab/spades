@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "split_index_statistics.hpp"
 
 #include "common/pipeline/config_struct.hpp"
@@ -6,15 +12,15 @@
 namespace path_extend {
 namespace read_cloud {
 
-SplitStatistics::SplitStatistics(const vector<SplitEntry> &data) : data_(data) {}
-void SplitStatistics::Serialize(const string &path) {
-    ofstream fout(path);
+SplitStatistics::SplitStatistics(const std::vector<SplitEntry> &data) : data_(data) {}
+void SplitStatistics::Serialize(const std::string &path) {
+    std::ofstream fout(path);
     fout << "SplitIndex,Status" << std::endl;
     for (const auto &entry: data_) {
         fout << entry.split_index_ << "," << entry.status_ << "\n";
     }
 }
-SplitStatistics SplitStatisticsExtractor::GetSplitStatistics(const string &path_to_reference,
+SplitStatistics SplitStatisticsExtractor::GetSplitStatistics(const std::string &path_to_reference,
                                                              size_t length_threshold) const {
     validation::FilteredReferencePathHelper path_helper(gp_);
     auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
@@ -58,15 +64,15 @@ SplitStatistics SplitStatisticsExtractor::GetSplitStatistics(const string &path_
     const size_t count_threshold = 1;
 
     auto fraction_tail_threshold_getter =
-        make_shared<barcode_index::FractionTailThresholdGetter>(gp_.g, EDGE_LENGTH_FRACTION);
+        std::make_shared<barcode_index::FractionTailThresholdGetter>(gp_.g, EDGE_LENGTH_FRACTION);
     auto split_scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor,
                                                                            fraction_tail_threshold_getter,
                                                                            count_threshold, length_threshold,
                                                                            max_threads_, scaffold_vertices);
     auto split_scaffold_index_extractor =
-        make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(split_scaffold_vertex_index);
+        std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(split_scaffold_vertex_index);
 
-    vector<SplitEntry> data;
+    std::vector<SplitEntry> data;
     for (const auto &transition: reference_transitions) {
         double split_index = GetSplitIndex(transition, split_scaffold_index_extractor);
         data.emplace_back(split_index, "correct");
@@ -83,8 +89,9 @@ SplitStatistics SplitStatisticsExtractor::GetSplitStatistics(const string &path_
     SplitStatistics result(data);
     return result;
 }
-double SplitStatisticsExtractor::GetSplitIndex(const SplitStatisticsExtractor::Transition &transition,
-                                               shared_ptr<SplitStatisticsExtractor::BarcodeExtractor> barcode_extractor) const {
+double SplitStatisticsExtractor::GetSplitIndex(
+        const SplitStatisticsExtractor::Transition &transition,
+        std::shared_ptr<SplitStatisticsExtractor::BarcodeExtractor> barcode_extractor) const {
     auto first = transition.first_;
     auto second = transition.second_;
     auto first_start = barcode_extractor->GetHeadEntry(first);
@@ -114,15 +121,15 @@ double SplitStatisticsExtractor::GetSplitIndex(const SplitStatisticsExtractor::T
     }
     return split_index;
 }
-void SplitStatisticsExtractor::ConstructAndSerialize(const string &path_to_reference,
-                                                     const string &output_base,
+void SplitStatisticsExtractor::ConstructAndSerialize(const std::string &path_to_reference,
+                                                     const std::string &output_base,
                                                      size_t length_threshold) const {
     auto split_statistics = GetSplitStatistics(path_to_reference, length_threshold);
-    const string output_path = fs::append_path(output_base, "split_statistics.csv");
+    const std::string output_path = fs::append_path(output_base, "split_statistics.csv");
     split_statistics.Serialize(output_path);
 }
 SplitStatisticsExtractor::SplitStatisticsExtractor(const conj_graph_pack &gp, size_t max_threads) :
     gp_(gp), max_threads_(max_threads) {}
-SplitEntry::SplitEntry(double split_index, const string &status) : split_index_(split_index), status_(status) {}
+SplitEntry::SplitEntry(double split_index, const std::string &status) : split_index_(split_index), status_(status) {}
 }
 }

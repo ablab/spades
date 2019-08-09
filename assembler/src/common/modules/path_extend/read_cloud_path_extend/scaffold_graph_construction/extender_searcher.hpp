@@ -1,4 +1,8 @@
-
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #pragma once
 
@@ -18,7 +22,7 @@ struct SearchParams {
 };
 
 struct SearchingExtenderParams {
-  SearchingExtenderParams(const ScaffoldingUniqueEdgeStorage &unique_storage);
+  explicit SearchingExtenderParams(const ScaffoldingUniqueEdgeStorage &unique_storage);
   SearchingExtenderParams(const ScaffoldingUniqueEdgeStorage &unique_storage,
                           size_t insert_size,
                           bool investigate_short_loops,

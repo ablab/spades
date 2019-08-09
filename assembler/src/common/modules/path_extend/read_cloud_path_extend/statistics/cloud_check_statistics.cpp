@@ -1,7 +1,13 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "cloud_check_statistics.hpp"
 
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
-#include "component_validation.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/statistics/component_validation.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -37,12 +43,12 @@ void PathClusterChecker::CheckPathClusters(const PathClusterChecker::ScaffoldGra
     DEBUG("Constructing covered clusters");
 //    std::copy_if(corrected_clusters.begin(), corrected_clusters.end(), std::back_inserter(covered_clusters),
     std::copy_if(path_cluster_sets.begin(), path_cluster_sets.end(), std::back_inserter(covered_clusters),
-                 [this](const set<ScaffoldVertex> &cluster) {
+                 [this](const std::set<ScaffoldVertex> &cluster) {
                    return this->path_cluster_validator_.IsCovered(cluster);
                  });
     DEBUG("Constructing correct clusters");
-    vector<set<ScaffoldVertex>> true_clusters;
-    vector<set<ScaffoldVertex>> false_clusters;
+    std::vector<std::set<ScaffoldVertex>> true_clusters;
+    std::vector<std::set<ScaffoldVertex>> false_clusters;
     for (const auto &cluster: covered_clusters) {
         if (path_cluster_validator_.IsCorrect(cluster)) {
             true_clusters.push_back(cluster);
@@ -69,7 +75,7 @@ void PathClusterChecker::CheckComponents(const PathClusterChecker::ScaffoldGraph
     ComponentEstimator component_estimator(g_, path_cluster_helper_, path_cluster_validator_);
     component_estimator.EstimateComponents(graph);
 }
-shared_ptr<PathClusterChecker> PathClusterCheckerFactory::ConstuctPathClusterChecker(
+std::shared_ptr<PathClusterChecker> PathClusterCheckerFactory::ConstuctPathClusterChecker(
         const scaffold_graph::ScaffoldGraph &scaffold_graph) const {
     const string path_to_reference = path_to_reference_;
     DEBUG("Path to reference: " << path_to_reference);
@@ -95,11 +101,11 @@ shared_ptr<PathClusterChecker> PathClusterCheckerFactory::ConstuctPathClusterChe
     std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(vertices, vertices.begin()));
     auto initial_storage_builder = cluster_storage_helper.GetInitialStorageBuilder(vertices);
     DEBUG("Constructing initial storage");
-    auto initial_storage =
-        make_shared<cluster_storage::InitialClusterStorage>(initial_storage_builder->ConstructInitialClusterStorage());
+    auto initial_storage = std::make_shared<cluster_storage::InitialClusterStorage>(
+        initial_storage_builder->ConstructInitialClusterStorage());
     ScaffoldGraphPathClusterHelper path_cluster_helper(gp_.g, barcode_extractor_, initial_storage, max_threads_);
     validation::PathClusterValidator path_cluster_validator(reference_index);
-    auto path_cluster_checker = make_shared<PathClusterChecker>(gp_.g, path_cluster_helper, path_cluster_validator);
+    auto path_cluster_checker = std::make_shared<PathClusterChecker>(gp_.g, path_cluster_helper, path_cluster_validator);
     return path_cluster_checker;
 }
 PathClusterCheckerFactory::PathClusterCheckerFactory(const conj_graph_pack &gp, BarcodeIndexPtr barcode_extractor,

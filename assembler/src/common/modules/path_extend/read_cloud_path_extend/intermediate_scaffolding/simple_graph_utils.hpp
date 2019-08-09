@@ -1,7 +1,15 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
-#include <set>
+
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
 #include "common/utils/verify.hpp"
-#include "simple_graph.hpp"
+
+#include <set>
 
 namespace path_extend {
 namespace read_cloud {
@@ -34,9 +42,7 @@ class CondensationAnalyzer {
   public:
     typedef contracted_graph::ContractedGraph ContractedGraph;
     typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
-  private:
-    const contracted_graph::ContractedGraphFactoryHelper &contracted_builder_;
-  public:
+
     explicit CondensationAnalyzer(const contracted_graph::ContractedGraphFactoryHelper &contracted_builder) :
         contracted_builder_(contracted_builder) {}
 
@@ -45,10 +51,9 @@ class CondensationAnalyzer {
         auto components = GetStronglyConnectedComponents(graph);
         return GetCondensation(graph, components);
     }
-
     template<class VertexT>
     SimpleGraph<VertexT> GetCondensation(const SimpleGraph<VertexT> &graph,
-                                         const std::vector<unordered_set<VertexT>> &components) const {
+                                         const std::vector<std::unordered_set<VertexT>> &components) const {
         TRACE("Components: ")
         for (const auto &component: components) {
             string component_string;
@@ -83,9 +88,8 @@ class CondensationAnalyzer {
         }
         return condensation;
     }
-
     template<class VertexT>
-    vector<unordered_set<VertexT>> GetStronglyConnectedComponents(const SimpleGraph<VertexT> &graph) const {
+    std::vector<std::unordered_set<VertexT>> GetStronglyConnectedComponents(const SimpleGraph<VertexT> &graph) const {
         TRACE("Transposing graph")
         auto transposed_graph = TransposeSimpleGraph(graph);
 
@@ -94,7 +98,7 @@ class CondensationAnalyzer {
             vertex_to_visited[vertex] = false;
         }
         TRACE("Getting ordering of vertices based on DFS exit time");
-        vector<VertexT> ordering;
+        std::vector<VertexT> ordering;
         for (const auto &vertex: graph) {
             if (not vertex_to_visited.at(vertex)) {
                 GetExitTimeOrdering(vertex, graph, vertex_to_visited, ordering);
@@ -106,20 +110,18 @@ class CondensationAnalyzer {
         }
 
         TRACE("Getting components from ordering")
-        vector<unordered_set<VertexT>> components;
+        std::vector<std::unordered_set<VertexT>> components;
         for (auto it = ordering.rbegin(); it != ordering.rend(); ++it) {
             VertexT vertex = *it;
             if (not vertex_to_visited.at(vertex)) {
-                unordered_set<VertexT> component;
+                std::unordered_set<VertexT> component;
                 GetStrConComponent(vertex, transposed_graph, vertex_to_visited, component);
                 components.push_back(component);
             }
         }
         return components;
     }
-
   private:
-
     template<class VertexT>
     SimpleGraph<VertexT> TransposeSimpleGraph(const SimpleGraph<VertexT> &graph) const {
         SimpleGraph<VertexT> result;
@@ -135,10 +137,10 @@ class CondensationAnalyzer {
         }
         return result;
     }
-
     template<class VertexT>
     void GetExitTimeOrdering(const VertexT &vertex, const SimpleGraph<VertexT> &graph,
-                             std::unordered_map<VertexT, bool> &vertex_to_visited, vector<VertexT> &ordering) const {
+                             std::unordered_map<VertexT, bool> &vertex_to_visited,
+                             std::vector<VertexT> &ordering) const {
         vertex_to_visited.at(vertex) = true;
         for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
             VertexT next = *it;
@@ -148,12 +150,11 @@ class CondensationAnalyzer {
         }
         ordering.push_back(vertex);
     }
-
     template<class VertexT>
     void GetStrConComponent(const VertexT &vertex,
                             const SimpleGraph<VertexT> &graph,
                             std::unordered_map<VertexT, bool> &vertex_to_visited,
-                            unordered_set<VertexT> &component) const {
+                            std::unordered_set<VertexT> &component) const {
         vertex_to_visited.at(vertex) = true;
         component.insert(vertex);
         for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
@@ -164,16 +165,15 @@ class CondensationAnalyzer {
         }
     }
 
+  private:
+    const contracted_graph::ContractedGraphFactoryHelper &contracted_builder_;
     DECL_LOGGER("CondensationAnalyzer");
 };
 
 class TopSorter {
   public:
-
     template<class VertexT>
-    vector<VertexT> GetTopSort(const SimpleGraph<VertexT> &graph) {
-
-    }
+    std::vector<VertexT> GetTopSort(const SimpleGraph<VertexT> &graph) {}
 };
 }
 }

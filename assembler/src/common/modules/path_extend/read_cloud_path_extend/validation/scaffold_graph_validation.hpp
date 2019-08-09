@@ -1,8 +1,16 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
+
 #include "common/assembly_graph/core/graph.hpp"
-#include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "transition_extractor.hpp"
-#include "reference_path_index.hpp"
+#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
+
 #include <fstream>
 #include <iostream>
 
@@ -14,19 +22,6 @@ using debruijn_graph::EdgeId;
 using debruijn_graph::Graph;
 
 struct ScaffoldGraphStats {
-  size_t true_positive_;
-  size_t false_positive_;
-  size_t false_negative_;
-  size_t to_prev_;
-  size_t to_next_rc_;
-  size_t to_close_in_both_strands_;
-  size_t to_next_with_distance_;
-  size_t edges_;
-  size_t no_outgoing_;
-  size_t single_false_transition_;
-  size_t univocal_edges_;
-  size_t false_univocal_edges_;
-
   ScaffoldGraphStats() {
       true_positive_ = 0;
       false_positive_ = 0;
@@ -42,38 +37,46 @@ struct ScaffoldGraphStats {
       false_univocal_edges_ = 0;
   }
 
-  void Serialize(ostream &fout) const {
-      fout << "Overall edges: " << edges_ << endl;
-      fout << "Overall covered: " << true_positive_ + false_positive_ << endl;
-      fout << "True positive: " << true_positive_ << endl;
-      fout << "False negative: " << false_negative_ << endl;
-      fout << "False positive: " << false_positive_ << endl;
-      fout << "To next with distance: " << to_next_with_distance_ << endl;
-      fout << "To previous: " << to_prev_ << endl;
-      fout << "To near conjugate: " << to_next_rc_ << endl;
-      fout << "To close in both strands: " << to_close_in_both_strands_ << endl;
-      fout << "No outgoing: " << no_outgoing_ << endl;
-      fout << "Single false transition: " << single_false_transition_ << endl;
-      fout << "Univocal edges: " << univocal_edges_ << endl;
-      fout << "False univocal edges: " << false_univocal_edges_ << endl;
+  void Serialize(std::ostream &fout) const {
+      fout << "Overall edges: " << edges_ << std::endl;
+      fout << "Overall covered: " << true_positive_ + false_positive_ << std::endl;
+      fout << "True positive: " << true_positive_ << std::endl;
+      fout << "False negative: " << false_negative_ << std::endl;
+      fout << "False positive: " << false_positive_ << std::endl;
+      fout << "To next with distance: " << to_next_with_distance_ << std::endl;
+      fout << "To previous: " << to_prev_ << std::endl;
+      fout << "To near conjugate: " << to_next_rc_ << std::endl;
+      fout << "To close in both strands: " << to_close_in_both_strands_ << std::endl;
+      fout << "No outgoing: " << no_outgoing_ << std::endl;
+      fout << "Single false transition: " << single_false_transition_ << std::endl;
+      fout << "Univocal edges: " << univocal_edges_ << std::endl;
+      fout << "False univocal edges: " << false_univocal_edges_ << std::endl;
   }
+
+  size_t true_positive_;
+  size_t false_positive_;
+  size_t false_negative_;
+  size_t to_prev_;
+  size_t to_next_rc_;
+  size_t to_close_in_both_strands_;
+  size_t to_next_with_distance_;
+  size_t edges_;
+  size_t no_outgoing_;
+  size_t single_false_transition_;
+  size_t univocal_edges_;
+  size_t false_univocal_edges_;
 };
 
 class ScaffoldGraphValidator {
   public:
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
 
-  private:
-    const Graph &g_;
-
-  public:
     ScaffoldGraphValidator(const Graph &g_);
 
     ScaffoldGraphStats GetScaffoldGraphStats(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
-                                             const vector<vector<EdgeWithMapping>> &reference_paths);
-
-    set<transitions::Transition> GetFalseNegativeTransitions(const ScaffoldGraphValidator::ScaffoldGraph &graph,
-                                                             const ContigTransitionStorage &genome_transitions) const;
+                                             const std::vector<std::vector<EdgeWithMapping>> &reference_paths);
+    std::set<transitions::Transition> GetFalseNegativeTransitions(const ScaffoldGraphValidator::ScaffoldGraph &graph,
+                                                                  const ContigTransitionStorage &genome_transitions) const;
 
   private:
 
@@ -83,10 +86,10 @@ class ScaffoldGraphValidator {
                                                             const ContigTransitionStorage &conjugate_transitions,
                                                             const ContigTransitionStorage &near_in_both_strands_transitions,
                                                             const ContigTransitionStorage &forward_neighbouring_transitions);
-
     size_t CountStatsUsingTransitions(const ScaffoldGraph &graph, const ContigTransitionStorage &transitions);
-
     size_t CountFalsePositive(const ScaffoldGraph &graph, const ContigTransitionStorage &reference_transtions);
+
+    const Graph &g_;
 
     DECL_LOGGER("ScaffoldGraphValidator");
 };

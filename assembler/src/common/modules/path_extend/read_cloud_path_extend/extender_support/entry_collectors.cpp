@@ -1,12 +1,19 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "entry_collectors.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 
-SimpleBarcodeEntryCollector::SimpleBarcodeEntryCollector(const Graph &g,
-                                                         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index,
-                                                         const RelativeUniquePredicateGetter &predicate_getter,
-                                                         size_t distance) :
+SimpleBarcodeEntryCollector::SimpleBarcodeEntryCollector(
+        const Graph &g,
+        std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index,
+        const RelativeUniquePredicateGetter &predicate_getter,
+        size_t distance) :
     g_(g),
     barcode_index_(barcode_index),
     predicate_getter_(predicate_getter),
@@ -37,11 +44,12 @@ barcode_index::SimpleVertexEntry SimpleBarcodeEntryCollector::CollectEntry(const
     }
     return result;
 }
-std::pair<vector<EdgeId>, size_t> SimpleBarcodeEntryCollector::GetUniqueEdges(const BidirectionalPath &path,
-                                                                              const func::TypedPredicate<EdgeId> &predicate,
-                                                                              size_t distance) const {
+std::pair<std::vector<EdgeId>, size_t>
+SimpleBarcodeEntryCollector::GetUniqueEdges(const BidirectionalPath &path,
+                                            const func::TypedPredicate<EdgeId> &predicate,
+                                            size_t distance) const {
     DEBUG("Getting unique edges");
-    vector<EdgeId> result;
+    std::vector<EdgeId> result;
     for (int i = (int) path.Size() - 1; i >= 0; --i) {
         DEBUG("Applying predicate");
         if (predicate(path.At(i))) {

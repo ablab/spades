@@ -1,20 +1,28 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
-#include "cluster_storage.hpp"
 #include "common/assembly_graph/contracted_graph/contracted_graph_helper.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
+
+#include <memory>
+#include <vector>
 
 namespace path_extend {
 namespace read_cloud {
 namespace cluster_storage {
 
 class GraphAnalyzer {
-  private:
+  public:
     typedef contracted_graph::ContractedGraph ContractedGraph;
     typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
-  public:
     bool IsHamiltonian(const Cluster::InternalGraph &graph) const {
-        vector<ScaffoldVertex> vertices;
+        std::vector<ScaffoldVertex> vertices;
         std::copy(graph.begin(), graph.end(), std::back_inserter(vertices));
         std::sort(vertices.begin(), vertices.end());
         do {
@@ -32,9 +40,9 @@ class GraphAnalyzer {
         return false;
     }
 
-    vector<vector<ScaffoldVertex>> GetHamiltonianPaths(const Cluster::InternalGraph &graph) const {
-        vector<vector<ScaffoldVertex>> result;
-        vector<ScaffoldVertex> vertices;
+    std::vector<std::vector<ScaffoldVertex>> GetHamiltonianPaths(const Cluster::InternalGraph &graph) const {
+        std::vector<std::vector<ScaffoldVertex>> result;
+        std::vector<ScaffoldVertex> vertices;
         std::copy(graph.begin(), graph.end(), std::back_inserter(vertices));
         std::sort(vertices.begin(), vertices.end());
         do {
@@ -97,7 +105,6 @@ class GraphAnalyzer {
         }
         return indegree;
     }
-
     std::unordered_map<VertexId, size_t> GetOutdegrees(const ContractedGraph &graph) const {
         std::unordered_map<VertexId, size_t> outdegree;
         for (const auto &vertex: graph) {
@@ -110,18 +117,12 @@ class GraphAnalyzer {
         }
         return outdegree;
     }
-
 };
 
 class ClusterGraphAnalyzer {
-
-    const contracted_graph::ContractedGraphFactoryHelper &contracted_builder_;
-
   public:
     typedef contracted_graph::ContractedGraph ContractedGraph;
     typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
-
-  public:
 
     explicit ClusterGraphAnalyzer(const contracted_graph::ContractedGraphFactoryHelper &contracted_builder) :
         contracted_builder_(contracted_builder) {}
@@ -134,7 +135,6 @@ class ClusterGraphAnalyzer {
         }
         return IsEulerianCluster(cluster);
     }
-
     bool IsEulerianCluster(const Cluster &cluster) const {
         GraphAnalyzer graph_analyzer;
         auto contracted_graph = contracted_builder_.ConstructFromInternalGraph(cluster.GetInternalGraph());
@@ -142,6 +142,8 @@ class ClusterGraphAnalyzer {
     }
 
   private:
+    const contracted_graph::ContractedGraphFactoryHelper &contracted_builder_;
+
     DECL_LOGGER("ClusterGraphAnalyzer");
 };
 
@@ -150,44 +152,45 @@ struct ClusterFilter {
 };
 
 struct MinReadClusterFilter : public ClusterFilter {
-  size_t min_read_threshold_;
-
-  MinReadClusterFilter(size_t min_read_threshold_) : min_read_threshold_(min_read_threshold_) {}
+  explicit MinReadClusterFilter(size_t min_read_threshold) :
+    min_read_threshold(min_read_threshold) {}
 
   bool Check(const Cluster &cluster) const override {
-      return cluster.GetReads() >= min_read_threshold_;
+      return cluster.GetReads() >= min_read_threshold;
   }
+
+  size_t min_read_threshold;
 };
 
 struct PathClusterFilter : public ClusterFilter {
-  const ClusterGraphAnalyzer &ordering_analyzer_;
-
-  PathClusterFilter(const ClusterGraphAnalyzer &ordering_analyzer_) : ordering_analyzer_(ordering_analyzer_) {}
+  explicit PathClusterFilter(const ClusterGraphAnalyzer &ordering_analyzer) :
+    ordering_analyzer(ordering_analyzer) {}
   bool Check(const Cluster &cluster) const override {
-      return cluster.Size() >= 2 and ordering_analyzer_.IsPathCluster(cluster);
+      return cluster.Size() >= 2 and ordering_analyzer.IsPathCluster(cluster);
   }
+
+  const ClusterGraphAnalyzer &ordering_analyzer;
 };
 
 struct CompositeClusterFilter : public ClusterFilter {
-  const vector<shared_ptr<ClusterFilter>> cluster_filters_;
-
-  CompositeClusterFilter(const vector<shared_ptr<ClusterFilter>> &cluster_filters_)
-      : cluster_filters_(cluster_filters_) {}
+  explicit CompositeClusterFilter(const std::vector<std::shared_ptr<ClusterFilter>> &cluster_filters)
+      : cluster_filters(cluster_filters) {}
 
   bool Check(const Cluster &cluster) const override {
-      return std::all_of(cluster_filters_.begin(), cluster_filters_.end(),
-                         [this, &cluster](shared_ptr<ClusterFilter> filter) {
+      return std::all_of(cluster_filters.begin(), cluster_filters.end(),
+                         [this, &cluster](std::shared_ptr<ClusterFilter> filter) {
                            return filter->Check(cluster);
                          });
   }
+
+  const std::vector<std::shared_ptr<ClusterFilter>> cluster_filters;
 };
 
 class ClusterStorageExtractor {
-
   public:
-
-    vector<Cluster> FilterClusterStorage(const ClusterStorage &cluster_storage, shared_ptr<ClusterFilter> filter) {
-        vector<Cluster> result;
+    std::vector<Cluster> FilterClusterStorage(const ClusterStorage &cluster_storage,
+                                              std::shared_ptr<ClusterFilter> filter) {
+        std::vector<Cluster> result;
         size_t clusters = cluster_storage.Size();
         size_t counter = 0;
         size_t block_size = clusters / 10;
@@ -203,8 +206,8 @@ class ClusterStorageExtractor {
         return result;
     }
 
-    vector<Cluster> FilterClusters(const vector<Cluster> &clusters, shared_ptr<ClusterFilter> filter) {
-        vector<Cluster> result;
+    std::vector<Cluster> FilterClusters(const std::vector<Cluster> &clusters, std::shared_ptr<ClusterFilter> filter) {
+        std::vector<Cluster> result;
         for (const auto &cluster: clusters) {
             if (filter->Check(cluster)) {
                 result.push_back(cluster);
