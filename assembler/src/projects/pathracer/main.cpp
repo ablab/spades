@@ -1019,8 +1019,9 @@ void TraceHMM(const hmmer::HMM &hmm,
         bool hmm_in_aas = hmm.abc()->K == 20;
         if (hmm_in_aas) {
             if (cfg.indel_rate == 0.0) {
-                CachedCursorContext ccc(restricted_component_cursors, &restricted_context);
-                run_search(ccc, restricted_component_cursors, &restricted_context, cfg.top, local_results, component_name);
+                auto aa_cursors = make_aa_cursors(restricted_component_cursors, &restricted_context);
+                CachedCursorContext ccc(aa_cursors, &restricted_context);
+                run_search(ccc, aa_cursors, &restricted_context, cfg.top, local_results, component_name);
             } else {
                 CachedAACursorContext caacc(restricted_component_cursors, &restricted_context);
                 run_search(caacc, restricted_component_cursors, &restricted_context, cfg.top, local_results, component_name);
