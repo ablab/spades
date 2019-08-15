@@ -420,7 +420,8 @@ inline void ThreadPool::register_hooks(std::shared_ptr<Hooks> hooks)
 
 // Worker impl
 inline ThreadPool::Worker::Worker(ThreadPool* pool, std::size_t idx)
-  : pool(pool)
+  : queue_size(0)
+  , pool(pool)
   , stopped(false)
   , started(false)
   , idx(idx)
