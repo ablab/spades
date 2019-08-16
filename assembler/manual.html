@@ -1245,7 +1245,8 @@ nd reverse-complementary reads are taken into account.
 
 
 <a name="sec4.2">
-<h3>4.2 k-mer count read filter</h3>
+<h3>4.2 k-mer coverage read filter</h3>
+<code>spades-read-filter</code> is a tool for filtering reads with median kmer coverage less than threshold.
 
 To provide input data to SPAdes k-mer read filter tool <code>spades-read-filter</code> you should provide dataset description file in <a href="#yaml">YAML format</a>.
 
@@ -1272,7 +1273,7 @@ To provide input data to SPAdes k-mer read filter tool <code>spades-read-filter<
 </p>
 <p>
     <code>-c, --cov &lt;value></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EDUAL to this value will be ignored)
+    &nbsp;&nbsp;&nbsp;&nbsp;median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EQUAL to this value will be ignored)
 </p>
 
 <p>
@@ -1283,9 +1284,11 @@ To provide input data to SPAdes k-mer read filter tool <code>spades-read-filter<
 <a name="sec4.3">
 <h3>4.3 k-mer cardinality estimating</h3>
 
+<code>spades-kmer-estimating</code> is a tool for estimating approximate number of unique k-mers in the provided reads. Kmers from reverse-complementary reads aren't taken into account for k-mer cardinality estimating.
+
+
 To provide input data to SPAdes k-mer read filter tool <code>spades-kmer-estimating</code> you should provide dataset description file in <a href="#yaml">YAML format</a>. 
 
-Kmers from reverse-complementary reads aren't taken into account for k-mer cardinality estimating.
 
 <p> Synopsis: <code>spades-kmer-estimating [OPTION...] -d &lt;yaml></code>
 

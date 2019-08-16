@@ -1016,6 +1016,8 @@ The options are:
 <a name="sec4.2"></a>
 ## k-mer coverage read filter
 
+`spades-read-filter` is a tool for filtering reads with median kmer coverage less than threshold.
+
 To provide input data to SPAdes k-mer read filter tool `spades-read-filter ` you should provide dataset description file in [YAML format](#yaml).
 
 Synopsis: `spades-read-filter [OPTION...] -d <yaml>`
@@ -1035,7 +1037,7 @@ The options are:
     output directory to use (default: current directory)
 
 `-c, --cov <value> `
-    median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EDUAL to this value will be ignored)
+    median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EQUAL to this value will be ignored)
 
 `-h, --help `
     print help message
