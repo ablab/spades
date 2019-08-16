@@ -386,7 +386,7 @@ AlternativesAnalyzer<Graph> ParseBRConfig(const Graph &g,
                                        config.max_delta,
                                        config.max_relative_delta,
                                        config.max_number_edges,
-                                       config.dijkstra_vertex_limit);
+                                       config.dijkstra_vertex_limit, config.min_identity);
 }
 
 template<class Graph>

@@ -230,6 +230,7 @@ void load(debruijn_config::simplification::bulge_remover& br,
   load(br.buff_size,                        pt,     "buff_size", complete);
   load(br.buff_cov_diff,                    pt,     "buff_cov_diff", complete);
   load(br.buff_cov_rel_diff,                pt,     "buff_cov_rel_diff", complete);
+  load(br.min_identity,                     pt,     "min_identity", false);
 }
 
 void load(debruijn_config::simplification::complex_tip_clipper &ctc,
@@ -611,6 +612,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.init_clean, pt, "init_clean", complete); // presimplification
   load(simp.final_tc, pt, "final_tc", complete);
   load(simp.final_br, pt, "final_br", complete);
+  load(simp.subspecies_br, pt, "subspecies_br", complete);
 }
 
 void load(debruijn_config::info_printer& printer,

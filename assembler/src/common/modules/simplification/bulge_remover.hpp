@@ -14,9 +14,11 @@
 #include "assembly_graph/graph_support/comparators.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "math/xmath.h"
-#include <stack>
+#include "common/utils/bulge_utils.hpp"
 #include <cmath>
+#include <stack>
+#include <unordered_set>
+#include "math/xmath.h"
 
 namespace omnigraph {
 
@@ -206,6 +208,7 @@ class AlternativesAnalyzer {
     double max_relative_delta_;
     size_t max_edge_cnt_;
     size_t dijkstra_vertex_limit_;
+    double min_identity_;
 
     static std::vector<EdgeId> EmptyPath() {
         return {};
@@ -220,11 +223,22 @@ class AlternativesAnalyzer {
                 g_.coverage(e)) && SimplePathCondition<Graph>(g_)(e, path);
     }
 
+    bool IdentityCondition(EdgeId e, const std::vector<EdgeId>& path) const {
+        if (math::eq(min_identity_, 0.0))
+            return true;
+
+        const Sequence &seq1 = g_.EdgeNucls(e);
+        Sequence seq2 = utils::GetSequenceByPath(g_, g_.k(), path);
+        double identity = std::max(0.0, 1 - utils::RelAlignmentOfSequences(seq1, seq2));
+        return math::ge(identity, min_identity_);
+    }
+
+
 public:
     AlternativesAnalyzer(const Graph& g, double max_coverage, size_t max_length,
                          double max_relative_coverage, size_t max_delta,
                          double max_relative_delta, size_t max_edge_cnt,
-                         size_t dijkstra_vertex_limit) :
+                         size_t dijkstra_vertex_limit, double min_identity) :
                          g_(g),
                          max_coverage_(max_coverage),
                          max_length_(max_length),
@@ -232,7 +246,8 @@ public:
                          max_delta_(max_delta),
                          max_relative_delta_(max_relative_delta),
                          max_edge_cnt_(max_edge_cnt),
-                         dijkstra_vertex_limit_(dijkstra_vertex_limit) {
+                         dijkstra_vertex_limit_(dijkstra_vertex_limit),
+                         min_identity_(min_identity) {
         DEBUG("Created alternatives analyzer max_length=" << max_length
         << " max_coverage=" << max_coverage
         << " max_relative_coverage=" << max_relative_coverage
@@ -272,7 +287,7 @@ public:
         if (math::gr(path_coverage, 0.)) {
             TRACE("Best path with coverage " << path_coverage << " is " << PrintPath(g_, path));
 
-            if (BulgeCondition(e, path, path_coverage)) {
+            if (BulgeCondition(e, path, path_coverage) && IdentityCondition(e, path)) {
                 TRACE("Satisfied condition");
                 return path;
             } else {

@@ -171,6 +171,7 @@ struct debruijn_config {
             size_t buff_size;
             double buff_cov_diff;
             double buff_cov_rel_diff;
+            double min_identity;
         };
 
         struct erroneous_connections_remover {
@@ -288,7 +289,7 @@ struct debruijn_config {
         low_covered_edge_remover lcer;
         tip_clipper final_tc;
         bulge_remover final_br;
-
+        bulge_remover subspecies_br;
         init_cleaning init_clean;
     };
 

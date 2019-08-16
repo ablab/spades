@@ -298,6 +298,10 @@ public:
                 BRInstance(g_, simplif_cfg_.final_br,
                            info_container_, bulge_callback_f, removal_handler_),
                 "Final bulge remover");
+        algo.AddAlgo(
+                BRInstance(g_, simplif_cfg_.subspecies_br,
+                           info_container_, bulge_callback_f, removal_handler_),
+                "Subspecies bulge remover");
 
         //TODO need better configuration
         if (config::PipelineHelper::IsMetagenomicPipeline(info_container_.mode())) {
