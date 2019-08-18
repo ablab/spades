@@ -44,7 +44,8 @@ class SimplifInfoContainer {
     debruijn_graph::config::pipeline_type mode_;
 
 public: 
-    SimplifInfoContainer(debruijn_graph::config::pipeline_type mode) : 
+    SimplifInfoContainer(debruijn_graph::config::pipeline_type mode =
+                                  debruijn_graph::config::pipeline_type::base) :
         read_length_(-1ul),
         detected_mean_coverage_(-1.0),
         detected_coverage_bound_(-1.0),

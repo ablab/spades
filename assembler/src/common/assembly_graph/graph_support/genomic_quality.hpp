@@ -91,6 +91,11 @@ public:
             return 1. * (double) it->second / (double) this->g().length(edge);
     }
 
+    void AddQuality(EdgeId edge, double quality) {
+        //VERIFY(!IsPositiveQuality(e));
+        quality_[edge] += (size_t) math::round(quality * (double) this->g().length(edge));
+    }
+
     bool IsPositiveQuality(EdgeId edge) const {
         return math::gr(quality(edge), 0.);
     }
