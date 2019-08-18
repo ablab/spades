@@ -12,8 +12,9 @@ def main(args):
         farr = file.split('.')
         if farr[-1] != "fasta":
             continue
-        if farr[-2] != "circular":
+        if farr[-2] != "circular" and farr[-2] != "linear" and farr[-2] != "linear_repeat":
             continue
+        type = farr[-2]
         arr = farr[-3].split("_")
         if len(arr) < 2:
             continue
@@ -23,7 +24,7 @@ def main(args):
         for line in open(os.path.join(outdir,file), "r"):
             line = line.strip()
             if len(line) > 0 and line[0] == ">":
-                line += "_cutoff_" + cov
+                line += "_cutoff_" + cov+ "_type_" + type
             res_f.write(line+ "\n")
     res_f.close()
     scaff = outdir + "/scaffolds.fasta"   

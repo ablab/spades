@@ -228,8 +228,8 @@ class AlternativesAnalyzer {
         }
         Sequence seq1 = g_.EdgeNucls(e);
         Sequence seq2 = utils::GetSequenceByPath(g_, g_.k(), path);
-        double identity = utils::RelAlignmentOfSequences(seq1, seq2);
-        INFO("checking identity... " << identity);
+        double identity = std::max(0.0, 1 - utils::RelAlignmentOfSequences(seq1, seq2));
+        INFO("checking identity... " << identity << " len " << seq1.str().length() << " and " <<seq2.str().length());
         return math::ge(identity, min_identity_);
     }
 
