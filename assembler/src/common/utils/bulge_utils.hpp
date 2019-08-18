@@ -65,7 +65,11 @@ inline size_t AlignmentOfSequencesByParts(const Sequence &seq1, const Sequence &
 
         return summary_dist;
     }
-    return EditDistance(seq1, seq2);
+    INFO(seq1.str());
+    INFO(seq2.str());
+    size_t ed = EditDistance(seq1, seq2);
+    INFO(ed);
+    return ed;
 }
 
 inline double RelAlignmentOfSequences(const Sequence &seq1, const Sequence &seq2) {

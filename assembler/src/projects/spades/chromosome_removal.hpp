@@ -22,6 +22,5 @@ public:
 private:
     size_t ext_limit_;
     DECL_LOGGER("ChromosomeRemoval");
-
 };
 }

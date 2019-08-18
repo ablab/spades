@@ -217,6 +217,60 @@ void ChromosomeRemover::RemoveNearlyEverythingByCoverage(double cur_limit) {
     PlasmidSimplify(plasmid_config_.long_edge_length);
 }
 
+void ChromosomeRemover::OutputNineComponents (conj_graph_pack &gp, size_t ext_limit_) {
+    long_vertex_component_.clear();
+    long_component_.clear();
+    deadends_count_.clear();
+    component_list_.clear();
+    string tmp = std::to_string(ext_limit_);
+    while (tmp.length() < 4) tmp = "_" + tmp;
+    std::string out_file = "final_contigs" + tmp + ".linear_repeat.fasta";
+    std::ofstream is(cfg::get().output_dir + out_file);
+
+    for (auto iter = gp.g.ConstEdgeBegin(true); !iter.IsEnd(); ++iter) {
+        if (long_component_.find(*iter) == long_component_.end()) {
+            CalculateComponentSize(*iter, gp.g);
+        }
+    }
+    size_t count = 0;
+    for (auto &comp: component_list_) {
+        if (comp.size() == 4) {
+            EdgeId first_edge = comp[0];
+//conjugate, so /2
+            size_t comp_size = (long_component_[first_edge])/2;
+            size_t deadends_count = deadends_count_[first_edge] ;
+            if (deadends_count != 2)
+                break;
+            int incoming = -1;
+            for (size_t i = 0; i < comp.size(); i++) {
+                if (gp.g.IsDeadStart(gp.g.EdgeStart(comp[i])) && gp.g.length(comp[i]) < 0.3 * comp_size) {
+                    incoming = i;
+                    break;
+                }
+            }
+            if (incoming == -1)
+                break;
+            int next_circular = -1;
+            for (size_t i = 0; i < comp.size(); i++) {
+                if (gp.g.EdgeStart(comp[i]) == gp.g.EdgeEnd(comp[i]) && gp.g.EdgeStart(comp[i]) == gp.g.EdgeEnd(comp[incoming])) {
+                    next_circular = i;
+                    break;
+                }
+            }
+            if (next_circular == -1)
+                break;
+            stringstream ss;
+            ss << gp.g.EdgeNucls(comp[incoming]);
+            ss << gp.g.EdgeNucls(comp[next_circular]).Subseq(gp.g.k());
+            string seq = ss.str();
+            double cov = (gp.g.coverage(comp[incoming]) * gp.g.length(comp[incoming]) + gp.g.coverage(comp[next_circular]) * gp.g.length(comp[next_circular]))/(gp.g.length(comp[incoming]) + gp.g.length(comp[next_circular]));
+            is << ">CUTOFF_" << ext_limit_ <<"_NINE_" << count <<
+               "_length_"<< seq.length() <<"_cov_" << cov << "_id_" <<comp[incoming].int_id() + "," + comp[next_circular].int_id() << endl;
+
+        }
+    }
+}
+
 void ChromosomeRemover::OutputSuspiciousComponents () {
     auto& graph = gp_.get_mutable<Graph>();
     long_vertex_component_.clear();
@@ -327,6 +381,7 @@ void ChromosomeRemover::RunMetaPipeline() {
     size_t forbidden_size = gp_.get<SmartVertexSet>("forbidden_vertices").size();
     INFO("Forbidden (initial tip ends) vertex size: " << forbidden_size);
     OutputSuspiciousComponents ();
+    OutputNineComponents (gp_, ext_limit_);
     std::string tmp = std::to_string(ext_limit_);
     while (tmp.length() < 4) tmp = "_" + tmp;
 

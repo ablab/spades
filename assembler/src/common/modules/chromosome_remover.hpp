@@ -52,6 +52,7 @@ private:
     void RemoveNearlyEverythingByCoverage(double limit);
 
     void CoverageFilter(double coverage_cutoff);
+    void OutputNineComponents (conj_graph_pack &gp, size_t ext_limit_);
     void OutputSuspiciousComponents ();
 
 //  Not used, for debug purpose only
