@@ -450,7 +450,8 @@ template<class Graph>
 AlgoPtr<Graph> RelativelyLowCoverageDisconnectorInstance(Graph &g,
         const FlankingCoverage<Graph> &flanking_cov,
         const config::debruijn_config::simplification::relative_coverage_edge_disconnector &rced_config,
-        const SimplifInfoContainer &info) {
+        const SimplifInfoContainer &info,
+        EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
     if (!rced_config.enabled) {
         INFO("Disconnection of relatively low covered edges disabled");
         return nullptr;
@@ -466,7 +467,7 @@ AlgoPtr<Graph> RelativelyLowCoverageDisconnectorInstance(Graph &g,
     return std::make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g,
             condition,
             info.chunk_cnt(),
-            nullptr);
+            removal_handler);
 }
 
 template<class Graph>

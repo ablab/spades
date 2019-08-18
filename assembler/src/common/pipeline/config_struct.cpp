@@ -217,13 +217,13 @@ void load(debruijn_config::simplification::complex_tip_clipper &ctc,
     load(ctc.condition, pt, "condition", complete);
 }
 
-void load(debruijn_config::simplification::relative_coverage_edge_disconnector& relative_ed,
+void load(debruijn_config::simplification::relative_coverage_edge_disconnector& red,
         boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
-  load(relative_ed.enabled, pt, "enabled");
-  load(relative_ed.diff_mult, pt, "diff_mult", complete);
-  load(relative_ed.edge_sum, pt, "edge_sum", complete);
-  load(relative_ed.unconditional_diff_mult, pt, "unconditional_diff_mult", complete);
+  load(red.enabled, pt, "enabled");
+  load(red.diff_mult, pt, "diff_mult", complete);
+  load(red.edge_sum, pt, "edge_sum", complete);
+  load(red.unconditional_diff_mult, pt, "unconditional_diff_mult", complete);
 }
 
 void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,

@@ -248,7 +248,8 @@ public:
 
         algo.AddAlgo(
                 RelativelyLowCoverageDisconnectorInstance(gp_.g, gp_.flanking_cov,
-                                                          simplif_cfg_.red, info_container_),
+                                                          simplif_cfg_.red, info_container_,
+                                                          removal_handler_),
                 "Disconnecting edges with relatively low coverage");
 
         algo.AddAlgo(
