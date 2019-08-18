@@ -188,10 +188,10 @@ BinSet AnnotationFiller::DetermineBins(const std::vector<EdgeId> &path, const Co
     TRACE("Total len: " << total_len << "; candidates: " << path_colors);
     BinSet answer;
     using ColorInfo = ColoringLengths::value_type;
-    auto it = std::max_element(path_colors.begin(), path_colors.end(),
-        [](const ColorInfo& p1, const ColorInfo& p2) {
-             return p1.second < p2.second;
-        });
+    //auto it = std::max_element(path_colors.begin(), path_colors.end(),
+    //    [](const ColorInfo& p1, const ColorInfo& p2) {
+    //         return p1.second < p2.second;
+    //    });
     //Majority strategy: choose the longest coloring
     //if (it != path_colors.end() && !IsSpurious(it->second, total_len))
     //    answer.insert(it->first);
