@@ -1,5 +1,6 @@
 ############################################################################
 # Copyright (c) 2018 Saint Petersburg State University
+# Copyright (c) 2019 University of Warwick
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################

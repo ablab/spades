@@ -1,9 +1,11 @@
 //***************************************************************************
 //* Copyright (c) 2018 Saint Petersburg State University
+//* Copyright (c) 2019 University of Warwick
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "profile_storage.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/graph/gfa_reader.hpp"
 
@@ -30,13 +32,6 @@ static void create_console_logger() {
     attach_logger(lg);
 }
 
-static bool ends_with(const std::string &s, const std::string &p) {
-    if (s.size() < p.size())
-        return false;
-
-    return (s.compare(s.size() - p.size(), p.size(), p) == 0);
-}
-
 using namespace debruijn_graph;
 
 static void PrintGraphInfo(Graph &g) {
@@ -48,68 +43,16 @@ static void PrintGraphInfo(Graph &g) {
 }
 
 static void LoadGraph(conj_graph_pack &gp, const std::string &filename) {
-    if (ends_with(filename, ".gfa")) {
-        gfa::GFAReader gfa(filename);
-        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(gp.g);
-    } else {
-        io::binary::BasePackIO<Graph>().Load(filename, gp);
-    }
+    //if (ends_with(filename, ".gfa")) {
+    //    gfa::GFAReader gfa(filename);
+    //    INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+    //    gfa.to_graph(gp.g);
+    //} else {
+    io::binary::BasePackIO<Graph>().Load(filename, gp);
+    //}
     PrintGraphInfo(gp.g);
 }
 
-class EdgeProfileStorage {
-    typedef ConjugateDeBruijnGraph::EdgeId EdgeId;
-    typedef Profile<Abundance> AbundanceVector;
-
-    const ConjugateDeBruijnGraph &g_;
-    size_t sample_cnt_;
-    std::unordered_map<EdgeId, AbundanceVector> profiles_;
-
-    // FIXME self-conjugate edge coverage?!
-    template<class SingleStream, class Mapper>
-    void Fill(SingleStream &reader, size_t stream_id, const Mapper &mapper) {
-        typename SingleStream::ReadT read;
-        while (!reader.eof()) {
-            reader >> read;
-            //TRACE("Aligning " << read.name());
-
-            for (const auto &e_mr: mapper.MapSequence(read.sequence())) {
-                // FIXME: should initial_range be used instead?
-                profiles_[e_mr.first][stream_id] += float(e_mr.second.mapped_range.size());
-            }
-        }
-    };
-
-public:
-    EdgeProfileStorage(const ConjugateDeBruijnGraph &g, size_t sample_cnt) :
-            g_(g), sample_cnt_(sample_cnt) {}
-
-    template<class SingleStreamList, class Mapper>
-    void Fill(SingleStreamList &streams, const Mapper &mapper) {
-        for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            profiles_[*it] = AbundanceVector(sample_cnt_, 0.);
-        }
-
-#       pragma omp parallel for
-        for (size_t i = 0; i < sample_cnt_; ++i) {
-            Fill(streams[i], i, mapper);
-        }
-
-        for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            EdgeId e = *it;
-            auto &p = profiles_[e];
-            for (size_t i = 0; i < sample_cnt_; ++i) {
-                p[i] = p[i] / float(g_.length(e));
-            }
-        }
-    }
-
-    const AbundanceVector& profile(EdgeId e) const {
-        return utils::get(profiles_, e);
-    }
-
-};
 
 typedef io::DataSet<config::LibraryData> DataSet;
 typedef io::SequencingLibrary<config::LibraryData> SequencingLib;
@@ -155,15 +98,12 @@ static void Run(const std::string &graph_path, const std::string &dataset_desc, 
             /*followed by rc*/true, /*including paired*/true);
 
     size_t sample_cnt = dataset.lib_count();
-    EdgeProfileStorage profile_storage(gp.g, sample_cnt);
+    debruijn_graph::coverage_profiles::EdgeProfileStorage profile_storage(gp.g, sample_cnt);
 
     profile_storage.Fill(single_readers, *MapperInstance(gp));
 
     std::ofstream os(profiles_fn);
-    for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
-        os << gp.g.int_id(e) << '\t' << PrintVector(profile_storage.profile(e), "\t") << '\n';
-    }
+    profile_storage.Save(os);
 }
 
 struct gcfg {
