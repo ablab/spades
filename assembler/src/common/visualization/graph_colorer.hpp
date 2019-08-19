@@ -163,6 +163,10 @@ public:
         colorers_.push_back(colorer);
     }
 
+    void PopColorer() {
+        colorers_.pop_back();
+    }
+
     std::string GetValue(EdgeId edge) const {
         return ConstructColorString(CollectColors(edge));
     }

@@ -285,8 +285,9 @@ public:
             g_(g), edges_positions_(&position_handler) {
     }
 
-    explicit DefaultLabeler(const Graph &g) :
-            g_(g), edges_positions_(nullptr) {
+    explicit DefaultLabeler(const Graph &g,
+            const omnigraph::EdgesPositionHandler<Graph> *position_handler = nullptr) :
+            g_(g), edges_positions_(position_handler) {
     }
 
     virtual std::string label(VertexId vertexId) const {

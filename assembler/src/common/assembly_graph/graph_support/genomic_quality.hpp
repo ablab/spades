@@ -14,6 +14,7 @@
 
 namespace debruijn_graph {
 
+//FIXME fix issue with vanishing quality during split
 template<class Graph>
 class EdgeQuality: public visualization::graph_labeler::GraphLabeler<Graph>, public omnigraph::GraphActionHandler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
@@ -22,7 +23,8 @@ class EdgeQuality: public visualization::graph_labeler::GraphLabeler<Graph>, pub
     size_t k_;
 
     template<class Index>
-    void FillQuality(const Index &index, const KmerMapper<Graph> &kmer_mapper, const Sequence &genome) {
+    void FillQuality(const Index &index
+            , const KmerMapper<Graph>& kmer_mapper, const Sequence &genome) {
         if (genome.size() < k_)
             return;
         RtSeq cur = genome.start<RtSeq>(k_);
@@ -39,11 +41,31 @@ class EdgeQuality: public visualization::graph_labeler::GraphLabeler<Graph>, pub
 public:
 
     template<class Index>
-    void Fill(const Index &index, const KmerMapper<Graph> &kmer_mapper, const Sequence &genome) {
+    void Fill(const Index &index
+            , const KmerMapper<Graph>& kmer_mapper
+            , const Sequence &genome) {
         DEBUG("Filling quality values");
         FillQuality(index, kmer_mapper, genome);
         FillQuality(index, kmer_mapper, !genome);
         DEBUG(quality_.size() << " edges have non-zero quality");
+    }
+
+    template<class SequenceMapper, class SingleReadStream>
+    void Fill(const SequenceMapper &mapper, SingleReadStream &stream) {
+        io::SingleRead r;
+        while (!stream.eof()) {
+            stream >> r;
+            for (auto e_mr : mapper.MapRead(r)) {
+                quality_[e_mr.first] += e_mr.second.mapped_range.size();
+            }
+        }
+    }
+
+    void Fill(const EdgeQuality &edge_qual) {
+        VERIFY(&(this->g()) == &edge_qual.g());
+        for (const auto &e_q : edge_qual.quality_) {
+            quality_[e_q.first] += e_q.second;
+        }
     }
 
     EdgeQuality(const Graph &graph) :
@@ -51,14 +73,14 @@ public:
             k_(graph.k() + 1) {
     }
 
-    virtual void HandleAdd(EdgeId /*e*/) {
+    void HandleAdd(EdgeId /*e*/) override {
     }
 
-    virtual void HandleDelete(EdgeId e) {
+    void HandleDelete(EdgeId e) override {
         quality_.erase(e);
     }
 
-    virtual void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) {
+    void HandleMerge(const std::vector<EdgeId>& old_edges, EdgeId new_edge) override {
         size_t res = 0;
         for (size_t i = 0; i < old_edges.size(); i++) {
             res += quality_[old_edges[i]];
@@ -66,15 +88,19 @@ public:
         quality_[new_edge] += res;
     }
 
-    virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+    void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) override {
         quality_[new_edge] += quality_[edge2];
         quality_[new_edge] += quality_[edge1];
     }
 
-    virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) {
+    void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
+            EdgeId new_edge2) override {
         if (old_edge == this->g().conjugate(old_edge)) {
-            WARN("EdgeQuality does not support self-conjugate splits");
-            return;
+            if (IsPositiveQuality(old_edge)) {
+                //FIXME why not?
+                WARN("EdgeQuality does not support self-conjugate splits");
+                return;
+            }
         }
         VERIFY(old_edge != this->g().conjugate(old_edge));
         quality_[new_edge1] = quality_[old_edge] * this->g().length(new_edge1)
@@ -104,17 +130,28 @@ public:
         return math::eq(quality(edge), 0.);
     }
 
-    virtual std::string label(VertexId /*vertexId*/) const {
+    std::string label(VertexId /*vertexId*/) const override {
         return "";
     }
 
-    virtual std::string label(EdgeId edge) const {
+    std::string label(EdgeId edge) const override {
         double q = quality(edge);
         return (q == 0) ? "" : "quality: " + std::to_string(q);
     }
 
     void clear() {
+        //VERIFY_MSG(false, "Quality was cleared unexpectedly");
         quality_.clear();
+    }
+
+    std::set<EdgeId> PositiveQualEdges() const {
+        std::set<EdgeId> answer;
+        for (const auto & e_q : quality_) {
+            if (math::gr(e_q.second, 0.)) {
+                answer.insert(e_q.first);
+            }
+        }
+        return answer;
     }
 
 private:
