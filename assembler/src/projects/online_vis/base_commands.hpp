@@ -192,6 +192,7 @@ namespace online_visualization {
           shared_ptr<Env> new_env = MakeNewEnvironment(name, saves, K);
           loaded_environments.insert(make_pair(name, new_env));
           curr_env = new_env;
+          curr_env->graph_pack().EnsureBasicMapping();
         }
 
     };
