@@ -8,6 +8,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/graph_iterators.hpp"
+#include "assembly_graph/components/graph_component.hpp"
 
 using namespace gfa;
 using namespace debruijn_graph;
@@ -44,6 +45,30 @@ void GFAWriter::WriteLinks() {
             for (auto out_edge : graph_.OutgoingEdges(v)) {
                 WriteLink(inc_edge, out_edge, graph_.k(),
                           os_, edge_namer_);
+            }
+        }
+    }
+}
+
+void GFAWriter::WriteSegments(const omnigraph::GraphComponent<Graph> &gc) {
+    for (EdgeId e : gc.edges()) {
+        if (e <= graph_.conjugate(e)) {
+            WriteSegment(edge_namer_.EdgeString(e), graph_.EdgeNucls(e),
+                         graph_.coverage(e) * double(graph_.length(e)),
+                         os_);
+        }
+    }
+}
+
+void GFAWriter::WriteLinks(const omnigraph::GraphComponent<Graph> &gc) {
+    for (VertexId v : gc.vertices()) {
+        //TODO think about appropriate behavior or force preliminary component "closure"
+        if (v <= graph_.conjugate(v) && !gc.IsBorder(v)) {
+            for (auto inc_edge : graph_.IncomingEdges(v)) {
+                for (auto out_edge : graph_.OutgoingEdges(v)) {
+                    WriteLink(inc_edge, out_edge, graph_.k(),
+                              os_, edge_namer_);
+                }
             }
         }
     }

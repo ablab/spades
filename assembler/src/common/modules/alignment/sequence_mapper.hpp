@@ -132,6 +132,16 @@ bool SpuriousMappingFilter(const Graph& /*g*/,
 }
 
 template<class Graph>
+bool CheckContiguous(const Graph &g, const std::vector<typename Graph::EdgeId> &path) {
+    for (size_t i = 1; i < path.size(); ++i) {
+        if (g.EdgeEnd(path[i - 1]) != g.EdgeStart(path[i]))
+            return false;
+    }
+    return true;
+}
+
+
+template<class Graph>
 class MappingPathFixer {
 public:
 
@@ -140,14 +150,6 @@ public:
 
     MappingPathFixer(const Graph& graph)
             : g_(graph) {
-    }
-
-    bool CheckContiguous(const std::vector<typename Graph::EdgeId> &path) const {
-        for (size_t i = 1; i < path.size(); ++i) {
-            if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i]))
-                return false;
-        }
-        return true;
     }
 
     Path<EdgeId> TryFixPath(const Path<EdgeId>& path, size_t length_bound = 70) const {
@@ -183,6 +185,10 @@ public:
             }
         }
         return result;
+    }
+
+    Path<EdgeId> DeleteSameEdges(const Path<EdgeId>& path) const {
+        return Path<EdgeId>(DeleteSameEdges(path.sequence()), path.start_pos(), path.end_pos());
     }
 
 private:
@@ -229,36 +235,42 @@ class ReadPathFinder {
     const Graph& g_;
     const MappingPathFixer<Graph> path_fixer_;
     const bool skip_unfixed_;
+    const size_t max_gap_fill_;
 
 public:
-    ReadPathFinder(const Graph& g, bool skip_unfixed = true) :
-        g_(g), path_fixer_(g), skip_unfixed_(skip_unfixed)
+    ReadPathFinder(const Graph& g, bool skip_unfixed = true, size_t max_gap_fill = 70) :
+        g_(g), path_fixer_(g), skip_unfixed_(skip_unfixed), max_gap_fill_(max_gap_fill)
     {}
 
+    //TODO replace original method, rename sequence() field in path
+    Path<EdgeId> FindDetailedReadPath(const MappingPath<EdgeId> &mapping_path) const {
+        if (mapping_path.size() == 0) {
+            TRACE("Read unmapped");
+            return Path<EdgeId>();
+        }
+
+        auto fixed_path = path_fixer_.DeleteSameEdges(mapping_path.path());
+        if (fixed_path.size() != mapping_path.size()) {
+            TRACE("Some edges were deleted");
+        }
+
+        fixed_path = path_fixer_.TryFixPath(fixed_path, max_gap_fill_);
+
+        if (!CheckContiguous(g_, fixed_path.sequence())) {
+            TRACE("Could not fix the path!")
+            if (skip_unfixed_) {
+                TRACE("Read unmapped");
+                return Path<EdgeId>();
+            } else {
+                TRACE("Could not fix the path!")
+            }
+        }
+        return fixed_path;
+    }
+
     std::vector<EdgeId> FindReadPath(const MappingPath<EdgeId> &mapping_path) const {
-          if (mapping_path.size() == 0) {
-              TRACE("Read unmapped");
-              return {};
-          }
-
-          auto fixed_path = path_fixer_.DeleteSameEdges(mapping_path.simple_path());
-          if (fixed_path.size() != mapping_path.size()) {
-              TRACE("Some edges were deleted");
-          }
-
-          fixed_path = path_fixer_.TryFixPath(fixed_path);
-
-          if (!path_fixer_.CheckContiguous(fixed_path)) {
-              TRACE("Could not fix the path!")
-              if (skip_unfixed_) {
-                  TRACE("Read unmapped");
-                  return {};
-              } else {
-                  WARN("Could not fix the path!")
-              }
-          } 
-          return fixed_path;
-      }
+        return FindDetailedReadPath(mapping_path).sequence();
+    }
 };
 
 template<class Graph, class Index>

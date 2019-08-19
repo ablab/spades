@@ -127,5 +127,15 @@ namespace debruijn_graph {
         return path_sequence.Subseq(start, end);
     }
 
+    template<class Graph>
+    size_t PathLength(const Graph &g, const omnigraph::Path<typename Graph::EdgeId> &p) {
+        if (p.size() == 0)
+            return 0;
+        const auto &edges = p.sequence();
+        size_t len = CumulativeLength(g, edges);
+        len -= p.start_pos();
+        len -= g.length(edges.back()) - p.end_pos();
+        return len;
+    }
 
 }

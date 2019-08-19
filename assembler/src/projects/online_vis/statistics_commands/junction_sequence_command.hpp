@@ -61,7 +61,7 @@ public:
         debruijn_graph::MappingPathFixer<Graph> path_fixer(curr_env.graph());
         edges = path_fixer.TryFixPath(edges, insert_size);
 
-        if (path_fixer.CheckContiguous(edges)) {
+        if (CheckContiguous(curr_env.graph(), edges)) {
             LOG("Successfully fixed path");
         } else {
             LOG("Couldn't fix path!");
