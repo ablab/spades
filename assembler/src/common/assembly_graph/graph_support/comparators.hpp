@@ -20,8 +20,6 @@ public:
     bool operator()(EdgeId edge1, EdgeId edge2) const {
         const Graph &g = graph_;
 
-        // uint64_t lhs = g.raw_coverage(edge1) * g.length(edge2),
-        //         rhs = g.raw_coverage(edge2) * g.length(edge1);
         uint64_t lhs = g.raw_coverage(edge1) * g.length(edge2),
                  rhs = g.raw_coverage(edge2) * g.length(edge1);
         if (lhs < rhs)

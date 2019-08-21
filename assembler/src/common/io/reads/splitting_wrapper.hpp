@@ -48,7 +48,6 @@ public:
             base(reader), buffer_position_(0) {
     }
 
-    /* virtual */
     SplittingWrapper& operator>>(SingleRead& read) {
         Skip();
         read = buffer_[buffer_position_];
@@ -57,13 +56,13 @@ public:
     }
 
     //todo fix needed!!! seems that eof can't be called multiple times in a row!!!
-    /* virtual */ bool eof() {
+    bool eof() {
         return !Skip();
     }
 };
 
-inline NewReadStream<SingleRead> SplittingWrap(NewReadStream<SingleRead> reader_ptr) {
-    return SplittingWrapper>(reader_ptr);
+inline ReadStream<SingleRead> SplittingWrap(ReadStream<SingleRead> reader_ptr) {
+    return SplittingWrapper(reader_ptr);
 }
 
 inline ReadStreamList<SingleRead> SplittingWrap(ReadStreamList<SingleRead> readers) {
