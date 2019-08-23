@@ -7,15 +7,15 @@
 
 #pragma once
 
-#include "pipeline/graph_pack.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
 #include "modules/simplification/compressor.hpp"
-#include "assembly_graph/handlers/id_track_handler.hpp"
-#include "utils/logger/logger.hpp"
 
 #include "io/reads/read_stream_vector.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
 
-#include "pipeline/config_struct.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "utils/logger/logger.hpp"
+
+#include <parallel_hashmap/phmap.h>
 
 namespace debruijn_graph {
 
@@ -23,10 +23,14 @@ namespace mismatches {
 struct NuclCount {
     std::array<size_t, 4> counts_;
 
-    NuclCount() : counts_{} {
-    }
+    NuclCount()
+            : counts_{} {}
 
     size_t &operator[](size_t nucl) {
+        return counts_[nucl];
+    }
+
+    size_t operator[](size_t nucl) const {
         return counts_[nucl];
     }
 
@@ -49,15 +53,15 @@ struct MismatchEdgeInfo {
     }
 
     void operator+=(const MismatchEdgeInfo &other) {
-        for (auto it = other.info_.begin(); it != other.info_.end(); ++it) {
-            info_[it->first] += it->second;
+        for (const auto &entry : other.info_) {
+            info_[entry.first] += entry.second;
         }
     }
 
     void IncIfContains(size_t position, size_t nucl) {
         auto it = info_.find(position);
         if (it != info_.end()) {
-            it->second[nucl]++;
+            it->second[nucl] += 1;
         }
     }
 
@@ -66,17 +70,18 @@ struct MismatchEdgeInfo {
     }
 
 public:
-    std::map<size_t, NuclCount> info_;
+    phmap::flat_hash_map<size_t, NuclCount> info_;
 };
 
 template<typename EdgeId>
 class MismatchStatistics {
 private:
-    typedef typename std::map<EdgeId, MismatchEdgeInfo>::const_iterator const_iterator;
-    std::map<EdgeId, MismatchEdgeInfo> statistics_;
+    typedef phmap::node_hash_map<EdgeId, MismatchEdgeInfo> InnerMismatchStatistics;
+    typedef typename InnerMismatchStatistics::const_iterator const_iterator;
+    InnerMismatchStatistics statistics_;
 
     template<class graph_pack>
-    void CollectPotensialMismatches(const graph_pack &gp) {
+    void CollectPotentialMismatches(const graph_pack &gp) {
         const auto &kmer_mapper = gp.kmer_mapper;
         for (const auto &mentry : kmer_mapper) {
             // Kmer mapper iterator dereferences to pair (KMer, KMer), not to the reference!
@@ -115,7 +120,7 @@ private:
 
 public:
     MismatchStatistics(const conj_graph_pack &gp) {
-        CollectPotensialMismatches(gp);
+        CollectPotentialMismatches(gp);
     }
 
     const_iterator begin() const {
@@ -266,24 +271,23 @@ private:
 
     size_t CorrectAllEdges(const MismatchStatistics<EdgeId> &statistics) {
         size_t res = 0;
-        std::set<EdgeId> conjugate_fix;
+        btree::btree_set<EdgeId> conjugate_fix;
         //FIXME after checking saves replace with
         //for (auto it = g_.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
 
-        for (auto it = gp_.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (conjugate_fix.find(gp_.g.conjugate(*it)) == conjugate_fix.end()) {
-                conjugate_fix.insert(*it);
-            }
+        for (EdgeId e : g_.edges()) {
+            if (!conjugate_fix.count(g_.conjugate(e)))
+                conjugate_fix.insert(e);
         }
-        for (auto it = conjugate_fix.begin(); it != conjugate_fix.end(); ++it) {
-            EdgeId e = *it;
+        for (EdgeId e : conjugate_fix) {
             DEBUG("processing edge" << g_.int_id(e));
 
             auto stat_it = statistics.find(e);
-            if (stat_it != statistics.end()) {
-                if (!g_.RelatedVertices(g_.EdgeStart(e), g_.EdgeEnd(e))) {
-                    res += CorrectEdge(e, stat_it->second);
-                }
+            if (stat_it == statistics.end())
+                continue;
+
+            if (!g_.RelatedVertices(g_.EdgeStart(e), g_.EdgeEnd(e))) {
+                res += CorrectEdge(e, stat_it->second);
             }
         }
         INFO("All edges processed");
