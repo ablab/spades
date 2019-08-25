@@ -275,10 +275,18 @@ private:
         //FIXME after checking saves replace with
         //for (auto it = g_.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
 
+#if 0        
         for (EdgeId e : g_.edges()) {
             if (!conjugate_fix.count(g_.conjugate(e)))
                 conjugate_fix.insert(e);
         }
+#else
+        for (auto it = gp_.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            if (conjugate_fix.find(gp_.g.conjugate(*it)) == conjugate_fix.end()) {
+                conjugate_fix.insert(*it);
+            }
+        }
+#endif
         for (EdgeId e : conjugate_fix) {
             DEBUG("processing edge" << g_.int_id(e));
 
