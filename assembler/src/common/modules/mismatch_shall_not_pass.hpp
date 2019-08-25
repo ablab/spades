@@ -145,8 +145,10 @@ public:
         while (!stream.eof()) {
             stream >> read;
             const Sequence &s_read = read.sequence();
-            omnigraph::MappingPath<EdgeId> path = sm->MapSequence(s_read);
+            omnigraph::MappingPath<EdgeId> path = sm->MapSequence(s_read,
+                                                                  true /* only_simple */);
             TRACE("read mapped");
+            VERIFY(path.size() <= 1);
             if (path.size() != 1)
                 continue;
 

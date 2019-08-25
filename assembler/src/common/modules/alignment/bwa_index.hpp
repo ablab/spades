@@ -37,11 +37,11 @@ class BWAIndex {
     BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode = AlignmentMode::Default);
     ~BWAIndex();
 
-    omnigraph::MappingPath<debruijn_graph::EdgeId> AlignSequence(const Sequence &sequence) const;
+    omnigraph::MappingPath<debruijn_graph::EdgeId> AlignSequence(const Sequence &sequence,
+                                                                 bool only_simple = false) const;
   private:
     void Init();
-    omnigraph::MappingPath<debruijn_graph::EdgeId> GetMappingPath(const mem_alnreg_v&, const std::string &) const;
-    omnigraph::MappingPath<debruijn_graph::EdgeId> GetShortMappingPath(const mem_alnreg_v&, const std::string &) const;
+    omnigraph::MappingPath<debruijn_graph::EdgeId> GetMappingPath(const mem_alnreg_v&, const std::string &, bool = false) const;
 
     const debruijn_graph::Graph& g_;
 

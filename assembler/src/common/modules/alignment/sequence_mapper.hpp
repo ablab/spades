@@ -48,9 +48,11 @@ public:
 
     virtual ~SequenceMapper() = default;
 
-    virtual MappingPath<EdgeId> MapSequence(const Sequence &sequence) const = 0;
+    virtual MappingPath<EdgeId> MapSequence(const Sequence &sequence,
+                                            bool only_simple = false) const = 0;
 
-    virtual MappingPath<EdgeId> MapRead(const io::SingleRead &read) const = 0;
+    virtual MappingPath<EdgeId> MapRead(const io::SingleRead &read,
+                                        bool only_simple = false) const = 0;
 };
 
 template<class Graph>
@@ -58,20 +60,18 @@ class AbstractSequenceMapper : public SequenceMapper<Graph> {
 protected:
     const Graph& g_;
 
-//    const Graph& g() const {
-//        return g_;
-//    }
 public:
-    AbstractSequenceMapper(const Graph& g) : g_(g) {
-    }
+    AbstractSequenceMapper(const Graph& g)
+            : g_(g) {}
 
-    MappingPath<EdgeId> MapRead(const io::SingleRead &read) const override {
+    MappingPath<EdgeId> MapRead(const io::SingleRead &read,
+                                bool only_simple = false) const override {
 //      VERIFY(read.IsValid());
         DEBUG(read.name() << " is mapping");
         auto s = read.GetSequenceString();
         size_t l = 0, r = 0;
         MappingPath<EdgeId> result;
-        for(size_t i = 0; i < s.size(); i++) {
+        for (size_t i = 0; i < s.size(); i++) {
             if (read.GetSequenceString()[i] == 'N') {
                 if (r > l) {
                     result.join(this->MapSequence(Sequence(s.substr(l, r - l))), int(l));
@@ -85,36 +85,41 @@ public:
         if (r > l) {
             result.join(this->MapSequence(Sequence(s.substr(l, r - l))), int(l));
         }
-        DEBUG(read.name() << " is mapped");
+
+        // FIXME: exit earlier
+        if (only_simple && result.size() > 1)
+            result = MappingPath<EdgeId>();
+        
+        DEBUG(read.name() << " is mapped, only simple mode: " << only_simple);
         DEBUG("Number of edges is " << result.size());
 
         return result;
     }
 };
 
-//potentially useful class
-//template<class Graph>
-//class DelegatingSequenceMapper : public SequenceMapper<Graph> {
-//public:
-//    typedef std::function<MappingPath<EdgeId> (const MappingPath<EdgeId>&, size_t)> ProcessingF;
-//private:
-//    shared_ptr<SequenceMapper<Graph>> inner_mapper_;
-//    ProcessingF processing_f_;
-//
-//public:
-//    DelegatingSequenceMapper(shared_ptr<SequenceMapper<Graph>> inner_mapper,
-//                             ProcessingF processing_f) :
-//            inner_mapper_(inner_mapper), processing_f_(processing_f) {
-//    }
-//
-//    MappingPath<EdgeId> MapSequence(const Sequence& s) const override {
-//        return processing_f_(inner_mapper_->MapSequence(s), s.size());
-//    }
-//
-//    MappingPath<EdgeId> MapRead(const io::SingleRead& r) const override {
-//        return processing_f_(inner_mapper_->MapRead(r), r.size());
-//    }
-//};
+template<class Graph>
+class DelegatingSequenceMapper : public SequenceMapper<Graph> {
+public:
+    typedef std::function<MappingPath<EdgeId> (const MappingPath<EdgeId>&, size_t)> ProcessingF;
+private:
+    std::shared_ptr<SequenceMapper<Graph>> inner_mapper_;
+    ProcessingF processing_f_;
+
+public:
+    DelegatingSequenceMapper(std::shared_ptr<SequenceMapper<Graph>> inner_mapper,
+                             ProcessingF processing_f) :
+            inner_mapper_(inner_mapper), processing_f_(processing_f) {}
+
+    MappingPath<EdgeId> MapSequence(const Sequence &s,
+                                    bool only_simple = false) const override {
+        return processing_f_(inner_mapper_->MapSequence(s, only_simple), s.size());
+    }
+
+    MappingPath<EdgeId> MapRead(const io::SingleRead &r,
+                                bool only_simple = false) const override {
+        return processing_f_(inner_mapper_->MapRead(r, only_simple), r.size());
+    }
+};
 
 template<class Graph>
 bool SpuriousMappingFilter(const Graph& /*g*/,
@@ -122,13 +127,15 @@ bool SpuriousMappingFilter(const Graph& /*g*/,
                            size_t read_length,
                            size_t max_range,
                            size_t min_flank) {
-    if (mapping_path.size() == 1) {
-        Range read_range = mapping_path[0].second.initial_range;
-        if (read_range.size() <= max_range
-            && read_range.start_pos >= min_flank
-            && read_range.end_pos + min_flank <= read_length)
-            return false;
-    }
+    if (mapping_path.size() != 1)
+        return true;
+    
+    Range read_range = mapping_path[0].second.initial_range;
+    if (read_range.size() <= max_range &&
+        read_range.start_pos >= min_flank &&
+        read_range.end_pos + min_flank <= read_length)
+        return false;
+
     return true;
 }
 
@@ -323,8 +330,8 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
     } else {
       VertexId v = g_.EdgeEnd(last_edge);
 
-      if(!optimization_on_)
-          if(g_.OutgoingEdgeCount(v) > 1)
+      if (!optimization_on_)
+          if (g_.OutgoingEdgeCount(v) > 1)
               return false;
 
       for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
@@ -362,17 +369,18 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
 
  public:
   BasicSequenceMapper(const Graph& g,
-                            const Index& index,
-                            const KmerSubs& kmer_mapper,
-                bool optimization_on = true) :
+                      const Index& index,
+                      const KmerSubs& kmer_mapper,
+                      bool optimization_on = true) :
       AbstractSequenceMapper<Graph>(g), index_(index),
       kmer_mapper_(kmer_mapper), k_(g.k()+1),
       optimization_on_(optimization_on) { }
 
-  MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
+  MappingPath<EdgeId> MapSequence(const Sequence &sequence,
+                                  bool only_simple = false) const {
     std::vector<EdgeId> passed_edges;
     RangeMappings range_mapping;
-
+    
     if (sequence.size() < k_) {
       return MappingPath<EdgeId>();
     }
@@ -385,6 +393,8 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
       kmer <<= sequence[i];
       try_thread = ProcessKmer(kmer, i - k_ + 1, passed_edges,
                                range_mapping, try_thread);
+      if (only_simple && passed_edges.size() > 1)
+        return MappingPath<EdgeId>();
     }
 
     return MappingPath<EdgeId>(passed_edges, range_mapping);

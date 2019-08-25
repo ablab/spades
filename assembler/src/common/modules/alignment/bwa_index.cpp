@@ -310,7 +310,8 @@ static bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
 }
 
 
-omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
+omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const std::string &seq,
+                                                                        bool only_simple) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
     // Turn read length into k-mers
@@ -366,19 +367,22 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
                             Range(pos,  mapping_range_end).Invert(g_.length(ids_[a.rid])) , qual});
 
         }
+        if (only_simple && res.size() > 1)
+            return omnigraph::MappingPath<debruijn_graph::EdgeId>();
     }
     return res;
 }
 
 
-omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Sequence &sequence) const {
+omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Sequence &sequence,
+                                                                       bool only_simple) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
     VERIFY(idx_);
 
     std::string seq = sequence.str();
     mem_alnreg_v ar = mem_align1(memopt_.get(), idx_->bwt, idx_->bns, idx_->pac,
                                  int(seq.length()), seq.data());
-    res = GetMappingPath(ar, seq);
+    res = GetMappingPath(ar, seq, only_simple);
 
     free(ar.a);
 
