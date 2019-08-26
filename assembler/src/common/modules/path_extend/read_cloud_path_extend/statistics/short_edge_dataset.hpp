@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -76,10 +76,18 @@ class ShortEdgeDatasetExtractor {
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor BarcodeExtractor;
     typedef std::vector<std::vector<EdgeWithMapping>> ReferencePaths;
 
-    ShortEdgeDatasetExtractor(const conj_graph_pack &gp,
+    ShortEdgeDatasetExtractor(const Graph &g,
+                              const debruijn_graph::Index &index,
+                              const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                              const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
                               const ScaffoldGraphStorage &scaffold_graph_storage,
                               size_t max_threads) :
-        gp_(gp), scaffold_graph_storage_(scaffold_graph_storage), max_threads_(max_threads) {}
+        g_(g),
+        index_(index),
+        kmer_mapper_(kmer_mapper),
+        barcode_mapper_(barcode_mapper),
+        scaffold_graph_storage_(scaffold_graph_storage),
+        max_threads_(max_threads) {}
 
     ShortEdgeDataset GetShortEdgeDataset(const ReferencePaths &reference_paths,
                                          const ReferencePaths &filtered_reference_paths) const;
@@ -102,7 +110,10 @@ class ShortEdgeDatasetExtractor {
 
     std::shared_ptr<BarcodeExtractor> ConstructLongEdgeExtractor() const;
 
-    const conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
+    const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     const ScaffoldGraphStorage &scaffold_graph_storage_;
     const size_t max_threads_;
 

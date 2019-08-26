@@ -46,8 +46,8 @@ class DebruijnEnvironment : public Environment {
               picture_counter_(0),
               folder_("pictures_" + name_),
               file_name_base_("picture"),
-              max_vertices_(60),
-              edge_length_bound_(2000),
+              max_vertices_(40),
+              edge_length_bound_(1000),
               gp_(K, "./tmp", cfg::get().ds.reads.lib_count(), 
                   std::vector<std::string>(0),
                   cfg::get().flanking_range,
@@ -64,7 +64,9 @@ class DebruijnEnvironment : public Environment {
             gp_.get_mutable<debruijn_graph::KmerMapper<Graph>>().Attach();
             io::binary::BasePackIO().Load(path_, gp_);
 //            debruijn_graph::graphio::ScanGraphPack(path_, gp_);
-            DEBUG("Graph pack created")
+            io::binary::Load(path_, gp_.barcode_mapper);
+            DEBUG("Graph pack created");
+            barcode_labeler_.UpdateExtractor(gp_.barcode_mapper, gp_.g);
             LoadFromGP();
         }
 
@@ -175,8 +177,8 @@ class DebruijnEnvironment : public Environment {
             return gp_.get<KmerMapperClass>();
         }
 
-        const shared_ptr<barcode_index::AbstractBarcodeIndex> GetBarcodeExtractor() const {
-            return gp_.barcode_mapper_ptr;
+        const barcode_index::FrameBarcodeIndex<Graph> GetBarcodeExtractor() const {
+            return gp_.barcode_mapper;
         }
 
         const ElementFinder& finder() const {

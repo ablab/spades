@@ -5,7 +5,8 @@
 //***************************************************************************
 
 #pragma once
-#include "common/barcode_index/barcode_index.hpp"
+
+#include "barcode_index/barcode_index.hpp"
 
 namespace path_extend {
 namespace read_cloud {

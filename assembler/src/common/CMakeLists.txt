@@ -13,6 +13,7 @@ add_subdirectory(pipeline)
 add_subdirectory(sequence)
 add_subdirectory(assembly_graph)
 add_subdirectory(alignment)
+add_subdirectory(auxiliary_graphs)
 add_subdirectory(modules/path_extend)
 add_subdirectory(modules)
 add_subdirectory(paired_info)
@@ -28,7 +29,7 @@ add_library(common_modules
             adt/concurrent_dsu.cpp)
 
 target_link_libraries(common_modules library
-                      assembly_graph input pipeline sequence
+                      assembly_graph auxiliary_graphs input pipeline sequence
                       coverage_model paired_info path_extend
                       stages mph_index modules
                       utils configs alignment)

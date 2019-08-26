@@ -6,11 +6,10 @@
 
 #pragma once
 
-#include "common/pipeline/graph_pack.hpp"
-#include "common/modules/path_extend/extension_chooser.hpp"
-#include "common/modules/alignment/long_read_mapper.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
+#include "modules/path_extend/extension_chooser.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
+#include "modules/alignment/long_read_mapper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -109,7 +108,12 @@ struct NamedSimplePath {
 
 class ContigPathBuilder {
   public:
-    ContigPathBuilder(const debruijn_graph::conj_graph_pack &graph_pack) : gp_(graph_pack) {}
+    ContigPathBuilder(const Graph &g,
+                      const debruijn_graph::Index &index,
+                      const debruijn_graph::KmerMapper<Graph> &kmer_mapper) :
+        g_(g),
+        index_(index),
+        kmer_mapper_(kmer_mapper) {}
 
     std::vector<NamedSimplePath> GetContigPaths(const string &path_to_contigs) const;
 
@@ -123,7 +127,9 @@ class ContigPathBuilder {
     std::vector<NamedSimplePath> FixMappingPaths(const std::vector<NamedPath> &contig_paths) const;
 
   private:
-    const debruijn_graph::conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
 };
 
 class ContigPathFilter {
@@ -143,7 +149,12 @@ class ContigPathFilter {
 class FilteredReferencePathHelper {
   public:
     typedef std::vector<std::vector<EdgeWithMapping>> ReferencePaths;
-    explicit FilteredReferencePathHelper(const conj_graph_pack &gp_);
+    FilteredReferencePathHelper(const Graph &g,
+                                const debruijn_graph::Index &index,
+                                const debruijn_graph::KmerMapper<Graph> &kmer_mapper) :
+        g_(g),
+        index_(index),
+        kmer_mapper_(kmer_mapper) {};
 
     ReferencePaths GetFilteredReferencePathsFromLength(const string &path_to_reference, size_t length_threshold) const;
     ReferencePaths GetFilteredReferencePathsFromGraph(const string &path_to_reference,
@@ -153,7 +164,9 @@ class FilteredReferencePathHelper {
     ReferencePaths GetFilteredReferencePathsFromEdges(const string &path_to_reference,
                                                       const std::unordered_set<EdgeId> &target_edges) const;
 
-    const debruijn_graph::conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
 };
 
 class TransitionStorageBuilder {
@@ -185,7 +198,7 @@ class ReverseTransitionStorageBuilder : public TransitionStorageBuilder {
 
 class ConjugateTransitionStorageBuilder : public TransitionStorageBuilder {
   public:
-    ConjugateTransitionStorageBuilder(const Graph &g_) : g_(g_) {}
+    ConjugateTransitionStorageBuilder(const Graph &g) : g_(g) {}
   protected:
     ContigTransitionStorage BuildStorage(const std::vector<std::vector<EdgeWithMapping>> &long_edges) const override;
 
@@ -225,7 +238,7 @@ class ApproximateTransitionStorageBuilder : public TransitionStorageBuilder {
 class ClusterTransitionExtractor {
   public:
     typedef path_extend::read_cloud::transitions::Transition Transition;
-    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
     explicit ClusterTransitionExtractor(const cluster_storage::ClusterGraphAnalyzer &ordering_analyzer_)
         : ordering_analyzer_(

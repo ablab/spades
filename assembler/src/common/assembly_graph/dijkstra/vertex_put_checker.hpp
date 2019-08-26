@@ -111,4 +111,35 @@ class CompositePutChecker : public VertexPutChecker<Graph, distance_t> {
     }
 };
 
+template<class Tuple, class Graph, typename distance_t = size_t>
+class AndPutChecker {
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+
+    Tuple put_checkers_;
+  public:
+    explicit AndPutChecker(const Tuple &put_checkers) : put_checkers_(put_checkers) { }
+    bool Check(VertexId vertex, EdgeId edge, distance_t length) const {
+        const auto size = std::tuple_size<Tuple>{};
+        return CheckTuple(vertex, edge, length, put_checkers_, std::make_index_sequence<size>{});
+    }
+
+  private:
+    bool CheckInternal(VertexId, EdgeId, distance_t) const {
+        return true;
+    }
+
+    template<class CheckerT, class... CheckerTs>
+    bool CheckInternal(VertexId vertex, EdgeId edge, distance_t length, const CheckerT &checker,
+                       const CheckerTs &... checkers) const {
+        return checker.Check(vertex, edge, length) and CheckInternal(vertex, edge, length, checkers...);
+    }
+
+    template<size_t... Is>
+    bool CheckTuple(VertexId vertex, EdgeId edge, distance_t length, const Tuple &checkers,
+                    std::index_sequence<Is...>) const {
+        return CheckInternal(vertex, edge, length, std::get<Is>(checkers)...);
+    }
+};
+
 }

@@ -27,8 +27,6 @@ std::vector<std::vector<EdgeWithMapping>> ContigPathBuilder::StripNames(
 }
 std::vector<NamedPath> ContigPathBuilder::GetRawPaths(const string &contig_path) const {
     std::vector<NamedPath> contig_paths;
-    const debruijn_graph::Index &index = gp_.index;
-    const debruijn_graph::KmerMapper<Graph> &kmer_mapper = gp_.kmer_mapper;
     auto contig_stream_ptr = std::make_shared<io::FileReadStream>(contig_path);
     auto rc_contig_stream_ptr = io::RCWrap<io::SingleRead>(contig_stream_ptr);
 
@@ -38,7 +36,7 @@ std::vector<NamedPath> ContigPathBuilder::GetRawPaths(const string &contig_path)
         io::SingleRead contig;
         (*rc_contig_stream_ptr) >> contig;
         auto mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, debruijn_graph::Index>>
-            (gp_.g, index, kmer_mapper);
+            (g_, index_, kmer_mapper_);
         MappingPath<EdgeId> path = mapper->MapRead(contig);
         if (path.size() > 0 and path.back().second.initial_range.end_pos > contig_length_threshold) {
             NamedPath named_path(path, RemoveSpacesFromName(contig.name()));
@@ -62,7 +60,7 @@ string ContigPathBuilder::RemoveSpacesFromName(const string &name) const {
 }
 std::vector<NamedSimplePath> ContigPathBuilder::FixMappingPaths(const std::vector<NamedPath> &contig_paths) const {
     std::vector<NamedSimplePath> result;
-    debruijn_graph::GappedPathExtractor gapped_path_extractor(gp_.g);
+    debruijn_graph::GappedPathExtractor gapped_path_extractor(g_);
     for (const auto &named_path: contig_paths) {
         auto path = named_path.mapping_path;
         std::vector<std::vector<EdgeId>> fixed_paths = gapped_path_extractor(path);
@@ -70,10 +68,10 @@ std::vector<NamedSimplePath> ContigPathBuilder::FixMappingPaths(const std::vecto
         size_t prefix_len = 0;
         for (const auto &fixed_path: fixed_paths) {
             for (const auto &edge: fixed_path) {
-                Range mapping(prefix_len, prefix_len + gp_.g.length(edge));
+                Range mapping(prefix_len, prefix_len + g_.length(edge));
                 EdgeWithMapping ewm(edge, mapping);
                 long_path.push_back(ewm);
-                prefix_len += gp_.g.length(edge);
+                prefix_len += g_.length(edge);
             }
         }
         NamedSimplePath named_simple_path(long_path, named_path.name);
@@ -291,8 +289,8 @@ std::vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::
     const auto &internal_graph = cluster.GetInternalGraph();
     std::vector<Transition> result;
     for (const auto &vertex: internal_graph) {
-        for (auto it = internal_graph.outcoming_begin(vertex); it != internal_graph.outcoming_end(vertex); ++it) {
-            result.emplace_back(vertex, *it);
+        for (const auto &other: internal_graph.OutNeighbours(vertex)) {
+            result.emplace_back(vertex, other);
         }
     }
     return result;
@@ -302,8 +300,7 @@ std::vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::
     const auto &internal_graph = cluster.GetInternalGraph();
     std::vector<Transition> result;
     for (const auto &start: internal_graph) {
-        for (auto it = internal_graph.outcoming_begin(start); it != internal_graph.outcoming_end(start); ++it) {
-            auto end = *it;
+        for (const auto &end: internal_graph.OutNeighbours(start)) {
             if (internal_graph.GetIndegree(end) == 1 and internal_graph.GetOutdegree(start) == 1) {
                 result.emplace_back(start, end);
             }
@@ -311,13 +308,12 @@ std::vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::
     }
     return result;
 }
-FilteredReferencePathHelper::FilteredReferencePathHelper(const conj_graph_pack &gp_) : gp_(gp_) {}
 FilteredReferencePathHelper::ReferencePaths FilteredReferencePathHelper::GetFilteredReferencePathsFromLength(
         const string &path_to_reference,
         size_t length_threshold) const {
     std::unordered_set<EdgeId> long_edges;
-    for (const auto &edge: gp_.g.edges()) {
-        if (gp_.g.length(edge) >= length_threshold) {
+    for (const auto &edge: g_.edges()) {
+        if (g_.length(edge) >= length_threshold) {
             long_edges.insert(edge);
         }
     }
@@ -339,7 +335,7 @@ FilteredReferencePathHelper::ReferencePaths FilteredReferencePathHelper::GetFilt
 FilteredReferencePathHelper::ReferencePaths FilteredReferencePathHelper::GetFilteredReferencePathsFromEdges(
         const string &path_to_reference,
         const std::unordered_set<EdgeId> &target_edges) const {
-    validation::ContigPathBuilder contig_path_builder(gp_);
+    validation::ContigPathBuilder contig_path_builder(g_, index_, kmer_mapper_);
     auto named_reference_paths = contig_path_builder.GetContigPaths(path_to_reference);
     auto reference_paths = contig_path_builder.StripNames(named_reference_paths);
     DEBUG(reference_paths.size() << " reference paths");

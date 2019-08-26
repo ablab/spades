@@ -66,6 +66,6 @@ add_library(path_extend STATIC
             read_cloud_path_extend/validation/reference_path_index.cpp
             read_cloud_path_extend/validation/transition_subgraph_validation.cpp)
 
-target_link_libraries(path_extend assembly_graph ssw configs)
+target_link_libraries(path_extend assembly_graph auxiliary_graphs ssw configs)
 
 

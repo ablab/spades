@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -57,7 +57,11 @@ class LongEdgePairDatasetExtractor {
     typedef transitions::Transition Transition;
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor BarcodeExtractor;
 
-    LongEdgePairDatasetExtractor(const conj_graph_pack &gp, const ScaffoldGraphStorage &scaffold_graph_storage,
+    LongEdgePairDatasetExtractor(const Graph &g,
+                                 const debruijn_graph::Index &index,
+                                 const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                                 const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+                                 const ScaffoldGraphStorage &scaffold_graph_storage,
                                  size_t max_threads);
     LongEdgePairDataset GetLongEdgeDataset(const std::vector<std::vector<validation::EdgeWithMapping>> &reference_paths) const;
     LongEdgePairDataset GetLongEdgeDataset(const scaffold_graph::ScaffoldGraph &graph, const string &path_to_reference) const;
@@ -76,7 +80,10 @@ class LongEdgePairDatasetExtractor {
     bool AreNotClose(const validation::ContigTransitionStorage &close_transition_storage,
                      const EdgeId &first, const EdgeId &second) const;
 
-    const conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
+    const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     const ScaffoldGraphStorage &scaffold_graph_storage_;
     size_t max_threads_;
 };

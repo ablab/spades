@@ -329,9 +329,8 @@ public:
 
     }
 
-    //fixme refactor barcode index to avoid this
-    void UpdateExtractor(std::shared_ptr<barcode_index::AbstractBarcodeIndex<Graph>> index_ptr, const Graph& g) {
-        barcode_extractor_ptr_ = std::make_shared<extractor_t>(index_ptr, g);
+    void UpdateExtractor(const barcode_index::FrameBarcodeIndex<Graph> index, const Graph& g) {
+        barcode_extractor_ptr_ = std::make_shared<extractor_t>(index, g);
     }
 
     virtual ~ReadCloudLabeler() {

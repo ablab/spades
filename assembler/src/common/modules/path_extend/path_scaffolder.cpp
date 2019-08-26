@@ -6,7 +6,7 @@
 
 #include "path_scaffolder.hpp"
 
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
 
 namespace path_extend {
 
@@ -24,8 +24,8 @@ void SimplePathScaffolder::CondenseSimplePaths(const std::vector<ScaffoldEdge> &
     for (const auto &connection: merge_connections) {
         auto start = connection.first;
         auto end = connection.second;
-        auto start_conjugate = start.GetConjugateFromGraph(gp_.g);
-        auto end_conjugate = end.GetConjugateFromGraph(gp_.g);
+        auto start_conjugate = start.GetConjugateFromGraph(g_);
+        auto end_conjugate = end.GetConjugateFromGraph(g_);
         if (merge_connections.find(end_conjugate) == merge_connections.end() or
             merge_connections.at(end_conjugate) != start_conjugate) {
             WARN("Conjugate connection does not correspond to direct connection")
@@ -35,12 +35,12 @@ void SimplePathScaffolder::CondenseSimplePaths(const std::vector<ScaffoldEdge> &
         }
     }
 
-    StartFinder start_finder(gp_.g);
+    StartFinder start_finder(g_);
     auto starts = start_finder.GetStarts(merge_connections);
     std::unordered_map<ScaffoldVertex, size_t> start_to_distance;
     for (const auto &edge: scaffold_edges) {
         start_to_distance.insert({edge.getStart(), edge.getLength()});
-        start_to_distance.insert({edge.getEnd().GetConjugateFromGraph(gp_.g), edge.getLength()});
+        start_to_distance.insert({edge.getEnd().GetConjugateFromGraph(g_), edge.getLength()});
     }
     for (const auto &connection: merge_connections) {
         DEBUG(connection.first.int_id() << " -> " << connection.second.int_id());
@@ -57,7 +57,7 @@ void SimplePathScaffolder::CondenseSimplePaths(const std::vector<ScaffoldEdge> &
         }
     }
     for (const auto &start: starts) {
-        if (not start.ToPath(gp_.g)->Empty()) {
+        if (not start.ToPath(g_)->Empty()) {
             ExtendPathAlongConnections(start, merge_connections, start_to_distance);
         }
     }
@@ -121,10 +121,10 @@ void SimplePathScaffolder::ExtendPathAlongConnections(
         const std::unordered_map<ScaffoldVertex, size_t> &start_to_distance) const {
     auto current = start;
     bool next_found = merge_connections.find(current) != merge_connections.end();
-    auto start_path = start.ToPath(gp_.g);
+    auto start_path = start.ToPath(g_);
     while (next_found) {
         auto next = merge_connections.at(current);
-        auto next_path = next.ToPath(gp_.g);
+        auto next_path = next.ToPath(g_);
         if (start_path->GetId() == next_path->GetId()) {
             break;
         }
@@ -152,8 +152,8 @@ void SimplePathScaffolder::ExtendPathAlongConnections(
         next_found = merge_connections.find(current) != merge_connections.end();
     }
 }
-SimplePathScaffolder::SimplePathScaffolder(const conj_graph_pack &gp, int default_gap) :
-    gp_(gp), default_gap_(default_gap) {}
+SimplePathScaffolder::SimplePathScaffolder(const Graph &g, int default_gap) :
+    g_(g), default_gap_(default_gap) {}
 
 StartFinder::StartFinder(const Graph &g): g_(g) {}
 }

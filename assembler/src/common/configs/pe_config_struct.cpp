@@ -246,6 +246,94 @@ void load(pe_config::AllLongReads& p, boost::property_tree::ptree const& pt,
     load(p.rna_long_reads, pt, "rna_long_reads", complete);
 }
 
+void load(pe_config::ReadCloud::stats& statistics,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(statistics.genome_path, pt, "genome_path");
+    load(statistics.base_contigs_path, pt, "base_contigs_path");
+    load(statistics.cloud_contigs_path, pt, "cloud_contigs_path");
+    load(statistics.scaffold_graph_statistics, pt, "scaffold_graph_statistics");
+}
+
+void load(pe_config::ReadCloud::scaffold_polisher& scaff_pol,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(scaff_pol.share_threshold, pt, "share_threshold");
+    load(scaff_pol.read_count_threshold, pt, "read_count_threshold");
+    load(scaff_pol.max_scaffold_dijkstra_distance, pt, "max_scaffold_distance");
+    load(scaff_pol.path_cluster_linkage_distance, pt, "path_cluster_linkage_distance");
+    load(scaff_pol.path_cluster_min_reads, pt, "path_cluster_min_reads");
+    load(scaff_pol.path_cluster_relative_threshold, pt, "path_cluster_score_threshold");
+}
+
+void load(pe_config::ReadCloud::scaffold_graph_construction& scaff_con,
+          boost::property_tree::ptree const &pt, bool /*complete*/) {
+    using config_common::load;
+    load(scaff_con.score_percentile, pt, "score_percentile");
+    load(scaff_con.cluster_length_percentile, pt, "cluster_length_percentile");
+    load(scaff_con.count_threshold, pt, "count_threshold");
+    load(scaff_con.relative_coverage_threshold, pt, "relative_coverage_threshold");
+    load(scaff_con.connection_length_threshold, pt, "connection_length_threshold");
+    load(scaff_con.connection_count_threshold, pt, "connection_count_threshold");
+    load(scaff_con.split_procedure_strictness, pt, "split_strictness");
+    load(scaff_con.transitive_distance_threshold, pt, "transitive_distance_threshold");
+    load(scaff_con.path_scaffolder_tail_threshold, pt, "path_scaffolder_tail_threshold");
+    load(scaff_con.path_scaffolder_count_threshold, pt, "path_scaffolder_count_threshold");
+    load(scaff_con.min_edge_length_for_barcode_collection, pt, "min_edge_length_for_barcode_collection");
+    load(scaff_con.path_scaffolding_score, pt, "path_scaffolding_score");
+    load(scaff_con.ultralong_edge_length_percentile, pt, "ultralong_edge_length_percentile");
+    load(scaff_con.short_edge_threshold, pt, "short_edge_threshold");
+}
+
+void load(pe_config::ReadCloud::read_cloud_extender& read_ext,
+          boost::property_tree::ptree const &pt, bool /*complete*/) {
+    using config_common::load;
+    load(read_ext.reliable_edge_length, pt, "reliable_edge_length");
+    load(read_ext.tail_threshold, pt, "tail_threshold");
+    load(read_ext.distance_bound, pt, "distance_bound");
+    load(read_ext.seed_edge_length, pt, "seed_edge_length");
+    load(read_ext.extender_score_threshold, pt, "extender_score_threshold");
+    load(read_ext.relative_coverage_threshold, pt, "relative_coverage_threshold");
+    load(read_ext.barcode_threshold, pt, "barcode_threshold");
+    load(read_ext.score_function_tail_threshold, pt, "score_function_tail_threshold");
+}
+
+void load(pe_config::ReadCloud::path_searching &path_search,
+          boost::property_tree::ptree const &pt, bool /*complete*/) {
+    using config_common::load;
+    load(path_search.max_path_growing_iterations, pt, "max_path_growing_iterations");
+    load(path_search.max_paths_to_process, pt, "max_paths_to_process");
+    load(path_search.max_edge_visits, pt, "max_edge_visits");
+}
+
+void load(pe_config::ReadCloud& read_cloud,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(read_cloud.tslr_dataset, pt, "tslr_dataset");
+    load(read_cloud.edge_tail_len, pt, "edge_tail_len");
+    load(read_cloud.frame_size, pt, "frame_size");
+    load(read_cloud.read_cloud_gap_closer_on, pt, "read_cloud_gap_closer_on");
+    load(read_cloud.read_cloud_resolution_on, pt, "read_cloud_resolution_on");
+    load(read_cloud.scaff_pol, pt, "scaffold_polisher");
+    load(read_cloud.scaff_con, pt, "scaffold_graph_construction");
+    load(read_cloud.read_ext, pt, "read_cloud_extender");
+    load(read_cloud.long_edge_length_min_upper_bound, pt, "long_edge_length_min_upper_bound");
+    load(read_cloud.long_edge_length_max_upper_bound, pt, "long_edge_length_max_upper_bound");
+    load(read_cloud.long_edge_length_lower_bound, pt, "long_edge_length_lower_bound");
+    load(read_cloud.min_training_edges, pt, "min_training_edges");
+    load(read_cloud.min_training_total_length, pt, "min_training_total_length");
+    load(read_cloud.optimal_training_total_length, pt, "optimal_training_total_length");
+    load(read_cloud.path_search, pt, "path_searching");
+    load(read_cloud.statistics, pt, "statistics");
+    load(read_cloud.path_scaffolding_on, pt, "path_scaffolding_on");
+    load(read_cloud.debug_mode, pt, "debug_mode");
+    load(read_cloud.gap_closer_connection_score_threshold, pt, "gap_closer_connection_score_threshold");
+    load(read_cloud.gap_closer_relative_coverage_threshold, pt, "gap_closer_relative_coverage_threshold");
+    load(read_cloud.gap_closer_connection_length_threshold, pt, "gap_closer_connection_length_threshold");
+    load(read_cloud.gap_closer_scan_bound, pt, "gap_closer_scan_bound");
+    load(read_cloud.relative_score_threshold, pt, "relative_score_threshold");
+}
+
 void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,
           bool complete) {
     using config_common::load;
@@ -254,6 +342,7 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,
     load(p.viz, pt, "visualize", complete);
     load(p.param_set, pt, "params", complete);
     load(p.long_reads, pt, "long_reads", complete);
+    load(p.read_cloud, pt, "read_cloud", complete);
     if (!p.debug_output) {
         p.output.DisableAll();
         p.viz.DisableAll();

@@ -6,8 +6,8 @@
 
 #include "short_edge_dataset.hpp"
 
-#include "common/barcode_index/scaffold_vertex_index_builder.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
+#include "barcode_index/scaffold_vertex_index_builder.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -65,14 +65,14 @@ std::vector<ShortEdgeEntry> ShortEdgeDatasetExtractor::GetShortEdgeEntries(
         DEBUG(random_edges.size() << " random edges.");
         for (const auto &edge: correct_edges) {
             auto short_edge_entry = GetShortEdgeEntry(edge, first_entry, second_entry,
-                                                      gp_.g.coverage(first), gp_.g.coverage(second), true);
+                                                      g_.coverage(first), g_.coverage(second), true);
             entries.push_back(short_edge_entry);
         }
         size_t current_random_edges = 0;
         for (const auto &edge: random_edges) {
             if (correct_edges.find(edge) == correct_edges.end()) {
                 auto short_edge_entry = GetShortEdgeEntry(edge, first_entry, second_entry,
-                                                          gp_.g.coverage(first), gp_.g.coverage(second), false);
+                                                          g_.coverage(first), g_.coverage(second), false);
                 entries.push_back(short_edge_entry);
                 ++current_random_edges;
             }
@@ -92,10 +92,10 @@ ShortEdgeEntry ShortEdgeDatasetExtractor::GetShortEdgeEntry(EdgeId short_edge,
                                                             double left_coverage,
                                                             double right_coverage,
                                                             bool correct) const {
-    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper,gp_.g);
-    auto short_edge_extractor = std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, barcode_extractor);
-    size_t length = gp_.g.length(short_edge);
-    double coverage = gp_.g.coverage(short_edge);
+    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper_, g_);
+    auto short_edge_extractor = std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, barcode_extractor);
+    size_t length = g_.length(short_edge);
+    double coverage = g_.coverage(short_edge);
     size_t left_intersection = short_edge_extractor->GetIntersectionSize(short_edge, left_entry);
     size_t right_intersection = short_edge_extractor->GetIntersectionSize(short_edge, right_entry);
     size_t barcodes = short_edge_extractor->GetHeadSize(short_edge);
@@ -111,10 +111,10 @@ std::unordered_set<EdgeId> ShortEdgeDatasetExtractor::GetReachableEdges(const Ed
     size_t min_length = scaffold_graph_storage_.GetSmallLengthThreshold();
     std::unordered_set<EdgeId> reached_edges;
     DijkstraHelper<Graph> helper;
-    auto unique_dijkstra = helper.CreateLengthBoundedDijkstra(gp_.g, DISTANCE_BOUND, min_length);
-    unique_dijkstra.Run(gp_.g.EdgeEnd(long_edge));
+    auto unique_dijkstra = helper.CreateLengthBoundedDijkstra(g_, DISTANCE_BOUND, min_length);
+    unique_dijkstra.Run(g_.EdgeEnd(long_edge));
     for (const auto &reached_vertex: unique_dijkstra.ReachedVertices()) {
-        const auto &outgoing_edges = gp_.g.OutgoingEdges(reached_vertex);
+        const auto &outgoing_edges = g_.OutgoingEdges(reached_vertex);
         for (const auto &edge: outgoing_edges) {
             reached_edges.insert(edge);
         }
@@ -135,8 +135,7 @@ std::unordered_set<EdgeId> ShortEdgeDatasetExtractor::GetEdgesBetweenPair(size_t
 std::shared_ptr<ShortEdgeDatasetExtractor::BarcodeExtractor> ShortEdgeDatasetExtractor::ConstructLongEdgeExtractor() const {
     size_t min_length = scaffold_graph_storage_.GetSmallLengthThreshold();
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
-    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper,
-                                                                                             gp_.g);
+    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper_, g_);
     const size_t tail_threshold = min_length;
     const size_t length_threshold = 500;
     const size_t count_threshold = 1;
@@ -146,7 +145,7 @@ std::shared_ptr<ShortEdgeDatasetExtractor::BarcodeExtractor> ShortEdgeDatasetExt
     for (const auto &vertex: scaffold_graph.vertices()) {
         vertices.insert(vertex);
     }
-    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor, tail_threshold_getter,
+    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(g_, *barcode_extractor, tail_threshold_getter,
                                                                      count_threshold, length_threshold,
                                                                      max_threads_, vertices);
     auto scaffold_index_extractor = std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(
@@ -156,12 +155,11 @@ std::shared_ptr<ShortEdgeDatasetExtractor::BarcodeExtractor> ShortEdgeDatasetExt
 
 ShortEdgeDataset ShortEdgeDatasetExtractor::GetShortEdgeDataset(size_t length_threshold,
                                                                 const string &path_to_reference) const {
-    validation::ContigPathBuilder contig_path_builder(gp_);
+    validation::ContigPathBuilder contig_path_builder(g_, index_, kmer_mapper_);
     auto named_reference_paths = contig_path_builder.GetContigPaths(path_to_reference);
     auto reference_paths = contig_path_builder.StripNames(named_reference_paths);
-    validation::FilteredReferencePathHelper path_helper(gp_);
-    auto
-        filtered_reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
+    validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
+    auto filtered_reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
     return GetShortEdgeDataset(reference_paths, filtered_reference_paths);
 }
 void ShortEdgeDatasetExtractor::ConstructAndSerialize(const string &path_to_reference,
