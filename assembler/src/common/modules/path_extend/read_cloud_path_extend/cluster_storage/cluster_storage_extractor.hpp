@@ -6,8 +6,10 @@
 
 #pragma once
 
-#include "common/assembly_graph/contracted_graph/contracted_graph_helper.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
+#include "barcode_cluster.hpp"
+#include "cluster_storage.hpp"
+#include "auxiliary_graphs/contracted_graph/contracted_graph.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/contracted_graph_from_simple.hpp"
 
 #include <memory>
 #include <vector>
@@ -19,7 +21,7 @@ namespace cluster_storage {
 class GraphAnalyzer {
   public:
     typedef contracted_graph::ContractedGraph ContractedGraph;
-    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
     bool IsHamiltonian(const Cluster::InternalGraph &graph) const {
         std::vector<ScaffoldVertex> vertices;
@@ -99,7 +101,7 @@ class GraphAnalyzer {
             indegree[vertex] = 0;
         }
         for (const auto &vertex: graph) {
-            for (auto it = graph.out_begin(vertex); it != graph.out_end(vertex); ++it) {
+            for (auto it = graph.out_entry_begin(vertex); it != graph.out_entry_end(vertex); ++it) {
                 indegree[it->first] += it->second.size();
             }
         }
@@ -111,7 +113,7 @@ class GraphAnalyzer {
             outdegree[vertex] = 0;
         }
         for (const auto &vertex: graph) {
-            for (auto it = graph.out_begin(vertex); it != graph.out_end(vertex); ++it) {
+            for (auto it = graph.out_entry_begin(vertex); it != graph.out_entry_end(vertex); ++it) {
                 outdegree[vertex] += it->second.size();
             }
         }
@@ -122,9 +124,9 @@ class GraphAnalyzer {
 class ClusterGraphAnalyzer {
   public:
     typedef contracted_graph::ContractedGraph ContractedGraph;
-    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
-    explicit ClusterGraphAnalyzer(const contracted_graph::ContractedGraphFactoryHelper &contracted_builder) :
+    explicit ClusterGraphAnalyzer(const ContractedGraphFromSimpleHelper &contracted_builder) :
         contracted_builder_(contracted_builder) {}
 
     bool IsPathCluster(const Cluster &cluster) const {
@@ -137,12 +139,12 @@ class ClusterGraphAnalyzer {
     }
     bool IsEulerianCluster(const Cluster &cluster) const {
         GraphAnalyzer graph_analyzer;
-        auto contracted_graph = contracted_builder_.ConstructFromInternalGraph(cluster.GetInternalGraph());
-        return graph_analyzer.IsEulerianPath(contracted_graph);
+        auto contracted_graph = contracted_builder_.ConstructFromSimpleGraph(cluster.GetInternalGraph());
+        return graph_analyzer.IsEulerianPath(*contracted_graph);
     }
 
   private:
-    const contracted_graph::ContractedGraphFactoryHelper &contracted_builder_;
+    const ContractedGraphFromSimpleHelper contracted_builder_;
 
     DECL_LOGGER("ClusterGraphAnalyzer");
 };

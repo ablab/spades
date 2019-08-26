@@ -6,9 +6,9 @@
 
 #include "path_scaffolder_analyzer.hpp"
 
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
-#include "common/barcode_index/scaffold_vertex_index_builder.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
+#include "barcode_index/scaffold_vertex_index_builder.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -72,14 +72,14 @@ void PathPairDataset::Insert(const PathPairInfo &path_pair_info) {
 }
 PathPairDataset PathScaffolderAnalyzer::GetFalseNegativeDataset(const PathContainer &paths) const {
     const string path_to_reference = path_to_reference_;
-    validation::ContigPathBuilder contig_path_builder(gp_);
+    validation::ContigPathBuilder contig_path_builder(g_, index_, kmer_mapper_);
 
     auto named_reference_paths = contig_path_builder.GetContigPaths(path_to_reference);
     auto raw_reference_paths = contig_path_builder.StripNames(named_reference_paths);
-    validation::FilteredReferencePathHelper path_helper(gp_);
+    validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
     auto filtered_reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference,
                                                                                     long_edge_length_threshold_);
-    validation::GeneralTransitionStorageBuilder reference_transition_builder(gp_.g, 1, false, false);
+    validation::GeneralTransitionStorageBuilder reference_transition_builder(g_, 1, false, false);
     auto reference_transitions = reference_transition_builder.GetTransitionStorage(filtered_reference_paths);
     INFO(reference_transitions.GetCoveredEdges().size() << " covered edges");
     INFO(reference_transitions.size() << " reference transitions");
@@ -94,7 +94,7 @@ PathPairDataset PathScaffolderAnalyzer::GetFalseNegativeDataset(const PathContai
 
     validation::ReferencePathIndexBuilder path_index_builder;
     auto reference_path_index = path_index_builder.BuildReferencePathIndex(filtered_reference_paths);
-    PathDistanceEstimator distance_estimator(gp_.g, reference_path_index, long_edge_length_threshold_);
+    PathDistanceEstimator distance_estimator(g_, reference_path_index, long_edge_length_threshold_);
 //    const size_t distance_threshold = 5000;
 
     PathPairDataset result;
@@ -115,13 +115,13 @@ PathPairDataset PathScaffolderAnalyzer::GetFalseNegativeDataset(const PathContai
 std::shared_ptr<PathScaffolderAnalyzer::BarcodeIndex> PathScaffolderAnalyzer::ConstructIndex(
         const std::set<PathScaffolderAnalyzer::ScaffoldVertex> &vertices) const {
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
-    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper_, g_);
     auto graph_construction_params = configs_.scaff_con;
     const size_t tail_threshold = long_edge_length_threshold_;
     const size_t length_threshold = graph_construction_params.min_edge_length_for_barcode_collection;
     const size_t count_threshold = graph_construction_params.count_threshold;
     auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
-    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor, tail_threshold_getter,
+    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(g_, *barcode_extractor, tail_threshold_getter,
                                                                      count_threshold, length_threshold,
                                                                      max_threads_, vertices);
     auto scaffold_index_extractor =
@@ -131,16 +131,16 @@ std::shared_ptr<PathScaffolderAnalyzer::BarcodeIndex> PathScaffolderAnalyzer::Co
 PathScaffolderAnalyzer::ScaffoldGraph PathScaffolderAnalyzer::ConstructScaffoldGraph(
         const std::set<PathScaffolderAnalyzer::ScaffoldVertex> &vertices,
         std::shared_ptr<PathScaffolderAnalyzer::BarcodeIndex> index) const {
-    auto score_function = std::make_shared<NormalizedBarcodeScoreFunction>(gp_.g, index);
+    auto score_function = std::make_shared<NormalizedBarcodeScoreFunction>(g_, index);
 
     const double score_threshold = 0;
     INFO("Setting containment index threshold to " << score_threshold);
 
-    auto initial_constructor = std::make_shared<scaffold_graph::ScoreFunctionScaffoldGraphConstructor>(gp_.g,
-                                                                                                  vertices,
-                                                                                                  score_function,
-                                                                                                  score_threshold,
-                                                                                                  max_threads_);
+    auto initial_constructor = std::make_shared<scaffolder::ScoreFunctionScaffoldGraphConstructor>(g_,
+                                                                                                   vertices,
+                                                                                                   score_function,
+                                                                                                   score_threshold,
+                                                                                                   max_threads_);
     return *(initial_constructor->Construct());
 }
 std::set<PathScaffolderAnalyzer::ScaffoldVertex> PathScaffolderAnalyzer::ConstructScaffoldVertices(
@@ -157,7 +157,7 @@ std::set<PathScaffolderAnalyzer::ScaffoldVertex> PathScaffolderAnalyzer::Constru
             ScaffoldVertex second_vertex(path_pair.second);
             path_set.insert(first_vertex);
             path_set.insert(second_vertex);
-            INFO("Length: " << first_vertex.GetLengthFromGraph(gp_.g));
+            INFO("Length: " << first_vertex.GetLengthFromGraph(g_));
         }
     }
     return path_set;
@@ -166,7 +166,7 @@ std::set<PathScaffolderAnalyzer::ScaffoldEdge> PathScaffolderAnalyzer::GetFalseN
         const PathScaffolderAnalyzer::ScaffoldGraph &graph,
         const validation::ContigTransitionStorage &transitions,
         double score_threshold) const {
-    validation::ScaffoldGraphValidator validator(gp_.g);
+    validation::ScaffoldGraphValidator validator(g_);
     auto is_covered = [&transitions](const EdgeId &edge) {
       return transitions.IsEdgeCovered(edge);
     };
@@ -183,12 +183,18 @@ std::set<PathScaffolderAnalyzer::ScaffoldEdge> PathScaffolderAnalyzer::GetFalseN
     }
     return false_negative_edges;
 }
-PathScaffolderAnalyzer::PathScaffolderAnalyzer(const conj_graph_pack &gp,
+PathScaffolderAnalyzer::PathScaffolderAnalyzer(const Graph &g,
+                                               const debruijn_graph::Index &index,
+                                               const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                                               const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
                                                const ReadCloudConfigs &configs,
                                                const std::string &path_to_reference,
                                                size_t long_edge_length_threshold,
                                                size_t max_threads)
-    : gp_(gp),
+    : g_(g),
+      index_(index),
+      kmer_mapper_(kmer_mapper),
+      barcode_mapper_(barcode_mapper),
       configs_(configs),
       path_to_reference_(path_to_reference),
       long_edge_length_threshold_(long_edge_length_threshold),

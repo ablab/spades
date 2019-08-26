@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
+#include "transition_extractor.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -30,11 +30,16 @@ class SimpleTransitionGraphValidator {
 
 class SimpleTransitionGraphValidatorConstructor {
   public:
-    SimpleTransitionGraphValidatorConstructor(const conj_graph_pack &gp, size_t length_threshold);
+    SimpleTransitionGraphValidatorConstructor(const Graph &g,
+                                              const debruijn_graph::Index &index,
+                                              const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                                              size_t length_threshold);
     SimpleTransitionGraphValidator GetValidator(const string &path_to_reference) const;
 
   private:
-    const conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
     const size_t length_threshold_;
 };
 }

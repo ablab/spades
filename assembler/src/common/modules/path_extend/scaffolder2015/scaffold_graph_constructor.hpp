@@ -5,25 +5,30 @@
 //***************************************************************************
 
 #pragma once
-#include "scaffold_graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
+
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 
 namespace path_extend {
 
-namespace scaffold_graph {
+namespace scaffolder {
 
 typedef std::vector<std::shared_ptr<ConnectionCondition>> ConnectionConditions;
 
 //Iterface
 class ScaffoldGraphConstructor {
-
 public:
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+
     virtual std::shared_ptr<ScaffoldGraph> Construct() = 0;
 };
 
 //Basic scaffold graph constructor functions
 class BaseScaffoldGraphConstructor: public ScaffoldGraphConstructor {
 protected:
+    using ScaffoldGraphConstructor::ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
+
     std::shared_ptr<ScaffoldGraph> graph_;
 
     BaseScaffoldGraphConstructor(const debruijn_graph::Graph& assembly_graph) {
@@ -50,6 +55,8 @@ protected:
 
 class SimpleScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
 protected:
+    using BaseScaffoldGraphConstructor::ScaffoldGraph;
+
     const EdgeSet &edge_set_;
     ConnectionConditions &connection_conditions_;
 
@@ -65,6 +72,8 @@ public:
 
 class DefaultScaffoldGraphConstructor: public SimpleScaffoldGraphConstructor {
 protected:
+    using SimpleScaffoldGraphConstructor::ScaffoldGraph;
+
     func::TypedPredicate<typename Graph::EdgeId> edge_condition_;
 
 public:
@@ -80,6 +89,8 @@ public:
 };
 
 class ScaffoldSubgraphConstructor: public BaseScaffoldGraphConstructor {
+    using BaseScaffoldGraphConstructor::ScaffoldGraph;
+
     func::TypedPredicate<ScaffoldVertex> vertex_condition_;
     const ScaffoldGraph& large_graph_;
     const size_t distance_threshold_;
@@ -95,12 +106,10 @@ class ScaffoldSubgraphConstructor: public BaseScaffoldGraphConstructor {
 
 //todo refactor connection conditions to avoid code duplication
 class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
-    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
-    const std::set<ScaffoldVertex> scaffold_vertices_;
-    const size_t distance_;
-    const size_t max_threads_;
-
  public:
+    using BaseScaffoldGraphConstructor::ScaffoldGraph;
+    using BaseScaffoldGraphConstructor::ScaffoldVertex;
+
     UniqueScaffoldGraphConstructor(const Graph &assembly_graph,
                                    const ScaffoldingUniqueEdgeStorage &unique_storage,
                                    const std::set<ScaffoldVertex> &scaffold_vertices,
@@ -122,12 +131,19 @@ class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
         return false;
     }
 
+    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
+    const std::set<ScaffoldVertex> scaffold_vertices_;
+    const size_t distance_;
+    const size_t max_threads_;
+
     DECL_LOGGER("UniqueScaffoldGraphConstructor");
 };
 
 class PredicateScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
  public:
     typedef read_cloud::ScaffoldEdgePredicate EdgePairPredicate;
+    using BaseScaffoldGraphConstructor::ScaffoldGraph;
+    using BaseScaffoldGraphConstructor::ScaffoldVertex;
  protected:
     const ScaffoldGraph& old_graph_;
     const std::shared_ptr<EdgePairPredicate> predicate_;
@@ -149,6 +165,8 @@ class PredicateScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
 
 class ScoreFunctionScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
     typedef read_cloud::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
+    using BaseScaffoldGraphConstructor::ScaffoldGraph;
+    using BaseScaffoldGraphConstructor::ScaffoldVertex;
  protected:
     const ScaffoldGraph &old_graph_;
     const std::shared_ptr<EdgePairScoreFunction> score_function_;
@@ -169,6 +187,8 @@ class ScoreFunctionScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
 
 class InternalScoreScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
     typedef read_cloud::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
+    using BaseScaffoldGraphConstructor::ScaffoldGraph;
+    using BaseScaffoldGraphConstructor::ScaffoldVertex;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
  protected:
     const ScaffoldGraph &old_graph_;
@@ -189,6 +209,8 @@ class InternalScoreScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
 
 class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
     typedef read_cloud::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
+    using BaseScaffoldGraphConstructor::ScaffoldGraph;
+    using BaseScaffoldGraphConstructor::ScaffoldVertex;
 
  protected:
     const std::set<ScaffoldVertex> scaffold_vertices_;

@@ -17,9 +17,11 @@
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "assembly_graph/dijkstra/read_cloud_path_extend/read_cloud_dijkstras.hpp"
-#include <cmath>
-#include "read_cloud_path_extend/extender_support/entry_collectors.hpp"
 #include "read_cloud_path_extend/extender_support/candidate_selectors.hpp"
+#include "read_cloud_path_extend/extender_support/entry_collectors.hpp"
+#include "read_cloud_path_extend/scaffold_graph_construction/read_cloud_dijkstras.hpp"
+
+#include <cmath>
 
 namespace path_extend {
 
@@ -857,7 +859,7 @@ class ReadCloudExtender : public SimpleExtender { //Traverse forward to find lon
 };
 
 class ScaffoldGraphExtender : public PathExtender {
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 

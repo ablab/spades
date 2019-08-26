@@ -21,6 +21,7 @@
 #include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
 #include "modules/alignment/rna/ss_coverage.hpp"
 #include "read_cloud_path_extend/paired_dijkstra.hpp"
+#include "scaffolder2015/scaffold_vertex_predicates.hpp"
 
 #include <cfloat>
 #include <fstream>
@@ -1733,16 +1734,16 @@ class ReadCloudExtensionChooser : public ExtensionChooser {
 };
 
 class PredicateExtensionChooser : public ExtensionChooser {
-    std::shared_ptr<read_cloud::ScaffoldVertexPredicate> predicate_;
+    std::shared_ptr<scaffolder::ScaffoldVertexPredicate> predicate_;
     std::shared_ptr<ExtensionChooser> chooser_;
 
   public:
     PredicateExtensionChooser(const Graph &g,
-                              std::shared_ptr<read_cloud::ScaffoldVertexPredicate> intermediate_predicate,
-                              std::shared_ptr<ExtensionChooser> pe_extension_chooser_) :
+                              std::shared_ptr<scaffolder::ScaffoldVertexPredicate> intermediate_predicate,
+                              std::shared_ptr<ExtensionChooser> chooser) :
         ExtensionChooser(g),
         predicate_(intermediate_predicate),
-        chooser_(pe_extension_chooser_) {}
+        chooser_(chooser) {}
 
   public:
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {

@@ -6,15 +6,14 @@
 
 #pragma once
 
-#include "common/assembly_graph/paths/bidirectional_path_container.hpp"
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "common/pipeline/graph_pack.hpp"
-#include "common/pipeline/config_struct.hpp"
+#include "pe_config_struct.hpp"
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 namespace path_extend {
 
 class StartFinder {
-    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef std::unordered_map<ScaffoldVertex, ScaffoldVertex> TransitionMap;
 
     const Graph &g_;
@@ -26,7 +25,7 @@ class StartFinder {
 
 class PathScaffolder {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
 
     virtual ~PathScaffolder() = default;
 
@@ -36,10 +35,10 @@ class PathScaffolder {
 class SimplePathScaffolder : public PathScaffolder {
   public:
     using PathScaffolder::ScaffoldGraph;
-    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
 
-    SimplePathScaffolder(const conj_graph_pack &gp, int default_gap);
+    SimplePathScaffolder(const Graph &g, int default_gap);
 
     void MergePaths(const ScaffoldGraph &scaffold_graph) const override;
 
@@ -50,7 +49,7 @@ class SimplePathScaffolder : public PathScaffolder {
                                     const std::unordered_map<ScaffoldVertex, ScaffoldVertex> &merge_connections,
                                     const std::unordered_map<ScaffoldVertex, size_t> &start_to_length) const;
 
-    const debruijn_graph::conj_graph_pack &gp_;
+    const Graph &g_;
     const int default_gap_;
 
     DECL_LOGGER("SimplePathScaffolder");

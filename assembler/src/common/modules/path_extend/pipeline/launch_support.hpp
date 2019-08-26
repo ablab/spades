@@ -56,7 +56,6 @@ struct PathExtendParamsContainer {
 
     PathExtendParamsContainer(const config::dataset& dataset_info,
                               const pe_config::MainPEParamsT& pe_cfg_,
-                              const config::debruijn_config::read_cloud_resolver &read_cloud_configs,
                               const config::debruijn_config::strand_specificity& strand_specificity,
                               const std::filesystem::path& output_dir_,
                               config::pipeline_type mode_,
@@ -66,7 +65,6 @@ struct PathExtendParamsContainer {
                               bool use_scaffolder_):
         pe_cfg(pe_cfg_),
         pset(pe_cfg_.param_set),
-        read_cloud_configs(read_cloud_configs),
         ss(strand_specificity),
         output_dir(output_dir_),
         etc_dir(output_dir / pe_cfg_.etc_dir),
@@ -98,7 +96,6 @@ struct PathExtendParamsContainer {
 
     const pe_config::MainPEParamsT& pe_cfg;
     const pe_config::ParamSetT& pset;
-    const config::debruijn_config::read_cloud_resolver &read_cloud_configs;
 
     const config::debruijn_config::strand_specificity& ss;
 

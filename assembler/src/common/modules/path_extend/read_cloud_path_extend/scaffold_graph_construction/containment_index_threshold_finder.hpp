@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor.hpp"
+#include "read_cloud_connection_conditions.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -48,7 +48,7 @@ class ScoreHistogram {
 
 class AbstractScoreHistogramConstructor {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef fragment_statistics::DistributionPack::ClusterCoverageDistribution ScoreDistribution;
     AbstractScoreHistogramConstructor(const double tick_step_,
                                       const double min_score_,

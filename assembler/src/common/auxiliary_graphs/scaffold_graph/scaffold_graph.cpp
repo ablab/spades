@@ -6,9 +6,6 @@
 
 #include "scaffold_graph.hpp"
 
-#include "common/modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
-
-namespace path_extend {
 namespace scaffold_graph {
 
 std::atomic<ScaffoldGraph::ScaffoldEdgeIdT> ScaffoldGraph::ScaffoldEdge::scaffold_edge_id_{0};
@@ -314,4 +311,3 @@ void ScaffoldGraph::swap(ScaffoldGraph &other) {
 }
 
 } //scaffold_graph
-} //path_extend

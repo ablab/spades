@@ -5,7 +5,6 @@
 #include "distance_estimation.info"
 #include "detail_info_printer.info"
 #include "tsa.info"
-#include "tslr_resolver.info"
 #include "pe_params.info"
 
 K		55
