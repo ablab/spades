@@ -6,9 +6,8 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
-#include "common/pipeline/graph_pack.hpp"
-#include "common/pipeline/config_struct.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
+#include "modules/path_extend/pe_config_struct.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -37,7 +36,7 @@ struct PathPairDataset {
 
 class PathDistanceEstimator {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     PathDistanceEstimator(const Graph &g,
                           const validation::ReferencePathIndex &reference_path_index,
                           size_t long_edge_threshold);
@@ -60,12 +59,17 @@ class PathScaffolderAnalyzer {
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor BarcodeIndex;
     typedef validation::EdgeWithMapping EdgeWithMapping;
     typedef std::vector<std::vector<EdgeWithMapping>> MappedPathStorage;
-    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver ReadCloudConfigs;
+    typedef pe_config::ReadCloud ReadCloudConfigs;
 
   public:
-    PathScaffolderAnalyzer(const conj_graph_pack &gp, const ReadCloudConfigs &configs,
+    PathScaffolderAnalyzer(const Graph &g,
+                           const debruijn_graph::Index &index,
+                           const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                           const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+                           const ReadCloudConfigs &configs,
                            const std::string &path_to_reference,
-                           size_t long_edge_length_threshold, size_t max_threads);
+                           size_t long_edge_length_threshold,
+                           size_t max_threads);
 
     PathPairDataset GetFalseNegativeDataset(const PathContainer &paths) const;
 
@@ -81,7 +85,10 @@ class PathScaffolderAnalyzer {
                                                  double score_threshold) const;
 
   private:
-    const debruijn_graph::conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
+    const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     const ReadCloudConfigs &configs_;
     const std::string path_to_reference_;
     const size_t long_edge_length_threshold_;

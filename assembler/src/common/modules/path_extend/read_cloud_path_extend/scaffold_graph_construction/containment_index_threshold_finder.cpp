@@ -6,7 +6,7 @@
 
 #include "containment_index_threshold_finder.hpp"
 
-#include "common/modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
 
 #include <random>
 

@@ -13,7 +13,7 @@
 
 namespace path_extend {
 
-namespace scaffold_graph {
+namespace scaffolder {
 
 const std::map<size_t, std::string> ScaffoldEdgeColorer::color_map =
         {{(size_t) -1, "black"},
@@ -41,7 +41,7 @@ std::string ScaffoldGraphLabeler::label(VertexId v) const {
         additional_label;
 }
 
-void ScaffoldGraphVisualizer::Visualize(graph_printer::GraphPrinter<ScaffoldGraph> &printer) {
+void ScaffoldGraphVisualizer::Visualize(graph_printer::GraphPrinter<scaffold_graph::ScaffoldGraph> &printer) {
     printer.open();
     printer.AddVertices(graph_.vbegin(), graph_.vend());
     for (const auto& e : graph_.edges()) {
@@ -51,15 +51,15 @@ void ScaffoldGraphVisualizer::Visualize(graph_printer::GraphPrinter<ScaffoldGrap
 }
 
 void ScaffoldGraphVisualizer::Visualize(std::ostream &os,
-                                        graph_colorer::CompositeGraphColorer<ScaffoldGraph> &colorer) {
+                                        graph_colorer::CompositeGraphColorer<scaffold_graph::ScaffoldGraph> &colorer) {
     ScaffoldGraphLabeler labeler(graph_, additional_vertex_labels_);
-    vertex_linker::EmptyGraphLinker<ScaffoldGraph> linker;
+    vertex_linker::EmptyGraphLinker<scaffold_graph::ScaffoldGraph> linker;
 
-    graph_printer::SingleGraphPrinter <ScaffoldGraph> printer(graph_, os, labeler, colorer, linker);
+    graph_printer::SingleGraphPrinter <scaffold_graph::ScaffoldGraph> printer(graph_, os, labeler, colorer, linker);
     Visualize(printer);
 }
 
-std::string ScaffoldEdgeColorer::GetValue(ScaffoldGraph::EdgeId e) const {
+std::string ScaffoldEdgeColorer::GetValue(scaffold_graph::ScaffoldGraph::EdgeId e) const {
     auto it = color_map.find(e.getColor());
     if (it != color_map.end()) {
         return it->second;
@@ -67,7 +67,7 @@ std::string ScaffoldEdgeColorer::GetValue(ScaffoldGraph::EdgeId e) const {
     return default_color;
 }
 
-std::string ScaffoldVertexSetColorer::GetValue(ScaffoldGraph::VertexId v) const {
+std::string ScaffoldVertexSetColorer::GetValue(scaffold_graph::ScaffoldGraph::VertexId v) const {
     if (vertex_set_.count(v) > 0)
         return "white";
     return "yellow";

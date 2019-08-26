@@ -6,13 +6,13 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/predicate_builders.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "common/barcode_index/barcode_info_extractor.hpp"
-#include "common/assembly_graph/core/graph.hpp"
+#include "predicate_builders.hpp"
+#include "path_cluster_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "barcode_index/barcode_info_extractor.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -166,7 +166,7 @@ class BackwardReachabilityChecker : public ReachabilityChecker {
 
 class ScaffoldGraphGapCloserParamsConstructor {
   public:
-    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver ReadCloudConfigs;
+    typedef pe_config::ReadCloud ReadCloudConfigs;
 
     static CloudSubgraphExtractorParams ConstructSubgraphExtractorParamsFromConfig(size_t length_upper_bound,
                                                                                    const ReadCloudConfigs &configs);
@@ -177,7 +177,8 @@ class ScaffoldIndexInfoExtractorHelper {
   public:
     std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> ConstructIndexExtractorFromParams(
         const scaffold_graph::ScaffoldGraph &scaffold_graph,
-        const conj_graph_pack &gp,
+        const Graph &g,
+        const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
         const CloudSubgraphExtractorParams &subgraph_extractor_params,
         size_t max_threads) const;
 };
@@ -216,17 +217,21 @@ class ScaffoldGraphPolisherLauncher {
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
-    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver ReadCloudConfigs;
+    typedef pe_config::ReadCloud ReadCloudConfigs;
 
     ScaffoldGraphPolisherLauncher(size_t max_threads, const ReadCloudConfigs &configs);
-    ScaffoldGraph GetFinalScaffoldGraph(const conj_graph_pack &graph_pack,
-                                        const ScaffoldGraphStorage &scaffold_graph_storage, bool path_scaffolding);
+    ScaffoldGraph GetFinalScaffoldGraph(const Graph &g,
+                                        const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+                                        const ScaffoldGraphStorage &scaffold_graph_storage,
+                                        bool path_scaffolding);
 
   private:
-    std::shared_ptr<cluster_storage::InitialClusterStorage> ConstructInitialStorage(const conj_graph_pack &gp,
-                                                                                    const ScaffoldGraph &scaffold_graph,
-                                                                                    const PathExtractionParams &params,
-                                                                                    bool path_scaffolding) const;
+    std::shared_ptr<cluster_storage::InitialClusterStorage> ConstructInitialStorage(
+        const Graph &g,
+        const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+        const ScaffoldGraph &scaffold_graph,
+        const PathExtractionParams &params,
+        bool path_scaffolding) const;
 
     const size_t max_threads_;
     const ReadCloudConfigs &configs_;

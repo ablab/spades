@@ -68,18 +68,18 @@ void DistanceEstimationBase::run(graph_pack::GraphPack &gp, const char *,
             std::numeric_limits<size_t>::max() : config.max_repeat_length;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         const auto &lib = cfg::get().ds.reads[i];
-        if (lib.type() != io::LibraryType::PairedEnd)
+        if (lib.type() != io::LibraryType::PairedEnd && lib.type() != io::LibraryType::Clouds10x)
             continue;
 
         if (lib.data().mean_insert_size != 0.0) {
             INFO("Processing library #" << i);
             runEstimatePairedDistances(clustered_indices[i], graph, lib, paired_indices[i],
-                                       max_repeat_length, config.de);
-            if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info)
+                max_repeat_length, config.de);
+            if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
                 runEstimateScaffoldingDistances(scaffolding_indices[i], graph, lib, paired_indices[i],
                                                 config.ade, config.de);
+            }
         }
-
         if (!cfg::get().preserve_raw_paired_index) {
             INFO("Clearing raw paired index");
             paired_indices[i].clear();

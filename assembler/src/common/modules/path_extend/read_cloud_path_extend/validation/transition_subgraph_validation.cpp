@@ -23,8 +23,7 @@ boost::optional<std::vector<scaffold_graph::ScaffoldVertex>> SimpleTransitionGra
     std::set<ScaffoldVertex> visited;
     while (current != sink and visited.find(current) == visited.end()) {
         visited.insert(current);
-        for (auto it = graph.outcoming_begin(current); it != graph.outcoming_end(current); ++it) {
-            auto next = *it;
+        for (const auto &next: graph.OutNeighbours(current)) {
             VERIFY(graph.ContainsVertex(next));
             TRACE("Checking transition");
             bool is_correct = reference_transition_storage_.CheckTransition(current, next);
@@ -53,16 +52,19 @@ SimpleTransitionGraphValidator::SimpleTransitionGraphValidator(const ContigTrans
     : reference_transition_storage_(reference_transition_storage), length_threshold_(length_threshold) {}
 SimpleTransitionGraphValidator SimpleTransitionGraphValidatorConstructor::GetValidator(
     const string &path_to_reference) const {
-    GeneralTransitionStorageBuilder reference_storage_builder(gp_.g, 1, false, false);
-    validation::FilteredReferencePathHelper path_helper(gp_);
+    GeneralTransitionStorageBuilder reference_storage_builder(g_, 1, false, false);
+    validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
     auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold_);
     auto reference_transition_storage = reference_storage_builder.GetTransitionStorage(reference_paths);
     SimpleTransitionGraphValidator transition_graph_validator(reference_transition_storage, length_threshold_);
     return transition_graph_validator;
 }
-SimpleTransitionGraphValidatorConstructor::SimpleTransitionGraphValidatorConstructor(const conj_graph_pack &gp,
-                                                                                     size_t length_threshold) :
-    gp_(gp), length_threshold_(length_threshold) {}
+SimpleTransitionGraphValidatorConstructor::SimpleTransitionGraphValidatorConstructor(
+        const Graph &g,
+        const debruijn_graph::Index &index,
+        const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+        size_t length_threshold) :
+    g_(g), index_(index), kmer_mapper_(kmer_mapper), length_threshold_(length_threshold) {}
 }
 }
 }

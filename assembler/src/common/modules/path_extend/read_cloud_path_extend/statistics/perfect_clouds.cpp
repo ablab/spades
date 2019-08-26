@@ -6,8 +6,8 @@
 
 #include "perfect_clouds.hpp"
 
-#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -16,8 +16,8 @@ PerfectClustersAnalyzer::SetDistribution PerfectClustersAnalyzer::ConstructPerfe
     const scaffold_graph::ScaffoldGraph &perfect_graph) const {
 
     const size_t min_read_threshold = 1;
-    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
-    cluster_storage::HalfEdgeClusterStorageHelper cluster_storage_helper(gp_.g, barcode_extractor,
+    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper_, g_);
+    cluster_storage::HalfEdgeClusterStorageHelper cluster_storage_helper(g_, barcode_extractor,
                                                                          min_read_threshold, max_threads_);
     std::set<scaffold_graph::ScaffoldVertex> vertices;
     std::copy(perfect_graph.vbegin(), perfect_graph.vend(), std::inserter(vertices, vertices.end()));
@@ -26,7 +26,7 @@ PerfectClustersAnalyzer::SetDistribution PerfectClustersAnalyzer::ConstructPerfe
     auto initial_storage = std::make_shared<cluster_storage::InitialClusterStorage>(
         initial_storage_builder->ConstructInitialClusterStorage());
 
-    ScaffoldGraphPathClusterHelper path_cluster_helper(gp_.g, barcode_extractor, initial_storage, max_threads_);
+    ScaffoldGraphPathClusterHelper path_cluster_helper(g_, barcode_extractor, initial_storage, max_threads_);
     std::vector<Cluster> raw_clusters = path_cluster_helper.GetAllClusters(perfect_graph);
     SetDistribution result;
     for (const auto &cluster: raw_clusters) {
@@ -39,11 +39,11 @@ PerfectClustersAnalyzer::SetDistribution PerfectClustersAnalyzer::ConstructPerfe
     return result;
 }
 void PerfectClustersAnalyzer::AnalyzePerfectClouds(const std::string &path_to_reference, size_t min_length) const {
-    PerfectScaffoldGraphConstructor constructor(gp_);
-    omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(gp_.g);
+    PerfectScaffoldGraphConstructor constructor(g_);
+    omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(g_);
     std::vector<EdgeId> long_edges;
     for (const auto &edge: edge_it_helper) {
-        if (gp_.g.length(edge) >= min_length) {
+        if (g_.length(edge) >= min_length) {
             long_edges.push_back(edge);
         }
     }
@@ -54,7 +54,7 @@ void PerfectClustersAnalyzer::AnalyzePerfectClouds(const std::string &path_to_re
     for (size_t length = min_length; length <= max_length; length += step) {
         length_thresholds.push_back(length);
     }
-    validation::FilteredReferencePathHelper path_helper(gp_);
+    validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
     auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, min_length);
     auto perfect_scaffold_graph = constructor.ConstuctPerfectGraph(reference_paths, min_length);
     auto perfect_clusters = ConstructPerfectClusters(perfect_scaffold_graph);
@@ -67,12 +67,12 @@ void PerfectClustersAnalyzer::AnalyzePerfectClouds(const std::string &path_to_re
         INFO("Length threshold: " << length_threshold);
         size_t total_edges = 0;
         for (const auto &edge: long_edges) {
-            if (gp_.g.length(edge) >= length_threshold) {
+            if (g_.length(edge) >= length_threshold) {
                 ++total_edges;
             }
         }
         INFO("Total edges: " << total_edges);
-        double mean_edges_num = GetMeanEdgeNumber(perfect_clusters, length_threshold, gp_.g);
+        double mean_edges_num = GetMeanEdgeNumber(perfect_clusters, length_threshold, g_);
         INFO("Mean edges: " << mean_edges_num);
         fout << length_threshold << " " << total_edges << " " << mean_edges_num << "\n";
     }
@@ -99,7 +99,16 @@ double PerfectClustersAnalyzer::GetMeanEdgeNumber(const SetDistribution &cluster
     INFO("Total clusters: " << total_clusters);
     return static_cast<double>(total_edges) / static_cast<double>(total_clusters);
 }
-PerfectClustersAnalyzer::PerfectClustersAnalyzer(const conj_graph_pack &gp, const std::string &output_dir, size_t max_threads) :
-    gp_(gp), output_dir_(output_dir), max_threads_(max_threads) {}
+PerfectClustersAnalyzer::PerfectClustersAnalyzer(const Graph &g,
+                                                 const debruijn_graph::Index &index,
+                                                 const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                                                 const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+                                                 const std::string &output_dir, size_t max_threads) :
+    g_(g),
+    index_(index),
+    kmer_mapper_(kmer_mapper),
+    barcode_mapper_(barcode_mapper),
+    output_dir_(output_dir),
+    max_threads_(max_threads) {}
 }
 }
