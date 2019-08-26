@@ -15,8 +15,8 @@ vector<UnbranchingPathExtractor::SimplePath> UnbranchingPathExtractor::ExtractUn
     set<ScaffoldVertex> starts;
     for (const auto &vertex: graph) {
         if (graph.GetOutDegree(vertex) == 1 and graph.GetInDegree(vertex) == 1) {
-            auto incoming_edge = graph.GetIncomingEdges(vertex)[0];
-            auto outcoming_edge = graph.GetOutcomingEdges(vertex)[0];
+            auto incoming_edge = *(graph.in_edge_begin(vertex));
+            auto outcoming_edge = *(graph.out_edge_begin(vertex));
             if (incoming_edge != outcoming_edge) {
                 edge_to_next[incoming_edge] = outcoming_edge;
                 unbranching_vertices.insert(incoming_edge);

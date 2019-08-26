@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "common/assembly_graph/core/graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
+#include "transition_extractor.hpp"
+#include "assembly_graph/core/graph.hpp"
 
 namespace path_extend {
 namespace read_cloud {

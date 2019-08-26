@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/barcode_index/barcode_index.hpp"
+#include "barcode_index.hpp"
 
 namespace barcode_index {
 
@@ -61,9 +61,11 @@ namespace barcode_index {
          * @return Number of barcodes shared by edge1 and edge2
          */
         size_t GetNumberOfSharedBarcodes (const EdgeId &edge1, const EdgeId &edge2) const {
-            auto it_tail = index_.GetEntryTailsIterator(edge1);
-            auto it_head = index_.GetEntryHeadsIterator(edge2);
-            return (it_tail->second).GetIntersectionSize(it_head->second);
+            size_t result = 0;
+            for (auto it = intersection_iterator_begin(edge1, edge2); it != intersection_iterator_end(edge1, edge2); ++it) {
+                ++result;
+            }
+            return result;
         }
 
         /**

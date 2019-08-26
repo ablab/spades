@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
+#include "barcode_cluster.hpp"
+#include "cluster_storage.hpp"
 
 #include <memory>
 
@@ -16,25 +17,27 @@ namespace cluster_storage {
 
 class EdgeClusterExtractor {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
-    typedef ScaffoldGraph::VertexId ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> BarcodeIndexPtr;
 
-    EdgeClusterExtractor(const Graph &g_, std::shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_)
+    EdgeClusterExtractor(const Graph &g_, BarcodeIndexPtr barcode_extractor_ptr_)
         : g_(g_), barcode_extractor_ptr_(barcode_extractor_ptr_) {}
 
     virtual std::unordered_map<BarcodeId, std::vector<Cluster>> ExtractClustersFromEdge(const EdgeId &edge) const = 0;
 
   protected:
     const Graph &g_;
-    std::shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
+    BarcodeIndexPtr barcode_extractor_ptr_;
 };
 
 class AccurateEdgeClusterExtractor : public EdgeClusterExtractor {
     using EdgeClusterExtractor::ScaffoldGraph;
     using EdgeClusterExtractor::ScaffoldVertex;
+    using EdgeClusterExtractor::BarcodeIndexPtr;
 
   public:
-    AccurateEdgeClusterExtractor(const Graph &g, std::shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
+    AccurateEdgeClusterExtractor(const Graph &g, BarcodeIndexPtr barcode_extractor_ptr,
                                  size_t distance_threshold, size_t min_read_threshold)
         : EdgeClusterExtractor(g, barcode_extractor_ptr),
           distance_threshold_(distance_threshold), min_read_threshold_(min_read_threshold) {}
@@ -104,9 +107,10 @@ class IndexBasedClusterExtractor : public EdgeClusterExtractor {
   public:
     using EdgeClusterExtractor::ScaffoldGraph;
     using EdgeClusterExtractor::ScaffoldVertex;
+    using EdgeClusterExtractor::BarcodeIndexPtr;
 
     IndexBasedClusterExtractor(const Graph &g,
-                               std::shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
+                               BarcodeIndexPtr barcode_extractor_ptr,
                                const SimpleScaffoldVertexIndex &scaffold_vertex_index) :
         EdgeClusterExtractor(g, barcode_extractor_ptr), scaffold_vertex_index_(scaffold_vertex_index) {}
 

@@ -13,9 +13,12 @@
 #include "common/assembly_graph/dijkstra/read_cloud_dijkstra/read_cloud_dijkstras.hpp"
 #include "scaffold_graph_constructor.hpp"
 
+#include "scaffold_graph_dijkstra.hpp"
+#include "read_cloud_path_extend/scaffold_graph_construction/read_cloud_dijkstras.hpp"
+
 namespace path_extend {
 
-namespace scaffold_graph {
+namespace scaffolder {
 
 void BaseScaffoldGraphConstructor::ConstructFromEdgeConditions(func::TypedPredicate<typename Graph::EdgeId> edge_condition,
                                                                ConnectionConditions &connection_conditions,
@@ -69,12 +72,12 @@ void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const std::share
     }
 }
 
-std::shared_ptr<ScaffoldGraph> SimpleScaffoldGraphConstructor::Construct() {
+std::shared_ptr<scaffold_graph::ScaffoldGraph> SimpleScaffoldGraphConstructor::Construct() {
     ConstructFromSet(edge_set_, connection_conditions_);
     return graph_;
 }
 
-std::shared_ptr<ScaffoldGraph> DefaultScaffoldGraphConstructor::Construct() {
+std::shared_ptr<scaffold_graph::ScaffoldGraph> DefaultScaffoldGraphConstructor::Construct() {
     ConstructFromSet(edge_set_, connection_conditions_);
     ConstructFromEdgeConditions(edge_condition_, connection_conditions_);
     return graph_;
@@ -103,9 +106,9 @@ void PredicateScaffoldGraphFilter::ConstructFromGraphAndPredicate(const Scaffold
 #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < scaffold_edges.size(); ++i) {
         auto edge = scaffold_edges[i];
-        DEBUG("Checking");
+        TRACE("Checking");
         bool check_predicate = (*predicate)(edge);
-        DEBUG("Check result: " << check_predicate);
+        TRACE("Check result: " << check_predicate);
 #pragma omp critical
         {
             if (check_predicate) {
@@ -119,7 +122,7 @@ void PredicateScaffoldGraphFilter::ConstructFromGraphAndPredicate(const Scaffold
     }
 }
 
-std::shared_ptr<ScaffoldGraph> PredicateScaffoldGraphFilter::Construct() {
+std::shared_ptr<scaffold_graph::ScaffoldGraph> PredicateScaffoldGraphFilter::Construct() {
     ConstructFromGraphAndPredicate(old_graph_, predicate_);
     return graph_;
 }
@@ -136,7 +139,6 @@ void ScoreFunctionScaffoldGraphFilter::ConstructFromGraphAndScore(const Scaffold
     for (const auto& vertex: graph.vertices()) {
         graph_->AddVertex(vertex);
     }
-    //fixme switch to tbb or use chunk splitter
     std::vector<ScaffoldGraph::ScaffoldEdge> scaffold_edges;
     for (const auto& edge: graph.edges()) {
         scaffold_edges.push_back(edge);
@@ -164,11 +166,11 @@ void ScoreFunctionScaffoldGraphFilter::ConstructFromGraphAndScore(const Scaffold
         }
     }
 }
-std::shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphFilter::Construct() {
+std::shared_ptr<scaffold_graph::ScaffoldGraph> ScoreFunctionScaffoldGraphFilter::Construct() {
     ConstructFromGraphAndScore(old_graph_, score_function_, score_threshold_, num_threads_);
     return graph_;
 }
-std::shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
+std::shared_ptr<scaffold_graph::ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
     INFO("Scaffolding distance: " << distance_);
     //        auto bounded_dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
 
@@ -196,7 +198,7 @@ std::shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
 
 #pragma omp parallel for num_threads(max_threads_)
     for (size_t i = 0; i < vertices_copy.size(); ++i) {
-        ReadCloudDijkstraHelper helper;
+        read_cloud::ReadCloudDijkstraHelper helper;
         auto dij = helper.CreateUniqueDijkstra(graph_->AssemblyGraph(), distance_, unique_storage_);
         const auto vertex = vertices_copy[i];
         EdgeId last_edge = vertex.GetLastEdge();
@@ -241,7 +243,7 @@ UniqueScaffoldGraphConstructor::UniqueScaffoldGraphConstructor(const Graph &asse
       max_threads_(max_threads) {}
 
 
-std::shared_ptr<ScaffoldGraph> ScaffoldSubgraphConstructor::Construct() {
+std::shared_ptr<scaffold_graph::ScaffoldGraph> ScaffoldSubgraphConstructor::Construct() {
     for (const ScaffoldVertex& vertex: large_graph_.vertices()) {
         if (vertex_condition_(vertex)) {
             graph_->AddVertex(vertex);
@@ -250,7 +252,7 @@ std::shared_ptr<ScaffoldGraph> ScaffoldSubgraphConstructor::Construct() {
     INFO(graph_->VertexCount() << " vertices");
 
     //todo add distance calculation
-    omnigraph::ScaffoldDijkstraHelper helper;
+    ScaffoldDijkstraHelper helper;
     for (const ScaffoldVertex& vertex: graph_->vertices()) {
         auto scaffold_dijkstra = helper.CreatePredicateBasedScaffoldDijkstra(large_graph_, vertex, vertex_condition_);
         scaffold_dijkstra.Run(vertex);
@@ -283,7 +285,7 @@ ScoreFunctionScaffoldGraphConstructor::ScoreFunctionScaffoldGraphConstructor(
       score_threshold_(score_threshold),
       num_threads_(num_threads) {}
 
-std::shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
+std::shared_ptr<scaffold_graph::ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
     for (const auto& vertex: scaffold_vertices_) {
         graph_->AddVertex(vertex);
     }
@@ -322,7 +324,7 @@ std::shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct(
     }
     return graph_;
 }
-std::shared_ptr<ScaffoldGraph> InternalScoreScaffoldGraphFilter::Construct() {
+std::shared_ptr<scaffold_graph::ScaffoldGraph> InternalScoreScaffoldGraphFilter::Construct() {
     for (const auto& vertex: old_graph_.vertices()) {
         graph_->AddVertex(vertex);
     }
@@ -334,7 +336,7 @@ std::shared_ptr<ScaffoldGraph> InternalScoreScaffoldGraphFilter::Construct() {
     }
     return graph_;
 }
-boost::optional<ScaffoldGraph::ScaffoldEdge> InternalScoreScaffoldGraphFilter::GetWinnerVertex(
+boost::optional<scaffold_graph::ScaffoldGraph::ScaffoldEdge> InternalScoreScaffoldGraphFilter::GetWinnerVertex(
         std::vector<ScaffoldGraph::ScaffoldEdge> &edges) const {
     boost::optional<ScaffoldEdge> result;
     if (edges.size() < 2) {

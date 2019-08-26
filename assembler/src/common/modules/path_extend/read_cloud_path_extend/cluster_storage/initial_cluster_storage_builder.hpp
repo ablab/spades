@@ -6,16 +6,18 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/edge_cluster_extractor.hpp"
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+#include "barcode_cluster.hpp"
+#include "cluster_storage.hpp"
+#include "edge_cluster_extractor.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 namespace cluster_storage {
+
 class InitialClusterStorageBuilder {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
   public:
@@ -74,7 +76,7 @@ class EdgeInitialClusterStorageBuilder : public InitialClusterStorageBuilder {
         size_t processed_edges = 0;
 #pragma omp parallel for num_threads(max_threads_)
         for (size_t i = 0; i < target_edges_vector.size(); ++i) {
-            path_extend::scaffold_graph::EdgeGetter getter;
+            scaffold_graph::EdgeGetter getter;
             auto unique_edge = getter.GetEdgeFromScaffoldVertex(target_edges_vector[i]);
             DEBUG("Extracting clusters from edge " << unique_edge.int_id());
             auto barcode_to_clusters = edge_cluster_extractor_->ExtractClustersFromEdge(unique_edge);

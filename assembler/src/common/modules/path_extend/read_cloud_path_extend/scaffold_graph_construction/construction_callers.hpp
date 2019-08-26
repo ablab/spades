@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/extender_searcher.hpp"
+#include "extender_searcher.hpp"
+#include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -50,14 +50,14 @@ struct ScaffolderParams {
  */
 class IterativeScaffoldGraphConstructorCaller {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     explicit IterativeScaffoldGraphConstructorCaller(const string &name);
     /**
     * @param params Scaffold graph construction configs
     * @param scaffold_graph Original scaffold graph which is used to construct the new one.
      * Most constructors remove subset of edges of the original graph based on some predicate.
     */
-    virtual std::shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+    virtual std::shared_ptr<scaffolder::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
         const read_cloud::ScaffolderParams &params,
         const ScaffoldGraph &scaffold_graph) const = 0;
 
@@ -77,7 +77,7 @@ class BarcodeScoreConstructorCaller : public IterativeScaffoldGraphConstructorCa
                                   std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> raw_barcode_extractor,
                                   std::shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                   size_t max_threads_);
-    std::shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+    std::shared_ptr<scaffolder::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
         const read_cloud::ScaffolderParams &params,
         const ScaffoldGraph &scaffold_graph) const override;
 
@@ -97,7 +97,7 @@ class BarcodeConnectionConstructorCaller : public IterativeScaffoldGraphConstruc
                                        const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_,
                                        size_t max_threads);
 
-    std::shared_ptr<path_extend::scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+    std::shared_ptr<scaffolder::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
         const read_cloud::ScaffolderParams &params,
         const ScaffoldGraph &scaffold_graph) const override;
   private:
@@ -113,17 +113,19 @@ class BarcodeConnectionConstructorCaller : public IterativeScaffoldGraphConstruc
 class CompositeConnectionConstructorCaller : public IterativeScaffoldGraphConstructorCaller {
   public:
     using IterativeScaffoldGraphConstructorCaller::ScaffoldGraph;
-    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver::scaffold_graph_construction ScaffConConfigs;
+    typedef std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> MainBarcodeIndexPtr;
+    typedef std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> ScaffoldBarcodeIndexPtr;
+    typedef pe_config::ReadCloud::scaffold_graph_construction ScaffConConfigs;
 
     CompositeConnectionConstructorCaller(const debruijn_graph::conj_graph_pack &gp,
-                                         std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor,
-                                         std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor,
+                                         MainBarcodeIndexPtr main_extractor,
+                                         ScaffoldBarcodeIndexPtr barcode_extractor,
                                          const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
-                                         const ReadCloudSearchParameterPack search_parameter_pack,
+                                         const ReadCloudSearchParameterPack &search_parameter_pack,
                                          const ScaffConConfigs &scaff_con_configs,
                                          const size_t max_threads, bool scaffolding_mode);
 
-    std::shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+    std::shared_ptr<scaffolder::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
         const read_cloud::ScaffolderParams &params,
         const ScaffoldGraph &scaffold_graph) const override;
 
@@ -136,6 +138,8 @@ class CompositeConnectionConstructorCaller : public IterativeScaffoldGraphConstr
     const ScaffConConfigs &scaff_con_configs_;
     const size_t max_threads_;
     const bool scaffolding_mode_;
+
+    DECL_LOGGER("CompositeConnectionConstructorCaller");
 };
 /** ConstructorCaller that filters conjugate transitions by selecting the best orientation of two edges in the transition.
  */
@@ -146,7 +150,7 @@ class EdgeSplitConstructorCaller : public IterativeScaffoldGraphConstructorCalle
                                std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                std::size_t max_threads_);
 
-    std::shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+    std::shared_ptr<scaffolder::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
         const read_cloud::ScaffolderParams &params,
         const ScaffoldGraph &scaffold_graph) const override;
 
@@ -163,7 +167,7 @@ class TransitiveConstructorCaller : public IterativeScaffoldGraphConstructorCall
     TransitiveConstructorCaller(const Graph &g_,
                                 std::size_t max_threads_);
 
-    std::shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
+    std::shared_ptr<scaffolder::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(
         const read_cloud::ScaffolderParams &params,
         const ScaffoldGraph &scaffold_graph) const override;
 

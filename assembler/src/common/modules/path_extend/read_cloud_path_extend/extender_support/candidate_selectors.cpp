@@ -6,6 +6,8 @@
 
 #include "candidate_selectors.hpp"
 
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_dijkstras.hpp"
+
 namespace path_extend {
 namespace read_cloud {
 

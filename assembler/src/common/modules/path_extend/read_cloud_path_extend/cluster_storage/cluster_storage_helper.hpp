@@ -6,16 +6,18 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/graph_cluster_storage_builder.hpp"
-#include "common/barcode_index/scaffold_vertex_index_builder.hpp"
+#include "barcode_cluster.hpp"
+#include "initial_cluster_storage_builder.hpp"
+#include "graph_cluster_storage_builder.hpp"
+#include "barcode_index/scaffold_vertex_index_builder.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 namespace cluster_storage {
+
 class HalfEdgeClusterStorageHelper {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
     HalfEdgeClusterStorageHelper(const Graph &g,
                                  std::shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_extractor,

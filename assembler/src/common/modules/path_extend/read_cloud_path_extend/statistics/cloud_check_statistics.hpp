@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_subgraph_validation.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/path_cluster_validation.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/transition_subgraph_validation.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/path_cluster_validation.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -43,11 +43,19 @@ class PathClusterStorageChecker {
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
 
-    PathClusterStorageChecker(const conj_graph_pack &gp, const std::string &path_to_reference, size_t max_threads);
+    PathClusterStorageChecker(const Graph &g,
+                              const debruijn_graph::Index &index,
+                              const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                              const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+                              const std::string &path_to_reference,
+                              size_t max_threads);
     void CheckPathClusters(const ScaffoldGraphStorage &storage) const;
 
   private:
-    const conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
+    const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     const std::string path_to_reference_;
     size_t max_threads_;
 };
@@ -56,7 +64,9 @@ class PathClusterCheckerFactory {
   public:
     typedef std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> BarcodeIndexPtr;
 
-    PathClusterCheckerFactory(const conj_graph_pack &gp,
+    PathClusterCheckerFactory(const Graph &g,
+                              const debruijn_graph::Index &index,
+                              const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
                               BarcodeIndexPtr barcode_extractor,
                               const std::string &path_to_reference,
                               size_t max_threads);
@@ -64,9 +74,11 @@ class PathClusterCheckerFactory {
     std::shared_ptr<PathClusterChecker> ConstuctPathClusterChecker(const scaffold_graph::ScaffoldGraph &scaffold_graph) const;
 
   private:
-    const conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
     BarcodeIndexPtr barcode_extractor_;
-    const std::string &path_to_reference_;
+    const std::string path_to_reference_;
     size_t max_threads_;
 };
 }

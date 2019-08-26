@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor.hpp"
-#include "common/pipeline/graph_pack.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
+#include "distribution_extractor.hpp"
+#include "modules/path_extend/pe_config_struct.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -69,7 +69,7 @@ class MinTrainingLengthEstimator {
 
 class MinTrainingLengthEstimatorHelper {
   public:
-    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver ReadCloudConfigs;
+    typedef pe_config::ReadCloud ReadCloudConfigs;
 
     MinTrainingLengthEstimatorHelper(const ReadCloudConfigs &configs) : configs_(configs) {}
 
@@ -125,16 +125,18 @@ class ClusterDistributionExtractor {
     typedef DistributionPack::ClusterLengthDistribution ClusterLengthDistribution;
     typedef DistributionPack::ClusterCoverageDistribution ClusterCoverageDistribution;
 
-    ClusterDistributionExtractor(const conj_graph_pack &gp_,
-                                 size_t min_read_threshold_,
-                                 size_t min_edge_length_,
-                                 size_t min_cluster_offset_,
-                                 size_t max_threads_)
-        : gp_(gp_),
-          min_read_threshold_(min_read_threshold_),
-          min_edge_length_(min_edge_length_),
-          min_cluster_offset_(min_cluster_offset_),
-          max_threads_(max_threads_) {}
+    ClusterDistributionExtractor(const Graph &g,
+                                 const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+                                 size_t min_read_threshold,
+                                 size_t min_edge_length,
+                                 size_t min_cluster_offset,
+                                 size_t max_threads)
+        : g_(g),
+          barcode_mapper_(barcode_mapper),
+          min_read_threshold_(min_read_threshold),
+          min_edge_length_(min_edge_length),
+          min_cluster_offset_(min_cluster_offset),
+          max_threads_(max_threads) {}
 
     DistributionPack GetDistributionsForDistance(size_t distance_threshold) {
         auto cluster_storage = GetInitialClusterStorage(distance_threshold);
@@ -143,7 +145,7 @@ class ClusterDistributionExtractor {
           VERIFY_DEV(cluster.Size() == 1);
           auto map_info = cluster.GetMappings()[0];
           auto edge = map_info.GetEdge();
-          size_t edge_length = edge.GetLengthFromGraph(this->gp_.g);
+          size_t edge_length = edge.GetLengthFromGraph(this->g_);
           size_t left_pos = map_info.GetLeft();
           size_t right_pos = map_info.GetRight();
           return left_pos >= min_cluster_offset_ and right_pos + min_cluster_offset_ <= edge_length;
@@ -248,19 +250,19 @@ class ClusterDistributionExtractor {
 
     cluster_storage::ClusterStorage GetInitialClusterStorage(size_t distance_threshold) {
         auto barcode_extractor =
-            std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
-        omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(gp_.g);
+            std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper_, g_);
+        omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(g_);
         std::set<scaffold_graph::ScaffoldVertex> long_edges;
         for (const auto &edge: edge_it_helper) {
-            if (gp_.g.length(edge) >= min_edge_length_) {
+            if (g_.length(edge) >= min_edge_length_) {
                 long_edges.insert(edge);
             }
         }
         DEBUG("Found " << long_edges.size() << " long edges in the graph");
         auto edge_cluster_extractor =
-            std::make_shared<cluster_storage::AccurateEdgeClusterExtractor>(gp_.g, barcode_extractor,
+            std::make_shared<cluster_storage::AccurateEdgeClusterExtractor>(g_, barcode_extractor,
                                                                             distance_threshold, min_read_threshold_);
-        cluster_storage::EdgeInitialClusterStorageBuilder initial_builder(gp_.g, edge_cluster_extractor, long_edges,
+        cluster_storage::EdgeInitialClusterStorageBuilder initial_builder(g_, edge_cluster_extractor, long_edges,
                                                                           distance_threshold, min_read_threshold_,
                                                                           max_threads_);
         auto initial_cluster_storage = initial_builder.ConstructInitialClusterStorage();
@@ -286,7 +288,8 @@ class ClusterDistributionExtractor {
         return current_distance;
     }
 
-    const conj_graph_pack &gp_;
+    const Graph &g_;
+    const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     size_t min_read_threshold_;
     size_t min_edge_length_;
     size_t min_cluster_offset_;
@@ -341,10 +344,13 @@ class ClusterStatisticsExtractor {
 
 class ClusterStatisticsExtractorHelper {
   public:
-    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver ReadCloudConfigs;
+    typedef pe_config::ReadCloud ReadCloudConfigs;
 
-    ClusterStatisticsExtractorHelper(const conj_graph_pack &gp, const ReadCloudConfigs &configs, size_t max_threads)
-        : gp_(gp), configs_(configs), max_threads_(max_threads) {}
+    ClusterStatisticsExtractorHelper(const Graph &g,
+                                     const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+                                     const ReadCloudConfigs &configs,
+                                     size_t max_threads)
+        : g_(g), barcode_mapper_(barcode_mapper), configs_(configs), max_threads_(max_threads) {}
 
     ClusterStatisticsExtractor GetStatisticsExtractor() const {
         const size_t DEFAULT_TRAINING_LENGTH = 10000;
@@ -353,7 +359,7 @@ class ClusterStatisticsExtractorHelper {
         const size_t MIN_READ_THRESHOLD = 5;
 
         MinTrainingLengthEstimatorHelper training_length_estimator_helper(configs_);
-        const auto min_training_length_result = training_length_estimator_helper.EstimateTrainingLength(gp_.g);
+        const auto min_training_length_result = training_length_estimator_helper.EstimateTrainingLength(g_);
         size_t min_training_length = DEFAULT_TRAINING_LENGTH;
         if (min_training_length_result.is_initialized()) {
             min_training_length = min_training_length_result.get();
@@ -361,7 +367,8 @@ class ClusterStatisticsExtractorHelper {
 
         const size_t min_cluster_offset = std::min(MIN_CLUSTER_OFFSET, min_training_length / LENGTH_TO_OFFSET);
 
-        ClusterDistributionExtractor distribution_analyzer(gp_,
+        ClusterDistributionExtractor distribution_analyzer(g_,
+                                                           barcode_mapper_,
                                                            MIN_READ_THRESHOLD,
                                                            min_training_length,
                                                            min_cluster_offset,
@@ -372,7 +379,8 @@ class ClusterStatisticsExtractorHelper {
     }
 
   private:
-    const conj_graph_pack &gp_;
+    const Graph &g_;
+    const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     const ReadCloudConfigs &configs_;
     const size_t max_threads_;
 };

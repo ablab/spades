@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -34,7 +34,11 @@ class SplitStatisticsExtractor {
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor BarcodeExtractor;
     typedef validation::GeneralTransitionStorageBuilder TransitionBuilder;
 
-    SplitStatisticsExtractor(const conj_graph_pack &gp, size_t max_threads);
+    SplitStatisticsExtractor(const Graph &g,
+                             const debruijn_graph::Index &index,
+                             const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                             const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+                             size_t max_threads);
 
     SplitStatistics GetSplitStatistics(const std::string &path_to_reference, size_t length_threshold) const;
     void ConstructAndSerialize(const std::string &path_to_reference,
@@ -44,7 +48,10 @@ class SplitStatisticsExtractor {
   private:
     double GetSplitIndex(const Transition &transition, std::shared_ptr<BarcodeExtractor> barcode_extractor) const;
 
-    const conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
+    const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     size_t max_threads_;
 };
 }

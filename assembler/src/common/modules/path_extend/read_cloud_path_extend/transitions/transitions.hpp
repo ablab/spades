@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "common/assembly_graph/core/graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
-#include "common/modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_vertex.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
 
 namespace path_extend {
 namespace read_cloud {
