@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+
 namespace path_extend {
 namespace read_cloud {
 

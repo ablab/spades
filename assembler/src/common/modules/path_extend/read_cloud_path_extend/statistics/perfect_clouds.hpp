@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/statistics/perfect_transitions.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
+#include "perfect_transitions.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -17,7 +17,12 @@ class PerfectClustersAnalyzer {
     typedef cluster_storage::Cluster Cluster;
     typedef std::set<scaffold_graph::ScaffoldVertex> VertexSet;
     typedef std::map<VertexSet, size_t> SetDistribution;
-    PerfectClustersAnalyzer(const conj_graph_pack &gp, const std::string &output_dir, size_t max_threads);
+    PerfectClustersAnalyzer(const Graph &g,
+                            const debruijn_graph::Index &index,
+                            const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                            const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+                            const std::string &output_dir,
+                            size_t max_threads);
 
     void AnalyzePerfectClouds(const std::string &path_to_reference, size_t min_length) const;
 
@@ -25,7 +30,10 @@ class PerfectClustersAnalyzer {
     SetDistribution ConstructPerfectClusters(const scaffold_graph::ScaffoldGraph &perfect_graph) const;
     double GetMeanEdgeNumber(const SetDistribution &clusters, size_t length_threshold, const Graph &g) const;
 
-    const conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
+    const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     const std::string output_dir_;
     const size_t max_threads_;
 };

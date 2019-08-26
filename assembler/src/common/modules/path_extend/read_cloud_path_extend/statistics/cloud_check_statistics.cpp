@@ -6,8 +6,8 @@
 
 #include "cloud_check_statistics.hpp"
 
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/statistics/component_validation.hpp"
+#include "component_validation.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -80,8 +80,8 @@ std::shared_ptr<PathClusterChecker> PathClusterCheckerFactory::ConstuctPathClust
     const string path_to_reference = path_to_reference_;
     DEBUG("Path to reference: " << path_to_reference);
     DEBUG("Path exists: " << fs::check_existence(path_to_reference));
-    validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
-    validation::FilteredReferencePathHelper path_helper(gp_);
+    validation::ScaffoldGraphValidator scaffold_graph_validator(g_);
+    validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
     auto reference_paths = path_helper.GetFilteredReferencePathsFromGraph(path_to_reference, scaffold_graph);
 
     const size_t min_read_threshold = 2;
@@ -95,7 +95,7 @@ std::shared_ptr<PathClusterChecker> PathClusterCheckerFactory::ConstuctPathClust
         }
     }
     DEBUG(covered_vertices << " covered vertices out of " << scaffold_graph.VertexCount());
-    cluster_storage::HalfEdgeClusterStorageHelper cluster_storage_helper(gp_.g, barcode_extractor_,
+    cluster_storage::HalfEdgeClusterStorageHelper cluster_storage_helper(g_, barcode_extractor_,
                                                                          min_read_threshold, max_threads_);
     std::set<scaffold_graph::ScaffoldVertex> vertices;
     std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(vertices, vertices.begin()));
@@ -103,18 +103,28 @@ std::shared_ptr<PathClusterChecker> PathClusterCheckerFactory::ConstuctPathClust
     DEBUG("Constructing initial storage");
     auto initial_storage = std::make_shared<cluster_storage::InitialClusterStorage>(
         initial_storage_builder->ConstructInitialClusterStorage());
-    ScaffoldGraphPathClusterHelper path_cluster_helper(gp_.g, barcode_extractor_, initial_storage, max_threads_);
+    ScaffoldGraphPathClusterHelper path_cluster_helper(g_, barcode_extractor_, initial_storage, max_threads_);
     validation::PathClusterValidator path_cluster_validator(reference_index);
-    auto path_cluster_checker = std::make_shared<PathClusterChecker>(gp_.g, path_cluster_helper, path_cluster_validator);
+    auto path_cluster_checker = std::make_shared<PathClusterChecker>(g_, path_cluster_helper, path_cluster_validator);
     return path_cluster_checker;
 }
-PathClusterCheckerFactory::PathClusterCheckerFactory(const conj_graph_pack &gp, BarcodeIndexPtr barcode_extractor,
-                                                     const std::string &path_to_reference, size_t max_threads)
-    : gp_(gp), barcode_extractor_(barcode_extractor), path_to_reference_(path_to_reference), max_threads_(max_threads) {}
+PathClusterCheckerFactory::PathClusterCheckerFactory(const Graph &g,
+                                                     const debruijn_graph::Index &index,
+                                                     const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                                                     BarcodeIndexPtr barcode_extractor,
+                                                     const std::string &path_to_reference,
+                                                     size_t max_threads)
+    : g_(g),
+      index_(index),
+      kmer_mapper_(kmer_mapper),
+      barcode_extractor_(barcode_extractor),
+      path_to_reference_(path_to_reference),
+      max_threads_(max_threads) {}
 
 void PathClusterStorageChecker::CheckPathClusters(const ScaffoldGraphStorage &storage) const {
-    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
-    PathClusterCheckerFactory path_cluster_checker_factory(gp_, barcode_extractor, path_to_reference_, max_threads_);
+    const auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper_, g_);
+    PathClusterCheckerFactory path_cluster_checker_factory(g_, index_, kmer_mapper_, barcode_extractor,
+                                                           path_to_reference_, max_threads_);
 
     const auto &small_scaffold_graph = storage.GetSmallScaffoldGraph();
     auto path_cluster_checker = path_cluster_checker_factory.ConstuctPathClusterChecker(small_scaffold_graph);
@@ -129,9 +139,17 @@ void PathClusterStorageChecker::CheckPathClusters(const ScaffoldGraphStorage &st
     large_path_cluster_checker->CheckPathClusters(large_scaffold_graph);
     large_path_cluster_checker->CheckComponents(large_scaffold_graph);
 }
-PathClusterStorageChecker::PathClusterStorageChecker(const conj_graph_pack &gp,
+PathClusterStorageChecker::PathClusterStorageChecker(const Graph &g,
+                                                     const debruijn_graph::Index &index,
+                                                     const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                                                     const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
                                                      const std::string &path_to_reference,
                                                      size_t max_threads)
-    : gp_(gp), path_to_reference_(path_to_reference), max_threads_(max_threads) {}
+    : g_(g),
+      index_(index),
+      kmer_mapper_(kmer_mapper),
+      barcode_mapper_(barcode_mapper),
+      path_to_reference_(path_to_reference),
+      max_threads_(max_threads) {}
 }
 }

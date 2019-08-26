@@ -6,11 +6,12 @@
 
 #include "path_cluster_helper.hpp"
 
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/graph_cluster_storage_builder.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph_utils.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/utils/barcode_score_functions.hpp"
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+#include "simple_graph_utils.hpp"
+#include "contracted_graph_from_simple.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/graph_cluster_storage_builder.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/utils/barcode_score_functions.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -19,7 +20,7 @@ std::vector<cluster_storage::Cluster> PathClusterExtractorHelper::GetPathCluster
     cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_, linkage_distance_);
     DEBUG("Constructing cluster storage");
     auto cluster_storage = cluster_storage_builder.ConstructClusterStorage(*initial_cluster_storage_, graph);
-    contracted_graph::ContractedGraphFactoryHelper contracted_helper(g_);
+    ContractedGraphFromSimpleHelper contracted_helper(g_);
     cluster_storage::ClusterGraphAnalyzer cluster_graph_analyzer(contracted_helper);
     auto path_cluster_filter_ptr = std::make_shared<cluster_storage::PathClusterFilter>(cluster_graph_analyzer);
     cluster_storage::ClusterStorageExtractor cluster_extractor;
@@ -269,8 +270,7 @@ std::vector<CloudPathExtractor::InternalPathWithSet> CloudPathExtractor::Extract
             result.push_back(last_path);
             continue;
         }
-        for (auto it = graph.outcoming_begin(last_vertex); it != graph.outcoming_end(last_vertex); ++it) {
-            ScaffoldVertex new_vertex = *it;
+        for (const auto &new_vertex: graph.OutNeighbours(last_vertex)) {
             TRACE("New vertex: " << new_vertex.int_id());
             if (not last_path.HasVertex(new_vertex)) {
                 auto last_path_copy = last_path;
@@ -484,7 +484,7 @@ std::vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetAllClus
 }
 std::vector<ScaffoldGraphPathClusterHelper::Cluster> ScaffoldGraphPathClusterHelper::GetPathClusters(
     const std::vector<ScaffoldGraphPathClusterHelper::Cluster> &clusters) const {
-    contracted_graph::ContractedGraphFactoryHelper contracted_helper(g_);
+    ContractedGraphFromSimpleHelper contracted_helper(g_);
     cluster_storage::ClusterGraphAnalyzer cluster_graph_analyzer(contracted_helper);
     auto path_cluster_filter_ptr = std::make_shared<cluster_storage::PathClusterFilter>(cluster_graph_analyzer);
     cluster_storage::ClusterStorageExtractor cluster_extractor;

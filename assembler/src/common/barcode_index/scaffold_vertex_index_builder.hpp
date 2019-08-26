@@ -6,58 +6,53 @@
 
 #pragma once
 
-#include "common/barcode_index/scaffold_vertex_index.hpp"
-#include "common/barcode_index/barcode_info_extractor.hpp"
+#include "scaffold_vertex_index.hpp"
+#include "barcode_info_extractor.hpp"
 
 namespace barcode_index {
 
     template <class EdgeEntryT>
     class AbstractScaffoldVertexEntryExtractor {
      public:
-        virtual EdgeEntryT ExtractEntry(const path_extend::scaffold_graph::ScaffoldVertex &vertex) const = 0;
+        virtual EdgeEntryT ExtractEntry(const scaffold_graph::ScaffoldVertex &vertex) const = 0;
     };
 
     class TailThresholdGetter {
      public:
-        virtual size_t GetTailThreshold(const path_extend::scaffold_graph::ScaffoldVertex &vertex) const = 0;
+        virtual size_t GetTailThreshold(const scaffold_graph::ScaffoldVertex &vertex) const = 0;
     };
 
     class ConstTailThresholdGetter: public TailThresholdGetter {
-        const size_t tail_threshold_;
      public:
         explicit ConstTailThresholdGetter(const size_t tail_threshold_) : tail_threshold_(tail_threshold_) {}
-        size_t GetTailThreshold(const path_extend::scaffold_graph::ScaffoldVertex &/*vertex*/) const override {
+        size_t GetTailThreshold(const scaffold_graph::ScaffoldVertex &/*vertex*/) const override {
             return tail_threshold_;
         }
+     private:
+        const size_t tail_threshold_;
     };
 
     class FractionTailThresholdGetter: public TailThresholdGetter {
-        const Graph& g_;
-        const double edge_length_fraction_;
      public:
         FractionTailThresholdGetter(const Graph &g_, const double edge_length_fraction_)
             : g_(g_), edge_length_fraction_(edge_length_fraction_) {}
 
-        size_t GetTailThreshold(const path_extend::scaffold_graph::ScaffoldVertex &vertex) const override {
+        size_t GetTailThreshold(const scaffold_graph::ScaffoldVertex &vertex) const override {
             return static_cast<size_t>(static_cast<double>(vertex.GetLengthFromGraph(g_)) * edge_length_fraction_);
         }
+     private:
+        const Graph& g_;
+        const double edge_length_fraction_;
     };
 
     class ScaffoldVertexSimpleEntryExtractor: public AbstractScaffoldVertexEntryExtractor<SimpleVertexEntry> {
      public:
-        typedef typename path_extend::scaffold_graph::EdgeIdVertex EdgeIdVertex;
-        typedef typename path_extend::scaffold_graph::PathVertex PathVertex;
-     private:
-        const debruijn_graph::Graph &g_;
-        const FrameBarcodeIndexInfoExtractor& barcode_extractor_;
-        shared_ptr<TailThresholdGetter> tail_threshold_getter_;
-        const size_t count_threshold_;
-        const size_t length_threshold_;
+        typedef typename scaffold_graph::EdgeIdVertex EdgeIdVertex;
+        typedef typename scaffold_graph::PathVertex PathVertex;
 
-     public:
         ScaffoldVertexSimpleEntryExtractor(const Graph &g_,
                                            const FrameBarcodeIndexInfoExtractor &barcode_extractor_,
-                                           shared_ptr<TailThresholdGetter> tail_threshold_getter,
+                                           std::shared_ptr<TailThresholdGetter> tail_threshold_getter,
                                            const size_t count_threshold_,
                                            const size_t length_threshold_)
             : g_(g_),
@@ -66,17 +61,17 @@ namespace barcode_index {
               count_threshold_(count_threshold_),
               length_threshold_(length_threshold_) {}
 
-        SimpleVertexEntry ExtractEntry(const path_extend::scaffold_graph::ScaffoldVertex &vertex) const override {
+        SimpleVertexEntry ExtractEntry(const scaffold_graph::ScaffoldVertex &vertex) const override {
             auto inner_vertex = vertex.GetInnerVertex();
 
             SimpleVertexEntry empty;
             auto type = vertex.GetType();
             switch (type) {
-                case path_extend::scaffold_graph::ScaffoldVertexT::Edge: {
+                case scaffold_graph::ScaffoldVertexT::Edge: {
                     auto edge_vertex = std::static_pointer_cast<EdgeIdVertex>(inner_vertex);
                     return ExtractEntryInner(edge_vertex);
                 }
-                case path_extend::scaffold_graph::ScaffoldVertexT::Path: {
+                case scaffold_graph::ScaffoldVertexT::Path: {
                     auto path_vertex = std::static_pointer_cast<PathVertex>(inner_vertex);
                     return ExtractEntryInner(path_vertex);
                 }
@@ -86,19 +81,20 @@ namespace barcode_index {
         }
 
      private:
-        SimpleVertexEntry ExtractEntryInner(shared_ptr<EdgeIdVertex> simple_edge_vertex) const {
+        SimpleVertexEntry ExtractEntryInner(std::shared_ptr<EdgeIdVertex> simple_edge_vertex) const {
             SimpleVertexEntry result;
             TRACE("Extracting entry from edge");
-            size_t tail_threshold = tail_threshold_getter_->GetTailThreshold(simple_edge_vertex->get());
+            auto edge = simple_edge_vertex->get();
+            size_t tail_threshold = tail_threshold_getter_->GetTailThreshold(edge);
             TRACE("Tail threshold: " << tail_threshold);
-            auto entry = barcode_extractor_.GetBarcodesFromHead(simple_edge_vertex->get(), count_threshold_, tail_threshold);
+            auto entry = barcode_extractor_.GetBarcodesFromHead(edge, count_threshold_, tail_threshold);
             std::copy(entry.begin(), entry.end(), std::inserter(result, result.end()));
             TRACE("Entry size: " << entry.size());
             return result;
         }
 
         //fixme optimize later
-        SimpleVertexEntry ExtractEntryInner(shared_ptr<PathVertex> path_vertex) const {
+        SimpleVertexEntry ExtractEntryInner(std::shared_ptr<PathVertex> path_vertex) const {
             TRACE("Extracting entry from path");
             size_t current_prefix = 0;
             path_extend::BidirectionalPath* path = path_vertex->get();
@@ -116,7 +112,9 @@ namespace barcode_index {
                 }
                 size_t current_tail = tail_threshold - current_prefix;
                 TRACE("Current tail: " << current_tail);
-                const auto &current_entry = barcode_extractor_.GetBarcodesAndCountsFromHead(current_edge, count_threshold_,current_tail);
+                const auto &current_entry = barcode_extractor_.GetBarcodesAndCountsFromHead(current_edge,
+                                                                                            count_threshold_,
+                                                                                            current_tail);
                 for (const auto& barcode_and_reads: current_entry) {
                     barcode_to_count[barcode_and_reads.first] += barcode_and_reads.second;
                 }
@@ -132,27 +130,27 @@ namespace barcode_index {
             return result;
         }
 
+        const debruijn_graph::Graph &g_;
+        const FrameBarcodeIndexInfoExtractor& barcode_extractor_;
+        std::shared_ptr<TailThresholdGetter> tail_threshold_getter_;
+        const size_t count_threshold_;
+        const size_t length_threshold_;
+
         DECL_LOGGER("ScaffoldVertexSimpleEntryExtractor");
     };
 
     template <class EdgeEntryT>
     class ScaffoldVertexIndexBuilder {
-        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
-
-        const Graph& g_;
-        shared_ptr<AbstractScaffoldVertexEntryExtractor<EdgeEntryT>> vertex_entry_extractor_;
-        shared_ptr<ScaffoldVertexIndex<EdgeEntryT>> index_;
-        size_t max_threads_;
-
      public:
-        ScaffoldVertexIndexBuilder(const Graph &g_,
-                                   shared_ptr<AbstractScaffoldVertexEntryExtractor<EdgeEntryT>> vertex_entry_extractor_,
-                                   size_t max_threads)
-            : g_(g_), vertex_entry_extractor_(vertex_entry_extractor_),
+        typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
+        typedef std::shared_ptr<AbstractScaffoldVertexEntryExtractor<EdgeEntryT>> EntryExtractorPtr;
+
+        ScaffoldVertexIndexBuilder(const Graph &g, EntryExtractorPtr vertex_entry_extractor, size_t max_threads)
+            : g_(g), vertex_entry_extractor_(vertex_entry_extractor),
               index_(std::make_shared<ScaffoldVertexIndex<EdgeEntryT>>(g_)), max_threads_(max_threads) {}
 
         template <class ContainerT>
-        shared_ptr<ScaffoldVertexIndex<EdgeEntryT>> GetConstructedIndex(const ContainerT& vertex_container) {
+        std::shared_ptr<ScaffoldVertexIndex<EdgeEntryT>> GetConstructedIndex(const ContainerT& vertex_container) {
 
             //todo make parallel using iterator chunks
             DEBUG("Constructing long edge index in " << max_threads_ << " threads");
@@ -173,56 +171,56 @@ namespace barcode_index {
             DEBUG("Constructed long edge index");
             return index_;
         }
+
+     private:
+        const Graph& g_;
+        EntryExtractorPtr vertex_entry_extractor_;
+        std::shared_ptr<ScaffoldVertexIndex<EdgeEntryT>> index_;
+        size_t max_threads_;
     };
 
     class SimpleScaffoldVertexIndexBuilderHelper {
      public:
-        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+        typedef std::shared_ptr<SimpleScaffoldVertexIndex> ScaffoldIndexPtr;
+        typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
         template <class ContainerT>
-        shared_ptr<SimpleScaffoldVertexIndex> ConstructScaffoldVertexIndex(const Graph& g_,
-                                                                           const FrameBarcodeIndexInfoExtractor& extractor,
-                                                                           shared_ptr<TailThresholdGetter> tail_threshold_getter,
-                                                                           size_t count_threshold,
-                                                                           size_t length_threshold,
-                                                                           size_t max_threads,
-                                                                           const ContainerT& vertex_container) {
+        ScaffoldIndexPtr ConstructScaffoldVertexIndex(const Graph& g_, const FrameBarcodeIndexInfoExtractor& extractor,
+                                                      std::shared_ptr<TailThresholdGetter> tail_threshold_getter,
+                                                      size_t count_threshold, size_t length_threshold,
+                                                      size_t max_threads, const ContainerT& vertex_container) {
             DEBUG("Building simple long edge barcode index with parameters");
             DEBUG("Count threshold: " << count_threshold);
             DEBUG("Length threshold: " << length_threshold);
-            auto entry_extractor = make_shared<ScaffoldVertexSimpleEntryExtractor>(g_, extractor, tail_threshold_getter,
-                                                                                       count_threshold, length_threshold);
+            auto entry_extractor = std::make_shared<ScaffoldVertexSimpleEntryExtractor>(g_, extractor,
+                                                                                        tail_threshold_getter,
+                                                                                        count_threshold,
+                                                                                        length_threshold);
             ScaffoldVertexIndexBuilder<SimpleVertexEntry> builder(g_, entry_extractor, max_threads);
             return builder.GetConstructedIndex(vertex_container);
         }
 
         template <class ContainerT>
-        shared_ptr<SimpleScaffoldVertexIndex> HalfEdgeScaffoldVertexIndex(const Graph& g,
-                                                                          const FrameBarcodeIndexInfoExtractor& extractor,
-                                                                          const ContainerT& vertex_container,
-                                                                          size_t count_threshold,
-                                                                          size_t max_threads) {
+        ScaffoldIndexPtr HalfEdgeScaffoldVertexIndex(const Graph& g, const FrameBarcodeIndexInfoExtractor& extractor,
+                                                     const ContainerT& vertex_container, size_t count_threshold,
+                                                     size_t max_threads) {
             const size_t length_threshold = 1000;
             const size_t linkage_distance = 10;
             const double EDGE_LENGTH_FRACTION = 0.5;
-            auto fraction_tail_threshold_getter =
-                make_shared<barcode_index::FractionTailThresholdGetter>(g, EDGE_LENGTH_FRACTION);
+            auto threshold_getter = std::make_shared<barcode_index::FractionTailThresholdGetter>(g, EDGE_LENGTH_FRACTION);
             auto split_scaffold_vertex_index = ConstructScaffoldVertexIndex(g, extractor,
-                                                                            fraction_tail_threshold_getter,
+                                                                            threshold_getter,
                                                                             count_threshold, length_threshold,
                                                                             max_threads, vertex_container);
             return split_scaffold_vertex_index;
         }
 
         template <class ContainerT>
-        shared_ptr<SimpleScaffoldVertexIndex> TailEdgeScaffoldVertexIndex(const Graph& g,
-                                                                          const FrameBarcodeIndexInfoExtractor& extractor,
-                                                                          const ContainerT& vertex_container,
-                                                                          size_t count_threshold,
-                                                                          size_t tail_threshold,
-                                                                          size_t max_threads) {
+        ScaffoldIndexPtr TailEdgeScaffoldVertexIndex(const Graph& g, const FrameBarcodeIndexInfoExtractor& extractor,
+                                                     const ContainerT& vertex_container, size_t count_threshold,
+                                                     size_t tail_threshold, size_t max_threads) {
             const size_t length_threshold = 1000;
-            auto tail_threshold_getter = make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
+            auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
             auto scaffold_vertex_index = ConstructScaffoldVertexIndex(g, extractor, tail_threshold_getter,
                                                                       count_threshold, length_threshold,
                                                                       max_threads, vertex_container);

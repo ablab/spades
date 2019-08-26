@@ -6,11 +6,12 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
+#include "initial_cluster_storage_builder.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 namespace cluster_storage {
+
 class PathInitialClusterStorageBuilder : public InitialClusterStorageBuilder {
   public:
 
@@ -234,7 +235,7 @@ class PathInitialClusterStorageBuilder : public InitialClusterStorageBuilder {
         size_t reads = 0;
         auto mapping = first_cluster.GetMappings()[0];
         boost::optional<Cluster> result;
-        path_extend::scaffold_graph::EdgeGetter edge_getter;
+        scaffold_graph::EdgeGetter edge_getter;
         EdgeId prev_edge = edge_getter.GetEdgeFromScaffoldVertex(mapping.GetEdge());
         bool left_pos_set = false;
         TRACE("Barcode: " << barcode);

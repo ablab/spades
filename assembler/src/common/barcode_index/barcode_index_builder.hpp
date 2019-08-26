@@ -6,11 +6,10 @@
 
 #pragma once
 
-#include "common/barcode_index/barcode_index.hpp"
-#include "common/pipeline/library.hpp"
-#include "common/modules/alignment/edge_index.hpp"
-#include "common/modules/alignment/kmer_mapper.hpp"
-#include "common/modules/alignment/sequence_mapper.hpp"
+#include "barcode_index.hpp"
+#include "modules/alignment/edge_index.hpp"
+#include "modules/alignment/kmer_mapper.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
 
 namespace barcode_index {
 
@@ -22,7 +21,6 @@ namespace barcode_index {
         typedef debruijn_graph::KmerFreeEdgeIndex<Graph, utils::DefaultStoring> InnerIndex;
         typedef typename InnerIndex::KeyWithHash KeyWithHash;
         typedef typename debruijn_graph::EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
-        typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> LibraryT;
         typedef typename barcode_index::BarcodeIndex<Graph, BarcodeEntryT> BarcodeIndexT;
         typedef typename Graph::EdgeId EdgeId;
 
@@ -104,18 +102,17 @@ namespace barcode_index {
             }
         }
 
-        void FillMapFrom10XReads(const LibraryT& lib_10x, const Index &index, const KmerSubs &kmer_mapper) {
+        void FillMapFrom10XReads(const std::vector <io::SingleStreamPtr> &reads, const Index &index, const KmerSubs &kmer_mapper) {
             INFO("Starting barcode index construction from 10X reads")
 //            auto mapper = std::make_shared < alignment::BWAReadMapper < Graph > > (g_);
             auto mapper = std::make_shared < debruijn_graph::BasicSequenceMapper < Graph, Index> >
                     (g_, index, kmer_mapper);
 
-            auto streams = GetStreamsFromLib(lib_10x);
             //Process every read from 10X dataset
             io::SingleRead read;
             size_t counter = 0;
             const std::vector<string> barcode_prefixes = {"BC:Z:", "BX:Z:"};
-            for (auto stream: streams) {
+            for (auto stream: reads) {
                 while (!stream->eof()) {
                     *stream >> read;
                     string barcode_string = GetTenXBarcodeFromRead(read, barcode_prefixes);
@@ -135,9 +132,9 @@ namespace barcode_index {
             INFO("FillMap finished")
         }
 
-        void FillMap(const LibraryT& lib_10x, const Index &index, const KmerSubs &kmer_mapper) {
+        void FillMap(const std::vector <io::SingleStreamPtr> &reads, const Index &index, const KmerSubs &kmer_mapper) {
             InitialFillMap();
-            FillMapFrom10XReads(lib_10x, index, kmer_mapper);
+            FillMapFrom10XReads(reads, index, kmer_mapper);
             return;
         }
         virtual void InitialFillMap() = 0;
@@ -246,16 +243,6 @@ namespace barcode_index {
                 }
             }
             return lib_vec;
-        }
-
-        std::vector <io::SingleStreamPtr> GetStreamsFromLib(const LibraryT &lib) { ;
-            std::vector <io::SingleStreamPtr> result;
-            VERIFY_DEV(lib.type() == io::LibraryType::Clouds10x);
-            for (const auto &read: lib.reads()) {
-                auto stream = io::EasyStream(read, false);
-                result.push_back(stream);
-            }
-            return result;
         }
 
         std::vector <std::vector<tslr_barcode_library>> SplitLibrary(const std::vector <tslr_barcode_library> &lib_vec,

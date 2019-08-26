@@ -6,9 +6,10 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/extender_searcher.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage.hpp"
+#include "scaffold_graph_construction_pipeline.hpp"
+#include "extender_searcher.hpp"
+#include "scaffold_graph_storage.hpp"
+#include "modules/path_extend/pe_config_struct.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -17,7 +18,7 @@ class ScaffoldGraphStorageConstructor {
   public:
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> LibraryT;
-    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver ReadCloudConfigsT;
+    typedef pe_config::ReadCloud ReadCloudConfigsT;
 
     ScaffoldGraphStorageConstructor(const ScaffoldingUniqueEdgeStorage &small_length_storage,
                                     const ScaffoldingUniqueEdgeStorage &large_length_storage,
@@ -50,12 +51,17 @@ class ScaffoldGraphStorageConstructor {
 class ScaffoldGraphPolisherHelper {
   public:
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
-    typedef config::debruijn_config::read_cloud_resolver CloudConfigT;
-    ScaffoldGraphPolisherHelper(const conj_graph_pack &gp, const CloudConfigT &cloud_configs, size_t max_threads);
+    typedef pe_config::ReadCloud CloudConfigT;
+    ScaffoldGraphPolisherHelper(const Graph &g,
+                                const debruijn_graph::Index &index,
+                                const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                                const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+                                const CloudConfigT &cloud_configs,
+                                size_t max_threads);
 
     ScaffoldGraph GetScaffoldGraphFromStorage(const ScaffoldGraphStorage &storage, bool path_scaffolding) const;
 
-    void PrintScaffoldGraphReferenceInfo(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
+    void PrintScaffoldGraphReferenceInfo(const scaffold_graph::ScaffoldGraph &scaffold_graph,
                                          const std::string &path_to_reference) const;
 
   private:
@@ -63,19 +69,22 @@ class ScaffoldGraphPolisherHelper {
     ScaffoldGraph ApplyRelativeThreshold(const ScaffoldGraph &graph,
                                          size_t unique_length_threshold,
                                          double relative_threshold) const;
-    const conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
+    const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     const CloudConfigT &cloud_configs_;
     const size_t max_threads_;
 };
 
 class CloudScaffoldGraphConstructor {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
-    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
-    typedef path_extend::scaffold_graph::ScaffoldGraphConstructor ScaffoldGraphConstructor;
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef path_extend::scaffolder::ScaffoldGraphConstructor ScaffoldGraphConstructor;
     typedef path_extend::ScaffoldingUniqueEdgeStorage ScaffoldingUniqueEdgeStorage;
     typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> LibraryT;
-    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver ReadCloudConfigsT;
+    typedef pe_config::ReadCloud ReadCloudConfigsT;
     typedef barcode_index::FrameBarcodeIndexInfoExtractor BarcodeExtractorT;
 
     CloudScaffoldGraphConstructor(size_t max_threads_,
@@ -83,7 +92,7 @@ class CloudScaffoldGraphConstructor {
                                   const ScaffoldingUniqueEdgeStorage &unique_storage,
                                   const LibraryT &lib,
                                   const ReadCloudConfigsT &configs,
-                                  const ReadCloudSearchParameterPack search_parameter_pack,
+                                  const ReadCloudSearchParameterPack &search_parameter_pack,
                                   const std::string &debug_output_path,
                                   std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
     ScaffoldGraph ConstructScaffoldGraphFromMinLength(const ScaffoldingUniqueEdgeStorage &unique_storage,

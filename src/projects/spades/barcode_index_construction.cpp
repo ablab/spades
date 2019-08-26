@@ -33,16 +33,21 @@ namespace debruijn_graph {
             if (lib.type() == io::LibraryType::Clouds10x) {
                 graph_pack.EnsureIndex();
                 graph_pack.EnsureBasicMapping();
+                std::vector <io::SingleStreamPtr> reads;
+                for (const auto &read: lib.reads()) {
+                    auto stream = io::EasyStream(read, false);
+                    reads.push_back(stream);
+                }
                 FrameMapperBuilder<Graph> mapper_builder(graph_pack.barcode_mapper,
-                                                         cfg::get().ts_res.edge_tail_len,
-                                                         cfg::get().ts_res.frame_size);
-
-                mapper_builder.FillMap(lib, graph_pack.index, graph_pack.kmer_mapper);
+                                                         cfg::get().pe_params.read_cloud.edge_tail_len,
+                                                         cfg::get().pe_params.read_cloud.frame_size);
+                mapper_builder.FillMap(reads, graph_pack.index, graph_pack.kmer_mapper);
                 INFO("Barcode index construction finished.");
                 FrameBarcodeIndexInfoExtractor extractor(graph_pack.barcode_mapper, graph_pack.g);
-                size_t length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
+                size_t length_threshold = cfg::get().pe_params.read_cloud.long_edge_length_lower_bound;
                 INFO("Average barcode coverage: " + std::to_string(extractor.AverageBarcodeCoverage(length_threshold)));
-                ClusterStatisticsExtractorHelper cluster_extractor_helper(graph_pack, cfg::get().ts_res, num_threads);
+                ClusterStatisticsExtractorHelper cluster_extractor_helper(graph_pack.g, graph_pack.barcode_mapper,
+                                                                          cfg::get().pe_params.read_cloud, num_threads);
                 auto cluster_statistics_extractor = cluster_extractor_helper.GetStatisticsExtractor();
                 auto distribution_pack = cluster_statistics_extractor.GetDistributionPack();
                 lib.data().read_cloud_info.fragment_length_distribution = distribution_pack.length_distribution_;

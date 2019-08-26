@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "common/assembly_graph/core/graph.hpp"
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 #include <fstream>
 

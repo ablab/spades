@@ -18,9 +18,9 @@ ScaffoldGraphComponentExtractor::TransitionGraph ScaffoldGraphComponentExtractor
         result.AddVertex(vertex);
     }
     for (const auto &vertex: transition_graph) {
-        for (auto it = transition_graph.outcoming_begin(vertex); it != transition_graph.outcoming_end(vertex); ++it) {
-            result.AddEdge(vertex, *it);
-            result.AddEdge(*it, vertex);
+        for (const auto &other: transition_graph.OutNeighbours(vertex)) {
+            result.AddEdge(vertex, other);
+            result.AddEdge(other, vertex);
         }
     }
     return result;
@@ -48,9 +48,9 @@ std::vector<ScaffoldGraphComponentExtractor::TransitionGraph> ScaffoldGraphCompo
             }
             DEBUG("Adding component edges");
             for (const auto &vertex: component_vertices) {
-                for (auto it = simple_graph.outcoming_begin(vertex); it != simple_graph.outcoming_end(vertex); ++it) {
-                    TRACE("Adding edge " << vertex.int_id() << " -> " << it->int_id());
-                    component.AddEdge(vertex, *it);
+                for (const auto &other: simple_graph.OutNeighbours(vertex)) {
+                    TRACE("Adding edge " << vertex.int_id() << " -> " << other.int_id());
+                    component.AddEdge(vertex, other);
                 }
             }
             components.push_back(component);
@@ -69,8 +69,7 @@ std::set<ScaffoldGraphComponentExtractor::ScaffoldVertex> ScaffoldGraphComponent
         ScaffoldVertex current = current_stack.top();
         current_stack.pop();
         TRACE("Processing " << current.int_id());
-        for (auto it = transition_graph.outcoming_begin(current); it != transition_graph.outcoming_end(current); ++it) {
-            ScaffoldVertex next = *it;
+        for (const auto &next: transition_graph.OutNeighbours(current)) {
             if (visited.find(next) == visited.end()) {
                 TRACE("Inserting " << next.int_id());
                 visited.insert(next);

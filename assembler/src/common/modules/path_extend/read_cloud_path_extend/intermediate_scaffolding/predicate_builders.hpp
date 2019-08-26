@@ -6,15 +6,15 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
-#include "common/barcode_index/scaffold_vertex_index.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
+#include "barcode_index/scaffold_vertex_index.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 
 class GapCloserPredicateBuilder {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef SimpleGraph<ScaffoldVertex> SimpleTransitionGraph;
 
     virtual std::shared_ptr<ScaffoldEdgePredicate> GetPredicate(const SimpleTransitionGraph &graph,

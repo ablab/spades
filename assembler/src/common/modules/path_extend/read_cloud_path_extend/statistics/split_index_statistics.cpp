@@ -6,8 +6,7 @@
 
 #include "split_index_statistics.hpp"
 
-#include "common/pipeline/config_struct.hpp"
-#include "common/barcode_index/scaffold_vertex_index_builder.hpp"
+#include "barcode_index/scaffold_vertex_index_builder.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -22,16 +21,16 @@ void SplitStatistics::Serialize(const std::string &path) {
 }
 SplitStatistics SplitStatisticsExtractor::GetSplitStatistics(const std::string &path_to_reference,
                                                              size_t length_threshold) const {
-    validation::FilteredReferencePathHelper path_helper(gp_);
+    validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
     auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
 
-    validation::GeneralTransitionStorageBuilder forward_transition_builder(gp_.g, 1, false, false);
+    validation::GeneralTransitionStorageBuilder forward_transition_builder(g_, 1, false, false);
     auto reference_transition_storage = forward_transition_builder.GetTransitionStorage(reference_paths);
     std::unordered_set<Transition> reference_transitions;
     for (const auto &transition: reference_transition_storage) {
         reference_transitions.insert(transition);
     }
-    validation::GeneralTransitionStorageBuilder close_transition_builder(gp_.g, 5, false, false);
+    validation::GeneralTransitionStorageBuilder close_transition_builder(g_, 5, false, false);
     auto close_transition_storage = close_transition_builder.GetTransitionStorage(reference_paths);
     std::unordered_set<Transition> close_transitions;
     for (const auto &transition: close_transition_storage) {
@@ -39,7 +38,7 @@ SplitStatistics SplitStatisticsExtractor::GetSplitStatistics(const std::string &
             close_transitions.insert(transition);
         }
     }
-    validation::GeneralTransitionStorageBuilder conj_transition_builder(gp_.g, 5, true, true);
+    validation::GeneralTransitionStorageBuilder conj_transition_builder(g_, 5, true, true);
     auto conj_transition_storage = conj_transition_builder.GetTransitionStorage(reference_paths);
     std::unordered_set<Transition> conj_transitions;
     for (const auto &transition: conj_transition_storage) {
@@ -58,14 +57,14 @@ SplitStatistics SplitStatisticsExtractor::GetSplitStatistics(const std::string &
             scaffold_vertices.insert(edge.edge_);
         }
     }
-    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper_, g_);
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     const double EDGE_LENGTH_FRACTION = 0.5;
     const size_t count_threshold = 1;
 
     auto fraction_tail_threshold_getter =
-        std::make_shared<barcode_index::FractionTailThresholdGetter>(gp_.g, EDGE_LENGTH_FRACTION);
-    auto split_scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor,
+        std::make_shared<barcode_index::FractionTailThresholdGetter>(g_, EDGE_LENGTH_FRACTION);
+    auto split_scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(g_, *barcode_extractor,
                                                                            fraction_tail_threshold_getter,
                                                                            count_threshold, length_threshold,
                                                                            max_threads_, scaffold_vertices);
@@ -128,8 +127,12 @@ void SplitStatisticsExtractor::ConstructAndSerialize(const std::string &path_to_
     const std::string output_path = fs::append_path(output_base, "split_statistics.csv");
     split_statistics.Serialize(output_path);
 }
-SplitStatisticsExtractor::SplitStatisticsExtractor(const conj_graph_pack &gp, size_t max_threads) :
-    gp_(gp), max_threads_(max_threads) {}
+SplitStatisticsExtractor::SplitStatisticsExtractor(const Graph &g,
+                                                   const debruijn_graph::Index &index,
+                                                   const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                                                   const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+                                                   size_t max_threads) :
+    g_(g), index_(index), kmer_mapper_(kmer_mapper), barcode_mapper_(barcode_mapper), max_threads_(max_threads) {}
 SplitEntry::SplitEntry(double split_index, const std::string &status) : split_index_(split_index), status_(status) {}
 }
 }

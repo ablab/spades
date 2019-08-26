@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include "common/barcode_index/barcode_info_extractor.hpp"
-#include "common/barcode_index/scaffold_vertex_index.hpp"
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/barcode_cluster.hpp"
+#include "barcode_cluster.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "barcode_index/barcode_info_extractor.hpp"
+#include "barcode_index/scaffold_vertex_index.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
 
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/utility/result_of.hpp>
@@ -23,8 +23,6 @@
 namespace path_extend {
 namespace read_cloud {
 namespace cluster_storage {
-
-using namespace barcode_index;
 
 class ClusterStorage {
 
@@ -99,7 +97,7 @@ class BarcodeClusterStorage {
 
 class InternalEdgeClusterStorage {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::VertexId ScaffoldVertex;
     typedef std::unordered_map<ScaffoldVertex, BarcodeClusterStorage>::const_iterator const_edge_iterator;
 

@@ -6,13 +6,12 @@
 
 #pragma once
 
-#include "common/assembly_graph/paths/mapping_path.hpp"
-#include "common/assembly_graph/core/graph.hpp"
-#include "common/io/binary.hpp"
-#include "common/pipeline/config_struct.hpp"
-#include "common/assembly_graph/index/edge_index_builders.hpp"
-#include "common/sequence/range.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/index/edge_index_builders.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
+#include "io/binary.hpp"
 #include "io/reads/paired_readers.hpp"
+#include "sequence/range.hpp"
 
 #include <boost/unordered_map.hpp>
 #include <boost/dynamic_bitset.hpp>
@@ -424,18 +423,23 @@ namespace barcode_index {
         }
 
         void BinRead(std::istream &str) {
-            //fixme very ineffective!
             using io::binary::BinRead;
-
             auto count = BinRead<size_t>(str);
             SetCount(count);
-            auto bitset_str = BinRead<std::string>(str);
-            IsOnFrameT bitset(bitset_str);
-            SetBitSet(bitset);
-            SetLeftMost(bitset.find_first());
+
+            auto set_positions = BinRead<std::vector<size_t>>(str);
+            VERIFY_DEV(set_positions.back() < is_on_frame_.size());
+            TRACE("Last position: " << set_positions.back());
+            TRACE("Bitset size: " << is_on_frame_.size());
+            for (const auto &pos: set_positions) {
+                TRACE("Position: " << pos);
+                is_on_frame_.set(pos, true);
+            }
+
+            SetLeftMost(is_on_frame_.find_first());
             size_t rightmost = 0;
-            for (size_t i = bitset.size() - 1; i > 0; --i) {
-                if (bitset.test(i)) {
+            for (size_t i = is_on_frame_.size() - 1; i > 0; --i) {
+                if (is_on_frame_.test(i)) {
                     rightmost = i;
                     break;
                 }
@@ -447,11 +451,17 @@ namespace barcode_index {
 
         void BinWrite(std::ostream &str) const {
             using io::binary::BinWrite;
-
             BinWrite(str, GetCount());
-            std::string bitset_string;
-            boost::to_string(GetBitSet(), bitset_string);
-            BinWrite(str, bitset_string);
+
+            std::vector<size_t> set_positions;
+            size_t current_set_pos = GetBitSet().find_first();
+            TRACE("Size: " << GetBitSet().size());
+            while (current_set_pos != IsOnFrameT::npos) {
+                TRACE("Current set position: " << current_set_pos);
+                set_positions.push_back(current_set_pos);
+                current_set_pos = GetBitSet().find_next(current_set_pos);
+            }
+            BinWrite(str, set_positions);
         }
 
 
@@ -526,23 +536,6 @@ namespace barcode_index {
 
         EdgeId GetEdge() const {
             return edge_;
-        }
-
-        //fixme move to extractor
-        size_t GetIntersectionSize(const EdgeEntry &other) const {
-            size_t result = 0;
-            for (auto it = barcode_distribution_.begin(); it != barcode_distribution_.end(); ++it) {
-                if (other.GetDistribution().find(it-> first) != other.GetDistribution().end()) {
-                    result++;
-                }
-            }
-            return result;
-        }
-
-        size_t GetUnionSize(const EdgeEntry& other) const {
-            auto distr_this = barcode_distribution_;
-            auto distr_other = other.GetDistribution();
-            return Size() + other.Size() - GetIntersectionSize(other);
         }
 
         size_t Size() const {
@@ -724,18 +717,32 @@ namespace barcode_index {
 
         void BinRead(std::istream &str) override {
             using io::binary::BinRead;
-            BinRead(str, barcode_distribution_);
             edge_length_ = BinRead<size_t>(str);
             frame_size_ = BinRead<size_t>(str);
             number_of_frames_ = BinRead<size_t>(str);
+
+            barcode_distribution_.clear();
+            size_t size;
+            BinRead(str, size);
+            for (size_t i = 0; i < size; ++i) {
+                BarcodeId barcode;
+                FrameBarcodeInfo info(number_of_frames_);
+                BinRead(str, barcode, info);
+                barcode_distribution_.insert({std::move(barcode), std::move(info)});
+            }
         }
 
         void BinWrite(std::ostream &str) const override {
             using io::binary::BinWrite;
-            BinWrite(str, barcode_distribution_);
             BinWrite(str, edge_length_);
             BinWrite(str, frame_size_);
             BinWrite(str, number_of_frames_);
+
+            size_t size = barcode_distribution_.size();
+            BinWrite(str, size);
+            for (const auto &entry : barcode_distribution_) {
+                BinWrite(str, entry.first, entry.second);
+            }
         }
 
     protected:

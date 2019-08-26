@@ -6,13 +6,14 @@
 
 #pragma once
 
-#include "common/modules/path_extend/path_extender.hpp"
-#include "common/modules/path_extend/pipeline/launch_support.hpp"
-#include "common/modules/path_extend/extension_chooser.hpp"
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/extender_searcher.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
+#include "extender_searcher.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "modules/path_extend/path_extender.hpp"
+#include "modules/path_extend/pipeline/launch_support.hpp"
+#include "modules/path_extend/extension_chooser.hpp"
+#include "modules/path_extend/scaffolder2015/connection_condition2015.hpp"
+#include "modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/pair_entry_processors.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -90,7 +91,7 @@ class CompositeConnectionPredicate : public ScaffoldEdgePredicate {
     bool Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &scaffold_edge) const override;
 
   private:
-    std::shared_ptr<ScaffoldVertexPredicate> ConstructScaffoldVertexPredicate(
+    std::shared_ptr<scaffolder::ScaffoldVertexPredicate> ConstructScaffoldVertexPredicate(
         const ScaffoldVertex &start, const ScaffoldVertex &end,
         std::shared_ptr<PairEntryProcessor> entry_processor) const;
 
@@ -184,7 +185,7 @@ class SimpleSearcher {
 class TransitiveEdgesPredicate : public ScaffoldEdgePredicate {
   public:
     using ScaffoldEdgePredicate::ScaffoldEdge;
-    typedef scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
     TransitiveEdgesPredicate(const scaffold_graph::ScaffoldGraph &graph, const Graph &g, size_t distance_threshold);
 

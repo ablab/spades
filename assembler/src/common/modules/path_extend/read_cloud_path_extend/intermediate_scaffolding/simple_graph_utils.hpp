@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
-#include "common/utils/verify.hpp"
+#include "simple_graph.hpp"
+#include "utils/verify.hpp"
 
 #include <set>
 
@@ -23,14 +23,14 @@ class SubgraphGetter {
             result.AddVertex(vertex);
         }
         for (const VertexT &vertex: vertices) {
-            for (auto out_it = graph.outcoming_begin(vertex); out_it != graph.outcoming_end(vertex); ++out_it) {
-                if (result.ContainsVertex(*out_it)) {
-                    result.AddEdge(vertex, *out_it);
+            for (const auto &other: graph.OutNeighbours(vertex)) {
+                if (result.ContainsVertex(other)) {
+                    result.AddEdge(vertex, other);
                 }
             }
-            for (auto in_it = graph.incoming_begin(vertex); in_it != graph.incoming_end(vertex); ++in_it) {
-                if (result.ContainsVertex(*in_it)) {
-                    result.AddEdge(*in_it, vertex);
+            for (const auto &other: graph.InNeighbours(vertex)) {
+                if (result.ContainsVertex(other)) {
+                    result.AddEdge(other, vertex);
                 }
             }
         }
@@ -41,10 +41,9 @@ class SubgraphGetter {
 class CondensationAnalyzer {
   public:
     typedef contracted_graph::ContractedGraph ContractedGraph;
-    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
-    explicit CondensationAnalyzer(const contracted_graph::ContractedGraphFactoryHelper &contracted_builder) :
-        contracted_builder_(contracted_builder) {}
+    explicit CondensationAnalyzer() = default;
 
     template<class VertexT>
     SimpleGraph<VertexT> GetCondensation(const SimpleGraph<VertexT> &graph) {
@@ -77,10 +76,9 @@ class CondensationAnalyzer {
             condensation.AddVertex(entry.second);
         }
         for (const auto &vertex: graph) {
-            for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
-                VertexId next = *it;
+            for (const auto &other: graph.OutNeighbours(vertex)) {
                 VertexId prev_root = vertex_to_root.at(vertex);
-                VertexId next_root = vertex_to_root.at(next);
+                VertexId next_root = vertex_to_root.at(other);
                 if (prev_root != next_root) {
                     condensation.AddEdge(prev_root, next_root);
                 }
@@ -130,8 +128,7 @@ class CondensationAnalyzer {
         }
 
         for (const auto &start: graph) {
-            for (auto it = graph.outcoming_begin(start); it != graph.outcoming_end(start); ++it) {
-                VertexT end = *it;
+            for (const auto &end: graph.OutNeighbours(start)) {
                 result.AddEdge(end, start);
             }
         }
@@ -142,8 +139,7 @@ class CondensationAnalyzer {
                              std::unordered_map<VertexT, bool> &vertex_to_visited,
                              std::vector<VertexT> &ordering) const {
         vertex_to_visited.at(vertex) = true;
-        for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
-            VertexT next = *it;
+        for (const auto &next: graph.OutNeighbours(vertex)) {
             if (not vertex_to_visited.at(next)) {
                 GetExitTimeOrdering(next, graph, vertex_to_visited, ordering);
             }
@@ -157,23 +153,15 @@ class CondensationAnalyzer {
                             std::unordered_set<VertexT> &component) const {
         vertex_to_visited.at(vertex) = true;
         component.insert(vertex);
-        for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
-            VertexId next = *it;
+        for (const auto &next: graph.OutNeighbours(vertex)) {
             if (not vertex_to_visited.at(next)) {
                 GetStrConComponent(next, graph, vertex_to_visited, component);
             }
         }
     }
 
-  private:
-    const contracted_graph::ContractedGraphFactoryHelper &contracted_builder_;
     DECL_LOGGER("CondensationAnalyzer");
 };
 
-class TopSorter {
-  public:
-    template<class VertexT>
-    std::vector<VertexT> GetTopSort(const SimpleGraph<VertexT> &graph) {}
-};
 }
 }

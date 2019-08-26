@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "common/pipeline/graph_pack.hpp"
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
+#include "pipeline/graph_pack.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -17,11 +17,11 @@ class PerfectScaffoldGraphConstructor {
   public:
     typedef std::vector<std::vector<validation::EdgeWithMapping>> ReferencePaths;
 
-    PerfectScaffoldGraphConstructor(const conj_graph_pack &gp);
+    PerfectScaffoldGraphConstructor(const Graph &g);
 
     scaffold_graph::ScaffoldGraph ConstuctPerfectGraph(const ReferencePaths &reference_paths, size_t min_length) const;
   private:
-    const conj_graph_pack &gp_;
+    const Graph &g_;
 };
 }
 }

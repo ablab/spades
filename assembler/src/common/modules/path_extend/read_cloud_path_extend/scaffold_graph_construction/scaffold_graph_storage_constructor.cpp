@@ -6,11 +6,11 @@
 
 #include "scaffold_graph_storage_constructor.hpp"
 
-#include "common/modules/path_extend/read_cloud_path_extend/statistics/cloud_check_statistics.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/path_cluster_validation.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/statistics/cloud_check_statistics.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/path_cluster_validation.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -70,10 +70,16 @@ ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorageFromPaths(
     return storage;
 }
 
-ScaffoldGraphPolisherHelper::ScaffoldGraphPolisherHelper(const conj_graph_pack &gp,
+ScaffoldGraphPolisherHelper::ScaffoldGraphPolisherHelper(const Graph &g,
+                                                         const debruijn_graph::Index &index,
+                                                         const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                                                         const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
                                                          const CloudConfigT &cloud_configs,
                                                          size_t max_threads) :
-    gp_(gp),
+    g_(g),
+    index_(index),
+    kmer_mapper_(kmer_mapper),
+    barcode_mapper_(barcode_mapper),
     cloud_configs_(cloud_configs),
     max_threads_(max_threads) {}
 
@@ -90,8 +96,8 @@ void ScaffoldGraphPolisherHelper::PrintScaffoldGraphReferenceInfo(const scaffold
                                                                   const std::string &path_to_reference) const {
     DEBUG("Path to reference: " << path_to_reference);
     DEBUG("Path exists: " << fs::check_existence(path_to_reference));
-    validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
-    validation::FilteredReferencePathHelper path_helper(gp_);
+    validation::ScaffoldGraphValidator scaffold_graph_validator(g_);
+    validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
     auto reference_paths = path_helper.GetFilteredReferencePathsFromGraph(path_to_reference, scaffold_graph);
     auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
     stats.Serialize(std::cout);
@@ -115,7 +121,7 @@ ScaffoldGraphPolisherHelper::ScaffoldGraph ScaffoldGraphPolisherHelper::GetScaff
     }
 
     ScaffoldGraphPolisherLauncher gap_closer_launcher(max_threads_, cloud_configs_);
-    auto polished_scaffold_graph = gap_closer_launcher.GetFinalScaffoldGraph(gp_, storage, path_scaffolding);
+    auto polished_scaffold_graph = gap_closer_launcher.GetFinalScaffoldGraph(g_, barcode_mapper_, storage, path_scaffolding);
     INFO(polished_scaffold_graph.VertexCount() << " vertices and " << polished_scaffold_graph.EdgeCount()
                                                << " edges in new small scaffold graph");
     if (validate_using_reference) {
@@ -134,8 +140,7 @@ ScaffoldGraphPolisherHelper::ScaffoldGraph ScaffoldGraphPolisherHelper::ApplyRel
     const ScaffoldGraphPolisherHelper::ScaffoldGraph &graph,
     size_t unique_length_threshold,
     double relative_threshold) const {
-    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper,
-                                                                                                  gp_.g);
+    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper_, g_);
     auto params = cloud_configs_.scaff_con;
     const size_t tail_threshold = unique_length_threshold;
     const size_t length_threshold = params.min_edge_length_for_barcode_collection;
@@ -144,16 +149,16 @@ ScaffoldGraphPolisherHelper::ScaffoldGraph ScaffoldGraphPolisherHelper::ApplyRel
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     std::vector<scaffold_graph::ScaffoldVertex> scaffold_vertices;
     std::move(graph.vbegin(), graph.vend(), std::back_inserter(scaffold_vertices));
-    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor, tail_threshold_getter,
+    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(g_, *barcode_extractor, tail_threshold_getter,
                                                                      count_threshold, length_threshold,
                                                                      max_threads_, scaffold_vertices);
     auto scaffold_index_extractor =
         std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
 
-    auto score_function = std::make_shared<NormalizedBarcodeScoreFunction>(gp_.g, scaffold_index_extractor);
-    scaffold_graph::InternalScoreScaffoldGraphFilter filtered_graph_constructor(gp_.g, graph,
-                                                                                score_function,
-                                                                                relative_threshold);
+    auto score_function = std::make_shared<NormalizedBarcodeScoreFunction>(g_, scaffold_index_extractor);
+    scaffolder::InternalScoreScaffoldGraphFilter filtered_graph_constructor(g_, graph,
+                                                                            score_function,
+                                                                            relative_threshold);
     auto new_scaffold_graph = filtered_graph_constructor.Construct();
     return *new_scaffold_graph;
 }
@@ -163,7 +168,7 @@ CloudScaffoldGraphConstructor::CloudScaffoldGraphConstructor(const size_t max_th
                                                              const ScaffoldingUniqueEdgeStorage &unique_storage,
                                                              const LibraryT &lib,
                                                              const ReadCloudConfigsT &configs,
-                                                             const ReadCloudSearchParameterPack search_parameter_pack,
+                                                             const ReadCloudSearchParameterPack &search_parameter_pack,
                                                              const std::string &debug_output_path,
                                                              std::shared_ptr<BarcodeExtractorT> barcode_extractor)
     : max_threads_(max_threads_), gp_(gp), unique_storage_(unique_storage),
@@ -214,7 +219,8 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     std::shared_ptr<ScaffoldGraphPipelineConstructor> pipeline_constructor;
     switch (type) {
         case scaffold_graph_construction_pipeline_type::Basic: {
-            pipeline_constructor = std::make_shared<FullScaffoldGraphPipelineConstructor>(gp_, lib_, configs_,
+            pipeline_constructor = std::make_shared<FullScaffoldGraphPipelineConstructor>(configs_,
+                                                                                          gp_, lib_,
                                                                                           unique_storage,
                                                                                           barcode_extractor_,
                                                                                           max_threads_, min_length,
@@ -223,7 +229,7 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
             break;
         }
         case scaffold_graph_construction_pipeline_type::Scaffolding: {
-            pipeline_constructor = std::make_shared<MergingScaffoldGraphPipelineConstructor>(gp_, lib_, configs_,
+            pipeline_constructor = std::make_shared<MergingScaffoldGraphPipelineConstructor>(configs_, gp_.g, lib_,
                                                                                              unique_storage,
                                                                                              barcode_extractor_,
                                                                                              max_threads_, min_length);
@@ -231,7 +237,7 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
             break;
         }
         case scaffold_graph_construction_pipeline_type::Binning: {
-            pipeline_constructor = std::make_shared<BinningScaffoldGraphPipelineConstructor>(gp_, lib_, configs_,
+            pipeline_constructor = std::make_shared<BinningScaffoldGraphPipelineConstructor>(configs_, gp_.g, lib_,
                                                                                              unique_storage,
                                                                                              barcode_extractor_,
                                                                                              max_threads_, min_length);
@@ -248,7 +254,7 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
         DEBUG("Path to reference: " << path_to_reference);
         DEBUG("Path exists: " << fs::check_existence(path_to_reference));
         validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
-        validation::FilteredReferencePathHelper path_helper(gp_);
+        validation::FilteredReferencePathHelper path_helper(gp_.g, gp_.index, gp_.kmer_mapper);
         VERIFY_DEV(not intermediate_results.empty());
         auto reference_paths = path_helper.GetFilteredReferencePathsFromGraph(path_to_reference,
                                                                               *(intermediate_results[0].first));

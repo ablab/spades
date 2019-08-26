@@ -1,10 +1,17 @@
+//***************************************************************************
+//* Copyright (c) 2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
-#include "common/modules/path_extend/scaffolder2015/connection_condition2015.hpp"
-#include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/pair_entry_processors.hpp"
 
-namespace omnigraph {
+namespace path_extend {
+
+namespace read_cloud {
 //------------------------------
 // unique based dijkstra
 //------------------------------
@@ -15,11 +22,11 @@ class UniquePutChecker {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &g_;
-    const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_;
+    const ScaffoldingUniqueEdgeStorage &unique_storage_;
 
   public:
     UniquePutChecker(const Graph &g,
-                     const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage) :
+                     const ScaffoldingUniqueEdgeStorage &unique_storage) :
         g_(g),
         unique_storage_(unique_storage) {}
 
@@ -58,15 +65,15 @@ class BarcodedPathPutChecker {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &g_;
-    const path_extend::read_cloud::LongEdgePairGapCloserPredicate gap_closer_predicate_;
+    const LongEdgePairGapCloserPredicate gap_closer_predicate_;
 
   public:
     BarcodedPathPutChecker(const Graph &g,
                            std::shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> barcode_extractor,
-                           std::shared_ptr<path_extend::read_cloud::PairEntryProcessor> pair_entry_processor,
-                           const path_extend::scaffold_graph::ScaffoldVertex &start,
-                           const path_extend::scaffold_graph::ScaffoldVertex &end,
-                           const path_extend::read_cloud::LongEdgePairGapCloserParams &params) :
+                           std::shared_ptr<PairEntryProcessor> pair_entry_processor,
+                           const scaffold_graph::ScaffoldVertex &start,
+                           const scaffold_graph::ScaffoldVertex &end,
+                           const LongEdgePairGapCloserParams &params) :
         g_(g), gap_closer_predicate_(g, barcode_extractor, params, start, end, pair_entry_processor) {}
 
     bool Check(VertexId, EdgeId edge, distance_t) const {
@@ -132,15 +139,15 @@ class ReadCloudDijkstraHelper {
     typedef std::tuple<BarcodedPathPutChecker<Graph>, UniquePutChecker<Graph>> GapCloserCheckerTuple;
 
     static AndPutChecker<GapCloserCheckerTuple, Graph>
-    CreateLongGapCloserPutChecker(const Graph &g, const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
+    CreateLongGapCloserPutChecker(const Graph &g, const ScaffoldingUniqueEdgeStorage &unique_storage,
                                   std::shared_ptr<BarcodeExtractor> short_edge_extractor,
                                   std::shared_ptr<BarcodeExtractor> long_edge_extractor,
-                                  const path_extend::scaffold_graph::ScaffoldVertex &start,
-                                  const path_extend::scaffold_graph::ScaffoldVertex &end,
-                                  const path_extend::read_cloud::LongEdgePairGapCloserParams &params) {
+                                  const scaffold_graph::ScaffoldVertex &start,
+                                  const scaffold_graph::ScaffoldVertex &end,
+                                  const LongEdgePairGapCloserParams &params) {
         auto score_function =
-            std::make_shared<path_extend::read_cloud::RepetitiveVertexEntryScoreFunction>(short_edge_extractor);
-        auto pair_entry_processor = std::make_shared<path_extend::read_cloud::TwoSetsBasedPairEntryProcessor>(
+            std::make_shared<RepetitiveVertexEntryScoreFunction>(short_edge_extractor);
+        auto pair_entry_processor = std::make_shared<TwoSetsBasedPairEntryProcessor>(
             long_edge_extractor->GetTailEntry(start),
             long_edge_extractor->GetHeadEntry(end),
             score_function);
@@ -162,12 +169,12 @@ class ReadCloudDijkstraHelper {
 
     static LongGapCloserDijkstra CreateLongGapCloserDijkstra(
         const Graph &graph, size_t length_bound,
-        const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
+        const ScaffoldingUniqueEdgeStorage &unique_storage,
         std::shared_ptr<BarcodeExtractor> short_edge_extractor,
         std::shared_ptr<BarcodeExtractor> long_edge_extractor,
-        const path_extend::scaffold_graph::ScaffoldVertex &start,
-        const path_extend::scaffold_graph::ScaffoldVertex &end,
-        const path_extend::read_cloud::LongEdgePairGapCloserParams &vertex_predicate_params,
+        const scaffold_graph::ScaffoldVertex &start,
+        const scaffold_graph::ScaffoldVertex &end,
+        const LongEdgePairGapCloserParams &vertex_predicate_params,
         size_t max_vertex_number = -1ul) {
         return LongGapCloserDijkstra(graph,
                                      LongGapCloserDijkstraSettings(
@@ -211,4 +218,5 @@ class ReadCloudDijkstraHelper {
                                      max_vertex_number);
     }
 };
+}
 }

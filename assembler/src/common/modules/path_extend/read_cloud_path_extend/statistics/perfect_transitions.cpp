@@ -11,15 +11,15 @@ namespace read_cloud {
 
 scaffold_graph::ScaffoldGraph PerfectScaffoldGraphConstructor::ConstuctPerfectGraph(const ReferencePaths &reference_paths,
                                                                                     size_t min_length) const {
-    scaffold_graph::ScaffoldGraph result(gp_.g);
+    scaffold_graph::ScaffoldGraph result(g_);
     std::vector<std::vector<EdgeId>> long_edge_paths;
     size_t total_length = 0;
     for (const auto &path: reference_paths) {
         std::vector<EdgeId> new_path;
         for (const auto &entry: path) {
-            if (gp_.g.length(entry.edge_) >= min_length) {
+            if (g_.length(entry.edge_) >= min_length) {
                 new_path.push_back(entry.edge_);
-                total_length += gp_.g.length(entry.edge_);
+                total_length += g_.length(entry.edge_);
             }
         }
         if (new_path.size() >= 2) {
@@ -44,6 +44,6 @@ scaffold_graph::ScaffoldGraph PerfectScaffoldGraphConstructor::ConstuctPerfectGr
     INFO("Total length: " << total_length);
     return result;
 }
-PerfectScaffoldGraphConstructor::PerfectScaffoldGraphConstructor(const conj_graph_pack &gp) : gp_(gp) {}
+PerfectScaffoldGraphConstructor::PerfectScaffoldGraphConstructor(const Graph &g) : g_(g) {}
 }
 }

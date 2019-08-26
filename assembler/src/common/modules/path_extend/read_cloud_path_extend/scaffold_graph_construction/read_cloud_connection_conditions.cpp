@@ -6,8 +6,8 @@
 
 #include "read_cloud_connection_conditions.hpp"
 
-#include "common/assembly_graph/dijkstra/read_cloud_dijkstra/read_cloud_dijkstras.hpp"
-#include "common/assembly_graph/dijkstra/read_cloud_dijkstra/path_extend_dijkstras.hpp"
+#include "read_cloud_dijkstras.hpp"
+#include "modules/path_extend/pipeline/launcher.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -316,7 +316,23 @@ bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::Sc
     auto pair_entry_processor = std::make_shared<TwoSetsBasedPairEntryProcessor>(start_entry, end_entry,
                                                                                  short_edge_score_function);
     auto scaffold_vertex_predicate = ConstructScaffoldVertexPredicate(start, end, pair_entry_processor);
-    auto pe_extension_chooser = search_parameter_pack_.extension_chooser;
+
+    const auto &chooser_params = search_parameter_pack_.chooser_params;
+    size_t lib_index = chooser_params.lib_index;
+    const auto &lib = chooser_params.lib;
+    std::shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, chooser_params.lib, gp_.clustered_indices[lib_index]);
+    std::shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
+    if (chooser_params.is_coverage_aware) {
+        iip = std::make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length);
+    } else {
+        iip = std::make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length,
+            chooser_params.lib_cov);
+    }
+    auto wc = std::make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, chooser_params.normalize_weight,
+                                                       chooser_params.single_threshold, iip);
+    auto pe_extension_chooser = std::make_shared<SimpleExtensionChooser>(gp_.g, wc,
+        chooser_params.weight_threshold, chooser_params.priority_coeff);
+
     auto multi_chooser = std::make_shared<path_extend::PredicateExtensionChooser>(gp_.g, scaffold_vertex_predicate,
                                                                                   pe_extension_chooser);
     ExtenderSearcher extender_searcher(gp_, multi_chooser, search_parameter_pack_.search_params,
@@ -334,7 +350,8 @@ CompositeConnectionPredicate::CompositeConnectionPredicate(
         const ScaffoldingUniqueEdgeStorage &unique_storage,
         const size_t length_bound,
         const ReadCloudSearchParameterPack &search_parameter_pack,
-        const LongEdgePairGapCloserParams &predicate_params, bool scaffolding_mode) :
+        const LongEdgePairGapCloserParams &predicate_params,
+        bool scaffolding_mode) :
     gp_(gp),
     short_edge_extractor_(short_edge_extractor),
     long_edge_extractor_(barcode_extractor),
@@ -343,7 +360,7 @@ CompositeConnectionPredicate::CompositeConnectionPredicate(
     search_parameter_pack_(search_parameter_pack),
     predicate_params_(predicate_params),
     scaffolding_mode_(scaffolding_mode) {}
-std::shared_ptr<ScaffoldVertexPredicate> CompositeConnectionPredicate::ConstructScaffoldVertexPredicate(
+std::shared_ptr<scaffolder::ScaffoldVertexPredicate> CompositeConnectionPredicate::ConstructScaffoldVertexPredicate(
         const ScaffoldVertex &start, const ScaffoldVertex &end,
         std::shared_ptr<PairEntryProcessor> entry_processor) const {
     auto long_gap_cloud_predicate = std::make_shared<LongEdgePairGapCloserPredicate>(gp_.g, short_edge_extractor_,
@@ -352,8 +369,9 @@ std::shared_ptr<ScaffoldVertexPredicate> CompositeConnectionPredicate::Construct
                                                                                      entry_processor);
     size_t length_threshold = unique_storage_.min_length();
 
-    auto length_predicate = std::make_shared<LengthChecker>(length_threshold, gp_.g);
-    auto scaffold_vertex_predicate = std::make_shared<AndPredicate>(length_predicate, long_gap_cloud_predicate);
+    auto length_predicate = std::make_shared<scaffolder::LengthChecker>(length_threshold, gp_.g);
+    auto scaffold_vertex_predicate = std::make_shared<scaffolder::AndPredicate>(length_predicate,
+                                                                                    long_gap_cloud_predicate);
     return scaffold_vertex_predicate;
 }
 

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/path_cluster_validation.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/path_cluster_validation.hpp"
 
 namespace path_extend {
 namespace read_cloud {

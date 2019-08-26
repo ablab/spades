@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
+#include "distribution_extractor_helper.hpp"
 
 namespace path_extend {
 namespace read_cloud {

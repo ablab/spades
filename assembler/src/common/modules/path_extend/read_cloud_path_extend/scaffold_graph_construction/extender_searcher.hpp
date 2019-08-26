@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/modules/path_extend/path_extender.hpp"
+#include "modules/path_extend/path_extender.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -37,8 +37,29 @@ struct SearchingExtenderParams {
   size_t length_bound;
 };
 
+struct ChooserConstructionParams {
+  explicit ChooserConstructionParams(const config::dataset::Library &lib);
+  ChooserConstructionParams(const config::dataset::Library &lib,
+                            size_t lib_index,
+                            bool is_coverage_aware,
+                            double lib_cov,
+                            double single_threshold,
+                            bool normalize_weight,
+                            double weight_threshold,
+                            double priority_coeff);
+
+  const debruijn_graph::config::dataset::Library &lib;
+  size_t lib_index;
+  bool is_coverage_aware;
+  double lib_cov;
+  double single_threshold;
+  bool normalize_weight;
+  double weight_threshold;
+  double priority_coeff;
+};
+
 struct ReadCloudSearchParameterPack {
-  std::shared_ptr<path_extend::ExtensionChooser> extension_chooser;
+  ChooserConstructionParams chooser_params;
   SearchParams search_params;
   SearchingExtenderParams searching_extender_params;
 };
@@ -71,15 +92,18 @@ class ExtenderSearcher {
                                     GraphCoverageMap &cover_map,
                                     const VertexId &target_vertex) const;
 
-    std::shared_ptr<SearchingMultiExtender> ConstructSearchingExtender(
-        std::shared_ptr<path_extend::QueueContainer> paths_container,
-        GraphCoverageMap &cover_map) const;
+    std::shared_ptr<SearchingMultiExtender> ConstructSearchingExtender(std::shared_ptr<ExtensionChooser> extension_chooser,
+                                                                       std::shared_ptr<QueueContainer> paths_container,
+                                                                       GraphCoverageMap &cover_map,
+                                                                       UsedUniqueStorage &used_unique_storage) const;
 
     const conj_graph_pack &gp_;
     std::shared_ptr<ExtensionChooser> extension_chooser_;
     SearchParams search_params_;
     SearchingExtenderParams extender_params_;
     size_t length_bound_;
+
+    DECL_LOGGER("ExtenderSearcher");
 };
 }
 }

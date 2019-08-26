@@ -10,18 +10,14 @@
 //
 #pragma once
 
-#include "connection_condition2015.hpp"
 #include "scaffold_vertex.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "utils/logger/logger.hpp"
 
 #include "adt/iterator_range.hpp"
-#include "assembly_graph/core/graph.hpp"
-#include "modules/path_extend/paired_library.hpp"
-#include "modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
-#include "utils/logger/logger.hpp"
 
 #include <utility>
 
-namespace path_extend {
 namespace scaffold_graph {
 
 //do NOT add "using namespace debruijn_graph" in order not to confuse between EdgeId typdefs
@@ -263,5 +259,4 @@ public:
 };
 
 } //scaffold_graph
-} //path_extend
 

@@ -4,12 +4,12 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "scaffold_vertex_predicates.hpp"
+#include "pair_entry_processors.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 
-bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVertex &vertex) const {
+bool LongEdgePairGapCloserPredicate::Check(const ScaffoldVertex &vertex) const {
     size_t vertex_length = vertex.GetLengthFromGraph(g_);
     double vertex_coverage = vertex.GetCoverageFromGraph(g_);
     double start_coverage = start_.GetCoverageFromGraph(g_);
@@ -49,8 +49,8 @@ LongEdgePairGapCloserPredicate::LongEdgePairGapCloserPredicate(
         const debruijn_graph::Graph &g,
         BarcodeIndexPtr extractor,
         const LongEdgePairGapCloserParams &params,
-        const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &start,
-        const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &end,
+        const ScaffoldVertex &start,
+        const ScaffoldVertex &end,
         std::shared_ptr<PairEntryProcessor> pair_entry_processor) :
     g_(g), barcode_extractor_(extractor), params_(params), start_(start),
     end_(end), pair_entry_processor_(pair_entry_processor) {}
@@ -58,13 +58,6 @@ LongEdgePairGapCloserParams LongEdgePairGapCloserPredicate::GetParams() const {
     return params_;
 }
 
-AndPredicate::AndPredicate(const std::shared_ptr<ScaffoldVertexPredicate> &first,
-                           const std::shared_ptr<ScaffoldVertexPredicate> &second) :
-    first_(first),
-    second_(second) {}
-bool AndPredicate::Check(const ScaffoldVertexPredicate::ScaffoldVertex &scaffold_vertex) const {
-    return first_->Check(scaffold_vertex) and second_->Check(scaffold_vertex);
-}
 LongEdgePairGapCloserParams::LongEdgePairGapCloserParams(size_t count_threshold,
                                                          size_t length_normalizer,
                                                          double raw_score_threshold,
@@ -77,11 +70,6 @@ LongEdgePairGapCloserParams::LongEdgePairGapCloserParams(size_t count_threshold,
       relative_coverage_threshold_(relative_coverage_threshold),
       edge_length_threshold_(edge_length_threshold),
       normalize_using_cov_(normalize_using_cov) {}
-LengthChecker::LengthChecker(size_t length_threshold, const Graph &g_)
-    : length_threshold_(length_threshold), g_(g_) {}
-bool LengthChecker::Check(const ScaffoldVertexPredicate::ScaffoldVertex &vertex) const {
-    return vertex.GetLengthFromGraph(g_) < length_threshold_;
-}
 bool IntersectionBasedPairEntryProcessor::CheckMiddleEdge(const ScaffoldGraph::ScaffoldGraphVertex &vertex,
                                                           double score_threshold) {
     size_t intersection_size = barcode_extractor_->GetIntersectionSize(vertex, intersection_);
@@ -115,22 +103,6 @@ TwoSetsBasedPairEntryProcessor::TwoSetsBasedPairEntryProcessor(
         const std::shared_ptr<VertexEntryScoreFunction> score_function)
     : first_(first), second_(second), score_function_(score_function) {}
 
-RecordingPairEntryProcessor::RecordingPairEntryProcessor(
-        const RecordingPairEntryProcessor::SimpleVertexEntry &first,
-        const RecordingPairEntryProcessor::SimpleVertexEntry &second,
-        std::shared_ptr<PairEntryProcessor> internal_processor)
-    : first_(first), second_(second), internal_processor_(internal_processor), vertex_to_result_() {}
-
-bool RecordingPairEntryProcessor::CheckMiddleEdge(const ScaffoldVertex &vertex, double score_threshold) {
-    auto result_it = vertex_to_result_.find(vertex);
-    bool found_result = result_it != vertex_to_result_.end();
-    if (not found_result) {
-        bool result = internal_processor_->CheckMiddleEdge(vertex, score_threshold);
-        vertex_to_result_.insert({vertex, result});
-        return result;
-    }
-    return (*result_it).second;
-}
 double RepetitiveVertexEntryScoreFunction::GetScore(const scaffold_graph::ScaffoldVertex &vertex,
                                                     const barcode_index::SimpleVertexEntry &entry) const {
     size_t unique_entry_size = entry.size();

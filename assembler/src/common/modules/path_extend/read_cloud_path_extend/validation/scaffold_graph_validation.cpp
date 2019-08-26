@@ -6,15 +6,15 @@
 
 #include "scaffold_graph_validation.hpp"
 
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
+#include "transition_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 namespace validation {
 
 ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStats(
-        const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
+        const scaffold_graph::ScaffoldGraph&scaffold_graph,
         const std::vector<std::vector<EdgeWithMapping>> &reference_paths) {
     GeneralTransitionStorageBuilder reference_transition_builder(g_, 1, false, false);
     ReverseTransitionStorageBuilder reverse_transition_builder;
@@ -83,7 +83,7 @@ std::set<transitions::Transition> ScaffoldGraphValidator::GetFalseNegativeTransi
 }
 
 ScaffoldGraphStats ScaffoldGraphValidator::GetScaffoldGraphStatsFromTransitions(
-    const path_extend::scaffold_graph::ScaffoldGraph &graph,
+    const scaffold_graph::ScaffoldGraph&graph,
     const ContigTransitionStorage &reference_transitions,
     const ContigTransitionStorage &reverse_transitions,
     const ContigTransitionStorage &conjugate_transitions,

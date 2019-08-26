@@ -6,16 +6,19 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "common/barcode_index/barcode_info_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "barcode_index/barcode_info_extractor.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 namespace cluster_storage {
+
+using namespace barcode_index;
+
 class Cluster {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef SimpleGraph<ScaffoldVertex> InternalGraph;
     class MappingInfo {
         size_t left_pos_;

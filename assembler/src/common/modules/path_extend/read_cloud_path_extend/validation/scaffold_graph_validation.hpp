@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "common/assembly_graph/core/graph.hpp"
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
+#include "transition_extractor.hpp"
+#include "reference_path_index.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -69,18 +69,18 @@ struct ScaffoldGraphStats {
 
 class ScaffoldGraphValidator {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
 
     ScaffoldGraphValidator(const Graph &g_);
 
-    ScaffoldGraphStats GetScaffoldGraphStats(const path_extend::scaffold_graph::ScaffoldGraph &scaffold_graph,
+    ScaffoldGraphStats GetScaffoldGraphStats(const scaffold_graph::ScaffoldGraph&scaffold_graph,
                                              const std::vector<std::vector<EdgeWithMapping>> &reference_paths);
     std::set<transitions::Transition> GetFalseNegativeTransitions(const ScaffoldGraphValidator::ScaffoldGraph &graph,
                                                                   const ContigTransitionStorage &genome_transitions) const;
 
   private:
 
-    ScaffoldGraphStats GetScaffoldGraphStatsFromTransitions(const path_extend::scaffold_graph::ScaffoldGraph &graph,
+    ScaffoldGraphStats GetScaffoldGraphStatsFromTransitions(const scaffold_graph::ScaffoldGraph&graph,
                                                             const ContigTransitionStorage &reference_transitions,
                                                             const ContigTransitionStorage &reverse_transitions,
                                                             const ContigTransitionStorage &conjugate_transitions,

@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "common/modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
-#include "common/assembly_graph/core/graph.hpp"
+#include "barcode_info_extractor.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_vertex.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "adt/iterator_range.hpp"
-#include "common/barcode_index/barcode_info_extractor.hpp"
 
 namespace barcode_index {
 
@@ -20,7 +20,7 @@ namespace barcode_index {
     class ScaffoldVertexIndex {
         friend class ScaffoldVertexIndexBuilder<VertexEntryT>;
      public:
-        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+        typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
         typedef typename VertexEntryT::const_iterator const_iterator;
 
      private:
@@ -28,7 +28,7 @@ namespace barcode_index {
         std::unordered_map<ScaffoldVertex, VertexEntryT> vertex_to_entry_;
 
      public:
-        ScaffoldVertexIndex(const Graph &g_): g_(g_), vertex_to_entry_() {}
+        ScaffoldVertexIndex(const Graph &g): g_(g), vertex_to_entry_() {}
 
         const VertexEntryT& GetHeadEntry(const ScaffoldVertex& vertex) const {
             return vertex_to_entry_.at(vertex);
@@ -79,7 +79,7 @@ namespace barcode_index {
 
     class ScaffoldVertexIndexInfoExtractor {
      public:
-        typedef typename path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+        typedef typename scaffold_graph::ScaffoldVertex ScaffoldVertex;
      public:
         virtual size_t GetHeadSize(const ScaffoldVertex &vertex) const = 0;
         virtual size_t GetTailSize(const ScaffoldVertex &vertex) const = 0;
@@ -172,7 +172,7 @@ class BarcodeIndexInfoExtractorWrapper: public IntersectingScaffoldVertexIndexIn
     };
 
     class SimpleScaffoldVertexIndexInfoExtractor: public IntersectingScaffoldVertexIndexInfoExtractor<SimpleVertexEntry> {
-        typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+        typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
      private:
         shared_ptr<ScaffoldVertexIndex<SimpleVertexEntry>> index_;
 

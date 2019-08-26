@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
+#include "barcode_cluster.hpp"
+#include "cluster_storage.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -15,7 +16,7 @@ namespace cluster_storage {
 class SubstorageExtractor {
   public:
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
-    typedef SimpleGraph<scaffold_graph::ScaffoldVertex> TransitionGraph;
+    typedef SimpleGraph<ScaffoldVertex> TransitionGraph;
     InitialClusterStorage ExtractClusterSubstorage(const InitialClusterStorage &initial_storage,
                                                    const TransitionGraph &graph) {
         ClusterStorage local_cluster_substorage;
@@ -76,8 +77,8 @@ class SubstorageExtractor {
 
 class ClusterMerger {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
-    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef SimpleGraph<ScaffoldVertex> TransitionGraph;
 
     struct TakeFirst {
@@ -171,8 +172,8 @@ class ClusterMerger {
 
 class GraphClusterStorageBuilder {
   public:
-    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
-    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef SimpleGraph<ScaffoldVertex> TransitionGraph;
 
     GraphClusterStorageBuilder(const Graph &g,
@@ -203,10 +204,8 @@ class GraphClusterStorageBuilder {
         size_t processed_vertices = 0;
         size_t step_size = transition_graph.size() / 10;
         for (const auto &vertex: transition_graph) {
-            for (auto next = transition_graph.outcoming_begin(vertex); next != transition_graph.outcoming_end(vertex);
-                 ++next) {
+            for (const auto &tail: transition_graph.OutNeighbours(vertex)) {
                 ScaffoldVertex head = vertex;
-                ScaffoldVertex tail = *next;
                 const uint64_t distance = 0;
                 TRACE("Merging clusters using transition edge " << head.int_id() << " -> " << tail.int_id());
                 cluster_merger_.MergeClustersOnEdges(head, tail, cluster_storage, edge_cluster_storage,

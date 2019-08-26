@@ -6,8 +6,8 @@
 
 #include "reference_path_index.hpp"
 
-#include "common/assembly_graph/core/graph.hpp"
-#include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 
 namespace path_extend {
 namespace read_cloud {

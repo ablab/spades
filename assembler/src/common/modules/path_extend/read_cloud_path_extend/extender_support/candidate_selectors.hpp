@@ -6,9 +6,8 @@
 
 #pragma once
 
-#include "common/barcode_index/scaffold_vertex_index.hpp"
-#include "common/modules/path_extend/weight_counter.hpp"
-#include "common/assembly_graph/dijkstra/read_cloud_dijkstra/read_cloud_dijkstras.hpp"
+#include "modules/path_extend/weight_counter.hpp"
+#include "barcode_index/scaffold_vertex_index.hpp"
 
 namespace path_extend {
 namespace read_cloud {

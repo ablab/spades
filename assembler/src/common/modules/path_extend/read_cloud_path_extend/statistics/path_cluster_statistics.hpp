@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/validation/transition_subgraph_validation.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/transition_subgraph_validation.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/simple_graph.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
 
 #include <ostream>
 
@@ -76,9 +76,12 @@ class PathClusterStatisticsExtractor {
     typedef SimpleGraph<ScaffoldVertex> SimpleTransitionGraph;
     typedef std::map<ScaffoldVertex, std::string> IdMap;
     typedef std::map<ScaffoldVertex, std::map<ScaffoldVertex, size_t>> ScaffoldEdgeMap;
-    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver ReadCloudConfigs;
+    typedef pe_config::ReadCloud ReadCloudConfigs;
 
-    PathClusterStatisticsExtractor(const conj_graph_pack &gp,
+    PathClusterStatisticsExtractor(const Graph &g,
+                                   const debruijn_graph::Index &index,
+                                   const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+                                   const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
                                    const ReadCloudConfigs &configs,
                                    size_t max_threads);
 
@@ -106,7 +109,10 @@ class PathClusterStatisticsExtractor {
     IdMap GetIdMap(const SimpleTransitionGraph &graph) const;
     ScaffoldEdgeMap ConstructLengthMap(const SimpleTransitionGraph &transition_graph, const ScaffoldGraph &graph) const;
 
-    const conj_graph_pack &gp_;
+    const Graph &g_;
+    const debruijn_graph::Index &index_;
+    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
+    const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     const ReadCloudConfigs configs_;
     const size_t max_threads_;
 

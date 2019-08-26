@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include "common/assembly_graph/contracted_graph/contracted_graph.hpp"
-
+#include "contracted_graph.hpp"
 
 namespace contracted_graph {
 class ContractedStatisticsExtractor {
@@ -21,6 +20,6 @@ class ContractedStatisticsExtractor {
     void GetMeanWeights(std::vector<size_t> thresholds, const std::string &output_path) const;
 
   private:
-    const Graph& assembly_graph_;
+    const Graph &assembly_graph_;
 };
 }

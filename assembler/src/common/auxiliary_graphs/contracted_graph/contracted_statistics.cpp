@@ -6,13 +6,14 @@
 
 #include "contracted_statistics.hpp"
 
-#include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
+#include "contracted_graph_builder.hpp"
+
 namespace contracted_graph {
 size_t ContractedStatisticsExtractor::CountLoops(const ContractedGraph &graph) const {
     size_t result = 0;
     for (const auto &vertex: graph) {
-        for (auto it = graph.out_begin(vertex); it != graph.out_end(vertex); ++it) {
-            auto next_vertex = it->first;
+        for (const auto &entry: graph.OutcomingEntries(vertex)) {
+            auto next_vertex = entry.first;
             if (vertex == next_vertex) {
                 ++result;
             }
@@ -53,8 +54,8 @@ void ContractedStatisticsExtractor::GetMeanWeights(std::vector<size_t> threshold
         fout << entry.first << " " << entry.second << "\n";
     }
 }
-ContractedStatisticsExtractor::ContractedStatisticsExtractor(const Graph &assembly_graph) : assembly_graph_(
-    assembly_graph) {}
+ContractedStatisticsExtractor::ContractedStatisticsExtractor(const Graph &assembly_graph) :
+    assembly_graph_(assembly_graph) {}
 size_t ContractedStatisticsExtractor::CountNonIsolated(const ContractedGraph &graph) const {
     size_t result = 0;
     for (const auto &vertex: graph) {

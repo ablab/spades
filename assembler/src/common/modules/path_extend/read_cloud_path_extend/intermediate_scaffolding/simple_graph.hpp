@@ -6,6 +6,12 @@
 
 #pragma once
 
+#include "adt/iterator_range.hpp"
+#include "utils/verify.hpp"
+
+#include <unordered_map>
+#include <unordered_set>
+
 namespace path_extend {
 namespace read_cloud {
 template<class Vertex>
@@ -49,8 +55,7 @@ class SimpleGraph {
             AddVertex(vertex);
         }
         for (const auto &vertex: other) {
-            for (auto it = other.outcoming_begin(vertex); it != other.outcoming_end(vertex); ++it) {
-                Vertex next = *it;
+            for (const auto &next: other.OutNeighbours(vertex)) {
                 AddEdge(vertex, next);
             }
         }
@@ -61,17 +66,26 @@ class SimpleGraph {
     const_iterator end() const {
         return vertices_.end();
     }
+    adt::iterator_range<const_iterator> vertices() const {
+        return adt::make_range(begin(), end());
+    }
     const_iterator outcoming_begin(const Vertex &vertex) const {
         return vertex_to_outcoming_.at(vertex).begin();
     }
     const_iterator outcoming_end(const Vertex &vertex) const {
         return vertex_to_outcoming_.at(vertex).end();
     }
+    adt::iterator_range<const_iterator> OutNeighbours(const Vertex &vertex) const {
+        return adt::make_range(outcoming_begin(vertex), outcoming_end(vertex));
+    }
     const_iterator incoming_begin(const Vertex &vertex) const {
         return vertex_to_incoming_.at(vertex).begin();
     }
     const_iterator incoming_end(const Vertex &vertex) const {
         return vertex_to_incoming_.at(vertex).end();
+    }
+    adt::iterator_range<const_iterator> InNeighbours(const Vertex &vertex) const {
+        return adt::make_range(incoming_begin(vertex), incoming_end(vertex));
     }
     size_t NumberOfVertices() const {
         return vertices_.size();
@@ -82,19 +96,12 @@ class SimpleGraph {
     size_t GetIndegree(const Vertex &vertex) const {
         return vertex_to_incoming_.at(vertex).size();
     }
-    std::unordered_set<Vertex> GetIncoming(const Vertex &vertex) const {
-        return vertex_to_incoming_.at(vertex);
-    }
-    std::unordered_set<Vertex> GetOutcoming(const Vertex &vertex) const {
-        return vertex_to_outcoming_.at(vertex);
-    }
     size_t size() const {
         return vertices_.size();
     }
     size_t GetEdgesCount() const {
         size_t result = 0;
-        for (auto it = begin(); it != end(); ++it) {
-            auto vertex = *it;
+        for (const auto &vertex: vertices()) {
             result += GetOutdegree(vertex);
         }
         return result;
