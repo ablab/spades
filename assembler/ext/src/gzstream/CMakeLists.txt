@@ -6,5 +6,6 @@
 
 project(gzstream CXX)
 
-# Create libraries.
 add_library(gzstream STATIC gzstream.C)
+include_directories(SYSTEM "${ZLIB_INCLUDE_DIRS}")
+target_link_libraries(gzstream ${ZLIB_LIBRARIES})
