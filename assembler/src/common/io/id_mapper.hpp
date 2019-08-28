@@ -37,7 +37,7 @@ private:
     std::unordered_map <size_t, IdType> id_map_;
 };
 
-template<typename T>
-using EdgeMapper = IdMapper<typename T::EdgeId>;
+//template<typename T>
+//using EdgeMapper = IdMapper<typename T::EdgeId>;
 
 }
