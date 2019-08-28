@@ -12,7 +12,7 @@ namespace debruijn_graph {
 
 double CoverageUniformityAnalyzer::CountMedianCoverage() const{
     std::vector<std::pair<double, size_t>> coverages;
-    size_t total_len = 0, short_len = 0, cur_len = 0;
+    size_t total_len = 0, short_len = 0;
     for (auto iter = g_.ConstEdgeBegin(); ! iter.IsEnd(); ++iter){
         if (g_.length(*iter) > length_bound_) {
             coverages.emplace_back(g_.coverage(*iter), g_.length(*iter));
@@ -26,7 +26,7 @@ double CoverageUniformityAnalyzer::CountMedianCoverage() const{
     return res;
 }
 
-double CoverageUniformityAnalyzer::CountMedianCoverage(std::vector<std::pair<double, size_t>> coverages, size_t total_len) const{
+double CoverageUniformityAnalyzer::CountMedianCoverage(std::vector<std::pair<double, size_t>> &coverages, size_t total_len) const{
     if (total_len == 0){
         INFO("Median coverage detection failed, not enough long edges");
         return -1.0;
@@ -65,26 +65,6 @@ size_t CoverageUniformityAnalyzer::TotalLongEdgeLength() const {
         }
     }
     return res;
-}
-
-double CoverageUniformityAnalyzer::DetectCoverageForDeletion(size_t length_limit) const {
-    vector<pair<double, size_t>> edges;
-    for (auto iter = g_.ConstEdgeBegin(true); ! iter.IsEnd(); ++iter){
-        if (g_.length(*iter) > length_bound_) {
-            edges.push_back(make_pair(g_.coverage(*iter), g_.length(*iter)));
-        }
-    }
-//decreasing order
-    std::sort(edges.rbegin(), edges.rend());
-    size_t cur_len = 0;
-    for (auto p: edges){
-        cur_len += p.second;
-        if (cur_len > length_limit) {
-            INFO("Length " << length_limit << " achieved on coverage " << p.first );
-            return p.first;
-        }
-    }
-    return -1;
 }
 
 double CoverageUniformityAnalyzer::UniformityFraction(double allowed_variation, double median_coverage) const {

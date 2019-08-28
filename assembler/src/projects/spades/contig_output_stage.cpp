@@ -10,6 +10,7 @@
 #include "contig_output_stage.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
+#include <unordered_set>
 using namespace std;
 
 namespace debruijn_graph {
@@ -17,7 +18,7 @@ bool CheckCircularPath(const path_extend::BidirectionalPath* path) {
     return (path->Size() > 0 && path->g().EdgeStart(path->Front()) == path->g().EdgeEnd(path->Back()));
 }
 
-bool CheckUsedPath(const path_extend::BidirectionalPath* path, set<EdgeId> &used_edges) {
+bool CheckUsedPath(const path_extend::BidirectionalPath* path, unordered_set<EdgeId> &used_edges) {
     const Graph& g = path->g();
     size_t used_len = 0;
     size_t total_len = 0;
@@ -34,16 +35,18 @@ bool CheckUsedPath(const path_extend::BidirectionalPath* path, set<EdgeId> &used
         used_edges.insert(g.conjugate(path->At(i)));
     }
 //FIXME: constant
-    if (used_len > total_len * 0.8) return true;
-    else return false;
+    if (math::ge((double) used_len , (double)total_len * ContigOutput::LARGE_FRACTION))
+        return true;
+    else
+        return false;
 }
 
-path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage, set<EdgeId> &used_paths) {
+path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage, unordered_set<EdgeId> &used_edges) {
     path_extend::PathContainer res;
-    INFO("banned " << used_paths.size() <<" edges");
+    INFO("banned " << used_edges.size() <<" edges");
     for (auto it = sc_storage.begin(); it != sc_storage.end(); it++) {
 //FIXME: constant
-        if (CheckCircularPath(it->first) && !CheckUsedPath(it->first, used_paths) && it->first->Length() >= 500) {
+        if (CheckCircularPath(it->first) && !CheckUsedPath(it->first, used_edges) && it->first->Length() >= 500) {
             path_extend::BidirectionalPath *p = new path_extend::BidirectionalPath(*it->first);
             path_extend::BidirectionalPath *cp = new path_extend::BidirectionalPath(p->Conjugate());
             res.AddPair(p, cp);
@@ -52,7 +55,7 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
     INFO("got circular scaffs");
     return res;
 }
-path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage, set<VertexId> &forbidden_vertices) {
+path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage, const unordered_set<VertexId> &forbidden_vertices) {
     path_extend::PathContainer res;
     for (auto it = sc_storage.begin(); it != sc_storage.end(); it++) {
 //FIXME: constant
@@ -103,7 +106,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
     std::ofstream os(gfa_fn);
     GFAPathWriter gfa_writer(gp.g, os,
-                             cfg::get().pd && gp.components.IsFilled()?
+                             config::PipelineHelper::IsPlasmidPipeline(cfg::get().mode) && gp.components.IsFilled()?
                              PlasmidNamingF<Graph>(io::IdNamingF<Graph>(), gp.components) : 
                              io::IdNamingF<Graph>());
     gfa_writer.WriteSegmentsAndLinks();
@@ -115,7 +118,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
     FastgPathWriter fastg_writer(gp.g,
                                  fastg_fn,
-                                 cfg::get().pd && gp.components.IsFilled() ?
+                                 config::PipelineHelper::IsPlasmidPipeline(cfg::get().mode) && gp.components.IsFilled() ?
                                  PlasmidNamingF<Graph>(io::BasicNamingF<Graph>(), gp.components) :
                                  io::BasicNamingF<Graph>());
     fastg_writer.WriteSegmentsAndLinks();
@@ -152,14 +155,20 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
             writer.OutputPaths(broken_scaffolds,
                                CreatePathsWriters(output_dir + contigs_name_,
                                                   fastg_writer));
-            PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.used_edges);
-            writer.OutputPaths(circulars,
-                               CreatePathsWriters(output_dir + contigs_name_+".circular",
-                                                  fastg_writer));
-            PathContainer linears = GetTipScaffolds(broken_scaffolds, gp.forbidden_vertices);
-            writer.OutputPaths(linears,
-                               CreatePathsWriters(output_dir + contigs_name_+".linears",
-                                                  fastg_writer));
+            if (cfg::get().mode == config::pipeline_type::metaplasmid) {
+                if (!gp.count<unordered_set<EdgeId>>("used_edges")){
+                    gp.add("used_edges", unordered_set<EdgeId>());
+                }
+                PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.get_mutable<unordered_set<EdgeId>>("used_edges"));
+                writer.OutputPaths(circulars,
+                                   CreatePathsWriters(output_dir + contigs_name_ + ".circular",
+                                                      fastg_writer));
+                PathContainer linears = GetTipScaffolds(broken_scaffolds, gp.count <std::unordered_set<VertexId>>("forbidden_vertices")
+                        > 0 ? gp.get_const<std::unordered_set<VertexId>>("forbidden_vertices") : std::unordered_set<VertexId>());
+                writer.OutputPaths(linears,
+                                   CreatePathsWriters(output_dir + contigs_name_ + ".linears",
+                                                      fastg_writer));
+            }
         }
 
         auto writers = CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name, fastg_writer);

@@ -8,13 +8,12 @@
 #pragma once
 
 #include "adt/iterator_range.hpp"
-#include <boost/iterator/iterator_facade.hpp>
-#include <btree/safe_btree_map.h>
 #include "assembly_graph/core/action_handlers.hpp"
 #include "utils/parallel/openmp_wrapper.h"
-
 #include "paired_info_buffer.hpp"
 #include <type_traits>
+#include <boost/iterator/iterator_facade.hpp>
+#include <btree/safe_btree_map.h>
 
 namespace omnigraph {
 
@@ -522,17 +521,13 @@ public:
     }
 
     void VerifyIndex() {
-        std::set<EdgeId> edges_in_graph;
         std::set<EdgeId> edges_in_index;
-        for (auto iter = this->graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-            edges_in_graph.insert(*iter);
-        }
         size_t sz = 0;
         for( auto iter = data_begin(); iter != data_end(); iter ++ ) {
             VERIFY_MSG(iter->second.size() > 0, " empty map! ");
-            VERIFY_MSG(edges_in_graph.find(iter->first) != edges_in_graph.end(), " left edge wrong  " << iter->first);
+            VERIFY_MSG(this->graph_.edges().find(iter->first) != this->graph_.edges().end(), " left edge wrong  " << iter->first);
             for (const auto &e_iter: iter->second) {
-                VERIFY_MSG(edges_in_graph.find(e_iter.first) != edges_in_graph.end(), " right edge wrong  " << e_iter.first);
+                VERIFY_MSG(this->graph_.edges().find(e_iter.first) != this->graph_.edges().end(), " right edge wrong  " << e_iter.first);
                 sz += e_iter.second->size();
 
             }
@@ -587,16 +582,20 @@ using btree_map = NoLockingAdapter<btree::btree_map<K, V>>; //Two-parameters wra
 template<typename Graph>
 using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, btree_map>;
 
+
 template<typename G, typename Traits, template<typename, typename> class Container>
 class PairedIndexHandler : public omnigraph::GraphActionHandler<G> {
 
 public:
     using BaseIndex = PairedIndex<G, Traits, Container>;
-    typedef typename G::EdgeId EdgeId;
-    BaseIndex &paired_index_;
-    PairedIndexHandler(PairedIndex<G, Traits, Container>& p): paired_index_(p), GraphActionHandler<G>(p.graph(), "PairedIndexHandler") {}
 
-    virtual void HandleDelete(EdgeId e) {
+    typedef typename G::EdgeId EdgeId;
+
+    BaseIndex &paired_index_;
+
+    PairedIndexHandler(PairedIndex<G, Traits, Container>& p): GraphActionHandler<G>(p.graph(), "PairedIndexHandler"), paired_index_(p) {}
+
+    virtual void HandleDelete(EdgeId e) override {
         if (e == paired_index_.graph().conjugate(e)) {
             DEBUG("removing self-conj");
         }
@@ -624,10 +623,6 @@ public:
         for(auto e: old_edges) {
             DEBUG("trying " << e);
             typename BaseIndex::EdgeProxy old_e = paired_index_.Get(e);
-            size_t rs = 0;
-            for (auto it: old_e)
-                rs++;
-            DEBUG(rs <<"  next edges");
             std::vector<std::pair<EdgeId, Point>> to_add;
             for (auto it: old_e) {
                 EdgeId next = it.first;
@@ -644,10 +639,9 @@ public:
                 DEBUG(e <<" " << next << " "<< it.second.size());
                 for (auto pp: it.second) {
                     Point point (pp);
-                    point.d += shifts[e];
-                    point.d = point.d - neg_shift;
+                    point.d += (double) shifts[e] - double (neg_shift);
                     DEBUG("from "  <<new_edge << " to " << next  <<" old " << e << " old_dist " << pp.d << "new_dist " << point.d << " "  << point.weight);
-                    if (paired_index_.graph().length(new_edge) > point.d && new_edge != next) {
+                    if (math::gr(paired_index_.graph().length(new_edge), double(point.d)) && new_edge != next) {
                         DEBUG("not adding, assert failed");
                     } else {
                         to_add.push_back(std::make_pair(next, point));

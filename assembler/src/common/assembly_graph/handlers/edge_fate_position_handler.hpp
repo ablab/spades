@@ -1,9 +1,13 @@
+//***************************************************************************
+//* Copyright (c) 2015-2019 Saint-Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
 #pragma once
-#include <unordered_map>
-//#include "utils.hpp"
-#include "visualization/graph_labeler.hpp"
 #include "utils/stl_utils.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
+#include <unordered_map>
+
 using namespace omnigraph;
 
 namespace omnigraph {
@@ -13,7 +17,7 @@ class EdgeFatePositionTracker : omnigraph::GraphActionHandler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename std::vector<std::pair<EdgeId, size_t>> OldEdgesInfo;
 
-    std::map<EdgeId, OldEdgesInfo> storage_;
+    std::unordered_map<EdgeId, OldEdgesInfo> storage_;
 
     void FillRelevant(EdgeId e, std::set<EdgeId> &relevant) const {
         auto it = storage_.find(e);
@@ -33,8 +37,7 @@ public:
     }
 
     void HandleAdd(EdgeId e) override {
-        if (!storage_.count(e))
-            storage_[e] = {};
+        storage_.insert({e, {}});
     }
 
     void HandleDelete(EdgeId e) override {
@@ -62,24 +65,10 @@ public:
     }
 
     void Init() {
-        for (auto iter = this->g().ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            OldEdgesInfo tmp{std::make_pair(*iter, this->g().length(*iter))};
-            storage_[*iter] = tmp;
+        for (EdgeId e: this->g().edges()) {
+            storage_[e] = {std::make_pair(e, this->g().length(e))};
         }
     }
-//
-//
-//    map<EdgeId, EdgeId> Old2NewMapping() const {
-//        map<EdgeId, EdgeId> old_2_new;
-//        for (const auto &new_2_olds : storage_) {
-//            for (EdgeId e : new_2_olds.second) {
-//                VERIFY(!old_2_new.count(e));
-//                old_2_new[e] = new_2_olds.first;
-//            }
-//        }
-//        return old_2_new;
-//    }
-
 };
 
 }

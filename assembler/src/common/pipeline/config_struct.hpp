@@ -47,6 +47,14 @@ enum class pipeline_type : char {
     total
 };
 
+class PipelineHelper {
+
+public:
+    static bool IsPlasmidPipeline(const pipeline_type pipeline);
+    static bool IsMetagenomicPipeline(const pipeline_type pipeline);
+};
+
+
 std::vector<std::string> PipelineTypeNames();
 
 enum class resolving_mode : char {
@@ -340,18 +348,16 @@ struct debruijn_config {
         size_t min_component_length;
         size_t min_isolated_length;
         bool meta_mode;
-        std::string remove_list;
         double absolute_coverage_cutoff;
-        bool circular_removal;
 //circular removal for plasmids
         size_t min_start_edge_length;
         double min_start_coverage;
         size_t max_loop;
         std::string reference_removal;
-        std::string HMM_filtration; //"do","use" "none"
 //settings for iterative removal;
         bool iterative_coverage_elimination;
-        double iterative_step; //5
+        size_t additive_step; //5
+        double relative_step; //1.3
         size_t max_length; //1000000
     };
 

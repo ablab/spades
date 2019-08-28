@@ -14,9 +14,10 @@
 #include "paired_info/weighted_distance_estimation.hpp"
 #include "paired_info/smoothing_distance_estimation.hpp"
 #include "paired_info/weights.hpp"
-
 #include "distance_estimation.hpp"
+
 #include <set>
+#include <unordered_set>
 
 namespace debruijn_graph {
 
@@ -159,7 +160,7 @@ void estimate_distance(conj_graph_pack& gp,
 
     INFO("Improving paired information");
     PairInfoImprover<Graph> improver(gp.g, clustered_index, lib,
-                                     (config.mode == debruijn_graph::config::pipeline_type::meta || config.mode == debruijn_graph::config::pipeline_type::metaplasmid)?
+                                     (debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(config.mode))?
                                      std::numeric_limits<size_t>::max() : config.max_repeat_length);
 
     improver.ImprovePairedInfo((unsigned) config.max_threads);
@@ -183,8 +184,6 @@ void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
                 gp.paired_indices[i].clear();
             }
         }
-//Clearing used edges for plasmids
-    gp.used_edges.clear();
 }
 
 }

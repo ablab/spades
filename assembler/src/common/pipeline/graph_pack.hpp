@@ -59,9 +59,7 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
     EdgeQuality<Graph> &edge_qual;
     EdgesPositionHandler<graph_t> &edge_pos;
     ConnectedComponentCounter &components;
-//metaplasmid stuff. Where should it be?
-    std::set<VertexId> &forbidden_vertices;
-    std::set<EdgeId> &used_edges;
+
     path_extend::PathContainer &contig_paths;
 
     graph_pack(size_t k,
@@ -86,9 +84,6 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
               edge_qual(adt::pack::emplace<EdgeQuality<Graph>>(g)),
               edge_pos(adt::pack::emplace<EdgesPositionHandler<graph_t>>(g, max_mapping_gap + k, max_gap_diff)),
               components(adt::pack::emplace<ConnectedComponentCounter>(g)),
-//TODO:: rmv from graph_pack
-              forbidden_vertices(adt::pack::emplace<std::set<VertexId>>()),
-              used_edges(adt::pack::emplace<std::set<EdgeId>>()),
               contig_paths(adt::pack::emplace<path_extend::PathContainer>()) {
         if (detach_indices)
             DetachAll();

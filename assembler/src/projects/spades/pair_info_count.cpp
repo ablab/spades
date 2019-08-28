@@ -169,7 +169,7 @@ static bool ShouldObtainSingleReadsPaths(size_t ilib) {
             //Map when no PacBio/paried libs or only mate-pairs or single lib itself
             if (!HasGoodRRLibs() || HasOnlyMP() ||
                 cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads) {
-                if (cfg::get().mode != debruijn_graph::config::pipeline_type::meta && cfg::get().mode != debruijn_graph::config::pipeline_type::metaplasmid) {
+                if (!debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(cfg::get().mode)) {
                     return true;
                 } else {
                     WARN("Single reads are not used in metagenomic mode");
@@ -316,8 +316,9 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
 
     //TODO implement better universal logic
     size_t edge_length_threshold = cfg::get().min_edge_length_for_is_count;
-    if (cfg::get().mode != config::pipeline_type::meta && cfg::get().mode != config::pipeline_type::metaplasmid)
+    if (debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(cfg::get().mode))
         edge_length_threshold = std::max(edge_length_threshold, stats::Nx(gp.g, 50));
+
     INFO("Min edge length for estimation: " << edge_length_threshold);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         auto &lib = cfg::get_writable().ds.reads[i];

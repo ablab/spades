@@ -445,22 +445,26 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
     size_t scf_pe_libs = 0;
 
     const auto &pset = params_.pset;
-    INFO("start");
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
-        INFO(" lib index "<< lib_index);
         const auto &lib = dataset_info_.reads[lib_index];
         //TODO: scaff2015 does not need any single read libs?
         if (support_.IsForSingleReadExtender(lib) && ! cfg::get().pd) {
-            if (pset.multi_path_extend) {
-                basic_extenders.emplace_back(lib.type(), lib_index, MakeLongReadsRNAExtender(lib_index,
+            if (!config::PipelineHelper::IsPlasmidPipeline(params_.mode)) {
+
+                if (pset.multi_path_extend) {
+                    basic_extenders.emplace_back(lib.type(), lib_index, MakeLongReadsRNAExtender(lib_index,
                                                                                              unique_data_.long_reads_cov_map_[lib_index]));
-                INFO("Created for lib #" << lib_index);
+                    INFO("Created for lib #" << lib_index);
+                } else {
+                    basic_extenders.emplace_back(lib.type(), lib_index,
+                                                 MakeLongReadsExtender(lib_index,
+                                                                       unique_data_.long_reads_cov_map_[lib_index]));
+                }
+                ++single_read_libs;
             } else {
-                basic_extenders.emplace_back(lib.type(), lib_index,
-                                             MakeLongReadsExtender(lib_index,
-                                                                   unique_data_.long_reads_cov_map_[lib_index]));
+                if (lib.type() != io::LibraryType::PathExtendContigs)
+                    WARN("Long reads and contig libraries are currently not supported within plasmid pipeline");
             }
-            ++single_read_libs;
         }
         if (support_.IsForPEExtender(lib)) {
             ++pe_libs;
@@ -481,7 +485,6 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
                                                                              unique_data_.main_unique_storage_));
             }
         }
-        INFO("basic");
         //TODO logic is very cryptic!
         if (support_.IsForShortLoopExtender(lib) && IsOldPEEnabled(pset.sm)) {
             loop_resolving_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, true));
@@ -493,9 +496,8 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
             if (params_.mode == config::pipeline_type::rna) {
                 scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeRNAScaffoldingExtender(lib_index));
             } else {
-//Want to avoid merging tips that appears after plasmid removal
-                if (params_.mode != config::pipeline_type::plasmid)
-                    scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeScaffoldingExtender(lib_index));
+//Do we really need this in plasmid modes?
+                scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeScaffoldingExtender(lib_index));
                 if (pset.sm == scaffolding_mode::sm_combined) {
                     scaffolding_extenders.emplace_back(lib.type(), lib_index,
                                                        MakeMatePairScaffoldingExtender(lib_index,
@@ -503,7 +505,6 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
                 }
             }
         }
-        INFO("scaffolding");
     }
 
     std::stable_sort(basic_extenders.begin(), basic_extenders.end());

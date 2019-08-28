@@ -13,6 +13,7 @@
 #include "sequence/sequence.hpp"
 
 #include <set>
+#include <unordered_set>
 
 namespace omnigraph {
 
@@ -247,17 +248,17 @@ class IsAllowedCondition : public EdgeCondition<Graph> {
 
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    std::set<VertexId> forbidden_;
+    std::unordered_set<VertexId> forbidden_;
     /**
      * This class checks if any end of given edge is forbidden for deletion because of some xternal reason
      */
 
 public:
-    IsAllowedCondition(const Graph& g, const std::set<VertexId>& forbidden) : base(g), forbidden_(forbidden) {
+    IsAllowedCondition(const Graph& g, const std::unordered_set<VertexId>& forbidden) : base(g), forbidden_(forbidden) {
     }
 
     bool Check(EdgeId e) const {
-        return (forbidden_.find(this->g().EdgeStart(e)) == forbidden_.end() && forbidden_.find(this->g().EdgeEnd(e)) == forbidden_.end());
+        return (!forbidden_.count(this->g().EdgeStart(e)) && !forbidden_.count(this->g().EdgeEnd(e)));
     }
 
 private:

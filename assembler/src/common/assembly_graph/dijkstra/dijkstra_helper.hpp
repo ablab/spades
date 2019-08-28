@@ -191,13 +191,13 @@ public:
     typedef Dijkstra<Graph, CoverageBoundedDijkstraSettings> CoverageBoundedDijkstra;
 
     static CoverageBoundedDijkstra CreateCoverageBoundedDijkstra(const Graph &graph, size_t length_bound, double min_coverage,
-                                                                 size_t max_vertex_number = -1ul) {
+                                                                 size_t max_vertex_number = -1ul, bool collect_traceback = false) {
         return CoverageBoundedDijkstra(graph, CoverageBoundedDijkstraSettings(
                 LengthCalculator<Graph>(graph),
                 BoundProcessChecker<Graph>(length_bound),
                 CoveragePutChecker<Graph>(min_coverage, graph, length_bound),
                 ForwardNeighbourIteratorFactory<Graph>(graph)),
-                                       max_vertex_number);
+                                       max_vertex_number, collect_traceback);
     }
 
 

@@ -19,6 +19,7 @@ def parse_args(args):
         sys.exit(1)
     parser.add_argument('-d', required = True, help='Input dataset description file(in yaml format, see SPAdes manual for details)')
     parser.add_argument('-o', required = True, help='Output directory')
+    parser.add_argument('--pv', required = True, help='Path to plasmidVerify script')
     parser.add_argument('--db', help='Path to BLAST db')
     parser.add_argument('--hmm', required = True, help='Path to Pfam-A HMM database')    
     return parser.parse_args()
@@ -28,7 +29,7 @@ def parse_args(args):
 args = parse_args(sys.argv[1:])
 current_path = os.path.dirname(os.path.realpath(__file__))
 spades = os.path.join(current_path, "spades.py")
-plasmidverify = os.path.join(current_path, "src", "plasmid_utils", "plasmidverify.py")
+plasmidverify = os.path.join(args.pv, "plasmidverify.py")
 
 spades_string = spades + " --plasmid --dataset " + args.d + " -o " + args.o 
 os.system(spades_string)

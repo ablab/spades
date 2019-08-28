@@ -45,10 +45,6 @@ void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
     debruijn_graph::config::write_lib_data(p);
 }
 
-void AssemblyStage::set_id(std::string& real_name) {
-    id_ = const_cast<char*>(real_name.c_str());
-}
-
 class StageIdComparator {
   public:
     StageIdComparator(const char* id)

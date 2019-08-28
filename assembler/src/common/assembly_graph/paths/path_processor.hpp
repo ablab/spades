@@ -30,7 +30,7 @@ class PathProcessor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef std::vector<EdgeId> Path;
-    typedef typename DijkstraHelper<Graph>::CoverageBoundedDijkstra DijkstraT;
+    typedef typename DijkstraHelper<Graph>::BoundedDijkstra DijkstraT;
 public:
     class Callback {
 
@@ -179,10 +179,10 @@ private:
 public:
 
     PathProcessor(const Graph& g, VertexId start, size_t length_bound,
-                  size_t dijkstra_vertex_limit = MAX_DIJKSTRA_VERTICES, double cov_limit = 0) :
+                  size_t dijkstra_vertex_limit = MAX_DIJKSTRA_VERTICES) :
               g_(g),
               start_(start),
-              dijkstra_(DijkstraHelper<Graph>::CreateCoverageBoundedDijkstra(g, length_bound, cov_limit,
+              dijkstra_(DijkstraHelper<Graph>::CreateBoundedDijkstra(g, length_bound,
                                                                      dijkstra_vertex_limit)) {
         TRACE("Dijkstra launched");
         dijkstra_.Run(start);
@@ -229,8 +229,8 @@ template<class Graph>
 int ProcessPaths(const Graph& g, size_t min_len, size_t max_len,
                  typename Graph::VertexId start, typename Graph::VertexId end,
                  typename PathProcessor<Graph>::Callback& callback,
-                 size_t max_edge_cnt = std::numeric_limits<size_t>::max(), double min_coverage = 0) {
-    PathProcessor<Graph> processor(g, start, max_len, PathProcessor<Graph>::MAX_DIJKSTRA_VERTICES, min_coverage);
+                 size_t max_edge_cnt = std::numeric_limits<size_t>::max()) {
+    PathProcessor<Graph> processor(g, start, max_len);
     return processor.Process(end, min_len, max_len, callback, max_edge_cnt);
 }
 

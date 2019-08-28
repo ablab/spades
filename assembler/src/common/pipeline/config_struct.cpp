@@ -42,6 +42,15 @@ template class io::DataSet<debruijn_graph::config::LibraryData>;
 namespace debruijn_graph {
 namespace config {
 
+bool PipelineHelper::IsPlasmidPipeline(const pipeline_type pipeline) {
+    return pipeline == pipeline_type ::plasmid || pipeline == pipeline_type::metaplasmid;
+}
+
+bool PipelineHelper::IsMetagenomicPipeline(const pipeline_type pipeline) {
+    return pipeline == pipeline_type ::meta || pipeline == pipeline_type::metaplasmid;
+}
+
+
 template<typename mode_t>
 std::vector<std::string> CheckedNames(const std::vector<std::pair<std::string, mode_t>>& mapping, mode_t total) {
     VERIFY_MSG(size_t(total) == mapping.size(), "Names for some modes missing")
@@ -438,10 +447,7 @@ void load(debruijn_config::plasmid& pd,
     load(pd.min_component_length, pt, "min_component_length");
     load(pd.min_isolated_length, pt, "min_isolated_length");
     load(pd.meta_mode, pt, "meta_mode");
-    std::string remove_list;
-    load(remove_list, pt, "remove_list");
     load(pd.absolute_coverage_cutoff, pt, "absolute_coverage_cutoff");
-    load(pd.circular_removal, pt, "circular_removal");
     load(pd.min_start_edge_length, pt, "min_start_edge_length");
     load(pd.min_start_coverage, pt, "min_start_coverage");
     load(pd.max_loop, pt, "max_loop");
@@ -451,9 +457,9 @@ void load(debruijn_config::plasmid& pd,
     if (reference && *reference != "N/A") {
         pd.reference_removal = *reference;
     }
-    load (pd.HMM_filtration, pt, "HMM_filtration");
     load(pd.iterative_coverage_elimination, pt, "iterative_coverage_elimination");
-    load(pd.iterative_step, pt, "iterative_step"); //5
+    load(pd.additive_step, pt, "additive_step"); //5
+    load(pd.relative_step, pt, "relative_step"); //5
     load(pd.max_length, pt, "max_length"); //1000000
 }
 

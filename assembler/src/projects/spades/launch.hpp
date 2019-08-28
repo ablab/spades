@@ -56,17 +56,21 @@ inline std::string GetContigName(std::string contig_id, size_t cov) {
     }
     return contig_id + res;
 }
-inline std::set<debruijn_graph::Graph::VertexId> FillForbiddenSet(debruijn_graph::Graph& g) {
-    std::set<debruijn_graph::VertexId> res;
-    for (auto it = g.SmartVertexBegin(); ! it.IsEnd(); ++it) {
-        if (g.IsDeadStart(*it) || g.IsDeadEnd(*it))
-            res.insert(*it);
+
+inline void AddMetaplasmidStages(StageManager &SPAdes) {
+    size_t cov = cfg::get().pd->additive_step;
+    size_t add = cfg::get().pd->additive_step;
+    double multiplier = cfg::get().pd->relative_step;
+    size_t max_cov = 600;
+    SPAdes.add<debruijn_graph::ContigOutput>(true, true, GetContigName(cfg::get().co.contigs_name, 0));
+    while (cov < max_cov) {
+        SPAdes.add<debruijn_graph::ChromosomeRemoval>(cov);
+        SPAdes.add<debruijn_graph::RepeatResolution>();
+        SPAdes.add<debruijn_graph::ContigOutput>(true, true, GetContigName(cfg::get().co.contigs_name, cov));
+        cov = std::max(cov + add, size_t((double) cov*multiplier));
     }
-    INFO("forbidding: "<< res.size())
-    return res;
+
 }
-
-
 
 void assemble_genome() {
     INFO("SPAdes started");
@@ -101,7 +105,7 @@ void assemble_genome() {
     SPAdes.add<ReadConversion>();
     SPAdes.add<debruijn_graph::Construction>();
 
-    if (cfg::get().mode != debruijn_graph::config::pipeline_type::meta && cfg::get().mode != debruijn_graph::config::pipeline_type::metaplasmid)
+    if (! debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(cfg::get().mode))
         SPAdes.add<debruijn_graph::GenomicInfoFiller>();
 
     VERIFY(!cfg::get().gc.before_raw_simplify || !cfg::get().gc.before_simplify);
@@ -145,12 +149,12 @@ void assemble_genome() {
     if (cfg::get().rr_enable) {
         if (!cfg::get().series_analysis.empty())
             SPAdes.add<debruijn_graph::SeriesAnalysis>();
-
-        if (cfg::get().pd &&  !two_step_rr)
+//Not metaplasmid!
+        if (cfg::get().mode == debruijn_graph::config::pipeline_type::plasmid)
             SPAdes.add<debruijn_graph::ChromosomeRemoval>();
 
         if (HybridLibrariesPresent()) {
-            SPAdes.add(new debruijn_graph::HybridLibrariesAligning());
+            SPAdes.add<debruijn_graph::HybridLibrariesAligning>();
         }
 
         //No graph modification allowed after HybridLibrariesAligning stage!
@@ -161,16 +165,7 @@ void assemble_genome() {
                .add<debruijn_graph::RepeatResolution>();
 
         if (cfg::get().mode == debruijn_graph::config::pipeline_type::metaplasmid) {
-            size_t cov = 5;
-            double multiplier = 1.3;
-            size_t max_cov = 600;
-            SPAdes.add(new debruijn_graph::ContigOutput(true, GetContigName(cfg::get().co.contigs_name, 0)));
-            while (cov < max_cov) {
-                SPAdes.add(new debruijn_graph::ChromosomeRemoval(cov));
-                SPAdes.add(new debruijn_graph::RepeatResolution());
-                SPAdes.add(new debruijn_graph::ContigOutput(true, GetContigName(cfg::get().co.contigs_name, cov)));
-                cov = std::max(cov + 5, size_t(cov*multiplier));
-            }
+            AddMetaplasmidStages(SPAdes);
         }
 
     } else {
