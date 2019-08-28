@@ -238,23 +238,15 @@ public:
         }
     }
 
-    void Load(std::istream &is, const omnigraph::GraphElementFinder<Graph> &element_finder,
-              std::unique_ptr<std::unordered_map<std::string, size_t>> label2int_id = nullptr) {
+    void Load(std::istream &is, const omnigraph::LabelEdgeMap<Graph> &label_2_edge) {
         std::string s;
         while (std::getline(is, s)) {
             std::istringstream ss(s);
             std::string label;
             ss >> label;
-            size_t int_id;
-            if (!label2int_id) {
-                int_id = std::stoi(label);
-            } else {
-                if (label2int_id->find(label) == label2int_id->end()) {
-                    WARN("Couldn't find edge labelled " << label << " in the graph");
-                    continue;
-                }
-                int_id = utils::get(*label2int_id, label);
-            }
+            EdgeId e = label_2_edge[label];
+            VERIFY_MSG(e != EdgeId(), "Couldn't find edge with int id " << std::stoi(label) << " in the graph");
+
             std::string orient;
             ss >> orient;
             VERIFY_MSG(orient == "+" || orient == "-", "Invalid orientation");
@@ -262,12 +254,6 @@ public:
             //Currently ignored
             int pos;
             ss >> pos;
-
-            EdgeId e = element_finder.ReturnEdgeId(int_id);
-            if (e == EdgeId()) {
-                WARN("Couldn't find edge with int id " << int_id << " in the graph");
-                continue;
-            }
 
             e = (orient == "+") ? e : g().conjugate(e);
             Insert(e);
@@ -434,18 +420,6 @@ size_t DetermineSampleCnt(const std::string &profile_fn) {
     return i - 1;
 }
 
-std::unique_ptr<std::unordered_map<std::string, size_t>> Label2IntId(const Graph &g,
-        const io::IdMapper<std::string> &id_mapper) {
-    DEBUG("Creating label to int_id map");
-    auto label2int_id = std::make_unique<std::unordered_map<std::string, size_t>>();
-    for (auto it = g.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
-        size_t id = g.int_id(*it);
-        DEBUG("Mapping " << id_mapper[id] << " to " << id);
-        (*label2int_id)[id_mapper[id]] = id;
-    }
-    return label2int_id;
-}
-
 //TODO set up reasonable flanking range
 int main(int argc, char** argv) {
     utils::segfault_handler sh;
@@ -477,6 +451,8 @@ int main(int argc, char** argv) {
         gp.kmer_mapper.Attach();
 
         auto id_mapper = LoadGraph(gp, cfg.graph);
+
+        omnigraph::LabelEdgeMap<Graph> label_2_edge(element_finder, id_mapper.get());
 
         const Graph &g = gp.g;
 
@@ -511,7 +487,7 @@ int main(int argc, char** argv) {
             INFO("Sample count determined as " << sample_cnt);
             profile_storage = std::make_unique<ProfileStorage>(gp.g, sample_cnt);
             std::ifstream is(cfg.edge_profile_fn);
-            profile_storage->Load(is, element_finder, id_mapper ? Label2IntId(gp.g, *id_mapper) : nullptr);
+            profile_storage->Load(is, label_2_edge);
             INFO("Profiles loaded");
         }
 
@@ -522,7 +498,7 @@ int main(int argc, char** argv) {
             fs::CheckFileExistenceFATAL(cfg.stop_codons_fn);
             stop_codons_storage = std::make_unique<PositionStorage>(gp.g);
             std::ifstream is(cfg.stop_codons_fn);
-            stop_codons_storage->Load(is, element_finder, id_mapper ? Label2IntId(gp.g, *id_mapper) : nullptr);
+            stop_codons_storage->Load(is, label_2_edge);
             INFO("Stop codon positions loaded");
         }
 
