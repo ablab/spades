@@ -117,7 +117,7 @@ public:
        }
     }
 
-    virtual ~WeightCounter() {}
+    virtual ~WeightCounter() = default;
 
     virtual std::set<size_t> PairInfoExist(const BidirectionalPath &path, EdgeId e,
                                            int gap = 0) const = 0;
