@@ -16,15 +16,15 @@ namespace debruijn_graph {
 
 //FIXME fix issue with vanishing quality during split
 template<class Graph>
-class EdgeQuality: public visualization::graph_labeler::GraphLabeler<Graph>, public omnigraph::GraphActionHandler<Graph> {
+class EdgeQuality: public visualization::graph_labeler::GraphLabeler<Graph>,
+                   public omnigraph::GraphActionHandler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     std::map<EdgeId, size_t> quality_;
     size_t k_;
 
     template<class Index>
-    void FillQuality(const Index &index
-            , const KmerMapper<Graph>& kmer_mapper, const Sequence &genome) {
+    void FillQuality(const Index &index, const KmerMapper<Graph> &kmer_mapper, const Sequence &genome) {
         if (genome.size() < k_)
             return;
         RtSeq cur = genome.start<RtSeq>(k_);
@@ -41,9 +41,7 @@ class EdgeQuality: public visualization::graph_labeler::GraphLabeler<Graph>, pub
 public:
 
     template<class Index>
-    void Fill(const Index &index
-            , const KmerMapper<Graph>& kmer_mapper
-            , const Sequence &genome) {
+    void Fill(const Index &index, const KmerMapper<Graph> &kmer_mapper, const Sequence &genome) {
         DEBUG("Filling quality values");
         FillQuality(index, kmer_mapper, genome);
         FillQuality(index, kmer_mapper, !genome);
@@ -80,7 +78,7 @@ public:
         quality_.erase(e);
     }
 
-    void HandleMerge(const std::vector<EdgeId>& old_edges, EdgeId new_edge) override {
+    void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) override {
         size_t res = 0;
         for (size_t i = 0; i < old_edges.size(); i++) {
             res += quality_[old_edges[i]];
@@ -161,8 +159,8 @@ private:
 template<class Graph>
 class QualityLoggingRemovalHandler {
     typedef typename Graph::EdgeId EdgeId;
-    const Graph& g_;
-    const EdgeQuality<Graph>& quality_handler_;
+    const Graph &g_;
+    const EdgeQuality<Graph> &quality_handler_;
     size_t black_removed_;
     size_t total_;
     bool handle_all_;
@@ -172,7 +170,7 @@ class QualityLoggingRemovalHandler {
     }
 
 public:
-    QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler,
+    QualityLoggingRemovalHandler(const Graph &g, const EdgeQuality<Graph> &quality_handler,
                                  bool handle_all = false) :
             g_(g), quality_handler_(quality_handler), black_removed_(0), total_(0), handle_all_(handle_all) {
     }
@@ -190,11 +188,11 @@ public:
         }
     }
 
-    const Graph& g() const {
+    const Graph &g() const {
         return g_;
     }
 
-    const EdgeQuality<Graph>& quality_handler() const {
+    const EdgeQuality<Graph> &quality_handler() const {
         return quality_handler_;
     }
 
@@ -224,7 +222,7 @@ public:
             printing_rh_(g, labeler, colorer, output_folder)
     {}
 
-    virtual void HandlePositiveQuality(EdgeId e) {
+    void HandlePositiveQuality(EdgeId e) override {
         printing_rh_.HandleDelete(e, "_" + std::to_string(this->quality_handler().quality(e)));
     }
 
