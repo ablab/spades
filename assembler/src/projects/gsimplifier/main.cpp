@@ -7,15 +7,12 @@
 
 #include "projects/edge_profiles/profile_storage.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
-#include "io/graph/gfa_reader.hpp"
 #include "io/graph/gfa_writer.hpp"
 #include "toolchain/edge_label_helper.hpp"
+#include "toolchain/utils.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "pipeline/config_struct.hpp"
 
-#include "io/binary/graph_pack.hpp"
-
-#include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 
 #include "version.hpp"
@@ -26,45 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-static void create_console_logger() {
-    using namespace logging;
-
-    logger *lg = create_logger("");
-    lg->add_writer(std::make_shared<console_writer>());
-    attach_logger(lg);
-}
-
-static bool ends_with(const std::string &s, const std::string &p) {
-    if (s.size() < p.size())
-        return false;
-
-    return (s.compare(s.size() - p.size(), p.size(), p) == 0);
-}
-
 using namespace debruijn_graph;
-
-static void PrintGraphInfo(Graph &g) {
-    size_t sz = 0;
-    for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it)
-        sz += 1;
-
-    INFO("Graph loaded. Total vertices: " << g.size() << " Total edges: " << sz);
-}
-
-static io::IdMapper<std::string> *LoadGraph(conj_graph_pack &gp, const std::string &filename) {
-    io::IdMapper<std::string> *id_mapper = nullptr;
-    if (ends_with(filename, ".gfa")) {
-        id_mapper = new io::IdMapper<std::string>();
-        gfa::GFAReader gfa(filename);
-        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(gp.g, id_mapper);
-    } else {
-        io::binary::BasePackIO<Graph>().Load(filename, gp);
-    }
-    PrintGraphInfo(gp.g);
-    return id_mapper;
-}
-
 
 typedef config::debruijn_config::simplification::bulge_remover BRConfig;
 typedef config::debruijn_config::simplification::relative_coverage_comp_remover RCCConfig;
@@ -428,7 +387,7 @@ int main(int argc, char** argv) {
 
     process_cmdline(argc, argv, cfg);
 
-    create_console_logger();
+    toolchain::create_console_logger();
     START_BANNER("SPAdes standalone graph simplifier");
 
     try {
@@ -451,7 +410,8 @@ int main(int argc, char** argv) {
         omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
         gp.kmer_mapper.Attach();
 
-        io::EdgeLabelHelper<Graph> label_helper(element_finder, LoadGraph(gp, cfg.graph));
+        io::EdgeLabelHelper<Graph> label_helper(element_finder,
+                                                toolchain::LoadGraph(gp, cfg.graph));
 
         const Graph &g = gp.g;
 
