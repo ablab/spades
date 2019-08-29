@@ -799,10 +799,10 @@ void init_libs(io::DataSet<LibraryData> &dataset, size_t max_threads,
         lib.data().lib_index = i;
         auto& bin_info = lib.data().binary_reads_info;
         bin_info.chunk_num = max_threads;
-        bin_info.bin_reads_info_file = temp_bin_reads_path + "INFO_" + std::to_string(i);
-        bin_info.paired_read_prefix = temp_bin_reads_path + "paired_" + std::to_string(i);
-        bin_info.merged_read_prefix = temp_bin_reads_path + "merged_" + std::to_string(i);
-        bin_info.single_read_prefix = temp_bin_reads_path + "single_" + std::to_string(i);
+        bin_info.bin_reads_info_file = temp_bin_reads_path + "/INFO_" + std::to_string(i);
+        bin_info.paired_read_prefix = temp_bin_reads_path + "/paired_" + std::to_string(i);
+        bin_info.merged_read_prefix = temp_bin_reads_path + "/merged_" + std::to_string(i);
+        bin_info.single_read_prefix = temp_bin_reads_path + "/single_" + std::to_string(i);
     }
 }
 

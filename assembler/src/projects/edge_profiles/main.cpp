@@ -58,8 +58,7 @@ static void Run(const std::string &graph_path, const std::string &dataset_desc, 
     io::EdgeLabelHelper<Graph> label_helper(element_finder,
                                             toolchain::LoadGraph(gp, graph_path));
 
-    // FIXME: Get rid of this "/" junk
-    config::init_libs(dataset, nthreads, tmpdir + "/");
+    config::init_libs(dataset, nthreads, tmpdir);
 
     gp.EnsureBasicMapping();
 
