@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "io/binary.hpp"
+#include "io/binary/binary.hpp"
 #include "utils/stl_utils.hpp"
 #include <boost/test/unit_test.hpp>
 #include <sstream>

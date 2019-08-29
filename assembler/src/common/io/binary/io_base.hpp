@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "io/binary.hpp"
+#include "binary.hpp"
 #include "utils/logger/logger.hpp"
 #include "utils/filesystem/path_helper.hpp"
 

@@ -11,7 +11,7 @@
 
 #include "io/binary/graph_pack.hpp"
 #include "projects/mts/contig_abundance.hpp"
-#include "io/utils/edge_label_helper.hpp"
+#include "toolchain/edge_label_helper.hpp"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"

@@ -8,9 +8,9 @@
 #include "projects/subgraph_extractor/subgraph_extraction.hpp"
 
 #include "io/graph/gfa_reader.hpp"
-#include "io/id_mapper.hpp"
+#include "io/utils/id_mapper.hpp"
 #include "io/binary/graph_pack.hpp"
-#include "io/utils/edge_label_helper.hpp"
+#include "toolchain/edge_label_helper.hpp"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"

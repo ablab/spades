@@ -9,7 +9,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "io/utils/edge_namer.hpp"
-#include "io/id_mapper.hpp"
+#include "io/utils/id_mapper.hpp"
 
 #include <memory>
 #include <string>

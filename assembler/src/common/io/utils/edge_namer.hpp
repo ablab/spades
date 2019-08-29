@@ -7,7 +7,7 @@
 #pragma once
 
 #include "io/reads/header_naming.hpp"
-#include "io/id_mapper.hpp"
+#include "id_mapper.hpp"
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
 

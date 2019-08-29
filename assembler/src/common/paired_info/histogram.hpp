@@ -10,7 +10,7 @@
 #include <btree/btree_set.h>
 #include "adt/flat_set.hpp"
 #include "adt/small_pod_vector.hpp"
-#include "io/binary.hpp"
+#include "io/binary/binary.hpp"
 #include "index_point.hpp"
 
 namespace omnigraph {

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "io/binary.hpp"
+#include "io/binary/binary.hpp"
 #include <string>
 #include <vector>
 #include <map>

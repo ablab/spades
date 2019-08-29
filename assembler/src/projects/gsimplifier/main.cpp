@@ -9,7 +9,7 @@
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/graph/gfa_writer.hpp"
-#include "io/utils/edge_label_helper.hpp"
+#include "toolchain/edge_label_helper.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "pipeline/config_struct.hpp"
 

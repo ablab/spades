@@ -7,7 +7,7 @@
 #pragma once
 
 #include "assembly_graph/handlers/id_track_handler.hpp"
-#include "io/id_mapper.hpp"
+#include "io/utils/id_mapper.hpp"
 #include "io/utils/edge_namer.hpp"
 
 namespace io {

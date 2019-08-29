@@ -7,7 +7,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
-#include "io/utils/edge_label_helper.hpp"
+#include "toolchain/edge_label_helper.hpp"
 
 #include <vector>
 

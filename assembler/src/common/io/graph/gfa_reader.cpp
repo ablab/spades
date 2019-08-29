@@ -9,7 +9,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/construction_helper.hpp"
 
-#include "io/id_mapper.hpp"
+#include "io/utils/id_mapper.hpp"
 
 #include "gfa1/gfa.h"
 
