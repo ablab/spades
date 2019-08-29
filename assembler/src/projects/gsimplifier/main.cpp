@@ -6,7 +6,6 @@
 //***************************************************************************
 
 #include "projects/edge_profiles/profile_storage.hpp"
-#include "io/dataset_support/dataset_readers.hpp"
 #include "io/graph/gfa_writer.hpp"
 #include "toolchain/edge_label_helper.hpp"
 #include "toolchain/utils.hpp"
@@ -21,7 +20,6 @@
 #include <string>
 #include <numeric>
 #include <sys/types.h>
-#include <sys/stat.h>
 
 using namespace debruijn_graph;
 
@@ -81,10 +79,10 @@ static REDConfig red_config(bool enabled = false) {
 //};
 
 struct gcfg {
-    gcfg()
-        : k(0), RL(0), save_gfa(false), rel_cov_proc_enabled(false),
-          nthreads(omp_get_max_threads() / 2 + 1)
-    {}
+    gcfg() : k(0), RL(0),
+             save_gfa(false), save_gp(false),
+             rel_cov_proc_enabled(false),
+             nthreads(omp_get_max_threads() / 2 + 1) {}
 
     unsigned k;
     unsigned RL;
@@ -96,6 +94,7 @@ struct gcfg {
     std::string deadends_fn;
     std::string outfile;
     bool save_gfa;
+    bool save_gp;
     bool rel_cov_proc_enabled;
     unsigned nthreads;
 //    output_type mode;
@@ -109,7 +108,10 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
       cfg.graph << value("graph. In GFA (ending with .gfa) or prefix to SPAdes graph pack"),
       //cfg.outfile << value("output filename/prefix (in case of --spades-gp)"),
       cfg.outfile << value("output prefix"),
-      option("--gfa").set(cfg.save_gfa) % "produce GFA output (default: false)",
+      option("--gfa").set(cfg.save_gfa) % "produce GFA output (default: true)",
+      option("--spades-gp").set(cfg.save_gp) % "produce output graph pack in SPAdes internal format (default: false). "
+                                                      "Recommended if bulges are removed to improve further read mapping. "
+                                                      "In case GFA output is required with graph pack specify '--gfa'",
       option("--rel-cov-proc").set(cfg.rel_cov_proc_enabled) % "enable procedures based on unitig coverage ratios (default: false)",
       (required("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (required("-read-length") & integer("value", cfg.RL)) % "read length",
@@ -494,10 +496,14 @@ int main(int argc, char** argv) {
         INFO("Saving graph to " << cfg.outfile);
 
         fs::make_dirs(fs::parent_path(cfg.outfile));
-        io::binary::BasePackIO<Graph>().Save(cfg.outfile, gp);
 
-        if (cfg.save_gfa) {
-            INFO("Saving gfa");
+        if (cfg.save_gp) {
+            INFO("Saving graph pack in SPAdes binary format");
+            io::binary::BasePackIO<Graph>().Save(cfg.outfile, gp);
+        }
+
+        if (cfg.save_gfa || !cfg.save_gp) {
+            INFO("Saving GFA");
             std::ofstream os(cfg.outfile + ".gfa");
             gfa::GFAWriter writer(gp.g, os);
             writer.WriteSegmentsAndLinks();
