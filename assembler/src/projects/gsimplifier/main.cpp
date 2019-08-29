@@ -25,11 +25,18 @@
 
 using namespace debruijn_graph;
 
+typedef config::debruijn_config::simplification::tip_clipper TCConfig;
 typedef config::debruijn_config::simplification::bulge_remover BRConfig;
 typedef config::debruijn_config::simplification::relative_coverage_comp_remover RCCConfig;
 typedef config::debruijn_config::simplification::relative_coverage_edge_disconnector REDConfig;
 
-static BRConfig default_br_config(bool enabled = false) {
+static TCConfig tc_config() {
+    config::debruijn_config::simplification::tip_clipper config;
+    config.condition = "{ tc_lb 3.5, cb 1000000, rctc 2.0 }";
+    return config;
+}
+
+static BRConfig br_config(bool enabled = false) {
     BRConfig config;
     config.enabled = enabled;
     config.main_iteration_only = false;
@@ -41,14 +48,14 @@ static BRConfig default_br_config(bool enabled = false) {
     config.max_number_edges = std::numeric_limits<size_t>::max();
     config.dijkstra_vertex_limit = std::numeric_limits<size_t>::max();
     config.max_relative_delta = 0.1;
-    config.parallel = false;
+    config.parallel = true;
     config.buff_size = 10000;
     config.buff_cov_diff = 2.;
     config.buff_cov_rel_diff = 0.2;
     return config;
 }
 
-static RCCConfig default_rcc_config(bool enabled = false) {
+static RCCConfig rcc_config(bool enabled = false) {
     RCCConfig rcc_config;
     rcc_config.enabled = enabled;
     rcc_config.coverage_gap = 50.;
@@ -60,7 +67,7 @@ static RCCConfig default_rcc_config(bool enabled = false) {
     return rcc_config;
 }
 
-static REDConfig default_red_config(bool enabled = false) {
+static REDConfig red_config(bool enabled = false) {
     REDConfig red_config;
     red_config.enabled = enabled;
     red_config.diff_mult = 75.;
@@ -279,9 +286,6 @@ static void Simplify(conj_graph_pack &gp,
         INFO("PROCEDURE == Simplification cycle, iteration " << ++iteration);
     };
 
-    config::debruijn_config::simplification::tip_clipper tc_config;
-    tc_config.condition = "{ tc_lb 3.5, cb 1000000, rctc 2.0 }";
-
     omnigraph::CompositeAlgorithm<Graph> algo(gp.g, message_callback);
 
     func::TypedPredicate<EdgeId> extra_condition = func::AlwaysTrue<EdgeId>();
@@ -292,12 +296,12 @@ static void Simplify(conj_graph_pack &gp,
             return gp.edge_qual.IsZeroQuality(e);
         };
     }
-    algo.AddAlgo(ConditionedTipClipperInstance(gp.g, tc_config, simplif_info,
+    algo.AddAlgo(ConditionedTipClipperInstance(gp.g, tc_config(), simplif_info,
                                                extra_condition, removal_handler),
                  "Tip clipper");
 
     //FIXME integrate condition
-    algo.AddAlgo(BRInstance(gp.g, default_br_config(), simplif_info, removal_handler),
+    algo.AddAlgo(BRInstance(gp.g, br_config(), simplif_info, removal_handler),
                         "Bulge remover");
 
     config::debruijn_config::simplification::erroneous_connections_remover ec_config;
@@ -326,12 +330,12 @@ static void Simplify(conj_graph_pack &gp,
                         "Removing all edges with coverage below " + std::to_string(low_cov_thr));
 
     algo.AddAlgo(RelativeCoverageComponentRemoverInstance<Graph>(gp.g, gp.flanking_cov,
-            default_rcc_config(rel_cov_proc_enabled),
+            rcc_config(rel_cov_proc_enabled),
             simplif_info, set_removal_handler_f),
             "Removing subgraphs based on relative coverage");
 
     algo.AddAlgo(RelativelyLowCoverageDisconnectorInstance<Graph>(gp.g, gp.flanking_cov,
-            default_red_config(rel_cov_proc_enabled),
+            red_config(rel_cov_proc_enabled),
             simplif_info, removal_handler),
             "Disconnecting relatively low covered edges");
 
