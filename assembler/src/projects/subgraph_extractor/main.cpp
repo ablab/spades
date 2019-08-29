@@ -871,6 +871,87 @@ static void WriteComponent(const GraphComponent<Graph> &component, const std::st
     }
 }
 
+void ExtractCDSSubgraphs(const conj_graph_pack &gp,
+             const GeneInitSeq &starting_seqs,
+             const std::unordered_map<std::string, size_t> &cds_len_ests,
+             const io::EdgeNamingF<Graph> &edge_naming_f,
+             const std::string &out_folder) {
+    PartialGeneProcessor processor(gp.g, edge_naming_f);
+    auto mapper = MapperInstance(gp);
+    INFO("Searching relevant subgraphs in parallel for all partial predictions");
+    for (const auto &gene_id : utils::key_set(starting_seqs)) {
+        INFO("Processing gene " << gene_id);
+        INFO("Subgraphs extracted for all " << starting_seqs.count(gene_id) << " of its partial predictions will be united");
+        std::set<EdgeId> edges;
+        std::set<GraphPos> stop_codon_poss;
+        for (const std::string &s : utils::get_all(starting_seqs, gene_id)) {
+            utils::insert_all(edges, processor.ProcessPartialGene(s, mapper,
+                                                                  utils::get(cds_len_ests, gene_id),
+                                                                  stop_codon_poss).edges());
+        }
+        subgraph_extraction::ComponentExpander expander(gp.g);
+        auto component = expander.Expand(GraphComponent<Graph>::FromEdges(gp.g, edges.begin(),
+                                                                          edges.end(), /*add conjugate*/true));
+
+        if (component.e_size() > 0) {
+            WriteComponent(component, out_folder + gene_id, stop_codon_poss, edge_naming_f);
+        } else {
+            INFO("Couldn't find a non-trivial component for gene " << gene_id);
+        }
+    }
+}
+
+void ParallelExtractCDSSubgraphs(const conj_graph_pack &gp,
+                       const GeneInitSeq &starting_seqs,
+                       const std::unordered_map<std::string, size_t> &cds_len_ests,
+                       const io::EdgeNamingF<Graph> &edge_naming_f,
+                       const std::string &out_folder) {
+    PartialGeneProcessor processor(gp.g, edge_naming_f);
+    auto mapper = MapperInstance(gp);
+    INFO("Searching relevant subgraphs in parallel for all partial predictions");
+    std::vector<std::string> flattened_ids;
+    std::vector<std::string> flattened_part_genes;
+    for (const auto &id_part : starting_seqs) {
+        flattened_ids.push_back(id_part.first);
+        flattened_part_genes.push_back(id_part.second);
+    }
+
+    size_t n = flattened_ids.size();
+
+    std::vector<std::set<EdgeId>> flattened_relevant_edges(n);
+    std::vector<std::set<GraphPos>> flattened_stop_poss(n);
+
+    #pragma omp parallel for schedule(guided)
+    for (size_t i = 0; i < n; ++i) {
+        flattened_relevant_edges[i] = processor.ProcessPartialGene(flattened_part_genes[i], mapper,
+                                                                   utils::get(cds_len_ests, flattened_ids[i]),
+                                                                   flattened_stop_poss[i]).edges();
+    }
+    INFO("Done searching subgraphs");
+
+    std::set<EdgeId> edges;
+    std::set<GraphPos> stop_codon_poss;
+    for (size_t i = 0; i < n; ++i) {
+        const std::string &gene_id = flattened_ids[i];
+        utils::insert_all(edges, flattened_relevant_edges[i]);
+        utils::insert_all(stop_codon_poss, flattened_stop_poss[i]);
+
+        if (i == n - 1 || flattened_ids[i + 1] != gene_id) {
+            subgraph_extraction::ComponentExpander expander(gp.g);
+            auto component = expander.Expand(GraphComponent<Graph>::FromEdges(gp.g, edges.begin(),
+                                                                              edges.end(), /*add conjugate*/true));
+
+            if (component.e_size() > 0) {
+                WriteComponent(component, out_folder + gene_id, stop_codon_poss, edge_naming_f);
+            } else {
+                INFO("Couldn't find a non-trivial component for gene " << gene_id);
+            }
+            edges.clear();
+            stop_codon_poss.clear();
+        }
+    }
+}
+
 int main(int argc, char** argv) {
     utils::segfault_handler sh;
     gcfg cfg;
@@ -904,7 +985,6 @@ int main(int argc, char** argv) {
                 toolchain::LoadGraph(gp, cfg.graph));
 
         gp.EnsureBasicMapping();
-        auto mapper = MapperInstance(gp);
 
         VERIFY(cfg.genes_desc.empty() != cfg.genes_seq.empty());
 
@@ -913,72 +993,16 @@ int main(int argc, char** argv) {
                               PredictionsFromDescFile(gp.g, element_finder, cfg.genes_desc);
 
         const Graph &g = gp.g;
-        PartialGeneProcessor processor(g, label_helper.edge_naming_f());
         auto cds_len_ests = CDSLengthsFromFile(cfg.cds_len_fn);
 
         const bool parallel = false;
         if (parallel) {
-        INFO("Searching relevant subgraphs in parallel for all partial predictions");
-        std::vector<std::string> flattened_ids;
-        std::vector<std::string> flattened_part_genes;
-        for (const auto &id_part : starting_seqs) {
-            flattened_ids.push_back(id_part.first);
-            flattened_part_genes.push_back(id_part.second);
-        }
-
-        size_t n = flattened_ids.size();
-
-        std::vector<std::set<EdgeId>> flattened_relevant_edges(n);
-        std::vector<std::set<GraphPos>> flattened_stop_poss(n);
-
-        #pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < n; ++i) {
-            flattened_relevant_edges[i] = processor.ProcessPartialGene(flattened_part_genes[i], mapper,
-                                                                       utils::get(cds_len_ests, flattened_ids[i]),
-                                                                       flattened_stop_poss[i]).edges();
-        }
-        INFO("Done searching subgraphs");
-
-        std::set<EdgeId> edges;
-        std::set<GraphPos> stop_codon_poss;
-        for (size_t i = 0; i < n; ++i) {
-            const std::string &gene_id = flattened_ids[i];
-            utils::insert_all(edges, flattened_relevant_edges[i]);
-            utils::insert_all(stop_codon_poss, flattened_stop_poss[i]);
-
-            if (i == n - 1 || flattened_ids[i + 1] != gene_id) {
-                subgraph_extraction::ComponentExpander expander(gp.g);
-                auto component = expander.Expand(GraphComponent<Graph>::FromEdges(gp.g, edges.begin(),
-                                                                                  edges.end(), /*add conjugate*/true));
-
-                if (component.e_size() > 0) {
-                    WriteComponent(component, out_folder + gene_id, stop_codon_poss, label_helper.edge_naming_f());
-                } else {
-                    INFO("Couldn't find a non-trivial component for gene " << gene_id);
-                }
-            }
-        }
+            //Experimental parallel mode
+            ParallelExtractCDSSubgraphs(gp, starting_seqs, cds_len_ests,
+                              label_helper.edge_naming_f(), out_folder);
         } else {
-        for (const auto &gene_id : utils::key_set(starting_seqs)) {
-            INFO("Processing gene " << gene_id);
-            INFO("Subgraphs extracted for all " << starting_seqs.count(gene_id) << " of its partial predictions will be united");
-            std::set<EdgeId> edges;
-            std::set<GraphPos> stop_codon_poss;
-            for (const std::string &s : utils::get_all(starting_seqs, gene_id)) {
-                utils::insert_all(edges, processor.ProcessPartialGene(s, mapper,
-                                                                      utils::get(cds_len_ests, gene_id),
-                                                                      stop_codon_poss).edges());
-            }
-            subgraph_extraction::ComponentExpander expander(gp.g);
-            auto component = expander.Expand(GraphComponent<Graph>::FromEdges(gp.g, edges.begin(),
-                                                                              edges.end(), /*add conjugate*/true));
-
-            if (component.e_size() > 0) {
-                WriteComponent(component, out_folder + gene_id, stop_codon_poss, label_helper.edge_naming_f());
-            } else {
-                INFO("Couldn't find a non-trivial component for gene " << gene_id);
-            }
-        }
+            ExtractCDSSubgraphs(gp, starting_seqs, cds_len_ests,
+                              label_helper.edge_naming_f(), out_folder);
         }
 
         INFO("Done");
