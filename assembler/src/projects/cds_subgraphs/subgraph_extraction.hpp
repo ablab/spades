@@ -13,7 +13,8 @@
 
 #include <fstream>
 
-namespace subgraph_extraction {
+namespace cds_subgraphs {
+
 using namespace omnigraph;
 using namespace debruijn_graph;
 

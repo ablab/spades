@@ -727,7 +727,7 @@ public:
         }
 
         INFO("'Closing' gathered component");
-        subgraph_extraction::ComponentExpander expander(g_);
+        cds_subgraphs::ComponentExpander expander(g_);
         return expander.Expand(GraphComponent<Graph>::FromEdges(g_, edges.begin(), edges.end()));
     }
 };
@@ -854,7 +854,7 @@ static void WriteComponent(const GraphComponent<Graph> &component, const std::st
                            const std::set<GraphPos> &stop_codon_poss, const io::EdgeNamingF<Graph> &naming_f) {
 
     const auto &g = component.g();
-    subgraph_extraction::WriteComponentWithDeadends(component, prefix, naming_f);
+    cds_subgraphs::WriteComponentWithDeadends(component, prefix, naming_f);
 
     INFO("Writing potential stop-codon positions to " << prefix << ".stops")
     std::ofstream stop_codon_os(prefix + ".stops");
@@ -889,7 +889,7 @@ void ExtractCDSSubgraphs(const conj_graph_pack &gp,
                                                                   utils::get(cds_len_ests, gene_id),
                                                                   stop_codon_poss).edges());
         }
-        subgraph_extraction::ComponentExpander expander(gp.g);
+        cds_subgraphs::ComponentExpander expander(gp.g);
         auto component = expander.Expand(GraphComponent<Graph>::FromEdges(gp.g, edges.begin(),
                                                                           edges.end(), /*add conjugate*/true));
 
@@ -937,7 +937,7 @@ void ParallelExtractCDSSubgraphs(const conj_graph_pack &gp,
         utils::insert_all(stop_codon_poss, flattened_stop_poss[i]);
 
         if (i == n - 1 || flattened_ids[i + 1] != gene_id) {
-            subgraph_extraction::ComponentExpander expander(gp.g);
+            cds_subgraphs::ComponentExpander expander(gp.g);
             auto component = expander.Expand(GraphComponent<Graph>::FromEdges(gp.g, edges.begin(),
                                                                               edges.end(), /*add conjugate*/true));
 
