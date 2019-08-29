@@ -10,10 +10,8 @@
 #include "visualization/graph_labeler.hpp"
 #include "utils/stl_utils.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
-#include "io/id_mapper.hpp"
 
 #include <unordered_map>
-using namespace omnigraph;
 
 namespace omnigraph {
 
@@ -82,39 +80,6 @@ public:
 
 private:
     DECL_LOGGER("GraphElementFinder");
-};
-
-template<class Graph>
-class LabelEdgeMap {
-    typedef typename Graph::EdgeId EdgeId;
-    const GraphElementFinder<Graph> &element_finder_;
-    const bool label_map_available_;
-    std::unordered_map<std::string, size_t> label2id_;
-
-public:
-
-    explicit LabelEdgeMap(const GraphElementFinder<Graph> &element_finder,
-                          const io::IdMapper<std::string> *id_mapper_ptr = nullptr) :
-            element_finder_(element_finder),
-            label_map_available_(id_mapper_ptr != nullptr) {
-        if (label_map_available_) {
-            DEBUG("Creating label to int_id map");
-            for (auto it = element_finder.g().ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
-                size_t id = element_finder.g().int_id(*it);
-                DEBUG("Mapping " << (*id_mapper_ptr)[id] << " to " << id);
-                label2id_[(*id_mapper_ptr)[id]] = id;
-            }
-        }
-    }
-
-    EdgeId operator[](const std::string &label) const {
-        return element_finder_.ReturnEdgeId(label_map_available_ ?
-                                            utils::get(label2id_, label) :
-                                            std::stoi(label));
-    }
-
-private:
-    DECL_LOGGER("LabelEdgeMap");
 };
 
 }

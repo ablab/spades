@@ -52,14 +52,14 @@ void EdgeProfileStorage::Save(std::ostream &os, const io::EdgeNamingF<Graph> &ed
 }
 
 void EdgeProfileStorage::Load(std::istream &is,
-                              const omnigraph::LabelEdgeMap<Graph> &label_2_edge,
+                              const io::EdgeLabelHelper<Graph> &label_helper,
                               bool check_consistency) {
     std::string s;
     while (std::getline(is, s)) {
         std::istringstream ss(s);
         std::string label;
         ss >> label;
-        EdgeId e = label_2_edge[label];
+        EdgeId e = label_helper.edge(label);
         auto p = MultiplyEscapeZero(LoadAbundanceVector(ss), g().length(e));
         profiles_[e] = p;
         profiles_[g().conjugate(e)] = std::move(p);

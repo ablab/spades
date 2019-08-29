@@ -7,7 +7,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
-#include "io/utils/edge_namer.hpp"
+#include "io/utils/edge_label_helper.hpp"
 
 #include <vector>
 
@@ -76,6 +76,7 @@ public:
 
     template<class SingleStreamList, class Mapper>
     void Fill(SingleStreamList &streams, const Mapper &mapper) {
+        //Initialize profiles
         for (auto it = g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             profiles_[*it] = RawAbundanceVector(sample_cnt_, 0);
         }
@@ -105,8 +106,9 @@ public:
     void Save(std::ostream &os,
               const io::EdgeNamingF<Graph> &edge_namer = io::IdNamingF<Graph>()) const;
 
+    //TODO maybe pass EdgeDereferenceF?
     void Load(std::istream &is,
-              const omnigraph::LabelEdgeMap<Graph> &label_2_edge,
+              const io::EdgeLabelHelper<Graph> &label_helper,
               //const omnigraph::GraphElementFinder<Graph> &element_finder,
               bool check_consistency = false);
 

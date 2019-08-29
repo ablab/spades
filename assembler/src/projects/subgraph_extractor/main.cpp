@@ -12,7 +12,7 @@
 #include "pipeline/config_struct.hpp"
 
 #include "io/binary/graph_pack.hpp"
-#include "io/utils/edge_namer.hpp"
+#include "io/utils/edge_label_helper.hpp"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
@@ -51,15 +51,13 @@ static void PrintGraphInfo(Graph &g) {
     INFO("Graph loaded. Total vertices: " << g.size() << " Total edges: " << sz);
 }
 
-using IdMapperPtr = std::unique_ptr<io::IdMapper<std::string>>;
-
-static IdMapperPtr LoadGraph(conj_graph_pack &gp, const std::string &filename) {
-    std::unique_ptr<io::IdMapper<std::string>> id_mapper;
+static io::IdMapper<std::string> *LoadGraph(conj_graph_pack &gp, const std::string &filename) {
+    io::IdMapper<std::string> *id_mapper = nullptr;
     if (ends_with(filename, ".gfa")) {
-        id_mapper = std::make_unique<io::IdMapper<std::string>>();
+        id_mapper = new io::IdMapper<std::string>();
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(gp.g, &(*id_mapper));
+        gfa.to_graph(gp.g, id_mapper);
     } else {
         io::binary::BasePackIO<Graph>().Load(filename, gp);
     }
@@ -578,8 +576,7 @@ class PartialGeneProcessor {
 //    const PathFindingRelevantComponentFinder rel_comp_finder_;
     const MinDistRelevantComponentFinder rel_comp_finder_;
     const ReadPathFinder<Graph> path_finder_;
-    //TODO temporary for better logging
-    const IdMapperPtr &id_mapper_;
+    const io::EdgeNamingF<Graph> edge_naming_f_;
 
     Sequence PathSequence(const EdgePath &p) const {
         return debruijn_graph::PathSequence(g_, p);
@@ -661,13 +658,13 @@ class PartialGeneProcessor {
         //TODO optimize debug logging
         for (const auto &gpos_d: ends) {
             EdgeId e = gpos_d.first.first;
-            DEBUG("Edge " << (id_mapper_ ? (*id_mapper_)[g_.int_id(e)] : std::to_string(g_.int_id(e))) << " pos " << gpos_d.first.second);
+            DEBUG("Edge " << edge_naming_f_(g_, e) << " pos " << gpos_d.first.second);
         }
         //TODO optimize debug logging
         INFO("Graph sources to consider: " << starts.size());
         for (const auto &gpos_d: starts) {
             EdgeId e = gpos_d.first.first;
-            DEBUG("Edge " << (id_mapper_ ? (*id_mapper_)[g_.int_id(e)] : std::to_string(g_.int_id(e))) << " pos " << gpos_d.first.second);
+            DEBUG("Edge " << edge_naming_f_(g_, e) << " pos " << gpos_d.first.second);
         }
 
         return (starts.size() * ends.size() == 0) ? GraphComponent<Graph>(g_) :
@@ -723,14 +720,13 @@ class PartialGeneProcessor {
 
 public:
     PartialGeneProcessor(const Graph &g,
-                         const IdMapperPtr &id_mapper,
-                         //io::IdMapper<std::string> *id_mapper = nullptr,
+                         const io::EdgeNamingF<Graph> &edge_naming_f,
                          //double min_len_frac = 0.5,
                          double max_len_coeff = 1.5) :
             g_(g),
             rel_comp_finder_(g_, /*min_len_frac, */max_len_coeff),
             path_finder_(g, false, /*max gap length*/100),
-            id_mapper_(id_mapper) {}
+            edge_naming_f_(edge_naming_f) {}
 
     //TODO configure + might need to use query length instead of path length
     //TODO think about interface
@@ -895,10 +891,8 @@ static GeneInitSeq PredictionsFromFastaFile(const std::string &fasta_fn) {
 }
 
 static void WriteComponent(const GraphComponent<Graph> &component, const std::string &prefix,
-                           const std::set<GraphPos> &stop_codon_poss, const IdMapperPtr &id_mapper) {
+                           const std::set<GraphPos> &stop_codon_poss, const io::EdgeNamingF<Graph> &naming_f) {
 
-    io::EdgeNamingF<Graph> naming_f = id_mapper ? io::MapNamingF<Graph>(*id_mapper)
-                                                : io::IdNamingF<Graph>();
     const auto &g = component.g();
     subgraph_extraction::WriteComponentWithDeadends(component, prefix, naming_f);
 
@@ -945,9 +939,9 @@ int main(int argc, char** argv) {
 
         omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
         INFO("Loading de Bruijn graph from " << cfg.graph);
-        gp.kmer_mapper.Attach(); // todo unnecessary
+        gp.kmer_mapper.Attach(); // TODO unnecessary
+        io::EdgeLabelHelper<Graph> label_helper(element_finder, LoadGraph(gp, cfg.graph));
 
-        auto id_mapper = LoadGraph(gp, cfg.graph);
         gp.EnsureBasicMapping();
         auto mapper = MapperInstance(gp);
 
@@ -958,7 +952,7 @@ int main(int argc, char** argv) {
                               PredictionsFromDescFile(gp.g, element_finder, cfg.genes_desc);
 
         const Graph &g = gp.g;
-        PartialGeneProcessor processor(g, id_mapper);
+        PartialGeneProcessor processor(g, label_helper.edge_naming_f());
         auto cds_len_ests = CDSLengthsFromFile(cfg.cds_len_fn);
 
         const bool parallel = false;
@@ -997,7 +991,7 @@ int main(int argc, char** argv) {
                                                                                   edges.end(), /*add conjugate*/true));
 
                 if (component.e_size() > 0) {
-                    WriteComponent(component, out_folder + gene_id, stop_codon_poss, id_mapper);
+                    WriteComponent(component, out_folder + gene_id, stop_codon_poss, label_helper.edge_naming_f());
                 } else {
                     INFO("Couldn't find a non-trivial component for gene " << gene_id);
                 }
@@ -1019,7 +1013,7 @@ int main(int argc, char** argv) {
                                                                               edges.end(), /*add conjugate*/true));
 
             if (component.e_size() > 0) {
-                WriteComponent(component, out_folder + gene_id, stop_codon_poss, id_mapper);
+                WriteComponent(component, out_folder + gene_id, stop_codon_poss, label_helper.edge_naming_f());
             } else {
                 INFO("Couldn't find a non-trivial component for gene " << gene_id);
             }

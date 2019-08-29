@@ -9,6 +9,7 @@
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/graph/gfa_writer.hpp"
+#include "io/utils/edge_label_helper.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "pipeline/config_struct.hpp"
 
@@ -50,20 +51,20 @@ static void PrintGraphInfo(Graph &g) {
     INFO("Graph loaded. Total vertices: " << g.size() << " Total edges: " << sz);
 }
 
-static std::unique_ptr<io::IdMapper<std::string>> LoadGraph(conj_graph_pack &gp,
-                                                            const std::string &filename) {
-    std::unique_ptr<io::IdMapper<std::string>> id_mapper;
+static io::IdMapper<std::string> *LoadGraph(conj_graph_pack &gp, const std::string &filename) {
+    io::IdMapper<std::string> *id_mapper = nullptr;
     if (ends_with(filename, ".gfa")) {
-        id_mapper = std::make_unique<io::IdMapper<std::string>>();
+        id_mapper = new io::IdMapper<std::string>();
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(gp.g, &(*id_mapper));
+        gfa.to_graph(gp.g, id_mapper);
     } else {
         io::binary::BasePackIO<Graph>().Load(filename, gp);
     }
     PrintGraphInfo(gp.g);
     return id_mapper;
 }
+
 
 typedef config::debruijn_config::simplification::bulge_remover BRConfig;
 typedef config::debruijn_config::simplification::relative_coverage_comp_remover RCCConfig;
@@ -238,13 +239,13 @@ public:
         }
     }
 
-    void Load(std::istream &is, const omnigraph::LabelEdgeMap<Graph> &label_2_edge) {
+    void Load(std::istream &is, const io::EdgeLabelHelper<Graph> &label_helper) {
         std::string s;
         while (std::getline(is, s)) {
             std::istringstream ss(s);
             std::string label;
             ss >> label;
-            EdgeId e = label_2_edge[label];
+            EdgeId e = label_helper.edge(label);
             VERIFY_MSG(e != EdgeId(), "Couldn't find edge with int id " << std::stoi(label) << " in the graph");
 
             std::string orient;
@@ -450,9 +451,7 @@ int main(int argc, char** argv) {
         omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
         gp.kmer_mapper.Attach();
 
-        auto id_mapper = LoadGraph(gp, cfg.graph);
-
-        omnigraph::LabelEdgeMap<Graph> label_2_edge(element_finder, id_mapper.get());
+        io::EdgeLabelHelper<Graph> label_helper(element_finder, LoadGraph(gp, cfg.graph));
 
         const Graph &g = gp.g;
 
@@ -462,8 +461,7 @@ int main(int argc, char** argv) {
             for (auto it = g.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
                 EdgeId e = *it;
                 if (IsDeadEnd(g, g.EdgeStart(e)) || IsDeadEnd(g, g.EdgeEnd(e))) {
-                    std::string name = id_mapper ? (*id_mapper)[g.int_id(e)] : std::to_string(g.int_id(e));
-                    if (!deadend_names.count(name)) {
+                    if (!deadend_names.count(label_helper.label(e))) {
                         undeadends.insert(e);
                         undeadends.insert(g.conjugate(e));
                     }
@@ -487,7 +485,7 @@ int main(int argc, char** argv) {
             INFO("Sample count determined as " << sample_cnt);
             profile_storage = std::make_unique<ProfileStorage>(gp.g, sample_cnt);
             std::ifstream is(cfg.edge_profile_fn);
-            profile_storage->Load(is, label_2_edge);
+            profile_storage->Load(is, label_helper);
             INFO("Profiles loaded");
         }
 
@@ -498,7 +496,7 @@ int main(int argc, char** argv) {
             fs::CheckFileExistenceFATAL(cfg.stop_codons_fn);
             stop_codons_storage = std::make_unique<PositionStorage>(gp.g);
             std::ifstream is(cfg.stop_codons_fn);
-            stop_codons_storage->Load(is, label_2_edge);
+            stop_codons_storage->Load(is, label_helper);
             INFO("Stop codon positions loaded");
         }
 

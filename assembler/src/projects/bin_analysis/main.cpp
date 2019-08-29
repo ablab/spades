@@ -10,6 +10,7 @@
 #include "io/graph/gfa_reader.hpp"
 #include "io/id_mapper.hpp"
 #include "io/binary/graph_pack.hpp"
+#include "io/utils/edge_label_helper.hpp"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
@@ -48,14 +49,13 @@ static void PrintGraphInfo(Graph &g) {
     INFO("Graph loaded. Total vertices: " << g.size() << " Total edges: " << sz);
 }
 
-static std::unique_ptr<io::IdMapper<std::string>> LoadGraph(conj_graph_pack &gp,
-                                                            const std::string &filename) {
-    std::unique_ptr<io::IdMapper<std::string>> id_mapper;
+static io::IdMapper<std::string> *LoadGraph(conj_graph_pack &gp, const std::string &filename) {
+    io::IdMapper<std::string> *id_mapper = nullptr;
     if (ends_with(filename, ".gfa")) {
-        id_mapper = std::make_unique<io::IdMapper<std::string>>();
+        id_mapper = new io::IdMapper<std::string>();
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(gp.g, &(*id_mapper));
+        gfa.to_graph(gp.g, id_mapper);
     } else {
         io::binary::BasePackIO<Graph>().Load(filename, gp);
     }
@@ -113,16 +113,13 @@ static void Run(size_t K, const std::string &graph_path,
     conj_graph_pack gp(K, tmpdir, 1, ref);
 
     INFO("Loading de Bruijn graph from " << graph_path);
+    omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
     gp.kmer_mapper.Attach();
+    io::EdgeLabelHelper<Graph> label_helper(element_finder, LoadGraph(gp, graph_path));
 
-    auto id_mapper = LoadGraph(gp, graph_path);
-
-    EdgeQuality<Graph> annotation(gp.g);
     gp.EnsureBasicMapping();
 
-	//auto p = fs::append_path(out_prefix, "graph_pack");
-    //io::binary::FullPackIO<Graph>().Save(p, gp);
-
+    EdgeQuality<Graph> annotation(gp.g);
     double base_cov = bin_refinement::AnnotateEdges(gp, annotation, bin_contigs);
 
     VERIFY(annotation.IsAttached());
@@ -145,10 +142,8 @@ static void Run(size_t K, const std::string &graph_path,
 
     auto gc = GraphComponent<Graph>::FromEdges(gp.g, annotation.PositiveQualEdges());
     gc = subgraph_extraction::ComponentExpander(gp.g).Expand(gc);
-    io::EdgeNamingF<Graph> naming_f = id_mapper ? io::MapNamingF<Graph>(*id_mapper)
-                                                : io::IdNamingF<Graph>();
 
-    subgraph_extraction::WriteComponentWithDeadends(gc, out_prefix, naming_f);
+    subgraph_extraction::WriteComponentWithDeadends(gc, out_prefix, label_helper.edge_naming_f());
 }
 
 struct gcfg {

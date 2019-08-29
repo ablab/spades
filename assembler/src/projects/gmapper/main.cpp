@@ -222,6 +222,7 @@ int main(int argc, char* argv[]) {
             INFO("Saving to " << cfg.outfile);
 
             std::ofstream os(cfg.outfile);
+            //FIXME fix behavior when we don't have the mapper
             path_extend::GFAPathWriter gfa_writer(gp.g, os,
                                                   io::MapNamingF<debruijn_graph::ConjugateDeBruijnGraph>(*id_mapper));
             gfa_writer.WriteSegmentsAndLinks();

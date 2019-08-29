@@ -11,6 +11,7 @@
 
 #include "io/binary/graph_pack.hpp"
 #include "projects/mts/contig_abundance.hpp"
+#include "io/utils/edge_label_helper.hpp"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
@@ -32,6 +33,14 @@ static void create_console_logger() {
     attach_logger(lg);
 }
 
+//TODO move to common header, typedef IdMapper<std::string>
+static bool ends_with(const std::string &s, const std::string &p) {
+    if (s.size() < p.size())
+        return false;
+
+    return (s.compare(s.size() - p.size(), p.size(), p) == 0);
+}
+
 using namespace debruijn_graph;
 
 static void PrintGraphInfo(Graph &g) {
@@ -42,17 +51,19 @@ static void PrintGraphInfo(Graph &g) {
     INFO("Graph loaded. Total vertices: " << g.size() << " Total edges: " << sz);
 }
 
-static void LoadGraph(conj_graph_pack &gp, const std::string &filename) {
-    //if (ends_with(filename, ".gfa")) {
-    //    gfa::GFAReader gfa(filename);
-    //    INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-    //    gfa.to_graph(gp.g);
-    //} else {
-    io::binary::BasePackIO<Graph>().Load(filename, gp);
-    //}
+static io::IdMapper<std::string> *LoadGraph(conj_graph_pack &gp, const std::string &filename) {
+    io::IdMapper<std::string> *id_mapper = nullptr;
+    if (ends_with(filename, ".gfa")) {
+        id_mapper = new io::IdMapper<std::string>();
+        gfa::GFAReader gfa(filename);
+        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+        gfa.to_graph(gp.g, id_mapper);
+    } else {
+        io::binary::BasePackIO<Graph>().Load(filename, gp);
+    }
     PrintGraphInfo(gp.g);
+    return id_mapper;
 }
-
 
 typedef io::DataSet<config::LibraryData> DataSet;
 typedef io::SequencingLibrary<config::LibraryData> SequencingLib;
@@ -82,9 +93,9 @@ static void Run(const std::string &graph_path, const std::string &dataset_desc, 
     conj_graph_pack gp(K, tmpdir, dataset.lib_count());
 
     INFO("Loading de Bruijn graph from " << graph_path);
+    omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
     gp.kmer_mapper.Attach();
-
-    LoadGraph(gp, graph_path);
+    io::EdgeLabelHelper<Graph> label_helper(element_finder, LoadGraph(gp, graph_path));
 
     // FIXME: Get rid of this "/" junk
     config::init_libs(dataset, nthreads, tmpdir + "/");
@@ -103,7 +114,7 @@ static void Run(const std::string &graph_path, const std::string &dataset_desc, 
     profile_storage.Fill(single_readers, *MapperInstance(gp));
 
     std::ofstream os(profiles_fn);
-    profile_storage.Save(os);
+    profile_storage.Save(os, label_helper.edge_naming_f());
 }
 
 struct gcfg {
