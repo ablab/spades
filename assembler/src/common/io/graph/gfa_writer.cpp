@@ -13,6 +13,8 @@
 using namespace gfa;
 using namespace debruijn_graph;
 
+template class omnigraph::GraphComponent<Graph>;
+
 static void WriteSegment(const std::string& edge_id, const Sequence &seq, double cov,
                          std::ostream &os) {
     os << "S\t"
@@ -50,7 +52,7 @@ void GFAWriter::WriteLinks() {
     }
 }
 
-void GFAWriter::WriteSegments(const omnigraph::GraphComponent<Graph> &gc) {
+void GFAWriter::WriteSegments(const Component &gc) {
     for (EdgeId e : gc.edges()) {
         if (e <= graph_.conjugate(e)) {
             WriteSegment(edge_namer_.EdgeString(e), graph_.EdgeNucls(e),
@@ -60,9 +62,8 @@ void GFAWriter::WriteSegments(const omnigraph::GraphComponent<Graph> &gc) {
     }
 }
 
-void GFAWriter::WriteLinks(const omnigraph::GraphComponent<Graph> &gc) {
+void GFAWriter::WriteLinks(const Component &gc) {
     for (VertexId v : gc.vertices()) {
-        //TODO think about appropriate behavior or force preliminary component "closure"
         if (v <= graph_.conjugate(v) && !gc.IsBorder(v)) {
             for (auto inc_edge : graph_.IncomingEdges(v)) {
                 for (auto out_edge : graph_.OutgoingEdges(v)) {
@@ -73,3 +74,12 @@ void GFAWriter::WriteLinks(const omnigraph::GraphComponent<Graph> &gc) {
         }
     }
 }
+
+void GFAWriter::WriteSegmentsAndLinks(const Component &gc) {
+    //TODO remove and add optional check?
+    auto rc_closure = Component::FromEdges(graph_, gc.edges().begin(), gc.edges().end(),
+                                           /*add_conjugate*/true);
+    WriteSegments(rc_closure);
+    WriteLinks(rc_closure);
+}
+

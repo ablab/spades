@@ -7,13 +7,19 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
-#include "assembly_graph/components/graph_component.hpp"
 #include "io/utils/edge_namer.hpp"
 #include "io/utils/id_mapper.hpp"
 
 #include <memory>
 #include <string>
 #include <ostream>
+
+namespace omnigraph {
+
+template <class Graph>
+class GraphComponent;
+
+}
 
 namespace gfa {
 
@@ -35,13 +41,7 @@ public:
         WriteLinks();
     }
 
-    void WriteSegmentsAndLinks(const Component &gc) {
-        //todo remove and add optional check?
-        auto rc_closure = Component::FromEdges(graph_, gc.edges().begin(),
-                                               gc.edges().end(), /*add_conjugate*/true);
-        WriteSegments(rc_closure);
-        WriteLinks(rc_closure);
-    }
+    void WriteSegmentsAndLinks(const Component &gc);
 
   private:
     void WriteSegments();
