@@ -27,14 +27,6 @@ static bool ends_with(const std::string &s, const std::string &p) {
     return (s.compare(s.size() - p.size(), p.size(), p) == 0);
 }
 
-static void PrintGraphInfo(debruijn_graph::Graph &g) {
-    size_t sz = 0;
-    for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it)
-        sz += 1;
-
-    INFO("Graph loaded. Total vertices: " << g.size() << " Total edges: " << sz);
-}
-
 static io::IdMapper<std::string> *LoadGraph(debruijn_graph::conj_graph_pack &gp, const std::string &filename) {
     io::IdMapper<std::string> *id_mapper = nullptr;
     if (ends_with(filename, ".gfa")) {
@@ -45,7 +37,7 @@ static io::IdMapper<std::string> *LoadGraph(debruijn_graph::conj_graph_pack &gp,
     } else {
         io::binary::BasePackIO<Graph>().Load(filename, gp);
     }
-    PrintGraphInfo(gp.g);
+    INFO("Graph loaded. Total vertices: " << gp.g.size() << " Total edges: " << gp.g.e_size());
     return id_mapper;
 }
 
