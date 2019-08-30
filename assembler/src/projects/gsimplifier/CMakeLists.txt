@@ -11,7 +11,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 
 add_executable(spades-gsimplifier
-               ../edge_profiles/profile_storage.cpp
+               ../unitig_coverage/profile_storage.cpp
                main.cpp)
 
 target_link_libraries(spades-gsimplifier graphio common_modules ${COMMON_LIBRARIES})
