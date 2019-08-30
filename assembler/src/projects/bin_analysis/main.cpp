@@ -130,9 +130,9 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
       cfg.core_contigs << value("path to contigs attributed to the bin"),
       cfg.out_prefix << value("output path prefix"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
-      (option("-r", "--ref") & value("file", cfg.reference)) % "fasta file with reference sequence (for benchmarking purposes)",
+      (option("-r", "--reference") & value("file", cfg.reference)) % "fasta file with reference sequence (for benchmarking purposes)",
       (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("-tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
+      (option("--tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
   );
 
   auto result = parse(argc, argv, cli);

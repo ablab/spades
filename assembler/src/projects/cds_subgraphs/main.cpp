@@ -27,7 +27,7 @@ using namespace debruijn_graph;
 
 struct gcfg {
     gcfg()
-        : k(0), //save_gfa(false),
+        : k(0),
           nthreads(omp_get_max_threads() / 2 + 1)
     {}
 
@@ -38,32 +38,21 @@ struct gcfg {
     std::string genes_desc;
     std::string genes_seq;
     std::string cds_len_fn;
-//    bool save_gfa;
     unsigned nthreads;
-//    output_type mode;
 };
 
 static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
   auto cli = (
-//      cfg.graph << value("graph. In GFA (ending with .gfa) or prefix to SPAdes graph pack"),
-      //cfg.outfile << value("output filename/prefix (in case of --spades-gp)"),
-//      option("--gfa").set(cfg.save_gfa) % "produce GFA output",
-      (required("-o") & value("dir", cfg.outdir)) % "outpur directory to use for GFA files",
-      one_of((option("-part-desc") & value("file", cfg.genes_desc)) % "file with partial genes description (.gff)",
-             (option("-part-seq") & value("file", cfg.genes_seq)) % "file with partial genes sequences (.fasta)"),
-      (required("-graph") & value("graph", cfg.graph)) % "In GFA (ending with .gfa) or prefix to SPAdes graph pack",
-      (required("-cds-len-est") & value("file", cfg.cds_len_fn)) % "file with cds length estimamtes",
+      (required("-o", "--output-folder") & value("dir", cfg.outdir)) % "output folder to use for GFA files",
+      one_of((option("--part-desc") & value("file", cfg.genes_desc)) % "file with partial genes description (.gff)",
+             (option("--part-seq") & value("file", cfg.genes_seq)) % "file with partial genes sequences (.fasta)"),
+      (required("--graph") & value("graph", cfg.graph)) % "In GFA (ending with .gfa) or prefix to SPAdes graph pack",
+      (required("--cds-len-est") & value("file", cfg.cds_len_fn)) % "file with cds length estimamtes",
       (required("-k") & integer("value", cfg.k)) % "k-mer length to use",
-      (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
-      (option("-tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use (default: <outdir>/tmp)"
-//      one_of(option("--unitigs").set(cfg.mode, output_type::unitigs) % "produce unitigs (default)",
-//             option("--fastg").set(cfg.mode, output_type::fastg) % "produce graph in FASTG format",
-//             option("--gfa").set(cfg.mode, output_type::gfa) % "produce graph in GFA1 format",
-//             option("--spades").set(cfg.mode, output_type::spades) % "produce graph in SPAdes internal format",
-//             option("--spades-gp").set(cfg.mode, output_type::spades_pack) % "produce graph pack in SPAdes internal format "
-//                                                                        "(recommended if bulges are removed to improve further read mapping)")
+      (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
+      (option("--tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use (default: <outdir>/tmp)"
   );
 
   auto result = parse(argc, argv, cli);
@@ -73,8 +62,6 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   }
 }
 
-
-//TODO simplify
 using CodonSet = std::vector<Sequence>;
 CodonSet STOP_CODONS = {Sequence("TAG"), Sequence("TAA"), Sequence("TGA")};
 

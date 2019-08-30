@@ -82,14 +82,10 @@ static REDConfig red_config(bool enabled = false) {
     return red_config;
 }
 
-//enum class output_type {
-//    unitigs, fastg, gfa, spades, spades_pack
-//};
-
 struct gcfg {
     gcfg() : k(0), RL(0),
              save_gfa(false), save_gp(false),
-             rel_cov_proc_enabled(false),
+             use_cov_ratios(false),
              nthreads(omp_get_max_threads() / 2 + 1) {}
 
     unsigned k;
@@ -103,39 +99,31 @@ struct gcfg {
     std::string outfile;
     bool save_gfa;
     bool save_gp;
-    bool rel_cov_proc_enabled;
+    bool use_cov_ratios;
     unsigned nthreads;
 //    output_type mode;
 };
 
-//TODO normalize -/-- usage
 static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
   auto cli = (
       cfg.graph << value("graph. In GFA (ending with .gfa) or prefix to SPAdes graph pack"),
-      //cfg.outfile << value("output filename/prefix (in case of --spades-gp)"),
       cfg.outfile << value("output prefix"),
       option("--gfa").set(cfg.save_gfa) % "produce GFA output (default: true)",
       option("--spades-gp").set(cfg.save_gp) % "produce output graph pack in SPAdes internal format (default: false). "
                                                       "Recommended if bulges are removed to improve further read mapping. "
                                                       "In case GFA output is required with graph pack specify '--gfa'",
-      option("--rel-cov-proc").set(cfg.rel_cov_proc_enabled) % "enable procedures based on unitig coverage ratios (default: false)",
+      option("--use-cov-ratios").set(cfg.use_cov_ratios) % "enable procedures based on unitig coverage ratios (default: false)",
       (required("-k") & integer("value", cfg.k)) % "k-mer length to use",
-      (required("-read-length") & integer("value", cfg.RL)) % "read length",
+      (required("--read-length") & integer("value", cfg.RL)) % "read length",
       (option("-c", "--coverage") & value("coverage", cfg.bin_cov_str)) % "estimated average (k+1-mer) bin coverage (default: 0.) "
                                                                           "or 'auto' (works only with '-d/--dead-ends' provided)",
-      (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
+      (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
       (option("-p", "--profile") & value("file", cfg.edge_profile_fn)) % "file with edge coverage profiles across multiple samples",
       (option("-s", "--stop-codons") & value("file", cfg.stop_codons_fn)) % "file stop codon positions",
       (option("-d", "--dead-ends") & value("file", cfg.deadends_fn)) % "while processing a subgraph -- file listing edges which are dead-ends in the original graph",
-      (option("-tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use (default: <output prefix>.tmp)"
-//      one_of(option("--unitigs").set(cfg.mode, output_type::unitigs) % "produce unitigs (default)",
-//             option("--fastg").set(cfg.mode, output_type::fastg) % "produce graph in FASTG format",
-//             option("--gfa").set(cfg.mode, output_type::gfa) % "produce graph in GFA1 format",
-//             option("--spades").set(cfg.mode, output_type::spades) % "produce graph in SPAdes internal format",
-//             option("--spades-gp").set(cfg.mode, output_type::spades_pack) % "produce graph pack in SPAdes internal format "
-//                                                                        "(recommended if bulges are removed to improve further read mapping)")
+      (option("--tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use (default: <output prefix>.tmp)"
   );
 
   auto result = parse(argc, argv, cli);
@@ -493,7 +481,7 @@ int main(int argc, char** argv) {
         simplif_info.set_detected_coverage_bound(ec_bound); //TODO
         INFO("Erroneous connection coverage bound set at " << ec_bound);
 
-        debruijn::simplification::Simplify(gp, simplif_info, cfg.rel_cov_proc_enabled);
+        debruijn::simplification::Simplify(gp, simplif_info, cfg.use_cov_ratios);
 
         INFO("Saving graph to " << cfg.outfile);
 
