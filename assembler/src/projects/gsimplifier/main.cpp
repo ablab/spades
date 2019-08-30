@@ -25,6 +25,7 @@ using namespace debruijn_graph;
 
 typedef config::debruijn_config::simplification::tip_clipper TCConfig;
 typedef config::debruijn_config::simplification::bulge_remover BRConfig;
+typedef config::debruijn_config::simplification::erroneous_connections_remover ECConfig;
 typedef config::debruijn_config::simplification::relative_coverage_comp_remover RCCConfig;
 typedef config::debruijn_config::simplification::relative_coverage_edge_disconnector REDConfig;
 
@@ -50,6 +51,13 @@ static BRConfig br_config(bool enabled = false) {
     config.buff_size = 10000;
     config.buff_cov_diff = 2.;
     config.buff_cov_rel_diff = 0.2;
+    return config;
+}
+
+static ECConfig ec_config() {
+    ECConfig config;
+    config.condition = "{ to_ec_lb 2, icb auto }";
+    //config.condition = "{ to_ec_lb 2, icb 2.5 }";
     return config;
 }
 
@@ -151,11 +159,12 @@ namespace debruijn {
 
 namespace simplification {
 
+//TODO support pos values other than -1
 class PositionStorage : public omnigraph::GraphActionHandler<Graph> {
     typedef Graph::EdgeId EdgeId;
     typedef Graph::VertexId VertexId;
 
-    //FIXME support pos values other than -1
+    //currently value is always -1
     std::multimap<EdgeId, int> poss_;
 
     void Insert(EdgeId e, int pos = -1) {
@@ -184,6 +193,7 @@ public:
         VERIFY_MSG(false, "No support");
     }
 
+    //currently does not handle positions properly
     void HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) override {
         if (poss_.count(old_edge) == 0)
             return;
@@ -197,11 +207,10 @@ public:
         }
     }
 
-    //FIXME support namer (in particular IdMapper)
-    void Save(std::ostream &os) const {
-        io::CanonicalEdgeHelper<Graph> canonical_helper(g());
+    void Save(std::ostream &os, const io::EdgeNamingF<Graph> &naming_f = io::IdNamingF<Graph>()) const {
+        io::CanonicalEdgeHelper<Graph> canonical_helper(g(), naming_f);
         for (const auto &e_p : poss_) {
-            //FIXME correct coord
+            //TODO think what coordinate to ouput
             os << canonical_helper.EdgeOrientationString(e_p.first, "\t")
                << '\t' << e_p.second << '\n';
         }
@@ -292,8 +301,7 @@ static void Simplify(conj_graph_pack &gp,
 
     func::TypedPredicate<EdgeId> extra_condition = func::AlwaysTrue<EdgeId>();
     if (gp.edge_qual.IsAttached()) {
-        //FIXME do something to not remove undead ends.
-        //FIXME Only in TipClipper or everywhere?
+        // Force TipClipper to ignore un-dead ends
         extra_condition = [&] (EdgeId e) {
             return gp.edge_qual.IsZeroQuality(e);
         };
@@ -302,15 +310,10 @@ static void Simplify(conj_graph_pack &gp,
                                                extra_condition, removal_handler),
                  "Tip clipper");
 
-    //FIXME integrate condition
     algo.AddAlgo(BRInstance(gp.g, br_config(), simplif_info, removal_handler),
                         "Bulge remover");
 
-    config::debruijn_config::simplification::erroneous_connections_remover ec_config;
-    //ec_config.condition = "{ to_ec_lb 2, icb 2.5 }";
-    ec_config.condition = "{ to_ec_lb 2, icb auto }";
-
-    algo.AddAlgo(ECRemoverInstance(gp.g, ec_config, simplif_info, removal_handler),
+    algo.AddAlgo(ECRemoverInstance(gp.g, ec_config(), simplif_info, removal_handler),
                  "Low coverage edge remover with bounded length");
 
     AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(algo,
@@ -350,13 +353,12 @@ static void Simplify(conj_graph_pack &gp,
 
 }
 
-//FIXME reduce code duplication with subgraph-extractor
 static bool IsDeadEnd(const Graph &g, VertexId v) {
     return g.IncomingEdgeCount(v) * g.OutgoingEdgeCount(v) == 0;
 }
 
-//FIXME think about self-conjugate sources/sinks and other connections between RC subgrahps
-//TODO improve, check consistency beteween total sink/source coverage estimates and think about weird cases
+//TODO improve, check consistency between total sink/source coverage estimates and think about weird cases
+//TODO think about self-conjugate sources/sinks and other connections between RC subgrahps
 static double DetermineAvgCoverage(const Graph &g, const std::set<EdgeId> &/*undeadends*/) {
     double sum = 0.;
     for (auto it = g.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
