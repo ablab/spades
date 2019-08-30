@@ -1,3 +1,8 @@
+//***************************************************************************
+//* Copyright (c) 2019 University of Warwick
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 #pragma once
 
 #include "stages/simplification_pipeline/graph_simplification.hpp"
