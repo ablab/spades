@@ -5,12 +5,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "projects/edge_profiles/profile_storage.hpp"
+#include "simplification.hpp"
+#include "position_storage.hpp"
+#include "projects/unitig_coverage/profile_storage.hpp"
 #include "io/graph/gfa_writer.hpp"
-#include "toolchain/edge_label_helper.hpp"
 #include "toolchain/utils.hpp"
-#include "stages/simplification_pipeline/graph_simplification.hpp"
-#include "pipeline/config_struct.hpp"
 
 #include "utils/segfault_handler.hpp"
 
@@ -20,67 +19,6 @@
 #include <string>
 #include <numeric>
 #include <sys/types.h>
-
-using namespace debruijn_graph;
-
-typedef config::debruijn_config::simplification::tip_clipper TCConfig;
-typedef config::debruijn_config::simplification::bulge_remover BRConfig;
-typedef config::debruijn_config::simplification::erroneous_connections_remover ECConfig;
-typedef config::debruijn_config::simplification::relative_coverage_comp_remover RCCConfig;
-typedef config::debruijn_config::simplification::relative_coverage_edge_disconnector REDConfig;
-
-static TCConfig tc_config() {
-    config::debruijn_config::simplification::tip_clipper config;
-    config.condition = "{ tc_lb 3.5, cb 1000000, rctc 2.0 }";
-    return config;
-}
-
-static BRConfig br_config(bool enabled = false) {
-    BRConfig config;
-    config.enabled = enabled;
-    config.main_iteration_only = false;
-    config.max_bulge_length_coefficient = 4;
-    config.max_additive_length_coefficient = 0;
-    config.max_coverage = 1000.;
-    config.max_relative_coverage = 1.2;
-    config.max_delta = 3;
-    config.max_number_edges = std::numeric_limits<size_t>::max();
-    config.dijkstra_vertex_limit = std::numeric_limits<size_t>::max();
-    config.max_relative_delta = 0.1;
-    config.parallel = true;
-    config.buff_size = 10000;
-    config.buff_cov_diff = 2.;
-    config.buff_cov_rel_diff = 0.2;
-    return config;
-}
-
-static ECConfig ec_config() {
-    ECConfig config;
-    config.condition = "{ to_ec_lb 2, icb auto }";
-    //config.condition = "{ to_ec_lb 2, icb 2.5 }";
-    return config;
-}
-
-static RCCConfig rcc_config(bool enabled = false) {
-    RCCConfig rcc_config;
-    rcc_config.enabled = enabled;
-    rcc_config.coverage_gap = 50.;
-    rcc_config.length_coeff = 3.0;
-    rcc_config.tip_allowing_length_coeff = 5.0;
-    rcc_config.vertex_count_limit = 100;
-    rcc_config.max_ec_length_coefficient = 300;
-    rcc_config.max_coverage_coeff = -1.0;
-    return rcc_config;
-}
-
-static REDConfig red_config(bool enabled = false) {
-    REDConfig red_config;
-    red_config.enabled = enabled;
-    red_config.diff_mult = 75.;
-    red_config.edge_sum = 10000;
-    red_config.unconditional_diff_mult = 100.;
-    return red_config;
-}
 
 struct gcfg {
     gcfg() : k(0), RL(0),
@@ -101,7 +39,6 @@ struct gcfg {
     bool save_gp;
     bool use_cov_ratios;
     unsigned nthreads;
-//    output_type mode;
 };
 
 static void process_cmdline(int argc, char **argv, gcfg &cfg) {
@@ -133,234 +70,6 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   }
 }
 
-static std::set<std::string> ReadDeadendNames(const std::string &deadends_fn) {
-    std::set<std::string> deadend_names;
-    std::ifstream is(deadends_fn);
-    std::string s;
-    while (is >> s) {
-        deadend_names.insert(s);
-    }
-    return deadend_names;
-}
-
-namespace debruijn {
-
-namespace simplification {
-
-//TODO support pos values other than -1
-class PositionStorage : public omnigraph::GraphActionHandler<Graph> {
-    typedef Graph::EdgeId EdgeId;
-    typedef Graph::VertexId VertexId;
-
-    //currently value is always -1
-    std::multimap<EdgeId, int> poss_;
-
-    void Insert(EdgeId e, int pos = -1) {
-        poss_.insert(std::make_pair(e, pos));
-    }
-
-public:
-    PositionStorage(const Graph &g) :
-            omnigraph::GraphActionHandler<Graph>(g, "PositionStorage") {}
-
-    void HandleDelete(EdgeId e) override {
-        poss_.erase(e);
-    }
-
-    void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) override {
-        size_t cumm_len = 0;
-        for (EdgeId e : old_edges) {
-            for (int p : utils::get_all(poss_, e)) {
-                Insert(new_edge, (p < 0) ? -1 : int(cumm_len + p));
-            }
-            cumm_len += g().length(e);
-        }
-    }
-
-    void HandleGlue(EdgeId /*new_edge*/, EdgeId /*edge1*/, EdgeId /*edge2*/) override {
-        VERIFY_MSG(false, "No support");
-    }
-
-    //currently does not handle positions properly
-    void HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) override {
-        if (poss_.count(old_edge) == 0)
-            return;
-        if (old_edge == g().conjugate(old_edge)) {
-            Insert(new_edge1);
-            Insert(g().conjugate(new_edge1));
-            Insert(new_edge2);
-        } else {
-            Insert(new_edge1);
-            Insert(new_edge2);
-        }
-    }
-
-    void Save(std::ostream &os, const io::EdgeNamingF<Graph> &naming_f = io::IdNamingF<Graph>()) const {
-        io::CanonicalEdgeHelper<Graph> canonical_helper(g(), naming_f);
-        for (const auto &e_p : poss_) {
-            //TODO think what coordinate to ouput
-            os << canonical_helper.EdgeOrientationString(e_p.first, "\t")
-               << '\t' << e_p.second << '\n';
-        }
-    }
-
-    void Load(std::istream &is, const io::EdgeLabelHelper<Graph> &label_helper) {
-        std::string s;
-        while (std::getline(is, s)) {
-            std::istringstream ss(s);
-            std::string label;
-            ss >> label;
-            EdgeId e = label_helper.edge(label);
-            VERIFY_MSG(e != EdgeId(), "Couldn't find edge with int id " << std::stoi(label) << " in the graph");
-
-            std::string orient;
-            ss >> orient;
-            VERIFY_MSG(orient == "+" || orient == "-", "Invalid orientation");
-
-            //Currently ignored
-            int pos;
-            ss >> pos;
-
-            e = (orient == "+") ? e : g().conjugate(e);
-            Insert(e);
-        }
-    }
-
-private:
-    DECL_LOGGER("PositionStorage");
-};
-
-template<class Graph>
-void FillFlankingFromAverage(const Graph &g, FlankingCoverage<Graph> &flanking_cov) {
-    for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
-        auto raw_flank = g.coverage(e) * double(std::min(g.length(e), flanking_cov.averaging_range()));
-        flanking_cov.SetRawCoverage(e, unsigned(math::round(raw_flank)));
-    }
-}
-
-template<class Graph>
-AlgoPtr<Graph> ConditionedTipClipperInstance(Graph &g,
-                                             const config::debruijn_config::simplification::tip_clipper &tc_config,
-                                             const SimplifInfoContainer &info,
-                                             func::TypedPredicate<EdgeId> extra_condition,
-                                             EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
-    if (tc_config.condition.empty())
-        return nullptr;
-
-    ConditionParser<Graph> parser(g, tc_config.condition, info);
-    auto condition = func::And(parser(), extra_condition);
-    auto algo = TipClipperInstance(g, condition, info, removal_handler);
-    VERIFY_MSG(parser.requested_iterations() != 0, "To disable tip clipper pass empty string");
-    if (parser.requested_iterations() == 1) {
-        return algo;
-    } else {
-        return std::make_shared<LoopedAlgorithm<Graph>>(g, algo, 1, size_t(parser.requested_iterations()),
-                /*force primary for all*/ true);
-    }
-}
-
-static void Simplify(conj_graph_pack &gp,
-                     const debruijn::simplification::SimplifInfoContainer &simplif_info,
-                     bool rel_cov_proc_enabled) {
-
-    const bool using_edge_qual = gp.edge_qual.IsAttached();
-
-    const std::function<void(EdgeId)>& removal_handler = nullptr;
-
-    typename ComponentRemover<Graph>::HandlerF set_removal_handler_f;
-    if (removal_handler) {
-        set_removal_handler_f = [=](const std::set<EdgeId> &edges) {
-            std::for_each(edges.begin(), edges.end(), removal_handler);
-        };
-    }
-
-    //Refill flanking coverage to get same behavior while working with gfa graphs
-    FillFlankingFromAverage<Graph>(gp.g, gp.flanking_cov);
-    VERIFY(gp.flanking_cov.IsAttached());
-
-    INFO("Graph simplification started");
-    size_t iteration = 0;
-    auto message_callback = [&] () {
-        INFO("PROCEDURE == Simplification cycle, iteration " << ++iteration);
-    };
-
-    omnigraph::CompositeAlgorithm<Graph> algo(gp.g, message_callback);
-
-    func::TypedPredicate<EdgeId> extra_condition = func::AlwaysTrue<EdgeId>();
-    if (gp.edge_qual.IsAttached()) {
-        // Force TipClipper to ignore un-dead ends
-        extra_condition = [&] (EdgeId e) {
-            return gp.edge_qual.IsZeroQuality(e);
-        };
-    }
-    algo.AddAlgo(ConditionedTipClipperInstance(gp.g, tc_config(), simplif_info,
-                                               extra_condition, removal_handler),
-                 "Tip clipper");
-
-    algo.AddAlgo(BRInstance(gp.g, br_config(), simplif_info, removal_handler),
-                        "Bulge remover");
-
-    algo.AddAlgo(ECRemoverInstance(gp.g, ec_config(), simplif_info, removal_handler),
-                 "Low coverage edge remover with bounded length");
-
-    AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(algo,
-                                                          /*cycle_iter_count*/3,
-                                                          /*all_primary*/false);
-
-    iteration = 0;
-
-    auto low_cov_thr = std::max(2.0, simplif_info.detected_mean_coverage() / 100.);
-    INFO("Unconditional coverage lower-bound set at " << low_cov_thr);
-    //NB: we do not rescue the undeadends here
-    algo.AddAlgo(std::make_shared<ParallelEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>>>
-                        (gp.g,
-                        CoverageUpperBound<Graph>(gp.g, low_cov_thr),
-                        simplif_info.chunk_cnt(),
-                        removal_handler,
-                        /*canonical_only*/true,
-                        CoverageComparator<Graph>(gp.g)),
-                        "Removing all edges with coverage below " + std::to_string(low_cov_thr));
-
-    algo.AddAlgo(RelativeCoverageComponentRemoverInstance<Graph>(gp.g, gp.flanking_cov,
-            rcc_config(rel_cov_proc_enabled),
-            simplif_info, set_removal_handler_f),
-            "Removing subgraphs based on relative coverage");
-
-    algo.AddAlgo(RelativelyLowCoverageDisconnectorInstance<Graph>(gp.g, gp.flanking_cov,
-            red_config(rel_cov_proc_enabled),
-            simplif_info, removal_handler),
-            "Disconnecting relatively low covered edges");
-
-    AlgorithmRunningHelper<Graph>::LoopedRun(algo, /*min it count*/1, /*max it count*/10);
-    VERIFY(!using_edge_qual || gp.edge_qual.IsAttached());
-    VERIFY(gp.flanking_cov.IsAttached());
-}
-
-}
-
-}
-
-static bool IsDeadEnd(const Graph &g, VertexId v) {
-    return g.IncomingEdgeCount(v) * g.OutgoingEdgeCount(v) == 0;
-}
-
-//TODO improve, check consistency between total sink/source coverage estimates and think about weird cases
-//TODO think about self-conjugate sources/sinks and other connections between RC subgrahps
-static double DetermineAvgCoverage(const Graph &g, const std::set<EdgeId> &/*undeadends*/) {
-    double sum = 0.;
-    for (auto it = g.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
-        if (IsDeadEnd(g, g.EdgeStart(e))) {
-            sum += g.coverage(e);
-        }
-        if (IsDeadEnd(g, g.EdgeEnd(e))) {
-            sum += g.coverage(e);
-        }
-    }
-    return sum / 2.;
-}
-
 size_t DetermineSampleCnt(const std::string &profile_fn) {
     std::ifstream is(profile_fn);
     std::string line;
@@ -376,6 +85,44 @@ size_t DetermineSampleCnt(const std::string &profile_fn) {
     return i - 1;
 }
 
+static std::set<std::string> ReadDeadendNames(const std::string &deadends_fn) {
+    std::set<std::string> deadend_names;
+    std::ifstream is(deadends_fn);
+    std::string s;
+    while (is >> s) {
+        deadend_names.insert(s);
+    }
+    return deadend_names;
+}
+
+static void FillFlankingFromAverage(const Graph &g, FlankingCoverage<Graph> &flanking_cov) {
+    for (EdgeId e : g.edges()) {
+        auto raw_flank = g.coverage(e) * double(std::min(g.length(e), flanking_cov.averaging_range()));
+        flanking_cov.SetRawCoverage(e, unsigned(math::round(raw_flank)));
+    }
+}
+
+static bool IsDeadEnd(const Graph &g, VertexId v) {
+    return g.IncomingEdgeCount(v) * g.OutgoingEdgeCount(v) == 0;
+}
+
+//TODO improve
+//TODO think about self-conjugate sources/sinks and other connections between RC subgrahps
+//TODO check consistency between total sink/source coverage estimates and think about weird cases
+static double DetermineAvgCoverage(const Graph &g, const std::set<EdgeId> &/*undeadends*/) {
+    double sum = 0.;
+    for (auto it = g.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
+        EdgeId e = *it;
+        if (IsDeadEnd(g, g.EdgeStart(e))) {
+            sum += g.coverage(e);
+        }
+        if (IsDeadEnd(g, g.EdgeEnd(e))) {
+            sum += g.coverage(e);
+        }
+    }
+    return sum / 2.;
+}
+
 //TODO set up reasonable flanking range
 int main(int argc, char** argv) {
     utils::segfault_handler sh;
@@ -384,7 +131,7 @@ int main(int argc, char** argv) {
     process_cmdline(argc, argv, cfg);
 
     toolchain::create_console_logger();
-    START_BANNER("SPAdes standalone graph simplifier");
+    START_BANNER("SPAdes-based standalone graph simplifier");
 
     try {
         unsigned nthreads = cfg.nthreads;
@@ -400,7 +147,7 @@ int main(int argc, char** argv) {
         omp_set_num_threads((int) nthreads);
         INFO("# of threads to use: " << nthreads);
 
-        conj_graph_pack gp(k, tmpdir, 0);
+        debruijn_graph::conj_graph_pack gp(k, tmpdir, 0);
 
         INFO("Loading de Bruijn graph from " << cfg.graph);
         omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
@@ -411,6 +158,11 @@ int main(int argc, char** argv) {
 
         const Graph &g = gp.g;
 
+        //Refilling flanking coverage to get same behavior while working with gfa graphs
+        FillFlankingFromAverage(g, gp.flanking_cov);
+        VERIFY(gp.flanking_cov.IsAttached());
+
+        //Loading and tracking edges that connect the subgraph to the rest of the graph
         std::set<EdgeId> undeadends;
         if (!cfg.deadends_fn.empty()) {
             auto deadend_names = ReadDeadendNames(cfg.deadends_fn);
@@ -423,6 +175,8 @@ int main(int argc, char** argv) {
                     }
                 }
             }
+            //Using "quality" to track the 'undeadends'
+            //TODO can use position storage for that instead of hacking edge_qual
             for (EdgeId e : undeadends) {
                 VERIFY(undeadends.count(g.conjugate(e)));
                 gp.edge_qual.AddQuality(e, 1000.);
@@ -430,10 +184,9 @@ int main(int argc, char** argv) {
             gp.edge_qual.Attach();
         }
 
-        using namespace debruijn_graph::coverage_profiles;
-        typedef EdgeProfileStorage ProfileStorage;
+        //Loading unitig profiles and keeping storage consistent
+        typedef debruijn_graph::coverage_profiles::EdgeProfileStorage ProfileStorage;
         std::unique_ptr<ProfileStorage> profile_storage;
-
         if (!cfg.edge_profile_fn.empty()) {
             INFO("Loading edge profiles from " << cfg.edge_profile_fn);
             fs::CheckFileExistenceFATAL(cfg.edge_profile_fn);
@@ -442,9 +195,9 @@ int main(int argc, char** argv) {
             profile_storage = std::make_unique<ProfileStorage>(gp.g, sample_cnt);
             std::ifstream is(cfg.edge_profile_fn);
             profile_storage->Load(is, label_helper);
-            INFO("Profiles loaded");
         }
 
+        //Loading unitigs which were predicted to contain stop codons and keeping storage consistent
         using debruijn::simplification::PositionStorage;
         std::unique_ptr<PositionStorage> stop_codons_storage;
         if (!cfg.stop_codons_fn.empty()) {
@@ -453,20 +206,16 @@ int main(int argc, char** argv) {
             stop_codons_storage = std::make_unique<PositionStorage>(gp.g);
             std::ifstream is(cfg.stop_codons_fn);
             stop_codons_storage->Load(is, label_helper);
-            INFO("Stop codon positions loaded");
         }
 
-        debruijn::simplification::SimplifInfoContainer simplif_info;
-        simplif_info.set_main_iteration(true);
-        simplif_info.set_read_length(cfg.RL);
-        simplif_info.set_chunk_cnt(200); //TODO
+        //Setting the estimated mean coverage
         double bin_cov = 0.;
         if (cfg.bin_cov_str.empty()) {
             INFO("Mean coverage option was not specified. Using default value of " << bin_cov);
         } else {
             INFO("Estimated mean coverage was specified as " << cfg.bin_cov_str)
             if (cfg.bin_cov_str == "auto") {
-                INFO("Trying to determine from edge coverage");
+                INFO("Trying to determine from coverage of sources and sinks");
                 VERIFY_MSG(!cfg.deadends_fn.empty(),
                            "Deadends option (-d/--dead-ends) was not specified. "
                            "Can only determine coverage while working with subgraphs!");
@@ -474,13 +223,21 @@ int main(int argc, char** argv) {
             } else {
                 bin_cov = std::stod(cfg.bin_cov_str);
             }
-
         }
-        simplif_info.set_detected_mean_coverage(bin_cov);
-        auto ec_bound = std::max(2.5, bin_cov / 50.);
-        simplif_info.set_detected_coverage_bound(ec_bound); //TODO
-        INFO("Erroneous connection coverage bound set at " << ec_bound);
 
+        //TODO parameterize
+        double ec_bound = std::max(2.5, bin_cov / 50.);
+        INFO("Erroneous connection coverage threshold set at " << ec_bound);
+
+        //Setting up some simplification parameters
+        debruijn::simplification::SimplifInfoContainer simplif_info;
+        simplif_info.set_main_iteration(true);
+        simplif_info.set_read_length(cfg.RL);
+        simplif_info.set_chunk_cnt(200); //TODO magic constant
+        simplif_info.set_detected_mean_coverage(bin_cov);
+        simplif_info.set_detected_coverage_bound(ec_bound);
+
+        //Simplification call
         debruijn::simplification::Simplify(gp, simplif_info, cfg.use_cov_ratios);
 
         INFO("Saving graph to " << cfg.outfile);
@@ -499,6 +256,7 @@ int main(int argc, char** argv) {
             writer.WriteSegmentsAndLinks();
         }
 
+        //Saving all the additional storages if were loaded
         if (profile_storage) {
             INFO("Saving profile storage");
             std::ofstream os(cfg.outfile + ".tsv");
@@ -524,6 +282,8 @@ int main(int argc, char** argv) {
                 }
             }
         }
+
+        INFO("Finished");
 
     } catch (const std::string &s) {
         std::cerr << s << std::endl;

@@ -109,7 +109,6 @@ public:
     //TODO maybe pass EdgeDereferenceF?
     void Load(std::istream &is,
               const io::EdgeLabelHelper<Graph> &label_helper,
-              //const omnigraph::GraphElementFinder<Graph> &element_finder,
               bool check_consistency = false);
 
 };
