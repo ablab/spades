@@ -61,19 +61,18 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
 
 BWAIndex::~BWAIndex() {}
 
-static uint8_t* seqlib_add1(const std::string &seq,
+static uint8_t* seqlib_add1(const Sequence &seq,
                             uint8_t *pac, size_t &l_pac, size_t &m_pac) {
     for (size_t i = 0; i < seq.size(); ++i) {
-        int c = nst_nt4_table[unsigned(seq[i])];
-        { // fill buffer
-            if (l_pac == m_pac) { // double the pac size
-                m_pac <<= 1;
-                pac = (uint8_t*)realloc(pac, m_pac/4);
-                memset(pac + l_pac/4, 0, (m_pac - l_pac)/4);
-            }
-            _set_pac(pac, l_pac, c);
-            ++l_pac;
+        unsigned c = seq[i];
+        // fill buffer
+        if (l_pac == m_pac) { // double the pac size
+            m_pac <<= 1;
+            pac = (uint8_t*)realloc(pac, m_pac/4);
+            memset(pac + l_pac/4, 0, (m_pac - l_pac)/4);
         }
+        _set_pac(pac, l_pac, c);
+        ++l_pac;
     }
 
     return pac;
@@ -91,10 +90,8 @@ static uint8_t* seqlib_make_pac(const debruijn_graph::Graph &g,
 
     // Move through the sequences
     for (auto e : ids) {
-        std::string seq = g.EdgeNucls(e).str();
-
         // make the forward only pac
-        pac = seqlib_add1(seq, pac, l_pac, m_pac);
+        pac = seqlib_add1(g.EdgeNucls(e), pac, l_pac, m_pac);
     }
 
     if (!for_only) {
