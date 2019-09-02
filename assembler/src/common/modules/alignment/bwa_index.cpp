@@ -61,51 +61,20 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
 
 BWAIndex::~BWAIndex() {}
 
-static uint8_t* seqlib_add1(const std::string &seq, const std::string &name,
-                            bntseq_t *bns, uint8_t *pac, int64_t *m_pac, int *m_seqs, int *m_holes, bntamb1_t **q) {
-    bntann1_t *p;
-    int lasts;
-    if (bns->n_seqs == *m_seqs) {
-        *m_seqs <<= 1;
-        bns->anns = (bntann1_t*)realloc(bns->anns, *m_seqs * sizeof(bntann1_t));
-    }
-    p = bns->anns + bns->n_seqs;
-    p->name = strdup(name.c_str());
-    p->anno = strdup("(null");
-    p->gi = 0; p->len = int(seq.size());
-    p->offset = (bns->n_seqs == 0)? 0 : (p-1)->offset + (p-1)->len;
-    p->n_ambs = 0;
-    for (size_t i = lasts = 0; i < seq.size(); ++i) {
+static uint8_t* seqlib_add1(const std::string &seq,
+                            uint8_t *pac, size_t &l_pac, size_t &m_pac) {
+    for (size_t i = 0; i < seq.size(); ++i) {
         int c = nst_nt4_table[unsigned(seq[i])];
-        if (c >= 4) { // N
-            if (lasts == seq[i]) { // contiguous N
-                ++(*q)->len;
-            } else {
-                if (bns->n_holes == *m_holes) {
-                    (*m_holes) <<= 1;
-                    bns->ambs = (bntamb1_t*)realloc(bns->ambs, (*m_holes) * sizeof(bntamb1_t));
-                }
-                *q = bns->ambs + bns->n_holes;
-                (*q)->len = 1;
-                (*q)->offset = p->offset + i;
-                (*q)->amb = seq[i];
-                ++p->n_ambs;
-                ++bns->n_holes;
-            }
-        }
-        lasts = seq[i];
         { // fill buffer
-            if (c >= 4) c = lrand48() & 3;
-            if (bns->l_pac == *m_pac) { // double the pac size
-                *m_pac <<= 1;
-                pac = (uint8_t*)realloc(pac, *m_pac/4);
-                memset(pac + bns->l_pac/4, 0, (*m_pac - bns->l_pac)/4);
+            if (l_pac == m_pac) { // double the pac size
+                m_pac <<= 1;
+                pac = (uint8_t*)realloc(pac, m_pac/4);
+                memset(pac + l_pac/4, 0, (m_pac - l_pac)/4);
             }
-            _set_pac(pac, bns->l_pac, c);
-            ++bns->l_pac;
+            _set_pac(pac, l_pac, c);
+            ++l_pac;
         }
     }
-    ++bns->n_seqs;
 
     return pac;
 }
@@ -113,38 +82,29 @@ static uint8_t* seqlib_add1(const std::string &seq, const std::string &name,
 static uint8_t* seqlib_make_pac(const debruijn_graph::Graph &g,
                                 const std::vector<debruijn_graph::EdgeId> &ids,
                                 bool for_only) {
-    bntseq_t * bns = (bntseq_t*)calloc(1, sizeof(bntseq_t));
     uint8_t *pac = 0;
-    int32_t m_seqs, m_holes;
-    int64_t m_pac, l;
-    bntamb1_t *q;
+    size_t m_pac, l_pac;
+    ssize_t l;
 
-    bns->seed = 11; // fixed seed for random generator
-    m_seqs = m_holes = 8; m_pac = 0x10000;
-    bns->anns = (bntann1_t*)calloc(m_seqs, sizeof(bntann1_t));
-    bns->ambs = (bntamb1_t*)calloc(m_holes, sizeof(bntamb1_t));
-    pac = (uint8_t*) calloc(m_pac/4, 1);
-    q = bns->ambs;
+    m_pac = 0x10000; l_pac = 0;
+    pac = (uint8_t*)calloc(m_pac/4, 1);
 
     // Move through the sequences
     for (auto e : ids) {
-        std::string ref = std::to_string(g.int_id(e));
         std::string seq = g.EdgeNucls(e).str();
 
         // make the forward only pac
-        pac = seqlib_add1(seq, ref, bns, pac, &m_pac, &m_seqs, &m_holes, &q);
+        pac = seqlib_add1(seq, pac, l_pac, m_pac);
     }
 
     if (!for_only) {
         // add the reverse complemented sequence
-        m_pac = (bns->l_pac * 2 + 3) / 4 * 4;
+        m_pac = (l_pac * 2 + 3) / 4 * 4;
         pac = (uint8_t*)realloc(pac, m_pac/4);
-        memset(pac + (bns->l_pac+3)/4, 0, (m_pac - (bns->l_pac+3)/4*4) / 4);
-        for (l = bns->l_pac - 1; l >= 0; --l, ++bns->l_pac)
-            _set_pac(pac, bns->l_pac, 3-_get_pac(pac, l));
+        memset(pac + (l_pac+3)/4, 0, (m_pac - (l_pac+3)/4*4) / 4);
+        for (l = l_pac - 1; l >= 0; --l, ++l_pac)
+            _set_pac(pac, l_pac, 3 - _get_pac(pac, l));
     }
-
-    bns_destroy(bns);
 
     return pac;
 }
@@ -207,18 +167,6 @@ static bwt_t *seqlib_bwt_pac2bwt(const uint8_t *pac, size_t bwt_seq_lenr) {
     return bwt;
 }
 
-static bntann1_t* seqlib_add_to_anns(const std::string& name, const std::string& seq, bntann1_t* ann, size_t offset) {
-    ann->offset = offset;
-    ann->name = strdup(name.c_str());
-    ann->anno = strdup("(null)");
-    ann->len = int(seq.length());
-    ann->n_ambs = 0; // number of "holes"
-    ann->gi = 0; // gi?
-    ann->is_alt = 0;
-
-    return ann;
-}
-
 void BWAIndex::Init() {
     idx_.reset((bwaidx_t*)calloc(1, sizeof(bwaidx_t)));
     ids_.clear();
@@ -255,18 +203,24 @@ void BWAIndex::Init() {
     bns->n_holes = 0;
 
     // make the anns
-    // FIXME: Do we really need this?
     bns->anns = (bntann1_t*)calloc(ids_.size(), sizeof(bntann1_t));
     size_t offset = 0, k = 0;
     for (auto e: ids_) {
-        std::string name = std::to_string(g_.int_id(e));
-        std::string seq = g_.EdgeNucls(e).str();
-        seqlib_add_to_anns(name, seq, &bns->anns[k++], offset);
-        offset += seq.length();
+        bntann1_t *ann = &bns->anns[k++];
+        int len = int(g_.EdgeNucls(e).size());
+
+        ann->offset = offset;
+        ann->name = ann->anno = nullptr;
+        ann->len = len;
+        ann->n_ambs = 0; // number of "holes"
+        ann->gi = 0; // gi?
+        ann->is_alt = 0;
+
+        offset += len;
     }
 
     // ambs is "holes", like N bases
-    bns->ambs = 0;
+    bns->ambs = nullptr;
 
     // Make the in-memory idx struct
     idx_->bwt = bwt;
@@ -314,12 +268,8 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
                                                                         bool only_simple) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
-    // Turn read length into k-mers
-    bool is_short = false;
     size_t seq_len = seq.length();
-    if (seq_len <= g_.k()) {
-        is_short = true;
-    }
+    bool is_short = seq_len <= g_.k();
 
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
@@ -327,15 +277,16 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
         if (skip_secondary_ && a.secondary >= 0) continue; // skip secondary alignments
 
         if (is_short) {
-// skipping alignments shorter than half of read length
-            if (size_t(a.qe - a.qb) * 2 <= seq_len ) continue;
+            // Skipping alignments shorter than half of read length
+            if (size_t(a.qe - a.qb) * 2 <= seq_len) continue;
             if (size_t(a.re - a.rb) * 2 <= seq_len) continue;
         } else {
             if (size_t(a.qe - a.qb) <= g_.k()) continue; // skip short alignments
             if (size_t(a.re - a.rb) <= g_.k()) continue;
         }
         int is_rev = 0;
-        size_t pos = bns_depos(idx_->bns, a.rb < idx_->bns->l_pac? a.rb : a.re - 1, &is_rev) - idx_->bns->anns[a.rid].offset;
+        bntann1_t *ans = idx_->bns->anns + a.rid;
+        size_t pos = bns_depos(idx_->bns, a.rb < idx_->bns->l_pac? a.rb : a.re - 1, &is_rev) - ans->offset;
         size_t initial_range_end;
         size_t mapping_range_end;
 
@@ -349,14 +300,15 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
             initial_range_end = a.qe - g_.k();
             mapping_range_end = pos + a.re - a.rb - g_.k();
         }
+        // Important for alignments shorter than K
+        if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
+            continue;
+
         DEBUG(a);
-//FIXME: what about other scoring systems?
+        // FIXME: what about other scoring systems?
         double qual = double(a.score)/double(a.qe - a.qb);
         DEBUG("Edge: "<< ids_[a.rid] << " quality from score: " << qual);
         
-        //Important for alignments shorter than K
-        if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
-            continue;
         if (!is_rev) {
             res.push_back(ids_[a.rid],
                           { { (size_t)a.qb, initial_range_end },
