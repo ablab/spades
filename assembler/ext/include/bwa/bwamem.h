@@ -150,6 +150,7 @@ extern "C" {
 	 * @return       list of aligned regions.
 	 */
 	mem_alnreg_v mem_align1(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bns, const uint8_t *pac, int l_seq, const char *seq);
+    mem_alnreg_v mem_align1_bin(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bns, const uint8_t *pac, int l_seq, char *seq);
 
 	/**
 	 * Generate CIGAR and forward-strand position from alignment region

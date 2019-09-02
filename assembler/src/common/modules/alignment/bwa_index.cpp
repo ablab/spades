@@ -261,11 +261,11 @@ static bool MostlyInVertex(size_t rb, size_t re, size_t edge_len, size_t k) {
 }
 
 
-omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const std::string &seq,
+omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const Sequence &seq,
                                                                         bool only_simple) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
-    size_t seq_len = seq.length();
+    size_t seq_len = seq.size();
     bool is_short = seq_len <= g_.k();
 
     for (size_t i = 0; i < ar.n; ++i) {
@@ -328,13 +328,17 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
     VERIFY(idx_);
 
-    std::string seq = sequence.str();
-    mem_alnreg_v ar = mem_align1(memopt_.get(), idx_->bwt, idx_->bns, idx_->pac,
-                                 int(seq.length()), seq.data());
-    res = GetMappingPath(ar, seq, only_simple);
+    char *seq = new char[sequence.size()];
+    for (size_t i = 0; i < sequence.size(); ++i)
+        seq[i] = sequence[i];
+    // WARNING: This function modifies seq (for purpose)!
+    mem_alnreg_v ar = mem_align1_bin(memopt_.get(), idx_->bwt, idx_->bns, idx_->pac,
+                                     int(sequence.size()), seq);
+    res = GetMappingPath(ar, sequence, only_simple);
 
     free(ar.a);
-
+    delete[] seq;
+    
     return res;
 }
 

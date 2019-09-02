@@ -87,6 +87,17 @@ mem_alnreg_v mem_align1(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *
 	return ar;
 }
 
+/* SPADES_LOCAL */
+mem_alnreg_v mem_align1_bin(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bns, const uint8_t *pac, int l_seq, char *seq)
+{ // the difference from mem_align1_core() is that this routine: 1) calls mem_mark_primary_se(); 2) expects seq_ in binary encoding
+	extern mem_alnreg_v mem_align1_core(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bns, const uint8_t *pac, int l_seq, char *seq, void *buf);
+	extern void mem_mark_primary_se(const mem_opt_t *opt, int n, mem_alnreg_t *a, int64_t id);
+	mem_alnreg_v ar;
+	ar = mem_align1_core(opt, bwt, bns, pac, l_seq, seq, 0);
+	mem_mark_primary_se(opt, ar.n, ar.a, 42);
+	return ar;
+}
+
 static inline int get_pri_idx(double XA_drop_ratio, const mem_alnreg_t *a, int i)
 {
 	int k = a[i].secondary_all;
