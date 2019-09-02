@@ -223,8 +223,8 @@ void BWAIndex::Init() {
     idx_.reset((bwaidx_t*)calloc(1, sizeof(bwaidx_t)));
     ids_.clear();
 
-    for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-        ids_.push_back(*it);
+    for (debruijn_graph::EdgeId e : g_.canonical_edges()) {
+        ids_.push_back(e);
     }
 
     // construct the forward-only pac

@@ -16,6 +16,7 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>
+#include <boost/iterator/filter_iterator.hpp>
 #include <boost/noncopyable.hpp>
 #include <btree/safe_btree_set.h>
 
@@ -343,26 +344,64 @@ public:
     size_t size() const { return vstorage_.size(); }
     size_t e_size() const { return estorage_.size(); }
 
-    class EdgeIt : public boost::iterator_adaptor<EdgeIt,
-                                                  typename EdgeStorage::id_iterator,
-                                                  EdgeId,
-                                                  typename std::iterator_traits<typename EdgeStorage::id_iterator>::iterator_category,
-                                                  EdgeId> {
-      public:
-        EdgeIt(typename EdgeStorage::id_iterator it)
-                : EdgeIt::iterator_adaptor(it) {}
+    struct EdgePredicate {
+        EdgePredicate() = default;
+        EdgePredicate(const GraphCore<DataMaster> &graph)
+                : graph_(&graph) {}
 
-      private:
-        friend class boost::iterator_core_access;
+        bool operator()(EdgeId) const;
 
-        EdgeId dereference() const {
-            return *this->base();
+        const GraphCore<DataMaster> *graph_ = nullptr;
+    };
+
+    struct AllEdges : public EdgePredicate {
+        using EdgePredicate::EdgePredicate;
+
+        bool operator()(EdgeId) const {
+            return true;
         }
     };
 
-    EdgeIt e_begin() const { return estorage_.id_begin(); }
-    EdgeIt e_end() const { return estorage_.id_end(); }
-    adt::iterator_range<EdgeIt> edges() const { return { e_begin(), e_end()}; }
+    struct CanonicalEdges : public EdgePredicate {
+        using EdgePredicate::EdgePredicate;
+
+        bool operator()(EdgeId e) const {
+          return e <= this->graph_->conjugate(e);
+        }
+    };
+
+    template<class Predicate>
+    auto e_begin(Predicate p) const {
+        return boost::make_filter_iterator(std::move(p),
+                                           estorage_.id_begin(), estorage_.id_end());
+    }
+    template<class Predicate>
+    auto e_end(Predicate p) const {
+        return boost::make_filter_iterator(std::move(p), estorage_.id_end(), estorage_.id_end());
+    }
+    template<class Predicate>
+    auto edges(Predicate p) const {
+        return adt::make_range(e_begin(std::move(p)), e_end(std::move(p)));
+    }
+
+    template<bool Canonical = false>
+    auto e_begin() const {
+        using Predicate = typename std::conditional<Canonical, CanonicalEdges, AllEdges>::type;
+        return boost::make_filter_iterator(Predicate(*this), estorage_.id_begin(), estorage_.id_end());
+    }
+    template<bool Canonical = false>
+    auto e_end() const {
+        using Predicate = typename std::conditional<Canonical, CanonicalEdges, AllEdges>::type;
+        return boost::make_filter_iterator(Predicate(*this),
+                                           estorage_.id_end(), estorage_.id_end());
+    }
+    template<bool Canonical = false>
+    auto edges() const {
+        return adt::make_range(e_begin<Canonical>(), e_end<Canonical>());
+    }
+    auto canonical_edges() const {
+        return edges<true>();
+    }
 
     edge_const_iterator out_begin(VertexId v) const { return vertex(v)->out_begin(this); }
     edge_const_iterator out_end(VertexId v) const { return vertex(v)->out_end(this); }
