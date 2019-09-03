@@ -49,7 +49,7 @@ public:
         return coverage_index_.coverage(edge);
     }
 
-    uint64_t raw_coverage(EdgeId edge) const {
+    uint64_t kmer_multiplicity(EdgeId edge) const {
         return coverage_index_.RawCoverage(edge);
     }
 
