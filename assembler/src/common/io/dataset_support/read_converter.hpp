@@ -29,6 +29,7 @@ public:
 };
 
 void ConvertIfNeeded(DataSet<LibraryData> &data, unsigned nthreads);
+
 BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
                                           bool followed_by_rc,
                                           size_t insert_size,

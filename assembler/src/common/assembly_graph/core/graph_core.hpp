@@ -16,6 +16,7 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>
+#include <boost/noncopyable.hpp>
 #include <btree/safe_btree_set.h>
 
 #include <atomic>

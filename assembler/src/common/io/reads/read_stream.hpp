@@ -4,7 +4,6 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
-//todo rename to reader
 #pragma once
 
 #include <boost/noncopyable.hpp>
@@ -56,8 +55,6 @@ struct ReadStreamStat {
     }
 
 };
-
-inline namespace v2 {
 
 template<class ReadType>
 struct ReadStream {
@@ -124,6 +121,5 @@ struct ReadStream {
 
   std::unique_ptr<ReadStreamConcept> self;
 };
-}
 
 }

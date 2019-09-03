@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include "ireader.hpp"
+#include "read_stream.hpp"
+
 #include <memory>
 #include <vector>
 

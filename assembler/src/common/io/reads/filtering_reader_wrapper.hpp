@@ -5,24 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/**
- * @file    filtering_reader_wrapper.hpp
- * @author  Sergey Nurk
- * @version 1.0
- *
- * @section LICENSE
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * @section DESCRIPTION
- *
- * FilteringReaderWrapper is the class-wrapper that gets only valid
- * reads. 
- */
-
 #pragma once
 
 #include "delegating_reader_wrapper.hpp"
@@ -47,7 +29,7 @@ public:
    *
    * @param reader Reference to any other reader (child of IReader).
    */
-    explicit FilteringReaderWrapper(typename base::ReadStreamPtrT reader_ptr,
+    explicit FilteringReaderWrapper(typename base::ReadStreamT reader_ptr,
                                     FilterF filter = VALIDITY_FILTER) :
             base(std::move(reader_ptr)), filter_f_(filter), eof_(false) {
         StepForward();

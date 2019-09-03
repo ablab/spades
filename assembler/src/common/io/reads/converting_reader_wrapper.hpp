@@ -19,10 +19,10 @@ namespace io {
 template<class PairedReadType>
 class SquashingWrapper {
     typedef typename PairedReadType::SingleReadT SingleReadT;
-    typedef ReadStream<PairedReadType> PairedReaderPtrT;
+    typedef ReadStream<PairedReadType> PairedReader;
 public:
 
-    explicit SquashingWrapper(PairedReaderPtrT reader)
+    explicit SquashingWrapper(PairedReader reader)
             : reader_(std::move(reader)), pairedread_(), index_(0) {}
 
     /*
@@ -80,7 +80,7 @@ private:
     /*
      * @variable Internal stream reader.
      */
-    PairedReaderPtrT reader_;
+    PairedReader reader_;
     /*
      * @variable Element that stores the last read PairedRead from
      * stream.

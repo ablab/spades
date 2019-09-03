@@ -5,7 +5,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 #pragma once
+
 #include "filtering_reader_wrapper.hpp"
+#include "single_read.hpp"
+#include "paired_read.hpp"
 
 namespace io {
 
@@ -59,7 +62,7 @@ template<typename ReadType>
 class LongestValidRetainingWrapper : public DelegatingWrapper<ReadType> {
     typedef DelegatingWrapper<ReadType> base;
 public:
-    LongestValidRetainingWrapper(typename base::ReadStreamPtrT reader_ptr) :
+    LongestValidRetainingWrapper(typename base::ReadStreamT reader_ptr) :
             base(std::move(reader_ptr)) {}
 
     LongestValidRetainingWrapper& operator>>(ReadType& read) {

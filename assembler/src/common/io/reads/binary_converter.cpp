@@ -6,7 +6,7 @@
 
 #include "binary_converter.hpp"
 
-#include "ireader.hpp"
+#include "read_stream.hpp"
 #include "single_read.hpp"
 #include "paired_read.hpp"
 #include "orientation.hpp"

@@ -7,7 +7,7 @@
 //todo rename to reader
 #pragma once
 
-#include "io/reads/ireader.hpp"
+#include "io/reads/read_stream.hpp"
 #include "io/reads/single_read.hpp"
 
 #include <bamtools/api/BamReader.h>

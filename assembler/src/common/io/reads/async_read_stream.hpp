@@ -5,7 +5,7 @@
 //***************************************************************************
 
 #pragma once
-#include "io/reads/ireader.hpp"
+#include "read_stream.hpp"
 
 #include "threadpool/threadpool.hpp"
 
@@ -33,7 +33,8 @@ class AsyncReadStream {
             start_ = false;
         }
             
-        if (read_pos_ < read_buffer_.size()) t = std::move(read_buffer_[read_pos_++]);
+        if (read_pos_ < read_buffer_.size())
+            t = std::move(read_buffer_[read_pos_++]);
 
         if (read_pos_ == read_buffer_.size()) {
             // Wait for completion of the write task, if any
@@ -96,7 +97,7 @@ class AsyncReadStream {
                               while (write_buffer_.size() < BUF_SIZE && !stream_.eof()) {
                                   ReadType r;
                                   stream_ >> r;
-                                  write_buffer_.emplace_back(r);
+                                  write_buffer_.emplace_back(std::move(r));
                               }
 
                               return !stream_.eof();

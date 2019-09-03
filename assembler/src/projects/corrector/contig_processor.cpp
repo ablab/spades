@@ -9,7 +9,6 @@
 #include "config_struct.hpp"
 #include "variants_table.hpp"
 
-#include "io/reads/ireader.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/reads/single_read.hpp"

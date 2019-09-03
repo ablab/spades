@@ -30,7 +30,7 @@ namespace debruijn_graph {
 
 template<class Graph, class Readers, class Index>
 size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
-        Index& index, io::SingleStream contigs_stream = io::SingleStream()) {
+        Index& index, io::SingleStream *contigs_stream = nullptr) {
     INFO("Constructing DeBruijn graph");
 
     TRACE("Filling indices");
@@ -42,7 +42,7 @@ size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageFillingEdgeIndexBuilderT IndexBuilder;
     InnerIndex& debruijn = index.inner_index();
     //fixme hack
-    rl = IndexBuilder().BuildIndexFromStream(debruijn, streams, contigs_stream ? contigs_stream : nullptr);
+    rl = IndexBuilder().BuildIndexFromStream(debruijn, streams, contigs_stream);
 
     VERIFY(g.k() + 1== debruijn.k());
     // FIXME: output_dir here is damn ugly!

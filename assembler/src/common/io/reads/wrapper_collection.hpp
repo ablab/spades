@@ -17,7 +17,7 @@ class IdSettingReaderWrapper: public DelegatingWrapper<SingleRead> {
     typedef DelegatingWrapper<SingleRead> base;
     size_t next_id_;
 public:
-    IdSettingReaderWrapper(base::ReadStreamPtrT reader, size_t start_id = 0)
+    IdSettingReaderWrapper(base::ReadStreamT reader, size_t start_id = 0)
             : base(std::move(reader)), next_id_(start_id) {}
 
     IdSettingReaderWrapper& operator>>(SingleRead& read) {
@@ -31,7 +31,7 @@ class PrefixAddingReaderWrapper: public DelegatingWrapper<SingleRead> {
     typedef DelegatingWrapper<SingleRead> base;
     std::string prefix_;
 public:
-    PrefixAddingReaderWrapper(base::ReadStreamPtrT reader,
+    PrefixAddingReaderWrapper(base::ReadStreamT reader,
                               const std::string& prefix) :
             base(std::move(reader)), prefix_(prefix) {}
 
@@ -56,7 +56,7 @@ class FixingWrapper: public DelegatingWrapper<SingleRead> {
     }
 
 public:
-    FixingWrapper(base::ReadStreamPtrT reader) :
+    FixingWrapper(base::ReadStreamT reader) :
             base(std::move(reader)) {}
 
     FixingWrapper& operator>>(SingleRead& read) {
@@ -87,7 +87,7 @@ class NonNuclCollapsingWrapper: public DelegatingWrapper<SingleRead> {
     }
 
 public:
-    NonNuclCollapsingWrapper(base::ReadStreamPtrT reader) :
+    NonNuclCollapsingWrapper(base::ReadStreamT reader) :
             base(std::move(reader)) {}
 
     NonNuclCollapsingWrapper& operator>>(SingleRead& read) {

@@ -23,7 +23,7 @@ template<typename ReadType>
 class RCWrapper: public DelegatingWrapper<ReadType> {
     typedef DelegatingWrapper<ReadType> base;
 public:
-    explicit RCWrapper(typename base::ReadStreamPtrT reader)
+    explicit RCWrapper(typename base::ReadStreamT reader)
             : base(std::move(reader)), rc_read_(), was_rc_(true) {}
 
     bool eof() {
@@ -70,7 +70,7 @@ class OrientationChangingWrapper: public DelegatingWrapper<ReadType> {
     typedef DelegatingWrapper<ReadType> base;
 public:
 
-    OrientationChangingWrapper(typename base::ReadStreamPtrT reader,
+    OrientationChangingWrapper(typename base::ReadStreamT reader,
                                LibraryOrientation orientation) :
             base(std::move(reader)), changer_(GetOrientationChanger<ReadType>(orientation)) {
     }
@@ -84,40 +84,5 @@ public:
 private:
     OrientationF<ReadType> changer_;
 };
-
-template<typename ReadType>
-class RCRemovingWrapper: public DelegatingWrapper<ReadType> {
-    typedef DelegatingWrapper<ReadType> base;
-public:
-
-    explicit RCRemovingWrapper(typename base::ReadStreamPtrT reader)
-            : base(std::move(reader)) {}
-
-    /*virtual*/
-    RCRemovingWrapper& operator>>(ReadType& read) {
-        base::operator>>(read);
-
-        VERIFY(!this->eof());
-        ReadType skip;
-        base::operator>>(skip);
-
-        return *this;
-    }
-
-};
-
-template<class ReadType>
-ReadStream<ReadType> UnRCWrap(ReadStream<ReadType> reader_ptr) {
-    return RCRemovingWrapper<ReadType>(std::move(reader_ptr));
-}
-
-template<class ReadType>
-ReadStreamList<ReadType> UnRCWrap(ReadStreamList<ReadType>& readers) {
-    ReadStreamList<ReadType> answer;
-    for (size_t i = 0; i < readers.size(); ++i) {
-        answer.push_back(UnRCWrap<ReadType>(readers.ptr_at(i)));
-    }
-    return answer;
-}
 
 }

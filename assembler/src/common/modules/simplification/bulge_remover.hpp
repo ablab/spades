@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * bulge_remover.hpp
- *
- *  Created on: Apr 13, 2011
- *      Author: sergey
- */
-
 #pragma once
 
 #include "assembly_graph/graph_support/parallel_processing.hpp"
@@ -393,7 +386,8 @@ private:
     typedef typename Graph::VertexId VertexId;
     typedef InterestingFinderPtr<Graph, EdgeId> CandidateFinderPtr;
     typedef SmartSetIterator<Graph, EdgeId, CoverageComparator<Graph>> SmartEdgeSet;
-
+    typedef phmap::flat_hash_set<EdgeId> EdgeSet;
+    
     size_t buff_size_;
     double buff_cov_diff_;
     double buff_cov_rel_diff_;
@@ -461,7 +455,7 @@ private:
         return smart_set;
     }
 
-    bool CheckInteracting(const BulgeInfo &info, const phmap::flat_hash_set<EdgeId> &involved_edges) const {
+    bool CheckInteracting(const BulgeInfo &info, const EdgeSet &involved_edges) const {
         if (involved_edges.count(info.e))
             return true;
         for (EdgeId e : info.alternative)
@@ -470,7 +464,7 @@ private:
         return false;
     }
 
-    void AccountEdge(EdgeId e, phmap::flat_hash_set<EdgeId>& involved_edges) const {
+    void AccountEdge(EdgeId e, EdgeSet& involved_edges) const {
         TRACE("Pushing edge " << this->g().str(e));
         involved_edges.insert(e);
         EdgeId conj = this->g().conjugate(e);
@@ -478,7 +472,7 @@ private:
         involved_edges.insert(conj);
     }
 
-    void AccountEdges(const BulgeInfo& info, phmap::flat_hash_set<EdgeId>& involved_edges) const {
+    void AccountEdges(const BulgeInfo& info, EdgeSet& involved_edges) const {
         AccountEdge(info.e, involved_edges);
         for (EdgeId e : info.alternative) {
             AccountEdge(e, involved_edges);

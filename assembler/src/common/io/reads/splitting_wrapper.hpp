@@ -18,8 +18,9 @@ private:
     std::vector<SingleRead> buffer_;
     size_t buffer_position_;
 
-    void FillBuffer(SingleRead& tmp_read) {
+    void FillBuffer(const SingleRead& tmp_read) {
         buffer_.clear();
+        buffer_position_ = 0;
         for (size_t i = 0; i < tmp_read.size(); ++i) {
             size_t j = i;
             while (j < tmp_read.size() && is_nucl(tmp_read.GetSequenceString()[j])) {
@@ -30,7 +31,6 @@ private:
                 i = j - 1;
             }
         }
-        buffer_position_ = 0;
     }
 
     bool Skip() {
@@ -44,7 +44,7 @@ private:
 
 public:
 
-    explicit SplittingWrapper(base::ReadStreamPtrT reader) :
+    explicit SplittingWrapper(base::ReadStreamT reader) :
             base(reader), buffer_position_(0) {
     }
 

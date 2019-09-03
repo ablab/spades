@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "ireader.hpp"
+#include "read_stream.hpp"
 
 namespace io {
 
@@ -15,7 +15,7 @@ namespace io {
 template<typename ReadType>
 class DelegatingWrapper {
 public:
-    typedef ReadStream<ReadType> ReadStreamPtrT;
+    typedef ReadStream<ReadType> ReadStreamT;
     
     explicit DelegatingWrapper(ReadStream<ReadType> reader)
             : reader_{std::move(reader)} {}

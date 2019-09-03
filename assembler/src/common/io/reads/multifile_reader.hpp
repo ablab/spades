@@ -18,13 +18,13 @@ namespace io {
  */
 template<typename ReadType>
 class MultifileStream {
-    typedef ReadStream<ReadType> ReadStreamPtrT;
+    typedef ReadStream<ReadType> ReadStreamT;
 
 public:
     MultifileStream(ReadStreamList<ReadType> readers)
             : readers_{std::move(readers)}, current_reader_index_(0) {}
 
-    MultifileStream(ReadStreamPtrT reader_1, ReadStreamPtrT reader_2) :
+    MultifileStream(ReadStreamT reader_1, ReadStreamT reader_2) :
             current_reader_index_(0) {
         VERIFY(reader_1.is_open() && reader_2.is_open());
         readers_.push_back(std::move(reader_1));

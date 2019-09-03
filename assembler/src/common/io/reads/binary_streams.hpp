@@ -7,13 +7,14 @@
 
 #pragma once
 
-#include "ireader.hpp"
+#include "read_stream.hpp"
 #include "single_read.hpp"
 #include "paired_read.hpp"
 #include "binary_converter.hpp"
 
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
+#include "utils/filesystem/path_helper.hpp"
 
 #include <fstream>
 

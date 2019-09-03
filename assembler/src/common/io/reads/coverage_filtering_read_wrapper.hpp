@@ -8,6 +8,8 @@
 
 #include "filtering_reader_wrapper.hpp"
 
+#include "sequence/sequence.hpp"
+
 #include "adt/cqf.hpp"
 #include "adt/cyclichash.hpp"
 #include "utils/kmer_counting.hpp"
@@ -96,11 +98,11 @@ public:
 };
 
 template<class ReadType, class Hasher>
-inline ReadStream<ReadType> CovFilteringWrap(ReadStream<ReadType> reader_ptr,
+inline ReadStream<ReadType> CovFilteringWrap(ReadStream<ReadType> reader,
                                              unsigned k, const Hasher &hasher,
                                              const utils::CQFKmerFilter &cqf, unsigned thr) {
     CoverageFilter<ReadType, Hasher> filter(k, hasher, cqf, thr);
-    return io::FilteringWrap<ReadType>(std::move(reader_ptr),
+    return io::FilteringWrap<ReadType>(std::move(reader),
                                        [=](const ReadType &r) { return filter(r); });
 }
 
