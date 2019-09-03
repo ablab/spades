@@ -233,7 +233,7 @@ public:
         return result;
     }
 
-    auto ProcessedVertices() const -> const decltype(processed_vertices_)& {
+    const auto& ProcessedVertices() const {
         return processed_vertices_;
     }
 
