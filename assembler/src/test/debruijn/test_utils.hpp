@@ -210,7 +210,9 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
 
     DEBUG("Graph pack created");
 
-    io::ReadStreamList<io::SingleRead> single_stream_vector(io::SquashingWrap<io::PairedRead>(RawStream(MakePairedReads(paired_reads, insert_size))));
+    RawStream paired_stream = MakePairedReads(paired_reads, insert_size);
+    using SquashingWrapper = io::SquashingWrapper<io::PairedRead>;
+    io::ReadStreamList<io::SingleRead> single_stream_vector(SquashingWrapper(std::move(paired_stream)));
     ConstructGraphWithCoverage(config::debruijn_config::construction(), workdir,
                                single_stream_vector, gp.g, gp.index, gp.flanking_cov);
 
@@ -218,7 +220,7 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
     gp.kmer_mapper.Attach();
     gp.EnsureBasicMapping();
 
-    io::ReadStreamList<io::PairedRead> paired_streams(RawStream(MakePairedReads(paired_reads, insert_size)));
+    io::ReadStreamList<io::PairedRead> paired_streams(std::move(single_stream_vector[0].recover<SquashingWrapper>().recover<RawStream>()));
     DEBUG("Streams initialized");
 
     SequenceMapperNotifier notifier(gp, 1);
