@@ -16,7 +16,7 @@ template<typename ReadType>
 class DelegatingWrapper {
 public:
     typedef ReadStream<ReadType> ReadStreamT;
-    
+
     explicit DelegatingWrapper(ReadStream<ReadType> reader)
             : reader_{std::move(reader)} {}
 
@@ -39,6 +39,10 @@ public:
 
     void reset() {
         reader_.reset();
+    }
+
+    constexpr auto && unwrap() {
+        return reader_;
     }
 
 protected:

@@ -6,9 +6,13 @@
 //***************************************************************************
 #pragma once
 
+#include "utils/verify.hpp"
+
 #include <boost/noncopyable.hpp>
 #include <istream>
 #include <memory>
+#include <typeinfo>
+#include <typeindex>
 
 namespace io {
 
@@ -64,16 +68,23 @@ struct ReadStream {
 
   template<class T>
   ReadStream(T &&t) noexcept
-      : self(std::make_unique<ReadStreamModel<T>>(std::forward<T>(t))) {}
+      : self_(std::make_unique<ReadStreamModel<T>>(std::forward<T>(t))) {}
 
-  bool is_open() const { return self->is_open(); }
-  bool eof() const { return self->eof(); }
-  ReadStream& operator>>(ReadType& read) { (*self) >> read; return *this; }
-  void close() { self->close(); }
-  void reset() { self->reset(); }
+  bool is_open() const { return self_->is_open(); }
+  bool eof() const { return self_->eof(); }
+  ReadStream& operator>>(ReadType& read) { (*self_) >> read; return *this; }
+  void close() { self_->close(); }
+  void reset() { self_->reset(); }
 
-  explicit operator bool() const { return (bool)self; }
+  explicit operator bool() const { return (bool)self_; }
 
+  template<class T>
+  constexpr auto &&recover() {
+      VERIFY(std::type_index(self_->type_info()) == std::type_index(typeid(T)));
+
+      auto model = static_cast<ReadStreamModel<T>*>(self_.get());
+      return model->self_;
+  }
 
  private:
   struct ReadStreamConcept {
@@ -104,22 +115,27 @@ struct ReadStream {
 
     /* Close the stream and open it again */
     virtual void reset() = 0;
+
+    /* Provide the type information for reification */
+    virtual const std::type_info &type_info() const = 0;
+
   };
 
   template<typename T>
   struct ReadStreamModel : ReadStreamConcept {
-    explicit ReadStreamModel(T &&s) noexcept : self(std::move(s)) {}
+    explicit ReadStreamModel(T &&s) noexcept : self_(std::move(s)) {}
 
-    bool is_open() { return self.is_open(); }
-    bool eof() { return self.eof(); }
-    ReadStreamModel& operator>>(ReadType& read) { self >> read; return *this; }
-    void close() { self.close(); }
-    void reset() { self.reset(); }
+    bool is_open() { return self_.is_open(); }
+    bool eof() { return self_.eof(); }
+    ReadStreamModel& operator>>(ReadType& read) { self_ >> read; return *this; }
+    void close() { self_.close(); }
+    void reset() { self_.reset(); }
+    const std::type_info &type_info() const { return typeid(T); }
 
-    T self;
+    T self_;
   };
 
-  std::unique_ptr<ReadStreamConcept> self;
+  std::unique_ptr<ReadStreamConcept> self_;
 };
 
 }

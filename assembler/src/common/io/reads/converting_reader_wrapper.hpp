@@ -76,6 +76,10 @@ public:
         reader_.reset();
     }
 
+    constexpr auto && unwrap() {
+        return reader_;
+    }
+
 private:
     /*
      * @variable Internal stream reader.

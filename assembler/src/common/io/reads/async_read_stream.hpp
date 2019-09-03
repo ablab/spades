@@ -78,6 +78,10 @@ class AsyncReadStream {
         init();
     }
 
+    constexpr auto && unwrap() {
+        return stream_;
+    }
+
   private:
     void init() {
         read_buffer_.clear();
