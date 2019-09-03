@@ -81,6 +81,10 @@ class AsyncReadStream {
     constexpr auto && unwrap() {
         return stream_;
     }
+    template<class T>
+    constexpr auto && recover() {
+        return stream_.template recover<T>();
+    }
 
   private:
     void init() {

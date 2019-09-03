@@ -79,6 +79,10 @@ public:
     constexpr auto && unwrap() {
         return reader_;
     }
+    template<class T>
+    constexpr auto && recover() {
+        return reader_.template recover<T>();
+    }
 
 private:
     /*
