@@ -79,18 +79,18 @@ void Write(std::ostream &str, const T &value) {
  * @brief  A convenient template function that deserializes a component from an STL stream
  *         calling an appropriate ComponentIO.
  */
-template<typename T, typename... Env>
-bool Load(std::istream &str, T &value, Env... env) {
+template<typename T>
+bool Read(std::istream &str, T &value) {
     BinIStream str_(str);
     typename IOTraits<T>::Type io;
-    return io.Read(str_, value, env...);
+    return io.Read(str_, value);
 }
 
 /**
  * @brief  An abstract saver/loader which uses a single file for its component.
  */
 template<typename T>
-class IOSingle : public IOStream<T> {
+class IOSingle : public IOBase<T> {
 public:
     IOSingle(const char *name, const char *ext)
             : name_(name), ext_(ext) {
@@ -102,7 +102,14 @@ public:
         DEBUG("Saving " << this->name_ << " into " << filename);
         VERIFY(file);
         BinOStream writer(file);
-        this->Write(writer, value);
+        this->SaveImpl(writer, value);
+    }
+
+    void SaveEmpty(const std::string &basename) {
+        std::string filename = basename + this->ext_;
+        std::ofstream file(filename, std::ios::binary);
+        DEBUG("Create empty file " << filename);
+        VERIFY(file);
     }
 
     /**
@@ -111,19 +118,64 @@ public:
      */
     bool Load(const std::string &basename, T &value) override {
         std::string filename = basename + this->ext_;
-        if (!fs::check_existence(filename))
-            return false;
+        VERIFY_MSG(fs::check_existence(filename), "File not found: " + filename);
         std::ifstream file(filename, std::ios::binary);
+        //check file is empty
+        if (file.peek() == std::ifstream::traits_type::eof()) {
+            return false;
+        }
         VERIFY_MSG(file, "Failed to read " << filename);
         DEBUG("Loading " << this->name_ << " from " << filename);
         BinIStream reader(file);
-        this->Read(reader, value);
+        this->LoadImpl(reader, value);
         return true;
+    }
+
+    virtual bool BinRead(std::istream &is, T &value) {
+        BinIStream str(is);
+        bool file_is_present;
+        str >> file_is_present;
+        if (file_is_present) {
+            this->LoadImpl(str, value);
+        }
+        return file_is_present;
+    }
+
+    virtual void BinWrite(std::ostream &os, const T &value) {
+        BinOStream str(os);
+        bool file_is_present = true;
+        str << file_is_present;
+        this->SaveImpl(str, value);
+    }
+
+    virtual void BinWriteEmpty(std::ostream &os) {
+        BinOStream str(os);
+        bool file_is_present = false;
+        str << file_is_present;
+    }
+
+    void Write(BinOStream &stream, const T &value) {
+        bool file_is_present = true;
+        stream << file_is_present;
+        this->SaveImpl(stream, value);
+    }
+
+    bool Read(BinIStream &stream, T &value) {
+        bool file_is_present;
+        stream >> file_is_present;
+        if (file_is_present) {
+            this->LoadImpl(stream, value);
+        }
+        return file_is_present;
     }
 
 private:
     const char *name_, *ext_;
 
+    virtual void SaveImpl(BinOStream &str, const T &value) = 0;
+    virtual void LoadImpl(BinIStream &str, T &value) = 0;
+
+private:
     DECL_LOGGER("BinaryIO");
 };
 
@@ -137,12 +189,12 @@ public:
             : IOSingle<T>(name, ext) {
     }
 
-    void Write(BinOStream &str, const T &value) override {
+    void SaveImpl(BinOStream &str, const T &value) override {
         str << value;
     }
 
-    void Read(BinIStream &str, T &value) override {
-        value.BinRead(str.stream());
+    void LoadImpl(BinIStream &str, T &value) override {
+        str >> value;
     }
 };
 
@@ -168,6 +220,20 @@ public:
         bool res = true;
         for (size_t i = 0; i < value.size(); ++i) {
             res &= io_->Load(basename + "_" + std::to_string(i), value[i]);
+        }
+        return res;
+    }
+
+    void Write(BinOStream &stream, const T &value) {
+        for (size_t i = 0; i < value.size(); ++i) {
+            io_->Write(stream, value[i]);
+        }
+    }
+
+    bool Read(BinIStream &stream, T &value) {
+        bool res = true;
+        for (size_t i = 0; i < value.size(); ++i) {
+            res &= io_->Read(stream, value[i]);
         }
         return res;
     }

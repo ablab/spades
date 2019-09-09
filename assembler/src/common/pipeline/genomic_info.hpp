@@ -35,6 +35,9 @@ class GenomicInfo {
     bool Load(const std::string &filename);
     void Save(const std::string &filename) const;
 
+    bool BinWrite(std::ostream &os) const;
+    void BinRead(std::istream &is);
+
     void yamlize(llvm::yaml::IO &io);
 
   private:

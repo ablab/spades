@@ -89,6 +89,35 @@ void GenomicInfo::Save(const std::string &filename) const {
     yout << const_cast<GenomicInfo&>(*this);
 }
 
+
+bool GenomicInfo::BinWrite(std::ostream &os) const {
+    io::binary::BinOStream str(os);
+    str << this->cov_histogram_.size();
+    for (auto elem : this->cov_histogram_) {
+        str << elem;
+    }
+    str << this->genome_size_;
+    str << this->estimated_mean_;
+    str << this->ec_bound_;
+    str << this->trusted_bound_;
+
+    return true;
+}
+
+void GenomicInfo::BinRead(std::istream &is) {
+    io::binary::BinIStream str(is);
+    size_t cov_hist_len;
+    str >> cov_hist_len;
+    this->cov_histogram_.resize(cov_hist_len);
+    for (int i = 0; i < cov_hist_len; ++i) {
+        str >> this->cov_histogram_[i];
+    }
+    str >> this->genome_size_;
+    str >> this->estimated_mean_;
+    str >> this->ec_bound_;
+    str >> this->trusted_bound_;
+}
+
 void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
     if (cfg::get().uneven_depth) {
         ErroneousConnectionThresholdFinder<conj_graph_pack::graph_t> finder(gp.g);

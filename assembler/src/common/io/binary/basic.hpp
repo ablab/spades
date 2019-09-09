@@ -30,6 +30,19 @@ public:
         VERIFY(loaded);
         return true;
     }
+
+    void BinWrite(std::ostream &os, const Graph &graph) {
+        Base::BinWrite(os, graph);
+        io::binary::Write(os, graph.coverage_index());
+    }
+
+    bool BinRead(std::istream &is, Graph &graph) {
+        bool loaded = Base::BinRead(is, graph);
+        VERIFY(loaded);
+        loaded = io::binary::Read(is, graph.coverage_index());
+        VERIFY(loaded);
+        return true;
+    }
 };
 
 } // namespace binary

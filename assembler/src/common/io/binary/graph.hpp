@@ -23,8 +23,11 @@ public:
     }
 
 private:
-    void Write(BinOStream &str, const Graph &graph) override {
+    void SaveImpl(BinOStream &str, const Graph &graph) override {
         str << graph.vreserved() << graph.ereserved();
+
+        size_t vertex_cnt = graph.size();
+        str << vertex_cnt;
 
         for (auto v1 : graph) {
             str << v1.int_id() << graph.conjugate(v1).int_id();
@@ -36,16 +39,19 @@ private:
                     << graph.EdgeEnd(e1).int_id() << graph.EdgeStart(e2).int_id()
                     << graph.EdgeNucls(e1);
             }
-            str << (uint64_t)0; //null-term
+            str << (size_t)0; //null-term
         }
     }
 
-    void Read(BinIStream &str, Graph &graph) override {
+    void LoadImpl(BinIStream &str, Graph &graph) override {
         graph.clear();
 
         uint64_t max_vid, max_eid;
         str >> max_vid >> max_eid;
         graph.reserve(max_vid, max_eid);
+
+        size_t vertex_cnt;
+        str >> vertex_cnt;
 
         auto TryAddVertex = [&](uint64_t ids[2]) {
             if (graph.contains(typename Graph::VertexId(ids[0])))
@@ -56,8 +62,7 @@ private:
             VERIFY(graph.conjugate(new_id) == ids[1]);
         };
 
-        while (str.has_data()) { //Read until the end
-            // FIXME use two separate ids instead of C-array! C-array are error-prone and could be easily mixed up with pointers!
+        for (size_t i = 0; i < vertex_cnt; ++i) {
             uint64_t start_ids[2];
             str >> start_ids;
             TryAddVertex(start_ids);
