@@ -150,20 +150,20 @@ endmacro()
 
 if(NOT JEMALLOC_PREFIX)
     # if no prefix, wrap native allocator functions
-    checkFunctionAppendSyms(__libc_calloc wrap_syms
-        JEMALLOC_OVERRIDE___LIBC_CALLOC)
-    checkFunctionAppendSyms(__libc_free wrap_syms
-        JEMALLOC_OVERRIDE___LIBC_FREE)
-    checkFunctionAppendSyms(__libc_malloc wrap_syms
-        JEMALLOC_OVERRIDE___LIBC_MALLOC)
-    checkFunctionAppendSyms(__libc_memalign wrap_syms
-        JEMALLOC_OVERRIDE___LIBC_MEMALIGN)
-    checkFunctionAppendSyms(__libc_realloc wrap_syms
-        JEMALLOC_OVERRIDE___LIBC_REALLOC)
-    checkFunctionAppendSyms(__libc_valloc wrap_syms
-        JEMALLOC_OVERRIDE___LIBC_VALLOC)
-    checkFunctionAppendSyms(__libc_posix_memalign wrap_syms
-        JEMALLOC_OVERRIDE___POSIX_MEMALIGN)
+    # checkFunctionAppendSyms(__libc_calloc wrap_syms
+    #    JEMALLOC_OVERRIDE___LIBC_CALLOC)
+    #checkFunctionAppendSyms(__libc_free wrap_syms
+    #    JEMALLOC_OVERRIDE___LIBC_FREE)
+    #checkFunctionAppendSyms(__libc_malloc wrap_syms
+    #    JEMALLOC_OVERRIDE___LIBC_MALLOC)
+    #checkFunctionAppendSyms(__libc_memalign wrap_syms
+    #    JEMALLOC_OVERRIDE___LIBC_MEMALIGN)
+    #checkFunctionAppendSyms(__libc_realloc wrap_syms
+    #    JEMALLOC_OVERRIDE___LIBC_REALLOC)
+    #checkFunctionAppendSyms(__libc_valloc wrap_syms
+    #    JEMALLOC_OVERRIDE___LIBC_VALLOC)
+    #checkFunctionAppendSyms(__libc_posix_memalign wrap_syms
+    #    JEMALLOC_OVERRIDE___POSIX_MEMALIGN)
 
     if(JEMALLOC_GLIBC_MALLOC_HOOK)
         list(APPEND wrap_syms __free_hook __malloc_hook __realloc_hook)
