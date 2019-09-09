@@ -12,6 +12,7 @@
 #include "utils/parallel/openmp_wrapper.h"
 
 #include <memory>
+#include <sched.h>
 
 #pragma GCC diagnostic push
 #ifdef __clang__
