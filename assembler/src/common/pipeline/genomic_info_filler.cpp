@@ -69,53 +69,32 @@ void GenomicInfo::yamlize(yaml::IO &io) {
 
 
 bool GenomicInfo::Load(const std::string &filename) {
-    ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename);
-    if (!Buf)
-        return false;
-
-    yaml::Input yin(*Buf.get());
-    yin >> *this;
-
-    if (yin.error())
-        return false;
-    
+    std::ifstream ifs(filename, std::ios::binary);
+    BinRead(ifs);
     return true;
 }
 
 void GenomicInfo::Save(const std::string &filename) const {
-    std::error_code EC;
-    llvm::raw_fd_ostream ofs(filename, EC, llvm::sys::fs::OpenFlags::F_Text);
-    llvm::yaml::Output yout(ofs);
-    yout << const_cast<GenomicInfo&>(*this);
+    std::ofstream ofs(filename, std::ios::binary);
+    BinWrite(ofs);
 }
 
-
 bool GenomicInfo::BinWrite(std::ostream &os) const {
-    io::binary::BinOStream str(os);
-    str << this->cov_histogram_.size();
-    for (auto elem : this->cov_histogram_) {
-        str << elem;
-    }
-    str << this->genome_size_;
-    str << this->estimated_mean_;
-    str << this->ec_bound_;
-    str << this->trusted_bound_;
-
+    std::string buffer;
+    llvm::raw_string_ostream raw_os(buffer);
+    llvm::yaml::Output yout(raw_os);
+    yout << const_cast<GenomicInfo&>(*this);
+    raw_os.str();  // Flush content to the target string
+    io::binary::BinWrite(os, buffer);
     return true;
 }
 
 void GenomicInfo::BinRead(std::istream &is) {
-    io::binary::BinIStream str(is);
-    size_t cov_hist_len;
-    str >> cov_hist_len;
-    this->cov_histogram_.resize(cov_hist_len);
-    for (int i = 0; i < cov_hist_len; ++i) {
-        str >> this->cov_histogram_[i];
-    }
-    str >> this->genome_size_;
-    str >> this->estimated_mean_;
-    str >> this->ec_bound_;
-    str >> this->trusted_bound_;
+    std::string buffer;
+    io::binary::BinRead(is, buffer);
+    llvm::yaml::Input yin(buffer);
+    yin >> *this;
+    VERIFY(!yin.error());
 }
 
 void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {

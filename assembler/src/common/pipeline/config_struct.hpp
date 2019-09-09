@@ -528,13 +528,14 @@ struct debruijn_config {
     }
 };
 
-
 void init_libs(io::DataSet<LibraryData> &dataset, size_t max_threads,
                const std::string &temp_bin_reads_path);
 void load(debruijn_config& cfg, const std::vector<std::string> &filenames);
 void load(debruijn_config& cfg, const std::string &filename);
 void load_lib_data(const std::string& prefix);
+void load_lib_data(std::istream& is);
 void write_lib_data(const std::string& prefix);
+void write_lib_data(std::ostream& os);
 
 } // config
 } // debruijn_graph

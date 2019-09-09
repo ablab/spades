@@ -14,11 +14,11 @@
 #include "io/reads/file_reader.hpp"
 
 #include "llvm/Support/YAMLTraits.h"
-#include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
 
 #include <string>
 #include <vector>
+#include <common/io/binary.hpp>
 
 using namespace llvm;
 
@@ -111,19 +111,38 @@ std::vector<std::string> BrokenScaffoldsModeNames() {
 
 template<class T>
 void LoadFromYaml(const std::string& filename, T &t) {
-    auto buf = llvm::MemoryBuffer::getFile(filename);
-    VERIFY_MSG(buf, "Failed to load file " << filename);
-    llvm::yaml::Input yin(*buf.get());
-    VERIFY_MSG(!yin.error(), "Failed to load file " << filename);
+    std::ifstream ifs(filename, std::ios::binary);
+    LoadFromYaml(ifs, t);
+}
+
+
+template<class T>
+void LoadFromYaml(std::istream& in, T &t) {
+    std::string buffer;
+    io::binary::BinRead(in, buffer);
+    llvm::yaml::Input yin(buffer);
     yin >> t;
+    VERIFY(!yin.error());
 }
 
 template<class T>
 void WriteToYaml(T &t, const std::string& filename) {
-    std::error_code EC;
-    llvm::raw_fd_ostream ofs(filename, EC, llvm::sys::fs::OpenFlags::F_Text);
-    llvm::yaml::Output yout(ofs);
+    std::ofstream ofs(filename, std::ios::binary);
+    WriteToYaml(t, ofs);
+}
+
+template<class T>
+void WriteToYaml(T &t, std::ostream& os) {
+    std::string buffer;
+    llvm::raw_string_ostream raw_os(buffer);
+    llvm::yaml::Output yout(raw_os);
     yout << t;
+    raw_os.str();  // Flush content to the target string
+    io::binary::BinWrite(os, buffer);
+}
+
+void load_lib_data(std::istream& is) {
+    LoadFromYaml(is, cfg::get_writable().ds);
 }
 
 void load_lib_data(const std::string& prefix) {
@@ -132,6 +151,10 @@ void load_lib_data(const std::string& prefix) {
 
 void write_lib_data(const std::string& prefix) {
     WriteToYaml(cfg::get_writable().ds, prefix + ".lib_data");
+}
+
+void write_lib_data(std::ostream& os) {
+    WriteToYaml(cfg::get_writable().ds, os);
 }
 
 void load(debruijn_config::simplification::tip_clipper &tc,
@@ -854,6 +877,5 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
 
     init_libs(cfg.ds.reads, cfg.max_threads, cfg.temp_bin_reads_path);
 }
-
 }
 }

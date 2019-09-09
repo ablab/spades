@@ -30,7 +30,7 @@ void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
     std::ifstream file(p, std::ios::binary);
 
     io::binary::FullPackIO<Graph>().BinRead(file, gp);
-    debruijn_graph::config::load_lib_data(p);
+    debruijn_graph::config::load_lib_data(file);
 }
 
 void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
@@ -44,9 +44,9 @@ void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
 
     auto p = fs::append_path(dir, "graph_pack");
     std::ofstream file(p, std::ios::binary);
-    io::binary::FullPackIO<Graph>().BinWrite(file, gp);
 
-    debruijn_graph::config::write_lib_data(p);
+    io::binary::FullPackIO<Graph>().BinWrite(file, gp);
+    debruijn_graph::config::write_lib_data(file);
 }
 
 class StageIdComparator {
