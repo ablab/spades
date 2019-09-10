@@ -319,31 +319,6 @@ private:
         return edge(conjugate(id));
     }
 
-public:
-    class VertexIt : public boost::iterator_adaptor<VertexIt,
-                                                    typename VertexStorage::id_iterator,
-                                                    VertexId,
-                                                    typename std::iterator_traits<typename VertexStorage::id_iterator>::iterator_category,
-                                                    VertexId> {
-      public:
-        VertexIt(typename VertexStorage::id_iterator it)
-                : VertexIt::iterator_adaptor(it) {}
-
-      private:
-        friend class boost::iterator_core_access;
-
-        VertexId dereference() const {
-            return *this->base();
-        }
-    };
-
-    VertexIt begin() const { return vstorage_.id_begin(); }
-    VertexIt end() const { return vstorage_.id_end(); }
-    adt::iterator_range<VertexIt> vertices() const { return { begin(), end()}; }
-
-    size_t size() const { return vstorage_.size(); }
-    size_t e_size() const { return estorage_.size(); }
-
     struct EdgePredicate {
         EdgePredicate() = default;
         EdgePredicate(const GraphCore<DataMaster> &graph)
@@ -370,6 +345,31 @@ public:
         }
     };
 
+public:
+    class VertexIt : public boost::iterator_adaptor<VertexIt,
+                                                    typename VertexStorage::id_iterator,
+                                                    VertexId,
+                                                    typename std::iterator_traits<typename VertexStorage::id_iterator>::iterator_category,
+                                                    VertexId> {
+      public:
+        VertexIt(typename VertexStorage::id_iterator it)
+                : VertexIt::iterator_adaptor(it) {}
+
+      private:
+        friend class boost::iterator_core_access;
+
+        VertexId dereference() const {
+            return *this->base();
+        }
+    };
+
+    VertexIt begin() const { return vstorage_.id_begin(); }
+    VertexIt end() const { return vstorage_.id_end(); }
+    adt::iterator_range<VertexIt> vertices() const { return { begin(), end()}; }
+
+    size_t size() const { return vstorage_.size(); }
+    size_t e_size() const { return estorage_.size(); }
+
     template<class Predicate>
     auto e_begin(Predicate p) const {
         return boost::make_filter_iterator(std::move(p),
@@ -387,13 +387,12 @@ public:
     template<bool Canonical = false>
     auto e_begin() const {
         using Predicate = typename std::conditional<Canonical, CanonicalEdges, AllEdges>::type;
-        return boost::make_filter_iterator(Predicate(*this), estorage_.id_begin(), estorage_.id_end());
+        return e_begin(Predicate(*this));
     }
     template<bool Canonical = false>
     auto e_end() const {
         using Predicate = typename std::conditional<Canonical, CanonicalEdges, AllEdges>::type;
-        return boost::make_filter_iterator(Predicate(*this),
-                                           estorage_.id_end(), estorage_.id_end());
+        return e_end(Predicate(*this));
     }
     template<bool Canonical = false>
     auto edges() const {
