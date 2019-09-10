@@ -247,7 +247,7 @@ void CheckIndex(const std::vector<std::string> &reads, size_t k) {
     auto &stream = streams.back();
     stream.reset();
     io::SingleRead read;
-    while (stream.eof()) {
+    while (!stream.eof()) {
         stream >> read;
         RtSeq kmer = read.sequence().start<RtSeq>(k + 1) >> 'A';
         for(size_t i = k; i < read.size(); i++) {

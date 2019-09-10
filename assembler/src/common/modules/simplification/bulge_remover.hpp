@@ -567,7 +567,7 @@ private:
         std::vector<BulgeInfo> filtered;
         filtered.reserve(bulges.size());
         //fixme switch to involved vertices to bring fully parallel glueing closer
-        phmap::flat_hash_set<EdgeId> involved_edges;
+        EdgeSet involved_edges;
         SmartEdgeSet interacting_edges(this->g(), false, CoverageComparator<Graph>(this->g()));
 
         for (BulgeInfo& info : bulges) {
