@@ -125,7 +125,7 @@ class MappingPrinterHub {
       mapping_printers_.push_back(new MappingPrinterGPA(g, edge_namer, output_dir));
     }
     if (formats.find("fasta") != std::string::npos) {
-      mapping_printers_.push_back(new MappingPrinterFasta(g, edge_namer, output_file_prefix));
+      mapping_printers_.push_back(new MappingPrinterFasta(g, edge_namer, output_dir));
     }
   }
 
