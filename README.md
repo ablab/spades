@@ -22,10 +22,10 @@
     4.1. [k-mer counting](#sec4.1)</br>
     4.2. [k-mer coverage read filter](#sec4.2)</br>
     4.3. [k-mer cardinality estimating](#sec4.3)</br>
-    4.4. [Graph construction](#sec4.4)</br>
+    4.4. [Graph construction](#sec4.4)</br>
     4.5. [Long read to graph alignment](#sec4.5)</br>
-         4.5.1. [hybridSPAdes aligner](#sec4.5.1)</br>
-         4.5.2. [SPAligner](#sec4.5.2)</br>
+        4.5.1. [hybridSPAdes aligner](#sec4.5.1)</br>
+        4.5.2. [SPAligner](#sec4.5.2)</br>
 5. [Citation](#sec5)</br>
 6. [Feedback and bug reports](#sec6)</br>
 
@@ -1127,7 +1127,7 @@ While `spades-mapper` is a solution for those who works on hybridSPAdes assembly
 ### SPAligner
 A tool for fast and accurate alignment of nucleotide sequences to assembly graphs. It takes file with sequences (in fasta/fastq format) and assembly in GFA format and outputs long read to graph alignment in various formats (such as tsv, fasta and [GPA](https://github.com/ocxtal/gpa "GPA-format spec")).
 
-Synopsis: `spaligner assembly/src/projects/spaligner_config.yaml [-d <value>] [-s <value>] [-g <value>] [-k <value>] [-t <value>] [-o <value>]`
+Synopsis: `spaligner assembly/src/projects/spaligner_config.yaml -d <value> -s <value> -g <value> -k <value> [-t <value>] [-o <value>]`
 
 Parameters are:
 
@@ -1144,12 +1144,12 @@ Parameters are:
     k-mer length that was used for graph construction
 
 `-t <int> `
-    number of threads (default 8)
+    number of threads (default: 8)
 
 `-o, --outdir <dir> `
     output directory to use (default: spaligner_result/)
 
-For more information on parameters and options please refer to [main SPAligner manual](https://github.com/ablab/algorithmic-biology/blob/spaligner_io_fix/assembler/src/projects/spaligner/README.md).
+For more information on parameters and options please refer to main SPAligner manual (assembler/src/projects/spaligner/README.md).
 
 Also if you want to align protein sequences please refer to our [pre-release version](https://github.com/ablab/spades/releases/tag/spaligner-paper).
 

@@ -2,7 +2,6 @@
 
 Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, coding sequences, etc.) to assembly graphs. 
 
-
 ## Running SPAligner
 
     spaligner spaligner_config.yaml \    # config file 
@@ -10,7 +9,7 @@ Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, c
               -g assembly_graph.gfa \    # gfa-file with assembly graph 
               -k 77 \                    # graph K-mer size
               -s pacbio_reads.fastq.gz \ # sequences to align in fasta/fastq formats
-              -t 8                       # number of threads
+              -t 8                       # number of threads, 8 by default
 
 By default, spaligner_config.yaml will be installed into /usr/share/spaligner/ or can be found in assembler/projects/spaligner/.
 
