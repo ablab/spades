@@ -23,7 +23,9 @@
     4.2. [k-mer coverage read filter](#sec4.2)</br>
     4.3. [k-mer cardinality estimating](#sec4.3)</br>
     4.4. [Graph construction](#sec4.4)</br>
-    4.5. [Long read to graph aligner](#sec4.5)</br>
+    4.5. [Long read to graph alignment](#sec4.5)</br>
+         4.5.1. [hybridSPAdes aligner](#sec4.5.1)</br>
+         4.5.2. [SPAligner](#sec4.5.2)</br>
 5. [Citation](#sec5)</br>
 6. [Feedback and bug reports](#sec6)</br>
 
@@ -1099,8 +1101,11 @@ Additional options are:
 
 
 <a name="sec4.5"></a>
-## Long read to graph aligner
-A tool for aligning long reads to the graph `spades-gmapper ` has three mandatory options: dataset description file in [YAML format](#yaml), graph file in GFA format and an output file name.
+## Long read to graph alignment
+
+<a name="sec4.5.1"></a>
+### hybridSPAdes aligner
+A tool `spades-gmapper ` gives opportunity to extract long read alignments generated with hybridSPAdes pipeline options. It has three mandatory options: dataset description file in [YAML format](#yaml), graph file in GFA format and an output file name.
 
 Synopsis: `spades-gmapper <dataset description (in YAML)> <graph (in GFA)> <output filename> [-k <value>] [-t <value>] [-tmpdir <dir>]`
 
@@ -1114,6 +1119,39 @@ Additional options are:
 
 `-tmpdir <dir_name>  `
     scratch directory to use
+
+While `spades-mapper` is a solution for those who works on hybridSPAdes assembly and wants to get intermediate results, [SPAligner](#sec4.5.2) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.  
+
+
+<a name="sec4.5.2"></a>
+### SPAligner
+A tool for fast and accurate alignment of nucleotide sequences to assembly graphs. It takes file with sequences (in fasta/fastq format) and assembly in GFA format and outputs long read to graph alignment in various formats (such as tsv, fasta and [GPA](https://github.com/ocxtal/gpa "GPA-format spec")).
+
+Synopsis: `spaligner assembly/src/projects/spaligner_config.yaml [-d <value>] [-s <value>] [-g <value>] [-k <value>] [-t <value>] [-o <value>]`
+
+Parameters are:
+
+`-d <type> `
+    long reads type: nanopore, pacbio
+
+`-s <filename> `
+    file with sequences (in fasta/fastq)
+
+`-g <filename> `
+    file with graph (in GFA)
+
+`-k <int> `
+    k-mer length that was used for graph construction
+
+`-t <int> `
+    number of threads (default 8)
+
+`-o, --outdir <dir> `
+    output directory to use (default: spaligner_result/)
+
+For more information on parameters and options please refer to [main SPAligner manual](https://github.com/ablab/algorithmic-biology/blob/spaligner_io_fix/assembler/src/projects/spaligner/README.md).
+
+Also if you want to align protein sequences please refer to our [pre-release version](https://github.com/ablab/spades/releases/tag/spaligner-paper).
 
 
 <a name="sec5"></a>
