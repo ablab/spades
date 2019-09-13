@@ -115,7 +115,6 @@ void LoadFromYaml(const std::string& filename, T &t) {
     LoadFromYaml(ifs, t);
 }
 
-
 template<class T>
 void LoadFromYaml(std::istream& in, T &t) {
     std::string buffer;
