@@ -346,7 +346,7 @@ private:
     };
 
     template<class Predicate1, class Predicate2>
-    struct And : public EdgePredicate {
+    struct And {
         And(Predicate1 p1, Predicate2 p2)
                 : p1_(std::move(p1)), p2_(std::move(p2)) {}
 
