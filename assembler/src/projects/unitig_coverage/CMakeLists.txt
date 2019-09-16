@@ -5,16 +5,16 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(edge-profiles CXX)
+project(unitig-coverage CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(spades-unitig-coverage
+add_executable(unitig-coverage
                main.cpp profile_storage.cpp)
 
-target_link_libraries(spades-unitig-coverage graphio common_modules ${COMMON_LIBRARIES})
+target_link_libraries(unitig-coverage graphio common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
-  set_target_properties(spades-unitig-coverage PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(unitig-coverage PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 

@@ -5,22 +5,22 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(cds_subgraphs CXX)
+project(cds-subgraphs CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 
-add_executable(spades-cds-subgraphs
+add_executable(cds-subgraphs
                stop_condon_finder.cpp
                subgraph_extraction.cpp
                main.cpp)
 
-target_link_libraries(spades-cds-subgraphs graphio common_modules ${COMMON_LIBRARIES})
+target_link_libraries(cds-subgraphs graphio common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
-  set_target_properties(spades-cds-subgraphs PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(cds-subgraphs PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
-install(TARGETS spades-cds-subgraphs
+install(TARGETS cds-subgraphs
         DESTINATION bin
         COMPONENT runtime)

@@ -7,9 +7,7 @@
 
 #include "stop_condon_finder.hpp"
 #include "subgraph_extraction.hpp"
-#include "assembly_graph/paths/path_utils.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
-#include "pipeline/config_struct.hpp"
 
 #include "toolchain/edge_label_helper.hpp"
 #include "toolchain/utils.hpp"
@@ -309,7 +307,7 @@ int main(int argc, char** argv) {
     process_cmdline(argc, argv, cfg);
 
     toolchain::create_console_logger();
-    START_BANNER("SPAdes gene cds relevant subgraph extractor");
+    START_BANNER("Extracting relevant subgraphs for (partial) predicted CDS");
 
     try {
         unsigned nthreads = cfg.nthreads;

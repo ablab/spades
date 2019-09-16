@@ -19,7 +19,6 @@
 #include <string>
 #include <numeric>
 #include <sys/types.h>
-#include <sys/stat.h>
 
 using namespace debruijn_graph;
 
@@ -149,7 +148,7 @@ int main(int argc, char** argv) {
     process_cmdline(argc, argv, cfg);
 
     toolchain::create_console_logger();
-    START_BANNER("Bin Refinement");
+    START_BANNER("Experimental MAG Refinement with the assembly graphs");
 
     try {
         unsigned nthreads = cfg.nthreads;
