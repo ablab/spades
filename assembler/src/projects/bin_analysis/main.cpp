@@ -5,7 +5,7 @@
 //***************************************************************************
 
 #include "bin_refinement.hpp"
-#include "projects/subgraph_extractor/subgraph_extraction.hpp"
+#include "toolchain/subgraph_utils.hpp"
 
 #include "toolchain/edge_label_helper.hpp"
 #include "toolchain/utils.hpp"
@@ -102,9 +102,9 @@ static void Run(size_t K, const std::string &graph_path,
     bin_refinement::AnnotateExtraEdges(gp, annotation, base_cov, out_prefix);
 
     auto gc = GraphComponent<Graph>::FromEdges(gp.g, annotation.PositiveQualEdges());
-    gc = subgraph_extraction::ComponentExpander(gp.g).Expand(gc);
+    gc = toolchain::ComponentExpander(gp.g).Expand(gc);
 
-    subgraph_extraction::WriteComponentWithDeadends(gc, out_prefix, label_helper.edge_naming_f());
+    toolchain::WriteComponentWithDeadends(gc, out_prefix, label_helper.edge_naming_f());
 }
 
 struct gcfg {

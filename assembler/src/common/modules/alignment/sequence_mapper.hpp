@@ -45,7 +45,7 @@ public:
     typedef typename Graph::EdgeId EdgeId;
     typedef RtSeq Kmer;
 
-    virtual ~SequenceMapper() {}
+    virtual ~SequenceMapper() = default;
 
     virtual MappingPath<EdgeId> MapSequence(const Sequence &sequence) const = 0;
 

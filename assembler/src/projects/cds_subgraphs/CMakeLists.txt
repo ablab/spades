@@ -10,15 +10,17 @@ project(cds_subgraphs CXX)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 
-add_executable(cds_subgraphs
+add_executable(spades-cds-subgraphs
+               stop_condon_finder.cpp
+               subgraph_extraction.cpp
                main.cpp)
 
-target_link_libraries(cds_subgraphs graphio common_modules ${COMMON_LIBRARIES})
+target_link_libraries(spades-cds-subgraphs graphio common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
-  set_target_properties(cds_subgraphs PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(spades-cds-subgraphs PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
-install(TARGETS cds_subgraphs
+install(TARGETS spades-cds-subgraphs
         DESTINATION bin
         COMPONENT runtime)
