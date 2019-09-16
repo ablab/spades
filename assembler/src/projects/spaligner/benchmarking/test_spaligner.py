@@ -17,7 +17,7 @@ TRUE_PERFORMANCE = {"ecoli": {"realpb": "88% 87%",
                               "simpb": "98% 83%",
                               "simnp": "85% 83%"},
                     "celegans": {"realpb": "84% 87%",
-                              "realnp": "65% 87%",
+                              "realnp": "66% 87%",
                               "simpb": "98% 83%",
                               "simnp": "88% 88%"} }
 
