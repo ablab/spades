@@ -23,7 +23,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <cxxopts/cxxopts.hpp>
+#include <clipp/clipp.h>
 
 using namespace std;
 
@@ -217,58 +217,37 @@ void Launch(GAlignerConfig &cfg, const string output_dir, int threads) {
 }
 } // namespace sensitive_aligner
 
-int main(int argc, char **argv) {
+void process_cmdline(int argc, char **argv,
+                    sensitive_aligner::GAlignerConfig &config,
+                    string &cfg_name,
+                    string &seq_type,
+                    unsigned &nthreads,
+                    string &output_dir) {
+    using namespace clipp;
 
-    unsigned nthreads;
-    string cfg, output_file, seq_type;
-    sensitive_aligner::GAlignerConfig config;
+    auto cli = (
+      cfg_name << value("aligner parameters description (in YAML)")
+                        .if_missing([]{ cout << "ERROR: No input YAML was specified\n"; } ),
+      (required("-d","--datatype") & value("value", seq_type)
+                                           .if_missing([]{ cout << "ERROR: Sequence type is not provided (nanopore or pacbio)\n"; } ))
+                                           % "type of sequences: nanopore, pacbio",
+      (required("-s","--sequences") & value("value", config.path_to_sequences)
+                                           .if_missing([]{ cout << "ERROR: Path to file with sequences is not provided\n"; } ))
+                                           % "path to fasta/fastq file with sequences",
+      (required("-g","--graph") & value("value", config.path_to_graphfile)
+                                        .if_missing([]{ cout << "ERROR: Path to file with graph is not provided\n"; } ))
+                                         % "path to GFA-file or SPAdes saves folder",
+      (required("-k", "--kmer") & integer("value", config.K)
+                                         .if_missing([]{ cout << "ERROR: k-mer value is not provided\n"; } ))
+                                         % "graph k-mer size (odd value)",
+      (option("-t", "--threads") & integer("value", nthreads)) % "# of threads to use",
+      (option("-o", "--outdir") & value("dir", output_dir)) % "output directory"
+    );
 
-    cxxopts::Options options(argv[0], " <YAML-config sequences and graph description> - Tool for sequence alignment on graph");
-    options.add_options()
-    ("k,k-mer", "graph k-mer size (odd value)", cxxopts::value<int>(config.K))
-    ("d,datatype", "type of sequences: nanopore, pacbio", cxxopts::value<string>(seq_type))
-    ("s,seq", "path to fasta/fastq file with sequences", cxxopts::value<string>(config.path_to_sequences))
-    ("g,graph", "path to gfa-file or SPAdes saves folder", cxxopts::value<string>(config.path_to_graphfile))
-    ("o,outdir", "Output directory", cxxopts::value<string>(output_file)->default_value("./spaligner_result"))
-    ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(to_string(min(omp_get_max_threads(), 8))), "threads")
-    ("h,help", "Print help");
-
-    options.add_options("Input")
-    ("positional", "", cxxopts::value<string>(cfg));
-
-    options.parse_positional("positional");
-    
-    std::string cmd_line = "";
-    for (int i = 0; i < argc; ++ i) {
-        cmd_line += std::string(argv[i]) + " ";
-    }
-
-    options.parse(argc, argv);
-    if (options.count("help")) {
-        cout << options.help() << endl;
-        exit(0);
-    }
-    if (!options.count("positional")) {
-        cerr << "ERROR: No input YAML was specified" << endl << endl;
-        cout << options.help() << endl;
-        exit(-1);
-    }
-    if (config.K == -1) {
-        cerr << "ERROR: K-mer value is not provided" << endl << endl;
-        cout << options.help() << endl;
-        exit(-1);
-    }
-
-    if (config.path_to_sequences.size() == 0) {
-        cerr << "ERROR: Path to sequences is not provided" << endl << endl;
-        cout << options.help() << endl;
-        exit(-1);
-    }
-
-    if (config.path_to_graphfile.size() == 0) {
-        cerr << "ERROR: Path to file with graph is not provided" << endl << endl;
-        cout << options.help() << endl;
-        exit(-1);
+    auto result = parse(argc, argv, cli);
+    if (!result) {
+      std::cout << make_man_page(cli, argv[0]);
+      exit(1);
     }
 
     if (seq_type == "nanopore")
@@ -276,9 +255,23 @@ int main(int argc, char **argv) {
     else if (seq_type == "pacbio")
         config.data_type = alignment::BWAIndex::AlignmentMode::PacBio;
     else {
-        cerr << "ERROR: Unsupported data type - nanopore, pacbio" << endl;
-        cout << options.help() << endl;
+        cerr << "You need to provied a supported datatype - nanopore or pacbio" << endl;
+        std::cout << make_man_page(cli, argv[0]);
         exit(-1);
+    }
+}
+
+int main(int argc, char **argv) {
+
+    unsigned nthreads = 8;
+    string cfg, output_dir = "./spaligner_result", seq_type;
+    sensitive_aligner::GAlignerConfig config;
+
+    process_cmdline(argc, argv, config, cfg, seq_type, nthreads, output_dir);
+
+    std::string cmd_line = "";
+    for (int i = 0; i < argc; ++ i) {
+        cmd_line += std::string(argv[i]) + " ";
     }
 
     create_console_logger();
@@ -292,6 +285,6 @@ int main(int argc, char **argv) {
     yin >> config;
     omp_set_num_threads(nthreads);
 
-    sensitive_aligner::Launch(config, output_file, nthreads);
+    sensitive_aligner::Launch(config, output_dir, nthreads);
     return 0;
 }
