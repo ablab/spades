@@ -36,8 +36,8 @@ io::SingleRead ReadSequence(io::SingleStream& reader) {
 
 io::SingleRead ReadGenome(const string& genome_path) {
     fs::CheckFileExistenceFATAL(genome_path);
-    auto genome_stream_ptr = std::make_shared<io::FileReadStream>(genome_path);
-    return ReadSequence(*genome_stream_ptr);
+    auto genome_stream_ptr = io::EasyStream(genome_path, false);
+    return ReadSequence(genome_stream_ptr);
 }
 
 EdgeAnnotation LoadAnnotation(const conj_graph_pack& gp,
@@ -128,14 +128,14 @@ int main(int argc, char** argv) {
 
         visualization::position_filler::FillPos(gp, genome_path, "", true);
 
-        io::FileReadStream contigs_stream(contigs_path);
-        io::FileReadStream splits_stream(splits_path);
+        auto contigs_stream = io::EasyStream(contigs_path, false);
+        auto splits_stream = io::EasyStream(splits_path, false);
         EdgeAnnotation edge_annotation = LoadAnnotation(
             gp, bins_of_interest, contigs_stream, 
             splits_stream, annotation_in_fn);
 
-        io::FileReadStream edges_stream(edges_path);
-        io::FileReadStream edges_stream2(edges_path);
+        auto edges_stream = io::EasyStream(edges_path, false);
+        auto edges_stream2 = io::EasyStream(edges_path, false);
         EdgeAnnotation prop_edge_annotation = LoadAnnotation(
             gp, bins_of_interest, 
             edges_stream, edges_stream2, 

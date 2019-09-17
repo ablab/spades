@@ -45,7 +45,7 @@ private:
 public:
 
     explicit SplittingWrapper(base::ReadStreamT reader) :
-            base(reader), buffer_position_(0) {
+            base(std::move(reader)), buffer_position_(0) {
     }
 
     SplittingWrapper& operator>>(SingleRead& read) {
@@ -62,13 +62,13 @@ public:
 };
 
 inline ReadStream<SingleRead> SplittingWrap(ReadStream<SingleRead> reader_ptr) {
-    return SplittingWrapper(reader_ptr);
+    return SplittingWrapper(std::move(reader_ptr));
 }
 
 inline ReadStreamList<SingleRead> SplittingWrap(ReadStreamList<SingleRead> readers) {
     ReadStreamList<SingleRead> answer;
     for (auto &reader : readers) {
-        answer.push_back(SplittingWrap(reader));
+        answer.push_back(SplittingWrap(std::move(reader)));
     }
     return answer;
 }
