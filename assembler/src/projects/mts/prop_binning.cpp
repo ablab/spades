@@ -8,6 +8,7 @@
 #include "getopt_pp/getopt_pp.h"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/osequencestream.hpp"
+#include "io/reads/file_reader.hpp"
 #include "io/binary/graph_pack.hpp"
 #include "logger.hpp"
 #include "read_binning.hpp"
@@ -115,8 +116,8 @@ int main(int argc, char** argv) {
 
     //Propagation stage
     INFO("Using contigs from " << contigs_path);
-    io::FileReadStream contigs_stream(contigs_path);
-    io::FileReadStream split_stream(splits_path);
+    auto contigs_stream = io::EasyStream(contigs_path, false);
+    auto split_stream = io::EasyStream(splits_path, false);
 
     AnnotationStream annotation_in(annotation_path);
 

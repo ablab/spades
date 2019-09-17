@@ -46,15 +46,15 @@ void ContigBinner::Run(io::PairedStream& paired_reads) {
 }
 
 void BinReads(const conj_graph_pack& gp, const std::string& out_root,
-             const std::string& sample,
-             const std::string& left_reads, const std::string& right_reads,
-             const EdgeAnnotation& edge_annotation,
-             const std::vector<std::string>& bins_of_interest) {
+              const std::string& sample,
+              const std::string& left_reads, const std::string& right_reads,
+              const EdgeAnnotation& edge_annotation,
+              const std::vector<std::string>& bins_of_interest) {
     ContigBinner binner(gp, edge_annotation, out_root, sample, bins_of_interest);
     INFO("Initializing binner for " << sample);
     auto paired_stream = io::PairedEasyStream(left_reads, right_reads, false, 0);
     INFO("Running binner on " << left_reads << " and " << right_reads);
-    binner.Run(*paired_stream);
+    binner.Run(paired_stream);
 }
 
 };

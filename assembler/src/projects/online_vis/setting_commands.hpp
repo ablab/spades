@@ -49,9 +49,9 @@ class LoadGenomeCommand : public LocalCommand<DebruijnEnvironment> {
             if (!CheckCorrectness(args))
                 return;
             const string& file = args[1];
-            auto genome_reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
+            auto genome_reader = io::FixingWrapper(io::FileReadStream(file));
             io::SingleRead genome;
-            (*genome_reader) >> genome;
+            genome_reader >> genome;
             curr_env.LoadNewGenome(genome.sequence());
         }
 };

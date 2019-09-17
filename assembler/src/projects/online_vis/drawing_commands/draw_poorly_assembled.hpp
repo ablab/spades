@@ -11,6 +11,8 @@
 #include "../command.hpp"
 #include "../errors.hpp"
 #include "io/reads/wrapper_collection.hpp"
+#include "io/reads/file_reader.hpp"
+
 #include <boost/algorithm/string.hpp>
 #include "assembly_graph/core/basic_graph_stats.hpp"
 

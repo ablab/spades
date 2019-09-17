@@ -11,6 +11,7 @@
 #include "../command.hpp"
 #include "../errors.hpp"
 #include "io/reads/wrapper_collection.hpp"
+#include "io/reads/file_reader.hpp"
 
 namespace online_visualization {
 class DrawContigCommand : public DrawingCommand {
