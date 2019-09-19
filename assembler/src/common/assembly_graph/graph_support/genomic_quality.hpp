@@ -12,9 +12,10 @@
 #include "modules/alignment/sequence_mapper.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
 
+#include <algorithm>
+
 namespace debruijn_graph {
 
-//FIXME fix issue with vanishing quality during split
 template<class Graph>
 class EdgeQuality: public visualization::graph_labeler::GraphLabeler<Graph>,
                    public omnigraph::GraphActionHandler<Graph> {
@@ -91,20 +92,23 @@ public:
         quality_[new_edge] += quality_[edge1];
     }
 
-    void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
-            EdgeId new_edge2) override {
-        if (old_edge == this->g().conjugate(old_edge)) {
-            if (IsPositiveQuality(old_edge)) {
-                //FIXME why not?
-                WARN("EdgeQuality does not support self-conjugate splits");
-                return;
-            }
+    void HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) override {
+        if (!quality_.count(old_edge))
+            return;
+
+        const auto &g = this->g();
+        auto qual_frac_f = [&] (EdgeId e) {
+            return size_t(std::max(1., math::round(
+                   double(quality_[old_edge]) * double(g.length(e)) / double(g.length(old_edge)))));
+        };
+        if (old_edge == g.conjugate(old_edge)) {
+            quality_[new_edge1] = qual_frac_f(new_edge1);
+            quality_[g.conjugate(new_edge1)] = qual_frac_f(new_edge1);
+            quality_[g.conjugate(new_edge2)] = qual_frac_f(new_edge2);
+        } else {
+            quality_[new_edge1] = qual_frac_f(new_edge1);
+            quality_[new_edge2] = qual_frac_f(new_edge2);
         }
-        VERIFY(old_edge != this->g().conjugate(old_edge));
-        quality_[new_edge1] = quality_[old_edge] * this->g().length(new_edge1)
-                / (this->g().length(new_edge1) + this->g().length(new_edge2));
-        quality_[new_edge2] = quality_[old_edge] * this->g().length(new_edge2)
-                / (this->g().length(new_edge1) + this->g().length(new_edge2));
     }
 
     double quality(EdgeId edge) const {
@@ -112,7 +116,7 @@ public:
         if (it == quality_.end())
             return 0.;
         else
-            return 1. * (double) it->second / (double) this->g().length(edge);
+            return (double) it->second / (double) this->g().length(edge);
     }
 
     void AddQuality(EdgeId edge, double quality) {
