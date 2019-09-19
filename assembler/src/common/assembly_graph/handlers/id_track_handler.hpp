@@ -28,29 +28,19 @@ public:
     }
 
     void HandleAdd(EdgeId e) override {
-        //FIXME do we need it?
-#pragma omp critical
-        {
-            id2edge_[e.int_id()] = e;
-        }
-    }
-
-    void HandleAdd(VertexId v) override {
-        //FIXME do we need it?
-#pragma omp critical
-        {
-            id2vertex_[v.int_id()] = v;
-        }
-    }
-
-    void HandleDelete(EdgeId e) override {
-        //FIXME shouldn't we delete it?
         id2edge_[e.int_id()] = e;
     }
 
-    void HandleDelete(VertexId v) override {
-        //FIXME shouldn't we delete it?
+    void HandleAdd(VertexId v) override {
         id2vertex_[v.int_id()] = v;
+    }
+
+    void HandleDelete(EdgeId e) override {
+        id2edge_.erase(e.int_id());
+    }
+
+    void HandleDelete(VertexId v) override {
+        id2vertex_.erase(v.int_id());
     }
 
     VertexId ReturnVertexId(size_t id) const {
@@ -68,15 +58,6 @@ public:
         else
             return it->second;
     }
-
-//    void Init() {
-//        for(auto it = this->g().begin(); it != this->g().end(); ++it) {
-//            HandleAdd(*it);
-//            for(auto eit = this->g().OutgoingEdges(*it).begin(); eit != this->g().OutgoingEdges(*it).end(); ++eit) {
-//                HandleAdd(*eit);
-//            }
-//        }
-//    }
 
 private:
     DECL_LOGGER("GraphElementFinder");
