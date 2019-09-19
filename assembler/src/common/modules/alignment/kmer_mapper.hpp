@@ -71,7 +71,7 @@ public:
         for (auto it = begin(); it != end(); ++it)
             all.push_back(it->first);
 
-        std::vector<const RawSeqData*> roots(all.size());
+        std::vector<const RawSeqData*> roots(all.size(), nullptr);
 
 #       pragma omp parallel for
         for (size_t i = 0; i < all.size(); ++i) {
@@ -81,8 +81,10 @@ public:
 
 #       pragma omp parallel for
         for (size_t i = 0; i < all.size(); ++i) {
-            Seq kmer(k_, all[i]);
-            mapping_.set(kmer, Seq(k_, roots[i]));
+            if (roots[i] != nullptr) {
+                Seq kmer(k_, all[i]);
+                mapping_.set(kmer, Seq(k_, roots[i]));
+            }
         }
 
         normalized_ = true;
