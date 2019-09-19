@@ -94,7 +94,7 @@ MinDistRelevantComponentFinder::RelevantComponent(size_t cds_len_est,
             continue;
 
         const auto &e_dist = it->second;
-        dist_vertices.emplace_back(Check(s_dist, e_dist, base_dist_f), v);
+        dist_vertices.emplace_back(MinExitDist(s_dist, e_dist, base_dist_f), v);
     }
 
     DEBUG("Creating component");
@@ -246,22 +246,23 @@ CDSSubgraphExtractor::ProcessPartialCDS(const std::string &partial_cds,
         min_len_to_explore = partial_cds.size();
     }
     size_t crop_len = std::max(min_len_to_explore, RoundedProduct(partial_cds.size(), frac_to_explore));
-//aligning on frame
+    //aligning on frame
     crop_len = crop_len / 3 * 3;
     INFO("Will explore left/right parts of length " << crop_len);
 
     std::set<EdgeId> edges;
 
-    INFO("Processing rightmost part of the query of length " << crop_len);
-//s.Last(crop_len) & s.First(crop_len)
     VERIFY(crop_len <= partial_cds.size());
 
+    INFO("Processing rightmost part of the query of length " << crop_len);
     utils::insert_all(edges, cds_path_processor_.ProcessPartialGenePath(
-            ExtractPath(partial_cds.substr(partial_cds.size() - crop_len), mapper_),
-                                                    cds_length_estimate, stop_codon_poss).edges());
+                ExtractPath(partial_cds.substr(partial_cds.size() - crop_len), mapper_),
+                cds_length_estimate, stop_codon_poss).edges());
+
     INFO("Processing leftmost part of the query of length " << crop_len);
-    utils::insert_all(edges, cds_path_processor_.ProcessPartialGenePath(ExtractPath(partial_cds.substr(0, crop_len), mapper_),
-                                                    cds_length_estimate, stop_codon_poss).edges());
+    utils::insert_all(edges, cds_path_processor_.ProcessPartialGenePath(
+                ExtractPath(partial_cds.substr(0, crop_len), mapper_),
+                cds_length_estimate, stop_codon_poss).edges());
 
     if (edges.size() == 0) {
         INFO("Couldn't gather any reasonable component");

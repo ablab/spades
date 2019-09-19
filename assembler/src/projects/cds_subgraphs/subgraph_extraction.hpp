@@ -45,59 +45,6 @@ static size_t RoundedProduct(size_t l, double coeff) {
 //    std::set<EdgeId> edges_;
 //};
 
-class MinDistRelevantComponentFinder {
-    //TODO use throughout file
-    using DistInfo = std::unordered_map<GraphPos, size_t>;
-    using BaseDistF = std::function<size_t(GraphPos, GraphPos)>;
-    const Graph &g_;
-    const double max_len_coeff_;
-
-    size_t MaxDist(const DistInfo &v_ds) const {
-        size_t max = 0;
-        for (const auto &v_d : v_ds) {
-            if (v_d.second > max)
-                max = v_d.second;
-        }
-        return max;
-    }
-
-    //FIXME rename
-    //returns min distance to exit among the appropriate paths or max value if none
-    size_t Check(const DistInfo &s_dist, const DistInfo &e_dist, const BaseDistF &base_dist_f) const {
-        size_t min_e_dist = std::numeric_limits<size_t>::max();
-        //todo seems like can be simplified
-        for (const auto s_d : s_dist) {
-            for (const auto e_d : e_dist) {
-                if (base_dist_f(s_d.first, e_d.first) >= s_d.second + e_d.second) {
-                    if (e_d.second < min_e_dist) {
-                        min_e_dist = e_d.second;
-                    }
-                }
-            }
-        }
-        return min_e_dist;
-    }
-
-    bool CheckConnectedTo(VertexId v, const std::set<VertexId> &vertices) const {
-        for (EdgeId e : g_.IncomingEdges(v))
-            if (vertices.count(g_.EdgeStart(e)))
-                return true;
-        return false;
-    }
-
-public:
-    //TODO max_len_frac used twice with slightly different meaning
-    MinDistRelevantComponentFinder(const Graph &g,
-                                   double max_len_frac = 1.5) :
-            g_(g), max_len_coeff_(max_len_frac) {}
-
-    //TODO check how base_len is defined
-    omnigraph::GraphComponent<Graph> RelevantComponent(size_t cds_len_est,
-                                                       size_t base_len,
-                                                       const DistInfo &starts,
-                                                       const DistInfo &ends) const;
-};
-
 //class PathFindingRelevantComponentFinder {
 //    const Graph &g_;
 //    const double min_len_frac_;
@@ -143,11 +90,62 @@ public:
 //
 //};
 
+class MinDistRelevantComponentFinder {
+    //TODO use throughout file
+    using DistInfo = std::unordered_map<GraphPos, size_t>;
+    using BaseDistF = std::function<size_t(GraphPos, GraphPos)>;
+    const Graph &g_;
+    const double max_len_coeff_;
+
+    size_t MaxDist(const DistInfo &v_ds) const {
+        size_t max = 0;
+        for (const auto &v_d : v_ds) {
+            if (v_d.second > max)
+                max = v_d.second;
+        }
+        return max;
+    }
+
+    //returns min distance to exit among the appropriate paths or max value if none
+    size_t MinExitDist(const DistInfo &s_dist, const DistInfo &e_dist, const BaseDistF &base_dist_f) const {
+        size_t min_e_dist = std::numeric_limits<size_t>::max();
+        //TODO seems like can be simplified
+        for (const auto s_d : s_dist) {
+            for (const auto e_d : e_dist) {
+                if (base_dist_f(s_d.first, e_d.first) >= s_d.second + e_d.second) {
+                    if (e_d.second < min_e_dist) {
+                        min_e_dist = e_d.second;
+                    }
+                }
+            }
+        }
+        return min_e_dist;
+    }
+
+    bool CheckConnectedTo(VertexId v, const std::set<VertexId> &vertices) const {
+        for (EdgeId e : g_.IncomingEdges(v))
+            if (vertices.count(g_.EdgeStart(e)))
+                return true;
+        return false;
+    }
+
+public:
+    //TODO NB: max_len_frac used twice with slightly different meaning
+    MinDistRelevantComponentFinder(const Graph &g,
+                                   double max_len_frac = 1.5) :
+            g_(g), max_len_coeff_(max_len_frac) {}
+
+    //TODO check how base_len is defined
+    omnigraph::GraphComponent<Graph> RelevantComponent(size_t cds_len_est,
+                                                       size_t base_len,
+                                                       const DistInfo &starts,
+                                                       const DistInfo &ends) const;
+};
+
 class PartialGenePathProcessor {
     const Graph &g_;
     const MinDistRelevantComponentFinder rel_comp_finder_;
     const io::EdgeNamingF<Graph> edge_naming_f_;
-//    const PathFindingRelevantComponentFinder rel_comp_finder_;
 
     Sequence PathSeq(const EdgePath &p) const {
         return PathSequence(g_, p);
@@ -209,13 +207,11 @@ class PartialGenePathProcessor {
 //    }
 
 public:
-    //FIXME configure?
     PartialGenePathProcessor(const Graph &g,
                              io::EdgeNamingF<Graph> edge_naming_f,
-                             //double min_len_frac = 0.5,
                              double max_len_coeff = 1.5) :
             g_(g),
-            rel_comp_finder_(g_, /*min_len_frac, */max_len_coeff),
+            rel_comp_finder_(g_, max_len_coeff),
             edge_naming_f_(edge_naming_f) {}
 
     //potential stop codons of the gene will be added to stop_codon_poss
@@ -230,7 +226,6 @@ class CDSSubgraphExtractor {
     const SequenceMapper<Graph> &mapper_;
     const PartialGenePathProcessor &cds_path_processor_;
     const ReadPathFinder<Graph> path_finder_;
-    //const io::EdgeNamingF<Graph> edge_naming_f_;
 
     EdgePath ExtractPath(const std::string &partial_cds, const SequenceMapper<Graph> &mapper) const;
 
