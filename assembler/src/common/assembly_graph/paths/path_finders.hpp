@@ -2,6 +2,8 @@
 
 #include "assembly_graph/core/directions.hpp"
 
+#include <set>
+
 namespace omnigraph {
 template<class Graph>
 class UniquePathFinder {

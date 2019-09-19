@@ -12,6 +12,7 @@
 #include "assembly_graph/core/directions.hpp"
 #include "assembly_graph/paths/path_finders.hpp"
 #include "math/xmath.h"
+#include "utils/logger/logger.hpp"
 
 namespace omnigraph {
 
