@@ -71,10 +71,20 @@ public:
         for (auto it = begin(); it != end(); ++it)
             all.push_back(it->first);
 
-        for (auto it = all.begin(); it != all.end(); ++it) {
-            Seq val(k_, it.data());
-            Normalize(val);
+        std::vector<const RawSeqData*> roots(all.size());
+
+#       pragma omp parallel for
+        for (size_t i = 0; i < all.size(); ++i) {
+            Seq val(k_, all[i]);
+            roots[i] = GetRoot(val);
         }
+
+#       pragma omp parallel for
+        for (size_t i = 0; i < all.size(); ++i) {
+            Seq kmer(k_, all[i]);
+            mapping_.set(kmer, Seq(k_, roots[i]));
+        }
+
         normalized_ = true;
     }
 
@@ -90,10 +100,6 @@ public:
 //            normalized_ = false;
 //        }
 //    }
-
-    void Normalize(const Kmer &kmer) {
-        mapping_.set(kmer, Substitute(kmer));
-    }
 
     void RemapKmers(const Sequence &old_s, const Sequence &new_s) {
         VERIFY(this->IsAttached());
@@ -141,14 +147,31 @@ public:
         RemapKmers(this->g().EdgeNucls(edge1), this->g().EdgeNucls(edge2));
     }
 
+    const RawSeqData* GetRoot(const Kmer &kmer) const {
+        VERIFY(this->IsAttached());
+        const RawSeqData *answer = nullptr;
+        const RawSeqData *rawval = mapping_.find(kmer);
+
+        while (rawval != nullptr) {
+            Seq val(k_, rawval);
+
+            answer = rawval;
+            rawval = mapping_.find(val);
+        }
+        return answer;
+    }
+
+
     Kmer Substitute(const Kmer &kmer) const {
         VERIFY(this->IsAttached());
         Kmer answer = kmer;
-        const auto *rawval = mapping_.find(answer);
+        const RawSeqData *rawval = mapping_.find(answer);
+
         while (rawval != nullptr) {
             Seq val(k_, rawval);
-            if (verification_on_)
+            if (verification_on_) {
                 VERIFY(answer != val);
+            }
 
             answer = val;
             rawval = mapping_.find(answer);
