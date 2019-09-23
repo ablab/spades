@@ -7,6 +7,7 @@
 #include "mismatch_correction.hpp"
 
 #include "modules/alignment/sequence_mapper.hpp"
+#include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "modules/simplification/compressor.hpp"
 
 #include "io/reads/read_stream_vector.hpp"
@@ -66,19 +67,27 @@ struct MismatchEdgeInfo {
     }
 
     void AddPosition(size_t position) {
-        info_[position]; //in case map did not contain this key creates entry in the map with default value
+        info_.insert({position, NuclCount()}); //in case map did not contain this key creates entry in the map with default value
+    }
+
+    void ClearValues() {
+        for (auto &kv : info_) {
+            kv.second = NuclCount();
+        }
     }
 
 public:
     phmap::flat_hash_map<size_t, NuclCount> info_;
 };
 
-class MismatchStatistics {
+class MismatchStatistics : public SequenceMapperListener {
 private:
     typedef Graph::EdgeId EdgeId;
     typedef phmap::node_hash_map<EdgeId, MismatchEdgeInfo> InnerMismatchStatistics;
     typedef typename InnerMismatchStatistics::const_iterator const_iterator;
     InnerMismatchStatistics statistics_;
+    std::vector<InnerMismatchStatistics> statistics_buffers_;
+    const Graph &g_;
 
     void CollectPotentialMismatches(const GraphPack &gp) {
         const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
@@ -113,15 +122,75 @@ private:
         }
     }
 
-    void Merge(const MismatchStatistics &other) {
-        for (const auto &e_info : other.statistics_) {
-            statistics_[e_info.first] += e_info.second;
+    template <typename Read>
+    void ProcessSingleReadImpl(size_t thread_index, const Read& read, const MappingPath<EdgeId> &path) {
+        // VERIFY(path.size() <= 1);
+        if (path.size() != 1)  // TODO Use only_simple feature
+            return;
+
+        EdgeId e = path[0].first;
+        MappingRange mr = path[0].second;
+        const Sequence &s_read = read.sequence();
+        auto &buffer = statistics_buffers_[thread_index];
+
+        if (mr.initial_range.size() == mr.mapped_range.size()) {
+            const Sequence &s_edge = g_.EdgeNucls(e);
+            size_t len = mr.initial_range.size() + g_.k();
+            size_t cnt = 0;
+            for (size_t i = 0; i < len; i++) {
+                if (s_read[mr.initial_range.start_pos + i] != s_edge[mr.mapped_range.start_pos + i]) {
+                    cnt++;
+                }
+            }
+            if (cnt <= g_.k() / 3) {
+                TRACE("statistics changing");
+                auto it = buffer.find(e);
+                if (it == buffer.end()) {
+                    //                            if (gp_.g.length(path[0].first) < 4000)
+                    //                                WARN ("id "<< gp_.g.length(path[0].first)<<"  " << len);
+                    return;
+                }
+                for (size_t i = 0; i < len; i++) {
+                    char nucl_code = s_read[mr.initial_range.start_pos + i];
+                    it->second.IncIfContains(mr.mapped_range.start_pos + i, nucl_code);
+                }
+            }
         }
     }
 
 public:
-    MismatchStatistics(const GraphPack &gp) {
+    MismatchStatistics(const GraphPack &gp):
+            g_(gp.get<Graph>()) {
         CollectPotentialMismatches(gp);
+    }
+
+    void StartProcessLibrary(size_t threads_count) override {
+        statistics_buffers_.resize(threads_count, statistics_);
+        for (auto &statistics_buffer : statistics_buffers_) {
+            for (auto &e_info : statistics_buffer) {
+                statistics_[e_info.first] += e_info.second;
+                e_info.second.ClearValues();
+            }
+        }
+    }
+
+    void StopProcessLibrary() override {
+        statistics_buffers_.clear();
+    }
+
+    void ProcessSingleRead(size_t thread_index, const io::SingleReadSeq &read, const MappingPath<EdgeId> &path) override {
+        ProcessSingleReadImpl(thread_index, read, path);
+    }
+
+    void ProcessSingleRead(size_t thread_index, const io::SingleRead &read, const MappingPath<EdgeId> &path) override {
+        ProcessSingleReadImpl(thread_index, read, path);
+    }
+
+    void MergeBuffer(size_t thread_index) override {
+        for (auto &e_info : statistics_buffers_[thread_index]) {
+            statistics_[e_info.first] += e_info.second;
+            e_info.second.ClearValues();
+        }
     }
 
     const_iterator begin() const {
@@ -134,70 +203,6 @@ public:
 
     const_iterator find(const EdgeId &edge) const {
         return statistics_.find(edge);
-    }
-
-    template<class read_type>
-    void Count(io::ReadStream<read_type> &stream, const GraphPack &gp) {
-        stream.reset();
-        DEBUG("count started");
-        auto sm = MapperInstance(gp);
-        DEBUG("seq mapper created");
-        read_type read;
-        const auto &graph = gp.get<Graph>();
-        while (!stream.eof()) {
-            stream >> read;
-            const Sequence &s_read = read.sequence();
-            omnigraph::MappingPath<EdgeId> path = sm->MapSequence(s_read,
-                                                                  true /* only_simple */);
-            TRACE("read mapped");
-            VERIFY(path.size() <= 1);
-            if (path.size() != 1)
-                continue;
-
-            EdgeId e = path[0].first;
-            MappingRange mr = path[0].second;
-
-            if (mr.initial_range.size() == mr.mapped_range.size()) {
-                const Sequence &s_edge = graph.EdgeNucls(e);
-                size_t len = mr.initial_range.size() + graph.k();
-                size_t cnt = 0;
-                for (size_t i = 0; i < len; i++) {
-                    if (s_read[mr.initial_range.start_pos + i] != s_edge[mr.mapped_range.start_pos + i]) {
-                        cnt++;
-                    }
-                }
-                if (cnt <= graph.k() / 3) {
-                    TRACE("statistics changing");
-                    auto it = statistics_.find(e);
-                    if (it == statistics_.end()) {
-                        //                            if (gp.g.length(path[0].first) < 4000)
-                        //                                WARN ("id "<< gp.g.length(path[0].first)<<"  " << len);
-                        continue;
-                    }
-                    for (size_t i = 0; i < len; i++) {
-                        char nucl_code = s_read[mr.initial_range.start_pos + i];
-                        it->second.IncIfContains(mr.mapped_range.start_pos + i, nucl_code);
-                    }
-                }
-            }
-        }
-    }
-
-    template<class SingleStreamList>
-    void ParallelCount(SingleStreamList &streams, const GraphPack &gp) {
-        std::vector<MismatchStatistics> statistics(streams.size(), *this);
-
-        #pragma omp parallel for
-        for (size_t i = 0; i < streams.size(); ++i) {
-            DEBUG("statistics created thread " << i);
-            statistics[i].Count(streams[i], gp);
-            DEBUG("count finished thread " << i);
-        }
-
-        INFO("Finished collecting potential mismatches positions");
-        for (size_t i = 0; i < statistics.size(); i++) {
-            Merge(statistics[i]);
-        }
     }
 };
 
@@ -313,17 +318,26 @@ private:
         return res;
     }
 
-    template<class SingleReadStream>
-    size_t StopMismatchIteration(SingleReadStream &stream) {
+    size_t ParallelStopMismatchIteration() {
         MismatchStatistics statistics(gp_);
-        statistics.Count(stream, gp_);
-        return CorrectAllEdges(statistics);
-    }
+        SequenceMapperNotifier notifier(gp_, cfg::get().ds.reads.lib_count());
 
-    template<class SingleReadStreamList>
-    size_t ParallelStopMismatchIteration(SingleReadStreamList &streams) {
-        MismatchStatistics statistics(gp_);
-        statistics.ParallelCount(streams, gp_);
+        auto& dataset = cfg::get_writable().ds;
+        for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
+            if (dataset.reads[i].is_mismatch_correctable())
+                notifier.Subscribe(i, &statistics);
+        }
+
+        for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
+            if (!dataset.reads[i].is_mismatch_correctable()) {
+                continue;
+            }
+
+            auto &reads = cfg::get_writable().ds.reads[i];
+            auto single_streams = single_binary_readers(reads, /*followed by rc */true, /*binary*/true);
+            notifier.ProcessLibrary(single_streams, i, *MapperInstance(gp_));
+        }
+
         return CorrectAllEdges(statistics);
     }
 
@@ -337,24 +351,10 @@ public:
     }
 
 
-    template<class SingleReadStream>
-    size_t StopAllMismatches(SingleReadStream &stream, size_t max_iterations = 1) {
+    size_t ParallelStopAllMismatches(size_t max_iterations = 1) {
         size_t res = 0;
         while (max_iterations > 0) {
-            size_t last = StopMismatchIteration(stream);
-            res += last;
-            if (last == 0)
-                break;
-            max_iterations--;
-        }
-        return res;
-    }
-
-    template<class SingleReadStreamList>
-    size_t ParallelStopAllMismatches(SingleReadStreamList &streams, size_t max_iterations = 1) {
-        size_t res = 0;
-        while (max_iterations > 0) {
-            size_t last = ParallelStopMismatchIteration(streams);
+            size_t last = ParallelStopMismatchIteration();
             res += last;
             if (last == 0)
                 break;
@@ -368,16 +368,8 @@ public:
 
 void MismatchCorrection::run(GraphPack &gp, const char*) {
     gp.EnsureBasicMapping();
-
-    auto& dataset = cfg::get_writable().ds;
-    std::vector<size_t> libs;
-    for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
-        if (dataset.reads[i].is_mismatch_correctable())
-            libs.push_back(i);
-    }
-    auto streams = io::single_binary_readers_for_libs(dataset.reads, libs);
     size_t corrected = mismatches::MismatchShallNotPass(gp, 2).
-                       ParallelStopAllMismatches(streams, 1);
+                       ParallelStopAllMismatches(1);
     INFO("Corrected " << corrected << " nucleotides");
 }
 
