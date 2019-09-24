@@ -55,6 +55,8 @@ def read_seq(file):
 #---- De Bruijn graph ----------------------------------------------------------
 def show_grp(file, show_seq=False):
     _, _ = read_int(file), read_int(file) # max_vid, max_eid
+
+    vertex_cnt = read_int(file)
     while True:
         try:
             start = read_int(file)
@@ -101,12 +103,10 @@ def show_sqn(file):
 
 #---- Edge coverage ------------------------------------------------------------
 def show_cvr(file):
-    while True:
-        try:
-            edge, coverage = read_int(file), read_int(file)
-            print(edge, coverage, ".")
-        except EOFError:
-            break
+    edge_cnt = read_int(file)
+    for _ in range(edge_cnt):
+        edge, coverage = read_int(file), read_int(file)
+        print(edge, coverage, ".")
 
 #---- Long reads paths ---------------------------------------------------------
 def show_mpr(file):
