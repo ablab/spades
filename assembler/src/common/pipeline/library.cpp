@@ -44,8 +44,7 @@ struct ScalarEnumerationTraits<LibraryType> {
         io.enumCase(value, "trusted-contigs",     LibraryType::TrustedContigs);
         io.enumCase(value, "untrusted-contigs",   LibraryType::UntrustedContigs);
         io.enumCase(value, "path-extend-contigs", LibraryType::PathExtendContigs);
-        io.enumCase(value, "fl-pacbio",           LibraryType::FLPacBioReads);
-        io.enumCase(value, "fl-nanopore",         LibraryType::FLNanoporeReads);
+        io.enumCase(value, "fl-rna",              LibraryType::FLRNAReads);
     }
 };
 
@@ -106,8 +105,7 @@ void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
     case LibraryType::TrustedContigs:
     case LibraryType::UntrustedContigs:
     case LibraryType::PathExtendContigs:
-    case LibraryType::FLPacBioReads:
-    case LibraryType::FLNanoporeReads:
+    case LibraryType::FLRNAReads:
         if (left_paired_reads_.size() || right_paired_reads_.size()) {
             res = "Paired reads should not be set for this library type";
             return;

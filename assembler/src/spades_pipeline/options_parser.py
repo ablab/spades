@@ -447,16 +447,10 @@ def add_input_data_args(pgroup_input_data):
                                    action=AddToDatasetAction)
 
     help_hidden = (mode != "rna")
-    pgroup_input_data.add_argument("--fl-pacbio",
+    pgroup_input_data.add_argument("--fl-rna",
                                    metavar="<filename>",
                                    nargs=1,
-                                   help="file with PacBio reads that capture full-length transcripts"
-                                   if not help_hidden else argparse.SUPPRESS,
-                                   action=AddToDatasetAction)
-    pgroup_input_data.add_argument("--fl-nanopore",
-                                   metavar="<filename>",
-                                   nargs=1,
-                                   help="file with Nanopore reads that capture full-length transcripts"
+                                   help="file with PacBio/Nanopore/contigs that capture full-length transcripts"
                                    if not help_hidden else argparse.SUPPRESS,
                                    action=AddToDatasetAction)
     pgroup_input_data.add_argument("--ss",

@@ -191,13 +191,11 @@ public:
                type == io::LibraryType::SangerReads ||
                type == io::LibraryType::NanoporeReads ||
                type == io::LibraryType::TSLReads ||
-               type == io::LibraryType::FLPacBioReads ||
-               type == io::LibraryType::FLNanoporeReads;
+               type == io::LibraryType::FLRNAReads;
     }
 
     static bool is_full_length_rna_lib(LibraryType type) {
-        return type == io::LibraryType::FLPacBioReads ||
-            type == io::LibraryType::FLNanoporeReads;
+        return type == io::LibraryType::FLRNAReads;
     }
 
     bool is_contig_lib() const {
@@ -227,8 +225,7 @@ public:
     }
 
     bool is_fl_lib() const {
-        return type_ == io::LibraryType::FLPacBioReads ||
-               type_ == io::LibraryType::FLNanoporeReads;
+        return type_ == io::LibraryType::FLRNAReads;
     }
 
 private:

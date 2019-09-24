@@ -313,8 +313,7 @@ bool ShouldAlignWithPacbioAligner(io::LibraryType lib_type) {
            lib_type == io::LibraryType::PacBioReads ||
            lib_type == io::LibraryType::SangerReads ||
            lib_type == io::LibraryType::NanoporeReads ||
-           lib_type == io::LibraryType::FLPacBioReads ||
-           lib_type == io::LibraryType::FLNanoporeReads; //||
+           lib_type == io::LibraryType::FLRNAReads; //||
 //           lib_type == io::LibraryType::TSLReads;
 }
 
