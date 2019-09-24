@@ -19,6 +19,8 @@ struct pacbio_processor {
     size_t max_vertex_in_dijkstra = 2000;
     // gap closer
     size_t long_seq_limit           = 400;
+    bool enable_gap_closing         = true;
+    bool enable_fl_gap_closing      = true;
     size_t pacbio_min_gap_quantity  = 2;
     size_t contigs_min_gap_quantity = 1;
     size_t max_contigs_gap_length   = 10000;
