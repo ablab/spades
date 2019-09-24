@@ -25,7 +25,10 @@ public:
             : IOSingle<Type>("edge positions", ".pos") {
     }
 
-    void Write(BinOStream &str, const Type &edge_pos) override {
+    void SaveImpl(BinOStream &str, const Type &edge_pos) override {
+        size_t edges_cnt = edge_pos.g().e_size();
+        str << edges_cnt;
+
         for (auto it = edge_pos.g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             auto pos_it = edge_pos.GetEdgePositions(*it);
             str << (*it).int_id() << pos_it.size();
@@ -35,12 +38,16 @@ public:
         }
     }
 
-    void Read(BinIStream &str, Type &edge_pos) override {
+    void LoadImpl(BinIStream &str, Type &edge_pos) override {
         edge_pos.clear();
-        while (str.has_data()) {
+        size_t edge_cnt;
+        str >> edge_cnt;
+
+        for (size_t i = 0; i < edge_cnt; ++i) {
             uint64_t eid;
             str >> eid;
-            auto info_count = str.Read<size_t>();
+            size_t info_count;
+            str >> info_count;
             while (info_count--) {
                 auto contig = str.Read<std::string>();
                 size_t pos[4];
