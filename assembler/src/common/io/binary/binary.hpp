@@ -533,10 +533,6 @@ public:
         return result;
     }
 
-    bool has_data() {
-        return str_.good() && str_.peek() != EOF;
-    }
-
     operator bool() const {
         return (bool) str_;
     }
