@@ -24,6 +24,7 @@ def get_mode():
     options = options_storage.first_command_line
 
     mode_parser = argparse.ArgumentParser(add_help=False)
+    mode_parser.add_argument("--isolate", dest="isolate", action="store_true")
     mode_parser.add_argument("--rna", dest="rna", action="store_true")
     mode_parser.add_argument("--plasmid", dest="plasmid", action="store_true")
     mode_parser.add_argument("--meta", dest="meta", action="store_true")
@@ -276,6 +277,11 @@ def add_basic_args(pgroup_basic):
                               action=StoreUniqueAction)
 
     help_hidden = (mode is not None)
+    pgroup_basic.add_argument("--isolate",
+                              dest="isolate",
+                              help="this flag is highly recommended for high-coverage isolate and multi-cell data"
+                              if not help_hidden else argparse.SUPPRESS,
+                              action="store_true")
     pgroup_basic.add_argument("--sc",
                               dest="single_cell",
                               help="this flag is required for MDA (single-cell) data"
@@ -754,6 +760,8 @@ def check_options_for_restart_from(log):
         support.error("you cannot specify --plasmid with --restart-from option!", log)
     if options_storage.args.rna:
         support.error("you cannot specify --rna with --restart-from option!", log)
+    if options_storage.args.isolate:
+        support.error("you cannot specify --isolate with --restart-from option!", log)
     if options_storage.args.iontorrent:
         support.error("you cannot specify --iontorrent with --restart-from option!", log)
     if options_storage.args.only_assembler:
@@ -799,6 +807,9 @@ def add_to_option(args, log, skip_output_dir):
     if args.rna and args.only_error_correction:
         support.error("you cannot specify --only-error-correction in RNA-seq mode!", log)
 
+    if args.isolate and args.only_error_correction:
+        support.error("you cannot specify --only-error-correction in isolate mode!", log)
+
     if args.careful == False and args.mismatch_corrector == True:
         support.error("you cannot specify --mismatch-correction and --careful:false simultaneously")
 
@@ -808,13 +819,19 @@ def add_to_option(args, log, skip_output_dir):
     if args.rna and (args.careful or args.mismatch_corrector):
         support.error("you cannot specify --mismatch-correction or --careful in RNA-seq mode!", log)
 
+    if args.isolate and (args.careful or args.mismatch_corrector):
+        support.error("you cannot specify --mismatch-correction or --careful in isolate mode!", log)
+
+    if args.only_assembler and args.isolate:
+        support.warning("Isolate mode already implies --only-assembler, so this option has no effect.")
+
     if args.restart_from is not None:
         args.continue_mode = True
     if args.careful is not None:
         args.mismatch_corrector = args.careful
     if args.truseq_mode:
         enable_truseq_mode()
-    if args.rna and not args.iontorrent:
+    if (args.isolate or args.rna) and not args.iontorrent:
         args.only_assembler = True
 
 
@@ -926,10 +943,14 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
     if args.rna:
         if args.careful:
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
-    if [args.meta, args.large_genome, args.truseq_mode,
-        args.rna, args.plasmid, args.single_cell].count(True) > 1 and [args.meta, args.plasmid].count(True) < 2:
+
+    modes_count =  [args.meta, args.large_genome, args.truseq_mode, args.rna, args.plasmid, args.single_cell, args.isolate].count(True)
+    if modes_count > 1 and [args.meta, args.plasmid].count(True) < 2:
         support.error("you cannot simultaneously use more than one mode out of "
-                      "Metagenomic, Large genome, Illumina TruSeq, RNA-Seq, Plasmid, and Single-cell (except combining Metagenomic and Plasmid)!", log)
+                      "Isolate, Metagenomic, Large genome, Illumina TruSeq, RNA-Seq, Plasmid, and Single-cell (except combining Metagenomic and Plasmid)!", log)
+    elif modes_count == 0:
+        support.warning("No assembly mode was sepcified! If you intend to assemble high-coverage multi-cell/isolate data, use --isolate option.")
+
     if args.continue_mode:
         return None
 

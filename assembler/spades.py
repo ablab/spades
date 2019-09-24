@@ -93,6 +93,8 @@ def print_used_values(cfg, log):
             log.info("  Large genome mode")
         elif options_storage.args.truseq_mode:
             log.info("  Illumina TruSeq mode")
+        elif options_storage.args.isolate:
+            log.info("  Isolate mode")
         elif options_storage.args.rna:
             log.info("  RNA-seq mode")
         elif options_storage.args.single_cell:

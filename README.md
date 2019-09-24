@@ -41,8 +41,9 @@ The current version of SPAdes works with Illumina or IonTorrent reads and is cap
 
 Version 3.13.1 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
 
-SPAdes 3.13.1 includes the following additional pipelines:
+If you have high-coverage data for barcterial/viral isolate or multi-cell organism, we highly recommend to use [`--isolate`](#isolate) option.
 
+SPAdes 3.13.1 includes the following additional pipelines:
 -   metaSPAdes – a pipeline for metagenomic data sets (see [metaSPAdes options](#meta)).
 -   plasmidSPAdes – a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmidSPAdes options](#plasmid)).
 -   rnaSPAdes – a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](rnaspades_manual.html)).
@@ -384,6 +385,11 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 
 []()
 
+<a name="isolate"></a>
+`--isolate ` 
+    This flag is highly recommended for high-coverage isolate and multi-cell data; improves the assembly quality and running time. 
+    Not compatible with `--only-error-correction` or `--careful` options. 
+
 <a name="sc"></a>
 `--sc `
     This flag is required for MDA (single-cell) data.
@@ -405,6 +411,7 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 <a name="rna"></a>
 `--rna `   (same as `rnaspades.py`)
     This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To learn more, see [rnaSPAdes manual](rnaspades_manual.html).
+    Not compatible with `--only-error-correction` or `--careful` options. 
 
 `--iontorrent `
     This flag is required when assembling IonTorrent data. Allows BAM files as input. Carefully read [section 3.3](#sec3.3) before using this option.
