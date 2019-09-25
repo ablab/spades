@@ -59,6 +59,7 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
     EdgeQuality<Graph> &edge_qual;
     EdgesPositionHandler<graph_t> &edge_pos;
     ConnectedComponentCounter &components;
+
     path_extend::PathContainer &contig_paths;
 
     graph_pack(size_t k,

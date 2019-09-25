@@ -121,17 +121,26 @@ def generateK(cfg, log, dataset_data, silent=False):
         RL = support.get_primary_max_reads_length(dataset_data, log, ["merged reads"],
                                                   options_storage.READS_TYPES_USED_IN_CONSTRUCTION)
         if options_storage.auto_K_allowed():
-            if RL >= 250:
-                if not silent:
-                    log.info("Default k-mer sizes were set to %s because estimated "
-                             "read length (%d) is equal to or greater than 250" % (str(options_storage.K_MERS_250), RL))
-                cfg.iterative_K = options_storage.K_MERS_250
-            elif RL >= 150:
-                if not silent:
-                    log.info("Default k-mer sizes were set to %s because estimated "
-                             "read length (%d) is equal to or greater than 150" % (str(options_storage.K_MERS_150), RL))
-                cfg.iterative_K = options_storage.K_MERS_150
-
+            if options_storage.args.plasmid:
+                if RL >= 150:
+                    if not silent:
+                        log.info("Default k-mer sizes were set to %s because estimated read length (%d) is equal to or greater than 150" % (str(options_storage.K_MERS_PLASMID_LONG), RL))
+                    cfg.iterative_K = options_storage.K_MERS_PLASMID_LONG
+                else:
+                    if not silent:
+                        log.info("Default k-mer sizes were set to %s because estimated read length (%d) is less than 150" % (str(options_storage.K_MERS_PLASMID_100), RL))
+                    cfg.iterative_K = options_storage.K_MERS_PLASMID_100
+            else:
+                if RL >= 250:
+                    if not silent:
+                        log.info("Default k-mer sizes were set to %s because estimated "
+                                 "read length (%d) is equal to or greater than 250" % (str(options_storage.K_MERS_250), RL))
+                    cfg.iterative_K = options_storage.K_MERS_250
+                elif RL >= 150:
+                    if not silent:
+                        log.info("Default k-mer sizes were set to %s because estimated "
+                                 "read length (%d) is equal to or greater than 150" % (str(options_storage.K_MERS_150), RL))
+                    cfg.iterative_K = options_storage.K_MERS_150
         if RL <= max(cfg.iterative_K):
             new_k_mers = [k for k in cfg.iterative_K if k < RL]
             if not silent:
@@ -142,6 +151,23 @@ def generateK(cfg, log, dataset_data, silent=False):
     if not isinstance(cfg.iterative_K, list):
         cfg.iterative_K = [cfg.iterative_K]
     cfg.iterative_K = sorted(cfg.iterative_K)
+
+class PlasmidGlueFileStage(stage.Stage):
+    STAGE_NAME = "metaplasmid glue files"
+    def __init__(self, latest, *args):
+        super(PlasmidGlueFileStage, self).__init__(*args)
+        self.latest = latest
+
+    def get_command(self, cfg):
+        self.cfg = cfg
+        args = [os.path.join(self.python_modules_home, "spades_pipeline", "scripts", "plasmid_glue.py")]
+        args.append(self.latest)
+        command = [commands_parser.Command(STAGE=self.STAGE_NAME,
+                                       path=sys.executable,
+                                       args=args,
+                                       short_name=self.short_name,
+                                       )]
+        return command 
 
 
 class SpadesCopyFileStage(stage.Stage):
@@ -212,7 +238,6 @@ class SpadesCopyFileStage(stage.Stage):
                 filename = os.path.join(self.latest, outputfile.tmp_file)
                 args.append(filename)
                 args.append(outputfile.output_file)
-
         bin_reads_dir = os.path.join(self.cfg.output_dir, ".bin_reads")
         command = [commands_parser.Command(STAGE=self.STAGE_NAME,
                                            path=sys.executable,
@@ -284,7 +309,14 @@ class SpadesStage(stage.Stage):
                                                                                  self.ext_python_modules_home,
                                                                                  self.python_modules_home))
             self.latest = os.path.join(os.path.join(self.cfg.output_dir, "SCC"), "K21")
-
+        if options_storage.args.plasmid and options_storage.args.meta:
+            self.stages.append(PlasmidGlueFileStage(self.latest, "plasmid_copy_files", 
+                                                    self.output_files,
+                                                    self.tmp_configs_dir,
+                                                    self.dataset_data, self.log,
+                                                    self.bin_home,
+                                                    self.ext_python_modules_home,
+                                                    self.python_modules_home))
         self.stages.append(SpadesCopyFileStage(self.latest, "copy_files",
                                                self.output_files,
                                                self.tmp_configs_dir,

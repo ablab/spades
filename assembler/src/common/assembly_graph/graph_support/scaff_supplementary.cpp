@@ -127,7 +127,7 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, const GraphCov
 //2 - hybrid paths weight doubles (conjugate paths)
             if (pair.first != next_unique && pair.second > 2)
                 alt += pair.second;
-        if (maxx < lr_config.unique_edge_priority * double(alt)) {
+        if (math::ls((double) maxx, lr_config.unique_edge_priority * (double) alt)) {
             DEBUG("edge " << gp_.g.int_id(e) <<" dir "<< direction << " was not unique" );
             DEBUG("current edge " << gp_.g.int_id(next_unique));
             DEBUG("Paths " << active_paths.size());

@@ -21,11 +21,20 @@ inline void OutputEdgeSequences(const Graph &g, const std::string &contigs_outpu
     INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
     io::osequencestream_cov oss(contigs_output_filename + ".fasta");
 
-    for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
+    for (EdgeId e: g.canonical_edges()) {
         oss << g.coverage(e);
         oss << g.EdgeNucls(e).str();
     }
 }
 
+inline void OutputEdgesByID(const Graph &g,
+                                const std::string &contigs_output_filename) {
+    INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
+    io::OFastaReadStream oss(contigs_output_filename + ".fasta");
+    for (EdgeId e: g.canonical_edges()) {
+        std::string s = g.EdgeNucls(e).str();
+        oss << io::SingleRead(io::MakeContigId(g.int_id(e), s.size(), g.coverage(e), "EDGE"), s);
+    }
+}
 } // namespace debruijn_graph
+

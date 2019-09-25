@@ -13,6 +13,7 @@
 #include "sequence/sequence.hpp"
 
 #include <set>
+#include <unordered_set>
 
 namespace omnigraph {
 
@@ -240,6 +241,32 @@ public:
         DECL_LOGGER("DeadEndCondition");
 
 };
+
+template<class Graph>
+class IsAllowedCondition : public EdgeCondition<Graph> {
+    typedef EdgeCondition<Graph> base;
+
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    std::unordered_set<VertexId> forbidden_;
+    /**
+     * This class checks if any end of given edge is forbidden for deletion because of some xternal reason
+     */
+
+public:
+    IsAllowedCondition(const Graph& g, const std::unordered_set<VertexId>& forbidden) : base(g), forbidden_(forbidden) {
+    }
+
+    bool Check(EdgeId e) const {
+        return (!forbidden_.count(this->g().EdgeStart(e)) && !forbidden_.count(this->g().EdgeEnd(e)));
+    }
+
+private:
+    DECL_LOGGER("IsAllowedCondition");
+
+};
+
+
 
 template<class Graph>
 func::TypedPredicate<typename Graph::EdgeId>AddDeadEndCondition(const Graph& g,

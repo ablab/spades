@@ -15,9 +15,11 @@ private:
 public:
     CoverageUniformityAnalyzer(const Graph& g, const size_t length_bound): g_(g), length_bound_(length_bound){}
     double CountMedianCoverage() const;
+    double CountMedianCoverage(std::vector<std::pair<double, size_t>> &coverages, size_t total_len) const;
     double UniformityFraction(double allowed_variation, double median_coverage) const;
 //first - inside [median* (1 - allowed_variation), median* (1 + allowed_variation)], second-outside
     std::pair<size_t, size_t> TotalLengthsNearMedian(double allowed_variation, double median_coverage) const;
     size_t TotalLongEdgeLength() const;
+
 };
 }

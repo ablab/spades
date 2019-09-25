@@ -2,11 +2,25 @@ mode    plasmid
 
 plasmid 
 {
+;isolated
     long_edge_length 1000
     edge_length_for_median 10000
     relative_coverage 0.3
     small_component_size 10000
-    small_component_relative_coverage 2
+    small_component_relative_coverage 1.5
     min_component_length 10000
     min_isolated_length 1000
+;meta
+    meta_mode true
+    absolute_coverage_cutoff 5
+;circular_removal
+    min_start_edge_length 2000
+    min_start_coverage 20
+    max_loop 150000
+;   reference_removal replace this with path to reference and uncomment for reference based filtration
+;iterative_coverage_elimination
+    iterative_coverage_elimination true
+    additive_step 5
+    relative_step 1.3
+    max_length 1000000
 }

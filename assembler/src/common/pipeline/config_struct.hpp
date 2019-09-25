@@ -43,9 +43,17 @@ enum class pipeline_type : char {
     rna,
     plasmid,
     large_genome,
-
+    metaplasmid,
     total
 };
+
+class PipelineHelper {
+
+public:
+    static bool IsPlasmidPipeline(const pipeline_type pipeline);
+    static bool IsMetagenomicPipeline(const pipeline_type pipeline);
+};
+
 
 std::vector<std::string> PipelineTypeNames();
 
@@ -339,6 +347,18 @@ struct debruijn_config {
         double small_component_relative_coverage;
         size_t min_component_length;
         size_t min_isolated_length;
+        bool meta_mode;
+        double absolute_coverage_cutoff;
+//circular removal for plasmids
+        size_t min_start_edge_length;
+        double min_start_coverage;
+        size_t max_loop;
+        std::string reference_removal;
+//settings for iterative removal;
+        bool iterative_coverage_elimination;
+        size_t additive_step; //5
+        double relative_step; //1.3
+        size_t max_length; //1000000
     };
 
     struct position_handler {

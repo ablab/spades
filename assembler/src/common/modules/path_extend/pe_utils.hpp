@@ -24,7 +24,10 @@ using namespace debruijn_graph;
 //Checks whether we are in a cycle of length 2, used only for seed selection.
 inline bool InTwoEdgeCycle(EdgeId e, const Graph &g) {
     auto v = g.EdgeEnd(e);
-    if (g.OutgoingEdgeCount(v) >= 1) {
+    //allow to start from long edge with potential coverage one.
+    if (g.OutgoingEdgeCount(v) >= 1 && (g.length(e) < 1000 || g.OutgoingEdgeCount(v) > 1)) {
+
+//    if (g.OutgoingEdgeCount(v) >= 1) {
         auto edges = g.OutgoingEdges(v);
         for (auto it = edges.begin(); it != edges.end(); ++it) {
             if (g.EdgeStart(e) == g.EdgeEnd(*it)) {
@@ -229,6 +232,10 @@ inline bool GetLoopAndExit(const Graph& g, EdgeId forward_cycle_edge, EdgeId& ba
     auto edges = g.OutgoingEdges(loop_end);
     EdgeId edge1 = *edges.begin();
     EdgeId edge2 = *(++edges.begin());
+    if (g.EdgeEnd(edge1) == g.EdgeEnd(edge2)) {
+//Patologic situation, two glued loops
+        return false;
+    }
     if (g.EdgeEnd(edge1) == g.EdgeStart(forward_cycle_edge)) {
         back_cycle_edge = edge1;
         loop_outgoing = edge2;

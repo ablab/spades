@@ -8,12 +8,12 @@
 #pragma once
 
 #include "adt/iterator_range.hpp"
+#include "assembly_graph/core/action_handlers.hpp"
+#include "utils/parallel/openmp_wrapper.h"
+#include "paired_info_buffer.hpp"
+#include <type_traits>
 #include <boost/iterator/iterator_facade.hpp>
 #include <btree/safe_btree_map.h>
-
-#include "paired_info_buffer.hpp"
-
-#include <type_traits>
 
 namespace omnigraph {
 
@@ -281,8 +281,7 @@ public:
     //---------------- Constructor ----------------
 
     PairedIndex(const Graph &graph)
-        : base(graph)
-    {}
+        : base(graph) {}
 
     /**
      * @brief Adds a lot of info from another index, using fast merging strategy.
@@ -417,12 +416,14 @@ public:
     /**
      * @brief Removes all neighbourhood of an edge (all edges referring to it, and their histograms)
      * @warning To keep the symmetricity, it also deletes all conjugates, so the actual complexity is O(size).
+     * NB: size - not all index but size of conjugates!!!
      * @return The number of deleted entries
      */
     size_t Remove(EdgeId edge) {
-        if (this->storage_.find(edge) == this->storage_.end())
+        auto i = this->storage_.find(edge);
+        if (i == this->storage_.end())
             return 0;
-        InnerMap &inner_map = this->storage_[edge];
+        InnerMap &inner_map = i->second;
         std::vector<EdgeId> to_remove;
         to_remove.reserve(inner_map.size());
         size_t old_size = this->size();
@@ -519,6 +520,21 @@ public:
             this->Add(*it, *it, Point());
     }
 
+    void VerifyIndex() {
+        std::set<EdgeId> edges_in_index;
+        size_t sz = 0;
+        for( auto iter = data_begin(); iter != data_end(); iter ++ ) {
+            VERIFY_MSG(iter->second.size() > 0, " empty map! ");
+            VERIFY_MSG(this->graph_.edges().find(iter->first) != this->graph_.edges().end(), " left edge wrong  " << iter->first);
+            for (const auto &e_iter: iter->second) {
+                VERIFY_MSG(this->graph_.edges().find(e_iter.first) != this->graph_.edges().end(), " right edge wrong  " << e_iter.first);
+                sz += e_iter.second->size();
+
+            }
+        }
+        DEBUG(sz << " " << this->size_);
+        VERIFY_MSG(sz == this ->size_, "Different sizes");
+    }
 private:
     InnerMap empty_map_; //null object
 };
@@ -566,6 +582,83 @@ using btree_map = NoLockingAdapter<btree::btree_map<K, V>>; //Two-parameters wra
 template<typename Graph>
 using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, btree_map>;
 
+
+template<typename G, typename Traits, template<typename, typename> class Container>
+class PairedIndexHandler : public omnigraph::GraphActionHandler<G> {
+
+public:
+    using BaseIndex = PairedIndex<G, Traits, Container>;
+
+    typedef typename G::EdgeId EdgeId;
+
+    BaseIndex &paired_index_;
+
+    PairedIndexHandler(PairedIndex<G, Traits, Container>& p): GraphActionHandler<G>(p.graph(), "PairedIndexHandler"), paired_index_(p) {}
+
+    virtual void HandleDelete(EdgeId e) override {
+        if (e == paired_index_.graph().conjugate(e)) {
+            DEBUG("removing self-conj");
+        }
+        DEBUG("Deleted:" << e << " " << omp_get_thread_num());
+        paired_index_.Remove(e);
+    }
+
+    virtual void HandleMerge(const std::vector<EdgeId> &old_edges, EdgeId new_edge) override {
+//        VerifyIndex();
+//        return;
+        size_t shift = 0;
+        DEBUG("created: " << new_edge);
+        if (new_edge == paired_index_.graph().conjugate(new_edge))
+            DEBUG("merging self-conj");
+        std::set<EdgeId> forbidden;
+        std::map<EdgeId, size_t> shifts;
+        for (auto e: old_edges)  {
+            shifts[e] = shift;
+            shift += paired_index_.graph().length(e);
+            forbidden.insert(paired_index_.graph().conjugate(e));
+        }
+
+        for(auto e: old_edges)
+            DEBUG(e << " " << paired_index_.graph().length(e));
+        for(auto e: old_edges) {
+            DEBUG("trying " << e);
+            typename BaseIndex::EdgeProxy old_e = paired_index_.Get(e);
+            std::vector<std::pair<EdgeId, Point>> to_add;
+            for (auto it: old_e) {
+                EdgeId next = it.first;
+                if (forbidden.find(next) != forbidden.end()) {
+                    DEBUG("skpping self-conjugate merge");
+                    continue;
+                }
+                size_t neg_shift = 0;
+                if (shifts.find(next) != shifts.end()) {
+                    DEBUG("old edge was: " << next );
+                    neg_shift = shifts[next];
+                    next = new_edge;
+                }
+                DEBUG(e <<" " << next << " "<< it.second.size());
+                for (auto pp: it.second) {
+                    Point point (pp);
+                    point.d += (double) shifts[e] - double (neg_shift);
+                    DEBUG("from "  <<new_edge << " to " << next  <<" old " << e << " old_dist " << pp.d << "new_dist " << point.d << " "  << point.weight);
+                    if (math::gr(paired_index_.graph().length(new_edge), double(point.d)) && new_edge != next) {
+                        DEBUG("not adding, assert failed");
+                    } else {
+                        to_add.push_back(std::make_pair(next, point));
+                        DEBUG("added");
+                    }
+                }
+            }
+            for (auto p: to_add)  {
+                paired_index_.Add(new_edge, p.first, p.second);
+            }
+
+        }
+    }
+
+
+};
+
 /**
  * @brief A collection of paired indexes which can be manipulated as one.
  *        Used as a convenient wrapper in parallel index processing.
@@ -610,6 +703,13 @@ public:
 
 template<class Graph>
 using PairedInfoIndicesT = PairedIndices<PairedInfoIndexT<Graph>>;
+
+
+template<typename Graph>
+using PairedInfoIndexHandlerT = PairedIndexHandler<Graph, PointTraits, safe_btree_map>;
+
+template<class Graph>
+using PairedInfoIndicesHandlerT = std::vector<PairedInfoIndexHandlerT<Graph>>;
 
 template<class Graph>
 using UnclusteredPairedInfoIndicesT = PairedIndices<UnclusteredPairedInfoIndexT<Graph>>;
