@@ -21,7 +21,8 @@ from process_cfg import bool_to_str
 # FIXME double with scaffold correction stage
 def add_configs(command, configs_dir):
     # Order matters here!
-    mode_config_mapping = [("single_cell", "mda_mode"),
+    mode_config_mapping = [("isolate", "isolate_mode"),
+                           ("single_cell", "mda_mode"),
                            ("meta", "meta_mode"),
                            ("truseq_mode", "moleculo_mode"),
                            ("rna", "rna_mode"),
@@ -33,7 +34,7 @@ def add_configs(command, configs_dir):
             if mode == "rna" or mode == "meta":
                 command.append(os.path.join(configs_dir, "mda_mode.info"))
             command.append(os.path.join(configs_dir, config + ".info"))
-    if options_storage.args.__dict__["careful"] or options_storage.args.__dict__["isolate"]:
+    if options_storage.args.__dict__["careful"]:
         if options_storage.args.__dict__["single_cell"]:
             command.append(os.path.join(configs_dir, "careful_mda_mode.info"))
         else:

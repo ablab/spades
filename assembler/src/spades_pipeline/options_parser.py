@@ -949,7 +949,7 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
         support.error("you cannot simultaneously use more than one mode out of "
                       "Isolate, Metagenomic, Large genome, Illumina TruSeq, RNA-Seq, Plasmid, and Single-cell (except combining Metagenomic and Plasmid)!", log)
     elif modes_count == 0:
-        support.warning("No assembly mode was sepcified! If you intend to assemble high-coverage multi-cell/isolate data, use --isolate option.")
+        support.warning("No assembly mode was sepcified! If you intend to assemble high-coverage multi-cell/isolate data, use '--isolate' option.")
 
     if args.continue_mode:
         return None

@@ -71,7 +71,7 @@ double CoverageUniformityAnalyzer::UniformityFraction(double allowed_variation, 
     std::pair<size_t, size_t> lengths = TotalLengthsNearMedian(allowed_variation, median_coverage);
     size_t total_len = lengths.first + lengths.second;
     if (total_len == 0) {
-        WARN(" No edges longer than length bound(" << length_bound_ <<" )");
+        WARN(" No edges longer than length bound(" << length_bound_ <<")");
         return 0;
     }
     return double(lengths.first) / double(total_len);

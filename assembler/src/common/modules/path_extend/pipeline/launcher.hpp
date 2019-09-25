@@ -47,6 +47,8 @@ class PathExtendLauncher {
 
     void EstimateUniqueEdgesParams();
 
+    void CheckCoverageUniformity();
+
     void FillUniqueEdgeStorage();
 
     void FillPBUniqueEdgeStorages();

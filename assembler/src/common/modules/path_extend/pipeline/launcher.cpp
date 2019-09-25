@@ -163,6 +163,16 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
     INFO ("In total found " << total_mis << " misassemblies " << " and " << gap_mis << " gaps.");
 }
 
+void PathExtendLauncher::CheckCoverageUniformity() {
+    if (params_.mode == config::pipeline_type::base) {
+        CoverageUniformityAnalyzer coverage_analyzer(gp_.g, std::min(size_t(1000), stats::Nx(gp_.g, 50) - 1));
+        double median_coverage = coverage_analyzer.CountMedianCoverage();
+        double uniformity_fraction = coverage_analyzer.UniformityFraction(unique_data_.unique_variation_, median_coverage);
+        if (math::ge(uniformity_fraction, 0.8) and math::ge(median_coverage, 50.0)) {
+            WARN("Your data seems to have high uniform coverage depth. It is strongly recommended to use --isolate option.")
+        }
+    }
+}
 
 void PathExtendLauncher::EstimateUniqueEdgesParams() {
     bool uniform_coverage = false;
@@ -528,6 +538,8 @@ void PathExtendLauncher::Launch() {
     INFO("ExSPAnder repeat resolving tool started");
     fs::make_dir(params_.output_dir);
     fs::make_dir(params_.etc_dir);
+
+    CheckCoverageUniformity();
 
     if (!config::PipelineHelper::IsPlasmidPipeline(params_.mode) && support_.NeedsUniqueEdgeStorage()) {
         //Fill the storage to enable unique edge check

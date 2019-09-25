@@ -55,7 +55,7 @@ def add_configs(command, configs_dir):
             if mode == "rna" or mode == "meta":
                 command.append(os.path.join(configs_dir, "mda_mode.info"))
             command.append(os.path.join(configs_dir, config + ".info"))
-    if options_storage.args.__dict__["careful"]  or options_storage.args.__dict__["isolate"]:
+    if options_storage.args.__dict__["careful"]:
         if options_storage.args.__dict__["single_cell"]:
             command.append(os.path.join(configs_dir, "careful_mda_mode.info"))
         else:

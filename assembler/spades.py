@@ -100,9 +100,11 @@ def print_used_values(cfg, log):
         elif options_storage.args.single_cell:
             log.info("  Single-cell mode")
         else:
-            log.info("  Multi-cell mode (you should set '--sc' flag if input data" \
-                     " was obtained with MDA (single-cell) technology" \
-                     " or --meta flag if processing metagenomic dataset)")
+            log.info("  Standard mode")
+            log.info("  For multi-cell/isolate data we recommend to use '--isolate' option;" \
+                     " for single-cell MDA data use '--sc';" \
+                     " for metagenomic data use '--meta';" \
+                     " for RNA-Seq use '--rna'.")
 
         log.info("  Reads:")
         dataset_data = pyyaml.load(open(cfg["dataset"].yaml_filename))
