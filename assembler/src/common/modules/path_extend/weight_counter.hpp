@@ -299,16 +299,16 @@ public:
 
     CoverageAwareIdealInfoProvider(const Graph &g, const std::shared_ptr<PairedInfoLibrary> &lib,
                                    size_t read_length) :
-                BasicIdealInfoProvider(lib), g_(g), read_length_(read_length) {
-        VERIFY(read_length_ > g_.k());
-    }
+                BasicIdealInfoProvider(lib), g_(g), read_length_(read_length) {}
 
     //TODO optimize number of calls of EstimatePathCoverage(path)
     std::vector<EdgeWithPairedInfo> FindCoveredEdges(const BidirectionalPath &path, EdgeId candidate, int gap) const override {
         VERIFY(read_length_ != -1ul);
         //bypassing problems with ultra-low coverage estimates
         double estimated_coverage = std::max(EstimatePathCoverage(path), 1.0);
-        double correction_coeff = estimated_coverage / ((double(read_length_) - double(g_.k())) * MAGIC_COEFF);
+        //just make sure it somehow works for rare case when RL <= k
+        double correction_coeff = read_length_ > g_.k() ?
+            estimated_coverage / ((double(read_length_) - double(g_.k())) * MAGIC_COEFF) : estimated_coverage;
         TRACE("Estimated coverage " << estimated_coverage);
         TRACE("Correction coefficient " << correction_coeff);
 
