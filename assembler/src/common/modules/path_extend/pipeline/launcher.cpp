@@ -519,7 +519,7 @@ void PathExtendLauncher::SelectStrandSpecificPaths(PathContainer &paths) const {
             ++lib_index;
         }
         PathContainerCoverageSwitcher switcher(gp_.g, gp_.ss_coverage[lib_index], params_.ss.antisense);
-        switcher.Apply(gp_.contig_paths);
+        switcher.Apply(paths);
     }
 }
 
