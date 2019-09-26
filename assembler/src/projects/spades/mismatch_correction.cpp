@@ -357,12 +357,14 @@ private:
     }
 
     size_t ParallelStopMismatchIteration() {
+        INFO("Collect potential mismatches");
         MismatchStatistics statistics(gp_);
+        INFO("Potential mismatches collected");
+
         SequenceMapperNotifier notifier(gp_, cfg::get().ds.reads.lib_count());
-
         auto& dataset = cfg::get_writable().ds;
-
         auto mapper = MapperInstance(gp_);
+
         for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
             if (!dataset.reads[i].is_mismatch_correctable()) {
                 continue;
