@@ -323,19 +323,17 @@ private:
         SequenceMapperNotifier notifier(gp_, cfg::get().ds.reads.lib_count());
 
         auto& dataset = cfg::get_writable().ds;
-        for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
-            if (dataset.reads[i].is_mismatch_correctable())
-                notifier.Subscribe(i, &statistics);
-        }
 
+        auto mapper = MapperInstance(gp_);
         for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
             if (!dataset.reads[i].is_mismatch_correctable()) {
                 continue;
             }
 
+            notifier.Subscribe(i, &statistics);
             auto &reads = cfg::get_writable().ds.reads[i];
             auto single_streams = single_binary_readers(reads, /*followed by rc */true, /*binary*/true);
-            notifier.ProcessLibrary(single_streams, i, *MapperInstance(gp_));
+            notifier.ProcessLibrary(single_streams, i, *mapper);
         }
 
         return CorrectAllEdges(statistics);
@@ -348,6 +346,7 @@ public:
             k_(gp.k()),
             relative_threshold_(relative_threshold) {
         VERIFY(relative_threshold >= 1);
+        graph_.clear_state();  // FIXME Hack-hack-hack required for uniform id distribution on master and slaves        
     }
 
 
