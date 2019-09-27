@@ -32,6 +32,7 @@ public:
     virtual void load(debruijn_graph::conj_graph_pack &, const std::string &load_from, const char *prefix = nullptr);
     virtual void save(const debruijn_graph::conj_graph_pack &, const std::string &save_to,
                       const char *prefix = nullptr) const;
+    void prepare(debruijn_graph::conj_graph_pack &, const char *stage_name, const char *started_from = nullptr);
     virtual void run(debruijn_graph::conj_graph_pack &, const char *started_from = nullptr) = 0;
 
 private:

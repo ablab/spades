@@ -165,6 +165,9 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
         edge_qual.Detach();
     }
 
+    void PrepareForStage(const char*) {
+        g.clear_state();
+    }
 };
 
 typedef graph_pack<ConjugateDeBruijnGraph> conj_graph_pack;

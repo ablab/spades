@@ -297,6 +297,7 @@ private:
         }
 
         uint64_t reserved() const { return id_distributor_.size(); }
+        void clear_state() { id_distributor_.clear_state(); }
 
       private:
         std::atomic<size_t> size_;
@@ -436,6 +437,8 @@ public:
 
     edge_const_iterator in_begin(VertexId v) const { return cvertex(v)->out_begin(this, true); }
     edge_const_iterator in_end(VertexId v) const { return cvertex(v)->out_end(this, true); }
+
+    void clear_state() { estorage_.clear_state(); vstorage_.clear_state(); }
 
 private:
     VertexId CreateVertex(const VertexData &data, VertexId id1 = 0, VertexId id2 = 0) {

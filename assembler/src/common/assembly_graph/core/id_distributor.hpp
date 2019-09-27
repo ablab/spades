@@ -42,6 +42,8 @@ class ReclaimingIdDistributor {
         free_map_[at - bias_] = true;
     }
 
+    void clear_state(void) { last_allocated_ = 0; }
+
     class id_iterator : public boost::iterator_facade<id_iterator,
                                                       uint64_t,
                                                       boost::forward_traversal_tag,

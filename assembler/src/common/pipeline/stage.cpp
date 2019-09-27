@@ -6,8 +6,9 @@
 //***************************************************************************
 
 #include "io/dataset_support/read_converter.hpp"
-#include "pipeline/stage.hpp"
 #include "io/binary/graph_pack.hpp"
+
+#include "pipeline/stage.hpp"
 
 #include "utils/logger/log_writers.hpp"
 
@@ -126,6 +127,11 @@ void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
     fini(gp);
 }
 
+void AssemblyStage::prepare(debruijn_graph::conj_graph_pack& g,
+                            const char *stage, const char*) {
+    g.PrepareForStage(stage);
+}
+
 void StageManager::run(debruijn_graph::conj_graph_pack& g,
                        const char* start_from) {
     auto start_stage = stages_.begin();
@@ -158,6 +164,7 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
         AssemblyStage *stage = start_stage->get();
 
         INFO("STAGE == " << stage->name());
+        stage->prepare(g, start_from);
         stage->run(g, start_from);
         if (saves_policy_.EnabledCheckpoints() != SavesPolicy::Checkpoints::None) {
             auto prev_saves = saves_policy_.GetLastCheckpoint();
