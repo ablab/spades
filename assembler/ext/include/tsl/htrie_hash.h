@@ -101,7 +101,6 @@ static T numeric_cast(U value, const char* error_message = "numeric_cast() faile
 }
 
 
-
 template<class T>
 struct value_node {
     /*
@@ -305,17 +304,17 @@ private:
                                            m_value_node(nullptr), m_children()
         {
             if(other.m_value_node != nullptr) {
-                m_value_node.reset(new value_node(*other.m_value_node));
+                m_value_node = make_unique<value_node>(*other.m_value_node);
             }
             
             // TODO avoid recursion
             for(std::size_t ichild = 0; ichild < other.m_children.size(); ichild++) {
                 if(other.m_children[ichild] != nullptr) {
                     if(other.m_children[ichild]->is_hash_node()) {
-                        m_children[ichild].reset(new hash_node(other.m_children[ichild]->as_hash_node()));
+                        m_children[ichild] = make_unique<hash_node>(other.m_children[ichild]->as_hash_node());
                     }
                     else {
-                        m_children[ichild].reset(new trie_node(other.m_children[ichild]->as_trie_node()));
+                        m_children[ichild] = make_unique<trie_node>(other.m_children[ichild]->as_trie_node());
                     }
                     
                     m_children[ichild]->m_parent_node = this;
@@ -876,10 +875,10 @@ public:
     {
         if(other.m_root != nullptr) {
             if(other.m_root->is_hash_node()) {
-                m_root.reset(new hash_node(other.m_root->as_hash_node()));
+                m_root = make_unique<hash_node>(other.m_root->as_hash_node());
             }
             else {
-                m_root.reset(new trie_node(other.m_root->as_trie_node()));
+                m_root = make_unique<trie_node>(other.m_root->as_trie_node());
             }
         }
     }
@@ -899,10 +898,10 @@ public:
             std::unique_ptr<anode> new_root = nullptr;
             if(other.m_root != nullptr) {
                 if(other.m_root->is_hash_node()) {
-                    new_root.reset(new hash_node(other.m_root->as_hash_node()));
+                    new_root = make_unique<hash_node>(other.m_root->as_hash_node());
                 }
                 else {
-                    new_root.reset(new trie_node(other.m_root->as_trie_node()));
+                    new_root = make_unique<trie_node>(other.m_root->as_trie_node());
                 }
             }
             
@@ -1019,7 +1018,7 @@ public:
         }
         
         if(m_root == nullptr) {
-            m_root.reset(new hash_node(m_hash, m_max_load_factor));
+            m_root = make_unique<hash_node>(m_hash, m_max_load_factor);
         }
         
         return insert_impl(*m_root, key, key_size, std::forward<ValueArgs>(value_args)...); 
@@ -1366,7 +1365,7 @@ private:
                     current_node = tnode.child(key[ikey]).get();
                 }
                 else {
-                    std::unique_ptr<hash_node> hnode(new hash_node(m_hash, m_max_load_factor));
+                    auto hnode = make_unique<hash_node>(m_hash, m_max_load_factor);
                     auto insert_it = hnode->array_hash().emplace_ks(key + ikey + 1, key_size - ikey - 1, 
                                                                     std::forward<ValueArgs>(value_args)...);
                     
@@ -1391,7 +1390,7 @@ private:
                 return std::make_pair(iterator(tnode), false);
             }
             else {
-                tnode.val_node().reset(new value_node(std::forward<ValueArgs>(value_args)...));
+                tnode.val_node() = make_unique<value_node>(std::forward<ValueArgs>(value_args)...);
                 m_nb_elements++;
                 
                 return std::make_pair(iterator(tnode), true);
@@ -1724,10 +1723,10 @@ private:
                                                                  node.array_hash().cend());
         
                                             
-        std::unique_ptr<trie_node> new_node(new trie_node());
+        auto new_node = make_unique<trie_node>();
         for(auto it = node.array_hash().cbegin(); it != node.array_hash().cend(); ++it) {
             if(it.key_size() == 0) {
-                new_node->val_node().reset(new value_node(it.value()));
+                new_node->val_node() = make_unique<value_node>(it.value());
             }
             else {
                 hash_node& hnode = get_hash_node_for_char(first_char_count, *new_node, it.key()[0]);
@@ -1762,10 +1761,10 @@ private:
                         get_first_char_count(node.array_hash().cbegin(), node.array_hash().cend());
             
                         
-            std::unique_ptr<trie_node> new_node(new trie_node());
+            auto new_node = make_unique<trie_node>();
             for(auto it = node.array_hash().begin(); it != node.array_hash().end(); ++it) {
                 if(it.key_size() == 0) {
-                    new_node->val_node().reset(new value_node(std::move(it.value())));
+                    new_node->val_node() = make_unique<value_node>(std::move(it.value()));
                     moved_values_rollback.push_back(std::addressof(new_node->val_node()->m_value));
                 }
                 else {
@@ -1799,10 +1798,10 @@ private:
                     get_first_char_count(node.array_hash().begin(), node.array_hash().end());
         
                     
-        std::unique_ptr<trie_node> new_node(new trie_node());
+        auto new_node = make_unique<trie_node>();
         for(auto it = node.array_hash().cbegin(); it != node.array_hash().cend(); ++it) {
             if(it.key_size() == 0) {
-                new_node->val_node().reset(new value_node());
+                new_node->val_node() = make_unique<value_node>();
             }
             else {
                 hash_node& hnode = get_hash_node_for_char(first_char_count, *new_node, it.key()[0]);
@@ -1842,8 +1841,8 @@ private:
                                           / m_max_load_factor
                             ));
                             
-            tnode.set_child(for_char, std::unique_ptr<hash_node>(
-                                            new hash_node(nb_buckets, m_hash, m_max_load_factor)));
+            tnode.set_child(for_char, 
+                            make_unique<hash_node>(nb_buckets, m_hash, m_max_load_factor));
         }
         
         return tnode.child(for_char)->as_hash_node();
@@ -1997,7 +1996,7 @@ private:
                 if(str_size == 0) {
                     tsl_ht_assert(m_nb_elements == 0 && !m_root);
                     
-                    m_root.reset(new hash_node(array_hash_type::deserialize(deserializer, hash_compatible)));
+                    m_root = make_unique<hash_node>(array_hash_type::deserialize(deserializer, hash_compatible));
                     m_nb_elements += m_root->as_hash_node().array_hash().size();
                     
                     tsl_ht_assert(m_nb_elements == nb_elements);
@@ -2007,7 +2006,7 @@ private:
                     deserializer(str_buffer.data(), str_size);
                     
                     
-                    std::unique_ptr<hash_node> hnode(new hash_node(array_hash_type::deserialize(deserializer, hash_compatible)));
+                    auto hnode = make_unique<hash_node>(array_hash_type::deserialize(deserializer, hash_compatible));
                     m_nb_elements += hnode->array_hash().size();
                     
                     trie_node* current_node = insert_prefix_trie_nodes(str_buffer.data(), str_size - 1);
@@ -2024,13 +2023,13 @@ private:
     
     trie_node* insert_prefix_trie_nodes(const CharT* prefix, std::size_t prefix_size) {
         if(m_root == nullptr) {
-            m_root.reset(new trie_node());
+            m_root = make_unique<trie_node>();
         }
                     
         trie_node* current_node = &m_root->as_trie_node();
         for(std::size_t iprefix = 0; iprefix < prefix_size; iprefix++) {
             if(current_node->child(prefix[iprefix]) == nullptr) {
-                current_node->set_child(prefix[iprefix], std::unique_ptr<trie_node>(new trie_node()));
+                current_node->set_child(prefix[iprefix], make_unique<trie_node>());
             }
             
             current_node = &current_node->child(prefix[iprefix])->as_trie_node();
@@ -2043,14 +2042,14 @@ private:
              typename std::enable_if<!has_value<U>::value>::type* = nullptr>
     void deserialize_value_node(Deserializer& /*deserializer*/, trie_node* current_node) {
         tsl_ht_assert(!current_node->val_node());
-        current_node->val_node().reset(new value_node());
+        current_node->val_node() = make_unique<value_node>();
     }
     
     template<class Deserializer, class U = T,
              typename std::enable_if<has_value<U>::value>::type* = nullptr>
     void deserialize_value_node(Deserializer& deserializer, trie_node* current_node) {
         tsl_ht_assert(!current_node->val_node());
-        current_node->val_node().reset(new value_node(deserialize_value<T>(deserializer)));
+        current_node->val_node() = make_unique<value_node>(deserialize_value<T>(deserializer));
     }
     
     template<class U, class Deserializer>
@@ -2061,6 +2060,12 @@ private:
     #else        
         return deserializer.Deserializer::template operator()<U>();
     #endif        
+    }
+
+    // Same as std::make_unique for non-array types which is only available in C++14 (we need to support C++11).
+    template<typename U, typename... Args>
+    static std::unique_ptr<U> make_unique(Args&&... args) {
+        return std::unique_ptr<U>(new U(std::forward<Args>(args)...));
     }
     
 public:    
