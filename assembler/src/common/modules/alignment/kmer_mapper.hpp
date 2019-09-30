@@ -150,7 +150,6 @@ public:
     }
 
     const RawSeqData* GetRoot(const Kmer &kmer) const {
-        VERIFY(this->IsAttached());
         const RawSeqData *answer = nullptr;
         const RawSeqData *rawval = mapping_.find(kmer);
 
