@@ -28,21 +28,20 @@ public:
     ScaffoldingUniqueEdgeStorage& operator=(const ScaffoldingUniqueEdgeStorage&) = delete;
 
     ScaffoldingUniqueEdgeStorage(ScaffoldingUniqueEdgeStorage&&) = default;
-    ScaffoldingUniqueEdgeStorage& operator=(ScaffoldingUniqueEdgeStorage&&) = default;
 
     bool IsUnique(EdgeId e) const {
         return (unique_edges_.find(e) != unique_edges_.end());
     }
 
-    decltype(unique_edges_.begin()) begin() const {
+    auto begin() const {
         return unique_edges_.begin();
     }
 
-    decltype(unique_edges_.end()) end() const {
+    auto end() const {
         return unique_edges_.end();
     }
 
-    decltype(unique_edges_.begin()) erase(decltype(unique_edges_.begin()) iter) {
+    auto erase(decltype(unique_edges_.begin()) iter) {
         return unique_edges_.erase(iter);
     }
 
@@ -118,7 +117,6 @@ public:
     UsedUniqueStorage& operator=(const UsedUniqueStorage&) = delete;
 
     UsedUniqueStorage(UsedUniqueStorage&&) = default;
-    UsedUniqueStorage& operator=(UsedUniqueStorage&&) = default;
 
     explicit UsedUniqueStorage(const ScaffoldingUniqueEdgeStorage& unique,
                                const debruijn_graph::ConjugateDeBruijnGraph &g):

@@ -91,7 +91,6 @@ public:
     GraphCoverageMap& operator=(const GraphCoverageMap&) = delete;
 
     GraphCoverageMap(GraphCoverageMap&&) = default;
-    GraphCoverageMap& operator=(GraphCoverageMap&&) = default;
 
     explicit GraphCoverageMap(const Graph& g) : g_(g) {
         //FIXME heavy constructor
