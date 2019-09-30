@@ -316,7 +316,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
 
     //TODO implement better universal logic
     size_t edge_length_threshold = cfg::get().min_edge_length_for_is_count;
-    if (debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(cfg::get().mode))
+    if (!debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(cfg::get().mode))
         edge_length_threshold = std::max(edge_length_threshold, stats::Nx(gp.g, 50));
 
     INFO("Min edge length for estimation: " << edge_length_threshold);
