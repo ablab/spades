@@ -12,7 +12,7 @@ def main(args):
         farr = file.split('.')
         if farr[-1] != "fasta":
             continue
-        if farr[-2] != "circular" and farr[-2] != "linear" and farr[-2] != "linear_repeat":
+        if farr[-2] != "circular" and farr[-2] != "linears" and farr[-2] != "linear_repeat":
             continue
         type = farr[-2]
         arr = farr[-3].split("_")
