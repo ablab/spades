@@ -265,8 +265,8 @@ void ChromosomeRemover::OutputNineComponents (conj_graph_pack &gp, size_t ext_li
             string seq = ss.str();
             double cov = (gp.g.coverage(comp[incoming]) * gp.g.length(comp[incoming]) + gp.g.coverage(comp[next_circular]) * gp.g.length(comp[next_circular]))/(gp.g.length(comp[incoming]) + gp.g.length(comp[next_circular]));
             is << ">CUTOFF_" << ext_limit_ <<"_NINE_" << count <<
-               "_length_"<< seq.length() <<"_cov_" << cov << "_id_" <<comp[incoming].int_id() + "," + comp[next_circular].int_id() << endl;
-
+               "_length_"<< seq.length() <<"_cov_" << cov << "_id_" <<comp[incoming].int_id() << "_" << comp[next_circular].int_id() << endl;
+            is <<seq << endl;
         }
     }
 }

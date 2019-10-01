@@ -38,7 +38,7 @@ def get_mode():
         mode = "bgc"
     elif script_basename == "metaspades.py" or nargs.meta:
         mode = "meta"
-    if script_basename == "metaplasmidspades.py" or (nargs.plasmid and nargs.meta):
+    if script_basename == "metaplasmidspades.py" or (nargs.plasmid and nargs.meta) or script_basename == "metaviralspades.py":
         mode = "metaplasmid"
     return mode
 
