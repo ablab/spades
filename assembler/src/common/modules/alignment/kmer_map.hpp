@@ -14,10 +14,16 @@
 
 namespace debruijn_graph {
 class KMerMap {
+    struct str_hash {
+        std::size_t operator()(const char* key, std::size_t key_size) const {
+            return CityHash64(key, key_size);
+        }
+    };
+
     typedef RtSeq Kmer;
     typedef RtSeq Seq;
     typedef typename Seq::DataType RawSeqData;
-    typedef typename tsl::htrie_map<char, RawSeqData*> HTMap;
+    typedef typename tsl::htrie_map<char, RawSeqData*, str_hash> HTMap;
 
     class iterator : public boost::iterator_facade<iterator,
                                                    const std::pair<Kmer, Seq>,
