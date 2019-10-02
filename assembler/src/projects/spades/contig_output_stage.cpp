@@ -98,6 +98,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
     if (!final_iteration_) {
         OutputEdgeSequences(gp.g, output_dir + "simplified_contigs");
+        OutputEdgeSequencesToBinary(gp.g, output_dir + "simplified_contigs");
         return;
     }
 

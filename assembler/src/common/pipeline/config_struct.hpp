@@ -524,7 +524,6 @@ struct debruijn_config {
 
     debruijn_config() :
             use_single_reads(false) {
-
     }
 };
 
