@@ -18,6 +18,22 @@
 
 #include <parallel_hashmap/phmap.h>
 
+template <typename Iter>
+std::vector<Iter> split_iterator(size_t chunks, Iter b, Iter e, size_t n) {
+    // INFO("split_iterator: n = " << n);
+    std::vector<Iter> result(chunks + 1, e);
+    size_t leading_chunks_size = n / chunks;
+    for (size_t i = 0; b != e; ++b, ++i) {
+        if (i % leading_chunks_size) {
+            // INFO("Setting iterator on position " << i << ", nchunks = " << chunks);
+            result[i / leading_chunks_size] = b;
+        }
+    }
+    result[chunks] = e;
+
+    return result;
+}
+
 namespace debruijn_graph {
 
 namespace mismatches {
@@ -89,11 +105,12 @@ private:
     std::vector<InnerMismatchStatistics> statistics_buffers_;
     const Graph &g_;
 
-    void CollectPotentialMismatches(const GraphPack &gp) {
-        const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
+
+    template <typename Iter>
+    void CollectPotentialMismatches(const GraphPack &gp, Iter b, Iter e, InnerMismatchStatistics &statistics) {
         const auto &index = gp.get<EdgeIndex<Graph>>();
 
-        for (const auto &mentry : kmer_mapper) {
+        for (const auto &mentry : adt::make_range(b, e)) {
             // Kmer mapper iterator dereferences to pair (KMer, KMer), not to the reference!
             const RtSeq &from = mentry.first;
             const RtSeq &to = mentry.second;
@@ -115,11 +132,27 @@ private:
                     if (from[i] != to[i] && index.contains(to)) {
                         const auto &position = index.get(to);
                         //FIXME add only canonical edges?
-                        statistics_[position.first].AddPosition(position.second + i);
+                        statistics[position.first].AddPosition(position.second + i);
                     }
                 }
             }
         }
+    }
+
+    void CollectPotentialMismatches(const GraphPack &gp) {
+        size_t nthreads = omp_get_max_threads();
+        const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
+        auto iters = split_iterator(nthreads, kmer_mapper.begin(), kmer_mapper.end(), kmer_mapper.size());
+        statistics_buffers_.clear();
+        statistics_buffers_.resize(nthreads);
+#       pragma omp parallel for
+        for (size_t i = 0; i < nthreads; ++i) {
+            CollectPotentialMismatches(gp, iters[i], iters[i + 1], statistics_buffers_[i]);
+        }
+        for (auto &statistics_buffer : statistics_buffers_) {
+            Merge(statistics_buffer);
+        }
+        statistics_buffers_.clear();
     }
 
     template <typename Read>
@@ -158,6 +191,13 @@ private:
         }
     }
 
+    void Merge(InnerMismatchStatistics &other_statistics) {
+        for (auto &e_info : other_statistics) {
+            statistics_[e_info.first] += e_info.second;
+            e_info.second.ClearValues();
+        }
+    }
+
 public:
     MismatchStatistics(const GraphPack &gp):
             g_(gp.get<Graph>()) {
@@ -165,13 +205,8 @@ public:
     }
 
     void StartProcessLibrary(size_t threads_count) override {
+        statistics_buffers_.clear();
         statistics_buffers_.resize(threads_count, statistics_);
-        for (auto &statistics_buffer : statistics_buffers_) {
-            for (auto &e_info : statistics_buffer) {
-                statistics_[e_info.first] += e_info.second;
-                e_info.second.ClearValues();
-            }
-        }
     }
 
     void StopProcessLibrary() override {
@@ -187,10 +222,7 @@ public:
     }
 
     void MergeBuffer(size_t thread_index) override {
-        for (auto &e_info : statistics_buffers_[thread_index]) {
-            statistics_[e_info.first] += e_info.second;
-            e_info.second.ClearValues();
-        }
+        Merge(statistics_buffers_[thread_index]);
     }
 
     const_iterator begin() const {
@@ -291,7 +323,7 @@ private:
         //FIXME after checking saves replace with
         //for (auto it = g_.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
 
-#if 0        
+#if 0
         for (EdgeId e : g_.edges()) {
             if (!conjugate_fix.count(g_.conjugate(e)))
                 conjugate_fix.insert(e);
@@ -346,7 +378,7 @@ public:
             k_(gp.k()),
             relative_threshold_(relative_threshold) {
         VERIFY(relative_threshold >= 1);
-        graph_.clear_state();  // FIXME Hack-hack-hack required for uniform id distribution on master and slaves        
+        graph_.clear_state();  // FIXME Hack-hack-hack required for uniform id distribution on master and slaves
     }
 
 
