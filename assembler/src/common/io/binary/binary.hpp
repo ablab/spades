@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <type_traits>
 #include <iostream>
 #include <vector>
 #include <map>
@@ -14,10 +13,15 @@
 
 #include "utils/verify.hpp"
 #include "llvm/Support/LEB128.h"
+#include "io/binary/access.hpp"
 
 namespace io {
 
 namespace binary {
+
+namespace impl {
+
+static const char LEB_BUF_SIZE = 128 / 7 + 1;
 
 enum class Encoding {
     Unknown,
@@ -26,215 +30,446 @@ enum class Encoding {
     ULEB128
 };
 
-static const char LEB_BUF_SIZE = 128 / 7 + 1;
-
+// TODO implement special wrapper for pointers and disable direct serialization
 template<typename T>
 static constexpr Encoding GetEncoding() {
     return !std::is_pod<T>::value ? Encoding::Unknown :
-           std::is_floating_point<T>::value ? Encoding::Raw : //Required because is_signed is true for floats
-           std::is_unsigned<T>::value && sizeof(T) > 1 ? Encoding::ULEB128 :
-           std::is_signed<T>::value && sizeof(T) > 1 ? Encoding::SLEB128 :
-           Encoding::Raw;
+           std::is_floating_point<T>::value || sizeof(T) == 1 || std::is_pointer<T>::value ? Encoding::Raw : //Required because is_signed is true for floats
+           std::is_unsigned<T>::value ? Encoding::ULEB128 :
+           std::is_signed<T>::value ? Encoding::SLEB128 :
+           Encoding::Unknown;
 }
 
-template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::Raw> BinWrite(std::ostream &os, const T &value) {
-    os.write(reinterpret_cast<const char *>(&value), sizeof(T));
-}
+template <typename T, typename Enable = void>
+class Serializer;
 
-template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::Raw> BinRead(std::istream &is, T &value) {
-    is.read(reinterpret_cast<char *>(&value), sizeof(T));
-}
+// Motivated by declval, the same stuff but returns lvalue reference
+template <class T>
+typename std::add_lvalue_reference<T>::type declref() noexcept;
 
-template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::ULEB128> BinWrite(std::ostream &os, const T &value) {
-    uint8_t buf[LEB_BUF_SIZE];
-    auto count = llvm::encodeULEB128(value, buf);
-    os.write(reinterpret_cast<const char *>(buf), count);
-}
+template <class T>
+typename std::add_lvalue_reference<const T>::type declcref() noexcept;
 
-template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::ULEB128> BinRead(std::istream &is, T &value) {
-    uint8_t buf[LEB_BUF_SIZE];
-    auto pos = reinterpret_cast<char *>(buf);
-    char count = 0;
-    do {
-        is.read(pos, 1);
-        VERIFY(is);
-        ++count;
-        VERIFY_MSG(count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
-    } while (*(pos++) & 0x80);
-    value = static_cast<T>(llvm::decodeULEB128(buf));
-}
-
-// Implementation for classes that have corresponding BinWrite/BinRead methods.
-template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::SLEB128> BinWrite(std::ostream &os, const T &value) {
-    uint8_t buf[LEB_BUF_SIZE];
-    auto count = llvm::encodeSLEB128(value, buf);
-    os.write(reinterpret_cast<const char *>(buf), count);
-}
-
-template<typename T>
-typename std::enable_if_t<GetEncoding<T>() == Encoding::SLEB128> BinRead(std::istream &is, T &value) {
-    uint8_t buf[LEB_BUF_SIZE];
-    auto pos = reinterpret_cast<char *>(buf);
-    char count = 0;
-    do {
-        is.read(pos, 1);
-        VERIFY(is);
-        ++count;
-        VERIFY_MSG(count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
-    } while (*(pos++) & 0x80);
-    value = static_cast<T>(llvm::decodeSLEB128(buf));
-}
-
-template<typename T>
-auto BinWrite(std::ostream &os, const T &value) -> decltype(std::declval<const T>().BinWrite(os), void()) {
-    value.BinWrite(os);
-}
-
-template<typename T>
-auto BinRead(std::istream &is, T &value) -> decltype(std::declval<T>().BinRead(is), void()) {
-    value.BinRead(is);
-}
-
-//---- Ad-hoc overloads ------------------------------------------------------------------------------------------------
-template <typename T, typename... Ts>
-void BinWrite(std::ostream &os, const T &v, const Ts &... vs);
-template <typename T, typename... Ts>
-void BinRead(std::istream &is, T &v, Ts &... vs);
-
-inline void BinWrite(std::ostream &os, const std::string &value);
-inline void BinRead(std::istream &is, std::string &value);
+namespace impl {
+template <typename T, typename Enable = void>
+constexpr bool is_serializable = false;
 
 template <typename T>
-std::enable_if_t<!std::is_same<T, bool>::value> BinRead(std::istream &is, std::vector<T> &v);
+constexpr bool is_serializable<T, decltype(Serializer<T>::Write(declref<std::ostream>(), declcref<T>()),
+                                           Serializer<T>::Read(declref<std::istream>(), declref<T>()), void())> = true;
+
+template <typename... Ts>
+constexpr std::enable_if_t<sizeof...(Ts) == 0, bool> is_all_serializable_f() {
+    return true;
+}
+
+template <typename T, typename... Ts>
+constexpr bool is_all_serializable_f() {
+    return is_serializable<T> && is_all_serializable_f<Ts...>();
+}
+
+}  // namespace impl
+
+template <typename... Ts>
+constexpr bool is_serializable = impl::is_all_serializable_f<Ts...>();
+
 template <typename T>
-std::enable_if_t<!std::is_same<T, bool>::value> BinWrite(std::ostream &os, const std::vector<T> &v);
+std::enable_if_t<is_serializable<T>> BinWrite(std::ostream &os, const T &v) {
+    Serializer<T>::Write(os, v);
+}
 
-template <typename T1, typename T2>
-void BinWrite(std::ostream &os, const std::pair<T1, T2> &p);
-template <typename T1, typename T2>
-void BinRead(std::istream &is, std::pair<T1, T2> &p);
+template <typename T>
+std::enable_if_t<is_serializable<T>> BinRead(std::istream &is, T &v) {
+    Serializer<T>::Read(is, v);
+}
 
-template <typename K, typename V, typename... Args>
-void BinWrite(std::ostream &os, const std::map<K, V, Args...> &m);
-template <typename K, typename V, typename... Args>
-void BinRead(std::istream &is, std::map<K, V, Args...> &m);
+// Multi-value wrappers to save even more LOCs.
+template <typename T, typename... Ts>
+std::enable_if_t<is_serializable<T, Ts...> && sizeof...(Ts) != 0> BinWrite(std::ostream &os, const T &v, const Ts &... vs) {
+    BinWrite(os, v);
+    BinWrite(os, vs...);
+}
 
-template <typename K, typename V, typename... Args>
-void BinWrite(std::ostream &os, const std::unordered_map<K, V, Args...> &m);
-template <typename K, typename V, typename... Args>
-void BinRead(std::istream &is, std::unordered_map<K, V, Args...> &m);
+template <typename T, typename... Ts>
+std::enable_if_t<is_serializable<T, Ts...> && sizeof...(Ts) != 0> BinRead(std::istream &is, T &v, Ts &... vs) {
+    BinRead(is, v);
+    BinRead(is, vs...);
+}
+
+template <typename T>
+class Serializer<T, std::enable_if_t<GetEncoding<T>() == Encoding::Raw>> {
+public:
+    static void Write(std::ostream &os, const T &value) {
+        os.write(reinterpret_cast<const char *>(&value), sizeof(T));
+    }
+
+    static void Read(std::istream &is, T &value) {
+        is.read(reinterpret_cast<char *>(&value), sizeof(T));
+    }
+};
+
+template <typename T>
+class Serializer<T, std::enable_if_t<GetEncoding<T>() == Encoding::ULEB128>> {
+public:
+    static void Write(std::ostream &os, const T &value) {
+        uint8_t buf[LEB_BUF_SIZE];
+        auto count = llvm::encodeULEB128(value, buf);
+        os.write(reinterpret_cast<const char *>(buf), count);
+    }
+
+    static void Read(std::istream &is, T &value) {
+        uint8_t buf[LEB_BUF_SIZE];
+        auto pos = reinterpret_cast<char *>(buf);
+        char count = 0;
+        do {
+            is.read(pos, 1);
+            VERIFY(is);
+            ++count;
+            VERIFY_MSG(count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
+        } while (*(pos++) & 0x80);
+        value = static_cast<T>(llvm::decodeULEB128(buf));
+    }
+};
+
+template <typename T>
+class Serializer<T, std::enable_if_t<GetEncoding<T>() == Encoding::SLEB128>> {
+public:
+    static void Write(std::ostream &os, const T &value) {
+        uint8_t buf[LEB_BUF_SIZE];
+        auto count = llvm::encodeSLEB128(value, buf);
+        os.write(reinterpret_cast<const char *>(buf), count);
+    }
+
+    static void Read(std::istream &is, T &value) {
+        uint8_t buf[LEB_BUF_SIZE];
+        auto pos = reinterpret_cast<char *>(buf);
+        char count = 0;
+        do {
+            is.read(pos, 1);
+            VERIFY(is);
+            ++count;
+            VERIFY_MSG(count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
+        } while (*(pos++) & 0x80);
+        value = static_cast<T>(llvm::decodeSLEB128(buf));
+    }
+};
+
+namespace impl {
+template <typename T, typename Enable = void>
+constexpr bool has_binread_binwrite = false;
+
+template <typename T>
+constexpr bool has_binread_binwrite<T, decltype(declcref<T>().BinWrite(declref<std::ostream>()), declref<T>().BinRead(declref<std::istream>()), void())> = true;
+}
+
+template <typename T>
+constexpr bool has_binread_binwrite = impl::has_binread_binwrite<T>;
+
+// Implementation for classes having corresponding BinWrite/BinRead methods:
+template <typename T>
+class Serializer<T, std::enable_if_t<has_binread_binwrite<T>>> {
+public:
+    static void Write(std::ostream &os, const T &value) {
+        value.BinWrite(os);
+    }
+
+    static void Read(std::istream &is, T &value) {
+        value.BinRead(is);
+    }
+};
+
+// Implementation for classes having BinArchive method
+class StreamArchiveWriter {
+public:
+    StreamArchiveWriter(std::ostream &os) : os_{os} {}
+
+    template <typename T>
+    void operator()(const T &value) {
+        BinWrite(os_, value);
+    }
+
+    template <typename T, typename... Ts>
+    void operator()(const T &v, const Ts &... vs) {
+        operator()(v);
+        operator()(vs...);
+    }
+
+    template <typename T>
+    std::enable_if_t<std::is_pod<T>::value> raw(const T &value) {
+        os_.write(reinterpret_cast<const char*>(&value), sizeof(T));
+    }
+
+    template <typename T, typename... Ts>
+    auto raw(const T &v, const Ts &... vs) -> decltype(raw(v), raw(vs...), void()) {
+        raw(v);
+        raw(vs...);
+    }
+
+    template <typename T>
+    std::enable_if_t<std::is_pod<T>::value> raw_array(const T *p, size_t count) {
+        os_.write(reinterpret_cast<const char*>(p), count * sizeof(T));
+    }
+
+    std::ostream &stream() {
+        return os_;
+    }
+
+private:
+    std::ostream &os_;
+};
+
+class StreamArchiveReader {
+public:
+    StreamArchiveReader(std::istream &is) : is_{is} {}
+
+    template <typename T>
+    void operator()(T &value) {
+        BinRead(is_, value);
+    }
+
+    template <typename T, typename... Ts>
+    void operator()(T &v, Ts &... vs) {
+        operator()(v);
+        operator()(vs...);
+    }
+
+    template <typename T>
+    std::enable_if_t<std::is_pod<T>::value> raw(T &value) {
+        is_.read(reinterpret_cast<char*>(&value), sizeof(T));
+    }
+
+    template <typename T, typename... Ts>
+    auto raw(const T &v, const Ts &... vs) -> decltype(raw(v), raw(vs...), void()) {
+        raw(v);
+        raw(vs...);
+    }
+
+    template <typename T>
+    std::enable_if_t<std::is_pod<T>::value> raw_array(T *p, size_t count) {
+        is_.read(reinterpret_cast<char*>(p), count * sizeof(T));
+    }
+
+    std::istream &stream() {
+        return is_;
+    }
+
+    // That would require 'template' keyword on call
+    // template <typename T>
+    // T get() {
+    //     T v;
+    //     operator()(v);
+    //     return v;
+    // }
+
+    template <typename T>
+    T get(T) {
+        T v;
+        operator()(v);
+        return v;
+    }
+
+private:
+    std::istream &is_;
+};
+
+namespace impl {
+template <typename T, typename Enable = void>
+constexpr bool has_binarchive = false;
+
+template <typename T>
+constexpr bool has_binarchive<T, decltype(access().BinArchive(declref<T>(), declref<StreamArchiveWriter>()), access().BinArchive(declref<T>(), declref<StreamArchiveReader>()), void())> = true;
+
+template <typename T, typename Enable = void>
+constexpr bool has_binarchive_save_load = false;
+
+template <typename T>
+constexpr bool has_binarchive_save_load<T, decltype(access().BinArchiveSave(declcref<T>(), declref<StreamArchiveWriter>()), access().BinArchiveLoad(declref<T>(), declref<StreamArchiveReader>()), void())> = true;
+}
+
+template <typename T>
+constexpr bool has_binarchive = impl::has_binarchive<T>;
+
+template <typename T>
+constexpr bool has_binarchive_save_load = impl::has_binarchive_save_load<T>;
+
+template <typename T>
+constexpr bool has_inside_serialization = has_binread_binwrite<T> || has_binarchive<T> || has_binarchive_save_load<T>;
+
+template <typename T>
+class Serializer<T, std::enable_if_t<has_binarchive<T>>> {
+public:
+    static void Write(std::ostream &os, const T &value) {
+        StreamArchiveWriter saw(os);
+        access().BinArchive(const_cast<T&>(value), saw);
+    }
+
+    static void Read(std::istream &is, T &value) {
+        StreamArchiveReader sar(is);
+        access().BinArchive(value, sar);
+    }
+};
+
+template <typename T>
+class Serializer<T, std::enable_if_t<has_binarchive_save_load<T>>> {
+public:
+    static void Write(std::ostream &os, const T &value) {
+        StreamArchiveWriter saw(os);
+        access().BinArchiveSave(value, saw);
+    }
+
+    static void Read(std::istream &is, T &value) {
+        StreamArchiveReader sar(is);
+        access().BinArchiveLoad(value, sar);
+    }
+};
 
 // Arrays
+// TODO Disable direct array serialization
+template <typename T, size_t N>
+class Serializer<T[N], std::enable_if_t<is_serializable<T>>> {
+public:
+    static void Write(std::ostream &os, const T (&value)[N]) {
+        for (size_t i = 0; i < N; ++i)
+            BinWrite(os, value[i]);
+    }
 
-template<typename T, size_t N>
-void BinWrite(std::ostream &os, const T (&value)[N]) {
-    for (size_t i = 0; i < N; ++i)
-        BinWrite(os, value[i]);
-}
-
-template<typename T, size_t N>
-void BinRead(std::istream &is, T (&value)[N]) {
-    for (size_t i = 0; i < N; ++i)
-        BinRead(is, value[i]);
-}
+    static void Read(std::istream &is, T (&value)[N]) {
+        for (size_t i = 0; i < N; ++i)
+            BinRead(is, value[i]);
+    }
+};
 
 // Strings
+template <>
+class Serializer<std::string> {
+public:
+    static void Write(std::ostream &os, const std::string &value) {
+        BinWrite(os, static_cast<size_t>(value.length()));
+        os.write(value.data(), value.length());
+    }
 
-inline void BinWrite(std::ostream &os, const std::string &value) {
-    BinWrite(os, static_cast<size_t>(value.length()));
-    os.write(value.data(), value.length());
-}
+    static void Read(std::istream &is, std::string &value) {
+        size_t size;
+        BinRead(is, size);
+        value.resize(size);
+        is.read(const_cast<char *>(value.data()), value.length());
+    }
+};
 
-inline void BinRead(std::istream &is, std::string &value) {
-    size_t size;
-    BinRead(is, size);
-    value.resize(size);
-    is.read(const_cast<char *>(value.data()), value.length());
-}
 
-// Vectors
+// std::array
+template <typename T, size_t N>
+class Serializer<std::array<T, N>, std::enable_if_t<is_serializable<T>>> {
+public:
+    static void Write(std::ostream &os, const std::array<T, N> &v) {
+        for (size_t i = 0; i < v.size(); ++i) {
+            BinWrite(os, v[i]);
+        }
+    }
 
+    static void Read(std::istream &is, std::array<T, N> &v) {
+        for (size_t i = 0; i < v.size(); ++i) {
+            BinRead(is, v[i]);
+        }
+    }
+};
+
+// std::vector
 template <typename T>
-std::enable_if_t<!std::is_same<T, bool>::value> BinWrite(std::ostream &os, const std::vector<T> &v) {
-    BinWrite(os, v.size());
-    for (size_t i = 0; i < v.size(); ++i) {
-        BinWrite(os, v[i]);
+class Serializer<std::vector<T>, std::enable_if_t<!std::is_same<T, bool>::value && is_serializable<T>>> {
+public:
+    static void Write(std::ostream &os, const std::vector<T> &v) {
+        BinWrite(os, v.size());
+        for (size_t i = 0; i < v.size(); ++i) {
+            BinWrite(os, v[i]);
+        }
     }
+
+    static void Read(std::istream &is, std::vector<T> &v) {
+        size_t size;
+        BinRead(is, size);
+        v.resize(size);
+        for (size_t i = 0; i < size; ++i) {
+            BinRead(is, v[i]);
+        }
+    }
+};
+
+// std::tuple
+namespace detail {
+template <class F, class Tuple, std::size_t... I>
+constexpr decltype(auto) apply_impl(F &&f, Tuple &&t, std::index_sequence<I...>) {
+    return std::forward<F>(f)(std::get<I>(std::forward<Tuple>(t))...);
 }
 
-template <typename T>
-std::enable_if_t<!std::is_same<T, bool>::value> BinRead(std::istream &is, std::vector<T> &v) {
-    size_t size;
-    BinRead(is, size);
-    v.resize(size);
-    for (size_t i = 0; i < size; ++i) {
-        BinRead(is, v[i]);
-    }
+template <class T>
+constexpr std::size_t tuple_size_v = std::tuple_size<T>::value;
+}  // namespace detail
+
+// Just std::apply from C++17
+template <class F, class Tuple>
+constexpr decltype(auto) apply(F &&f, Tuple &&t) {
+    return detail::apply_impl(std::forward<F>(f), std::forward<Tuple>(t),
+                              std::make_index_sequence<detail::tuple_size_v<std::remove_reference_t<Tuple>>>{});
 }
 
-// Tuples
+template <typename... Ts>
+class Serializer<std::tuple<Ts...>, std::enable_if_t<is_serializable<Ts...>>> {
+public:
+    static void Write(std::ostream &os, const std::tuple<Ts...> &t) {
+        auto binwriter = [&os](const auto& v) { BinWrite(os, v); };
+        apply(binwriter, t);
+    }
 
-// TODO implement for std::tuple
+    static void BinRead(std::istream &is, const std::tuple<Ts...> &t) {
+        auto binreader = [&is](auto& v) { BinRead(is, v); };
+        apply(binreader, t);
+    }
+};
+
+// std::pair
 template <typename T1, typename T2>
-void BinWrite(std::ostream &os, const std::pair<T1, T2> &p) {
-    BinWrite(os, p.first, p.second);
-}
+class Serializer<std::pair<T1, T2>, std::enable_if_t<is_serializable<T1, T2>>> {
+public:
+    static void Write(std::ostream &os, const std::pair<T1, T2> &p) {
+        BinWrite(os, p.first, p.second);
+    }
 
-template <typename T1, typename T2>
-void BinRead(std::istream &is, std::pair<T1, T2> &p) {
-    BinRead(is, p.first, p.second);
-}
+    static void Read(std::istream &is, std::pair<T1, T2> &p) {
+        BinRead(is, p.first, p.second);
+    }
+};
 
-// Maps
+// std::map & std::unordered_map
+template <typename M>
+class MapSerializer {
+public:
+    static void Write(std::ostream &os, const M &m) {
+        size_t size = m.size();
+        BinWrite(os, size);
+        for (const auto &kv : m) {
+            BinWrite(os, kv.first, kv.second);
+        }
+    }
+
+    static void Read(std::istream &is, M &m) {
+        m.clear();
+        size_t size;
+        BinRead(is, size);
+        for (size_t i = 0; i < size; ++i) {
+            typename M::key_type k;
+            typename M::mapped_type v;
+            BinRead(is, k, v);
+            m.insert({std::move(k), std::move(v)});
+        }
+    }
+};
 
 template <typename K, typename V, typename... Args>
-void BinWrite(std::ostream &os, const std::map<K, V, Args...> &m) {
-    size_t size = m.size();
-    BinWrite(os, size);
-    for (const auto &kv : m) {
-        BinWrite(os, kv.first, kv.second);
-    }
-}
+class Serializer<std::map<K, V, Args...>, std::enable_if_t<is_serializable<K, V>>> : public MapSerializer<std::map<K, V, Args...>> {};
 
 template <typename K, typename V, typename... Args>
-void BinRead(std::istream &is, std::map<K, V, Args...> &m) {
-    m.clear();
-    size_t size;
-    BinRead(is, size);
-    for (size_t i = 0; i < size; ++i) {
-        K k;
-        V v;
-        BinRead(is, k, v);
-        m.insert({std::move(k), std::move(v)});
-    }
-}
-
-template <typename K, typename V, typename... Args>
-void BinWrite(std::ostream &os, const std::unordered_map<K, V, Args...> &m) {
-    size_t size = m.size();
-    BinWrite(os, size);
-    for (const auto &kv : m) {
-        BinWrite(os, kv.first, kv.second);
-    }
-}
-
-template <typename K, typename V, typename... Args>
-void BinRead(std::istream &is, std::unordered_map<K, V, Args...> &m) {
-    m.clear();
-    size_t size;
-    BinRead(is, size);
-    for (size_t i = 0; i < size; ++i) {
-        K k;
-        V v;
-        BinRead(is, k, v);
-        m.insert({std::move(k), std::move(v)});
-    }
-}
+class Serializer<std::unordered_map<K, V, Args...>, std::enable_if_t<is_serializable<K, V>>> : public MapSerializer<std::unordered_map<K, V, Args...>> {};
 
 //---- Helpers ---------------------------------------------------------------------------------------------------------
 
@@ -249,21 +484,6 @@ T BinRead(std::istream &is) {
 }
 
 /**
- * @brief Multi-value wrappers to save even more LOCs.
- */
-template <typename T, typename... Ts>
-void BinWrite(std::ostream &os, const T &v, const Ts &... vs) {
-    BinWrite(os, v);
-    BinWrite(os, vs...);
-}
-
-template <typename T, typename... Ts>
-void BinRead(std::istream &is, T &v, Ts &... vs) {
-    BinRead(is, v);
-    BinRead(is, vs...);
-}
-
-/**
  * @brief  A small wrapper for binary serialization into an STL ostream.
  */
 class BinOStream {
@@ -274,7 +494,7 @@ public:
 
     template<typename T>
     BinOStream &operator<<(const T &value) {
-        io::binary::BinWrite(str_, value);
+        BinWrite(str_, value);
         return *this;
     }
 
@@ -301,7 +521,7 @@ public:
 
     template<typename T>
     BinIStream &operator>>(T &value) {
-        io::binary::BinRead(str_, value);
+        BinRead(str_, value);
         //VERIFY(!str.fail());
         return *this;
     }
@@ -333,6 +553,20 @@ private:
     std::istream &str_;
 };
 
-} // namespace binary
+}  // namespace impl
 
-} // namespace io
+using impl::BinWrite;
+using impl::BinRead;
+using impl::BinIStream;
+using impl::BinOStream;
+using impl::Serializer;
+using impl::is_serializable;
+using impl::has_binread_binwrite;
+using impl::has_binarchive;
+using impl::has_binarchive_save_load;
+using impl::has_inside_serialization;
+using impl::MapSerializer;
+
+}  // namespace binary
+
+}  // namespace io

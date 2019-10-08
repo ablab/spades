@@ -56,6 +56,11 @@ struct Id {
     bool operator!=(Id other) const { return id_ != other.id_; }
     bool operator<(Id rhs) const { return id_ < rhs.id_; }
     bool operator<=(Id rhs) const { return *this < rhs || *this == rhs; }
+
+    template <typename Archive>
+    void BinArchive(Archive &ar) {
+        ar(id_);
+    }
 };
 
 // FIXME: Move to .cpp

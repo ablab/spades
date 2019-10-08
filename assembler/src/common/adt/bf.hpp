@@ -25,6 +25,7 @@ public:
     /// The hash function type.
     typedef std::function<digest(const T &, uint64_t seed)> hasher;
 
+    // FIXME disable default constructor
     counting_bloom_filter() = default;
 
     ~counting_bloom_filter() = default;
@@ -100,6 +101,45 @@ public:
         std::fill(data_.begin(), data_.end(), 0);
     }
 
+    void merge(const counting_bloom_filter<T, width_> &other) {
+        VERIFY(data_.size() == other.data_.size());
+        VERIFY(num_hashes_ == other.num_hashes_);
+        VERIFY(cells_ = other.cells_);
+
+        for (size_t cell_id = 0; cell_id < cells_; ++cell_id) {
+            size_t pos = cell_id / cells_per_entry_;
+            size_t epos = cell_id - pos * cells_per_entry_;
+            auto &entry = data_[pos];
+            const auto &other_entry = other.data_[pos];
+            uint64_t mask = cell_mask_ << (width_ * epos);
+            uint64_t val = entry & mask;
+            uint64_t other_val = other_entry & mask;
+            uint64_t newval = (entry + other_val) & mask;
+            if (newval < val) {
+                newval = mask;
+            }
+            entry &= ~mask;
+            entry |= newval;
+        }
+    }
+
+    template <typename Archive>
+    void BinArchiveSave(Archive &ar) const {
+        ar(num_hashes_, cells_, data_.size());
+        ar.raw_array(data_.data(), data_.size());
+    }
+
+    template <typename Archive>
+    void BinArchiveLoad(Archive &ar) {
+        size_t size;
+        ar(num_hashes_, cells_, size);
+        if (data_.size() != size) {
+            // data_.resize(size); // vector of atomics could not be resized
+            data_ = std::vector<std::atomic<uint64_t>>(size);
+        }
+        ar.raw_array(data_.data(), data_.size());
+    }
+
 protected:
     hasher hasher_;
     size_t num_hashes_;
@@ -170,6 +210,10 @@ public:
         }
 
         return val;
+    }
+
+    void merge(...) {
+        VERIFY_MSG(false, "Not implemented");
     }
 };
 

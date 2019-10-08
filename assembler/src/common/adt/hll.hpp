@@ -4,6 +4,7 @@
 #include <functional>
 #include <numeric>
 #include <cmath>
+
 namespace hll {
 
 template<unsigned precision = 24>
@@ -34,6 +35,7 @@ public:
     }
 
     void merge(const hll &other) {
+      VERIFY(data_.size() == other.data_.size());
       for (size_t i = 0; i < data_.size(); ++i)
         data_[i] = std::max(data_[i], other.data_[i]);
     }
@@ -60,6 +62,11 @@ public:
 
     void clear() {
       std::fill(data_.begin(), data_.end(), 0);
+    }
+
+    template <typename Archive>
+    void BinArchive(Archive &ar) {
+        ar(data_);
     }
 
 private:

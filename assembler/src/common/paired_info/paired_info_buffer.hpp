@@ -202,7 +202,7 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
             for (const auto &j : i.second) {
                 if (j.second.owning()) {
                     BinWrite(str, j.first.int_id());
-                    j.second->BinWrite(str);
+                    io::binary::BinWrite(str, *(j.second));
                 }
             }
             BinWrite(str, (size_t)0); //null-term
@@ -220,7 +220,7 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
                 if (!e2) //null-term
                     break;
                 auto hist = new InnerHistogram();
-                hist->BinRead(str);
+                io::binary::BinRead(str, *hist);
                 TRACE(e1 << "->" << e2 << ": " << hist->size() << "points");
                 storage_[e1][e2] = InnerHistPtr(hist, /* owning */ true);
                 bool selfconj = this->IsSelfConj(e1, e2);
