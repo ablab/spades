@@ -242,18 +242,19 @@ private:
         return false;
     }
 
-    static const KeyWithHash& min(const KeyWithHash &k1, const KeyWithHash &k2) {
+    // KeyWithHash has no operator<
+    static const KeyWithHash& min_by_key(const KeyWithHash &k1, const KeyWithHash &k2) {
         return k1.key() < k2.key() ? k1 : k2;
     }
 
     KeyWithHash FindMinimalKMerInLoop(const KeyWithHash &start) const {
-        KeyWithHash minimal = min(start, !start);
+        KeyWithHash minimal = min_by_key(start, !start);
         KeyWithHash kh = start;
         StepRightIfPossible(kh);
 
         for (; start != kh; StepRightIfPossible(kh)) {
-            minimal = min(minimal, kh);
-            minimal = min(minimal, !kh);
+            minimal = min_by_key(minimal, kh);
+            minimal = min_by_key(minimal, !kh);
         }
         return minimal;
     }
