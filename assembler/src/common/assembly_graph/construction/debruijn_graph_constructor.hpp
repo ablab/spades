@@ -458,6 +458,10 @@ private:
         uint64_t EdgeAndMask() const {
             return (edge_.int_id() << 2) | (BitBool(IsRC()) << 1) | BitBool(IsStart());
         }
+
+        static bool CompareByVertexKMerEdgeIdAndMask(const LinkRecord &r1, const LinkRecord& r2) {
+            return std::make_tuple(r1.GetHash(), r1.EdgeAndMask()) < std::make_tuple(r2.GetHash(), r2.EdgeAndMask());
+        }
     };
 
     LinkRecord StartLink(const EdgeId &edge, const Sequence &sequence) const {
@@ -520,8 +524,9 @@ public:
         INFO("Collecting link records")
         CollectLinkRecords(helper, graph, records, sequences);
         INFO("Sorting LinkRecords...");
-        parallel::sort(records.begin(), records.end(),
-                       [](const LinkRecord &r1, const LinkRecord& r2) { return std::make_tuple(r1.GetHash(), r1.EdgeAndMask()) < std::make_tuple(r2.GetHash(), r2.EdgeAndMask()); });
+        // We sort by Vertex and then by EdgeID and RC/Start mask in order to combine together records accociated with the same vertex with a special order in each group
+        parallel::sort(records.begin(), records.end(), LinkRecord::CompareByVertexKMerEdgeIdAndMask);
+        // Now we extract starting positions of each vertex group
         std::vector<size_t> unique_record_indices;
         for (size_t i = 0; i < records.size(); i++) {
             if (i == 0 || records[i].GetHash() != records[i - 1].GetHash()) {
@@ -530,6 +535,8 @@ public:
                 }
             }
         }
+        // Now we sort vertices by their lowest edge and mask (they are unique since each edge has only one start and one stop).
+        // It is a deterministic order while ordering by vertex kmer perfect hash is not (hashes are dependent on nthreads/nnodes)
         parallel::sort(unique_record_indices.begin(), unique_record_indices.end(),
                        [&records](size_t i, size_t j) { return records[i].EdgeAndMask() < records[j].EdgeAndMask(); });
         INFO("LinkRecords sorted");
