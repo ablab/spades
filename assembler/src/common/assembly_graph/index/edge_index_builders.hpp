@@ -189,9 +189,9 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
 
         // Contigs have zero coverage!
 #if 0
-        if (contigs_stream) {
-            contigs_stream->reset();
-            FillCoverageFromStream(*contigs_stream, index, check_contains);
+        if (contigs_streams) {
+            contigs_streams->reset();
+            FillCoverageFromStream(*contigs_streams, index, check_contains);
         }
 #endif
 

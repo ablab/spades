@@ -24,13 +24,13 @@ namespace debruijn_graph {
 
 //template<class Read>
 //void construct_graph(io::ReadStreamList<Read>& streams,
-//                     conj_graph_pack& gp, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+//                     conj_graph_pack& gp, io::SingleStreamPtr contigs_streams = io::SingleStreamPtr()) {
 //    config::debruijn_config::construction params = cfg::get().con;
 //    params.early_tc.enable &= !cfg::get().gap_closer_enable;
 //    VERIFY(cfg::get().ds.RL > 0);
 //
 //    ConstructGraphWithCoverage(params, cfg::get().ds.RL, streams, gp.g,
-//                               gp.index, gp.flanking_cov, contigs_stream);
+//                               gp.index, gp.flanking_cov, contigs_streams);
 //}
 
 struct ConstructionStorage {
@@ -46,46 +46,75 @@ struct ConstructionStorage {
     std::unique_ptr<CoverageMap> coverage_map;
     config::debruijn_config::construction params;
     io::ReadStreamList<io::SingleReadSeq> read_streams;
-    io::SingleStream contigs_stream;
+    io::ReadStreamList<io::SingleReadSeq> contigs_streams;
     fs::TmpDir workdir;
 };
 
-bool AddTrustedContigs(const io::DataSet<config::LibraryData> &libraries,
-                       io::ReadStreamList<io::SingleRead> &trusted_list) {
+bool add_trusted_contigs(io::DataSet<config::LibraryData> &libraries,
+                       io::ReadStreamList<io::SingleReadSeq> &trusted_list) {
     bool trusted_contigs_exist = false;
-    for (const auto& lib : libraries) {
+    std::vector<size_t> trusted_contigs;
+    for (size_t i = 0; i < libraries.lib_count(); ++i) {
+        auto& lib = libraries[i];
         if (lib.type() != io::LibraryType::TrustedContigs)
             continue;
-
-        for (const auto& read : lib.single_reads()) {
-            trusted_list.push_back(io::EasyStream(read, true));
-            trusted_contigs_exist = true;
-        }
+        trusted_contigs.push_back(i);
+        trusted_contigs_exist = true;
+    }
+    if (trusted_contigs_exist) {
+        trusted_list = io::single_binary_readers_for_libs(libraries, trusted_contigs, true, false);
     }
     return trusted_contigs_exist;
+}
+
+void merge_read_streams(io::ReadStreamList<io::SingleReadSeq> &streams1,
+                        io::ReadStreamList<io::SingleReadSeq> &streams2) {
+    for (size_t i = 0; i < streams2.size(); ++i) {
+        if (i < streams1.size()) {
+            streams1[i] = io::MultifileWrap<io::SingleReadSeq>(std::move(streams1[i]), std::move(streams2[2]));
+        } else {
+            streams1.push_back(std::move(streams2[i]));
+        }
+    }
+}
+
+void add_additional_contigs_to_lib(std::string path_to_additional_contigs_dir, size_t max_threads,
+                                   io::ReadStreamList<io::SingleReadSeq> &trusted_list) {
+    io::SequencingLibraryT seq_lib;
+    seq_lib.set_type(io::LibraryType::TrustedContigs);
+    seq_lib.set_orientation(io::LibraryOrientation::Undefined);
+    seq_lib.data().lib_index = size_t(-1);
+    auto& bin_info = seq_lib.data().binary_reads_info;
+    bin_info.single_read_prefix = path_to_additional_contigs_dir + "/contigs";
+    bin_info.bin_reads_info_file = path_to_additional_contigs_dir + "/contigs_info";
+    bin_info.binary_converted = true;
+    bin_info.chunk_num = max_threads;
+
+    io::ReadStreamList<io::SingleReadSeq> lib_streams = io::single_binary_readers(seq_lib, true, false);
+    merge_read_streams(trusted_list, lib_streams);
 }
 
 void Construction::init(debruijn_graph::conj_graph_pack &gp, const char *) {
     init_storage(unsigned(gp.g.k()));
 
-    // Has to be separate stream for not counting it in coverage
-    io::ReadStreamList<io::SingleRead> trusted_contigs;
-    if (cfg::get().use_additional_contigs) {
-        DEBUG("Contigs from previous K will be used: " << cfg::get().additional_contigs);
-        trusted_contigs.push_back(io::EasyStream(cfg::get().additional_contigs, true));
-    }
+    auto& dataset = cfg::get_writable().ds;
 
-    if (AddTrustedContigs(cfg::get().ds.reads, trusted_contigs))
+    // Has to be separate stream for not counting it in coverage
+    if (add_trusted_contigs(dataset.reads, storage().contigs_streams))
         INFO("Trusted contigs will be used in graph construction");
 
-    storage().contigs_stream = MultifileWrap(std::move(trusted_contigs));
+    if (cfg::get().use_additional_contigs) {
+        DEBUG("Contigs from previous K will be used: " << cfg::get().additional_contigs);
+        add_additional_contigs_to_lib(cfg::get().additional_contigs, cfg::get().max_threads, storage().contigs_streams);
+    }
 
     // FIXME: indices here are awful
-    auto& dataset = cfg::get_writable().ds;
     std::vector<size_t> libs_for_construction;
-    for (size_t i = 0; i < dataset.reads.lib_count(); ++i)
-        if (dataset.reads[i].is_graph_contructable())
+    for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
+        if (dataset.reads[i].is_graph_contructable()) {
             libs_for_construction.push_back(i);
+        }
+    }
 
     storage().params = cfg::get().con;
     storage().workdir = fs::tmp::make_temp_dir(gp.workdir, "construction");
@@ -183,7 +212,7 @@ public:
 
     void run(debruijn_graph::conj_graph_pack &, const char*) override {
         auto &read_streams = storage().read_streams;
-        auto &contigs_stream = storage().contigs_stream;
+        auto &contigs_stream = storage().contigs_streams;
         const auto &index = storage().ext_index;
         size_t buffer_size = storage().params.read_buffer_size;
         using storing_type = decltype(storage().ext_index)::storing_type;
@@ -194,7 +223,7 @@ public:
         utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
                                         utils::StoringTypeFilter<storing_type>>
                 splitter(storage().workdir, index.k() + 1, 0,
-                         read_streams, contigs_stream ? &contigs_stream : nullptr,
+                         read_streams, contigs_stream,
                          buffer_size);
         storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
         storage().counter->CountAll(nthreads, nthreads, /* merge */false);

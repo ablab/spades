@@ -15,6 +15,7 @@
 #include "threadpool/threadpool.hpp"
 
 #include <fstream>
+#include <reads/edge_sequences_reader.hpp>
 
 namespace io {
 
@@ -101,6 +102,31 @@ void ReadConverter::ConvertToBinary(SequencingLibraryT& lib,
 
     info.close();
     data.binary_reads_info.binary_converted = true;
+}
+
+void ReadConverter::ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g,
+                                                 const std::string &contigs_output_dir, unsigned nthreads) {
+    INFO("Outputting contigs to " << contigs_output_dir);
+    fs::make_dir(contigs_output_dir);
+
+    std::unique_ptr<ThreadPool::ThreadPool> pool;
+    if (nthreads > 1)
+        pool = std::make_unique<ThreadPool::ThreadPool>(nthreads);
+
+    io::BinaryWriter single_converter(contigs_output_dir + "/contigs");
+    io::ReadStream<io::SingleReadSeq> single_reader = io::EdgeSequencesStream(g);
+    ReadStreamStat read_stat = single_converter.ToBinary(single_reader, pool.get());
+
+    std::ofstream info;
+    info.open((contigs_output_dir + "/contigs_info").c_str(), std::ios_base::out);
+    info << BINARY_FORMAT_VERSION << " " <<
+         size_t(-1) << " " <<
+         read_stat.max_len << " " <<
+         0 << " " <<
+         read_stat.read_count << " " <<
+         read_stat.total_len << "\n";
+    info.close();
+
 }
 
 void ConvertIfNeeded(DataSet<LibraryData> &data, unsigned nthreads) {

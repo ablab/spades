@@ -11,6 +11,7 @@
 #include "io/reads/binary_converter.hpp"
 #include "io/reads/io_helper.hpp"
 #include "dataset_readers.hpp"
+#include "common/assembly_graph/core/graph.hpp"
 
 namespace io {
 
@@ -26,6 +27,9 @@ public:
     static bool LoadLibIfExists(SequencingLibraryT& lib);
     static void ConvertToBinary(SequencingLibraryT& lib,
                                 ThreadPool::ThreadPool *pool = nullptr);
+
+    static void ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g, const std::string &contigs_output_dir,
+                                             unsigned nthreads);
 };
 
 void ConvertIfNeeded(DataSet<LibraryData> &data, unsigned nthreads);

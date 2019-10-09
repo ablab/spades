@@ -145,7 +145,8 @@ void AssertGraph(size_t k, const std::vector<std::string>& reads, const std::vec
     index.Detach();
 
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
-    ConstructGraph(config::debruijn_config::construction(), workdir, streams, g, index);
+    io::ReadStreamList<io::SingleRead> contigs_streams;
+    ConstructGraph(config::debruijn_config::construction(), workdir, streams, g, index, contigs_streams);
 
     AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }
@@ -213,8 +214,9 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
     RawStream paired_stream = MakePairedReads(paired_reads, insert_size);
     using SquashingWrapper = io::SquashingWrapper<io::PairedRead>;
     io::ReadStreamList<io::SingleRead> single_stream_vector(SquashingWrapper(std::move(paired_stream)));
+    io::ReadStreamList<io::SingleRead> contigs_stream;
     ConstructGraphWithCoverage(config::debruijn_config::construction(), workdir,
-                               single_stream_vector, gp.g, gp.index, gp.flanking_cov);
+                               single_stream_vector, gp.g, gp.index, gp.flanking_cov, contigs_stream);
 
     gp.InitRRIndices();
     gp.kmer_mapper.Attach();
@@ -241,8 +243,9 @@ void CheckIndex(const std::vector<std::string> &reads, size_t k) {
     graph_pack gp(k, "tmp", 0);
     auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
+    io::ReadStreamList<io::SingleRead> contigs_streams;
     ConstructGraph(config::debruijn_config::construction(), workdir,
-                   streams, gp.g, gp.index);
+                   streams, gp.g, gp.index, contigs_streams);
 
     auto &stream = streams.back();
     stream.reset();

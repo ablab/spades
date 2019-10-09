@@ -9,7 +9,7 @@
 #include "modules/path_extend/pe_resolver.hpp"
 #include "contig_output_stage.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
-
+#include "common/io/dataset_support/read_converter.hpp"
 #include <unordered_set>
 using namespace std;
 
@@ -97,8 +97,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     auto output_dir = cfg::get().output_dir;
 
     if (!final_iteration_) {
-        OutputEdgeSequences(gp.g, output_dir + "simplified_contigs");
-        OutputEdgeSequencesToBinary(gp.g, output_dir + "simplified_contigs");
+        io::ReadConverter::ConvertEdgeSequencesToBinary(gp.g, output_dir + "simplified_contigs", cfg::get().max_threads);
         return;
     }
 

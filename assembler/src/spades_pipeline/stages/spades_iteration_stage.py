@@ -128,7 +128,7 @@ class IterationStage(stage.Stage):
             dir_util.copy_tree(os.path.join(self.tmp_configs_dir, "debruijn"), dst_configs, preserve_times=False)
 
         if self.prev_K:
-            additional_contigs_fname = os.path.join(cfg.output_dir, "K%d" % self.prev_K, "simplified_contigs.fasta")
+            additional_contigs_fname = os.path.join(cfg.output_dir, "K%d" % self.prev_K, "simplified_contigs")
         else:
             additional_contigs_fname = None
 

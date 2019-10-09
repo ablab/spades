@@ -232,7 +232,7 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
 template<class Read, class KmerFilter>
 class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   io::ReadStreamList<Read> &streams_;
-  io::SingleStream *contigs_;
+  io::ReadStreamList<Read> &contigs_;
 
   template<class ReadStream>
   size_t
@@ -243,7 +243,7 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   DeBruijnReadKMerSplitter(fs::TmpDir work_dir,
                            unsigned K, uint32_t seed,
                            io::ReadStreamList<Read>& streams,
-                           io::SingleStream* contigs_stream = 0,
+                           io::ReadStreamList<Read>& contigs_stream,
                            size_t read_buffer_size = 0,
                            KmerFilter filter = KmerFilter())
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, filter, read_buffer_size, seed),
@@ -291,21 +291,22 @@ DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, unsigned nth
     }
   }
 
-  if (contigs_) {
-    INFO("Adding contigs from previous K");
-    unsigned cnt = 0;
-    contigs_->reset();
-    while (!contigs_->eof()) {
-      FillBufferFromStream(*contigs_, cnt);
-      this->DumpBuffers(out);
-      if (++cnt >= nthreads)
-        cnt = 0;
+
+  INFO("Adding contigs from previous K");
+  size_t contigs_counter = 0;
+  contigs_.reset();
+  while (!contigs_.eof()) {
+#   pragma omp parallel for num_threads(nthreads) reduction(+ : contigs_counter)
+    for (unsigned i = 0; i < (unsigned)contigs_.size(); ++i) {
+      contigs_counter += FillBufferFromStream(contigs_[i], i);
     }
+
+    this->DumpBuffers(out);
   }
 
   this->ClearBuffers();
 
-  INFO("Used " << counter << " reads");
+  INFO("Used " << counter << " reads; Used " << contigs_counter << " contigs");
 
   return out;
 }

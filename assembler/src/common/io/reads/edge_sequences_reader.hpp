@@ -23,7 +23,7 @@ namespace io {
 
 class EdgeSequencesStream {
  public:
-    typedef SingleRead ReadT;
+    typedef SingleReadSeq ReadT;
 
     explicit EdgeSequencesStream(const debruijn_graph::Graph &g) : g(g), edge_iterator(g.e_begin<true>()) {}
 
@@ -32,12 +32,12 @@ class EdgeSequencesStream {
     }
 
     bool eof() {
-        return edge_iterator != g.e_end<true>();
+        return edge_iterator == g.e_end<true>();
     }
 
-    EdgeSequencesStream &operator>>(SingleRead &singleread) {
+    EdgeSequencesStream &operator>>(SingleReadSeq &singleread) {
         std::string edge_nucl = g.EdgeNucls(*edge_iterator).str();
-        singleread = SingleRead(MakeContigId(id_++, edge_nucl.size(), g.coverage(*edge_iterator)), edge_nucl);
+        singleread = SingleReadSeq(Sequence(edge_nucl));
         edge_iterator++;
         return *this;
     }
@@ -48,7 +48,7 @@ class EdgeSequencesStream {
 
  private:
     const debruijn_graph::Graph &g;
-    size_t id_;
+    size_t id_ = 0;
     decltype(g.e_begin<true>()) edge_iterator;
 };
 }

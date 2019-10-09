@@ -62,7 +62,7 @@ public:
 public:
     template<class Index, class Streams>
     void BuildExtensionIndexFromStream(fs::TmpDir workdir, Index &index,
-                                       Streams &streams, io::SingleStream *contigs_stream = nullptr,
+                                       Streams &streams, Streams &contigs_stream,
                                        size_t read_buffer_size = 0) const {
         unsigned nthreads = (unsigned) streams.size();
         using KmerFilter = StoringTypeFilter<typename Index::storing_type>;
