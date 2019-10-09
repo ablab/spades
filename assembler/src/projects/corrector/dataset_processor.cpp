@@ -136,7 +136,7 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
     string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
     string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
     string genome_screened = fs::screen_whitespaces(genome_file_);
-    string index_line = bwa_string + string(" index ") + genome_screened ;
+    string index_line = bwa_string + string(" index ") + genome_screened;
     INFO("Running bwa index ...: " << index_line);
     run_res = system(index_line.c_str());
     if (run_res != 0) {
@@ -161,7 +161,7 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
     string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
     string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
     string genome_screened = fs::screen_whitespaces(genome_file_);
-    string index_line = bwa_string + string(" index ") + "-a " + "is " + genome_screened ;
+    string index_line = bwa_string + string(" index ") + genome_screened;
     INFO("Running bwa index ...: " << index_line);
     run_res = system(index_line.c_str());
     if (run_res != 0) {
