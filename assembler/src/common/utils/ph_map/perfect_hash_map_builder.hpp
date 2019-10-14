@@ -117,18 +117,4 @@ void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
                 size_t thread_num, bool save_final = true) {
     PerfectHashMapBuilder().BuildIndex(index, counter, bucket_num, thread_num, save_final);
 }
-
-template<class Index, class Streams>
-size_t BuildIndexFromStream(const std::string &workdir,
-                            Index &index,
-                            Streams &streams,
-                            io::SingleStream* contigs_stream = 0) {
-    DeBruijnReadKMerSplitter<typename Streams::ReadT,
-                             StoringTypeFilter<typename Index::storing_type>>
-            splitter(workdir, index.k(), 0, streams, contigs_stream);
-    KMerDiskCounter<RtSeq> counter(workdir, splitter);
-    BuildIndex(index, counter, 16, streams.size());
-    return 0;
-}
-
 }

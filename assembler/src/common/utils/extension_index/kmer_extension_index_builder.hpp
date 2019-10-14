@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <common/io/reads/multifile_reader.hpp>
 #include "kmer_extension_index.hpp"
 #include "utils/kmer_mph/kmer_index_builder.hpp"
 #include "utils/kmer_mph/kmer_splitters.hpp"
@@ -67,16 +68,17 @@ public:
         unsigned nthreads = (unsigned) streams.size();
         using KmerFilter = StoringTypeFilter<typename Index::storing_type>;
 
+        io::MultifileReadStreamList<typename Streams::ReadT> merge_streams(std::move(streams),
+                                                                  std::move(contigs_stream));
         // First, build a k+1-mer index
-        DeBruijnReadKMerSplitter<typename Streams::ReadT, KmerFilter >
-                splitter(workdir, index.k() + 1, 0xDEADBEEF, streams,
-                         contigs_stream, read_buffer_size);
+        DeBruijnReadKMerSplitter<typename Streams::ReadT, io::MultifileReadStreamList<typename Streams::ReadT>, KmerFilter >
+                splitter(workdir, index.k() + 1, 0xDEADBEEF, merge_streams, read_buffer_size);
         KMerDiskCounter<RtSeq> counter(workdir, splitter);
         counter.CountAll(nthreads, nthreads, /* merge */ false);
 
         BuildExtensionIndexFromKPOMers(workdir, index, counter,
                                        nthreads, read_buffer_size);
-
+        merge_streams.split_streams(streams, contigs_stream);
     }
 
     template<class Index, class Counter>

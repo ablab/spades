@@ -71,7 +71,7 @@ void merge_read_streams(io::ReadStreamList<io::SingleReadSeq> &streams1,
                         io::ReadStreamList<io::SingleReadSeq> &streams2) {
     for (size_t i = 0; i < streams2.size(); ++i) {
         if (i < streams1.size()) {
-            streams1[i] = io::MultifileWrap<io::SingleReadSeq>(std::move(streams1[i]), std::move(streams2[2]));
+            streams1[i] = io::MultifileWrap<io::SingleReadSeq>(std::move(streams1[i]), std::move(streams2[i]));
         } else {
             streams1.push_back(std::move(streams2[i]));
         }
@@ -219,14 +219,18 @@ public:
 
         VERIFY_MSG(read_streams.size(), "No input streams specified");
 
-        unsigned nthreads = (unsigned)read_streams.size();
+        io::MultifileReadStreamList<io::SingleReadSeq> merge_streams(std::move(read_streams),
+                                                                     std::move(contigs_stream));
+
+        unsigned nthreads = (unsigned)merge_streams.size();
         utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
+                                        io::MultifileReadStreamList<io::SingleReadSeq>,
                                         utils::StoringTypeFilter<storing_type>>
-                splitter(storage().workdir, index.k() + 1, 0,
-                         read_streams, contigs_stream,
-                         buffer_size);
+                splitter(storage().workdir, index.k() + 1, 0, merge_streams, buffer_size);
         storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
         storage().counter->CountAll(nthreads, nthreads, /* merge */false);
+
+        merge_streams.split_streams(read_streams, contigs_stream);
     }
 
     void load(debruijn_graph::conj_graph_pack&,
