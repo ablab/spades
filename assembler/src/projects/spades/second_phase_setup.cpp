@@ -23,8 +23,8 @@ void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
     gp.ClearRRIndices();
     gp.ClearPaths();
     //Clearing used edges for plasmids
-    if (gp.count<std::unordered_set<EdgeId>>("used_edges"))
-        gp.get_mutable<std::unordered_set<EdgeId>>("used_edges").clear();
+    if (gp.count<SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges"))
+        gp.get_mutable<SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges").clear();
 
     std::string old_pe_contigs_filename = cfg::get().output_dir + "final_contigs.fasta";
     std::string new_pe_contigs_filename = cfg::get().output_dir + "first_pe_contigs.fasta";

@@ -152,10 +152,11 @@ void ChromosomeRemover::PlasmidSimplify(size_t long_edge_bound,
                                         std::function<void (EdgeId)> removal_handler ) {
     DEBUG("Simplifying graph for plasmid project");
     size_t iteration_count = 10;
-    INFO("Blocked vertices: " <<  gp_.get_const<std::unordered_set<VertexId>>("forbidden_vertices").size());
+    size_t forbidden_size = gp_.get_const<omnigraph::SmartContainer<std::unordered_set<VertexId>, Graph>>("forbidden_vertices").size();
+    INFO("Blocked vertices: " <<  forbidden_size);
     for (size_t i = 0; i < iteration_count; i++) {
         omnigraph::EdgeRemovingAlgorithm<Graph> tc(gp_.g, func::And(func::And(DeadEndCondition<Graph>(gp_.g),
-                LengthUpperBound<Graph>(gp_.g, long_edge_bound)), IsAllowedCondition<Graph>(gp_.g,  gp_.get_const<std::unordered_set<VertexId>>("forbidden_vertices"))),
+                LengthUpperBound<Graph>(gp_.g, long_edge_bound)), IsAllowedCondition<Graph>(gp_.g,  gp_.get_const<omnigraph::SmartContainer<std::unordered_set<VertexId>, Graph>>("forbidden_vertices"))),
                                                    removal_handler, true);
         tc.Run();
     }
@@ -209,8 +210,7 @@ void ChromosomeRemover::OutputSuspiciousComponents () {
     CoverageUniformityAnalyzer coverage_analyzer(gp_.g, 0);
     std::ofstream is(cfg::get().output_dir + out_file);
     size_t component_count = 1;
-    VERIFY(gp_.count<unordered_set<EdgeId>>("used_edges") > 0);
-    unordered_set<EdgeId> used_edges = gp_.get_const<unordered_set<EdgeId>>("used_edges");
+    SmartContainer<std::unordered_set<EdgeId>, Graph> used_edges = gp_.get_const<SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges");
     for (auto &comp: component_list_) {
         VERIFY(comp.size() > 0);
         EdgeId first_edge = comp[0];
@@ -284,13 +284,14 @@ void ChromosomeRemover::RunMetaPipeline() {
         OutputEdgeSequences(gp_.g, cfg::get().output_dir + "before_chromosome_removal");
     }
 //first iteration of coverage-based chromosome removal
-    if (gp_.count<std::unordered_set<VertexId>>("forbidden_vertices") == 0) {
+    if (gp_.count<SmartContainer<std::unordered_set<VertexId>, Graph>>("forbidden_vertices") == 0) {
         INFO("Forbidding tip ends.. ");
-        unordered_set<VertexId> forb;
+        SmartContainer<std::unordered_set<VertexId>, Graph> forb(gp_.g);
         FillForbiddenSet(gp_.g, forb);
         gp_.add("forbidden_vertices", forb);
     }
-    INFO("Forbidden (initial tip ends) vertex size: " << gp_.get_const<std::unordered_set<VertexId>>("forbidden_vertices").size() );
+    size_t forbidden_size =  gp_.get_const<omnigraph::SmartContainer<std::unordered_set<VertexId>, Graph>>("forbidden_vertices").size();
+    INFO("Forbidden (initial tip ends) vertex size: " << forbidden_size);
     OutputSuspiciousComponents ();
     string tmp = std::to_string(ext_limit_);
     while (tmp.length() < 4) tmp = "_" + tmp;
@@ -300,9 +301,10 @@ void ChromosomeRemover::RunMetaPipeline() {
 }
 
 void ChromosomeRemover::RunIsolatedPipeline() {
-    unordered_set<VertexId> forb;
+    //SmartContainer<std::unordered_set<VertexId>, Graph> forb(gp_.g);
 //currently not forbidding anything...
-    gp_.add("forbidden_vertices", forb);
+    std::unordered_set<VertexId> forb;
+    gp_.add("forbidden_vertices", make_smart_container<SmartContainer<std::unordered_set<VertexId>, Graph>>(gp_.g, forb));
     chromosome_coverage_ = RemoveLongGenomicEdges(plasmid_config_.long_edge_length,
                                                  plasmid_config_.relative_coverage);
     PlasmidSimplify(plasmid_config_.long_edge_length);
@@ -347,6 +349,7 @@ void ChromosomeRemover::FilterSmallComponents() {
                 gp_.g.DeleteEdge(*iter);
             }
         }
+        DEBUG("isolated deleted");
         for (auto iter = gp_.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (long_component_[*iter] < 2 * plasmid_config_.small_component_size) {
                 if (old_vertex_weights.find(gp_.g.EdgeStart(*iter)) != old_vertex_weights.end() &&
@@ -359,6 +362,7 @@ void ChromosomeRemover::FilterSmallComponents() {
                 }
             }
         }
+        DEBUG("components deleted");
 
 
 // Small components with dead-ends and relatively short edges.

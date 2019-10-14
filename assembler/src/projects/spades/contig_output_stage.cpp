@@ -158,15 +158,15 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
                                CreatePathsWriters(output_dir + contigs_name_,
                                                   fastg_writer));
             if (cfg::get().mode == config::pipeline_type::metaplasmid) {
-                if (!gp.count<unordered_set<EdgeId>>("used_edges")){
-                    gp.add("used_edges", unordered_set<EdgeId>());
+                if (!gp.count<SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges")){
+                    gp.add("used_edges", omnigraph::make_smart_container<std::unordered_set<EdgeId>, Graph>(gp.g));
                 }
-                PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.get_mutable<unordered_set<EdgeId>>("used_edges"));
+                PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.get_mutable<SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges"));
                 writer.OutputPaths(circulars,
                                    CreatePathsWriters(output_dir + contigs_name_ + ".circular",
                                                       fastg_writer));
-                PathContainer linears = GetTipScaffolds(broken_scaffolds, gp.count <std::unordered_set<VertexId>>("forbidden_vertices")
-                        > 0 ? gp.get_const<std::unordered_set<VertexId>>("forbidden_vertices") : std::unordered_set<VertexId>());
+                PathContainer linears = GetTipScaffolds(broken_scaffolds, gp.count<SmartContainer<std::unordered_set<VertexId>, Graph>>("forbidden_vertices")
+                        > 0 ? gp.get_const<SmartContainer<std::unordered_set<VertexId>, Graph>>("forbidden_vertices") : SmartContainer<std::unordered_set<VertexId>, Graph>(gp.g));
                 writer.OutputPaths(linears,
                                    CreatePathsWriters(output_dir + contigs_name_ + ".linears",
                                                       fastg_writer));
