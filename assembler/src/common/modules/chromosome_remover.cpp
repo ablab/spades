@@ -286,9 +286,9 @@ void ChromosomeRemover::RunMetaPipeline() {
 //first iteration of coverage-based chromosome removal
     if (gp_.count<SmartContainer<std::unordered_set<VertexId>, Graph>>("forbidden_vertices") == 0) {
         INFO("Forbidding tip ends.. ");
-        SmartContainer<std::unordered_set<VertexId>, Graph> forb(gp_.g);
+        std::unordered_set<VertexId> forb;
         FillForbiddenSet(gp_.g, forb);
-        gp_.add("forbidden_vertices", forb);
+        gp_.add("forbidden_vertices", make_smart_container<std::unordered_set<VertexId>, Graph>(gp_.g, forb));
     }
     size_t forbidden_size =  gp_.get_const<omnigraph::SmartContainer<std::unordered_set<VertexId>, Graph>>("forbidden_vertices").size();
     INFO("Forbidden (initial tip ends) vertex size: " << forbidden_size);
@@ -304,7 +304,7 @@ void ChromosomeRemover::RunIsolatedPipeline() {
     //SmartContainer<std::unordered_set<VertexId>, Graph> forb(gp_.g);
 //currently not forbidding anything...
     std::unordered_set<VertexId> forb;
-    gp_.add("forbidden_vertices", make_smart_container<SmartContainer<std::unordered_set<VertexId>, Graph>>(gp_.g, forb));
+    gp_.add("forbidden_vertices", make_smart_container<std::unordered_set<VertexId>, Graph>(gp_.g, forb));
     chromosome_coverage_ = RemoveLongGenomicEdges(plasmid_config_.long_edge_length,
                                                  plasmid_config_.relative_coverage);
     PlasmidSimplify(plasmid_config_.long_edge_length);
