@@ -21,11 +21,11 @@ public:
             : IOSingle<Type>("kmer mapper", ".kmm") {
     }
 
-    void Write(BinOStream &str, const Type &mapper) override {
+    void SaveImpl(BinOStream &str, const Type &mapper) override {
         str << (uint32_t)mapper.k() << mapper;
     }
 
-    void Read(BinIStream &str, Type &mapper) override {
+    void LoadImpl(BinIStream &str, Type &mapper) override {
         uint32_t k_;
         str >> k_;
         VERIFY_MSG(k_ == mapper.k(), "Cannot read kmer mapper, different Ks");

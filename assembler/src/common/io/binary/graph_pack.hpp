@@ -49,6 +49,12 @@ public:
     }
 
     bool Load(const std::string &basename, Type &gp) override {
+        // Detach all
+        DetachIfAttached(gp.edge_pos);
+        DetachIfAttached(gp.index);
+        DetachIfAttached(gp.kmer_mapper);
+        DetachIfAttached(gp.flanking_cov);
+
         //1. Load basic graph
         graph_io_.Load(basename, gp.g);
 
@@ -113,6 +119,13 @@ protected:
     BasicGraphIO<Graph> graph_io_;
 
     template<typename T>
+    void DetachIfAttached(T &component) {
+        if (component.IsAttached()) {
+            component.Detach();
+        }
+    }
+
+    template<typename T>
     void SaveAttached(const std::string &basename, const T &component) {
         typename IOTraits<T>::Type io;
         if (component.IsAttached()) {
@@ -135,8 +148,7 @@ protected:
 
     template<typename T>
     void LoadAttached(const std::string &basename, T &component) {
-        if (component.IsAttached())
-            component.Detach();
+        DetachIfAttached(component);
         typename IOTraits<T>::Type io;
         if (io.Load(basename, component))
             component.Attach();

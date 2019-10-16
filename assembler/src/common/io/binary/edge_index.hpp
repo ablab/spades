@@ -21,12 +21,12 @@ public:
             : IOSingle<Type>("edge index", ".kmidx") {
     }
 
-    void Write(BinOStream &str, const Type &value) override {
+    void SaveImpl(BinOStream &str, const Type &value) override {
         const auto &index = value.inner_index();
         str << (uint32_t)index.k() << index;
     }
 
-    void Read(BinIStream &str, Type &value) override {
+    void LoadImpl(BinIStream &str, Type &value) override {
         auto &index = value.inner_index();
         uint32_t k_;
         str >> k_;
