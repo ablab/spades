@@ -31,7 +31,7 @@ bool ReadConverter::LoadLibIfExists(SequencingLibraryT& lib) {
         return false;
 
     std::ifstream info;
-    info.open(data.binary_reads_info.bin_reads_info_file.c_str(), std::ios_base::in);
+    info.open(data.binary_reads_info.bin_reads_info_file, std::ios_base::in);
     DEBUG("Reading binary information file " << data.binary_reads_info.bin_reads_info_file);
 
     size_t format = 0;
@@ -62,7 +62,7 @@ void ReadConverter::ConvertToBinary(SequencingLibraryT& lib,
                                     ThreadPool::ThreadPool *pool) {
     auto& data = lib.data();
     std::ofstream info;
-    info.open(data.binary_reads_info.bin_reads_info_file.c_str(), std::ios_base::out);
+    info.open(data.binary_reads_info.bin_reads_info_file, std::ios_base::out);
     info << "0 0 0";
     info.close();
 
