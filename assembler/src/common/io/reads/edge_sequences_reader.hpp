@@ -33,8 +33,8 @@ class EdgeSequencesStream {
     }
 
     EdgeSequencesStream &operator>>(SingleReadSeq &singleread) {
-        std::string edge_nucl = graph_.EdgeNucls(*edge_iterator_).str();
-        singleread = SingleReadSeq(Sequence(edge_nucl));
+        auto edge_nucl = graph_.EdgeNucls(*edge_iterator_);
+        singleread = SingleReadSeq(edge_nucl);
         edge_iterator_++;
         return *this;
     }
