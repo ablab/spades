@@ -11,7 +11,7 @@
 #include "assembly_graph/core/action_handlers.hpp"
 #include "assembly_graph/index/edge_info_updater.hpp"
 #include "edge_index_refiller.hpp"
-    
+
 namespace debruijn_graph {
 
 /**
