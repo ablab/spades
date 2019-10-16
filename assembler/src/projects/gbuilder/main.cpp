@@ -150,10 +150,8 @@ int main(int argc, char* argv[]) {
         VERIFY_MSG(read_streams.size(), "No input streams specified");
         utils::DeBruijnExtensionIndex<> ext_index(k);
 
-        io::BinarySingleStreams contigs_stream;
-        utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir,
-                                                                             ext_index, read_streams,
-                                                                             contigs_stream, buff_size);
+        utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext_index,
+                                                                             read_streams, buff_size);
 
         // Step 2: extract unbranching paths
         bool keep_perfect_loops = true;

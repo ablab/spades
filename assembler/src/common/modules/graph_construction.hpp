@@ -73,7 +73,7 @@ template<class Graph, class Read, class Index>
 void ConstructGraphUsingExtensionIndex(const config::debruijn_config::construction &params,
                                        fs::TmpDir workdir,
                                        io::ReadStreamList<Read>& streams, Graph& g,
-                                       Index& index, io::ReadStreamList<Read>& contigs_stream) {
+                                       Index& index) {
     unsigned k = unsigned(g.k());
     INFO("Constructing DeBruijn graph for k=" << k);
 
@@ -83,9 +83,7 @@ void ConstructGraphUsingExtensionIndex(const config::debruijn_config::constructi
     TRACE("... in parallel");
     utils::DeBruijnExtensionIndex<> ext(k);
 
-    utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext, streams,
-                                                                         contigs_stream,
-                                                                         params.read_buffer_size);
+    utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext, streams, params.read_buffer_size);
 
     EarlyClipTips(params, ext);
 
@@ -104,8 +102,8 @@ void ConstructGraphUsingExtensionIndex(const config::debruijn_config::constructi
 template<class Graph, class Index, class Streams>
 void ConstructGraph(const config::debruijn_config::construction &params,
                     fs::TmpDir workdir, Streams& streams, Graph& g,
-                    Index& index, Streams& contigs_stream) {
-    ConstructGraphUsingExtensionIndex(params, workdir, streams, g, index, contigs_stream);
+                    Index& index) {
+    ConstructGraphUsingExtensionIndex(params, workdir, streams, g, index);
 //  ConstructGraphUsingOldIndex(k, streams, g, index, contigs_streams);
 }
 
@@ -113,9 +111,8 @@ void ConstructGraph(const config::debruijn_config::construction &params,
 template<class Graph, class Index, class Streams>
 void ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
                                 fs::TmpDir workdir, Streams &streams, Graph &g,
-                                Index &index, FlankingCoverage<Graph> &flanking_cov,
-                                Streams &contigs_stream = nullptr) {
-    ConstructGraph(params, workdir, streams, g, index, contigs_stream);
+                                Index &index, FlankingCoverage<Graph> &flanking_cov) {
+    ConstructGraph(params, workdir, streams, g, index);
 
     typedef typename Index::InnerIndex InnerIndex;
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;

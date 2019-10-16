@@ -214,9 +214,8 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
     RawStream paired_stream = MakePairedReads(paired_reads, insert_size);
     using SquashingWrapper = io::SquashingWrapper<io::PairedRead>;
     io::ReadStreamList<io::SingleRead> single_stream_vector(SquashingWrapper(std::move(paired_stream)));
-    io::ReadStreamList<io::SingleRead> contigs_stream;
     ConstructGraphWithCoverage(config::debruijn_config::construction(), workdir,
-                               single_stream_vector, gp.g, gp.index, gp.flanking_cov, contigs_stream);
+                               single_stream_vector, gp.g, gp.index, gp.flanking_cov);
 
     gp.InitRRIndices();
     gp.kmer_mapper.Attach();
