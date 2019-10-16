@@ -15,9 +15,6 @@
 #pragma once
 
 #include <common/assembly_graph/core/graph.hpp>
-#include "read_stream.hpp"
-#include "single_read.hpp"
-#include "header_naming.hpp"
 
 namespace io {
 
@@ -25,20 +22,20 @@ class EdgeSequencesStream {
  public:
     typedef SingleReadSeq ReadT;
 
-    explicit EdgeSequencesStream(const debruijn_graph::Graph &g) : g(g), edge_iterator(g.e_begin<true>()) {}
+    explicit EdgeSequencesStream(const debruijn_graph::Graph &g) : graph_(g), edge_iterator_(g.e_begin<true>()) {}
 
     bool is_open() {
         return true;
     }
 
     bool eof() {
-        return edge_iterator == g.e_end<true>();
+        return edge_iterator_ == graph_.e_end<true>();
     }
 
     EdgeSequencesStream &operator>>(SingleReadSeq &singleread) {
-        std::string edge_nucl = g.EdgeNucls(*edge_iterator).str();
+        std::string edge_nucl = graph_.EdgeNucls(*edge_iterator_).str();
         singleread = SingleReadSeq(Sequence(edge_nucl));
-        edge_iterator++;
+        edge_iterator_++;
         return *this;
     }
 
@@ -47,8 +44,7 @@ class EdgeSequencesStream {
     void reset() {}
 
  private:
-    const debruijn_graph::Graph &g;
-    size_t id_ = 0;
-    decltype(g.e_begin<true>()) edge_iterator;
+    const debruijn_graph::Graph &graph_;
+    decltype(graph_.e_begin<true>()) edge_iterator_;
 };
 }
