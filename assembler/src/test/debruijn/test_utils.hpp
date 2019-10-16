@@ -242,9 +242,7 @@ void CheckIndex(const std::vector<std::string> &reads, size_t k) {
     graph_pack gp(k, "tmp", 0);
     auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
-    io::ReadStreamList<io::SingleRead> contigs_streams;
-    ConstructGraph(config::debruijn_config::construction(), workdir,
-                   streams, gp.g, gp.index, contigs_streams);
+    ConstructGraph(config::debruijn_config::construction(), workdir, streams, gp.g, gp.index);
 
     auto &stream = streams.back();
     stream.reset();
