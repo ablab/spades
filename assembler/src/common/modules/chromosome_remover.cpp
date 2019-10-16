@@ -210,7 +210,7 @@ void ChromosomeRemover::OutputSuspiciousComponents () {
     CoverageUniformityAnalyzer coverage_analyzer(gp_.g, 0);
     std::ofstream is(cfg::get().output_dir + out_file);
     size_t component_count = 1;
-    SmartContainer<std::unordered_set<EdgeId>, Graph> used_edges = gp_.get_const<SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges");
+    const auto& used_edges = gp_.get_const<SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges");
     for (auto &comp: component_list_) {
         VERIFY(comp.size() > 0);
         EdgeId first_edge = comp[0];
