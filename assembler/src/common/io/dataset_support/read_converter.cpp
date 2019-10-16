@@ -97,7 +97,6 @@ void ReadConverter::ConvertToBinary(SequencingLibraryT& lib,
 void ReadConverter::ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g,
                                                  const std::string &contigs_output_dir, unsigned nthreads) {
     INFO("Outputting contigs to " << contigs_output_dir);
-    fs::make_dir(contigs_output_dir);
 
     std::unique_ptr<ThreadPool::ThreadPool> pool;
     if (nthreads > 1)

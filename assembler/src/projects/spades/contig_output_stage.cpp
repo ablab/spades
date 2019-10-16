@@ -97,7 +97,9 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     auto output_dir = cfg::get().output_dir;
 
     if (!final_iteration_) {
-        io::ReadConverter::ConvertEdgeSequencesToBinary(gp.g, output_dir + "simplified_contigs", cfg::get().max_threads);
+        std::string contigs_output_dir = output_dir + "simplified_contigs";
+        fs::make_dir(contigs_output_dir);
+        io::ReadConverter::ConvertEdgeSequencesToBinary(gp.g, contigs_output_dir, cfg::get().max_threads);
         return;
     }
 
