@@ -26,11 +26,16 @@ public:
               container_(c) {}
 
     void HandleDelete(Element e) override {
-        container_.erase(e);
+        container_.get().erase(e);
     }
 
-  private:
-    Container &container_;
+protected:
+    void reset(Container &c) {
+        container_ = c;
+    }
+
+private:
+    std::reference_wrapper<Container> container_;
 };
 
 template<class Container, class Graph>
@@ -49,6 +54,19 @@ public:
     SmartContainer(const Graph &g, Args&&... args)
             : container(std::forward<Args>(args)...),
               wrapper_(g, *this) {}
+
+    SmartContainer& operator=(SmartContainer &&other) {
+        if (other == this)
+            return;
+
+        Container::operator=(other);
+        wrapper_.reset(*this);
+    }
+
+    SmartContainer(SmartContainer &&other)
+            : Container(other),
+              wrapper_(other.wrapper_.g(), *this) {}
+
 private:
     wrapper wrapper_;
 };
