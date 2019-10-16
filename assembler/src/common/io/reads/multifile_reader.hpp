@@ -70,15 +70,14 @@ public:
         return readers_.size();
     }
 
-    void get_stream(size_t i, ReadStreamT& reader) {
+    ReadStreamT reset(size_t i) {
         VERIFY(i < readers_.size());
-        reader = std::move(readers_[i]);
+        return std::move(readers_[i]);
     }
 
-    void split_streams(ReadStreamT& reader_1, ReadStreamT& reader_2) {
+    std::pair<ReadStreamT, ReadStreamT> split_streams() {
         VERIFY(readers_.size() == 2);
-        reader_1 = std::move(readers_[0]);
-        reader_2 = std::move(readers_[1]);
+        return std::make_pair(std::move(readers_[0]), std::move(readers_[1]));
     }
 
 private:
@@ -149,7 +148,7 @@ public:
                     reader_1.push_back(ReadStream<ReadType>());
                 }
 
-                streams_[i].get_stream(0, reader_1[i]);
+                reader_1[i] = streams_[i].reset(0);
             }
             return;
         }
@@ -162,7 +161,7 @@ public:
                 reader_2.push_back(ReadStream<ReadType>());
             }
 
-            streams_[i].split_streams(reader_1[i], reader_2[i]);
+            std::tie(reader_1[i], reader_2[i]) = streams_[i].split_streams();
         }
     }
 
