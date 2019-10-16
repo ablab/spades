@@ -52,19 +52,18 @@ struct ConstructionStorage {
 
 bool add_trusted_contigs(io::DataSet<config::LibraryData> &libraries,
                        io::ReadStreamList<io::SingleReadSeq> &trusted_list) {
-    bool trusted_contigs_exist = false;
     std::vector<size_t> trusted_contigs;
     for (size_t i = 0; i < libraries.lib_count(); ++i) {
         auto& lib = libraries[i];
         if (lib.type() != io::LibraryType::TrustedContigs)
             continue;
         trusted_contigs.push_back(i);
-        trusted_contigs_exist = true;
     }
-    if (trusted_contigs_exist) {
+
+    if (!trusted_contigs.empty()) {
         trusted_list = io::single_binary_readers_for_libs(libraries, trusted_contigs, true, false);
     }
-    return trusted_contigs_exist;
+    return !trusted_contigs.empty();
 }
 
 void merge_read_streams(io::ReadStreamList<io::SingleReadSeq> &streams1,
