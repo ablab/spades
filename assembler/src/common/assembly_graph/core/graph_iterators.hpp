@@ -57,7 +57,7 @@ public:
 
     SmartContainer& operator=(SmartContainer &&other) {
         if (other == this)
-            return;
+            return *this;
 
         Container::operator=(other);
         wrapper_.reset(*this);
@@ -156,7 +156,7 @@ public:
 
     SmartEdgeSet& operator=(SmartEdgeSet &&other) {
         if (other == this)
-            return;
+            return *this;
 
         SetContainer::operator=(other);
         wrapper_.reset(*this);
