@@ -154,6 +154,18 @@ public:
             : container(std::forward<Args>(args)...),
               wrapper_(graph, *this) {}
 
+    SmartEdgeSet& operator=(SmartEdgeSet &&other) {
+        if (other == this)
+            return;
+
+        SetContainer::operator=(other);
+        wrapper_.reset(*this);
+    }
+
+    SmartEdgeSet(SmartEdgeSet &&other)
+            : SetContainer(other),
+              wrapper_(other.wrapper_.g(), *this) {}
+
 private:
     wrapper wrapper_;
 
