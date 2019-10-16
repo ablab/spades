@@ -141,25 +141,17 @@ public:
         }
     }
 
-    //Only coverage is loaded
-    template<class Writer>
-    void BinWrite(Writer &writer) const {
-        this->index_ptr_->serialize(writer);
-        size_t sz = this->data_.size();
-        writer.write((char*)&sz, sizeof(sz));
-        for (size_t i = 0; i < sz; ++i)
-            writer.write((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
+    using ValueBase = utils::ValueArray<EdgeInfo<typename Graph::EdgeId>>;
+    using KeyBase = typename utils::PerfectHashMap<RtSeq, EdgeInfo<typename Graph::EdgeId>, utils::kmer_index_traits<RtSeq>, StoringType>::KeyBase;
+    void BinWrite(std::ostream &writer) const {
+        KeyBase::BinWrite(writer);
+        ValueBase::BinWrite(writer);
     }
 
-    template<class Reader>
-    void BinRead(Reader &reader) {
+    void BinRead(std::istream &reader) {
         this->clear();
-        this->index_ptr_->deserialize(reader);
-        size_t sz = 0;
-        reader.read((char*)&sz, sizeof(sz));
-        this->data_.resize(sz);
-        for (size_t i = 0; i < sz; ++i)
-            reader.read((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
+        KeyBase::BinRead(reader);
+        ValueBase::BinRead(reader);
     }
 };
 

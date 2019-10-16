@@ -84,7 +84,7 @@ public:
     }
 
     template<class Reader>
-    void BinRead(Reader &reader, const std::string &) {
+    void BinRead(Reader &reader, const std::string & = "") {
         clear();
         size_t sz = 0;
         reader.read((char*) &sz, sizeof(sz));

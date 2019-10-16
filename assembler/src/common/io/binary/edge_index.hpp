@@ -33,7 +33,6 @@ public:
         VERIFY_MSG(k_ == index.k(), "Cannot read edge index, different Ks");
         index.clear();
         str >> index;
-        value.Update();
     }
 };
 
