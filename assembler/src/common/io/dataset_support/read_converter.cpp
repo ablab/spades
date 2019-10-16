@@ -91,17 +91,7 @@ void ReadConverter::ConvertToBinary(SequencingLibraryT& lib,
     data.read_count = read_stat.read_count;
     data.total_nucls = read_stat.total_len;
 
-    //todo use yaml or reuse same data!!!
-    info.open(data.binary_reads_info.bin_reads_info_file.c_str(), std::ios_base::out);
-    info << BINARY_FORMAT_VERSION << " " <<
-            data.lib_index << " " <<
-            data.unmerged_read_length << " " <<
-            data.merged_read_length << " " <<
-            data.read_count << " " <<
-            data.total_nucls << "\n";
-
-    info.close();
-    data.binary_reads_info.binary_converted = true;
+    WriteBinaryInfo(data.binary_reads_info.bin_reads_info_file, data);
 }
 
 void ReadConverter::ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g,
@@ -117,16 +107,27 @@ void ReadConverter::ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g,
     io::ReadStream<io::SingleReadSeq> single_reader = io::EdgeSequencesStream(g);
     ReadStreamStat read_stat = single_converter.ToBinary(single_reader, pool.get());
 
-    std::ofstream info;
-    info.open((contigs_output_dir + "/contigs_info").c_str(), std::ios_base::out);
-    info << BINARY_FORMAT_VERSION << " " <<
-         size_t(-1) << " " <<
-         read_stat.max_len << " " <<
-         0 << " " <<
-         read_stat.read_count << " " <<
-         read_stat.total_len << "\n";
-    info.close();
+    LibraryData data;
+    data.lib_index = size_t(-1);
+    data.unmerged_read_length = read_stat.max_len;
+    data.merged_read_length = 0;
+    data.read_count = read_stat.read_count;
+    data.total_nucls = read_stat.total_len;
+    WriteBinaryInfo(contigs_output_dir + "/contigs_info", data);
+}
 
+void ReadConverter::WriteBinaryInfo(const std::string &filename, LibraryData &data) {
+    std::ofstream info;
+    info.open(filename, std::ios_base::out);
+    info << BINARY_FORMAT_VERSION << " " <<
+         data.lib_index << " " <<
+         data.unmerged_read_length << " " <<
+         data.merged_read_length << " " <<
+         data.read_count << " " <<
+         data.total_nucls << "\n";
+
+    info.close();
+    data.binary_reads_info.binary_converted = true;
 }
 
 void ConvertIfNeeded(DataSet<LibraryData> &data, unsigned nthreads) {
