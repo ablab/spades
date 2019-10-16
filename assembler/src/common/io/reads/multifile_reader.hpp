@@ -177,12 +177,7 @@ public:
     }
 
     bool eof()  {
-        for (size_t i = 0; i < streams_.size(); ++i) {
-            if (!streams_[i].eof()) {
-                return false;
-            }
-        }
-        return true;
+        return std::all_of(streams_.begin(), streams_.end(), [](ReaderT& stream) { return stream.eof(); });
     }
 
     iterator begin() { return streams_.begin(); }
