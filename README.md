@@ -41,7 +41,7 @@ The current version of SPAdes works with Illumina or IonTorrent reads and is cap
 
 Version 3.13.1 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
 
-If you have high-coverage data for barcterial/viral isolate or multi-cell organism, we highly recommend to use [`--isolate`](#isolate) option.
+If you have high-coverage data for bacterial/viral isolate or multi-cell organism, we highly recommend to use [`--isolate`](#isolate) option.
 
 SPAdes 3.13.1 includes the following additional pipelines:
 -   metaSPAdes – a pipeline for metagenomic data sets (see [metaSPAdes options](#meta)).
@@ -1169,9 +1169,11 @@ In case you perform hybrid assembly ussing  PacBio or Nanopore reads, you may al
 
 If you use multiple paired-end and/or mate-pair libraries you may also cite papers describing SPAdes repeat resolution algorithms [Prjibelski et al., 2014](http://bioinformatics.oxfordjournals.org/content/30/12/i293.short) and [Vasilinetc et al., 2015](http://bioinformatics.oxfordjournals.org/content/31/20/3262.abstract). 
 
-If you use plasmidSPAdes please cite [Antipov et al., 2016](http://biorxiv.org/content/early/2016/04/20/048942).
+If you use metaSPAdes please cite [Antipov et al., 2016](https://genome.cshlp.org/content/27/5/824.short).
 
-For rnaSPAdes citation use [Bushmanova et al., 2018](https://www.biorxiv.org/content/early/2018/09/18/420208)</a>.
+If you use plasmidSPAdes please cite [Antipov et al., 2016](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610).
+
+For rnaSPAdes citation use [Bushmanova et al., 2019](https://academic.oup.com/gigascience/article/8/9/giz100/5559527).
 
 In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <spades.support@cab.spbu.ru>.
 []()
