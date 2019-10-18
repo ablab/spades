@@ -20,19 +20,24 @@
 
 template <typename Iter>
 std::vector<Iter> split_iterator(size_t chunks, Iter b, Iter e, size_t n) {
-    // INFO("split_iterator: n = " << n);
     std::vector<Iter> result(chunks + 1, e);
     size_t leading_chunks_size = n / chunks;
+    if (n % chunks) {
+        leading_chunks_size += 1;
+    }
+    DEBUG("Leading chunk size " << leading_chunks_size << " n " << n);
     for (size_t i = 0; b != e; ++b, ++i) {
-        if (i % leading_chunks_size) {
-            // INFO("Setting iterator on position " << i << ", nchunks = " << chunks);
+        if (i % leading_chunks_size == 0) {
+            DEBUG("i = " << i << ", setting to " << i / leading_chunks_size);
             result[i / leading_chunks_size] = b;
+            VERIFY(i / leading_chunks_size < chunks);
         }
     }
     result[chunks] = e;
 
     return result;
 }
+
 
 namespace debruijn_graph {
 
@@ -143,6 +148,8 @@ private:
         size_t nthreads = omp_get_max_threads();
         const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
         auto iters = split_iterator(nthreads, kmer_mapper.begin(), kmer_mapper.end(), kmer_mapper.size());
+        VERIFY(iters.front() == kmer_mapper.begin());
+        VERIFY(iters.back() == kmer_mapper.end());
         statistics_buffers_.clear();
         statistics_buffers_.resize(nthreads);
 #       pragma omp parallel for
