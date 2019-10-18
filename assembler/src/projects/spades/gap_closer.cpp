@@ -57,40 +57,58 @@ private:
     }
 
     void PrepareShiftMaps(TipMap &OutTipMap, TipMap &InTipMap) const {
-        for (EdgeId edge : graph_.edges()) {
-            if (graph_.IsDeadStart(graph_.EdgeStart(edge))) {
-                InTipMap.insert({edge, {edge, 0}});
-                std::stack<std::pair<EdgeId, int>> edge_stack;
-                edge_stack.push({edge, 0});
-                while (!edge_stack.empty()) {
-                    auto checking_pair = edge_stack.top();
-                    edge_stack.pop();
-                    if (graph_.CheckUniqueIncomingEdge(graph_.EdgeEnd(checking_pair.first))) {
-                        for (EdgeId e : graph_.OutgoingEdges(graph_.EdgeEnd(checking_pair.first))) {
-                            InTipMap.insert({e, {edge, graph_.length(checking_pair.first) +
-                                            checking_pair.second}});
-                            edge_stack.push({e, graph_.length(checking_pair.first) + checking_pair.second});
+        size_t nthreads = omp_get_max_threads();
 
+        omnigraph::IterationHelper<Graph, EdgeId> edges(graph_);
+        auto iters = edges.Chunks(nthreads);
+        VERIFY(iters.size() == nthreads + 1);
+#pragma omp parallel for
+        for (size_t i = 0; i < nthreads; ++i) {
+            TipMap local_in_tip_map, local_out_tip_map;
+            for (EdgeId edge : adt::make_range(iters[i], iters[i + 1])) {
+                if (graph_.IsDeadStart(graph_.EdgeStart(edge))) {
+                    local_in_tip_map.insert({edge, {edge, 0}});
+                    std::stack<std::pair<EdgeId, int>> edge_stack;
+                    edge_stack.push({edge, 0});
+                    while (!edge_stack.empty()) {
+                        auto checking_pair = edge_stack.top();
+                        edge_stack.pop();
+                        if (graph_.CheckUniqueIncomingEdge(graph_.EdgeEnd(checking_pair.first))) {
+                            for (EdgeId e : graph_.OutgoingEdges(graph_.EdgeEnd(checking_pair.first))) {
+                                local_in_tip_map.insert({e, {edge, graph_.length(checking_pair.first) +
+                                                        checking_pair.second}});
+                                edge_stack.push({e, graph_.length(checking_pair.first) + checking_pair.second});
+
+                            }
                         }
+                    }
+                }
+
+                if (graph_.IsDeadEnd(graph_.EdgeEnd(edge))) {
+                    local_out_tip_map.insert({edge, {edge, 0}});
+                    std::stack<std::pair<EdgeId, int>> edge_stack;
+                    edge_stack.push({edge, 0});
+                    while (!edge_stack.empty()) {
+                        auto checking_pair = edge_stack.top();
+                        edge_stack.pop();
+                        if (graph_.CheckUniqueOutgoingEdge(graph_.EdgeStart(checking_pair.first))) {
+                            for (EdgeId e : graph_.IncomingEdges(graph_.EdgeStart(checking_pair.first))) {
+                                local_out_tip_map.insert({e, {edge, graph_.length(e) + checking_pair.second}});
+                                edge_stack.push({e, graph_.length(e) + checking_pair.second});
+                            }
+                        }
+
                     }
                 }
             }
 
-            if (graph_.IsDeadEnd(graph_.EdgeEnd(edge))) {
-                OutTipMap.insert({edge, {edge, 0}});
-                std::stack<std::pair<EdgeId, int>> edge_stack;
-                edge_stack.push({edge, 0});
-                while (!edge_stack.empty()) {
-                    auto checking_pair = edge_stack.top();
-                    edge_stack.pop();
-                    if (graph_.CheckUniqueOutgoingEdge(graph_.EdgeStart(checking_pair.first))) {
-                        for (EdgeId e : graph_.IncomingEdges(graph_.EdgeStart(checking_pair.first))) {
-                            OutTipMap.insert({e, {edge, graph_.length(e) + checking_pair.second}});
-                            edge_stack.push({e, graph_.length(e) + checking_pair.second});
-                        }
-                    }
-
-                }
+#pragma omp critical
+            {
+                InTipMap.insert(std::make_move_iterator(local_in_tip_map.begin()), std::make_move_iterator(local_in_tip_map.end()));
+            }
+#pragma omp critical
+            {
+                OutTipMap.insert(std::make_move_iterator(local_out_tip_map.begin()), std::make_move_iterator(local_out_tip_map.end()));
             }
         }
     }
