@@ -13,6 +13,7 @@
 #include "utils/logger/logger.hpp"
 #include "math/xmath.h"
 #include <queue>
+#include <unordered_set>
 
 namespace omnigraph {
 
@@ -29,8 +30,8 @@ class SuperbubbleFinder {
     size_t cnt_;
     //TODO think of alternative definitions of weight (currently: total k-mer multiplicity)
     //vertex to heaviest path weight / path length range
-    std::map<VertexId, std::pair<size_t, Range>> superbubble_vertices_;
-    std::map<VertexId, EdgeId> heaviest_backtrace_;
+    std::unordered_map<VertexId, std::pair<size_t, Range>> superbubble_vertices_;
+    std::unordered_map<VertexId, EdgeId> heaviest_backtrace_;
     VertexId end_vertex_;
 
     bool CheckCanBeProcessed(VertexId v) const {
@@ -47,8 +48,8 @@ class SuperbubbleFinder {
     }
 
     void UpdateCanBeProcessed(VertexId v,
-                              std::set<VertexId>& can_be_processed,
-                              std::set<VertexId>& border) const {
+                              std::unordered_set<VertexId>& can_be_processed,
+                              std::unordered_set<VertexId>& border) const {
         DEBUG("Updating can be processed");
         for (EdgeId e : g_.OutgoingEdges(v)) {
             DEBUG("Considering edge " << g_.str(e));
@@ -97,8 +98,8 @@ public:
         superbubble_vertices_[start_vertex_] = std::make_pair(0, Range(0, 0));
         heaviest_backtrace_[start_vertex_] = EdgeId();
         cnt_++;
-        std::set<VertexId> can_be_processed;
-        std::set<VertexId> border;
+        std::unordered_set<VertexId> can_be_processed;
+        std::unordered_set<VertexId> border;
         UpdateCanBeProcessed(start_vertex_, can_be_processed, border);
         while (!can_be_processed.empty()) {
             //finish after checks and adding the vertex
@@ -166,7 +167,7 @@ public:
         return false;
     }
 
-    const std::map<VertexId, Range>& bubble_vertices() const {
+    const std::unordered_map<VertexId, Range>& bubble_vertices() const {
         return superbubble_vertices_;
     }
 
