@@ -411,18 +411,23 @@ public:
         return edges<Predicate, true>(std::move(p));
     }
 
-    // Optimize common case
-    template<bool Canonical = false>
-    auto e_begin() const {
-        using Predicate = typename std::conditional<Canonical, CanonicalEdges, AllEdges>::type;
-        return boost::make_filter_iterator(Predicate(*this),
+    template<bool Canonical>
+    auto e_begin(std::enable_if_t<Canonical, int> = 0) const {
+        return boost::make_filter_iterator(CanonicalEdges(*this),
                                            estorage_.id_begin(), estorage_.id_end());
     }
-    template<bool Canonical = false>
-    auto e_end() const {
-        using Predicate = typename std::conditional<Canonical, CanonicalEdges, AllEdges>::type;
-        return boost::make_filter_iterator(Predicate(*this),
+    template<bool Canonical>
+    auto e_end(std::enable_if_t<Canonical, int> = 0) const {
+        return boost::make_filter_iterator(CanonicalEdges(*this),
                                            estorage_.id_end(), estorage_.id_end());
+    }
+    template<bool Canonical = false>
+    auto e_begin(std::enable_if_t<!Canonical, int> = 0) const {
+        return estorage_.id_begin();
+    }
+    template<bool Canonical = false>
+    auto e_end(std::enable_if_t<!Canonical, int> = 0) const {
+        return estorage_.id_end();
     }
     template<bool Canonical = false>
     auto edges() const {
