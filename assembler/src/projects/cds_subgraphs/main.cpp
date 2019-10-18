@@ -7,7 +7,7 @@
 
 #include "stop_condon_finder.hpp"
 #include "subgraph_extraction.hpp"
-#include "io/dataset_support/dataset_readers.hpp"
+#include "io/reads/file_reader.hpp"
 
 #include "toolchain/edge_label_helper.hpp"
 #include "toolchain/utils.hpp"

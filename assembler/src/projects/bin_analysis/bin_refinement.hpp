@@ -697,12 +697,12 @@ static double AnnotateEdges(const conj_graph_pack &gp,
                                                         /*extension optimization enabled*/false);
 
     INFO("Filling annotation with contigs attributed to bin");
-    annotation.Fill(mapper, *stream);
+    annotation.Fill(mapper, stream);
 
     VERIFY(annotation.IsAttached());
-    stream->reset();
+    stream.reset();
 
-    double base_cov = CountMedianCoverage(gp.g, mapper, *stream);
+    double base_cov = CountMedianCoverage(gp.g, mapper, stream);
 
     INFO("Base coverage determined as " << base_cov);
     return base_cov;

@@ -6,11 +6,11 @@
 
 #include "bin_refinement.hpp"
 #include "toolchain/subgraph_utils.hpp"
-
 #include "toolchain/edge_label_helper.hpp"
 #include "toolchain/utils.hpp"
 
 #include "utils/segfault_handler.hpp"
+#include "io/reads/file_reader.hpp"
 
 #include "version.hpp"
 
