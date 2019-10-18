@@ -56,49 +56,42 @@ private:
         }
     }
 
-    void PrepareShiftMaps(TipMap &OutTipMap, TipMap &InTipMap) {
-        std::stack<std::pair<EdgeId, int>> edge_stack;
-        for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();) {
-            EdgeId edge = *iterator;
-            if (graph_.IncomingEdgeCount(graph_.EdgeStart(edge)) == 0) {
+    void PrepareShiftMaps(TipMap &OutTipMap, TipMap &InTipMap) const {
+        for (EdgeId edge : graph_.edges()) {
+            if (graph_.IsDeadStart(graph_.EdgeStart(edge))) {
                 InTipMap.insert({edge, {edge, 0}});
+                std::stack<std::pair<EdgeId, int>> edge_stack;
                 edge_stack.push({edge, 0});
-                while (edge_stack.size() > 0) {
+                while (!edge_stack.empty()) {
                     auto checking_pair = edge_stack.top();
                     edge_stack.pop();
-                    if (graph_.IncomingEdgeCount(graph_.EdgeEnd(checking_pair.first)) == 1) {
-                        VertexId v = graph_.EdgeEnd(checking_pair.first);
-                        if (graph_.OutgoingEdgeCount(v)) {
-                            for (auto I = graph_.out_begin(v), E = graph_.out_end(v); I != E; ++I) {
-                                EdgeId Cur_edge = *I;
-                                InTipMap.insert({Cur_edge, {edge, graph_.length(checking_pair.first) +
-                                                                  checking_pair.second}});
-                                edge_stack.push({Cur_edge, graph_.length(checking_pair.first) + checking_pair.second});
+                    if (graph_.CheckUniqueIncomingEdge(graph_.EdgeEnd(checking_pair.first))) {
+                        for (EdgeId e : graph_.OutgoingEdges(graph_.EdgeEnd(checking_pair.first))) {
+                            InTipMap.insert({e, {edge, graph_.length(checking_pair.first) +
+                                            checking_pair.second}});
+                            edge_stack.push({e, graph_.length(checking_pair.first) + checking_pair.second});
 
-                            }
                         }
                     }
                 }
             }
 
-            if (graph_.OutgoingEdgeCount(graph_.EdgeEnd(edge)) == 0) {
+            if (graph_.IsDeadEnd(graph_.EdgeEnd(edge))) {
                 OutTipMap.insert({edge, {edge, 0}});
+                std::stack<std::pair<EdgeId, int>> edge_stack;
                 edge_stack.push({edge, 0});
-                while (edge_stack.size() > 0) {
+                while (!edge_stack.empty()) {
                     auto checking_pair = edge_stack.top();
                     edge_stack.pop();
-                    if (graph_.OutgoingEdgeCount(graph_.EdgeStart(checking_pair.first)) == 1) {
-                        if (graph_.IncomingEdgeCount(graph_.EdgeStart(checking_pair.first))) {
-                            for (EdgeId e : graph_.IncomingEdges(graph_.EdgeStart(checking_pair.first))) {
-                                OutTipMap.insert({e, {edge, graph_.length(e) + checking_pair.second}});
-                                edge_stack.push({e, graph_.length(e) + checking_pair.second});
-                            }
+                    if (graph_.CheckUniqueOutgoingEdge(graph_.EdgeStart(checking_pair.first))) {
+                        for (EdgeId e : graph_.IncomingEdges(graph_.EdgeStart(checking_pair.first))) {
+                            OutTipMap.insert({e, {edge, graph_.length(e) + checking_pair.second}});
+                            edge_stack.push({e, graph_.length(e) + checking_pair.second});
                         }
                     }
 
                 }
             }
-            ++iterator;
         }
     }
 
