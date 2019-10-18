@@ -9,7 +9,7 @@
 
 #include <assembly_graph/core/graph.hpp>
 #include <sequence/range.hpp>
-#include "io/binary.hpp"
+#include "io/binary/binary.hpp"
 
 
 namespace debruijn_graph {
