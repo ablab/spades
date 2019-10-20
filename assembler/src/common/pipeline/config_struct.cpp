@@ -18,7 +18,7 @@
 
 #include <string>
 #include <vector>
-#include <common/io/binary.hpp>
+#include <common/io/binary/binary.hpp>
 
 using namespace llvm;
 
