@@ -39,6 +39,10 @@ public:
         readers_.push_back(std::move(reader_2));
     }
 
+    MultifileStream(MultifileStream<ReadType>&& multifile_stream) noexcept :
+        readers_(std::move(multifile_stream.readers_)),
+        current_reader_index_(std::exchange(multifile_stream.current_reader_index_, 0)) {}
+
     bool is_open() {
         return (readers_.size() > 0) && readers_[0].is_open();
     }
@@ -50,7 +54,7 @@ public:
         return current_reader_index_ == readers_.size();
     }
 
-    MultifileStream& operator>>(ReadType& read) {
+    virtual MultifileStream& operator>>(ReadType& read) {
         if (!eof()) {
             readers_[current_reader_index_] >> read;
         }
@@ -80,10 +84,54 @@ public:
         return std::make_pair(std::move(readers_[0]), std::move(readers_[1]));
     }
 
-private:
+protected:
     ReadStreamList<ReadType> readers_;
     size_t current_reader_index_;
 };
+
+template<typename ReadType>
+class GuardMultifileStream : public MultifileStream<ReadType> {
+    typedef ReadStream<ReadType> ReadStreamT;
+public:
+    typedef ReadType ReadT;
+
+    GuardMultifileStream(ReadStreamT* reader_1) : refs({reader_1}), MultifileStream<ReadType>(std::move(*reader_1)) {}
+
+    GuardMultifileStream(ReadStreamT* reader_1, ReadStreamT* reader_2) : refs({reader_1, reader_2}),
+        MultifileStream<ReadType>(std::move(*reader_1), std::move(*reader_2)) {
+    }
+
+    GuardMultifileStream(GuardMultifileStream<ReadType>&& guard_multifile_stream) noexcept :
+        refs(std::move(guard_multifile_stream.refs)), MultifileStream<ReadType>(std::move(guard_multifile_stream)) {}
+
+    GuardMultifileStream& operator>>(ReadType& read) {
+        if (!MultifileStream<ReadType>::eof()) {
+            MultifileStream<ReadType>::readers_[MultifileStream<ReadType>::current_reader_index_] >> read;
+        }
+        return (*this);
+    }
+
+    ~GuardMultifileStream() {
+        for (size_t i = 0; i < refs.size(); ++i) {
+            *refs[i] = std::move(MultifileStream<ReadType>::readers_[i]);
+        }
+    }
+
+private:
+    std::vector<ReadStreamT*> refs;
+};
+
+
+template<class ReadType>
+ReadStream<ReadType> GuardMultifileWrap(ReadStream<ReadType>* reader_1,
+                                   ReadStream<ReadType>* reader_2) {
+    return GuardMultifileStream<ReadType>(reader_1, reader_2);
+}
+
+template<class ReadType>
+ReadStream<ReadType> GuardMultifileWrap(ReadStream<ReadType>* reader_1) {
+    return GuardMultifileStream<ReadType>(reader_1);
+}
 
 template<class ReadType>
 ReadStream<ReadType> MultifileWrap(ReadStream<ReadType> reader_1,

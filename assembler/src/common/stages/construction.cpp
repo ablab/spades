@@ -77,6 +77,26 @@ void merge_read_streams(io::ReadStreamList<io::SingleReadSeq> &streams1,
     }
 }
 
+io::ReadStreamList<io::SingleReadSeq> temp_merge_read_streams(io::ReadStreamList<io::SingleReadSeq> &streams1,
+                                                              io::ReadStreamList<io::SingleReadSeq> &streams2) {
+    io::ReadStreamList<io::SingleReadSeq> merge_stream_list;
+
+    for (size_t i = 0; i < std::max(streams1.size(), streams2.size()); ++i) {
+        if (i < streams1.size() && i < streams2.size()) {
+            merge_stream_list.push_back(io::GuardMultifileWrap<io::SingleReadSeq>(&streams1[i], &streams2[i]));
+        } else if (i < streams1.size()) {
+            merge_stream_list.push_back(io::GuardMultifileWrap<io::SingleReadSeq>(&streams1[i]));
+        } else {
+            merge_stream_list.push_back(io::GuardMultifileWrap<io::SingleReadSeq>(&streams2[i]));
+        }
+    }
+
+    return std::move(merge_stream_list);
+}
+
+
+
+
 void add_additional_contigs_to_lib(std::string path_to_additional_contigs_dir, size_t max_threads,
                                    io::ReadStreamList<io::SingleReadSeq> &trusted_list) {
     io::SequencingLibraryT seq_lib;
