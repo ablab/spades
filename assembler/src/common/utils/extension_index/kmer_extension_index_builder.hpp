@@ -69,7 +69,7 @@ public:
         using KmerFilter = StoringTypeFilter<typename Index::storing_type>;
 
         // First, build a k+1-mer index
-        DeBruijnReadKMerSplitter<typename Streams::ReadT, Streams, KmerFilter >
+        DeBruijnReadKMerSplitter<typename Streams::ReadT, KmerFilter >
                 splitter(workdir, index.k() + 1, 0xDEADBEEF, streams, read_buffer_size);
         KMerDiskCounter<RtSeq> counter(workdir, splitter);
         counter.CountAll(nthreads, nthreads, /* merge */ false);

@@ -74,16 +74,6 @@ public:
         return readers_.size();
     }
 
-    ReadStreamT reset(size_t i) {
-        VERIFY(i < readers_.size());
-        return std::move(readers_[i]);
-    }
-
-    std::pair<ReadStreamT, ReadStreamT> split_streams() {
-        VERIFY(readers_.size() == 2);
-        return std::make_pair(std::move(readers_[0]), std::move(readers_[1]));
-    }
-
 protected:
     ReadStreamList<ReadType> readers_;
     size_t current_reader_index_;
@@ -155,100 +145,4 @@ ReadStreamList<ReadType> WrapPairsInMultifiles(ReadStreamList<ReadType> readers_
     return answer;
 }
 
-template<class ReadType>
-class MultifileReadStreamList {
-public:
-    typedef ReadType ReadT;
-    typedef MultifileStream<ReadType> ReaderT;
-    typedef std::vector<ReaderT> ReadersT;
-    using iterator = typename ReadersT::iterator;
-    using const_iterator = typename ReadersT::const_iterator;
-
-private:
-    ReadersT streams_;
-
-public:
-    MultifileReadStreamList(ReadStreamList<ReadType> streams1,
-                            ReadStreamList<ReadType> streams2) {
-        if (streams2.size() == 0) {
-            for (size_t i = 0; i < streams1.size(); ++i) {
-                streams_.push_back(MultifileStream<ReadType>(std::move(streams1[i])));
-            }
-            return;
-        }
-
-        VERIFY(streams1.size() == streams2.size());
-        for (size_t i = 0; i < streams1.size(); ++i) {
-            streams_.push_back(MultifileStream<ReadType>(std::move(streams1[i]), std::move(streams2[i])));
-        }
-    }
-
-    MultifileReadStreamList() = default;
-    MultifileReadStreamList(const MultifileReadStreamList&) = delete;
-    MultifileReadStreamList(MultifileReadStreamList&&) = default;
-    MultifileReadStreamList &operator=(const MultifileReadStreamList&) = delete;
-    MultifileReadStreamList &operator=(MultifileReadStreamList&&) = default;
-
-    void split_streams(ReadStreamList<ReadType>& reader_1, ReadStreamList<ReadType>& reader_2) {
-        if (streams_.size() > 0 && streams_[0].size() == 1) {
-            for (size_t i = 0; i < streams_.size(); ++i) {
-                if (reader_1.size() <= i) {
-                    reader_1.push_back(ReadStream<ReadType>());
-                }
-
-                reader_1[i] = streams_[i].reset(0);
-            }
-            return;
-        }
-
-        for (size_t i = 0; i < streams_.size(); ++i) {
-            if (reader_1.size() <= i) {
-                reader_1.push_back(ReadStream<ReadType>());
-            }
-            if (reader_2.size() <= i) {
-                reader_2.push_back(ReadStream<ReadType>());
-            }
-
-            std::tie(reader_1[i], reader_2[i]) = streams_[i].split_streams();
-        }
-    }
-
-    ReaderT &operator[](size_t i) { return streams_[i]; }
-    const ReaderT &operator[](size_t i) const { return streams_[i]; }
-
-    ReaderT &back() {
-        return streams_.back();
-    }
-
-    size_t size() const {
-        return streams_.size();
-    }
-
-    bool eof()  {
-        return std::all_of(streams_.begin(), streams_.end(), [](ReaderT& stream) { return stream.eof(); });
-    }
-
-    iterator begin() { return streams_.begin(); }
-    iterator end() { return iterator(streams_.end()); }
-    const_iterator begin() const { return streams_.begin(); }
-    const_iterator end() const { return iterator(streams_.end()); }
-
-    void push_back(ReadStream<ReadType> reader) {
-        streams_.emplace_back(std::move(reader));
-    }
-
-    void reset() {
-        for (auto &reader : streams_)
-            reader.reset();
-    }
-
-    void close() {
-        for (auto &reader : streams_)
-            reader.close();
-    }
-
-    void clear() {
-        streams_.clear();
-    }
-};
 }

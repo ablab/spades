@@ -238,18 +238,15 @@ public:
 
         VERIFY_MSG(read_streams.size(), "No input streams specified");
 
-        io::MultifileReadStreamList<io::SingleReadSeq> merge_streams(std::move(read_streams),
-                                                                     std::move(contigs_stream));
+
+        io::ReadStreamList<io::SingleReadSeq> merge_streams = temp_merge_read_streams(read_streams, contigs_stream);
 
         unsigned nthreads = (unsigned)merge_streams.size();
         utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
-                                        io::MultifileReadStreamList<io::SingleReadSeq>,
                                         utils::StoringTypeFilter<storing_type>>
                 splitter(storage().workdir, index.k() + 1, 0, merge_streams, buffer_size);
         storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
         storage().counter->CountAll(nthreads, nthreads, /* merge */false);
-
-        merge_streams.split_streams(read_streams, contigs_stream);
     }
 
     void load(debruijn_graph::conj_graph_pack&,

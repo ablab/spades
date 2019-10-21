@@ -229,9 +229,9 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
   DECL_LOGGER("DeBruijnKMerSplitter");
 };
 
-template<class Read, class Streams, class KmerFilter>
+template<class Read, class KmerFilter>
 class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
-  Streams& streams_;
+  io::ReadStreamList<Read>& streams_;
 
   template<class ReadStream>
   size_t
@@ -241,7 +241,7 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   using typename DeBruijnKMerSplitter<KmerFilter>::RawKMers;
   DeBruijnReadKMerSplitter(fs::TmpDir work_dir,
                            unsigned K, uint32_t seed,
-                           Streams& streams,
+                           io::ReadStreamList<Read>& streams,
                            size_t read_buffer_size = 0,
                            KmerFilter filter = KmerFilter())
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, filter, read_buffer_size, seed),
@@ -250,9 +250,9 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   RawKMers Split(size_t num_files, unsigned nthreads) override;
 };
 
-template<class Read, class Streams, class KmerFilter> template<class ReadStream>
+template<class Read, class KmerFilter> template<class ReadStream>
 size_t
-DeBruijnReadKMerSplitter< Read, Streams, KmerFilter>::FillBufferFromStream(ReadStream &stream,
+DeBruijnReadKMerSplitter< Read, KmerFilter>::FillBufferFromStream(ReadStream &stream,
                                                                  unsigned thread_id) {
   typename ReadStream::ReadT r;
   size_t reads = 0;
@@ -268,9 +268,9 @@ DeBruijnReadKMerSplitter< Read, Streams, KmerFilter>::FillBufferFromStream(ReadS
   return reads;
 }
 
-template<class Read, class Streams, class KmerFilter>
-typename DeBruijnReadKMerSplitter<Read, Streams, KmerFilter>::RawKMers
-DeBruijnReadKMerSplitter<Read, Streams, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
+template<class Read, class KmerFilter>
+typename DeBruijnReadKMerSplitter<Read, KmerFilter>::RawKMers
+DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
   auto out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
   size_t counter = 0, n = 15;
