@@ -145,8 +145,7 @@ void AssertGraph(size_t k, const std::vector<std::string>& reads, const std::vec
     index.Detach();
 
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
-    io::ReadStreamList<io::SingleRead> contigs_streams;
-    ConstructGraph(config::debruijn_config::construction(), workdir, streams, g, index, contigs_streams);
+    ConstructGraph(config::debruijn_config::construction(), workdir, streams, g, index);
 
     AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }
