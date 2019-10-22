@@ -186,25 +186,6 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
         for (size_t i = 0; i < nthreads; ++i) {
             FillCoverageFromStream(streams[i], index, check_contains);
         }
-
-        // Contigs have zero coverage!
-#if 0
-        if (contigs_streams) {
-            contigs_streams->reset();
-            FillCoverageFromStream(*contigs_streams, index, check_contains);
-        }
-#endif
-
-//todo if this verify is neede, put it outside
-//#ifndef NDEBUG
-//        for (auto idx = index.kmer_idx_begin(), eidx = index.kmer_idx_end();
-//             idx != eidx; ++idx) {
-//
-//            Kmer k = index.kmer(idx);
-//
-//            VERIFY(index[k].count == index[!k].count);
-//        }
-//#endif
     }
 };
 
