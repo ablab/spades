@@ -29,7 +29,6 @@
 #include <algorithm>
 
 class MMappedReader {
-    int StreamFile;
     bool Unlink;
     std::string FileName;
 
@@ -46,13 +45,19 @@ class MMappedReader {
 
         // We do not add PROT_WRITE here intentionaly - remapping and write access
         // is pretty error-prone.
-        if (BlockSize)
+        if (BlockSize) {
+            int StreamFile = open(FileName.c_str(), O_RDONLY);
+            if (StreamFile == -1)
+                FATAL_ERROR("open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno << ". File: " <<
+                            FileName);
             MappedRegion =
                     (uint8_t *) mmap(NULL, BlockSize,
                                      PROT_READ, MAP_FILE | MAP_PRIVATE,
                                      StreamFile, InitialOffset + BlockOffset);
-        else
+            close(StreamFile);
+        } else
             MappedRegion = NULL;
+
         if (MappedRegion == MAP_FAILED)
             FATAL_ERROR("mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
     }
@@ -69,8 +74,6 @@ protected:
 
 private:
     void cleanup() {
-        if (StreamFile != -1)
-            close(StreamFile);
         if (MappedRegion)
             munmap(MappedRegion, BlockSize);
 
@@ -83,7 +86,7 @@ private:
 
 public:
     MMappedReader()
-            : StreamFile(-1), Unlink(false), FileName(""), MappedRegion(0), FileSize(0), BytesRead(0),
+            : Unlink(false), FileName(""), MappedRegion(0), FileSize(0), BytesRead(0),
               InitialOffset(0) { }
 
     MMappedReader(const std::string &filename, bool unlink = false,
@@ -94,11 +97,6 @@ public:
         InitialOffset = off;
         FileSize = (sz ? sz : (stat(FileName.c_str(), &buf) != 0 ? 0 : buf.st_size - InitialOffset));
 
-        StreamFile = open(FileName.c_str(), O_RDONLY);
-        if (StreamFile == -1)
-            FATAL_ERROR("open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno << ". File: " <<
-                        FileName);
-
         if (BlockSize != -1ULL) {
             size_t PageSize = getpagesize();
             BlockSize = BlockSize / PageSize * PageSize;
@@ -106,13 +104,18 @@ public:
             BlockSize = FileSize;
 
         if (BlockSize) {
+            int StreamFile = open(FileName.c_str(), O_RDONLY);
+            if (StreamFile == -1)
+                FATAL_ERROR("open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno << ". File: " <<
+                            FileName);
             MappedRegion =
                     (uint8_t *) mmap(NULL, BlockSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_PRIVATE,
                                      StreamFile, InitialOffset);
-            if (MappedRegion == MAP_FAILED)
-                FATAL_ERROR("mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+            close(StreamFile);
         } else
             MappedRegion = NULL;
+        if (MappedRegion == MAP_FAILED)
+            FATAL_ERROR("mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
 
         BlockOffset = BytesRead = 0;
     }
@@ -133,11 +136,9 @@ public:
             BlockSize = other.BlockSize;
             FileName = std::move(other.FileName);
             Unlink = other.Unlink;
-            StreamFile = other.StreamFile;
             InitialOffset = other.InitialOffset;
 
             // Now, zero out inside other, so we won't do crazy thing in dtor
-            other.StreamFile = -1;
             other.Unlink = false;
             other.MappedRegion = 0;
         }
