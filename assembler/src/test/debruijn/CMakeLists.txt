@@ -23,4 +23,4 @@ add_executable(short_edge_contractor short_edge_contractor.cpp)
 target_link_libraries(short_edge_contractor common_modules cityhash ${COMMON_LIBRARIES})
 
 add_executable(sequence_threader thread_sequences.cpp)
-target_link_libraries(sequence_threader common_modules cityhash ${COMMON_LIBRARIES})
+target_link_libraries(sequence_threader graphio common_modules ${COMMON_LIBRARIES})
