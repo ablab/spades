@@ -9,6 +9,7 @@
 
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/logger.hpp"
+#include "utils/filesystem/path_helper.hpp"
 #include "utils/verify.hpp"
 #include "io/reads/file_reader.hpp"
 
@@ -799,10 +800,10 @@ void init_libs(io::DataSet<LibraryData> &dataset, size_t max_threads,
         lib.data().lib_index = i;
         auto& bin_info = lib.data().binary_reads_info;
         bin_info.chunk_num = max_threads;
-        bin_info.bin_reads_info_file = temp_bin_reads_path + "/INFO_" + std::to_string(i);
-        bin_info.paired_read_prefix = temp_bin_reads_path + "/paired_" + std::to_string(i);
-        bin_info.merged_read_prefix = temp_bin_reads_path + "/merged_" + std::to_string(i);
-        bin_info.single_read_prefix = temp_bin_reads_path + "/single_" + std::to_string(i);
+        bin_info.bin_reads_info_file = fs::append_path(temp_bin_reads_path, "INFO_" + std::to_string(i));
+        bin_info.paired_read_prefix = fs::append_path(temp_bin_reads_path, "paired_" + std::to_string(i));
+        bin_info.merged_read_prefix = fs::append_path(temp_bin_reads_path, "merged_" + std::to_string(i));
+        bin_info.single_read_prefix = fs::append_path(temp_bin_reads_path, "single_" + std::to_string(i));
     }
 }
 
@@ -840,15 +841,15 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
                        || cfg.gap_closer_enable || cfg.rr_enable ||
                        cfg.ss_coverage_splitter.enabled;
 
-    cfg.output_dir = cfg.output_base + "/K" + std::to_string(cfg.K) + "/";
+    cfg.output_dir = fs::append_path(cfg.output_base, "K" + std::to_string(cfg.K));
 
     cfg.output_saves = cfg.output_dir + "saves/";
 
     if (cfg.tmp_dir[0] != '/') { // relative path
-        cfg.tmp_dir = cfg.output_dir + cfg.tmp_dir;
+        cfg.tmp_dir = fs::append_path(cfg.output_dir, cfg.tmp_dir);
     }
 
-    cfg.temp_bin_reads_path = cfg.output_base + "/" + cfg.temp_bin_reads_dir;
+    cfg.temp_bin_reads_path = fs::append_path(cfg.output_base, cfg.temp_bin_reads_dir);
     //cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
 
     init_libs(cfg.ds.reads, cfg.max_threads, cfg.temp_bin_reads_path);
