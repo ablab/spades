@@ -54,7 +54,7 @@ public:
         return current_reader_index_ == readers_.size();
     }
 
-    virtual MultifileStream& operator>>(ReadType& read) {
+    MultifileStream& operator>>(ReadType& read) {
         if (!eof()) {
             readers_[current_reader_index_] >> read;
         }
@@ -85,30 +85,23 @@ class GuardMultifileStream : public MultifileStream<ReadType> {
 public:
     typedef ReadType ReadT;
 
-    GuardMultifileStream(ReadStreamT* reader_1) : refs({reader_1}), MultifileStream<ReadType>(std::move(*reader_1)) {}
+    GuardMultifileStream(ReadStreamT* reader_1) : pointers({reader_1}), MultifileStream<ReadType>(std::move(*reader_1)) {}
 
-    GuardMultifileStream(ReadStreamT* reader_1, ReadStreamT* reader_2) : refs({reader_1, reader_2}),
+    GuardMultifileStream(ReadStreamT* reader_1, ReadStreamT* reader_2) : pointers({reader_1, reader_2}),
         MultifileStream<ReadType>(std::move(*reader_1), std::move(*reader_2)) {
     }
 
     GuardMultifileStream(GuardMultifileStream<ReadType>&& guard_multifile_stream) noexcept :
-        refs(std::move(guard_multifile_stream.refs)), MultifileStream<ReadType>(std::move(guard_multifile_stream)) {}
-
-    GuardMultifileStream& operator>>(ReadType& read) {
-        if (!MultifileStream<ReadType>::eof()) {
-            MultifileStream<ReadType>::readers_[MultifileStream<ReadType>::current_reader_index_] >> read;
-        }
-        return (*this);
-    }
+        pointers(std::move(guard_multifile_stream.pointers)), MultifileStream<ReadType>(std::move(guard_multifile_stream)) {}
 
     ~GuardMultifileStream() {
-        for (size_t i = 0; i < refs.size(); ++i) {
-            *refs[i] = std::move(MultifileStream<ReadType>::readers_[i]);
+        for (size_t i = 0; i < pointers.size(); ++i) {
+            *pointers[i] = std::move(MultifileStream<ReadType>::readers_[i]);
         }
     }
 
 private:
-    std::vector<ReadStreamT*> refs;
+    std::vector<ReadStreamT*> pointers;
 };
 
 
