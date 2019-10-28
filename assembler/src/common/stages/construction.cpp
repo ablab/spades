@@ -22,17 +22,6 @@
 
 namespace debruijn_graph {
 
-//template<class Read>
-//void construct_graph(io::ReadStreamList<Read>& streams,
-//                     conj_graph_pack& gp, io::SingleStreamPtr contigs_streams = io::SingleStreamPtr()) {
-//    config::debruijn_config::construction params = cfg::get().con;
-//    params.early_tc.enable &= !cfg::get().gap_closer_enable;
-//    VERIFY(cfg::get().ds.RL > 0);
-//
-//    ConstructGraphWithCoverage(params, cfg::get().ds.RL, streams, gp.g,
-//                               gp.index, gp.flanking_cov, contigs_streams);
-//}
-
 struct ConstructionStorage {
     using CoverageMap = utils::PerfectHashMap<RtSeq, uint32_t, utils::slim_kmer_index_traits<RtSeq>, utils::DefaultStoring>;
 
