@@ -85,22 +85,22 @@ class ScopedMultifileStream : public MultifileStream<ReadType> {
 public:
     typedef ReadType ReadT;
 
-    ScopedMultifileStream(ReadStreamT* reader_1) : pointers({reader_1}), MultifileStream<ReadType>(std::move(*reader_1)) {}
+    ScopedMultifileStream(ReadStreamT* reader_1) : origin_stream_pointers_({reader_1}), MultifileStream<ReadType>(std::move(*reader_1)) {}
 
-    ScopedMultifileStream(ReadStreamT* reader_1, ReadStreamT* reader_2) : pointers({reader_1, reader_2}),
+    ScopedMultifileStream(ReadStreamT* reader_1, ReadStreamT* reader_2) : origin_stream_pointers_({reader_1, reader_2}),
         MultifileStream<ReadType>(std::move(*reader_1), std::move(*reader_2)) {
     }
 
     ScopedMultifileStream(ScopedMultifileStream<ReadType>&& guard_multifile_stream) noexcept = default;
 
     ~ScopedMultifileStream() noexcept {
-        for (size_t i = 0; i < pointers.size(); ++i) {
-            *pointers[i] = std::move(MultifileStream<ReadType>::readers_[i]);
+        for (size_t i = 0; i < origin_stream_pointers_.size(); ++i) {
+            *origin_stream_pointers_[i] = std::move(MultifileStream<ReadType>::readers_[i]);
         }
     }
 
 private:
-    std::vector<ReadStreamT*> pointers;
+    std::vector<ReadStreamT*> origin_stream_pointers_;
 };
 
 
