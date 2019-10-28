@@ -35,7 +35,7 @@ class EdgeSequencesStream {
     EdgeSequencesStream &operator>>(SingleReadSeq &singleread) {
         auto edge_nucl = graph_.EdgeNucls(*edge_iterator_);
         singleread = SingleReadSeq(edge_nucl);
-        edge_iterator_++;
+        ++edge_iterator_;
         return *this;
     }
 
