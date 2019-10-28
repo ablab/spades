@@ -80,7 +80,7 @@ io::ReadStreamList<io::SingleReadSeq> temp_merge_read_streams(io::ReadStreamList
         }
     }
 
-    return std::move(merge_stream_list);
+    return merge_stream_list;
 }
 
 
