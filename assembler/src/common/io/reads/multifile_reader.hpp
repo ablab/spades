@@ -91,8 +91,7 @@ public:
         MultifileStream<ReadType>(std::move(*reader_1), std::move(*reader_2)) {
     }
 
-    ScopedMultifileStream(ScopedMultifileStream<ReadType>&& guard_multifile_stream) noexcept :
-        pointers(std::move(guard_multifile_stream.pointers)), MultifileStream<ReadType>(std::move(guard_multifile_stream)) {}
+    ScopedMultifileStream(ScopedMultifileStream<ReadType>&& guard_multifile_stream) noexcept = default;
 
     ~ScopedMultifileStream() noexcept {
         for (size_t i = 0; i < pointers.size(); ++i) {
