@@ -220,7 +220,7 @@ public:
 
     void run(debruijn_graph::conj_graph_pack &, const char*) override {
         auto &read_streams = storage().read_streams;
-        auto &contigs_stream = storage().contigs_streams;
+        auto &contigs_streams = storage().contigs_streams;
         const auto &index = storage().ext_index;
         size_t buffer_size = storage().params.read_buffer_size;
         using storing_type = decltype(storage().ext_index)::storing_type;
@@ -228,7 +228,7 @@ public:
         VERIFY_MSG(read_streams.size(), "No input streams specified");
 
 
-        io::ReadStreamList<io::SingleReadSeq> merge_streams = temp_merge_read_streams(read_streams, contigs_stream);
+        io::ReadStreamList<io::SingleReadSeq> merge_streams = temp_merge_read_streams(read_streams, contigs_streams);
 
         unsigned nthreads = (unsigned)merge_streams.size();
         utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
