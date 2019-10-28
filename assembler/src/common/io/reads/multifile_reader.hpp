@@ -79,6 +79,11 @@ protected:
     size_t current_reader_index_;
 };
 
+
+/**
+ * ScopedMultifileStream is the stream that gets data from a number of streams,
+ * given in a constructor and return ownership of streams to the initial state on destruction
+ */
 template<typename ReadType>
 class ScopedMultifileStream : public MultifileStream<ReadType> {
     typedef ReadStream<ReadType> ReadStreamT;
