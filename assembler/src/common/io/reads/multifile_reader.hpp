@@ -94,7 +94,7 @@ public:
     GuardMultifileStream(GuardMultifileStream<ReadType>&& guard_multifile_stream) noexcept :
         pointers(std::move(guard_multifile_stream.pointers)), MultifileStream<ReadType>(std::move(guard_multifile_stream)) {}
 
-    ~GuardMultifileStream() {
+    ~GuardMultifileStream() noexcept {
         for (size_t i = 0; i < pointers.size(); ++i) {
             *pointers[i] = std::move(MultifileStream<ReadType>::readers_[i]);
         }
