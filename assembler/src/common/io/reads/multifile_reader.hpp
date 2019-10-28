@@ -80,21 +80,21 @@ protected:
 };
 
 template<typename ReadType>
-class GuardMultifileStream : public MultifileStream<ReadType> {
+class ScopedMultifileStream : public MultifileStream<ReadType> {
     typedef ReadStream<ReadType> ReadStreamT;
 public:
     typedef ReadType ReadT;
 
-    GuardMultifileStream(ReadStreamT* reader_1) : pointers({reader_1}), MultifileStream<ReadType>(std::move(*reader_1)) {}
+    ScopedMultifileStream(ReadStreamT* reader_1) : pointers({reader_1}), MultifileStream<ReadType>(std::move(*reader_1)) {}
 
-    GuardMultifileStream(ReadStreamT* reader_1, ReadStreamT* reader_2) : pointers({reader_1, reader_2}),
+    ScopedMultifileStream(ReadStreamT* reader_1, ReadStreamT* reader_2) : pointers({reader_1, reader_2}),
         MultifileStream<ReadType>(std::move(*reader_1), std::move(*reader_2)) {
     }
 
-    GuardMultifileStream(GuardMultifileStream<ReadType>&& guard_multifile_stream) noexcept :
+    ScopedMultifileStream(ScopedMultifileStream<ReadType>&& guard_multifile_stream) noexcept :
         pointers(std::move(guard_multifile_stream.pointers)), MultifileStream<ReadType>(std::move(guard_multifile_stream)) {}
 
-    ~GuardMultifileStream() noexcept {
+    ~ScopedMultifileStream() noexcept {
         for (size_t i = 0; i < pointers.size(); ++i) {
             *pointers[i] = std::move(MultifileStream<ReadType>::readers_[i]);
         }
@@ -106,14 +106,14 @@ private:
 
 
 template<class ReadType>
-ReadStream<ReadType> GuardMultifileWrap(ReadStream<ReadType>* reader_1,
-                                   ReadStream<ReadType>* reader_2) {
-    return GuardMultifileStream<ReadType>(reader_1, reader_2);
+ReadStream<ReadType> ScopedMultifileWrap(ReadStream <ReadType> *reader_1,
+                                         ReadStream <ReadType> *reader_2) {
+    return ScopedMultifileStream<ReadType>(reader_1, reader_2);
 }
 
 template<class ReadType>
-ReadStream<ReadType> GuardMultifileWrap(ReadStream<ReadType>* reader_1) {
-    return GuardMultifileStream<ReadType>(reader_1);
+ReadStream<ReadType> ScopedMultifileWrap(ReadStream <ReadType> *reader_1) {
+    return ScopedMultifileStream<ReadType>(reader_1);
 }
 
 template<class ReadType>
