@@ -128,9 +128,9 @@ class IterationStage(stage.Stage):
             dir_util.copy_tree(os.path.join(self.tmp_configs_dir, "debruijn"), dst_configs, preserve_times=False)
 
         if self.prev_K:
-            additional_contigs_fname = os.path.join(cfg.output_dir, "K%d" % self.prev_K, "simplified_contigs")
+            additional_contigs_dname = os.path.join(cfg.output_dir, "K%d" % self.prev_K, "simplified_contigs")
         else:
-            additional_contigs_fname = None
+            additional_contigs_dname = None
 
         if "read_buffer_size" in cfg.__dict__:
             # FIXME why here???
@@ -144,7 +144,7 @@ class IterationStage(stage.Stage):
         prepare_config_rnaspades(os.path.join(dst_configs, "rna_mode.info"), self.log)
         prepare_config_construction(os.path.join(dst_configs, "construction.info"), self.log)
         cfg_fn = os.path.join(dst_configs, "config.info")
-        prepare_config_spades(cfg_fn, cfg, self.log, additional_contigs_fname, self.K, self.get_stage(self.short_name),
+        prepare_config_spades(cfg_fn, cfg, self.log, additional_contigs_dname, self.K, self.get_stage(self.short_name),
                               saves_dir, self.last_one, self.bin_home)
 
     def get_command(self, cfg):
