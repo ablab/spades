@@ -102,7 +102,7 @@ void ReadConverter::ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g,
     if (nthreads > 1)
         pool = std::make_unique<ThreadPool::ThreadPool>(nthreads);
 
-    io::BinaryWriter single_converter(contigs_output_dir + "/contigs");
+    io::BinaryWriter single_converter(fs::append_path(contigs_output_dir, "contigs"));
     io::ReadStream<io::SingleReadSeq> single_reader = io::EdgeSequencesStream(g);
     ReadStreamStat read_stat = single_converter.ToBinary(single_reader, pool.get());
 
@@ -112,7 +112,7 @@ void ReadConverter::ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g,
     data.merged_read_length = 0;
     data.read_count = read_stat.read_count;
     data.total_nucls = read_stat.total_len;
-    WriteBinaryInfo(contigs_output_dir + "/contigs_info", data);
+    WriteBinaryInfo(fs::append_path(contigs_output_dir, "contigs_info"), data);
 }
 
 void ReadConverter::WriteBinaryInfo(const std::string &filename, LibraryData &data) {
