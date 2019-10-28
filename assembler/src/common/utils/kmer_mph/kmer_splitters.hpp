@@ -290,7 +290,7 @@ DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, unsigned nth
   }
 
   this->ClearBuffers();
-  INFO("Used " << counter << " reads;");
+  INFO("Used " << counter << " reads");
   return out;
 }
 
