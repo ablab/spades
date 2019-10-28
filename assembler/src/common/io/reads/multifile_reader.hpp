@@ -85,10 +85,12 @@ class ScopedMultifileStream : public MultifileStream<ReadType> {
 public:
     typedef ReadType ReadT;
 
-    ScopedMultifileStream(ReadStreamT* reader_1) : origin_stream_pointers_({reader_1}), MultifileStream<ReadType>(std::move(*reader_1)) {}
+    ScopedMultifileStream(ReadStreamT& reader_1) : origin_stream_pointers_({&reader_1}),
+                                                   MultifileStream<ReadType>(std::move(reader_1)) {}
 
-    ScopedMultifileStream(ReadStreamT* reader_1, ReadStreamT* reader_2) : origin_stream_pointers_({reader_1, reader_2}),
-        MultifileStream<ReadType>(std::move(*reader_1), std::move(*reader_2)) {
+    ScopedMultifileStream(ReadStreamT& reader_1, ReadStreamT& reader_2) :
+        origin_stream_pointers_({&reader_1, &reader_2}),
+        MultifileStream<ReadType>(std::move(reader_1), std::move(reader_2)) {
     }
 
     ScopedMultifileStream(ScopedMultifileStream<ReadType>&& guard_multifile_stream) noexcept = default;
@@ -105,13 +107,13 @@ private:
 
 
 template<class ReadType>
-ReadStream<ReadType> ScopedMultifileWrap(ReadStream <ReadType> *reader_1,
-                                         ReadStream <ReadType> *reader_2) {
+ReadStream<ReadType> ScopedMultifileWrap(ReadStream <ReadType>& reader_1,
+                                         ReadStream <ReadType>& reader_2) {
     return ScopedMultifileStream<ReadType>(reader_1, reader_2);
 }
 
 template<class ReadType>
-ReadStream<ReadType> ScopedMultifileWrap(ReadStream <ReadType> *reader_1) {
+ReadStream<ReadType> ScopedMultifileWrap(ReadStream <ReadType>& reader_1) {
     return ScopedMultifileStream<ReadType>(reader_1);
 }
 
