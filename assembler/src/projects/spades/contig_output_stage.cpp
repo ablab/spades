@@ -9,7 +9,7 @@
 #include "modules/path_extend/pe_resolver.hpp"
 #include "contig_output_stage.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
-#include "common/io/dataset_support/read_converter.hpp"
+#include "io/dataset_support/read_converter.hpp"
 #include <unordered_set>
 using namespace std;
 

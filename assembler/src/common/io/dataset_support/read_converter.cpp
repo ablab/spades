@@ -9,13 +9,14 @@
 #include "io/reads/rc_reader_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "io/reads/converting_reader_wrapper.hpp"
+#include "io/reads/edge_sequences_reader.hpp"
 
 #include "utils/logger/logger.hpp"
 
 #include "threadpool/threadpool.hpp"
 
 #include <fstream>
-#include <reads/edge_sequences_reader.hpp>
+
 
 namespace io {
 

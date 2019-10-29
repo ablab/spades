@@ -104,7 +104,6 @@ void ConstructGraph(const config::debruijn_config::construction &params,
                     fs::TmpDir workdir, Streams& streams, Graph& g,
                     Index& index) {
     ConstructGraphUsingExtensionIndex(params, workdir, streams, g, index);
-//  ConstructGraphUsingOldIndex(k, streams, g, index, contigs_streams);
 }
 
 //FIXME these methods are tested, but not used!

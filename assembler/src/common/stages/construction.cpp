@@ -112,7 +112,7 @@ void Construction::init(debruijn_graph::conj_graph_pack &gp, const char *) {
         INFO("Trusted contigs will be used in graph construction");
 
     if (cfg::get().use_additional_contigs) {
-        DEBUG("Contigs from previous K will be used: " << cfg::get().additional_contigs);
+        INFO("Contigs from previous K will be used: " << cfg::get().additional_contigs);
         add_additional_contigs_to_lib(cfg::get().additional_contigs, cfg::get().max_threads, storage().contigs_streams);
     }
 

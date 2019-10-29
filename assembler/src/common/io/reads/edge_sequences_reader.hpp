@@ -4,17 +4,9 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/**
-
-* Reader<SingleRead> is the very base class that reads from one file
-* through Parser object.
-* Reader<PairedRead> is the class that reads data from two input
-* files and gets PairedReads using this data and distance information.
-*/
-
 #pragma once
 
-#include <common/assembly_graph/core/graph.hpp>
+#include "assembly_graph/core/graph.hpp"
 
 namespace io {
 
@@ -33,8 +25,7 @@ class EdgeSequencesStream {
     }
 
     EdgeSequencesStream &operator>>(SingleReadSeq &singleread) {
-        auto edge_nucl = graph_.EdgeNucls(*edge_iterator_);
-        singleread = SingleReadSeq(edge_nucl);
+        singleread = SingleReadSeq(graph_.EdgeNucls(*edge_iterator_));
         ++edge_iterator_;
         return *this;
     }

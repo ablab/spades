@@ -7,11 +7,11 @@
 
 #pragma once
 
+#include "assembly_graph/core/graph.hpp"
 #include "pipeline/config_struct.hpp"
 #include "io/reads/binary_converter.hpp"
 #include "io/reads/io_helper.hpp"
 #include "dataset_readers.hpp"
-#include "common/assembly_graph/core/graph.hpp"
 
 namespace io {
 
