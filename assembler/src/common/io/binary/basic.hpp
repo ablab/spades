@@ -31,12 +31,12 @@ public:
         return true;
     }
 
-    void BinWrite(std::ostream &os, const Graph &graph) {
+    void BinWrite(std::ostream &os, const Graph &graph) override {
         Base::BinWrite(os, graph);
         io::binary::Write(os, graph.coverage_index());
     }
 
-    bool BinRead(std::istream &is, Graph &graph) {
+    bool BinRead(std::istream &is, Graph &graph) override {
         bool loaded = Base::BinRead(is, graph);
         VERIFY(loaded);
         loaded = io::binary::Read(is, graph.coverage_index());

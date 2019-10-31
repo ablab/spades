@@ -216,7 +216,7 @@ public:
         return true;
     }
 
-    void BinWrite(std::ostream &os, const Type &gp) {
+    void BinWrite(std::ostream &os, const Type &gp) override {
         //1. Save basic graph
         base::BinWrite(os, gp);
 
@@ -235,7 +235,7 @@ public:
         gp.ginfo.BinWrite(os);
     }
 
-    bool BinRead(std::istream &is, Type &gp) {
+    bool BinRead(std::istream &is, Type &gp) override {
         //1. Load basic graph
         bool loaded = base::BinRead(is, gp);
         VERIFY(loaded);
