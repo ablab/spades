@@ -37,7 +37,12 @@ BOOST_AUTO_TEST_CASE(TestBinarySimple) {
     SimpleCheck<std::string>("A quick brown fox jumps over the lazy dog");
 }
 
-struct Boo {int i; float f;};
+struct Boo {int i; float f;
+template <typename Archive>
+void BinArchive(Archive &ar) {
+    ar(i, f);
+}
+};
 
 bool operator==(const Boo &l, const Boo &r) {
     return l.i == r.i && l.f == r.f;
