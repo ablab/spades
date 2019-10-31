@@ -12,7 +12,6 @@
 #include <unordered_map>
 
 #include "utils/verify.hpp"
-#include "llvm/Support/LEB128.h"
 #include "io/binary/access.hpp"
 
 namespace io {
@@ -20,8 +19,6 @@ namespace io {
 namespace binary {
 
 namespace impl {
-
-static const char LEB_BUF_SIZE = 128 / 7 + 1;
 
 enum class Encoding {
     Unknown,
@@ -108,49 +105,89 @@ public:
     }
 };
 
+inline static void encodeULEB128(uint64_t Value, std::ostream &os) {
+    static const char LEB_BUF_SIZE = 64 / 7 + 1;
+    uint8_t buf[LEB_BUF_SIZE];
+    unsigned count = 0;
+    do {
+        uint8_t Byte = Value & 0x7f;
+        Value >>= 7;
+        if (Value != 0)
+            Byte |= 0x80; // Mark this byte to show that more bytes will follow.
+        buf[count] = Byte;
+        ++count;
+    } while (Value != 0);
+    os.write(reinterpret_cast<const char *>(buf), count);
+}
+
+inline static uint64_t decodeULEB128(std::istream &is) {
+    uint64_t Value = 0;
+    unsigned Shift = 0;
+    for (uint8_t Byte = static_cast<uint8_t>(is.get()); Shift < 70; Byte = static_cast<uint8_t>(is.get())) {
+        Value |= uint64_t(Byte & 0x7f) << Shift;
+        Shift += 7;
+        if ((Byte & 0x80) == 0) break;
+    }
+    VERIFY(Shift < 70 && is);
+    return Value;
+}
+
 template <typename T>
 class Serializer<T, std::enable_if_t<GetEncoding<T>() == Encoding::ULEB128>> {
 public:
     static void Write(std::ostream &os, const T &value) {
-        uint8_t buf[LEB_BUF_SIZE];
-        auto count = llvm::encodeULEB128(value, buf);
-        os.write(reinterpret_cast<const char *>(buf), count);
+        encodeULEB128(value, os);
     }
 
     static void Read(std::istream &is, T &value) {
-        uint8_t buf[LEB_BUF_SIZE];
-        auto pos = reinterpret_cast<char *>(buf);
-        char count = 0;
-        do {
-            is.read(pos, 1);
-            VERIFY(is);
-            ++count;
-            VERIFY_MSG(count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
-        } while (*(pos++) & 0x80);
-        value = static_cast<T>(llvm::decodeULEB128(buf));
+        value = static_cast<T>(decodeULEB128(is));
     }
 };
+
+inline static void encodeSLEB128(int64_t Value, std::ostream &os) {
+    static const char LEB_BUF_SIZE = 64 / 7 + 1;
+    uint8_t buf[LEB_BUF_SIZE];
+    unsigned count = 0;
+    bool More;
+    do {
+        uint8_t Byte = Value & 0x7f;
+        // NOTE: this assumes that this signed shift is an arithmetic right shift.
+        Value >>= 7;
+        More = !((((Value == 0 ) && ((Byte & 0x40) == 0)) ||
+                  ((Value == -1) && ((Byte & 0x40) != 0))));
+        if (More)
+            Byte |= 0x80; // Mark this byte to show that more bytes will follow.
+        buf[count] = Byte;
+        ++count;
+    } while (More);
+    os.write(reinterpret_cast<const char *>(buf), count);
+}
+
+inline static int64_t decodeSLEB128(std::istream &is) {
+    int64_t Value = 0;
+    unsigned Shift = 0;
+    uint8_t Byte = static_cast<uint8_t>(is.get());
+    for (;; Byte = static_cast<uint8_t>(is.get())) {
+        Value |= (int64_t(Byte & 0x7f) << Shift);
+        Shift += 7;
+        if ((Byte & 0x80) == 0) break;
+    }
+    VERIFY(Shift < 70 && is);
+    // Sign extend negative numbers.
+    if (Byte & 0x40)
+        Value |= (-1ULL) << Shift;
+    return Value;
+}
 
 template <typename T>
 class Serializer<T, std::enable_if_t<GetEncoding<T>() == Encoding::SLEB128>> {
 public:
     static void Write(std::ostream &os, const T &value) {
-        uint8_t buf[LEB_BUF_SIZE];
-        auto count = llvm::encodeSLEB128(value, buf);
-        os.write(reinterpret_cast<const char *>(buf), count);
+        encodeSLEB128(value, os);
     }
 
     static void Read(std::istream &is, T &value) {
-        uint8_t buf[LEB_BUF_SIZE];
-        auto pos = reinterpret_cast<char *>(buf);
-        char count = 0;
-        do {
-            is.read(pos, 1);
-            VERIFY(is);
-            ++count;
-            VERIFY_MSG(count < LEB_BUF_SIZE, "Malformed LEB128 sequence");
-        } while (*(pos++) & 0x80);
-        value = static_cast<T>(llvm::decodeSLEB128(buf));
+        value = static_cast<T>(decodeSLEB128(is));
     }
 };
 
