@@ -22,23 +22,24 @@ public:
     }
 
     void SaveImpl(BinOStream &str, const Index &index) override {
-        size_t edges_cnt = index.g().e_size();
-
-        str << edges_cnt;
-        for (auto it = index.g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            auto e = *it;
-            str << e.int_id() << index.RawCoverage(e);
+        for (auto e : index.g().canonical_edges()) {
+            str << e << index.RawCoverage(e);
         }
+        str << uint64_t(0);  // null-term
     }
 
     void LoadImpl(BinIStream &str, Index &index) override {
-        size_t edges_cnt;
-        str >> edges_cnt;
-        for (size_t i = 0; i < edges_cnt; ++i) {
+        while (true) {
             uint64_t eid;
+            str >> eid;
+            if (!eid) break; // null-term
             uint32_t cov;
-            str >> eid >> cov;
+            str >> cov;
             index.SetRawCoverage(eid, cov);
+            auto conj_eid = index.g().conjugate(typename Index::EdgeId(eid));
+            if (eid != conj_eid.int_id()) {
+                index.SetRawCoverage(conj_eid, cov);
+            }
         }
     }
 };
