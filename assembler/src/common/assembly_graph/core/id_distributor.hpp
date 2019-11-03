@@ -12,6 +12,7 @@
 #include <vector>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 
 namespace omnigraph {
 
@@ -53,7 +54,7 @@ class ReclaimingIdDistributor {
                     const std::vector<bool> &map,
                     uint64_t bias)
                 : map_(map), bias_(bias), cur_(start) {
-            if (cur_ != NPOS && map_[cur_])
+            if (cur_ != NPOS && map_.get()[cur_])
                 cur_ = next_occupied(cur_);
         }
 
@@ -65,8 +66,8 @@ class ReclaimingIdDistributor {
         }
 
         uint64_t next_occupied(uint64_t n) const {
-            for (size_t i = n + 1; i < map_.size(); ++i) {
-                if (!map_[i])
+            for (size_t i = n + 1; i < map_.get().size(); ++i) {
+                if (!map_.get()[i])
                     return i;
             }
             return NPOS;
@@ -85,7 +86,7 @@ class ReclaimingIdDistributor {
 
       private:
         static const uint64_t NPOS = -1ULL;
-        const std::vector<bool> &map_;
+        std::reference_wrapper<const std::vector<bool>> map_;
         uint64_t bias_, cur_;
     };
 
