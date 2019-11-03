@@ -49,6 +49,7 @@ class Command(object):
 
 def write_commands_to_sh(commands, output_file):
     with open(output_file, 'w') as fw:
+        fw.write("set -e\n")
         for command in commands:
             fw.write(command.__str__() + "\n")
 
