@@ -6,11 +6,15 @@
 
 #pragma once
 
-#include "common/io/binary/binary.hpp"
 #include <boost/optional.hpp>
+#include "common/io/binary/binary.hpp"
+
+namespace io {
+namespace binary {
+namespace impl {
 
 template <typename T>
-class io::binary::Serializer<boost::optional<T>, std::enable_if_t<io::binary::is_serializable<T>>> {
+class Serializer<boost::optional<T>, std::enable_if_t<io::binary::is_serializable<T>>> {
 public:
     static void Write(std::ostream &os, const boost::optional<T> &v) {
         if (v) {
@@ -30,3 +34,6 @@ public:
         }
     }
 };
+}  // namespace impl
+}  // namespace binary
+}  // namespace io
