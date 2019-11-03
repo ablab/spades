@@ -7,11 +7,15 @@
 
 #pragma once
 
-#include "assembly_graph/core/graph.hpp"
 #include "pipeline/config_struct.hpp"
 #include "io/reads/binary_converter.hpp"
 #include "io/reads/io_helper.hpp"
 #include "dataset_readers.hpp"
+
+namespace debruijn_graph {
+class DeBruijnGraph;
+typedef DeBruijnGraph Graph;
+}
 
 namespace io {
 

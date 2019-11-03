@@ -5,6 +5,8 @@
 //***************************************************************************
 
 #include "read_converter.hpp"
+
+#include "assembly_graph/core/graph.hpp"
 #include "io/reads/binary_streams.hpp"
 #include "io/reads/rc_reader_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
