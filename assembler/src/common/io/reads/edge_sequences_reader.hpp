@@ -16,7 +16,7 @@ class EdgeSequencesStream {
 
     explicit EdgeSequencesStream(const debruijn_graph::Graph &g) : graph_(g), edge_iterator_(g.e_begin<true>()) {}
 
-    bool is_open() {
+    bool is_open() const {
         return true;
     }
 
@@ -30,9 +30,9 @@ class EdgeSequencesStream {
         return *this;
     }
 
-    void close() {}
+    void close() const {}
 
-    void reset() {}
+    void reset() const {}
 
  private:
     const debruijn_graph::Graph &graph_;
