@@ -8,6 +8,7 @@
 #pragma once
 
 #include "adt/queue_iterator.hpp"
+#include "adt/iterator_range.hpp"
 #include "func/pred.hpp"
 #include "action_handlers.hpp"
 #include "utils/stl_utils.hpp"
@@ -482,18 +483,13 @@ class IterationHelper<Graph, typename Graph::VertexId> {
 public:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::VertexIt const_vertex_iterator;
+    typedef typename adt::iterator_range<const_vertex_iterator> VertexRange;
 
     IterationHelper(const Graph& g)
-            : g_(g) {
-    }
+            : g_(g) {}
 
-    const_vertex_iterator begin() const {
-        return g_.begin();
-    }
-
-    const_vertex_iterator end() const {
-        return g_.end();
-    }
+    const_vertex_iterator begin() const { return g_.begin(); }
+    const_vertex_iterator end() const { return g_.end(); }
 
     std::vector<const_vertex_iterator> Chunks(size_t chunk_cnt) const {
         VERIFY(chunk_cnt > 0);
@@ -527,6 +523,15 @@ public:
         return answer;
     }
 
+    std::vector<VertexRange> Ranges(size_t chunk_num) const {
+        auto its = Chunks(chunk_num);
+
+        std::vector<VertexRange> ranges;
+        for (size_t i = 0; i < its.size() - 1; ++i)
+            ranges.emplace_back(its[i], its[i+1]);
+
+        return ranges;
+    }    
 };
 
 //todo move out
@@ -538,30 +543,33 @@ class IterationHelper<Graph, typename Graph::EdgeId> {
 public:
     typedef typename Graph::EdgeId EdgeId;
     typedef GraphEdgeIterator<Graph> const_edge_iterator;
+    typedef adt::iterator_range<const_edge_iterator> EdgeRange;
 
     IterationHelper(const Graph& g)
-            : g_(g) {
-    }
-
-    const_edge_iterator begin() const {
-        return const_edge_iterator(g_, g_.begin());
-    }
-
-    const_edge_iterator end() const {
-        return const_edge_iterator(g_, g_.end());
-    }
+            : g_(g) {}
+    
+    const_edge_iterator begin() const { return const_edge_iterator(g_, g_.begin()); }
+    const_edge_iterator end() const { return const_edge_iterator(g_, g_.end()); }
 
     std::vector<omnigraph::GraphEdgeIterator<Graph>> Chunks(size_t chunk_cnt) const {
-        if (chunk_cnt == 1) {
+        if (chunk_cnt == 1)
             return {begin(), end()};
-        }
 
         std::vector<omnigraph::GraphEdgeIterator<Graph>> answer;
-
         for (auto v_it : IterationHelper<Graph, VertexId>(g_).Chunks(chunk_cnt)) {
             answer.push_back(omnigraph::GraphEdgeIterator<Graph>(g_, v_it));
         }
         return answer;
+    }
+
+    std::vector<EdgeRange> Ranges(size_t chunk_num) const {
+        auto its = Chunks(chunk_num);
+
+        std::vector<EdgeRange> ranges;
+        for (size_t i = 0; i < its.size() - 1; ++i)
+            ranges.emplace_back(its[i], its[i+1]);
+
+        return ranges;
     }
 };
 
