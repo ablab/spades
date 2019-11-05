@@ -94,13 +94,21 @@ MinDistRelevantComponentFinder::RelevantComponent(size_t cds_len_est,
             continue;
 
         const auto &e_dist = it->second;
-        dist_vertices.emplace_back(MinExitDist(s_dist, e_dist, base_dist_f), v);
+        size_t min_e_dist = MinExitDist(s_dist, e_dist, base_dist_f);
+        if (min_e_dist < std::numeric_limits<size_t>::max()) {
+            dist_vertices.emplace_back(min_e_dist, v);
+        } else {
+            TRACE("All paths that vertex " << g_.str(v) << " belongs to are much longer than the shortest path between the same start/end pairs");
+        }
+    }
+    //Adding starts of the edges with stop codons backward into consideration
+    for (const auto &p : utils::key_set(starts)) {
+        dist_vertices.emplace_back(std::numeric_limits<size_t>::max(), g_.EdgeStart(p.first));
     }
 
     DEBUG("Creating component");
     std::sort(dist_vertices.begin(), dist_vertices.end());
     std::set<VertexId> within_cds_limit;
-    std::set<VertexId> component_vertices;
 
     //FIXME what if corresponding stop codon is too far?
     //Probably need to check stop codon distance first!
@@ -111,26 +119,36 @@ MinDistRelevantComponentFinder::RelevantComponent(size_t cds_len_est,
         VertexId v = d_v.second;
         if (min_end_dist < max_cds_len) {
             within_cds_limit.insert(v);
-            component_vertices.insert(v);
-        } else if (min_end_dist < std::numeric_limits<size_t>::max()) {
-            if (std::any_of(g_.out_begin(v), g_.out_end(v), [&](EdgeId e) {
-                return within_cds_limit.count(g_.EdgeEnd(e));
-            })) {
-                component_vertices.insert(v);
-            }
         }
     }
+
+    auto gc = omnigraph::GraphComponent<Graph>::FromVertices(g_, within_cds_limit.begin(), within_cds_limit.end());
+
+    //Adding edges upstream
+    std::set<EdgeId> revised_edges(gc.edges());
+    for (auto d_v : dist_vertices) {
+        size_t min_end_dist = d_v.first;
+        VertexId v = d_v.second;
+        if (min_end_dist >= max_cds_len) {
+            for (EdgeId e : g_.OutgoingEdges(v)) {
+                if (within_cds_limit.count(g_.EdgeEnd(e))) {
+                    revised_edges.insert(e);
+                }
+             }
+         }
+     }
 
     //Adding edges containing stop codons forward (if length check passed)
     for (const auto &p_d : ends) {
         EdgeId e = p_d.first.first;
         if (base_len + p_d.second < max_cds_len) {
-            if (!CheckConnectedTo(g_.EdgeStart(e), within_cds_limit))
+            if (!CheckConnectedTo(g_.EdgeStart(e), within_cds_limit)) {
+                //FIXME add entire path?
                 WARN("Edge " << g_.str(e) << " being added as containing stop codon "
                                              "is disconnected from inner component vertices");
+            }
 
-            component_vertices.insert(g_.EdgeStart(e));
-            component_vertices.insert(g_.EdgeEnd(e));
+            revised_edges.insert(e);
         } else {
             WARN("Edge " << g_.str(e) << " containing stop codon "
                                          "on position " << p_d.first.second << " was not added to component");
@@ -139,14 +157,7 @@ MinDistRelevantComponentFinder::RelevantComponent(size_t cds_len_est,
     }
 
     DEBUG("Relevant component extracted");
-    return omnigraph::GraphComponent<Graph>::FromVertices(g_, component_vertices.begin(), component_vertices.end());
-}
-
-std::string PrintEdgePath(const Graph &g, const EdgePath &path) {
-    std::stringstream ss;
-    ss << "[" << omnigraph::PrintPath(g, path.sequence()) << "], ";
-    ss << "start: " << path.start_pos() << ", end: " << path.end_pos();
-    return ss.str();
+    return omnigraph::GraphComponent<Graph>::FromEdges(g_, revised_edges.begin(), revised_edges.end());
 }
 
 omnigraph::GraphComponent<Graph>
@@ -157,7 +168,7 @@ PartialGenePathProcessor::ProcessPartialGenePath(const EdgePath &gene_path,
         WARN("Partial gene path was empty");
         return omnigraph::GraphComponent<Graph>(g_);
     }
-    DEBUG("Processing partial gene path " << PrintEdgePath(g_, gene_path));
+    DEBUG("Processing partial gene path " << PrintEdgePath(gene_path));
     //DEBUG("Nucls: " << PathSeq(gene_path));
 
     INFO("Searching for stop codon forward");
@@ -176,7 +187,7 @@ PartialGenePathProcessor::ProcessPartialGenePath(const EdgePath &gene_path,
 
     TRACE("Paths forward:");
     for (const auto &p : paths_fwd) {
-        TRACE("Path: " << PrintEdgePath(g_, p));
+        TRACE("Path: " << PrintEdgePath(p));
         Sequence s = PathSeq(p).Subseq(g_.k());
         TRACE("Sequence: len=" << s.size() << "; " << s);
     }
@@ -191,7 +202,7 @@ PartialGenePathProcessor::ProcessPartialGenePath(const EdgePath &gene_path,
 
     TRACE("Paths backward (reversed): ");
     for (const auto &p : RCEdgePaths(paths_bwd)) {
-        TRACE("Path: " << PrintEdgePath(g_, p));
+        TRACE("Path: " << PrintEdgePath(p));
         Sequence s = PathSeq(p);
         TRACE("Sequence: len=" << s.size() - g_.k() << "; " << s.Subseq(0, s.size() - g_.k()));
     }

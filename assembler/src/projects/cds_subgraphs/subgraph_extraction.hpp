@@ -90,6 +90,7 @@ static size_t RoundedProduct(size_t l, double coeff) {
 //
 //};
 
+//FIXME consider using edges rather than vertices
 class MinDistRelevantComponentFinder {
     //TODO use throughout file
     using DistInfo = std::unordered_map<GraphPos, size_t>;
@@ -146,6 +147,18 @@ class PartialGenePathProcessor {
     const Graph &g_;
     const MinDistRelevantComponentFinder rel_comp_finder_;
     const io::EdgeNamingF<Graph> edge_naming_f_;
+
+    std::string PrintEdgePath(const EdgePath &path) const {
+        std::stringstream ss;
+        std::string delim = "";
+        for (EdgeId e : path.sequence()) {
+            ss << delim << edge_naming_f_(g_, e);
+            delim = " ";
+        }
+        ss << "], ";
+        ss << "start: " << path.start_pos() << ", end: " << path.end_pos();
+        return ss.str();
+    }
 
     Sequence PathSeq(const EdgePath &p) const {
         return PathSequence(g_, p);
