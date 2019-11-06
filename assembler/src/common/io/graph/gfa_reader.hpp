@@ -59,6 +59,7 @@ class GFAReader {
         return adt::make_range(path_begin(), path_end());
     }
 
+    unsigned k() const;
     void to_graph(debruijn_graph::DeBruijnGraph &g, io::IdMapper<std::string> *id_mapper = nullptr);
 
   private:
