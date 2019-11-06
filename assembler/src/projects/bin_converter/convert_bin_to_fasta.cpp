@@ -38,7 +38,6 @@ void create_console_logger() {
 
 namespace convert_bin_to_fasta {
 struct Args {
-    unsigned nthreads = omp_get_max_threads();
     std::string prefix_file = "";
     std::string info_file = "";
     std::string output_file = "contigs.fasta";
@@ -52,7 +51,6 @@ void process_cmdline(int argc, char **argv, convert_bin_to_fasta::Args &args) {
     auto cli = (
         (option("--prefix") & value("path", args.prefix_file)) % "Prefix of .off and .seq file for contigs in binary format",
         (option("--info_file") & value("path", args.info_file)) % "Path to info file for contigs in binary format",
-        (option("-t", "--threads") & integer("value", args.nthreads)) % "# of threads to use",
         (option("-o", "--output_file") & value("path", args.output_file)) % "Output file name",
         (option("-h", "--help").set(print_help)) % "Show help"
     );
@@ -88,7 +86,7 @@ io::ReadStreamList<io::SingleReadSeq> get_bin_stream(convert_bin_to_fasta::Args 
     bin_info.single_read_prefix = args.prefix_file;
     bin_info.bin_reads_info_file = args.info_file;
     bin_info.binary_converted = true;
-    bin_info.chunk_num = args.nthreads;
+    bin_info.chunk_num = 1;
 
     io::ReadStreamList<io::SingleReadSeq> lib_streams = io::single_binary_readers(seq_lib, true, false);
     return lib_streams;
@@ -112,7 +110,6 @@ int main(int argc, char* argv[]) {
         START_BANNER("SPAdes converter from binary to fasta");
 
         INFO("Binary files: " << args.prefix_file << " " << args.info_file);
-        INFO("# of threads to use: " << args.nthreads);
         INFO("Output file: " << args.output_file);
 
         auto streams = get_bin_stream(args);
