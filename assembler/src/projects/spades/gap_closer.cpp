@@ -60,12 +60,11 @@ private:
         size_t nthreads = omp_get_max_threads();
 
         omnigraph::IterationHelper<Graph, EdgeId> edges(graph_);
-        auto iters = edges.Chunks(nthreads);
-        VERIFY(iters.size() == nthreads + 1);
+        auto ranges = edges.Ranges(nthreads);
 #pragma omp parallel for
-        for (size_t i = 0; i < nthreads; ++i) {
+        for (size_t i = 0; i < ranges.size(); ++i) {
             TipMap local_in_tip_map, local_out_tip_map;
-            for (EdgeId edge : adt::make_range(iters[i], iters[i + 1])) {
+            for (EdgeId edge : ranges[i]) {
                 if (graph_.IsDeadStart(graph_.EdgeStart(edge))) {
                     local_in_tip_map.insert({edge, {edge, 0}});
                     std::stack<std::pair<EdgeId, int>> edge_stack;
