@@ -17,4 +17,4 @@ jobs:
     - name: plasmid mode check
       run: bin/plasmidspades.py --test
     - name: metagenomic mode check
-      run: bin/metaspades.py --sc --test
+      run: bin/metaspades.py --test
