@@ -77,7 +77,7 @@ void process_cmdline(int argc, char **argv, convert_bin_to_fasta::Args &args) {
     }
 }
 
-io::ReadStreamList<io::SingleReadSeq> get_bin_stream(convert_bin_to_fasta::Args args) {
+io::ReadStreamList<io::SingleReadSeq> get_bin_stream(const convert_bin_to_fasta::Args& args) {
     io::SequencingLibraryT seq_lib;
     seq_lib.set_type(io::LibraryType::TrustedContigs);
     seq_lib.set_orientation(io::LibraryOrientation::Undefined);
