@@ -25,7 +25,7 @@ jobs:
       run: make -C assembler/build_spades/test/include_test include_test
 
     - name: compile debruijn test
-      run: make -C assembler/build_spades/test/debruijn_test debruijn_test
+      run: make -C assembler/build_spades/test/debruijn debruijn_test
 
     - name: include check
       run: cd assembler && build_spades/bin/include_test
