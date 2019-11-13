@@ -1,4 +1,4 @@
-name: SPAdes basic tests
+name: SPAdes 1k test
 
 on: [push]
 
@@ -10,5 +10,11 @@ jobs:
     - uses: actions/checkout@v1
     - name: compile
       run: assembler/spades_compile.sh
-    - name: check
+    - name: multi-cell mode check
       run: bin/spades.py --test
+    - name: single-cell mode check
+      run: bin/spades.py --sc --test
+    - name: plasmid mode check
+      run: bin/plasmidspades.py --test
+    - name: metagenomic mode check
+      run: bin/metaspades.py --sc --test
