@@ -9,7 +9,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: compile
-      run: assembler/spades_compile.sh
+      run: assembler/spades_compile.sh -j3
     - name: multi-cell mode check
       run: bin/spades.py --test
     - name: single-cell mode check
