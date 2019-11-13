@@ -16,19 +16,19 @@ jobs:
         fetch-depth: 1
     
     - name: prepare
-      run: cd assembler && mkdir build_spades && cd build_spades
+      run: cd assembler && mkdir build_spades
 
     - name: cmake
-      run: cmake - G "Unix Makefiles" ../src && cd ..
+      run: cd assembler/build_spades && cmake - G "Unix Makefiles" ../src
 
     - name: compile include test
-      run: make build_spades/test/include_test include_test
+      run: make -C assembler/build_spades/test/include_test include_test
 
     - name: compile debruijn test
-      run: make build_spades/test/debruijn_test debruijn_test
+      run: make -C assembler/build_spades/test/debruijn_test debruijn_test
 
     - name: include check
-      run: build_spades/bin/include_test
+      run: cd assembler && build_spades/bin/include_test
       
     - name: debruijn check
-      run: build_spades/bin/debruijn_test
+      run: cd assembler && build_spades/bin/debruijn_test
