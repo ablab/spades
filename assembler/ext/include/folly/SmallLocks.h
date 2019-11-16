@@ -172,7 +172,7 @@ struct PicoSpinLock {
                 "PicoSpinLock can't work on integers smaller than 2 bytes");
 
  public:
-  static const UIntType kLockBitMask_ = UIntType(1) << Bit;
+  static constexpr UIntType kLockBitMask_ = UIntType(1) << Bit;
   UIntType lock_;
 
   /*

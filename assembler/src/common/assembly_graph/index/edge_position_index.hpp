@@ -10,20 +10,26 @@
 #include "sequence/rtseq.hpp"
 #include "utils/ph_map/perfect_hash_map.hpp"
 
+#include <folly/SmallLocks.h>
+
 namespace debruijn_graph {
 
 template<class IdType>
 class EdgeInfo {
     IdType edge_id_;
-    unsigned offset_;
-    unsigned count_;
+    uint32_t count_;
 
-    static constexpr unsigned CLEARED = -1u;
-    static constexpr unsigned TOMBSTONE = -2u;
+    typedef folly::PicoSpinLock<uint32_t> OffsetType;
+    OffsetType offset_with_lock_;
+    // This is a bit hacky...
+    static constexpr unsigned CLEARED = -1u & ~OffsetType::kLockBitMask_;
+    static constexpr unsigned TOMBSTONE = -2u & ~OffsetType::kLockBitMask_;
 
  public:
     EdgeInfo(IdType e = IdType(), unsigned o = CLEARED, unsigned c = 0) :
-            edge_id_(e), offset_(o), count_(c) {
+        edge_id_(e), count_(c) {
+        offset_with_lock_.init();
+        offset_with_lock_.setData(o);
         VERIFY(edge_id_ != IdType() || clean());
     }
 
@@ -32,40 +38,25 @@ class EdgeInfo {
         if (!valid())
             return EdgeInfo(IdType(), CLEARED, count_);
 
-        return EdgeInfo(g.conjugate(edge_id_), unsigned(g.length(edge_id_) - offset_ - 1), count_);
+        return EdgeInfo(g.conjugate(edge_id_), unsigned(g.length(edge_id_) - offset() - 1), count_);
     }
 
     IdType edge() const {
-      return edge_id_;
+        return edge_id_;
     }
 
-    unsigned offset() const {
-      return offset_;
-    }
+    void lock() { offset_with_lock_.lock(); }
+    void unlock() { offset_with_lock_.unlock(); }
 
-    unsigned count() const {
-      return count_;
-    }
+    unsigned offset() const { return offset_with_lock_.getData(); }
+    unsigned count() const { return count_; }
+    unsigned& count() { return count_; }
 
-    unsigned& count() {
-      return count_;
-    }
+    void clear() { offset_with_lock_.setData(CLEARED); }
+    bool clean() const { return offset() == CLEARED; }
 
-    void clear() {
-        offset_ = CLEARED;
-    }
-
-    bool clean() const {
-        return offset_ == CLEARED;
-    }
-
-    void remove() {
-        offset_ = TOMBSTONE;
-    }
-
-    bool removed() const {
-        return offset_ == TOMBSTONE;
-    }
+    void remove() { offset_with_lock_.setData(TOMBSTONE); }
+    bool removed() const { return offset() == TOMBSTONE; }
 
     bool valid() const {
         return !clean() && !removed();
@@ -149,16 +140,14 @@ public:
         if (entry.removed())
             return;
 
+        entry.lock();
         if (entry.clean()) {
-            //put verify on this conversion!
+            // Note that this releases the lock as well!
             put_value(kwh, KmerPos(id, (unsigned)offset, entry.count()));
         } else if (contains(kwh)) {
-            //VERIFY(false);
             entry.remove();
-        } else {
-            //VERIFY(false);
-            //FIXME bad situation; some other kmer is there; think of putting verify
         }
+        entry.unlock();
     }
 
     using ValueBase = utils::ValueArray<EdgeInfo<typename Graph::EdgeId>>;
@@ -231,7 +220,7 @@ public:
   }
 
   void PutInIndex(KeyWithHash &kwh, IdType id, size_t offset) {
-      //here valid already checks equality of query-kmer and stored-kmer sequences
+      // Here valid already checks equality of query-kmer and stored-kmer sequences
       if (!base::valid(kwh))
         return;
 
@@ -239,11 +228,13 @@ public:
       if (entry.removed())
         return;
 
-      if (!entry.clean()) {
-        this->put_value(kwh, KmerPos(id, (unsigned)offset, entry.count));
+      entry.lock();
+      if (entry.clean()) {
+        put_value(kwh, KmerPos(id, (unsigned)offset, entry.count()));
       } else {
         entry.remove();
       }
+      entry.unlock();
   }
 };
 
