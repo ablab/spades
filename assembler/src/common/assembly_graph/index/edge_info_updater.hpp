@@ -27,7 +27,7 @@ class EdgeInfoUpdater {
         if (!index_.contains(kwh))
             return false;
 
-        if (index_.get_value(kwh).edge_id == e) {
+        if (index_.get_value(kwh).edge() == e) {
             index_.get_raw_value_reference(kwh).clear();
             return true;
         }

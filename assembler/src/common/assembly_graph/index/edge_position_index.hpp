@@ -14,40 +14,57 @@ namespace debruijn_graph {
 
 template<class IdType>
 class EdgeInfo {
-    IdType edge_id;
-    unsigned offset;
-    unsigned count;
+    IdType edge_id_;
+    unsigned offset_;
+    unsigned count_;
 
     static constexpr unsigned CLEARED = -1u;
     static constexpr unsigned TOMBSTONE = -2u;
 
+ public:
     EdgeInfo(IdType e = IdType(), unsigned o = CLEARED, unsigned c = 0) :
-            edge_id(e), offset(o), count(c) {
-        VERIFY(edge_id != IdType() || clean());
+            edge_id_(e), offset_(o), count_(c) {
+        VERIFY(edge_id_ != IdType() || clean());
     }
 
     template<class Graph>
     EdgeInfo conjugate(const Graph &g) const {
         if (!valid())
-            return EdgeInfo(IdType(), CLEARED, count);
+            return EdgeInfo(IdType(), CLEARED, count_);
 
-        return EdgeInfo(g.conjugate(edge_id), unsigned(g.length(edge_id) - offset - 1), count);
+        return EdgeInfo(g.conjugate(edge_id_), unsigned(g.length(edge_id_) - offset_ - 1), count_);
+    }
+
+    IdType edge() const {
+      return edge_id_;
+    }
+
+    unsigned offset() const {
+      return offset_;
+    }
+
+    unsigned count() const {
+      return count_;
+    }
+
+    unsigned& count() {
+      return count_;
     }
 
     void clear() {
-        offset = CLEARED;
+        offset_ = CLEARED;
     }
 
     bool clean() const {
-        return offset == CLEARED;
+        return offset_ == CLEARED;
     }
 
     void remove() {
-        offset = TOMBSTONE;
+        offset_ = TOMBSTONE;
     }
 
     bool removed() const {
-        return offset == TOMBSTONE;
+        return offset_ == TOMBSTONE;
     }
 
     bool valid() const {
@@ -57,7 +74,7 @@ class EdgeInfo {
 
 template<class stream, class IdType>
 stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
-    return s << "EdgeInfo[" << info.edge_id.int_id() << ", " << info.offset << ", " << info.count << "]";
+    return s << "EdgeInfo[" << info.edge() << ", " << info.offset() << ", " << info.count() << "]";
 }
 
 template<class Graph,
@@ -121,7 +138,7 @@ public:
         if (!entry.valid())
             return false;
 
-        return graph_.EdgeNucls(entry.edge_id).contains(kwh.key(), entry.offset);
+        return graph_.EdgeNucls(entry.edge()).contains(kwh.key(), entry.offset());
     }
 
     void PutInIndex(KeyWithHash &kwh, IdType id, size_t offset) {
@@ -134,7 +151,7 @@ public:
 
         if (entry.clean()) {
             //put verify on this conversion!
-            put_value(kwh, KmerPos(id, (unsigned)offset, entry.count));
+            put_value(kwh, KmerPos(id, (unsigned)offset, entry.count()));
         } else if (contains(kwh)) {
             //VERIFY(false);
             entry.remove();

@@ -165,8 +165,9 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
                 kwh <<= seq[j];
                 //contains is not used since index might be still empty here
                 if (kwh.is_minimal() && index.valid(kwh) && ContainsWrap(check_contains, index, kwh, has_contains<IndexT>())) {
-#     pragma omp atomic
-                    index.get_raw_value_reference(kwh).count += 1;
+#                   pragma omp atomic
+                    // FIXME: Get rid of this
+                    index.get_raw_value_reference(kwh).count() += 1;
                 }
             }
         }

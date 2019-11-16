@@ -82,7 +82,7 @@ public:
             return { EdgeId(), -1u };
         } else {
             EdgeInfo<EdgeId> entry = inner_index_.get_value(kwh);
-            return { entry.edge_id, (size_t)entry.offset };
+            return { entry.edge(), (size_t)entry.offset() };
         }
     }
 

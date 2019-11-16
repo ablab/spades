@@ -52,9 +52,9 @@ public:
     }
 
     void inc_coverage(const Value &edge_info) {
-        coverage_index_.IncRawCoverage(edge_info.edge_id, edge_info.count);
-        if (edge_info.offset < flanking_coverage_.averaging_range()) {
-            flanking_coverage_.IncRawCoverage(edge_info.edge_id, edge_info.count);
+        coverage_index_.IncRawCoverage(edge_info.edge(), edge_info.count());
+        if (edge_info.offset() < flanking_coverage_.averaging_range()) {
+            flanking_coverage_.IncRawCoverage(edge_info.edge(), edge_info.count());
         }
     }
 
