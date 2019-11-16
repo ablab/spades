@@ -219,7 +219,8 @@ private:
     bool valid_;
 
     void Init() {
-        VERIFY(seq_.size() == qual_.size());
+        VERIFY_MSG(seq_.size() == qual_.size(),
+                   "Invalid read: length of sequence should equal to length of quality line");
         valid_ = SingleRead::IsValid(seq_);
     }
 
