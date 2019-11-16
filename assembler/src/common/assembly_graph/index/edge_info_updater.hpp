@@ -7,9 +7,9 @@
 
 #pragma once
 
+#include "assembly_graph/core/graph_iterators.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "sequence/sequence.hpp"
-#include "assembly_graph/core/graph_iterators.hpp"
 #include "edge_position_index.hpp"
 
 namespace debruijn_graph {
@@ -23,19 +23,10 @@ class EdgeInfoUpdater {
     const Graph &g_;
     Index &index_;
 
-//    void PutInIndex(const KeyWithHash &kwh, EdgeId id, size_t offset) {
-//        if (index_.valid(kwh)) {
-//            auto &entry = index_.get_raw_value_reference(kwh);
-//            if (!entry.valid() || index_.contains(kwh)) {
-//                index_.put_value(kwh, EdgeInfo(id, (unsigned)offset, entry.count));
-//            }
-//        }
-//    }
-
-    //todo why do we need to check equality???!!!
     bool DeleteIfEqual(const KeyWithHash& kwh, EdgeId e) {
         if (!index_.contains(kwh))
             return false;
+
         if (index_.get_value(kwh).edge_id == e) {
             index_.get_raw_value_reference(kwh).clear();
             return true;
@@ -67,17 +58,15 @@ class EdgeInfoUpdater {
 
  public:
     /**
-     * Creates DataHashRenewer for specified graph and index
+     * Creates EdgeInfoUpdater for specified graph and index
      * @param g graph to be indexed
      * @param index index to be synchronized with graph
      */
     EdgeInfoUpdater(const Graph& g, Index& index)
-            : g_(g),
-              index_(index) {
-    }
+            : g_(g), index_(index) { }
 
     void UpdateKmers(EdgeId e) {
-        Sequence nucls = g_.EdgeNucls(e);
+        const Sequence &nucls = g_.EdgeNucls(e);
         UpdateKMers(nucls, e);
     }
 

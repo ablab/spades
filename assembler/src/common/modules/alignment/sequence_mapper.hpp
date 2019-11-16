@@ -9,14 +9,15 @@
 
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
-#include "sequence/sequence_tools.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
+#include "io/reads/single_read.hpp"
+
+#include "sequence/sequence_tools.hpp"
 
 #include "edge_index.hpp"
 #include "kmer_mapper.hpp"
 
 #include <cstdlib>
-#include "assembly_graph/core/basic_graph_stats.hpp"
 
 namespace debruijn_graph {
 using omnigraph::MappingPath;

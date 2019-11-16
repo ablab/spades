@@ -7,44 +7,47 @@
 
 #pragma once
 
+#include "sequence/rtseq.hpp"
 #include "utils/ph_map/perfect_hash_map.hpp"
-#include "io/reads/single_read.hpp"
 
 namespace debruijn_graph {
 
 template<class IdType>
-struct EdgeInfo {
+class EdgeInfo {
     IdType edge_id;
     unsigned offset;
     unsigned count;
 
-    EdgeInfo(IdType edge_id_ = IdType(), unsigned offset_ = unsigned(-1), unsigned count_ = 0) :
-            edge_id(edge_id_), offset(offset_), count(count_) {
+    static constexpr unsigned CLEARED = -1u;
+    static constexpr unsigned TOMBSTONE = -2u;
+
+    EdgeInfo(IdType e = IdType(), unsigned o = CLEARED, unsigned c = 0) :
+            edge_id(e), offset(o), count(c) {
         VERIFY(edge_id != IdType() || clean());
     }
 
     template<class Graph>
     EdgeInfo conjugate(const Graph &g) const {
         if (!valid())
-            return EdgeInfo(IdType(), unsigned(-1), count);
+            return EdgeInfo(IdType(), CLEARED, count);
 
         return EdgeInfo(g.conjugate(edge_id), unsigned(g.length(edge_id) - offset - 1), count);
     }
 
     void clear() {
-        offset = unsigned(-1);
+        offset = CLEARED;
     }
 
     bool clean() const {
-        return offset == unsigned(-1);
+        return offset == CLEARED;
     }
 
     void remove() {
-        offset = unsigned(-2);
+        offset = TOMBSTONE;
     }
 
     bool removed() const {
-        return offset == unsigned(-2);
+        return offset == TOMBSTONE;
     }
 
     bool valid() const {
@@ -117,6 +120,7 @@ public:
         KmerPos entry = get_value(kwh);
         if (!entry.valid())
             return false;
+
         return graph_.EdgeNucls(entry.edge_id).contains(kwh.key(), entry.offset);
     }
 
@@ -125,10 +129,9 @@ public:
             return;
 
         KmerPos &entry = this->get_raw_value_reference(kwh);
-        if (entry.removed()) {
-            //VERIFY(false);
+        if (entry.removed())
             return;
-        }
+
         if (entry.clean()) {
             //put verify on this conversion!
             put_value(kwh, KmerPos(id, (unsigned)offset, entry.count));
