@@ -86,9 +86,9 @@ public:
             const auto& edge_info = *I;
             if (!edge_info.valid())
                 continue;
-            EdgeId e = edge_info.edge_id;
-            unsigned offset = edge_info.offset;
-            unsigned count = edge_info.count;
+            EdgeId e = edge_info.edge();
+            unsigned offset = edge_info.offset();
+            unsigned count = edge_info.count();
             if (offset < averaging_range_) {
                 IncRawCoverage(e, count);
             }

@@ -305,15 +305,14 @@ BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
 // TODO: Remove this hack. We really need to save flcvr!
 template<class Graph, class InnerIndex>
 void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
-    for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
+    for (EdgeId e : g.edges()) {
         Sequence nucls = g.EdgeNucls(e);
         double cov = g.coverage(e);
         auto kpomer = idx.ConstructKWH(RtSeq(g.k() + 1, nucls));
         kpomer >>= 0;
         for (size_t i = 0; i < g.length(e); ++i) {
             kpomer <<= nucls[i + g.k()];
-            idx.get_raw_value_reference(kpomer).count = unsigned(math::floor(cov)) / 2;
+            idx.get_raw_value_reference(kpomer).count() = unsigned(math::floor(cov)) / 2;
         }
     }
 }
