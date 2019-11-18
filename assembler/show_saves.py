@@ -45,7 +45,7 @@ def show_kmidx(file):
     size = read_int(file, 8)
     print("Size: %d" % size)
     for _ in range(size):
-        id, offset, count = read_int(file, 8), read_int(file, 4), read_int(file, 4)
+        id, count, offset = read_int(file, 8), read_int(file, 4), read_int(file, 4)
         print(id, offset, count)
 
 
