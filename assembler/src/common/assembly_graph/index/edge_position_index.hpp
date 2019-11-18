@@ -153,14 +153,14 @@ public:
     using ValueBase = utils::ValueArray<EdgeInfo<typename Graph::EdgeId>>;
     using KeyBase = typename utils::PerfectHashMap<RtSeq, EdgeInfo<typename Graph::EdgeId>, utils::kmer_index_traits<RtSeq>, StoringType>::KeyBase;
     void BinWrite(std::ostream &writer) const {
-        KeyBase::BinWrite(writer);
         ValueBase::BinWrite(writer);
+        KeyBase::BinWrite(writer);
     }
 
     void BinRead(std::istream &reader) {
         this->clear();
-        KeyBase::BinRead(reader);
         ValueBase::BinRead(reader);
+        KeyBase::BinRead(reader);
     }
 };
 

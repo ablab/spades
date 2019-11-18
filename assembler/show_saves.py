@@ -39,6 +39,16 @@ def read_struct(file, struct):
 ST_SIZE = 8
 ST_NUC = ST_SIZE * 4
 
+def show_kmidx(file):
+    k = read_int(file)
+    print("k: %d" % k)
+    size = read_int(file, 8)
+    print("Size: %d" % size)
+    for _ in range(size):
+        id, offset, count = read_int(file, 8), read_int(file, 4), read_int(file, 4)
+        print(id, offset, count)
+
+
 def read_seq(file):
     def unpack_seq(bytes, length):
         nucs = ['A', 'C', 'G', 'T']
@@ -130,7 +140,8 @@ showers = {".grp" : show_grp,
            ".sqn" : show_sqn,
            ".cvr" : show_cvr,
            ".flcvr" : show_cvr,
-           ".mpr" : show_mpr }
+           ".mpr" : show_mpr,
+           ".kmidx" : show_kmidx}
 
 basename, ext = os.path.splitext(sys.argv[1])
 target = ext
