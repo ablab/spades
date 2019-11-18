@@ -149,19 +149,6 @@ public:
         }
         entry.unlock();
     }
-
-    using ValueBase = utils::ValueArray<EdgeInfo<typename Graph::EdgeId>>;
-    using KeyBase = typename utils::PerfectHashMap<RtSeq, EdgeInfo<typename Graph::EdgeId>, utils::kmer_index_traits<RtSeq>, StoringType>::KeyBase;
-    void BinWrite(std::ostream &writer) const {
-        ValueBase::BinWrite(writer);
-        KeyBase::BinWrite(writer);
-    }
-
-    void BinRead(std::istream &reader) {
-        this->clear();
-        ValueBase::BinRead(reader);
-        KeyBase::BinRead(reader);
-    }
 };
 
 template<class Graph, class StoringType = utils::DefaultStoring>

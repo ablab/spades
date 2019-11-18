@@ -72,7 +72,7 @@ public:
     }
 
     template<class Reader>
-    void BinRead(Reader &reader, const std::string & = "") {
+    void BinRead(Reader &reader) {
         clear();
         index_ptr_->deserialize(reader);
     }
@@ -138,14 +138,14 @@ public:
 
     template<class Writer>
     void BinWrite(Writer &writer) const {
-        KeyBase::BinWrite(writer);
         ValueBase::BinWrite(writer);
+        KeyBase::BinWrite(writer);
     }
 
     template<class Reader>
-    void BinRead(Reader &reader, const std::string &tmp) {
-        KeyBase::BinRead(reader, tmp);
-        ValueBase::BinRead(reader, tmp);
+    void BinRead(Reader &reader) {
+        ValueBase::BinRead(reader);
+        KeyBase::BinRead(reader);
     }
 
     friend struct PerfectHashMapBuilder;
@@ -196,8 +196,8 @@ public:
     }
 
     template<class Reader>
-    void BinRead(Reader &reader, const std::string &tmp) {
-        KeyBase::BinRead(reader, tmp);
+    void BinRead(Reader &reader) {
+        KeyBase::BinRead(reader);
     }
 
   private:
@@ -267,7 +267,7 @@ public:
 
     template<class Reader>
     void BinRead(Reader &reader, const std::string &FileName) {
-        base::BinRead(reader, FileName);
+        base::BinRead(reader);
         BinReadKmers(reader, FileName);
     }
 
