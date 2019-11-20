@@ -51,13 +51,14 @@ static void MappingPathStats(const Graph &g, size_t query_kmer_len,
 }
 
 static bool UsedOnBothSides(const Graph &g, EdgeId e, const std::multimap<EdgeId, std::string> &edge_usage) {
-    auto used_f = [&] (EdgeId a) { return edge_usage.count(a) > 0; };
+    auto used_f = [&] (EdgeId a) { return edge_usage.count(a) > 0 || edge_usage.count(g.conjugate(a)) > 0; };
     return std::any_of(g.out_begin(g.EdgeEnd(e)), g.out_end(g.EdgeEnd(e)), used_f) &&
             std::any_of(g.in_begin(g.EdgeStart(e)), g.in_end(g.EdgeStart(e)), used_f);
 }
 
 static void Run(const conj_graph_pack &gp, const std::string &contigs_file,
                 const std::string &paths_fn, const std::string &edge_info_fn,
+                const std::string &edge_color_fn,
                 const io::EdgeLabelHelper<Graph> &label_helper) {
 
     io::CanonicalEdgeHelper<Graph> canonical_helper(gp.g, label_helper.edge_naming_f());
@@ -109,6 +110,12 @@ static void Run(const conj_graph_pack &gp, const std::string &contigs_file,
     if (!edge_info_fn.empty())
         edge_info_os.open(edge_info_fn);
 
+    std::ofstream edge_color_os;
+    if (!edge_color_fn.empty()) {
+        edge_color_os.open(edge_color_fn);
+        edge_color_os << "Name,color\n";
+    }
+
     for (EdgeId e : gp.g.canonical_edges()) {
         edge_info_os << label_helper.label(e);
         std::string delimeter = "\t";
@@ -116,7 +123,12 @@ static void Run(const conj_graph_pack &gp, const std::string &contigs_file,
             suspicious_edge_cnt++;
             suspicious_edges << label_helper.label(e) << ",";
             total_suspicious_kmer_len += gp.g.length(e);
+            edge_color_os << label_helper.label(e) << ",red\n";
         }
+        if (edge_usage.count(e) > 0) {
+            edge_color_os << label_helper.label(e) << ",green\n";
+        }
+
         for (const auto &usage : utils::get_all(edge_usage, e)) {
             edge_info_os << delimeter << usage;
         }
@@ -141,6 +153,7 @@ struct gcfg {
     std::string sequences_fn;
     std::string paths_fn;
     std::string edge_info_fn;
+    std::string edge_color_fn;
     std::string workdir;
     unsigned nthreads;
 };
@@ -155,6 +168,7 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
                (option("-p", "--paths") & value("file", cfg.paths_fn)) % "Destination for outputting paths corresponding to CDS sequences",
                (option("-e", "--edge-info") & value("file", cfg.edge_info_fn)) % "Destination for outputting edge usage information",
                (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
+               (option("-c", "--colors") & value("file", cfg.edge_color_fn)) % "Destination for outputting edge coloring to be displayed in Bandage",
                (option("--workdir") & value("dir", cfg.workdir)) % "scratch directory to use (default: ./tmp)"
     );
 
@@ -195,7 +209,7 @@ int main(int argc, char** argv) {
 
         gp.EnsureBasicMapping();
 
-        debruijn_graph::Run(gp, cfg.sequences_fn, cfg.paths_fn, cfg.edge_info_fn, label_helper);
+        debruijn_graph::Run(gp, cfg.sequences_fn, cfg.paths_fn, cfg.edge_info_fn, cfg.edge_color_fn, label_helper);
         INFO("Done");
     } catch (const std::string &s) {
         std::cerr << s << std::endl;
