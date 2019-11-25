@@ -544,6 +544,10 @@ def init_parser(args):
         command_line, options, script, err_msg = get_options_from_params(
             os.path.join(options_parser.get_output_dir_from_args(), "params.txt"),
             args[0])
+
+        if err_msg != "":
+            support.error(err_msg)
+
         options_storage.first_command_line = [script] + options
 
 
