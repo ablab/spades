@@ -90,12 +90,12 @@ class ScopedMultifileStream : public MultifileStream<ReadType> {
 public:
     typedef ReadType ReadT;
 
-    ScopedMultifileStream(ReadStreamT& reader_1) : origin_stream_refs_({reader_1}),
-                                                   MultifileStream<ReadType>(std::move(reader_1)) {}
+    ScopedMultifileStream(ReadStreamT& reader_1) : MultifileStream<ReadType>(std::move(reader_1)),
+                                                   origin_stream_refs_({reader_1}) {}
 
     ScopedMultifileStream(ReadStreamT& reader_1, ReadStreamT& reader_2) :
-        origin_stream_refs_({reader_1, reader_2}),
-        MultifileStream<ReadType>(std::move(reader_1), std::move(reader_2)) {
+        MultifileStream<ReadType>(std::move(reader_1), std::move(reader_2)),
+        origin_stream_refs_({reader_1, reader_2}) {
     }
 
     ScopedMultifileStream(ScopedMultifileStream<ReadType>&& guard_multifile_stream) noexcept = default;
