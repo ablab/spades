@@ -119,6 +119,8 @@ class HllFiller {
     std::vector<KmerSequenceProcessor<Hasher, HllProcessor, KMerFilter>> kmer_seq_processors;
     unsigned k;
     std::vector<size_t> reads;
+
+    unsigned stop_after_log_read_cnt = 15;
  public:
     HllFiller(std::vector<hll::hll<>>& hlls, const Hasher& hasher, const KMerFilter& filter,
               unsigned k) {
@@ -133,6 +135,7 @@ class HllFiller {
         }
     }
 
+    //Return value: should we interrupt reads processing
     template <class Read>
     bool operator()(std::unique_ptr<Read> r) {
         unsigned thread_id = (unsigned)omp_get_thread_num();
@@ -142,7 +145,14 @@ class HllFiller {
             return false;
         }
         kmer_seq_processors[thread_id].ProcessSequence(seq, k);
-        return true;
+
+        if (reads[thread_id] >> stop_after_log_read_cnt) {
+#           pragma omp atomic
+            stop_after_log_read_cnt += 1;
+            return true;
+        }
+
+        return false;
     }
 
     size_t processed_reads() const {
