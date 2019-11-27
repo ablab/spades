@@ -187,11 +187,21 @@ def make_spades_cmd(args, dataset_info, test, spades_params_list, spades_dir, ou
     return cmd
 
 
-def contain_prohib(prohib_subs, s):
-    for subs in prohib_subs:
-        if (subs in s):
+def contain_subs(subs, s):
+    for sub in subs:
+        if (sub in s):
             return True
     return False
+
+
+def create_ignore_list(dir, allow_sub):
+    ignore_list = []
+    for file in os.listdir(dir):
+        if os.path.isfile(os.path.join(dir, file)):
+            if (not contain_subs(allow_sub, file)):
+                ignore_list.append(file)
+
+    return ignore_list
 
 
 def cmp_folder(output_dir, etalon_dir, ignore, allowed_substring):
@@ -211,10 +221,14 @@ def cmp_folder(output_dir, etalon_dir, ignore, allowed_substring):
     os.system("find " + output_dir + " -type f -exec sed -i '/version/d' {} \;")
     os.system("find " + etalon_dir + " -type f -exec sed -i '/version/d' {} \;")
 
-    dircmp = filecmp.dircmp(etalon_dir, output_dir, ignore=ignore)
-    dircmp.diff_files = [x for x in dircmp.diff_files if contain_prohib(allowed_substring, x)]
-    dircmp.right_only = [x for x in dircmp.right_only if contain_prohib(allowed_substring, x)]
-    dircmp.left_only = [x for x in dircmp.left_only if contain_prohib(allowed_substring, x)]
+    ignore_list = ignore
+    ignore_list += create_ignore_list(output_dir, ignore + allowed_substring)
+    ignore_list += create_ignore_list(etalon_dir, ignore + allowed_substring)
+
+    dircmp = filecmp.dircmp(etalon_dir, output_dir, ignore=ignore_list)
+    dircmp.diff_files = [x for x in dircmp.diff_files if contain_subs(allowed_substring, x)]
+    dircmp.right_only = [x for x in dircmp.right_only if contain_subs(allowed_substring, x)]
+    dircmp.left_only = [x for x in dircmp.left_only if contain_subs(allowed_substring, x)]
 
     if (dircmp.diff_files != []):
         log.err(str(dircmp.diff_files) + " differ from etalon")
