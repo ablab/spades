@@ -194,7 +194,7 @@ def contain_prohib(prohib_subs, s):
     return False
 
 
-def cmp_folder(output_dir, etalon_dir, ignore, ignore_substr):
+def cmp_folder(output_dir, etalon_dir, ignore, allowed_substring):
     log.log("cmp folder " + output_dir + " with etalon")
     os.system("find " + output_dir + " -type f -exec sed -i '/_dir/d' {} \;")
     os.system("find " + etalon_dir + " -type f -exec sed -i '/_dir/d' {} \;")
@@ -203,10 +203,9 @@ def cmp_folder(output_dir, etalon_dir, ignore, ignore_substr):
     os.system("find " + etalon_dir + " -type f -exec sed -i '/agent/d' {} \;")
 
     dircmp = filecmp.dircmp(etalon_dir, output_dir, ignore=ignore)
-    dircmp.diff_files = [x for x in dircmp.diff_files if
-                         not contain_prohib(ignore_substr + ["fasta", "fastq", "fastg", "gfa", "paths"], x)]
-    dircmp.right_only = [x for x in dircmp.right_only if not contain_prohib(ignore_substr, x)]
-    dircmp.left_only = [x for x in dircmp.left_only if not contain_prohib(ignore_substr, x)]
+    dircmp.diff_files = [x for x in dircmp.diff_files if contain_prohib(allowed_substring, x)]
+    dircmp.right_only = [x for x in dircmp.right_only if contain_prohib(allowed_substring, x)]
+    dircmp.left_only = [x for x in dircmp.left_only if contain_prohib(allowed_substring, x)]
 
     if (dircmp.diff_files != []):
         log.err(str(dircmp.diff_files) + " differ from etalon")
@@ -221,7 +220,7 @@ def cmp_folder(output_dir, etalon_dir, ignore, ignore_substr):
         return 0
 
 
-def cmp_folder_rec(output_dir, etalon_dir, ignore, ignore_substr):
+def cmp_folder_rec(output_dir, etalon_dir, ignore, allowed_substr):
     folder_ignore = ['tmp', 'saves', '.bin_reads', 'path_extend']
     subdirs_etalon = [x for x in os.listdir(etalon_dir)
                       if os.path.isdir(os.path.join(etalon_dir, x)) and x not in folder_ignore]
@@ -229,12 +228,8 @@ def cmp_folder_rec(output_dir, etalon_dir, ignore, ignore_substr):
     subdirs_output = [x for x in os.listdir(output_dir)
                         if os.path.isdir(os.path.join(output_dir, x)) and x not in folder_ignore]
 
-    errcode = cmp_folder(output_dir, etalon_dir, [
-                             "params.txt", "spades.log",
-                             "tmp", "saves", ".bin_reads", "warnings.log",
-                             "input_dataset.yaml", "dont_correct.yaml",
-                             "final.lib_data", "corrected.yaml", "run_spades.sh", "run_spades.yaml"] + ignore,
-               ignore_substr)
+    errcode = cmp_folder(output_dir, etalon_dir, ["tmp", "saves", ".bin_reads"] + ignore,
+                         allowed_substr)
 
     if (errcode != 0):
         return errcode
@@ -246,19 +241,19 @@ def cmp_folder_rec(output_dir, etalon_dir, ignore, ignore_substr):
         return 12
 
     for subdir in subdirs_etalon:
-        errcode = cmp_folder_rec(output_dir + "/" + subdir, etalon_dir + "/" + subdir, ignore, ignore_substr)
+        errcode = cmp_folder_rec(output_dir + "/" + subdir, etalon_dir + "/" + subdir, ignore, allowed_substr)
         if (errcode != 0):
             return errcode
     return 0
 
 
-def cmp_with_etalon(output_dir, etalon_dir, ignore=None, ignore_substr=None):
+def cmp_with_etalon(output_dir, etalon_dir, ignore=None, allowed_substr=None):
     if (ignore == None):
         ignore = []
-    if (ignore_substr == None):
-        ignore_substr = []
+    if (allowed_substr == None):
+        allowed_substr = []
 
-    return cmp_folder_rec(output_dir, etalon_dir, ignore, ignore_substr)
+    return cmp_folder_rec(output_dir, etalon_dir, ignore, allowed_substr)
 
 
 def run_spades(spades_dir, args, dataset_info, test, spades_params, output_dir, finish_with_error):
@@ -288,7 +283,8 @@ def etalon_saves(dataset_info, test, output_dir):
         if ("name" in test):
             etalon_folder += test["name"]
 
-        ecode = cmp_with_etalon(output_dir, os.path.join(etalon_folder))
+        ecode = cmp_with_etalon(output_dir, os.path.join(etalon_folder),
+                                allowed_substr=[".info", ".yaml", ".sh", "params.txt"])
 
         if ecode != 0:
             log.err("Comparing etalon saves did not pass, exit code " + str(ecode))
