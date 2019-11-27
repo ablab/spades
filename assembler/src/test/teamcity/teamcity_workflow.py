@@ -203,6 +203,9 @@ def cmp_folder(output_dir, etalon_dir, ignore, allowed_substring):
     os.system("find " + etalon_dir + " -type f -exec sed -i '/agent/d' {} \;")
 
     os.system("find " + output_dir + " -type f -exec sed -i '/hammer_/d' {} \;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/hammer_/d' {} \;")
+
+    os.system("find " + output_dir + " -type f -exec sed -i '/spades_/d' {} \;")
     os.system("find " + etalon_dir + " -type f -exec sed -i '/spades_/d' {} \;")
 
     os.system("find " + output_dir + " -type f -exec sed -i '/version/d' {} \;")
@@ -234,7 +237,7 @@ def cmp_folder_rec(output_dir, etalon_dir, ignore, allowed_substr):
     subdirs_output = [x for x in os.listdir(output_dir)
                         if os.path.isdir(os.path.join(output_dir, x)) and x not in folder_ignore]
 
-    errcode = cmp_folder(output_dir, etalon_dir, ["tmp", "saves", ".bin_reads"] + ignore,
+    errcode = cmp_folder(output_dir, etalon_dir, ["tmp", "saves", ".bin_reads", 'test_run.info'] + ignore,
                          allowed_substr)
 
     if (errcode != 0):
