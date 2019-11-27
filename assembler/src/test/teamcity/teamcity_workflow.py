@@ -202,6 +202,12 @@ def cmp_folder(output_dir, etalon_dir, ignore, allowed_substring):
     os.system("find " + output_dir + " -type f -exec sed -i '/agent/d' {} \;")
     os.system("find " + etalon_dir + " -type f -exec sed -i '/agent/d' {} \;")
 
+    os.system("find " + output_dir + " -type f -exec sed -i '/hammer_/d' {} \;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/spades_/d' {} \;")
+
+    os.system("find " + output_dir + " -type f -exec sed -i '/version/d' {} \;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/version/d' {} \;")
+
     dircmp = filecmp.dircmp(etalon_dir, output_dir, ignore=ignore)
     dircmp.diff_files = [x for x in dircmp.diff_files if contain_prohib(allowed_substring, x)]
     dircmp.right_only = [x for x in dircmp.right_only if contain_prohib(allowed_substring, x)]
