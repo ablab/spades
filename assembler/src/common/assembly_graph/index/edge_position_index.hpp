@@ -52,10 +52,18 @@ class EdgeInfo {
     unsigned count() const { return count_; }
     unsigned& count() { return count_; }
 
-    void clear() { offset_with_lock_.setData(CLEARED); }
+    void clear() {
+      offset_with_lock_.setData(CLEARED);
+      edge_id_ = IdType();
+      count_ = 0;
+    }
     bool clean() const { return offset() == CLEARED; }
 
-    void remove() { offset_with_lock_.setData(TOMBSTONE); }
+    void remove() {
+      offset_with_lock_.setData(TOMBSTONE);
+      edge_id_ = IdType();
+      count_ = 0;
+    }
     bool removed() const { return offset() == TOMBSTONE; }
 
     bool valid() const {
