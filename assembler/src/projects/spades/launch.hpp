@@ -133,12 +133,12 @@ void assemble_genome() {
                   .add<debruijn_graph::DistanceEstimation>(true)
                   .add<debruijn_graph::RepeatResolution>(true);
 
-            if (cfg::get().biosynthetic_mode)
+            if (cfg::get().mode == debruijn_graph::config::pipeline_type::bgc)
                 SPAdes.add<debruijn_graph::ExtractDomains>();
 
             SPAdes.add<debruijn_graph::ContigOutput>(false)
                   .add<debruijn_graph::SecondPhaseSetup>();
-            if (cfg::get().biosynthetic_mode)
+            if (cfg::get().mode == debruijn_graph::config::pipeline_type::bgc)
                 SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();
         }
     }
@@ -169,9 +169,9 @@ void assemble_genome() {
         //No graph modification allowed after HybridLibrariesAligning stage!
 
         SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration, false)
-               .add<debruijn_graph::PairInfoCount>()
-               .add<debruijn_graph::DistanceEstimation>()
-               .add<debruijn_graph::RepeatResolution>();
+              .add<debruijn_graph::PairInfoCount>()
+              .add<debruijn_graph::DistanceEstimation>()
+              .add<debruijn_graph::RepeatResolution>();
 
         if (cfg::get().mode == debruijn_graph::config::pipeline_type::metaplasmid) {
             AddMetaplasmidStages(SPAdes);
@@ -183,7 +183,7 @@ void assemble_genome() {
 
     SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
 
-    if (cfg::get().biosynthetic_mode && cfg::get().rr_enable)
+    if (cfg::get().mode == debruijn_graph::config::pipeline_type::bgc && cfg::get().rr_enable)
         SPAdes.add(new debruijn_graph::DomainGraphConstruction());
 
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());

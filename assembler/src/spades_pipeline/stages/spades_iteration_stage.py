@@ -27,7 +27,8 @@ def add_configs(command, configs_dir):
                            ("truseq_mode", "moleculo_mode"),
                            ("rna", "rna_mode"),
                            ("large_genome", "large_genome_mode"),
-                           ("plasmid", "plasmid_mode")]
+                           ("plasmid", "plasmid_mode"),
+                           ("bio", "bgc_mode")]
     # ("careful", "careful_mode"),
     for (mode, config) in mode_config_mapping:
         if options_storage.args.__dict__[mode]:
@@ -60,8 +61,6 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one or K >= options_storage.GAP_CLOSER_ENABLE_MIN_K)
     subst_dict["rr_enable"] = bool_to_str(last_one and cfg.rr_enable)
-    subst_dict["bio"] = bool_to_str(cfg.bio)
-    subst_dict["set_of_hmms"] = cfg.set_of_hmms
 #    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
@@ -98,6 +97,12 @@ def prepare_config_rnaspades(filename, log):
     subst_dict["antisense"] = bool_to_str(options_storage.args.strand_specificity == "rf")
     process_cfg.substitute_params(filename, subst_dict, log)
 
+def prepare_config_bgcspades(filename, cfg, log):
+    if not options_storage.args.bio:
+        return
+    subst_dict = dict()
+    subst_dict["set_of_hmms"] = cfg.set_of_hmms
+    process_cfg.substitute_params(filename, subst_dict, log)
 
 def prepare_config_construction(filename, log):
     if options_storage.args.read_cov_threshold is None:
@@ -144,6 +149,7 @@ class IterationStage(stage.Stage):
                                           {"scaffolding_mode": cfg.scaffolding_mode}, self.log)
 
         prepare_config_rnaspades(os.path.join(dst_configs, "rna_mode.info"), self.log)
+        prepare_config_bgcspades(os.path.join(dst_configs, "bgc_mode.info"), cfg, self.log)
         prepare_config_construction(os.path.join(dst_configs, "construction.info"), self.log)
         cfg_fn = os.path.join(dst_configs, "config.info")
         prepare_config_spades(cfg_fn, cfg, self.log, additional_contigs_dname, self.K, self.get_stage(self.short_name),

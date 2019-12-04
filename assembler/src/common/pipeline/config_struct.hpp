@@ -39,7 +39,7 @@ enum class pipeline_type : char {
     isolate,
     mda,
     meta,
-    anti,
+    bgc,
     moleculo,
     rna,
     plasmid,
@@ -473,7 +473,6 @@ struct debruijn_config {
     bool use_intermediate_contigs;
     size_t min_edge_length_for_is_count;
 
-    bool biosynthetic_mode;
     std::string hmm_set;
 
     single_read_resolving_mode single_reads_rr;

@@ -54,10 +54,6 @@ two_step_rr false
 ; enables/disables usage of intermediate contigs in two-step pipeline
 use_intermediate_contigs false
 
-;run pipeline for BGCs detection
-bio false
-set_of_hmms none
-
 ;use single reads for rr (all | only_single_libs | none )
 single_reads_rr only_single_libs
 

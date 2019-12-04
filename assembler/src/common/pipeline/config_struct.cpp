@@ -81,7 +81,7 @@ std::vector<std::string> PipelineTypeNames() {
                     {"isolate", pipeline_type::isolate},
                     {"mda", pipeline_type::mda},
                     {"meta", pipeline_type::meta},
-                    {"anti", pipeline_type::anti},
+                    {"bgc", pipeline_type::bgc},
                     {"moleculo", pipeline_type::moleculo},
                     {"rna", pipeline_type::rna},
                     {"plasmid", pipeline_type::plasmid},
@@ -732,9 +732,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
 
     load(cfg.pb, pt, "pacbio_processor", complete);
 
-    load(cfg.biosynthetic_mode, pt, "bio", complete);
-    load(cfg.hmm_set, pt, "set_of_hmms", complete);
-
     load(cfg.two_step_rr, pt, "two_step_rr", complete);
 //TODO::how to do it normally??
     if (cfg.two_step_rr && cfg.mode == pipeline_type::plasmid) {
@@ -813,6 +810,10 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
         VERIFY_MSG(!cfg.prelim_pe_params, "Option prelim_pe can be loaded only once");
         cfg.prelim_pe_params.reset(cfg.pe_params);
         load(*cfg.prelim_pe_params, pt, "prelim_pe", false);
+    }
+
+    if (pt.count("set_of_hmms")) {
+        load(cfg.hmm_set, pt, "set_of_hmms");
     }
 }
 

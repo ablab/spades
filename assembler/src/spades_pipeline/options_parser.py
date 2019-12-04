@@ -35,7 +35,7 @@ def get_mode():
     elif script_basename == "plasmidspades.py" or nargs.plasmid:
         mode = "plasmid"
     elif nargs.bio:
-        mode = "bio"
+        mode = "bgc"
     elif script_basename == "metaspades.py" or nargs.meta:
         mode = "meta"
     if script_basename == "metaplasmidspades.py" or (nargs.plasmid and nargs.meta):
@@ -49,7 +49,7 @@ def add_mode_to_args(args):
         args.rna = True
     elif mode == "plasmid":
         args.plasmid = True
-    elif mode == "bio":
+    elif mode == "bgc":
         args.meta = True
         args.bio = True
     elif mode == "meta":
@@ -864,13 +864,10 @@ def add_to_cfg(cfg, log, bin_home, args):
     cfg["common"].__dict__["developer_mode"] = args.developer_mode
     if args.series_analysis:
         cfg["common"].__dict__["series_analysis"] = args.series_analysis
-    cfg["common"].__dict__["bio"] = args.bio
     if args.bio:
         cfg["common"].__dict__["set_of_hmms"] = ",".join([os.path.join(biosyntheticspades_hmms, hmmfile) for hmmfile in os.listdir(biosyntheticspades_hmms)
                                                           if os.path.isfile(os.path.join(biosyntheticspades_hmms, hmmfile))
                                                           and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz"))])
-    else:
-        cfg["common"].__dict__["set_of_hmms"] = "";
 
     # dataset section
     cfg["dataset"].__dict__["yaml_filename"] = args.dataset_yaml_filename
