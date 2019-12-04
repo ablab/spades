@@ -474,7 +474,7 @@ template<class Graph>
 AlgoPtr<Graph> ComplexBRInstance(
     Graph &g,
     config::debruijn_config::simplification::complex_bulge_remover cbr_config,
-    const SmartEdgeSet<std::unordered_set<typename Graph::EdgeId>, Graph>& restricted_edges,
+    const SmartEdgeSet<std::unordered_set<typename Graph::EdgeId>, Graph> *restricted_edges,
     const SimplifInfoContainer &info) {
     if (!cbr_config.enabled)
         return nullptr;
@@ -631,7 +631,7 @@ template<class Graph>
 AlgoPtr<Graph> BRInstance(Graph &g,
                           const config::debruijn_config::simplification::bulge_remover &br_config,
                           const SimplifInfoContainer &info,
-                          BulgeCallbackF callback,
+                          BulgeCallbackF callback = nullptr,
                           EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
     if (!br_config.enabled || (br_config.main_iteration_only && !info.main_iteration())) {
         return nullptr;

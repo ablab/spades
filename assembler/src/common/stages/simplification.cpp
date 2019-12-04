@@ -12,7 +12,6 @@
 #include "stages/simplification_pipeline/single_cell_simplification.hpp"
 #include "stages/simplification_pipeline/rna_simplification.hpp"
 #include "modules/simplification/cleaner.hpp"
-#include "common/utils/filesystem/path_helper.hpp"
 
 #include "simplification.hpp"
 
@@ -217,17 +216,19 @@ public:
         //    std::cout << "Edge:" << g_.str(e) << "; cov: " << g_.coverage(e) << "; start " << g_.str(g_.EdgeStart(e)) << "; end " << g_.str(g_.EdgeEnd(e)) << std::endl;
         //};
         //auto extensive_handler = [&] (EdgeId e) {removal_handler_(e) ; printing_handler(e); drawing_handler.HandleDelete(e);};
-        std::unordered_set<EdgeId> placeholder_set;
-        SmartEdgeSet<std::unordered_set<EdgeId>, Graph> placeholder_smartset = make_smart_edge_set(gp_.g, placeholder_set);
-
-        if (gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>()) {
-            DEBUG("RestrictedEdgeSet is attached");
+        bool use_restricted = gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>();
+        if (use_restricted) {
+            DEBUG("RestrictedEdgeSet is present");
         }
 
-        auto restricted_check = [this](EdgeId e, const std::vector<EdgeId>&){
-            DEBUG("Checking if " << e << " is in restricted edge set");
-            return gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>() ? gp_.get_const<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0 : 0;
-        };
+        typedef std::function<bool(EdgeId edge, const std::vector<EdgeId>& path)> BulgeCallbackF;
+        BulgeCallbackF bulge_callback_f = nullptr;
+        if (use_restricted) {
+            bulge_callback_f = [this](EdgeId e, const std::vector<EdgeId>&) {
+                                   DEBUG("Checking if " << e << " is in restricted edge set");
+                                   return gp_.get_const<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
+                               };
+        }
 
         typename ComponentRemover<Graph>::HandlerF set_removal_handler_f;
         if (removal_handler_) {
@@ -268,7 +269,7 @@ public:
                 "Complex tip clipper");
 
         algo.AddAlgo(
-                ComplexBRInstance(gp_.g, simplif_cfg_.cbr, gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>() ? gp_.get_const<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>() : placeholder_smartset, info_container_),
+            ComplexBRInstance(gp_.g, simplif_cfg_.cbr, use_restricted ? &gp_.get_const<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>() : nullptr, info_container_),
                 "Complex bulge remover");
 
         algo.AddAlgo(
@@ -283,12 +284,12 @@ public:
 
         algo.AddAlgo(
                 BRInstance(g_, simplif_cfg_.br,
-                           info_container_, restricted_check, removal_handler_),
+                           info_container_, bulge_callback_f, removal_handler_),
                 "Bulge remover");
 
         algo.AddAlgo(
                 BRInstance(g_, simplif_cfg_.final_br,
-                                   info_container_, restricted_check, removal_handler_),
+                           info_container_, bulge_callback_f, removal_handler_),
                 "Final bulge remover");
 
         //TODO need better configuration
@@ -367,9 +368,17 @@ public:
     void SimplifyGraph() {
         bool rna_mode = (info_container_.mode() == config::pipeline_type::rna);
 
-        auto restricted_check = [this](EdgeId e, const std::vector<EdgeId>&){
-            return gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>() ? gp_.get_const<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0 : 0;
-        };
+        bool use_restricted = gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>();
+        if (use_restricted) {
+            DEBUG("RestrictedEdgeSet is present");
+        }
+        typedef std::function<bool(EdgeId edge, const std::vector<EdgeId>& path)> BulgeCallbackF;
+        BulgeCallbackF bulge_callback_f = nullptr;
+        if (use_restricted) {
+            bulge_callback_f = [this](EdgeId e, const std::vector<EdgeId>&) {
+                                   return gp_.get_const<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
+                               };
+        }
 
         INFO("Graph simplification started");
         printer_(info_printer_pos::before_simplification);
@@ -385,7 +394,7 @@ public:
                             "Tip clipper");
         algo_tc_br->AddAlgo(DeadEndInstance(g_, simplif_cfg_.dead_end, info_container_, removal_handler_),
                             "Dead end clipper");
-        algo_tc_br->AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, restricted_check, removal_handler_),
+        algo_tc_br->AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, bulge_callback_f, removal_handler_),
                             "Bulge remover");
 
 //        algo.AddAlgo(

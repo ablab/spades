@@ -1027,7 +1027,6 @@ def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False
     cfg = dict()
     parser = create_parser()
 
-    global parser
     global biosyntheticspades_hmms
     biosyntheticspades_hmms = os.path.join(spades_home, "biosynthetic_spades_hmms")
     if secondary_filling:

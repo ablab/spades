@@ -127,7 +127,7 @@ static void Simplify(conj_graph_pack &gp,
                                                extra_condition, removal_handler),
                  "Tip clipper");
 
-    algo.AddAlgo(BRInstance(gp.g, br_config(), simplif_info, removal_handler),
+    algo.AddAlgo(BRInstance(gp.g, br_config(), simplif_info, nullptr, removal_handler),
                  "Bulge remover");
 
     algo.AddAlgo(ECRemoverInstance(gp.g, ec_config(), simplif_info, removal_handler),
@@ -144,11 +144,11 @@ static void Simplify(conj_graph_pack &gp,
     //NB: we do not rescue the undeadends here
     algo.AddAlgo(std::make_shared<ParallelEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>>>
                                                                        (gp.g,
-                                                                               CoverageUpperBound<Graph>(gp.g, low_cov_thr),
-                                                                               simplif_info.chunk_cnt(),
-                                                                               removal_handler,
-                                                                               /*canonical_only*/true,
-                                                                               CoverageComparator<Graph>(gp.g)),
+                                                                        CoverageUpperBound<Graph>(gp.g, low_cov_thr),
+                                                                        simplif_info.chunk_cnt(),
+                                                                        removal_handler,
+                                                                        /*canonical_only*/true,
+                                                                        CoverageComparator<Graph>(gp.g)),
                  "Removing all edges with coverage below " + std::to_string(low_cov_thr));
 
     algo.AddAlgo(RelativeCoverageComponentRemoverInstance<Graph>(gp.g, gp.flanking_cov,

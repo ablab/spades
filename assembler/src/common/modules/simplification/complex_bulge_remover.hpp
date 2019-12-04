@@ -1087,7 +1087,7 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
 
     size_t max_length_;
     size_t length_diff_;
-    const RestrictedEdgeSet &protected_edges_;
+    const RestrictedEdgeSet *protected_edges_ = nullptr;
     std::string pics_folder_;
 
     bool ProcessComponent(LocalizedComponent<Graph>& component,
@@ -1100,10 +1100,10 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
             DEBUG("Tree found");
             SkeletonTree<Graph> tree(component, tree_finder.GetTreeEdges());
 
-            if (protected_edges_.size()) {
+            if (protected_edges_) {
                 auto tree_edges = tree_finder.GetTreeEdges();
                 for (auto edge : tree_edges) {
-                    if (protected_edges_.count(edge) > 0) {
+                    if (protected_edges_->count(edge) > 0) {
                         DEBUG("Trying to project a-domain edges");
                         return false;
                     }
@@ -1168,7 +1168,7 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
 public:
 
     //track_changes=false leads to every iteration run from scratch
-    ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff, const RestrictedEdgeSet& protected_edges,
+    ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff, const RestrictedEdgeSet *protected_edges,
                         size_t chunk_cnt, const std::string& pics_folder = "") :
             base(g, std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph, VertexId>>(
                 CandidateFinder<Graph>(g, max_length, length_diff), chunk_cnt),
