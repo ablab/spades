@@ -1087,7 +1087,7 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
 
     size_t max_length_;
     size_t length_diff_;
-    const RestrictedEdgeSet &a_domain_edges_;
+    const RestrictedEdgeSet &protected_edges_;
     std::string pics_folder_;
 
     bool ProcessComponent(LocalizedComponent<Graph>& component,
@@ -1100,11 +1100,13 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
             DEBUG("Tree found");
             SkeletonTree<Graph> tree(component, tree_finder.GetTreeEdges());
 
-            auto tree_edges = tree_finder.GetTreeEdges();
-            for (auto edge : tree_edges) {
-                if (a_domain_edges_.count(edge) > 0) {
-                    DEBUG("Trying to project a-domain edges");
-                    return false;
+            if (protected_edges_.size()) {
+                auto tree_edges = tree_finder.GetTreeEdges();
+                for (auto edge : tree_edges) {
+                    if (protected_edges_.count(edge) > 0) {
+                        DEBUG("Trying to project a-domain edges");
+                        return false;
+                    }
                 }
             }
 
@@ -1166,14 +1168,14 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
 public:
 
     //track_changes=false leads to every iteration run from scratch
-    ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff, const RestrictedEdgeSet& a_domain_edges,
+    ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff, const RestrictedEdgeSet& protected_edges,
                         size_t chunk_cnt, const std::string& pics_folder = "") :
             base(g, std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph, VertexId>>(
                 CandidateFinder<Graph>(g, max_length, length_diff), chunk_cnt),
                 false, std::less<VertexId>(), /*track changes*/false),
             max_length_(max_length),
             length_diff_(length_diff),
-            a_domain_edges_(a_domain_edges),
+            protected_edges_(protected_edges),
             pics_folder_(pics_folder) {
         if (!pics_folder_.empty()) {
 //            remove_dir(pics_folder_);
