@@ -136,7 +136,7 @@ void assemble_genome() {
             if (cfg::get().mode == debruijn_graph::config::pipeline_type::bgc)
                 SPAdes.add<debruijn_graph::ExtractDomains>();
 
-            SPAdes.add<debruijn_graph::ContigOutput>(false)
+            SPAdes.add<debruijn_graph::ContigOutput>(true)
                   .add<debruijn_graph::SecondPhaseSetup>();
             if (cfg::get().mode == debruijn_graph::config::pipeline_type::bgc)
                 SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();
