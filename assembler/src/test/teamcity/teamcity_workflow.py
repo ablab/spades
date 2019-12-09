@@ -209,6 +209,12 @@ def cmp_folder(output_dir, etalon_dir, ignore, allowed_substring):
     os.system("find " + output_dir + " -type f -exec sed -i '/_dir/d' {} \;")
     os.system("find " + etalon_dir + " -type f -exec sed -i '/_dir/d' {} \;")
 
+    os.system("find " + output_dir + " -type f -exec sed -i '/corrector_/d' {} \;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/corrector_/d' {} \;")
+
+    os.system("find " + output_dir + " -type f -exec sed -i '/tmp/d' {} \;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/tmp/d' {} \;")
+
     os.system("find " + output_dir + " -type f -exec sed -i '/agent/d' {} \;")
     os.system("find " + etalon_dir + " -type f -exec sed -i '/agent/d' {} \;")
 
