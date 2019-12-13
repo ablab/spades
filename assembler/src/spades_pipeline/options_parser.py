@@ -846,7 +846,7 @@ def add_to_option(args, log, skip_output_dir):
         args.only_assembler = True
 
 
-def add_to_cfg(cfg, log, bin_home, args):
+def add_to_cfg(cfg, log, bin_home, spades_home, args):
     ### FILLING cfg
     cfg["common"] = empty_config()
     cfg["dataset"] = empty_config()
@@ -865,9 +865,12 @@ def add_to_cfg(cfg, log, bin_home, args):
     if args.series_analysis:
         cfg["common"].__dict__["series_analysis"] = args.series_analysis
     if args.bio:
-        cfg["common"].__dict__["set_of_hmms"] = ",".join([os.path.join(biosyntheticspades_hmms, hmmfile) for hmmfile in os.listdir(biosyntheticspades_hmms)
-                                                          if os.path.isfile(os.path.join(biosyntheticspades_hmms, hmmfile))
-                                                          and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz"))])
+        biosyntheticspades_hmms_path = os.path.join(spades_home, options_storage.biosyntheticspades_hmms)
+        is_hmmfile = lambda hmmfile: os.path.isfile(os.path.join(biosyntheticspades_hmms_path, hmmfile)) \
+                                     and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz"))
+        cfg["common"].__dict__["set_of_hmms"] = ",".join([os.path.join(biosyntheticspades_hmms_path, hmmfile)
+                                                          for hmmfile in os.listdir(biosyntheticspades_hmms_path)
+                                                          if is_hmmfile(hmmfile)])
 
     # dataset section
     cfg["dataset"].__dict__["yaml_filename"] = args.dataset_yaml_filename
@@ -1027,8 +1030,6 @@ def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False
     cfg = dict()
     parser = create_parser()
 
-    global biosyntheticspades_hmms
-    biosyntheticspades_hmms = os.path.join(spades_home, "biosynthetic_spades_hmms")
     if secondary_filling:
         old_output_dir = options_storage.args.output_dir
         old_stop_after = options_storage.args.stop_after
@@ -1063,7 +1064,7 @@ def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False
     if options_storage.args.continue_mode:
         return options_storage.args, None, None
 
-    add_to_cfg(cfg, log, bin_home, options_storage.args)
+    add_to_cfg(cfg, log, bin_home, spades_home, options_storage.args)
     return options_storage.args, cfg, dataset_data
 
 
