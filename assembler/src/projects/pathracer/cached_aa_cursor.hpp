@@ -6,18 +6,19 @@
 
 #pragma once
 
-#include <cstdint>
-#include <limits>
-#include <unordered_map>
-#include <vector>
-#include <bitset>
-
 #include "common/utils/verify.hpp"
 
 // Serialization
 #include <cereal/types/common.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+
+#include <cstdint>
+#include <limits>
+#include <unordered_map>
+#include <vector>
+#include <bitset>
+#include <array>
 
 class CachedAACursorContext;
 
