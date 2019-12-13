@@ -41,7 +41,6 @@ Required positional arguments:
 
 1. Query file (.hmm file or .fasta)
 2. Assembly graph in GFA format
-3. _k_ (_de Bruijn_ vertex overlap size) for the input graph
 
 Main options:
 
@@ -157,7 +156,7 @@ One can download example datasets from here <http://cab.spbu.ru/software/pathrac
 
 Lookup for beta-lactamase genes (amino acid pHMMs) in Singapore wastewater  
 ```
-pathracer bla_all.hmm urban_strain.gfa 55 --output pathracer_urban_strain_bla_all
+pathracer bla_all.hmm urban_strain.gfa --output pathracer_urban_strain_bla_all
 ```
 
 Lookup for beta-lactamase genes (amino acid pHMMs) in AMR ONT plasmids (many indels!)   
@@ -167,17 +166,17 @@ pathracer-fs-seq bla_all.hmm plasmids-ONT.fa --output pathracer_plasmids_ont_bla
 
 Lookup for _16S_/_5S_/_23S_ (nucleotide HMMs) in _E.coli_ multicell assembly  
 ```
-pathracer bac.hmm ecoli_mc.gfa 55 --output pathracer_ecoli_mc_bac
+pathracer bac.hmm ecoli_mc.gfa --output pathracer_ecoli_mc_bac
 ```
 
 Lookup for known _16S_ sequences in _E.coli_ multicell assembly  
 ```
-pathracer synth16S_new.fa ecoli_mc.gfa 55 --nt --output pathracer_ecoli_mc_16S_seqs
+pathracer synth16S_new.fa ecoli_mc.gfa --nt --output pathracer_ecoli_mc_16S_seqs
 ```
 
 Lookup for known _16S_ sequences in SYNTH mock metagenome assembly  
 ```
-pathracer synth16S_new.fa synth_strain_gbuilder.gfa 55 --nt --output pathracer_synth_strain_gbuider_16S_seqs
+pathracer synth16S_new.fa synth_strain_gbuilder.gfa --nt --output pathracer_synth_strain_gbuider_16S_seqs
 ```
 
 Let us extract **all** _16S_ sequences from SYNTH mock metagenome assembly.
@@ -186,7 +185,7 @@ Deep analysis of extremely complicated dataset also require stack and memory lim
 ```
 ulimit -s unlimited &&  
 export OMP_STACKSIZE=1G  
-pathracer bac.hmm synth_strain_gbuilder.gfa 55 --queries 16S_rRNA -m 250 --top 1000000 --output pathracer_synth_strain_gbuilder_16s --no-top-score-filter
+pathracer bac.hmm synth_strain_gbuilder.gfa --queries 16S_rRNA -m 250 --top 1000000 --output pathracer_synth_strain_gbuilder_16s --no-top-score-filter
 ```
 
 ### References

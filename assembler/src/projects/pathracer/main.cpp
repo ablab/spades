@@ -131,7 +131,6 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
   auto cli = (
       cfg.hmmfile    << value("input file (HMM or sequence)"),
       cfg.load_from  << value("load from"),
-      cfg.k          << integer("k-mer size"),
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
       (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
       (cfg.local << option("--local") % "perform local-local HMM matching"),
@@ -586,26 +585,6 @@ std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path,
         cpath.push_back(g.conjugate(*it));
     }
     return cpath;
-}
-
-void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph,
-               std::vector<std::vector<EdgeId>> &paths,
-               const std::string &filename,
-               io::IdMapper<std::string> *id_mapper) {
-    using namespace debruijn_graph;
-    if (ends_with(filename, ".gfa")) {
-        gfa::GFAReader gfa(filename);
-        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(graph, id_mapper);
-        paths.reserve(gfa.num_paths());
-        for (const auto &path : gfa.paths()) {
-            paths.push_back(path.edges);
-            paths.push_back(conjugate_path(path.edges, graph));
-        }
-    } else {
-        io::binary::GraphIO<debruijn_graph::ConjugateDeBruijnGraph> gio;
-        gio.Load(filename, graph);
-    }
 }
 
 void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph */,
@@ -1171,10 +1150,22 @@ int pathracer_main(int argc, char* argv[]) {
 
     using namespace debruijn_graph;
 
-    debruijn_graph::ConjugateDeBruijnGraph graph(cfg.k);
     std::vector<std::vector<EdgeId>> scaffold_paths;
     std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
-    LoadGraph(graph, scaffold_paths, cfg.load_from, id_mapper.get());
+    using namespace debruijn_graph;
+
+    gfa::GFAReader gfa(cfg.load_from);
+    INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+    VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
+    VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
+    debruijn_graph::ConjugateDeBruijnGraph graph(gfa.k());
+    gfa.to_graph(graph, id_mapper.get());
+    scaffold_paths.reserve(gfa.num_paths());
+    for (const auto &path : gfa.paths()) {
+        scaffold_paths.push_back(path.edges);
+        scaffold_paths.push_back(conjugate_path(path.edges, graph));
+    }
+
     size_t letters = 0;
     for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         EdgeId edge = *it;
@@ -1275,7 +1266,6 @@ void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
       cfg.hmmfile    << value("input HMM file"),  // TODO support sequence mode
       // cfg.load_from  << value("load from"),
       cfg.sequence_file  << value("input sequence file"),
-      // cfg.k          << integer("k-mer size"),
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
       (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
       (cfg.local << option("--local") % "perform local-local HMM matching"),
