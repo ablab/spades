@@ -26,6 +26,7 @@
 #include "series_analysis.hpp"
 #include "pipeline/stage.hpp"
 #include "contig_output_stage.hpp"
+#include "molecule_extraction_stage.hpp"
 
 namespace spades {
 
@@ -45,6 +46,13 @@ inline bool MetaCompatibleLibraries() {
 inline bool HybridLibrariesPresent() {
     for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id) 
         if (cfg::get().ds.reads[lib_id].is_hybrid_lib()) 
+            return true;
+    return false;
+}
+
+inline bool RNA10XLibraries() {
+    for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id)
+        if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::RNA10x)
             return true;
     return false;
 }
@@ -160,9 +168,14 @@ void assemble_genome() {
         //No graph modification allowed after HybridLibrariesAligning stage!
 
         SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration, false)
-               .add<debruijn_graph::PairInfoCount>()
-               .add<debruijn_graph::DistanceEstimation>()
-               .add<debruijn_graph::RepeatResolution>();
+               .add<debruijn_graph::PairInfoCount>();
+
+        if (RNA10XLibraries())
+            SPAdes.add<debruijn_graph::MoleculeExtractionStage>();
+        else {
+            SPAdes.add<debruijn_graph::DistanceEstimation>()
+                    .add<debruijn_graph::RepeatResolution>();
+        }
 
         if (cfg::get().mode == debruijn_graph::config::pipeline_type::metaplasmid) {
             AddMetaplasmidStages(SPAdes);

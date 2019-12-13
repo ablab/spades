@@ -16,7 +16,8 @@ add_library(spades-stages STATIC
             repeat_resolving.cpp
             contig_output_stage.cpp
             hybrid_aligning.cpp
-            chromosome_removal.cpp)
+            chromosome_removal.cpp
+            molecule_extraction_stage.cpp)
 target_link_libraries(spades-stages ConsensusCore)
 
 add_executable(spades-core 

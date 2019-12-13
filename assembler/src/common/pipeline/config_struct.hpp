@@ -41,6 +41,7 @@ enum class pipeline_type : char {
     meta,
     moleculo,
     rna,
+    rna10x,
     plasmid,
     large_genome,
     metaplasmid,

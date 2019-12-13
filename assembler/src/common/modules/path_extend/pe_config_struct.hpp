@@ -91,6 +91,14 @@ struct pe_config {
 
         ExtensionOptionsT mate_pair_options;
 
+        struct RNA10xOpts {
+            size_t min_cloud_size;
+            bool remove_overlaps;
+            double absolute_barcode_threshold;
+            double relative_barcode_threshold;
+            size_t absolute_length_threshold;
+            double short_rel_barcode_threshold;
+        } rna_10x;
 
         struct ScaffolderOptionsT {
             bool enabled;

@@ -9,6 +9,7 @@
 
 #include <assembly_graph/core/graph.hpp>
 #include <sequence/range.hpp>
+#include <assembly_graph/paths/mapping_path.hpp>
 #include "io/binary/binary.hpp"
 
 
@@ -377,5 +378,169 @@ public:
     }
 
 };
+
+
+
+class BarcodeCoverageStorage {
+public:
+    typedef std::unordered_map<std::string, std::unordered_map<EdgeId, double>> InnerMap;
+    typedef std::unordered_map<std::string, std::unordered_map<EdgeId, std::pair<size_t, size_t>>> InnerPosMap;
+
+private:
+    const Graph& g_;
+
+    InnerMap storage_;
+    InnerPosMap position_storage_;
+
+    const std::unordered_map<EdgeId, double> empty_map_;
+public:
+    BarcodeCoverageStorage(const Graph& g): g_(g), storage_(), position_storage_() {}
+
+    double GetCoverage(EdgeId e, const std::string &barcode, bool reverse = false) const {
+        if (reverse) {
+            e = g_.conjugate(e);
+        }
+
+        auto it_external = storage_.find(barcode);
+        if (it_external == storage_.end())
+            return 0.0;
+
+        auto it = it_external->second.find(e);
+        if (it == it_external->second.end())
+            return 0.0;
+        return it->second;
+    }
+
+    size_t GetLeftMostPosition(EdgeId e, const std::string &barcode) const {
+        auto it_external = position_storage_.find(barcode);
+        if (it_external == position_storage_.end())
+            return g_.length(e);
+        auto it = it_external->second.find(e);
+        if (it == it_external->second.end())
+            return g_.length(e);
+        return it->second.first;
+    }
+
+    size_t GetRightMostPosition(EdgeId e, const std::string &barcode) const {
+        auto it_external = position_storage_.find(barcode);
+        if (it_external == position_storage_.end())
+            return g_.length(e);
+        auto it = it_external->second.find(e);
+        if (it == it_external->second.end())
+            return g_.length(e);
+        return it->second.second;
+    }
+
+
+    void SetExtremePositions(EdgeId e, const std::string &barcode, size_t left, size_t right) {
+        if (!position_storage_[barcode].count(e)) {
+            position_storage_[barcode][e] = std::make_pair(g_.length(e), g_.length(e));
+            position_storage_[barcode][g_.conjugate(e)] = std::make_pair(g_.length(e), g_.length(e));
+        }
+        position_storage_[barcode][e].first = std::min(position_storage_[barcode][e].first, left);
+        position_storage_[barcode][e].second = std::min(position_storage_[barcode][e].second, right);
+        position_storage_[barcode][g_.conjugate(e)].second = std::min(position_storage_[barcode][g_.conjugate(e)].second, left);
+        position_storage_[barcode][g_.conjugate(e)].first = std::min(position_storage_[barcode][g_.conjugate(e)].first, right);
+        DEBUG(barcode << " " << barcode << " " << e << " " << position_storage_[barcode][e].first << " " << position_storage_[barcode][e].second);
+
+    }
+
+    void SetExtremePositions(const omnigraph::MappingPath<EdgeId>& read, const std::string &barcode) {
+
+        for (auto range : read) {
+            if (!position_storage_[barcode].count(range.first)) {
+                position_storage_[barcode][range.first] = std::make_pair(g_.length(range.first), g_.length(range.first));
+                position_storage_[barcode][g_.conjugate(range.first)] = std::make_pair(g_.length(range.first), g_.length(range.first));
+            }
+            position_storage_[barcode][range.first].first = std::min(position_storage_[barcode][range.first].first, range.second.mapped_range.start_pos);
+            position_storage_[barcode][range.first].second = std::min(position_storage_[barcode][range.first].second, g_.length(range.first) - range.second.mapped_range.end_pos - 1);
+
+            position_storage_[barcode][g_.conjugate(range.first)].second = std::min(position_storage_[barcode][g_.conjugate(range.first)].second, range.second.mapped_range.start_pos);
+            position_storage_[barcode][g_.conjugate(range.first)].first = std::min(position_storage_[barcode][g_.conjugate(range.first)].first, g_.length(range.first) - range.second.mapped_range.end_pos - 1);
+            DEBUG(barcode << " " << range.first << " " << position_storage_[barcode][range.first].first << " " << position_storage_[barcode][range.first].second);
+        }
+
+    }
+
+    const std::unordered_map<EdgeId, double>& GetBarcodeMap(const std::string &barcode) const {
+        if (storage_.find(barcode) != storage_.end()) {
+            return storage_.at(barcode);
+        }
+        return empty_map_;
+    }
+
+    void IncreaseKmerCount(EdgeId e, const std::string &barcode, size_t count, bool add_reverse = true) {
+        storage_[barcode][e] += (double) count;
+        if (add_reverse)
+            storage_[barcode][g_.conjugate(e)] += (double) count;
+    }
+
+    void Clear(const std::string &barcode) {
+        storage_.erase(barcode);
+        position_storage_.erase(barcode);
+    }
+
+    void Clear() {
+        storage_.clear();
+        position_storage_.clear();
+    }
+
+    void RecalculateCoverage() {
+        for(auto& it_external : storage_) {
+            for (auto& it_internal : it_external.second) {
+                it_internal.second = it_internal.second / double(g_.length(it_internal.first));
+            }
+        }
+    }
+
+    InnerMap::const_iterator begin() const {
+        return storage_.begin();
+    }
+
+    InnerMap::const_iterator end() const {
+        return storage_.end();
+    }
+
+    InnerPosMap& GetPosMap() {
+        return position_storage_;
+    }
+protected:
+    DECL_LOGGER("BarcodeCoverageStorage");
+};
+
+
+class BarcodeCoverageContainer {
+    std::vector<BarcodeCoverageStorage> data_;
+
+public:
+    typedef BarcodeCoverageStorage value_type;
+
+    BarcodeCoverageContainer(Graph& g, size_t count = 0) {
+        for (size_t i = 0; i < count; ++i) {
+            data_.emplace_back(g);
+        }
+    }
+
+    BarcodeCoverageStorage& operator[](size_t index) {
+        return data_[index];
+    }
+
+    const BarcodeCoverageStorage& operator[](size_t index) const {
+        return data_[index];
+    }
+
+
+    size_t size() const {
+        return data_.size();
+    }
+
+    void clear() {
+        for (auto& storage : data_) {
+            storage.Clear();
+        }
+    }
+
+};
+
 
 }

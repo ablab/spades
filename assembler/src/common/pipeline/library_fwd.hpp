@@ -15,6 +15,7 @@ namespace io {
 enum class LibraryType {
     SingleReads,
     SangerReads,
+    RNA10x,
     PacBioReads,
     NanoporeReads,
     PairedEnd,

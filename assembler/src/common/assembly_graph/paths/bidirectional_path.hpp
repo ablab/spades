@@ -112,13 +112,18 @@ class BidirectionalPath : public PathListener {
     std::vector<PathListener *> listeners_;
     const uint64_t id_;  //Unique ID
     float weight_;
+    uint32_t cut_from_beginning_;
+    uint32_t cut_from_end_;
+    std::string barcode_;
 
 public:
     BidirectionalPath(const Graph& g)
             : g_(g),
               conj_path_(nullptr),
               id_(path_id_++),
-              weight_(1.0) {
+              weight_(1.0),
+              cut_from_beginning_(0),
+              cut_from_end_(0) {
     }
 
     BidirectionalPath(const Graph& g, const std::vector<EdgeId>& path)
@@ -149,7 +154,10 @@ public:
               gap_len_(path.gap_len_),
               listeners_(),
               id_(path_id_++),
-              weight_(path.weight_) {
+              weight_(path.weight_),
+              cut_from_beginning_(path.cut_from_beginning_),
+              cut_from_end_(path.cut_from_end_),
+              barcode_(path.barcode_) {
     }
 
     const Graph &g() const{
@@ -173,7 +181,31 @@ public:
         conj_path_ = path;
     }
 
-    const BidirectionalPath* GetConjPath() const {
+    void SetCutFromEnd(uint32_t cut_from_end) {
+        cut_from_end_ = cut_from_end;
+    }
+
+    void SetCutFromBeginning(uint32_t cut_from_begin) {
+        cut_from_beginning_ = cut_from_begin;
+    }
+
+    uint32_t GetCutFromEnd() const {
+        return cut_from_end_;
+    }
+
+    uint32_t GetCutFromBeginning() const {
+        return cut_from_beginning_;
+    }
+
+    std::string GetBarcode() const {
+        return barcode_;
+    }
+
+    void SetBarcode(const std::string &barcode)  {
+        barcode_ = barcode;
+    }
+
+        const BidirectionalPath* GetConjPath() const {
         return conj_path_;
     }
 

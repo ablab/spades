@@ -153,6 +153,7 @@ public:
 
     bool is_graph_contructable() const {
         return type_ == io::LibraryType::PairedEnd ||
+               type_ == io::LibraryType::RNA10x ||
                type_ == io::LibraryType::SingleReads ||
                type_ == io::LibraryType::HQMatePairs;
     }
@@ -171,8 +172,14 @@ public:
 
     bool is_paired() const {
         return type_ == io::LibraryType::PairedEnd ||
+               type_ == io::LibraryType::RNA10x ||
                type_ == io::LibraryType::MatePairs ||
                type_ == io::LibraryType::HQMatePairs;
+    }
+
+    bool is_gap_closable() const {
+        return type_ == io::LibraryType::PairedEnd ||
+               type_ == io::LibraryType::RNA10x;
     }
 
     bool is_mate_pair() const {

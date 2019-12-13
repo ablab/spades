@@ -89,6 +89,19 @@ void load(pe_config::ParamSetT::CoordinatedCoverageT& coord_cov,
     load(coord_cov.min_path_len, pt, "min_path_len", complete);
 }
 
+void load(pe_config::ParamSetT::RNA10xOpts& r,
+          boost::property_tree::ptree const& pt, bool complete) {
+    using config_common::load;
+
+    load(r.min_cloud_size, pt, "min_cloud_size", complete);
+    load(r.remove_overlaps, pt, "remove_overlaps", complete);
+    load(r.absolute_barcode_threshold, pt, "absolute_barcode_threshold", complete);
+    load(r.relative_barcode_threshold, pt, "relative_barcode_threshold", complete);
+    load(r.absolute_length_threshold, pt, "absolute_length_threshold", complete);
+    load(r.short_rel_barcode_threshold, pt, "short_rel_barcode_threshold", complete);
+
+}
+
 void load(pe_config::ParamSetT::ScaffolderOptionsT& so, 
             boost::property_tree::ptree const& pt, bool complete)
 {

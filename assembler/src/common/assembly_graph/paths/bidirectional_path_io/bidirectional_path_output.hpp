@@ -139,6 +139,7 @@ public:
     }
 
     void OutputPaths(const PathContainer &paths, const std::vector<PathsWriterT>& writers) const;
+    void OutputPathsRNA(const PathContainer &paths, const std::vector<PathsWriterT>& writers) const;
 
     void OutputPaths(const PathContainer &paths, PathsWriterT writer) const {
         OutputPaths(paths, std::vector<PathsWriterT>{writer});
@@ -146,6 +147,14 @@ public:
 
     void OutputPaths(const PathContainer &paths, const std::string &fn) const {
         OutputPaths(paths, BasicFastaWriter(fn));
+    }
+
+    void OutputPathsRNA(const PathContainer &paths, PathsWriterT writer) const {
+        OutputPathsRNA(paths, std::vector<PathsWriterT>{writer});
+    }
+
+    void OutputPathsRNA(const PathContainer &paths, const std::string &fn) const {
+        OutputPathsRNA(paths, BasicFastaWriter(fn));
     }
 
 private:

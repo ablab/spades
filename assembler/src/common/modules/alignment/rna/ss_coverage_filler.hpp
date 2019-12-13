@@ -111,4 +111,80 @@ public:
     }
 };
 
+
+class BarcodeCoverageFiller: public SequenceMapperListener {
+private:
+    const Graph& g_;
+
+    BarcodeCoverageStorage& storage_;
+
+    std::vector<BarcodeCoverageStorage> tmp_storages_;
+
+    bool symmetric_;
+
+    void ProcessRange(size_t thread_index, const MappingPath<EdgeId>& read, const std::string &barcode) {
+        if (barcode == "")
+            return;
+
+        for (size_t i = 0; i < read.size(); ++i) {
+            const auto& range = read[i].second;
+            size_t kmer_count = range.mapped_range.end_pos - range.mapped_range.start_pos;
+            tmp_storages_[thread_index].IncreaseKmerCount(read[i].first, barcode, kmer_count, symmetric_);
+            tmp_storages_[thread_index].SetExtremePositions(read, barcode);
+        }
+    }
+
+    std::string GetBarcode(const io::SingleRead &r) const {
+        std::string delimeter = "BX:";
+        size_t start_pos = r.name().find(delimeter);
+        if (start_pos != std::string::npos) {
+            std::string barcode = r.name().substr(start_pos, 21);
+            TRACE(barcode);
+            return barcode;
+        }
+        return "";
+    }
+
+public:
+    BarcodeCoverageFiller(const Graph& g, BarcodeCoverageStorage& storage, bool symmertic = true):
+            g_(g), storage_(storage), tmp_storages_(), symmetric_(symmertic) {}
+
+    void StartProcessLibrary(size_t threads_count) override {
+        tmp_storages_.clear();
+
+        for (size_t i = 0; i < threads_count; ++i) {
+            tmp_storages_.emplace_back(g_);
+        }
+    }
+
+    void StopProcessLibrary() override {
+        for (auto& storage : tmp_storages_)
+            storage.Clear();
+        storage_.RecalculateCoverage();
+    }
+
+    void ProcessSingleRead(size_t thread_index, const io::SingleRead &r, const MappingPath<EdgeId> &read) override {
+        ProcessRange(thread_index, read, GetBarcode(r));
+    }
+
+    void ProcessSingleRead(size_t thread_index, const io::SingleReadSeq &r, const MappingPath<EdgeId>& read) override {
+        VERIFY_MSG(false, "This code shouldn't be reached");
+    }
+
+    void MergeBuffer(size_t thread_index) override {
+        for (const auto& it_external : tmp_storages_[thread_index])
+        {
+            for (const auto& it_internal : it_external.second) {
+                storage_.IncreaseKmerCount(it_internal.first, it_external.first, size_t(it_internal.second));
+            }
+        }
+        for (auto external_elem : tmp_storages_[thread_index].GetPosMap()) {
+            for (auto internal_elem : external_elem.second) {
+                storage_.SetExtremePositions(internal_elem.first, external_elem.first, tmp_storages_[thread_index].GetLeftMostPosition(internal_elem.first, external_elem.first), tmp_storages_[thread_index].GetRightMostPosition(internal_elem.first, external_elem.first));
+            }
+        }
+        tmp_storages_[thread_index].Clear();
+    }
+};
+
 }

@@ -24,6 +24,9 @@ public:
 private:
     std::vector<EdgeId> path_;
     mutable size_t w_;
+    mutable std::string barcodes_;
+    mutable size_t cut_from_begin_;
+    mutable size_t cut_from_end_;
 
 public:
     const std::vector<EdgeId> &path() const {
@@ -37,21 +40,50 @@ public:
         return w_;
     }
 
+    size_t get_cut_from_begin() const {
+        return cut_from_begin_;
+    }
+
+    size_t get_cut_from_end() const {
+        return cut_from_end_;
+    }
+
+    std::string get_barcodes() const {
+        return barcodes_;
+    }
+
+    void add_barcodes(const std::string &new_barcode) const {
+        barcodes_ += "," + new_barcode;
+    }
+
     void increase_weight(int addition = 1) const {
         w_ += addition;
     }
 
     bool operator<(const PathInfo<Graph> &other) const {
-        return path_ < other.path_;
+        if (path_ < other.path_) {
+            return true;
+        } else if (path_ > other.path_) {
+            return false;
+        }
+        if (barcodes_ < other.barcodes_) {
+            return true;
+        } else if (barcodes_ > other.barcodes_) {
+            return false;
+        }
+        return false;
     }
 
-    PathInfo(const std::vector<EdgeId> &p, size_t weight = 0) :
-            path_(p), w_(weight) {
+    PathInfo(const std::vector<EdgeId> &p, size_t weight = 0, const std::string &barcodes = "", size_t cut_from_begin = 0, size_t cut_from_end = 0) :
+            path_(p), w_(weight), barcodes_(barcodes), cut_from_begin_(cut_from_begin), cut_from_end_(cut_from_end) {
     }
 
     PathInfo(const PathInfo<Graph> &other) {
         path_ = other.path_;
         w_ = other.w_;
+        barcodes_ = other.barcodes_;
+        cut_from_begin_ = other.cut_from_begin_;
+        cut_from_end_ = other.cut_from_end_;
     }
 
     std::string str(const Graph &g_) const {
@@ -68,22 +100,108 @@ class PathStorage {
     friend class PathInfo<Graph> ;
     typedef typename Graph::EdgeId EdgeId;
     typedef std::map<EdgeId, std::set<PathInfo<Graph>>> InnerIndex;
+    using outer_iterator = typename InnerIndex::iterator;
+    using inner_iterator = typename std::set<PathInfo<Graph>>::iterator;
 
     const Graph &g_;
     InnerIndex inner_index_;
     static const size_t kLongEdgeForStats = 500;
 
-    void HiddenAddPath(const std::vector<EdgeId> &p, int w) {
+    bool IsCanonical(const std::vector<EdgeId> &p) {
+        for (size_t i = 0; i < p.size(); ++i) {
+            if (p[i].int_id() < g_.conjugate(p[p.size() - 1 - i]).int_id()) {
+                return true;
+            }
+            if (p[i].int_id() > g_.conjugate(p[p.size() - 1 - i]).int_id()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void HiddenAddPath(const std::vector<EdgeId> &p, int w, const std::string &barcodes, size_t forward_gap, size_t backward_gap) {
         if (p.size() == 0 ) return;
-        for (typename std::set<PathInfo<Graph>>::iterator iter = inner_index_[p[0]].begin(); iter != inner_index_[p[0]].end(); ++iter) {
-            if (iter->path() == p) {
+        if (!IsCanonical(p) && barcodes != "") return; //TODO: Dirty fix.
+        typename std::set<PathInfo<Graph> >::iterator iter = inner_index_[p[0]].begin();
+        for (; iter != inner_index_[p[0]].end(); ++iter) {
+            if (iter->path() == p && std::abs((int)forward_gap - (int)iter->get_cut_from_begin()) < 50 && std::abs((int)backward_gap - (int)iter->get_cut_from_end()) < 50) {
                 iter->increase_weight(w);
+                iter->add_barcodes(barcodes);
                 return;
             }
         }
-        inner_index_[p[0]].insert(PathInfo<Graph>(p, w));
+        inner_index_[p[0]].insert(PathInfo<Graph>(p, w, barcodes, forward_gap, backward_gap));
         size_++;
     }
+
+    class flattening_iterator {
+    public:
+        flattening_iterator() { }
+        flattening_iterator(outer_iterator it) : outer_it_(it), outer_end_(it) { }
+
+        flattening_iterator(outer_iterator it, outer_iterator end)
+                : outer_it_(it),
+                  outer_end_(end)
+        {
+            if (outer_it_ == outer_end_) { return; }
+
+            inner_it_ = outer_it_->second.begin();
+            advance_past_empty_inner_containers();
+        }
+
+        PathInfo<Graph> operator*() {
+            return *inner_it_;
+        }
+
+        flattening_iterator& operator++()
+        {
+            ++inner_it_;
+            if (inner_it_ == outer_it_->second.end())
+                advance_past_empty_inner_containers();
+            return *this;
+        }
+
+        flattening_iterator operator++(int)
+        {
+            flattening_iterator it(*this);
+            ++*this;
+            return it;
+        }
+
+        friend bool operator==(const flattening_iterator& a,
+                               const flattening_iterator& b)
+        {
+            if (a.outer_it_ != b.outer_it_)
+                return false;
+
+            if (a.outer_it_ != a.outer_end_ &&
+                b.outer_it_ != b.outer_end_ &&
+                a.inner_it_ != b.inner_it_)
+                return false;
+
+            return true;
+        }
+
+        friend bool operator!=(const flattening_iterator& a,
+                               const flattening_iterator& b)
+        {
+            return !(a == b);
+        }
+    private:
+        void advance_past_empty_inner_containers()
+        {
+            while (outer_it_ != outer_end_ && inner_it_ == outer_it_->second.end())
+            {
+                ++outer_it_;
+                if (outer_it_ != outer_end_)
+                    inner_it_ = outer_it_->second.begin();
+            }
+        }
+
+        outer_iterator outer_it_;
+        outer_iterator outer_end_;
+        inner_iterator inner_it_;
+    };
 
 public:
     PathStorage(const Graph &g)
@@ -103,6 +221,14 @@ public:
                 this->AddPath(j_iter->path(), (int) j_iter->weight());
             }
         }
+    }
+
+    flattening_iterator end() {
+        return flattening_iterator(inner_index_.end());
+    }
+
+    flattening_iterator begin() {
+        return flattening_iterator(inner_index_.begin(), inner_index_.end());
     }
 
     void ReplaceEdges(std::map<EdgeId, EdgeId> &old_to_new){
@@ -148,13 +274,13 @@ public:
         inner_index_ = new_index;
     }
 
-    void AddPath(const std::vector<EdgeId> &p, int w, bool add_rc = false) {
-        HiddenAddPath(p, w);
+    void AddPath(const std::vector<EdgeId> &p, int w, bool add_rc = false, const std::string &barcodes = "", size_t cut_from_begin = 0, size_t cut_from_end = 0) {
+        HiddenAddPath(p, w, barcodes, cut_from_begin, cut_from_end);
         if (add_rc) {
             std::vector<EdgeId> rc_p(p.size());
             for (size_t i = 0; i < p.size(); i++)
                 rc_p[i] = g_.conjugate(p[p.size() - 1 - i]);
-            HiddenAddPath(rc_p, w);
+            HiddenAddPath(rc_p, w, barcodes, cut_from_begin, cut_from_end);
         }
     }
 

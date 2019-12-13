@@ -9,6 +9,7 @@
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/graph_support/contig_output.hpp"
 #include "assembly_graph/components/connected_component.hpp"
+#include "common/modules/path_extend/pe_utils.hpp"
 
 namespace path_extend {
 using namespace debruijn_graph;
@@ -89,6 +90,16 @@ public:
     }
 };
 
+class BarcodeContigNameGenerator: public ContigNameGenerator {
+public:
+    void Preprocess(const PathContainer&) override {}
+
+    std::string MakeContigName(size_t index, const ScaffoldInfo &scaffold_info) override {
+        return io::MakeContigId(index, scaffold_info.length(), scaffold_info.coverage()) +
+               "_barcodeIDs_" + scaffold_info.path->GetBarcode() + "_f_" + std::to_string(scaffold_info.path->GetCutFromBeginning()) +"_b_" + std::to_string(scaffold_info.path->GetCutFromEnd());
+    }
+};
+
 class PlasmidContigNameGenerator: public ContigNameGenerator {
     const ConnectedComponentCounter &c_counter_;
 
@@ -144,12 +155,13 @@ public:
     }
 };
 
-
 inline std::shared_ptr<ContigNameGenerator> MakeContigNameGenerator(config::pipeline_type mode,
                                                                     const conj_graph_pack &gp) {
     std::shared_ptr<path_extend::ContigNameGenerator> name_generator;
     if (mode == config::pipeline_type::plasmid)
         name_generator = std::make_shared<PlasmidContigNameGenerator>(gp.components);
+    else if (mode == config::pipeline_type::rna)
+        name_generator = std::make_shared<BarcodeContigNameGenerator>();
     else if (mode == config::pipeline_type::rna)
         name_generator = std::make_shared<TranscriptNameGenerator>(gp.g);
     else
