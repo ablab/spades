@@ -28,7 +28,7 @@ ALLOWED_READS_EXTENSIONS = BH_ALLOWED_READS_EXTENSIONS + CONTIGS_ALLOWED_READS_E
 # we support up to MAX_LIBS_NUMBER libs for each type of short-reads libs
 MAX_LIBS_NUMBER = 9
 OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s", "--merged"]
-SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs", "nxmate": "nxmate"}
+SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs", "nxmate": "nxmate", "rna10x": "rna10x"}
 # other libs types:
 LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "tslr", "trusted-contigs", "untrusted-contigs", "fl-rna"]
 
@@ -70,8 +70,8 @@ K_MERS_PLASMID_LONG = [21, 33, 55, 77, 99, 127]
 ITERATIONS = 1
 TMP_DIR = "tmp"
 
-READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
-READS_TYPES_USED_IN_RNA_SEQ = ["paired-end", "single", "trusted-contigs", "untrusted-contigs", "pacbio", "nanopore", "fl-rna"]
+READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs", "rna10x"]
+READS_TYPES_USED_IN_RNA_SEQ = ["paired-end", "single", "trusted-contigs", "untrusted-contigs", "pacbio", "nanopore", "fl-rna", "rna10x"]
 
 BASE_STAGE = "read_conversion"
 LAST_STAGE = "last"
