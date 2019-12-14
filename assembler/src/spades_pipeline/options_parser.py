@@ -987,6 +987,8 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
                 support.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_RNA_SEQ)):
             support.error("you cannot specify any data types except " +
                           ", ".join(options_storage.READS_TYPES_USED_IN_RNA_SEQ) + " in RNA-Seq mode!")
+        if support.get_lib_ids_by_type(dataset_data, ["rna10x"]):
+            options_storage.args.barcoded = True
             # if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
             #    support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
     if args.meta and not args.only_error_correction:

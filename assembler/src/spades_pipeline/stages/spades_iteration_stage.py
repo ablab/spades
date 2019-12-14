@@ -40,6 +40,8 @@ def add_configs(command, configs_dir):
         else:
             command.append(os.path.join(configs_dir, "careful_mode.info"))
 
+        if options_storage.rna and options_storage.barcoded:
+            command.append(os.path.join(configs_dir, "rna_10x_mode.info"))
 
 def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home):
     subst_dict = dict()
