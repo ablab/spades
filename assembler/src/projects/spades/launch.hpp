@@ -170,7 +170,7 @@ void assemble_genome() {
         SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration, false)
                .add<debruijn_graph::PairInfoCount>();
 
-        if (RNA10XLibraries())
+        if (cfg::get().mode == debruijn_graph::config::pipeline_type::rna10x)
             SPAdes.add<debruijn_graph::MoleculeExtractionStage>();
         else {
             SPAdes.add<debruijn_graph::DistanceEstimation>()
