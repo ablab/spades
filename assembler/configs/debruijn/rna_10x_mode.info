@@ -1,4 +1,4 @@
-
+mode rna10x
 
 kmer_coverage_model {
     use_coverage_threshold true
