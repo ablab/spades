@@ -1,6 +1,8 @@
-//
-// Created by andrey on 14.08.17.
-//
+//***************************************************************************
+//* Copyright (c) 2017-2019 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #pragma once
 
@@ -58,7 +60,7 @@ public:
         }
 
         ConstIterator(const PathContainer::Iterator& iter)
-            : PathContainerT::const_iterator(iter) {
+            : PathContainerT::const_iterator(PathContainerT::iterator(iter)) {
         }
 
         BidirectionalPath* get() const {
@@ -69,9 +71,7 @@ public:
         }
     };
 
-    PathContainer() {
-    }
-
+    PathContainer() {}
 
     PathContainer(const PathContainer&) = delete;
     PathContainer& operator=(const PathContainer&) = delete;
@@ -163,7 +163,7 @@ public:
         return ConstIterator(data_.end());
     }
 
-    Iterator erase(Iterator iter) {
+    Iterator erase(ConstIterator iter) {
         return Iterator(data_.erase(iter));
     }
 
