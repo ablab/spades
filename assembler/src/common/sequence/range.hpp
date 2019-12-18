@@ -54,12 +54,6 @@ public:
         return Range(base_length - end_pos, base_length - start_pos);
     }
 
-    Range& operator=(const Range& other) {
-        start_pos = other.start_pos;
-        end_pos = other.end_pos;
-        return *this;
-    }
-
     bool empty() const {
         return start_pos == end_pos;
     }

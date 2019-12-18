@@ -118,12 +118,6 @@ struct MappingRange {
             return this->initial_range < other.initial_range;
         return this->mapped_range < other.mapped_range;
     }
-    MappingRange operator = (const MappingRange & other) {
-        initial_range = other.initial_range;
-        mapped_range = other.mapped_range;
-        quality = other.quality;
-        return *this;
-    }
 
     bool Intersect(const MappingRange &other) {
         return initial_range.Intersect(other.initial_range) && mapped_range.Intersect(other.mapped_range);
