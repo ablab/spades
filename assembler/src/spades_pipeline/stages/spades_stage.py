@@ -179,6 +179,9 @@ class SpadesCopyFileStage(stage.Stage):
     def rna_copy(self, output_file, latest, cfg):
         return options_storage.args.rna and self.always_copy(output_file, latest, cfg)
 
+    def only_bio(self, output_file, latest, cfg):
+        return options_storage.args.bio
+
     def correct_scaffolds_copy(self, output_file, latest, cfg):
         return cfg.correct_scaffolds
 
@@ -208,7 +211,11 @@ class SpadesCopyFileStage(stage.Stage):
             self.OutputFile(self.cfg.result_scaffolds_paths, "scaffolds.paths", self.rr_enably_copy),
             self.OutputFile(self.cfg.result_graph_gfa, "assembly_graph_with_scaffolds.gfa", self.always_copy),
             self.OutputFile(self.cfg.result_graph, "assembly_graph.fastg", self.always_copy),
-            self.OutputFile(self.cfg.result_contigs_paths, "final_contigs.paths", self.not_rna_copy)
+            self.OutputFile(self.cfg.result_contigs_paths, "final_contigs.paths", self.not_rna_copy),
+            self.OutputFile(self.cfg.result_gene_clusters, "gene_clusters.fasta", self.only_bio),
+            self.OutputFile(self.cfg.result_bgc_statistics, "bgc_statistics.txt", self.only_bio),
+            self.OutputFile(self.cfg.result_domain_graph, "domain_graph.dot", self.only_bio)
+
         ]
 
         for filtering_type in options_storage.filtering_types:
@@ -335,6 +342,9 @@ class SpadesStage(stage.Stage):
         self.cfg.__dict__["result_scaffolds_paths"] = output_files["result_scaffolds_paths_filename"]
         self.cfg.__dict__["result_transcripts"] = output_files["result_transcripts_filename"]
         self.cfg.__dict__["result_transcripts_paths"] = output_files["result_transcripts_paths_filename"]
+        self.cfg.__dict__["result_gene_clusters"] = output_files["result_gene_clusters_filename"]
+        self.cfg.__dict__["result_bgc_statistics"] = output_files["result_bgc_stats_filename"]
+        self.cfg.__dict__["result_domain_graph"] = output_files["result_domain_graph_filename"]
 
         if self.cfg.disable_rr:
             self.cfg.__dict__["rr_enable"] = False

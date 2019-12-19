@@ -542,6 +542,8 @@ def load_info(dataset_path):
             info.__dict__["mode"] = "rna"
         elif 'plasmid' in info.__dict__ and info.plasmid:
             info.__dict__["mode"] = "plasmid"
+        elif 'bio' in info.__dict__ and info.bio:
+            info.__dict__["mode"] = "bio"
         else:
             info.__dict__["mode"] = "standard"
     return info
@@ -553,6 +555,9 @@ def get_contigs_list(args, dataset_info, before_rr = False):
     contigs.append(("scaffolds", "scaffolds", "sc", " -s ", "fasta"))
     contigs.append(("contigs_paths", "contigs", "", "", "paths"))
     contigs.append(("scaffolds_paths", "scaffolds", "", "", "paths"))
+
+    if dataset_info.mode == "bio":
+        contigs = [("gene_clusters", "gene_clusters", "", "", "fasta")]
 
     if dataset_info.mode == "tru":
         contigs = [("contigs", "truseq_long_reads", "", "", "fasta")]
@@ -687,7 +692,7 @@ def make_spades_cmd(args, dataset_info, spades_dir, output_dir):
         spades_params.append(args.spades_cfg_dir)
 
     spades_exec = dataset_info.mode + "spades.py"
-    if dataset_info.mode in ['standard', 'tru']:
+    if dataset_info.mode in ['standard', 'tru', 'bio']:
         spades_exec = "spades.py"
     if "--only-assembler" not in spades_params:
         spades_exec += " --disable-gzip-output "
