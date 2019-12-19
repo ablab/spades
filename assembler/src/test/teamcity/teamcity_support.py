@@ -91,7 +91,6 @@ class MetricEntry:
 def construct_limit_map(dataset_info, prefix, metric_list, add_all_params = False):
     limit_map = {}
     params = map(lambda x: MetricEntry(prefix + x[0], x[1], x[2], x[3], x[4], x[5]), metric_list)
-
     if add_all_params or (prefix + 'assess' in dataset_info.__dict__ and dataset_info.__dict__[prefix + 'assess']):
         log.log("Assessing quality results...")
         for p in params:
@@ -154,7 +153,6 @@ def parse_report(report, limit_map):
             columns.append(row[0].strip())
             values.append(row[1].strip())
     f.close()
-
     result_map = {}
     for metric in limit_map.keys():
         if metric in columns:
@@ -264,6 +262,8 @@ def run_quast(dataset_info, contigs, quast_output_dir, opts):
 def construct_quast_limit_map(dataset_info, prefix, add_all_params = False):
 #                                       metric name,  QUAST name, higher than threshold, is int, relative delta, delta value
     return construct_limit_map(dataset_info, prefix, [
+                                        ('min_contig',      "# contigs",                True,   True, True, 0.1),
+                                        ('max_contig',      "# contigs",                False,  True, True, 0.1),
                                         ('min_n50',         "N50",                      True,   True, True, 0.1),
                                         ('max_n50',         "N50",                      False,  True, True, 0.1),
                                         ('min_ng50',        "NG50",                     True,   True, True, 0.1) ,
@@ -557,7 +557,7 @@ def get_contigs_list(args, dataset_info, before_rr = False):
     contigs.append(("scaffolds_paths", "scaffolds", "", "", "paths"))
 
     if dataset_info.mode == "bio":
-        contigs = [("gene_clusters", "gene_clusters", "", "", "fasta")]
+        contigs = [("gene_clusters", "gene_clusters", "bio", "", "fasta")]
 
     if dataset_info.mode == "tru":
         contigs = [("contigs", "truseq_long_reads", "", "", "fasta")]
