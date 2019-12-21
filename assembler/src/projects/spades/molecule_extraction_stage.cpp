@@ -379,7 +379,7 @@ namespace debruijn_graph {
         size_t passed_counter = 0;
         size_t failed_counter = 0;
         std::vector<MappingPath<EdgeId>> paths;
-        path_extend::PathContainer& long_reads = graph_pack.mapped_paths[lib_10x.data().lib_index];
+        path_extend::PathContainer& long_reads = graph_pack.contig_paths;
         PathStorage<Graph> long_reads_temp_storage(graph_pack.g);
         LongReadsCreator extractor(graph_pack);
         while (!stream.eof()) {

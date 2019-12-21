@@ -54,7 +54,6 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
     LongReadContainerT &single_long_reads;
     SSCoverageContainer &ss_coverage;
     BarcodeCoverageContainer &barcode_coverage;
-    std::vector<path_extend::PathContainer> &mapped_paths;
     GenomicInfo &ginfo;
 
 
@@ -82,7 +81,6 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
               scaffolding_indices(adt::pack::emplace_with_key<PairedInfoIndicesT>("scaffolding_indices", g, lib_count)),
               single_long_reads(adt::pack::emplace<LongReadContainerT>(g, lib_count)),
               ss_coverage(adt::pack::emplace<SSCoverageContainer>(g, lib_count)),
-              mapped_paths(adt::pack::emplace<std::vector<path_extend::PathContainer>>()),
               barcode_coverage(adt::pack::emplace<BarcodeCoverageContainer>(g, lib_count)),
               ginfo(adt::pack::emplace<GenomicInfo>()),
               genome(adt::pack::emplace<GenomeStorage>(genome)),
