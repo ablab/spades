@@ -533,7 +533,7 @@ public:
         for (auto v : sources) {
             typename omnigraph::DijkstraHelper<Graph>::BoundedDijkstra d = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_,
                                                                                                                                    max_distance,
-                                                                                                                                   1000);
+                                                                                                                                   1000, true);
             d.Run(v);
             auto reached = d.ReachedVertices();
             std::set<VertexId> intersection;
