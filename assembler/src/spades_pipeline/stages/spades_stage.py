@@ -82,7 +82,7 @@ def rna_k_values(support, dataset_data, log):
         lower_k -= 1
 
     use_iterative = True
-    if upper_k <= lower_k:
+    if upper_k <= lower_k or options_storage.args.barcoded:
         use_iterative = False
 
     if upper_k < options_storage.RNA_MIN_K:
