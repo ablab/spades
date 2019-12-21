@@ -420,29 +420,24 @@ namespace debruijn_graph {
             ++failed_counter;
         ++counter;
         paths.clear();
-
-
-        INFO("Here");
+        
         std::vector<PathInfo<Graph>> debug_path;
         long_reads_temp_storage.SaveAllPaths(debug_path);
-        INFO("Path saved");
         for (auto p : debug_path) {
-            INFO(p.str(graph_pack.g));
-            INFO("Inside");
             path_extend::BidirectionalPath *path = new path_extend::BidirectionalPath(graph_pack.g);
             auto conj = new path_extend::BidirectionalPath(graph_pack.g);
             long_reads.AddPair(path, conj);
-//            for (auto e : p.path()) {
-//                path->PushBack(e);
-//            }
-//            path->SetBarcode(p.get_barcodes());
-//            conj->SetBarcode(p.get_barcodes());
-//            path->SetWeight(p.weight());
-//            conj->SetWeight(p.weight());
-//            path->SetCutFromBeginning(p.get_cut_from_begin());
-//            path->SetCutFromEnd(p.get_cut_from_end());
-//            conj->SetCutFromBeginning(p.get_cut_from_end());
-//            conj->SetCutFromEnd(p.get_cut_from_begin());
+            for (auto e : p.path()) {
+                path->PushBack(e);
+            }
+            path->SetBarcode(p.get_barcodes());
+            conj->SetBarcode(p.get_barcodes());
+            path->SetWeight(p.weight());
+            conj->SetWeight(p.weight());
+            path->SetCutFromBeginning(p.get_cut_from_begin());
+            path->SetCutFromEnd(p.get_cut_from_end());
+            conj->SetCutFromBeginning(p.get_cut_from_end());
+            conj->SetCutFromEnd(p.get_cut_from_begin());
         }
         INFO("Total reads processed: " << counter);
         INFO("Total barcodes passed: " << passed_counter << ", failed " << failed_counter);
