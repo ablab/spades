@@ -251,8 +251,10 @@ static void ProcessSingleReads(conj_graph_pack &gp,
 
     SSCoverageFiller ss_coverage_filler(gp.g, gp.ss_coverage[ilib], !cfg::get().ss.ss_enabled);
     BarcodeCoverageFiller barcode_coverage_filler(gp.g, gp.barcode_coverage[ilib]);
-    if (cfg::get().mode == debruijn_graph::config::pipeline_type::rna10x)
+    if (cfg::get().mode == debruijn_graph::config::pipeline_type::rna10x) {
         notifier.Subscribe(ilib, &barcode_coverage_filler);
+        use_binary = false;
+    }
 
     if (cfg::get().calculate_coverage_for_each_lib) {
         INFO("Will calculate lib coverage as well");
