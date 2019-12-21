@@ -574,7 +574,7 @@ def correct_dataset(dataset_data):
             if "orientation" in reads_library:
                 del reads_library["orientation"]
         if "orientation" not in reads_library:
-            if reads_library["type"] == "paired-end" or reads_library["type"] == "hq-mate-pairs":
+            if reads_library["type"] == "paired-end" or reads_library["type"] == "hq-mate-pairs" or reads_library['type'] == 'rna10x':
                 reads_library["orientation"] = "fr"
             elif reads_library["type"] == "mate-pairs":
                 reads_library["orientation"] = "rf"

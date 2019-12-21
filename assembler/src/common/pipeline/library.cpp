@@ -86,6 +86,7 @@ void SequencingLibraryBase::yamlize(llvm::yaml::IO &io) {
 void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
     switch (type_) {
     case LibraryType::PairedEnd:
+    case LibraryType::RNA10x:
     case LibraryType::MatePairs:
     case LibraryType::HQMatePairs:
         if (left_paired_reads_.size() != right_paired_reads_.size()) {
@@ -99,7 +100,6 @@ void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
         }
         break;
     case LibraryType::SingleReads:
-    case LibraryType::RNA10x:
     case LibraryType::PacBioReads:
     case LibraryType::SangerReads:
     case LibraryType::NanoporeReads:
