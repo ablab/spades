@@ -99,6 +99,7 @@ void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
         }
         break;
     case LibraryType::SingleReads:
+    case LibraryType::RNA10x:
     case LibraryType::PacBioReads:
     case LibraryType::SangerReads:
     case LibraryType::NanoporeReads:
