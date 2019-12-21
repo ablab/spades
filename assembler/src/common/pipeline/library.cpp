@@ -45,6 +45,7 @@ struct ScalarEnumerationTraits<LibraryType> {
         io.enumCase(value, "untrusted-contigs",   LibraryType::UntrustedContigs);
         io.enumCase(value, "path-extend-contigs", LibraryType::PathExtendContigs);
         io.enumCase(value, "fl-rna",              LibraryType::FLRNAReads);
+        io.enumCase(value, "rna10x",              LibraryType::RNA10x);
     }
 };
 

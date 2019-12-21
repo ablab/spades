@@ -269,7 +269,7 @@ def add_deprecated_input_data_args(pgroup_input_data):
                                        nargs=1,
                                        help=argparse.SUPPRESS,
                                        action=AddToDatasetAction)
-        pgroup_input_data.add_argument("--rna10x%d-2" % num,
+        pgroup_input_data.aargument("--rna10x%d-2" % num,
                                        metavar="<filename>",
                                        nargs=1,
                                        help=argparse.SUPPRESS,
