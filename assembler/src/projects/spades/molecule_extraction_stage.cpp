@@ -421,9 +421,13 @@ namespace debruijn_graph {
         ++counter;
         paths.clear();
 
+
+        INFO("Here");
         std::vector<PathInfo<Graph>> debug_path;
         long_reads_temp_storage.SaveAllPaths(debug_path);
+        INFO("Path saved");
         for (auto p : debug_path) {
+            INFO("Inside");
             path_extend::BidirectionalPath *path = new path_extend::BidirectionalPath(graph_pack.g);
             auto conj = new path_extend::BidirectionalPath(graph_pack.g);
             long_reads.AddPair(path, conj);
