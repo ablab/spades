@@ -83,6 +83,7 @@ std::vector<std::string> PipelineTypeNames() {
                     {"meta", pipeline_type::meta},
                     {"moleculo", pipeline_type::moleculo},
                     {"rna", pipeline_type::rna},
+                    {"rna10x", pipeline_type::rna10x},
                     {"plasmid", pipeline_type::plasmid},
                     {"large_genome", pipeline_type::large_genome},
                     {"metaplasmid", pipeline_type::metaplasmid}
@@ -848,7 +849,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
 
     //some post-loading processing
     using config::pipeline_type;
-    cfg.uneven_depth = std::set<pipeline_type>{pipeline_type::mda, pipeline_type::rna,
+    cfg.uneven_depth = std::set<pipeline_type>{pipeline_type::mda, pipeline_type::rna, pipeline_type::rna10x,
                                                pipeline_type::meta, pipeline_type::metaplasmid}.count(cfg.mode);
     if (!cfg.developer_mode) {
         cfg.pe_params.debug_output = false;
