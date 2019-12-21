@@ -2,7 +2,7 @@ mode rna10x
 
 kmer_coverage_model {
     use_coverage_threshold true
-    coverage_coefficient 1.0
+    coverage_threshold 1.0
 }
 
 pe {
