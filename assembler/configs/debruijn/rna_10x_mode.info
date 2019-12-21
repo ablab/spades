@@ -1,6 +1,8 @@
 mode rna10x
 
 kmer_coverage_model {
+    probability_threshold 0.05
+    strong_probability_threshold 0.999
     use_coverage_threshold true
     coverage_threshold 1.0
 }
