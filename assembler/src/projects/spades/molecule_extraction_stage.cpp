@@ -427,13 +427,14 @@ namespace debruijn_graph {
         long_reads_temp_storage.SaveAllPaths(debug_path);
         INFO("Path saved");
         for (auto p : debug_path) {
+            INFO(p);
             INFO("Inside");
             path_extend::BidirectionalPath *path = new path_extend::BidirectionalPath(graph_pack.g);
             auto conj = new path_extend::BidirectionalPath(graph_pack.g);
             long_reads.AddPair(path, conj);
-            for (auto e : p.path()) {
-                path->PushBack(e);
-            }
+//            for (auto e : p.path()) {
+//                path->PushBack(e);
+//            }
 //            path->SetBarcode(p.get_barcodes());
 //            conj->SetBarcode(p.get_barcodes());
 //            path->SetWeight(p.weight());

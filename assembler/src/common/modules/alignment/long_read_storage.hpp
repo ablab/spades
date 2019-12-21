@@ -32,6 +32,7 @@ public:
     const std::vector<EdgeId> &path() const {
         return path_;
     }
+
     std::vector<EdgeId> &path() {
         return path_;
     }
