@@ -434,14 +434,14 @@ namespace debruijn_graph {
             for (auto e : p.path()) {
                 path->PushBack(e);
             }
-            path->SetBarcode(p.get_barcodes());
-            conj->SetBarcode(p.get_barcodes());
-            path->SetWeight(p.weight());
-            conj->SetWeight(p.weight());
-            path->SetCutFromBeginning(p.get_cut_from_begin());
-            path->SetCutFromEnd(p.get_cut_from_end());
-            conj->SetCutFromBeginning(p.get_cut_from_end());
-            conj->SetCutFromEnd(p.get_cut_from_begin());
+//            path->SetBarcode(p.get_barcodes());
+//            conj->SetBarcode(p.get_barcodes());
+//            path->SetWeight(p.weight());
+//            conj->SetWeight(p.weight());
+//            path->SetCutFromBeginning(p.get_cut_from_begin());
+//            path->SetCutFromEnd(p.get_cut_from_end());
+//            conj->SetCutFromBeginning(p.get_cut_from_end());
+//            conj->SetCutFromEnd(p.get_cut_from_begin());
         }
         INFO("Total reads processed: " << counter);
         INFO("Total barcodes passed: " << passed_counter << ", failed " << failed_counter);
