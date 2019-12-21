@@ -274,7 +274,11 @@ def add_deprecated_input_data_args(pgroup_input_data):
                                        nargs=1,
                                        help=argparse.SUPPRESS,
                                        action=AddToDatasetAction)
-
+        pgroup_input_data.add_argument("--rna10x%d-s" % num,
+                                       metavar="<filename>",
+                                       nargs=1,
+                                       help=argparse.SUPPRESS,
+                                       action=AddToDatasetAction)
 
 def add_basic_args(pgroup_basic):
     mode = get_mode()
