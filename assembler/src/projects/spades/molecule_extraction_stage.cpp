@@ -444,7 +444,7 @@ namespace debruijn_graph {
         INFO(long_reads.size() << " paths totally extracted");
         long_reads.FilterPaths(path_extend::LengthPathCondition(300));
         INFO(long_reads.size() << " paths after filtering");
-        path_extend::ContigWriter writer(graph_pack.g, std::make_shared<path_extend::DefaultContigNameGenerator>());
+        path_extend::ContigWriter writer(graph_pack.g, std::make_shared<path_extend::BarcodeContigNameGenerator>());
         writer.OutputPathsRNA(long_reads, cfg::get().output_dir + "/extracted.fasta");
     }
 
