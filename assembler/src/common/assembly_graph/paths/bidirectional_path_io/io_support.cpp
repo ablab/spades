@@ -120,7 +120,7 @@ std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const Bidirectional
         answer += g_.EdgeNucls(path[i]).Subseq(gap.trash.current + overlap_after_trim).str();
     }
     TRACE("Sequence formed");
-
+    answer = answer.substr(path.GetCutFromBeginning(), answer.size() - path.GetCutFromBeginning() - path.GetCutFromEnd());
     return answer;
 }
 
