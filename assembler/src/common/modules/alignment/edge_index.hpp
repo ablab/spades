@@ -29,6 +29,7 @@ public:
     typedef typename InnerIndex::KMer KMer;
     typedef typename InnerIndex::KMerIdx KMerIdx;
     typedef typename InnerIndex::KmerPos Value;
+    static constexpr size_t NOT_FOUND = size_t(-1);
 
 private:
     InnerIndex inner_index_;
@@ -79,7 +80,7 @@ public:
         VERIFY(this->IsAttached());
         auto kwh = inner_index_.ConstructKWH(kmer);
         if (!inner_index_.contains(kwh)) {
-            return { EdgeId(), -1u };
+            return { EdgeId(), NOT_FOUND };
         } else {
             EdgeInfo<EdgeId> entry = inner_index_.get_value(kwh);
             return { entry.edge(), (size_t)entry.offset() };

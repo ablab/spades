@@ -328,7 +328,8 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   }
 
   // find if centers are in clusters
-  std::vector<size_t> centersInCluster(bestCenters.size(), -1u);
+  size_t NO_CENTER = size_t(-1);
+  std::vector<size_t> centersInCluster(bestCenters.size(), NO_CENTER);
   for (unsigned i = 0; i < origBlockSize; i++) {
     unsigned dist = kmers[i].hamdist(bestCenters[bestIndices[i]].center_);
     if (dist == 0)
@@ -341,7 +342,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
       std::cout << "Centers: \n";
       for (size_t k=0; k<bestCenters.size(); ++k) {
         std::cout << "  " << std::setw(4) << bestCenters[k].count_ << ": ";
-        if (centersInCluster[k] != -1u) {
+        if (centersInCluster[k] != NO_CENTER) {
           const KMerStat &kms = data_[block[centersInCluster[k]]];
           std::cout << kms << " " << std::setw(8) << block[centersInCluster[k]] << "  ";
         } else {
@@ -367,9 +368,9 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
     for (size_t k=0; k<bestCenters.size(); ++k) {
       if (foundBadCenter) break; // restart if found one bad center
       if (bestCenters[k].count_ == 0) continue;
-      if (centersInCluster[k] != -1u) continue;
+      if (centersInCluster[k] != NO_CENTER) continue;
       for (size_t s = 0; s< bestCenters.size(); ++s) {
-        if (s == k || centersInCluster[s] == -1u) continue;
+        if (s == k || centersInCluster[s] == NO_CENTER) continue;
         unsigned dist = hamdist(bestCenters[k].center_, bestCenters[s].center_);
         if (dist == 0) {
           // OK, that's the situation, cluster k should be added to cluster s
@@ -393,7 +394,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
       std::cout << "\nAfter the check we got centers: \n";
       for (size_t k=0; k<bestCenters.size(); ++k) {
         std::cout << "  " << bestCenters[k].center_ << " (" << bestCenters[k].count_ << ")";
-        if (centersInCluster[k] != -1u) std::cout << block[centersInCluster[k]];
+        if (centersInCluster[k] != NO_CENTER) std::cout << block[centersInCluster[k]];
         std::cout << "\n";
       }
       std::cout << std::endl;
@@ -423,7 +424,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
         }
       }
 
-      if (centersInCluster[k] == -1u) {
+      if (centersInCluster[k] == NO_CENTER) {
         KMer newkmer(bestCenters[k].center_);
         size_t new_idx = data_.checking_seq_idx(newkmer);
         if (new_idx == -1ULL) {

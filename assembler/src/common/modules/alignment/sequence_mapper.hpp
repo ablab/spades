@@ -299,7 +299,7 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
   bool FindKmer(const Kmer &kmer, size_t kmer_pos, std::vector<EdgeId> &passed,
                 RangeMappings& range_mappings) const {
     const auto& position = index_.get(kmer);
-    if (position.second == -1u)
+    if (position.second == Index::NOT_FOUND)
         return false;
     
     if (passed.empty() || passed.back() != position.first ||

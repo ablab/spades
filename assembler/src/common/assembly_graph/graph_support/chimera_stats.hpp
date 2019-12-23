@@ -72,7 +72,7 @@ private:
 
 template<class Graph>
 class InterstrandAnalyzer {
-    const static size_t infinity = -1u;
+    const static size_t infinity = size_t(-1);
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
@@ -118,7 +118,7 @@ class InterstrandAnalyzer {
         EdgeId e1 = g_.GetUniqueIncomingEdge(g_.EdgeStart(e));
         EdgeId e2 = g_.GetUniqueOutgoingEdge(g_.EdgeEnd(e));
         if (g_.length(e2) > dist_bound_)
-            return -1;
+            return infinity;
         Relax(answer,
                 ShortestGenomicDistance(e1, g_.conjugate(e2),
                         dist_bound_ - g_.length(e2)));
@@ -136,14 +136,16 @@ public:
               genome_path_(genome_path) {
     }
 
+    static constexpr size_t NOT_FOUND = size_t(-1);
+
     //todo rewrite and think of additionally detecting thorns with no path
-    //returns -1u if no interstrand path or interstrand distance > dist_bound
+    //returns NOT_FOUND if no interstrand path or interstrand distance > dist_bound
     size_t InterstrandDistance(EdgeId e) const {
         size_t answer = infinity;
         Relax(answer, InnerInterstrandDistance(e));
         Relax(answer, InnerInterstrandDistance(g_.conjugate(e)));
         //todo maybe unnecessary check
-        return answer <= dist_bound_ ? answer : -1u;
+        return answer <= dist_bound_ ? answer : NOT_FOUND;
     }
 
 private:
@@ -152,7 +154,7 @@ private:
 
 template<class Graph>
 class ChimericEdgeStats {
-    const static size_t infinity = -1u;
+    const static size_t infinity = size_t(-1);
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
