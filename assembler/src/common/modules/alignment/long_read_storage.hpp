@@ -122,7 +122,8 @@ class PathStorage {
 
     void HiddenAddPath(const std::vector<EdgeId> &p, int w, const std::string &barcodes, size_t forward_gap, size_t backward_gap) {
         if (p.size() == 0 ) return;
-        if (!IsCanonical(p) && barcodes != "") return; //TODO: Dirty fix.
+        if (!IsCanonical(p))
+            return;
         typename std::set<PathInfo<Graph> >::iterator iter = inner_index_[p[0]].begin();
         for (; iter != inner_index_[p[0]].end(); ++iter) {
             if (iter->path() == p && std::abs((int)forward_gap - (int)iter->get_cut_from_begin()) < 50 && std::abs((int)backward_gap - (int)iter->get_cut_from_end()) < 50) {
