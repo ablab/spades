@@ -158,7 +158,7 @@ void assemble_genome() {
     if (cfg::get().rr_enable) {
         if (!cfg::get().series_analysis.empty())
             SPAdes.add<debruijn_graph::SeriesAnalysis>();
-//Not metaplasmid!
+        // Not metaplasmid!
         if (cfg::get().mode == debruijn_graph::config::pipeline_type::plasmid)
             SPAdes.add<debruijn_graph::ChromosomeRemoval>();
 
@@ -177,8 +177,6 @@ void assemble_genome() {
             AddMetaplasmidStages(SPAdes);
         }
 
-    } else {
-        SPAdes.add<debruijn_graph::ContigOutput>(false);
     }
 
     SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
