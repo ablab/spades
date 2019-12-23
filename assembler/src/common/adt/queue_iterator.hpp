@@ -11,7 +11,7 @@
 #include "utils/verify.hpp"
 #include "btree/btree_set.h"
 #include <set>
-#include <unordered_map>
+#include <parallel_hashmap/phmap.h>
 #include <vector>
 #include <algorithm>
 
@@ -80,7 +80,7 @@ template<typename T, typename Comparator>
 class indexed_heap_erasable_priority_queue {
 private:
     std::vector<T> heap_;
-    std::unordered_map<T, size_t> map_;
+    phmap::flat_hash_map<T, size_t> map_;
     Comparator cmp_;
 public:
     /*
