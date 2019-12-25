@@ -1,4 +1,4 @@
-<html> <head>     <title>SPAdes 3.13.1 Manual</title>     <style type="text/css">         .highlight  pre {           background-color: #f0f2f4;           border-radius: 2px;           font-size: 100%;           line-height: 1.45;           overflow: auto;           padding: 16px;         }     </style> </head> <body><p><strong>SPAdes 3.13.1 Manual</strong></p>
+<html> <head>     <title>SPAdes 3.13.1 Manual</title>     <style type="text/css">         .highlight  pre {           background-color: #f0f2f4;           border-radius: 2px;           font-size: 100%;           line-height: 1.45;           overflow: auto;           padding: 16px;         }     </style> </head> <body><p><strong>SPAdes 3.14.0 Manual</strong></p>
 <ol>
 <li><a href="#sec1">About SPAdes</a> <br>
     1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -31,13 +31,13 @@
 </ol>
 <p><a name="sec1"></a></p>
 <h1>About SPAdes</h1>
-<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.13.1 was released under GPLv2 on April 11, 2019 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>. <a href=""></a></p>
+<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.14.0 was released under GPLv2 on December 27, 2019 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>. <a href=""></a></p>
 <p><a name="sec1.1"></a></p>
 <h2>Supported data types</h2>
 <p>The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.</p>
-<p>Version 3.13.1 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.</p>
+<p>Version 3.14.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.</p>
 <p>If you have high-coverage data for bacterial/viral isolate or multi-cell organism, we highly recommend to use <a href="#isolate"><code>--isolate</code></a> option.</p>
-<p>SPAdes 3.13.1 includes the following additional pipelines:</p>
+<p>SPAdes 3.14.0 includes the following additional pipelines:</p>
 <ul>
 <li>metaSPAdes – a pipeline for metagenomic data sets (see <a href="#meta">metaSPAdes options</a>).</li>
 <li>plasmidSPAdes – a pipeline for extracting and assembling plasmids from WGS data sets (see <a href="#plasmid">plasmidSPAdes options</a>).</li>
@@ -122,7 +122,7 @@
 <li>Running SPAdes without preliminary read error correction (e.g. without BayesHammer or IonHammer) will likely require more time and memory.</li>
 <li>Each module removes its temporary files as soon as it finishes.</li>
 <li>SPAdes uses 512 Mb per thread for buffers, which results in higher memory consumption. If you set memory limit manually, SPAdes will use smaller buffers and thus less RAM.</li>
-<li>Performance statistics is given for SPAdes version 3.13.1.</li>
+<li>Performance statistics is given for SPAdes version 3.14.0.</li>
 </ul>
 <p><a name="sec2"></a></p>
 <h1>Installation</h1>
@@ -146,17 +146,17 @@
 </ul>
 <p><a name="sec2.1"></a></p>
 <h2>Downloading SPAdes Linux binaries</h2>
-<p>To download <a href="http://cab.spbu.ru/files/release3.13.1/SPAdes-3.13.1-Linux.tar.gz" rel="nofollow">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:</p>
-<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.13.1/SPAdes-3.13.1-Linux.tar.gz
-    tar -xzf SPAdes-3.13.1-Linux.tar.gz
-    <span class="pl-c1">cd</span> SPAdes-3.13.1-Linux/bin/</pre></div>
+<p>To download <a href="http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0-Linux.tar.gz" rel="nofollow">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:</p>
+<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0-Linux.tar.gz
+    tar -xzf SPAdes-3.14.0-Linux.tar.gz
+    <span class="pl-c1">cd</span> SPAdes-3.14.0-Linux/bin/</pre></div>
 <p>In this case you do not need to run any installation scripts – SPAdes is ready to use. We also suggest adding SPAdes installation directory to the <code>PATH</code> variable. <a href=""></a></p>
 <p><a name="sec2.2"></a></p>
 <h2>Downloading SPAdes binaries for Mac</h2>
-<p>To obtain <a href="http://cab.spbu.ru/files/release3.13.1/SPAdes-3.13.1-Darwin.tar.gz" rel="nofollow">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:</p>
-<div class="highlight highlight-source-shell"><pre>    curl http://cab.spbu.ru/files/release3.13.1/SPAdes-3.13.1-Darwin.tar.gz -o SPAdes-3.13.1-Darwin.tar.gz
-    tar -zxf SPAdes-3.13.1-Darwin.tar.gz
-    <span class="pl-c1">cd</span> SPAdes-3.13.1-Darwin/bin/</pre></div>
+<p>To obtain <a href="http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0-Darwin.tar.gz" rel="nofollow">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:</p>
+<div class="highlight highlight-source-shell"><pre>    curl http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0-Darwin.tar.gz -o SPAdes-3.14.0-Darwin.tar.gz
+    tar -zxf SPAdes-3.14.0-Darwin.tar.gz
+    <span class="pl-c1">cd</span> SPAdes-3.14.0-Darwin/bin/</pre></div>
 <p>Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the <code>PATH</code> variable. <a href=""></a></p>
 <p><a name="sec2.3"></a></p>
 <h2>Downloading and compiling SPAdes source code</h2>
@@ -167,10 +167,10 @@
 <li>zlib</li>
 <li>libbz2</li>
 </ul>
-<p>If you meet these requirements, you can download the <a href="http://cab.spbu.ru/files/release3.13.1/SPAdes-3.13.1.tar.gz" rel="nofollow">SPAdes source code</a>:</p>
-<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.13.1/SPAdes-3.13.1.tar.gz
-    tar -xzf SPAdes-3.13.1.tar.gz
-    <span class="pl-c1">cd</span> SPAdes-3.13.1</pre></div>
+<p>If you meet these requirements, you can download the <a href="http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0.tar.gz" rel="nofollow">SPAdes source code</a>:</p>
+<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0.tar.gz
+    tar -xzf SPAdes-3.14.0.tar.gz
+    <span class="pl-c1">cd</span> SPAdes-3.14.0</pre></div>
 <p>and build it with the following script:</p>
 <div class="highlight highlight-source-shell"><pre>    ./spades_compile.sh</pre></div>
 <p>SPAdes will be built in the directory <code>./bin</code>. If you wish to install SPAdes into another directory, you can specify full path of destination folder by running the following command in <code>bash</code> or <code>sh</code>:</p>
@@ -211,7 +211,7 @@ Thank you for using SPAdes!
 <p><a name="sec3.1"></a></p>
 <h2>SPAdes input</h2>
 <p>SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.</p>
-<p>To run SPAdes 3.13.1 you need at least one library of the following types:</p>
+<p>To run SPAdes 3.14.0 you need at least one library of the following types:</p>
 <ul>
 <li>Illumina paired-end/high-quality mate-pairs/unpaired reads</li>
 <li>IonTorrent paired-end/high-quality mate-pairs/unpaired reads</li>
