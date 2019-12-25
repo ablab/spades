@@ -109,13 +109,13 @@ public:
     }
 
     void pop() {
-        VERIFY(!heap_.empty());
+        VERIFY_DEV(!heap_.empty());
         heap_pop();
-        VERIFY(map_.size() == heap_.size());
+        VERIFY_DEV(map_.size() == heap_.size());
     }
 
     const T& top() {
-        VERIFY(!heap_.empty());
+        VERIFY_DEV(!heap_.empty());
         return heap_top();
     }
 
@@ -125,7 +125,7 @@ public:
         it_fl.first->second = heap_.size();
         heap_.push_back(key);
         up(heap_.size() - 1);
-        VERIFY(map_.size() == heap_.size());
+        VERIFY_DEV(map_.size() == heap_.size());
     }
 
     bool erase(const T &key) {
@@ -134,11 +134,11 @@ public:
         size_t i = it->second;
         heap_[i] = heap_.back();
         map_.find(heap_[i])->second = i;
-        map_.erase(it);
+        map_._erase(it);
         heap_.resize(heap_.size() - 1);
         if (i == heap_.size()) return true;
         if (up(i) == i) down(i);
-        VERIFY(map_.size() == heap_.size());
+        VERIFY_DEV(map_.size() == heap_.size());
         return true;
     }
 
