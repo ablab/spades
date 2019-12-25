@@ -47,8 +47,8 @@ If you have high-coverage data for bacterial/viral isolate or multi-cell organis
 SPAdes 3.13.1 includes the following additional pipelines:
 -   metaSPAdes &ndash; a pipeline for metagenomic data sets (see [metaSPAdes options](#meta)).
 -   plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmidSPAdes options](#plasmid)).
--   rnaSPAdes &ndash; a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](rnaspades_manual.html)).
--   truSPAdes &ndash; a module for TruSeq barcode assembly (see [truSPAdes manual](truspades_manual.html)).
+-   rnaSPAdes &ndash; a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](assembler/rnaspades_manual.html)).
+-   truSPAdes &ndash; a module for TruSeq barcode assembly (see [truSPAdes manual](assembler/truspades_manual.html)).
 -   biosyntheticSPAdes &ndash; a module for biosynthetic gene cluster assembly with paired-end reads (see [biosynthicSPAdes options](#biosynthetic)).
 
 In addition, we provide several stand-alone binaries with relatively simple command-line interface: [k-mer counting](#sec4.1) (`spades-kmercounter`), [assembly graph construction](#sec4.2) (`spades-gbuilder`) and [long read to graph aligner](#sec4.3) (`spades-gmapper`). To learn options of these tools you can either run them without any parameters or read [this section](#sec4).
@@ -153,8 +153,8 @@ In case of successful installation the following files will be placed in the `bi
 -   `spades.py` (main executable script)
 -   `metaspades.py` (main executable script for [metaSPAdes](#meta))
 -   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
--   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
--   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
+-   `rnaspades.py` (main executable script for [rnaSPAdes](assembler/rnaspades_manual.html))
+-   `truspades.py` (main executable script for [truSPAdes](assembler/truspades_manual.html))
 -   `spades-core`  (assembly module)
 -   `spades-gbuilder`  (standalone graph builder application)
 -   `spades-gmapper`  (standalone long read to graph aligner)
@@ -418,7 +418,7 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 
 <a name="rna"></a>
 `--rna `   (same as `rnaspades.py`)
-    This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To learn more, see [rnaSPAdes manual](rnaspades_manual.html).
+    This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To learn more, see [rnaSPAdes manual](assembler/rnaspades_manual.html).
     Not compatible with `--only-error-correction` or `--careful` options. 
 
 
@@ -528,7 +528,7 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 `--pe<#>-<or> `
     Orientation of reads for paired-end library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
     The default orientation for paired-end libraries is forward-reverse (`--> <--`). For example, to specify reverse-forward orientation for the second paired-end library, you should use the flag: `--pe2-rf `
-    Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <a href="rnaspades_manual.html#sec2.3" target="_blank">rnaSPAdes manual</a>). 
+    Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <a href="assembler/rnaspades_manual.html#sec2.3" target="_blank">rnaSPAdes manual</a>). 
 
 **_Mate-pair libraries_**
 
