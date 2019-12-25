@@ -17,7 +17,8 @@
     3.4. [Assembling long Illumina paired reads (2x150 and 2x250)](#sec3.4)</br>
     3.5. [SPAdes output](#sec3.5)</br>
     3.6. [plasmidSPAdes output](#sec3.6)</br>
-    3.7. [Assembly evaluation](#sec3.7)</br>
+    3.7. [biosyntheticSPAdes output](#sec3.7)</br>
+    3.8. [Assembly evaluation](#sec3.8)</br>
 4. [Stand-alone binaries released within SPAdes package](#sec4)</br>
     4.1. [k-mer counting](#sec4.1)</br>
     4.2. [k-mer coverage read filter](#sec4.2)</br>
@@ -48,6 +49,7 @@ SPAdes 3.13.1 includes the following additional pipelines:
 -   plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmidSPAdes options](#plasmid)).
 -   rnaSPAdes &ndash; a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](rnaspades_manual.html)).
 -   truSPAdes &ndash; a module for TruSeq barcode assembly (see [truSPAdes manual](truspades_manual.html)).
+-   biosyntheticSPAdes &ndash; a module for biosynthetic gene cluster assembly with paired-end reads (see [biosynthicSPAdes options](#biosynthetic)).
 
 In addition, we provide several stand-alone binaries with relatively simple command-line interface: [k-mer counting](#sec4.1) (`spades-kmercounter`), [assembly graph construction](#sec4.2) (`spades-gbuilder`) and [long read to graph aligner](#sec4.3) (`spades-gmapper`). To learn options of these tools you can either run them without any parameters or read [this section](#sec4).
 
@@ -408,10 +410,17 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 
 []()
 
+<a name="biosynthetic"></a>
+`--bio `
+    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see [paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1) for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See [section 3.7](#sec3.7) for biosyntheticSPAdes output details.
+
+[]()
+
 <a name="rna"></a>
 `--rna `   (same as `rnaspades.py`)
     This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To learn more, see [rnaSPAdes manual](rnaspades_manual.html).
     Not compatible with `--only-error-correction` or `--careful` options. 
+
 
 `--iontorrent `
     This flag is required when assembling IonTorrent data. Allows BAM files as input. Carefully read [section 3.3](#sec3.3) before using this option.
@@ -963,6 +972,15 @@ SPAdes will overwrite these files and directories if they exist in the specified
 plasmidSPAdes outputs only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see [previous](#sec3.5) section), with the following difference. For all contig names in `contigs.fasta`, `scaffolds.fasta` and `assembly_graph.fastg` we append suffix `_component_X`, where `X` is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. []()
 
 <a name="sec3.7"></a>
+## biosyntheticSPAdes output
+
+biosyntheticSPAdes outputs three files of interest:
+- gene_clusters.fasta &ndash; contains DNA sequences from putative biosynthetic gene clusters (BGC). Since eash sample may contain multiple BGCs and biosyntheticSPAdes can output several putative DNA sequences for eash cluster, for each contig name we append suffix `_cluster_X_candidate_Y`, where X is the id of the BGC and Y is the id of the candidate from the BGC.
+- bgc_statistics.txt &ndash; contains statistics about BGC composition in the sample. First, it outputs number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from gene_clusters.fasta. 
+- domain_graph.dot &ndash; contains domain graph structure, that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.
+
+
+<a name="sec3.8"></a>
 ## Assembly evaluation
 
 [QUAST](http://cab.spbu.ru/software/quast/) may be used to generate summary statistics (N50, maximum contig length, GC %, \# genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).
@@ -1174,6 +1192,8 @@ If you use metaSPAdes please cite [Antipov et al., 2016](https://genome.cshlp.or
 If you use plasmidSPAdes please cite [Antipov et al., 2016](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610).
 
 For rnaSPAdes citation use [Bushmanova et al., 2019](https://academic.oup.com/gigascience/article/8/9/giz100/5559527).
+
+If you use biosyntheticSPAdes please cite [Meleshko et al., 2019](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1).
 
 In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <spades.support@cab.spbu.ru>.
 []()
