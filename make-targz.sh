@@ -22,6 +22,7 @@ rm -f $SRC_DIR/spades_pipeline/*.pyo
 rm -f $TARGET_DIR/ext/include/python_libs/joblib/*.pyc
 rm -f $TARGET_DIR/ext/include/python_libs/joblib/*.pyo
 
+cp -r assembler/biosynthetic_spades_hmms $TARGET_DIR/
 cp -r assembler/test_dataset $TARGET_DIR/test_dataset
 cp -r assembler/test_dataset_truspades $TARGET_DIR/test_dataset_truspades
 cp -r assembler/test_dataset_plasmid $TARGET_DIR/test_dataset_plasmid
