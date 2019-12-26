@@ -179,6 +179,8 @@ To download [SPAdes Linux binaries](http://cab.spbu.ru/files/release3.14.0/SPAde
 
 In this case you do not need to run any installation scripts &ndash; SPAdes is ready to use. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
 
+Note, that pre-build binaries do not work on new Linux kernels.
+
 <a name="sec2.2"></a>
 ## Downloading SPAdes binaries for Mac
 
