@@ -1,20 +1,21 @@
-New SPAdes 3.7
+Dear user,<br>
 <p>
-Dear user, <br>
+We are happy to announce that we have released <a href="http://cab.spbu.ru/software/spades/">SPAdes 3.14</a>. This release includes such new features as:<br>
+- BiosyntheticSPAdes pipeline for identifying Biosynthetic Gene Clusters (BGCs);<br>
+- Hybrid transcriptome assembly (Illumina RNA-Seq + Iso-seq / ONT RNA);<br>
+- Plasmid assembly from metagenomic datasets;<br>
+- New --isolate option that improves assembly quality of standard datasets with high coverage;<br>
+- New standalone tools for read filtration based on k-mer coverage and estimating number of unique k-mers in reads;<br>
+- Improved SPAligner tool for read-to-graph alignment;<br>
+- Major performance improvements and memory consumption reduction in graph construction,simplification procedures and throughout the whole pipeline;<br>
+- Several bug-fixes.<br>
+Please, consider updating.
 <p>
-We are happy to announce that we have just released new <a href="http://bioinf.spbau.ru/en/spades">SPAdes 3.7.0</a>. This version includes the following modifications: <br>
+SPAdes 3.14.0 is released under GPLv2 and openly available for download from our website <a href="http://cab.spbu.ru/software/spades/">cab.spbu.ru/software/spades/</a>
 <p>
-- New truSPAdes – an assembler for short reads produced by Illumina TruSeq Long Read technology; <br>
-- Better running time, less RAM consumption and improved results for BayesHammer error correction module;<br>
-- Improvements and bugfixes in dipSPAdes;<br>
-- Multiple improvements and bugfixes in repeat resolution and scaffolding modules;<br>
-- MismatchCorrector module now uses bwa-mem; several bugfixes are made.<br>
-<p>
-Please note that SPAdes was designed for single-cell and standard bacterial and other small (e.g. fungal) data sets and was not intended for larger genomes (e.g. mammalian size genomes). Should you decide to use SPAdes for a larger genome, please be aware that you are doing it at your own risk.
-<p>
-SPAdes version 3.7.0 is released under GPLv2 and openly available for download from <a href="http://bioinf.spbau.ru/en/spades">http://bioinf.spbau.ru/en/spades</a>.
-<p>
-Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes. If you have any troubles running SPAdes, please provide us with the files <b>params.txt</b> and <b>spades.log</b> from the output directory. Address for communications: <a href="mailto:spades.support@bioinf.spbau.ru">spades.support@bioinf.spbau.ru</a>.<br>
+Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes. You can look for existing issue on our <a href="https://github.com/ablab/spades">GitHub repository</a>, create a new one or write us via e-mail:  <a href="mailto:spades.support@cab.spbu.ru">spades.support@cab.spbu.ru</a>. If you have any troubles running SPAdes, please provide us with the files params.txt and spades.log from the output directory.
+
 <p>
 Best regards, <br>
 SPAdes team
+
