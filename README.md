@@ -16,7 +16,7 @@
     3.3. [Assembling IonTorrent reads](#sec3.3)</br>
     3.4. [Assembling long Illumina paired reads (2x150 and 2x250)](#sec3.4)</br>
     3.5. [SPAdes output](#sec3.5)</br>
-    3.6. [plasmidSPAdes output](#sec3.6)</br>
+    3.6. [plasmidSPAdes output/metaplasmidSPAdes output](#sec3.6)</br>
     3.7. [biosyntheticSPAdes output](#sec3.7)</br>
     3.8. [Assembly evaluation](#sec3.8)</br>
 4. [Stand-alone binaries released within SPAdes package](#sec4)</br>
@@ -46,7 +46,8 @@ If you have high-coverage data for bacterial/viral isolate or multi-cell organis
 
 SPAdes 3.14.0 includes the following additional pipelines:
 -   metaSPAdes &ndash; a pipeline for metagenomic data sets (see [metaSPAdes options](#meta)).
--   plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmidSPAdes options](#plasmid)).
+-   plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmid options](#plasmid)).
+-   metaplasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from <strong>metagenomic</strong> data sets (see [plasmid options](#plasmid)).
 -   rnaSPAdes &ndash; a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](assembler/rnaspades_manual.html)).
 -   truSPAdes &ndash; a module for TruSeq barcode assembly (see [truSPAdes manual](assembler/truspades_manual.html)).
 -   biosyntheticSPAdes &ndash; a module for biosynthetic gene cluster assembly with paired-end reads (see [biosynthicSPAdes options](#biosynthetic)).
@@ -153,8 +154,9 @@ In case of successful installation the following files will be placed in the `bi
 -   `spades.py` (main executable script)
 -   `metaspades.py` (main executable script for [metaSPAdes](#meta))
 -   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
--   `rnaspades.py` (main executable script for [rnaSPAdes](assembler/rnaspades_manual.html))
--   `truspades.py` (main executable script for [truSPAdes](assembler/truspades_manual.html))
+-   `metaplasmidspades.py` (main executable script for [metaplasmidSPAdes](#plasmid))
+-   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
+-   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
 -   `spades-core`  (assembly module)
 -   `spades-gbuilder`  (standalone graph builder application)
 -   `spades-gmapper`  (standalone long read to graph aligner)
@@ -406,7 +408,16 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 
 <a name="plasmid"></a>
 `--plasmid `   (same as `plasmidspades.py`)
-    This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see [paper](http://biorxiv.org/content/early/2016/04/20/048942) for the algorithm details). Note, that plasmidSPAdes is not compatible with [metaSPAdes](#meta) and [single-cell mode](#sc). Additionally, we do not recommend to run plasmidSPAdes on more than one library. See [section 3.6](#sec3.6) for plasmidSPAdes output details.
+    This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see [paper](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610) for the algorithm details). Note, that plasmidSPAdes is not compatible with [single-cell mode](#sc). Additionally, we do not recommend to run plasmidSPAdes on more than one library. 
+If options `--meta` and `--plasmid` are combined (same as `metaspades.py`) then metaplasmidSPAdes algorithm for extracting plasmids from metagenomic data sets is run (see [paper](https://genome.cshlp.org/content/29/6/961.short) for algorithm details)  
+
+[]()
+
+For plasmidSPAdes and metaplasmidSPAdes output details see [section 3.6](#sec3.6)  
+
+[]()
+
+Additionally for plasmidSPAdes and metaplasmidSPAdes we recommend to additionally verify resulting contigs with [plasmidVerify tool](https://github.com/ablab/plasmidVerify) 
 
 []()
 
@@ -969,7 +980,11 @@ SPAdes will overwrite these files and directories if they exist in the specified
 <a name="sec3.6"></a>
 ## plasmidSPAdes output
 
-plasmidSPAdes outputs only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see [previous](#sec3.5) section), with the following difference. For all contig names in `contigs.fasta`, `scaffolds.fasta` and `assembly_graph.fastg` we append suffix `_component_X`, where `X` is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. []()
+plasmidSPAdes and metaplasmidSPAdes output only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see [previous](#sec3.5) section), with the following differences.  
+
+For all plasmidSPAdes' contig names in `contigs.fasta`, `scaffolds.fasta` and `assembly_graph.fastg` we append suffix `_component_X`, where `X` is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. []()  
+
+For metaplasmidSPAdes only complete putative plasmids (i.e. circular contigs) are output.
 
 <a name="sec3.7"></a>
 ## biosyntheticSPAdes output
@@ -1145,7 +1160,7 @@ Additional options are:
 `-tmpdir <dir_name>  `
     scratch directory to use
 
-While `spades-mapper` is a solution for those who works on hybridSPAdes assembly and wants to get intermediate results, [SPAligner](#sec4.5.2) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.  
+While `spades-mapper` is a solution for those who works on hybridSPAdes assembly and wants to get exactly its intermediate results, [SPAligner](#sec4.5.2) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.  
 
 
 <a name="sec4.5.2"></a>
@@ -1187,9 +1202,11 @@ In case you perform hybrid assembly ussing  PacBio or Nanopore reads, you may al
 
 If you use multiple paired-end and/or mate-pair libraries you may also cite papers describing SPAdes repeat resolution algorithms [Prjibelski et al., 2014](http://bioinformatics.oxfordjournals.org/content/30/12/i293.short) and [Vasilinetc et al., 2015](http://bioinformatics.oxfordjournals.org/content/31/20/3262.abstract). 
 
-If you use metaSPAdes please cite [Antipov et al., 2016](https://genome.cshlp.org/content/27/5/824.short).
+If you use metaSPAdes please cite [Nurk et al., 2017](https://genome.cshlp.org/content/27/5/824.short).
 
 If you use plasmidSPAdes please cite [Antipov et al., 2016](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610).
+
+If you use metaplasmidSPAdes and/or plasmidVerify please cite [Antipov et al., 2019](https://genome.cshlp.org/content/29/6/961.short)
 
 For rnaSPAdes citation use [Bushmanova et al., 2019](https://academic.oup.com/gigascience/article/8/9/giz100/5559527).
 
