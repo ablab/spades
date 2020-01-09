@@ -157,7 +157,7 @@ static void WriteComponent(const GraphComponent<Graph> &component, const std::st
             stop_codon_os << canonical_helper.EdgeOrientationString(gpos.first, "\t")
                           << "\t" << (gpos.second + g.k() - 2) << "\n";
         } else {
-            WARN("Earlier detected stop codon " << g.str(gpos.first) << " "
+            WARN("Earlier detected stop codon " << naming_f(g, gpos.first) << " "
                                                 << gpos.second << " is outside the component");
         }
     }
@@ -306,7 +306,7 @@ int main(int argc, char** argv) {
 
     process_cmdline(argc, argv, cfg);
 
-    toolchain::create_console_logger();
+    toolchain::create_console_logger(/*logging::L_TRACE*/);
     START_BANNER("Extracting relevant subgraphs for (partial) predicted CDS");
 
     try {

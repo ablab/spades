@@ -6,6 +6,7 @@
 
 #include "toolchain/edge_label_helper.hpp"
 #include "toolchain/utils.hpp"
+#include "toolchain/subgraph_utils.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/binary/graph_pack.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
@@ -21,7 +22,7 @@
 
 namespace debruijn_graph {
 
-static void MappingPathStats(const Graph &g, size_t query_kmer_len,
+static void MappingPathStats(const Graph &g, const std::string &name, size_t query_kmer_len,
                              const omnigraph::MappingPath<EdgeId> &mapping_path,
                              io::EdgeNamingF<Graph> edge_naming_f) {
     VERIFY(mapping_path.size() > 0);
@@ -41,12 +42,12 @@ static void MappingPathStats(const Graph &g, size_t query_kmer_len,
         Range q_range = mapping_path[i].second.initial_range;
         //Range e_range = mapping_path[i].second.mapped_range;
         if (q_range.start_pos > curr_pos) {
-            INFO("GAP of length " << (q_range.start_pos - curr_pos) << " between " << curr_pos << " and " << q_range.start_pos);
+            INFO("GAP while mapping " << name << " of length " << (q_range.start_pos - curr_pos) << " between " << curr_pos << " and " << q_range.start_pos);
         }
         curr_pos = q_range.end_pos;
     }
     if (query_kmer_len > curr_pos) {
-        INFO("GAP of length " << (query_kmer_len - curr_pos) << " between " << curr_pos << " and " << query_kmer_len);
+        INFO("GAP while mapping " << name << " of length " << (query_kmer_len - curr_pos) << " between " << curr_pos << " and " << query_kmer_len);
     }
 }
 
@@ -58,7 +59,7 @@ static bool UsedOnBothSides(const Graph &g, EdgeId e, const std::multimap<EdgeId
 
 static void Run(const conj_graph_pack &gp, const std::string &contigs_file,
                 const std::string &paths_fn, const std::string &edge_info_fn,
-                const std::string &edge_color_fn,
+                const std::string &subgraph_prefix, const std::string &edge_color_fn,
                 const io::EdgeLabelHelper<Graph> &label_helper) {
 
     io::CanonicalEdgeHelper<Graph> canonical_helper(gp.g, label_helper.edge_naming_f());
@@ -89,7 +90,7 @@ static void Run(const conj_graph_pack &gp, const std::string &contigs_file,
             continue;
         }
 
-        MappingPathStats(gp.g, read.sequence().size() - gp.g.k(), mapping_path, label_helper.edge_naming_f());
+        MappingPathStats(gp.g, read.name(), read.sequence().size() - gp.g.k(), mapping_path, label_helper.edge_naming_f());
         std::string delimeter = "";
         auto fixed_path = path_finder.FindReadPath(mapping_path);
         if (!CheckContiguous(gp.g, fixed_path)) {
@@ -103,8 +104,6 @@ static void Run(const conj_graph_pack &gp, const std::string &contigs_file,
         os << "\n";
     }
 
-    size_t suspicious_edge_cnt = 0;
-    size_t total_suspicious_kmer_len = 0;
     std::stringstream suspicious_edges;
     std::ofstream edge_info_os;
     if (!edge_info_fn.empty())
@@ -116,28 +115,42 @@ static void Run(const conj_graph_pack &gp, const std::string &contigs_file,
         edge_color_os << "Name,color\n";
     }
 
-    for (EdgeId e : gp.g.canonical_edges()) {
-        edge_info_os << label_helper.label(e);
-        std::string delimeter = "\t";
-        if (edge_usage.count(e) == 0 && UsedOnBothSides(gp.g, e, edge_usage)) {
-            suspicious_edge_cnt++;
-            suspicious_edges << label_helper.label(e) << ",";
-            total_suspicious_kmer_len += gp.g.length(e);
-            edge_color_os << label_helper.label(e) << ",red\n";
-        }
-        if (edge_usage.count(e) > 0) {
-            edge_color_os << label_helper.label(e) << ",green\n";
+    //TODO optimize if we do not need to output unused edges
+    if (!edge_info_fn.empty() || !edge_color_fn.empty()) {
+        size_t suspicious_edge_cnt = 0;
+        size_t total_suspicious_kmer_len = 0;
+
+        for (EdgeId e : gp.g.canonical_edges()) {
+            edge_info_os << label_helper.label(e);
+            std::string delimeter = "\t";
+            if (edge_usage.count(e) == 0 && UsedOnBothSides(gp.g, e, edge_usage)) {
+                suspicious_edge_cnt++;
+                suspicious_edges << label_helper.label(e) << ",";
+                total_suspicious_kmer_len += gp.g.length(e);
+                edge_color_os << label_helper.label(e) << ",red\n";
+            }
+            if (edge_usage.count(e) > 0) {
+                edge_color_os << label_helper.label(e) << ",green\n";
+            }
+
+            for (const auto &usage : utils::get_all(edge_usage, e)) {
+                edge_info_os << delimeter << usage;
+            }
+            edge_info_os << "\n";
         }
 
-        for (const auto &usage : utils::get_all(edge_usage, e)) {
-            edge_info_os << delimeter << usage;
-        }
-        edge_info_os << "\n";
+        INFO("Suspicious edge cnt: " << suspicious_edge_cnt << "; " <<
+                "total (" << (gp.g.k() + 1) << "-mer) length: " << total_suspicious_kmer_len);
+        INFO("Suspicious edges: " << suspicious_edges.str());
     }
 
-    INFO("Suspicious edge cnt: " << suspicious_edge_cnt << "; " <<
-            "total (" << (gp.g.k() + 1) << "-mer) length: " << total_suspicious_kmer_len);
-    INFO("Suspicious edges: " << suspicious_edges.str());
+    if (!subgraph_prefix.empty()) {
+        auto edges = utils::key_set(edge_usage);
+        toolchain::ComponentExpander expander(gp.g);
+        auto component = expander.Expand(GraphComponent<Graph>::FromEdges(gp.g, edges.begin(),
+                                                                          edges.end(), /*add conjugate*/true));
+        toolchain::WriteComponentWithDeadends(component, subgraph_prefix, label_helper.edge_naming_f());
+    }
 }
 
 }
@@ -154,6 +167,7 @@ struct gcfg {
     std::string paths_fn;
     std::string edge_info_fn;
     std::string edge_color_fn;
+    std::string subgraph_prefix;
     std::string workdir;
     unsigned nthreads;
 };
@@ -169,6 +183,7 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
                (option("-e", "--edge-info") & value("file", cfg.edge_info_fn)) % "Destination for outputting edge usage information",
                (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
                (option("-c", "--colors") & value("file", cfg.edge_color_fn)) % "Destination for outputting edge coloring to be displayed in Bandage",
+               (option("-s", "--subgraph") & value("file", cfg.subgraph_prefix)) % "Destination for outputting locality of covered edges in GFA",
                (option("--workdir") & value("dir", cfg.workdir)) % "scratch directory to use (default: ./tmp)"
     );
 
@@ -209,7 +224,8 @@ int main(int argc, char** argv) {
 
         gp.EnsureBasicMapping();
 
-        debruijn_graph::Run(gp, cfg.sequences_fn, cfg.paths_fn, cfg.edge_info_fn, cfg.edge_color_fn, label_helper);
+        debruijn_graph::Run(gp, cfg.sequences_fn, cfg.paths_fn, cfg.edge_info_fn,
+                            cfg.subgraph_prefix, cfg.edge_color_fn, label_helper);
         INFO("Done");
     } catch (const std::string &s) {
         std::cerr << s << std::endl;

@@ -144,13 +144,13 @@ MinDistRelevantComponentFinder::RelevantComponent(size_t cds_len_est,
         if (base_len + p_d.second < max_cds_len) {
             if (!CheckConnectedTo(g_.EdgeStart(e), within_cds_limit)) {
                 //FIXME add entire path?
-                WARN("Edge " << g_.str(e) << " being added as containing stop codon "
+                WARN("Edge " << edge_naming_f_(g_, e) << " being added as containing stop codon "
                                              "is disconnected from inner component vertices");
             }
 
             revised_edges.insert(e);
         } else {
-            WARN("Edge " << g_.str(e) << " containing stop codon "
+            WARN("Edge " << edge_naming_f_(g_, e) << " containing stop codon "
                                          "on position " << p_d.first.second << " was not added to component");
             INFO("Max cds len " << max_cds_len << " ; base_len " << base_len << " ; dist to stop " << p_d.second);
         }
@@ -168,7 +168,7 @@ PartialGenePathProcessor::ProcessPartialGenePath(const EdgePath &gene_path,
         WARN("Partial gene path was empty");
         return omnigraph::GraphComponent<Graph>(g_);
     }
-    DEBUG("Processing partial gene path " << PrintEdgePath(gene_path));
+    INFO("Processing partial gene path " << PrintEdgePath(gene_path));
     //DEBUG("Nucls: " << PathSeq(gene_path));
 
     INFO("Searching for stop codon forward");
@@ -185,9 +185,9 @@ PartialGenePathProcessor::ProcessPartialGenePath(const EdgePath &gene_path,
         stop_codon_poss->insert(gp_d.first);
     }
 
-    TRACE("Paths forward:");
+    INFO("Paths forward:");
     for (const auto &p : paths_fwd) {
-        TRACE("Path: " << PrintEdgePath(p));
+        INFO("Path: " << PrintEdgePath(p));
         Sequence s = PathSeq(p).Subseq(g_.k());
         TRACE("Sequence: len=" << s.size() << "; " << s);
     }
@@ -200,9 +200,9 @@ PartialGenePathProcessor::ProcessPartialGenePath(const EdgePath &gene_path,
     INFO("Codons backward found: " << paths_bwd.size());
     auto starts = RCTerminates(bwd_finder.Terminates(paths_bwd));
 
-    TRACE("Paths backward (reversed): ");
+    INFO("Paths backward (reversed): ");
     for (const auto &p : RCEdgePaths(paths_bwd)) {
-        TRACE("Path: " << PrintEdgePath(p));
+        INFO("Path: " << PrintEdgePath(p));
         Sequence s = PathSeq(p);
         TRACE("Sequence: len=" << s.size() - g_.k() << "; " << s.Subseq(0, s.size() - g_.k()));
     }

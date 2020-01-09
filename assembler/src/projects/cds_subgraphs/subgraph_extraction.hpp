@@ -96,6 +96,7 @@ class MinDistRelevantComponentFinder {
     using DistInfo = std::unordered_map<GraphPos, size_t>;
     using BaseDistF = std::function<size_t(GraphPos, GraphPos)>;
     const Graph &g_;
+    const io::EdgeNamingF<Graph> edge_naming_f_;
     const double max_len_coeff_;
 
     size_t MaxDist(const DistInfo &v_ds) const {
@@ -133,8 +134,9 @@ class MinDistRelevantComponentFinder {
 public:
     //TODO NB: max_len_frac used twice with slightly different meaning
     MinDistRelevantComponentFinder(const Graph &g,
+                                   io::EdgeNamingF<Graph> edge_naming_f,
                                    double max_len_frac = 1.5) :
-            g_(g), max_len_coeff_(max_len_frac) {}
+            g_(g), edge_naming_f_(edge_naming_f), max_len_coeff_(max_len_frac) {}
 
     //TODO check how base_len is defined
     omnigraph::GraphComponent<Graph> RelevantComponent(size_t cds_len_est,
@@ -151,9 +153,10 @@ class PartialGenePathProcessor {
     std::string PrintEdgePath(const EdgePath &path) const {
         std::stringstream ss;
         std::string delim = "";
+        ss << "[";
         for (EdgeId e : path.sequence()) {
             ss << delim << edge_naming_f_(g_, e);
-            delim = " ";
+            delim = ", ";
         }
         ss << "], ";
         ss << "start: " << path.start_pos() << ", end: " << path.end_pos();
@@ -224,7 +227,7 @@ public:
                              io::EdgeNamingF<Graph> edge_naming_f,
                              double max_len_coeff = 1.5) :
             g_(g),
-            rel_comp_finder_(g_, max_len_coeff),
+            rel_comp_finder_(g_, edge_naming_f, max_len_coeff),
             edge_naming_f_(edge_naming_f) {}
 
     //potential stop codons of the gene will be added to stop_codon_poss
