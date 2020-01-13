@@ -11,6 +11,7 @@
 #include "utils/verify.hpp"
 #include "btree/btree_set.h"
 #include <set>
+#include <queue>
 #include <parallel_hashmap/phmap.h>
 #include <vector>
 #include <algorithm>
@@ -26,6 +27,82 @@ public:
 };
 
 template<typename T, typename Priority=identity>
+class erasable_priority_queue_key_dirty_heap {
+private:
+    using PriorityValue = std::decay_t<decltype(std::declval<Priority>()(T()))>;
+    using Pair = std::pair<PriorityValue, T>;
+    std::priority_queue<Pair, std::vector<Pair>, std::greater<Pair>> queue_;
+    phmap::flat_hash_set<T> set_;
+    Priority priority_;
+
+    const T& top_impl() const {
+        return queue_.top().second;
+    }
+
+    void skip() {
+        while (!queue_.empty() && !set_.count(top_impl())) {
+            queue_.pop();
+        }
+    }
+public:
+    /*
+     * Be careful! This constructor requires Priority to have default constructor even if you call it with
+     * specified priority. In this case just create default constructor with VERIFY(false) inside it.
+     * TODO Fix it
+     */
+    erasable_priority_queue_key_dirty_heap(const Priority &priority = Priority()) : priority_(priority) {}
+
+    template<typename InputIterator>
+    erasable_priority_queue_key_dirty_heap(InputIterator begin, InputIterator end,
+                                           const Priority &priority) : priority_(priority) {
+        insert(begin, end);
+    }
+
+    void pop() {
+        VERIFY(!set_.empty());
+        set_.erase(top());
+        queue_.pop();
+        skip();
+    }
+
+    const T& top() const {
+        VERIFY(!set_.empty());
+        return top_impl();
+    }
+
+    void push(const T &key) {
+        queue_.push(std::make_pair(priority_(key), key));
+        set_.insert(key);
+    }
+
+    bool erase(const T &key) {
+        bool res = set_.erase(key) > 0;
+        skip();
+        return res;
+    }
+
+    void clear() {
+        set_.clear();
+        queue_ = std::decay_t<decltype(queue_)>();  // std::priority_queue has not .clear() method!
+    }
+
+    bool empty() const {
+        return set_.empty();
+    }
+
+    size_t size() const {
+        return set_.size();
+    }
+
+    template <class InputIterator>
+    void insert(InputIterator begin, InputIterator end) {
+        for (; begin != end; ++begin) {
+            push(*begin);
+        }
+    }
+};
+
+template<typename T, typename Priority=identity>
 class erasable_priority_queue_key {
 private:
     using PriorityValue = std::decay_t<decltype(std::declval<Priority>()(T()))>;
@@ -33,8 +110,9 @@ private:
     Priority priority_;
 public:
     /*
-     * Be careful! This constructor requires Comparator to have default constructor even if you call it with
-     * specified comparator. In this case just create default constructor with VERIFY(false) inside it.
+     * Be careful! This constructor requires Priority to have default constructor even if you call it with
+     * specified priority. In this case just create default constructor with VERIFY(false) inside it.
+     * TODO Fix it
      */
     erasable_priority_queue_key(const Priority &priority = Priority()) : priority_(priority) {}
 
@@ -78,7 +156,7 @@ public:
     template <class InputIterator>
     void insert(InputIterator begin, InputIterator end) {
         for (; begin != end; ++begin) {
-            storage_.push(*begin);
+            push(*begin);
         }
     }
 };
@@ -279,7 +357,7 @@ class DynamicQueueIteratorKey {
     bool current_actual_;
     bool current_deleted_;
     T current_;
-    erasable_priority_queue_key<T, Priority> queue_;
+    erasable_priority_queue_key_dirty_heap<T, Priority> queue_;
 
 public:
 
