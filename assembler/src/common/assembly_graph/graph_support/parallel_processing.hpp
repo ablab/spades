@@ -317,7 +317,7 @@ public:
 
 //FIXME only potentially relevant edges should be stored at any point
 template<class Graph, class ElementId,
-         class Comparator = std::less<ElementId>>
+         class Comparator = adt::identity<ElementId>>
 class PersistentProcessingAlgorithm : public PersistentAlgorithmBase<Graph> {
 protected:
     typedef std::shared_ptr<InterestingElementFinder<Graph, ElementId>> CandidateFinderPtr;
@@ -397,7 +397,7 @@ private:
 };
 
 template<class Graph,
-        class Comparator = std::less<typename Graph::EdgeId>>
+        class Comparator = adt::identity<typename Graph::EdgeId>>
 class ParallelEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Graph,
         typename Graph::EdgeId,
         Comparator> {
@@ -440,7 +440,7 @@ private:
 };
 
 //TODO use coverage order?
-template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
+template<class Graph, class Comparator = adt::identity<typename Graph::EdgeId>>
 class DisconnectionAlgorithm : public PersistentProcessingAlgorithm<Graph,
         typename Graph::EdgeId,
         Comparator> {

@@ -91,7 +91,7 @@ public:
     }
 
     SmartVertexIterator<ObservableGraph> SmartVertexBegin(bool canonical_only = false) const {
-        return SmartVertexIterator<ObservableGraph>(*this, std::less<VertexId>(), canonical_only);
+        return SmartVertexIterator<ObservableGraph>(*this, adt::identity<VertexId>(), canonical_only);
     }
 
     template<typename Comparator>
@@ -101,7 +101,7 @@ public:
     }
 
     SmartEdgeIterator<ObservableGraph> SmartEdgeBegin(bool canonical_only = false) const {
-        return SmartEdgeIterator<ObservableGraph>(*this, std::less<EdgeId>(), canonical_only);
+        return SmartEdgeIterator<ObservableGraph>(*this, adt::identity<EdgeId>(), canonical_only);
     }
 
     ConstEdgeIterator<ObservableGraph> ConstEdgeBegin(bool canonical_only = false) const {

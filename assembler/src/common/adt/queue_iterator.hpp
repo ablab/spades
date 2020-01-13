@@ -17,6 +17,63 @@
 
 namespace adt {
 
+template<typename T, typename Priority>
+class erasable_priority_queue_key {
+private:
+    using PriorityValue = std::decay_t<decltype(std::declval<Priority>()(T()))>;
+    btree::btree_set<std::pair<PriorityValue, T>> storage_;
+    Priority priority_;
+public:
+    /*
+     * Be careful! This constructor requires Comparator to have default constructor even if you call it with
+     * specified comparator. In this case just create default constructor with VERIFY(false) inside it.
+     */
+    erasable_priority_queue_key(const Priority &priority = Priority()) : priority_(priority) {}
+
+    template<typename InputIterator>
+    erasable_priority_queue_key(InputIterator begin, InputIterator end,
+                                const Priority &priority) : priority_(priority) {
+        insert(begin, end);
+    }
+
+    void pop() {
+        VERIFY(!storage_.empty());
+        storage_.erase(storage_.begin());
+    }
+
+    const T& top() const {
+        VERIFY(!storage_.empty());
+        return storage_.begin()->second;
+    }
+
+    void push(const T &key) {
+        storage_.insert(std::make_pair(priority_(key), key));
+    }
+
+    bool erase(const T &key) {
+        bool res = storage_.erase(std::make_pair(priority_(key), key)) > 0;
+        return res;
+    }
+
+    void clear() {
+        storage_.clear();
+    }
+
+    bool empty() const {
+        return storage_.empty();
+    }
+
+    size_t size() const {
+        return storage_.size();
+    }
+
+    template <class InputIterator>
+    void insert(InputIterator begin, InputIterator end) {
+        for (; begin != end; ++begin) {
+            storage_.push(*begin);
+        }
+    }
+};
 
 template<typename T, typename Comparator>
 class erasable_priority_queue {
@@ -208,6 +265,82 @@ private:
     }
 };
 
+template <typename T>
+class identity {
+public:
+    T operator()(const T &v) const {
+        return v;
+    }
+};
+
+template<typename T, typename Priority = identity<T>>
+class DynamicQueueIteratorKey {
+
+    bool current_actual_;
+    bool current_deleted_;
+    T current_;
+    erasable_priority_queue_key<T, Priority> queue_;
+
+public:
+
+    DynamicQueueIteratorKey(const Priority &priority = Priority()) :
+        current_actual_(false), current_deleted_(false), queue_(priority) {
+    }
+
+    template<typename InputIterator>
+    void insert(InputIterator begin, InputIterator end) {
+        queue_.insert(begin, end);
+    }
+
+    void push(const T &to_add) {
+        queue_.push(to_add);
+    }
+
+    void erase(const T &to_remove) {
+        if (current_actual_ && to_remove == current_) {
+            current_deleted_ = true;
+        }
+        queue_.erase(to_remove);
+    }
+
+    void clear() {
+        queue_.clear();
+        current_actual_ = false;
+        current_deleted_ = false;
+    }
+
+    bool IsEnd() const {
+        return queue_.empty();
+    }
+
+    size_t size() const {
+        return queue_.size();
+    }
+
+    const T& operator*() {
+        VERIFY(!queue_.empty());
+        if (!current_actual_ || current_deleted_) {
+            current_ = queue_.top();
+            current_actual_ = true;
+            current_deleted_ = false;
+        }
+        return current_;
+    }
+
+    void operator++() {
+        if (!current_actual_) {
+            queue_.pop();
+        } else if (!current_deleted_) {
+            queue_.erase(current_);
+        }
+        current_actual_ = false;
+    }
+
+    //use carefully!
+    void ReleaseCurrent() {
+        current_actual_ = false;
+    }
+};
 
 template<typename T, typename Comparator = std::less<T>>
 class DynamicQueueIterator {
