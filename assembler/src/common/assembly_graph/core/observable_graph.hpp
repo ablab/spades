@@ -83,21 +83,20 @@ public:
     bool VerifyAllDetached();
 
     //smart iterators
-    template<typename Comparator>
-    SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(
-            const Comparator& comparator, bool canonical_only = false) const {
-        return SmartVertexIterator<ObservableGraph, Comparator>(*this,
-                                                                comparator, canonical_only);
+    template<typename Priority>
+    SmartVertexIterator<ObservableGraph, Priority> SmartVertexBegin(
+            const Priority& priority, bool canonical_only = false) const {
+        return SmartVertexIterator<ObservableGraph, Priority>(*this, priority, canonical_only);
     }
 
     SmartVertexIterator<ObservableGraph> SmartVertexBegin(bool canonical_only = false) const {
         return SmartVertexIterator<ObservableGraph>(*this, adt::identity(), canonical_only);
     }
 
-    template<typename Comparator>
-    SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin(
-            const Comparator& comparator, bool canonical_only = false) const {
-        return SmartEdgeIterator<ObservableGraph, Comparator>(*this, comparator, canonical_only);
+    template<typename Priority>
+    SmartEdgeIterator<ObservableGraph, Priority> SmartEdgeBegin(
+            const Priority& priority, bool canonical_only = false) const {
+        return SmartEdgeIterator<ObservableGraph, Priority>(*this, priority, canonical_only);
     }
 
     SmartEdgeIterator<ObservableGraph> SmartEdgeBegin(bool canonical_only = false) const {

@@ -317,14 +317,14 @@ public:
 
 //FIXME only potentially relevant edges should be stored at any point
 template<class Graph, class ElementId,
-         class Comparator = adt::identity>
+         class Priority = adt::identity>
 class PersistentProcessingAlgorithm : public PersistentAlgorithmBase<Graph> {
 protected:
     typedef std::shared_ptr<InterestingElementFinder<Graph, ElementId>> CandidateFinderPtr;
     CandidateFinderPtr interest_el_finder_;
 
 private:
-    SmartSetIterator<Graph, ElementId, Comparator> it_;
+    SmartSetIterator<Graph, ElementId, Priority> it_;
     const bool tracking_;
 
 protected:
@@ -341,11 +341,11 @@ public:
     PersistentProcessingAlgorithm(Graph& g,
                                   CandidateFinderPtr interest_el_finder,
                                   bool canonical_only = false,
-                                  const Comparator& comp = Comparator(),
+                                  const Priority& priority = Priority(),
                                   bool track_changes = true) :
             PersistentAlgorithmBase<Graph>(g),
             interest_el_finder_(interest_el_finder),
-            it_(g, true, comp, canonical_only),
+            it_(g, true, priority, canonical_only),
             tracking_(track_changes) {
         it_.Detach();
     }
@@ -397,12 +397,12 @@ private:
 };
 
 template<class Graph,
-        class Comparator = adt::identity>
+        class Priority = adt::identity>
 class ParallelEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Graph,
         typename Graph::EdgeId,
-        Comparator> {
+        Priority> {
     typedef typename Graph::EdgeId EdgeId;
-    typedef PersistentProcessingAlgorithm<Graph, EdgeId, Comparator> base;
+    typedef PersistentProcessingAlgorithm<Graph, EdgeId, Priority> base;
 
     const func::TypedPredicate<EdgeId> remove_condition_;
     EdgeRemover<Graph> edge_remover_;
@@ -426,11 +426,11 @@ public:
                                   size_t chunk_cnt,
                                   std::function<void(EdgeId)> removal_handler = boost::none,
                                   bool canonical_only = false,
-                                  const Comparator& comp = Comparator(),
+                                  const Priority& priority = Priority(),
                                   bool track_changes = true)
             : base(g,
                    std::make_shared<ParallelInterestingElementFinder<Graph>>(remove_condition, chunk_cnt),
-                   canonical_only, comp, track_changes),
+                   canonical_only, priority, track_changes),
                    remove_condition_(remove_condition),
                    edge_remover_(g, removal_handler) {
     }
@@ -440,12 +440,12 @@ private:
 };
 
 //TODO use coverage order?
-template<class Graph, class Comparator = adt::identity>
+template<class Graph, class Priority = adt::identity>
 class DisconnectionAlgorithm : public PersistentProcessingAlgorithm<Graph,
         typename Graph::EdgeId,
-        Comparator> {
+        Priority> {
     typedef typename Graph::EdgeId EdgeId;
-    typedef PersistentProcessingAlgorithm<Graph, EdgeId, Comparator> base;
+    typedef PersistentProcessingAlgorithm<Graph, EdgeId, Priority> base;
     func::TypedPredicate<EdgeId> condition_;
     EdgeDisconnector<Graph> disconnector_;
 
@@ -454,11 +454,11 @@ public:
                            func::TypedPredicate<EdgeId> condition,
                            size_t chunk_cnt,
                            EdgeRemovalHandlerF<Graph> removal_handler,
-                           const Comparator& comp = Comparator(),
+                           const Priority& priority = Priority(),
                            bool track_changes = true)
             : base(g,
                    std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(condition, chunk_cnt),
-            /*canonical_only*/false, comp, track_changes),
+            /*canonical_only*/false, priority, track_changes),
               //condition_(second_check ? condition : func::AlwaysTrue<EdgeId>()),
               condition_(condition),
               disconnector_(g, removal_handler) {

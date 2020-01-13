@@ -309,7 +309,7 @@ class AdditionalMDAThornCondition : public EdgeCondition<Graph> {
 //todo move to rnaSPAdes simplification
 template<class Graph>
 class ECLoopRemover : public EdgeProcessingAlgorithm<Graph> {
-    typedef adt::identity Comparator;
+    typedef adt::identity Priority;
     typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
