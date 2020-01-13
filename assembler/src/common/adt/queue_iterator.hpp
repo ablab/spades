@@ -17,7 +17,15 @@
 
 namespace adt {
 
-template<typename T, typename Priority>
+class identity {
+public:
+    template <typename T>
+    constexpr T&& operator()(T&& t) const noexcept {
+        return std::forward<T>(t);
+    }
+};
+
+template<typename T, typename Priority=identity>
 class erasable_priority_queue_key {
 private:
     using PriorityValue = std::decay_t<decltype(std::declval<Priority>()(T()))>;
@@ -265,15 +273,7 @@ private:
     }
 };
 
-template <typename T>
-class identity {
-public:
-    T operator()(const T &v) const {
-        return v;
-    }
-};
-
-template<typename T, typename Priority = identity<T>>
+template<typename T, typename Priority = identity>
 class DynamicQueueIteratorKey {
 
     bool current_actual_;

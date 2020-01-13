@@ -309,7 +309,7 @@ class AdditionalMDAThornCondition : public EdgeCondition<Graph> {
 //todo move to rnaSPAdes simplification
 template<class Graph>
 class ECLoopRemover : public EdgeProcessingAlgorithm<Graph> {
-    typedef adt::identity<typename Graph::EdgeId> Comparator;
+    typedef adt::identity Comparator;
     typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
@@ -479,7 +479,7 @@ public:
                     size_t uniqueness_length,
                     double relative_threshold,
                     EdgeRemovalHandlerF<Graph> removal_handler = 0)
-            : base(g, nullptr, /*canonical only*/ false, adt::identity<VertexId>(), /*track changes*/false),
+            : base(g, nullptr, /*canonical only*/ false, adt::identity(), /*track changes*/false),
               flanking_coverage_(flanking_coverage),
               uniqueness_length_(uniqueness_length),
               relative_threshold_(relative_threshold),
@@ -573,7 +573,7 @@ public:
                     double unreliability_coeff,
                     double ec_threshold, double relative_threshold,
                     EdgeRemovalHandlerF<Graph> removal_handler = 0)
-            : base(g, nullptr, /*canonical only*/ false, adt::identity<VertexId>(), /*track changes*/false), 
+            : base(g, nullptr, /*canonical only*/ false, adt::identity(), /*track changes*/false), 
               flanking_coverage_(flanking_coverage),
               uniqueness_length_(uniqueness_length),
               unreliability_threshold_(unreliability_coeff * ec_threshold), ec_threshold_(ec_threshold),

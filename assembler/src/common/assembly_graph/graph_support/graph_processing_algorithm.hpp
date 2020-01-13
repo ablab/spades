@@ -53,7 +53,7 @@ class EdgeProcessingAlgorithm {
 //        return conjugate_symmetry_;
 //    }
 
-    template<class Comparator = adt::identity<EdgeId>>
+    template<class Comparator = adt::identity>
     bool Run(const Comparator& comp = Comparator(), ProceedConditionT proceed_condition = func::AlwaysTrue<EdgeId>()) {
         bool triggered = false;
         for (auto it = g_.SmartEdgeBegin(comp, conjugate_symmetry_); !it.IsEnd(); ++it) {

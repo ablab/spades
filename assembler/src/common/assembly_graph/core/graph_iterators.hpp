@@ -183,7 +183,7 @@ SmartEdgeSet<Container, Graph> make_smart_edge_set(const Graph &g, Container &c,
  * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
  * way graph is changed. Also one can define order of iteration by specifying Priority.
  */
-template<class Graph, typename ElementId, typename Priority = adt::identity<ElementId>>
+template<class Graph, typename ElementId, typename Priority = adt::identity>
 class SmartIterator : public GraphActionHandler<Graph> {
     typedef GraphActionHandler<Graph> base;
     typedef adt::DynamicQueueIteratorKey<ElementId, Priority> DynamicQueueIterator;
@@ -274,7 +274,7 @@ public:
  * way graph is changed. Also one can define order of iteration by specifying Priority.
  */
 template<class Graph, typename ElementId,
-         typename Priority = adt::identity<ElementId>>
+         typename Priority = adt::identity>
 class SmartSetIterator : public SmartIterator<Graph, ElementId, Priority> {
     typedef SmartIterator<Graph, ElementId, Priority> base;
 
@@ -318,7 +318,7 @@ public:
  * structure which is also updated with handlers make sure that all information is updated in high level
  * event handlers.
  */
-template<class Graph, typename Priority = adt::identity<typename Graph::VertexId> >
+template<class Graph, typename Priority = adt::identity >
 class SmartVertexIterator : public SmartIterator<Graph,
                                                  typename Graph::VertexId, Priority> {
   public:
@@ -443,7 +443,7 @@ class ConstEdgeIterator {
  * structure which is also updated with handlers make sure that all information is updated in high level
  * event handlers.
  */
-template<class Graph, typename Priority = adt::identity<typename Graph::EdgeId> >
+template<class Graph, typename Priority = adt::identity>
 class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId, Priority> {
     typedef GraphEdgeIterator<Graph> EdgeIt;
   public:

@@ -1172,7 +1172,7 @@ public:
                         size_t chunk_cnt, const std::string& pics_folder = "") :
             base(g, std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph, VertexId>>(
                 CandidateFinder<Graph>(g, max_length, length_diff), chunk_cnt),
-                false, adt::identity<VertexId>(), /*track changes*/false),
+                false, adt::identity(), /*track changes*/false),
             max_length_(max_length),
             length_diff_(length_diff),
             protected_edges_(protected_edges),
