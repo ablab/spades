@@ -573,7 +573,7 @@ public:
                     double unreliability_coeff,
                     double ec_threshold, double relative_threshold,
                     EdgeRemovalHandlerF<Graph> removal_handler = 0)
-            : base(g, nullptr, /*canonical only*/ false, adt::identity(), /*track changes*/false), 
+            : base(g, nullptr, /*canonical only*/ false, adt::identity(), /*track changes*/false),
               flanking_coverage_(flanking_coverage),
               uniqueness_length_(uniqueness_length),
               unreliability_threshold_(unreliability_coeff * ec_threshold), ec_threshold_(ec_threshold),
