@@ -16,6 +16,26 @@
 #include <vector>
 #include <algorithm>
 
+template<typename T>
+inline void hash_combine(std::size_t& seed, const T& val) {
+    std::hash<T> hasher;
+    seed ^= hasher(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+//  taken from https://stackoverflow.com/a/7222201/916549
+//
+namespace std {
+template<typename S, typename T>
+struct hash<std::pair<S, T>> {
+    inline size_t operator()(const std::pair<S, T>& val) const {
+        size_t seed = 0;
+        hash_combine(seed, val.first);
+        hash_combine(seed, val.second);
+        return seed;
+    }
+};
+}
+
 namespace adt {
 
 class identity {
@@ -32,7 +52,7 @@ private:
     using PriorityValue = std::decay_t<decltype(std::declval<Priority>()(T()))>;
     using Pair = std::pair<PriorityValue, T>;
     std::priority_queue<Pair, std::vector<Pair>, std::greater<Pair>> queue_;
-    phmap::flat_hash_set<T> set_;
+    phmap::flat_hash_set<Pair> set_;
     Priority priority_;
 
     const T& top_impl() const {
@@ -40,7 +60,9 @@ private:
     }
 
     void skip() {
-        while (!queue_.empty() && !set_.count(top_impl())) {
+        if (empty()) return clear();
+
+        while (!set_.count(queue_.top())) {
             queue_.pop();
         }
     }
@@ -60,7 +82,7 @@ public:
 
     void pop() {
         VERIFY(!set_.empty());
-        bool res = set_.erase(top_impl());
+        bool res = set_.erase(queue_.top());
         VERIFY(res);
         queue_.pop();
         skip();
@@ -68,17 +90,18 @@ public:
 
     const T& top() const {
         VERIFY(!set_.empty());
-        VERIFY(set_.count(top_impl()));
         return top_impl();
     }
 
     void push(const T &key) {
-        queue_.push(std::make_pair(priority_(key), key));
-        set_.insert(key);
+        auto p = std::make_pair(priority_(key), key);
+        queue_.push(p);
+        set_.insert(p);
     }
 
     bool erase(const T &key) {
-        bool res = set_.erase(key) > 0;
+        auto p = std::make_pair(priority_(key), key);
+        bool res = set_.erase(p) > 0;
         skip();
         return res;
     }
