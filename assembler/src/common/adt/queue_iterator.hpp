@@ -60,13 +60,15 @@ public:
 
     void pop() {
         VERIFY(!set_.empty());
-        set_.erase(top());
+        bool res = set_.erase(top_impl());
+        VERIFY(res);
         queue_.pop();
         skip();
     }
 
     const T& top() const {
         VERIFY(!set_.empty());
+        VERIFY(set_.count(top_impl()));
         return top_impl();
     }
 
