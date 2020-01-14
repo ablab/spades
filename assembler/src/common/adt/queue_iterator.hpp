@@ -46,17 +46,57 @@ public:
     }
 };
 
+struct simple_greater {
+    template <typename T>
+    constexpr bool operator()(const T &t1, const T &t2) const noexcept {
+        return t2 < t1;
+    }
+};
+
 template<typename T, typename Priority=identity>
 class erasable_priority_queue_key_dirty_heap {
 private:
-    using PriorityValue = std::decay_t<decltype(std::declval<Priority>()(T()))>;
-    using Pair = std::pair<PriorityValue, T>;
-    std::priority_queue<Pair, std::vector<Pair>, std::greater<Pair>> queue_;
-    phmap::flat_hash_set<Pair> set_;
     Priority priority_;
+    using PriorityValue = std::decay_t<decltype(std::declval<Priority>()(T()))>;
+
+    constexpr static bool is_trivial = std::is_same<Priority, identity>::value;
+    using StoredType = std::conditional_t<is_trivial, T, std::pair<PriorityValue, T>>;
+
+
+    std::priority_queue<StoredType, std::vector<StoredType>, simple_greater> queue_;
+    phmap::flat_hash_set<StoredType> set_;
+
+    template <typename This>
+    struct TrivialFunctions {
+        static const T& top_impl(const This *p) {
+            return p->queue_.top();
+        }
+
+        static const StoredType get_stored(const This*, const T &key) {
+            return key;
+        }
+    };
+
+    template <typename This>
+    struct NontrivialFunctions {
+        static const T& top_impl(const This *p) {
+            return p->queue_.top().second;
+        }
+
+        static const StoredType get_stored(const This *p, const T &key) {
+            return std::make_pair(p->priority_(key), key);
+        }
+    };
+
+    using Queue = erasable_priority_queue_key_dirty_heap<T, Priority>;
+    using Functions = std::conditional_t<is_trivial, TrivialFunctions<Queue>, NontrivialFunctions<Queue>>;
 
     const T& top_impl() const {
-        return queue_.top().second;
+        return Functions::top_impl(this);
+    }
+
+    StoredType get_stored(const T &key) const {
+        return Functions::get_stored(this, key);
     }
 
     void skip() {
@@ -94,13 +134,13 @@ public:
     }
 
     void push(const T &key) {
-        auto p = std::make_pair(priority_(key), key);
+        auto p = get_stored(key);
         queue_.push(p);
         set_.insert(p);
     }
 
     bool erase(const T &key) {
-        auto p = std::make_pair(priority_(key), key);
+        auto p = get_stored(key);
         bool res = set_.erase(p) > 0;
         skip();
         return res;
