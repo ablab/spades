@@ -46,6 +46,7 @@ public:
     }
 };
 
+// std::greater uses operator> which could be unimplemented
 struct simple_greater {
     template <typename T>
     constexpr bool operator()(const T &t1, const T &t2) const noexcept {
@@ -62,8 +63,18 @@ private:
     constexpr static bool is_trivial = std::is_same<Priority, identity>::value;
     using StoredType = std::conditional_t<is_trivial, T, std::pair<PriorityValue, T>>;
 
+    template <typename... Args>
+    class priority_queue : public std::priority_queue<Args...> {
+    public:  // use Public Morozov pattern
+        using std::priority_queue<Args...>::c;
 
-    std::priority_queue<StoredType, std::vector<StoredType>, simple_greater> queue_;
+        // std::priority_queue has not .clear() method!
+        void clear() {
+            c.clear();
+        }
+    };
+
+    priority_queue<StoredType, std::vector<StoredType>, simple_greater> queue_;
     phmap::flat_hash_set<StoredType> set_;
 
     template <typename This>
@@ -143,12 +154,19 @@ public:
         auto p = get_stored(key);
         bool res = set_.erase(p) > 0;
         skip();
+        if (2 * set_.size() < queue_.size()) compress();
         return res;
     }
 
     void clear() {
         set_.clear();
-        queue_ = std::decay_t<decltype(queue_)>();  // std::priority_queue has not .clear() method!
+        queue_.clear();
+    }
+
+    void compress() {
+        auto &storage = queue_.c;
+        storage = std::vector<StoredType>(set_.cbegin(), set_.cend());
+        std::make_heap(storage.begin(), storage.end(), simple_greater());
     }
 
     bool empty() const {
