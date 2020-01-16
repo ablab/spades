@@ -56,17 +56,8 @@ public:
     typedef T *pointer;
     typedef const T *const_pointer;
 
-// workaround missing "is_trivially_copyable" in g++ < 5.0
-#if __GNUG__ && __GNUC__ < 5
-#define IS_TRIVIALLY_COPYABLE(T) __has_trivial_copy(T)
-#else
-#define IS_TRIVIALLY_COPYABLE(T) std::is_trivially_copyable<T>::value
-#endif
-
-    static_assert(IS_TRIVIALLY_COPYABLE(value_type),
+    static_assert(std::is_trivially_copyable<value_type>::value,
                   "Value type for SmallPODVector should be trivially copyable");
-
-#undef IS_TRIVIALLY_COPYABLE
 
 private:
     vector_type *vector() const {
@@ -201,74 +192,42 @@ public:
     }
 
     // forward iterator creation methods.
-    __attribute__((always_inline))
-    iterator begin() {
-        return (iterator)(data());
-    }
-
-    __attribute__((always_inline))
-    const_iterator begin() const {
-        return (const_iterator)(cdata());
-    }
-
-    __attribute__((always_inline))
-    const_iterator cbegin() const {
-        return (const_iterator)(cdata());
-    }
-
-    __attribute__((always_inline))
-    iterator end() {
-        return (iterator)(data() + size());
-    }
-
-    __attribute__((always_inline))
-    const_iterator end() const {
-        return (const_iterator)(cdata() + size());
-    }
-
-    __attribute__((always_inline))
-    const_iterator cend() const {
-        return (const_iterator)(cdata() + size());
-    }
+    iterator begin() { return (iterator)(data()); }
+    const_iterator begin() const { return (const_iterator)(cdata()); }
+    const_iterator cbegin() const { return (const_iterator)(cdata()); }
+    iterator end() { return (iterator)(data() + size()); }
+    const_iterator end() const { return (const_iterator)(cdata() + size()); }
+    const_iterator cend() const { return (const_iterator)(cdata() + size()); }
 
     // reverse iterator creation methods.
     reverse_iterator rbegin() { return reverse_iterator(end()); }
-
     const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
-
     reverse_iterator rend() { return reverse_iterator(begin()); }
-
     const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
 
     __attribute__((always_inline))
     reference operator[](size_type idx) {
-        assert(idx < size());
         return begin()[idx];
     }
 
     __attribute__((always_inline))
     const_reference operator[](size_type idx) const {
-        assert(idx < size());
         return begin()[idx];
     }
 
     reference front() {
-        assert(!empty());
         return begin()[0];
     }
 
     const_reference front() const {
-        assert(!empty());
         return begin()[0];
     }
 
     reference back() {
-        assert(!empty());
         return end()[-1];
     }
 
     const_reference back() const {
-        assert(!empty());
         return end()[-1];
     }
 
