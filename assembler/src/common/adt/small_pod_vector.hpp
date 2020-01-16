@@ -14,13 +14,23 @@ namespace adt {
 #define LIKELY(EXPR) __builtin_expect((bool)(EXPR), true)
 #define UNLIKELY(EXPR) __builtin_expect((bool)(EXPR), false)
 
+namespace impl {
 template<class T>
-class SmallPODVector {
+struct SmallPODVectorData {
+    typedef size_t size_type;
+    typedef ptrdiff_t difference_type;
+    typedef T value_type;
+    typedef T *iterator;
+
+    typedef T& reference;
+    typedef const T& const_reference;
+    typedef T* pointer;
+    typedef const T* const_pointer;
+
     template<typename PT1, typename PT2>
     class PointerUnionTraits {
     public:
         static inline void *getAsVoidPointer(void *P) { return P; }
-
         static inline void *getFromVoidPointer(void *P) { return P; }
 
         enum {
@@ -36,35 +46,62 @@ class SmallPODVector {
     typedef typename std::vector<T> vector_type;
 
     typedef llvm::PointerIntPair<void *, SmallSizeIntBits, size_t,
-            PointerUnionTraits<T *, vector_type *> > container_type;
+                                 PointerUnionTraits<T *, vector_type *> > container_type;
 
-    typedef SmallPODVector<T> self;
     container_type data_;
 
-public:
-    typedef size_t size_type;
-    typedef ptrdiff_t difference_type;
-    typedef T value_type;
-    typedef T *iterator;
-    typedef const T *const_iterator;
-
-    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-    typedef std::reverse_iterator<iterator> reverse_iterator;
-
-    typedef T &reference;
-    typedef const T &const_reference;
-    typedef T *pointer;
-    typedef const T *const_pointer;
-
-    static_assert(std::is_trivially_copyable<value_type>::value,
-                  "Value type for SmallPODVector should be trivially copyable");
-
-private:
-    vector_type *vector() const {
-        return (data_.getInt() == 0 ? static_cast<vector_type *>(data_.getPointer()) : nullptr);
+    void reset() {
+        data_.setPointer(nullptr);
+        data_.setInt(0);
     }
 
-    void impl_resize(size_type N) {
+    __attribute__((always_inline))
+    bool empty() const {
+        return data_.getInt() == 0 && data_.getPointer() == nullptr;
+    }
+
+    __attribute__((always_inline))
+    vector_type *vector() const {
+        return (data_.getInt() == 0 ?
+                static_cast<vector_type *>(data_.getPointer()) : nullptr);
+    }
+
+    __attribute__((always_inline))
+    size_type size() const {
+        const auto v = vector();
+        if (UNLIKELY(v != nullptr))
+            return v->size();
+
+        return data_.getInt();
+    }
+
+    __attribute__((always_inline))
+    pointer data() {
+        const auto v = vector();
+        if (UNLIKELY(v != nullptr))
+            return v->data();
+
+        return pointer(data_.getPointer());
+    }
+
+    __attribute__((always_inline))
+    const_pointer cdata() const {
+        const auto v = vector();
+        if (UNLIKELY(v != nullptr))
+            return v->data();
+
+        return const_pointer(data_.getPointer());
+    }
+
+    size_t capacity() const {
+        const auto v = vector();
+        if (UNLIKELY(v != nullptr))
+            return v->capacity();
+
+        return data_.getInt();
+    }
+
+    void grow(size_type N) {
         void *data = data_.getPointer(), *new_data = data;
         size_t sz = data_.getInt(), new_sz = N;
 
@@ -108,6 +145,34 @@ private:
         data_.setPointer(new_data);
         data_.setInt(new_sz);
     }
+};
+}
+
+template<class T>
+class SmallPODVector {
+    impl::SmallPODVectorData<T> data_;
+    typedef SmallPODVector<T> self;
+
+public:
+    typedef size_t size_type;
+    typedef ptrdiff_t difference_type;
+    typedef T value_type;
+    typedef T *iterator;
+    typedef const T *const_iterator;
+
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
+
+    typedef T& reference;
+    typedef const T& const_reference;
+    typedef T* pointer;
+    typedef const T* const_pointer;
+
+    static_assert(std::is_trivially_copyable<value_type>::value,
+                  "Value type for SmallPODVector should be trivially copyable");
+
+private:
+
 
 public:
     SmallPODVector<T>() = default;
@@ -129,67 +194,38 @@ public:
 
     SmallPODVector<T>(self &&that) {
         data_ = that.data_;
-        that.data_.setPointer(nullptr);
-        that.data_.setInt(0);
+        that.data_.reset();
     }
 
     const self &operator=(const self &&that) {
         // Avoid self-assignment.
         if (this == &that) return *this;
 
-        this->impl_resize(0);
+        data_.grow(0);
         data_ = that.data_;
-        that.data_.setPointer(nullptr);
-        that.data_.setInt(0);
+        that.data_.reset();
 
         return *this;
     }
 
     ~SmallPODVector<T>() {
-        this->impl_resize(0);
+        data_.grow(0);
     }
 
-    __attribute__((always_inline))
-    bool empty() const {
-        return data_.getInt() == 0 && data_.getPointer() == nullptr;
-    }
-
-    __attribute__((always_inline))
-    size_type size() const {
-        const auto v = vector();
-        if (UNLIKELY(v != nullptr))
-            return v->size();
-
-        return data_.getInt();
-    }
-
-    __attribute__((always_inline))
-    pointer data() {
-        const auto v = vector();
-        if (UNLIKELY(v != nullptr))
-            return v->data();
-
-        return pointer(data_.getPointer());
-    }
-
-    __attribute__((always_inline))
-    const_pointer cdata() const {
-        const auto v = vector();
-        if (UNLIKELY(v != nullptr))
-            return v->data();
-
-        return const_pointer(data_.getPointer());
-    }
 
     size_type max_size() const { return size_type(-1) / sizeof(T); }
 
-    size_t capacity() const {
-        const auto v = vector();
-        if (UNLIKELY(v != nullptr))
-            return v->capacity();
+    __attribute__((always_inline))
+    bool empty() const { return data_.empty(); }
 
-        return data_.getInt();
-    }
+    __attribute__((always_inline))
+    size_type size() const { return data_.size(); }
+
+    __attribute__((always_inline))
+    pointer data() { return data_.data(); }
+    __attribute__((always_inline))
+    const_pointer cdata() const { return data_.cdata(); }
+    size_t capacity() const { return data_.capacity(); }
 
     // forward iterator creation methods.
     iterator begin() { return (iterator)(data()); }
@@ -232,19 +268,19 @@ public:
     }
 
     void push_back(const T &value) {
-        const auto v = vector();
+        const auto v = data_.vector();
         if (UNLIKELY(v != nullptr)) {
             v->push_back(value);
             return;
         }
 
-        this->impl_resize(this->size() + 1);
+        data_.grow(this->size() + 1);
         memcpy(this->end() - 1, &value, sizeof(T));
     }
 
     void pop_back() {
         // This will reallocate to array, if necessary.
-        this->impl_resize(this->size() - 1);
+        data_.grow(this->size() - 1);
     }
 
     T pop_back_val() {
@@ -254,40 +290,40 @@ public:
     }
 
     void clear() {
-        this->impl_resize(0);
+        data_.grow(0);
     }
 
     void resize(size_type count) {
-        this->impl_resize(count);
+        data_.grow(count);
         std::uninitialized_fill(this->begin() + count, this->end(), T());
     }
 
     void resize(size_type count, const T &value) {
-        this->impl_resize(count);
+        data_.grow(count);
         std::uninitialized_fill(this->begin() + count, this->end(), value);
     }
 
     void reserve(size_type count) {
-        if (auto v = vector()) {
+        if (auto v = data_.vector()) {
             v->reserve(count);
         }
     }
 
     void assign(size_type count, const T &value) {
-        this->impl_resize(count);
+        data_.grow(count);
         std::uninitialized_fill(this->begin(), this->end(), value);
     }
 
     template<class InputIt>
     void assign(InputIt first, InputIt last) {
-        this->impl_resize(last - first);
+        data_.grow(last - first);
         std::uninitialized_copy(first, last, this->begin());
     }
 
     iterator erase(const_iterator pos) {
         size_type idx = pos - this->begin();
         std::copy(iterator(pos + 1), this->end(), iterator(pos));
-        this->impl_resize(this->size() - 1); // This might invalidate iterators
+        data_.grow(this->size() - 1); // This might invalidate iterators
 
         return this->begin() + idx;
     }
@@ -295,7 +331,7 @@ public:
     iterator erase(const_iterator first, const_iterator last) {
         difference_type idx = first - this->begin();
         std::copy(iterator(last), this->end(), iterator(first));
-        this->impl_resize(this->size() - (last - first)); // This might invalidate iterators
+        data_.grow(this->size() - (last - first)); // This might invalidate iterators
 
         return this->begin() + idx;
     }
@@ -309,7 +345,7 @@ public:
         difference_type idx = pos - this->begin();
         size_type sz = this->size();
 
-        this->impl_resize(sz + 1); // This might invalidate iterators
+        data_.grow(sz + 1); // This might invalidate iterators
 
         iterator it = this->begin() + idx;
         std::copy_backward(it, this->end() - 1, this->end());
