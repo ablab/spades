@@ -40,8 +40,8 @@ struct SmallPODVectorData {
         };
     };
 
-    static const unsigned SmallSizeIntBits = 3;
-    static const unsigned MaxSmall = (1 << SmallSizeIntBits) - 1;
+    static constexpr unsigned SmallSizeIntBits = 3;
+    static constexpr unsigned MaxSmall = (1 << SmallSizeIntBits) - 1;
 
     typedef typename std::vector<T> vector_type;
 
@@ -100,10 +100,17 @@ struct SmallPODVectorData {
 
         return data_.getInt();
     }
+};
+
+template<class T>
+struct HeapAllocatedStorage : public SmallPODVectorData<T> {
+    using typename SmallPODVectorData<T>::vector_type;
+    using typename SmallPODVectorData<T>::size_type;
+    using SmallPODVectorData<T>::MaxSmall;
 
     void grow(size_type N) {
-        void *data = data_.getPointer(), *new_data = data;
-        size_t sz = data_.getInt(), new_sz = N;
+        void *data = this->data_.getPointer(), *new_data = data;
+        size_t sz = this->data_.getInt(), new_sz = N;
 
         if (UNLIKELY(sz == 0 && data != nullptr)) { // vector case
             vector_type *v = static_cast<vector_type *>(data);
@@ -142,15 +149,69 @@ struct SmallPODVectorData {
             }
         }
 
-        data_.setPointer(new_data);
-        data_.setInt(new_sz);
+        this->data_.setPointer(new_data);
+        this->data_.setInt(new_sz);
     }
 };
+
+template<class T, unsigned PreAllocated = 4>
+struct PreAllocatedStorage : public SmallPODVectorData<T> {
+    using typename SmallPODVectorData<T>::vector_type;
+    using typename SmallPODVectorData<T>::size_type;
+    static constexpr unsigned MaxSmall = PreAllocated;
+
+    T buffer[PreAllocated];
+    static_assert(PreAllocated <= SmallPODVectorData<T>::MaxSmall,
+                  "Cannot fit so much pre-allocated data");
+
+    void grow(size_type N) {
+        void *data = this->data_.getPointer(), *new_data = data;
+        size_t sz = this->data_.getInt(), new_sz = N;
+
+        if (UNLIKELY(sz == 0 && data != nullptr)) { // vector case
+            vector_type *v = static_cast<vector_type *>(data);
+            if (N > MaxSmall) {
+                v->resize(N);
+                new_data = v;
+                new_sz = 0;
+            } else { // We have to turn vector into array
+                if (N) {
+                    new_data = buffer;
+                    new_sz = N;
+                    memcpy(new_data, v->data(), N * sizeof(T));
+                } else {
+                    new_data = nullptr;
+                    new_sz = 0;
+                }
+                delete v;
+            }
+        } else if (UNLIKELY(N > MaxSmall)) {
+            // Ok, we have to grow too much - allocate new vector
+            vector_type *new_vector = new vector_type((T *) data, (T *) data + sz);
+            new_vector->resize(N);
+            new_data = new_vector;
+            new_sz = 0;
+        } else {
+            // Otherwise, simply change the size of the allocated space if we have to grow
+            if (N > sz) {
+                new_data = buffer;
+                new_sz = N;
+            } else if (N == 0) {
+                new_data = nullptr;
+                new_sz = 0;
+            }
+        }
+
+        this->data_.setPointer(new_data);
+        this->data_.setInt(new_sz);
+    }
+};
+
 }
 
-template<class T>
+template<class T, class Container = impl::PreAllocatedStorage<T>>
 class SmallPODVector {
-    impl::SmallPODVectorData<T> data_;
+    Container data_;
     typedef SmallPODVector<T> self;
 
 public:
