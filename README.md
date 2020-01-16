@@ -16,7 +16,7 @@
     3.3. [Assembling IonTorrent reads](#sec3.3)</br>
     3.4. [Assembling long Illumina paired reads (2x150 and 2x250)](#sec3.4)</br>
     3.5. [SPAdes output](#sec3.5)</br>
-    3.6. [plasmidSPAdes output/metaplasmidSPAdes output](#sec3.6)</br>
+    3.6. [plasmidSPAdes and metaplasmidSPAdes output](#sec3.6)</br>
     3.7. [biosyntheticSPAdes output](#sec3.7)</br>
     3.8. [Assembly evaluation](#sec3.8)</br>
 4. [Stand-alone binaries released within SPAdes package](#sec4)</br>
@@ -47,7 +47,7 @@ If you have high-coverage data for bacterial/viral isolate or multi-cell organis
 SPAdes 3.14.0 includes the following additional pipelines:
 -   metaSPAdes &ndash; a pipeline for metagenomic data sets (see [metaSPAdes options](#meta)).
 -   plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmid options](#plasmid)).
--   metaplasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from <strong>metagenomic</strong> data sets (see [plasmid options](#plasmid)).
+-   metaplasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from *metagenomic* data sets (see [plasmid options](#plasmid)).
 -   rnaSPAdes &ndash; a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](assembler/rnaspades_manual.html)).
 -   truSPAdes &ndash; a module for TruSeq barcode assembly (see [truSPAdes manual](assembler/truspades_manual.html)).
 -   biosyntheticSPAdes &ndash; a module for biosynthetic gene cluster assembly with paired-end reads (see [biosynthicSPAdes options](#biosynthetic)).
@@ -409,15 +409,15 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 <a name="plasmid"></a>
 `--plasmid `   (same as `plasmidspades.py`)
     This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see [paper](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610) for the algorithm details). Note, that plasmidSPAdes is not compatible with [single-cell mode](#sc). Additionally, we do not recommend to run plasmidSPAdes on more than one library. 
-If options `--meta` and `--plasmid` are combined (same as `metaspades.py`) then metaplasmidSPAdes algorithm for extracting plasmids from metagenomic data sets is run (see [paper](https://genome.cshlp.org/content/29/6/961.short) for algorithm details)  
+If options `--meta` and `--plasmid` are combined (same as `metaplasmidspades.py`) then metaplasmidSPAdes algorithm for extracting plasmids from metagenomic data sets is run (see [paper](https://genome.cshlp.org/content/29/6/961.short) for algorithm details).
 
 []()
 
-For plasmidSPAdes and metaplasmidSPAdes output details see [section 3.6](#sec3.6)  
+For plasmidSPAdes and metaplasmidSPAdes output details see [section 3.6](#sec3.6).
 
 []()
 
-Additionally for plasmidSPAdes and metaplasmidSPAdes we recommend to additionally verify resulting contigs with [plasmidVerify tool](https://github.com/ablab/plasmidVerify) 
+Additionally for plasmidSPAdes and metaplasmidSPAdes we recommend to additionally verify resulting contigs with [plasmidVerify tool](https://github.com/ablab/plasmidVerify).
 
 []()
 
@@ -1160,7 +1160,7 @@ Additional options are:
 `-tmpdir <dir_name>  `
     scratch directory to use
 
-While `spades-mapper` is a solution for those who works on hybridSPAdes assembly and wants to get exactly its intermediate results, [SPAligner](#sec4.5.2) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.  
+While `spades-mapper` is a solution for those who work on hybridSPAdes assembly and want to get exactly its intermediate results, [SPAligner](#sec4.5.2) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.  
 
 
 <a name="sec4.5.2"></a>
