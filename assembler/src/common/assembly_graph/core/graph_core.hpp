@@ -131,6 +131,8 @@ private:
     PairedEdge(VertexId end, const EdgeData &data)
             : end_(end), data_(data) {}
 
+    PairedEdge(PairedEdge &&that) = default;
+
     EdgeData &data() { return data_; }
     const EdgeData &data() const { return data_; }
     void set_data(const EdgeData &data) { data_ = data; }
@@ -179,8 +181,10 @@ private:
         return edge_const_iterator(outgoing_edges_.cend(), graph, conjugate);
     }
 
-    PairedVertex(VertexData data)
+    PairedVertex(const VertexData &data)
             : data_(data) {}
+
+    PairedVertex(PairedVertex &&that) = default;
 
     VertexData &data() { return data_; }
     const VertexData &data() const { return data_; }
@@ -225,74 +229,95 @@ private:
 
     template<class T>
     class IdStorage {
+      private:
+        void resize(size_t N) {
+            VERIFY(N > storage_size_);
+            T *new_storage = (T*)malloc(N * sizeof(T));
+            for (uint64_t id = bias_; id < storage_size_; ++id) {
+                if (!id_distributor_.occupied(id))
+                    continue;
+
+                T *val = &storage_[id];
+                ::new(new_storage + id) T(std::move(*val));
+                val->~T();
+            }
+
+            if (storage_)
+                free(storage_);
+            storage_ = new_storage;
+            storage_size_ = N;
+        }
+
       public:
         typedef omnigraph::ReclaimingIdDistributor::id_iterator id_iterator;
         typedef T value_type;
 
         IdStorage(uint64_t bias = ID_BIAS)
-                : size_(0), bias_(bias), id_distributor_(bias) {
-            storage_.resize(id_distributor_.size() + bias_);
+                : size_(0), bias_(bias), storage_(nullptr), storage_size_(0), id_distributor_(bias) {
+            resize(id_distributor_.size() + bias_);
+        }
+
+        ~IdStorage() {
+            if (storage_)
+                free(storage_);
         }
 
         id_iterator id_begin() const { return id_distributor_.begin(); }
         id_iterator id_end() const { return id_distributor_.end(); }
 
         void reserve(size_t sz) {
-            if (storage_.size() >= sz + bias_)
+            if (storage_size_ >= sz + bias_)
                 return;
 
             id_distributor_.resize(sz);
-            storage_.resize(sz + bias_);
+            resize(sz + bias_);
         }
 
         // FIXME: Count!
         size_t size() const { return size_; }
 
         bool contains(uint64_t id) const {
-            return (id < storage_.size()) && storage_[id];
+            return id < storage_size_ && id_distributor_.occupied(id);
         }
 
         template<typename... ArgTypes>
         uint64_t create(ArgTypes &&... args) {
             uint64_t id = id_distributor_.allocate();
 
-            while (storage_.size() < id + 1)
-                storage_.resize(storage_.size() * 2 + 1);
+            while (storage_size_ < id + 1)
+                resize(storage_size_ * 2 + 1);
 
-            VERIFY(storage_[id] == nullptr);
-            storage_[id] = new T(std::forward<ArgTypes>(args)...);;
+            new(storage_ + id) T(std::forward<ArgTypes>(args)...);;
             size_ += 1;
 
-            // INFO("Create " << vid1 << ":" << vid2);
+            // INFO("Create " << id);
             return id;
         }
 
         template<typename... ArgTypes>
         uint64_t emplace(uint64_t at, ArgTypes &&... args) {
             // One MUST call reserve before using emplace()
-            VERIFY(storage_.at(at) == nullptr);
             VERIFY(!id_distributor_.occupied(at));
 
             id_distributor_.acquire(at);
-            storage_[at] = new T(std::forward<ArgTypes>(args)...);;
+            new(storage_ + at) T(std::forward<ArgTypes>(args)...);;
             size_.fetch_add(1);
 
-            // INFO("Create " << vid1 << ":" << vid2);
+            // INFO("Emplace " << at);
             return at;
         }
 
         void erase(uint64_t id) {
-            auto *v = storage_[id];
+            T *v = &storage_[id];
 
-            // INFO("Remove " << id << ":" << cid);
-            delete v;
+            // INFO("Remove " << id);
+            v->~T();
 
             id_distributor_.release(id);
-            storage_[id] = nullptr;
             size_ -= 1;
         }
 
-        T* at(uint64_t id) const {
+        T& at(uint64_t id) const {
             return storage_[id];
         }
 
@@ -302,7 +327,8 @@ private:
       private:
         std::atomic<size_t> size_;
         uint64_t bias_;
-        std::vector<T*> storage_;
+        T *storage_;
+        size_t storage_size_;
         omnigraph::ReclaimingIdDistributor id_distributor_;
     };
 
@@ -311,17 +337,17 @@ private:
     using EdgeStorage = IdStorage<PairedEdge<DataMaster>>;
     EdgeStorage estorage_;
 
-    PairedVertex<DataMaster>* vertex(VertexId id) const {
+    PairedVertex<DataMaster>& vertex(VertexId id) const {
         return vstorage_.at(id.int_id());
     }
-    PairedVertex<DataMaster>* cvertex(VertexId id) const {
+    PairedVertex<DataMaster>& cvertex(VertexId id) const {
         return vertex(conjugate(id));
     }
 
-    PairedEdge<DataMaster>* edge(EdgeId id) const {
+    PairedEdge<DataMaster>& edge(EdgeId id) const {
         return estorage_.at(id.int_id());
     }
-    PairedEdge<DataMaster>* cedge(EdgeId id) const {
+    PairedEdge<DataMaster>& cedge(EdgeId id) const {
         return edge(conjugate(id));
     }
 
@@ -437,11 +463,11 @@ public:
         return edges<true>();
     }
 
-    edge_const_iterator out_begin(VertexId v) const { return vertex(v)->out_begin(this); }
-    edge_const_iterator out_end(VertexId v) const { return vertex(v)->out_end(this); }
+    edge_const_iterator out_begin(VertexId v) const { return vertex(v).out_begin(this); }
+    edge_const_iterator out_end(VertexId v) const { return vertex(v).out_end(this); }
 
-    edge_const_iterator in_begin(VertexId v) const { return cvertex(v)->out_begin(this, true); }
-    edge_const_iterator in_end(VertexId v) const { return cvertex(v)->out_end(this, true); }
+    edge_const_iterator in_begin(VertexId v) const { return cvertex(v).out_begin(this, true); }
+    edge_const_iterator in_end(VertexId v) const { return cvertex(v).out_end(this, true); }
 
     void clear_state() { estorage_.clear_state(); vstorage_.clear_state(); }
 
@@ -458,8 +484,8 @@ private:
         VertexId vid1 = (id1 ? vstorage_.emplace(id1.int_id(), data1) : vstorage_.create(data1));
         VertexId vid2 = (id2 ? vstorage_.emplace(id2.int_id(), data2) : vstorage_.create(data2));
 
-        vertex(vid1)->set_conjugate(vid2);
-        vertex(vid2)->set_conjugate(vid1);
+        vertex(vid1).set_conjugate(vid2);
+        vertex(vid2).set_conjugate(vid1);
 
         return vid1;
     }
@@ -476,7 +502,7 @@ private:
                       estorage_.emplace(id.int_id(), v2, data) :
                       estorage_.create(v2, data));
         if (v1.int_id())
-            vertex(v1)->AddOutgoingEdge(eid);
+            vertex(v1).AddOutgoingEdge(eid);
         return eid;
     }
 
@@ -504,7 +530,7 @@ protected:
                          EdgeId at1 = 0, EdgeId at2 = 0) {
         EdgeId result = AddSingleEdge(VertexId(), VertexId(), data, at1);
         if (this->master().isSelfConjugate(data)) {
-            edge(result)->set_conjugate(result);
+            edge(result).set_conjugate(result);
             return result;
         }
 
@@ -512,8 +538,8 @@ protected:
             at2 = at1.int_id() + 1;
         EdgeId rcEdge = AddSingleEdge(VertexId(), VertexId(), this->master().conjugate(data),
                                       at2);
-        edge(result)->set_conjugate(rcEdge);
-        edge(rcEdge)->set_conjugate(result);
+        edge(result).set_conjugate(rcEdge);
+        edge(rcEdge).set_conjugate(result);
         return result;
     }
 
@@ -527,26 +553,26 @@ protected:
             //          Because of some split issues: when self-conjugate edge is split armageddon happends
             //          VERIFY(v1 == conjugate(v2));
             //          VERIFY(v1 == conjugate(v2));
-            edge(result)->set_conjugate(result);
+            edge(result).set_conjugate(result);
             return result;
         }
 
         if (at1 && !at2)
             at2 = at1.int_id() + 1;
-        EdgeId rcEdge = AddSingleEdge(vertex(v2)->conjugate(), vertex(v1)->conjugate(),
+        EdgeId rcEdge = AddSingleEdge(vertex(v2).conjugate(), vertex(v1).conjugate(),
                                       this->master().conjugate(data), at2);
-        edge(result)->set_conjugate(rcEdge);
-        edge(rcEdge)->set_conjugate(result);
+        edge(result).set_conjugate(rcEdge);
+        edge(rcEdge).set_conjugate(result);
         return result;
     }
 
     void HiddenDeleteEdge(EdgeId e) {
         TRACE("Hidden delete edge " << e.int_id());
         EdgeId rcEdge = conjugate(e);
-        VertexId rcStart = conjugate(edge(e)->end());
-        VertexId start = conjugate(edge(rcEdge)->end());
-        vertex(start)->RemoveOutgoingEdge(e);
-        vertex(rcStart)->RemoveOutgoingEdge(rcEdge);
+        VertexId rcStart = conjugate(edge(e).end());
+        VertexId start = conjugate(edge(rcEdge).end());
+        vertex(start).RemoveOutgoingEdge(e);
+        vertex(rcStart).RemoveOutgoingEdge(rcEdge);
         DestroyEdge(e, rcEdge);
     }
 
@@ -592,28 +618,28 @@ public:
     size_t int_id(VertexId vertex) const { return vertex.int_id(); }
 
     const DataMaster& master() const { return master_; }
-    const EdgeData& data(EdgeId e) const { return edge(e)->data(); }
-    const VertexData& data(VertexId v) const { return vertex(v)->data(); }
-    EdgeData& data(EdgeId e) { return edge(e)->data(); }
-    VertexData& data(VertexId v) { return vertex(v)->data(); }
+    const EdgeData& data(EdgeId e) const { return edge(e).data(); }
+    const VertexData& data(VertexId v) const { return vertex(v).data(); }
+    EdgeData& data(EdgeId e) { return edge(e).data(); }
+    VertexData& data(VertexId v) { return vertex(v).data(); }
 
-    size_t OutgoingEdgeCount(VertexId v) const { return vertex(v)->OutgoingEdgeCount(); }
-    size_t IncomingEdgeCount(VertexId v) const { return cvertex(v)->OutgoingEdgeCount(); }
+    size_t OutgoingEdgeCount(VertexId v) const { return vertex(v).OutgoingEdgeCount(); }
+    size_t IncomingEdgeCount(VertexId v) const { return cvertex(v).OutgoingEdgeCount(); }
 
     adt::iterator_range<edge_const_iterator> OutgoingEdges(VertexId v) const {
-        auto vertex = this->vertex(v);
-        return { vertex->out_begin(this), vertex->out_end(this) };
+        auto &vertex = this->vertex(v);
+        return { vertex.out_begin(this), vertex.out_end(this) };
     }
 
     adt::iterator_range<edge_const_iterator> IncomingEdges(VertexId v) const {
-        auto vertex = this->cvertex(v);
-        return { vertex->out_begin(this, true), vertex->out_end(this, true) };
+        auto &vertex = this->cvertex(v);
+        return { vertex.out_begin(this, true), vertex.out_end(this, true) };
     }
 
     std::vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) const {
         std::vector<EdgeId> result;
         for (auto e : OutgoingEdges(v)) {
-            if (edge(e)->end() != u)
+            if (edge(e).end() != u)
                 continue;
 
             result.push_back(e);
@@ -627,10 +653,10 @@ public:
 
     //////////////////////// Edge information
     VertexId EdgeStart(EdgeId edge) const { return conjugate(EdgeEnd(conjugate(edge))); }
-    VertexId EdgeEnd(EdgeId e) const { return edge(e)->end(); }
+    VertexId EdgeEnd(EdgeId e) const { return edge(e).end(); }
 
-    VertexId conjugate(VertexId v) const { return vertex(v)->conjugate(); }
-    EdgeId conjugate(EdgeId e) const { return edge(e)->conjugate(); }
+    VertexId conjugate(VertexId v) const { return vertex(v).conjugate(); }
+    EdgeId conjugate(EdgeId e) const { return edge(e).conjugate(); }
 
     size_t length(EdgeId edge) const { return master_.length(data(edge)); }
     size_t length(VertexId v) const { return master_.length(data(v)); }

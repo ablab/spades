@@ -50,6 +50,10 @@ struct SmallPODVectorData {
 
     container_type data_;
 
+    SmallPODVectorData() {
+        reset();
+    }
+
     void reset() {
         data_.setPointer(nullptr);
         data_.setInt(0);
@@ -108,6 +112,10 @@ struct HeapAllocatedStorage : public SmallPODVectorData<T> {
     using typename SmallPODVectorData<T>::size_type;
     using SmallPODVectorData<T>::MaxSmall;
 
+    HeapAllocatedStorage() {
+        this->reset();
+    }
+
     void grow(size_type N) {
         void *data = this->data_.getPointer(), *new_data = data;
         size_t sz = this->data_.getInt(), new_sz = N;
@@ -165,6 +173,28 @@ struct PreAllocatedStorage : public SmallPODVectorData<T> {
 
     using SmallPODVectorData<T>::MaxSmall;
 
+    PreAllocatedStorage() {
+        this->reset();
+    }
+
+    PreAllocatedStorage(PreAllocatedStorage &&that) {
+        void *data = that.data_.getPointer(), *new_data = data;
+        size_t sz = that.data_.getInt(), new_sz = sz;
+
+        if (sz == 0 && data != nullptr) { // vector case
+            // Do nothing special;
+        } else if (sz) {
+            new_data = buffer;
+            memcpy(new_data, data, sz * sizeof(T));
+        }
+
+
+        this->data_.setPointer(new_data);
+        this->data_.setInt(new_sz);
+
+        that.reset();
+    }
+
     void grow(size_type N) {
         void *data = this->data_.getPointer(), *new_data = data;
         size_t sz = this->data_.getInt(), new_sz = N;
@@ -218,6 +248,29 @@ struct HybridAllocatedStorage : public SmallPODVectorData<T> {
                   "Cannot fit so much pre-allocated data");
 
     using SmallPODVectorData<T>::MaxSmall;
+
+    HybridAllocatedStorage() {
+        this->reset();
+    }
+
+    HybridAllocatedStorage(HybridAllocatedStorage &&that) {
+        void *data = that.data_.getPointer(), *new_data = data;
+        size_t sz = that.data_.getInt(), new_sz = sz;
+
+        if (sz == 0 && data != nullptr) { // vector case
+            // Do nothing special;
+        } else if (sz > PreAllocated) { // heap allocated case
+            // Do nothing special;
+        } else if (sz) {
+            new_data = buffer;
+            memcpy(new_data, data, sz * sizeof(T));
+        }
+
+        this->data_.setPointer(new_data);
+        this->data_.setInt(new_sz);
+
+        that.reset();
+    }
 
     void grow(size_type N) {
         void *data = this->data_.getPointer(), *new_data = data;
@@ -334,8 +387,8 @@ public:
         return *this;
     }
 
-    SmallPODVector(self &&that) {
-        data_ = that.data_;
+    SmallPODVector(self &&that)
+            : data_(std::move(that.data_)) {
         that.data_.reset();
     }
 
@@ -344,7 +397,7 @@ public:
         if (this == &that) return *this;
 
         data_.grow(0);
-        data_ = that.data_;
+        data_ = std::move(that.data_);
         that.data_.reset();
 
         return *this;
@@ -353,7 +406,6 @@ public:
     ~SmallPODVector() {
         data_.grow(0);
     }
-
 
     size_type max_size() const { return size_type(-1) / sizeof(T); }
 
