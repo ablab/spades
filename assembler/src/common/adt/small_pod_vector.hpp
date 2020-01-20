@@ -154,15 +154,16 @@ struct HeapAllocatedStorage : public SmallPODVectorData<T> {
     }
 };
 
-template<class T, unsigned PreAllocated = 4>
+template<class T, unsigned PreAllocated = 3>
 struct PreAllocatedStorage : public SmallPODVectorData<T> {
     using typename SmallPODVectorData<T>::vector_type;
     using typename SmallPODVectorData<T>::size_type;
-    static constexpr unsigned MaxSmall = PreAllocated;
 
     T buffer[PreAllocated];
     static_assert(PreAllocated <= SmallPODVectorData<T>::MaxSmall,
                   "Cannot fit so much pre-allocated data");
+
+    using SmallPODVectorData<T>::MaxSmall;
 
     void grow(size_type N) {
         void *data = this->data_.getPointer(), *new_data = data;
@@ -170,7 +171,7 @@ struct PreAllocatedStorage : public SmallPODVectorData<T> {
 
         if (UNLIKELY(sz == 0 && data != nullptr)) { // vector case
             vector_type *v = static_cast<vector_type *>(data);
-            if (N > MaxSmall) {
+            if (N > PreAllocated) {
                 v->resize(N);
                 new_data = v;
                 new_sz = 0;
@@ -185,7 +186,7 @@ struct PreAllocatedStorage : public SmallPODVectorData<T> {
                 }
                 delete v;
             }
-        } else if (UNLIKELY(N > MaxSmall)) {
+        } else if (UNLIKELY(N > PreAllocated)) {
             // Ok, we have to grow too much - allocate new vector
             vector_type *new_vector = new vector_type((T *) data, (T *) data + sz);
             new_vector->resize(N);
@@ -207,9 +208,89 @@ struct PreAllocatedStorage : public SmallPODVectorData<T> {
     }
 };
 
+template<class T, unsigned PreAllocated = 3>
+struct HybridAllocatedStorage : public SmallPODVectorData<T> {
+    using typename SmallPODVectorData<T>::vector_type;
+    using typename SmallPODVectorData<T>::size_type;
+
+    T buffer[PreAllocated];
+    static_assert(PreAllocated <= SmallPODVectorData<T>::MaxSmall,
+                  "Cannot fit so much pre-allocated data");
+
+    using SmallPODVectorData<T>::MaxSmall;
+
+    void grow(size_type N) {
+        void *data = this->data_.getPointer(), *new_data = data;
+        size_t sz = this->data_.getInt(), new_sz = N;
+
+        // Destructor
+        if (sz == 0 && data == nullptr && N == 0)
+            return;
+
+        if (UNLIKELY(sz == 0 && data != nullptr)) { // vector case
+            vector_type *v = static_cast<vector_type *>(data);
+            if (N > MaxSmall) {
+                v->resize(N);
+                new_data = v;
+                new_sz = 0;
+            } else { // We have to turn vector into array
+                if (N > PreAllocated) {
+                    new_data = malloc(N * sizeof(T));
+                    new_sz = N;
+                    memcpy(new_data, v->data(), N * sizeof(T));
+                } else if (N) {
+                    new_data = buffer;
+                    new_sz = N;
+                    memcpy(new_data, v->data(), N * sizeof(T));
+                } else {
+                    new_data = nullptr;
+                    new_sz = 0;
+                }
+                delete v;
+            }
+        } else if (UNLIKELY(N > MaxSmall)) { // Ok, we have to grow too much - allocate new vector
+            vector_type *new_vector = new vector_type((T *) data, (T *) data + sz);
+            new_vector->resize(N);
+            new_data = new_vector;
+            new_sz = 0;
+            if (sz > PreAllocated)
+                free(data);
+        } else if (UNLIKELY(sz > PreAllocated)) { // Heap-allocated storage
+            if (N > sz) { // Realloc if necessary
+                new_data = realloc(data, N * sizeof(T));
+                new_sz = N;
+            } else if (N > 0 && N <= PreAllocated) { // Go to static buffer
+                new_data = buffer;
+                new_sz = N;
+                memcpy(new_data, data, N * sizeof(T));
+                free(data);
+            } else if (N == 0) {
+                free(data);
+                new_data = nullptr;
+                new_sz = 0;
+            }
+        } else { // Pre-allocated storage
+            if (UNLIKELY(N > PreAllocated)) { // Turn to heap-allocated storage
+                new_data = malloc(N * sizeof(T));
+                new_sz = N;
+                memcpy(new_data, data, sz * sizeof(T));
+            } else if (N > sz) { // Otherwise, simply change the size of the allocated space if we have to grow
+                new_data = buffer;
+                new_sz = N;
+            } else if (N == 0) {
+                new_data = nullptr;
+                new_sz = 0;
+            }
+        }
+
+        this->data_.setPointer(new_data);
+        this->data_.setInt(new_sz);
+    }
+};
+
 }
 
-template<class T, class Container = impl::PreAllocatedStorage<T>>
+template<class T, class Container = impl::HybridAllocatedStorage<T>>
 class SmallPODVector {
     Container data_;
     typedef SmallPODVector<T> self;
