@@ -317,13 +317,13 @@ private:
 
 
 public:
-    SmallPODVector<T>() = default;
+    SmallPODVector() = default;
 
-    SmallPODVector<T>(size_type size, const T &value = T()) {
+    SmallPODVector(size_type size, const T &value = T()) {
         this->assign(size, value);
     }
 
-    SmallPODVector<T>(const self &that) {
+    SmallPODVector(const self &that) {
         assign(that.begin(), that.end());
     }
 
@@ -334,7 +334,7 @@ public:
         return *this;
     }
 
-    SmallPODVector<T>(self &&that) {
+    SmallPODVector(self &&that) {
         data_ = that.data_;
         that.data_.reset();
     }
@@ -350,7 +350,7 @@ public:
         return *this;
     }
 
-    ~SmallPODVector<T>() {
+    ~SmallPODVector() {
         data_.grow(0);
     }
 
