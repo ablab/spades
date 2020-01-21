@@ -138,5 +138,9 @@ def print_usage_and_exit(code, version, show_hidden=False):
 
 
 def print_version_and_exit(version):
-    options_storage.version(version, mode="tru")
+    sys.stdout.write("SPAdes v" + str(version))
+    mode="tru"
+    sys.stdout.write(" [" + mode + "SPAdes mode]")
+    sys.stdout.write("\n")
+    sys.stdout.flush()
     sys.exit(0)
