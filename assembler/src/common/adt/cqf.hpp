@@ -21,7 +21,7 @@ class cqf {
 
     cqf(uint64_t maxn)
             : insertions_(0) {
-        unsigned qbits = unsigned(ceil(log2(double(maxn)))) + 1;
+        unsigned qbits = std::max(7u, unsigned(ceil(log2(double(maxn))))) + 1;
         num_hash_bits_ = qbits + 8;
         num_slots_ = (1ULL << qbits);
         qf_init(&qf_, num_slots_, num_hash_bits_, 0, 42);
