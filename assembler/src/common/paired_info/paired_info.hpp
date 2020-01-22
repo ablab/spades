@@ -360,6 +360,11 @@ public:
         return removed;
     }
 
+    void Clear() {
+        this->storage_.clear();
+        this->size_ = 0;
+    }
+
   private:
     void Prune(EdgeId e1, EdgeId e2) {
         auto i1 = this->storage_.find(e1);

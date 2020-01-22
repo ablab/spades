@@ -49,7 +49,9 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
     KmerMapper<graph_t> &kmer_mapper;
     FlankingCoverage<graph_t> &flanking_cov;
     UnclusteredPairedInfoIndicesT &paired_indices;
+    UnclusteredPairedInfoIndicesT &barcode_indices;
     PairedInfoIndicesT &clustered_indices;
+    PairedInfoIndicesT &barcode_clustered_indices;
     PairedInfoIndicesT &scaffolding_indices;
     LongReadContainerT &single_long_reads;
     SSCoverageContainer &ss_coverage;
@@ -76,8 +78,10 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
               index(adt::pack::emplace<index_t>(g, workdir)),
               kmer_mapper(adt::pack::emplace<KmerMapper<graph_t>>(g)),
               flanking_cov(adt::pack::emplace<FlankingCoverage<graph_t>>(g, flanking_range)),
-              paired_indices(adt::pack::emplace<UnclusteredPairedInfoIndicesT>(g, lib_count)),
+              paired_indices(adt::pack::emplace_with_key<UnclusteredPairedInfoIndicesT>("paired_indices", g, lib_count)),
+              barcode_indices(adt::pack::emplace_with_key<UnclusteredPairedInfoIndicesT>("barcode_unclustered_indices", g, lib_count)),
               clustered_indices(adt::pack::emplace_with_key<PairedInfoIndicesT>("clustered_indices", g, lib_count)),
+              barcode_clustered_indices(adt::pack::emplace_with_key<PairedInfoIndicesT>("barcode_clustered_indices", g, lib_count)),
               scaffolding_indices(adt::pack::emplace_with_key<PairedInfoIndicesT>("scaffolding_indices", g, lib_count)),
               single_long_reads(adt::pack::emplace<LongReadContainerT>(g, lib_count)),
               ss_coverage(adt::pack::emplace<SSCoverageContainer>(g, lib_count)),
@@ -145,6 +149,7 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
 
     void InitRRIndices() {
         clustered_indices.Init();
+        barcode_clustered_indices.Init();
         scaffolding_indices.Init();
     }
 
@@ -153,6 +158,7 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
             pi.clear();
         }
         clustered_indices.Clear();
+        barcode_clustered_indices.Init();
         scaffolding_indices.Clear();
         single_long_reads.Clear();
     }

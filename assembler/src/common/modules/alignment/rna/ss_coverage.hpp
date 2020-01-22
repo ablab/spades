@@ -442,7 +442,6 @@ public:
         position_storage_[barcode][g_.conjugate(e)].second = std::min(position_storage_[barcode][g_.conjugate(e)].second, left);
         position_storage_[barcode][g_.conjugate(e)].first = std::min(position_storage_[barcode][g_.conjugate(e)].first, right);
         DEBUG(barcode << " " << barcode << " " << e << " " << position_storage_[barcode][e].first << " " << position_storage_[barcode][e].second);
-
     }
 
     void SetExtremePositions(const omnigraph::MappingPath<EdgeId>& read, const std::string &barcode) {

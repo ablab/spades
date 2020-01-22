@@ -2,6 +2,14 @@
 #include "io/dataset_support/dataset_readers.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 #include "common/modules/path_extend/path_filter.hpp"
+#include "common/paired_info/pair_info_filler.hpp"
+#include "projects/spades/distance_estimation.hpp"
+#include "common/modules/path_extend/paired_library.hpp"
+#include "common/modules/path_extend/weight_counter.hpp"
+#include "common/modules/path_extend/path_extender.hpp"
+#include "common/modules/path_extend/pe_resolver.hpp"
+#include "modules/path_extend/pipeline/launch_support.hpp"
+#include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
 
 namespace debruijn_graph {
     typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> lib_t;
@@ -241,7 +249,38 @@ namespace debruijn_graph {
         : gp_(gp), temp_set_(gp.g) {
         }
 
+
+        std::set<EdgeId> simplifyComponent(std::set<EdgeId> &edge_set, const std::string &barcode) {
+            INFO(edge_set);
+            temp_set_.Clear();
+            std::set<EdgeId> bad_edges;
+            auto initial_component = GraphComponent<Graph>::FromEdges(gp_.g, edge_set, true);
+            initial_component.ChangeCoverageProvider(gp_.barcode_coverage[0].GetBarcodeMap(barcode));
+            DEBUG("Initial component");
+            DEBUG(initial_component.edges());
+            for (size_t i = 0; i < 2; ++i) {
+                initial_component.RemoveIsolated();
+                DEBUG("After remove isolated");
+                initial_component.ClipTips();
+                DEBUG("After clip tips");
+                DEBUG(initial_component.edges());
+                initial_component.FillGaps(30 * (i + 1));
+                DEBUG("After fill gaps");
+                DEBUG(initial_component.edges());
+                RemoveBulges(initial_component);
+                DEBUG("After remove bulges");
+                DEBUG(initial_component.edges());
+                initial_component.RemoveLowCoveredJunctions();
+                temp_set_.Clear();
+            }
+            DEBUG("Fixed initial component");
+            DEBUG(initial_component.edges());
+            auto out_edge_set = initial_component.edges();
+            return out_edge_set;
+        }
+
         PathStorage<Graph>& getLongReads(std::set<EdgeId> &edge_set, const std::string &barcode) {
+            INFO(edge_set);
             temp_set_.Clear();
             std::set<EdgeId> bad_edges;
             auto initial_component = GraphComponent<Graph>::FromEdges(gp_.g, edge_set, true);
@@ -311,6 +350,96 @@ namespace debruijn_graph {
         : gp_(gp), extractor_(gp) {
         }
 
+        void extractLongReadsPE(debruijn_graph::conj_graph_pack &graph_pack, path_extend::PathContainer &path_set, const std::vector<EdgeId> &out_edges, const std::string &barcode, const lib_t& lib_10x) {
+
+            path_extend::PathExtendParamsContainer params(cfg::get().ds,
+                                              cfg::get().pe_params,
+                                              cfg::get().ss,
+                                              cfg::get().output_dir,
+                                              cfg::get().mode,
+                                              cfg::get().uneven_depth,
+                                              cfg::get().avoid_rc_connections,
+                                              cfg::get().use_scaffolder);
+
+            INFO("graph_pack.barcode_indices[0].size() - " << graph_pack.barcode_indices[0].size());
+            estimate_distance(graph_pack, lib_10x, graph_pack.barcode_indices[0], graph_pack.barcode_clustered_indices[0]);
+            INFO("graph_pack.barcode_clustered_indices[0].size() - " << graph_pack.barcode_clustered_indices[0].size());
+
+            if (graph_pack.barcode_clustered_indices[0].size() == 0)
+                return;
+
+            auto paired_lib = path_extend::MakeNewLib(graph_pack.g, lib_10x, graph_pack.barcode_clustered_indices[0]);
+            std::shared_ptr<path_extend::CoverageAwareIdealInfoProvider> iip = std::make_shared<path_extend::CoverageAwareIdealInfoProvider>(graph_pack.g, paired_lib, lib_10x.data().unmerged_read_length);
+            auto wc = std::make_shared<path_extend::PathCoverWeightCounter>(graph_pack.g, paired_lib, params.pset.normalize_weight,
+                                                          params.pset.extension_options.single_threshold,
+                                                          iip);
+            auto opts = params.pset.extension_options;
+            auto extension_chooser_1 = std::make_shared<path_extend::TrivialExtensionChooser>(graph_pack.g);
+
+            auto extension_chooser_2 = std::make_shared<path_extend::SimpleExtensionChooser>(graph_pack.g, wc,
+                                                                         opts.weight_threshold,
+                                                                         opts.priority_coeff);
+            path_extend::GraphCoverageMap cover_map(graph_pack.g);
+            path_extend::UniqueData unique_data;
+            path_extend::UsedUniqueStorage used_unique_storage(unique_data.main_unique_storage_, graph_pack.g);
+
+            std::set<EdgeId> edge_set(out_edges.begin(), out_edges.end());
+            auto extender_1 = std::make_shared<path_extend::GoodEdgeExtender>(graph_pack, cover_map,
+                                                                              used_unique_storage,
+                                                                              extension_chooser_1,
+                                                                              paired_lib->GetISMax(),
+                                                                              edge_set,
+                                                                              true, /*investigate loops*/
+                                                                              true /*use short loop coverage resolver*/,
+                                                                              opts.weight_threshold);
+            auto extender_2 = std::make_shared<path_extend::GoodEdgeExtender>(graph_pack, cover_map,
+                                                                            used_unique_storage,
+                                                                            extension_chooser_2,
+                                                                            paired_lib->GetISMax(),
+                                                                            edge_set,
+                                                                            true, /*investigate loops*/
+                                                                            true /*use short loop coverage resolver*/,
+                                                                            opts.weight_threshold);
+            path_extend::PathExtendResolver resolver(graph_pack.g);
+            auto seeds = resolver.MakeSeedsFromEdgeSet(out_edges);
+            seeds.SortByLength();
+
+            typedef std::vector<std::shared_ptr<path_extend::PathExtender>> Extenders;
+            Extenders extenders {extender_1, extender_2};
+            path_extend::CompositeExtender composite_extender(graph_pack.g, cover_map,
+                                                              used_unique_storage,
+                                                              extenders);
+            path_set = resolver.ExtendSeeds(seeds, composite_extender);
+            INFO("path_set.size() - " << path_set.size());
+        }
+
+        void extractEdges(std::vector<MappingPath<EdgeId>> &paths, std::vector<EdgeId> &out_edges, const std::string &barcode) {
+            if (paths.size() < cfg::get().pe_params.param_set.rna_10x.min_cloud_size)
+                return;
+            std::map<EdgeId, int> edge_map;
+            std::set<EdgeId> edge_set;
+            for (auto const& path : paths) {
+                std::vector<EdgeId> edges = path.simple_path();
+                for (auto e : edges) {
+                    edge_set.insert(e);
+                    edge_set.insert(gp_.g.conjugate(e));
+                    if (edge_map.find(e) != edge_map.end()) {
+                        edge_map.emplace(e, 0);
+                        edge_map.emplace(gp_.g.conjugate(e), 0);
+                    }
+                    edge_map[e] += 1;
+                    edge_map[gp_.g.conjugate(e)] += 1;
+                }
+            }
+            for (auto kv : edge_map) {
+                INFO(kv.first << " " << kv.second);
+            }
+            auto out_edges_set = extractor_.simplifyComponent(edge_set, barcode);
+            for (auto e : out_edges_set) {
+                out_edges.push_back(e);
+            }
+        }
+
         bool extractLongReads(std::vector<MappingPath<EdgeId>> &paths, PathStorage<Graph> &path_set, const std::string &barcode) {
             if (paths.size() < cfg::get().pe_params.param_set.rna_10x.min_cloud_size)
                 return false;
@@ -359,14 +488,21 @@ namespace debruijn_graph {
 
 
     std::string GetTenXBarcodeFromRead(const io::PairedRead &read) {
-        std::string delimeter = "BX:";
-        size_t start_pos = read.first().name().find(delimeter);
-        if (start_pos != std::string::npos) {
-            std::string barcode = read.first().name().substr(start_pos, 21);
-            TRACE(barcode);
+        std::string delimeter = "___";
+        size_t start_pos = read.first().name().find(delimeter) + 3;
+        std::string barcode = "";
+        if (start_pos == std::string::npos) {
             return barcode;
         }
-        return "";
+        for (int i = start_pos; i < read.first().name().length(); ++i) {
+            if (!std::isspace(read.first().name()[i])) {
+                barcode.push_back(read.first().name()[i]);
+            } else {
+                break;
+            }
+        }
+        TRACE(barcode);
+        return barcode;
     }
 
     void Process10XLibrary(debruijn_graph::conj_graph_pack &graph_pack, const lib_t& lib_10x) {
@@ -380,19 +516,56 @@ namespace debruijn_graph {
         size_t failed_counter = 0;
         std::vector<MappingPath<EdgeId>> paths;
         path_extend::PathContainer& long_reads = graph_pack.contig_paths;
+
+        LatePairedIndexFiller::WeightF weight = [&](const std::pair<EdgeId, EdgeId> &,
+                     const MappingRange&, const MappingRange&) {
+            return 1.;
+        };
+        unsigned round_thr = 0;
+        LatePairedIndexFiller pif(graph_pack.g,
+                                  weight, round_thr,
+                                  graph_pack.barcode_indices[0]);
+
+        pif.StartProcessLibrary(0);
         PathStorage<Graph> long_reads_temp_storage(graph_pack.g);
+        path_extend::PathContainer long_reads_temp_container;
         LongReadsCreator extractor(graph_pack);
         while (!stream.eof()) {
             stream >> read;
             std::string barcode_string = GetTenXBarcodeFromRead(read);
             if (barcode_string != "") {
                 if (barcode_string != current_barcode && !paths.empty()) {
+                    INFO("graph_pack.barcode_indices[0].size() - " << graph_pack.barcode_indices[0].size());
                     DEBUG("Processing barcode " << current_barcode);
-                    if (extractor.extractLongReads(paths, long_reads_temp_storage, current_barcode))
+                    pif.StopProcessLibrary();
+                    INFO("Here");
+                    std::vector<EdgeId> good_edges;
+                    extractor.extractEdges(paths, good_edges, current_barcode);
+                    INFO("Here");
+
+                    extractor.extractLongReadsPE(graph_pack, long_reads_temp_container, good_edges, current_barcode, lib_10x);
+                    INFO("Here");
+
+                    for (auto path : long_reads_temp_container) {
+                        path.first->PrintINFO();
+                        INFO(path.first->ToVector()[0]);
+                        INFO(path.first->ToVector()[path.first->ToVector().size() - 1]);
+                        DEBUG(graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode));
+                        DEBUG(graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector()[path.first->ToVector().size() - 1], current_barcode));
+
+                        long_reads_temp_storage.AddPath(path.first->ToVector(), 1, true, current_barcode, graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode),
+                                                        graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector()[path.first->ToVector().size() - 1], current_barcode));
+                    }
+                    INFO("Here");
+
+                    if (long_reads_temp_container.size())
                         ++passed_counter;
                     else
                         ++failed_counter;
-                    paths.clear();
+
+                    long_reads_temp_container.clear();
+                    INFO("Here");
+
                     if (used_barcodes.count(current_barcode) && current_barcode != "") {
                         WARN("Path with " << current_barcode << " barcode was previously extracted");
                     }
@@ -403,26 +576,43 @@ namespace debruijn_graph {
                         }
                         graph_pack.barcode_coverage[0].Clear(current_barcode);
                     }
+                    INFO("Here");
+
+                    graph_pack.barcode_indices[0].Clear();
+                    graph_pack.barcode_clustered_indices[0].Clear();
+                    paths.clear();
+                    pif.StartProcessLibrary(0);
                 }
                 current_barcode = barcode_string;
                 const auto &path1 = mapper->MapRead(read.first());
                 const auto &path2 = mapper->MapRead(read.second());
                 paths.push_back(path1);
                 paths.push_back(path2);
+                pif.ProcessPairedRead(0, read, path1, path2);
             }
             counter++;
             VERBOSE_POWER_T2(counter, 100, "Processed " << counter << " reads.");
         }
         DEBUG("Processing barcode " << current_barcode);
-        if (extractor.extractLongReads(paths, long_reads_temp_storage, current_barcode))
+        std::vector<EdgeId> good_edges;
+        extractor.extractEdges(paths, good_edges, current_barcode);
+        extractor.extractLongReadsPE(graph_pack, long_reads_temp_container, good_edges, current_barcode, lib_10x);
+        if (long_reads_temp_container.size())
             ++passed_counter;
         else
             ++failed_counter;
-        ++counter;
-        paths.clear();
-        
+
+        for (auto path : long_reads_temp_container) {
+            long_reads_temp_storage.AddPath(path.first->ToVector(), 1, true, current_barcode, graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode),
+                                            graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector()[path.first->ToVector().size() - 1], current_barcode));
+        }
+        long_reads_temp_container.clear();
+
+        INFO("Start to save paths");
         std::vector<PathInfo<Graph>> debug_path;
         long_reads_temp_storage.SaveAllPaths(debug_path);
+        INFO("Save all paths");
+
         for (auto p : debug_path) {
             path_extend::BidirectionalPath *path = new path_extend::BidirectionalPath(graph_pack.g);
             auto conj = new path_extend::BidirectionalPath(graph_pack.g);
@@ -438,6 +628,10 @@ namespace debruijn_graph {
             path->SetCutFromEnd(p.get_cut_from_end());
             conj->SetCutFromBeginning(p.get_cut_from_end());
             conj->SetCutFromEnd(p.get_cut_from_begin());
+            INFO(p.get_barcodes());
+            INFO(p.get_cut_from_begin());
+            INFO(p.get_cut_from_end());
+            path->PrintINFO();
         }
         INFO("Total reads processed: " << counter);
         INFO("Total barcodes passed: " << passed_counter << ", failed " << failed_counter);

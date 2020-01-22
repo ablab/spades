@@ -292,6 +292,14 @@ public:
 };
 
 
+class BarcodeWiseExtensionChooser : public ExtensionChooser {
+public:
+    BarcodeWiseExtensionChooser(const Graph& g) :
+            ExtensionChooser(g)
+    {  }
+
+};
+
 class SimpleCoverageExtensionChooser: public ExtensionChooser {
     const SSCoverageStorage& coverage_storage_;
     //> 1

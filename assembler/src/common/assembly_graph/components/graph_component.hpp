@@ -559,6 +559,7 @@ public:
 
 
     void RemoveLowCoveredJunctions() {
+        return;
         std::set<EdgeId> to_delete;
         for (auto v : vertices_) {
             if (OutgoingEdges(v).size() > 1) {

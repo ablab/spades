@@ -18,6 +18,7 @@ add_library(spades-stages STATIC
             hybrid_aligning.cpp
             chromosome_removal.cpp
             molecule_extraction_stage.cpp)
+
 target_link_libraries(spades-stages ConsensusCore)
 
 add_executable(spades-core 

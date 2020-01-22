@@ -266,6 +266,10 @@ class PathExtendResolver {
     const Graph& g_;
     size_t k_;
 
+    bool IsCanonical(EdgeId e) const {
+        return e <= g_.conjugate(e);
+    }
+
 public:
     PathExtendResolver(const Graph& g): g_(g), k_(g.k()) {
     }
@@ -276,6 +280,16 @@ public:
         for (auto iter = g_.ConstEdgeBegin(/*canonical only*/true); !iter.IsEnd(); ++iter) {
             EdgeId e = *iter;
             if (g_.int_id(e) <= 0 || InTwoEdgeCycle(e, g_))
+                continue;
+            edges.AddPair(new BidirectionalPath(g_, e), new BidirectionalPath(g_, g_.conjugate(e)));
+        }
+        return edges;
+    }
+
+    PathContainer MakeSeedsFromEdgeSet(const std::vector<EdgeId> &edge_container) const {
+        PathContainer edges;
+        for (auto e : edge_container) {
+            if (!IsCanonical(e) || g_.int_id(e) <= 0 || InTwoEdgeCycle(e, g_))
                 continue;
             edges.AddPair(new BidirectionalPath(g_, e), new BidirectionalPath(g_, g_.conjugate(e)));
         }

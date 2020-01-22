@@ -238,7 +238,7 @@ public:
             return 0;
         }
         VERIFY(gap_len_[0].gap == 0);
-        return cumulative_len_[0];
+        return cumulative_len_[0] - cut_from_end_ - cut_from_beginning_;
     }
 
     //TODO iterators forward/reverse

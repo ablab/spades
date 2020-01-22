@@ -1111,6 +1111,8 @@ protected:
     DECL_LOGGER("LoopDetectingPathExtender")
 };
 
+
+
 class SimpleExtender: public LoopDetectingPathExtender {
 
 protected:
@@ -1226,6 +1228,67 @@ protected:
     DECL_LOGGER("SimpleExtender")
 };
 
+
+
+class GoodEdgeExtender : public SimpleExtender {
+protected:
+    std::set<EdgeId> good_edges_;
+
+    void FilterGoodEdges(ExtensionChooser::EdgeContainer * result) {
+        ExtensionChooser::EdgeContainer new_edges;
+        for (auto e : (*result)) {
+            if (good_edges_.count(e.e_)) {
+                new_edges.push_back(e);
+            }
+        }
+        result->clear();
+        for (auto e : new_edges) {
+            result->push_back(e);
+        }
+    }
+
+public:
+    GoodEdgeExtender(const conj_graph_pack &gp,
+                       const GraphCoverageMap &cov_map,
+                       UsedUniqueStorage &unique,
+                       std::shared_ptr<ExtensionChooser> ec,
+                       size_t is,
+                       std::set<EdgeId> good_edges,
+                       bool investigate_short_loops,
+                       bool use_short_loop_cov_resolver,
+                       double weight_threshold = 0.0):
+            SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold),
+            good_edges_(good_edges) {
+
+    }
+
+protected:
+    virtual bool FilterCandidates(BidirectionalPath& path, ExtensionChooser::EdgeContainer& candidates) {
+        if (path.Size() == 0) {
+            return false;
+        }
+        DEBUG("Simple grow step");
+        path.PrintDEBUG();
+        FindFollowingEdges(path, &candidates);
+        FilterGoodEdges(&candidates);
+
+        DEBUG("found candidates");
+        DEBUG(candidates.size())
+        if (candidates.size() == 1) {
+            LoopDetector loop_detector(&path, cov_map_);
+            if (!investigate_short_loops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
+                && extensionChooser_->WeightCounterBased()) {
+                return false;
+            }
+        }
+        DEBUG("more filtering");
+        candidates = extensionChooser_->Filter(path, candidates);
+        DEBUG("filtered candidates");
+        DEBUG(candidates.size())
+        return true;
+    }
+
+};
 
 class MultiExtender: public SimpleExtender {
 public:

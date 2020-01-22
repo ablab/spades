@@ -282,7 +282,7 @@ public:
             std::vector<EdgeId> rc_p(p.size());
             for (size_t i = 0; i < p.size(); i++)
                 rc_p[i] = g_.conjugate(p[p.size() - 1 - i]);
-            HiddenAddPath(rc_p, w, barcodes, cut_from_begin, cut_from_end);
+            HiddenAddPath(rc_p, w, barcodes, cut_from_end, cut_from_begin);
         }
     }
 
