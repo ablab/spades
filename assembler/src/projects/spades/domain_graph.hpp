@@ -82,6 +82,13 @@ public:
 };
 
 class DomainGraph {
+
+struct cmpshared_ptrs {
+    bool operator()(std::shared_ptr<Vertex> v1, std::shared_ptr<Vertex> v2) const {
+        return v1->name_ < v2->name_;
+    }
+};
+
 public:
     DomainGraph() { iteration_number_ = 0; }
 
@@ -205,8 +212,8 @@ public:
 
     const std::set<Edge *> &getEdgeSet(std::shared_ptr<Vertex> v) const { return v->edges_; }
     std::shared_ptr<Vertex> getVertex(const std::string &name) const { return node_map_.at(name); }
-    const std::set<std::shared_ptr<Vertex>> &getVertexSet() const { return nodes_; }
-    std::set<std::shared_ptr<Vertex>> const &getNodeSet() const { return nodes_; }
+    const std::set<std::shared_ptr<Vertex>, cmpshared_ptrs> &getVertexSet() const { return nodes_; }
+    std::set<std::shared_ptr<Vertex>, cmpshared_ptrs> const &getNodeSet() const { return nodes_; }
 
     void ExportToDot(const std::string &output_path) const;
 
@@ -310,7 +317,9 @@ private:
                   std::vector<std::vector<std::shared_ptr<Vertex>>> &answer,
                   size_t component_size);
 
-    std::set<std::shared_ptr<Vertex>> nodes_; /* The set of nodes in the graph */
+
+
+    std::set<std::shared_ptr<Vertex>, cmpshared_ptrs> nodes_; /* The set of nodes in the graph */
     std::set<Edge *> arcs_;                   /* The set of arcs in the graph  */
     std::map<std::string, std::shared_ptr<Vertex>> node_map_; /* A map from names to nodes     */
     std::map<EdgeId, std::vector<std::string>> a_edges_map_; /* A map from edges to nodenames */
