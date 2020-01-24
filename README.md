@@ -341,7 +341,7 @@ If adapter and/or quality trimming software has been used prior to assembly, fil
 
 <a name="merged"></a>
 If you have merged some of the reads from your paired-end (not mate-pair or high-quality mate-pair) library (using tools s.a. [BBMerge](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmerge-guide/) or [STORM](https://bitbucket.org/yaoornl/align_test/overview)), you should provide the file with resulting reads as a "merged read file" for the corresponding library.
-Note that non-empty files with the remaining unmerged left/right reads (separate or interlaced) must be provided for the same library (for SPAdes to correctly detect the original read length).
+Note that non-empty files with the remaining unmerged left/right reads (separate or interlaced) **must** be provided for the same library (for SPAdes to correctly detect the original read length).
 
 In an unlikely case some of the reads from your mate-pair (or high-quality mate-pair) library are "merged", you should provide the resulting reads as a SEPARATE single-read library.
 
@@ -393,8 +393,9 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 
 <a name="isolate"></a>
 `--isolate ` 
-    This flag is highly recommended for high-coverage isolate and multi-cell data; improves the assembly quality and running time. 
-    Not compatible with `--only-error-correction` or `--careful` options. 
+    This flag is highly recommended for high-coverage isolate and multi-cell Illumina data; improves the assembly quality and running time. 
+    We also recommend to trim your reads prior to the assembly. More details can be found [here](http://cab.spbu.ru/benchmarking-tools-for-de-novo-microbial-assembly/).
+    This option is not compatible with `--only-error-correction` or `--careful` options. 
 
 <a name="sc"></a>
 `--sc `
@@ -506,7 +507,7 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 `--merged <file_name> `
     File with merged paired reads.
     If the properties of the library permit, overlapping paired-end reads can be merged using special software.
-    Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) must be provided for the same library for SPAdes to correctly detect the original read length.
+    Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) **must** be provided for the same library for SPAdes to correctly detect the original read length.
 
 `-s <file_name> `
     File with unpaired reads.
@@ -532,7 +533,7 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 
 `--pe<#>-m <file_name> `
     File with merged reads from paired-end library number `<#>` (`<#>` = 1,2,..,9)
-    If the properties of the library permit, paired reads can be merged using special software.     Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) must be provided for the same library for SPAdes to correctly detect the original read length.
+    If the properties of the library permit, paired reads can be merged using special software. Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) **must** be provided for the same library for SPAdes to correctly detect the original read length.
 
 `--pe<#>-s <file_name> `
     File with unpaired reads from paired-end library number `<#>` (`<#>` = 1,2,..,9)
@@ -755,7 +756,7 @@ Files with interlacing paired-end reads or files with unpaired reads can be spec
 
     spades.py --pe1-12 lib1_1.fastq --pe1-12 lib1_2.fastq \
     --pe1-s lib1_unpaired_1.fastq --pe1-s lib1_unpaired_2.fastq \
-    -o spades_output    
+    -o spades_output
 ```
 
 If you have several paired-end and mate-pair reads, for example:
