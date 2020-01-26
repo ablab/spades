@@ -484,21 +484,33 @@ public:
         typename Graph::HelperT helper = graph.GetConstructionHelper();
 
         std::vector<LinkRecord> records;
+        INFO("Total " << 2*sequences.size() << " edges to create");
         graph.ereserve(2*sequences.size());
+        INFO("Collecting link records")
         CollectLinkRecords(helper, graph, records, sequences);
+        INFO("Ordering link records")
         parallel::sort(records.begin(), records.end());
-        size_t size = records.size();
-        graph.vreserve(2*size);
-        uint64_t min_id = graph.min_id();
-#       pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < size; i++) {
+        INFO("Sorting done");
+        std::vector<size_t> vertex_pos;
+        for (size_t i = 0; i < records.size(); i++) {
             if (i != 0 && records[i].GetHash() == records[i - 1].GetHash())
                 continue;
             if (records[i].IsInvalid())
                 continue;
+            vertex_pos.push_back(i);
+        }
+        size_t size = vertex_pos.size();
+        INFO("Total " << size << " vertices to create");
+        graph.vreserve(2*size);
 
-            VertexId v = helper.CreateVertex(DeBruijnVertexData(), min_id + (i << 1));
-            for (size_t j = i; j < size && records[j].GetHash() == records[i].GetHash(); j++) {
+        INFO("Connecting the graph");
+        uint64_t min_id = graph.min_id();
+#       pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < size; i++) {
+            size_t pos = vertex_pos[i];
+
+            VertexId v = helper.CreateVertex(DeBruijnVertexData(), min_id + 2*i);
+            for (size_t j = pos; j < records.size() && records[j].GetHash() == records[pos].GetHash(); ++j) {
                 LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsStart(), records[j].IsRC());
             }
         }

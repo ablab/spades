@@ -561,7 +561,10 @@ protected:
 public:
     GraphCore(const DataMaster& master)
             : master_(master),
-              vstorage_(ID_BIAS), estorage_(ID_BIAS) {}
+              vstorage_(ID_BIAS), estorage_(ID_BIAS) {
+        INFO("Graph created, vertex min_id: " << ID_BIAS << ", edge min_id: " << ID_BIAS);
+        INFO("Vertex size: " << sizeof(PairedVertex<DataMaster>) << ", edge size: " << sizeof(PairedEdge<DataMaster>));
+    }
 
     virtual ~GraphCore() { VERIFY(size() == 0); }
 
