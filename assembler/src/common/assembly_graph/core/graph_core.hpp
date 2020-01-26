@@ -125,8 +125,8 @@ private:
     //todo unfriend
     friend class PairedVertex<DataMaster>;
     VertexId end_;
-    EdgeData data_;
     EdgeId conjugate_;
+    EdgeData data_;
 
     PairedEdge(VertexId end, const EdgeData &data)
             : end_(end), data_(data) {}

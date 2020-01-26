@@ -18,6 +18,10 @@
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <llvm/Support/TrailingObjects.h>
 
+// Silence bogus gcc warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+
 class Sequence {
     // Type to store Seq in Sequences
     typedef seq_element_type ST;
@@ -55,9 +59,9 @@ class Sequence {
         ST *data() { return getTrailingObjects<ST>(); }
     };
 
-    size_t from_;
-    size_t size_;
-    bool rtl_; // Right to left + complimentary (?)
+    size_t size_ : 32;
+    size_t from_ : 31;
+    bool   rtl_  : 1;  // Right to left + complimentary (?)
     llvm::IntrusiveRefCntPtr<ManagedNuclBuffer> data_;
 
     static size_t DataSize(size_t size) {
@@ -121,11 +125,11 @@ class Sequence {
     inline bool WriteHeader(std::ostream &file) const;
 
     Sequence(size_t size, int)
-            : from_(0), size_(size), rtl_(false), data_(ManagedNuclBuffer::create(size_)) {}
+            : size_(size), from_(0), rtl_(false), data_(ManagedNuclBuffer::create(size_)) {}
 
     //Low level constructor. Handle with care.
     Sequence(const Sequence &seq, size_t from, size_t size, bool rtl)
-            : from_(from), size_(size), rtl_(rtl), data_(seq.data_) {}
+            : size_(size), from_(from), rtl_(rtl), data_(seq.data_) {}
 
 public:
     /**
@@ -393,8 +397,10 @@ std::ostream &operator<<(std::ostream &os, const Sequence &s) {
 }
 
 bool Sequence::ReadHeader(std::istream &file) {
-    file.read((char *) &size_, sizeof(size_));
+    size_t size;
+    file.read((char *) &size, sizeof(size));
 
+    size_ = size;
     from_ = 0;
     rtl_ = false;
 
@@ -405,7 +411,8 @@ bool Sequence::WriteHeader(std::ostream &file) const {
     VERIFY(from_ == 0);
     VERIFY(!rtl_);
 
-    file.write((const char *) &size_, sizeof(size_));
+    size_t size = size_;
+    file.write((const char *)&size, sizeof(size));
 
     return !file.fail();
 }
@@ -482,3 +489,5 @@ public:
         return s;
     }
 };
+
+#pragma GCC diagnostic pop
