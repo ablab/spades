@@ -313,7 +313,7 @@ def etalon_saves(dataset_info, test, output_dir):
             etalon_folder += test["name"]
 
         ecode = cmp_with_etalon(output_dir, os.path.join(etalon_folder),
-                                allowed_substr=[".info", ".yaml", ".sh", "params.txt"])
+                                allowed_substr=[".yaml", ".sh", "params.txt"])
 
         if ecode != 0:
             log.err("Comparing etalon saves did not pass, exit code " + str(ecode))
