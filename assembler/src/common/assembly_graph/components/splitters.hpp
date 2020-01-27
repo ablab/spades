@@ -280,36 +280,56 @@ private:
         const size_t edge_summary_length_limit_;
 
         void Find(EdgeId edge, std::set<EdgeId> &result) const {
-
-            if (edge_summary_length_ > edge_summary_length_limit_) {
+            if (edge_summary_length_ > edge_summary_length_limit_)
                 return;
-            }
 
-            if (result.size() > edge_limit_) {
+            if (result.size() > edge_limit_)
                 return;
-            }
 
-            if (math::ls(graph_.coverage(edge), coverage_bound_)) {
+            if (math::ls(graph_.coverage(edge), coverage_bound_))
                 return;
-            }
 
-            if (result.count(edge) || result.count(graph_.conjugate(edge))) {
+            if (result.count(edge) || result.count(graph_.conjugate(edge)))
                 return;
-            }
 
             edge_summary_length_ += graph_.length(edge);
             result.insert(edge);
             result.insert(graph_.conjugate(edge));
 
             VertexId v = graph_.EdgeEnd(edge);
-            for (auto e : graph_.IncidentEdges(v)) {
+            for (auto e : graph_.IncidentEdges(v))
                 Find(e, result);
-            }
 
             v = graph_.EdgeStart(edge);
-            for (auto e : graph_.IncidentEdges(v)) {
+            for (auto e : graph_.IncidentEdges(v))
                 Find(e, result);
-            }
+        }
+
+        // FIXME: Get rid of recursion, it's ugly!
+        void Fill(EdgeId edge, phmap::flat_hash_set<EdgeId> &processed) const {
+            if (edge_summary_length_ > edge_summary_length_limit_)
+                return;
+
+            if (processed.size() > edge_limit_)
+                return;
+
+            if (math::ls(graph_.coverage(edge), coverage_bound_))
+                return;
+
+            if (processed.count(edge) || processed.count(graph_.conjugate(edge)))
+                return;
+
+            edge_summary_length_ += graph_.length(edge);
+            processed.insert(edge);
+            processed.insert(graph_.conjugate(edge));
+
+            VertexId v = graph_.EdgeEnd(edge);
+            for (auto e : graph_.IncidentEdges(v))
+                Fill(e, processed);
+
+            v = graph_.EdgeStart(edge);
+            for (auto e : graph_.IncidentEdges(v))
+                Fill(e, processed);
         }
 
     public:
@@ -332,6 +352,17 @@ private:
                 Find(e, result);
             }
             return result;
+        }
+
+        size_t Fill(VertexId v) const {
+            edge_summary_length_ = 0;
+            phmap::flat_hash_set<EdgeId> processed;
+            for (auto e : graph_.OutgoingEdges(v))
+                Fill(e, processed);
+            for (auto e : graph_.IncomingEdges(v)) {
+                Fill(e, processed);
+            }
+            return edge_summary_length_;
         }
 
         size_t EdgeSummaryLength() const {
@@ -358,9 +389,9 @@ public:
     }
 
     size_t EdgeSummaryLength(VertexId v) const {
-        GraphComponent<Graph> component = Find(v);
-        DEBUG("Summary edge length for vertex " << v.int_id() << " is " << dfs_helper.EdgeSummaryLength());
-        return dfs_helper.EdgeSummaryLength();
+        size_t result = dfs_helper.Fill(v);
+        DEBUG("Summary edge length for vertex " << v.int_id() << " is " << result);
+        return result;
     }
 
     std::vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) const {
