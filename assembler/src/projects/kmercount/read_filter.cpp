@@ -91,7 +91,7 @@ void filter_reads(IS &input, OS &output, const Filter& filter, unsigned buffer_s
 #       pragma omp parallel for
         for (unsigned i = 0; i < nthreads; ++i) {
             for (unsigned j = chunk_start[i]; j < chunk_end[i]; ++j) {
-                if (!filter(reads_buffer[j])) {
+                if (filter(reads_buffer[j])) {
                     need_to_out[j] = 1;
                 } else {
                     need_to_out[j] = 0;
@@ -164,14 +164,14 @@ int main(int argc, char* argv[]) {
                         io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0);
                 io::OFastqPairedStream ostream(args.workdir + "/" + to_string(i + 1) + ".1.fastq",
                                                args.workdir + "/" + to_string(i + 1) + ".2.fastq");
-                io::CoverageFilter<io::PairedRead, SeqHasher> filter(args.k, hasher, cqf, args.thr);
+                io::CoverageFilter<io::PairedRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
                 filter_reads(paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
             }
 
             if (dataset[i].has_single()) {
                 io::SingleStream single_reads_stream =
                         io::single_easy_reader(dataset[i], /*followed_by_rc*/ false, /*including_paired_reads*/ false);
-                io::CoverageFilter<io::SingleRead, SeqHasher> filter(args.k, hasher, cqf, args.thr);
+                io::CoverageFilter<io::SingleRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
 
                 io::OFastqReadStream ostream(args.workdir + "/" + to_string(i + 1) + ".s.fastq");
                 filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);

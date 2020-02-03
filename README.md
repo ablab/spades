@@ -1,4 +1,4 @@
-<font size=20>__SPAdes 3.14.0 Manual__</font>
+<font size=20>__SPAdes 3.14.1 Manual__</font>
 
 
 1. [About SPAdes](#sec1) </br>
@@ -16,7 +16,7 @@
     3.3. [Assembling IonTorrent reads](#sec3.3)</br>
     3.4. [Assembling long Illumina paired reads (2x150 and 2x250)](#sec3.4)</br>
     3.5. [SPAdes output](#sec3.5)</br>
-    3.6. [plasmidSPAdes output](#sec3.6)</br>
+    3.6. [plasmidSPAdes and metaplasmidSPAdes output](#sec3.6)</br>
     3.7. [biosyntheticSPAdes output](#sec3.7)</br>
     3.8. [Assembly evaluation](#sec3.8)</br>
 4. [Stand-alone binaries released within SPAdes package](#sec4)</br>
@@ -33,20 +33,21 @@
 <a name="sec1"></a>
 # About SPAdes
 
-SPAdes &ndash; St. Petersburg genome assembler &ndash; is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.14.0 was released under GPLv2 on December 27, 2019 and can be downloaded from <http://cab.spbu.ru/software/spades/>. []()
+SPAdes &ndash; St. Petersburg genome assembler &ndash; is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.14.1 was released under GPLv2 on February 5, 2020 and can be downloaded from <http://cab.spbu.ru/software/spades/>. []()
 
 <a name="sec1.1"></a>
 ## Supported data types
 
 The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.
 
-Version 3.14.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
+Version 3.14.1 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
 
 If you have high-coverage data for bacterial/viral isolate or multi-cell organism, we highly recommend to use [`--isolate`](#isolate) option.
 
-SPAdes 3.14.0 includes the following additional pipelines:
+SPAdes 3.14.1 includes the following additional pipelines:
 -   metaSPAdes &ndash; a pipeline for metagenomic data sets (see [metaSPAdes options](#meta)).
--   plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmidSPAdes options](#plasmid)).
+-   plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmid options](#plasmid)).
+-   metaplasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from *metagenomic* data sets (see [plasmid options](#plasmid)).
 -   rnaSPAdes &ndash; a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](assembler/rnaspades_manual.html)).
 -   truSPAdes &ndash; a module for TruSeq barcode assembly (see [truSPAdes manual](assembler/truspades_manual.html)).
 -   biosyntheticSPAdes &ndash; a module for biosynthetic gene cluster assembly with paired-end reads (see [biosynthicSPAdes options](#biosynthetic)).
@@ -140,7 +141,7 @@ Notes:
 -   Running SPAdes without preliminary read error correction (e.g. without BayesHammer or IonHammer) will likely require more time and memory.
 -   Each module removes its temporary files as soon as it finishes.
 -   SPAdes uses 512 Mb per thread for buffers, which results in higher memory consumption. If you set memory limit manually, SPAdes will use smaller buffers and thus less RAM.
--   Performance statistics is given for SPAdes version 3.14.0.
+-   Performance statistics is given for SPAdes version 3.14.1.
 
 <a name="sec2"></a>
 # Installation
@@ -153,8 +154,9 @@ In case of successful installation the following files will be placed in the `bi
 -   `spades.py` (main executable script)
 -   `metaspades.py` (main executable script for [metaSPAdes](#meta))
 -   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
--   `rnaspades.py` (main executable script for [rnaSPAdes](assembler/rnaspades_manual.html))
--   `truspades.py` (main executable script for [truSPAdes](assembler/truspades_manual.html))
+-   `metaplasmidspades.py` (main executable script for [metaplasmidSPAdes](#plasmid))
+-   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
+-   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
 -   `spades-core`  (assembly module)
 -   `spades-gbuilder`  (standalone graph builder application)
 -   `spades-gmapper`  (standalone long read to graph aligner)
@@ -168,27 +170,29 @@ In case of successful installation the following files will be placed in the `bi
 <a name="sec2.1"></a>
 ## Downloading SPAdes Linux binaries
 
-To download [SPAdes Linux binaries](http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
+To download [SPAdes Linux binaries](http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
 
-    wget http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0-Linux.tar.gz
-    tar -xzf SPAdes-3.14.0-Linux.tar.gz
-    cd SPAdes-3.14.0-Linux/bin/
+    wget http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1-Linux.tar.gz
+    tar -xzf SPAdes-3.14.1-Linux.tar.gz
+    cd SPAdes-3.14.1-Linux/bin/
 ```
 
 In this case you do not need to run any installation scripts &ndash; SPAdes is ready to use. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
 
+Note, that pre-build binaries do not work on new Linux kernels.
+
 <a name="sec2.2"></a>
 ## Downloading SPAdes binaries for Mac
 
-To obtain [SPAdes binaries for Mac](http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
+To obtain [SPAdes binaries for Mac](http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
 
-    curl http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0-Darwin.tar.gz -o SPAdes-3.14.0-Darwin.tar.gz
-    tar -zxf SPAdes-3.14.0-Darwin.tar.gz
-    cd SPAdes-3.14.0-Darwin/bin/
+    curl http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1-Darwin.tar.gz -o SPAdes-3.14.1-Darwin.tar.gz
+    tar -zxf SPAdes-3.14.1-Darwin.tar.gz
+    cd SPAdes-3.14.1-Darwin/bin/
 ```
 
 Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
@@ -203,13 +207,13 @@ If you wish to compile SPAdes by yourself you will need the following libraries 
 -   zlib
 -   libbz2
 
-If you meet these requirements, you can download the [SPAdes source code](http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0.tar.gz):
+If you meet these requirements, you can download the [SPAdes source code](http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1.tar.gz):
 
 ``` bash
 
-    wget http://cab.spbu.ru/files/release3.14.0/SPAdes-3.14.0.tar.gz
-    tar -xzf SPAdes-3.14.0.tar.gz
-    cd SPAdes-3.14.0
+    wget http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1.tar.gz
+    tar -xzf SPAdes-3.14.1.tar.gz
+    cd SPAdes-3.14.1
 ```
 
 and build it with the following script:
@@ -287,7 +291,7 @@ Thank you for using SPAdes!
 
 SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
 
-To run SPAdes 3.14.0 you need at least one library of the following types:
+To run SPAdes 3.14.1 you need at least one library of the following types:
 
 -   Illumina paired-end/high-quality mate-pairs/unpaired reads
 -   IonTorrent paired-end/high-quality mate-pairs/unpaired reads
@@ -337,7 +341,7 @@ If adapter and/or quality trimming software has been used prior to assembly, fil
 
 <a name="merged"></a>
 If you have merged some of the reads from your paired-end (not mate-pair or high-quality mate-pair) library (using tools s.a. [BBMerge](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmerge-guide/) or [STORM](https://bitbucket.org/yaoornl/align_test/overview)), you should provide the file with resulting reads as a "merged read file" for the corresponding library.
-Note that non-empty files with the remaining unmerged left/right reads (separate or interlaced) must be provided for the same library (for SPAdes to correctly detect the original read length).
+Note that non-empty files with the remaining unmerged left/right reads (separate or interlaced) **must** be provided for the same library (for SPAdes to correctly detect the original read length).
 
 In an unlikely case some of the reads from your mate-pair (or high-quality mate-pair) library are "merged", you should provide the resulting reads as a SEPARATE single-read library.
 
@@ -389,8 +393,9 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 
 <a name="isolate"></a>
 `--isolate ` 
-    This flag is highly recommended for high-coverage isolate and multi-cell data; improves the assembly quality and running time. 
-    Not compatible with `--only-error-correction` or `--careful` options. 
+    This flag is highly recommended for high-coverage isolate and multi-cell Illumina data; improves the assembly quality and running time. 
+    We also recommend to trim your reads prior to the assembly. More details can be found [here](http://cab.spbu.ru/benchmarking-tools-for-de-novo-microbial-assembly/).
+    This option is not compatible with `--only-error-correction` or `--careful` options. 
 
 <a name="sc"></a>
 `--sc `
@@ -406,7 +411,16 @@ Note that we assume that SPAdes installation directory is added to the `PATH` va
 
 <a name="plasmid"></a>
 `--plasmid `   (same as `plasmidspades.py`)
-    This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see [paper](http://biorxiv.org/content/early/2016/04/20/048942) for the algorithm details). Note, that plasmidSPAdes is not compatible with [metaSPAdes](#meta) and [single-cell mode](#sc). Additionally, we do not recommend to run plasmidSPAdes on more than one library. See [section 3.6](#sec3.6) for plasmidSPAdes output details.
+    This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see [paper](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610) for the algorithm details). Note, that plasmidSPAdes is not compatible with [single-cell mode](#sc). Additionally, we do not recommend to run plasmidSPAdes on more than one library. 
+If options `--meta` and `--plasmid` are combined (same as `metaplasmidspades.py`) then metaplasmidSPAdes algorithm for extracting plasmids from metagenomic data sets is run (see [paper](https://genome.cshlp.org/content/29/6/961.short) for algorithm details).
+
+[]()
+
+For plasmidSPAdes and metaplasmidSPAdes output details see [section 3.6](#sec3.6).
+
+[]()
+
+Additionally for plasmidSPAdes and metaplasmidSPAdes we recommend to additionally verify resulting contigs with [plasmidVerify tool](https://github.com/ablab/plasmidVerify).
 
 []()
 
@@ -493,7 +507,7 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 `--merged <file_name> `
     File with merged paired reads.
     If the properties of the library permit, overlapping paired-end reads can be merged using special software.
-    Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) must be provided for the same library for SPAdes to correctly detect the original read length.
+    Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) **must** be provided for the same library for SPAdes to correctly detect the original read length.
 
 `-s <file_name> `
     File with unpaired reads.
@@ -519,7 +533,7 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 
 `--pe<#>-m <file_name> `
     File with merged reads from paired-end library number `<#>` (`<#>` = 1,2,..,9)
-    If the properties of the library permit, paired reads can be merged using special software.     Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) must be provided for the same library for SPAdes to correctly detect the original read length.
+    If the properties of the library permit, paired reads can be merged using special software. Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) **must** be provided for the same library for SPAdes to correctly detect the original read length.
 
 `--pe<#>-s <file_name> `
     File with unpaired reads from paired-end library number `<#>` (`<#>` = 1,2,..,9)
@@ -742,7 +756,7 @@ Files with interlacing paired-end reads or files with unpaired reads can be spec
 
     spades.py --pe1-12 lib1_1.fastq --pe1-12 lib1_2.fastq \
     --pe1-s lib1_unpaired_1.fastq --pe1-s lib1_unpaired_2.fastq \
-    -o spades_output    
+    -o spades_output
 ```
 
 If you have several paired-end and mate-pair reads, for example:
@@ -969,7 +983,11 @@ SPAdes will overwrite these files and directories if they exist in the specified
 <a name="sec3.6"></a>
 ## plasmidSPAdes output
 
-plasmidSPAdes outputs only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see [previous](#sec3.5) section), with the following difference. For all contig names in `contigs.fasta`, `scaffolds.fasta` and `assembly_graph.fastg` we append suffix `_component_X`, where `X` is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. []()
+plasmidSPAdes and metaplasmidSPAdes output only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see [previous](#sec3.5) section), with the following differences.  
+
+For all plasmidSPAdes' contig names in `contigs.fasta`, `scaffolds.fasta` and `assembly_graph.fastg` we append suffix `_component_X`, where `X` is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. []()  
+
+For metaplasmidSPAdes only complete putative plasmids (i.e. circular contigs) are output.
 
 <a name="sec3.7"></a>
 ## biosyntheticSPAdes output
@@ -1145,7 +1163,7 @@ Additional options are:
 `-tmpdir <dir_name>  `
     scratch directory to use
 
-While `spades-mapper` is a solution for those who works on hybridSPAdes assembly and wants to get intermediate results, [SPAligner](#sec4.5.2) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.  
+While `spades-mapper` is a solution for those who work on hybridSPAdes assembly and want to get exactly its intermediate results, [SPAligner](#sec4.5.2) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.  
 
 
 <a name="sec4.5.2"></a>
@@ -1187,9 +1205,11 @@ In case you perform hybrid assembly ussing  PacBio or Nanopore reads, you may al
 
 If you use multiple paired-end and/or mate-pair libraries you may also cite papers describing SPAdes repeat resolution algorithms [Prjibelski et al., 2014](http://bioinformatics.oxfordjournals.org/content/30/12/i293.short) and [Vasilinetc et al., 2015](http://bioinformatics.oxfordjournals.org/content/31/20/3262.abstract). 
 
-If you use metaSPAdes please cite [Antipov et al., 2016](https://genome.cshlp.org/content/27/5/824.short).
+If you use metaSPAdes please cite [Nurk et al., 2017](https://genome.cshlp.org/content/27/5/824.short).
 
 If you use plasmidSPAdes please cite [Antipov et al., 2016](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610).
+
+If you use metaplasmidSPAdes and/or plasmidVerify please cite [Antipov et al., 2019](https://genome.cshlp.org/content/29/6/961.short)
 
 For rnaSPAdes citation use [Bushmanova et al., 2019](https://academic.oup.com/gigascience/article/8/9/giz100/5559527).
 
