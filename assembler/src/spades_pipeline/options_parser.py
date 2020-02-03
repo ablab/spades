@@ -533,7 +533,7 @@ def add_pipeline_args(pgroup_pipeline):
                                  action="store")
     pgroup_pipeline.add_argument("--continue",
                                  dest="continue_mode",
-                                 help="continue run from the last available check-point",
+                                 help="continue run from the last available check-point (only -o should be specified)",
                                  action="store_true")
 
     restart_from_help = "restart run with updated options and from the specified check-point\n" \
