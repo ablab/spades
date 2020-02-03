@@ -187,18 +187,18 @@ def make_spades_cmd(args, dataset_info, test, spades_params_list, spades_dir, ou
     return cmd
 
 
-def contain_subs(subs, s):
+def is_contain_one_of_substring(subs, s):
     for sub in subs:
         if (sub in s):
             return True
     return False
 
 
-def create_ignore_list(dir, allow_sub):
+def create_ignore_list_of_files_in_dir(dir, allow_sub):
     ignore_list = []
     for file in os.listdir(dir):
         if os.path.isfile(os.path.join(dir, file)):
-            if (not contain_subs(allow_sub, file)):
+            if (not is_contain_one_of_substring(allow_sub, file)):
                 ignore_list.append(file)
 
     return ignore_list
@@ -206,6 +206,8 @@ def create_ignore_list(dir, allow_sub):
 
 def cmp_folder(output_dir, etalon_dir, ignore, allowed_substring):
     log.log("cmp folder " + output_dir + " with etalon")
+
+    #delete lines with tmp folders from logs (tmp folders have a different name each time)
     os.system("find " + output_dir + " -type f -exec sed -i '/_dir/d' {} \;")
     os.system("find " + etalon_dir + " -type f -exec sed -i '/_dir/d' {} \;")
 
@@ -228,13 +230,13 @@ def cmp_folder(output_dir, etalon_dir, ignore, allowed_substring):
     os.system("find " + etalon_dir + " -type f -exec sed -i '/version/d' {} \;")
 
     ignore_list = ignore
-    ignore_list += create_ignore_list(output_dir, ignore + allowed_substring)
-    ignore_list += create_ignore_list(etalon_dir, ignore + allowed_substring)
+    ignore_list += create_ignore_list_of_files_in_dir(output_dir, ignore + allowed_substring)
+    ignore_list += create_ignore_list_of_files_in_dir(etalon_dir, ignore + allowed_substring)
 
     dircmp = filecmp.dircmp(etalon_dir, output_dir, ignore=ignore_list)
-    dircmp.diff_files = [x for x in dircmp.diff_files if contain_subs(allowed_substring, x)]
-    dircmp.right_only = [x for x in dircmp.right_only if contain_subs(allowed_substring, x)]
-    dircmp.left_only = [x for x in dircmp.left_only if contain_subs(allowed_substring, x)]
+    dircmp.diff_files = [x for x in dircmp.diff_files if is_contain_one_of_substring(allowed_substring, x)]
+    dircmp.right_only = [x for x in dircmp.right_only if is_contain_one_of_substring(allowed_substring, x)]
+    dircmp.left_only = [x for x in dircmp.left_only if is_contain_one_of_substring(allowed_substring, x)]
 
     if (dircmp.diff_files != []):
         log.err(str(dircmp.diff_files) + " differ from etalon")
