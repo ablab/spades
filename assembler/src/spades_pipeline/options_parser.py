@@ -98,7 +98,7 @@ class AddToDatasetAction(argparse.Action):
             support.only_old_style_options = False
 
         # create dataset_data if don't exsist
-        if not "dataset_data" in namespace:
+        if (not "dataset_data" in namespace) or (namespace.dataset_data is None):
             dataset_data = init_dataset_data()
             setattr(namespace, "dataset_data", dataset_data)
 
@@ -761,6 +761,8 @@ def create_parser():
 
 
 def check_options_for_restart_from(log):
+    if ("dataset_data" in options_storage.args) and (options_storage.args.dataset_data is not None):
+        support.error("you cannot specify input data (-1, -2, -12, --pe-1, --pe-2 ...) with --restart-from option!", log)
     if options_storage.args.dataset_yaml_filename:
         support.error("you cannot specify --dataset with --restart-from option!", log)
     if options_storage.args.single_cell:
