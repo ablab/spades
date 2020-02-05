@@ -16,8 +16,8 @@ def do(report_dict, total_report_horizontal, total_report_vertical, min_contig=0
     table_ext = '.txt'
     tab_ext   = '.tsv'
 
-    print 'Summarizing...'
-    print '  Creating total report...'
+    print('Summarizing...')
+    print('  Creating total report...')
     total_report = total_report_horizontal + table_ext
     total_report_tab = total_report_horizontal + tab_ext
     tr_file = open(total_report, 'w')
@@ -58,9 +58,9 @@ def do(report_dict, total_report_horizontal, total_report_vertical, min_contig=0
 
     tr_file.close()
     tab_file.close()
-    print '    Saved to', total_report, 'and', total_report_tab
+    print('    Saved to', total_report, 'and', total_report_tab)
 
-    print '  Transposed version of total report...'   
+    print('  Transposed version of total report...')
     total_report = total_report_vertical + table_ext
     total_report_tab = total_report_vertical + tab_ext
     tr_file = open(total_report, 'w')
@@ -85,7 +85,7 @@ def do(report_dict, total_report_horizontal, total_report_vertical, min_contig=0
         value = report_dict['header'][i]
         tr_file.write( ' ' + str(value).ljust(col_widthes[header_id]) + ' ')
         tab_file.write(str(value) + '\t')
-        for id, contig_name in enumerate(sorted(report_dict.iterkeys())):
+        for id, contig_name in enumerate(sorted(report_dict.keys())):
             if contig_name == 'header':
                 continue
             value = report_dict[contig_name][i]
@@ -96,7 +96,7 @@ def do(report_dict, total_report_horizontal, total_report_vertical, min_contig=0
             
     tr_file.close()
     tab_file.close()
-    print '    Saved to', total_report, 'and', total_report_tab
+    print('    Saved to', total_report, 'and', total_report_tab)
 
     '''
     if all_pdf != None:
