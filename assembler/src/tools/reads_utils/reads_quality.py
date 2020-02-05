@@ -48,24 +48,23 @@ long_options = "output-dir= reference= thread-num= bin-size= kmer-size= max-is= 
 short_options = "o:r:t:b:k:x:sp"
 
 def usage():
-    print 'Estimation reads quality'
-    print 'Usage:', sys.argv[0], ' [options described below] <datasets YAML description-file(s)>'
-    print ""
-    print "Options:"
-    print "-p\t--paired-mode\tStarts ReadsQuality in PAIRED mode (former paired_reads_quality)"
-    print "-r\t--reference\tFile with reference genome (Mandatory parameter)"
-    print "-o\t--output-dir\tDirectory to store all result files"
-    print "-t\t--thread-num\tMax number of threads (default is " + str(thread_num) + ")"
-    print "-k\t--kmer-size\tK-mer size for which coverage is counted (default is " + str(kmer) + ")"
-    print "-b\t--bin-size\tSize of bins for counting coverage (default is " + str(bin_size) + ")"
-    print "-x\t--max-is\tMaximal inser size (default is none)"
-    print "-s\t--skip-trimming\tSkip N-trimming for speed-up"
+    print("Estimation reads quality")
+    print("Usage:", sys.argv[0], " [options described below] <datasets YAML description-file(s)>")
+    print("")
+    print("Options:")
+    print("-p\t--paired-mode\tStarts ReadsQuality in PAIRED mode (former paired_reads_quality)")
+    print("-r\t--reference\tFile with reference genome (Mandatory parameter)")
+    print("-o\t--output-dir\tDirectory to store all result files")
+    print("-t\t--thread-num\tMax number of threads (default is " + str(thread_num) + ")")
+    print("-k\t--kmer-size\tK-mer size for which coverage is counted (default is " + str(kmer) + ")")
+    print("-b\t--bin-size\tSize of bins for counting coverage (default is " + str(bin_size) + ")")
+    print("-x\t--max-is\tMaximal inser size (default is none)")
+    print("-s\t--skip-trimming\tSkip N-trimming for speed-up")
     
 try:
     options, datasets = getopt.gnu_getopt(sys.argv[1:], short_options, long_options)
 except getopt.GetoptError, err:
-    print str(err)
-    print ""
+    print(str(err) + "\n")
     usage()
     sys.exit(1)
 
@@ -100,12 +99,12 @@ for d in datasets:
     support.check_file_existence(d)    
 
 if not datasets:
-    print >> sys.stderr, "no datasets"
+    sys.stderr.wirte("no datasets provided")
     usage()
     sys.exit(1)   
 
 if not reference:
-    print >> sys.stderr, 'no reference'
+    sys.stderr.wirte("no refrence provided")
     usage()
     sys.exit(1)   
 
@@ -155,7 +154,7 @@ for dataset in datasets:
 
     dataset_data = support.correct_dataset(dataset_data)
     for id, library in enumerate(dataset_data):
-        print ("processing lib#" + str(id) + " of " + dataset)
+        print("processing lib#" + str(id) + " of " + dataset)
         basename = os.path.splitext(os.path.basename(dataset))[0]
         cur_key = basename
         i = 1

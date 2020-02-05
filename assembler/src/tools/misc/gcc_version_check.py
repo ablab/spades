@@ -11,7 +11,7 @@
 import sys
 import os
 import time
-import commands
+import subprocess 
 
 gccversion = '4.9.3' if len(sys.argv) < 2 else sys.argv[1] 
 
@@ -19,7 +19,7 @@ cmd_list_to_check = ['gcc', 'g++', 'cc']
 excode = 0
 
 for cmd in cmd_list_to_check:
-    status, output = commands.getstatusoutput(cmd + " -v")
+    status, output = subprocess.getstatusoutput(cmd + " -v")
     version = output.split('\n')[-1].split()[2]
 
     if version != gccversion:
