@@ -52,7 +52,7 @@ def CountContigQuality(contigs, qual):
         for pos in range(len(contigs[i])):
             q = qual[i][pos]
             if q[1] != 0:
-                qual_list[pos] = chr(q[0] / q[1])
+                qual_list[pos] = chr(int(round(q[0] / q[1])))
             else:
                 cnt += 1
         contigs[i].qual = "".join(qual_list)
