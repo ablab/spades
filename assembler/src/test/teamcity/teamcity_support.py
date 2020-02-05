@@ -16,6 +16,7 @@ import re
 import datetime
 import argparse
 import subprocess
+import functools
 from traceback import print_exc
 
 sys.path.append('./src/spades_pipeline/')
@@ -215,7 +216,7 @@ def run_reads_assessment(dataset_info, working_dir, output_dir):
 
 # Run QUAST for a set of contigs
 def run_quast(dataset_info, contigs, quast_output_dir, opts):
-    if not reduce(lambda x, y: os.path.exists(y) and x, contigs, True):
+    if not functools.reduce(lambda x, y: os.path.exists(y) and x, contigs, True):
         log.err("No contigs were found")
         return 8
 
