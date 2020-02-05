@@ -15,6 +15,7 @@ import re
 import getopt
 import datetime
 import subprocess
+import functools
 
 ###################################################################
 
@@ -63,7 +64,7 @@ def usage():
     
 try:
     options, datasets = getopt.gnu_getopt(sys.argv[1:], short_options, long_options)
-except getopt.GetoptError, err:
+except getopt.GetoptError as err:
     print(str(err) + "\n")
     usage()
     sys.exit(1)
@@ -147,8 +148,8 @@ print("Analyzing datasets")
 for dataset in datasets:
 
     try:
-        dataset_data = pyyaml.load(file(dataset, 'r'))
-    except pyyaml.YAMLError, exc:
+        dataset_data = pyyaml.load(open(dataset, 'r'))
+    except pyyaml.YAMLError as exc:
         support.warning('skipping ' + dataset + ': exception caught while parsing YAML file (' + options_storage.dataset_yaml_filename + '):\n' + str(exc))
         continue
 
@@ -158,7 +159,7 @@ for dataset in datasets:
         basename = os.path.splitext(os.path.basename(dataset))[0]
         cur_key = basename
         i = 1
-        while datasets_dict.has_key(cur_key):
+        while cur_key in datasets_dict.keys():
             cur_key = basename + "_" + str(i)
 
         cur_reads = []
@@ -177,7 +178,7 @@ if len(datasets_dict.keys()) == 0:
 ###################################################################
 
 report_dict = {"header" : ["Dataset"]}
-for dataset in datasets_dict.iterkeys():
+for dataset in datasets_dict.keys():
     report_dict[dataset] = [dataset]
 
 tmp_folder = os.path.join(output_dir, tmp_folder)
@@ -193,7 +194,7 @@ print("  reference...")
 reference = ungzip_if_needed(reference, tmp_folder)
 
 # TODO fastA analysis (we should convert all in fasta if there is at least one file in fasta)
-for dataset in datasets_dict.iterkeys():
+for dataset in datasets_dict.keys():
     print("  " + dataset + "...")
     ungzipped_reads = []
     for read in datasets_dict[dataset]:    
@@ -223,11 +224,11 @@ print("Aligning")
 report_dict["header"] += ["Unaligned reads", "Uniquely aligned reads", "Non-niquely aligned reads"]
 total_reads = {}
 
-for dataset in datasets_dict.iterkeys():
+for dataset in datasets_dict.keys():
     print("  " + dataset + "...")
     align_log = open(os.path.join(output_dir, dataset + ".log"),'w')
     align_err = open(os.path.join(output_dir, dataset + ".err"),'w') 
-    reads_string = reduce(lambda x, y: x + (',' + y if os.path.getsize(y) > 0 else ""), datasets_dict[dataset], "")
+    reads_string = functools.reduce(lambda x, y: x + (',' + y if os.path.getsize(y) > 0 else ""), datasets_dict[dataset], "")
 
     if (len(reads_string) > 0):
         if paired_mode:
@@ -258,7 +259,7 @@ for dataset in datasets_dict.iterkeys():
 # raw-single    
 print("Parsing Bowtie log")
 import raw_single
-for dataset in datasets_dict.iterkeys():
+for dataset in datasets_dict.keys():
     print("  " + dataset + "...")
     align_log = os.path.join(output_dir, dataset + ".log")
     raw_file  = os.path.join(output_dir, dataset + ".raw")
@@ -275,7 +276,7 @@ print("Analyzing coverage")
 report_dict["header"] += ["Genome mapped (%)"]
 gaps_dict = {}  # TODO: use it somewhere!
 import coverage
-for dataset in datasets_dict.iterkeys():
+for dataset in datasets_dict.keys():
     print("  " + dataset + "...")
     raw_file  = os.path.join(output_dir, dataset + ".raw")
     cov_file  = os.path.join(output_dir, dataset + ".cov")
@@ -292,7 +293,7 @@ if paired_mode:
     print("Retaining insert size")
     report_dict["header"] += ["Read length", "FR read pairs", "Insert size (deviation)", "RF read pairs", "Insert size (deviation)", "FF read pairs", "Insert size (deviation)", "One uniquely aligned read in pair", "Both reads unaligned", "Both aligned to same position", "Suppressed due to insert size limit"]
     import is_from_single_log
-    for dataset in datasets_dict.iterkeys():
+    for dataset in datasets_dict.keys():
         print("  " + dataset + "...")
         align_log = os.path.join(output_dir, dataset + ".log")
         stat = is_from_single_log.stat_from_log(align_log, max_is)

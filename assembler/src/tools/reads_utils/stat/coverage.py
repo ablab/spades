@@ -11,6 +11,7 @@
 #Calculate coverage from raw file
 
 import sys
+import math 
 
 def coverage(in_filename, out_filename, maxLen, bar, kmer):
     
@@ -20,28 +21,28 @@ def coverage(in_filename, out_filename, maxLen, bar, kmer):
     hist = [0] * (maxLen + 1)
 
     for line in inFile:
-	    coords = line.split()
-	    stpos = int(coords[0])
-	    rlen =  int(coords[1])
-	    for i in range(0, rlen - kmer + 1):
-		    cpos = stpos + i
-		    if cpos <= maxLen:
-			    hist[cpos] += 1
+        coords = line.split()
+        stpos = int(coords[0])
+        rlen =  int(coords[1])
+        for i in range(0, rlen - kmer + 1):
+            cpos = stpos + i
+            if cpos <= maxLen:
+                hist[cpos] += 1
 
     covered = 0.0
     for i in range(0, maxLen + 1):
-	    if (hist[i] > 0):
-		    covered += 1.0
+        if (hist[i] > 0):
+            covered += 1.0
 
     # print("Coverage: " + str(covered/maxLen) + "\n")
 
-    newHist = [0 for i in range((maxLen + 1) / bar + 2)]
+    newHist = [0 for i in range(int(math.floor((maxLen + 1) / bar)) + 2)]
 
     for i in range(maxLen + 1):
-	    newHist[int(i/bar)] += hist[i]
+        newHist[int(i/bar)] += hist[i]
 
-    for i in range((maxLen + 1) / bar + 1):
-	    outFile.write(str(i) + ' ' + str(newHist[i] / bar) + '\n')
+    for i in range(int(math.floor((maxLen + 1) / bar)) + 1):
+        outFile.write(str(i) + ' ' + str(int(round(newHist[i] / bar))) + '\n')
 
     inFile.close()
     outFile.close()
@@ -55,9 +56,9 @@ def read_genome(filename):
     seq = ''
     for line in open(filename):
             if line[0] == '>':
-    	    	    pass
+                    pass
             else:
-    	    	    seq += line.strip()
+                    seq += line.strip()
 
     return seq
 
@@ -89,8 +90,7 @@ def analyze_gaps(in_filename, out_filename, reference, out_ref, kmer):
 
     line = inFile.readline()
     while line:
-	    cov = int(line.split()[1])
-
+            cov = int(line.split()[1])
             end = current
             while cov == 0 and line:
                    end += 1 
@@ -150,12 +150,12 @@ def analyze_gaps(in_filename, out_filename, reference, out_ref, kmer):
 def main():
 
     if len(sys.argv) < 5:
-	    print("Usage: <coverage file> <output> <genome length> <bar width> [k = 1]");
-	    exit(0)
+        print("Usage: <coverage file> <output> <genome length> <bar width> [k = 1]");
+        exit(0)
 
     kmer = 1
     if len(sys.argv) > 5:
-	kmer = int(sys.argv[5])
+        kmer = int(sys.argv[5])
 
     cov = coverage(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), kmer)
 
