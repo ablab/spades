@@ -49,7 +49,7 @@ void process_cmdline(int argc, char **argv, read_filter::Args &args) {
     auto cli = (
         (option("-k", "--kmer") & integer("value", args.k)) % "K-mer length",
         (option("-c", "--cov") & integer("value", args.thr)) % "Median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EQUAL to this value will be ignored)",
-        (required("-d", "--dataset") & value("dir", args.dataset_desc)) % "Dataset description (in YAML)",
+        (required("-d", "--dataset") & value("yaml", args.dataset_desc)) % "Dataset description (in YAML)",
         (option("-t", "--threads") & integer("value", args.nthreads)) % "# of threads to use",
         (option("-o", "--outdir") & value("dir", args.workdir)) %  "Output directory to use",
         (option("-h", "--help").set(print_help)) % "Show help"
