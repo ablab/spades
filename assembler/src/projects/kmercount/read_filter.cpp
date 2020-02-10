@@ -19,6 +19,8 @@
 #include "utils/segfault_handler.hpp"
 #include "utils/kmer_counting.hpp"
 
+#include "threadpool/threadpool.hpp"
+
 #include <clipp/clipp.h>
 #include <sys/types.h>
 #include <string>
@@ -137,8 +139,14 @@ int main(int argc, char* argv[]) {
         fs::make_dirs(args.workdir + "/tmp/");
         debruijn_graph::config::init_libs(dataset, args.nthreads, args.workdir + "/tmp/");
 
+        std::unique_ptr<ThreadPool::ThreadPool> pool;
+
+        if (args.nthreads > 1) {
+            pool = std::make_unique<ThreadPool::ThreadPool>(args.nthreads);
+        }
+
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
-            io::ReadConverter::ConvertToBinary(dataset[i]);
+            io::ReadConverter::ConvertToBinary(dataset[i], pool.get());
         }
 
         std::vector<size_t> libs(dataset.lib_count());
