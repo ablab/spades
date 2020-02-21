@@ -217,4 +217,4 @@ public:
     }
 };
 
-}
+} // namespace debruijn_graph

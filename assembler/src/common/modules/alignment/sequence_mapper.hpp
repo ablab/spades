@@ -409,4 +409,4 @@ std::shared_ptr<BasicSequenceMapper<typename gp_t::graph_t, typename gp_t::index
   return std::make_shared<BasicSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t>>(gp.g, gp.index, gp.kmer_mapper);
 }
 
-}
+} // namespace debruijn_graph

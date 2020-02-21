@@ -15,6 +15,10 @@ namespace debruijn_graph {
 
 using EdgeIndex = KmerFreeEdgeIndex<ConjugateDeBruijnGraph>;
 
+EdgeIndexRefiller::EdgeIndexRefiller(const std::string &workdir)
+    : workdir_(workdir)
+{}
+
 template<>
 void EdgeIndexRefiller::Refill(EdgeIndex &index,
                                const ConjugateDeBruijnGraph &g) {

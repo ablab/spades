@@ -12,12 +12,12 @@
 #include <tsl/htrie_map.h>
 #include <boost/iterator/iterator_facade.hpp>
 
+#include <cstdlib>
+
 namespace debruijn_graph {
 class KMerMap {
     struct str_hash {
-        std::size_t operator()(const char* key, std::size_t key_size) const {
-            return CityHash64(key, key_size);
-        }
+        std::size_t operator()(const char* key, std::size_t key_size) const;
     };
 
     typedef RtSeq Kmer;
@@ -30,26 +30,16 @@ class KMerMap {
                                                    std::forward_iterator_tag,
                                                    const std::pair<Kmer, Seq>> {
       public:
-        iterator(unsigned k, HTMap::const_iterator iter)
-                : k_(k), iter_(iter) {}
+        iterator(unsigned k, HTMap::const_iterator iter);
 
       private:
         friend class boost::iterator_core_access;
 
-        void increment() {
-            ++iter_;
-        }
+        void increment();
 
-        bool equal(const iterator &other) const {
-            return iter_ == other.iter_;
-        }
+        bool equal(const iterator &other) const;
 
-        const std::pair<Kmer, Seq> dereference() const {
-            iter_.key(key_out_);
-            Kmer k(k_, (const RawSeqData*)key_out_.data());
-            Seq s(k_, (const RawSeqData*)iter_.value());
-            return std::make_pair(k, s);
-        }
+        const std::pair<Kmer, Seq> dereference() const;
 
         unsigned k_;
         HTMap::const_iterator iter_;
@@ -57,79 +47,27 @@ class KMerMap {
     };
 
   public:
-    KMerMap(unsigned k)
-            : k_(k) {
-        rawcnt_ = (unsigned)Seq::GetDataSize(k_);
-    }
+    KMerMap(unsigned k);
 
-    ~KMerMap() {
-        clear();
-    }
+    ~KMerMap();
 
-    void erase(const Kmer &key) {
-        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
-        if (res == mapping_.end())
-            return;
+    void erase(const Kmer &key);
 
-        delete[] res.value();
-        mapping_.erase(res);
-    }
+    void set(const Kmer &key, const Seq &value);
 
-    void set(const Kmer &key, const Seq &value) {
-        RawSeqData *rawvalue = nullptr;
-        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
-        if (res == mapping_.end()) {
-            rawvalue = new RawSeqData[rawcnt_];
-            mapping_.insert_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData), rawvalue);
-        } else {
-            rawvalue = res.value();
-        }
-        memcpy(rawvalue, value.data(), rawcnt_ * sizeof(RawSeqData));
-    }
+    bool count(const Kmer &key) const;
 
-    bool count(const Kmer &key) const {
-        return mapping_.count_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
-    }
+    const RawSeqData* find(const Kmer &key) const;
 
-    const RawSeqData *find(const Kmer &key) const {
-        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
-        if (res == mapping_.end())
-            return nullptr;
+    const RawSeqData* find(const RawSeqData *key) const;
 
-        return res.value();
-    }
+    void clear();
 
-    const RawSeqData *find(const RawSeqData *key) const {
-        auto res = mapping_.find_ks((const char*)key, rawcnt_ * sizeof(RawSeqData));
-        if (res == mapping_.end())
-            return nullptr;
+    size_t size() const;
 
-        return res.value();
-    }
+    iterator begin() const;
 
-    void clear() {
-        // Delete all the values
-        for (auto it = mapping_.begin(); it != mapping_.end(); ++it) {
-            VERIFY(it.value() != nullptr);
-            delete[] it.value();
-            it.value() = nullptr;
-        }
-
-        // Delete the mapping and all the keys
-        mapping_.clear();
-    }
-
-    size_t size() const {
-        return mapping_.size();
-    }
-
-    iterator begin() const {
-        return iterator(k_, mapping_.begin());
-    }
-
-    iterator end() const {
-        return iterator(k_, mapping_.end());
-    }
+    iterator end() const;
 
   private:
     unsigned k_;
@@ -137,6 +75,6 @@ class KMerMap {
     HTMap mapping_;
 };
 
-}
+} // namespace debruijn_graph
 
 #endif // __KMER_MAP_HPP__

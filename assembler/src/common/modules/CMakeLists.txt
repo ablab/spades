@@ -12,6 +12,9 @@ add_library(modules STATIC
             genome_consistance_checker.cpp
             alignment/gap_info.cpp
             alignment/bwa_index.cpp
+            alignment/kmer_map.cpp
+            alignment/long_read_mapper.cpp
+            alignment/sequence_mapper_notifier.cpp
             alignment/pacbio/gap_filler.cpp
             alignment/pacbio/gap_dijkstra.cpp 
             alignment/pacbio/g_aligner.cpp 
