@@ -1,4 +1,14 @@
+//***************************************************************************
+//* Copyright (c) 2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "sequence_mapper_notifier.hpp"
+
+#include "sequence_mapper.hpp"
+#include "io/reads/paired_read.hpp"
+#include "io/reads/read_stream_vector.hpp"
 
 namespace debruijn_graph {
 

@@ -1,6 +1,12 @@
-#include <common/utils/logger/logger.hpp>
+//***************************************************************************
+//* Copyright (c) 2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #include "long_read_mapper.hpp"
+
+#include <common/utils/logger/logger.hpp>
 
 namespace debruijn_graph {
 

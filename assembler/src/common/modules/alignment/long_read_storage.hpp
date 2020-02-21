@@ -8,6 +8,9 @@
 #pragma once
 
 #include "io/binary/binary.hpp"
+
+#include <common/utils/logger/logger.hpp>
+
 #include <string>
 #include <vector>
 #include <map>

@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "kmer_map.hpp"
 
 namespace debruijn_graph {
@@ -10,21 +16,6 @@ KMerMap::iterator::iterator(unsigned k, HTMap::const_iterator iter)
     : k_(k)
     , iter_(iter)
 {}
-
-void KMerMap::iterator::increment() {
-    ++iter_;
-}
-
-bool KMerMap::iterator::equal(const iterator &other) const {
-    return iter_ == other.iter_;
-}
-
-auto KMerMap::iterator::dereference() const -> const std::pair<Kmer, Seq> {
-    iter_.key(key_out_);
-    Kmer k(k_, (const RawSeqData*)key_out_.data());
-    Seq s(k_, (const RawSeqData*)iter_.value());
-    return std::make_pair(k, s);
-}
 
 KMerMap::KMerMap(unsigned k)
     : k_(k)

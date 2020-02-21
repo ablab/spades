@@ -12,8 +12,6 @@
 #include <tsl/htrie_map.h>
 #include <boost/iterator/iterator_facade.hpp>
 
-#include <cstdlib>
-
 namespace debruijn_graph {
 class KMerMap {
     struct str_hash {
@@ -35,11 +33,20 @@ class KMerMap {
       private:
         friend class boost::iterator_core_access;
 
-        void increment();
+        void increment() {
+          ++iter_;
+        }
 
-        bool equal(const iterator &other) const;
+        bool equal(const iterator &other) const {
+            return iter_ == other.iter_;
+        }
 
-        const std::pair<Kmer, Seq> dereference() const;
+        const std::pair<Kmer, Seq> dereference() const {
+            iter_.key(key_out_);
+            Kmer k(k_, (const RawSeqData*)key_out_.data());
+            Seq s(k_, (const RawSeqData*)iter_.value());
+            return std::make_pair(k, s);
+        }
 
         unsigned k_;
         HTMap::const_iterator iter_;
