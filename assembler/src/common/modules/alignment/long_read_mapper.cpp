@@ -6,8 +6,6 @@
 
 #include "long_read_mapper.hpp"
 
-#include <common/utils/logger/logger.hpp>
-
 namespace debruijn_graph {
 
 LongReadMapper::LongReadMapper(const Graph& g,
@@ -46,10 +44,6 @@ void LongReadMapper::ProcessSingleRead(size_t thread_index,
                                        const MappingPath<EdgeId>& read)
 {
     ProcessSingleRead(thread_index, read);
-}
-
-const Graph& LongReadMapper::g() const {
-    return g_;
 }
 
 void LongReadMapper::ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& mapping) {

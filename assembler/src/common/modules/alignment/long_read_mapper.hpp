@@ -37,7 +37,9 @@ public:
                            const io::SingleReadSeq&,
                            const MappingPath<EdgeId>& read) override;
 
-    const Graph& g() const;
+    const Graph& g() const {
+        return g_;
+    }
 
 private:
     void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& mapping);

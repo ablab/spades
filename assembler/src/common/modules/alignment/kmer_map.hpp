@@ -15,7 +15,9 @@
 namespace debruijn_graph {
 class KMerMap {
     struct str_hash {
-        std::size_t operator()(const char* key, std::size_t key_size) const;
+        std::size_t operator()(const char* key, std::size_t key_size) const {
+            return CityHash64(key, key_size);
+        }
     };
 
     typedef RtSeq Kmer;
@@ -28,13 +30,14 @@ class KMerMap {
                                                    std::forward_iterator_tag,
                                                    const std::pair<Kmer, Seq>> {
       public:
-        iterator(unsigned k, HTMap::const_iterator iter);
+        iterator(unsigned k, HTMap::const_iterator iter)
+                : k_(k), iter_(iter) {}
 
       private:
         friend class boost::iterator_core_access;
 
         void increment() {
-          ++iter_;
+            ++iter_;
         }
 
         bool equal(const iterator &other) const {
@@ -54,27 +57,79 @@ class KMerMap {
     };
 
   public:
-    KMerMap(unsigned k);
+    KMerMap(unsigned k)
+            : k_(k) {
+        rawcnt_ = (unsigned)Seq::GetDataSize(k_);
+    }
 
-    ~KMerMap();
+    ~KMerMap() {
+        clear();
+    }
 
-    void erase(const Kmer &key);
+    void erase(const Kmer &key) {
+        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
+        if (res == mapping_.end())
+            return;
 
-    void set(const Kmer &key, const Seq &value);
+        delete[] res.value();
+        mapping_.erase(res);
+    }
 
-    bool count(const Kmer &key) const;
+    void set(const Kmer &key, const Seq &value) {
+        RawSeqData *rawvalue = nullptr;
+        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
+        if (res == mapping_.end()) {
+            rawvalue = new RawSeqData[rawcnt_];
+            mapping_.insert_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData), rawvalue);
+        } else {
+            rawvalue = res.value();
+        }
+        memcpy(rawvalue, value.data(), rawcnt_ * sizeof(RawSeqData));
+    }
 
-    const RawSeqData* find(const Kmer &key) const;
+    bool count(const Kmer &key) const {
+        return mapping_.count_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
+    }
 
-    const RawSeqData* find(const RawSeqData *key) const;
+    const RawSeqData *find(const Kmer &key) const {
+        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
+        if (res == mapping_.end())
+            return nullptr;
 
-    void clear();
+        return res.value();
+    }
 
-    size_t size() const;
+    const RawSeqData *find(const RawSeqData *key) const {
+        auto res = mapping_.find_ks((const char*)key, rawcnt_ * sizeof(RawSeqData));
+        if (res == mapping_.end())
+            return nullptr;
 
-    iterator begin() const;
+        return res.value();
+    }
 
-    iterator end() const;
+    void clear() {
+        // Delete all the values
+        for (auto it = mapping_.begin(); it != mapping_.end(); ++it) {
+            VERIFY(it.value() != nullptr);
+            delete[] it.value();
+            it.value() = nullptr;
+        }
+
+        // Delete the mapping and all the keys
+        mapping_.clear();
+    }
+
+    size_t size() const {
+        return mapping_.size();
+    }
+
+    iterator begin() const {
+        return iterator(k_, mapping_.begin());
+    }
+
+    iterator end() const {
+        return iterator(k_, mapping_.end());
+    }
 
   private:
     unsigned k_;
@@ -82,6 +137,6 @@ class KMerMap {
     HTMap mapping_;
 };
 
-} // namespace debruijn_graph
+}
 
 #endif // __KMER_MAP_HPP__
