@@ -197,7 +197,7 @@
  * Assembled contigs are in spades_test/contigs.fasta
  * Assembled scaffolds are in spades_test/scaffolds.fasta
  * Assembly graph is in spades_test/assembly_graph.fastg
- * Assembly graph in GFA format is in spades_test/assembly_graph.gfa
+ * Assembly graph in GFA format is in spades_test/assembly_graph_with_scaffolds.gfa
  * Paths in the assembly graph corresponding to the contigs are in spades_test/contigs.paths
  * Paths in the assembly graph corresponding to the scaffolds are in spades_test/scaffolds.paths
 
@@ -595,7 +595,7 @@ Notes:</p>
 <li><code>&lt;output_dir&gt;/corrected/</code> directory contains reads corrected by BayesHammer in <code>*.fastq.gz</code> files; if compression is disabled, reads are stored in uncompressed <code>*.fastq</code> files</li>
 <li><code>&lt;output_dir&gt;/scaffolds.fasta</code> contains resulting scaffolds (recommended for use as resulting sequences)</li>
 <li><code>&lt;output_dir&gt;/contigs.fasta</code> contains resulting contigs</li>
-<li><code>&lt;output_dir&gt;/assembly_graph.gfa</code> contains SPAdes assembly graph and scaffolds paths in <a href="https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md">GFA 1.0 format</a></li>
+<li><code>&lt;output_dir&gt;/assembly_graph_with_scaffolds.gfa</code> contains SPAdes assembly graph and scaffolds paths in <a href="https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md">GFA 1.0 format</a></li>
 <li><code>&lt;output_dir&gt;/assembly_graph.fastg</code> contains SPAdes assembly graph in <a href="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf" rel="nofollow">FASTG format</a></li>
 <li><code>&lt;output_dir&gt;/contigs.paths</code> contains paths in the assembly graph corresponding to contigs.fasta (see details below)</li>
 <li><code>&lt;output_dir&gt;/scaffolds.paths</code> contains paths in the assembly graph corresponding to scaffolds.fasta (see details below)</li>
