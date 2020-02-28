@@ -21,6 +21,7 @@ enum class LibraryType {
     PairedEnd,
     HQMatePairs,
     MatePairs,
+    // TrustedContigs,
     TSLReads,
     PathExtendContigs,
     UntrustedContigs,

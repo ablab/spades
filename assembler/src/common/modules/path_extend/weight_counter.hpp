@@ -52,10 +52,13 @@ struct EdgeWithPairedInfo {
 struct EdgeWithDistance {
     EdgeId e_;
     int d_;
+    std::string gap_sequence_;
 
-    EdgeWithDistance(EdgeId e, size_t d) :
-            e_(e), d_((int) d) {
-    }
+    EdgeWithDistance(EdgeId e, size_t d, std::string && gep_sequence = "")
+        : e_(e)
+        , d_((int) d)
+        , gap_sequence_(std::move(gep_sequence)) 
+    {}
 
     struct DistanceComparator {
         bool operator()(const EdgeWithDistance& e1, const EdgeWithDistance& e2) {
@@ -64,6 +67,12 @@ struct EdgeWithDistance {
             return e1.d_ > e2.d_;
         }
     };
+
+    friend bool operator < (const EdgeWithDistance& e1, const EdgeWithDistance& e2) {
+        if (e1.e_ != e2.e_)
+            return e1.e_ < e2.e_;
+        return e1.d_ < e2.d_;
+    }
 
     //static DistanceComparator comparator;
 };

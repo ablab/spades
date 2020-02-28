@@ -165,7 +165,8 @@ void CloseGaps(conj_graph_pack& gp, bool rtype,
 
     INFO("Closing gaps with long reads finished");
 }
-}
+
+} // namespace gap_closing
 
 bool IsNontrivialAlignment(const std::vector<std::vector<EdgeId>>& aligned_edges) {
     for (size_t j = 0; j < aligned_edges.size(); j++)
@@ -346,7 +347,7 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
 
                 SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
                 //FIXME pretty awful, would be much better if listeners were shared ptrs
-                LongReadMapper read_mapper(gp.g, gp.single_long_reads[lib_id],
+                LongReadMapper read_mapper(gp.g, gp.single_long_reads[lib_id], reads.type(),
                                            ChooseProperReadPathExtractor(gp.g, reads.type()));
 
                 notifier.Subscribe(lib_id, &mapping_listener);
@@ -389,4 +390,4 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
     printer(config::info_printer_pos::final_gap_closed);
 }
 
-}
+} // namespace debruijn_graph

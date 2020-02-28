@@ -15,6 +15,7 @@
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
 
+#include <unordered_set>
 
 namespace path_extend {
 
@@ -338,7 +339,7 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
     gp_.single_long_reads[lib_index].SaveAllPaths(paths);
     for (const auto &path: paths) {
         const auto &edges = path.path();
-        if (edges.size() <= size_threshold)
+        if (edges.size() <= size_threshold)//&& dataset_info_.reads[lib_index].type() != io::LibraryType::TrustedContigs)
             continue;
         BidirectionalPath *new_path = new BidirectionalPath(gp_.g, edges);
         BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
@@ -533,6 +534,25 @@ void PathExtendLauncher::SelectStrandSpecificPaths(PathContainer &paths) const {
     }
 }
 
+void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const & graph) {
+    std::unordered_set<uint64_t> ids;
+    std::ofstream out("conjugate_edge_pairs_dump.info");
+    if (!out.is_open()) {
+        ERROR("Cannot open conjugate_edge_pairs_dump.info for writing");
+        return;
+    }
+
+    for (auto it = graph.e_begin(); it != graph.e_end(); ++it) {
+        auto conjID = graph.conjugate(EdgeId(*it)).id_;
+        if (!ids.count(*it) && !ids.count(conjID)) {
+            assert(*it == graph.conjugate(graph.conjugate(EdgeId(*it))).id_);
+            ids.insert(*it);
+            ids.insert(conjID);
+            out << *it << ' ' << graph.conjugate(EdgeId(*it)) << '\n';
+        }
+    }
+
+}
 
 void PathExtendLauncher::Launch() {
     INFO("ExSPAnder repeat resolving tool started");
@@ -557,8 +577,13 @@ void PathExtendLauncher::Launch() {
     PathExtendResolver resolver(gp_.g);
 
     auto seeds = resolver.MakeSimpleSeeds();
+    // std::cout << "~+~+~+~++~+~" << seeds.size() << '\n';
+
     seeds.SortByLength();
     DebugOutputPaths(seeds, "init_paths");
+
+
+    // MakeConjugateEdgePairsDump(gp_.g);
 
     GraphCoverageMap cover_map(gp_.g);
     UsedUniqueStorage used_unique_storage(unique_data_.main_unique_storage_, gp_.g);
@@ -568,7 +593,9 @@ void PathExtendLauncher::Launch() {
                                          extenders);
 
     auto paths = resolver.ExtendSeeds(seeds, composite_extender);
+    std::cout << "Strat printing ==========================================================\n";
     DebugOutputPaths(paths, "raw_paths");
+    std::cout << "End printing   ==========================================================\n";
 
     RemoveOverlapsAndArtifacts(paths, cover_map, resolver);
     DebugOutputPaths(paths, "before_path_polishing");

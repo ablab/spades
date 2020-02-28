@@ -155,4 +155,9 @@ inline char dignucl(char c) {
     }
 }
 
+inline void nucl_str_complement(char * __restrict__ seq, size_t size) {
+    for (; size > 0; ++seq, --size)
+        *seq = nucl_complement(*seq); 
+}
+
 #endif /* NUCL_HPP_ */

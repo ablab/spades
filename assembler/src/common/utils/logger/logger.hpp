@@ -145,6 +145,7 @@ inline const char* __scope_source_name() {
 # define TRACE(message)                      /* No trace */
 #endif
 #define INFO(message)                       LOG_MSG(logging::L_INFO , message)
+// #define DEBUG(message) INFO(message)
 #define START_BANNER(description)                                       \
     do {                                                                \
         INFO("Starting " description ", built from "                    \

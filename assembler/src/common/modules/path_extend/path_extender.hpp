@@ -888,7 +888,9 @@ private:
     }
     
     void GrowAllPaths(PathContainer& paths, PathContainer& result) {
+        // std::cout << "!!!!!!!!!!!!!!!!!!!!" << paths.size() << "!!!!!!!!!!!!!!!!!!!!!!\n";
         for (size_t i = 0; i < paths.size(); ++i) {
+            // std::cout << "<0====================================================================>\n";
             VERBOSE_POWER_T2(i, 100, "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
                 INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
@@ -912,7 +914,7 @@ private:
                     continue;
                 }
             }
-
+            // std::cout << "<1====================================================================>\n";
             if (!cover_map_.IsCovered(*paths.Get(i))) {
                 AddPath(result, *paths.Get(i), cover_map_);
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
@@ -930,7 +932,17 @@ private:
                 } while (count_trying < 10 && (path->Length() != current_path_len));
                 DEBUG("result path " << path->GetId());
                 path->PrintDEBUG();
+
+
+                std::cout << "i: " << i << "\n\tforward:\n";
+                for (auto const & x : *path)
+                    std::cout << x << ' '; 
+                std::cout << "\n\tback:\n";
+                for (auto const & x : path->Conjugate())
+                    std::cout << x << ' ';
+                std::cout << '\n';
             }
+            // std::cout << "<2====================================================================>\n";
         }
     }
 
@@ -1190,6 +1202,53 @@ protected:
         FindFollowingEdges(path, &candidates);
         DEBUG("found candidates");
         DEBUG(candidates.size())
+        
+        // auto conj = [th = this](auto id) {
+        //     return th->g_.conjugate(EdgeId(id)).id_;
+        // };
+
+        // auto good_edge = [&conj](auto id) {
+        //     // std::vector<int> good = {651334, 1794, 1788, 1782, 1776, 1926, 1792, 583141};
+        //     // // std::vector<int> good = {583141, 651333};
+        //     // for (auto x : good) {
+        //     //     if (x == id || id == conj(x))
+        //     //         return true;
+        //     // }
+        //     return false;
+        // };
+        // auto print1 = [&good_edge](auto v) {
+        //     for (auto const & x : v) {
+        //         std::cout << x.id_;
+        //         if (good_edge(x.id_))
+        //             std::cout << '!';
+        //         std::cout << ' ';
+        //     }
+        //     std::cout << std::endl;
+        // };
+        // auto print2 = [&good_edge](auto v) {
+        //     for (auto const & x : v) {
+        //         std::cout << x.e_.id_;
+        //         if (good_edge(x.e_.id_))
+        //             std::cout << '!';
+        //         std::cout << ' ';
+        //     }
+        //     std::cout << std::endl;
+        // };
+        // // std::cout << "~~~~~~\n";
+        // bool b = false;
+        // for (auto const & x : candidates)
+        //     b |= good_edge(x.e_.id_);
+        // b |= good_edge(path.Back().id_)|| good_edge(path.Front().id_);
+        // if (b) {
+        //     std::cout << "more filtering:\n";
+        //     std::cout << "path: ";
+        //     print1(path);
+        //     std::cout << "candidates: ";
+        //     print2(candidates);
+        // }
+
+
+
         if (candidates.size() == 1) {
             LoopDetector loop_detector(&path, cov_map_);
             if (!investigate_short_loops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
@@ -1200,6 +1259,11 @@ protected:
         DEBUG("more filtering");
         candidates = extensionChooser_->Filter(path, candidates);
         DEBUG("filtered candidates");
+        // if (b) {
+        //     std::cout << "chosen: ";
+        //     print2(candidates);
+        // }
+    //    std::cout << "\tfiltered candidates " << candidates.size() << '\n';
         DEBUG(candidates.size())
         return true;
     }
@@ -1219,7 +1283,7 @@ protected:
         EdgeId eid = candidates.back().e_;
 //In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
 //That allows us to avoid overlap removal hacks used earlier.
-        Gap gap(candidates.back().d_);
+        Gap gap(candidates.back().d_, true, std::move(candidates.back().gap_sequence_));
         return TryUseEdge(path, eid, gap);
     }
 

@@ -26,6 +26,7 @@ struct Gap {
             previous(previous_), current(current_) {
         }
     };
+    std::string gap_seq_;
     int gap;
     Trash trash;
 
@@ -40,14 +41,27 @@ struct Gap {
     }
 
     //gap is in k+1-mers and does not know about "trash" regions
-    explicit Gap(int gap_, Gap::Trash trash_, bool is_final_ = true)
-            : gap(gap_), trash(trash_), is_final(is_final_) { }
+    template <class T = std::string>
+    explicit Gap(int gap_, Gap::Trash trash_, bool is_final_ = true, T && gap_seq = "")
+        : gap_seq_(std::forward<T>(gap_seq))
+        , gap(gap_)
+        , trash(trash_)
+        , is_final(is_final_)
+     { }
 
-    explicit Gap(int gap_ = 0, bool is_final_ = true)
-            : gap(gap_), trash{0, 0}, is_final(is_final_) { }
+    template <class T = std::string>
+    explicit Gap(int gap_ = 0, bool is_final_ = true, T && gap_seq = "")
+        : gap_seq_(std::forward<T>(gap_seq))
+        , gap(gap_)
+        , trash{0, 0}
+        , is_final(is_final_)
+    { }
 
     Gap conjugate() const {
-        return Gap(gap, {trash.current, trash.previous}, is_final);
+        auto gap_seq_complement = gap_seq_;
+        std::reverse(gap_seq_complement.begin(), gap_seq_complement.end());
+        nucl_str_complement(const_cast<char*>(gap_seq_complement.data()), gap_seq_complement.size());
+        return Gap(gap, {trash.current, trash.previous}, is_final, std::move(gap_seq_complement));
     }
 
     bool operator==(const Gap &that) const {
@@ -201,7 +215,7 @@ public:
     }
 
     debruijn_graph::EdgeId At(size_t index) const {
-        return data_[index];
+        return data_.at(index);
     }
 
     int ShiftLength(size_t index) const {

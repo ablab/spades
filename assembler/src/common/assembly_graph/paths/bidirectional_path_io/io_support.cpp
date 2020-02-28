@@ -110,7 +110,12 @@ std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const Bidirectional
         int overlap_after_trim = gap.overlap_after_trim(k_);
         TRACE("Overlap after trim " << overlap_after_trim);
         if (overlap_after_trim < 0) {
-            answer += std::string(abs(overlap_after_trim), 'N');
+            if (gap.gap_seq_.empty()) {
+                answer += std::string(abs(overlap_after_trim), 'N');
+            } else {
+                VERIFY(gap.gap_seq_.size() == abs(overlap_after_trim));
+                answer += gap.gap_seq_;
+            }
             overlap_after_trim = 0;
         }
         TRACE("Corrected overlap after trim " << overlap_after_trim);
