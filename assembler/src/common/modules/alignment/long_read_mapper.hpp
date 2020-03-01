@@ -22,20 +22,13 @@ struct PathWithMappingInfo {
     using PathType = std::vector<EdgeId>;
     PathType Path_;
     Range MappingRangeOntoRead_;
-    uint64_t Id_ = -1;
 
     PathWithMappingInfo() = default;
     PathWithMappingInfo(std::vector<EdgeId> && path, Range && range = Range());
 };
 
-template<class ReadType>
-struct PathsWithMappingInfoStorage {
-    ReadType Read_;
-    std::vector<PathWithMappingInfo> Paths_;
-};
-
 extern std::mutex PathsWithMappingInfoStorageStorageLock;
-extern std::vector<PathsWithMappingInfoStorage<io::SingleRead>> PathsWithMappingInfoStorageStorage;
+extern std::vector<std::unique_ptr<path_extend::BidirectionalPath>> PathsWithMappingInfoStorageStorage;
 
 using PathExtractionF = std::function<std::vector<PathWithMappingInfo> (const MappingPath<EdgeId>&)>;
 
@@ -79,9 +72,16 @@ private:
         for (const auto& path : paths)
             buffer_storages_[thread_index].AddPath(path.Path_, 1, false);
 
-        if (lib_type_ == io::LibraryType::TrustedContigs) {
+        if (lib_type_ == io::LibraryType::TrustedContigs && !paths.empty()) {
+            auto path = std::make_unique<path_extend::BidirectionalPath>(g_, paths[0].Path_);
+            for (size_t i = 1; i < paths.size(); ++i) {
+                auto start_pos = paths[i-1].MappingRangeOntoRead_.end_pos;
+                auto end_pos = paths[i].MappingRangeOntoRead_.start_pos;
+                std::string gap_seq = r.GetSequenceString().substr(start_pos, end_pos-start_pos);
+                path->PushBack(paths[i].Path_, path_extend::Gap(end_pos - start_pos + g_.k(), std::move(gap_seq)));
+            }
             std::lock_guard<std::mutex> guard(PathsWithMappingInfoStorageStorageLock);
-            PathsWithMappingInfoStorageStorage.push_back({r, std::move(paths)});
+            PathsWithMappingInfoStorageStorage.push_back(std::move(path));
         }
         DEBUG("Single read processed");
     }
@@ -182,9 +182,9 @@ private:
                     out << "gap is closed!\n";
                 } else {
                     tmp_path.MappingRangeOntoRead_.end_pos = path[i-1].second.end_pos;
+                    out << "gap is not closed, length of path: " << tmp_path.MappingRangeOntoRead_.end_pos - tmp_path.MappingRangeOntoRead_.start_pos << '\n';
                     result.push_back(std::move(tmp_path));
                     tmp_path.MappingRangeOntoRead_.start_pos = path[i].second.start_pos;
-                    out << "gap is not closed\n";
                 }
             }
             VERIFY(tmp_path.Path_.empty() || bool(path[i-1].second.end_pos == path[i].second.start_pos));
@@ -192,6 +192,7 @@ private:
             out << std::setw(8) << path[i].first << ' ' << path[i].second << '\n';
         }
         tmp_path.MappingRangeOntoRead_.end_pos = path.back().second.end_pos;
+        out << "length of path: " << tmp_path.MappingRangeOntoRead_.end_pos - tmp_path.MappingRangeOntoRead_.start_pos << '\n';
         result.push_back(std::move(tmp_path));
 
         for (int i = 1; i < result.size(); ++i)

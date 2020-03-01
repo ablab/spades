@@ -335,17 +335,25 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
 
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
     INFO("filling path container");
-    std::vector<PathInfo<Graph>> paths;
-    gp_.single_long_reads[lib_index].SaveAllPaths(paths);
-    for (const auto &path: paths) {
-        const auto &edges = path.path();
-        if (edges.size() <= size_threshold)//&& dataset_info_.reads[lib_index].type() != io::LibraryType::TrustedContigs)
-            continue;
-        BidirectionalPath *new_path = new BidirectionalPath(gp_.g, edges);
-        BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
-        new_path->SetWeight((float) path.weight());
-        conj_path->SetWeight((float) path.weight());
-        unique_data_.long_reads_paths_[lib_index].AddPair(new_path, conj_path);
+    if (dataset_info_.reads[lib_index].type() == io::LibraryType::TrustedContigs) {
+        for (auto & path : PathsWithMappingInfoStorageStorage) {
+            auto conj_path = new BidirectionalPath(path->Conjugate());
+            unique_data_.long_reads_paths_[lib_index].AddPair(path.release(), conj_path);
+            DebugOutputPaths(unique_data_.long_reads_paths_[lib_index], "trusted_contigs");
+        }
+    } else {
+        std::vector<PathInfo<Graph>> paths;
+        gp_.single_long_reads[lib_index].SaveAllPaths(paths);
+        for (const auto &path: paths) {
+            const auto &edges = path.path();
+            if (edges.size() <= size_threshold)
+                continue;
+            BidirectionalPath *new_path = new BidirectionalPath(gp_.g, edges);
+            BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
+            new_path->SetWeight((float) path.weight());
+            conj_path->SetWeight((float) path.weight());
+            unique_data_.long_reads_paths_[lib_index].AddPair(new_path, conj_path);
+        }
     }
     DEBUG("Long reads paths " << unique_data_.long_reads_paths_[lib_index].size());
     unique_data_.long_reads_cov_map_[lib_index].AddPaths(unique_data_.long_reads_paths_[lib_index]);
@@ -583,7 +591,7 @@ void PathExtendLauncher::Launch() {
     DebugOutputPaths(seeds, "init_paths");
 
 
-    // MakeConjugateEdgePairsDump(gp_.g);
+    MakeConjugateEdgePairsDump(gp_.g);
 
     GraphCoverageMap cover_map(gp_.g);
     UsedUniqueStorage used_unique_storage(unique_data_.main_unique_storage_, gp_.g);

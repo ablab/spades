@@ -33,7 +33,8 @@ struct Gap {
 //True if gap is resolved not by ordinary procedure but by some sort of magic, and should not be changed.
     bool is_final;
 
-    static const int INVALID_GAP = std::numeric_limits<int>::min();
+    static constexpr int INVALID_GAP = std::numeric_limits<int>::min();
+    static constexpr bool IS_FINAL_DEFAULT = true;
 
     static const Gap& INVALID() {
         static Gap gap = Gap(INVALID_GAP);
@@ -42,7 +43,7 @@ struct Gap {
 
     //gap is in k+1-mers and does not know about "trash" regions
     template <class T = std::string>
-    explicit Gap(int gap_, Gap::Trash trash_, bool is_final_ = true, T && gap_seq = "")
+    explicit Gap(int gap_, Gap::Trash trash_, bool is_final_ = IS_FINAL_DEFAULT, T && gap_seq = "")
         : gap_seq_(std::forward<T>(gap_seq))
         , gap(gap_)
         , trash(trash_)
@@ -50,11 +51,19 @@ struct Gap {
      { }
 
     template <class T = std::string>
-    explicit Gap(int gap_ = 0, bool is_final_ = true, T && gap_seq = "")
+    explicit Gap(int gap_ = 0, bool is_final_ = IS_FINAL_DEFAULT, T && gap_seq = "")
         : gap_seq_(std::forward<T>(gap_seq))
         , gap(gap_)
         , trash{0, 0}
         , is_final(is_final_)
+    { }
+
+    template <class T = std::string>
+    explicit Gap(int gap_, T && gap_seq)
+        : gap_seq_(std::forward<T>(gap_seq))
+        , gap(gap_)
+        , trash{0, 0}
+        , is_final(IS_FINAL_DEFAULT)
     { }
 
     Gap conjugate() const {
@@ -262,6 +271,13 @@ public:
                 PushBack(path.At(i), path.GapAt(i));
             }
         }
+    }
+
+    void PushBack(const std::vector<EdgeId>& path, const Gap& gap = Gap()) {
+        VERIFY(!path.empty());
+        PushBack(path[0], gap);
+        for (size_t i = 1; i < path.size(); ++i)
+            PushBack(path[i]);
     }
 
     void PopBack() {

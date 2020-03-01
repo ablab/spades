@@ -28,23 +28,7 @@
 
 namespace debruijn_graph {
 
-struct PathWithMappingInfo { 
-    using PathType = std::vector<EdgeId>;
-    PathType Path_;
-    Range MappingRangeOntoRead_;
-    uint64_t Id_ = -1;
-
-    PathWithMappingInfo() = default;
-    PathWithMappingInfo(std::vector<EdgeId> && path, Range && range = Range());
-};
-
-template<class ReadType>
-struct PathsWithMappingInfoStorage {
-    ReadType Read_;
-    std::vector<PathWithMappingInfo> Paths_;
-};
-
-extern std::vector<PathsWithMappingInfoStorage<io::SingleRead>> PathsWithMappingInfoStorageStorage;
+extern std::vector<std::unique_ptr<path_extend::BidirectionalPath>> PathsWithMappingInfoStorageStorage;
 
 } // namespace debruijn_graph
 
@@ -1286,13 +1270,11 @@ public:
             return th.g_.conjugate(EdgeId(id)).id_;
         };
         auto good_edge = [&conj](auto id) {
-            // std::vector<int> good = {651334, 1794, 1788, 1782, 1776, 1926, 1792, 583141};
-            // std::vector<int> good = { 1793, 651333};
-            std::vector<int> good = { 651263, 2174, 1545, 2175};
-            for (auto x : good) {
-                if (x == id || id == conj(x))
-                    return true;
-            }
+            // std::vector<int> good = {1431, 1869, 1867, 976};
+            // for (auto x : good) {
+            //     if (x == id || id == conj(x))
+            //         return true;
+            // }
             return false;
         };
         auto print_if = [](bool cond, auto msg) {
@@ -1367,50 +1349,18 @@ public:
                 {
                     DEBUG("Checking unique path_back for " << (*it)->GetId());
 
-                    if (UniqueBackPath(**it, positions[i])) {
+                    // if (UniqueBackPath(**it, positions[i])) {
                         DEBUG("Success");
-
-                        EdgeWithDistance next = {(*it)->At(positions[i] + 1), 0};
-                        weights_cands[next] += (*it)->GetWeight();
+                        auto mp = (UniqueBackPath(**it, positions[i]) ? 3 : 1);
+                        auto gap = (*it)->GapAt(positions[i] + 1);
+                        EdgeWithDistance next = {(*it)->At(positions[i] + 1), gap.gap, std::move(gap.gap_seq_)};
+                        weights_cands[next] += (*it)->GetWeight()*mp;
                         filtered_cands.insert(next);
-                    }
-                }
-                if (positions[i]+1 == (*it)->Size() && EqualBegins(path, (int) path.Size() - 1, **it, positions[i], false)) {
-                    auto cov_path = FindThePath(**it);
-                    boost::optional<EdgeWithDistance> next;
-                    if (cov_path.is_initialized()) {
-                        auto const & cur_path_storage = debruijn_graph::PathsWithMappingInfoStorageStorage[cov_path->first];
-                        auto cur_pos = cov_path->second;
-                        if (cur_pos + 1 < cur_path_storage.Paths_.size()) {
-                            auto end_pos = cur_path_storage.Paths_[cur_pos + 1].MappingRangeOntoRead_.start_pos;
-                            auto start_pos = cur_path_storage.Paths_[cur_pos].MappingRangeOntoRead_.end_pos;
-                            std::string gap_seq = cur_path_storage.Read_.GetSequenceString().substr(start_pos, end_pos-start_pos);
-                            next.emplace(cur_path_storage.Paths_[cur_pos + 1].Path_[0], end_pos - start_pos + g_.k(), std::move(gap_seq));
-                        }
-                    } else {
-                        cov_path = FindThePath(*(*it)->GetConjPath());
-                        if (cov_path.is_initialized()) {
-                            auto const & cur_path_storage = debruijn_graph::PathsWithMappingInfoStorageStorage[cov_path->first];
-                            auto cur_pos = cov_path->second;
-                            if (cur_pos > 0) {
-                                auto end_pos = cur_path_storage.Paths_[cur_pos].MappingRangeOntoRead_.start_pos;
-                                auto start_pos = cur_path_storage.Paths_[cur_pos - 1].MappingRangeOntoRead_.end_pos;
-                                std::string gap_seq = cur_path_storage.Read_.GetSequenceString().substr(start_pos, end_pos-start_pos);
-                                std::cout << "---------------back seq!!\n";
-                                nucl_str_complement(const_cast<char*>(gap_seq.data()), gap_seq.size());
-                                next.emplace(g_.conjugate(cur_path_storage.Paths_[cur_pos - 1].Path_.back()), end_pos - start_pos + g_.k(), std::move(gap_seq));
-                            }
-                        }
-                    }
-                    if (next.is_initialized() && UniqueBackPath(**it, positions[i])) {
-                        weights_cands[*next] += (*it)->GetWeight();
-                        filtered_cands.insert(*next);
-                        std::cout << "----------------jumped!\n";
-                    }
+                    // }
                 }
             }
         }
-        DEBUG("Candidates");
+        DEBUG("Candidates:");
         for (auto iter = weights_cands.begin(); iter != weights_cands.end(); ++iter) {
             DEBUG("Candidate " << g_.int_id(iter->first.e_) << " weight " << iter->second);
         }
@@ -1453,6 +1403,7 @@ public:
 private:
 
     bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
+        return true;
         int int_pos = (int) pos;
         while (int_pos >= 0) {
             if (unique_edge_analyzer_.IsUnique(path.At(int_pos)) > 0 && g_.length(path.At(int_pos)) >= min_significant_overlap_)
@@ -1466,34 +1417,6 @@ private:
         std::vector<std::pair<EdgeWithDistance, double>> result(map.begin(), map.end());
         std::sort(result.begin(), result.end(), EdgeWithWeightCompareReverse<EdgeWithDistance>);
         return result;
-    }
-
-    boost::optional<std::pair<size_t, size_t>> FindThePath(BidirectionalPath const & path) const {
-        auto compare = [&path](debruijn_graph::PathWithMappingInfo & cur_path) {
-            if (path.Size() != cur_path.Path_.size())
-                return false;
-
-            if (cur_path.Id_ != -1) {
-                return cur_path.Id_ == path.GetId();
-            }
-
-            for (int i = 0; i < path.Size(); ++i) {
-                if (path[i] != cur_path.Path_[i])
-                    return false;
-            }
-
-            cur_path.Id_ = path.GetId();
-            return true;
-        };
-        auto & storage = debruijn_graph::PathsWithMappingInfoStorageStorage;
-        for (size_t i = 0; i < storage.size(); ++i) {
-            auto & cur_path = storage[i].Paths_;
-            for (size_t j = 0; j < cur_path.size(); ++j) {
-                if (compare(cur_path[j]))
-                    return {{i, j}};
-            }
-        }
-        return {};
     }
 
     double filtering_threshold_;

@@ -14,8 +14,7 @@ PathWithMappingInfo::PathWithMappingInfo(std::vector<EdgeId> && path, Range && r
 {}
 
 std::mutex PathsWithMappingInfoStorageStorageLock;
-std::vector<PathsWithMappingInfoStorage<io::SingleRead>> PathsWithMappingInfoStorageStorage;
-
+std::vector<std::unique_ptr<path_extend::BidirectionalPath>> PathsWithMappingInfoStorageStorage;
 
 } // namespace debruijn_graph
 
