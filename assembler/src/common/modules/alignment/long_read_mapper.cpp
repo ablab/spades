@@ -8,7 +8,7 @@
 
 namespace debruijn_graph {
 
-PathWithMappingInfo::PathWithMappingInfo(std::vector<EdgeId> && path, Range && range) 
+PathWithMappingInfo::PathWithMappingInfo(std::vector<EdgeId> && path, MappingRange && range) 
     : Path_(std::move(path))
     , MappingRangeOntoRead_(range)
 {}
