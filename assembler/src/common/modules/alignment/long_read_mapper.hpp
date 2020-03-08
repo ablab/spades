@@ -39,11 +39,21 @@ public:
                    io::LibraryType lib_type,
                    PathExtractionF path_extractor);
 
-    void StartProcessLibrary(size_t threads_count) override;
+    void StartProcessLibrary(size_t threads_count) override {
+        for (size_t i = 0; i < threads_count; ++i)
+            buffer_storages_.emplace_back(g_);
+    }
 
-    void StopProcessLibrary() override;
+    void StopProcessLibrary() override {
+        buffer_storages_.clear();
+    }
 
-    void MergeBuffer(size_t thread_index) override;
+    void MergeBuffer(size_t thread_index) override {
+        DEBUG("Merge buffer " << thread_index << " with size " << buffer_storages_[thread_index].size());
+        storage_.AddStorage(buffer_storages_[thread_index]);
+        buffer_storages_[thread_index].Clear();
+        DEBUG("Now size " << storage_.size());
+    }
 
     void ProcessSingleRead(size_t thread_index,
                            const io::SingleRead& r,
@@ -54,7 +64,10 @@ public:
 
     void ProcessSingleRead(size_t thread_index,
                            const io::SingleReadSeq&,
-                           const MappingPath<EdgeId>& read) override;
+                           const MappingPath<EdgeId>& read) override
+    {
+        ProcessSingleRead(thread_index, read);
+    }
 
     const Graph& g() const {
         return g_;
