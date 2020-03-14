@@ -71,8 +71,8 @@ BidirectionalPath PathPolisher::Polish(const BidirectionalPath &init_path) {
 }
 
 BidirectionalPath PathGapCloser::CloseGaps(const BidirectionalPath &path) const {
-    auto isBadGap = [&path, &g_ = g_] (size_t i) {
-        return g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i]) && !path.GapAt(i).is_final;
+    auto isBadGap = [&path, th = this] (size_t i) {
+        return th->g_.EdgeEnd(path[i - 1]) != th->g_.EdgeStart(path[i]) && !path.GapAt(i).is_final;
     };
 
     auto withoutBadGaps = [&isBadGap, &path] () {

@@ -215,6 +215,8 @@ public:
 
     void SetCycleOverlaping(int new_overlaping) noexcept {
         cycle_overlaping_ = new_overlaping;
+        if (conj_path_)
+            conj_path_->cycle_overlaping_ = new_overlaping;
 
         VERIFY(cycle_overlaping_ <= (int)Size());
         for (int i = 0; i < cycle_overlaping_; ++i) {
