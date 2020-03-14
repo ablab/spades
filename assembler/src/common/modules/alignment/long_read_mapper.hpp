@@ -88,9 +88,6 @@ private:
                 auto end_pos = paths[i].MappingRangeOntoRead_.initial_range.start_pos;
                 VERIFY(end_pos >= paths[i].MappingRangeOntoRead_.mapped_range.start_pos);
                 end_pos -= paths[i].MappingRangeOntoRead_.mapped_range.start_pos;
-                if (end_pos <= start_pos) {
-                    std::cout << "start: " << start_pos << " end: " << end_pos << " edgeId: " << paths[i].Path_.front() << '\n';
-                }
                 std::string gap_seq = (end_pos > start_pos ? r.GetSequenceString().substr(start_pos, end_pos-start_pos) : "");
                 VERIFY(g_.k() + end_pos >= start_pos);
                 path->PushBack(paths[i].Path_, path_extend::Gap(g_.k() + end_pos - start_pos, std::move(gap_seq)));

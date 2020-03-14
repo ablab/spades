@@ -226,7 +226,7 @@ public:
         }
     }
 
-    bool WeightCounterBased() const {
+    bool WeightCounterBased() const noexcept {
         return wc_ != nullptr;
     }
 
@@ -1266,8 +1266,8 @@ public:
      * Two reads are consistent if they can form one path in the graph.
      */
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
-        auto conj = [&th = *this](auto id) {
-            return th.g_.conjugate(EdgeId(id)).id_;
+        auto conj = [th = this](auto id) {
+            return th->g_.conjugate(EdgeId(id)).id_;
         };
         auto good_edge = [&conj](auto id) {
             // std::vector<int> good = {1431, 1869, 1867, 976};

@@ -145,6 +145,7 @@ public:
     bool TryUseEdge(BidirectionalPath &path, EdgeId e, const Gap &gap) {
         if (UniqueCheckEnabled()) {
             if (IsUsedAndUnique(e)) {
+                path.SetCycleOverlaping(path.FindFirst(e));
                 return false;
             } else {
                 insert(e);

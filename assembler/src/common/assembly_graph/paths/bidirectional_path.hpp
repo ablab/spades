@@ -79,19 +79,19 @@ struct Gap {
                 is_final == that.is_final;
     }
 
-    bool operator!=(const Gap &that) const {
+    bool operator!=(const Gap &that) const noexcept {
         return !(*this == that);
     }
 
-    int overlap(size_t k) const {
+    int overlap(size_t k) const noexcept {
         return int(k) - gap;
     }
 
-    int overlap_after_trim(size_t k) const {
+    int overlap_after_trim(size_t k) const noexcept {
         return overlap(k) - trash.current - trash.previous;
     }
 
-    bool NoTrash() const {
+    bool NoTrash() const noexcept {
         return trash.current == 0 && trash.previous == 0;
     }
 };
@@ -121,13 +121,15 @@ class BidirectionalPath : public PathListener {
     std::vector<PathListener *> listeners_;
     const uint64_t id_;  //Unique ID
     float weight_;
+    int cycle_overlaping_; // in edges; [ < 0 ] => is not cycled
 
 public:
     BidirectionalPath(const debruijn_graph::Graph& g)
             : g_(g),
               conj_path_(nullptr),
               id_(path_id_++),
-              weight_(1.0) {
+              weight_(1.0),
+              cycle_overlaping_(-1) {
     }
 
     BidirectionalPath(const debruijn_graph::Graph& g, const std::vector<debruijn_graph::EdgeId>& path)
@@ -158,10 +160,11 @@ public:
               gap_len_(path.gap_len_),
               listeners_(),
               id_(path_id_++),
-              weight_(path.weight_) {
+              weight_(path.weight_),
+              cycle_overlaping_(path.cycle_overlaping_) {
     }
 
-    const debruijn_graph::Graph &g() const{
+    const debruijn_graph::Graph &g() const noexcept {
         return g_;
     }
 
@@ -178,36 +181,50 @@ public:
 //        }
 //    }
 
-    void SetConjPath(BidirectionalPath* path) {
+    void SetConjPath(BidirectionalPath* path) noexcept {
         conj_path_ = path;
     }
 
-    const BidirectionalPath* GetConjPath() const {
+    const BidirectionalPath* GetConjPath() const noexcept {
         return conj_path_;
     }
 
-    BidirectionalPath* GetConjPath() {
+    BidirectionalPath* GetConjPath() noexcept {
         return conj_path_;
     }
 
-    void SetWeight(float w) {
+    void SetWeight(float w) noexcept {
         weight_ = w;
     }
 
-    double GetWeight() const {
+    double GetWeight() const noexcept {
         return weight_;
     }
 
-    size_t Size() const {
+    size_t Size() const noexcept {
         return data_.size();
     }
 
-    const debruijn_graph::Graph& graph() const {
+    const debruijn_graph::Graph& graph() const noexcept {
         return g_;
     }
 
-    bool Empty() const {
+    bool Empty() const noexcept {
         return data_.empty();
+    }
+
+    void SetCycleOverlaping(int new_overlaping) noexcept {
+        cycle_overlaping_ = new_overlaping;
+
+        VERIFY(cycle_overlaping_ <= (int)Size());
+        for (int i = 0; i < cycle_overlaping_; ++i) {
+            VERIFY(data_[i] == data_[Size() - cycle_overlaping_ + i]);
+            VERIFY(GapAt(i) == GapAt(Size() - cycle_overlaping_ + i));
+        }
+    }
+    
+    int GetCycleOverlaping() const noexcept {
+        return cycle_overlaping_;
     }
 
     size_t Length() const {
@@ -219,7 +236,7 @@ public:
     }
 
     //TODO iterators forward/reverse
-    debruijn_graph::EdgeId operator[](size_t index) const {
+    debruijn_graph::EdgeId operator[](size_t index) const noexcept {
         return data_[index];
     }
 
@@ -232,11 +249,11 @@ public:
     }
 
     // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN)
-    size_t LengthAt(size_t index) const {
+    size_t LengthAt(size_t index) const noexcept {
         return cumulative_len_[index];
     }
 
-    Gap GapAt(size_t index) const {
+    const Gap& GapAt(size_t index) const noexcept {
         return gap_len_[index];
     }
 
@@ -244,19 +261,23 @@ public:
         gap_len_[index] = gap;
     }
 
-    size_t GetId() const {
+    size_t GetId() const noexcept {
         return id_;
     }
 
-    debruijn_graph::EdgeId Back() const {
+    debruijn_graph::EdgeId Back() const noexcept {
         return data_.back();
     }
 
-    debruijn_graph::EdgeId Front() const {
+    debruijn_graph::EdgeId Front() const noexcept {
         return data_.front();
     }
     void PushBack(debruijn_graph::EdgeId e, const Gap& gap = Gap()) {
         VERIFY(!data_.empty() || gap == Gap());
+        if (cycle_overlaping_ >= 0) {
+            VERIFY(e == data_[cycle_overlaping_]);
+            ++cycle_overlaping_;
+        }
         data_.push_back(e);
         gap_len_.push_back(gap);
         IncreaseLengths(g_.length(e), gap.gap);
@@ -273,7 +294,7 @@ public:
         }
     }
 
-    void PushBack(const std::vector<EdgeId>& path, const Gap& gap = Gap()) {
+    void PushBack(const std::vector<debruijn_graph::EdgeId>& path, const Gap& gap = Gap()) {
         VERIFY(!path.empty());
         PushBack(path[0], gap);
         for (size_t i = 1; i < path.size(); ++i)
@@ -289,6 +310,7 @@ public:
         gap_len_.pop_back();
         data_.pop_back();
         NotifyBackEdgeRemoved(e);
+        DecreaseCycleOverlaping();
     }
 
     void PopBack(size_t count) {
@@ -318,7 +340,7 @@ public:
         PopFront();
     }
 
-    int FindFirst(debruijn_graph::EdgeId e) const {
+    int FindFirst(debruijn_graph::EdgeId e) const noexcept {
         for (size_t i = 0; i < Size(); ++i) {
             if (data_[i] == e) {
                 return (int) i;
@@ -327,7 +349,7 @@ public:
         return -1;
     }
 
-    int FindLast(debruijn_graph::EdgeId e) const {
+    int FindLast(debruijn_graph::EdgeId e) const noexcept {
         for (int i = (int) Size() - 1; i >= 0; --i) {
             if (data_[i] == e) {
                 return i;
@@ -336,7 +358,7 @@ public:
         return -1;
     }
 
-    bool Contains(debruijn_graph::EdgeId e) const {
+    bool Contains(debruijn_graph::EdgeId e) const noexcept {
         return FindFirst(e) != -1;
     }
 
@@ -459,7 +481,7 @@ public:
         for (int i = ((int) Size()) - 2; i >= 0; --i) {
             result.PushBack(g_.conjugate(data_[i]), gap_len_[i + 1].conjugate());
         }
-
+        result.cycle_overlaping_ = cycle_overlaping_;
         return result;
     }
 
@@ -468,11 +490,11 @@ public:
         return std::vector<debruijn_graph::EdgeId>(data_.begin(), data_.end());
     }
 
-    auto begin() const -> decltype(data_.begin()) {
+    auto begin() const noexcept -> decltype(data_.begin()) {
         return data_.begin();
     }
 
-    auto end() const -> decltype(data_.end()) {
+    auto end() const noexcept -> decltype(data_.end()) {
         return data_.end();
     }
 
@@ -525,6 +547,10 @@ private:
     }
 
     void PushFront(debruijn_graph::EdgeId e, Gap gap) {
+        if (cycle_overlaping_ >= 0) {
+            VERIFY(e == data_[Size() - cycle_overlaping_ - 1]);
+            ++cycle_overlaping_;
+        }
         data_.push_front(e);
         if (gap_len_.size() > 0) {
             VERIFY(gap_len_[0] == Gap());
@@ -551,6 +577,11 @@ private:
         }
 
         NotifyFrontEdgeRemoved(e);
+        DecreaseCycleOverlaping();
+    }
+
+    void DecreaseCycleOverlaping() noexcept {
+        cycle_overlaping_ -= (cycle_overlaping_ >= 0);
     }
 
     DECL_LOGGER("BidirectionalPath");

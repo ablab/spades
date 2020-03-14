@@ -888,9 +888,7 @@ private:
     }
     
     void GrowAllPaths(PathContainer& paths, PathContainer& result) {
-        // std::cout << "!!!!!!!!!!!!!!!!!!!!" << paths.size() << "!!!!!!!!!!!!!!!!!!!!!!\n";
         for (size_t i = 0; i < paths.size(); ++i) {
-            // std::cout << "<0====================================================================>\n";
             VERBOSE_POWER_T2(i, 100, "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
                 INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
@@ -914,7 +912,6 @@ private:
                     continue;
                 }
             }
-            // std::cout << "<1====================================================================>\n";
             if (!cover_map_.IsCovered(*paths.Get(i))) {
                 AddPath(result, *paths.Get(i), cover_map_);
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
@@ -942,7 +939,6 @@ private:
                     std::cout << x << ' ';
                 std::cout << '\n';
             }
-            // std::cout << "<2====================================================================>\n";
         }
     }
 
@@ -965,6 +961,8 @@ protected:
         if (success) {
             DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
                                           << gap.gap << ", trash length: " << gap.trash.previous << "-" << gap.trash.current);
+        } else {
+            
         }
         return success;
     }
@@ -1012,7 +1010,7 @@ protected:
 
     virtual bool ResolveShortLoopByPI(BidirectionalPath& path) = 0;
 
-    virtual bool CanInvestigateShortLoop() const {
+    virtual bool CanInvestigateShortLoop() const noexcept {
         return false;
     }
 
@@ -1078,31 +1076,31 @@ public:
         DEBUG("un ch enabled " << used_storage_.UniqueCheckEnabled());
         bool result;
         LoopDetector loop_detector(&path, cov_map_);
-        if (DetectCycle(path)) {
-            result = false;
-        } else if (TryToResolveTwoLoops(path)) {
-            result = true;
-        } else if (path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back()) && use_short_loop_cov_resolver_) {
-            DEBUG("edge in short loop");
-            result = ResolveShortLoop(path);
-        } else if (InvestigateShortLoop() && loop_detector.PrevEdgeInShortLoop() && use_short_loop_cov_resolver_) {
-            DEBUG("Prev edge in short loop");
-            path.PopBack();
-            result = ResolveShortLoop(path);
-        } else {
-            DEBUG("Making step");
-            result = MakeSimpleGrowStep(path, paths_storage);
-            DEBUG("Made step");
+
+        auto resolveLoops = [&](bool resolve_two_loops = false, bool resolve_short_loop = true) {
             if (DetectCycle(path)) {
                 result = false;
-            } else if (path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back())) {
+            } else if (resolve_two_loops && TryToResolveTwoLoops(path)) {
+                result = true;
+            } else if (resolve_short_loop && path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back())) {
                 DEBUG("Edge in short loop");
                 result = ResolveShortLoop(path);
-            } else if (InvestigateShortLoop() && loop_detector.PrevEdgeInShortLoop()) {
+            } else if (resolve_short_loop && InvestigateShortLoop() && loop_detector.PrevEdgeInShortLoop()) {
                 DEBUG("Prev edge in short loop");
                 path.PopBack();
                 result = ResolveShortLoop(path);
+            } else {
+                return false;
             }
+            
+            return true;
+        };
+
+        if (!resolveLoops(true, use_short_loop_cov_resolver_)) {
+            DEBUG("Making step");
+            result = MakeSimpleGrowStep(path, paths_storage);
+            DEBUG("Made step");
+            resolveLoops();
         }
         return result;
     }
@@ -1116,7 +1114,7 @@ private:
         }
     }
 
-    bool InvestigateShortLoop() {
+    bool InvestigateShortLoop() const noexcept {
         return investigate_short_loops_ && (use_short_loop_cov_resolver_ || CanInvestigateShortLoop());
     }
 protected:
@@ -1164,7 +1162,7 @@ public:
         return extensionChooser_;
     }
 
-    bool CanInvestigateShortLoop() const override {
+    bool CanInvestigateShortLoop() const noexcept override {
         return extensionChooser_->WeightCounterBased();
     }
 
@@ -1202,52 +1200,6 @@ protected:
         FindFollowingEdges(path, &candidates);
         DEBUG("found candidates");
         DEBUG(candidates.size())
-        
-        // auto conj = [th = this](auto id) {
-        //     return th->g_.conjugate(EdgeId(id)).id_;
-        // };
-
-        // auto good_edge = [&conj](auto id) {
-        //     // std::vector<int> good = {651334, 1794, 1788, 1782, 1776, 1926, 1792, 583141};
-        //     // // std::vector<int> good = {583141, 651333};
-        //     // for (auto x : good) {
-        //     //     if (x == id || id == conj(x))
-        //     //         return true;
-        //     // }
-        //     return false;
-        // };
-        // auto print1 = [&good_edge](auto v) {
-        //     for (auto const & x : v) {
-        //         std::cout << x.id_;
-        //         if (good_edge(x.id_))
-        //             std::cout << '!';
-        //         std::cout << ' ';
-        //     }
-        //     std::cout << std::endl;
-        // };
-        // auto print2 = [&good_edge](auto v) {
-        //     for (auto const & x : v) {
-        //         std::cout << x.e_.id_;
-        //         if (good_edge(x.e_.id_))
-        //             std::cout << '!';
-        //         std::cout << ' ';
-        //     }
-        //     std::cout << std::endl;
-        // };
-        // // std::cout << "~~~~~~\n";
-        // bool b = false;
-        // for (auto const & x : candidates)
-        //     b |= good_edge(x.e_.id_);
-        // b |= good_edge(path.Back().id_)|| good_edge(path.Front().id_);
-        // if (b) {
-        //     std::cout << "more filtering:\n";
-        //     std::cout << "path: ";
-        //     print1(path);
-        //     std::cout << "candidates: ";
-        //     print2(candidates);
-        // }
-
-
 
         if (candidates.size() == 1) {
             LoopDetector loop_detector(&path, cov_map_);
@@ -1259,11 +1211,6 @@ protected:
         DEBUG("more filtering");
         candidates = extensionChooser_->Filter(path, candidates);
         DEBUG("filtered candidates");
-        // if (b) {
-        //     std::cout << "chosen: ";
-        //     print2(candidates);
-        // }
-    //    std::cout << "\tfiltered candidates " << candidates.size() << '\n';
         DEBUG(candidates.size())
         return true;
     }

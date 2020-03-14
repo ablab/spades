@@ -585,7 +585,6 @@ void PathExtendLauncher::Launch() {
     PathExtendResolver resolver(gp_.g);
 
     auto seeds = resolver.MakeSimpleSeeds();
-    // std::cout << "~+~+~+~++~+~" << seeds.size() << '\n';
 
     seeds.SortByLength();
     DebugOutputPaths(seeds, "init_paths");
@@ -601,9 +600,7 @@ void PathExtendLauncher::Launch() {
                                          extenders);
 
     auto paths = resolver.ExtendSeeds(seeds, composite_extender);
-    std::cout << "Strat printing ==========================================================\n";
     DebugOutputPaths(paths, "raw_paths");
-    std::cout << "End printing   ==========================================================\n";
 
     RemoveOverlapsAndArtifacts(paths, cover_map, resolver);
     DebugOutputPaths(paths, "before_path_polishing");
