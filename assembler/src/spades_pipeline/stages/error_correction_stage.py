@@ -92,7 +92,7 @@ class ECRunningToolStage(stage.Stage):
                                            args=[os.path.abspath(cfg_file_name)],
                                            config_dir=os.path.relpath(cfg.output_dir, options_storage.args.output_dir),
                                            short_name=self.short_name,
-                                           del_after=[cfg.tmp_dir],
+                                           del_after=[os.path.relpath(cfg.tmp_dir, options_storage.args.output_dir)],
                                            output_files=[self.output_files["corrected_dataset_yaml_filename"]])]
         return command
 

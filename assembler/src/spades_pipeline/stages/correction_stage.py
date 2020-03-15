@@ -62,8 +62,10 @@ class CorrectionIterationStage(stage.Stage):
                                         args=args,
                                         config_dir=os.path.relpath(self.cfg.output_dir, options_storage.args.output_dir),
                                         short_name=self.short_name,
-                                        del_after=[os.path.join(self.cfg.output_dir, "tmp"),
-                                                   self.cfg.tmp_dir])]
+                                        del_after=[os.path.join(os.path.relpath(self.cfg.output_dir,
+                                                                                options_storage.args.output_dir),
+                                                                "tmp"),
+                                                   os.path.relpath(self.cfg.tmp_dir, options_storage.args.output_dir)])]
 
     def generate_config(self, cfg):
         dst_configs = os.path.join(self.cfg.output_dir, "configs")

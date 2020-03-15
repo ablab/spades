@@ -291,7 +291,7 @@ class PreprocessReadsStage(stage.Stage):
                                         path="true",
                                         args=[],
                                         short_name=self.short_name + "_finish",
-                                        del_after=[self.tmp_dir])]
+                                        del_after=[os.path.relpath(self.tmp_dir, options_storage.args.output_dir)])]
 
 
 def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log,
