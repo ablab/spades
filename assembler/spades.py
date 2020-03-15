@@ -32,6 +32,7 @@ if sys.version.startswith("2."):
     import pyyaml2 as pyyaml
 elif sys.version.startswith("3."):
     import pyyaml3 as pyyaml
+
 import options_storage
 options_storage.spades_version = spades_version
 
@@ -511,6 +512,7 @@ def get_stage(iteration_name):
 
 def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
                    ext_python_modules_home, python_modules_home):
+    from stages import before_start_stage
     from stages import error_correction_stage
     from stages import spades_stage
     from stages import postprocessing_stage
@@ -520,6 +522,8 @@ def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, l
     from stages import preprocess_reads_stage
     from stages import terminating_stage
 
+    before_start_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+                                           ext_python_modules_home, python_modules_home)
     preprocess_reads_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
                                            ext_python_modules_home, python_modules_home)
     error_correction_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
