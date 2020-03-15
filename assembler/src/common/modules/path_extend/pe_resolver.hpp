@@ -107,9 +107,9 @@ class OverlapRemover {
             //TODO think if this "optimization" is necessary
             if (path_pair.first->Size() == 0)
                 continue;
-            VERIFY(path_pair.first->GetCycleOverlaping() == path_pair.second->GetCycleOverlaping());
-            auto overlaping = path_pair.first->GetCycleOverlaping();
-            if (overlaping >= 0) {
+            if (path_pair.first->IsCycle()) {
+                VERIFY(path_pair.first->GetCycleOverlaping() == path_pair.second->GetCycleOverlaping());
+                auto overlaping = path_pair.first->GetCycleOverlaping();
                 if (overlaping > 0)
                     splits_[path_pair.first].insert(overlaping);
             } else {

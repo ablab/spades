@@ -229,6 +229,10 @@ public:
         return cycle_overlaping_;
     }
 
+    bool IsCycle() const noexcept {
+        return cycle_overlaping_ >= 0;
+    }
+
     size_t Length() const {
         if (Empty()) {
             return 0;
@@ -276,7 +280,7 @@ public:
     }
     void PushBack(debruijn_graph::EdgeId e, const Gap& gap = Gap()) {
         VERIFY(!data_.empty() || gap == Gap());
-        if (cycle_overlaping_ >= 0) {
+        if (IsCycle()) {
             VERIFY(e == data_[cycle_overlaping_]);
             ++cycle_overlaping_;
         }
@@ -549,7 +553,7 @@ private:
     }
 
     void PushFront(debruijn_graph::EdgeId e, Gap gap) {
-        if (cycle_overlaping_ >= 0) {
+        if (IsCycle()) {
             VERIFY(e == data_[Size() - cycle_overlaping_ - 1]);
             ++cycle_overlaping_;
         }
@@ -583,7 +587,7 @@ private:
     }
 
     void DecreaseCycleOverlaping() noexcept {
-        cycle_overlaping_ -= (cycle_overlaping_ >= 0);
+        cycle_overlaping_ -= IsCycle();
     }
 
     DECL_LOGGER("BidirectionalPath");

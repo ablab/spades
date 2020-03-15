@@ -1069,6 +1069,9 @@ public:
     }
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
+        if (path.IsCycle()) 
+            return false;
+
         if (is_detector_.InExistingLoop(path)) {
             DEBUG("in existing loop");
             return false;
