@@ -54,10 +54,11 @@ class Executor(executors.ExecutorBase):
 
     def rm_files(self, command):
         for fpath in command.del_after:
-            if os.path.isdir(fpath):
-                shutil.rmtree(fpath)
-            elif os.path.isfile(fpath):
-                os.remove(fpath)
+            fpath_abs = os.path.join(options_storage.args.output_dir, fpath)
+            if os.path.isdir(fpath_abs):
+                shutil.rmtree(fpath_abs)
+            elif os.path.isfile(fpath_abs):
+                os.remove(fpath_abs)
 
     def check_output(self, command):
         for fpath in command.output_files:

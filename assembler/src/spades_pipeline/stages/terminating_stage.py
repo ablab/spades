@@ -20,7 +20,7 @@ class TerminatingStage(stage.Stage):
     def get_command(self, cfg):
         del_after = []
         if not cfg["common"].developer_mode:
-            del_after.append(self.tmp_configs_dir)
+            del_after.append(os.path.relpath(self.tmp_configs_dir, options_storage.args.output_dir))
 
         return [commands_parser.Command(STAGE=self.STAGE_NAME,
                                         path="true",

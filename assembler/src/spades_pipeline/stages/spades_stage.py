@@ -250,7 +250,8 @@ class SpadesCopyFileStage(stage.Stage):
                                            path=sys.executable,
                                            args=args,
                                            short_name=self.short_name,
-                                           del_after=[bin_reads_dir, self.cfg.tmp_dir])]
+                                           del_after=[os.path.relpath(bin_reads_dir, options_storage.args.output_dir),
+                                                      os.path.relpath(self.cfg.tmp_dir, options_storage.args.output_dir)])]
         return command
 
 
