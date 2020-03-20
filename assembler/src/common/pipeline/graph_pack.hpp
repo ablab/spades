@@ -30,6 +30,8 @@
 
 namespace debruijn_graph {
 
+using BidirectionalPathStorage = std::vector<std::unique_ptr<path_extend::BidirectionalPath>>;
+
 template<class Graph>
 struct graph_pack: public adt::pack, private boost::noncopyable {
     typedef Graph graph_t;
@@ -40,6 +42,7 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
     using PairedInfoIndicesT = omnigraph::de::PairedInfoIndicesT<Graph>;
     typedef omnigraph::de::UnclusteredPairedInfoIndicesT<Graph> UnclusteredPairedInfoIndicesT;
     typedef LongReadContainer<Graph> LongReadContainerT;
+    using TrustedPathsContainer = std::vector<BidirectionalPathStorage>;
 
     size_t &k_value;
     std::string &workdir;
@@ -52,6 +55,7 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
     PairedInfoIndicesT &clustered_indices;
     PairedInfoIndicesT &scaffolding_indices;
     LongReadContainerT &single_long_reads;
+    TrustedPathsContainer &trusted_paths;
     SSCoverageContainer &ss_coverage;
     GenomicInfo &ginfo;
 
@@ -78,6 +82,7 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
               clustered_indices(adt::pack::emplace_with_key<PairedInfoIndicesT>("clustered_indices", g, lib_count)),
               scaffolding_indices(adt::pack::emplace_with_key<PairedInfoIndicesT>("scaffolding_indices", g, lib_count)),
               single_long_reads(adt::pack::emplace<LongReadContainerT>(g, lib_count)),
+              trusted_paths(adt::pack::emplace<TrustedPathsContainer>(lib_count)),
               ss_coverage(adt::pack::emplace<SSCoverageContainer>(g, lib_count)),
               ginfo(adt::pack::emplace<GenomicInfo>()),
               genome(adt::pack::emplace<GenomeStorage>(genome)),

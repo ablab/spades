@@ -336,11 +336,12 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
     INFO("filling path container");
     if (dataset_info_.reads[lib_index].type() == io::LibraryType::TrustedContigs) {
-        for (auto & path : PathsWithMappingInfoStorageStorage) {
+        for (auto & path : gp_.trusted_paths[lib_index]) {
             auto conj_path = new BidirectionalPath(path->Conjugate());
             unique_data_.long_reads_paths_[lib_index].AddPair(path.release(), conj_path);
             DebugOutputPaths(unique_data_.long_reads_paths_[lib_index], "trusted_contigs");
         }
+        gp_.trusted_paths[lib_index].clear();
     } else {
         std::vector<PathInfo<Graph>> paths;
         gp_.single_long_reads[lib_index].SaveAllPaths(paths);

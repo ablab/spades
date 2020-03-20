@@ -321,13 +321,21 @@ bool ShouldAlignWithPacbioAligner(io::LibraryType lib_type) {
 void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
     using namespace omnigraph;
 
-    bool make_additional_saves = (bool)parent_->saves_policy().EnabledCheckpoints();
+    std::deque<size_t> traverseOrder;
     for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id) {
+        if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::TrustedContigs)
+            traverseOrder.push_back(lib_id);
+        else
+            traverseOrder.push_front(lib_id);
+    }
+    
+
+    bool make_additional_saves = (bool)parent_->saves_policy().EnabledCheckpoints();
+    for (size_t lib_id : traverseOrder) {
         if (cfg::get().ds.reads[lib_id].is_hybrid_lib()) {
             INFO("Hybrid library detected: #" << lib_id);
 
             const auto& lib = cfg::get().ds.reads[lib_id];
-            bool rtype = lib.is_long_read_lib();
 
             auto& path_storage = gp.single_long_reads[lib_id];
             gap_closing::GapStorage gap_storage(gp.g);
@@ -342,20 +350,16 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
                 gap_closing::GapTrackingListener mapping_listener(gp.g, gap_storage);
                 INFO("Processing reads from hybrid library " << lib_id);
 
-                //FIXME make const
-                auto& reads = cfg::get_writable().ds.reads[lib_id];
-
                 SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
                 //FIXME pretty awful, would be much better if listeners were shared ptrs
-                LongReadMapper read_mapper(gp.g, gp.single_long_reads[lib_id], reads.type(),
-                                           ChooseProperReadPathExtractor(gp.g, reads.type()));
+                LongReadMapper read_mapper(gp.g, path_storage, gp.trusted_paths[lib_id], lib.type());
 
                 notifier.Subscribe(lib_id, &mapping_listener);
                 notifier.Subscribe(lib_id, &read_mapper);
 
                 //TODO think of N's proper handling
                 // (currently handled by BasicSequenceMapper and concatenated in single MappingPath)
-                auto single_streams = single_easy_readers(reads, false,
+                auto single_streams = single_easy_readers(lib, false,
                                                           /*map_paired*/false, /*handle Ns*/false);
 
                 notifier.ProcessLibrary(single_streams, lib_id, *MapperInstance(gp));
@@ -365,14 +369,17 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
                 gp.index.Detach();
             }
 
+            bool rtype = lib.is_long_read_lib();
             if (make_additional_saves) {
                 INFO("Producing additional saves");
                 path_storage.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
                                         {}, /*min_stats_cutoff*/rtype ? 1 : 0, true);
                 gap_storage.DumpToFile(cfg::get().output_saves + "gaps.mpr");
             }
-
-            if (cfg::get().pb.enable_gap_closing || (cfg::get().pb.enable_fl_gap_closing && cfg::get().ds.reads[lib_id].is_fl_lib())) {
+            
+            if (lib.type() != io::LibraryType::TrustedContigs &&
+                (cfg::get().pb.enable_gap_closing || (cfg::get().pb.enable_fl_gap_closing && lib.is_fl_lib())))
+            {
                 INFO("Padding gaps");
                 size_t min_gap_quantity = rtype ? cfg::get().pb.pacbio_min_gap_quantity
                                               : cfg::get().pb.contigs_min_gap_quantity;

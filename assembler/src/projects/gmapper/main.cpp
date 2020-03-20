@@ -107,8 +107,7 @@ static void ProcessSingleReads(conj_graph_pack &gp, DataSet &dataset,
     SequencingLib &lib = dataset[ilib];
     SequenceMapperNotifier notifier(gp, dataset.lib_count());
 
-    LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib], lib.type(),
-                               ChooseProperReadPathExtractor(gp.g, lib.type()));
+    LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib], gp.trusted_paths[ilib], lib.type());
 
     if (lib.is_contig_lib()) {
         //FIXME pretty awful, would be much better if listeners were shared ptrs

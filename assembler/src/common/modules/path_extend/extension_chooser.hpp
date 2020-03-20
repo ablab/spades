@@ -26,12 +26,6 @@
 #include <fstream>
 #include <map>
 
-namespace debruijn_graph {
-
-extern std::vector<std::unique_ptr<path_extend::BidirectionalPath>> PathsWithMappingInfoStorageStorage;
-
-} // namespace debruijn_graph
-
 namespace path_extend {
 
 typedef std::multimap<double, EdgeWithDistance> AlternativeContainer;
@@ -1270,7 +1264,7 @@ public:
             return th->g_.conjugate(EdgeId(id)).id_;
         };
         auto good_edge = [&conj](auto id) {
-            // std::vector<int> good = {1431, 1869, 1867, 976};
+            // std::vector<int> good = {41814, 41871};
             // for (auto x : good) {
             //     if (x == id || id == conj(x))
             //         return true;
@@ -1352,9 +1346,10 @@ public:
                     // if (UniqueBackPath(**it, positions[i])) {
                         DEBUG("Success");
                         auto mp = (UniqueBackPath(**it, positions[i]) ? 3 : 1);
+                        auto common_size = std::min(positions[i]+1, path.Size());
                         auto gap = (*it)->GapAt(positions[i] + 1);
                         EdgeWithDistance next = {(*it)->At(positions[i] + 1), gap.gap, std::move(gap.gap_seq_)};
-                        weights_cands[next] += (*it)->GetWeight()*mp;
+                        weights_cands[next] += (*it)->GetWeight()*mp*common_size;
                         filtered_cands.insert(next);
                     // }
                 }

@@ -240,8 +240,7 @@ static void ProcessSingleReads(conj_graph_pack &gp,
 
     SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
 
-    LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib], reads.type(),
-                               ChooseProperReadPathExtractor(gp.g, reads.type()));
+    LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib], gp.trusted_paths[ilib], reads.type());
 
     if (ShouldObtainSingleReadsPaths(ilib) || reads.is_contig_lib()) {
         //FIXME pretty awful, would be much better if listeners were shared ptrs
