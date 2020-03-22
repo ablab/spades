@@ -54,9 +54,9 @@ struct EdgeWithDistance {
     int d_;
     std::string gap_sequence_;
 
-    EdgeWithDistance(EdgeId e, size_t d, std::string && gep_sequence = "")
+    EdgeWithDistance(EdgeId e, int d, std::string && gep_sequence = "")
         : e_(e)
-        , d_((int) d)
+        , d_(d)
         , gap_sequence_(std::move(gep_sequence)) 
     {}
 
