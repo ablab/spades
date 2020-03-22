@@ -10,6 +10,7 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <memory>
 
 #include "utils/verify.hpp"
 #include "io/binary/access.hpp"
@@ -499,6 +500,21 @@ public:
             BinRead(is, k, v);
             m.insert({std::move(k), std::move(v)});
         }
+    }
+};
+
+// std::unique_ptr
+template <typename T>
+class Serializer<std::unique_ptr<T>, std::enable_if_t<is_serializable<T>>> {
+public:
+    static void Write(std::ostream &os, const std::unique_ptr<T> &v) {
+        VERIFY(v);
+        BinWrite(os, *v);
+    }
+
+    static void Read(std::istream &is, std::unique_ptr<T> &v) {
+        VERIFY(v);
+        BinRead(is, *v);
     }
 };
 

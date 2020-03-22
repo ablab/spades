@@ -98,7 +98,7 @@ PathWithMappingInfo::PathWithMappingInfo(std::vector<EdgeId> && path, MappingRan
 
 LongReadMapper::LongReadMapper(const Graph& g,
                                PathStorage<Graph>& storage,
-                               BidirectionalPathStorage& trusted_paths_storage,
+                               path_extend::BidirectionalPathStorage& trusted_paths_storage,
                                io::LibraryType lib_type)
     : g_(g)
     , storage_(storage)

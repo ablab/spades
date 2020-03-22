@@ -30,8 +30,6 @@
 
 namespace debruijn_graph {
 
-using BidirectionalPathStorage = std::vector<std::unique_ptr<path_extend::BidirectionalPath>>;
-
 template<class Graph>
 struct graph_pack: public adt::pack, private boost::noncopyable {
     typedef Graph graph_t;
@@ -42,7 +40,7 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
     using PairedInfoIndicesT = omnigraph::de::PairedInfoIndicesT<Graph>;
     typedef omnigraph::de::UnclusteredPairedInfoIndicesT<Graph> UnclusteredPairedInfoIndicesT;
     typedef LongReadContainer<Graph> LongReadContainerT;
-    using TrustedPathsContainer = std::vector<BidirectionalPathStorage>;
+    using TrustedPathsContainer = std::vector<path_extend::BidirectionalPathStorage>;
 
     size_t &k_value;
     std::string &workdir;
@@ -82,14 +80,18 @@ struct graph_pack: public adt::pack, private boost::noncopyable {
               clustered_indices(adt::pack::emplace_with_key<PairedInfoIndicesT>("clustered_indices", g, lib_count)),
               scaffolding_indices(adt::pack::emplace_with_key<PairedInfoIndicesT>("scaffolding_indices", g, lib_count)),
               single_long_reads(adt::pack::emplace<LongReadContainerT>(g, lib_count)),
-              trusted_paths(adt::pack::emplace<TrustedPathsContainer>(lib_count)),
+              trusted_paths(adt::pack::emplace<TrustedPathsContainer>()),
               ss_coverage(adt::pack::emplace<SSCoverageContainer>(g, lib_count)),
               ginfo(adt::pack::emplace<GenomicInfo>()),
               genome(adt::pack::emplace<GenomeStorage>(genome)),
               edge_qual(adt::pack::emplace<EdgeQuality<Graph>>(g)),
               edge_pos(adt::pack::emplace<EdgesPositionHandler<graph_t>>(g, max_mapping_gap + k, max_gap_diff)),
               components(adt::pack::emplace<ConnectedComponentCounter>(g)),
-              contig_paths(adt::pack::emplace<path_extend::PathContainer>()) {
+              contig_paths(adt::pack::emplace<path_extend::PathContainer>())
+    {
+        for (size_t i = 0; i < lib_count; ++i)
+            trusted_paths.emplace_back(g);
+
         if (detach_indices)
             DetachAll();
     }

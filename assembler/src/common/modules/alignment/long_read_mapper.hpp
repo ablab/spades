@@ -32,13 +32,16 @@ class LongReadMapper: public SequenceMapperListener {
 public:
     LongReadMapper(const Graph& g,
                    PathStorage<Graph>& storage,
-                   BidirectionalPathStorage& bidirectional_path_storage,
+                   path_extend::BidirectionalPathStorage& bidirectional_path_storage,
                    io::LibraryType lib_type);
 
     void StartProcessLibrary(size_t threads_count) override {
-        for (size_t i = 0; i < threads_count; ++i)
+        buffer_storages_.reserve(threads_count);
+        trusted_path_buffer_storages_.reserve(threads_count);
+        for (size_t i = 0; i < threads_count; ++i) {
             buffer_storages_.emplace_back(g_);
-        trusted_path_buffer_storages_.resize(threads_count);
+            trusted_path_buffer_storages_.emplace_back(g_);
+        }
     }
 
     void StopProcessLibrary() override {
@@ -115,9 +118,9 @@ private:
 
     const Graph& g_;
     PathStorage<Graph>& storage_;
-    BidirectionalPathStorage& trusted_paths_storage_;
+    path_extend::BidirectionalPathStorage& trusted_paths_storage_;
     std::vector<PathStorage<Graph>> buffer_storages_;
-    std::vector<BidirectionalPathStorage> trusted_path_buffer_storages_;
+    std::vector<path_extend::BidirectionalPathStorage> trusted_path_buffer_storages_;
     io::LibraryType lib_type_;
     PathExtractionF path_extractor_;
     DECL_LOGGER("LongReadMapper");

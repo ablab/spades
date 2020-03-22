@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "io/binary/binary.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include <algorithm>
 #include <atomic>
@@ -24,6 +25,18 @@ struct Gap {
 
         Trash(uint32_t previous_, uint32_t current_) :
             previous(previous_), current(current_) {
+        }
+
+        void BinWrite(std::ostream &str) const {
+            using io::binary::BinWrite;
+            BinWrite(str, previous);
+            BinWrite(str, current);
+        };
+
+        void BinRead(std::istream &str) {
+            using io::binary::BinRead;
+            BinRead(str, previous);
+            BinRead(str, current);
         }
     };
     std::string gap_seq_;
@@ -93,6 +106,22 @@ struct Gap {
 
     bool NoTrash() const noexcept {
         return trash.current == 0 && trash.previous == 0;
+    }
+
+    void BinWrite(std::ostream &str) const {
+        using io::binary::BinWrite;
+        BinWrite(str, gap_seq_);
+        BinWrite(str, gap);
+        BinWrite(str, trash);
+        BinWrite(str, is_final);
+    };
+
+    void BinRead(std::istream &str) {
+        using io::binary::BinRead;
+        BinRead(str, gap_seq_);
+        BinRead(str, gap);
+        BinRead(str, trash);
+        BinRead(str, is_final);
     }
 };
 
@@ -509,6 +538,44 @@ public:
     void Print(std::ostream &os) const;
     std::string str() const;
 
+    void BinWrite(std::ostream &str) const {
+        VERIFY(conj_path_ == nullptr);
+        VERIFY(listeners_.empty());
+        using io::binary::BinWrite;
+        BinWrite(str, data_.size());
+        for (auto x : data_)
+            BinWrite(str, x);
+
+        BinWrite(str, cumulative_len_.size());
+        for (auto x : cumulative_len_)
+            BinWrite(str, x);
+        
+        BinWrite(str, gap_len_.size());
+        for (const auto& x : gap_len_)
+            BinWrite(str, x);
+        
+        BinWrite(str, weight_);
+        BinWrite(str, cycle_overlaping_);
+    };
+
+    void BinRead(std::istream &str) {
+        using io::binary::BinRead;
+        data_.resize(BinRead<size_t>(str));
+        for (auto& x : data_)
+            BinRead(str, x);
+
+        cumulative_len_.resize(BinRead<size_t>(str));
+        for (auto& x : cumulative_len_)
+            BinRead<size_t>(str, x);
+
+        gap_len_.resize(BinRead<size_t>(str));
+        for (auto& x : gap_len_)
+            BinRead(str, x);
+
+        BinRead<float>(str, weight_);
+        BinRead<int>(str, cycle_overlaping_);
+    }
+
 private:
     std::vector<std::string> PrintLines() const;
 
@@ -701,6 +768,37 @@ inline bool EndsWithInterstrandBulge(const BidirectionalPath &path) {
             g.OutgoingEdgeCount(v1) == 2 &&
             g.CheckUniqueIncomingEdge(v1);
 }
+
+class BidirectionalPathStorage : public std::vector<std::unique_ptr<BidirectionalPath>> {
+    using base = std::vector<std::unique_ptr<BidirectionalPath>>;
+    const debruijn_graph::Graph& g_;
+
+public:
+    BidirectionalPathStorage(const debruijn_graph::Graph& g)
+        : g_(g)
+    {}
+
+    void resize(size_t new_size) {
+        auto last_size = size();
+        base::resize(new_size);
+        for (size_t i = last_size; i < new_size; ++i)
+            (*this)[i] = std::make_unique<BidirectionalPath>(g_);
+    };
+
+    void BinWrite(std::ostream &str) const {
+        using io::binary::BinWrite;
+        BinWrite(str, size());
+        for (auto& path: *this)
+            BinWrite(str, path);
+    };
+
+    void BinRead(std::istream &str) {
+        using io::binary::BinRead;
+        resize(BinRead<size_t>(str));
+        for (auto& path: *this)
+            BinRead(str, path);
+    }
+};
 
 }  // path extend
 
