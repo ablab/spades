@@ -37,7 +37,7 @@ else()
   message("Making Release Configuration...")
 
   if (${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
-    add_compile_options(-g3)
+    add_compile_options(-g1)
   else()
     add_compile_options(-g0)
   endif()
