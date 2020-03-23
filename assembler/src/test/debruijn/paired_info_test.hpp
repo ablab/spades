@@ -437,11 +437,11 @@ BOOST_AUTO_TEST_CASE(PairedInfoPairTraverse) {
     BOOST_CHECK_EQUAL(GetEdgePairInfo(pi), test1);
 }
 
-using TestIndex = UnclusteredPairedInfoIndexT<Graph>;
+using TestIndex = UnclusteredPairedInfoIndexT<debruijn_graph::Graph>;
 
 BOOST_AUTO_TEST_CASE(PairedInfoRandomSymmetry) {
-    Graph graph(55);
-    debruijn_graph::RandomGraph<Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
+    debruijn_graph::Graph graph(55);
+    debruijn_graph::RandomGraph<debruijn_graph::Graph>(graph, /*max_size*/100).Generate(/*iterations*/1000);
 
     TestIndex pi(graph);
     debruijn_graph::RandomPairedIndex<TestIndex>(pi, 100).Generate(20);

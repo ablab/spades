@@ -35,7 +35,7 @@ static io::IdMapper<std::string> *LoadGraph(debruijn_graph::conj_graph_pack &gp,
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(gp.g, id_mapper);
     } else {
-        io::binary::BasePackIO<Graph>().Load(filename, gp);
+        io::binary::BasePackIO<debruijn_graph::Graph>().Load(filename, gp);
     }
     INFO("Graph loaded. Total vertices: " << gp.g.size() << " Total edges: " << gp.g.e_size());
     return id_mapper;

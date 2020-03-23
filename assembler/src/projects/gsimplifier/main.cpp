@@ -20,6 +20,8 @@
 #include <numeric>
 #include <sys/types.h>
 
+using namespace debruijn_graph;
+
 struct gcfg {
     gcfg() : k(0), RL(0),
              save_gfa(false), save_gp(false),

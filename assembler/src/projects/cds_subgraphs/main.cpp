@@ -23,6 +23,8 @@
 #include <numeric>
 #include <sys/types.h>
 
+using namespace debruijn_graph;
+
 namespace cds_subgraphs {
 
 struct PartialGeneInfo {

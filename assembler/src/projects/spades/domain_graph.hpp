@@ -258,13 +258,13 @@ private:
     std::string PathToSequence(path_extend::BidirectionalPath *p,
                                std::vector<std::shared_ptr<Vertex>> &answer);
 
-    void OutputStatArrangement(const Graph &g,
+    void OutputStatArrangement(const debruijn_graph::Graph &g,
                                std::vector<std::shared_ptr<Vertex>> single_candidate,
                                int id, std::ofstream &stat_file);
     void OutputStat(std::set<std::shared_ptr<Vertex>> &preliminary_visited,
                     std::ofstream &stat_file);
 
-    size_t GetMaxVisited(const Graph &g, std::shared_ptr<Vertex> v,
+    size_t GetMaxVisited(const debruijn_graph::Graph &g, std::shared_ptr<Vertex> v,
                          double base_coverage) {
         double low_coverage = std::numeric_limits<double>::max();
         for (auto e : v->domain_edges_in_row_)
@@ -273,7 +273,7 @@ private:
         return size_t(round(low_coverage / base_coverage));
   }
 
-    void SetCopynumber(const Graph &g,
+    void SetCopynumber(const debruijn_graph::Graph &g,
                        std::set<std::shared_ptr<Vertex>> &preliminary_visited) {
         double base_coverage = std::numeric_limits<double>::max();
         for (auto v : preliminary_visited) {
@@ -297,7 +297,7 @@ private:
         }
     }
 
-    void FindAllPossibleArrangements(const Graph &g, std::shared_ptr<Vertex> v,
+    void FindAllPossibleArrangements(const debruijn_graph::Graph &g, std::shared_ptr<Vertex> v,
                                      std::vector<std::vector<std::shared_ptr<Vertex>>> &answer,
                                      std::ofstream &stat_file);
 

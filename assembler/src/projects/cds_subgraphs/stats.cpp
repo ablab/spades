@@ -20,6 +20,8 @@
 #include <numeric>
 #include <sys/types.h>
 
+using namespace debruijn_graph;
+
 namespace debruijn_graph {
 
 static void MappingPathStats(const Graph &g, const std::string &name, size_t query_kmer_len,

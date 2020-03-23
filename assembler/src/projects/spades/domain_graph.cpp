@@ -17,6 +17,7 @@
 #include <memory>
 
 using namespace nrps;
+using namespace debruijn_graph;
 
 void DomainGraph::ExportToDot(const std::string &output_path) const {
     std::ofstream out(output_path);

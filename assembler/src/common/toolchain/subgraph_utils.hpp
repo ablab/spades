@@ -5,21 +5,21 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#pragma once
+
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "io/graph/gfa_writer.hpp"
 
 #include <fstream>
 
-#pragma once
-
 namespace toolchain {
 
 class ComponentExpander {
-    const Graph &g_;
+    const debruijn_graph::Graph &g_;
 
-    bool IsInnerVertex(VertexId v, const std::set<EdgeId> &edges) const {
-        auto in_f = [&edges](EdgeId e) {
+    bool IsInnerVertex(debruijn_graph::VertexId v, const std::set<debruijn_graph::EdgeId> &edges) const {
+        auto in_f = [&edges](debruijn_graph::EdgeId e) {
             return edges.count(e);
         };
         return std::any_of(g_.in_begin(v), g_.in_end(v), in_f) &&
@@ -27,17 +27,17 @@ class ComponentExpander {
     }
 
 public:
-    explicit ComponentExpander(const Graph &g) : g_(g) {}
+    explicit ComponentExpander(const debruijn_graph::Graph &g) : g_(g) {}
 
-    omnigraph::GraphComponent<Graph> Expand(const omnigraph::GraphComponent<Graph> &component) const {
+    omnigraph::GraphComponent<debruijn_graph::Graph> Expand(const omnigraph::GraphComponent<debruijn_graph::Graph> &component) const {
         INFO("Expanding component to include incident edges of all 'inner' vertices");
-        std::set<EdgeId> expanded_edges(component.edges());
-        for (VertexId v : component.vertices()) {
+        std::set<debruijn_graph::EdgeId> expanded_edges(component.edges());
+        for (debruijn_graph::VertexId v : component.vertices()) {
             if (IsInnerVertex(v, component.edges())) {
                 utils::insert_all(expanded_edges, g_.IncidentEdges(v));
             }
         }
-        return omnigraph::GraphComponent<Graph>::FromEdges(g_,
+        return omnigraph::GraphComponent<debruijn_graph::Graph>::FromEdges(g_,
                                                            expanded_edges.begin(),
                                                            expanded_edges.end());
     }
@@ -46,14 +46,14 @@ private:
     DECL_LOGGER("ComponentExpander");
 };
 
-static bool IsDeadEnd(const Graph &g, VertexId v) {
+static bool IsDeadEnd(const debruijn_graph::Graph &g, debruijn_graph::VertexId v) {
     return g.IncomingEdgeCount(v) * g.OutgoingEdgeCount(v) == 0;
 }
 
-static std::vector<EdgeId> CollectDeadEnds(const omnigraph::GraphComponent<Graph> &gc, bool canonical_only = true) {
+static std::vector<debruijn_graph::EdgeId> CollectDeadEnds(const omnigraph::GraphComponent<debruijn_graph::Graph> &gc, bool canonical_only = true) {
     const auto &g = gc.g();
-    std::vector<EdgeId> answer;
-    for (EdgeId e : gc.edges()) {
+    std::vector<debruijn_graph::EdgeId> answer;
+    for (debruijn_graph::EdgeId e : gc.edges()) {
         VERIFY(gc.edges().count(g.conjugate(e)));
         if (canonical_only && g.conjugate(e) < e)
             continue;
@@ -64,9 +64,9 @@ static std::vector<EdgeId> CollectDeadEnds(const omnigraph::GraphComponent<Graph
     return answer;
 }
 
-static void WriteComponentWithDeadends(const omnigraph::GraphComponent<Graph> &component,
+static void WriteComponentWithDeadends(const omnigraph::GraphComponent<debruijn_graph::Graph> &component,
                                        const std::string &prefix,
-                                       const io::EdgeNamingF<Graph> &naming_f) {
+                                       const io::EdgeNamingF<debruijn_graph::Graph> &naming_f) {
     INFO("Writing GFA to " << prefix << ".gfa")
     std::ofstream os(prefix + ".gfa");
     const auto &g = component.g();
@@ -75,7 +75,7 @@ static void WriteComponentWithDeadends(const omnigraph::GraphComponent<Graph> &c
 
     INFO("Writing dead-ends to " << prefix << ".deadends")
     std::ofstream deadends_os(prefix + ".deadends");
-    for (EdgeId e : CollectDeadEnds(component)) {
+    for (debruijn_graph::EdgeId e : CollectDeadEnds(component)) {
         deadends_os << naming_f(g, e) << "\n";
     }
 }
