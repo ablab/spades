@@ -36,7 +36,6 @@ public:
                                double range_coeff, double delta_coeff,
                                size_t cutoff,
                                size_t min_peak_points,
-                               double inv_density,
                                double percentage,
                                double derivative_threshold) :
             base(graph, histogram, dist_finder, weight_f, linkage_distance, max_distance),
@@ -45,7 +44,6 @@ public:
             delta_coeff_(delta_coeff),
             cutoff_((int) cutoff),
             min_peak_points_(min_peak_points),
-            inv_density_(inv_density),
             percentage_(percentage),
             deriv_thr(derivative_threshold),
             gap_distances(0) { }
@@ -75,7 +73,6 @@ private:
     double delta_coeff_;
     int cutoff_;
     size_t min_peak_points_;
-    double inv_density_;
     double percentage_;
     double deriv_thr;
     mutable size_t gap_distances;

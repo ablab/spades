@@ -128,7 +128,7 @@ void estimate_scaffolding_distance(conj_graph_pack& gp,
                                          linkage_distance, max_distance,
                                          cfg::get().ade.threshold, cfg::get().ade.range_coeff,
                                          cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,
-                                         cfg::get().ade.min_peak_points, cfg::get().ade.inv_density,
+                                         cfg::get().ade.min_peak_points,
                                          cfg::get().ade.percentage,
                                          cfg::get().ade.derivative_threshold);
     estimate_with_estimator<Graph>(gp.g, estimator, checker, scaffolding_index);
