@@ -53,6 +53,9 @@ class Executor(executors.ExecutorBase):
                 break
 
     def rm_files(self, command):
+        if options_storage.args.no_clear_after:
+            return
+
         for fpath in command.del_after:
             fpath_abs = os.path.join(options_storage.args.output_dir, fpath)
             if os.path.isdir(fpath_abs):

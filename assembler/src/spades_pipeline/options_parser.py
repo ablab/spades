@@ -734,6 +734,11 @@ def add_hidden_args(pgroup_hidden):
                                help="generate configs and print script to run_spades.sh"
                                if show_help_hidden else argparse.SUPPRESS,
                                action="store_true")
+    pgroup_hidden.add_argument("--no-clear-after",
+                               dest="no_clear_after",
+                               help="don't delete tmp files after SPAdes pipeline finished"
+                               if show_help_hidden else argparse.SUPPRESS,
+                               action = "store_true")
     pgroup_hidden.add_argument("--help-hidden",
                                help="prints this usage message with all hidden options"
                                if show_help_hidden else argparse.SUPPRESS,
@@ -813,6 +818,9 @@ def add_to_option(args, log, skip_output_dir):
 
     if "reference" in args and args.reference is not None:
         args.developer_mode = True
+
+    if args.developer_mode:
+        args.no_clear_after = True
 
     if args.only_assembler and args.only_error_correction:
         support.error("you cannot specify --only-error-correction and --only-assembler simultaneously")
