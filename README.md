@@ -987,7 +987,14 @@ plasmidSPAdes and metaplasmidSPAdes output only DNA sequences from putative plas
 
 For all plasmidSPAdes' contig names in `contigs.fasta`, `scaffolds.fasta` and `assembly_graph.fastg` we append suffix `_component_X`, where `X` is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. []()  
 
-For metaplasmidSPAdes only complete putative plasmids (i.e. circular contigs) are output.
+For metaplasmidSPAdes only complete putative plasmids (i.e. circular contigs) are output. Since repeat resolution in metaSPAdes is run independently for different coverage cutoffs (see [paper](https://genome.cshlp.org/content/29/6/961.short) for details), to all headers in fasta files we add information about coverage cutoff used (in format `_cutoff_N`). For each cutoff contigs enumeration starts independently, so, in the contrast to regular SPAdes, there will be a contig with `NODE_1_` prefix for each cutoff with potential plasmids detected. In following example, there were detected two potential plasmids using cutoff 0, one plasmid was detected with cutoff 5 and one with cutoff 10.
+``` plain
+>NODE_1_length_40003_cov_13.48_cutoff_0
+>NODE_2_length_30000_cov_4.20_cutoff_0
+>NODE_1_length_20000_cov_20.42_cutoff_5
+>NODE_1_length_10000_cov_198.4_cutoff_10
+```
+
 
 <a name="sec3.7"></a>
 ## biosyntheticSPAdes output
