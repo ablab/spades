@@ -671,7 +671,12 @@ Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is
 <h2>plasmidSPAdes output</h2>
 <p>plasmidSPAdes and metaplasmidSPAdes output only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see <a href="#sec3.5">previous</a> section), with the following differences.</p>
 <p>For all plasmidSPAdes' contig names in <code>contigs.fasta</code>, <code>scaffolds.fasta</code> and <code>assembly_graph.fastg</code> we append suffix <code>_component_X</code>, where <code>X</code> is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. <a href=""></a></p>
-<p>For metaplasmidSPAdes only complete putative plasmids (i.e. circular contigs) are output.</p>
+<p>For metaplasmidSPAdes only complete putative plasmids (i.e. circular contigs) are output. Since repeat resolution in metaSPAdes is run independently for different coverage cutoffs (see <a href="https://genome.cshlp.org/content/29/6/961.short" rel="nofollow">paper</a> for details), to all headers in fasta files we add information about coverage cutoff used (in format <code>_cutoff_N</code>). For each cutoff contigs enumeration starts independently, so, in the contrast to regular SPAdes, there will be a contig with <code>NODE_1_</code> prefix for each cutoff with potential plasmids detected. In following example, there were detected two potential plasmids using cutoff 0, one plasmid was detected with cutoff 5 and one with cutoff 10.</p>
+<pre lang="plain"><code>&gt;NODE_1_length_40003_cov_13.48_cutoff_0
+&gt;NODE_2_length_30000_cov_4.20_cutoff_0
+&gt;NODE_1_length_20000_cov_20.42_cutoff_5
+&gt;NODE_1_length_10000_cov_198.4_cutoff_10
+</code></pre>
 <p><a name="sec3.7"></a></p>
 <h2>biosyntheticSPAdes output</h2>
 <p>biosyntheticSPAdes outputs three files of interest:</p>
