@@ -181,14 +181,14 @@
 <p>for example:</p>
 <div class="highlight highlight-source-shell"><pre>    PREFIX=/usr/local ./spades_compile.sh</pre></div>
 <p>which will install SPAdes into <code>/usr/local/bin</code>.</p>
-<p>After installation you will get the same files (listed above) in <code>./bin</code> directory (or <code>&lt;destination_dir&gt;/bin</code> if you specified PREFIX). We also suggest adding SPAdes installation directory to the <code>PATH</code> variable. <a href=""></a></p>
+<p>After installation you will get the same files (listed above) in <code>./bin</code> directory (or <code>&lt;destination_dir&gt;/bin</code> if you specified PREFIX). We also suggest adding <code>bin</code> directory to the <code>PATH</code> variable. <a href=""></a></p>
 <p><a name="sec2.4"></a></p>
 <h2>Verifying your installation</h2>
 <p>For testing purposes, SPAdes comes with a toy data set (reads that align to first 1000 bp of <em>E. coli</em>). To try SPAdes on this data set, run:</p>
-<div class="highlight highlight-source-shell"><pre>    <span class="pl-k">&lt;</span>spades installation dir<span class="pl-k">&gt;</span>/spades.py --test</pre></div>
-<p>If you added SPAdes installation directory to the <code>PATH</code> variable, you can run:</p>
+<div class="highlight highlight-source-shell"><pre>    <span class="pl-k">&lt;</span>spades installation dir<span class="pl-k">&gt;</span>/bin/spades.py --test</pre></div>
+<p>If you added <code>bin</code> folder from SPAdes installation directory to the <code>PATH</code> variable, you can run:</p>
 <div class="highlight highlight-source-shell"><pre>    spades.py --test</pre></div>
-<p>For the simplicity we further assume that SPAdes installation directory is added to the <code>PATH</code> variable.</p>
+<p>For the simplicity we further assume that <code>bin</code> folder from SPAdes installation directory is added to the <code>PATH</code> variable.</p>
 <p>If the installation is successful, you will find the following information at the end of the log:</p>
 <pre lang="plain"><code>
 ===== Assembling finished. Used k-mer sizes: 21, 33, 55
@@ -266,7 +266,7 @@ Note that non-empty files with the remaining unmerged left/right reads (separate
 <h2>SPAdes command line options</h2>
 <p>To run SPAdes from the command line, type</p>
 <div class="highlight highlight-source-shell"><pre>    spades.py [options] -o <span class="pl-k">&lt;</span>output_dir<span class="pl-k">&gt;</span></pre></div>
-<p>Note that we assume that SPAdes installation directory is added to the <code>PATH</code> variable (provide full path to SPAdes executable otherwise: <code>&lt;spades installation dir&gt;/spades.py</code>). <a href=""></a></p>
+<p>Note that we assume that <code>bin</code> forder from SPAdes installation directory is added to the <code>PATH</code> variable (provide full path to SPAdes executable otherwise: <code>&lt;spades installation dir&gt;/bin/spades.py</code>). <a href=""></a></p>
 <p><a name="basicopt"></a></p>
 <h3>Basic options</h3>
 <p><code>-o &lt;output_dir&gt; </code><br>
