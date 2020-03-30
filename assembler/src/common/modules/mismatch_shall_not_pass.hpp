@@ -212,7 +212,8 @@ private:
     EdgeId CorrectNucl(EdgeId edge, size_t position, char nucl) {
         VERIFY(position >= k_);
         if (position + 1 < g_.length(edge)) {
-            edge = g_.SplitEdge(edge, position + 1).first;
+            auto tmp = g_.SplitEdge(edge, position + 1);
+            edge = tmp.first;
         }
         EdgeId mismatch = edge;
         if (position > k_) {
@@ -231,6 +232,12 @@ private:
     }
 
     EdgeId CorrectNucls(EdgeId edge, const std::vector<std::pair<size_t, char>> &mismatches) {
+        // Nothing to correct, bail out.
+        // Note that this might be a correctness thing as well, as we're calling Compress
+        // down below.
+        if (mismatches.empty())
+            return edge;
+
         for (auto it = mismatches.rbegin(); it != mismatches.rend(); ++it) {
             edge = CorrectNucl(edge, it->first, it->second);
         }
