@@ -239,7 +239,7 @@ for example:
 
 which will install SPAdes into `/usr/local/bin`.
 
-After installation you will get the same files (listed above) in `./bin` directory (or `<destination_dir>/bin` if you specified PREFIX). We also suggest adding SPAdes installation directory to the `PATH` variable. []()
+After installation you will get the same files (listed above) in `./bin` directory (or `<destination_dir>/bin` if you specified PREFIX). We also suggest adding `bin` directory to the `PATH` variable. []()
 
 <a name="sec2.4"></a>
 ## Verifying your installation
@@ -248,17 +248,17 @@ For testing purposes, SPAdes comes with a toy data set (reads that align to firs
 
 ``` bash
 
-    <spades installation dir>/spades.py --test
+    <spades installation dir>/bin/spades.py --test
 ```
 
-If you added SPAdes installation directory to the `PATH` variable, you can run:
+If you added `bin` folder from SPAdes installation directory to the `PATH` variable, you can run:
 
 ``` bash
 
     spades.py --test
 ```
 
-For the simplicity we further assume that SPAdes installation directory is added to the `PATH` variable.
+For the simplicity we further assume that `bin` folder from SPAdes installation directory is added to the `PATH` variable.
 
 If the installation is successful, you will find the following information at the end of the log:
 
@@ -381,7 +381,7 @@ To run SPAdes from the command line, type
     spades.py [options] -o <output_dir>
 ```
 
-Note that we assume that SPAdes installation directory is added to the `PATH` variable (provide full path to SPAdes executable otherwise: `<spades installation dir>/spades.py`). []()
+Note that we assume that `bin` forder from SPAdes installation directory is added to the `PATH` variable (provide full path to SPAdes executable otherwise: `<spades installation dir>/bin/spades.py`). []()
 
 <a name="basicopt"></a>
 ### Basic options
