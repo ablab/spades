@@ -6,7 +6,7 @@
 //***************************************************************************
 #pragma once
 
-#include <gzstream/gzstream.h>
+#include "gzstream/gzstream.h"
 #include "annotation.hpp"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/osequencestream.hpp"
