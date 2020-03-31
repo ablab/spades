@@ -102,4 +102,8 @@ public:
     }
 
 };
+
+template<class Graph>
+constexpr size_t EdgeIndex<Graph>::NOT_FOUND;
+
 }
