@@ -35,81 +35,25 @@ public:
                    path_extend::BidirectionalPathStorage& bidirectional_path_storage,
                    io::LibraryType lib_type);
 
-    void StartProcessLibrary(size_t threads_count) override {
-        buffer_storages_.reserve(threads_count);
-        trusted_path_buffer_storages_.reserve(threads_count);
-        for (size_t i = 0; i < threads_count; ++i) {
-            buffer_storages_.emplace_back(g_);
-            trusted_path_buffer_storages_.emplace_back(g_);
-        }
-    }
+    void StartProcessLibrary(size_t threads_count) override;
+    void StopProcessLibrary() override;
 
-    void StopProcessLibrary() override {
-        buffer_storages_.clear();
-        trusted_path_buffer_storages_.clear();
-    }
-
-    void MergeBuffer(size_t thread_index) override {
-        DEBUG("Merge buffer " << thread_index << " with size " << buffer_storages_[thread_index].size());
-        storage_.AddStorage(buffer_storages_[thread_index]);
-        buffer_storages_[thread_index].Clear();
-        std::move(trusted_path_buffer_storages_[thread_index].begin(), trusted_path_buffer_storages_[thread_index].end(), std::back_inserter(trusted_paths_storage_));
-        trusted_path_buffer_storages_[thread_index].clear();
-        DEBUG("Now size " << storage_.size());
-    }
+    void MergeBuffer(size_t thread_index) override;
 
     void ProcessSingleRead(size_t thread_index,
                            const io::SingleRead& r,
-                           const MappingPath<EdgeId>& read) override
-    {
-        ProcessSingleRead(thread_index, read, r);
-    }
+                           const MappingPath<EdgeId>& read) override;
 
     void ProcessSingleRead(size_t thread_index,
                            const io::SingleReadSeq&,
-                           const MappingPath<EdgeId>& read) override
-    {
-        ProcessSingleRead(thread_index, read);
-    }
+                           const MappingPath<EdgeId>& read) override;
 
-    const Graph& g() const {
+    const Graph& g() const noexcept {
         return g_;
     }
 
 private:
-    void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& mapping, const io::SingleRead& r) {
-        DEBUG("Processing single read");
-        auto paths = path_extractor_(mapping);
-        for (const auto& path : paths)
-            buffer_storages_[thread_index].AddPath(path.Path_, 1, false);
-
-        auto mergePaths = [&]() {
-            std::vector<std::unique_ptr<path_extend::BidirectionalPath>> merged_paths;
-            merged_paths.push_back(std::make_unique<path_extend::BidirectionalPath>(g_, paths[0].Path_));
-            for (size_t i = 1; i < paths.size(); ++i) {
-                auto start_pos = paths[i-1].MappingRangeOntoRead_.initial_range.end_pos;
-                start_pos += g_.length(paths[i-1].Path_.back()) - paths[i-1].MappingRangeOntoRead_.mapped_range.end_pos;
-
-                unsigned long long end_pos = paths[i].MappingRangeOntoRead_.initial_range.start_pos;
-                end_pos -= paths[i].MappingRangeOntoRead_.mapped_range.start_pos;
-
-                std::string gap_seq = (end_pos > start_pos ? r.GetSequenceString().substr(start_pos, end_pos-start_pos) : "");
-
-                if ((g_.k() + end_pos < start_pos)) {
-                    merged_paths.push_back(std::make_unique<path_extend::BidirectionalPath>(g_, paths[i].Path_));
-                } else {
-                    merged_paths.back()->PushBack(paths[i].Path_, path_extend::Gap(g_.k() + end_pos - start_pos, std::move(gap_seq)));
-                }
-            }
-            return merged_paths;
-        };
-
-        if (lib_type_ == io::LibraryType::TrustedContigs && !paths.empty()) {
-            auto paths = mergePaths();
-            std::move(paths.begin(), paths.end(), std::back_inserter(trusted_path_buffer_storages_[thread_index]));
-        }
-        DEBUG("Single read processed");
-    }
+    void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& mapping, const io::SingleRead& r);
 
     void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& mapping);
 
