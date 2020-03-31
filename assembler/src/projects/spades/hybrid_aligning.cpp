@@ -362,7 +362,13 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
                 auto single_streams = single_easy_readers(lib, false,
                                                           /*map_paired*/false, /*handle Ns*/false);
 
-                notifier.ProcessLibrary(single_streams, lib_id, *MapperInstance(gp));
+                // if (lib.type() == io::LibraryType::TrustedContigs) {
+                //     config::pacbio_processor conf;
+                //     sensitive_aligner::GAligner galigner(gp.g, conf, alignment::BWAIndex::AlignmentMode::Default);
+                //     notifier.ProcessLibrary(single_streams, lib_id, galigner);
+                // } else {
+                    notifier.ProcessLibrary(single_streams, lib_id, *MapperInstance(gp));
+                // }
                 cfg::get_writable().ds.reads[lib_id].data().single_reads_mapped = true;
 
                 INFO("Finished processing long reads from lib " << lib_id);

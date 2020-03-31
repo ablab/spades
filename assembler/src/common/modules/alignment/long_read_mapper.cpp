@@ -221,8 +221,8 @@ std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(const
     out << "length of path: " << tmp_path.MappingRangeOntoRead_.initial_range.end_pos - tmp_path.MappingRangeOntoRead_.initial_range.start_pos << '\n';
     result.push_back(std::move(tmp_path));
 
-    for (int i = 1; i < result.size(); ++i)
-        VERIFY(result[i-1].MappingRangeOntoRead_.initial_range.end_pos < result[i].MappingRangeOntoRead_.initial_range.start_pos);
+    // for (int i = 1; i < result.size(); ++i)
+    //     VERIFY(result[i-1].MappingRangeOntoRead_.initial_range.end_pos < result[i].MappingRangeOntoRead_.initial_range.start_pos);
 
     std::cout << "================DONE====================" << std::endl; 
     return result;

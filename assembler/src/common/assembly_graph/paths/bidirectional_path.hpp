@@ -243,14 +243,21 @@ public:
     }
 
     void SetCycleOverlaping(int new_overlaping) noexcept {
-        cycle_overlaping_ = new_overlaping;
-        if (conj_path_)
-            conj_path_->cycle_overlaping_ = new_overlaping;
+        auto is_cycle = [&]() {
+            #define RETURN_IF_FALSE(expr) if (!(expr)) return false
+            RETURN_IF_FALSE(cycle_overlaping_ <= (int)Size());
+            for (int i = 0; i < cycle_overlaping_; ++i) {
+                RETURN_IF_FALSE(data_[i] == data_[Size() - cycle_overlaping_ + i]);
+                RETURN_IF_FALSE(GapAt(i) == GapAt(Size() - cycle_overlaping_ + i));
+            }
+            return true;
+            #undef RETURN_IF_FALSE
+        };
 
-        VERIFY(cycle_overlaping_ <= (int)Size());
-        for (int i = 0; i < cycle_overlaping_; ++i) {
-            VERIFY(data_[i] == data_[Size() - cycle_overlaping_ + i]);
-            VERIFY(GapAt(i) == GapAt(Size() - cycle_overlaping_ + i));
+        if (is_cycle()) {
+            cycle_overlaping_ = new_overlaping;
+            if (conj_path_)
+                conj_path_->cycle_overlaping_ = new_overlaping;
         }
     }
     

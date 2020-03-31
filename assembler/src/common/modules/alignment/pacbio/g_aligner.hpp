@@ -30,9 +30,21 @@ struct OneReadMapping {
 
 typedef std::pair<QualityRange, int> ColoredRange;
 
-class GAligner {
+class GAligner : public debruijn_graph::SequenceMapper<debruijn_graph::ConjugateDeBruijnGraph> {
  public:
   OneReadMapping GetReadAlignment(const io::SingleRead &read) const;
+
+  omnigraph::MappingPath<EdgeId> MapSequence(const Sequence &sequence, bool) const override {
+    VERIFY(false);
+  }
+
+  omnigraph::MappingPath<EdgeId> MapRead(const io::SingleRead &read, bool) const override {
+    auto paths = GetReadAlignment(read);
+    omnigraph::MappingPath<EdgeId> res;
+    for (auto & path : paths.bwa_paths)
+      res.join(path);
+    return res;
+  }
   
   GAligner(const debruijn_graph::Graph &g,
            const GAlignerConfig &cfg)

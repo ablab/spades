@@ -1296,12 +1296,16 @@ public:
             std::cout << std::endl;
         };
 
-        std::cout << "Filter called!\n";
         bool b = false;
-        b|=print_if(good_edge(path.Back().int_id()), "back");
-        
-        for (auto const & x : edges)
-            b |= good_edge(x.e_.id_);
+        auto get_b = [&] () {
+            std::cout << "Filter called!\n";
+            b|=print_if(good_edge(path.Back().int_id()), "back");
+            
+            for (auto const & x : edges)
+                b |= good_edge(x.e_.id_);
+        };
+
+        // b = get_b();
 
         if (b) {
             std::cout << "path:\n";

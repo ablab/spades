@@ -54,7 +54,7 @@ public:
         storage_.AddStorage(buffer_storages_[thread_index]);
         buffer_storages_[thread_index].Clear();
         std::move(trusted_path_buffer_storages_[thread_index].begin(), trusted_path_buffer_storages_[thread_index].end(), std::back_inserter(trusted_paths_storage_));
-        trusted_path_buffer_storages_[thread_index].empty();
+        trusted_path_buffer_storages_[thread_index].clear();
         DEBUG("Now size " << storage_.size());
     }
 
@@ -83,33 +83,30 @@ private:
         for (const auto& path : paths)
             buffer_storages_[thread_index].AddPath(path.Path_, 1, false);
 
-        auto makeSinglePath = [&]() {
-            auto path = std::make_unique<path_extend::BidirectionalPath>(g_, paths[0].Path_);
+        auto mergePaths = [&]() {
+            std::vector<std::unique_ptr<path_extend::BidirectionalPath>> merged_paths;
+            merged_paths.push_back(std::make_unique<path_extend::BidirectionalPath>(g_, paths[0].Path_));
             for (size_t i = 1; i < paths.size(); ++i) {
                 auto start_pos = paths[i-1].MappingRangeOntoRead_.initial_range.end_pos;
                 start_pos += g_.length(paths[i-1].Path_.back()) - paths[i-1].MappingRangeOntoRead_.mapped_range.end_pos;
 
-                auto end_pos = paths[i].MappingRangeOntoRead_.initial_range.start_pos;
-                VERIFY(end_pos >= paths[i].MappingRangeOntoRead_.mapped_range.start_pos);
+                unsigned long long end_pos = paths[i].MappingRangeOntoRead_.initial_range.start_pos;
                 end_pos -= paths[i].MappingRangeOntoRead_.mapped_range.start_pos;
 
                 std::string gap_seq = (end_pos > start_pos ? r.GetSequenceString().substr(start_pos, end_pos-start_pos) : "");
 
                 if ((g_.k() + end_pos < start_pos)) {
-                    path.reset();
-                    return path;
+                    merged_paths.push_back(std::make_unique<path_extend::BidirectionalPath>(g_, paths[i].Path_));
+                } else {
+                    merged_paths.back()->PushBack(paths[i].Path_, path_extend::Gap(g_.k() + end_pos - start_pos, std::move(gap_seq)));
                 }
-                path->PushBack(paths[i].Path_, path_extend::Gap(g_.k() + end_pos - start_pos, std::move(gap_seq)));
             }
-            return path;
+            return merged_paths;
         };
 
         if (lib_type_ == io::LibraryType::TrustedContigs && !paths.empty()) {
-            if (auto path = makeSinglePath()) {
-                trusted_path_buffer_storages_[thread_index].push_back(std::move(path));
-            } else {
-                ERROR("BAD MAPPED PATH WAS DETECTED, DROPPED!");
-            }
+            auto paths = mergePaths();
+            std::move(paths.begin(), paths.end(), std::back_inserter(trusted_path_buffer_storages_[thread_index]));
         }
         DEBUG("Single read processed");
     }
