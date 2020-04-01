@@ -30,6 +30,9 @@ class Log:
     def start_block(self, name, desc):
         print("==== Step: '%s' ('%s')" % (name, desc))
 
+    def end_block(self, name, value):
+        pass
+
     def log(self, s):
         self.text += s + "\n"
         print(s)
@@ -53,6 +56,8 @@ class Log:
     def get_log(self):
         return self.text
 
+    def record_metric(self, name, value):
+        pass
 
 _quote = {"'": "|'", "|": "||", "\n": "|n", "\r": "|r", '[': '|[', ']': '|]'}
 
@@ -94,6 +99,10 @@ class TeamCityLog:
 
     def get_log(self):
         return self.text
+
+    def record_metric(self, name, value):
+        sys.stdout.write("##teamcity[buildStatisticValue key='%s' value='%s']" % (escape_value(name), escape_value(value)))
+        sys.stdout.flush()
 
 log = TeamCityLog()
 
@@ -164,6 +173,8 @@ def assess_map(result_map, limit_map):
         if metric in limit_map and len(limit_map[metric]) > 0:
             for entry in limit_map[metric]:
                 metric_value = int(result_map[metric]) if entry.is_int else result_map[metric]
+                log.record_metric(metric, str(metric_value))
+
                 if not entry.assess:
                     log.log(metric + " = " + str(metric_value))
                     continue
