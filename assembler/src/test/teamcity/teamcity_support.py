@@ -68,31 +68,41 @@ class TeamCityLog:
 
     text = ""
 
+    def _tc_out(self, token, **attributes):
+        message = "##teamcity[%s" % token
+
+        for k in sorted(attributes.keys()):
+            value = attributes[k]
+            if value is None:
+                continue
+
+            message += (" %s='%s'" % (k, escape_value(value)))
+
+        message += "]\n"
+        sys.stdout.write(message)
+        sys.stdout.flush()
+
     def start_block(self, name, desc):
         sys.stdout.flush()
-        print("##teamcity[blockOpened name='%s' description='%s']" %
-              (escape_value(name), escape_value(desc)))
+        self._tc_out("blockOpened", name = name, description = desc)
 
     def end_block(self, name):
         sys.stdout.flush()
-        print("##teamcity[blockClosed name='%s']" % escape_value(name))
+        self._tc_out("blockClosed", name = name)
 
     def log(self, s):
         self.text += s + "\n"
-        sys.stdout.write("##teamcity[message text='%s']" % escape_value(s))
-        sys.stdout.flush()
+        self._tc_out("message", text = s)
 
     def warn(self, s):
         msg = "WARNING: " + s + "\n"
         self.text += msg
-        sys.stdout.write("##teamcity[message text='%s' status='WARNING']" % escape_value(s))
-        sys.stdout.flush()
+        self._tc_out("message", text = s, status = 'WARNING')
 
     def err(self, s, context = ""):
         msg = "ERROR: " + s + "\n"
         self.text += msg
-        sys.stdout.write("##teamcity[message text='%s' errorDetails='%s' status='ERROR']" % (escape_value(s), escape_value(context)))
-        sys.stdout.flush()
+        self._tc_out("message", text = s, status = 'ERROR', errorDetails = context)
 
     def print_log(self):
         print(self.text)
@@ -101,8 +111,7 @@ class TeamCityLog:
         return self.text
 
     def record_metric(self, name, value):
-        sys.stdout.write("##teamcity[buildStatisticValue key='%s' value='%s']" % (escape_value(name), escape_value(value)))
-        sys.stdout.flush()
+        self._tc_out("buildStatisticValue", key=name, value=value)
 
 log = TeamCityLog()
 
