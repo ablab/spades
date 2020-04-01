@@ -59,9 +59,11 @@ class TeamCityLog:
     text = ""
 
     def start_block(self, name, desc):
+        sys.stdout.flush()        
         print("##teamcity[blockOpened name='%s' description='%s']" % (name, desc))
 
     def end_block(self, name):
+        sys.stdout.flush()
         print("##teamcity[blockClosed name='%s']" % name)
 
     def log(self, s):
