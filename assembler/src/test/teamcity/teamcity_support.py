@@ -27,9 +27,13 @@ class Log:
 
     text = ""
 
+    def start_block(self, name, desc):
+        print("==== Step: '%s' ('%s')" % (name, desc))
+
     def log(self, s):
-        self.text += s + "\n"    
+        self.text += s + "\n"
         print(s)
+        sys.stdout.flush()
 
     def warn(self, s):
         msg = "WARNING: " + s + "\n"
@@ -37,7 +41,7 @@ class Log:
         sys.stdout.write(msg)
         sys.stdout.flush()
 
-    def err(self, s):
+    def err(self, s, context = ""):
         msg = "ERROR: " + s + "\n"
         self.text += msg
         sys.stdout.write(msg)
@@ -49,7 +53,41 @@ class Log:
     def get_log(self):
         return self.text
 
-log = Log()
+
+class TeamCityLog:
+
+    text = ""
+
+    def start_block(self, name, desc):
+        print("##teamcity[blockOpened name='%s' description='%s']" % (name, desc))
+
+    def end_block(self, name):
+        print("##teamcity[blockClosed name='%s']" % name)
+
+    def log(self, s):
+        self.text += s + "\n"
+        sys.stdout.write("##teamcity[message text='%s']" % s)
+        sys.stdout.flush()
+
+    def warn(self, s):
+        msg = "WARNING: " + s + "\n"
+        self.text += msg
+        sys.stdout.write("##teamcity[message text='%s' status='WARNING']" % s)
+        sys.stdout.flush()
+
+    def err(self, s, context = ""):
+        msg = "ERROR: " + s + "\n"
+        self.text += msg
+        sys.stdout.write("##teamcity[message text='%s' errorDetails='%s' status='ERROR']" % (s, context))
+        sys.stdout.flush()
+
+    def print_log(self):
+        print(self.text)
+
+    def get_log(self):
+        return self.text
+
+log = TeamCityLog()
 
 ### Quality assessment ###
 
@@ -86,7 +124,7 @@ class MetricEntry:
             #E.g. reads aligned 100 (100%)
             p = re.search('\((.+)%\)', s).group(1)
             return float(p)
-            
+
 
 # Construct limit map for given metrics ---  list of triplets (config_name, report_name, should_be_higher_that_threshold)
 def construct_limit_map(dataset_info, prefix, metric_list, add_all_params = False):
@@ -353,19 +391,19 @@ def quast_analysis(contigs, dataset_info, folder):
     return exit_code
 
 
-### Compare misassemblies 
+### Compare misassemblies
 
-def parse_alignment(s): 
+def parse_alignment(s):
     m = s.strip()
     if not m.startswith("Real Alignment"):
         return None
-    
+
     coords = m.split(':')[1]
     genome_c = coords.split('|')[0].strip().split(' ')
     genome_coords = (int(genome_c[0]), int(genome_c[1]))
     contig_c = coords.split('|')[1].strip().split(' ')
     contig_coords = (int(contig_c[0]), int(contig_c[1]))
-    
+
     return (genome_coords, contig_coords)
 
 
@@ -392,7 +430,7 @@ def parse_misassembly(m1, m2):
         return (pos1, pos2)
     else:
         return (pos2, pos1)
-  
+
 
 def find_mis_positions(contig_report):
     infile = open(contig_report)
@@ -423,7 +461,7 @@ def find_mis_positions(contig_report):
             prev_line = line2
             continue
         prev_line = line
-               
+
     infile.close()
     return coords
 
@@ -454,10 +492,10 @@ def cmp_misassemblies(quast_output_dir, old_ctgs, new_ctgs):
                 new_pos[k] = []
 
     old_mis = 0
-    for k, v in old_pos.items(): 
+    for k, v in old_pos.items():
         old_mis += len(v)
     new_mis = 0
-    for k, v in new_pos.items():   
+    for k, v in new_pos.items():
         new_mis += len(v)
 
     if new_mis == 0 and old_mis == 0:
@@ -486,7 +524,7 @@ def cmp_misassemblies(quast_output_dir, old_ctgs, new_ctgs):
                     log.log("      " + ctg)
         return False
 
-        
+
 # Run QUAST and compare misassemblies for given pair of contigs files
 def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir):
     exit_code = 0
@@ -497,7 +535,7 @@ def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
         for name, file_name, prefix, opts, ext in contigs:
             if ext != "fasta":
                 continue
-            fn = os.path.join(output_dir, file_name + "." + ext) 
+            fn = os.path.join(output_dir, file_name + "." + ext)
             if not os.path.exists(fn):
                 log.err('File for comparison is not found: ' + fn)
                 exit_code = 8
@@ -647,8 +685,9 @@ def create_output_dir(args, dataset_info):
 
 # Compile SPAdes
 def compile_spades(args, dataset_info, working_dir):
+    log.log("Building SPAdes")
     if not args.cfg_compilation:
-        log.log("Forced to use current SPAdes build, will not compile SPAdes");
+        log.warn("Forced to use current SPAdes build, will not compile SPAdes");
     elif 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
         comp_params = ' '
         if 'compilation_params' in dataset_info.__dict__:
@@ -668,6 +707,7 @@ def compile_spades(args, dataset_info, working_dir):
 
         if err_code != 0:
             # Compile from the beginning if failed
+            log.warn("Incremental build failed, trying from scratch")
             shutil.rmtree('bin', True)
             shutil.rmtree('build_spades', True)
             return os.system('./spades_compile.sh ' + comp_params)
@@ -787,4 +827,3 @@ def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, art
         os.chdir(quast_output_dir)
         os.system("zip -9r " + compressed_report + " * > /dev/null")
         os.chdir(working_dir)
-
