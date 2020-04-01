@@ -54,33 +54,39 @@ class Log:
         return self.text
 
 
+_quote = {"'": "|'", "|": "||", "\n": "|n", "\r": "|r", '[': '|[', ']': '|]'}
+
+def escape_value(value):
+    return "".join(_quote.get(x, x) for x in value)
+
 class TeamCityLog:
 
     text = ""
 
     def start_block(self, name, desc):
-        sys.stdout.flush()        
-        print("##teamcity[blockOpened name='%s' description='%s']" % (name, desc))
+        sys.stdout.flush()
+        print("##teamcity[blockOpened name='%s' description='%s']" %
+              (escape_value(name), escape_value(desc)))
 
     def end_block(self, name):
         sys.stdout.flush()
-        print("##teamcity[blockClosed name='%s']" % name)
+        print("##teamcity[blockClosed name='%s']" % escape_value(name))
 
     def log(self, s):
         self.text += s + "\n"
-        sys.stdout.write("##teamcity[message text='%s']" % s)
+        sys.stdout.write("##teamcity[message text='%s']" % escape_value(s))
         sys.stdout.flush()
 
     def warn(self, s):
         msg = "WARNING: " + s + "\n"
         self.text += msg
-        sys.stdout.write("##teamcity[message text='%s' status='WARNING']" % s)
+        sys.stdout.write("##teamcity[message text='%s' status='WARNING']" % escape_value(s))
         sys.stdout.flush()
 
     def err(self, s, context = ""):
         msg = "ERROR: " + s + "\n"
         self.text += msg
-        sys.stdout.write("##teamcity[message text='%s' errorDetails='%s' status='ERROR']" % (s, context))
+        sys.stdout.write("##teamcity[message text='%s' errorDetails='%s' status='ERROR']" % (escape_value(s), escape_value(context)))
         sys.stdout.flush()
 
     def print_log(self):
