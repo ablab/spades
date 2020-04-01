@@ -43,13 +43,15 @@ try:
     save_run_info(args, output_dir)
 
     #compile
+    log.log("##teamcity[blockOpened name='build' description='Building SPAdes']")
     ecode = compile_spades(args, dataset_info, working_dir)
     if ecode != 0:
         log.err("Compilation finished abnormally with exit code " + str(ecode))
         sys.exit(3)
- 
-    #run spades
+    log.log("##teamcity[blockClosed name='build']")
 
+    #run spades
+    log.log("##teamcity[blockOpened name='run' description='Running SPAdes']")
     spades_dir = working_dir
     if args.spades_path:
         spades_dir = args.spades_path
@@ -57,40 +59,51 @@ try:
     spades_cmd = make_spades_cmd(args, dataset_info, spades_dir, output_dir)
     #log.log("Launching: " + spades_cmd)
 
-    ecode = os.system(spades_cmd) 
+    ecode = os.system(spades_cmd)
     if ecode != 0:
         log.err("SPAdes finished abnormally with exit code " + str(ecode))
         sys.exit(4)
+    log.log("##teamcity[blockClosed name='run']")
 
     #reads quality
     if 'reads_quality_params' in dataset_info.__dict__:
+        log.log("##teamcity[blockOpened name='reads quality' description='Asessing reads quality']")
         exit_code = run_reads_assessment(dataset_info, working_dir, output_dir)
+        log.log("##teamcity[blockClosed name='reads quality']")
+
 
     #QUAST
     rewrite_latest = True
-    contigs = get_contigs_list(args, dataset_info)    
+    contigs = get_contigs_list(args, dataset_info)
     if 'quast_params' in dataset_info.__dict__:
+        log.log("##teamcity[blockOpened name='quast' description='Running QUAST']")
         ecode = quast_analysis(contigs, dataset_info, output_dir)
         if ecode != 0:
             rewrite_latest = False
             log.err("QUAST analysis did not pass, exit code " + str(ecode))
             exit_code = ecode
+        log.log("##teamcity[blockClosed name='quast']")
+
 
     #etalon saves
     if 'etalon_saves' in dataset_info.__dict__:
         log.log("Comparing etalon saves now")
+        log.log("##teamcity[blockOpened name='saves' description='Comparing etalon saves']")
         ecode = os.system(os.path.join(spades_dir, "./src/test/teamcity/detect_diffs.sh") + " " + output_dir + " " + dataset_info.etalon_saves)
         if ecode != 0:
             rewrite_latest = False
             log.err("Comparing etalon saves did not pass, exit code " + str(ecode))
             exit_code = 12
+        log.log("##teamcity[blockClosed name='saves']")
 
     #compare misassemblies
+    log.log("##teamcity[blockOpened name='misassemblies' description='Comparing misassemblies']")
     contig_storage_dir = get_contigs_storage_dir(args, dataset_info)
     ecode, rewrite = compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
     rewrite_latest = rewrite_latest and rewrite
     if ecode != 0:
         log.err('Failed to compare misassemblies')
+    log.log("##teamcity[blockClosed name='misassemblies']")
 
     #save contigs to storage
     contigs = get_contigs_list(args, dataset_info, True)
