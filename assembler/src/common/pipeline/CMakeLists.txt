@@ -14,4 +14,3 @@ add_library(pipeline STATIC
             stage.cpp)
 
 target_link_libraries(pipeline path_extend input llvm-support)
-

@@ -8,6 +8,7 @@
 #ifndef __GENOMIC_INFO_HPP__
 #define __GENOMIC_INFO_HPP__
 
+#include <string>
 #include <vector>
 
 namespace llvm { namespace yaml { class IO; } }
