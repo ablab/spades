@@ -16,7 +16,8 @@ add_library(input STATIC
             dataset_support/read_converter.cpp
             dataset_support/dataset_readers.cpp
             sam/read.cpp
-            sam/sam_reader.cpp)
+            sam/sam_reader.cpp
+            binary/genomic_info.cpp)
 
 include_directories(SYSTEM "${ZLIB_INCLUDE_DIRS}")
 target_link_libraries(input BamTools samtools ${ZLIB_LIBRARIES})
