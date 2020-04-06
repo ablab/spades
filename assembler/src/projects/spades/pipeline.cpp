@@ -74,6 +74,29 @@ static void AddMetaplasmidStages(StageManager &SPAdes) {
 
 }
 
+static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
+    using namespace debruijn_graph::config;
+    pipeline_type mode = cfg::get().mode;
+
+    SPAdes.add<debruijn_graph::Simplification>(true);
+    if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
+        SPAdes.add<debruijn_graph::GapClosing>("prelim_gapcloser");
+
+    if (cfg::get().use_intermediate_contigs) {
+        SPAdes.add<debruijn_graph::PairInfoCount>(true)
+              .add<debruijn_graph::DistanceEstimation>(true)
+              .add<debruijn_graph::RepeatResolution>(true);
+
+        if (mode == pipeline_type::bgc)
+            SPAdes.add<debruijn_graph::ExtractDomains>();
+
+        SPAdes.add<debruijn_graph::ContigOutput>(true)
+              .add<debruijn_graph::SecondPhaseSetup>();
+        if (mode == pipeline_type::bgc)
+            SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();
+    }
+}
+
 void assemble_genome() {
     using namespace debruijn_graph::config;
     pipeline_type mode = cfg::get().mode;
@@ -119,39 +142,15 @@ void assemble_genome() {
         cfg::get().gc.before_raw_simplify)
         SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
 
-    if (two_step_rr) {
-        // Using two_step_rr is hacky here. Fix soon!
-        SPAdes.add<debruijn_graph::RawSimplification>(true);
+    // Using two_step_rr is hacky here. Fix soon!
+    SPAdes.add<debruijn_graph::RawSimplification>(two_step_rr);
 
-        if (cfg::get().gap_closer_enable &&
-            cfg::get().gc.before_simplify)
-            SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
+    if (cfg::get().gap_closer_enable &&
+        cfg::get().gc.before_simplify)
+        SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
 
-        SPAdes.add<debruijn_graph::Simplification>(true);
-        if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
-            SPAdes.add<debruijn_graph::GapClosing>("prelim_gapcloser");
-        if (cfg::get().use_intermediate_contigs) {
-            SPAdes.add<debruijn_graph::PairInfoCount>(true)
-                  .add<debruijn_graph::DistanceEstimation>(true)
-                  .add<debruijn_graph::RepeatResolution>(true);
-
-            if (mode == pipeline_type::bgc)
-                SPAdes.add<debruijn_graph::ExtractDomains>();
-
-            SPAdes.add<debruijn_graph::ContigOutput>(true)
-                  .add<debruijn_graph::SecondPhaseSetup>();
-            if (mode == pipeline_type::bgc)
-                SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();
-        }
-    } else {
-        // Using two_step_rr is hacky here. Fix soon!
-        SPAdes.add<debruijn_graph::RawSimplification>(false);
-
-        if (cfg::get().gap_closer_enable &&
-            cfg::get().gc.before_simplify)
-            SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
-    }
-
+    if (two_step_rr)
+        AddPreliminarySimplificationStages(SPAdes);
 
     SPAdes.add<debruijn_graph::Simplification>();
 
