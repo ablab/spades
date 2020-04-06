@@ -9,7 +9,6 @@ project(pipeline CXX)
 
 add_library(pipeline STATIC
             config_struct.cpp
-            genomic_info_filler.cpp
             library.cpp
             library_data.cpp
             stage.cpp)
