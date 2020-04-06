@@ -5,17 +5,17 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#pragma once
-
 #include "pipeline/config_struct.hpp"
 
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/genomic_info_filler.hpp"
+
 #include "stages/read_conversion.hpp"
 #include "stages/construction.hpp"
-#include "pipeline/genomic_info_filler.hpp"
-#include "gap_closer.hpp"
 #include "stages/simplification.hpp"
 #include "stages/ss_edge_split.hpp"
+
+#include "gap_closer.hpp"
 #include "mismatch_correction.hpp"
 #include "pair_info_count.hpp"
 #include "second_phase_setup.hpp"
@@ -32,7 +32,7 @@
 
 namespace spades {
 
-inline bool MetaCompatibleLibraries() {
+static bool MetaCompatibleLibraries() {
     const auto& libs = cfg::get().ds.reads;
     if (libs[0].type() != io::LibraryType::PairedEnd)
         return false;
@@ -45,7 +45,7 @@ inline bool MetaCompatibleLibraries() {
     return true;
 }
 
-inline bool HybridLibrariesPresent() {
+static bool HybridLibrariesPresent() {
     for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id) 
         if (cfg::get().ds.reads[lib_id].is_hybrid_lib()) 
             return true;

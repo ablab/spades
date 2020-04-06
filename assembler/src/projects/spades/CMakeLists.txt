@@ -24,7 +24,8 @@ add_library(spades-stages STATIC
             restricted_edges_filling.cpp)
 target_link_libraries(spades-stages ConsensusCore)
           
-add_executable(spades-core 
+add_executable(spades-core
+               pipeline.cpp
                main.cpp
                series_analysis.cpp
                ../mts/contig_abundance.cpp)
