@@ -44,13 +44,12 @@ namespace debruijn_graph {
 namespace config {
 
 bool PipelineHelper::IsPlasmidPipeline(const pipeline_type pipeline) {
-    return pipeline == pipeline_type ::plasmid || pipeline == pipeline_type::metaplasmid;
+    return pipeline == pipeline_type::plasmid || pipeline == pipeline_type::metaplasmid;
 }
 
 bool PipelineHelper::IsMetagenomicPipeline(const pipeline_type pipeline) {
-    return pipeline == pipeline_type ::meta || pipeline == pipeline_type::metaplasmid || pipeline == pipeline_type::bgc;
+    return pipeline == pipeline_type::meta || pipeline == pipeline_type::metaplasmid || pipeline == pipeline_type::bgc;
 }
-
 
 template<typename mode_t>
 std::vector<std::string> CheckedNames(const std::vector<std::pair<std::string, mode_t>>& mapping, mode_t total) {
@@ -866,8 +865,8 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
         cfg.pe_params.param_set.scaffolder_options.enabled = false;
     }
 
-    cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches
-                       || cfg.gap_closer_enable || cfg.rr_enable ||
+    cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches ||
+                       cfg.gap_closer_enable || cfg.rr_enable ||
                        cfg.ss_coverage_splitter.enabled;
 
     cfg.output_dir = fs::append_path(cfg.output_base, "K" + std::to_string(cfg.K)) + "/";
