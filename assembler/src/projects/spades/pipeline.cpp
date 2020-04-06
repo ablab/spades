@@ -1,19 +1,8 @@
 //***************************************************************************
-//* Copyright (c) 2015 Saint Petersburg State University
-//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* Copyright (c) 2020 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
-
-#include "pipeline/config_struct.hpp"
-
-#include "pipeline/graph_pack.hpp"
-#include "pipeline/genomic_info_filler.hpp"
-
-#include "stages/read_conversion.hpp"
-#include "stages/construction.hpp"
-#include "stages/simplification.hpp"
-#include "stages/ss_edge_split.hpp"
 
 #include "gap_closer.hpp"
 #include "mismatch_correction.hpp"
@@ -29,6 +18,15 @@
 #include "extract_domains.hpp"
 #include "domain_graph_construction.hpp"
 #include "restricted_edges_filling.hpp"
+
+#include "stages/genomic_info_filler.hpp"
+#include "stages/read_conversion.hpp"
+#include "stages/construction.hpp"
+#include "stages/simplification.hpp"
+#include "stages/ss_edge_split.hpp"
+
+#include "pipeline/config_struct.hpp"
+#include "pipeline/graph_pack.hpp"
 
 namespace spades {
 
