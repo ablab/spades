@@ -121,7 +121,7 @@ double PELaunchSupport::EstimateLibCoverage(size_t lib_index) const {
 size_t PELaunchSupport::TotalNuclsInGraph() const {
     size_t total_nc_count = 0;
     for (const auto &lib: dataset_info_.reads) {
-        if (lib.is_graph_contructable())
+        if (lib.is_graph_constructable())
             total_nc_count += lib.data().total_nucls;
     }
     return total_nc_count;

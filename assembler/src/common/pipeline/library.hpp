@@ -151,7 +151,7 @@ public:
         return adt::make_range(single_begin(), single_end());
     }
 
-    bool is_graph_contructable() const {
+    bool is_graph_constructable() const {
         return type_ == io::LibraryType::PairedEnd ||
                type_ == io::LibraryType::SingleReads ||
                type_ == io::LibraryType::HQMatePairs;
@@ -162,7 +162,7 @@ public:
     }
 
     bool is_mismatch_correctable() const {
-        return is_graph_contructable();
+        return is_graph_constructable();
     }
 
 //    bool is_binary_covertable() {
@@ -226,6 +226,10 @@ public:
 
     bool is_fl_lib() const {
         return type_ == io::LibraryType::FLRNAReads;
+    }
+
+    bool is_assembly_graph() const {
+        return type_ == io::LibraryType::AssemblyGraph;
     }
 
 private:

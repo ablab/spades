@@ -534,7 +534,7 @@ void PathExtendLauncher::SelectStrandSpecificPaths(PathContainer &paths) const {
     if (params_.ss.ss_enabled) {
         INFO("Paths will be printed according to strand-specific coverage");
         size_t lib_index = 0;
-        while (lib_index < dataset_info_.reads.lib_count() && !dataset_info_.reads[lib_index].is_graph_contructable()) {
+        while (lib_index < dataset_info_.reads.lib_count() && !dataset_info_.reads[lib_index].is_graph_constructable()) {
             ++lib_index;
         }
         PathContainerCoverageSwitcher switcher(graph_, gp_.get<SSCoverageContainer>()[lib_index], params_.ss.antisense);

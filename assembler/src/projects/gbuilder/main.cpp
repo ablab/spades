@@ -138,7 +138,7 @@ int main(int argc, char* argv[]) {
 
         std::vector<size_t> libs_for_construction;
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
-            if (dataset[i].is_graph_contructable()) {
+            if (dataset[i].is_graph_constructable()) {
                 libs_for_construction.push_back(i);
                 io::ReadConverter::ConvertToBinary(dataset[i]);
             }

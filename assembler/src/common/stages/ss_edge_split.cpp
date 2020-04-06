@@ -26,7 +26,7 @@ void SSEdgeSplit::run(GraphPack& gp, const char *) {
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         auto &lib = cfg::get_writable().ds.reads[i];
-        if (!lib.is_graph_contructable()) {
+        if (!lib.is_graph_constructable()) {
             continue;
         }
 

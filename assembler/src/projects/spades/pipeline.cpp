@@ -168,7 +168,7 @@ static void AddSimplificationStages(StageManager &SPAdes) {
         SPAdes.add<debruijn_graph::SSEdgeSplit>();
 }
 
-void AddConstructionStages(StageManager &SPAdes) {
+static void AddConstructionStages(StageManager &SPAdes) {
     using namespace debruijn_graph::config;
     pipeline_type mode = cfg::get().mode;
 
@@ -177,7 +177,7 @@ void AddConstructionStages(StageManager &SPAdes) {
         SPAdes.add<debruijn_graph::GenomicInfoFiller>();
 }
 
-void AddRepeatResolutionStages(StageManager &SPAdes) {
+static void AddRepeatResolutionStages(StageManager &SPAdes) {
     using namespace debruijn_graph::config;
 
     if (!cfg::get().series_analysis.empty())
@@ -205,7 +205,7 @@ void assemble_genome() {
                                     cfg::get().output_saves, cfg::get().load_from));
 
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
-    INFO("Two-step RR enabled: " << two_step_rr);
+    INFO("Two-step repeat resolution " << (two_step_rr ? "enabled" : "disabled"));
 
     debruijn_graph::GraphPack conj_gp(cfg::get().K,
                                             cfg::get().tmp_dir,
