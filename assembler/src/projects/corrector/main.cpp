@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     srandom(42);
     try {
         if (argc != 3) {
-            WARN("Wrong argument number");
+            std::cerr << "Wrong argument number\n";
             return 1;
         }
         string contig_name(argv[2]);
