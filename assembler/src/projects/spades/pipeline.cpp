@@ -44,13 +44,14 @@ static bool MetaCompatibleLibraries() {
 }
 
 static bool HybridLibrariesPresent() {
-    for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id) 
-        if (cfg::get().ds.reads[lib_id].is_hybrid_lib()) 
+    for (const auto &lib : cfg::get().ds.reads.libraries())
+        if (lib.is_hybrid_lib())
             return true;
+
     return false;
 }
 
-inline std::string GetContigName(std::string contig_id, size_t cov) {
+static std::string GetContigName(std::string contig_id, size_t cov) {
     std::string res = std::to_string(cov);
     while (res.length() < 4) {
         res = "_" + res;
@@ -58,7 +59,7 @@ inline std::string GetContigName(std::string contig_id, size_t cov) {
     return contig_id + res;
 }
 
-inline void AddMetaplasmidStages(StageManager &SPAdes) {
+static void AddMetaplasmidStages(StageManager &SPAdes) {
     size_t cov = cfg::get().pd->additive_step;
     size_t add = cfg::get().pd->additive_step;
     double multiplier = cfg::get().pd->relative_step;
@@ -74,10 +75,13 @@ inline void AddMetaplasmidStages(StageManager &SPAdes) {
 }
 
 void assemble_genome() {
+    using namespace debruijn_graph::config;
+    pipeline_type mode = cfg::get().mode;
+
     INFO("SPAdes started");
-    if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta && !MetaCompatibleLibraries()) {
+    if (mode == pipeline_type::meta && !MetaCompatibleLibraries()) {
         ERROR("Sorry, current version of metaSPAdes can work either with single library (paired-end only) "
-                      "or in paired-end + (TSLR or PacBio or Nanopore) mode.");
+              "or in hybrid paired-end + (TSLR or PacBio or Nanopore) mode.");
         exit(239);
     }
 
@@ -106,7 +110,7 @@ void assemble_genome() {
     SPAdes.add<ReadConversion>();
     SPAdes.add<debruijn_graph::Construction>();
 
-    if (! debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(cfg::get().mode))
+    if (!PipelineHelper::IsMetagenomicPipeline(mode))
         SPAdes.add<debruijn_graph::GenomicInfoFiller>();
 
     VERIFY(!cfg::get().gc.before_raw_simplify || !cfg::get().gc.before_simplify);
@@ -115,14 +119,14 @@ void assemble_genome() {
         cfg::get().gc.before_raw_simplify)
         SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
 
-    //Using two_step_rr is hacky here. Fix soon!
-    SPAdes.add<debruijn_graph::RawSimplification>(two_step_rr);
-
-    if (cfg::get().gap_closer_enable &&
-        cfg::get().gc.before_simplify)
-        SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
-
     if (two_step_rr) {
+        // Using two_step_rr is hacky here. Fix soon!
+        SPAdes.add<debruijn_graph::RawSimplification>(true);
+
+        if (cfg::get().gap_closer_enable &&
+            cfg::get().gc.before_simplify)
+            SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
+
         SPAdes.add<debruijn_graph::Simplification>(true);
         if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
             SPAdes.add<debruijn_graph::GapClosing>("prelim_gapcloser");
@@ -131,15 +135,23 @@ void assemble_genome() {
                   .add<debruijn_graph::DistanceEstimation>(true)
                   .add<debruijn_graph::RepeatResolution>(true);
 
-            if (cfg::get().mode == debruijn_graph::config::pipeline_type::bgc)
+            if (mode == pipeline_type::bgc)
                 SPAdes.add<debruijn_graph::ExtractDomains>();
 
             SPAdes.add<debruijn_graph::ContigOutput>(true)
                   .add<debruijn_graph::SecondPhaseSetup>();
-            if (cfg::get().mode == debruijn_graph::config::pipeline_type::bgc)
+            if (mode == pipeline_type::bgc)
                 SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();
         }
+    } else {
+        // Using two_step_rr is hacky here. Fix soon!
+        SPAdes.add<debruijn_graph::RawSimplification>(false);
+
+        if (cfg::get().gap_closer_enable &&
+            cfg::get().gc.before_simplify)
+            SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
     }
+
 
     SPAdes.add<debruijn_graph::Simplification>();
 
@@ -147,6 +159,7 @@ void assemble_genome() {
         SPAdes.add<debruijn_graph::GapClosing>("late_gapcloser");
 
     SPAdes.add<debruijn_graph::SimplificationCleanup>();
+
     if (cfg::get().correct_mismatches)
         SPAdes.add<debruijn_graph::MismatchCorrection>();
 
@@ -156,36 +169,35 @@ void assemble_genome() {
     if (cfg::get().rr_enable) {
         if (!cfg::get().series_analysis.empty())
             SPAdes.add<debruijn_graph::SeriesAnalysis>();
+
         // Not metaplasmid!
-        if (cfg::get().mode == debruijn_graph::config::pipeline_type::plasmid)
+        if (mode == pipeline_type::plasmid)
             SPAdes.add<debruijn_graph::ChromosomeRemoval>();
 
-        if (HybridLibrariesPresent()) {
+        if (HybridLibrariesPresent())
             SPAdes.add<debruijn_graph::HybridLibrariesAligning>();
-        }
 
-        //No graph modification allowed after HybridLibrariesAligning stage!
-
+        // No graph modification allowed after HybridLibrariesAligning stage!
         SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration, false)
               .add<debruijn_graph::PairInfoCount>()
               .add<debruijn_graph::DistanceEstimation>()
               .add<debruijn_graph::RepeatResolution>();
 
-        if (cfg::get().mode == debruijn_graph::config::pipeline_type::metaplasmid) {
+        if (mode == pipeline_type::metaplasmid)
             AddMetaplasmidStages(SPAdes);
-        }
 
+        SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
+
+        if (mode == pipeline_type::bgc && cfg::get().rr_enable)
+            SPAdes.add<debruijn_graph::DomainGraphConstruction>();
+    } else {
+        SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
     }
-
-    SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
-
-    if (cfg::get().mode == debruijn_graph::config::pipeline_type::bgc && cfg::get().rr_enable)
-        SPAdes.add(new debruijn_graph::DomainGraphConstruction());
 
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 
     // For informing spades.py about estimated params
-    debruijn_graph::config::write_lib_data(fs::append_path(cfg::get().output_dir, "final"));
+    write_lib_data(fs::append_path(cfg::get().output_dir, "final"));
 
     INFO("SPAdes finished");
 }
