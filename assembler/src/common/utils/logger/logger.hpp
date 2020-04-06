@@ -118,7 +118,10 @@ inline const char* __scope_source_name() {
 #define LOG_MSG(l, msg)                                                 \
   do {                                                                  \
     std::shared_ptr<logging::logger> &__lg__ = logging::__logger();     \
-    if (__lg__.get() == NULL)                                           \
+    if (__lg__.get() == NULL) {                                         \
+      std::cerr << "WARNING: Try to use logger before create one. Level=" << level_name(l);\
+      std::cerr << ". Message="  <<  msg << "\n";                       \
+      fflush(stderr);                                                   \
       break;                                                            \
                                                                         \
     if (__lg__->need_log((l), __scope_source_name())) {                 \
