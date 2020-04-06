@@ -12,6 +12,11 @@ import logging
 import os
 import shutil
 import sys
+from os.path import abspath, dirname, realpath, join
+
+python_modules_home = abspath(dirname(realpath(__file__)))
+sys.path.append(join(python_modules_home, ".."))
+import support
 
 
 def parse_args():
@@ -70,7 +75,8 @@ def main():
         log.info("\n== Running contig polishing tool: " + ' '.join(command) + "\n")
         log.info("\n== Dataset description file was created: " + cfg_file_name + "\n")
         log.info("Run: " + ' '.join(command))
-        os.system(' '.join(command))
+
+        support.sys_call(command, log)
 
         if not os.path.isfile(result_corrected_filename):
             log.error("mismatch correction finished abnormally: %s not found!" % result_corrected_filename)
