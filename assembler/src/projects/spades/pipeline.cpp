@@ -97,6 +97,68 @@ static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
     }
 }
 
+static void AddSimplificationStages(StageManager &SPAdes) {
+    VERIFY(!cfg::get().gc.before_raw_simplify || !cfg::get().gc.before_simplify);
+    bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
+
+    if (cfg::get().gap_closer_enable &&
+        cfg::get().gc.before_raw_simplify)
+        SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
+
+    // Using two_step_rr is hacky here. Fix soon!
+    SPAdes.add<debruijn_graph::RawSimplification>(two_step_rr);
+
+    if (cfg::get().gap_closer_enable &&
+        cfg::get().gc.before_simplify)
+        SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
+
+    if (two_step_rr)
+        AddPreliminarySimplificationStages(SPAdes);
+
+    SPAdes.add<debruijn_graph::Simplification>();
+
+    if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
+        SPAdes.add<debruijn_graph::GapClosing>("late_gapcloser");
+
+    SPAdes.add<debruijn_graph::SimplificationCleanup>();
+
+    if (cfg::get().correct_mismatches)
+        SPAdes.add<debruijn_graph::MismatchCorrection>();
+
+    if (cfg::get().ss_coverage_splitter.enabled)
+        SPAdes.add<debruijn_graph::SSEdgeSplit>();
+}
+
+void AddConstructionStages(StageManager &SPAdes) {
+    using namespace debruijn_graph::config;
+    pipeline_type mode = cfg::get().mode;
+
+    SPAdes.add<debruijn_graph::Construction>();
+    if (!PipelineHelper::IsMetagenomicPipeline(mode))
+        SPAdes.add<debruijn_graph::GenomicInfoFiller>();
+}
+
+void AddRepeatResolutionStages(StageManager &SPAdes) {
+    using namespace debruijn_graph::config;
+    pipeline_type mode = cfg::get().mode;
+
+    if (!cfg::get().series_analysis.empty())
+        SPAdes.add<debruijn_graph::SeriesAnalysis>();
+
+    // No graph modification allowed after HybridLibrariesAligning stage!
+    SPAdes.add<debruijn_graph::PairInfoCount>()
+          .add<debruijn_graph::DistanceEstimation>()
+          .add<debruijn_graph::RepeatResolution>();
+
+    if (mode == pipeline_type::metaplasmid)
+        AddMetaplasmidStages(SPAdes);
+
+    SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
+
+    if (mode == pipeline_type::bgc)
+        SPAdes.add<debruijn_graph::DomainGraphConstruction>();
+}
+
 void assemble_genome() {
     using namespace debruijn_graph::config;
     pipeline_type mode = cfg::get().mode;
@@ -131,67 +193,26 @@ void assemble_genome() {
 
     // Build the pipeline
     SPAdes.add<ReadConversion>();
-    SPAdes.add<debruijn_graph::Construction>();
 
-    if (!PipelineHelper::IsMetagenomicPipeline(mode))
-        SPAdes.add<debruijn_graph::GenomicInfoFiller>();
+    AddConstructionStages(SPAdes);
 
-    VERIFY(!cfg::get().gc.before_raw_simplify || !cfg::get().gc.before_simplify);
+    AddSimplificationStages(SPAdes);
 
-    if (cfg::get().gap_closer_enable &&
-        cfg::get().gc.before_raw_simplify)
-        SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
+    // No need to output paths if no repeat resolution is made
+    SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration,
+                                             !cfg::get().rr_enable);
 
-    // Using two_step_rr is hacky here. Fix soon!
-    SPAdes.add<debruijn_graph::RawSimplification>(two_step_rr);
-
-    if (cfg::get().gap_closer_enable &&
-        cfg::get().gc.before_simplify)
-        SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
-
-    if (two_step_rr)
-        AddPreliminarySimplificationStages(SPAdes);
-
-    SPAdes.add<debruijn_graph::Simplification>();
-
-    if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
-        SPAdes.add<debruijn_graph::GapClosing>("late_gapcloser");
-
-    SPAdes.add<debruijn_graph::SimplificationCleanup>();
-
-    if (cfg::get().correct_mismatches)
-        SPAdes.add<debruijn_graph::MismatchCorrection>();
-
-    if (cfg::get().ss_coverage_splitter.enabled)
-        SPAdes.add<debruijn_graph::SSEdgeSplit>();
-
-    if (cfg::get().rr_enable) {
-        if (!cfg::get().series_analysis.empty())
-            SPAdes.add<debruijn_graph::SeriesAnalysis>();
-
+    if (cfg::get().main_iteration) {
         // Not metaplasmid!
         if (mode == pipeline_type::plasmid)
             SPAdes.add<debruijn_graph::ChromosomeRemoval>();
 
         if (HybridLibrariesPresent())
             SPAdes.add<debruijn_graph::HybridLibrariesAligning>();
-
-        // No graph modification allowed after HybridLibrariesAligning stage!
-        SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration, false)
-              .add<debruijn_graph::PairInfoCount>()
-              .add<debruijn_graph::DistanceEstimation>()
-              .add<debruijn_graph::RepeatResolution>();
-
-        if (mode == pipeline_type::metaplasmid)
-            AddMetaplasmidStages(SPAdes);
-
-        SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
-
-        if (mode == pipeline_type::bgc && cfg::get().rr_enable)
-            SPAdes.add<debruijn_graph::DomainGraphConstruction>();
-    } else {
-        SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
     }
+
+    if (cfg::get().rr_enable)
+        AddRepeatResolutionStages(SPAdes);
 
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 
