@@ -222,7 +222,7 @@ class SpadesCopyFileStage(stage.Stage):
             prefix = filtering_type + "_filtered_"
             result_filtered_transcripts = os.path.join(self.cfg.output_dir,
                                                        prefix + options_storage.transcripts_name)
-            self.OutputFile(result_filtered_transcripts, prefix + "final_paths.fasta", self.rna_copy)
+            self.output.append(self.OutputFile(result_filtered_transcripts, prefix + "final_paths.fasta", self.rna_copy))
 
     def __init__(self, latest, *args):
         super(SpadesCopyFileStage, self).__init__(*args)
