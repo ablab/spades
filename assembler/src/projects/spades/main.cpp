@@ -5,21 +5,23 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * Assembler Main
- */
-#include "utils/logger/log_writers.hpp"
+#include "pipeline/config_struct.hpp"
 
+#include "utils/logger/log_writers.hpp"
 #include "utils/memory_limit.hpp"
 #include "utils/segfault_handler.hpp"
-#include "launch.hpp"
 #include "utils/filesystem/copy_file.hpp"
+
+#include "k_range.hpp"
 #include "version.hpp"
 
-using namespace std;
 using fs::make_dir;
 
-void load_config(const vector<string>& cfg_fns) {
+namespace spades {
+void assemble_genome();
+}
+
+void load_config(const std::vector<std::string>& cfg_fns) {
     for (const auto& s : cfg_fns) {
         fs::CheckFileExistenceFATAL(s);
     }
@@ -35,7 +37,7 @@ void load_config(const vector<string>& cfg_fns) {
     make_dir(cfg::get().temp_bin_reads_path);
 }
 
-void create_console_logger(const string& dir, string log_prop_fn) {
+void create_console_logger(const std::string& dir, std::string log_prop_fn) {
     using namespace logging;
 
     if (!fs::FileExists(log_prop_fn))
@@ -57,10 +59,10 @@ int main(int argc, char **argv) {
 
     try {
         using namespace debruijn_graph;
+        
+        std::string cfg_dir = fs::parent_path(argv[1]);
 
-        string cfg_dir = fs::parent_path(argv[1]);
-
-        vector<string> cfg_fns;
+        std::vector<std::string> cfg_fns;
         for (int i = 1; i < argc; ++i) {
            cfg_fns.push_back(argv[i]);
         }
