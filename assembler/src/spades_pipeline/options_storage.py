@@ -23,7 +23,8 @@ SUPPORTED_PYTHON_VERSIONS = ["2.7", "3.2+"]  # major.minor format only, close ("
 BH_ALLOWED_READS_EXTENSIONS = [".fq", ".fastq", ".bam", ".fq.gz", ".fastq.gz"]
 IONTORRENT_ONLY_ALLOWED_READS_EXTENSIONS = [".bam"]
 CONTIGS_ALLOWED_READS_EXTENSIONS = [".fa", ".fasta", ".fa.gz", ".fasta.gz"]
-ALLOWED_READS_EXTENSIONS = BH_ALLOWED_READS_EXTENSIONS + CONTIGS_ALLOWED_READS_EXTENSIONS
+GRAPH_ALLOWED_READS_EXTENSIONS = [".gfa"]
+ALLOWED_READS_EXTENSIONS = BH_ALLOWED_READS_EXTENSIONS + CONTIGS_ALLOWED_READS_EXTENSIONS + GRAPH_ALLOWED_READS_EXTENSIONS
 
 # we support up to MAX_LIBS_NUMBER libs for each type of short-reads libs
 MAX_LIBS_NUMBER = 9
@@ -31,6 +32,7 @@ OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s", "--merged"]
 SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs", "nxmate": "nxmate"}
 # other libs types:
 LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "tslr", "trusted-contigs", "untrusted-contigs", "fl-rna"]
+GRAPH_READS_TYPES = ["assembly-graph"]
 
 SHORT_STAGES_NAME = ["ec", "as", "mc", "scc", "tpp"]
 

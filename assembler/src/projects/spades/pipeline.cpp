@@ -18,6 +18,7 @@
 #include "extract_domains.hpp"
 #include "domain_graph_construction.hpp"
 #include "restricted_edges_filling.hpp"
+
 #include "modules/alignment/kmer_mapper.hpp"
 
 #include "stages/genomic_info_filler.hpp"
@@ -29,6 +30,8 @@
 #include "pipeline/config_struct.hpp"
 #include "pipeline/graph_pack.hpp"
 
+#include "load_graph.hpp"
+
 namespace spades {
 
 static bool MetaCompatibleLibraries() {
@@ -39,14 +42,23 @@ static bool MetaCompatibleLibraries() {
         return false;
     if (libs.lib_count() == 2 &&
         libs[1].type() != io::LibraryType::TSLReads &&
-        libs[1].type() != io::LibraryType::PacBioReads && libs[1].type() != io::LibraryType::NanoporeReads)
-            return false;
+        libs[1].type() != io::LibraryType::PacBioReads &&
+        libs[1].type() != io::LibraryType::NanoporeReads)
+        return false;
     return true;
 }
 
 static bool HybridLibrariesPresent() {
     for (const auto &lib : cfg::get().ds.reads.libraries())
         if (lib.is_hybrid_lib())
+            return true;
+
+    return false;
+}
+
+static bool AssemblyGraphPresent() {
+    for (const auto &lib : cfg::get().ds.reads.libraries())
+        if (lib.is_assembly_graph())
             return true;
 
     return false;
@@ -193,10 +205,16 @@ void assemble_genome() {
     pipeline_type mode = cfg::get().mode;
 
     INFO("SPAdes started");
+
+    // Perform various sanity checks
     if (mode == pipeline_type::meta && !MetaCompatibleLibraries()) {
-        ERROR("Sorry, current version of metaSPAdes can work either with single library (paired-end only) "
-              "or in hybrid paired-end + (TSLR or PacBio or Nanopore) mode.");
-        exit(239);
+        FATAL_ERROR("Sorry, current version of metaSPAdes can work either with single library (paired-end only) "
+                    "or in hybrid paired-end + (TSLR or PacBio or Nanopore) mode.");
+    } else if (AssemblyGraphPresent() &&
+               (mode != pipeline_type::metaplasmid && mode != pipeline_type::bgc &&
+                mode != pipeline_type::plasmid)) {
+        // Disallow generic assembly graph inputs for now
+        FATAL_ERROR("Assembly graph inputs are supported only for plasmid / metaplasmid and / bgc modes!");
     }
 
     INFO("Starting from stage: " << cfg::get().entry_point);
@@ -223,13 +241,17 @@ void assemble_genome() {
     // Build the pipeline
     SPAdes.add<ReadConversion>();
 
-    AddConstructionStages(SPAdes);
+    if (!AssemblyGraphPresent()) {
+        AddConstructionStages(SPAdes);
 
-    AddSimplificationStages(SPAdes);
+        AddSimplificationStages(SPAdes);
 
-    SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration ?
-                                             GetBeforeRROutput() : GetNonFinalStageOutput());
-
+        SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration ?
+                                                 GetBeforeRROutput() : GetNonFinalStageOutput());
+    } else {
+        SPAdes.add<debruijn_graph::LoadGraph>();
+    }
+    
     if (cfg::get().main_iteration) {
         // Not metaplasmid!
         if (mode == pipeline_type::plasmid)

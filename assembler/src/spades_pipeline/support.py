@@ -204,6 +204,10 @@ def check_reads_file_format(filename, message, only_assembler, iontorrent, libra
         error("file with %s should be in FASTA format  (%s are supported): %s (%s)" %
               (library_type, ", ".join(options_storage.CONTIGS_ALLOWED_READS_EXTENSIONS), filename, message), log)
 
+    if library_type.endswith("graph") and ext.lower() not in options_storage.GRAPH_ALLOWED_READS_EXTENSIONS:
+        error("file with %s should be in GFA format  (%s are supported): %s (%s)" %
+              (library_type, ", ".join(options_storage.GRAPH_ALLOWED_READS_EXTENSIONS), filename, message), log)
+        
 
 # http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 def which(program):

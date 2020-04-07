@@ -21,7 +21,8 @@ add_library(spades-stages STATIC
             domain_matcher.cpp
             domain_graph.cpp
             domain_graph_construction.cpp
-            restricted_edges_filling.cpp)
+            restricted_edges_filling.cpp
+            load_graph.cpp)
 target_link_libraries(spades-stages ConsensusCore)
           
 add_executable(spades-core
