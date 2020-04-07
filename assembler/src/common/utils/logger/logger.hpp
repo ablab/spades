@@ -123,6 +123,7 @@ inline const char* __scope_source_name() {
       std::cerr << ". Message="  <<  msg << "\n";                       \
       fflush(stderr);                                                   \
       break;                                                            \
+    }                                                                   \
                                                                         \
     if (__lg__->need_log((l), __scope_source_name())) {                 \
       std::stringstream __logger__str__;                                \
