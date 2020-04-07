@@ -86,7 +86,7 @@ if (SPADES_USE_JEMALLOC)
   set(JEMALLOC_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
 endif()
 
-option(SPADES_FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." ON)
+option(SPADES_FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." OFF)
 if (SPADES_FORCE_COLORED_OUTPUT)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
        add_compile_options(-fdiagnostics-color=always)
