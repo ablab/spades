@@ -56,6 +56,7 @@ def compress_dataset_files(input_file, ext_python_modules_home, max_threads, log
                         to_compress.append(reads_file)
                     reads_library[key] = compressed_reads_filenames
 
+        log.info("\n== Files to compress: " + str(to_compress))
         if len(to_compress):
             for reads_file in to_compress:
                 if not isfile(reads_file):
@@ -72,15 +73,19 @@ def compress_dataset_files(input_file, ext_python_modules_home, max_threads, log
                 for output in outputs:
                     if output:
                         log.info(output)
+            log.info("\n== Files compression is finished")
 
     if not_used_yaml_file != "":
         is_changed = True
         not_used_dataset_data = pyyaml.load(open(not_used_yaml_file))
         dataset_data += not_used_dataset_data
+        log.info("\n== Info about datasets not used in error correction stage is loaded")
+
     if is_changed:
         with open(input_file, 'w') as f:
             pyyaml.dump(dataset_data, f,
                         default_flow_style=False, default_style='"', width=float("inf"))
+        log.info("\n== Dataset yaml file is updated")
 
 
 def parse_args():
