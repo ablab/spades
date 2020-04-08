@@ -497,6 +497,14 @@ def add_input_data_args(pgroup_input_data):
                                    help=argparse.SUPPRESS,
                                    action="store_const")
 
+    help_hidden = (mode != "plasmid" and mode != "bgc" and mode != "metaplasmid")
+    pgroup_input_data.add_argument("--assembly-graph",
+                                   metavar="<filename>",
+                                   nargs=1,
+                                   help="file with assembly graph"
+                                   if not help_hidden else argparse.SUPPRESS,
+                                   action=AddToDatasetAction)
+    
 def add_pipeline_args(pgroup_pipeline):
     mode = get_mode()
     help_hidden = (mode == "rna")

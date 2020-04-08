@@ -514,6 +514,13 @@ def get_long_reads_type(option):
     return None
 
 
+def get_graph_type(option):
+    for graph_reads_type in options_storage.GRAPH_READS_TYPES:
+        if option.startswith("--") and option in ("--" + graph_reads_type):
+            return graph_reads_type
+    return None
+
+
 def is_single_read_type(option):
     return option.startswith("--s") and option[3:].isdigit()
 
@@ -528,8 +535,10 @@ def get_lib_type_and_number(option):
         lib_number = int(option[re.search("\d", option).start()])
     elif get_long_reads_type(option):
         lib_type = get_long_reads_type(option)
-    return lib_type, lib_number
+    elif get_graph_type(option):
+        lib_type = get_graph_type(option)
 
+    return lib_type, lib_number
 
 def get_data_type(option):
     if option.endswith("-12"):
@@ -538,7 +547,10 @@ def get_data_type(option):
         data_type = "left reads"
     elif option.endswith("-2"):
         data_type = "right reads"
-    elif option.endswith("-s") or is_single_read_type(option) or get_long_reads_type(option):
+    elif option.endswith("-s") or \
+         is_single_read_type(option) or \
+         get_long_reads_type(option) or \
+         get_graph_type(option):
         data_type = "single reads"
     elif option.endswith("-m") or option.endswith("-merged"):
         data_type = "merged reads"
