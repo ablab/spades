@@ -48,7 +48,7 @@ bool PipelineHelper::IsPlasmidPipeline(const pipeline_type pipeline) {
 }
 
 bool PipelineHelper::IsMetagenomicPipeline(const pipeline_type pipeline) {
-    return pipeline == pipeline_type ::meta || pipeline == pipeline_type::metaplasmid;
+    return pipeline == pipeline_type ::meta || pipeline == pipeline_type::metaplasmid || pipeline == pipeline_type::bgc;
 }
 
 
