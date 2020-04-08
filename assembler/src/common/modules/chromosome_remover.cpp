@@ -144,7 +144,7 @@ void ChromosomeRemover::CoverageFilter(double coverage_cutoff) {
             deleted ++;
         }
     }
-    INFO("With limit " <<coverage_cutoff << "deleted  " << deleted <<" edges");
+    INFO("With coverage cutoff " << coverage_cutoff << " removed " << deleted << " edges");
     CompressAll(gp_.g);
 }
 
@@ -243,7 +243,7 @@ void ChromosomeRemover::OutputSuspiciousComponents () {
             if (math::ls (average_cov, (double) ext_limit_ * 1.3)) {
                 DEBUG ("component coverage close to current limit");
             } else if (math::ls((double) good_len, 0.8 * (double) total_len)) {
-                DEBUG ("component coverage too variable: fraction close to average" << (double) good_len / (double) total_len);
+                DEBUG ("component coverage too variable: fraction close to average " << (double) good_len / (double) total_len);
             } else {
                 DEBUG("Component is good!");
                 size_t count = 1;
@@ -316,7 +316,7 @@ void ChromosomeRemover::RunIsolatedPipeline() {
         PlasmidSimplify(plasmid_config_.long_edge_length);
         size_t new_graph_size = gp_.g.size();
         if (new_graph_size == graph_size) {
-            INFO("Iteration " << i << " graph was not changed");
+            INFO("At iteration " << i << " graph was not changed");
             INFO(new_graph_size << " vertices left");
             break;
         }
@@ -379,7 +379,7 @@ void ChromosomeRemover::FilterSmallComponents() {
         PlasmidSimplify(plasmid_config_.long_edge_length);
         size_t new_graph_size = gp_.g.size();
         if (new_graph_size == graph_size) {
-            INFO("Iteration " << i << " of small components additional filtering graph was not changed");
+            INFO("At iteration " << i << " of small components additional filtering graph was not changed");
             if (new_graph_size == 0) {
                 WARN("No putative plasmid contigs found!");
             } else {
