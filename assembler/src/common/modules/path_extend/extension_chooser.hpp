@@ -1264,11 +1264,11 @@ public:
             return th->g_.conjugate(EdgeId(id)).id_;
         };
         auto good_edge = [&conj](auto id) {
-            // std::vector<int> good = {41814, 41871};
-            // for (auto x : good) {
-            //     if (x == id || id == conj(x))
-            //         return true;
-            // }
+            std::vector<int> good = {409089, 494732, 6047341};
+            for (auto x : good) {
+                if (x == id || id == conj(x))
+                    return true;
+            }
             return false;
         };
         auto print_if = [](bool cond, auto msg) {
@@ -1305,7 +1305,7 @@ public:
                 b |= good_edge(x.e_.id_);
         };
 
-        // b = get_b();
+        // get_b();
 
         if (b) {
             std::cout << "path:\n";
@@ -1315,9 +1315,9 @@ public:
         }
 
 
-        if (edges.empty()) {
-            return edges;
-        }
+        // if (edges.empty()) {
+        //     return edges;
+        // }
         DEBUG("We are in Filter of TrustedContigsExtensionChooser");
         path.PrintDEBUG();
         std::map<EdgeWithDistance, double> weights_cands;
@@ -1378,16 +1378,16 @@ public:
                 }
             }
         }
-        EdgeContainer result;
-        for (auto it = edges.begin(); it != edges.end(); ++it) {
-            if (filtered_cands.find(*it) != filtered_cands.end()) {
-                result.push_back(*it);
-            }
-        }
-        for (auto const & x : filtered_cands) {
-            if (x.d_ != 0)
-                result.push_back(x);
-        }
+        EdgeContainer result(filtered_cands.begin(), filtered_cands.end());
+        // for (auto it = edges.begin(); it != edges.end(); ++it) {
+        //     if (filtered_cands.find(*it) != filtered_cands.end()) {
+        //         result.push_back(*it);
+        //     }
+        // }
+        // for (auto const & x : filtered_cands) {
+        //     if (x.d_ != 0)
+        //         result.push_back(x);
+        // }
         if (result.size() != 1) {
             DEBUG("Trusted contigs don't help =(");
         }

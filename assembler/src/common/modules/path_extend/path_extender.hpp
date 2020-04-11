@@ -878,6 +878,8 @@ private:
 
         size_t current = 0;
         while (current < extenders_.size()) {
+            if (path.Back().id_ == 547690)
+                std::cout << "-------------------------------------\n";
             DEBUG("step " << current << " of total " << extenders_.size());
             if (extenders_[current]->MakeGrowStep(path, paths_storage)) {
                 return true;
@@ -1069,7 +1071,7 @@ public:
     }
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
-        if (path.IsCycle()) 
+        if (path.IsCycle())
             return false;
 
         if (is_detector_.InExistingLoop(path)) {

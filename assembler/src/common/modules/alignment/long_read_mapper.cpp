@@ -249,7 +249,7 @@ std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(const
                                                                            MappingPath<EdgeId> &path) const
 {
     std::vector<PathWithMappingInfo> result;
-    if (mapping_path.empty()) {
+    if (mapping_path.empty() || path.empty()) {
         TRACE("read unmapped");
         return result;
     }

@@ -150,7 +150,7 @@ class BidirectionalPath : public PathListener {
     std::vector<PathListener *> listeners_;
     const uint64_t id_;  //Unique ID
     float weight_;
-    int cycle_overlaping_; // in edges; [ < 0 ] => is not cycled
+    int cycle_overlapping_; // in edges; [ < 0 ] => is not cycled
 
 public:
     BidirectionalPath(const debruijn_graph::Graph& g)
@@ -158,7 +158,7 @@ public:
               conj_path_(nullptr),
               id_(path_id_++),
               weight_(1.0),
-              cycle_overlaping_(-1) {
+              cycle_overlapping_(-1) {
     }
 
     BidirectionalPath(const debruijn_graph::Graph& g, const std::vector<debruijn_graph::EdgeId>& path)
@@ -190,7 +190,7 @@ public:
               listeners_(),
               id_(path_id_++),
               weight_(path.weight_),
-              cycle_overlaping_(path.cycle_overlaping_) {
+              cycle_overlapping_(path.cycle_overlapping_) {
     }
 
     const debruijn_graph::Graph &g() const noexcept {
@@ -242,31 +242,32 @@ public:
         return data_.empty();
     }
 
-    void SetCycleOverlaping(int new_overlaping) noexcept {
-        auto is_cycle = [&]() {
+    bool SetCycleOverlapping(int new_overlapping) noexcept {
+        auto is_cycle = [&](int overlapping) {
             #define RETURN_IF_FALSE(expr) if (!(expr)) return false
-            RETURN_IF_FALSE(cycle_overlaping_ <= (int)Size());
-            for (int i = 0; i < cycle_overlaping_; ++i) {
-                RETURN_IF_FALSE(data_[i] == data_[Size() - cycle_overlaping_ + i]);
-                RETURN_IF_FALSE(GapAt(i) == GapAt(Size() - cycle_overlaping_ + i));
+            RETURN_IF_FALSE(overlapping <= (int)Size());
+            for (int i = 0; i < overlapping; ++i) {
+                RETURN_IF_FALSE(data_[i] == data_[Size() - overlapping + i]);
+                RETURN_IF_FALSE(GapAt(i) == GapAt(Size() - overlapping + i));
             }
             return true;
             #undef RETURN_IF_FALSE
         };
-
-        if (is_cycle()) {
-            cycle_overlaping_ = new_overlaping;
+        if (is_cycle(new_overlapping)) {
+            cycle_overlapping_ = new_overlapping;
             if (conj_path_)
-                conj_path_->cycle_overlaping_ = new_overlaping;
+                conj_path_->cycle_overlapping_ = new_overlapping;
+            return true;
         }
+        return false;
     }
     
-    int GetCycleOverlaping() const noexcept {
-        return cycle_overlaping_;
+    int GetCycleOverlapping() const noexcept {
+        return cycle_overlapping_;
     }
 
     bool IsCycle() const noexcept {
-        return cycle_overlaping_ >= 0;
+        return cycle_overlapping_ >= 0;
     }
 
     size_t Length() const {
@@ -317,8 +318,8 @@ public:
     void PushBack(debruijn_graph::EdgeId e, const Gap& gap = Gap()) {
         VERIFY(!data_.empty() || gap == Gap());
         if (IsCycle()) {
-            VERIFY(e == data_[cycle_overlaping_]);
-            ++cycle_overlaping_;
+            VERIFY(e == data_[cycle_overlapping_]);
+            ++cycle_overlapping_;
         }
         data_.push_back(e);
         gap_len_.push_back(gap);
@@ -352,7 +353,7 @@ public:
         gap_len_.pop_back();
         data_.pop_back();
         NotifyBackEdgeRemoved(e);
-        DecreaseCycleOverlaping();
+        DecreaseCycleOverlapping();
     }
 
     void PopBack(size_t count) {
@@ -523,7 +524,7 @@ public:
         for (int i = ((int) Size()) - 2; i >= 0; --i) {
             result.PushBack(g_.conjugate(data_[i]), gap_len_[i + 1].conjugate());
         }
-        result.cycle_overlaping_ = cycle_overlaping_;
+        result.cycle_overlapping_ = cycle_overlapping_;
         return result;
     }
 
@@ -562,7 +563,7 @@ public:
             BinWrite(str, x);
         
         BinWrite(str, weight_);
-        BinWrite(str, cycle_overlaping_);
+        BinWrite(str, cycle_overlapping_);
     };
 
     void BinRead(std::istream &str) {
@@ -580,7 +581,7 @@ public:
             BinRead(str, x);
 
         BinRead<float>(str, weight_);
-        BinRead<int>(str, cycle_overlaping_);
+        BinRead<int>(str, cycle_overlapping_);
     }
 
 private:
@@ -628,8 +629,8 @@ private:
 
     void PushFront(debruijn_graph::EdgeId e, Gap gap) {
         if (IsCycle()) {
-            VERIFY(e == data_[Size() - cycle_overlaping_ - 1]);
-            ++cycle_overlaping_;
+            VERIFY(e == data_[Size() - cycle_overlapping_ - 1]);
+            ++cycle_overlapping_;
         }
         data_.push_front(e);
         if (gap_len_.size() > 0) {
@@ -657,11 +658,11 @@ private:
         }
 
         NotifyFrontEdgeRemoved(e);
-        DecreaseCycleOverlaping();
+        DecreaseCycleOverlapping();
     }
 
-    void DecreaseCycleOverlaping() noexcept {
-        cycle_overlaping_ -= IsCycle();
+    void DecreaseCycleOverlapping() noexcept {
+        cycle_overlapping_ -= IsCycle();
     }
 
     DECL_LOGGER("BidirectionalPath");

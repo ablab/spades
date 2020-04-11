@@ -108,10 +108,10 @@ class OverlapRemover {
             if (path_pair.first->Size() == 0)
                 continue;
             if (path_pair.first->IsCycle()) {
-                VERIFY(path_pair.first->GetCycleOverlaping() == path_pair.second->GetCycleOverlaping());
-                auto overlaping = path_pair.first->GetCycleOverlaping();
-                if (overlaping > 0)
-                    splits_[path_pair.first].insert(overlaping);
+                VERIFY(path_pair.first->GetCycleOverlapping() == path_pair.second->GetCycleOverlapping());
+                auto overlapping = path_pair.first->GetCycleOverlapping();
+                if (overlapping > 0)
+                    splits_[path_pair.first].insert(overlapping);
             } else {
                 MarkStartOverlaps(*path_pair.first, end_start_only, retain_one_copy);
                 MarkStartOverlaps(*path_pair.second, end_start_only, retain_one_copy);

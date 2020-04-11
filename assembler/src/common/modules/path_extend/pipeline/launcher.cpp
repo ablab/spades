@@ -339,8 +339,8 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
         for (auto & path : gp_.trusted_paths[lib_index]) {
             auto conj_path = new BidirectionalPath(path->Conjugate());
             unique_data_.long_reads_paths_[lib_index].AddPair(path.release(), conj_path);
-            DebugOutputPaths(unique_data_.long_reads_paths_[lib_index], "trusted_contigs");
         }
+        DebugOutputPaths(unique_data_.long_reads_paths_[lib_index], "trusted_contigs");
         gp_.trusted_paths[lib_index].clear();
     } else {
         std::vector<PathInfo<Graph>> paths;

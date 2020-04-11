@@ -145,7 +145,14 @@ public:
     bool TryUseEdge(BidirectionalPath &path, EdgeId e, const Gap &gap) {
         if (UniqueCheckEnabled()) {
             if (IsUsedAndUnique(e)) {
-                path.SetCycleOverlaping(path.FindFirst(e));
+                if (!path.SetCycleOverlapping(path.FindFirst(e))) {
+                    std::cout << "Wrong edge was detected, trying to add " << e << " with overlapping " << path.FindFirst(e) << " into: ";
+                    for (auto const & x : path)
+                        std::cout << x << ' '; 
+                    std::cout << '\n';
+                } else {
+                    std::cout << "Trying to add edge " << e << " was failed, because this edge is unique and had used before\n";
+                }
                 return false;
             } else {
                 insert(e);

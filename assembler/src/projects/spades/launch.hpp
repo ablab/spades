@@ -77,11 +77,11 @@ inline void AddMetaplasmidStages(StageManager &SPAdes) {
 
 void assemble_genome() {
     INFO("SPAdes started");
-    if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta && !MetaCompatibleLibraries()) {
-        ERROR("Sorry, current version of metaSPAdes can work either with single library (paired-end only) "
-                      "or in paired-end + (TSLR or PacBio or Nanopore) mode.");
-        exit(239);
-    }
+    // if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta && !MetaCompatibleLibraries()) {
+    //     ERROR("Sorry, current version of metaSPAdes can work either with single library (paired-end only) "
+    //                   "or in paired-end + (TSLR or PacBio or Nanopore) mode.");
+    //     exit(239);
+    // }
 
     INFO("Starting from stage: " << cfg::get().entry_point);
 

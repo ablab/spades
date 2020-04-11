@@ -1019,13 +1019,13 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
                           ", ".join(options_storage.READS_TYPES_USED_IN_RNA_SEQ) + " in RNA-Seq mode!")
             # if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
             #    support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
-    if args.meta and not args.only_error_correction:
-        if len(support.get_lib_ids_by_type(dataset_data, "paired-end")) != 1 or \
-                                len(dataset_data) - min(1, len(
-                            support.get_lib_ids_by_type(dataset_data, ["tslr", "pacbio", "nanopore"]))) > 1:
-            support.error("you cannot specify any data types except a single paired-end library "
-                          "(optionally accompanied by a single library of "
-                          "TSLR-contigs, or PacBio reads, or Nanopore reads) in metaSPAdes mode!")
+    # if args.meta and not args.only_error_correction:
+    #     if len(support.get_lib_ids_by_type(dataset_data, "paired-end")) != 1 or \
+    #                             len(dataset_data) - min(1, len(
+    #                         support.get_lib_ids_by_type(dataset_data, ["tslr", "pacbio", "nanopore"]))) > 1:
+    #         support.error("you cannot specify any data types except a single paired-end library "
+    #                       "(optionally accompanied by a single library of "
+    #                       "TSLR-contigs, or PacBio reads, or Nanopore reads) in metaSPAdes mode!")
 
     if existing_dataset_data is None:
         with open(args.dataset_yaml_filename, 'w') as f:
