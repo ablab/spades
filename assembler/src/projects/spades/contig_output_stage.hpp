@@ -13,23 +13,28 @@ namespace debruijn_graph {
 
 
 class ContigOutput : public spades::AssemblyStage {
-
-private:
-    bool final_iteration_;
-    bool output_paths_;
-    std::string contigs_name_;
-
 public:
-    ContigOutput(bool final_iteration, bool output_paths = true, std::string contigs_name = cfg::get().co.contigs_name)
-        : AssemblyStage("Contig Output", "contig_output"), final_iteration_(final_iteration), output_paths_(output_paths), contigs_name_(contigs_name) { }
+    enum class Kind {
+        BinaryContigs,
+        EdgeSequences,
+        GFAGraph,
+        FASTGGraph,
+        FinalContigs,
+        PlasmidContigs,
+        Scaffolds
+    };
+    typedef std::map<Kind, std::string> OutputList;
 
-    static constexpr double LARGE_FRACTION = 0.8;
+    ContigOutput(OutputList list)
+            : AssemblyStage("Contig Output", "contig_output"),
+              outputs_(std::move(list)) {}
 
     void load(conj_graph_pack &, const std::string &, const char *) { }
-
     void save(const conj_graph_pack &, const std::string &, const char *) const { }
-
     void run(conj_graph_pack &gp, const char *);
+
+private:
+    OutputList outputs_;
 };
 
 }
