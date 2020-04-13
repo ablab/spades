@@ -59,19 +59,48 @@ static std::string GetContigName(std::string contig_id, size_t cov) {
     return contig_id + res;
 }
 
+static debruijn_graph::ContigOutput::OutputList GetMetaplasmidOutput(size_t cov) {
+    return {{debruijn_graph::ContigOutput::Kind::PlasmidContigs,
+             GetContigName(cfg::get().co.contigs_name, cov) }};
+}
+
 static void AddMetaplasmidStages(StageManager &SPAdes) {
     size_t cov = cfg::get().pd->additive_step;
     size_t add = cfg::get().pd->additive_step;
     double multiplier = cfg::get().pd->relative_step;
     size_t max_cov = 600;
-    SPAdes.add<debruijn_graph::ContigOutput>(true, true, GetContigName(cfg::get().co.contigs_name, 0));
+    SPAdes.add<debruijn_graph::ContigOutput>(GetMetaplasmidOutput(0));
     while (cov < max_cov) {
         SPAdes.add<debruijn_graph::ChromosomeRemoval>(cov);
         SPAdes.add<debruijn_graph::RepeatResolution>();
-        SPAdes.add<debruijn_graph::ContigOutput>(true, true, GetContigName(cfg::get().co.contigs_name, cov));
+        SPAdes.add<debruijn_graph::ContigOutput>(GetMetaplasmidOutput(cov));
         cov = std::max(cov + add, size_t((double) cov*multiplier));
     }
+}
 
+static debruijn_graph::ContigOutput::OutputList GetPreliminaryStageOutput() {
+    return {{debruijn_graph::ContigOutput::Kind::FinalContigs, cfg::get().co.contigs_name}};
+}
+
+static debruijn_graph::ContigOutput::OutputList GetNonFinalStageOutput() {
+    return {{debruijn_graph::ContigOutput::Kind::BinaryContigs, "simplified_contigs"}};
+}
+
+static debruijn_graph::ContigOutput::OutputList GetBeforeRROutput() {
+    return {{debruijn_graph::ContigOutput::Kind::EdgeSequences, "before_rr"}};
+}
+
+static debruijn_graph::ContigOutput::OutputList GetFinalStageOutput() {
+    using namespace debruijn_graph;
+    ContigOutput::OutputList res;
+
+    res[ContigOutput::Kind::EdgeSequences] = "before_rr";
+    res[ContigOutput::Kind::GFAGraph] = "assembly_graph_with_scaffolds";
+    res[ContigOutput::Kind::FASTGGraph] = "assembly_graph";
+    res[ContigOutput::Kind::FinalContigs] = cfg::get().co.contigs_name;
+    res[ContigOutput::Kind::Scaffolds] = cfg::get().co.scaffolds_name;
+
+    return res;
 }
 
 static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
@@ -90,7 +119,7 @@ static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
         if (mode == pipeline_type::bgc)
             SPAdes.add<debruijn_graph::ExtractDomains>();
 
-        SPAdes.add<debruijn_graph::ContigOutput>(true)
+        SPAdes.add<debruijn_graph::ContigOutput>(GetPreliminaryStageOutput())
               .add<debruijn_graph::SecondPhaseSetup>();
         if (mode == pipeline_type::bgc)
             SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();
@@ -140,23 +169,13 @@ void AddConstructionStages(StageManager &SPAdes) {
 
 void AddRepeatResolutionStages(StageManager &SPAdes) {
     using namespace debruijn_graph::config;
-    pipeline_type mode = cfg::get().mode;
 
     if (!cfg::get().series_analysis.empty())
         SPAdes.add<debruijn_graph::SeriesAnalysis>();
 
-    // No graph modification allowed after HybridLibrariesAligning stage!
     SPAdes.add<debruijn_graph::PairInfoCount>()
           .add<debruijn_graph::DistanceEstimation>()
           .add<debruijn_graph::RepeatResolution>();
-
-    if (mode == pipeline_type::metaplasmid)
-        AddMetaplasmidStages(SPAdes);
-
-    SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
-
-    if (mode == pipeline_type::bgc)
-        SPAdes.add<debruijn_graph::DomainGraphConstruction>();
 }
 
 void assemble_genome() {
@@ -198,9 +217,8 @@ void assemble_genome() {
 
     AddSimplificationStages(SPAdes);
 
-    // No need to output paths if no repeat resolution is made
-    SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration,
-                                             !cfg::get().rr_enable);
+    SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration ?
+                                             GetBeforeRROutput() : GetNonFinalStageOutput());
 
     if (cfg::get().main_iteration) {
         // Not metaplasmid!
@@ -209,10 +227,20 @@ void assemble_genome() {
 
         if (HybridLibrariesPresent())
             SPAdes.add<debruijn_graph::HybridLibrariesAligning>();
-    }
 
-    if (cfg::get().rr_enable)
-        AddRepeatResolutionStages(SPAdes);
+        // No graph modification allowed after HybridLibrariesAligning stage!
+
+        if (cfg::get().rr_enable)
+            AddRepeatResolutionStages(SPAdes);
+
+        if (mode == pipeline_type::metaplasmid)
+            AddMetaplasmidStages(SPAdes);
+        else
+            SPAdes.add<debruijn_graph::ContigOutput>(GetFinalStageOutput());
+
+        if (mode == pipeline_type::bgc)
+            SPAdes.add<debruijn_graph::DomainGraphConstruction>();
+    }
 
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 

@@ -41,7 +41,6 @@ public:
         WriteSegments();
         WriteLinks();
     }
-
     void WriteSegmentsAndLinks(const Component &gc);
 
   private:
@@ -55,7 +54,6 @@ public:
     const Graph &graph_;
     io::CanonicalEdgeHelper<Graph> edge_namer_;
     std::ostream &os_;
-
 };
 
 class GFAComponentWriter {
