@@ -13,15 +13,14 @@ namespace llvm { class StringRef;  }
 namespace io {
 
 enum class LibraryType {
-    TrustedContigs,
-    SingleReads,
     SangerReads,
     PacBioReads,
+    TrustedContigs,
+    SingleReads,
     NanoporeReads,
     PairedEnd,
     HQMatePairs,
     MatePairs,
-    // TrustedContigs,
     TSLReads,
     PathExtendContigs,
     UntrustedContigs,

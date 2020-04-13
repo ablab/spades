@@ -1264,7 +1264,7 @@ public:
             return th->g_.conjugate(EdgeId(id)).id_;
         };
         auto good_edge = [&conj](auto id) {
-            std::vector<int> good = {409089, 494732, 6047341};
+            std::vector<EdgeId> good = {657120, 127385};
             for (auto x : good) {
                 if (x == id || id == conj(x))
                     return true;
@@ -1305,7 +1305,7 @@ public:
                 b |= good_edge(x.e_.id_);
         };
 
-        // get_b();
+        get_b();
 
         if (b) {
             std::cout << "path:\n";
@@ -1314,80 +1314,37 @@ public:
             print2(edges);
         }
 
-
-        // if (edges.empty()) {
-        //     return edges;
-        // }
         DEBUG("We are in Filter of TrustedContigsExtensionChooser");
         path.PrintDEBUG();
         std::map<EdgeWithDistance, double> weights_cands;
         for (const auto &edge : edges) {
             weights_cands.emplace(EdgeWithDistance(edge.e_, 0), 0.0);
         }
-        std::set<EdgeWithDistance> filtered_cands;
-        auto support_paths = cov_map_.GetCoveringPaths(path.Back());
-        DEBUG("Found " << support_paths.size() << " covering paths!!!");
-        for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
-            auto positions = (*it)->FindAll(path.Back());
-            for (size_t i = 0; i < positions.size(); ++i) {
-                if (b) {
-                    std::cout << "common prefix:\n";
-                    for (size_t j = std::max(0, (int)positions[i] + 1 - (int)path.Size()); j <= positions[i]; ++j) {
-                        std::cout << (*it)->At(j) << ' ';
-                    }
-                    std::cout << '[';
-                    if (positions[i]+1 < (*it)->Size())
-                        std::cout << (*it)->At(positions[i] + 1);
-                    std::cout << ']';
-                    std::cout << '\n';
-                }
-                if ((int) positions[i] < (int) (*it)->Size() - 1
-                        && EqualBegins(path, (int) path.Size() - 1, **it,
-                                       positions[i], false))
-                {
-                    DEBUG("Checking unique path_back for " << (*it)->GetId());
 
-                    // if (UniqueBackPath(**it, positions[i])) {
-                        DEBUG("Success");
-                        auto mp = (UniqueBackPath(**it, positions[i]) ? 3 : 1);
-                        auto common_size = std::min(positions[i]+1, path.Size());
-                        auto gap = (*it)->GapAt(positions[i] + 1);
-                        EdgeWithDistance next = {(*it)->At(positions[i] + 1), gap.gap, std::move(gap.gap_seq_)};
-                        weights_cands[next] += (*it)->GetWeight()*mp*common_size;
-                        filtered_cands.insert(next);
-                    // }
-                }
-            }
-        }
+        auto filtered_cands = getHighQualityCandidats(path, weights_cands, b);
+        if (filtered_cands.empty())
+            filtered_cands = getLowQualityCandidats(path, weights_cands, b);
+
         DEBUG("Candidates:");
-        for (auto iter = weights_cands.begin(); iter != weights_cands.end(); ++iter) {
-            DEBUG("Candidate " << g_.int_id(iter->first.e_) << " weight " << iter->second);
-        }
+        for (auto const & iter : weights_cands)
+            DEBUG("Candidate " << g_.int_id(iter.first.e_) << " weight " << iter.second);
+
         auto sort_res = MapToSortVector(weights_cands);
         DEBUG("sort res " << sort_res.size() << " tr " << weight_priority_threshold_);
-        if (sort_res.size() < 1 || sort_res[0].second < filtering_threshold_) {
+        if (sort_res.empty() || sort_res[0].second < filtering_threshold_) {
             filtered_cands.clear();
-        } else if (sort_res.size() > 1
-                && sort_res[0].second > weight_priority_threshold_ * sort_res[1].second) {
-            filtered_cands.clear();
-            filtered_cands.insert(sort_res[0].first);
         } else if (sort_res.size() > 1) {
-            for (size_t i = 0; i < sort_res.size(); ++i) {
-                if (sort_res[i].second * weight_priority_threshold_ < sort_res[0].second) {
-                    filtered_cands.erase(sort_res[i].first);
+            if (sort_res[0].second > weight_priority_threshold_ * sort_res[1].second) {
+                filtered_cands.clear();
+                filtered_cands.insert(sort_res[0].first);
+            } else {
+                for (size_t i = 0; i < sort_res.size(); ++i) {
+                    if (sort_res[i].second * weight_priority_threshold_ < sort_res[0].second)
+                        filtered_cands.erase(sort_res[i].first);
                 }
             }
         }
         EdgeContainer result(filtered_cands.begin(), filtered_cands.end());
-        // for (auto it = edges.begin(); it != edges.end(); ++it) {
-        //     if (filtered_cands.find(*it) != filtered_cands.end()) {
-        //         result.push_back(*it);
-        //     }
-        // }
-        // for (auto const & x : filtered_cands) {
-        //     if (x.d_ != 0)
-        //         result.push_back(x);
-        // }
         if (result.size() != 1) {
             DEBUG("Trusted contigs don't help =(");
         }
@@ -1401,13 +1358,68 @@ public:
 
 private:
 
-    bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
-        return true;
-        int int_pos = (int) pos;
-        while (int_pos >= 0) {
-            if (unique_edge_analyzer_.IsUnique(path.At(int_pos)) > 0 && g_.length(path.At(int_pos)) >= min_significant_overlap_)
+    std::set<EdgeWithDistance> getCandidates(const BidirectionalPath &path, std::map<EdgeWithDistance, double> &weights_cands, size_t start_pos, bool full_match, bool b) const {
+        VERIFY(start_pos < path.Size());
+        std::set<EdgeWithDistance> filtered_cands;
+        auto support_paths = cov_map_.GetCoveringPaths(path[start_pos]);
+        DEBUG("Found " << support_paths.size() << " covering paths!!!");
+        for (auto const & it : support_paths) {
+            for (auto pos : it->FindAll(path[start_pos])) {
+                if (b) {
+                    std::cout << "common prefix:\n";
+                    for (size_t j = std::max(0, (int)pos + 1 - (int)path.Size()); j <= pos; ++j) {
+                        std::cout << it->At(j) << ' ';
+                    }
+                    std::cout << '[';
+                    if (pos+1 < it->Size())
+                        std::cout << it->At(pos + 1);
+                    std::cout << ']';
+                    std::cout << '\n';
+                }
+                if (pos + 1 < it->Size()) {
+                    auto firstNotEqPos = FirstNotEqualPosition(path, start_pos, *it, pos, false);
+                    if (!full_match || firstNotEqPos == -1ul) {
+                        auto matched_len = start_pos - firstNotEqPos;
+                        auto mp = (hasUniqueEdge(path, firstNotEqPos + 1, matched_len) ? 3 : 1);
+                        auto gap = it->GapAt(pos + 1);
+                        EdgeWithDistance next = {it->At(pos + 1), gap.gap, std::move(gap.gap_seq_)};
+                        weights_cands[next] += static_cast<double>(matched_len)*it->GetWeight()*mp;
+                        filtered_cands.insert(next);
+                    }
+                }
+            }
+        }
+        return filtered_cands;
+
+    }
+
+    std::set<EdgeWithDistance> getHighQualityCandidats(const BidirectionalPath &path, std::map<EdgeWithDistance, double> &weights_cands, bool b) const {
+        return getCandidates(path, weights_cands, path.Size() - 1, true, b);
+    }
+
+    std::set<EdgeWithDistance> getLowQualityCandidats(const BidirectionalPath &path, std::map<EdgeWithDistance, double> &weights_cands, bool b) const {
+        DEBUG("Fallback mode");
+        std::set<EdgeWithDistance> filtered_cands;
+        bool used_unique_edge = false;
+        for (int i = 0; i < std::min((int)path.Size(), 4) && !used_unique_edge; ++i) {
+            auto pos = path.Size() - 1 - i;
+            used_unique_edge = isUniqueEdge(path[pos]);
+            filtered_cands = getCandidates(path, weights_cands, pos, false, b);
+            if (!filtered_cands.empty())
+                return filtered_cands;
+        }
+        return filtered_cands;
+    }
+
+    bool isUniqueEdge(EdgeId edge) const {
+        return unique_edge_analyzer_.IsUnique(edge) && g_.length(edge) >= min_significant_overlap_;
+    }
+
+    bool hasUniqueEdge(const BidirectionalPath& path, size_t from, size_t len) const {
+        for (size_t i = 0; i < len; ++i) {
+            auto edge = path.At(from + i);
+            if (isUniqueEdge(edge))
                 return true;
-            --int_pos;
         }
         return false;
     }
