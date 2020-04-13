@@ -5,14 +5,18 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "assembly_graph/paths/bidirectional_path.hpp"
-#include "modules/path_extend/pe_resolver.hpp"
 #include "contig_output_stage.hpp"
+
+#include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
+#include "modules/path_extend/pe_resolver.hpp"
 #include "io/dataset_support/read_converter.hpp"
+
 #include <unordered_set>
 
-namespace debruijn_graph {
+namespace {
+using namespace debruijn_graph;
+
 bool CheckCircularPath(const path_extend::BidirectionalPath* path) {
     return (path->Size() > 0 && path->g().EdgeStart(path->Front()) == path->g().EdgeEnd(path->Back()));
 }
@@ -25,19 +29,17 @@ bool CheckUsedPath(const path_extend::BidirectionalPath* path, std::unordered_se
     for (size_t i = 0; i < path_len; i++) {
         size_t cur_len = g.length(path->At(i));
         total_len += cur_len;
-        if (used_edges.find(path->At(i)) != used_edges.end()) {
+        if (used_edges.count(path->At(i))) {
             used_len += cur_len;
-        } 
+        }
     }
+
     for (size_t i = 0; i < path_len; i++) {
         used_edges.insert(path->At(i));
         used_edges.insert(g.conjugate(path->At(i)));
     }
 //FIXME: constant
-    if (math::ge((double) used_len , (double)total_len * ContigOutput::LARGE_FRACTION))
-        return true;
-    else
-        return false;
+    return (math::ge((double)used_len, (double)total_len * ContigOutput::LARGE_FRACTION));
 }
 
 path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage, std::unordered_set<EdgeId> &used_edges) {
@@ -54,6 +56,7 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
     INFO("got circular scaffs");
     return res;
 }
+
 path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage, const std::unordered_set<VertexId> &forbidden_vertices) {
     path_extend::PathContainer res;
     for (auto it = sc_storage.begin(); it != sc_storage.end(); it++) {
@@ -71,19 +74,6 @@ path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_
 
 }
 
-std::vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
-                                                          path_extend::FastgPathWriter &fastg_writer) {
-    using namespace path_extend;
-    std::vector<PathsWriterT> writers;
-
-    writers.push_back(ContigWriter::BasicFastaWriter(fn_base + ".fasta"));
-    INFO("Outputting FastG paths to " << fn_base << ".paths");
-    writers.push_back([=](const ScaffoldStorage& scaffold_storage) {
-        fastg_writer.WritePaths(scaffold_storage, fn_base + ".paths");
-    });
-    return writers;
-}
-
 template<class Graph>
 io::EdgeNamingF<Graph> PlasmidNamingF(io::EdgeNamingF<Graph> naming_f,
                                       const ConnectedComponentCounter &cc_counter) {
@@ -92,6 +82,22 @@ io::EdgeNamingF<Graph> PlasmidNamingF(io::EdgeNamingF<Graph> naming_f,
     };
 }
 
+std::vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
+                                                          path_extend::FastgPathWriter &fastg_writer) {
+    using namespace path_extend;
+    std::vector<PathsWriterT> writers;
+
+    writers.push_back(ContigWriter::BasicFastaWriter(fn_base + ".fasta"));
+    writers.push_back([=](const ScaffoldStorage& scaffold_storage) {
+        INFO("Outputting FastG paths to " << fn_base << ".paths");
+        fastg_writer.WritePaths(scaffold_storage, fn_base + ".paths");
+    });
+    return writers;
+}
+
+}
+
+namespace debruijn_graph {
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
     using namespace path_extend;
     auto output_dir = cfg::get().output_dir;
@@ -103,30 +109,28 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
         return;
     }
 
-    std::string gfa_fn = output_dir + "assembly_graph_with_scaffolds.gfa";
-    INFO("Writing GFA to " << gfa_fn);
-
-    std::ofstream os(gfa_fn);
-    GFAPathWriter gfa_writer(gp.g, os,
-                             config::PipelineHelper::IsPlasmidPipeline(cfg::get().mode) && gp.components.IsFilled()?
-                             PlasmidNamingF<Graph>(io::IdNamingF<Graph>(), gp.components) : 
-                             io::IdNamingF<Graph>());
-    gfa_writer.WriteSegmentsAndLinks();
-
     OutputEdgeSequences(gp.g, output_dir + "before_rr");
 
-    INFO("Outputting FastG graph to " << output_dir << "assembly_graph.fastg");
-    std::string fastg_fn = output_dir + "assembly_graph.fastg";
+    io::EdgeNamingF<Graph> naming_f =
+            config::PipelineHelper::IsPlasmidPipeline(cfg::get().mode) && gp.components.IsFilled()?
+            PlasmidNamingF<Graph>(io::IdNamingF<Graph>(), gp.components) :
+            io::IdNamingF<Graph>();
 
-    FastgPathWriter fastg_writer(gp.g,
-                                 fastg_fn,
-                                 config::PipelineHelper::IsPlasmidPipeline(cfg::get().mode) && gp.components.IsFilled() ?
-                                 PlasmidNamingF<Graph>(io::BasicNamingF<Graph>(), gp.components) :
-                                 io::BasicNamingF<Graph>());
+    std::string gfa_fn = output_dir + "assembly_graph_with_scaffolds.gfa";
+    INFO("Writing GFA graph to " << gfa_fn);
+
+    std::ofstream os(gfa_fn);
+    GFAPathWriter gfa_writer(gp.g, os, naming_f);
+    gfa_writer.WriteSegmentsAndLinks();
+
+    std::string fastg_fn = output_dir + "assembly_graph.fastg";
+    INFO("Outputting FastG graph to " << fastg_fn);
+
+    FastgPathWriter fastg_writer(gp.g, fastg_fn, naming_f);
     fastg_writer.WriteSegmentsAndLinks();
+
     if (output_paths_ && gp.contig_paths.size() != 0) {
-        auto name_generator = MakeContigNameGenerator(cfg::get().mode, gp);
-        ContigWriter writer(gp.g, name_generator);
+        ContigWriter writer(gp.g, MakeContigNameGenerator(cfg::get().mode, gp));
 
         bool output_broken_scaffolds = cfg::get().pe_params.param_set.scaffolder_options.enabled &&
             cfg::get().use_scaffolder &&
@@ -168,7 +172,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
                                                       fastg_writer));
                 using ForbiddenVertices = SmartContainer<std::unordered_set<VertexId>, Graph>;
                 PathContainer linears;
-                if (gp.count<ForbiddenVertices>("forbidden_vertices")) 
+                if (gp.count<ForbiddenVertices>("forbidden_vertices"))
                     linears = GetTipScaffolds(broken_scaffolds, gp.get_const<ForbiddenVertices>("forbidden_vertices"));
                 writer.OutputPaths(linears,
                                    CreatePathsWriters(output_dir + contigs_name_ + ".linears",
