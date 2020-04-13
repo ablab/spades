@@ -83,21 +83,32 @@ io::EdgeNamingF<Graph> PlasmidNamingF(io::EdgeNamingF<Graph> naming_f,
 }
 
 std::vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
-                                                          path_extend::FastgPathWriter &fastg_writer) {
+                                                          boost::optional<path_extend::FastgPathWriter> fastg_writer = boost::none,
+                                                          boost::optional<path_extend::GFAPathWriter> gfa_writer = boost::none) {
     using namespace path_extend;
-    std::vector<PathsWriterT> writers;
+    std::vector<path_extend::PathsWriterT> res{ContigWriter::BasicFastaWriter(fn_base + ".fasta")};
 
-    writers.push_back(ContigWriter::BasicFastaWriter(fn_base + ".fasta"));
-    writers.push_back([=](const ScaffoldStorage& scaffold_storage) {
-        INFO("Outputting FastG paths to " << fn_base << ".paths");
-        fastg_writer.WritePaths(scaffold_storage, fn_base + ".paths");
-    });
-    return writers;
+    if (fastg_writer) {
+        res.push_back([&](const ScaffoldStorage& scaffold_storage) {
+                          INFO("Outputting FastG paths to " << fn_base << ".paths");
+                          fastg_writer->WritePaths(scaffold_storage, fn_base + ".paths");
+                      });
+    }
+
+    if (gfa_writer) {
+        res.push_back([&](const ScaffoldStorage &storage) {
+                          INFO("Populating GFA with scaffold paths");
+                          gfa_writer->WritePaths(storage);
+                      });
+    }
+
+    return res;
 }
 
 }
 
 namespace debruijn_graph {
+
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
     using namespace path_extend;
     auto output_dir = cfg::get().output_dir;
@@ -129,7 +140,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     FastgPathWriter fastg_writer(gp.g, fastg_fn, naming_f);
     fastg_writer.WriteSegmentsAndLinks();
 
-    if (output_paths_ && gp.contig_paths.size() != 0) {
+    if (output_paths_ && gp.contig_paths.size()) {
         ContigWriter writer(gp.g, MakeContigNameGenerator(cfg::get().mode, gp));
 
         bool output_broken_scaffolds = cfg::get().pe_params.param_set.scaffolder_options.enabled &&
@@ -138,12 +149,16 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
         if (output_broken_scaffolds) {
             int min_overlap = int(gp.g.k());
-            if (cfg::get().co.obs_mode == config::output_broken_scaffolds::break_all) {
-                min_overlap = int(gp.g.k());
-            } else if (cfg::get().co.obs_mode == config::output_broken_scaffolds::break_gaps) {
-                min_overlap = 0;
-            } else {
+            switch (cfg::get().co.obs_mode) {
+            default:
                 WARN("Unsupported contig output mode");
+                break;
+            case config::output_broken_scaffolds::break_all:
+                min_overlap = int(gp.g.k());
+                break;
+            case config::output_broken_scaffolds::break_gaps:
+                min_overlap = 0;
+                break;
             }
 
             ScaffoldBreaker breaker(min_overlap);
@@ -151,41 +166,36 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
             breaker.Break(gp.contig_paths, broken_scaffolds);
 
             //FIXME don't we want to use FinalizePaths here?
-            GraphCoverageMap cover_map(gp.g, broken_scaffolds, true);
+            GraphCoverageMap cover_map(gp.g, broken_scaffolds, /* subscribe */ true);
             Deduplicate(gp.g, broken_scaffolds, cover_map,
-                        /*min_edge_len*/0,
-                        /*max_path_diff*/0);
+                        /* min_edge_len */ 0, /* max_path_diff */ 0);
             broken_scaffolds.FilterEmptyPaths();
             broken_scaffolds.SortByLength();
 
             writer.OutputPaths(broken_scaffolds,
-                               CreatePathsWriters(output_dir + contigs_name_,
-                                                  fastg_writer));
+                               CreatePathsWriters(output_dir + contigs_name_, fastg_writer));
+
             if (cfg::get().mode == config::pipeline_type::metaplasmid) {
                 using UsedEdges = SmartContainer<std::unordered_set<EdgeId>, Graph>;
-                if (!gp.count<UsedEdges>("used_edges")) {
+                if (!gp.count<UsedEdges>("used_edges"))
                     gp.add("used_edges", UsedEdges(gp.g));
-                }
+
                 PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.get_mutable<UsedEdges>("used_edges"));
                 writer.OutputPaths(circulars,
-                                   CreatePathsWriters(output_dir + contigs_name_ + ".circular",
-                                                      fastg_writer));
+                                   CreatePathsWriters(output_dir + contigs_name_ + ".circular"));
+
                 using ForbiddenVertices = SmartContainer<std::unordered_set<VertexId>, Graph>;
                 PathContainer linears;
                 if (gp.count<ForbiddenVertices>("forbidden_vertices"))
                     linears = GetTipScaffolds(broken_scaffolds, gp.get_const<ForbiddenVertices>("forbidden_vertices"));
                 writer.OutputPaths(linears,
-                                   CreatePathsWriters(output_dir + contigs_name_ + ".linears",
-                                                      fastg_writer));
+                                   CreatePathsWriters(output_dir + contigs_name_ + ".linears"));
             }
         }
 
-        auto writers = CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name, fastg_writer);
-        writers.push_back([&](const ScaffoldStorage &storage) {
-            gfa_writer.WritePaths(storage);
-        });
-        writer.OutputPaths(gp.contig_paths, writers);
-
+        writer.OutputPaths(gp.contig_paths,
+                           CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name,
+                                              fastg_writer, gfa_writer));
     } else {
         OutputEdgeSequences(gp.g, output_dir + contigs_name_);
     }
