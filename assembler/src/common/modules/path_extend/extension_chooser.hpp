@@ -1243,17 +1243,18 @@ public:
                                     double unique_edge_priority_threshold,
                                     size_t min_significant_overlap,
                                     size_t max_repeat_length,
-                                    bool uneven_depth)
-            : ExtensionChooser(g),
-              filtering_threshold_(filtering_threshold),
-              weight_priority_threshold_(weight_priority_threshold),
-              min_significant_overlap_(min_significant_overlap),
-              cov_map_(read_paths_cov_map),
-              unique_edge_analyzer_(g, cov_map_, filtering_threshold,
+                                    bool uneven_depth,
+                                    bool use_low_quality_matching = false)
+            : ExtensionChooser(g)
+            , filtering_threshold_(filtering_threshold)
+            , weight_priority_threshold_(weight_priority_threshold)
+            , min_significant_overlap_(min_significant_overlap)
+            , cov_map_(read_paths_cov_map)
+            , unique_edge_analyzer_(g, cov_map_, filtering_threshold,
                                     unique_edge_priority_threshold,
                                     max_repeat_length, uneven_depth)
-    {
-    }
+            , use_low_quality_matching_(use_low_quality_matching)
+    {}
 
     /* Choose extension as correct only if we have reads that traverse a unique edge from the path and this extension.
      * Edge is unique if all reads mapped to this edge are consistent.
@@ -1305,7 +1306,7 @@ public:
                 b |= good_edge(x.e_.id_);
         };
 
-        get_b();
+        // get_b();
 
         if (b) {
             std::cout << "path:\n";
@@ -1319,7 +1320,7 @@ public:
         std::map<EdgeWithDistance, double> weights_cands;
 
         auto filtered_cands = GetHighQualityCandidats(path, weights_cands, b);
-        if (filtered_cands.empty())
+        if (use_low_quality_matching_ && filtered_cands.empty())
             filtered_cands = GetLowQualityCandidats(path, weights_cands, b);
 
         DEBUG("Candidates:");
@@ -1416,7 +1417,7 @@ private:
                         --pos2;
                     } else {
                         ++skippedNonUniqueEdges;
-                        if (th->IsUniqueEdge(path[pos1]) || skippedNonUniqueEdges > 2)
+                        if (th->IsUniqueEdge(path[pos1]) || skippedNonUniqueEdges > 0)
                             break;
                     }
                     --pos1;
@@ -1463,6 +1464,7 @@ private:
     size_t min_significant_overlap_;
     const GraphCoverageMap& cov_map_;
     LongReadsUniqueEdgeAnalyzer unique_edge_analyzer_;
+    bool use_low_quality_matching_;
 
     DECL_LOGGER("TrustedContigsExtensionChooser");
 };

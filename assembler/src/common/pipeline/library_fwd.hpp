@@ -15,9 +15,9 @@ namespace io {
 enum class LibraryType {
     SangerReads,
     PacBioReads,
+    NanoporeReads,
     TrustedContigs,
     SingleReads,
-    NanoporeReads,
     PairedEnd,
     HQMatePairs,
     MatePairs,
