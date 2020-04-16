@@ -79,28 +79,37 @@ static void AddMetaplasmidStages(StageManager &SPAdes) {
 }
 
 static debruijn_graph::ContigOutput::OutputList GetPreliminaryStageOutput() {
-    return {{debruijn_graph::ContigOutput::Kind::FinalContigs, cfg::get().co.contigs_name}};
+    using namespace debruijn_graph;
+
+    return {
+        {ContigOutput::Kind::GFAGraph, "strain_graph"},
+        {ContigOutput::Kind::FinalContigs, cfg::get().co.contigs_name}
+    };
 }
 
 static debruijn_graph::ContigOutput::OutputList GetNonFinalStageOutput() {
-    return {{debruijn_graph::ContigOutput::Kind::BinaryContigs, "simplified_contigs"}};
+    return { { debruijn_graph::ContigOutput::Kind::BinaryContigs, "simplified_contigs"} };
 }
 
 static debruijn_graph::ContigOutput::OutputList GetBeforeRROutput() {
-    return {{debruijn_graph::ContigOutput::Kind::EdgeSequences, "before_rr"}};
+    using namespace debruijn_graph;
+
+    return {
+        { ContigOutput::Kind::GFAGraph, "assembly_graph_after_simplification"},
+        { ContigOutput::Kind::EdgeSequences, "before_rr"}
+    };
 }
 
 static debruijn_graph::ContigOutput::OutputList GetFinalStageOutput() {
     using namespace debruijn_graph;
-    ContigOutput::OutputList res;
 
-    res[ContigOutput::Kind::EdgeSequences] = "before_rr";
-    res[ContigOutput::Kind::GFAGraph] = "assembly_graph_with_scaffolds";
-    res[ContigOutput::Kind::FASTGGraph] = "assembly_graph";
-    res[ContigOutput::Kind::FinalContigs] = cfg::get().co.contigs_name;
-    res[ContigOutput::Kind::Scaffolds] = cfg::get().co.scaffolds_name;
-
-    return res;
+    return {
+        { ContigOutput::Kind::EdgeSequences, "before_rr" },
+        { ContigOutput::Kind::GFAGraph, "assembly_graph_with_scaffolds" },
+        { ContigOutput::Kind::FASTGGraph, "assembly_graph" },
+        { ContigOutput::Kind::FinalContigs, cfg::get().co.contigs_name },
+        { ContigOutput::Kind::Scaffolds, cfg::get().co.scaffolds_name }
+    };
 }
 
 static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
