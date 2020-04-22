@@ -31,7 +31,7 @@
 </ol>
 <p><a name="sec1"></a></p>
 <h1>About SPAdes</h1>
-<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.14.1 was released under GPLv2 on February 5, 2020 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>. <a href=""></a></p>
+<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.14.1 was released under GPLv2 on April 27, 2020 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>. <a href=""></a></p>
 <p><a name="sec1.1"></a></p>
 <h2>Supported data types</h2>
 <p>The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.</p>
@@ -66,7 +66,7 @@
 <li><a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/" rel="nofollow">MDA single-cell <em>E. coli</em></a>; 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp</li>
 </ul>
 <p>We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately half an hour and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 10 minutes for the <em>E. coli</em> isolate data set and 20 minutes for the <em>E. coli</em> single-cell data set. Both data sets require about 8Gb of RAM (see notes below). MismatchCorrector runs for about 15 minutes on both data sets, and requires less than 2Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.</p>
-<table border="1" cellpadding="4" cellspacing="0">
+<table border="1" cellpadding="4" cellspacing="0" role="table">
 <tbody><tr>
 <td align="right"> Data set   </td>
 <td colspan="3" align="center"> <i>E. coli</i> isolate </td> 
