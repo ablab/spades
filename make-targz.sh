@@ -17,10 +17,18 @@ rm -r $TARGET_DIR/ext/include/cute
 rm -r $TARGET_DIR/ext/include/teamcity_boost
 
 # cleaning .pyc and .pyo
+rm -f $SRC_DIR/*.pyc
+rm -f $SRC_DIR/*.pyo
+rm -rf $SRC_DIR/__pycache__/
 rm -f $SRC_DIR/spades_pipeline/*.pyc
 rm -f $SRC_DIR/spades_pipeline/*.pyo
-rm -f $TARGET_DIR/ext/include/python_libs/joblib/*.pyc
-rm -f $TARGET_DIR/ext/include/python_libs/joblib/*.pyo
+rm -rf $SRC_DIR/spades_pipeline/__pycache__/
+rm -f $SRC_DIR/spades_pipeline/*/*.pyo
+rm -f $SRC_DIR/spades_pipeline/*/*.pyc
+rm -rf $SRC_DIR/spades_pipeline/*/__pycache__/
+rm -f $TARGET_DIR/ext/include/python_libs/*/*.pyc
+rm -f $TARGET_DIR/ext/include/python_libs/*/*.pyo
+rm -rf $TARGET_DIR/ext/include/python_libs/*/__pycache__/
 
 cp -r assembler/biosynthetic_spades_hmms $TARGET_DIR/
 cp -r assembler/test_dataset $TARGET_DIR/test_dataset
