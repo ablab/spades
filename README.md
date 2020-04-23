@@ -73,8 +73,8 @@ We recommend to run SPAdes with BayesHammer/IonHammer to obtain high-quality ass
 
 In this section we give approximate data about SPAdes performance on two data sets:
 
--   [Standard isolate *E. coli*](http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_mc/); 6.2Gb, 28M reads, 2x100bp, insert size ~ 215bp
--   [MDA single-cell *E. coli*](http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/); 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp
+-   [Standard isolate *E. coli*](https://www.ncbi.nlm.nih.gov/sra/?term=ERR008613); 6.2Gb, 28M reads, 2x100bp, insert size ~ 215bp
+-   [MDA single-cell *E. coli*](http://cab.spbu.ru/files/spades_test_datasets/ecoli_sc/); 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp (originally downloaded from [here](http://bix.ucsd.edu/projects/singlecell/nbt_data.html))
 
 We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately half an hour and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 10 minutes for the *E. coli* isolate data set and 20 minutes for the *E. coli* single-cell data set. Both data sets require about 8Gb of RAM (see notes below). MismatchCorrector runs for about 15 minutes on both data sets, and requires less than 2Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.
 
@@ -147,7 +147,7 @@ Notes:
 # Installation
 
 
-SPAdes requires a 64-bit Linux system or Mac OS and Python (supported versions are Python2: 2.4&ndash;2.7, and Python3: 3.2 and higher) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself. []()
+SPAdes requires a 64-bit Linux system or Mac OS and Python (supported versions are Python 2.7, and Python3: 3.2 and higher) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself. []()
 
 In case of successful installation the following files will be placed in the `bin` directory:
 
