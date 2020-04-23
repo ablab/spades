@@ -26,9 +26,9 @@ rm -rf $SRC_DIR/spades_pipeline/__pycache__/
 rm -f $SRC_DIR/spades_pipeline/*/*.pyo
 rm -f $SRC_DIR/spades_pipeline/*/*.pyc
 rm -rf $SRC_DIR/spades_pipeline/*/__pycache__/
-rm -f $TARGET_DIR/ext/include/python_libs/*/*.pyc
-rm -f $TARGET_DIR/ext/include/python_libs/*/*.pyo
-rm -rf $TARGET_DIR/ext/include/python_libs/*/__pycache__/
+rm -f $TARGET_DIR/ext/src/python_libs/*/*.pyc
+rm -f $TARGET_DIR/ext/src/python_libs/*/*.pyo
+rm -rf $TARGET_DIR/ext/src/python_libs/*/__pycache__/
 
 cp -r assembler/biosynthetic_spades_hmms $TARGET_DIR/
 cp -r assembler/test_dataset $TARGET_DIR/test_dataset
