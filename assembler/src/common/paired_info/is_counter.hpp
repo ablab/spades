@@ -20,10 +20,10 @@ class InsertSizeCounter: public SequenceMapperListener {
 
 public:
 
-    InsertSizeCounter(const conj_graph_pack& gp,
+    InsertSizeCounter(const Graph &graph,
             size_t edge_length_threshold,
             bool ignore_negative = false)
-        : gp_(gp), 
+        : graph_(graph),
           edge_length_threshold_(edge_length_threshold),
           ignore_negative_(ignore_negative) {
     }
@@ -91,7 +91,7 @@ private:
 
         if (read1.size() == 1 && read2.size() == 1 &&
             read2.simple_path().front() == read1.simple_path().front() &&
-            gp_.g.length(read1.simple_path().front()) >= edge_length_threshold_) {
+            graph_.length(read1.simple_path().front()) >= edge_length_threshold_) {
 
             auto mapping_edge_1 = read1.front().second;
             auto mapping_edge_2 = read2.front().second;
@@ -131,7 +131,7 @@ private:
     };
 
 private:
-    const conj_graph_pack &gp_;
+    const Graph &graph_;
 
     HistType hist_;
     std::vector<HistType> tmp_hists_;

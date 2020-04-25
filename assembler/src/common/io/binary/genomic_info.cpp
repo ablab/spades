@@ -4,8 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "binary.hpp"
-#include "pipeline/genomic_info.hpp"
+#include "genomic_info.hpp"
 
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/Errc.h"

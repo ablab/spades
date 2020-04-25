@@ -12,10 +12,13 @@
  *      Author: ira
  */
 
-#ifndef IDEAL_PAIR_INFO_HPP_
-#define IDEAL_PAIR_INFO_HPP_
-#include <vector>
+#pragma once
+
 #include "pipeline/graph_pack.hpp"
+#include "assembly_graph/core/graph.hpp"
+
+#include <vector>
+
 
 namespace path_extend {
 
@@ -126,6 +129,5 @@ private:
 protected:
     DECL_LOGGER("PathExtendPI");
 };
-}  // path extend
 
-#endif /* IDEAL_PAIR_INFO_HPP_ */
+}  // path extend

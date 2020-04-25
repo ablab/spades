@@ -7,6 +7,7 @@
 
 #include "profile_storage.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
+#include "modules/alignment/kmer_mapper.hpp"
 
 #include "projects/mts/contig_abundance.hpp"
 #include "toolchain/edge_label_helper.hpp"
@@ -48,11 +49,12 @@ static void Run(const std::string &graph_path, const std::string &dataset_desc, 
     DataSet dataset;
     dataset.load(dataset_desc);
 
-    conj_graph_pack gp(K, tmpdir, dataset.lib_count());
+    GraphPack gp(K, tmpdir, dataset.lib_count());
+    auto &graph = gp.get<Graph>();
 
     INFO("Loading de Bruijn graph from " << graph_path);
-    omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
-    gp.kmer_mapper.Attach();
+    omnigraph::GraphElementFinder<Graph> element_finder(graph);
+    gp.get_mutable<KmerMapper<Graph>>().Attach();
     io::EdgeLabelHelper<Graph> label_helper(element_finder,
                                             toolchain::LoadGraph(gp, graph_path));
 
@@ -67,7 +69,7 @@ static void Run(const std::string &graph_path, const std::string &dataset_desc, 
             /*followed by rc*/true, /*including paired*/true);
 
     size_t sample_cnt = dataset.lib_count();
-    debruijn_graph::coverage_profiles::EdgeProfileStorage profile_storage(gp.g, sample_cnt);
+    debruijn_graph::coverage_profiles::EdgeProfileStorage profile_storage(graph, sample_cnt);
 
     profile_storage.Fill(single_readers, *MapperInstance(gp));
 

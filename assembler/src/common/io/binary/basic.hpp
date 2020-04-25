@@ -13,6 +13,9 @@ namespace io {
 
 namespace binary {
 
+/**
+ * @brief  This IOer processes the graph with its coverage index.
+ */
 template<typename Graph>
 class BasicGraphIO : public GraphIO<Graph> {
     typedef GraphIO<Graph> Base;

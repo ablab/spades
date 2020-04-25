@@ -50,7 +50,7 @@ public:
 };
 
 class EdgeAnnotation {
-    const conj_graph_pack& gp_;
+    const GraphPack& gp_;
     BinSet bins_of_interest_;
     std::map<EdgeId, BinSet> edge_annotation_;
 
@@ -61,7 +61,7 @@ class EdgeAnnotation {
 
 public:
 
-    EdgeAnnotation(const conj_graph_pack& gp,
+    EdgeAnnotation(const GraphPack& gp,
                    const std::set<bin_id>& bins_of_interest) :
                        gp_(gp),
                        bins_of_interest_(bins_of_interest)
@@ -71,7 +71,7 @@ public:
     template<class BinCollection>
     void StickAnnotation(EdgeId e, const BinCollection& bins) {
         InnerStickAnnotation(e, bins);
-        InnerStickAnnotation(gp_.g.conjugate(e), bins);
+        InnerStickAnnotation(gp_.get<Graph>().conjugate(e), bins);
     }
 
     void StickAnnotation(EdgeId e, const bin_id& bin) {
@@ -100,7 +100,7 @@ public:
 
 class AnnotationFiller {
 
-    const conj_graph_pack& gp_;
+    const GraphPack& gp_;
     BinSet interesting_bins_;
     std::shared_ptr<SequenceMapper<Graph>> mapper_;
 
@@ -124,7 +124,7 @@ class AnnotationFiller {
     std::set<bin_id> DetermineBins(const std::vector<EdgeId> &path, const ColoringMap &coloring) const;
 public:
 
-    AnnotationFiller(const conj_graph_pack& gp, const std::vector<bin_id> &interesting_bins) :
+    AnnotationFiller(const GraphPack& gp, const std::vector<bin_id> &interesting_bins) :
         gp_(gp),
         interesting_bins_(interesting_bins.begin(), interesting_bins.end()),
         mapper_(MapperInstance(gp)) {

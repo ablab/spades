@@ -120,7 +120,7 @@ public:
             return;
 
         for (auto point : index_.Get(e1, e2)) {
-            int pairedDistance = de::rounded_d(point);
+            int pairedDistance = omnigraph::de::rounded_d(point);
             dist.push_back(pairedDistance);
             w.push_back(point.weight);
         }
@@ -132,7 +132,7 @@ public:
         double weight = 0.0;
 
         for (auto point : index_.Get(e1, e2)) {
-            int pairedDistance = de::rounded_d(point);
+            int pairedDistance = omnigraph::de::rounded_d(point);
             int distanceDev = (int) point.variance();  //max((int) pointIter->var, (int) is_variation_);
             //Can be modified according to distance comparison
             int d_min = distance - distanceDev;
@@ -153,7 +153,7 @@ public:
         VERIFY(index_.size() != 0);
         double weight = 0.0;
         for (const auto &point : index_.Get(e1, e2)) {
-            int dist = de::rounded_d(point);
+            int dist = omnigraph::de::rounded_d(point);
             if (dist >= dist_min && dist <= dist_max)
                 weight += point.weight;
         }

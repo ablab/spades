@@ -140,7 +140,7 @@ private:
     DECL_LOGGER("GapTrackingListener");
 };
 
-void CloseGaps(conj_graph_pack& gp, bool rtype,
+void CloseGaps(GraphPack& gp, bool rtype,
                const GapStorage& gap_storage,
                size_t min_weight) {
     INFO("Closing gaps with long reads");
@@ -154,13 +154,14 @@ void CloseGaps(conj_graph_pack& gp, bool rtype,
         };
     }
 
-    HybridGapCloser gap_closer(gp.g, gap_storage,
+    HybridGapCloser gap_closer(gp.get_mutable<Graph>(), gap_storage,
                                min_weight, consensus_f,
                                cfg::get().pb.long_seq_limit);
     auto replacement = gap_closer();
 
+    auto &single_long_reads = gp.get_mutable<LongReadContainer<Graph>>();
     for (size_t j = 0; j < cfg::get().ds.reads.lib_count(); j++) {
-        gp.single_long_reads[j].ReplaceEdges(replacement);
+        single_long_reads[j].ReplaceEdges(replacement);
     }
 
     INFO("Closing gaps with long reads finished");
@@ -283,7 +284,7 @@ public:
     }
 };
 
-void PacbioAlignLibrary(const conj_graph_pack& gp,
+void PacbioAlignLibrary(const Graph &graph,
                         const io::SequencingLibrary<config::LibraryData>& lib,
                         PathStorage<Graph>& path_storage,
                         gap_closing::GapStorage& gap_storage,
@@ -296,7 +297,7 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
              alignment::BWAIndex::AlignmentMode::PacBio : alignment::BWAIndex::AlignmentMode::Ont2D);
 
     // Initialize index
-    sensitive_aligner::GAligner galigner(gp.g, pb, mode);
+    sensitive_aligner::GAligner galigner(graph, pb, mode);
 
     PacbioAligner aligner(galigner, path_storage, gap_storage);
 
@@ -317,10 +318,14 @@ bool ShouldAlignWithPacbioAligner(io::LibraryType lib_type) {
 //           lib_type == io::LibraryType::TSLReads;
 }
 
-void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
+void HybridLibrariesAligning::run(GraphPack& gp, const char*) {
     using namespace omnigraph;
 
     bool make_additional_saves = (bool)parent_->saves_policy().EnabledCheckpoints();
+
+    const auto &graph = gp.get<Graph>();
+    auto &single_long_reads = gp.get_mutable<LongReadContainer<Graph>>();
+
     for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id) {
         if (cfg::get().ds.reads[lib_id].is_hybrid_lib()) {
             INFO("Hybrid library detected: #" << lib_id);
@@ -328,17 +333,17 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
             const auto& lib = cfg::get().ds.reads[lib_id];
             bool rtype = lib.is_long_read_lib();
 
-            auto& path_storage = gp.single_long_reads[lib_id];
-            gap_closing::GapStorage gap_storage(gp.g);
+            auto &path_storage = single_long_reads[lib_id];
+            gap_closing::GapStorage gap_storage(graph);
 
             if (ShouldAlignWithPacbioAligner(lib.type())) {
                 //TODO put alternative alignment right here
-                PacbioAlignLibrary(gp, lib,
+                PacbioAlignLibrary(graph, lib,
                                    path_storage, gap_storage,
                                    cfg::get().max_threads, cfg::get().pb);
             } else {
                 gp.EnsureBasicMapping();
-                gap_closing::GapTrackingListener mapping_listener(gp.g, gap_storage);
+                gap_closing::GapTrackingListener mapping_listener(graph, gap_storage);
                 INFO("Processing reads from hybrid library " << lib_id);
 
                 //FIXME make const
@@ -346,8 +351,7 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
 
                 SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
                 //FIXME pretty awful, would be much better if listeners were shared ptrs
-                LongReadMapper read_mapper(gp.g, gp.single_long_reads[lib_id],
-                                           ChooseProperReadPathExtractor(gp.g, reads.type()));
+                LongReadMapper read_mapper(graph, path_storage, ChooseProperReadPathExtractor(graph, reads.type()));
 
                 notifier.Subscribe(lib_id, &mapping_listener);
                 notifier.Subscribe(lib_id, &read_mapper);
@@ -361,7 +365,7 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
                 cfg::get_writable().ds.reads[lib_id].data().single_reads_mapped = true;
 
                 INFO("Finished processing long reads from lib " << lib_id);
-                gp.index.Detach();
+                gp.get_mutable<EdgeIndex<Graph>>().Detach();
             }
 
             if (make_additional_saves) {
@@ -384,7 +388,7 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
         }
     }
 
-    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    visualization::graph_labeler::DefaultLabeler<Graph> labeler(graph, gp.get<EdgesPositionHandler<Graph>>());
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(config::info_printer_pos::final_gap_closed);
 }

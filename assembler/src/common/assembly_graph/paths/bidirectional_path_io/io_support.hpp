@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "assembly_graph/paths/bidirectional_path.hpp"
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/graph_support/contig_output.hpp"
 #include "assembly_graph/components/connected_component.hpp"
 
@@ -145,12 +145,12 @@ public:
 };
 
 inline std::shared_ptr<ContigNameGenerator> MakeContigNameGenerator(config::pipeline_type mode,
-                                                                    const conj_graph_pack &gp) {
+                                                                    const GraphPack &gp) {
     std::shared_ptr<path_extend::ContigNameGenerator> name_generator;
     if (mode == config::pipeline_type::plasmid)
-        name_generator = std::make_shared<PlasmidContigNameGenerator>(gp.components);
+        name_generator = std::make_shared<PlasmidContigNameGenerator>(gp.get<ConnectedComponentCounter>());
     else if (mode == config::pipeline_type::rna)
-        name_generator = std::make_shared<TranscriptNameGenerator>(gp.g);
+        name_generator = std::make_shared<TranscriptNameGenerator>(gp.get<Graph>());
     else
         name_generator = std::make_shared<DefaultContigNameGenerator>();
     return name_generator;

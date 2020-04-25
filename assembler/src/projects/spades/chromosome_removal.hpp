@@ -17,7 +17,7 @@ public:
             : AssemblyStage("Chromosome Removal", "chromosome_removal"), ext_limit_(ext_limit) {
     }
 
-    void run(conj_graph_pack &gp, const char *);
+    void run(GraphPack &gp, const char *);
 
 private:
     size_t ext_limit_;

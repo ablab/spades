@@ -387,18 +387,19 @@ private:
 };
 
 template<class Streams>
-void CloseGaps(conj_graph_pack &gp, Streams &streams) {
+void CloseGaps(GraphPack &gp, Streams &streams) {
+    auto &g = gp.get_mutable<Graph>();
     auto mapper = MapperInstance(gp);
-    GapCloserPairedIndexFiller gcpif(gp.g, *mapper);
-    PairedIndexT tips_paired_idx(gp.g);
+    GapCloserPairedIndexFiller gcpif(g, *mapper);
+    omnigraph::de::PairedInfoIndexT<Graph> tips_paired_idx(g);
     gcpif.FillIndex(tips_paired_idx, streams);
-    GapCloser gap_closer(gp.g, tips_paired_idx,
+    GapCloser gap_closer(g, tips_paired_idx,
                          cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold);
     gap_closer.CloseShortGaps();
 }
 
-void GapClosing::run(conj_graph_pack &gp, const char *) {
-    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+void GapClosing::run(GraphPack &gp, const char *) {
+    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.get<Graph>(), gp.get<EdgesPositionHandler<Graph>>());
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(config::info_printer_pos::before_first_gap_closer);
 

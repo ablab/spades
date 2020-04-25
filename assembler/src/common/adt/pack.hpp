@@ -74,18 +74,14 @@ public:
 
     template <typename T>
     const T &get(const std::string &key = "") const {
-        return get_const<T>(key);
-    }
-
-    template <typename T>
-    T &get(const std::string &key = "") {
-        return get_mutable<T>(key);
-    }
-
-    template <typename T>
-    const T &get_const(const std::string key = "") const {
         const auto &storage_unit = get_storage_unit_<T>();
         return storage_unit.template get_const<T>(key);
+    }
+
+    template <typename T>
+    T &get_mutable(const std::string &key = "") {
+        auto &storage_unit = get_storage_unit_<T>();
+        return storage_unit.template get_mutable<T>(key);
     }
 
     template <typename T>
@@ -97,12 +93,6 @@ public:
             erase(typeid(T));
         }
         return p;
-    }
-
-    template <typename T>
-    T &get_mutable(const std::string &key = "") {
-        auto &storage_unit = get_storage_unit_<T>();
-        return storage_unit.template get_mutable<T>(key);
     }
 
     bool empty() const { return storage_.empty(); }
@@ -145,14 +135,14 @@ public:
     }
 
     template <typename T>
-    void reset_invalidated() {
+    void reset_invalidated(bool invalidated = false) {
         static_assert(is_proper_type_v<T>, "T is not a proper type for pack structure");
-        reset_invalidated(typeid(T));
+        reset_invalidated(typeid(T), invalidated);
     }
 
-    void reset_invalidated() {
+    void reset_invalidated(bool invalidated = false) {
         for (auto &kv : storage_) {
-            kv.second.reset_invalidated();
+            kv.second.reset_invalidated(invalidated);
         }
     }
 
@@ -204,11 +194,11 @@ protected:
         return storage_.find(tindex)->second.invalidated(key);
     }
 
-    void reset_invalidated(const std::type_info &type) {
+    void reset_invalidated(const std::type_info &type, bool invalidated = false) {
         auto tindex = std::type_index(type);
         auto it = storage_.find(tindex);
         if (it != storage_.cend()) {
-            it->second.reset_invalidated();
+            it->second.reset_invalidated(invalidated);
         }
     }
 
@@ -310,7 +300,7 @@ private:
             VERIFY(!records_.count(key));
             // We should not use empty and non-empty keys at the same time
             VERIFY(!records_.count(""));
-            VERIFY(key != "" || records_.empty());
+            VERIFY(!key.empty() || records_.empty());
             records_[key] = {p, true};
             return *p;
         }
@@ -320,9 +310,9 @@ private:
             return it->second.invalidated;
         }
 
-        void reset_invalidated() {
+        void reset_invalidated(bool invalidated = false) {
             for (auto &kv : records_) {
-                kv.second.invalidated = false;
+                kv.second.invalidated = invalidated;
             }
         }
     };

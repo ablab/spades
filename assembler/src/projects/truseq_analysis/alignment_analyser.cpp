@@ -34,11 +34,7 @@ namespace alignment_analysis {
         if (alignments.empty()) {
             return vector<ConsistentMapping>();
         }
-        DijkstraHelper<Graph>::BoundedDijkstra d =
-                DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_,
-                                                             3000 + graph_.k(),
-                                                             1000,
-                                                             true  /* collect traceback */);
+        auto d = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_, 3000 + graph_.k(), 1000);
         vector <ConsistentMapping> result = {alignments.front()};
         for (size_t i = 0; i + 1 < alignments.size(); i++) {
             ConsistentMapping &prev = result.back();
@@ -86,10 +82,10 @@ namespace alignment_analysis {
         return result;
     }
 
-    vector <ConsistentMapping> AlignmentAnalyser::ExtractConsistentMappings(const MappingPath<EdgeId> &path) {
+    vector<ConsistentMapping> AlignmentAnalyser::ExtractConsistentMappings(const debruijn_graph::MappingPath<EdgeId> &path) {
         vector <ConsistentMapping> result;
         for (size_t i = 0; i < path.size(); i++) {
-            pair<EdgeId, MappingRange> m = path[i];
+            pair<EdgeId, debruijn_graph::MappingRange> m = path[i];
             ConsistentMapping mapping = ConsistentMapping(this->graph_, m.first, m.second);
             if (result.empty()) {
                 result.push_back(mapping);
@@ -108,7 +104,7 @@ namespace alignment_analysis {
 
     string AlignmentAnalyser::Analyse(const io::SingleRead &genome_part) {
         log_.str("");
-        MappingPath<EdgeId> path = mapper_.MapRead(genome_part);
+        debruijn_graph::MappingPath<EdgeId> path = mapper_.MapRead(genome_part);
         stringstream result;
         log_ << "Analysis of part " << genome_part.name() << endl;
         cout << "Analysis of part " << genome_part.name() << endl;

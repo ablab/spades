@@ -6,6 +6,8 @@
 //***************************************************************************
 
 #include "genomic_info_filler.hpp"
+#include "genomic_info.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "modules/coverage_model/kmer_coverage_model.hpp"
 #include "modules/simplification/ec_threshold_finder.hpp"
 
@@ -30,41 +32,45 @@ static std::vector<size_t> extract(const std::map<size_t, size_t> &hist) {
     return res;
 }
 
-void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
+void GenomicInfoFiller::run(GraphPack &gp, const char*) {
+    auto &ginfo = gp.get_mutable<GenomicInfo>();
+
     if (cfg::get().uneven_depth) {
-        ErroneousConnectionThresholdFinder<conj_graph_pack::graph_t> finder(gp.g);
+        omnigraph::ErroneousConnectionThresholdFinder<Graph> finder(gp.get<Graph>());
         std::map<size_t, size_t> hist = finder.ConstructHistogram();
         double avg = finder.AvgCoverage();
         double gthr = finder.FindThreshold(hist);
         INFO("Average edge coverage: " << avg);
         INFO("Graph threshold: " << gthr);
 
-        gp.ginfo.set_cov_histogram(extract(hist));
-        gp.ginfo.set_ec_bound(std::min(avg, gthr));
+        ginfo.set_cov_histogram(extract(hist));
+        ginfo.set_ec_bound(std::min(avg, gthr));
     } else {
         // Fit the coverage model and get the threshold
-        coverage_model::KMerCoverageModel CovModel(gp.ginfo.cov_histogram(), cfg::get().kcm.probability_threshold, cfg::get().kcm.strong_probability_threshold);
+        coverage_model::KMerCoverageModel CovModel(ginfo.cov_histogram(),
+                                                   cfg::get().kcm.probability_threshold,
+                                                   cfg::get().kcm.strong_probability_threshold);
         CovModel.Fit();
 
-        gp.ginfo.set_genome_size(CovModel.GetGenomeSize());
-        gp.ginfo.set_ec_bound((double)CovModel.GetErrorThreshold());
+        ginfo.set_genome_size(CovModel.GetGenomeSize());
+        ginfo.set_ec_bound((double)CovModel.GetErrorThreshold());
         if (CovModel.converged()) {
-            gp.ginfo.set_estimated_mean((double)CovModel.GetMeanCoverage());
-            INFO("Mean coverage was calculated as " << gp.ginfo.estimated_mean());
+            ginfo.set_estimated_mean((double)CovModel.GetMeanCoverage());
+            INFO("Mean coverage was calculated as " << ginfo.estimated_mean());
         } else
             INFO("Failed to estimate mean coverage");
 
         if (cfg::get().kcm.use_coverage_threshold) {
             VERIFY(math::gr(cfg::get().ds.aRL, 0.));
-            double arl = math::gr(cfg::get().ds.aRL, double(gp.k_value)) ?
+            double arl = math::gr(cfg::get().ds.aRL, double(gp.k())) ?
                          cfg::get().ds.aRL : double(cfg::get().ds.no_merge_RL);
-            double coef = (arl - double(gp.k_value)) / arl;
-            gp.ginfo.set_trusted_bound(CovModel.converged() && cfg::get().kcm.coverage_threshold == 0.0 ?
+            double coef = (arl - double(gp.k())) / arl;
+            ginfo.set_trusted_bound(CovModel.converged() && cfg::get().kcm.coverage_threshold == 0.0 ?
                                        double(CovModel.GetLowThreshold()) :
                                        cfg::get().kcm.coverage_threshold * coef);
         }
     }
 
-    INFO("EC coverage threshold value was calculated as " << gp.ginfo.ec_bound());
-    INFO("Trusted kmer low bound: " << gp.ginfo.trusted_bound());
+    INFO("EC coverage threshold value was calculated as " << ginfo.ec_bound());
+    INFO("Trusted kmer low bound: " << ginfo.trusted_bound());
 }

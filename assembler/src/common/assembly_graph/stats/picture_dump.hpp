@@ -13,10 +13,10 @@
 #include "pipeline/graph_pack.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "io/binary/graph_pack.hpp"
+#include "io/binary/paired_index.hpp"
 //FIXME awful dependency to get write_lib_data
 #include "pipeline/config_struct.hpp"
 #include "visualization/position_filler.hpp"
-
 #include "visualization/visualization.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/components/graph_component.hpp"
@@ -27,6 +27,8 @@
 #include "io/reads/osequencestream.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "utils/filesystem/copy_file.hpp"
+#include "sequence/genome_storage.hpp"
+#include "paired_info/paired_info.hpp"
 
 #include <boost/algorithm/string.hpp>
 
@@ -47,21 +49,24 @@ FindGenomeMappingPath(const Sequence& genome, const Graph& g,
     return srt.MapSequence(genome);
 }
 
-template<class graph_pack>
-MappingPath<typename graph_pack::graph_t::EdgeId>
-FindGenomeMappingPath(const Sequence& genome, const graph_pack& gp) {
-    return FindGenomeMappingPath(genome, gp.g, gp.index, gp.kmer_mapper);
+inline MappingPath<Graph::EdgeId> FindGenomeMappingPath(const Sequence& genome, const GraphPack &gp) {
+    const auto &graph = gp.get<Graph>();
+    const auto &index = gp.get<EdgeIndex<Graph>>();
+    const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
+    return FindGenomeMappingPath(genome, graph, index, kmer_mapper);
 }
 
-template <class graph_pack>
-std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultColorer(const graph_pack& gp) {
-    return visualization::graph_colorer::DefaultColorer(gp.g,
-        FindGenomeMappingPath(gp.genome.GetSequence(), gp.g, gp.index, gp.kmer_mapper).path(),
-        FindGenomeMappingPath(!gp.genome.GetSequence(), gp.g, gp.index, gp.kmer_mapper).path());
+inline std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultColorer(const GraphPack &gp) {
+    const auto &graph = gp.get<Graph>();
+    const auto &index = gp.get<EdgeIndex<Graph>>();
+    const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
+    const auto &genome = gp.get<GenomeStorage>();
+    return visualization::graph_colorer::DefaultColorer(graph,
+        FindGenomeMappingPath(genome.GetSequence(), graph, index, kmer_mapper).path(),
+        FindGenomeMappingPath(!genome.GetSequence(), graph, index, kmer_mapper).path());
 }
 
-template <class graph_pack>
-void CollectContigPositions(graph_pack &gp) {
+inline void CollectContigPositions(GraphPack &gp) {
     if (!cfg::get().pos.contigs_for_threading.empty() &&
         fs::FileExists(cfg::get().pos.contigs_for_threading))
       visualization::position_filler::FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_", true);
@@ -80,7 +85,7 @@ class GenomeMappingStat: public AbstractStatCounter {
     Sequence genome_;
     size_t k_;
   public:
-    GenomeMappingStat(const Graph &graph, const Index &index, GenomeStorage genome, size_t k) :
+    GenomeMappingStat(const Graph &graph, const Index &index, const GenomeStorage &genome, size_t k) :
             graph_(graph), index_(index), genome_(genome.GetSequence()), k_(k) {}
 
     virtual ~GenomeMappingStat() {}
@@ -146,24 +151,23 @@ void WriteErrorLoc(const Graph &g,
     INFO("Error localities written written to folder " << folder_name);
 }
 
-template<class graph_pack>
-void CountStats(const graph_pack& gp) {
-    typedef typename graph_pack::graph_t Graph;
+inline void CountStats(const GraphPack &gp) {
     typedef typename Graph::EdgeId EdgeId;
     INFO("Counting stats");
     StatList stats;
-    Path<EdgeId> path1 = FindGenomeMappingPath(gp.genome.GetSequence(), gp.g, gp.index,
-                                      gp.kmer_mapper).path();
-    Path<EdgeId> path2 = FindGenomeMappingPath(!gp.genome.GetSequence(), gp.g, gp.index,
-                                      gp.kmer_mapper).path();
-    stats.AddStat(new VertexEdgeStat<Graph>(gp.g));
-    stats.AddStat(new BlackEdgesStat<Graph>(gp.g, path1, path2));
-    stats.AddStat(new NStat<Graph>(gp.g, path1, 50));
-    stats.AddStat(new SelfComplementStat<Graph>(gp.g));
-    stats.AddStat(
-        new GenomeMappingStat<Graph, Index>(gp.g, gp.index,
-                                            gp.genome, gp.k_value));
-    stats.AddStat(new IsolatedEdgesStat<Graph>(gp.g, path1, path2));
+    const auto &graph = gp.get<Graph>();
+    const auto &index = gp.get<EdgeIndex<Graph>>();
+    const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
+    const auto &genome = gp.get<GenomeStorage>();
+
+    Path<EdgeId> path1 = FindGenomeMappingPath(genome.GetSequence(), graph, index, kmer_mapper).path();
+    Path<EdgeId> path2 = FindGenomeMappingPath(!genome.GetSequence(), graph, index, kmer_mapper).path();
+    stats.AddStat(new VertexEdgeStat<Graph>(graph));
+    stats.AddStat(new BlackEdgesStat<Graph>(graph, path1, path2));
+    stats.AddStat(new NStat<Graph>(graph, path1, 50));
+    stats.AddStat(new SelfComplementStat<Graph>(graph));
+    stats.AddStat(new GenomeMappingStat<Graph, EdgeIndex<Graph>>(graph, index, genome, gp.k()));
+    stats.AddStat(new IsolatedEdgesStat<Graph>(graph, path1, path2));
     stats.Count();
     INFO("Stats counted");
 }
@@ -204,47 +208,50 @@ void WriteGraphComponentsAlongContigs(const Graph &g,
     INFO("Writing graph components along contigs finished");
 }
 
-template<class Graph>
-void WriteKmerComponent(conj_graph_pack &gp, const RtSeq &kp1mer, const std::string &file,
+inline void WriteKmerComponent(const GraphPack &gp, const RtSeq &kp1mer, const std::string &file,
                         std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer,
                         const visualization::graph_labeler::GraphLabeler<Graph> &labeler) {
-    if(!gp.index.contains(kp1mer)) {
+    const auto &graph = gp.get<Graph>();
+    const auto &index = gp.get<EdgeIndex<Graph>>();
+    if(!index.contains(kp1mer)) {
         WARN("no such kmer in the graph");
         return;
     }
-    VERIFY(gp.index.contains(kp1mer));
-    auto pos = gp.index.get(kp1mer);
-    typename Graph::VertexId v = pos.second * 2 < gp.g.length(pos.first) ? gp.g.EdgeStart(pos.first) : gp.g.EdgeEnd(pos.first);
-    GraphComponent<Graph> component = omnigraph::VertexNeighborhood<Graph>(gp.g, v);
+    VERIFY(index.contains(kp1mer));
+    auto pos = index.get(kp1mer);
+    typename Graph::VertexId v = pos.second * 2 < graph.length(pos.first)
+            ? graph.EdgeStart(pos.first)
+            : graph.EdgeEnd(pos.first);
+    GraphComponent<Graph> component = omnigraph::VertexNeighborhood<Graph>(graph, v);
     visualization::visualization_utils::WriteComponent<Graph>(component, file, colorer, labeler);
 }
 
-inline
-boost::optional<RtSeq> FindCloseKP1mer(const conj_graph_pack &gp, size_t genome_pos, size_t k) {
-    VERIFY(gp.genome.size() > 0);
-    VERIFY(genome_pos < gp.genome.size());
+inline boost::optional<RtSeq> FindCloseKP1mer(const GraphPack &gp, size_t genome_pos, size_t k) {
+    const auto &genome = gp.get<GenomeStorage>();
+    const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
+    const auto &index = gp.get<EdgeIndex<Graph>>();
+    VERIFY(genome.size() > 0);
+    VERIFY(genome_pos < genome.size());
     static const size_t magic_const = 200;
     for (size_t diff = 0; diff < magic_const; diff++) {
         for (int dir = -1; dir <= 1; dir += 2) {
-            size_t pos = (gp.genome.size() - k + genome_pos + dir * diff) % (gp.genome.size() - k);
-            RtSeq kp1mer = gp.kmer_mapper.Substitute(
-                RtSeq (k + 1, gp.genome.GetSequence(), pos));
-            if (gp.index.contains(kp1mer))
+            size_t pos = (genome.size() - k + genome_pos + dir * diff) % (genome.size() - k);
+            RtSeq kp1mer = kmer_mapper.Substitute(RtSeq (k + 1, genome.GetSequence(), pos));
+            if (index.contains(kp1mer))
                 return boost::optional<RtSeq>(kp1mer);
         }
     }
     return boost::none;
 }
 
-inline
-void PrepareForDrawing(conj_graph_pack &gp) {
+inline void PrepareForDrawing(GraphPack &gp) {
     gp.EnsureDebugInfo();
     CollectContigPositions(gp);
 }
 
 
 struct detail_info_printer {
-    detail_info_printer(conj_graph_pack &gp,
+    detail_info_printer(GraphPack &gp,
                         const visualization::graph_labeler::GraphLabeler<Graph> &labeler,
                         const std::string &folder)
             :  gp_(gp),
@@ -276,6 +283,10 @@ struct detail_info_printer {
         using namespace visualization;
         using namespace io::binary;
 
+        const auto &graph = gp_.get<Graph>();
+        const auto &index = gp_.get<EdgeIndex<Graph>>();
+        const auto &kmer_mapper = gp_.get<KmerMapper<Graph>>();
+
         static size_t call_cnt = 0;
 
         auto it = cfg::get().info_printers.find(pos);
@@ -284,7 +295,7 @@ struct detail_info_printer {
         const config::debruijn_config::info_printer & config = it->second;
     
         if (config.basic_stats) {
-            VertexEdgeStat<conj_graph_pack::graph_t> stats(gp_.g);
+            VertexEdgeStat<Graph> stats(graph);
             INFO("Number of vertices : " << stats.vertices() << ", number of edges : "
                   << stats.edges() << ", sum length of edges : " << stats.edge_length());
         }
@@ -293,9 +304,10 @@ struct detail_info_printer {
             auto saves_folder = fs::append_path(fs::append_path(folder_, "saves/"),
                                                 ToString(call_cnt++, 2) + "_" + pos_name + "/");
             fs::make_dirs(saves_folder);
-            BasePackIO<Graph>().Save(saves_folder + "graph_pack", gp_);
+            BasePackIO().Save(saves_folder + "graph_pack", gp_);
             //TODO: separate
-            Save(saves_folder + "graph_pack", gp_.clustered_indices);
+            const auto &indices = gp_.get<omnigraph::de::PairedInfoIndicesT<Graph>>("clustered_indices");
+            Save(saves_folder + "graph_pack", indices);
         }
 
         if (config.save_all) {
@@ -305,7 +317,7 @@ struct detail_info_printer {
             auto p = saves_folder + "/saves";
             INFO("Saving current state to " << p);
 
-            FullPackIO<Graph>().Save(saves_folder + "graph_pack", gp_);
+            FullPackIO().Save(saves_folder + "graph_pack", gp_);
             debruijn_graph::config::write_lib_data(p);
         }
 
@@ -314,7 +326,7 @@ struct detail_info_printer {
                                                 ToString(call_cnt++, 2) + "_" + pos_name + "/");
             fs::make_dirs(saves_folder);
 
-            BasicGraphIO<Graph>().Save(saves_folder + "graph", gp_.g);
+            BasicGraphIO<Graph>().Save(saves_folder + "graph", graph);
         }
 
         if (config.lib_info) {
@@ -346,36 +358,35 @@ struct detail_info_printer {
         fs::make_dirs(pics_folder);
         PrepareForDrawing(gp_);
     
-        auto path1 = FindGenomeMappingPath(gp_.genome.GetSequence(), gp_.g, gp_.index,
-                                           gp_.kmer_mapper).path();
+        auto path1 = FindGenomeMappingPath(gp_.get<GenomeStorage>().GetSequence(), graph, index, kmer_mapper).path();
     
         auto colorer = DefaultColorer(gp_);
     
         if (config.write_error_loc) {
             fs::make_dir(pics_folder + "error_loc/");
-            WriteErrorLoc(gp_.g, pics_folder + "error_loc/", colorer, labeler_);
+            WriteErrorLoc(graph, pics_folder + "error_loc/", colorer, labeler_);
         }
     
         if (config.write_full_graph) {
-            visualization_utils::WriteComponent(GraphComponent<Graph>::WholeGraph(gp_.g),
+            visualization_utils::WriteComponent(GraphComponent<Graph>::WholeGraph(graph),
                                                 pics_folder + "full_graph.dot", colorer, labeler_);
         }
     
         if (config.write_full_nc_graph) {
-            visualization_utils::WriteSimpleComponent(GraphComponent<Graph>::WholeGraph(gp_.g),
+            visualization_utils::WriteSimpleComponent(GraphComponent<Graph>::WholeGraph(graph),
                                                       pics_folder + "nc_full_graph.dot", colorer, labeler_);
         }
     
         if (config.write_components) {
             fs::make_dir(pics_folder + "components/");
-            visualization_utils::WriteComponents(gp_.g, pics_folder + "components/",
-                                                 omnigraph::ReliableSplitter<Graph>(gp_.g), colorer, labeler_);
+            visualization_utils::WriteComponents(graph, pics_folder + "components/",
+                                                 omnigraph::ReliableSplitter<Graph>(graph), colorer, labeler_);
         }
     
         if (!config.components_for_kmer.empty()) {
             auto kmer_folder = fs::append_path(pics_folder, "kmer_loc/");
             fs::make_dir(kmer_folder);
-            auto kmer = RtSeq(gp_.k_value + 1, config.components_for_kmer.substr(0, gp_.k_value + 1).c_str());
+            auto kmer = RtSeq(gp_.k() + 1, config.components_for_kmer.substr(0, gp_.k() + 1).c_str());
             auto file_name = fs::append_path(kmer_folder, pos_name + ".dot");
             WriteKmerComponent(gp_, kmer, file_name, colorer, labeler_);
         }
@@ -383,13 +394,13 @@ struct detail_info_printer {
         if (config.write_components_along_genome) {
             fs::make_dir(pics_folder + "along_genome/");
             visualization_utils::WriteComponentsAlongPath
-                    (gp_.g, path1.sequence(), pics_folder + "along_genome/", colorer, labeler_);
+                    (graph, path1.sequence(), pics_folder + "along_genome/", colorer, labeler_);
         }
     
         if (config.write_components_along_contigs) {
             fs::make_dir(pics_folder + "along_contigs/");
-            BasicSequenceMapper<Graph, Index> mapper(gp_.g, gp_.index, gp_.kmer_mapper);
-            WriteGraphComponentsAlongContigs(gp_.g, mapper, pics_folder + "along_contigs/", colorer, labeler_);
+            BasicSequenceMapper<Graph, EdgeIndex<Graph>> mapper(graph, index, kmer_mapper);
+            WriteGraphComponentsAlongContigs(graph, mapper, pics_folder + "along_contigs/", colorer, labeler_);
         }
 
         if (!config.components_for_genome_pos.empty()) {
@@ -398,22 +409,23 @@ struct detail_info_printer {
             std::vector<std::string> positions;
             boost::split(positions, config.components_for_genome_pos,
                          boost::is_any_of(" ,"), boost::token_compress_on);
+            const auto &genome = gp_.get<GenomeStorage>();
             for (auto it = positions.begin(); it != positions.end(); ++it) {
-                auto close_kp1mer = FindCloseKP1mer(gp_, std::stoi(*it), gp_.k_value);
+                auto close_kp1mer = FindCloseKP1mer(gp_, std::stoi(*it), gp_.k());
                 if (close_kp1mer) {
                     auto locality_folder = fs::append_path(pos_loc_folder, *it + "/");
                     fs::make_dir(locality_folder);
                     WriteKmerComponent(gp_, *close_kp1mer, fs::append_path(locality_folder, pos_name + ".dot"), colorer, labeler_);
                 } else {
-                    WARN(
-                        "Failed to find genome kp1mer close to the one at position "
-                        << *it << " in the graph. Which is " << RtSeq (gp_.k_value + 1, gp_.genome.GetSequence(), std::stoi(*it)));
+                    WARN("Failed to find genome kp1mer close to the one at position "
+                        << *it << " in the graph. Which is "
+                        << RtSeq (gp_.k() + 1, genome.GetSequence(), std::stoi(*it)));
                 }
             }
         }
     }
 
-    conj_graph_pack& gp_;
+    GraphPack& gp_;
     const visualization::graph_labeler::GraphLabeler<Graph>& labeler_;
     std::string folder_;
 };

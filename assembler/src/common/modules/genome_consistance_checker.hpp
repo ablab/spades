@@ -17,6 +17,7 @@
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "modules/path_extend/pe_utils.hpp"
+#include "pipeline/config_struct.hpp"
 
 namespace debruijn_graph {
 
@@ -136,7 +137,8 @@ public:
 
 class GenomeConsistenceChecker {
     typedef omnigraph::MappingPath<EdgeId> MappingPathT;
-    const conj_graph_pack &gp_;
+    GraphPack &gp_;
+    Graph &graph_;
     const size_t absolute_max_gap_;
     const double relative_max_gap_;
     const size_t unresolvable_len_;
@@ -161,11 +163,13 @@ class GenomeConsistenceChecker {
 //constructs longest sequence of consequetive ranges, stores result in used_mappings
     std::vector<MappingRange> FindBestRangeSequence(const std::set<MappingRange>& mappings) const;
 
-    std::string ChromosomeByUniqueEdge(const EdgeId &e, const EdgesPositionHandler<Graph> &tmp_edge_pos, size_t &total) const;
+    std::string ChromosomeByUniqueEdge(const EdgeId &e,
+                                       const omnigraph::EdgesPositionHandler<Graph> &tmp_edge_pos,
+                                       size_t &total) const;
 
     std::pair<MappingRange, size_t> Merge(const std::vector<MappingRange> &mappings) const;
 
-    void FillPos(EdgeId e, const EdgesPositionHandler<Graph> &tmp_edge_pos);
+    void FillPos(EdgeId e, const omnigraph::EdgesPositionHandler<Graph> &tmp_edge_pos);
 
     void ReportPathEndByPairedLib(const std::shared_ptr<path_extend::PairedInfoLibrary> paired_lib, EdgeId current_edge) const;
 
@@ -179,7 +183,7 @@ class GenomeConsistenceChecker {
 
     void TheoreticLenStats(std::vector<size_t> theoretic_lens) const;
 
-    std::map<std::string, size_t> TotalAlignedLengths(const EdgesPositionHandler<Graph> &tmp_edge_pos, EdgeId e) const;
+    std::map<std::string, size_t> TotalAlignedLengths(const omnigraph::EdgesPositionHandler<Graph> &tmp_edge_pos, EdgeId e) const;
 
     MappingPathT ConstructEdgeOrder(const std::string &chr_name) const;
 
@@ -187,7 +191,8 @@ class GenomeConsistenceChecker {
     std::vector<size_t> MappedRegions(const MappingPathT &mapping_path) const;
 
     bool IsCloseToEnd(MappingRange range, const ChromosomeInfo &chr_info) const {
-        auto last_range = gp_.edge_pos.GetUniqueEdgePosition(chr_info.EdgeAt(chr_info.size() - 1), chr_info.name());
+        const auto &edge_pos = gp_.get<omnigraph::EdgesPositionHandler<Graph>>();
+        auto last_range = edge_pos.GetUniqueEdgePosition(chr_info.EdgeAt(chr_info.size() - 1), chr_info.name());
         return range.initial_range.end_pos + SIGNIFICANT_LENGTH_LOWER_LIMIT > last_range.initial_range.end_pos;
     }
 
@@ -197,7 +202,7 @@ class GenomeConsistenceChecker {
 
     DECL_LOGGER("GenomeConsistenceChecker");
 public:
-    GenomeConsistenceChecker(const conj_graph_pack &gp,
+    GenomeConsistenceChecker(GraphPack &gp,
                              size_t max_gap,
                              double relative_max_gap /*= 0.2*/,
                              size_t unresolvable_len,
@@ -205,6 +210,7 @@ public:
                              const std::vector<path_extend::GraphCoverageMap> &long_reads_cov_map,
                              const io::DataSet<config::LibraryData> reads) :
             gp_(gp),
+            graph_(gp.get_mutable<Graph>()),
             absolute_max_gap_(max_gap),
             relative_max_gap_(relative_max_gap),
             unresolvable_len_(unresolvable_len),

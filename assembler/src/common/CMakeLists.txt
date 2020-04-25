@@ -16,6 +16,7 @@ add_subdirectory(paired_info)
 add_subdirectory(stages)
 add_subdirectory(utils)
 add_subdirectory(io)
+add_subdirectory(io/binary)
 add_subdirectory(utils/kmer_mph)
 add_subdirectory(modules/coverage_model)
 add_subdirectory(hmm)
@@ -23,5 +24,5 @@ add_subdirectory(hmm)
 add_library(common_modules
             adt/concurrent_dsu.cpp)
 
-target_link_libraries(common_modules
-                      assembly_graph input pipeline sequence coverage_model paired_info path_extend stages utils mph_index modules)
+target_link_libraries(common_modules INTERFACE
+                      assembly_graph input binary pipeline sequence coverage_model paired_info path_extend stages utils mph_index modules)

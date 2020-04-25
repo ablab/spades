@@ -403,10 +403,10 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
   DECL_LOGGER("BasicSequenceMapper");
 };
 
-
-template<class gp_t>
-std::shared_ptr<BasicSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t>> MapperInstance(const gp_t& gp) {
-  return std::make_shared<BasicSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t>>(gp.g, gp.index, gp.kmer_mapper);
+inline std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const GraphPack &gp) {
+    return std::make_shared<BasicSequenceMapper<Graph, EdgeIndex<Graph>>>(gp.get<Graph>(),
+                                                                          gp.get<EdgeIndex<Graph>>(),
+                                                                          gp.get<KmerMapper<Graph>>());
 }
 
 } // namespace debruijn_graph

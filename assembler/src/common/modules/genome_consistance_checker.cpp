@@ -1,11 +1,15 @@
 #include "modules/genome_consistance_checker.hpp"
 #include "modules/path_extend/paired_library.hpp"
 #include "assembly_graph/core/graph.hpp"
+#include "sequence/genome_storage.hpp"
+
 #include <algorithm>
 #include <numeric>
 #include <limits>
 
 namespace debruijn_graph {
+
+using omnigraph::EdgesPositionHandler;
 using omnigraph::MappingRange;
 using namespace std;
 
@@ -44,11 +48,12 @@ PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &
     }
 }
 
-MappingPath<EdgeId> GenomeConsistenceChecker::ConstructEdgeOrder(const string& chr_name) const {
+MappingPath<EdgeId> GenomeConsistenceChecker::ConstructEdgeOrder(const std::string &chr_name) const {
+    const auto &edge_pos = gp_.get<EdgesPositionHandler<Graph>>();
     vector<pair<EdgeId, MappingRange>> to_sort;
     DEBUG ("constructing edge order for chr " << chr_name);
     for (auto e: storage_) {
-        set<MappingRange> mappings = gp_.edge_pos.GetEdgePositions(e, chr_name);
+        set<MappingRange> mappings = edge_pos.GetEdgePositions(e, chr_name);
         VERIFY_MSG(mappings.size() <= 1, "Presumably unique edge " << e << " with multiple mappings!");
         if (!mappings.empty()) {
             to_sort.push_back(make_pair(e, *mappings.begin()));
@@ -62,8 +67,8 @@ MappingPath<EdgeId> GenomeConsistenceChecker::ConstructEdgeOrder(const string& c
     return MappingPathT(to_sort);
 }
 
-void GenomeConsistenceChecker::ReportEdge(EdgeId e, double w) const{
-    INFO("Edge " << gp_.g.int_id(e) << " weight " << w << " len " << gp_.g.length(e) << " cov " << gp_.g.coverage(e));
+void GenomeConsistenceChecker::ReportEdge(EdgeId e, double w) const {
+    INFO("Edge " << graph_.int_id(e) << " weight " << w << " len " << graph_.length(e) << " cov " << graph_.coverage(e));
     if (!genome_info_.Multiplicity(e)) {
         INFO(" no chromosome position");
     } else {
@@ -107,7 +112,7 @@ void GenomeConsistenceChecker::ReportPathEndByLongLib(const path_extend::Bidirec
             for (size_t p_ind = 0; p_ind < cov_path->Size(); p_ind++) {
                 if (cov_path->At(p_ind) == current_edge) {
                     for (size_t p_ind2  = p_ind + 1; p_ind2 < cov_path->Size(); p_ind2++) {
-                        if (gp_.g.length(cov_path->At(p_ind2)) >= storage_.min_length() ) {
+                        if (graph_.length(cov_path->At(p_ind2)) >= storage_.min_length() ) {
                             next_weigths[cov_path->At(p_ind2)] += w;
                         }
                     }
@@ -140,6 +145,10 @@ void GenomeConsistenceChecker::ReportPathEndByPairedLib(const shared_ptr<path_ex
 }
 
 void GenomeConsistenceChecker::CheckPathEnd(const BidirectionalPath &path) const {
+    using namespace omnigraph::de;
+    const auto &paired_indices = gp_.get<UnclusteredPairedInfoIndicesT<Graph>>();
+    const auto &clustered_indices = gp_.get<UnclusteredPairedInfoIndicesT<Graph>>("clustered_indices");
+
     for (int i =  (int)path.Size() - 1; i >= 0; --i) {
         if (storage_.IsUnique(path.At(i))) {
             EdgeId current_edge = path.At(i);
@@ -159,9 +168,9 @@ void GenomeConsistenceChecker::CheckPathEnd(const BidirectionalPath &path) const
                 if (lib.is_paired()) {
                     shared_ptr<path_extend::PairedInfoLibrary> paired_lib;
                     if (lib.is_mate_pair())
-                        paired_lib = path_extend::MakeNewLib(gp_.g, lib, gp_.paired_indices[lib_index]);
+                        paired_lib = path_extend::MakeNewLib(graph_, lib, paired_indices[lib_index]);
                     else if (lib.type() == io::LibraryType::PairedEnd)
-                        paired_lib = path_extend::MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+                        paired_lib = path_extend::MakeNewLib(graph_, lib, clustered_indices[lib_index]);
                     ReportPathEndByPairedLib(paired_lib, current_edge);
                 } else if (lib.is_long_read_lib()) {
                     ReportPathEndByLongLib(long_reads_cov_map_[lib_index].GetCoveringPaths(current_edge), current_edge);
@@ -196,6 +205,10 @@ size_t GenomeConsistenceChecker::GetSupportingPathCount(EdgeId e1, EdgeId e2, si
 }
 
 void GenomeConsistenceChecker::PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const {
+    using namespace omnigraph::de;
+    const auto &paired_indices = gp_.get<UnclusteredPairedInfoIndicesT<Graph>>();
+    const auto &clustered_indices = gp_.get<UnclusteredPairedInfoIndicesT<Graph>>("clustered_indices");
+
     VERIFY(genome_info_.Multiplicity(e1));
     VERIFY(genome_info_.Multiplicity(e2));
     const auto &chr_info1 = genome_info_.UniqueChromosomeInfo(e1);
@@ -205,7 +218,8 @@ void GenomeConsistenceChecker::PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const 
 //FIXME: checks, compliment_strands;
     EdgeId true_next = chr_info1.EdgeAt((chr_info1.UniqueEdgeIdx(e1) + 1) % chr_info1.size());
     EdgeId true_prev = chr_info2.EdgeAt((chr_info2.UniqueEdgeIdx(e2) + chr_info2.size() - 1) % chr_info2.size());
-    INFO("Next genomic edge " << true_next.int_id() << " len " << gp_.g.length(true_next) << " prev " << true_prev.int_id() << " len " << gp_.g.length(true_prev));
+    INFO("Next genomic edge " << true_next.int_id() << " len " << graph_.length(true_next)
+                              << " prev " << true_prev.int_id() << " len " << graph_.length(true_prev));
     if (chr_info1.name() == chr_info2.name() && ind1 < ind2) {
         INFO("Same chromosome large forward jump misassembly");
     } else if (chr_info1.name() == chr_info2.name() && ind1 > ind2)  {
@@ -224,9 +238,9 @@ void GenomeConsistenceChecker::PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const 
         if (lib.is_paired()) {
             shared_ptr<path_extend::PairedInfoLibrary> paired_lib;
             if (lib.is_mate_pair())
-                paired_lib = path_extend::MakeNewLib(gp_.g, lib, gp_.paired_indices[lib_index]);
+                paired_lib = path_extend::MakeNewLib(graph_, lib, paired_indices[lib_index]);
             else if (lib.type() == io::LibraryType::PairedEnd)
-                paired_lib = path_extend::MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+                paired_lib = path_extend::MakeNewLib(graph_, lib, clustered_indices[lib_index]);
             INFO("for lib " << lib_index << " IS" << paired_lib->GetIS());
             INFO("Misassembly weight regardless of dists: " << paired_lib->CountPairedInfo(e1, e2, -1000000, 1000000));
             INFO("Next weight " << paired_lib->CountPairedInfo(e1, true_next, -1000000, 1000000));
@@ -242,17 +256,19 @@ void GenomeConsistenceChecker::PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const 
 }
 
 void GenomeConsistenceChecker::ClassifyPosition(size_t prev_pos, size_t cur_pos,
-                                                const BidirectionalPath & path, PathScore &res) const{
+                                                const BidirectionalPath &path, PathScore &res) const {
+    const auto &edge_pos = gp_.get<EdgesPositionHandler<Graph>>();
+
     EdgeId cur_e = path.At(cur_pos);
     const auto& chr_info = genome_info_.UniqueChromosomeInfo(cur_e);
     size_t cur_in_genome = chr_info.UniqueEdgeIdx(cur_e);
     string cur_chr = chr_info.name();
-    MappingRange cur_range = gp_.edge_pos.GetUniqueEdgePosition(cur_e, cur_chr);
+    MappingRange cur_range = edge_pos.GetUniqueEdgePosition(cur_e, cur_chr);
     EdgeId prev_e = path.At(prev_pos);
     const auto& prev_chr_info = genome_info_.UniqueChromosomeInfo(prev_e);
     size_t prev_in_genome = prev_chr_info.UniqueEdgeIdx(prev_e);
     string prev_chr = prev_chr_info.name();
-    MappingRange prev_range = gp_.edge_pos.GetUniqueEdgePosition(prev_e, prev_chr);
+    MappingRange prev_range = edge_pos.GetUniqueEdgePosition(prev_e, prev_chr);
 
     res.mapped_length += cur_range.mapped_range.size();
     if (cur_in_genome == prev_in_genome + 1 && cur_chr == prev_chr) {
@@ -275,7 +291,7 @@ void GenomeConsistenceChecker::ClassifyPosition(size_t prev_pos, size_t cur_pos,
             INFO("Local misassembly between edges: "<<prev_e.int_id() << " and " << cur_e.int_id());
             size_t total = 0;
             for (auto j = prev_in_genome + 1; j < cur_in_genome; j ++) {
-                total += gp_.g.length(chr_info.EdgeAt(j));
+                total += graph_.length(chr_info.EdgeAt(j));
             }
             INFO("Jumped over " << cur_in_genome - prev_in_genome - 1 << " uniques of total length: " << total);
         } else if (IsCloseToEnd(prev_range, prev_chr_info) && IsCloseToStart(cur_range, chr_info)) {
@@ -364,6 +380,7 @@ vector<MappingRange> GenomeConsistenceChecker::FindBestRangeSequence(const set<M
 }
 
 std::map<EdgeId, std::string> GenomeConsistenceChecker::EdgeLabels() const {
+    const auto &edge_pos = gp_.get<EdgesPositionHandler<Graph>>();
     INFO("Constructing reference labels");
     std::map<EdgeId, std::string> answer;
     size_t count = 0;
@@ -371,7 +388,7 @@ std::map<EdgeId, std::string> GenomeConsistenceChecker::EdgeLabels() const {
         const auto &chr_info = genome_info_.ChrInfo(chr);
         for (size_t pos = 0; pos < chr_info.size(); ++pos) {
             EdgeId e = chr_info.EdgeAt(pos);
-            auto mr = gp_.edge_pos.GetUniqueEdgePosition(e, chr);
+            auto mr = edge_pos.GetUniqueEdgePosition(e, chr);
             VERIFY(!answer.count(e));
             answer[e] += chr +
                          "order: " + to_string(count) +
@@ -387,16 +404,19 @@ std::map<EdgeId, std::string> GenomeConsistenceChecker::EdgeLabels() const {
 }
 
 void GenomeConsistenceChecker::Fill() {
-    gp_.edge_pos.clear();
-    if (!gp_.edge_pos.IsAttached()) {
-        gp_.edge_pos.Attach();
+    auto &edge_pos = gp_.get_mutable<EdgesPositionHandler<Graph>>();
+    const auto &genome = gp_.get<GenomeStorage>();
+
+    edge_pos.clear();
+    if (!edge_pos.IsAttached()) {
+        edge_pos.Attach();
     }
 
     //FIXME set the parameters to something more reasonable
-    EdgesPositionHandler<Graph> tmp_edge_pos(gp_.g, 0, 0);
-    visualization::position_filler::PosFiller<Graph> pos_filler(gp_.g, MapperInstance(gp_), tmp_edge_pos);
+    EdgesPositionHandler<Graph> tmp_edge_pos(graph_, 0, 0);
+    visualization::position_filler::PosFiller<Graph> pos_filler(graph_, MapperInstance(gp_), tmp_edge_pos);
 
-    for (const auto &chr: gp_.genome.GetChromosomes()) {
+    for (const auto &chr: genome.GetChromosomes()) {
         pos_filler.Process(chr.sequence, "0_" + chr.name);
         pos_filler.Process(ReverseComplement(chr.sequence), "1_" + chr.name);
     }
@@ -407,7 +427,7 @@ void GenomeConsistenceChecker::Fill() {
 
     vector<size_t> theoretic_lens;
     for (const auto &prefix: vector<std::string>{"0_", "1_"}) {
-        for (const auto &chr: gp_.genome.GetChromosomes()) {
+        for (const auto &chr: genome.GetChromosomes()) {
             string label = prefix + chr.name;
             INFO("Spelling label " << label);
             auto mapping_path = ConstructEdgeOrder(label);
@@ -453,7 +473,7 @@ vector<size_t> GenomeConsistenceChecker::MappedRegions(const GenomeConsistenceCh
     for (size_t i = 0; i < mapping_path.size(); i++) {
         auto current_range = mapping_path[i].second;
         INFO("Pos: " << i << " init_range " << current_range.initial_range
-                     << " mapped to edge " << gp_.g.str(mapping_path[i].first)
+                     << " mapped to edge " << graph_.str(mapping_path[i].first)
                      << " range " << current_range.mapped_range);
 
         size_t curr_start = current_range.initial_range.start_pos;
@@ -483,8 +503,8 @@ void GenomeConsistenceChecker::FillPos(EdgeId e, const EdgesPositionHandler<Grap
     //FIXME what is the logic here?
     //used less that 0.9 of aligned length
     VERIFY(total_mapped >= mapping_info.second);
-    if ((total_mapped - mapping_info.second) * 10 >=  gp_.g.length(e)) {
-        INFO ("Edge " << gp_.g.int_id(e) << " length "<< gp_.g.length(e)  << "is potentially misassembled! mappings: ");
+    if ((total_mapped - mapping_info.second) * 10 >= graph_.length(e)) {
+        INFO ("Edge " << graph_.int_id(e) << " length "<< graph_.length(e)  << "is potentially misassembled! mappings: ");
         for (auto mp : tmp_edge_pos.GetEdgePositions(e, chr)) {
             INFO("mp_range "<< mp.mapped_range.start_pos << " - " << mp.mapped_range.end_pos
                  << " init_range " << mp.initial_range.start_pos << " - " << mp.initial_range.end_pos );
@@ -494,7 +514,7 @@ void GenomeConsistenceChecker::FillPos(EdgeId e, const EdgesPositionHandler<Grap
             }
         }
     }
-    gp_.edge_pos.AddEdgePosition(e, chr, mapping_info.first);
+    gp_.get_mutable<EdgesPositionHandler<Graph>>().AddEdgePosition(e, chr, mapping_info.first);
 }
 
 pair<MappingRange, size_t> GenomeConsistenceChecker::Merge(const vector<MappingRange> &mappings) const {
@@ -513,14 +533,14 @@ pair<MappingRange, size_t> GenomeConsistenceChecker::Merge(const vector<MappingR
 string GenomeConsistenceChecker::ChromosomeByUniqueEdge(const EdgeId &e,
                                                         const EdgesPositionHandler<Graph> &tmp_edge_pos,
                                                         size_t &total) const {
-    DEBUG("Positioning edge " << gp_.g.str(e));
+    DEBUG("Positioning edge " << graph_.str(e));
     map<string, size_t> total_al_lens = TotalAlignedLengths(tmp_edge_pos, e);
     total = 0;
     for (size_t c : utils::value_set(total_al_lens))
         total += c;
 
-    if (total > size_t(math::round((double) gp_.g.length(e) * 1.5))) {
-        INFO("Edge " << gp_.g.int_id(e) <<" was not unique due to the references, excluding ");
+    if (total > size_t(math::round((double) graph_.length(e) * 1.5))) {
+        INFO("Edge " << graph_.int_id(e) <<" was not unique due to the references, excluding ");
         return "";
     }
 
@@ -535,7 +555,7 @@ string GenomeConsistenceChecker::ChromosomeByUniqueEdge(const EdgeId &e,
 
     DEBUG("Most likely chromosome " << chr << ". Mapped bp: " << max_l);
     //TODO: support non-unique edges;
-    if (max_l < size_t(math::round((double) gp_.g.length(e) * 0.5))) {
+    if (max_l < size_t(math::round((double) graph_.length(e) * 0.5))) {
         DEBUG("Too small a portion mapped. Edge not used");
         return "";
     }

@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "modules/alignment/long_read_storage.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "pipeline/stage.hpp"
 
 namespace debruijn_graph {
@@ -15,7 +17,7 @@ namespace gap_closing {
 class GapStorage;
 };
 
-void PacbioAlignLibrary(const conj_graph_pack& gp,
+void PacbioAlignLibrary(const Graph& g,
                         const io::SequencingLibrary<config::LibraryData>& lib,
                         PathStorage<Graph>& path_storage,
                         gap_closing::GapStorage& gap_storage,
@@ -27,7 +29,8 @@ public:
     HybridLibrariesAligning()
             : AssemblyStage("Hybrid Aligning", "hybrid_aligning") {
     }
-    void run(conj_graph_pack &gp, const char*);
+
+    void run(GraphPack &gp, const char*);
     DECL_LOGGER("HybridAligning");
 };
 

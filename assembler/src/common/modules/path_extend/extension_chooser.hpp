@@ -17,6 +17,8 @@
 
 #include "weight_counter.hpp"
 #include "pe_utils.hpp"
+#include "assembly_graph/components/graph_component.hpp"
+#include "modules/alignment/rna/ss_coverage.hpp"
 //#include "scaff_supplementary.hpp"
 
 #include <queue>
@@ -1286,7 +1288,7 @@ private:
         }
     }
 
-    GraphComponent<Graph> GetRepeatComponent(const VertexId start, double path_coverage) const {
+    omnigraph::GraphComponent<Graph> GetRepeatComponent(const VertexId start, double path_coverage) const {
         std::set<VertexId> vertices_of_component;
         vertices_of_component.insert(start);
         std::queue<VertexId> can_be_processed;
@@ -1296,14 +1298,14 @@ private:
             can_be_processed.pop();
             if (vertices_of_component.count(v) != 0) {
                 DEBUG("Component is too complex");
-                return GraphComponent<Graph>::Empty(g_);
+                return omnigraph::GraphComponent<Graph>::Empty(g_);
             }
             DEBUG("Adding vertex " << g_.str(v) << " to component set");
             vertices_of_component.insert(v);
             UpdateCanBeProcessed(v, can_be_processed, path_coverage);
         }
 
-        return GraphComponent<Graph>::FromVertices(g_, vertices_of_component);
+        return omnigraph::GraphComponent<Graph>::FromVertices(g_, vertices_of_component);
     }
 
     EdgeContainer FinalFilter(const EdgeContainer& edges,
@@ -1338,7 +1340,7 @@ private:
         } 
 
         DEBUG("Short extension, launching repeat component analysis");
-        GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(ext), path_coverage);
+        auto gc = GetRepeatComponent(g_.EdgeEnd(ext), path_coverage);
         if (gc.v_size() == 0) {
             DEBUG("Component search failed");
             return -1.;

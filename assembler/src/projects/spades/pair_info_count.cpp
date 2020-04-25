@@ -20,20 +20,24 @@
 
 namespace debruijn_graph {
 
-typedef io::SequencingLibrary<config::LibraryData> SequencingLib;
+namespace {
+
+using SequencingLib = io::SequencingLibrary<config::LibraryData>;
 using PairedInfoFilter = bf::counting_bloom_filter<std::pair<EdgeId, EdgeId>, 2>;
 using EdgePairCounter = hll::hll_with_hasher<std::pair<EdgeId, EdgeId>>;
 
-std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const conj_graph_pack& gp,
+std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const GraphPack& gp,
                                                           const SequencingLib& library) {
+    const auto &graph = gp.get<Graph>();
+
     if (library.type() == io::LibraryType::MatePairs) {
         INFO("Mapping mate-pairs using BWA-mem mapper");
-        return std::make_shared<alignment::BWAReadMapper<Graph>>(gp.g);
+        return std::make_shared<alignment::BWAReadMapper<Graph>>(graph);
     }
 
-    if (library.data().unmerged_read_length < gp.k_value && library.type() == io::LibraryType::PairedEnd) {
+    if (library.data().unmerged_read_length < gp.k() && library.type() == io::LibraryType::PairedEnd) {
         INFO("Mapping PE reads shorter than K with BWA-mem mapper");
-        return std::make_shared<alignment::BWAReadMapper<Graph>>(gp.g);
+        return std::make_shared<alignment::BWAReadMapper<Graph>>(graph);
     }
 
     INFO("Selecting usual mapper");
@@ -61,11 +65,11 @@ class DEFilter : public SequenceMapperListener {
     void ProcessPairedRead(const MappingPath<EdgeId>& path1,
                            const MappingPath<EdgeId>& path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
-            std::pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
+            EdgeId edge1 = path1.edge_at(i);
             for (size_t j = 0; j < path2.size(); ++j) {
-                std::pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
-                bf_.add({mapping_edge_1.first, mapping_edge_2.first});
-                bf_.add({g_.conjugate(mapping_edge_2.first), g_.conjugate(mapping_edge_1.first)});
+                EdgeId edge2 = path2.edge_at(j);
+                bf_.add({edge1, edge2});
+                bf_.add({g_.conjugate(edge2), g_.conjugate(edge1)});
             }
         }
     }
@@ -114,10 +118,10 @@ class EdgePairCounterFiller : public SequenceMapperListener {
                            const MappingPath<EdgeId>& path1,
                            const MappingPath<EdgeId>& path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
-            std::pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
+            EdgeId edge1 = path1.edge_at(i);
             for (size_t j = 0; j < path2.size(); ++j) {
-                std::pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
-                buf.add({mapping_edge_1.first, mapping_edge_2.first});
+                EdgeId edge2 = path2.edge_at(j);
+                buf.add({edge1, edge2});
             }
         }
     }
@@ -126,7 +130,7 @@ class EdgePairCounterFiller : public SequenceMapperListener {
     EdgePairCounter counter_;
 };
 
-static bool HasGoodRRLibs() {
+bool HasGoodRRLibs() {
     for (const auto &lib : cfg::get().ds.reads) {
         if (lib.is_contig_lib())
             continue;
@@ -142,7 +146,7 @@ static bool HasGoodRRLibs() {
     return false;
 }
 
-static bool HasOnlyMP() {
+bool HasOnlyMP() {
     for (const auto &lib : cfg::get().ds.reads) {
         if (lib.type() == io::LibraryType::PathExtendContigs)
             continue;
@@ -155,12 +159,12 @@ static bool HasOnlyMP() {
     return true;
 }
 
-static bool ShouldObtainLibCoverage() {
+bool ShouldObtainLibCoverage() {
     return cfg::get().calculate_coverage_for_each_lib;
 }
 
 //todo improve logic
-static bool ShouldObtainSingleReadsPaths(size_t ilib) {
+bool ShouldObtainSingleReadsPaths(size_t ilib) {
     using config::single_read_resolving_mode;
     switch (cfg::get().single_reads_rr) {
         case single_read_resolving_mode::all:
@@ -184,11 +188,11 @@ static bool ShouldObtainSingleReadsPaths(size_t ilib) {
     return false;
 }
 
-static bool CollectLibInformation(const conj_graph_pack &gp,
-                                  size_t &edgepairs,
-                                  size_t ilib, size_t edge_length_threshold) {
+bool CollectLibInformation(const GraphPack &gp,
+                           size_t &edgepairs,
+                           size_t ilib, size_t edge_length_threshold) {
     INFO("Estimating insert size (takes a while)");
-    InsertSizeCounter hist_counter(gp, edge_length_threshold);
+    InsertSizeCounter hist_counter(gp.get<Graph>(), edge_length_threshold);
     EdgePairCounterFiller pcounter(cfg::get().max_threads);
 
     SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
@@ -220,7 +224,7 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
     hist_counter.FindMean(data.mean_insert_size, data.insert_size_deviation, percentiles);
     hist_counter.FindMedian(data.median_insert_size, data.insert_size_mad,
                             data.insert_size_distribution);
-    if (data.median_insert_size < gp.k_value + 2)
+    if (data.median_insert_size < gp.k() + 2)
         return false;
 
     std::tie(data.insert_size_left_quantile,
@@ -230,18 +234,17 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
     return !data.insert_size_distribution.empty();
 }
 
-// FIXME: This needs to be static
-static void ProcessSingleReads(conj_graph_pack &gp,
-                        size_t ilib,
-                        bool use_binary = true,
-                        bool map_paired = false) {
+size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
+                                 bool use_binary = true, bool map_paired = false) {
     //FIXME make const
     auto& reads = cfg::get_writable().ds.reads[ilib];
+    const auto &graph = gp.get<Graph>();
 
     SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
 
-    LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib],
-                               ChooseProperReadPathExtractor(gp.g, reads.type()));
+    auto &single_long_reads = gp.get_mutable<LongReadContainer<Graph>>()[ilib];
+    LongReadMapper read_mapper(graph, single_long_reads,
+                               ChooseProperReadPathExtractor(graph, reads.type()));
 
     if (ShouldObtainSingleReadsPaths(ilib) || reads.is_contig_lib()) {
         //FIXME pretty awful, would be much better if listeners were shared ptrs
@@ -249,7 +252,8 @@ static void ProcessSingleReads(conj_graph_pack &gp,
         cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
     }
 
-    SSCoverageFiller ss_coverage_filler(gp.g, gp.ss_coverage[ilib], !cfg::get().ss.ss_enabled);
+    SSCoverageFiller ss_coverage_filler(graph, gp.get_mutable<std::vector<SSCoverageStorage>>()[ilib],
+                                        !cfg::get().ss.ss_enabled);
     if (cfg::get().calculate_coverage_for_each_lib) {
         INFO("Will calculate lib coverage as well");
         map_paired = true;
@@ -265,10 +269,12 @@ static void ProcessSingleReads(conj_graph_pack &gp,
                                                   map_paired, /*handle Ns*/false);
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     }
+
+    return single_long_reads.size();
 }
 
 
-static void ProcessPairedReads(conj_graph_pack &gp,
+void ProcessPairedReads(GraphPack &gp,
                                std::unique_ptr<PairedInfoFilter> filter,
                                unsigned filter_threshold,
                                size_t ilib) {
@@ -300,9 +306,8 @@ static void ProcessPairedReads(conj_graph_pack &gp,
         };
     }
 
-    LatePairedIndexFiller pif(gp.g,
-                              weight, round_thr,
-                              gp.paired_indices[ilib]);
+    using Indices = omnigraph::de::UnclusteredPairedInfoIndicesT<Graph>;
+    LatePairedIndexFiller pif(gp.get<Graph>(), weight, round_thr, gp.get_mutable<Indices>()[ilib]);
     notifier.Subscribe(ilib, &pif);
 
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
@@ -310,14 +315,18 @@ static void ProcessPairedReads(conj_graph_pack &gp,
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
 }
 
-void PairInfoCount::run(conj_graph_pack &gp, const char *) {
+} // namespace
+
+void PairInfoCount::run(GraphPack &gp, const char *) {
     gp.InitRRIndices();
     gp.EnsureBasicMapping();
+
+    const auto &graph = gp.get<Graph>();
 
     //TODO implement better universal logic
     size_t edge_length_threshold = cfg::get().min_edge_length_for_is_count;
     if (!debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(cfg::get().mode))
-        edge_length_threshold = std::max(edge_length_threshold, stats::Nx(gp.g, 50));
+        edge_length_threshold = std::max(edge_length_threshold, stats::Nx(graph, 50));
 
     INFO("Min edge length for estimation: " << edge_length_threshold);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
@@ -373,7 +382,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
                     INFO("Filtering data for library #" << i);
                     {
                         SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
-                        DEFilter filter_counter(*filter, gp.g);
+                        DEFilter filter_counter(*filter, graph);
                         notifier.Subscribe(i, &filter_counter);
 
                         VERIFY(lib.data().unmerged_read_length != 0);
@@ -392,11 +401,11 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
             if (ShouldObtainSingleReadsPaths(i) || ShouldObtainLibCoverage()) {
                 cfg::get_writable().use_single_reads |= ShouldObtainSingleReadsPaths(i);
                 INFO("Mapping single reads of library #" << i);
-                ProcessSingleReads(gp, i, /*use_binary*/true, /*map_paired*/true);
-                INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());
+                size_t n = ProcessSingleReads(gp, i, /*use_binary*/true, /*map_paired*/true);
+                INFO("Total paths obtained from single reads: " << n);
             }
         }
     }
 }
 
-}
+} // namespace debruijn_graph

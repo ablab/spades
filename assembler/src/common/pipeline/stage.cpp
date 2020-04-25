@@ -17,7 +17,9 @@
 
 namespace spades {
 
-void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
+constexpr char BASE_NAME[] = "graph_pack";
+
+void AssemblyStage::load(debruijn_graph::GraphPack& gp,
                          const std::string &load_from,
                          const char* prefix) {
     if (!prefix) prefix = id_;
@@ -27,12 +29,12 @@ void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
     io::ConvertIfNeeded(cfg::get_writable().ds.reads,
                         cfg::get().max_threads);
 
-    auto p = fs::append_path(dir, "graph_pack");
-    io::binary::FullPackIO<debruijn_graph::Graph>().Load(p, gp);
+    auto p = fs::append_path(dir, BASE_NAME);
+    io::binary::FullPackIO().Load(p, gp);
     debruijn_graph::config::load_lib_data(p);
 }
 
-void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
+void AssemblyStage::save(const debruijn_graph::GraphPack& gp,
                          const std::string &save_to,
                          const char* prefix) const {
     if (!prefix) prefix = id_;
@@ -41,8 +43,8 @@ void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
     fs::remove_if_exists(dir);
     fs::make_dir(dir);
 
-    auto p = fs::append_path(dir, "graph_pack");
-    io::binary::FullPackIO<debruijn_graph::Graph>().Save(p, gp);
+    auto p = fs::append_path(dir, BASE_NAME);
+    io::binary::FullPackIO().Save(p, gp);
     debruijn_graph::config::write_lib_data(p);
 }
 
@@ -80,7 +82,7 @@ class PhaseIdComparator {
     const char* id_;
 };
 
-void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
+void CompositeStageBase::run(debruijn_graph::GraphPack& gp,
                              const char* started_from) {
     // The logic here is as follows. By this time StageManager already called
     // load() function of the Stage itself. Therefore we only need to do
@@ -127,12 +129,12 @@ void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
     fini(gp);
 }
 
-void AssemblyStage::prepare(debruijn_graph::conj_graph_pack& g,
+void AssemblyStage::prepare(debruijn_graph::GraphPack& g,
                             const char *stage, const char*) {
     g.PrepareForStage(stage);
 }
 
-void StageManager::run(debruijn_graph::conj_graph_pack& g,
+void StageManager::run(debruijn_graph::GraphPack& g,
                        const char* start_from) {
     auto start_stage = stages_.begin();
     if (start_from) {

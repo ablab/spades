@@ -39,6 +39,8 @@ struct ConstructionStorage {
     fs::TmpDir workdir;
 };
 
+namespace {
+
 bool add_trusted_contigs(io::DataSet<config::LibraryData> &libraries,
                        io::ReadStreamList<io::SingleReadSeq> &trusted_list) {
     std::vector<size_t> trusted_contigs;
@@ -102,7 +104,7 @@ void add_additional_contigs_to_lib(std::string path_to_additional_contigs_dir, s
     merge_read_streams(trusted_list, lib_streams);
 }
 
-void Construction::init(debruijn_graph::conj_graph_pack &gp, const char *) {
+void Construction::init(debruijn_graph::GraphPack &gp, const char *) {
     init_storage(unsigned(gp.g.k()));
 
     auto& dataset = cfg::get_writable().ds;
@@ -156,7 +158,7 @@ void Construction::init(debruijn_graph::conj_graph_pack &gp, const char *) {
     INFO("Average read length " << dataset.aRL);
 }
 
-void Construction::fini(debruijn_graph::conj_graph_pack &) {
+void Construction::fini(debruijn_graph::GraphPack &) {
     reset_storage();
 }
 
@@ -168,7 +170,7 @@ class CoverageFilter: public Construction::Phase {
             : Construction::Phase("k-mer multiplicity estimation", "cqf_filter") { }
     virtual ~CoverageFilter() = default;
 
-    void run(debruijn_graph::conj_graph_pack &, const char*) override {
+    void run(debruijn_graph::GraphPack &, const char*) override {
         auto &read_streams = storage().read_streams;
         const auto &index = storage().ext_index;
         using storing_type = decltype(storage().ext_index)::storing_type;
@@ -195,13 +197,13 @@ class CoverageFilter: public Construction::Phase {
         storage().read_streams = io::CovFilteringWrap(std::move(read_streams), kplusone, hasher, *storage().cqf, rthr);
     }
 
-    void load(debruijn_graph::conj_graph_pack&,
+    void load(debruijn_graph::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::conj_graph_pack&,
+    void save(const debruijn_graph::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -218,7 +220,7 @@ public:
 
     virtual ~KMerCounting() = default;
 
-    void run(debruijn_graph::conj_graph_pack &, const char*) override {
+    void run(debruijn_graph::GraphPack &, const char*) override {
         auto &read_streams = storage().read_streams;
         auto &contigs_streams = storage().contigs_streams;
         const auto &index = storage().ext_index;
@@ -238,13 +240,13 @@ public:
         storage().counter->CountAll(nthreads, nthreads, /* merge */false);
     }
 
-    void load(debruijn_graph::conj_graph_pack&,
+    void load(debruijn_graph::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::conj_graph_pack&,
+    void save(const debruijn_graph::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -258,7 +260,7 @@ public:
 
     virtual ~ExtensionIndexBuilder() = default;
 
-    void run(debruijn_graph::conj_graph_pack &, const char*) override {
+    void run(debruijn_graph::GraphPack &, const char*) override {
         // FIXME: We just need files here, not the full counter. Implement refererence counting scheme!
         utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromKPOMers(storage().workdir,
                                                                               storage().ext_index,
@@ -267,13 +269,13 @@ public:
                                                                               storage().params.read_buffer_size);
     }
 
-    void load(debruijn_graph::conj_graph_pack&,
+    void load(debruijn_graph::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::conj_graph_pack&,
+    void save(const debruijn_graph::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -288,7 +290,7 @@ public:
 
     virtual ~EarlyTipClipper() = default;
 
-    void run(debruijn_graph::conj_graph_pack &gp, const char*) override {
+    void run(debruijn_graph::GraphPack &gp, const char*) override {
         if (!storage().params.early_tc.length_bound) {
             INFO("Early tip clipper length bound set as (RL - K)");
             storage().params.early_tc.length_bound.reset(cfg::get().ds.RL - gp.g.k());
@@ -296,13 +298,13 @@ public:
         EarlyTipClipperProcessor(storage().ext_index, *storage().params.early_tc.length_bound).ClipTips();
     }
 
-    void load(debruijn_graph::conj_graph_pack&,
+    void load(debruijn_graph::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::conj_graph_pack&,
+    void save(const debruijn_graph::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -316,19 +318,20 @@ public:
 
     virtual ~GraphCondenser() = default;
 
-    void run(debruijn_graph::conj_graph_pack &gp, const char*) override {
-        if (gp.index.IsAttached())
-            gp.index.Detach();
-        DeBruijnGraphExtentionConstructor<Graph>(gp.g, storage().ext_index).ConstructGraph(storage().params.keep_perfect_loops);
+    void run(debruijn_graph::GraphPack &gp, const char*) override {
+        auto &index = gp.get_mutable<EdgeIndex<Graph>>();
+        if (index.IsAttached())
+            index.Detach();
+        DeBruijnGraphExtentionConstructor<Graph>(gp.get_mutable<Graph>(), storage().ext_index).ConstructGraph(storage().params.keep_perfect_loops);
     }
 
-    void load(debruijn_graph::conj_graph_pack&,
+    void load(debruijn_graph::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::conj_graph_pack&,
+    void save(const debruijn_graph::GraphPack&,
               const std::string &,
               const char*) const override {
         //FIXME why commented here and others
@@ -344,18 +347,19 @@ public:
 
     virtual ~EdgeIndexFiller() = default;
 
-    void run(debruijn_graph::conj_graph_pack &gp, const char*) override {
-        gp.index.Refill();
-        gp.index.Attach();
+    void run(debruijn_graph::GraphPack &gp, const char*) override {
+        auto &index = gp.get_mutable<EdgeIndex<Graph>>();
+        index.Refill();
+        index.Attach();
     }
 
-    void load(debruijn_graph::conj_graph_pack&,
+    void load(debruijn_graph::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::conj_graph_pack&,
+    void save(const debruijn_graph::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -369,22 +373,23 @@ public:
 
     virtual ~CoverageFiller() = default;
 
-    void run(debruijn_graph::conj_graph_pack &gp, const char*) override {
-        typedef debruijn_graph::conj_graph_pack::index_t::InnerIndex InnerIndex;
-        typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
+    void run(debruijn_graph::GraphPack &gp, const char*) override {
+        using InnerIndex = EdgeIndex<Graph>::InnerIndex;
+        using IndexBuilder = EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT;
         INFO("Filling coverage index");
-        IndexBuilder().ParallelFillCoverage(gp.index.inner_index(), storage().read_streams);
+        auto &index = gp.get_mutable<EdgeIndex<Graph>>().inner_index();
+        IndexBuilder().ParallelFillCoverage(index.inner_index(), storage().read_streams);
         INFO("Filling coverage and flanking coverage from index");
-        FillCoverageAndFlanking(gp.index.inner_index(), gp.g, gp.flanking_cov);
+        FillCoverageAndFlanking(index.inner_index(), gp.get_mutable<Graph>(), gp.get_mutable<FlankingCoverage<Graph>>());
     }
 
-    void load(debruijn_graph::conj_graph_pack&,
+    void load(debruijn_graph::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::conj_graph_pack&,
+    void save(const debruijn_graph::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -522,7 +527,7 @@ public:
             : Construction::Phase("Filling coverage indices (PHM)", "coverage_filling_phm") {}
     virtual ~PHMCoverageFiller() = default;
 
-    void run(debruijn_graph::conj_graph_pack &gp, const char *) override {
+    void run(debruijn_graph::GraphPack &gp, const char *) override {
         storage().coverage_map.reset(new ConstructionStorage::CoverageMap(storage().counter->k()));
         auto &coverage_map = *storage().coverage_map;
 
@@ -547,12 +552,12 @@ public:
         } */
 
         INFO("Filling coverage and flanking coverage from PHM");
-        FillCoverageAndFlanking(coverage_map, gp.g, gp.flanking_cov);
+        FillCoverageAndFlanking(coverage_map, gp.get_mutable<Graph>(), gp.get_mutable<FlankingCoverage<Graph>>());
 
         std::vector<size_t> hist;
         size_t maxcov = 0;
         size_t kmer_per_record = 1;
-        if (conj_graph_pack::index_t::InnerIndex::storing_type::IsInvertable())
+        if (EdgeIndex<Graph>::InnerIndex::storing_type::IsInvertable())
             kmer_per_record = 2;
 
         for (auto I = coverage_map.value_cbegin(), E = coverage_map.value_cend(); I != E;  ++I) {
@@ -565,22 +570,24 @@ public:
             hist[ccov - 1] += kmer_per_record;
         }
 
-        gp.ginfo.set_cov_histogram(hist);
+        gp.get_mutable<GenomicInfo>().set_cov_histogram(hist);
     }
 
-    void load(debruijn_graph::conj_graph_pack&,
+    void load(debruijn_graph::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::conj_graph_pack&,
+    void save(const debruijn_graph::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
     }
 
 };
+
+} // namespace
 
 Construction::Construction()
         : spades::CompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {

@@ -14,11 +14,13 @@
 #pragma once
 
 #include "extension_chooser.hpp"
-#include "common/modules/alignment/gap_info.hpp"
-#include "assembly_graph/paths/bidirectional_path_container.hpp"
-#include "path_filter.hpp"
 #include "overlap_analysis.hpp"
+#include "path_filter.hpp"
+#include "modules/alignment/gap_info.hpp"
+#include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
+
 #include <cmath>
 
 namespace path_extend {
@@ -331,7 +333,7 @@ private:
 
 class CoverageLoopEstimator : public ShortLoopEstimator {
 public:
-    CoverageLoopEstimator(const Graph& g, const FlankingCoverage<Graph>& flanking_cov)
+    CoverageLoopEstimator(const Graph& g, const omnigraph::FlankingCoverage<Graph>& flanking_cov)
             : g_(g), flanking_cov_(flanking_cov) {
 
     }
@@ -368,7 +370,7 @@ public:
 
 private:
     const Graph& g_;
-    const FlankingCoverage<Graph>& flanking_cov_;
+    const omnigraph::FlankingCoverage<Graph>& flanking_cov_;
 };
 
 class PairedInfoLoopEstimator: public ShortLoopEstimator {
@@ -434,7 +436,7 @@ private:
 class CombinedLoopEstimator: public ShortLoopEstimator {
 public:
     CombinedLoopEstimator(const Graph& g,
-                          const FlankingCoverage<Graph>& flanking_cov,
+                          const omnigraph::FlankingCoverage<Graph>& flanking_cov,
                           std::shared_ptr<WeightCounter> wc,
                           double weight_threshold = 0.0)
         : pi_estimator_(g, wc, weight_threshold),
@@ -1005,21 +1007,18 @@ protected:
     }
 
 public:
-    LoopDetectingPathExtender(const conj_graph_pack &gp,
-                              const GraphCoverageMap &cov_map,
-                              UsedUniqueStorage &unique,
-                              bool investigate_short_loops,
-                              bool use_short_loop_cov_resolver,
+    LoopDetectingPathExtender(const Graph &graph, const omnigraph::FlankingCoverage<Graph> &flanking_cov,
+                              const GraphCoverageMap &cov_map, UsedUniqueStorage &unique,
+                              bool investigate_short_loops, bool use_short_loop_cov_resolver,
                               size_t is)
-            : PathExtender(gp.g),
+            : PathExtender(graph),
               use_short_loop_cov_resolver_(use_short_loop_cov_resolver),
-              cov_loop_resolver_(gp.g, std::make_shared<CoverageLoopEstimator>(gp.g, gp.flanking_cov)),
-              is_detector_(gp.g, is),
+              cov_loop_resolver_(graph, std::make_shared<CoverageLoopEstimator>(graph, flanking_cov)),
+              is_detector_(graph, is),
               used_storage_(unique),
               investigate_short_loops_(investigate_short_loops),
-              cov_map_(cov_map) {
-
-    }
+              cov_map_(cov_map) 
+            {}
 
     bool TryToResolveTwoLoops(BidirectionalPath& path) {
         EdgeId last_edge = path.Back();
@@ -1132,21 +1131,30 @@ protected:
         DEBUG("Following edges found");
     }
 
-
 public:
+    SimpleExtender(const Graph &graph, const omnigraph::FlankingCoverage<Graph> &flanking_cov,
+                   const GraphCoverageMap &cov_map, UsedUniqueStorage &unique,
+                   std::shared_ptr<ExtensionChooser> ec,
+                   bool investigate_short_loops, bool use_short_loop_cov_resolver,
+                   size_t is, double weight_threshold = 0.0)
+           : LoopDetectingPathExtender(graph, flanking_cov, cov_map, unique, investigate_short_loops, use_short_loop_cov_resolver, is)
+           , extensionChooser_(ec)
+           , loop_resolver_(graph, std::make_shared<CombinedLoopEstimator>(graph, flanking_cov, extensionChooser_->wc(), weight_threshold))
+           , weight_threshold_(weight_threshold)
+        {}
 
-    SimpleExtender(const conj_graph_pack &gp,
+    SimpleExtender(const GraphPack &gp,
                    const GraphCoverageMap &cov_map,
                    UsedUniqueStorage &unique,
                    std::shared_ptr<ExtensionChooser> ec,
                    size_t is,
                    bool investigate_short_loops,
                    bool use_short_loop_cov_resolver,
-                   double weight_threshold = 0.0):
-        LoopDetectingPathExtender(gp, cov_map, unique, investigate_short_loops, use_short_loop_cov_resolver, is),
-        extensionChooser_(ec),
-        loop_resolver_(gp.g, std::make_shared<CombinedLoopEstimator>(gp.g, gp.flanking_cov, extensionChooser_->wc(), weight_threshold)),
-        weight_threshold_(weight_threshold) {}
+                   double weight_threshold = 0.0)
+            : SimpleExtender(gp.get<Graph>(), gp.get<omnigraph::FlankingCoverage<Graph>>(),
+                             cov_map, unique, ec, investigate_short_loops, use_short_loop_cov_resolver,
+                             is, weight_threshold)
+        {}
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
         return extensionChooser_;
@@ -1400,7 +1408,7 @@ protected:
 
 public:
 
-    ScaffoldingPathExtender(const conj_graph_pack &gp,
+    ScaffoldingPathExtender(const GraphPack &gp,
                             const GraphCoverageMap &cov_map,
                             UsedUniqueStorage &unique,
                             std::shared_ptr<ExtensionChooser> extension_chooser,
@@ -1443,7 +1451,7 @@ protected:
 
 public:
 
-    RNAScaffoldingPathExtender(const conj_graph_pack &gp,
+    RNAScaffoldingPathExtender(const GraphPack &gp,
                                const GraphCoverageMap &cov_map,
                                UsedUniqueStorage &unique,
                                std::shared_ptr<ExtensionChooser> extension_chooser,

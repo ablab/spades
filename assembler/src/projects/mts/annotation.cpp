@@ -67,7 +67,7 @@ std::set<EdgeId> EdgeAnnotation::EdgesOfBin(bin_id bin, size_t min_length) const
     std::set<EdgeId> answer;
     for (auto ann_pair : edge_annotation_) {
         if (ann_pair.second.count(bin) &&
-                gp_.g.length(ann_pair.first) > min_length) {
+                gp_.get<Graph>().length(ann_pair.first) > min_length) {
             answer.insert(ann_pair.first);
         }
     }
@@ -150,7 +150,7 @@ bool AnnotationFiller::IsSpurious(size_t colored_len, size_t full_len) {
 
 void AnnotationFiller::FilterSpuriousInfo(ColoringMap& coloring) const {
     for (auto& edge_info : coloring) {
-        size_t edge_len = gp_.g.length(edge_info.first);
+        size_t edge_len = gp_.get<Graph>().length(edge_info.first);
         for (auto color_it = edge_info.second.begin(); color_it != edge_info.second.end(); ) {
             if (IsSpurious(color_it->second, edge_len)) {
                 edge_info.second.erase(color_it++);
@@ -175,7 +175,7 @@ BinSet AnnotationFiller::DetermineBins(const std::vector<EdgeId> &path, const Co
     ColoringLengths path_colors;
     size_t total_len = 0;
     for (const auto& e : path) {
-        size_t edge_len = gp_.g.length(e);
+        size_t edge_len = gp_.get<Graph>().length(e);
         total_len += edge_len;
         auto it = coloring.find(e);
         if (it != coloring.end()) {
@@ -215,6 +215,7 @@ EdgeAnnotation AnnotationFiller::operator() (io::SingleStream& contig_stream,
     EdgeAnnotation edge_annotation(gp_, interesting_bins_.empty() ? GatherAllBins(coloring) : interesting_bins_);
 
     io::SingleRead contig;
+    const auto& graph = gp_.get<Graph>();
     while (!contig_stream.eof()) {
         contig_stream >> contig;
         DEBUG("Filling annotation for contig " << contig.name());
@@ -223,7 +224,7 @@ EdgeAnnotation AnnotationFiller::operator() (io::SingleStream& contig_stream,
         path.reserve(raw_path.size());
         for (const auto& ep : raw_path) { //Filter the poorly mapped edges
             EdgeId e = ep.first;
-            size_t edge_len = gp_.g.length(e);
+            size_t edge_len = graph.length(e);
             if (math::ge(double(ep.second.mapped_range.size()) / double(edge_len), 0.9)) //FIXME: extract magic constant to config
                 path.push_back(e);
         }

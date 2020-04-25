@@ -9,12 +9,12 @@
 
 namespace spades {
 
-void ReadConversion::run(debruijn_graph::conj_graph_pack &, const char *) {
+void ReadConversion::run(debruijn_graph::GraphPack &, const char *) {
     io::ConvertIfNeeded(cfg::get_writable().ds.reads,
                         cfg::get().max_threads);
 }
 
-void ReadConversion::load(debruijn_graph::conj_graph_pack &,
+void ReadConversion::load(debruijn_graph::GraphPack &,
                          const std::string &load_from,
                          const char* prefix) {
     std::string p = fs::append_path(load_from, prefix == NULL ? id() : prefix);
@@ -23,7 +23,7 @@ void ReadConversion::load(debruijn_graph::conj_graph_pack &,
     debruijn_graph::config::load_lib_data(p);
 }
 
-void ReadConversion::save(const debruijn_graph::conj_graph_pack &,
+void ReadConversion::save(const debruijn_graph::GraphPack &,
                          const std::string &save_to,
                          const char* prefix) const {
     std::string p = fs::append_path(save_to, prefix == NULL ? id() : prefix);
