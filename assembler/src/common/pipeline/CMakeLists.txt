@@ -9,11 +9,10 @@ project(pipeline CXX)
 
 add_library(pipeline STATIC
             config_struct.cpp
-            genomic_info_filler.cpp
             graph_pack.cpp
             library.cpp
             library_data.cpp
             stage.cpp)
 
-target_link_libraries(pipeline binary input llvm-support)
+target_link_libraries(pipeline binary path_extend input llvm-support)
 

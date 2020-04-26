@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "genomic_info_filler.hpp"
-#include "genomic_info.hpp"
+#include "pipeline/genomic_info.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "modules/coverage_model/kmer_coverage_model.hpp"
 #include "modules/simplification/ec_threshold_finder.hpp"
