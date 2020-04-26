@@ -86,8 +86,7 @@ size_t ChromosomeRemover::CalculateComponentSize(EdgeId e, Graph &g) {
 
 double ChromosomeRemover::RemoveLongGenomicEdges(size_t long_edge_bound, double coverage_limits, double external_chromosome_coverage) {
     INFO("Removing of long chromosomal edges started");
-    const auto& graph = gp_.get<Graph>();
-    auto& graph_mutable = gp_.get_mutable<Graph>();
+    auto& graph = gp_.get_mutable<Graph>();
     CoverageUniformityAnalyzer coverage_analyzer(graph, long_edge_bound);
     size_t total_len = coverage_analyzer.TotalLongEdgeLength();
     if (total_len == 0) {
@@ -112,7 +111,7 @@ double ChromosomeRemover::RemoveLongGenomicEdges(size_t long_edge_bound, double 
         }
         for (EdgeId e : graph.edges()) {
             if (!long_component_.count(e)) {
-                CalculateComponentSize(e, graph_mutable);
+                CalculateComponentSize(e, graph);
             }
         }
         INFO("Connected components calculated");
@@ -136,18 +135,17 @@ double ChromosomeRemover::RemoveLongGenomicEdges(size_t long_edge_bound, double 
         } else {
             DEBUG("Edge " << graph.int_id(e) << " deleted");
             deleted += 1;
-            graph_mutable.DeleteEdge(e);
+            graph.DeleteEdge(e);
         }
     }
     INFO("Deleted " << deleted <<" long edges");
 
-    CompressAll(graph_mutable);
+    CompressAll(graph);
     return median_long_edge_coverage;
 }
 
 void ChromosomeRemover::CoverageFilter(double coverage_cutoff) {
-    const auto& graph = gp_.get<Graph>();
-    auto& graph_mutable = gp_.get_mutable<Graph>();
+    auto& graph = gp_.get_mutable<Graph>();
     size_t deleted = 0;
     for (auto it = graph.SmartEdgeBegin(true); !it.IsEnd(); ++it) {
         EdgeId e = *it;
@@ -159,12 +157,12 @@ void ChromosomeRemover::CoverageFilter(double coverage_cutoff) {
             continue;
 
         DEBUG("Deleting edge " << graph.int_id(e) << " because of low coverage");
-        graph_mutable.DeleteEdge(e);
+        graph.DeleteEdge(e);
         deleted += 1;
     }
     INFO("With coverage cutoff " << coverage_cutoff << " removed " << deleted << " edges");
 
-    CompressAll(graph_mutable);
+    CompressAll(graph);
 }
 
 void ChromosomeRemover::PlasmidSimplify(size_t long_edge_bound,
@@ -219,7 +217,6 @@ void ChromosomeRemover::RemoveNearlyEverythingByCoverage(double cur_limit) {
 
 void ChromosomeRemover::OutputSuspiciousComponents () {
     const auto& graph = gp_.get<Graph>();
-    auto& graph_mutable = gp_.get_mutable<Graph>();
     long_vertex_component_.clear();
     long_component_.clear();
     deadends_count_.clear();
@@ -231,9 +228,12 @@ void ChromosomeRemover::OutputSuspiciousComponents () {
     std::string out_file = "components" + tmp + ".fasta";
     double var = 0.3;
     DEBUG("calculating component sizes");
-    for (EdgeId e: graph.canonical_edges()) {
-        if (!long_component_.count(e)) {
-            CalculateComponentSize(e, graph_mutable);
+    {
+        auto& graph_mutable = gp_.get_mutable<Graph>();
+        for (EdgeId e: graph.canonical_edges()) {
+            if (!long_component_.count(e)) {
+                CalculateComponentSize(e, graph_mutable);
+            }
         }
     }
     CoverageUniformityAnalyzer coverage_analyzer(graph, 0);
@@ -360,8 +360,7 @@ void ChromosomeRemover::RunIsolatedPipeline() {
 }
 
 void ChromosomeRemover::FilterSmallComponents() {
-    const auto& graph = gp_.get<Graph>();
-    auto& graph_mutable = gp_.get_mutable<Graph>();
+    auto& graph = gp_.get_mutable<Graph>();
     //Small repetitive components after filtering
     std::unordered_map<VertexId, size_t> old_vertex_weights(long_vertex_component_.begin(), long_vertex_component_.end());
     for (size_t i = 0; i < max_iteration_count; i++) {
@@ -373,7 +372,7 @@ void ChromosomeRemover::FilterSmallComponents() {
         DEBUG("Calculating component sizes");
         for (EdgeId e: graph.canonical_edges()) {
             if (!long_component_.count(e)) {
-                CalculateComponentSize(e, graph_mutable);
+                CalculateComponentSize(e, graph);
             }
         }
         DEBUG("Component sizes calculated");
@@ -385,7 +384,7 @@ void ChromosomeRemover::FilterSmallComponents() {
                 // * 2 - because all coverages are taken with rc
                 old_vertex_weights[graph.EdgeStart(e)] > long_component_[e] + plasmid_config_.long_edge_length * 2)  {
                 DEBUG("Deleting isolated edge of length" << graph.length(e));
-                graph_mutable.DeleteEdge(e);
+                graph.DeleteEdge(e);
             }
         }
         DEBUG("isolated deleted");
@@ -399,7 +398,7 @@ void ChromosomeRemover::FilterSmallComponents() {
                 graph.coverage(e) < chromosome_coverage_ * (1 + plasmid_config_.small_component_relative_coverage) &&
                 graph.coverage(e) > chromosome_coverage_ * (1 - plasmid_config_.small_component_relative_coverage)) {
                 DEBUG("Deleting edge from fake small component, length " << graph.length(e) << " id " << graph.int_id(e) << " coverage " << graph.coverage(e) << " component_size " << old_vertex_weights[graph.EdgeStart(e)]);
-                graph_mutable.DeleteEdge(e);
+                graph.DeleteEdge(e);
             }
         }
         DEBUG("components deleted");
@@ -412,11 +411,11 @@ void ChromosomeRemover::FilterSmallComponents() {
             should_leave &= graph.length(e) > plasmid_config_.min_isolated_length;
             if (long_component_[e] < 2 * plasmid_config_.min_component_length &&
                 !should_leave) {
-                graph_mutable.DeleteEdge(e);
+                graph.DeleteEdge(e);
             }
         }
 
-        CompressAll(graph_mutable);
+        CompressAll(graph);
         PlasmidSimplify(plasmid_config_.long_edge_length);
 
         size_t new_graph_size = graph.size();
