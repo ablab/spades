@@ -4,6 +4,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "io/dataset_support/dataset_readers.hpp"
+#include "io/dataset_support/read_converter.hpp"
+
+#include "assembly_graph/stats/picture_dump.hpp"
 #include "second_phase_setup.hpp"
 
 #include "io/dataset_support/dataset_readers.hpp"
@@ -13,7 +17,7 @@
 
 namespace debruijn_graph {
 
-void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
+void SecondPhaseSetup::run(GraphPack &gp, const char*) {
     INFO("Preparing second phase");
     gp.ClearRRIndices();
     gp.ClearPaths();

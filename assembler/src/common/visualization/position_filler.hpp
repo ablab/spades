@@ -16,10 +16,10 @@ namespace visualization {
 
 namespace position_filler {
 
-template<class Graph>
 class PosFiller {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef std::shared_ptr<debruijn_graph::SequenceMapper<Graph>> MapperPtr;
+    using Graph = debruijn_graph::Graph;
+    using EdgeId = Graph::EdgeId;
+    using MapperPtr = std::shared_ptr<debruijn_graph::SequenceMapper<Graph>>;
     const Graph &g_;
     MapperPtr mapper_;
     omnigraph::EdgesPositionHandler<Graph> &edge_pos_;
@@ -27,11 +27,12 @@ class PosFiller {
 public:
     typedef omnigraph::MappingPath<EdgeId> MappingPath;
 
-    PosFiller(const Graph &g, MapperPtr mapper,
-              omnigraph::EdgesPositionHandler<Graph> &edge_pos) :
-            g_(g), mapper_(mapper), edge_pos_(edge_pos) {
+    PosFiller(const Graph &g, MapperPtr mapper, omnigraph::EdgesPositionHandler<Graph> &edge_pos)
+            : g_(g), mapper_(mapper), edge_pos_(edge_pos) {}
 
-    }
+    PosFiller(debruijn_graph::GraphPack &gp)
+            : g_(gp.get<Graph>()), mapper_(debruijn_graph::MapperInstance(gp)),
+              edge_pos_(gp.get_mutable<omnigraph::EdgesPositionHandler<Graph>>()) {}
 
     MappingPath Process(const std::string &s, const std::string &name) const {
         return Process(io::SingleRead(name, s));
@@ -84,15 +85,13 @@ private:
     DECL_LOGGER("PosFiller");
 };
 
-template<class gp_t>
-void FillPos(gp_t &gp, const std::string &contig_file, const std::string &prefix, bool with_rc) {
-    PosFiller<typename gp_t::graph_t> pos_filler(gp.g, debruijn_graph::MapperInstance(gp), gp.edge_pos);
+void FillPos(debruijn_graph::GraphPack &gp, const std::string &contig_file, const std::string &prefix, bool with_rc) {
+    PosFiller pos_filler(gp);
     pos_filler.Process(io::PrefixAddingReaderWrapper(io::EasyStream(contig_file, with_rc, false), prefix));
 }
 
-template<class gp_t>
-void FillPos(gp_t &gp, const std::string &s, const std::string &name) {
-    PosFiller<typename gp_t::graph_t> pos_filler(gp.g, debruijn_graph::MapperInstance(gp), gp.edge_pos);
+void FillPos(debruijn_graph::GraphPack &gp, const std::string &s, const std::string &name) {
+    PosFiller pos_filler(gp);
     pos_filler.Process(s, name);
 }
 

@@ -8,6 +8,9 @@
 #pragma once
 
 #include "pipeline/graph_pack.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/handlers/edges_position_handler.hpp"
+#include "modules/alignment/edge_index.hpp"
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -17,10 +20,10 @@ using namespace std;
 using namespace fs;
 
 namespace online_visualization {
-    typedef debruijn_graph::conj_graph_pack GraphPack;
-    typedef GraphPack::graph_t Graph;
-    typedef GraphPack::index_t Index;
-    typedef EdgesPositionHandler<Graph> EdgePos;
-    typedef Graph::VertexId VertexId;
-    typedef Graph::EdgeId EdgeId;
+    using debruijn_graph::GraphPack;
+    using debruijn_graph::Graph;
+    using Index = debruijn_graph::EdgeIndex<Graph>;
+    using EdgePos = omnigraph::EdgesPositionHandler<Graph>;
+    using VertexId = Graph::VertexId;
+    using EdgeId = Graph::EdgeId;
 }

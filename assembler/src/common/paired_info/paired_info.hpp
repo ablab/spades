@@ -14,6 +14,7 @@
 #include <type_traits>
 #include <boost/iterator/iterator_facade.hpp>
 #include <btree/safe_btree_map.h>
+#include <set>
 
 namespace omnigraph {
 

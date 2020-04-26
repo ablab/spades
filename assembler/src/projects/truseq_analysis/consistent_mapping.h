@@ -6,11 +6,13 @@
 //***************************************************************************
 
 #pragma once
+#include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 
 namespace alignment_analysis {
-    typedef debruijn_graph::DeBruijnGraph Graph;
-    typedef Graph::VertexId VertexId;
-    typedef Graph::EdgeId EdgeId;
+    using debruijn_graph::Graph;
+    using VertexId = Graph::VertexId;
+    using EdgeId = Graph::EdgeId;
 
     struct EdgeRange {
         EdgeRange(const EdgeId &first, const Range &second) : first(first), second(second) { }

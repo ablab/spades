@@ -4,14 +4,14 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include <pipeline/graph_pack.hpp>
+
 #include <string>
 #include <vector>
 
 namespace debruijn_graph {
 class DeBruijnGraph;
 typedef DeBruijnGraph ConjugateDeBruijnGraph;
-template<class Graph> struct graph_pack;
-typedef graph_pack<ConjugateDeBruijnGraph> conj_graph_pack;
 }
 
 namespace nrps {
@@ -27,7 +27,7 @@ using ContigAlnInfo = std::vector<AlnInfo>;
 
 class DomainMatcher {
 public:
-    ContigAlnInfo MatchDomains(debruijn_graph::conj_graph_pack &gp,
+    ContigAlnInfo MatchDomains(debruijn_graph::GraphPack &gp,
                                const std::string &hmm_set,
                                const std::string &output_dir);
 };

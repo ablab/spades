@@ -9,11 +9,13 @@
 #include "io/reads/io_helper.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "io/reads/file_reader.hpp"
+#include "io/binary/paired_index.hpp"
 #include "io/binary/graph_pack.hpp"
 #include "logger.hpp"
 #include "read_binning.hpp"
 #include "propagate.hpp"
 #include "visualization/position_filler.hpp"
+#include "paired_info/paired_info.hpp"
 
 using namespace debruijn_graph;
 using namespace std;
@@ -103,15 +105,15 @@ int main(int argc, char** argv) {
         INFO("Loaded " << bins_of_interest.size() << " interesting bins");
     }
 
-    conj_graph_pack gp(k, "tmp", 1);
-    gp.kmer_mapper.Attach();
+    GraphPack gp(k, "tmp", 1);
+    gp.get_mutable<KmerMapper<Graph>>().Attach();
 
     INFO("Load graph and clustered paired info from " << saves_path);
     {
         using namespace io::binary;
-        BasePackIO<Graph> io;
+        BasePackIO io;
         io.Load(saves_path, gp);
-        Load(saves_path, gp.clustered_indices);
+        Load(saves_path, gp.get_mutable<omnigraph::de::PairedInfoIndicesT<Graph>>("clustered_indices"));
     }
 
     //Propagation stage
@@ -129,14 +131,15 @@ int main(int argc, char** argv) {
     propagator.Run(contigs_stream, edge_annotation);
     INFO("Propagation finished");
 
+    auto const &graph = gp.get<Graph>();
     if (!edges_dump.empty()) {
         INFO("Dumping propagated edges to " << edges_dump);
-        DumpEdges(gp.g, edges_dump);
+        DumpEdges(graph, edges_dump);
     }
 
     if (!propagation_dump.empty()) {
         INFO("Dumping propagated annotation to " << propagation_dump);
-        DumpAnnotation(gp.g, edge_annotation, propagation_dump);
+        DumpAnnotation(graph, edge_annotation, propagation_dump);
     }
 
     //Binning stage

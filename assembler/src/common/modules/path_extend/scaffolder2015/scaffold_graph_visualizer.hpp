@@ -6,6 +6,9 @@
 #define PROJECT_SCAFFOLD_GRAPH_VISUALIZER_HPP
 
 #include "scaffold_graph.hpp"
+#include "visualization/graph_colorer.hpp"
+#include "visualization/graph_labeler.hpp"
+#include "visualization/graph_printer.hpp"
 
 namespace path_extend {
 

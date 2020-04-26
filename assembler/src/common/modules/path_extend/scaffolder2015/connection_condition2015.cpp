@@ -1,4 +1,5 @@
 #include "connection_condition2015.hpp"
+#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 
 namespace path_extend {
 
@@ -241,7 +242,7 @@ Connections AssemblyGraphConnectionCondition::ConnectedWith(debruijn_graph::Edge
             stored_distances_[e].emplace(connected, 1);
         }
     }
-    auto dijkstra = DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, max_connection_length_);
+    auto dijkstra = omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, max_connection_length_);
     dijkstra.Run(g_.EdgeEnd(e));
     for (auto v: dijkstra.ReachedVertices()) {
         for (auto connected: g_.OutgoingEdges(v)) {

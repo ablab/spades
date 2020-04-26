@@ -94,12 +94,13 @@ AlgoPtr<Graph> ConditionedTipClipperInstance(Graph &g,
     }
 }
 
-static void Simplify(conj_graph_pack &gp,
+static void Simplify(GraphPack &gp,
                      const SimplifInfoContainer &simplif_info,
                      bool rel_cov_proc_enabled,
                      const std::function<void(EdgeId)>& removal_handler = nullptr) {
 
-    const bool using_edge_qual = gp.edge_qual.IsAttached();
+    const auto& edge_qual = gp.get<EdgeQuality<Graph>>();
+    const bool using_edge_qual = edge_qual.IsAttached();
 
     typename ComponentRemover<Graph>::HandlerF set_removal_handler_f;
     if (removal_handler) {
@@ -114,23 +115,24 @@ static void Simplify(conj_graph_pack &gp,
         INFO("PROCEDURE == Simplification cycle, iteration " << ++iteration);
     };
 
-    omnigraph::CompositeAlgorithm<Graph> algo(gp.g, message_callback);
+    auto& graph = gp.get_mutable<Graph>();
+    omnigraph::CompositeAlgorithm<Graph> algo(graph, message_callback);
 
     func::TypedPredicate<EdgeId> extra_condition = func::AlwaysTrue<EdgeId>();
-    if (gp.edge_qual.IsAttached()) {
+    if (edge_qual.IsAttached()) {
         // Force TipClipper to ignore un-dead ends
         extra_condition = [&] (EdgeId e) {
-            return gp.edge_qual.IsZeroQuality(e);
+            return edge_qual.IsZeroQuality(e);
         };
     }
-    algo.AddAlgo(ConditionedTipClipperInstance(gp.g, tc_config(), simplif_info,
+    algo.AddAlgo(ConditionedTipClipperInstance(graph, tc_config(), simplif_info,
                                                extra_condition, removal_handler),
                  "Tip clipper");
 
-    algo.AddAlgo(BRInstance(gp.g, br_config(), simplif_info, nullptr, removal_handler),
+    algo.AddAlgo(BRInstance(graph, br_config(), simplif_info, nullptr, removal_handler),
                  "Bulge remover");
 
-    algo.AddAlgo(ECRemoverInstance(gp.g, ec_config(), simplif_info, removal_handler),
+    algo.AddAlgo(ECRemoverInstance(graph, ec_config(), simplif_info, removal_handler),
                  "Low coverage edge remover with bounded length");
 
     AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(algo,
@@ -143,27 +145,28 @@ static void Simplify(conj_graph_pack &gp,
     INFO("Unconditional coverage lower-bound set at " << low_cov_thr);
     //NB: we do not rescue the undeadends here
     algo.AddAlgo(std::make_shared<ParallelEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>>>
-                                                                       (gp.g,
-                                                                        CoverageUpperBound<Graph>(gp.g, low_cov_thr),
+                                                                       (graph,
+                                                                        CoverageUpperBound<Graph>(graph, low_cov_thr),
                                                                         simplif_info.chunk_cnt(),
                                                                         removal_handler,
                                                                         /*canonical_only*/true,
-                                                                        CoverageComparator<Graph>(gp.g)),
+                                                                        CoverageComparator<Graph>(graph)),
                  "Removing all edges with coverage below " + std::to_string(low_cov_thr));
 
-    algo.AddAlgo(RelativeCoverageComponentRemoverInstance<Graph>(gp.g, gp.flanking_cov,
+    const auto &flanking_cov = gp.get<FlankingCoverage<Graph>>();
+    algo.AddAlgo(RelativeCoverageComponentRemoverInstance<Graph>(graph, flanking_cov,
                                                                  rcc_config(rel_cov_proc_enabled),
                                                                  simplif_info, set_removal_handler_f),
                  "Removing subgraphs based on relative coverage");
 
-    algo.AddAlgo(RelativelyLowCoverageDisconnectorInstance<Graph>(gp.g, gp.flanking_cov,
+    algo.AddAlgo(RelativelyLowCoverageDisconnectorInstance<Graph>(graph, flanking_cov,
                                                                   red_config(rel_cov_proc_enabled),
                                                                   simplif_info, removal_handler),
                  "Disconnecting relatively low covered edges");
 
     AlgorithmRunningHelper<Graph>::LoopedRun(algo, /*min it count*/1, /*max it count*/10);
-    VERIFY(!using_edge_qual || gp.edge_qual.IsAttached());
-    VERIFY(gp.flanking_cov.IsAttached());
+    VERIFY(!using_edge_qual || edge_qual.IsAttached());
+    VERIFY(flanking_cov.IsAttached());
 }
 
 }

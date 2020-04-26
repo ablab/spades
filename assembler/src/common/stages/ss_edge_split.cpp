@@ -6,13 +6,14 @@
 
 #include <io/dataset_support/read_converter.hpp>
 #include <modules/alignment/sequence_mapper_notifier.hpp>
+#include <modules/alignment/sequence_mapper.hpp>
 #include <modules/alignment/rna/ss_coverage_filler.hpp>
 #include "ss_edge_split.hpp"
 
 namespace debruijn_graph {
 
 using namespace config;
-void SSEdgeSplit::run(conj_graph_pack& gp, const char *) {
+void SSEdgeSplit::run(GraphPack& gp, const char *) {
     using namespace omnigraph;
 
     if (!cfg::get().ss.ss_enabled) {
@@ -29,7 +30,7 @@ void SSEdgeSplit::run(conj_graph_pack& gp, const char *) {
         }
 
         auto& reads = cfg::get_writable().ds.reads[i];
-        if (reads.data().unmerged_read_length < gp.k_value) {
+        if (reads.data().unmerged_read_length < gp.k()) {
             INFO("Reads are too short for SS coverage splitter");
             continue;
         }
@@ -37,21 +38,20 @@ void SSEdgeSplit::run(conj_graph_pack& gp, const char *) {
         INFO("Running strand-specific edge splitter only for library # " << i);
         SequenceMapperNotifier notifier(gp, cfg::get().ds.reads.lib_count());
         const auto& params = cfg::get().ss_coverage_splitter;
-        SSCoverageSplitter splitter(gp.g, params.bin_size, params.min_edge_len,
+        SSCoverageSplitter splitter(gp.get_mutable<Graph>(), params.bin_size, params.min_edge_len,
             params.min_edge_coverage, params.coverage_margin, params.min_flanking_coverage);
         SSBinCoverageFiller ss_coverage_filler(splitter);
         notifier.Subscribe(i, &ss_coverage_filler);
 
         INFO("Selecting usual mapper");
-        MapperInstance(gp);
-
         auto mapper_ptr = MapperInstance(gp);
         auto single_streams = io::single_binary_readers(reads, /*followed_by_rc*/ false, /*map_paired*/true);
         notifier.ProcessLibrary(single_streams, i, *mapper_ptr);
 
-        if (gp.index.IsAttached())
-            gp.index.Detach();
-        gp.index.clear();
+        auto &index = gp.get_mutable<EdgeIndex<Graph>>();
+        if (index.IsAttached())
+            index.Detach();
+        index.clear();
 
         splitter.SplitEdges();
         break;

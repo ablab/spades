@@ -11,6 +11,8 @@
 #include "visualization/visualization.hpp"
 #include "visualization/graph_labeler.hpp"
 #include "io/graph/gfa_writer.hpp"
+#include "io/reads/io_helper.hpp"
+#include "assembly_graph/graph_support/genomic_quality.hpp"
 
 #include <unordered_set>
 
@@ -625,27 +627,29 @@ static void AnnotateExtraEdgesRound(const Graph &g,
     INFO("Annotation expansion done");
 }
 
-static void CompareAnnotations(const conj_graph_pack &gp, const EdgeQuality<Graph> &annotation,
+static void CompareAnnotations(const GraphPack &gp, const EdgeQuality<Graph> &annotation,
                         const std::string &out_folder = "") {
-    const Graph &g = gp.g;
+    const auto &g = gp.get<Graph>();
+    const auto &edge_qual = gp.get<EdgeQuality<Graph>>();
     using namespace visualization::graph_colorer;
     using namespace visualization::graph_labeler;
     using namespace visualization::visualization_utils;
     auto edge_colorer = std::make_shared<CompositeEdgeColorer<Graph>>("black");
     if (!out_folder.empty()) {
-        edge_colorer->AddColorer(std::make_shared<SetColorer<Graph>>(g, gp.edge_qual.PositiveQualEdges(), "blue"));
+        edge_colorer->AddColorer(std::make_shared<SetColorer<Graph>>(g, edge_qual.PositiveQualEdges(), "blue"));
         edge_colorer->AddColorer(std::make_shared<SetColorer<Graph>>(g, annotation.PositiveQualEdges(), "red"));
     }
 
     const size_t EDGE_LEN = 10000;
 
+    const auto &edge_pos= gp.get<EdgesPositionHandler<Graph>>();
     size_t total_len = 0;
-    for (EdgeId e : gp.edge_qual.PositiveQualEdges()) {
+    for (EdgeId e : edge_qual.PositiveQualEdges()) {
         if (g.int_id(e) <= g.int_id(g.conjugate(e)) && annotation.IsZeroQuality(e)) {
             if (g.length(e) > EDGE_LEN) {
                 INFO("Reference edge " << g.str(e) << " missing from the annotation");
                 if (!out_folder.empty()) {
-                    DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+                    DefaultLabeler<Graph> labeler(g, edge_pos);
                     edge_colorer->AddColorer(std::make_shared<SetColorer<Graph>>(g, std::vector<EdgeId>(1, e), "green"));
 
                     WriteComponent<Graph>(omnigraph::VertexNeighborhood<Graph>(g, g.EdgeStart(e), 50, 5000),
@@ -663,37 +667,42 @@ static void CompareAnnotations(const conj_graph_pack &gp, const EdgeQuality<Grap
     INFO("Total length " << total_len);
 }
 
-static void AnnotateExtraEdges(const conj_graph_pack &gp,
+static void AnnotateExtraEdges(const GraphPack &gp,
                                EdgeQuality<Graph> &annotation,
                                double est_cov,
                                const std::string &out_folder = "") {
     const size_t expansion_it_cnt = 3;
+    const auto &edge_qual = gp.get<EdgeQuality<Graph>>();
+    const auto &graph = gp.get<Graph>();
 
     for (size_t i = 0 ; i < expansion_it_cnt ; ++i) {
-        if (gp.edge_qual.IsAttached()) {
+        if (edge_qual.IsAttached()) {
             INFO("Reference was provided. Comparing annotations.");
 
             CompareAnnotations(gp, annotation);
         }
 
         INFO("#" << (i + 1) << " round of expansion")
-        AnnotateExtraEdgesRound(gp.g, annotation, est_cov, out_folder);
+        AnnotateExtraEdgesRound(graph, annotation, est_cov, out_folder);
 
     }
 
-    if (gp.edge_qual.IsAttached()) {
+    if (edge_qual.IsAttached()) {
         INFO("Reference was provided. Comparing annotations.");
         fs::make_dirs(out_folder + "/unannotated_pics");
         CompareAnnotations(gp, annotation, out_folder + "/unannotated_pics");
     }
 }
 
-static double AnnotateEdges(const conj_graph_pack &gp,
+static double AnnotateEdges(const GraphPack &gp,
                            EdgeQuality<Graph> &annotation,
                            const std::string &bin_contigs) {
     auto stream = io::EasyStream(bin_contigs,
             /*followed by rc*/true);
-    BasicSequenceMapper<Graph, EdgeIndex<Graph>> mapper(gp.g, gp.index, gp.kmer_mapper,
+    const auto &graph = gp.get<Graph>();
+    const auto &index = gp.get<EdgeIndex<Graph>>();
+    const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
+    BasicSequenceMapper<Graph, EdgeIndex<Graph>> mapper(graph, index, kmer_mapper,
                                                         /*extension optimization enabled*/false);
 
     INFO("Filling annotation with contigs attributed to bin");
@@ -702,7 +711,7 @@ static double AnnotateEdges(const conj_graph_pack &gp,
     VERIFY(annotation.IsAttached());
     stream.reset();
 
-    double base_cov = CountMedianCoverage(gp.g, mapper, stream);
+    double base_cov = CountMedianCoverage(graph, mapper, stream);
 
     INFO("Base coverage determined as " << base_cov);
     return base_cov;

@@ -15,11 +15,12 @@
 
 #pragma once
 
-#include <boost/test/unit_test.hpp>
-
 #include "test_utils.hpp"
+#include "assembly_graph/handlers/id_track_handler.hpp"
 #include "modules/path_extend/path_visualizer.hpp"
 #include "modules/path_extend/pe_resolver.hpp"
+
+#include <boost/test/unit_test.hpp>
 
 namespace path_extend {
 

@@ -121,7 +121,7 @@ public:
 class PathPolisher {
     static const size_t MAX_POLISH_ATTEMPTS = 5;
 
-    const conj_graph_pack &gp_;
+    const GraphPack &gp_;
     std::vector<std::shared_ptr<PathGapCloser>> gap_closers_;
 
     void InfoAboutGaps(const PathContainer& result);
@@ -130,7 +130,7 @@ class PathPolisher {
     DECL_LOGGER("PathPolisher")
 
 public:
-    PathPolisher(const conj_graph_pack &gp,
+    PathPolisher(const GraphPack &gp,
                  const std::vector<std::shared_ptr<PathGapCloser>> &gap_closers):
             gp_(gp), gap_closers_(gap_closers) {
     }

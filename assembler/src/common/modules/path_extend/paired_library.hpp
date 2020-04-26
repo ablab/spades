@@ -15,6 +15,7 @@
 #pragma once
 
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/config_struct.hpp"
 #include "paired_info/paired_info.hpp"
 #include "ideal_pair_info.hpp"
 

@@ -161,12 +161,12 @@ BOOST_AUTO_TEST_CASE( TestCondenseSimple ) {
 
 BOOST_AUTO_TEST_CASE( TestKmerStoringIndex ) {
     std::vector<std::string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
-    CheckIndex<graph_pack<Graph>>(reads, 5);
+    CheckIndex(reads, 5);
 }
 
 BOOST_AUTO_TEST_CASE( TestKmerFreeIndex ) {
     std::vector<std::string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
-    CheckIndex<conj_graph_pack>(reads, 5);
+    CheckIndex(reads, 5);
 }
 
 //BOOST_AUTO_TEST_CASE( TestStrange ) {

@@ -12,10 +12,12 @@
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
 
+#include "modules/alignment/edge_index.hpp"
 #include "modules/graph_construction.hpp"
 /* #include "assembly_graph/construction/early_simplification.hpp" TODO use it */
 
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/genomic_info.hpp"
 
 #include "utils/filesystem/temporary.hpp"
 
@@ -38,8 +40,6 @@ struct ConstructionStorage {
     io::ReadStreamList<io::SingleReadSeq> contigs_streams;
     fs::TmpDir workdir;
 };
-
-namespace {
 
 bool add_trusted_contigs(io::DataSet<config::LibraryData> &libraries,
                        io::ReadStreamList<io::SingleReadSeq> &trusted_list) {
@@ -105,7 +105,7 @@ void add_additional_contigs_to_lib(std::string path_to_additional_contigs_dir, s
 }
 
 void Construction::init(debruijn_graph::GraphPack &gp, const char *) {
-    init_storage(unsigned(gp.g.k()));
+    init_storage(unsigned(gp.k()));
 
     auto& dataset = cfg::get_writable().ds;
 
@@ -127,7 +127,7 @@ void Construction::init(debruijn_graph::GraphPack &gp, const char *) {
     }
 
     storage().params = cfg::get().con;
-    storage().workdir = fs::tmp::make_temp_dir(gp.workdir, "construction");
+    storage().workdir = fs::tmp::make_temp_dir(gp.workdir(), "construction");
     //FIXME needs to be changed if we move to hash only filtering
     storage().read_streams = io::single_binary_readers_for_libs(dataset.reads, libs_for_construction);
 
@@ -163,6 +163,8 @@ void Construction::fini(debruijn_graph::GraphPack &) {
 }
 
 Construction::~Construction() {}
+
+namespace {
 
 class CoverageFilter: public Construction::Phase {
   public:
@@ -293,7 +295,7 @@ public:
     void run(debruijn_graph::GraphPack &gp, const char*) override {
         if (!storage().params.early_tc.length_bound) {
             INFO("Early tip clipper length bound set as (RL - K)");
-            storage().params.early_tc.length_bound.reset(cfg::get().ds.RL - gp.g.k());
+            storage().params.early_tc.length_bound.reset(cfg::get().ds.RL - gp.k());
         }
         EarlyTipClipperProcessor(storage().ext_index, *storage().params.early_tc.length_bound).ClipTips();
     }
@@ -378,9 +380,9 @@ public:
         using IndexBuilder = EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT;
         INFO("Filling coverage index");
         auto &index = gp.get_mutable<EdgeIndex<Graph>>().inner_index();
-        IndexBuilder().ParallelFillCoverage(index.inner_index(), storage().read_streams);
+        IndexBuilder().ParallelFillCoverage(index, storage().read_streams);
         INFO("Filling coverage and flanking coverage from index");
-        FillCoverageAndFlanking(index.inner_index(), gp.get_mutable<Graph>(), gp.get_mutable<FlankingCoverage<Graph>>());
+        FillCoverageAndFlanking(index, gp.get_mutable<Graph>(), gp.get_mutable<omnigraph::FlankingCoverage<Graph>>());
     }
 
     void load(debruijn_graph::GraphPack&,
@@ -516,7 +518,7 @@ class PHMCoverageFiller : public Construction::Phase {
 
     template<class Graph, class PHM>
     void FillCoverageAndFlanking(const PHM& phm, Graph& g,
-                                 FlankingCoverage<Graph>& flanking_coverage) {
+                                 omnigraph::FlankingCoverage<Graph>& flanking_coverage) {
         GraphCoverageFiller<Graph, PHM>(g,
                                         storage().counter->k(), phm,
                                         flanking_coverage, g.coverage_index()).Fill(omp_get_max_threads());
@@ -552,7 +554,7 @@ public:
         } */
 
         INFO("Filling coverage and flanking coverage from PHM");
-        FillCoverageAndFlanking(coverage_map, gp.get_mutable<Graph>(), gp.get_mutable<FlankingCoverage<Graph>>());
+        FillCoverageAndFlanking(coverage_map, gp.get_mutable<Graph>(), gp.get_mutable<omnigraph::FlankingCoverage<Graph>>());
 
         std::vector<size_t> hist;
         size_t maxcov = 0;

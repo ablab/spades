@@ -15,7 +15,7 @@ public:
     ExtractDomains()
             : AssemblyStage("Extract Domains", "extract_domains") { }
 
-    void run(conj_graph_pack &gp, const char *);
+    void run(GraphPack &gp, const char *);
 };
 
 }

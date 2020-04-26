@@ -10,11 +10,12 @@ namespace path_extend {
 
 using namespace debruijn_graph;
 using namespace std;
+using namespace omnigraph::de;
 
 shared_ptr<ExtensionChooser> ExtendersGenerator::MakeLongReadsExtensionChooser(size_t lib_index,
                                                                                const GraphCoverageMap &read_paths_cov_map) const {
     auto long_reads_config = support_.GetLongReadsConfig(dataset_info_.reads[lib_index].type());
-    return make_shared<LongReadsExtensionChooser>(gp_.g, read_paths_cov_map,
+    return make_shared<LongReadsExtensionChooser>(graph_, read_paths_cov_map,
                                                   long_reads_config.filtering,
                                                   long_reads_config.weight_priority,
                                                   long_reads_config.unique_edge_priority,
@@ -46,17 +47,19 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongReadsExtender(size_t lib_
 
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib_index,
                                                                       bool investigate_loops) const {
+    const auto &clustered_indices = gp_.get<PairedInfoIndicesT<Graph>>("clustered_indices");
+
     const auto &lib = dataset_info_.reads[lib_index];
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+    auto paired_lib = MakeNewLib(graph_, lib, clustered_indices[lib_index]);
     //INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
     shared_ptr<WeightCounter> wc =
-        make_shared<PathCoverWeightCounter>(gp_.g, paired_lib,
+        make_shared<PathCoverWeightCounter>(graph_, paired_lib,
                                             params_.pset.normalize_weight,
                                             params_.pset.extension_options.single_threshold);
     auto opts = support_.GetExtensionOpts(paired_lib, params_.pset);
     shared_ptr<ExtensionChooser> extension =
-        make_shared<LongEdgeExtensionChooser>(gp_.g, wc,
+        make_shared<LongEdgeExtensionChooser>(graph_, wc,
                                               opts.weight_threshold,
                                               opts.priority_coeff);
 
@@ -74,19 +77,19 @@ shared_ptr<GapAnalyzer> ExtendersGenerator::MakeGapAnalyzer(double is_variation)
 
     vector<shared_ptr<GapAnalyzer>> joiners;
     if (params_.pset.scaffolder_options.use_la_gap_joiner)
-        joiners.push_back(std::make_shared<LAGapAnalyzer>(gp_.g, pset.scaffolder_options.min_overlap_length,
+        joiners.push_back(std::make_shared<LAGapAnalyzer>(graph_, pset.scaffolder_options.min_overlap_length,
                                                         pset.scaffolder_options.flank_multiplication_coefficient,
                                                         pset.scaffolder_options.flank_addition_coefficient));
 
 
-    joiners.push_back(std::make_shared<HammingGapAnalyzer>(gp_.g,
+    joiners.push_back(std::make_shared<HammingGapAnalyzer>(graph_,
                                                          pset.scaffolder_options.min_gap_score,
                                                          pset.scaffolder_options.short_overlap,
                                                          (int) pset.scaffolder_options.basic_overlap_coeff
                                                              * dataset_info_.RL));
 
     //todo introduce explicit must_overlap_coeff and rename max_can_overlap -> can_overlap_coeff
-    return std::make_shared<CompositeGapAnalyzer>(gp_.g,
+    return std::make_shared<CompositeGapAnalyzer>(graph_,
                                                 joiners,
                                                 size_t(math::round(pset.scaffolder_options.max_can_overlap
                                                            * is_variation)), /* may overlap threshold */
@@ -99,11 +102,12 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldingExtender(size_t lib_
 
     const auto &lib = dataset_info_.reads[lib_index];
     const auto &pset = params_.pset;
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.scaffolding_indices[lib_index]);
+    const auto &scaffolding_indices = gp_.get<PairedInfoIndicesT<Graph>>("scaffolding_indices");
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(graph_, lib, scaffolding_indices[lib_index]);
 
-    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib);
+    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(graph_, paired_lib);
 
-    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp_.g, counter,
+    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(graph_, counter,
                                                                        pset.scaffolder_options.cl_threshold,
                                                                        pset.scaffolder_options.var_coeff);
 
@@ -119,16 +123,17 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeRNAScaffoldingExtender(size_t l
 
     const auto &lib = dataset_info_.reads[lib_index];
     const auto &pset = params_.pset;
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.paired_indices[lib_index]);
+    const auto &paired_indices = gp_.get<UnclusteredPairedInfoIndicesT<Graph>>();
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(graph_, lib, paired_indices[lib_index]);
 
-    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib);
+    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(graph_, paired_lib);
 
-    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp_.g,
+    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(graph_,
                                                                        counter,
                                                                        pset.scaffolder_options.cutoff,
                                                                        pset.scaffolder_options.var_coeff,
                                                                        pset.scaffolder_options.rel_cov_cutoff);
-    auto scaff_chooser2 = std::make_shared<ScaffoldingExtensionChooser>(gp_.g,
+    auto scaff_chooser2 = std::make_shared<ScaffoldingExtensionChooser>(graph_,
                                                                         counter,
                                                                         pset.scaffolder_options.hard_cutoff,
                                                                         pset.scaffolder_options.var_coeff,
@@ -150,7 +155,7 @@ std::shared_ptr<ExtensionChooser> ExtendersGenerator::MakeLongReadsRNAExtensionC
                                                                                   const GraphCoverageMap &read_paths_cov_map) const {
     auto long_reads_config = support_.GetLongReadsConfig(dataset_info_.reads[lib_index].type());
     INFO("Creating long read rna chooser")
-    return std::make_shared<LongReadsRNAExtensionChooser>(gp_.g, read_paths_cov_map,
+    return std::make_shared<LongReadsRNAExtensionChooser>(graph_, read_paths_cov_map,
                                                      long_reads_config.filtering,
                                                      long_reads_config.min_significant_overlap);
 }
@@ -183,16 +188,19 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(siz
 
     const auto &lib = dataset_info_.reads[lib_index];
     const auto &pset = params_.pset;
+    const auto &paired_indices = gp_.get<UnclusteredPairedInfoIndicesT<Graph>>();
+    const auto &clustered_indices = gp_.get<PairedInfoIndicesT<Graph>>("clustered_indices");
+
     shared_ptr<PairedInfoLibrary> paired_lib;
     INFO("Creating Scaffolding 2015 extender for lib #" << lib_index);
 
     //FIXME: DimaA
-    if (gp_.paired_indices[lib_index].size() > gp_.clustered_indices[lib_index].size()) {
+    if (paired_indices[lib_index].size() > clustered_indices[lib_index].size()) {
         INFO("Paired unclustered indices not empty, using them");
-        paired_lib = MakeNewLib(gp_.g, lib, gp_.paired_indices[lib_index]);
-    } else if (gp_.clustered_indices[lib_index].size() != 0) {
+        paired_lib = MakeNewLib(graph_, lib, paired_indices[lib_index]);
+    } else if (clustered_indices[lib_index].size()) {
         INFO("clustered indices not empty, using them");
-        paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+        paired_lib = MakeNewLib(graph_, lib, clustered_indices[lib_index]);
     } else {
         ERROR("All paired indices are empty!");
     }
@@ -200,15 +208,15 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(siz
     //TODO::was copypasted from MakeScaffoldingExtender, refactor 2015 extension chooser
     DEBUG("creating extchooser");
     shared_ptr<ConnectionCondition>
-        condition = make_shared<PairedLibConnectionCondition>(gp_.g, paired_lib, lib_index, 0);
-    auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp_.g,
+        condition = make_shared<PairedLibConnectionCondition>(graph_, paired_lib, lib_index, 0);
+    auto scaff_chooser = std::make_shared<ExtensionChooser2015>(graph_,
                                                                 nullptr,
                                                                 condition,
                                                                 storage,
                                                                 pset.scaffolder_options.cl_threshold,
                                                                 pset.scaffolder_options.var_coeff,
                                                                 pset.scaffolding2015.relative_weight_cutoff,
-                                                                gp_.g.size()
+                                                                graph_.size()
                                                                     <= params_.pset.scaffolding2015.graph_connectivity_max_edges);
 
     return make_shared<ScaffoldingPathExtender>(gp_, cover_map_,
@@ -223,26 +231,27 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(siz
 
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t lib_index) const {
     const auto& lib = dataset_info_.reads[lib_index];
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+    const auto &clustered_indices = gp_.get<PairedInfoIndicesT<Graph>>("clustered_indices");
+    auto paired_lib = MakeNewLib(graph_, lib, clustered_indices[lib_index]);
 
-    auto provider = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length);
+    auto provider = make_shared<CoverageAwareIdealInfoProvider>(graph_, paired_lib, lib.data().unmerged_read_length);
 
-    auto meta_wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib,
+    auto meta_wc = make_shared<PathCoverWeightCounter>(graph_, paired_lib,
                                                        params_.pset.normalize_weight,
                                                        params_.pset.extension_options.single_threshold,
                                                        provider);
 
-    auto permissive_pi_chooser = make_shared<IdealBasedExtensionChooser>(gp_.g,
+    auto permissive_pi_chooser = make_shared<IdealBasedExtensionChooser>(graph_,
                                                                          meta_wc,
                                                                          params_.pset.extension_options.weight_threshold,
                                                                          params_.pset.extension_options.priority_coeff);
 
-    auto coord_cov_chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp_.g, *provider,
+    auto coord_cov_chooser = make_shared<CoordinatedCoverageExtensionChooser>(graph_, *provider,
                                                                               params_.pset.coordinated_coverage.max_edge_length_in_repeat,
                                                                               params_.pset.coordinated_coverage.delta,
                                                                               params_.pset.coordinated_coverage.min_path_len);
 
-    auto chooser = make_shared<JointExtensionChooser>(gp_.g, permissive_pi_chooser, coord_cov_chooser);
+    auto chooser = make_shared<JointExtensionChooser>(graph_, permissive_pi_chooser, coord_cov_chooser);
 
     return make_shared<SimpleExtender>(gp_, cover_map_, used_unique_storage_, chooser,
                                        -1ul /* insert size is needed only for loop detection, which is not needed in this case */,
@@ -254,18 +263,19 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t 
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index, bool investigate_loops) const {
 
     const auto &lib = dataset_info_.reads[lib_index];
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+    const auto &clustered_indices = gp_.get<PairedInfoIndicesT<Graph>>("clustered_indices");
+    auto paired_lib = MakeNewLib(graph_, lib, clustered_indices[lib_index]);
 //    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
-    auto cip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length);
+    auto cip = make_shared<CoverageAwareIdealInfoProvider>(graph_, paired_lib, lib.data().unmerged_read_length);
     shared_ptr<WeightCounter> wc =
-        make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight,
+        make_shared<PathCoverWeightCounter>(graph_, paired_lib, params_.pset.normalize_weight,
                                             params_.pset.extension_options.single_threshold,
                                             cip);
 
     auto opts = support_.GetExtensionOpts(paired_lib, params_.pset);
     shared_ptr<RNAExtensionChooser> extension =
-        make_shared<RNAExtensionChooser>(gp_.g, wc,
+        make_shared<RNAExtensionChooser>(graph_, wc,
                                          opts.weight_threshold,
                                          opts.priority_coeff);
 
@@ -281,8 +291,9 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
 
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeSimpleCoverageExtender(size_t lib_index) const {
 
+    const auto &ss_coverage = gp_.get<std::vector<SSCoverageStorage>>();
     auto extension =
-        make_shared<SimpleCoverageExtensionChooser>(gp_.ss_coverage[lib_index], gp_.g,
+        make_shared<SimpleCoverageExtensionChooser>(ss_coverage[lib_index], graph_,
                                                     params_.pset.simple_coverage_resolver.coverage_margin,
                                                     params_.pset.simple_coverage_resolver.max_coverage_variation,
                                                     params_.pset.simple_coverage_resolver.min_upper_coverage);
@@ -298,25 +309,26 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeSimpleCoverageExtender(size_t
 
 shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, bool investigate_loops) const {
     const auto &lib = dataset_info_.reads[lib_index];
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+    const auto &clustered_indices = gp_.get<PairedInfoIndicesT<Graph>>("clustered_indices");
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(graph_, lib, clustered_indices[lib_index]);
     VERIFY_MSG(!paired_lib->IsMp(), "Tried to create PE extender for MP library");
     auto opts = params_.pset.extension_options;
 //    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
     shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
     if (params_.uneven_depth || params_.mode == config::pipeline_type::moleculo) {
-        iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length);
+        iip = make_shared<CoverageAwareIdealInfoProvider>(graph_, paired_lib, lib.data().unmerged_read_length);
     } else {
         double lib_cov = support_.EstimateLibCoverage(lib_index);
         INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
-        iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length, lib_cov);
+        iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(graph_, paired_lib, lib.data().unmerged_read_length, lib_cov);
     }
 
-    auto wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight,
+    auto wc = make_shared<PathCoverWeightCounter>(graph_, paired_lib, params_.pset.normalize_weight,
                                                   params_.pset.extension_options.single_threshold,
                                                   iip);
 
-    auto extension_chooser = make_shared<SimpleExtensionChooser>(gp_.g, wc,
+    auto extension_chooser = make_shared<SimpleExtensionChooser>(graph_, wc,
                                                          opts.weight_threshold,
                                                          opts.priority_coeff);
 
@@ -394,10 +406,10 @@ Extenders ExtendersGenerator::MakePBScaffoldingExtenders() const {
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
         if (support_.IsForSingleReadScaffolder(dataset_info_.reads[lib_index])) {
             INFO("Creating scaffolding extender for lib " << lib_index);
-            shared_ptr<ConnectionCondition> condition = make_shared<LongReadsLibConnectionCondition>(gp_.g,
+            shared_ptr<ConnectionCondition> condition = make_shared<LongReadsLibConnectionCondition>(graph_,
                                                                                                      lib_index, 2,
                                                                                                      unique_data_.long_reads_cov_map_[lib_index]);
-            auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp_.g,
+            auto scaff_chooser = std::make_shared<ExtensionChooser2015>(graph_,
                                                                         nullptr,
                                                                         condition,
                                                                         unique_data_.unique_pb_storage_,

@@ -15,7 +15,7 @@
 #ifndef PATH_VISUALIZER_HPP_
 #define PATH_VISUALIZER_HPP_
 
-#include "assembly_graph/paths/bidirectional_path.hpp"
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 
 namespace path_extend {
@@ -62,6 +62,7 @@ public:
 };
 
 
+//TODO: refactor this copy-pasta
 class PathVisualizer {
 
 protected:
@@ -74,52 +75,60 @@ public:
 
     }
 
-    void writeGraphWithPathsSimple(const conj_graph_pack& gp, const std::string& file_name,
+    void writeGraphWithPathsSimple(const GraphPack& gp, const std::string& file_name,
                                    const std::string& graph_name, const PathContainer& paths) const {
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
         filestr.open(file_name.c_str(), std::fstream::out);
 
-        visualization::graph_labeler::StrGraphLabeler<Graph> str_labeler(gp.g);
-        PathGraphLabeler<Graph> path_labeler(gp.g, paths);
-        visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(gp.g);
-        visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
+        const auto &graph = gp.get<Graph>();
+        const auto &edge_pos = gp.get<EdgesPositionHandler<Graph>>();
+        const auto &index = gp.get<EdgeIndex<Graph>>();
+
+        visualization::graph_labeler::StrGraphLabeler<Graph> str_labeler(graph);
+        PathGraphLabeler<Graph> path_labeler(graph, paths);
+        visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(graph);
+        visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(graph, edge_pos);
 
         visualization::graph_labeler::CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, path_labeler, pos_labeler);
         std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer;
-        if (gp.index.IsAttached()) {
+        if (index.IsAttached()) {
              colorer = stats::DefaultColorer(gp);
         } else {
-            colorer = visualization::graph_colorer::DefaultColorer(gp.g);
+            colorer = visualization::graph_colorer::DefaultColorer(graph);
         }
 
-        visualization::visualizers::ComponentVisualizer<Graph> visualizer(gp.g, false);
+        visualization::visualizers::ComponentVisualizer<Graph> visualizer(graph, false);
         visualization::vertex_linker::EmptyGraphLinker<Graph> linker;
         visualizer.Visualize(filestr, composite_labeler, *colorer, linker);
         filestr.close();
         INFO("Visualizing graph done");
     }
 
-    void writeGraphSimple(const conj_graph_pack& gp, const std::string& file_name, const std::string& graph_name) const{
+    void writeGraphSimple(const GraphPack& gp, const std::string& file_name, const std::string& graph_name) const{
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
         filestr.open(file_name.c_str(), std::fstream::out);
 
-        visualization::graph_labeler::StrGraphLabeler<Graph> str_labeler(gp.g);
-        visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
-        visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(gp.g);
+        const auto &graph = gp.get<Graph>();
+        const auto &edge_pos = gp.get<EdgesPositionHandler<Graph>>();
+        const auto &index = gp.get<EdgeIndex<Graph>>();
+
+        visualization::graph_labeler::StrGraphLabeler<Graph> str_labeler(graph);
+        visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(graph, edge_pos);
+        visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(graph);
         visualization::graph_labeler::CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, pos_labeler);
 
         std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer;
 
-        if (gp.index.IsAttached()) {
+        if (index.IsAttached()) {
              colorer = stats::DefaultColorer(gp);
         } else {
             Path<EdgeId> empty;
-            colorer = visualization::graph_colorer::DefaultColorer(gp.g, empty, empty);
+            colorer = visualization::graph_colorer::DefaultColorer(graph, empty, empty);
         }
 
-        visualization::visualizers::ComponentVisualizer<Graph> visualizer(gp.g, false);
+        visualization::visualizers::ComponentVisualizer<Graph> visualizer(graph, false);
         visualization::vertex_linker::EmptyGraphLinker<Graph> linker;
         visualizer.Visualize(filestr, composite_labeler, *colorer, linker);
         filestr.close();

@@ -149,41 +149,42 @@ int main(int argc, char** argv) {
         omp_set_num_threads((int) nthreads);
         INFO("# of threads to use: " << nthreads);
 
-        debruijn_graph::conj_graph_pack gp(k, tmpdir, 0);
+        debruijn_graph::GraphPack gp(k, tmpdir, 0);
+        const auto &graph = gp.get<Graph>();
 
         INFO("Loading de Bruijn graph from " << cfg.graph);
-        omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
-        gp.kmer_mapper.Attach();
+        omnigraph::GraphElementFinder<Graph> element_finder(graph);
+        gp.get_mutable<KmerMapper<Graph>>().Attach();
 
         io::EdgeLabelHelper<Graph> label_helper(element_finder,
                                                 toolchain::LoadGraph(gp, cfg.graph));
 
-        const Graph &g = gp.g;
-
         //Refilling flanking coverage to get same behavior while working with gfa graphs
-        FillFlankingFromAverage(g, gp.flanking_cov);
-        VERIFY(gp.flanking_cov.IsAttached());
+        auto &flanking_cov = gp.get_mutable<FlankingCoverage<Graph>>();
+        FillFlankingFromAverage(graph, flanking_cov);
+        VERIFY(flanking_cov.IsAttached());
 
         //Loading and tracking edges that connect the subgraph to the rest of the graph
         std::set<EdgeId> undeadends;
+        auto & edge_qual = gp.get_mutable<EdgeQuality<Graph>>();
         if (!cfg.deadends_fn.empty()) {
             auto deadend_names = ReadDeadendNames(cfg.deadends_fn);
-            for (auto it = g.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
+            for (auto it = graph.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
                 EdgeId e = *it;
-                if (IsDeadEnd(g, g.EdgeStart(e)) || IsDeadEnd(g, g.EdgeEnd(e))) {
+                if (IsDeadEnd(graph, graph.EdgeStart(e)) || IsDeadEnd(graph, graph.EdgeEnd(e))) {
                     if (!deadend_names.count(label_helper.label(e))) {
                         undeadends.insert(e);
-                        undeadends.insert(g.conjugate(e));
+                        undeadends.insert(graph.conjugate(e));
                     }
                 }
             }
             //Using "quality" to track the 'undeadends'
             //TODO can use position storage for that instead of hacking edge_qual
             for (EdgeId e : undeadends) {
-                VERIFY(undeadends.count(g.conjugate(e)));
-                gp.edge_qual.AddQuality(e, 1000.);
+                VERIFY(undeadends.count(graph.conjugate(e)));
+                edge_qual.AddQuality(e, 1000.);
             }
-            gp.edge_qual.Attach();
+            edge_qual.Attach();
         }
 
         //Loading unitig profiles and keeping storage consistent
@@ -194,7 +195,7 @@ int main(int argc, char** argv) {
             fs::CheckFileExistenceFATAL(cfg.edge_profile_fn);
             size_t sample_cnt = DetermineSampleCnt(cfg.edge_profile_fn);
             INFO("Sample count determined as " << sample_cnt);
-            profile_storage = std::make_unique<ProfileStorage>(gp.g, sample_cnt);
+            profile_storage = std::make_unique<ProfileStorage>(graph, sample_cnt);
             std::ifstream is(cfg.edge_profile_fn);
             profile_storage->Load(is, label_helper);
         }
@@ -205,7 +206,7 @@ int main(int argc, char** argv) {
         if (!cfg.stop_codons_fn.empty()) {
             INFO("Loading stop codon positions from " << cfg.stop_codons_fn);
             fs::CheckFileExistenceFATAL(cfg.stop_codons_fn);
-            stop_codons_storage = std::make_unique<PositionStorage>(gp.g);
+            stop_codons_storage = std::make_unique<PositionStorage>(graph);
             std::ifstream is(cfg.stop_codons_fn);
             stop_codons_storage->Load(is, label_helper);
         }
@@ -221,7 +222,7 @@ int main(int argc, char** argv) {
                 VERIFY_MSG(!cfg.deadends_fn.empty(),
                            "Deadends option (-d/--dead-ends) was not specified. "
                            "Can only determine coverage while working with subgraphs!");
-                bin_cov = DetermineAvgCoverage(g, undeadends);
+                bin_cov = DetermineAvgCoverage(graph, undeadends);
             } else {
                 bin_cov = std::stod(cfg.bin_cov_str);
             }
@@ -248,13 +249,13 @@ int main(int argc, char** argv) {
 
         if (cfg.save_gp) {
             INFO("Saving graph pack in SPAdes binary format");
-            io::binary::BasePackIO<Graph>().Save(cfg.outfile, gp);
+            io::binary::BasePackIO().Save(cfg.outfile, gp);
         }
 
         if (cfg.save_gfa || !cfg.save_gp) {
             INFO("Saving GFA");
             std::ofstream os(cfg.outfile + ".gfa");
-            gfa::GFAWriter writer(gp.g, os);
+            gfa::GFAWriter writer(graph, os);
             writer.WriteSegmentsAndLinks();
         }
 
@@ -273,14 +274,14 @@ int main(int argc, char** argv) {
 
         if (!cfg.deadends_fn.empty()) {
             INFO("Saving deadends");
-            VERIFY_MSG(gp.edge_qual.IsAttached(), "Edge quality got detached");
+            VERIFY_MSG(edge_qual.IsAttached(), "Edge quality got detached");
             std::ofstream deadends_os(cfg.outfile + ".deadends");
-            for (auto it = g.ConstEdgeBegin(/*canonical_only*/true); !it.IsEnd(); ++it) {
+            for (auto it = graph.ConstEdgeBegin(/*canonical_only*/true); !it.IsEnd(); ++it) {
                 EdgeId e = *it;
-                if (IsDeadEnd(g, g.EdgeStart(e)) || IsDeadEnd(g, g.EdgeEnd(e))) {
-                    if (gp.edge_qual.IsPositiveQuality(e))
+                if (IsDeadEnd(graph, graph.EdgeStart(e)) || IsDeadEnd(graph, graph.EdgeEnd(e))) {
+                    if (edge_qual.IsPositiveQuality(e))
                         continue;
-                    deadends_os << gp.g.int_id(e) << "\n";
+                    deadends_os << graph.int_id(e) << "\n";
                 }
             }
         }

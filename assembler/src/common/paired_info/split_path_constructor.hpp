@@ -14,10 +14,10 @@
 
 #pragma once
 
-#include <common/assembly_graph/paths/path_utils.hpp>
+#include "assembly_graph/paths/path_utils.hpp"
+#include "assembly_graph/paths/path_processor.hpp"
 #include "utils/logger/logger.hpp"
 #include "paired_info/paired_info.hpp"
-#include "assembly_graph/paths/path_processor.hpp"
 #include "paired_info/pair_info_bounds.hpp"
 
 namespace debruijn_graph {
@@ -85,7 +85,7 @@ public:
 
         std::vector<bool> pair_info_used(pair_infos.size());
         TRACE("Preparing path_processor for this base edge");
-        size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);
+        size_t path_upper_bound = omnigraph::PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);
 
         //FIXME is path_upper_bound enough?
 

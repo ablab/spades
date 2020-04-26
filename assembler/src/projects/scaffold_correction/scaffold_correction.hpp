@@ -14,13 +14,16 @@
 #include "stages/construction.hpp"
 #include "stages/read_conversion.hpp"
 #include "pipeline/config_struct.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/dijkstra/dijkstra_algorithm.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
 
 namespace scaffold_correction {
-    typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
-    typedef std::vector<debruijn_graph::EdgeId> Path;
+    using Graph = debruijn_graph::ConjugateDeBruijnGraph;
+    using Path = std::vector<Graph::EdgeId>;
 
     class PathSideSimilarityComparator {
     private:
@@ -181,39 +184,39 @@ namespace scaffold_correction {
     };
 
     class ScaffoldCorrector {
-        typedef debruijn_graph::conj_graph_pack graph_pack;
     private:
 
-        const graph_pack& gp_;
+        const debruijn_graph::GraphPack& gp_;
         const CarefulPathFixer &fixer_;
 
 
         bool CheckPath(const std::vector<Graph::EdgeId> &path) const {
             if (!path.size())
                 return false;
-
+            const auto &graph = gp_.get<Graph>();
             for (size_t i = 1; i < path.size(); i++) {
-                if (gp_.g.EdgeEnd(path[i - 1]) != gp_.g.EdgeStart(path[i]))
+                if (graph.EdgeEnd(path[i - 1]) != graph.EdgeStart(path[i]))
                     return false;
             }
             return true;
         }
 
         Sequence ConstructSequence(const Path &path) const {
-            Sequence result = gp_.g.EdgeNucls(path[0]);
+            const auto &graph = gp_.get<Graph>();
+            Sequence result = graph.EdgeNucls(path[0]);
             for(size_t i = 1; i < path.size(); i++) {
-                result = result +  gp_.g.EdgeNucls(path[i]).Subseq(gp_.k_value);
+                result = result +  graph.EdgeNucls(path[i]).Subseq(gp_.k());
             }
             return result;
         }
 
     public:
-        ScaffoldCorrector(const graph_pack &gp, const CarefulPathFixer &fixer)
+        ScaffoldCorrector(const debruijn_graph::GraphPack &gp, const CarefulPathFixer &fixer)
                 : gp_(gp), fixer_(fixer) {}
 
         Sequence correct(const std::vector<Sequence> &scaffold) const {
             auto mapper = debruijn_graph::MapperInstance(gp_);
-            MappingPath <debruijn_graph::EdgeId> path;
+            omnigraph::MappingPath<debruijn_graph::EdgeId> path;
             for (auto it = scaffold.begin(); it != scaffold.end(); ++it) {
                 path.join(mapper->MapSequence(*it));
             }
@@ -298,9 +301,9 @@ namespace spades {
             return results;
         }
 
-        void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
+        void run(debruijn_graph::GraphPack &graph_pack, const char *) {
             INFO("Correcting scaffolds from " << config_.scaffolds_file);
-            scaffold_correction::CarefulPathFixer fixer(graph_pack.g, config_.max_cut_length, config_.max_insert);
+            scaffold_correction::CarefulPathFixer fixer(graph_pack.get<debruijn_graph::Graph>(), config_.max_cut_length, config_.max_insert);
             scaffold_correction::ScaffoldCorrector corrector(graph_pack, fixer);
             auto scaffolds = ReadScaffolds(config_.scaffolds_file);
             graph_pack.EnsureIndex();
@@ -315,7 +318,7 @@ namespace spades {
     void run_scaffold_correction() {
         INFO("Scaffold correction started");
 
-        debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
+        debruijn_graph::GraphPack conj_gp(cfg::get().K,
                 cfg::get().tmp_dir,
                 cfg::get().ds.reads.lib_count(),
                 cfg::get().ds.reference_genome,
@@ -328,7 +331,7 @@ namespace spades {
                .add<debruijn_graph::Construction>()
                .add<ScaffoldCorrectionStage>(cfg::get().output_dir + "corrected_scaffolds.fasta", *cfg::get().sc_cor);
         INFO("Output directory: " << cfg::get().output_dir);
-        conj_gp.kmer_mapper.Attach();
+        conj_gp.get_mutable<debruijn_graph::KmerMapper<debruijn_graph::Graph>>().Attach();
         manager.run(conj_gp, cfg::get().entry_point.c_str());
         INFO("Scaffold correction finished.");
     }

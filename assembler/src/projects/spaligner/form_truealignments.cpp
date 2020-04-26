@@ -33,7 +33,7 @@ void create_console_logger() {
 
 namespace debruijn_graph {
 
-typedef debruijn_graph::BasicSequenceMapper<debruijn_graph::Graph, Index> MapperClass;
+typedef BasicSequenceMapper<Graph, EdgeIndex<Graph>> MapperClass;
 
 
 struct ReadMappingStr {

@@ -80,7 +80,7 @@ static void match_contigs(const path_extend::PathContainer &contig_paths, const 
     }
 }
 
-ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::conj_graph_pack &gp,
+ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
                                           const std::string &hmm_set,
                                           const std::string &output_dir) {
     if (fs::check_existence(output_dir + "/temp_anti/"))
@@ -94,9 +94,9 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::conj_graph_pack &gp,
     hcfg.domE = 1.0e-9;
     std::vector<std::string> hmms;
     boost::split(hmms, hmm_set, boost::is_any_of(",;"), boost::token_compress_on);
-    path_extend::ScaffoldSequenceMaker scaffold_maker(gp.g);
+    path_extend::ScaffoldSequenceMaker scaffold_maker(gp.get<debruijn_graph::Graph>());
     path_extend::PathContainer broken_scaffolds;
-    path_extend::ScaffoldBreaker(int(gp.g.k())).Break(gp.contig_paths, broken_scaffolds);
+    path_extend::ScaffoldBreaker(int(gp.k())).Break(gp.get<path_extend::PathContainer>(), broken_scaffolds);
 
     io::OFastaReadStream oss_contig(output_dir + "/temp_anti/restricted_edges.fasta");
     for (const auto &file : hmms) {

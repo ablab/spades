@@ -13,6 +13,7 @@
 #include "io/reads/single_read.hpp"
 
 #include "sequence/sequence_tools.hpp"
+#include "pipeline/graph_pack.hpp"
 
 #include "edge_index.hpp"
 #include "kmer_mapper.hpp"

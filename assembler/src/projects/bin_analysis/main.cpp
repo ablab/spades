@@ -11,6 +11,7 @@
 
 #include "utils/segfault_handler.hpp"
 #include "io/reads/file_reader.hpp"
+#include "visualization/position_filler.hpp"
 
 #include "version.hpp"
 
@@ -22,19 +23,21 @@
 
 using namespace debruijn_graph;
 
-static void DrawNeighbourComponents(conj_graph_pack &gp, const std::string &bin_contigs,
+static void DrawNeighbourComponents(GraphPack &gp, const std::string &bin_contigs,
                              const EdgeQuality<Graph> &annotation,
                              const std::string &pics_path, size_t edge_len_bound) {
-    gp.edge_pos.Attach();
+    auto &edge_pos = gp.get_mutable<EdgesPositionHandler<Graph>>();
+    const auto &graph = gp.get<Graph>();
+    edge_pos.Attach();
     visualization::position_filler::FillPos(gp, bin_contigs, "bin_", /*with rc*/true);
 
     typedef bin_refinement::DFS<UnorientedNeighbourIteratorFactory<Graph>> ComponentCollectingDFS;
     std::set<EdgeId> considered;
     INFO("Considering long annotated edges");
     for (EdgeId e : annotation.PositiveQualEdges()) {
-        if (gp.g.length(e) >= edge_len_bound && !considered.count(e)) {
-            INFO("Collecting component from edge " << gp.g.str(e));
-            ComponentCollectingDFS component_collector(gp.g, e, edge_len_bound, /*vertex limit*/50);
+        if (graph.length(e) >= edge_len_bound && !considered.count(e)) {
+            INFO("Collecting component from edge " << graph.str(e));
+            ComponentCollectingDFS component_collector(graph, e, edge_len_bound, /*vertex limit*/50);
             bool vlimit_not_exceeded = component_collector.Run();
             utils::insert_all(considered, component_collector.border_sources());
             if (!vlimit_not_exceeded) {
@@ -42,14 +45,14 @@ static void DrawNeighbourComponents(conj_graph_pack &gp, const std::string &bin_
             }
 
             DEBUG("Writing to dot");
-            bin_refinement::DrawComponent(gp.g,
-                                          component_collector.reached(), pics_path + std::to_string(gp.g.int_id(e)) + ".dot",
-                                          annotation.PositiveQualEdges(), bin_refinement::EdgeSet(), &gp.edge_pos);
+            bin_refinement::DrawComponent(graph,
+                                          component_collector.reached(), pics_path + std::to_string(graph.int_id(e)) + ".dot",
+                                          annotation.PositiveQualEdges(), bin_refinement::EdgeSet(), &edge_pos);
             DEBUG("Written");
         }
     }
-    gp.edge_pos.clear();
-    gp.edge_pos.Detach();
+    edge_pos.clear();
+    edge_pos.Detach();
 }
 
 static void Run(size_t K, const std::string &graph_path,
@@ -69,17 +72,18 @@ static void Run(size_t K, const std::string &graph_path,
     }
 
     //Fixme check if 1 is a good value
-    conj_graph_pack gp(K, tmpdir, 1, ref);
+    GraphPack gp(K, tmpdir, 1, ref);
+    const auto &graph = gp.get<Graph>();
 
     INFO("Loading de Bruijn graph from " << graph_path);
-    omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
-    gp.kmer_mapper.Attach();
+    omnigraph::GraphElementFinder<Graph> element_finder(graph);
+    gp.get_mutable<KmerMapper<Graph>>().Attach();
     io::EdgeLabelHelper<Graph> label_helper(element_finder,
                                             toolchain::LoadGraph(gp, graph_path));
 
     gp.EnsureBasicMapping();
 
-    EdgeQuality<Graph> annotation(gp.g);
+    EdgeQuality<Graph> annotation(graph);
     double base_cov = bin_refinement::AnnotateEdges(gp, annotation, bin_contigs);
 
     VERIFY(annotation.IsAttached());
@@ -87,7 +91,7 @@ static void Run(size_t K, const std::string &graph_path,
     if (ref.size() > 0) {
         gp.EnsureDebugInfo();
     } else {
-        VERIFY(!gp.edge_qual.IsAttached());
+        VERIFY(!gp.get<EdgeQuality<Graph>>().IsAttached());
     }
 
     const std::string pics_path = out_prefix + "_neighbourhoods/";
@@ -100,8 +104,8 @@ static void Run(size_t K, const std::string &graph_path,
     INFO("Annotating extra edges");
     bin_refinement::AnnotateExtraEdges(gp, annotation, base_cov, out_prefix);
 
-    auto gc = GraphComponent<Graph>::FromEdges(gp.g, annotation.PositiveQualEdges());
-    gc = toolchain::ComponentExpander(gp.g).Expand(gc);
+    auto gc = GraphComponent<Graph>::FromEdges(graph, annotation.PositiveQualEdges());
+    gc = toolchain::ComponentExpander(graph).Expand(gc);
 
     toolchain::WriteComponentWithDeadends(gc, out_prefix, label_helper.edge_naming_f());
 }

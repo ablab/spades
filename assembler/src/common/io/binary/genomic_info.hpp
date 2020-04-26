@@ -27,12 +27,12 @@ public:
         return value.Load(basename + ext_);
     }
 
-    void Write(std::ostream &os, const GenomicInfo &value) {
-        value.BinWrite(os);
+    void Write(io::binary::BinOStream &os, const GenomicInfo &value) {
+        os << value;
     }
 
-    bool Read(std::istream &is, GenomicInfo &value) {
-        value.BinRead(is);
+    bool Read(io::binary::BinIStream &is, GenomicInfo &value) {
+        is >> value;
         return true;
     }
 

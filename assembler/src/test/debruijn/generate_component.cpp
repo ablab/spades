@@ -9,6 +9,7 @@
 #include "utils/logger/log_writers.hpp"
 #include "io/binary/graph_pack.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
+#include "assembly_graph/handlers/id_track_handler.hpp"
 
 using namespace std;
 
@@ -73,23 +74,24 @@ public:
 void Launch(size_t K, string saves_path, size_t start_vertex_int_id,
             vector<size_t> blocking_int_ids, size_t edge_length_bound,
             string component_out_path) {
-    conj_graph_pack gp(K, "tmp", 0);
-    omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
-    io::binary::BasePackIO<Graph> io;
+    GraphPack gp(K, "tmp", 0);
+    const auto& graph = gp.get<Graph>(); 
+    omnigraph::GraphElementFinder<Graph> element_finder(graph);
+    io::binary::BasePackIO io;
     io.Load(saves_path, gp);
-    INFO("Loaded graph with " << gp.g.size() << " vertices");
+    INFO("Loaded graph with " << graph.size() << " vertices");
     VertexId starting_vertex = element_finder.ReturnVertexId(start_vertex_int_id);
     vector<VertexId> blocking_vertices;
     for (size_t int_id : blocking_int_ids) {
         blocking_vertices.push_back(element_finder.ReturnVertexId(int_id));
     }
-    BlockedComponentFinder<Graph> component_finder(gp.g, blocking_vertices, edge_length_bound);
-    GraphComponent<Graph> component_to_save = ComponentCloser<Graph>(gp.g, 0).CloseComponent(component_finder.Find(starting_vertex));
+    BlockedComponentFinder<Graph> component_finder(graph, blocking_vertices, edge_length_bound);
+    GraphComponent<Graph> component_to_save = ComponentCloser<Graph>(graph, 0).CloseComponent(component_finder.Find(starting_vertex));
     INFO("Blocked component has " << component_to_save.v_size() << " vertices");
     io.Save(component_out_path, gp);
-    gp.edge_pos.Attach();
+    gp.get_mutable<EdgesPositionHandler<Graph>>().Attach();
     visualization::visualization_utils::WriteComponent<Graph>(component_to_save, component_out_path + ".dot", debruijn_graph::stats::DefaultColorer(gp),
-                                                    visualization::graph_labeler::DefaultLabeler<Graph>(gp.g, gp.edge_pos));
+                                                    visualization::graph_labeler::DefaultLabeler<Graph>(graph, gp.get<EdgesPositionHandler<Graph>>()));
 }
 
 }

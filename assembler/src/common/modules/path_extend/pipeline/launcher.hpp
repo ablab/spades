@@ -22,7 +22,8 @@ using namespace debruijn_graph;
 class PathExtendLauncher {
     const config::dataset& dataset_info_;
     const PathExtendParamsContainer& params_;
-    conj_graph_pack& gp_;
+    GraphPack& gp_;
+    const Graph &graph_;
     PELaunchSupport support_;
 
     std::shared_ptr<ContigNameGenerator> contig_name_generator_;
@@ -87,13 +88,14 @@ public:
 
     PathExtendLauncher(const config::dataset& dataset_info,
                        const PathExtendParamsContainer& params,
-                       conj_graph_pack& gp):
+                       GraphPack& gp):
         dataset_info_(dataset_info),
         params_(params),
         gp_(gp),
+        graph_(gp.get<Graph>()),
         support_(dataset_info, params),
         contig_name_generator_(MakeContigNameGenerator(params_.mode, gp)),
-        writer_(gp.g, contig_name_generator_),
+        writer_(graph_, contig_name_generator_),
         unique_data_() {
         unique_data_.min_unique_length_ = params.pset.scaffolding2015.unique_length_upper_bound;
         unique_data_.unique_variation_ = params.pset.uniqueness_analyser.unique_coverage_variation;

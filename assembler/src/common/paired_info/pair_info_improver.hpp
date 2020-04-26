@@ -8,9 +8,11 @@
 #pragma once
 
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/library_data.hpp"
 #include "split_path_constructor.hpp"
 #include "paired_info/paired_info_helpers.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
+#include "assembly_graph/core/graph_iterators.hpp"
 #include <math.h>
 #include <io/reads/read_processor.hpp>
 
@@ -41,7 +43,7 @@ class ParallelEdgeProcessor {
         }
 
     private:
-        ConstEdgeIterator<Graph> it_;
+        omnigraph::ConstEdgeIterator<Graph> it_;
     };
 
 public:
@@ -216,7 +218,7 @@ class PairInfoImprover {
         omnigraph::de::PairedInfoIndicesT<Graph> to_add(graph_, NUM_CHUNKS);
 
         SplitPathConstructor<Graph> spc(graph_);
-        IterationHelper<Graph, EdgeId> edges(graph_);
+        omnigraph::IterationHelper<Graph, EdgeId> edges(graph_);
         auto iters = edges.Chunks(NUM_CHUNKS);
 
         DEBUG("Fill missing: Start threads");

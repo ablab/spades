@@ -233,24 +233,30 @@ public:
         LoadCoverage(file_name, g.coverage_index());
     }
 
-    void LoadGraphPack(const std::string &file_name, conj_graph_pack &gp) {
-        LoadBasicGraph(file_name, gp.g);
-        gp.index.Attach();
-        if (LoadEdgeIndex(file_name, gp.index.inner_index())) {
-            gp.index.Update();
+    void LoadGraphPack(const std::string &file_name, GraphPack &gp) {
+        auto &graph = gp.get_mutable<Graph>();
+        auto &index = gp.get_mutable<EdgeIndex<Graph>>();
+        auto &edge_pos = gp.get_mutable<omnigraph::EdgesPositionHandler<Graph>>();
+        auto &flanking_cov = gp.get_mutable<omnigraph::FlankingCoverage<Graph>>();
+        auto &kmer_mapper = gp.get_mutable<KmerMapper<Graph>>();
+
+        LoadBasicGraph(file_name, graph);
+        index.Attach();
+        if (LoadEdgeIndex(file_name, index.inner_index())) {
+            index.Update();
         } else {
             WARN("Cannot load edge index, kmer coverages will be missed");
-            gp.index.Refill();
+            index.Refill();
         }
-        LoadPositions(file_name, gp.edge_pos);
+        LoadPositions(file_name, edge_pos);
         //load kmer_mapper only if needed
-        if (gp.kmer_mapper.IsAttached())
-            if (!LoadKmerMapper(file_name, gp.kmer_mapper)) {
+        if (kmer_mapper.IsAttached())
+            if (!LoadKmerMapper(file_name, kmer_mapper)) {
                 WARN("Cannot load kmer_mapper, information on projected kmers will be missed");
             }
-        if (!LoadFlankingCoverage(file_name, gp.flanking_cov)) {
+        if (!LoadFlankingCoverage(file_name, flanking_cov)) {
             WARN("Cannot load flanking coverage, flanking coverage will be recovered from index");
-            gp.flanking_cov.Fill(gp.index.inner_index());
+            flanking_cov.Fill(index.inner_index());
         }
     }
 
@@ -277,7 +283,7 @@ void ScanBasicGraph(const std::string &file_name, Graph &g) {
     LegacyTextIO().LoadBasicGraph(file_name, g);
 }
 
-void ScanGraphPack(const std::string &file_name, conj_graph_pack &gp) {
+void ScanGraphPack(const std::string &file_name, GraphPack &gp) {
     LegacyTextIO().LoadGraphPack(file_name, gp);
 }
 

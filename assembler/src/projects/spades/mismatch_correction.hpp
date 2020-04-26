@@ -16,7 +16,7 @@ public:
     MismatchCorrection()
             : AssemblyStage("Mismatch Correction", "mismatch_correction") { }
 
-    void run(conj_graph_pack &gp, const char *);
+    void run(GraphPack &gp, const char *);
 };
 
 }

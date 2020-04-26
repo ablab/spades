@@ -8,6 +8,8 @@
 //***************************************************************************
 
 #include "assembly_graph/components/graph_component.hpp"
+#include <boost/optional.hpp>
+#include <map>
 
 using namespace omnigraph;
 

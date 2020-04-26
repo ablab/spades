@@ -13,11 +13,11 @@
 namespace debruijn_graph {
 
 class AnnotationPropagator {
-    const conj_graph_pack& gp_;
+    const GraphPack& gp_;
     size_t length_threshold_;
 
 public:
-    AnnotationPropagator(const conj_graph_pack& gp, size_t length_threshold) :
+    AnnotationPropagator(const GraphPack& gp, size_t length_threshold) :
                      gp_(gp), length_threshold_(length_threshold) {
     }
 

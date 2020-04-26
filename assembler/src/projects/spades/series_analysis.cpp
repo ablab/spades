@@ -4,9 +4,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "visualization/graph_colorer.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
 #include "modules/simplification/tip_clipper.hpp"
 #include "projects/mts/contig_abundance.hpp"
 #include "io/reads/osequencestream.hpp"
@@ -212,11 +214,11 @@ boost::optional<AbundanceVector> InferAbundance(const std::string& bin_mult_fn,
     return boost::optional<AbundanceVector>(MeanVector(abundances));
 }
 
-void PrintEdgeFragmentProfiles(const conj_graph_pack &gp, const ContigAbundanceCounter &abundance_counter,
+void PrintEdgeFragmentProfiles(const Graph &graph, const ContigAbundanceCounter &abundance_counter,
                                size_t split_length, size_t min_len, std::ostream &os) {
-    for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+    for (auto it = graph.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
         EdgeId e = *it;
-        io::SingleRead full_contig(std::to_string(gp.g.int_id(e)), gp.g.EdgeNucls(e).str());
+        io::SingleRead full_contig(std::to_string(graph.int_id(e)), graph.EdgeNucls(e).str());
         for (size_t i = 0; i < full_contig.size(); i += split_length) {
             if (full_contig.size() - i < min_len) {
                 DEBUG("Fragment shorter than min_length_bound " << min_len);
@@ -242,7 +244,7 @@ void PrintEdgeFragmentProfiles(const conj_graph_pack &gp, const ContigAbundanceC
     }
 }
 
-void SeriesAnalysis::run(conj_graph_pack &gp, const char *) {
+void SeriesAnalysis::run(GraphPack &gp, const char *) {
     std::string cfg = cfg::get().series_analysis;
     INFO("Series analysis enabled with config " << cfg);
 
@@ -261,23 +263,24 @@ void SeriesAnalysis::run(conj_graph_pack &gp, const char *) {
 
     DEBUG("Abundance counter ready");
 
+    const auto &graph = gp.get<Graph>();
     if (!config.edges_sqn.empty()) {
         io::OFastaReadStream oss(config.edges_sqn);
-        for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+        for (auto it = graph.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
             EdgeId e = *it;
-            auto s = gp.g.EdgeNucls(e).str();
-            oss << io::SingleRead(io::MakeContigId(gp.g.int_id(e), s.size()), s);
+            auto s = graph.EdgeNucls(e).str();
+            oss << io::SingleRead(io::MakeContigId(graph.int_id(e), s.size()), s);
         }
     }
 
     if (!config.edges_mpl.empty()) {
         std::ofstream os(config.edges_mpl);
-        PrintEdgeFragmentProfiles(gp, abundance_counter, -1ul, config.min_len, os);
+        PrintEdgeFragmentProfiles(graph, abundance_counter, -1ul, config.min_len, os);
     }
 
     if (!config.edge_fragments_mpl.empty()) {
         std::ofstream os(config.edge_fragments_mpl);
-        PrintEdgeFragmentProfiles(gp, abundance_counter, config.frag_size, config.min_len, os);
+        PrintEdgeFragmentProfiles(graph, abundance_counter, config.frag_size, config.min_len, os);
     }
 
 //    boost::optional<AbundanceVector> bin_profile = InferAbundance(config.bin_prof, config.bin);

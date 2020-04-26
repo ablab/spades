@@ -8,7 +8,13 @@
 #pragma once
 
 #include "environment.hpp"
+#include "errors.hpp"
+#include "vis_logger.hpp"
 #include "io/binary/graph_pack.hpp"
+#include "modules/alignment/kmer_mapper.hpp"
+#include "sequence/genome_storage.hpp"
+#include "pipeline/config_struct.hpp"
+
 namespace online_visualization {
 
 class DebruijnEnvironment : public Environment {
@@ -32,8 +38,6 @@ class DebruijnEnvironment : public Environment {
 
     public :
 
-        typedef debruijn_graph::Index EdgeIndexT;
-
         DebruijnEnvironment(const string& env_name, const string& env_path, size_t K = cfg::get().K)
             : Environment(env_name, env_path),
               picture_counter_(0),
@@ -46,14 +50,14 @@ class DebruijnEnvironment : public Environment {
                   cfg::get().flanking_range,
                   cfg::get().pos.max_mapping_gap,
                   cfg::get().pos.max_gap_diff),
-              element_finder_(gp_.g),
-              mapper_(new MapperClass(gp_.g, gp_.index, gp_.kmer_mapper)),
-              filler_(gp_.g, mapper_, gp_.edge_pos),
-              labeler_(gp_.g, gp_.edge_pos),
-              path_finder_(gp_.g) {
+              element_finder_(gp_.get<Graph>()),
+              mapper_(MapperInstance(gp_)),
+              filler_(gp_.get<Graph>(), mapper_, gp_.get_mutable<EdgePos>()),
+              labeler_(gp_.get<Graph>(), gp_.get<EdgePos>()),
+              path_finder_(gp_.get<Graph>()) {
             DEBUG("Environment constructor");
-            gp_.kmer_mapper.Attach();
-            io::binary::BasePackIO<Graph>().Load(path_, gp_);
+            gp_.get_mutable<debruijn_graph::KmerMapper<Graph>>().Attach();
+            io::binary::BasePackIO().Load(path_, gp_);
 //            debruijn_graph::graphio::ScanGraphPack(path_, gp_);
             DEBUG("Graph pack created")
             LoadFromGP();
@@ -63,7 +67,7 @@ class DebruijnEnvironment : public Environment {
             if (!CheckFileExists(path_ + ".grseq"))
                 return false;
 
-            size_t K = gp_.k_value;
+            size_t K = gp_.k();
             if (!(K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K)) {
                 LOG("K " << K << " is out of bounds");
                     return false;
@@ -77,30 +81,37 @@ class DebruijnEnvironment : public Environment {
         }
 
         void LoadFromGP() {
-            if (!gp_.edge_pos.IsAttached()) {
-                gp_.edge_pos.Attach();
+            auto &edge_pos = gp_.get_mutable<EdgesPositionHandler<Graph>>();
+
+            if (!edge_pos.IsAttached()) {
+                edge_pos.Attach();
             }
 
             //Loading Genome and Handlers
             DEBUG("Colorer done");
-            Path<EdgeId> path1 = mapper_->MapSequence(gp_.genome.GetSequence()).path();
-            Path<EdgeId> path2 = mapper_->MapSequence(!gp_.genome.GetSequence()).path();
-            coloring_ = visualization::graph_colorer::DefaultColorer(gp_.g, path1, path2);
+            const auto &genome = gp_.get<GenomeStorage>();
+            Path<EdgeId> path1 = mapper_->MapSequence(genome.GetSequence()).path();
+            Path<EdgeId> path2 = mapper_->MapSequence(!genome.GetSequence()).path();
+            coloring_ = visualization::graph_colorer::DefaultColorer(gp_.get<Graph>(), path1, path2);
             ResetPositions();
         }
 
         void LoadNewGenome(const Sequence& genome) {
-            gp_.genome.SetSequence(genome);
+            gp_.get_mutable<GenomeStorage>().SetSequence(genome);
             ResetPositions();
         }
 
         void ResetPositions() {
-            if (!gp_.edge_pos.IsAttached())
-                gp_.edge_pos.Attach();
+            auto &edge_pos = gp_.get_mutable<EdgesPositionHandler<Graph>>();
 
-            gp_.edge_pos.clear();
-            filler_.Process(gp_.genome.GetSequence(), "ref0");
-            filler_.Process(!gp_.genome.GetSequence(), "ref1");
+            if (!edge_pos.IsAttached())
+                edge_pos.Attach();
+
+            edge_pos.clear();
+
+            const auto &genome = gp_.get<GenomeStorage>();
+            filler_.Process(genome.GetSequence(), "ref0");
+            filler_.Process(!genome.GetSequence(), "ref1");
         }
 
         string GetFormattedPictureCounter() const {
@@ -124,11 +135,11 @@ class DebruijnEnvironment : public Environment {
         }
 
         size_t k_value() const {
-            return gp_.k_value;
+            return gp_.k();
         }
 
         const Graph& graph() const {
-            return gp_.g;
+            return gp_.get<Graph>();
         }
 
         GraphPack& graph_pack() {
@@ -136,11 +147,11 @@ class DebruijnEnvironment : public Environment {
         }
 
         Graph& graph() {
-            return gp_.g;
+            return gp_.get_mutable<Graph>();;
         }
 
         Sequence genome() const {
-            return gp_.genome.GetSequence();
+            return gp_.get<GenomeStorage>().GetSequence();
         }
 
         const MapperClass& mapper() const {
@@ -151,12 +162,12 @@ class DebruijnEnvironment : public Environment {
                     return path_finder_;
         }
 
-        const EdgeIndexT& index() const {
-            return gp_.index;
+        const Index &index() const {
+            return gp_.get<Index>();
         }
 
         const KmerMapperClass& kmer_mapper() const {
-            return gp_.kmer_mapper;
+            return gp_.get<KmerMapperClass>();
         }
 
         const ElementFinder& finder() const {

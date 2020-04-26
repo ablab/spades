@@ -40,7 +40,7 @@ io::SingleRead ReadGenome(const string& genome_path) {
     return ReadSequence(genome_stream_ptr);
 }
 
-EdgeAnnotation LoadAnnotation(const conj_graph_pack& gp,
+EdgeAnnotation LoadAnnotation(const GraphPack& gp,
                               const vector<bin_id>& bins_of_interest,
                               io::SingleStream& contigs_stream,
                               io::SingleStream& splits_stream,
@@ -107,11 +107,11 @@ int main(int argc, char** argv) {
     }
     //TmpFolderFixture fixture("tmp");
 
-    conj_graph_pack gp(k, "tmp", 0);
-    gp.kmer_mapper.Attach();
+    GraphPack gp(k, "tmp", 0);
+    gp.get_mutable<KmerMapper<Graph>>().Attach();
     INFO("Load graph from " << saves_path);
-    io::binary::BasePackIO<Graph>().Load(saves_path, gp);
-    gp.edge_pos.Attach();
+    io::binary::BasePackIO().Load(saves_path, gp);
+    gp.get_mutable<EdgesPositionHandler<Graph>>().Attach();
 
     ofstream output(table_fn);
 
@@ -149,11 +149,12 @@ int main(int argc, char** argv) {
         auto genome_graph_path = mapper->MapRead(genome);
         std::set<EdgeId> unbinned_edges;
 
+        auto const &graph = gp.get<Graph>();
         gp.EnsurePos();
         for (size_t i = 0; i < genome_graph_path.size(); ++i) {
             EdgeId e = genome_graph_path[i].first;
             auto range = genome_graph_path[i].second.mapped_range;
-            add_edge_info(total_info, gp.g.length(e));
+            add_edge_info(total_info, graph.length(e));
             if (edge_annotation.Annotation(e).empty()) {
                 if (prop_edge_annotation.Annotation(e).empty()) {
                     // Only check for prop_annotation is necessary
@@ -172,15 +173,15 @@ int main(int argc, char** argv) {
                     }
                 } else {
                     DEBUG(e.int_id() << " was propagated\n");
-                    add_edge_info(prop_binned_info, gp.g.length(e));
-                    add_edge_info(binned_info, gp.g.length(e));
+                    add_edge_info(prop_binned_info, graph.length(e));
+                    add_edge_info(binned_info, graph.length(e));
                 }
             } else {
-                add_edge_info(pre_binned_info, gp.g.length(e));
+                add_edge_info(pre_binned_info, graph.length(e));
                 if (prop_edge_annotation.Annotation(e).empty()) {
                     WARN(e.int_id() << " was lost during propagation\n");
                 } else {
-                    add_edge_info(binned_info, gp.g.length(e));
+                    add_edge_info(binned_info, graph.length(e));
                 }
             }
         }

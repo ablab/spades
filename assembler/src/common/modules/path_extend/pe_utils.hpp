@@ -15,7 +15,8 @@
 #ifndef PE_UTILS_HPP_
 #define PE_UTILS_HPP_
 
-#include "assembly_graph/paths/bidirectional_path.hpp"
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
+#include "modules/alignment/rna/ss_coverage.hpp"
 
 namespace path_extend {
 
@@ -191,7 +192,7 @@ public:
 class PathContainerCoverageSwitcher {
     const Graph& g_;
 
-    const SSCoverageStorage& coverage_storage_;
+    const debruijn_graph::SSCoverageStorage& coverage_storage_;
 
     bool antisense_;
 
@@ -206,7 +207,7 @@ class PathContainerCoverageSwitcher {
     }
 
 public:
-    PathContainerCoverageSwitcher(const Graph& g, const SSCoverageStorage& coverage_storage, bool antisense):
+    PathContainerCoverageSwitcher(const Graph& g, const debruijn_graph::SSCoverageStorage& coverage_storage, bool antisense):
         g_(g), coverage_storage_(coverage_storage), antisense_(antisense) {}
 
 

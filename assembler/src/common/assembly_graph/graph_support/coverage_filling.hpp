@@ -75,7 +75,7 @@ public:
 
 template<class Graph, class CountIndex>
 void FillCoverageAndFlanking(const CountIndex& count_index, Graph& g,
-                             FlankingCoverage<Graph>& flanking_coverage) {
+                             omnigraph::FlankingCoverage<Graph>& flanking_coverage) {
     SimultaneousCoverageFiller<Graph, CountIndex> filler(g, count_index, flanking_coverage, g.coverage_index());
     filler.Fill();
 }

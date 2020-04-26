@@ -48,14 +48,15 @@ void Launch(size_t K, string saves_path, size_t edge_length_bound,
             const string& fastg_output) {
     fs::TmpFolderFixture tmp_dir("tmp");
     //TODO no need for whole graph pack; change to Graph
-    conj_graph_pack gp(K, "tmp", 0);
-    io::binary::BasePackIO<Graph>().Load(saves_path, gp);
+    GraphPack gp(K, "tmp", 0);
+    io::binary::BasePackIO().Load(saves_path, gp);
 
     io::OFastaReadStream oss(fastg_output);
-    for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+    const auto& graph = gp.get<Graph>();
+    for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         EdgeId e = *it;
-        if (gp.g.length(e) > edge_length_bound) {
-            DEBUG("Processing edge " << gp.g.str(e));
+        if (graph.length(e) > edge_length_bound) {
+            DEBUG("Processing edge " << graph.str(e));
 
             typedef ComposedDijkstraSettings<Graph,
                     BoundedEdgeLenCalculator<Graph>,
@@ -66,38 +67,38 @@ void Launch(size_t K, string saves_path, size_t edge_length_bound,
             typedef Dijkstra<Graph, ForwardShortEdgeDijkstraSettings> ForwardShortEdgeDijkstra;
 
             ForwardShortEdgeDijkstraSettings settings(
-                    BoundedEdgeLenCalculator<Graph>(gp.g, edge_length_bound),
+                    BoundedEdgeLenCalculator<Graph>(graph, edge_length_bound),
                     ZeroLengthProcessChecker<Graph>(),
                     VertexPutChecker<Graph>(),
-                    ForwardNeighbourIteratorFactory<Graph>(gp.g));
-            ForwardShortEdgeDijkstra dijkstra(gp.g, settings,
+                    ForwardNeighbourIteratorFactory<Graph>(graph));
+            ForwardShortEdgeDijkstra dijkstra(graph, settings,
                                               std::numeric_limits<size_t>::max(),
                                               true /* collect traceback */);
-            dijkstra.Run(gp.g.EdgeEnd(e));
+            dijkstra.Run(graph.EdgeEnd(e));
 
             set<EdgeId> long_reachable;
             for (VertexId v : dijkstra.ProcessedVertices()) {
-                for (EdgeId out_e : gp.g.OutgoingEdges(v)) {
-                    if (gp.g.length(out_e) > edge_length_bound) {
+                for (EdgeId out_e : graph.OutgoingEdges(v)) {
+                    if (graph.length(out_e) > edge_length_bound) {
                         long_reachable.insert(out_e);
                     }
                 }
             }
 
             for (EdgeId n : long_reachable) {
-                DEBUG("Neighbour " << gp.g.str(n));
-                auto path = dijkstra.GetShortestPathTo(gp.g.EdgeStart(n));
-                DEBUG("Connecting path " << PrintPath(gp.g, path));
+                DEBUG("Neighbour " << graph.str(n));
+                auto path = dijkstra.GetShortestPathTo(graph.EdgeStart(n));
+                DEBUG("Connecting path " << PrintPath(graph, path));
             }
 
-            std::string neighbours_string = NeighboursString(gp.g, long_reachable);
+            std::string neighbours_string = NeighboursString(graph, long_reachable);
 
-            string name = CanonicalName(gp.g, e);
+            string name = CanonicalName(graph, e);
             if (!neighbours_string.empty()) {
                 name += ":" + neighbours_string;
             }
             name += ";";
-            oss << io::SingleRead(name, gp.g.EdgeNucls(e).str());
+            oss << io::SingleRead(name, graph.EdgeNucls(e).str());
         }
     }
 }

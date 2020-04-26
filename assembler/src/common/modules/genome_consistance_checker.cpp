@@ -414,7 +414,7 @@ void GenomeConsistenceChecker::Fill() {
 
     //FIXME set the parameters to something more reasonable
     EdgesPositionHandler<Graph> tmp_edge_pos(graph_, 0, 0);
-    visualization::position_filler::PosFiller<Graph> pos_filler(graph_, MapperInstance(gp_), tmp_edge_pos);
+    visualization::position_filler::PosFiller pos_filler(graph_, MapperInstance(gp_), tmp_edge_pos);
 
     for (const auto &chr: genome.GetChromosomes()) {
         pos_filler.Process(chr.sequence, "0_" + chr.name);

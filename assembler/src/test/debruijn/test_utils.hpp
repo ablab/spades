@@ -141,7 +141,7 @@ void AssertGraph(size_t k, const std::vector<std::string>& reads, const std::vec
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     Graph g(k);
     auto workdir = fs::tmp::make_temp_dir("tmp", "tests");
-    graph_pack<Graph>::index_t index(g, *workdir);
+    EdgeIndex<Graph> index(g, *workdir);
     index.Detach();
 
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
@@ -205,16 +205,22 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
 
     DEBUG("Asserting graph with etalon data");
 
-    conj_graph_pack gp(k, "tmp", 1);
-    auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");
+    GraphPack gp(k, "tmp", 1);
+    auto workdir = fs::tmp::make_temp_dir(gp.workdir(), "tests");
 
     DEBUG("Graph pack created");
+
+    auto &graph = gp.get_mutable<Graph>();
+    auto &index = gp.get_mutable<EdgeIndex<Graph>>();
+    auto &flanking_cov = gp.get_mutable<omnigraph::FlankingCoverage<Graph>>();
+    auto &kmer_mapper = gp.get_mutable<KmerMapper<Graph>>();
+    auto &paired_indices = gp.get_mutable<omnigraph::de::UnclusteredPairedInfoIndicesT<Graph>>();
 
     RawStream paired_stream = MakePairedReads(paired_reads, insert_size);
     using SquashingWrapper = io::SquashingWrapper<io::PairedRead>;
     io::ReadStreamList<io::SingleRead> single_stream_vector(SquashingWrapper(std::move(paired_stream)));
     ConstructGraphWithCoverage(config::debruijn_config::construction(), workdir,
-                               single_stream_vector, gp.g, gp.index, gp.flanking_cov);
+                               single_stream_vector, graph, index, flanking_cov);
 
     gp.InitRRIndices();
     gp.kmer_mapper.Attach();
@@ -224,24 +230,25 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
     DEBUG("Streams initialized");
 
     SequenceMapperNotifier notifier(gp, 1);
-    LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, 0, gp.paired_indices[0]);
+    LatePairedIndexFiller pif(graph, PairedReadCountWeight, 0, paired_indices[0]);
     notifier.Subscribe(0, &pif);
     notifier.ProcessLibrary(paired_streams, 0, *MapperInstance(gp));
     
-    AssertEdges(gp.g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
+    AssertEdges(graph, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 
-    AssertCoverage(gp.g, AddComplement(etalon_coverage));
+    AssertCoverage(graph, AddComplement(etalon_coverage));
 
-    AssertPairInfo(gp.g, gp.paired_indices[0], AddComplement(AddBackward(etalon_pair_info)));
+    AssertPairInfo(graph, paired_indices[0], AddComplement(AddBackward(etalon_pair_info)));
 }
 
-template<class graph_pack>
-void CheckIndex(const std::vector<std::string> &reads, size_t k) {
+inline void CheckIndex(const std::vector<std::string> &reads, size_t k) {
     typedef io::VectorReadStream<io::SingleRead> RawStream;
-    graph_pack gp(k, "tmp", 0);
-    auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");
+    GraphPack gp(k, "tmp", 0);
+    auto &graph = gp.get_mutable<Graph>();
+    auto &index = gp.get_mutable<EdgeIndex<Graph>>();
+    auto workdir = fs::tmp::make_temp_dir(gp.workdir(), "tests");
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
-    ConstructGraph(config::debruijn_config::construction(), workdir, streams, gp.g, gp.index);
+    ConstructGraph(config::debruijn_config::construction(), workdir, streams, graph, gp.index);
 
     auto &stream = streams.back();
     stream.reset();
@@ -251,7 +258,7 @@ void CheckIndex(const std::vector<std::string> &reads, size_t k) {
         RtSeq kmer = read.sequence().start<RtSeq>(k + 1) >> 'A';
         for(size_t i = k; i < read.size(); i++) {
             kmer = kmer << read[i];
-            BOOST_CHECK(gp.index.contains(kmer));
+            BOOST_CHECK(index.contains(kmer));
         }
     }
 }

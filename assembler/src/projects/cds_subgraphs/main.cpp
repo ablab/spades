@@ -144,7 +144,7 @@ static GeneInitSeq PredictionsFromFastaFile(const std::string &fasta_fn) {
     return starting_seqs;
 }
 
-static void WriteComponent(const GraphComponent<Graph> &component, const std::string &prefix,
+static void WriteComponent(const omnigraph::GraphComponent<Graph> &component, const std::string &prefix,
                            const std::set<GraphPos> &stop_codon_poss, const io::EdgeNamingF<Graph> &naming_f) {
 
     const auto &g = component.g();
@@ -165,15 +165,16 @@ static void WriteComponent(const GraphComponent<Graph> &component, const std::st
     }
 }
 
-void ExtractCDSSubgraphs(const conj_graph_pack &gp,
+void ExtractCDSSubgraphs(const GraphPack &gp,
                          const GeneInitSeq &starting_seqs,
                          const std::unordered_map<std::string, size_t> &cds_len_ests,
                          const io::EdgeNamingF<Graph> &edge_naming_f,
                          const std::string &out_folder) {
+    const auto &graph = gp.get<Graph>();
     //fixme rename
-    PartialGenePathProcessor partial_path_processor(gp.g, edge_naming_f);
+    PartialGenePathProcessor partial_path_processor(graph, edge_naming_f);
     auto mapper = MapperInstance(gp);
-    CDSSubgraphExtractor subgraph_extractor(gp.g, *mapper, partial_path_processor);
+    CDSSubgraphExtractor subgraph_extractor(graph, *mapper, partial_path_processor);
     INFO("Searching relevant subgraphs in parallel for all partial predictions");
     for (const auto &gene_id : utils::key_set(starting_seqs)) {
         INFO("Processing gene " << gene_id);
@@ -187,12 +188,12 @@ void ExtractCDSSubgraphs(const conj_graph_pack &gp,
                                                  &stop_codon_poss);
             //TODO remove
             INFO("'Closing' gathered component");
-            toolchain::ComponentExpander expander(gp.g);
+            toolchain::ComponentExpander expander(graph);
             gc = expander.Expand(gc);
             utils::insert_all(edges, gc.edges());
         }
-        toolchain::ComponentExpander expander(gp.g);
-        auto component = expander.Expand(GraphComponent<Graph>::FromEdges(gp.g, edges.begin(),
+        toolchain::ComponentExpander expander(graph);
+        auto component = expander.Expand(omnigraph::GraphComponent<Graph>::FromEdges(graph, edges.begin(),
                                                                           edges.end(), /*add conjugate*/true));
 
         if (component.e_size() > 0) {
@@ -203,15 +204,16 @@ void ExtractCDSSubgraphs(const conj_graph_pack &gp,
     }
 }
 
-void ParallelExtractCDSSubgraphs(const conj_graph_pack &gp,
+void ParallelExtractCDSSubgraphs(const GraphPack &gp,
                                  const GeneInitSeq &starting_seqs,
                                  const std::unordered_map<std::string, size_t> &cds_len_ests,
                                  const io::EdgeNamingF<Graph> &edge_naming_f,
                                  const std::string &out_folder) {
+    const auto &graph = gp.get<Graph>();
     //fixme rename
-    PartialGenePathProcessor partial_path_processor(gp.g, edge_naming_f);
+    PartialGenePathProcessor partial_path_processor(graph, edge_naming_f);
     auto mapper = MapperInstance(gp);
-    CDSSubgraphExtractor subgraph_extractor(gp.g, *mapper, partial_path_processor);
+    CDSSubgraphExtractor subgraph_extractor(graph, *mapper, partial_path_processor);
     INFO("Searching relevant subgraphs in parallel for all partial predictions");
     std::vector<std::string> flattened_ids;
     std::vector<std::string> flattened_part_genes;
@@ -232,7 +234,7 @@ void ParallelExtractCDSSubgraphs(const conj_graph_pack &gp,
                                                              &flattened_stop_poss[i]);
         //TODO remove
         INFO("'Closing' gathered component");
-        toolchain::ComponentExpander expander(gp.g);
+        toolchain::ComponentExpander expander(graph);
         gc = expander.Expand(gc);
         flattened_relevant_edges[i] = subgraph_extractor.ProcessPartialCDS(flattened_part_genes[i],
                                                                             utils::get(cds_len_ests, flattened_ids[i]),
@@ -248,8 +250,8 @@ void ParallelExtractCDSSubgraphs(const conj_graph_pack &gp,
         utils::insert_all(stop_codon_poss, flattened_stop_poss[i]);
 
         if (i == n - 1 || flattened_ids[i + 1] != gene_id) {
-            toolchain::ComponentExpander expander(gp.g);
-            auto component = expander.Expand(GraphComponent<Graph>::FromEdges(gp.g, edges.begin(),
+            toolchain::ComponentExpander expander(graph);
+            auto component = expander.Expand(omnigraph::GraphComponent<Graph>::FromEdges(graph, edges.begin(),
                                                                               edges.end(), /*add conjugate*/true));
 
             if (component.e_size() > 0) {
@@ -326,11 +328,12 @@ int main(int argc, char** argv) {
 
         std::string tmpdir = cfg.tmpdir.empty() ? out_folder + "tmp" : cfg.tmpdir;
         fs::make_dirs(tmpdir);
-        debruijn_graph::conj_graph_pack gp(k, tmpdir, 0);
-
-        omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
+        debruijn_graph::GraphPack gp(k, tmpdir, 0);
+        
+        const auto &graph = gp.get<Graph>();
+        omnigraph::GraphElementFinder<Graph> element_finder(graph);
         INFO("Loading de Bruijn graph from " << cfg.graph);
-        gp.kmer_mapper.Attach(); // TODO unnecessary
+        gp.get_mutable<KmerMapper<Graph>>().Attach(); // TODO unnecessary
         io::EdgeLabelHelper<Graph> label_helper(element_finder,
                 toolchain::LoadGraph(gp, cfg.graph));
 
@@ -340,7 +343,7 @@ int main(int argc, char** argv) {
 
         auto starting_seqs = cfg.genes_desc.empty() ?
                               cds_subgraphs::PredictionsFromFastaFile(cfg.genes_seq) :
-                             cds_subgraphs::PredictionsFromDescFile(gp.g, element_finder, cfg.genes_desc);
+                             cds_subgraphs::PredictionsFromDescFile(graph, element_finder, cfg.genes_desc);
 
         auto cds_len_ests = cds_subgraphs::CDSLengthsFromFile(cfg.cds_len_fn);
 

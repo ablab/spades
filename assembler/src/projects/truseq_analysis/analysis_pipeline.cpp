@@ -12,6 +12,7 @@
 #include "io/reads/file_reader.hpp"
 #include "stages/construction.hpp"
 #include "analysis_pipeline.hpp"
+#include "fstream"
 
 using namespace std;
 
@@ -31,16 +32,16 @@ vector<io::SingleRead> spades::VariationDetectionStage::ReadScaffolds(const stri
     return scaffolds;
 }
 
-void spades::VariationDetectionStage::run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
-    using debruijn_graph::EdgeId;
+void spades::VariationDetectionStage::run(debruijn_graph::GraphPack &graph_pack, const char *) {
+    using namespace debruijn_graph;
     using alignment_analysis::EdgeRange;
     INFO("Analysis of contigs from " << config_.scaffolds_file);
     vector<io::SingleRead> scaffolds = ReadScaffolds(config_.scaffolds_file);
     vector<io::SingleRead> genome = ReadScaffolds(config_.genome_file);
     auto mapper_ptr = MapperInstance(graph_pack);
 //            alignment_analysis::AlignmentAnalyser aa(scaffolds, genome, graph_pack.g, *mapper_ptr);
-    const debruijn_graph::DeBruijnGraph &graph = graph_pack.g;
-    alignment_analysis::AlignmentAnalyserNew aa(graph, 2 * graph_pack.k_value + 10);
+    const DeBruijnGraph &graph = graph_pack.get<Graph>();
+    alignment_analysis::AlignmentAnalyserNew aa(graph, 2 * graph_pack.k() + 10);
 
     ofstream os(output_file_);
     for(auto it = genome.begin(); it != genome.end(); ++it) {
@@ -85,26 +86,27 @@ void spades::VariationDetectionStage::run(debruijn_graph::conj_graph_pack &graph
 }
 
 void spades::run_truseq_analysis() {
+    using namespace debruijn_graph;
     INFO("TruSeq analysis started");
 
-    debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
-                                            cfg::get().tmp_dir,
-                                            cfg::get().ds.reads.lib_count(),
-                                            cfg::get().ds.reference_genome,
-                                            cfg::get().flanking_range,
-                                            cfg::get().pos.max_mapping_gap,
-                                            cfg::get().pos.max_gap_diff);
+    GraphPack conj_gp(cfg::get().K,
+                      cfg::get().tmp_dir,
+                      cfg::get().ds.reads.lib_count(),
+                      cfg::get().ds.reference_genome,
+                      cfg::get().flanking_range,
+                      cfg::get().pos.max_mapping_gap,
+                      cfg::get().pos.max_gap_diff);
 
     auto enabled_saves = SavesPolicy::Checkpoints::None;
     if (cfg::get().developer_mode)
         enabled_saves = SavesPolicy::Checkpoints::All;
 
     StageManager manager(SavesPolicy(enabled_saves, cfg::get().output_saves));
-    manager.add(new debruijn_graph::Construction());
+    manager.add(new Construction());
     std::string output_file = cfg::get().output_dir + "analysis_report";
     manager.add(new VariationDetectionStage(output_file, cfg::get().tsa));
     INFO("Output directory: " << cfg::get().output_dir);
-    conj_gp.kmer_mapper.Attach();
+    conj_gp.get_mutable<KmerMapper<Graph>>().Attach();
     manager.run(conj_gp, cfg::get().entry_point.c_str());
     INFO("Scaffold correction finished.");
 }

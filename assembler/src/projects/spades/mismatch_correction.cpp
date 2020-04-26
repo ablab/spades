@@ -12,7 +12,7 @@
 
 namespace debruijn_graph {
 
-void MismatchCorrection::run(conj_graph_pack &gp, const char*) {
+void MismatchCorrection::run(GraphPack &gp, const char*) {
     gp.EnsureBasicMapping();
 
     auto& dataset = cfg::get_writable().ds;

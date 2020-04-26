@@ -43,7 +43,8 @@ inline Extenders ExtractExtenders(const ExtenderTriplets& triplets) {
 class ExtendersGenerator {
     const config::dataset &dataset_info_;
     const PathExtendParamsContainer &params_;
-    const conj_graph_pack &gp_;
+    const GraphPack &gp_;
+    const Graph &graph_;
 
     const GraphCoverageMap &cover_map_;
     const UniqueData &unique_data_;
@@ -54,7 +55,7 @@ class ExtendersGenerator {
 public:
     ExtendersGenerator(const config::dataset &dataset_info,
                        const PathExtendParamsContainer &params,
-                       const conj_graph_pack &gp,
+                       const GraphPack &gp,
                        const GraphCoverageMap &cover_map,
                        const UniqueData &unique_data,
                        UsedUniqueStorage &used_unique_storage,
@@ -62,6 +63,7 @@ public:
         dataset_info_(dataset_info),
         params_(params),
         gp_(gp),
+        graph_(gp.get<Graph>()),
         cover_map_(cover_map),
         unique_data_(unique_data),
         used_unique_storage_(used_unique_storage),

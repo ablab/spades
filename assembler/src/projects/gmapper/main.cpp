@@ -84,31 +84,34 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
 typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;
 typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> SequencingLib;
 
-std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const conj_graph_pack& gp,
-                                                          const SequencingLib& library) {
+std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const GraphPack& gp,
+                                                          const SequencingLib& library) 
+{
+    const auto &graph = gp.get<Graph>();
     if (library.type() == io::LibraryType::MatePairs) {
         INFO("Mapping mate pairs using BWA-mem mapper");
-        return std::make_shared<alignment::BWAReadMapper<Graph>>(gp.g);
+        return std::make_shared<alignment::BWAReadMapper<Graph>>(graph);
     }
 
-    if (library.data().unmerged_read_length < gp.k_value && library.type() == io::LibraryType::PairedEnd) {
+    if (library.data().unmerged_read_length < gp.k() && library.type() == io::LibraryType::PairedEnd) {
         INFO("Mapping PE reads shorter than K with BWA-mem mapper");
-        return std::make_shared<alignment::BWAReadMapper<Graph>>(gp.g);
+        return std::make_shared<alignment::BWAReadMapper<Graph>>(graph);
     }
 
     INFO("Selecting usual mapper");
     return MapperInstance(gp);
 }
 
-static void ProcessSingleReads(conj_graph_pack &gp, DataSet &dataset,
+static void ProcessSingleReads(GraphPack &gp, DataSet &dataset,
                                size_t ilib,
                                bool use_binary = true,
                                bool map_paired = false) {
     SequencingLib &lib = dataset[ilib];
     SequenceMapperNotifier notifier(gp, dataset.lib_count());
 
-    LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib],
-                               ChooseProperReadPathExtractor(gp.g, lib.type()));
+    const auto &graph = gp.get<Graph>();
+    LongReadMapper read_mapper(graph, gp.get_mutable<LongReadContainer<Graph>>()[ilib],
+                               ChooseProperReadPathExtractor(graph, lib.type()));
 
     if (lib.is_contig_lib()) {
         //FIXME pretty awful, would be much better if listeners were shared ptrs
@@ -127,7 +130,7 @@ static void ProcessSingleReads(conj_graph_pack &gp, DataSet &dataset,
 }
 
 #if 0
-static void ProcessPairedReads(conj_graph_pack &gp,
+static void ProcessPairedReads(GraphPack &gp,
                                DataSet &dataset, size_t ilib) {
     SequencingLib &lib = dataset[ilib];
     SequenceMapperNotifier notifier(gp, dataset.lib_count());
@@ -182,37 +185,38 @@ int main(int argc, char* argv[]) {
         DataSet dataset;
         dataset.load(dataset_desc);
 
-        debruijn_graph::conj_graph_pack gp(k, tmpdir, dataset.lib_count());
+        debruijn_graph::GraphPack gp(k, tmpdir, dataset.lib_count());
         std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
 
+        const auto &graph = gp.get<Graph>();
         INFO("Loading de Bruijn graph from " << cfg.graph);
-        LoadGraph(gp.g, cfg.graph, id_mapper.get());
+        LoadGraph(gp.get_mutable<Graph>(), cfg.graph, id_mapper.get());
         {
             size_t sz = 0;
-            for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it)
+            for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it)
                 sz += 1;
 
-            INFO("Graph loaded. Total vertices: " << gp.g.size() << " Total edges: " << sz);
+            INFO("Graph loaded. Total vertices: " << graph.size() << " Total edges: " << sz);
         }
 
         // FIXME: Get rid of this "/" junk
         debruijn_graph::config::init_libs(dataset, nthreads, tmpdir + "/");
 
-        gp.kmer_mapper.Attach();
+        gp.get_mutable<KmerMapper<Graph>>().Attach();
         gp.EnsureBasicMapping();
 
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
             auto &lib = dataset[i];
-            auto& path_storage = gp.single_long_reads[i];
+            auto& path_storage = gp.get_mutable<LongReadContainer<Graph>>()[i];
             if (lib.is_contig_lib()) {
                 INFO("Mapping contigs library #" << i);
                 ProcessSingleReads(gp, dataset, i, false);
             } else if (lib.is_long_read_lib()) {
-                gap_closing::GapStorage gap_storage(gp.g);
+                gap_closing::GapStorage gap_storage(graph);
 
                 debruijn_graph::config::pacbio_processor pb;
 
-                PacbioAlignLibrary(gp, lib,
+                PacbioAlignLibrary(graph, lib,
                                    path_storage, gap_storage,
                                    nthreads, pb);
             } else {
@@ -223,7 +227,7 @@ int main(int argc, char* argv[]) {
 
             std::ofstream os(cfg.outfile);
             //FIXME fix behavior when we don't have the mapper
-            path_extend::GFAPathWriter gfa_writer(gp.g, os,
+            path_extend::GFAPathWriter gfa_writer(graph, os,
                                                   io::MapNamingF<debruijn_graph::ConjugateDeBruijnGraph>(*id_mapper));
             gfa_writer.WriteSegmentsAndLinks();
 

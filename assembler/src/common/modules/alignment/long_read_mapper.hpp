@@ -11,14 +11,14 @@
 #include "long_read_storage.hpp"
 #include "sequence_mapper_notifier.hpp"
 
+#include "pipeline/library_fwd.hpp"
+
 namespace debruijn_graph {
+
+typedef std::function<std::vector<std::vector<EdgeId>> (const MappingPath<EdgeId>&)> PathExtractionF;
 
 class LongReadMapper: public SequenceMapperListener {
 public:
-    typedef std::vector<std::vector<EdgeId>> PathsT;
-    typedef MappingPath<EdgeId> MappingT;
-    typedef std::function<PathsT (const MappingT&)> PathExtractionF;
-
     LongReadMapper(const Graph& g,
                    PathStorage<Graph>& storage,
                    PathExtractionF path_extractor);
@@ -73,8 +73,6 @@ private:
 
     std::vector<std::vector<EdgeId>> SplitUnfixedPoints(std::vector<EdgeId>& path) const;
 };
-
-typedef std::function<std::vector<std::vector<EdgeId>> (const MappingPath<EdgeId>&)> PathExtractionF;
 
 PathExtractionF ChooseProperReadPathExtractor(const Graph& g, io::LibraryType lib_type);
 

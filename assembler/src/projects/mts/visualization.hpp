@@ -41,20 +41,22 @@ public:
 
 };
 
-void PrintColoredAnnotatedGraphAroundEdge(const conj_graph_pack &gp, const EdgeId &edge,
+void PrintColoredAnnotatedGraphAroundEdge(const GraphPack &gp, const EdgeId &edge,
                                           const EdgeAnnotation &annotation, const std::string &output_filename) {
     //std::cout << output_filename << std::endl;
-    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    const auto &graph = gp.get<Graph>();
+    visualization::graph_labeler::DefaultLabeler<Graph> labeler(graph, gp.get<EdgesPositionHandler<Graph>>());
     auto colorer_ptr = std::make_shared<AnnotatedGraphColorer<Graph>>(annotation);
-    GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp.g, edge, 100, 10000);
+    GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(graph, edge, 100, 10000);
     visualization::visualization_utils::WriteComponent<Graph>(component, output_filename, colorer_ptr, labeler);
 }
 
-void PrintAnnotatedAlongPath(const conj_graph_pack &gp, const std::vector<EdgeId> &path,
+void PrintAnnotatedAlongPath(const GraphPack &gp, const std::vector<EdgeId> &path,
                              const EdgeAnnotation &annotation, const std::string &output_prefix) {
-    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    const auto &graph = gp.get<Graph>();
+    visualization::graph_labeler::DefaultLabeler<Graph> labeler(graph, gp.get<EdgesPositionHandler<Graph>>());
     auto colorer_ptr = std::make_shared<AnnotatedGraphColorer<Graph>>(annotation);
-    visualization::visualization_utils::WriteComponentsAlongPath<Graph>(gp.g, path, output_prefix, colorer_ptr, labeler);
+    visualization::visualization_utils::WriteComponentsAlongPath<Graph>(graph, path, output_prefix, colorer_ptr, labeler);
 }
 
 }

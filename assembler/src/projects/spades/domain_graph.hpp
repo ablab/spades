@@ -224,9 +224,9 @@ public:
     }
 
     void FindBasicStatistic(std::ofstream &stat_stream);
-    void FindDomainOrderings(debruijn_graph::conj_graph_pack &gp,
+    void FindDomainOrderings(debruijn_graph::GraphPack &gp,
                              const std::string &output_filename, const std::string &output_dir);
-    void ExportPaths(debruijn_graph::conj_graph_pack &gp,
+    void ExportPaths(debruijn_graph::GraphPack &gp,
                      const std::string &output_dir);
 
 private:
@@ -258,7 +258,7 @@ private:
         return arc;
     }
 
-    void OutputComponent(debruijn_graph::conj_graph_pack &gp,
+    void OutputComponent(debruijn_graph::GraphPack &gp,
                          path_extend::BidirectionalPath *p, int component_id,
                          int ordering_id);
 

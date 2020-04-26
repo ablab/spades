@@ -8,10 +8,15 @@
 #include "profile_storage.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "modules/alignment/kmer_mapper.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
 
 #include "projects/mts/contig_abundance.hpp"
 #include "toolchain/edge_label_helper.hpp"
 #include "toolchain/utils.hpp"
+
+#include "pipeline/library_data.hpp"
+#include "pipeline/library.hpp"
+#include "pipeline/config_struct.hpp"
 
 #include "utils/segfault_handler.hpp"
 

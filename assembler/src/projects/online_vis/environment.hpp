@@ -11,11 +11,12 @@
 #include "pipeline/graph_pack.hpp"
 #include "visualization/visualization_utils.hpp"
 #include "standard_vis.hpp"
+#include "assembly_graph/handlers/id_track_handler.hpp"
 
 namespace online_visualization {
 
 typedef debruijn_graph::BasicSequenceMapper<debruijn_graph::Graph, Index> MapperClass;
-typedef visualization::position_filler::PosFiller<Graph> FillerClass;
+typedef visualization::position_filler::PosFiller FillerClass;
 typedef debruijn_graph::KmerMapper<Graph> KmerMapperClass;
 typedef omnigraph::GraphElementFinder<Graph> ElementFinder;
 typedef shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> ColoringClass;

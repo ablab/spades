@@ -64,11 +64,12 @@ void DomainGraph::FindBasicStatistic(std::ofstream &stat_stream) {
     stat_stream << std::endl;
 }
 
-void DomainGraph::FindDomainOrderings(debruijn_graph::conj_graph_pack &gp,
+void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
                                       const std::string &output_filename, const std::string &output_dir) {
+    const auto &graph = gp.get<debruijn_graph::Graph>();
     std::ofstream stat_stream(output_dir + "/bgc_statistics.txt");
     FindBasicStatistic(stat_stream);
-    path_extend::ContigWriter writer(gp.g, path_extend::MakeContigNameGenerator(cfg::get().mode, gp));
+    path_extend::ContigWriter writer(graph, path_extend::MakeContigNameGenerator(cfg::get().mode, gp));
     std::set<std::shared_ptr<Vertex>> nodes_with_incoming;
     for (auto e : arcs_)
         nodes_with_incoming.insert(e->end_);
@@ -80,7 +81,7 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::conj_graph_pack &gp,
         }
     }
     io::osequencestream_bgc oss(output_dir + "/" + output_filename);
-    path_extend::ScaffoldSequenceMaker seq_maker(gp.g);
+    path_extend::ScaffoldSequenceMaker seq_maker(graph);
     std::vector<std::vector<std::shared_ptr<Vertex>>> answer;
     int ordering_id = 1;
     int component_id = 1;
@@ -88,12 +89,12 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::conj_graph_pack &gp,
     for (auto v : start_nodes) {
         if (!v->visited_) {
             stat_stream << "BGC subgraph " << component_id << std::endl;
-            FindAllPossibleArrangements(gp.g, v, answer, stat_stream);
+            FindAllPossibleArrangements(graph, v, answer, stat_stream);
             ordering_id = 1;
             for (auto vec : answer) {
-                OutputStatArrangement(gp.g, vec, ordering_id, stat_stream);
+                OutputStatArrangement(graph, vec, ordering_id, stat_stream);
                 path_extend::BidirectionalPath *p =
-                        new path_extend::BidirectionalPath(gp.g);
+                        new path_extend::BidirectionalPath(graph);
                 std::string outputstring = PathToSequence(p, vec);
                 path_extend::BidirectionalPath *conjugate =
                         new path_extend::BidirectionalPath(p->Conjugate());
@@ -110,11 +111,11 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::conj_graph_pack &gp,
     }
 }
 
-void DomainGraph::ExportPaths(debruijn_graph::conj_graph_pack &gp,
+void DomainGraph::ExportPaths(debruijn_graph::GraphPack &gp,
                               const std::string &output_dir) {
     auto name_generator =
             path_extend::MakeContigNameGenerator(cfg::get().mode, gp);
-    path_extend::ContigWriter writer(gp.g, name_generator);
+    path_extend::ContigWriter writer(gp.get<debruijn_graph::Graph>(), name_generator);
     writer.OutputPaths(contig_paths_, output_dir + "/orderings2");
 }
 
@@ -126,11 +127,11 @@ static std::set<EdgeId> CollectEdges(path_extend::BidirectionalPath *p) {
     return edge_set;
 }
 
-void DomainGraph::OutputComponent(debruijn_graph::conj_graph_pack &gp,
+void DomainGraph::OutputComponent(debruijn_graph::GraphPack &gp,
                                   path_extend::BidirectionalPath *p, int component_id,
                                   int ordering_id) {
     auto edges = CollectEdges(p);
-    auto comp = GraphComponent<Graph>::FromEdges(gp.g, edges.begin(),
+    auto comp = GraphComponent<Graph>::FromEdges(gp.get<debruijn_graph::Graph>(), edges.begin(),
                                                  edges.end(), true);
     std::ofstream os(cfg::get().output_dir + "/bgc_in_gfa/" +
                      std::to_string(component_id) + "_" + std::to_string(ordering_id) +

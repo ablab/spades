@@ -27,17 +27,18 @@ static bool ends_with(const std::string &s, const std::string &p) {
     return (s.compare(s.size() - p.size(), p.size(), p) == 0);
 }
 
-static io::IdMapper<std::string> *LoadGraph(debruijn_graph::conj_graph_pack &gp, const std::string &filename) {
+static io::IdMapper<std::string> *LoadGraph(debruijn_graph::GraphPack &gp, const std::string &filename) {
+    auto &graph = gp.get_mutable<debruijn_graph::Graph>();
     io::IdMapper<std::string> *id_mapper = nullptr;
     if (ends_with(filename, ".gfa")) {
         id_mapper = new io::IdMapper<std::string>();
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(gp.g, id_mapper);
+        gfa.to_graph(graph, id_mapper);
     } else {
-        io::binary::BasePackIO<debruijn_graph::Graph>().Load(filename, gp);
+        io::binary::BasePackIO().Load(filename, gp);
     }
-    INFO("Graph loaded. Total vertices: " << gp.g.size() << " Total edges: " << gp.g.e_size());
+    INFO("Graph loaded. Total vertices: " << graph.size() << " Total edges: " << graph.e_size());
     return id_mapper;
 }
 

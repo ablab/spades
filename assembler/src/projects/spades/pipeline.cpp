@@ -18,6 +18,7 @@
 #include "extract_domains.hpp"
 #include "domain_graph_construction.hpp"
 #include "restricted_edges_filling.hpp"
+#include "modules/alignment/kmer_mapper.hpp"
 
 #include "stages/genomic_info_filler.hpp"
 #include "stages/read_conversion.hpp"
@@ -206,7 +207,7 @@ void assemble_genome() {
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
     INFO("Two-step RR enabled: " << two_step_rr);
 
-    debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
+    debruijn_graph::GraphPack conj_gp(cfg::get().K,
                                             cfg::get().tmp_dir,
                                             two_step_rr ? cfg::get().ds.reads.lib_count() + 1
                                                         : cfg::get().ds.reads.lib_count(),
@@ -216,7 +217,7 @@ void assemble_genome() {
                                             cfg::get().pos.max_gap_diff);
     if (cfg::get().need_mapping) {
         INFO("Will need read mapping, kmer mapper will be attached");
-        conj_gp.kmer_mapper.Attach();
+        conj_gp.get_mutable<debruijn_graph::KmerMapper<debruijn_graph::Graph>>().Attach();
     }
 
     // Build the pipeline

@@ -110,7 +110,7 @@ void ConstructGraph(const config::debruijn_config::construction &params,
 template<class Graph, class Index, class Streams>
 void ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
                                 fs::TmpDir workdir, Streams &streams, Graph &g,
-                                Index &index, FlankingCoverage<Graph> &flanking_cov) {
+                                Index &index, omnigraph::FlankingCoverage<Graph> &flanking_cov) {
     ConstructGraph(params, workdir, streams, g, index);
 
     typedef typename Index::InnerIndex InnerIndex;

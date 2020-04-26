@@ -13,7 +13,7 @@
 
 namespace debruijn_graph {
 
-static void PEResolving(conj_graph_pack& gp) {
+static void PEResolving(GraphPack& gp) {
     path_extend::PathExtendParamsContainer params(cfg::get().ds,
                                                   cfg::get().pe_params,
                                                   cfg::get().ss,
@@ -41,11 +41,11 @@ static bool HasValidLibs() {
     return false;
 }
 
-void RepeatResolution::run(conj_graph_pack &gp, const char*) {
+void RepeatResolution::run(GraphPack &gp, const char*) {
     if (cfg::get().developer_mode)
         stats::PrepareForDrawing(gp);
 
-    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.get<Graph>(), gp.get<EdgesPositionHandler<Graph>>());
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(config::info_printer_pos::before_repeat_resolution);
 

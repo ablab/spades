@@ -12,6 +12,8 @@
 #include "modules/simplification/tip_clipper.hpp"
 #include "propagate.hpp"
 #include "visualization.hpp"
+#include "paired_info/index_point.hpp"
+#include "paired_info/paired_info.hpp"
 
 using namespace std;
 
@@ -21,7 +23,7 @@ static const size_t EDGE_LENGTH_THRESHOLD = 2000,
 
 //FIXME 2kb edge length threshold might affect tip propagator in undesired way
 class EdgeAnnotationPropagator {
-    const conj_graph_pack& gp_;
+    const GraphPack& gp_;
     const string name_;
     size_t edge_length_threshold_, edge_upper_threshold_;
 
@@ -30,18 +32,18 @@ protected:
         return edge_length_threshold_;
     }
 
-    const conj_graph_pack& gp() const {
+    const GraphPack& gp() const {
         return gp_;
     }
 
     const Graph& g() const {
-        return gp_.g;
+        return gp_.get<Graph>();
     }
 
     virtual set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const = 0;
 
 public:
-    EdgeAnnotationPropagator(const conj_graph_pack& gp,
+    EdgeAnnotationPropagator(const GraphPack& gp,
                              const string& name,
                              size_t edge_length_threshold = EDGE_LENGTH_THRESHOLD,
                              size_t edge_upper_threshold = EDGE_UPPER_THRESHOLD) :
@@ -67,7 +69,7 @@ public:
             size_t n = 0;
             for (auto i = raw_propagated.begin(); i != raw_propagated.end(); ++n) {
                 DEBUG("Edge cnt: " << raw_propagated.size() << "; iter " << n);
-                if (gp_.g.length(*i) > edge_upper_threshold_)
+                if (gp_.get<Graph>().length(*i) > edge_upper_threshold_)
                     raw_propagated.erase(i++);
                 else
                     ++i;
@@ -119,7 +121,7 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
     }
 
 public:
-    ConnectingPathPropagator(const conj_graph_pack& gp,
+    ConnectingPathPropagator(const GraphPack& gp,
                              size_t length_threshold,
                              size_t path_length_threshold,
                              size_t path_edge_cnt) :
@@ -138,7 +140,7 @@ class PairedInfoPropagator : public EdgeAnnotationPropagator {
         set<EdgeId> answer;
         for (EdgeId e1 : edges) {
             DEBUG("Searching for paired neighbours of " << g().str(e1));
-            for (const auto& index : gp().clustered_indices)
+            for (const auto& index : gp().get<omnigraph::de::PairedInfoIndicesT<Graph>>("clustered_indices"))
                 for (auto i : index.Get(e1)) {
                     if (e1 == i.first) //No sense in self-propagation
                         continue;
@@ -152,7 +154,7 @@ class PairedInfoPropagator : public EdgeAnnotationPropagator {
         return answer;
     }
 public:
-    PairedInfoPropagator(const conj_graph_pack& gp,
+    PairedInfoPropagator(const GraphPack& gp,
                          size_t length_threshold,
                          size_t upper_threshold,
                          omnigraph::de::DEWeight weight_threshold):
@@ -165,7 +167,7 @@ private:
 
 class ContigPropagator : public EdgeAnnotationPropagator {
 public:
-    ContigPropagator(const conj_graph_pack& gp,
+    ContigPropagator(const GraphPack& gp,
                      io::SingleStream& contigs) :
         EdgeAnnotationPropagator(gp, "ContigPropagator"),
         contigs_(contigs),
@@ -181,7 +183,7 @@ protected:
             auto edges_of_contig = mapper_->MapRead(contig).simple_path();
             for (EdgeId e : edges_of_contig) {
                 if (edges.count(e)) {
-                    DEBUG("Edge " << gp().g.str(e) << " belongs to the contig #" <<
+                    DEBUG("Edge " << gp().get<Graph>().str(e) << " belongs to the contig #" <<
                             contig.name() << " of " << edges_of_contig.size() << " edges");
                     utils::insert_all(answer, edges_of_contig);
                     break;
@@ -201,8 +203,8 @@ private:
 class TipPropagator : public EdgeAnnotationPropagator {
 
 public:
-    TipPropagator(const conj_graph_pack& gp, size_t length_threshold) :
-        EdgeAnnotationPropagator(gp, "TipPropagator", length_threshold), tipper_(gp.g) {}
+    TipPropagator(const GraphPack& gp, size_t length_threshold) :
+        EdgeAnnotationPropagator(gp, "TipPropagator", length_threshold), tipper_(gp.get<Graph>()) {}
 
 protected:
     set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
@@ -281,7 +283,7 @@ void AnnotationPropagator::Run(io::SingleStream& /*contigs*/,
 //        std::make_shared<ContigPropagator>(gp_, contigs),
 //        std::make_shared<TipPropagator>(gp_)};
 
-    AnnotationChecker checker(gp_.g, edge_annotation);
+    AnnotationChecker checker(gp_.get<Graph>(), edge_annotation);
 
     for (const auto& bin_id : edge_annotation.interesting_bins()) {
         size_t problem_cnt = checker.Check(bin_id, edge_annotation.EdgesOfBin(bin_id, EDGE_LENGTH_THRESHOLD));

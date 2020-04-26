@@ -55,7 +55,7 @@ private:
                 curr_env.graph_pack().FillQuality();
 //                condition = make_shared<make_shared<debruijn_graph::ZeroQualityCondition<Graph, Index>>(curr_env.graph(), edge_qual);
                 condition = std::bind(&debruijn_graph::EdgeQuality<Graph>::IsZeroQuality,
-                                      std::ref(curr_env.graph_pack().edge_qual), std::placeholders::_1);
+                                      std::ref(curr_env.graph_pack().get<debruijn_graph::EdgeQuality<Graph>>()), std::placeholders::_1);
             }
         }
         debruijn::simplification::SimplifInfoContainer info(debruijn_graph::config::pipeline_type::base);

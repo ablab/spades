@@ -8,7 +8,13 @@
 #ifndef SEQUENCE_MAPPER_NOTIFIER_HPP_
 #define SEQUENCE_MAPPER_NOTIFIER_HPP_
 
+#include "sequence_mapper.hpp"
+
 #include "pipeline/graph_pack.hpp"
+#include "io/reads/paired_read.hpp"
+#include "io/reads/read_stream_vector.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
+#include "assembly_graph/core/graph.hpp"
 
 #include <vector>
 
@@ -35,11 +41,11 @@ public:
 class SequenceMapperNotifier {
     static constexpr size_t BUFFER_SIZE = 200000;
 public:
-    typedef SequenceMapper<conj_graph_pack::graph_t> SequenceMapperT;
+    typedef SequenceMapper<Graph> SequenceMapperT;
 
     typedef std::vector<SequenceMapperListener*> ListenersContainer;
 
-    SequenceMapperNotifier(const conj_graph_pack& gp, size_t lib_count);
+    SequenceMapperNotifier(const GraphPack &gp, size_t lib_count);
 
     void Subscribe(size_t lib_index, SequenceMapperListener* listener);
 
@@ -96,7 +102,7 @@ private:
 
     void NotifyMergeBuffer(size_t ilib, size_t ithread) const;
 
-    const conj_graph_pack& gp_;
+    const GraphPack& gp_;
 
     std::vector<std::vector<SequenceMapperListener*> > listeners_;  //first vector's size = count libs
 };

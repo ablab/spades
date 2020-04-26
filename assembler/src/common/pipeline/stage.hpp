@@ -9,6 +9,10 @@
 #define __STAGE_HPP__
 
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/config_struct.hpp"
+
+#include "utils/filesystem/path_helper.hpp"
+#include "utils/logger/logger.hpp"
 
 #include <vector>
 #include <memory>
@@ -150,7 +154,7 @@ private:
 
 class SavesPolicy {
 public:
-    typedef debruijn_graph::config::Checkpoints Checkpoints;
+    using Checkpoints = debruijn_graph::config::Checkpoints;
 
     SavesPolicy()
             : checkpoints_(Checkpoints::None), saves_path_("") {

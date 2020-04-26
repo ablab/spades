@@ -1,22 +1,34 @@
 #include "scaff_supplementary.hpp"
+#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
+
 #include <algorithm>
 
 using namespace std;
+
 namespace path_extend {
 
+ScaffoldingUniqueEdgeAnalyzer::ScaffoldingUniqueEdgeAnalyzer(const debruijn_graph::GraphPack &gp,
+                                                             size_t apriori_length_cutoff,
+                                                             double max_relative_coverage)
+        : gp_(gp), graph_(gp.get<debruijn_graph::Graph>())
+        , length_cutoff_(apriori_length_cutoff)
+        , relative_coverage_variation_(max_relative_coverage)
+{
+    SetCoverageBasedCutoff();
+}
 
 void ScaffoldingUniqueEdgeAnalyzer::SetCoverageBasedCutoff() {
     std::vector<std::pair<double, size_t>> coverages;
     std::map<EdgeId, size_t> long_component;
     size_t total_len = 0, short_len = 0, cur_len = 0;
 
-    for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-        if (gp_.g.length(*iter) > length_cutoff_) {
-            coverages.push_back(make_pair(gp_.g.coverage(*iter), gp_.g.length(*iter)));
-            total_len += gp_.g.length(*iter);
+    for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+        if (graph_.length(*iter) > length_cutoff_) {
+            coverages.push_back(make_pair(graph_.coverage(*iter), graph_.length(*iter)));
+            total_len += graph_.length(*iter);
             long_component[*iter] = 0;
         } else {
-            short_len += gp_.g.length(*iter);
+            short_len += graph_.length(*iter);
         }
     }
     if (total_len == 0) {
@@ -39,18 +51,19 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgeStorage(ScaffoldingUniqueEdgeS
     size_t unique_len = 0;
     size_t unique_num = 0;
     storage.set_min_length(length_cutoff_);
-    for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-        size_t tlen = gp_.g.length(*iter);
+
+    for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+        size_t tlen = graph_.length(*iter);
         total_len += tlen;
-        if (gp_.g.length(*iter) >= length_cutoff_ && gp_.g.coverage(*iter) > median_coverage_ * (1 - relative_coverage_variation_)
-                && gp_.g.coverage(*iter) < median_coverage_ * (1 + relative_coverage_variation_) ) {
+        if (graph_.length(*iter) >= length_cutoff_ && graph_.coverage(*iter) > median_coverage_ * (1 - relative_coverage_variation_)
+                && graph_.coverage(*iter) < median_coverage_ * (1 + relative_coverage_variation_) ) {
             storage.unique_edges_.insert(*iter);
             unique_len += tlen;
             unique_num ++;
         }
     }
     for (auto iter = storage.begin(); iter != storage.end(); ++iter) {
-        DEBUG (gp_.g.int_id(*iter) << " " << gp_.g.coverage(*iter) << " " << gp_.g.length(*iter) );
+        DEBUG (graph_.int_id(*iter) << " " << graph_.coverage(*iter) << " " << graph_.length(*iter) );
     }
     INFO ("With length cutoff: " << length_cutoff_ <<", median long edge coverage: " << median_coverage_ << ", and maximal unique coverage: " <<
                                                                                                             relative_coverage_variation_);
@@ -62,7 +75,7 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgeStorage(ScaffoldingUniqueEdgeS
 }
 
 bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByLength(EdgeId e) {
-    return gp_.g.length(e) >= length_cutoff_;
+    return graph_.length(e) >= length_cutoff_;
 }
 
 map<EdgeId, size_t> ScaffoldingUniqueEdgeAnalyzer::FillNextEdgeVoting(BidirectionalPathMap<size_t>& active_paths, int direction) const {
@@ -73,7 +86,7 @@ map<EdgeId, size_t> ScaffoldingUniqueEdgeAnalyzer::FillNextEdgeVoting(Bidirectio
         //not found
         active_paths[path_iter] = path_iter->Size();
         while (current_pos >= 0 && current_pos < (int) path_iter->Size()) {
-            if (gp_.g.length(path_iter->At(current_pos)) >= length_cutoff_) {
+            if (graph_.length(path_iter->At(current_pos)) >= length_cutoff_) {
                 voting[path_iter->At(current_pos)] += size_t(round(path_iter->GetWeight()));
                 active_paths[path_iter] = size_t(current_pos);
                 break;
@@ -90,7 +103,7 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, const GraphCov
     BidirectionalPathMap<size_t> active_paths;
     size_t loop_weight = 0;
     size_t nonloop_weight = 0;
-    DEBUG ("Checking " << gp_.g.int_id(e) <<" dir "<< direction );
+    DEBUG ("Checking " << graph_.int_id(e) <<" dir "<< direction );
     for (auto path_iter: all_set) {
         auto pos = path_iter->FindAll(e);
         if (pos.size() > 1)
@@ -107,7 +120,7 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, const GraphCov
     if (loop_weight > 2 && loop_weight * overwhelming_majority_ > nonloop_weight)
             return false;
         else
-            DEBUG (gp_.g.int_id(e) << " loop/nonloop weight " << loop_weight << " " << nonloop_weight);
+            DEBUG (graph_.int_id(e) << " loop/nonloop weight " << loop_weight << " " << nonloop_weight);
             
     EdgeId prev_unique = e;
     while (active_paths.size() > 0) {
@@ -128,12 +141,12 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, const GraphCov
             if (pair.first != next_unique && pair.second > 2)
                 alt += pair.second;
         if (math::ls((double) maxx, lr_config.unique_edge_priority * (double) alt)) {
-            DEBUG("edge " << gp_.g.int_id(e) <<" dir "<< direction << " was not unique" );
-            DEBUG("current edge " << gp_.g.int_id(next_unique));
+            DEBUG("edge " << graph_.int_id(e) <<" dir "<< direction << " was not unique" );
+            DEBUG("current edge " << graph_.int_id(next_unique));
             DEBUG("Paths " << active_paths.size());
             return false;
         } else {
-            DEBUG("cur " << gp_.g.int_id(prev_unique) << " next " << gp_.g.int_id(next_unique) <<" sz " << active_paths.size());
+            DEBUG("cur " << graph_.int_id(prev_unique) << " next " << graph_.int_id(next_unique) << " sz " << active_paths.size());
             for (auto iter = active_paths.begin(); iter != active_paths.end();) {
                 if (iter->second >= iter->first->Size() || iter->first->At(iter->second) != next_unique) {
                     iter = active_paths.erase(iter);
@@ -142,10 +155,10 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, const GraphCov
                 }
             }
             prev_unique = next_unique;
-            DEBUG(active_paths.size() << " "<< gp_.g.int_id(next_unique));
+            DEBUG(active_paths.size() << " "<< graph_.int_id(next_unique));
         }
     }
-    DEBUG("edge " << gp_.g.int_id(e) <<" dir "<< direction << " was unique" );
+    DEBUG("edge " << graph_.int_id(e) <<" dir "<< direction << " was unique" );
     return true;
 }
 
@@ -157,24 +170,26 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e,
 
 
 void ScaffoldingUniqueEdgeAnalyzer::CheckCorrectness(ScaffoldingUniqueEdgeStorage& unique_storage_pb) {
-    for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+    for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
         EdgeId e = *iter;
         bool e_unique = unique_storage_pb.IsUnique(e);
-        bool e_conj_unique = unique_storage_pb.IsUnique(gp_.g.conjugate(e));
-        VERIFY_MSG(!((e_unique && !e_conj_unique) || (!e_unique && e_conj_unique)), "Edge " << gp_.g.int_id(e) << " is not symmetrically unique with it conjugate");
+        bool e_conj_unique = unique_storage_pb.IsUnique(graph_.conjugate(e));
+        VERIFY_MSG(!((e_unique && !e_conj_unique) || (!e_unique && e_conj_unique)), "Edge " << graph_.int_id(e) << " is not symmetrically unique with it conjugate");
         if (ConservativeByLength(e)) {
             if (e_unique) {
-                DEBUG("edge " << gp_.g.int_id(e) << "is unique");
+                DEBUG("edge " << graph_.int_id(e) << "is unique");
             } else {
-                DEBUG("edge " << gp_.g.int_id(e) << "is not unique");
+                DEBUG("edge " << graph_.int_id(e) << "is not unique");
             }
         }
     }
 }
 
 set<VertexId> ScaffoldingUniqueEdgeAnalyzer::GetChildren(VertexId v, map<VertexId, set<VertexId>> &dijkstra_cash_) const {
-    DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
-            DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(gp_.g, max_dijkstra_depth_, max_dijkstra_vertices_));
+    using omnigraph::DijkstraHelper;
+    using debruijn_graph::Graph;
+    DijkstraHelper<Graph>::BoundedDijkstra dijkstra(
+            DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_, max_dijkstra_depth_, max_dijkstra_vertices_));
     dijkstra.Run(v);
 
     if (dijkstra_cash_.find(v) == dijkstra_cash_.end()) {
@@ -186,17 +201,17 @@ set<VertexId> ScaffoldingUniqueEdgeAnalyzer::GetChildren(VertexId v, map<VertexI
 }
 
 bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(EdgeId e1, EdgeId e2, map<VertexId, set<VertexId>> &dijkstra_cash_) const {
-    auto s1 = GetChildren(gp_.g.EdgeEnd(e1), dijkstra_cash_);
-    auto s2 = GetChildren(gp_.g.EdgeEnd(e2), dijkstra_cash_);
-    if (s1.find(gp_.g.EdgeStart(e2)) != s1.end()) {
+    auto s1 = GetChildren(graph_.EdgeEnd(e1), dijkstra_cash_);
+    auto s2 = GetChildren(graph_.EdgeEnd(e2), dijkstra_cash_);
+    if (s1.find(graph_.EdgeStart(e2)) != s1.end()) {
         return true;
     }
-    if (s2.find(gp_.g.EdgeStart(e1)) != s2.end()) {
+    if (s2.find(graph_.EdgeStart(e1)) != s2.end()) {
         return true;
     }
     for (VertexId v: s1) {
         if (s2.find(v) != s2.end()) {
-            DEBUG("bulge-like structure, edges "<< gp_.g.int_id(e1) << " " << gp_.g.int_id(e2));
+            DEBUG("bulge-like structure, edges "<< graph_.int_id(e1) << " " << graph_.int_id(e2));
             return true;
         }
     }
@@ -219,11 +234,12 @@ bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(const vector<pair<EdgeId,
 }
 
 bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(EdgeId from, size_t lib_index) const{
-    DEBUG("processing unique edge " << gp_.g.int_id(from));
-    auto next_edges = gp_.clustered_indices[lib_index].Get(from);
+    DEBUG("processing unique edge " << graph_.int_id(from));
+    const auto &clustered_indices = gp_.get<omnigraph::de::PairedInfoIndicesT<Graph>>("clustered_indices");
+    auto next_edges = clustered_indices[lib_index].Get(from);
     vector<pair<EdgeId, double>> next_weights;
     for (auto hist_pair: next_edges) {
-        if (hist_pair.first == from || hist_pair.first == gp_.g.conjugate(from))
+        if (hist_pair.first == from || hist_pair.first == graph_.conjugate(from))
             continue;
         double total_w = 0;
         for (auto w: hist_pair.second)
@@ -249,7 +265,7 @@ void ScaffoldingUniqueEdgeAnalyzer::ClearLongEdgesWithPairedLib(size_t lib_index
     for (EdgeId edge: storage) {
         if (!FindCommonChildren(edge, lib_index)) {
             to_erase.insert(edge);
-            to_erase.insert(gp_.g.conjugate(edge));
+            to_erase.insert(graph_.conjugate(edge));
         }
     }
     for (auto iter = storage.begin(); iter != storage.end(); ){
@@ -265,7 +281,7 @@ void ScaffoldingUniqueEdgeAnalyzer::ClearLongEdgesWithPairedLib(size_t lib_index
 void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(GraphCoverageMap &long_reads_cov_map,
                                                                  ScaffoldingUniqueEdgeStorage &unique_storage_pb,
                                                                  const pe_config::LongReads &lr_config) {
-    for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+    for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
         EdgeId e = *iter;
         if (ConservativeByLength(e) && ConservativeByPaths(e, long_reads_cov_map, lr_config)) {
             unique_storage_pb.unique_edges_.insert(e);

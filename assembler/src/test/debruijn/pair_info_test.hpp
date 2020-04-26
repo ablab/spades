@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE( EstimationFunctionalTest ) {
 //            400000)*/;
 
     Sequence genome(full_read.sequence());
-    conj_graph_pack gp(genome);
+    GraphPack gp(genome);
     paired_info_index paired_index(gp.g);
     paired_info_index clustered_index(gp.g);
 
@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE( CheckPairInfoSimmetry ) {
 //    io::SingleRead full_read;
 //    genome_stream >> full_read;
     Sequence genome(""/*full_read.sequence()*/);
-    conj_graph_pack gp(genome);
+    GraphPack gp(genome);
     paired_info_index paired_index(gp.g);
     paired_info_index clustered_index(gp.g);
 

@@ -92,9 +92,10 @@ public:
 class StructuredFileLogger : public RepeatProcessor {
 
     string Log(const GraphPack& gp, const RepeatInfo& repeat_info) const {
+        const auto &graph = gp.get<Graph>();
         return fmt::format("{:d} {:d} {:d} {:d} {:d}", repeat_info.genomic_gap, repeat_info.ref_path.size(),
-                                CumulativeLength(gp.g, repeat_info.ref_path),
-                                gp.g.int_id(repeat_info.e1), gp.g.int_id(repeat_info.e2));
+                                CumulativeLength(graph, repeat_info.ref_path),
+                                graph.int_id(repeat_info.e1), graph.int_id(repeat_info.e2));
     }
 
 public:
@@ -151,7 +152,7 @@ class PairedInfoChecker : public RepeatProcessor {
 public:
 
     virtual void ProcessUnresolved(DebruijnEnvironment& curr_env, const RepeatInfo& repeat_info) const {
-        const omnigraph::de::PairedInfoIndexT<Graph>& clustered_pi_idx = curr_env.graph_pack().clustered_indices[0];
+        const auto& clustered_pi_idx = curr_env.graph_pack().get<omnigraph::de::PairedInfoIndicesT<Graph>>("clustered_indices")[0];
         const Graph& g = curr_env.graph();
         vector<EdgeId> edges;
         edges.push_back(repeat_info.e1);
@@ -177,7 +178,7 @@ private:
 
     vector<EdgePosition> GatherPositions(const GraphPack& gp, EdgeId e, const string& prefix) const {
         vector<EdgePosition> answer;
-        for (EdgePosition pos : gp.edge_pos.GetEdgePositions(e)) {
+        for (EdgePosition pos : gp.get<EdgePos>().GetEdgePositions(e)) {
             if (boost::starts_with(pos.contigId, prefix)) {
                 answer.push_back(pos);
             }
@@ -247,9 +248,10 @@ private:
         EdgePosition e1_pos = e1_poss.front();
         EdgePosition e2_pos = e2_poss.front();
         VERIFY(e1_pos.contigId == e1_pos.contigId);
-        Sequence ref = (e1_pos.contigId == "ref0") ? gp.genome.GetSequence() : !gp.genome.GetSequence();
+        auto seq = gp.get<GenomeStorage>().GetSequence();
+        Sequence ref = (e1_pos.contigId == "ref0") ? seq : !seq;
         size_t gap_start = e1_pos.mr.initial_range.end_pos;
-        size_t gap_end = e2_pos.mr.initial_range.start_pos + gp.g.k();
+        size_t gap_end = e2_pos.mr.initial_range.start_pos + gp.k();
         VERIFY(gap_end >= gap_start && gap_end <= ref.size());
         Sequence gap_fragment = ref.Subseq(gap_start, gap_end);
         return debruijn_graph::MapperInstance(gp)->MapSequence(gap_fragment);
@@ -305,11 +307,12 @@ private:
 
     vector<EdgeId> EdgesOfInterest(const GraphPack& gp, const MappingPath<EdgeId>& mapping_path, size_t length_threshold) const {
         vector<EdgeId> answer;
+        const auto &graph = gp.get<Graph>();
         for (size_t i = 0; i < mapping_path.size(); ++i) {
             EdgeId e = mapping_path[i].first;
-            if (gp.g.length(e) >= length_threshold 
+            if (graph.length(e) >= length_threshold
                     && IsOfMultiplicityOne(gp, e)
-                    && CheckMapping(gp.g.length(e), mapping_path[i].second.mapped_range.size())) {
+                    && CheckMapping(graph.length(e), mapping_path[i].second.mapped_range.size())) {
                 answer.push_back(e);
             }
         }
@@ -327,8 +330,8 @@ protected:
         GraphPack& gp = curr_env.graph_pack();
         auto mapper_ptr = debruijn_graph::MapperInstance(gp);
         MappingPath<EdgeId> mapping_path = mapper_ptr->MapRead(contig);
-        auto pos_handler = gp.edge_pos;
-        
+        const auto &graph = gp.get<Graph>();
+
         auto long_unique = EdgesOfInterest(gp, mapping_path, edge_length);
 
         bool found_smth = false;
@@ -344,19 +347,19 @@ protected:
             size_t contig_gap = mapping_path[i].second.initial_range.start_pos - mapping_path[i-1].second.initial_range.end_pos;
             size_t genomic_gap = GenomicGap(gp, e1, e2);
             if (genomic_gap == -1u) {
-                DEBUG("Contig likely misassembled. Unique long regions in wrong order. e1 " << 
-                        gp.g.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << gp.g.str(e2) << 
+                DEBUG("Contig likely misassembled. Unique long regions in wrong order. e1 " <<
+                        graph.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << graph.str(e2) <<
                         " genome pos : " << GatherPositions(gp, e2, "ref"));
                 continue;
             }
             DEBUG("Found genomic gap " << genomic_gap << 
-                " between e1 " << gp.g.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << gp.g.str(e2)
+                " between e1 " << graph.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << graph.str(e2)
                 << " genome pos : " << GatherPositions(gp, e2, "ref"));
 
             DEBUG("Looking for reference path");
             auto ref_mapping_path = FindReferencePath(gp, e1, e2);
             if (ref_mapping_path.size() == 0) {
-                DEBUG("Couldn't find ref path between " << gp.g.str(e1) << " and " << gp.g.str(e2));
+                DEBUG("Couldn't find ref path between " << graph.str(e1) << " and " << graph.str(e2));
                 continue;
             } 
 
@@ -365,8 +368,8 @@ protected:
                 DEBUG("Couldn't fix ref path");
                 ref_path = ref_mapping_path.simple_path();
             }
-            DEBUG("Found ref path between " << gp.g.str(e1) << " and " << gp.g.str(e2));
-            DEBUG(ref_path.size() << " edges of cumulative length " << CumulativeLength(gp.g, ref_path));
+            DEBUG("Found ref path between " << graph.str(e1) << " and " << graph.str(e2));
+            DEBUG(ref_path.size() << " edges of cumulative length " << CumulativeLength(graph, ref_path));
                     
             if (std::abs(int(genomic_gap) - int(contig_gap)) >= int(gap_diff_threshold_)) {
                 DEBUG("Contig likely misassembled. Genomic gap is " << genomic_gap << " while contig gap was " << contig_gap);
@@ -507,7 +510,8 @@ public:
         std::string base_assembly_prefix = args[2];
         size_t edge_length = std::stoll(args[3]);
 
-        if (curr_env.graph_pack().genome.size() == 0) {
+        auto genome = curr_env.genome();
+        if (genome.size() == 0) {
             LOG("Reference genome hasn't been loaded");
             return;
         }
@@ -518,7 +522,7 @@ public:
             gap_cnt = std::stoll(args[4]);
         }
         
-        io::SingleRead ref_as_read("ref", curr_env.graph_pack().genome.str());
+        io::SingleRead ref_as_read("ref", genome.str());
         AnalyzeGaps(curr_env, ref_as_read, base_assembly_prefix,
                     edge_length, max_interesting_gap, gap_cnt);
     }
@@ -531,7 +535,7 @@ private:
     
     bool IsPoorlyAssembled(const GraphPack& gp, io::SingleRead contig, string base_assembly_prefix) const {
         MappingPath<EdgeId> mapping_path = debruijn_graph::MapperInstance(gp)->MapRead(contig);
-        auto pos_handler = gp.edge_pos;
+        const auto &pos_handler = gp.get<EdgePos>();
         map<string, size_t> base_ctg_2_len;
         for (EdgeId e : mapping_path.simple_path()) {
             auto positions = pos_handler.GetEdgePositions(e);
@@ -624,24 +628,27 @@ class DrawCoverageDropsCommand : public DrawingCommand {
 private:
 
     bool IsRepeat(const GraphPack& gp, EdgeId e) const {
-        auto v1 = gp.g.EdgeStart(e);
-        auto v2 = gp.g.EdgeEnd(e);
-        return gp.g.IncomingEdgeCount(v1) >= 2 || gp.g.OutgoingEdgeCount(v2) >= 2 ;
+        const auto &graph = gp.get<Graph>();
+        auto v1 = graph.EdgeStart(e);
+        auto v2 = graph.EdgeEnd(e);
+        return graph.IncomingEdgeCount(v1) >= 2 || graph.OutgoingEdgeCount(v2) >= 2 ;
     }
 
     std::vector<std::vector<EdgeId>> Split(const GraphPack& gp, std::vector<EdgeId> mapping_path) const {
         std::vector<std::vector<EdgeId>> answer;
         std::vector<EdgeId> temp;
+
+        const auto &graph = gp.get<Graph>();
         for(auto e : mapping_path) {
 
-            if(gp.g.OutgoingEdgeCount(gp.g.EdgeEnd(e)) == 0) {
+            if(graph.OutgoingEdgeCount(graph.EdgeEnd(e)) == 0) {
                 temp.push_back(e);
                 answer.push_back(temp);
                 temp.clear();
                 continue;
             }
 
-            if(gp.g.IncomingEdgeCount(gp.g.EdgeStart(e)) == 0) {
+            if(graph.IncomingEdgeCount(graph.EdgeStart(e)) == 0) {
                 answer.push_back(temp);
                 temp.clear();
                 temp.push_back(e);
@@ -659,10 +666,11 @@ private:
         double min_coverage = std::numeric_limits<double>::max();
         double max_coverage = 0;
 
-        std::for_each(mapping_path.begin(), mapping_path.end(), [this, &max_coverage, &min_coverage, &gp](EdgeId e){
-            if(!IsRepeat(gp, e) && gp.g.length(e) > min_ende_len) {
-                min_coverage = std::min(gp.g.coverage(e), min_coverage);
-                max_coverage = std::max(gp.g.coverage(e), max_coverage);
+        const auto &graph = gp.get<Graph>();
+        std::for_each(mapping_path.begin(), mapping_path.end(), [this, &max_coverage, &min_coverage, &gp, &graph](EdgeId e){
+            if(!IsRepeat(gp, e) && graph.length(e) > min_ende_len) {
+                min_coverage = std::min(graph.coverage(e), min_coverage);
+                max_coverage = std::max(graph.coverage(e), max_coverage);
             }
         });
         if(max_coverage > min_coverage && max_coverage - min_coverage > cov_drop) {

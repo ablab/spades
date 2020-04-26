@@ -59,14 +59,15 @@ static bool UsedOnBothSides(const Graph &g, EdgeId e, const std::multimap<EdgeId
             std::any_of(g.in_begin(g.EdgeStart(e)), g.in_end(g.EdgeStart(e)), used_f);
 }
 
-static void Run(const conj_graph_pack &gp, const std::string &contigs_file,
+static void Run(const GraphPack &gp, const std::string &contigs_file,
                 const std::string &paths_fn, const std::string &edge_info_fn,
                 const std::string &subgraph_prefix, const std::string &edge_color_fn,
                 const io::EdgeLabelHelper<Graph> &label_helper) {
 
-    io::CanonicalEdgeHelper<Graph> canonical_helper(gp.g, label_helper.edge_naming_f());
+    const auto &graph = gp.get<Graph>();
+    io::CanonicalEdgeHelper<Graph> canonical_helper(graph, label_helper.edge_naming_f());
     auto mapper = MapperInstance(gp);
-    ReadPathFinder<Graph> path_finder(gp.g, /*skip_unfixed*/false);
+    ReadPathFinder<Graph> path_finder(graph, /*skip_unfixed*/false);
 
     std::ofstream os;
     if (!paths_fn.empty())
@@ -92,10 +93,10 @@ static void Run(const conj_graph_pack &gp, const std::string &contigs_file,
             continue;
         }
 
-        MappingPathStats(gp.g, read.name(), read.sequence().size() - gp.g.k(), mapping_path, label_helper.edge_naming_f());
+        MappingPathStats(graph, read.name(), read.sequence().size() - gp.k(), mapping_path, label_helper.edge_naming_f());
         std::string delimeter = "";
         auto fixed_path = path_finder.FindReadPath(mapping_path);
-        if (!CheckContiguous(gp.g, fixed_path)) {
+        if (!CheckContiguous(graph, fixed_path)) {
             INFO("Were not able to recover continuous path for " << read.name() << " even after fixing attempt");
         }
         for (const auto& e : fixed_path) {
@@ -122,13 +123,13 @@ static void Run(const conj_graph_pack &gp, const std::string &contigs_file,
         size_t suspicious_edge_cnt = 0;
         size_t total_suspicious_kmer_len = 0;
 
-        for (EdgeId e : gp.g.canonical_edges()) {
+        for (EdgeId e : graph.canonical_edges()) {
             edge_info_os << label_helper.label(e);
             std::string delimeter = "\t";
-            if (edge_usage.count(e) == 0 && UsedOnBothSides(gp.g, e, edge_usage)) {
+            if (edge_usage.count(e) == 0 && UsedOnBothSides(graph, e, edge_usage)) {
                 suspicious_edge_cnt++;
                 suspicious_edges << label_helper.label(e) << ",";
-                total_suspicious_kmer_len += gp.g.length(e);
+                total_suspicious_kmer_len += graph.length(e);
                 edge_color_os << label_helper.label(e) << ",red\n";
             }
             if (edge_usage.count(e) > 0) {
@@ -142,20 +143,20 @@ static void Run(const conj_graph_pack &gp, const std::string &contigs_file,
         }
 
         INFO("Suspicious edge cnt: " << suspicious_edge_cnt << "; " <<
-                "total (" << (gp.g.k() + 1) << "-mer) length: " << total_suspicious_kmer_len);
+                "total (" << (gp.k() + 1) << "-mer) length: " << total_suspicious_kmer_len);
         INFO("Suspicious edges: " << suspicious_edges.str());
     }
 
     if (!subgraph_prefix.empty()) {
         auto edges = utils::key_set(edge_usage);
-        toolchain::ComponentExpander expander(gp.g);
-        auto component = expander.Expand(GraphComponent<Graph>::FromEdges(gp.g, edges.begin(),
+        toolchain::ComponentExpander expander(graph);
+        auto component = expander.Expand(omnigraph::GraphComponent<Graph>::FromEdges(graph, edges.begin(),
                                                                           edges.end(), /*add conjugate*/true));
         toolchain::WriteComponentWithDeadends(component, subgraph_prefix, label_helper.edge_naming_f());
     }
 }
 
-}
+} // namespace debruijn_graph
 
 struct gcfg {
     gcfg() : k(0),
@@ -216,11 +217,11 @@ int main(int argc, char** argv) {
         INFO("# of threads to use: " << nthreads);
 
         fs::make_dirs(cfg.workdir);
-        debruijn_graph::conj_graph_pack gp(k, cfg.workdir, 0);
+        debruijn_graph::GraphPack gp(k, cfg.workdir, 0);
 
-        omnigraph::GraphElementFinder<Graph> element_finder(gp.g);
+        omnigraph::GraphElementFinder<Graph> element_finder(gp.get<Graph>());
         INFO("Loading de Bruijn graph from " << cfg.graph_path);
-        gp.kmer_mapper.Attach(); // TODO unnecessary
+        gp.get_mutable<debruijn_graph::KmerMapper<debruijn_graph::Graph>>().Attach(); // TODO unnecessary
         io::EdgeLabelHelper<Graph> label_helper(element_finder,
                 toolchain::LoadGraph(gp, cfg.graph_path));
 

@@ -23,7 +23,7 @@ namespace spades {
 
         std::vector<io::SingleRead> ReadScaffolds(const std::string &scaffolds_file);
 
-        void run(debruijn_graph::conj_graph_pack &graph_pack, const char *);
+        void run(debruijn_graph::GraphPack &graph_pack, const char *);
 
         DECL_LOGGER("AlignmntAnalysis")
 

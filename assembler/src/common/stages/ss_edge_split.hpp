@@ -16,7 +16,7 @@ class SSEdgeSplit: public spades::AssemblyStage {
 public:
     SSEdgeSplit() : AssemblyStage("Strand-specific Edge Spliting", "ss_edge_splitting") {}
 
-    void run(conj_graph_pack& gp, const char *);
+    void run(GraphPack& gp, const char *);
 };
 }
 

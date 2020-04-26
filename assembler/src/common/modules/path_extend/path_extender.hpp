@@ -1417,7 +1417,7 @@ public:
                             bool investigate_short_loops,
                             bool avoid_rc_connections,
                             bool check_sink = true):
-        LoopDetectingPathExtender(gp, cov_map, unique, investigate_short_loops, false, is),
+        LoopDetectingPathExtender(gp.get<Graph>(), gp.get<omnigraph::FlankingCoverage<Graph>>(), cov_map, unique, investigate_short_loops, false, is),
         extension_chooser_(extension_chooser),
         gap_analyzer_(gap_analyzer),
         avoid_rc_connections_(avoid_rc_connections),
