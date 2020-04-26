@@ -216,7 +216,7 @@ void ChromosomeRemover::RemoveNearlyEverythingByCoverage(double cur_limit) {
 }
 
 void ChromosomeRemover::OutputSuspiciousComponents () {
-    const auto& graph = gp_.get<Graph>();
+    auto& graph = gp_.get_mutable<Graph>();
     long_vertex_component_.clear();
     long_component_.clear();
     deadends_count_.clear();
@@ -228,12 +228,9 @@ void ChromosomeRemover::OutputSuspiciousComponents () {
     std::string out_file = "components" + tmp + ".fasta";
     double var = 0.3;
     DEBUG("calculating component sizes");
-    {
-        auto& graph_mutable = gp_.get_mutable<Graph>();
-        for (EdgeId e: graph.canonical_edges()) {
-            if (!long_component_.count(e)) {
-                CalculateComponentSize(e, graph_mutable);
-            }
+    for (EdgeId e: graph.canonical_edges()) {
+        if (!long_component_.count(e)) {
+            CalculateComponentSize(e, graph);
         }
     }
     CoverageUniformityAnalyzer coverage_analyzer(graph, 0);
