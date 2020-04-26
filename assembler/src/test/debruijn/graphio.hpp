@@ -130,7 +130,7 @@ public:
         LoadEdgeAssociatedInfo(in, cov);
     }
 
-    bool LoadFlankingCoverage(const std::string &file_name, FlankingCoverage<Graph> &flanking_cov) {
+    bool LoadFlankingCoverage(const std::string &file_name, omnigraph::FlankingCoverage<Graph> &flanking_cov) {
         if (!fs::FileExists(file_name + ".flcvr")) {
             INFO("Flanking coverage saves are missing");
             return false;
@@ -194,7 +194,7 @@ public:
         fclose(file);
     }
 
-    bool LoadPositions(const std::string &file_name, EdgesPositionHandler<Graph> &edge_pos) {
+    bool LoadPositions(const std::string &file_name, omnigraph::EdgesPositionHandler<Graph> &edge_pos) {
         FILE* file = fopen((file_name + ".pos").c_str(), "r");
         if (file == NULL) {
             INFO("No positions were saved");

@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE( ComplexBulge ) {
     GraphPack gp(55, "tmp", 0);
     graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp);
     auto &graph = gp.get_mutable<Graph>();
-    omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(graph, graph.k() * 5, 5, 1);
+    omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(graph, graph.k() * 5, 5, nullptr, 1);
     remover.Run();
     BOOST_CHECK_EQUAL(graph.size(), 8u);
 }
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
     GraphPack gp(55, "tmp", 0);
     graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp);
     auto &graph = gp.get_mutable<Graph>();
-    omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(graph, graph.k() * 5, 5, 1);
+    omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(graph, graph.k() * 5, 5, nullptr, 1);
     remover.Run();
     BOOST_CHECK_EQUAL(graph.size(), 66u);
 }

@@ -223,7 +223,7 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
                                single_stream_vector, graph, index, flanking_cov);
 
     gp.InitRRIndices();
-    gp.kmer_mapper.Attach();
+    kmer_mapper.Attach();
     gp.EnsureBasicMapping();
 
     io::ReadStreamList<io::PairedRead> paired_streams(std::move(single_stream_vector[0].recover<SquashingWrapper>().recover<RawStream>()));
@@ -248,7 +248,7 @@ inline void CheckIndex(const std::vector<std::string> &reads, size_t k) {
     auto &index = gp.get_mutable<EdgeIndex<Graph>>();
     auto workdir = fs::tmp::make_temp_dir(gp.workdir(), "tests");
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
-    ConstructGraph(config::debruijn_config::construction(), workdir, streams, graph, gp.index);
+    ConstructGraph(config::debruijn_config::construction(), workdir, streams, graph, index);
 
     auto &stream = streams.back();
     stream.reset();

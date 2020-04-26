@@ -85,12 +85,12 @@ private:
     DECL_LOGGER("PosFiller");
 };
 
-void FillPos(debruijn_graph::GraphPack &gp, const std::string &contig_file, const std::string &prefix, bool with_rc) {
+inline void FillPos(debruijn_graph::GraphPack &gp, const std::string &contig_file, const std::string &prefix, bool with_rc) {
     PosFiller pos_filler(gp);
     pos_filler.Process(io::PrefixAddingReaderWrapper(io::EasyStream(contig_file, with_rc, false), prefix));
 }
 
-void FillPos(debruijn_graph::GraphPack &gp, const std::string &s, const std::string &name) {
+inline void FillPos(debruijn_graph::GraphPack &gp, const std::string &s, const std::string &name) {
     PosFiller pos_filler(gp);
     pos_filler.Process(s, name);
 }
