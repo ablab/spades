@@ -291,7 +291,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
 
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeSimpleCoverageExtender(size_t lib_index) const {
 
-    const auto &ss_coverage = gp_.get<std::vector<SSCoverageStorage>>();
+    const auto &ss_coverage = gp_.get<SSCoverageContainer>();
     auto extension =
         make_shared<SimpleCoverageExtensionChooser>(ss_coverage[lib_index], graph_,
                                                     params_.pset.simple_coverage_resolver.coverage_margin,

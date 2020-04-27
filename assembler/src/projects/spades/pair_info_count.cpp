@@ -252,7 +252,7 @@ size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
         cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
     }
 
-    SSCoverageFiller ss_coverage_filler(graph, gp.get_mutable<std::vector<SSCoverageStorage>>()[ilib],
+    SSCoverageFiller ss_coverage_filler(graph, gp.get_mutable<SSCoverageContainer>()[ilib],
                                         !cfg::get().ss.ss_enabled);
     if (cfg::get().calculate_coverage_for_each_lib) {
         INFO("Will calculate lib coverage as well");
