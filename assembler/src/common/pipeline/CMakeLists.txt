@@ -14,5 +14,5 @@ add_library(pipeline STATIC
             library_data.cpp
             stage.cpp)
 
-target_link_libraries(pipeline binary path_extend input llvm-support)
+target_link_libraries(pipeline binary_io path_extend input llvm-support)
 

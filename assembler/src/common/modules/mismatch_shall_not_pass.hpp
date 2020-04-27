@@ -292,9 +292,8 @@ private:
                 conjugate_fix.insert(e);
         }
 #else
-        const auto &graph = gp_.get<Graph>();
-        for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (conjugate_fix.find(graph.conjugate(*it)) == conjugate_fix.end()) {
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            if (conjugate_fix.find(graph_.conjugate(*it)) == conjugate_fix.end()) {
                 conjugate_fix.insert(*it);
             }
         }

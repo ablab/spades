@@ -49,11 +49,10 @@ PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &
 }
 
 MappingPath<EdgeId> GenomeConsistenceChecker::ConstructEdgeOrder(const std::string &chr_name) const {
-    const auto &edge_pos = gp_.get<EdgesPositionHandler<Graph>>();
     vector<pair<EdgeId, MappingRange>> to_sort;
     DEBUG ("constructing edge order for chr " << chr_name);
     for (auto e: storage_) {
-        set<MappingRange> mappings = edge_pos.GetEdgePositions(e, chr_name);
+        set<MappingRange> mappings = edge_pos_.GetEdgePositions(e, chr_name);
         VERIFY_MSG(mappings.size() <= 1, "Presumably unique edge " << e << " with multiple mappings!");
         if (!mappings.empty()) {
             to_sort.push_back(make_pair(e, *mappings.begin()));
@@ -257,18 +256,16 @@ void GenomeConsistenceChecker::PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const 
 
 void GenomeConsistenceChecker::ClassifyPosition(size_t prev_pos, size_t cur_pos,
                                                 const BidirectionalPath &path, PathScore &res) const {
-    const auto &edge_pos = gp_.get<EdgesPositionHandler<Graph>>();
-
     EdgeId cur_e = path.At(cur_pos);
     const auto& chr_info = genome_info_.UniqueChromosomeInfo(cur_e);
     size_t cur_in_genome = chr_info.UniqueEdgeIdx(cur_e);
     string cur_chr = chr_info.name();
-    MappingRange cur_range = edge_pos.GetUniqueEdgePosition(cur_e, cur_chr);
+    MappingRange cur_range = edge_pos_.GetUniqueEdgePosition(cur_e, cur_chr);
     EdgeId prev_e = path.At(prev_pos);
     const auto& prev_chr_info = genome_info_.UniqueChromosomeInfo(prev_e);
     size_t prev_in_genome = prev_chr_info.UniqueEdgeIdx(prev_e);
     string prev_chr = prev_chr_info.name();
-    MappingRange prev_range = edge_pos.GetUniqueEdgePosition(prev_e, prev_chr);
+    MappingRange prev_range = edge_pos_.GetUniqueEdgePosition(prev_e, prev_chr);
 
     res.mapped_length += cur_range.mapped_range.size();
     if (cur_in_genome == prev_in_genome + 1 && cur_chr == prev_chr) {
@@ -380,7 +377,6 @@ vector<MappingRange> GenomeConsistenceChecker::FindBestRangeSequence(const set<M
 }
 
 std::map<EdgeId, std::string> GenomeConsistenceChecker::EdgeLabels() const {
-    const auto &edge_pos = gp_.get<EdgesPositionHandler<Graph>>();
     INFO("Constructing reference labels");
     std::map<EdgeId, std::string> answer;
     size_t count = 0;
@@ -388,7 +384,7 @@ std::map<EdgeId, std::string> GenomeConsistenceChecker::EdgeLabels() const {
         const auto &chr_info = genome_info_.ChrInfo(chr);
         for (size_t pos = 0; pos < chr_info.size(); ++pos) {
             EdgeId e = chr_info.EdgeAt(pos);
-            auto mr = edge_pos.GetUniqueEdgePosition(e, chr);
+            auto mr = edge_pos_.GetUniqueEdgePosition(e, chr);
             VERIFY(!answer.count(e));
             answer[e] += chr +
                          "order: " + to_string(count) +

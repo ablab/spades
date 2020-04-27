@@ -9,10 +9,10 @@
 // Created by anton on 16.05.15.
 //
 
+#include "analysis_pipeline.hpp"
 #include "io/reads/file_reader.hpp"
 #include "stages/construction.hpp"
-#include "analysis_pipeline.hpp"
-#include "fstream"
+#include <fstream>
 
 using namespace std;
 

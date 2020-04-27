@@ -139,6 +139,7 @@ class GenomeConsistenceChecker {
     typedef omnigraph::MappingPath<EdgeId> MappingPathT;
     GraphPack &gp_;
     Graph &graph_;
+    const omnigraph::EdgesPositionHandler<Graph> &edge_pos_;
     const size_t absolute_max_gap_;
     const double relative_max_gap_;
     const size_t unresolvable_len_;
@@ -191,8 +192,7 @@ class GenomeConsistenceChecker {
     std::vector<size_t> MappedRegions(const MappingPathT &mapping_path) const;
 
     bool IsCloseToEnd(MappingRange range, const ChromosomeInfo &chr_info) const {
-        const auto &edge_pos = gp_.get<omnigraph::EdgesPositionHandler<Graph>>();
-        auto last_range = edge_pos.GetUniqueEdgePosition(chr_info.EdgeAt(chr_info.size() - 1), chr_info.name());
+        auto last_range = edge_pos_.GetUniqueEdgePosition(chr_info.EdgeAt(chr_info.size() - 1), chr_info.name());
         return range.initial_range.end_pos + SIGNIFICANT_LENGTH_LOWER_LIMIT > last_range.initial_range.end_pos;
     }
 
@@ -211,6 +211,7 @@ public:
                              const io::DataSet<config::LibraryData> reads) :
             gp_(gp),
             graph_(gp.get_mutable<Graph>()),
+            edge_pos_(gp_.get<omnigraph::EdgesPositionHandler<Graph>>()),
             absolute_max_gap_(max_gap),
             relative_max_gap_(relative_max_gap),
             unresolvable_len_(unresolvable_len),
