@@ -5,6 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "pipeline/library.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "paired_info/pair_info_improver.hpp"
 
