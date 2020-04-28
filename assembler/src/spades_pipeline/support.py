@@ -133,6 +133,9 @@ def get_read_file_type(input_filename, log=None):
 def check_file_not_empty(input_filename, message="", log=None):
     filename = abspath(expanduser(input_filename))
     file_type = get_read_file_type(input_filename, log)
+    if (file_type == 'bam'):
+        return
+    
     reads_iterator = SeqIO.parse(SeqIO.Open(filename, "r"), file_type)
     if next(reads_iterator, None) is None:
         error("file is empty: %s (%s)" % (filename, message), log=log)
