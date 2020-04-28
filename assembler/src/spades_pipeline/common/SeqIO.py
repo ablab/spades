@@ -173,10 +173,18 @@ def is_fastq(file_name):
     return False
 
 
+def is_bam(file_name):
+    if 'bam' in file_name:
+        return True
+    return False
+
+
 def get_read_file_type(file_name):
     if is_fastq(file_name):
         return 'fastq'
     elif is_fasta(file_name):
         return 'fasta'
+    elif is_bam(file_name):
+        return 'bam'
     else:
         return None
