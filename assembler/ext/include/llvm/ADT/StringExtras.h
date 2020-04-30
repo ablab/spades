@@ -1,9 +1,8 @@
 //===- llvm/ADT/StringExtras.h - Useful string functions --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -88,6 +87,26 @@ inline bool isAlpha(char C) {
 /// lowercase letter as classified by "C" locale.
 inline bool isAlnum(char C) { return isAlpha(C) || isDigit(C); }
 
+/// Checks whether character \p C is valid ASCII (high bit is zero).
+inline bool isASCII(char C) { return static_cast<unsigned char>(C) <= 127; }
+
+/// Checks whether all characters in S are ASCII.
+inline bool isASCII(llvm::StringRef S) {
+  for (char C : S)
+    if (LLVM_UNLIKELY(!isASCII(C)))
+      return false;
+  return true;
+}
+
+/// Checks whether character \p C is printable.
+///
+/// Locale-independent version of the C standard library isprint whose results
+/// may differ on different platforms.
+inline bool isPrint(char C) {
+  unsigned char UC = static_cast<unsigned char>(C);
+  return (0x20 <= UC) && (UC <= 0x7E);
+}
+
 /// Returns the corresponding lowercase character if \p x is uppercase.
 inline char toLower(char x) {
   if (x >= 'A' && x <= 'Z')
@@ -119,22 +138,23 @@ inline std::string utohexstr(uint64_t X, bool LowerCase = false) {
 
 /// Convert buffer \p Input to its hexadecimal representation.
 /// The returned string is double the size of \p Input.
-inline std::string toHex(StringRef Input) {
+inline std::string toHex(StringRef Input, bool LowerCase = false) {
   static const char *const LUT = "0123456789ABCDEF";
+  const uint8_t Offset = LowerCase ? 32 : 0;
   size_t Length = Input.size();
 
   std::string Output;
   Output.reserve(2 * Length);
   for (size_t i = 0; i < Length; ++i) {
     const unsigned char c = Input[i];
-    Output.push_back(LUT[c >> 4]);
-    Output.push_back(LUT[c & 15]);
+    Output.push_back(LUT[c >> 4] | Offset);
+    Output.push_back(LUT[c & 15] | Offset);
   }
   return Output;
 }
 
-inline std::string toHex(ArrayRef<uint8_t> Input) {
-  return toHex(toStringRef(Input));
+inline std::string toHex(ArrayRef<uint8_t> Input, bool LowerCase = false) {
+  return toHex(toStringRef(Input), LowerCase);
 }
 
 inline uint8_t hexFromNibbles(char MSB, char LSB) {
@@ -272,6 +292,18 @@ void printHTMLEscaped(StringRef String, raw_ostream &Out);
 /// printLowerCase - Print each character as lowercase if it is uppercase.
 void printLowerCase(StringRef String, raw_ostream &Out);
 
+/// Converts a string from camel-case to snake-case by replacing all uppercase
+/// letters with '_' followed by the letter in lowercase, except if the
+/// uppercase letter is the first character of the string.
+std::string convertToSnakeFromCamelCase(StringRef input);
+
+/// Converts a string from snake-case to camel-case by replacing all occurrences
+/// of '_' followed by a lowercase letter with the letter in uppercase.
+/// Optionally allow capitalization of the first letter (if it is a lowercase
+/// letter)
+std::string convertToCamelFromSnakeCase(StringRef input,
+                                        bool capitalizeFirst = false);
+
 namespace detail {
 
 template <typename IteratorT>
@@ -325,7 +357,7 @@ inline void join_items_impl(std::string &Result, Sep Separator, const Arg1 &A1,
   join_items_impl(Result, Separator, std::forward<Args>(Items)...);
 }
 
-inline size_t join_one_item_size(char C) { return 1; }
+inline size_t join_one_item_size(char) { return 1; }
 inline size_t join_one_item_size(const char *S) { return S ? ::strlen(S) : 0; }
 
 template <typename T> inline size_t join_one_item_size(const T &Str) {

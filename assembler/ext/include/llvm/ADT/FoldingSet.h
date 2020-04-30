@@ -1,9 +1,8 @@
-//===-- llvm/ADT/FoldingSet.h - Uniquing Hash Set ---------------*- C++ -*-===//
+//===- llvm/ADT/FoldingSet.h - Uniquing Hash Set ----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,12 +16,15 @@
 #define LLVM_ADT_FOLDINGSET_H
 
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/iterator.h"
 #include "llvm/Support/Allocator.h"
-#include "llvm/Support/DataTypes.h"
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <utility>
 
 namespace llvm {
+
 /// This folding set used for two purposes:
 ///   1. Given information about a node we want to create, look up the unique
 ///      instance of the node in the set.  If the node already exists, return
@@ -37,7 +39,7 @@ namespace llvm {
 /// FoldingSetNode.  The node class must also define a Profile method used to
 /// establish the unique bits of data for the node.  The Profile method is
 /// passed a FoldingSetNodeID object which is used to gather the bits.  Just
-/// call one of the Add* functions defined in the FoldingSetImpl::NodeID class.
+/// call one of the Add* functions defined in the FoldingSetBase::NodeID class.
 /// NOTE: That the folding set does not own the nodes and it is the
 /// responsibility of the user to dispose of the nodes.
 ///
@@ -83,62 +85,58 @@ namespace llvm {
 ///
 ///    MyNode *M = MyFoldingSet.FindNodeOrInsertPos(ID, InsertPoint);
 ///
-/// If found then M with be non-NULL, else InsertPoint will point to where it
+/// If found then M will be non-NULL, else InsertPoint will point to where it
 /// should be inserted using InsertNode.
 ///
-/// 3) If you get a NULL result from FindNodeOrInsertPos then you can as a new
-/// node with FindNodeOrInsertPos;
+/// 3) If you get a NULL result from FindNodeOrInsertPos then you can insert a
+/// new node with InsertNode;
 ///
-///    InsertNode(N, InsertPoint);
+///    MyFoldingSet.InsertNode(M, InsertPoint);
 ///
 /// 4) Finally, if you want to remove a node from the folding set call;
 ///
-///    bool WasRemoved = RemoveNode(N);
+///    bool WasRemoved = MyFoldingSet.RemoveNode(M);
 ///
 /// The result indicates whether the node existed in the folding set.
 
 class FoldingSetNodeID;
+class StringRef;
 
 //===----------------------------------------------------------------------===//
-/// FoldingSetImpl - Implements the folding set functionality.  The main
+/// FoldingSetBase - Implements the folding set functionality.  The main
 /// structure is an array of buckets.  Each bucket is indexed by the hash of
 /// the nodes it contains.  The bucket itself points to the nodes contained
 /// in the bucket via a singly linked list.  The last node in the list points
 /// back to the bucket to facilitate node removal.
 ///
-class FoldingSetImpl {
-  virtual void anchor(); // Out of line virtual method.
-
+class FoldingSetBase {
 protected:
   /// Buckets - Array of bucket chains.
-  ///
   void **Buckets;
 
   /// NumBuckets - Length of the Buckets array.  Always a power of 2.
-  ///
   unsigned NumBuckets;
 
   /// NumNodes - Number of nodes in the folding set. Growth occurs when NumNodes
   /// is greater than twice the number of buckets.
   unsigned NumNodes;
 
-  explicit FoldingSetImpl(unsigned Log2InitSize = 6);
-  FoldingSetImpl(FoldingSetImpl &&Arg);
-  FoldingSetImpl &operator=(FoldingSetImpl &&RHS);
-  ~FoldingSetImpl();
+  explicit FoldingSetBase(unsigned Log2InitSize = 6);
+  FoldingSetBase(FoldingSetBase &&Arg);
+  FoldingSetBase &operator=(FoldingSetBase &&RHS);
+  ~FoldingSetBase();
 
 public:
   //===--------------------------------------------------------------------===//
   /// Node - This class is used to maintain the singly linked bucket list in
   /// a folding set.
-  ///
   class Node {
   private:
     // NextInFoldingSetBucket - next link in the bucket list.
-    void *NextInFoldingSetBucket;
+    void *NextInFoldingSetBucket = nullptr;
 
   public:
-    Node() : NextInFoldingSetBucket(nullptr) {}
+    Node() = default;
 
     // Accessors
     void *getNextInBucket() const { return NextInFoldingSetBucket; }
@@ -148,6 +146,60 @@ public:
   /// clear - Remove all nodes from the folding set.
   void clear();
 
+  /// size - Returns the number of nodes in the folding set.
+  unsigned size() const { return NumNodes; }
+
+  /// empty - Returns true if there are no nodes in the folding set.
+  bool empty() const { return NumNodes == 0; }
+
+  /// capacity - Returns the number of nodes permitted in the folding set
+  /// before a rebucket operation is performed.
+  unsigned capacity() {
+    // We allow a load factor of up to 2.0,
+    // so that means our capacity is NumBuckets * 2
+    return NumBuckets * 2;
+  }
+
+protected:
+  /// Functions provided by the derived class to compute folding properties.
+  /// This is effectively a vtable for FoldingSetBase, except that we don't
+  /// actually store a pointer to it in the object.
+  struct FoldingSetInfo {
+    /// GetNodeProfile - Instantiations of the FoldingSet template implement
+    /// this function to gather data bits for the given node.
+    void (*GetNodeProfile)(const FoldingSetBase *Self, Node *N,
+                           FoldingSetNodeID &ID);
+
+    /// NodeEquals - Instantiations of the FoldingSet template implement
+    /// this function to compare the given node with the given ID.
+    bool (*NodeEquals)(const FoldingSetBase *Self, Node *N,
+                       const FoldingSetNodeID &ID, unsigned IDHash,
+                       FoldingSetNodeID &TempID);
+
+    /// ComputeNodeHash - Instantiations of the FoldingSet template implement
+    /// this function to compute a hash value for the given node.
+    unsigned (*ComputeNodeHash)(const FoldingSetBase *Self, Node *N,
+                                FoldingSetNodeID &TempID);
+  };
+
+private:
+  /// GrowHashTable - Double the size of the hash table and rehash everything.
+  void GrowHashTable(const FoldingSetInfo &Info);
+
+  /// GrowBucketCount - resize the hash table and rehash everything.
+  /// NewBucketCount must be a power of two, and must be greater than the old
+  /// bucket count.
+  void GrowBucketCount(unsigned NewBucketCount, const FoldingSetInfo &Info);
+
+protected:
+  // The below methods are protected to encourage subclasses to provide a more
+  // type-safe API.
+
+  /// reserve - Increase the number of buckets such that adding the
+  /// EltCount-th node won't cause a rebucket operation. reserve is permitted
+  /// to allocate more space than requested by EltCount.
+  void reserve(unsigned EltCount, const FoldingSetInfo &Info);
+
   /// RemoveNode - Remove a node from the folding set, returning true if one
   /// was removed or false if the node was not in the folding set.
   bool RemoveNode(Node *N);
@@ -155,57 +207,24 @@ public:
   /// GetOrInsertNode - If there is an existing simple Node exactly
   /// equal to the specified node, return it.  Otherwise, insert 'N' and return
   /// it instead.
-  Node *GetOrInsertNode(Node *N);
+  Node *GetOrInsertNode(Node *N, const FoldingSetInfo &Info);
 
   /// FindNodeOrInsertPos - Look up the node specified by ID.  If it exists,
   /// return it.  If not, return the insertion token that will make insertion
   /// faster.
-  Node *FindNodeOrInsertPos(const FoldingSetNodeID &ID, void *&InsertPos);
+  Node *FindNodeOrInsertPos(const FoldingSetNodeID &ID, void *&InsertPos,
+                            const FoldingSetInfo &Info);
 
   /// InsertNode - Insert the specified node into the folding set, knowing that
   /// it is not already in the folding set.  InsertPos must be obtained from
   /// FindNodeOrInsertPos.
-  void InsertNode(Node *N, void *InsertPos);
-
-  /// InsertNode - Insert the specified node into the folding set, knowing that
-  /// it is not already in the folding set.
-  void InsertNode(Node *N) {
-    Node *Inserted = GetOrInsertNode(N);
-    (void)Inserted;
-    assert(Inserted == N && "Node already inserted!");
-  }
-
-  /// size - Returns the number of nodes in the folding set.
-  unsigned size() const { return NumNodes; }
-
-  /// empty - Returns true if there are no nodes in the folding set.
-  bool empty() const { return NumNodes == 0; }
-
-private:
-  /// GrowHashTable - Double the size of the hash table and rehash everything.
-  ///
-  void GrowHashTable();
-
-protected:
-  /// GetNodeProfile - Instantiations of the FoldingSet template implement
-  /// this function to gather data bits for the given node.
-  virtual void GetNodeProfile(Node *N, FoldingSetNodeID &ID) const = 0;
-  /// NodeEquals - Instantiations of the FoldingSet template implement
-  /// this function to compare the given node with the given ID.
-  virtual bool NodeEquals(Node *N, const FoldingSetNodeID &ID, unsigned IDHash,
-                          FoldingSetNodeID &TempID) const=0;
-  /// ComputeNodeHash - Instantiations of the FoldingSet template implement
-  /// this function to compute a hash value for the given node.
-  virtual unsigned ComputeNodeHash(Node *N, FoldingSetNodeID &TempID) const = 0;
+  void InsertNode(Node *N, void *InsertPos, const FoldingSetInfo &Info);
 };
 
 //===----------------------------------------------------------------------===//
 
-template<typename T> struct FoldingSetTrait;
-
 /// DefaultFoldingSetTrait - This class provides default implementations
 /// for FoldingSetTrait implementations.
-///
 template<typename T> struct DefaultFoldingSetTrait {
   static void Profile(const T &X, FoldingSetNodeID &ID) {
     X.Profile(ID);
@@ -238,8 +257,6 @@ template<typename T> struct DefaultFoldingSetTrait {
 template<typename T> struct FoldingSetTrait
   : public DefaultFoldingSetTrait<T> {};
 
-template<typename T, typename Ctx> struct ContextualFoldingSetTrait;
-
 /// DefaultContextualFoldingSetTrait - Like DefaultFoldingSetTrait, but
 /// for ContextualFoldingSets.
 template<typename T, typename Ctx>
@@ -247,6 +264,7 @@ struct DefaultContextualFoldingSetTrait {
   static void Profile(T &X, FoldingSetNodeID &ID, Ctx Context) {
     X.Profile(ID, Context);
   }
+
   static inline bool Equals(T &X, const FoldingSetNodeID &ID, unsigned IDHash,
                             FoldingSetNodeID &TempID, Ctx Context);
   static inline unsigned ComputeHash(T &X, FoldingSetNodeID &TempID,
@@ -265,15 +283,15 @@ template<typename T, typename Ctx> struct ContextualFoldingSetTrait
 /// is often much larger than necessary, and the possibility of heap
 /// allocation means it requires a non-trivial destructor call.
 class FoldingSetNodeIDRef {
-  const unsigned *Data;
-  size_t Size;
+  const unsigned *Data = nullptr;
+  size_t Size = 0;
 
 public:
-  FoldingSetNodeIDRef() : Data(nullptr), Size(0) {}
+  FoldingSetNodeIDRef() = default;
   FoldingSetNodeIDRef(const unsigned *D, size_t S) : Data(D), Size(S) {}
 
   /// ComputeHash - Compute a strong hash value for this FoldingSetNodeIDRef,
-  /// used to lookup the node in the FoldingSetImpl.
+  /// used to lookup the node in the FoldingSetBase.
   unsigned ComputeHash() const;
 
   bool operator==(FoldingSetNodeIDRef) const;
@@ -292,20 +310,18 @@ public:
 /// FoldingSetNodeID - This class is used to gather all the unique data bits of
 /// a node.  When all the bits are gathered this class is used to produce a
 /// hash value for the node.
-///
 class FoldingSetNodeID {
   /// Bits - Vector of all the data bits that make the node unique.
   /// Use a SmallVector to avoid a heap allocation in the common case.
   SmallVector<unsigned, 32> Bits;
 
 public:
-  FoldingSetNodeID() {}
+  FoldingSetNodeID() = default;
 
   FoldingSetNodeID(FoldingSetNodeIDRef Ref)
     : Bits(Ref.getData(), Ref.getData() + Ref.getSize()) {}
 
   /// Add* - Add various data types to Bit data.
-  ///
   void AddPointer(const void *Ptr);
   void AddInteger(signed I);
   void AddInteger(unsigned I);
@@ -325,11 +341,10 @@ public:
   inline void clear() { Bits.clear(); }
 
   /// ComputeHash - Compute a strong hash value for this FoldingSetNodeID, used
-  /// to lookup the node in the FoldingSetImpl.
+  /// to lookup the node in the FoldingSetBase.
   unsigned ComputeHash() const;
 
   /// operator== - Used to compare two nodes to each other.
-  ///
   bool operator==(const FoldingSetNodeID &RHS) const;
   bool operator==(const FoldingSetNodeIDRef RHS) const;
 
@@ -348,7 +363,7 @@ public:
 };
 
 // Convenience type to hide the implementation of the folding set.
-typedef FoldingSetImpl::Node FoldingSetNode;
+using FoldingSetNode = FoldingSetBase::Node;
 template<class T> class FoldingSetIterator;
 template<class T> class FoldingSetBucketIterator;
 
@@ -388,55 +403,29 @@ DefaultContextualFoldingSetTrait<T, Ctx>::ComputeHash(T &X,
 }
 
 //===----------------------------------------------------------------------===//
-/// FoldingSet - This template class is used to instantiate a specialized
-/// implementation of the folding set to the node class T.  T must be a
-/// subclass of FoldingSetNode and implement a Profile function.
-///
-/// Note that this set type is movable and move-assignable. However, its
-/// moved-from state is not a valid state for anything other than
-/// move-assigning and destroying. This is primarily to enable movable APIs
-/// that incorporate these objects.
-template <class T> class FoldingSet final : public FoldingSetImpl {
-private:
-  /// GetNodeProfile - Each instantiatation of the FoldingSet needs to provide a
-  /// way to convert nodes into a unique specifier.
-  void GetNodeProfile(Node *N, FoldingSetNodeID &ID) const override {
-    T *TN = static_cast<T *>(N);
-    FoldingSetTrait<T>::Profile(*TN, ID);
-  }
-  /// NodeEquals - Instantiations may optionally provide a way to compare a
-  /// node with a specified ID.
-  bool NodeEquals(Node *N, const FoldingSetNodeID &ID, unsigned IDHash,
-                  FoldingSetNodeID &TempID) const override {
-    T *TN = static_cast<T *>(N);
-    return FoldingSetTrait<T>::Equals(*TN, ID, IDHash, TempID);
-  }
-  /// ComputeNodeHash - Instantiations may optionally provide a way to compute a
-  /// hash value directly from a node.
-  unsigned ComputeNodeHash(Node *N, FoldingSetNodeID &TempID) const override {
-    T *TN = static_cast<T *>(N);
-    return FoldingSetTrait<T>::ComputeHash(*TN, TempID);
-  }
+/// FoldingSetImpl - An implementation detail that lets us share code between
+/// FoldingSet and ContextualFoldingSet.
+template <class Derived, class T> class FoldingSetImpl : public FoldingSetBase {
+protected:
+  explicit FoldingSetImpl(unsigned Log2InitSize)
+      : FoldingSetBase(Log2InitSize) {}
+
+  FoldingSetImpl(FoldingSetImpl &&Arg) = default;
+  FoldingSetImpl &operator=(FoldingSetImpl &&RHS) = default;
+  ~FoldingSetImpl() = default;
 
 public:
-  explicit FoldingSet(unsigned Log2InitSize = 6)
-      : FoldingSetImpl(Log2InitSize) {}
+  using iterator = FoldingSetIterator<T>;
 
-  FoldingSet(FoldingSet &&Arg) : FoldingSetImpl(std::move(Arg)) {}
-  FoldingSet &operator=(FoldingSet &&RHS) {
-    (void)FoldingSetImpl::operator=(std::move(RHS));
-    return *this;
-  }
-
-  typedef FoldingSetIterator<T> iterator;
   iterator begin() { return iterator(Buckets); }
   iterator end() { return iterator(Buckets+NumBuckets); }
 
-  typedef FoldingSetIterator<const T> const_iterator;
+  using const_iterator = FoldingSetIterator<const T>;
+
   const_iterator begin() const { return const_iterator(Buckets); }
   const_iterator end() const { return const_iterator(Buckets+NumBuckets); }
 
-  typedef FoldingSetBucketIterator<T> bucket_iterator;
+  using bucket_iterator = FoldingSetBucketIterator<T>;
 
   bucket_iterator bucket_begin(unsigned hash) {
     return bucket_iterator(Buckets + (hash & (NumBuckets-1)));
@@ -446,19 +435,101 @@ public:
     return bucket_iterator(Buckets + (hash & (NumBuckets-1)), true);
   }
 
+  /// reserve - Increase the number of buckets such that adding the
+  /// EltCount-th node won't cause a rebucket operation. reserve is permitted
+  /// to allocate more space than requested by EltCount.
+  void reserve(unsigned EltCount) {
+    return FoldingSetBase::reserve(EltCount, Derived::getFoldingSetInfo());
+  }
+
+  /// RemoveNode - Remove a node from the folding set, returning true if one
+  /// was removed or false if the node was not in the folding set.
+  bool RemoveNode(T *N) {
+    return FoldingSetBase::RemoveNode(N);
+  }
+
   /// GetOrInsertNode - If there is an existing simple Node exactly
   /// equal to the specified node, return it.  Otherwise, insert 'N' and
   /// return it instead.
-  T *GetOrInsertNode(Node *N) {
-    return static_cast<T *>(FoldingSetImpl::GetOrInsertNode(N));
+  T *GetOrInsertNode(T *N) {
+    return static_cast<T *>(
+        FoldingSetBase::GetOrInsertNode(N, Derived::getFoldingSetInfo()));
   }
 
   /// FindNodeOrInsertPos - Look up the node specified by ID.  If it exists,
   /// return it.  If not, return the insertion token that will make insertion
   /// faster.
   T *FindNodeOrInsertPos(const FoldingSetNodeID &ID, void *&InsertPos) {
-    return static_cast<T *>(FoldingSetImpl::FindNodeOrInsertPos(ID, InsertPos));
+    return static_cast<T *>(FoldingSetBase::FindNodeOrInsertPos(
+        ID, InsertPos, Derived::getFoldingSetInfo()));
   }
+
+  /// InsertNode - Insert the specified node into the folding set, knowing that
+  /// it is not already in the folding set.  InsertPos must be obtained from
+  /// FindNodeOrInsertPos.
+  void InsertNode(T *N, void *InsertPos) {
+    FoldingSetBase::InsertNode(N, InsertPos, Derived::getFoldingSetInfo());
+  }
+
+  /// InsertNode - Insert the specified node into the folding set, knowing that
+  /// it is not already in the folding set.
+  void InsertNode(T *N) {
+    T *Inserted = GetOrInsertNode(N);
+    (void)Inserted;
+    assert(Inserted == N && "Node already inserted!");
+  }
+};
+
+//===----------------------------------------------------------------------===//
+/// FoldingSet - This template class is used to instantiate a specialized
+/// implementation of the folding set to the node class T.  T must be a
+/// subclass of FoldingSetNode and implement a Profile function.
+///
+/// Note that this set type is movable and move-assignable. However, its
+/// moved-from state is not a valid state for anything other than
+/// move-assigning and destroying. This is primarily to enable movable APIs
+/// that incorporate these objects.
+template <class T>
+class FoldingSet : public FoldingSetImpl<FoldingSet<T>, T> {
+  using Super = FoldingSetImpl<FoldingSet, T>;
+  using Node = typename Super::Node;
+
+  /// GetNodeProfile - Each instantiatation of the FoldingSet needs to provide a
+  /// way to convert nodes into a unique specifier.
+  static void GetNodeProfile(const FoldingSetBase *, Node *N,
+                             FoldingSetNodeID &ID) {
+    T *TN = static_cast<T *>(N);
+    FoldingSetTrait<T>::Profile(*TN, ID);
+  }
+
+  /// NodeEquals - Instantiations may optionally provide a way to compare a
+  /// node with a specified ID.
+  static bool NodeEquals(const FoldingSetBase *, Node *N,
+                         const FoldingSetNodeID &ID, unsigned IDHash,
+                         FoldingSetNodeID &TempID) {
+    T *TN = static_cast<T *>(N);
+    return FoldingSetTrait<T>::Equals(*TN, ID, IDHash, TempID);
+  }
+
+  /// ComputeNodeHash - Instantiations may optionally provide a way to compute a
+  /// hash value directly from a node.
+  static unsigned ComputeNodeHash(const FoldingSetBase *, Node *N,
+                                  FoldingSetNodeID &TempID) {
+    T *TN = static_cast<T *>(N);
+    return FoldingSetTrait<T>::ComputeHash(*TN, TempID);
+  }
+
+  static const FoldingSetBase::FoldingSetInfo &getFoldingSetInfo() {
+    static constexpr FoldingSetBase::FoldingSetInfo Info = {
+        GetNodeProfile, NodeEquals, ComputeNodeHash};
+    return Info;
+  }
+  friend Super;
+
+public:
+  explicit FoldingSet(unsigned Log2InitSize = 6) : Super(Log2InitSize) {}
+  FoldingSet(FoldingSet &&Arg) = default;
+  FoldingSet &operator=(FoldingSet &&RHS) = default;
 };
 
 //===----------------------------------------------------------------------===//
@@ -469,74 +540,59 @@ public:
 ///
 /// T must be a subclass of FoldingSetNode and implement a Profile
 /// function with signature
-///   void Profile(llvm::FoldingSetNodeID &, Ctx);
+///   void Profile(FoldingSetNodeID &, Ctx);
 template <class T, class Ctx>
-class ContextualFoldingSet final : public FoldingSetImpl {
+class ContextualFoldingSet
+    : public FoldingSetImpl<ContextualFoldingSet<T, Ctx>, T> {
   // Unfortunately, this can't derive from FoldingSet<T> because the
-  // construction vtable for FoldingSet<T> requires
+  // construction of the vtable for FoldingSet<T> requires
   // FoldingSet<T>::GetNodeProfile to be instantiated, which in turn
   // requires a single-argument T::Profile().
 
-private:
+  using Super = FoldingSetImpl<ContextualFoldingSet, T>;
+  using Node = typename Super::Node;
+
   Ctx Context;
+
+  static const Ctx &getContext(const FoldingSetBase *Base) {
+    return static_cast<const ContextualFoldingSet*>(Base)->Context;
+  }
 
   /// GetNodeProfile - Each instantiatation of the FoldingSet needs to provide a
   /// way to convert nodes into a unique specifier.
-  void GetNodeProfile(FoldingSetImpl::Node *N,
-                      FoldingSetNodeID &ID) const override {
+  static void GetNodeProfile(const FoldingSetBase *Base, Node *N,
+                             FoldingSetNodeID &ID) {
     T *TN = static_cast<T *>(N);
-    ContextualFoldingSetTrait<T, Ctx>::Profile(*TN, ID, Context);
+    ContextualFoldingSetTrait<T, Ctx>::Profile(*TN, ID, getContext(Base));
   }
-  bool NodeEquals(FoldingSetImpl::Node *N, const FoldingSetNodeID &ID,
-                  unsigned IDHash, FoldingSetNodeID &TempID) const override {
+
+  static bool NodeEquals(const FoldingSetBase *Base, Node *N,
+                         const FoldingSetNodeID &ID, unsigned IDHash,
+                         FoldingSetNodeID &TempID) {
     T *TN = static_cast<T *>(N);
     return ContextualFoldingSetTrait<T, Ctx>::Equals(*TN, ID, IDHash, TempID,
-                                                     Context);
+                                                     getContext(Base));
   }
-  unsigned ComputeNodeHash(FoldingSetImpl::Node *N,
-                           FoldingSetNodeID &TempID) const override {
+
+  static unsigned ComputeNodeHash(const FoldingSetBase *Base, Node *N,
+                                  FoldingSetNodeID &TempID) {
     T *TN = static_cast<T *>(N);
-    return ContextualFoldingSetTrait<T, Ctx>::ComputeHash(*TN, TempID, Context);
+    return ContextualFoldingSetTrait<T, Ctx>::ComputeHash(*TN, TempID,
+                                                          getContext(Base));
   }
+
+  static const FoldingSetBase::FoldingSetInfo &getFoldingSetInfo() {
+    static constexpr FoldingSetBase::FoldingSetInfo Info = {
+        GetNodeProfile, NodeEquals, ComputeNodeHash};
+    return Info;
+  }
+  friend Super;
 
 public:
   explicit ContextualFoldingSet(Ctx Context, unsigned Log2InitSize = 6)
-  : FoldingSetImpl(Log2InitSize), Context(Context)
-  {}
+      : Super(Log2InitSize), Context(Context) {}
 
   Ctx getContext() const { return Context; }
-
-  typedef FoldingSetIterator<T> iterator;
-  iterator begin() { return iterator(Buckets); }
-  iterator end() { return iterator(Buckets+NumBuckets); }
-
-  typedef FoldingSetIterator<const T> const_iterator;
-  const_iterator begin() const { return const_iterator(Buckets); }
-  const_iterator end() const { return const_iterator(Buckets+NumBuckets); }
-
-  typedef FoldingSetBucketIterator<T> bucket_iterator;
-
-  bucket_iterator bucket_begin(unsigned hash) {
-    return bucket_iterator(Buckets + (hash & (NumBuckets-1)));
-  }
-
-  bucket_iterator bucket_end(unsigned hash) {
-    return bucket_iterator(Buckets + (hash & (NumBuckets-1)), true);
-  }
-
-  /// GetOrInsertNode - If there is an existing simple Node exactly
-  /// equal to the specified node, return it.  Otherwise, insert 'N'
-  /// and return it instead.
-  T *GetOrInsertNode(Node *N) {
-    return static_cast<T *>(FoldingSetImpl::GetOrInsertNode(N));
-  }
-
-  /// FindNodeOrInsertPos - Look up the node specified by ID.  If it
-  /// exists, return it.  If not, return the insertion token that will
-  /// make insertion faster.
-  T *FindNodeOrInsertPos(const FoldingSetNodeID &ID, void *&InsertPos) {
-    return static_cast<T *>(FoldingSetImpl::FindNodeOrInsertPos(ID, InsertPos));
-  }
 };
 
 //===----------------------------------------------------------------------===//
@@ -544,21 +600,21 @@ public:
 /// to provide the interface of FoldingSet but with deterministic iteration
 /// order based on the insertion order. T must be a subclass of FoldingSetNode
 /// and implement a Profile function.
-template <class T, class VectorT = SmallVector<T*, 8> >
+template <class T, class VectorT = SmallVector<T*, 8>>
 class FoldingSetVector {
   FoldingSet<T> Set;
   VectorT Vector;
 
 public:
-  explicit FoldingSetVector(unsigned Log2InitSize = 6)
-      : Set(Log2InitSize) {
-  }
+  explicit FoldingSetVector(unsigned Log2InitSize = 6) : Set(Log2InitSize) {}
 
-  typedef pointee_iterator<typename VectorT::iterator> iterator;
+  using iterator = pointee_iterator<typename VectorT::iterator>;
+
   iterator begin() { return Vector.begin(); }
   iterator end()   { return Vector.end(); }
 
-  typedef pointee_iterator<typename VectorT::const_iterator> const_iterator;
+  using const_iterator = pointee_iterator<typename VectorT::const_iterator>;
+
   const_iterator begin() const { return Vector.begin(); }
   const_iterator end()   const { return Vector.end(); }
 
@@ -609,7 +665,9 @@ public:
 class FoldingSetIteratorImpl {
 protected:
   FoldingSetNode *NodePtr;
+
   FoldingSetIteratorImpl(void **Bucket);
+
   void advance();
 
 public:
@@ -646,15 +704,13 @@ public:
 /// FoldingSetBucketIteratorImpl - This is the common bucket iterator support
 /// shared by all folding sets, which knows how to walk a particular bucket
 /// of a folding set hash table.
-
 class FoldingSetBucketIteratorImpl {
 protected:
   void *Ptr;
 
   explicit FoldingSetBucketIteratorImpl(void **Bucket);
 
-  FoldingSetBucketIteratorImpl(void **Bucket, bool)
-    : Ptr(Bucket) {}
+  FoldingSetBucketIteratorImpl(void **Bucket, bool) : Ptr(Bucket) {}
 
   void advance() {
     void *Probe = static_cast<FoldingSetNode*>(Ptr)->getNextInBucket();
@@ -740,11 +796,12 @@ template<typename T> struct FoldingSetTrait<T*> {
 template <typename T1, typename T2>
 struct FoldingSetTrait<std::pair<T1, T2>> {
   static inline void Profile(const std::pair<T1, T2> &P,
-                             llvm::FoldingSetNodeID &ID) {
+                             FoldingSetNodeID &ID) {
     ID.Add(P.first);
     ID.Add(P.second);
   }
 };
-} // End of namespace llvm.
 
-#endif
+} // end namespace llvm
+
+#endif // LLVM_ADT_FOLDINGSET_H

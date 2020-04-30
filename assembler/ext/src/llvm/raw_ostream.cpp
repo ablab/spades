@@ -1,9 +1,8 @@
 //===--- raw_ostream.cpp - Implement the raw_ostream classes --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,25 +14,67 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringExtras.h"
+#include "llvm/Config.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Format.h"
+#include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/MathExtras.h"
+#include "llvm/Support/NativeFormatting.h"
+#include "llvm/Support/Process.h"
+#include "llvm/Support/Program.h"
+#include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <cstdio>
+#include <iterator>
 #include <sys/stat.h>
 #include <system_error>
-#include <signal.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/uio.h>
+
+// <fcntl.h> may provide O_BINARY.
+#if defined(HAVE_FCNTL_H)
+# include <fcntl.h>
+#endif
+
+#if defined(HAVE_UNISTD_H)
+# include <unistd.h>
+#endif
 
 #if defined(__CYGWIN__)
 #include <io.h>
 #endif
 
+#if defined(_MSC_VER)
+#include <io.h>
+#ifndef STDIN_FILENO
+# define STDIN_FILENO 0
+#endif
+#ifndef STDOUT_FILENO
+# define STDOUT_FILENO 1
+#endif
+#ifndef STDERR_FILENO
+# define STDERR_FILENO 2
+#endif
+#endif
+
+#ifdef _WIN32
+#include "llvm/Support/ConvertUTF.h"
+#include "llvm/Support/Windows/WindowsSupport.h"
+#endif
+
 using namespace llvm;
+
+constexpr raw_ostream::Colors raw_ostream::BLACK;
+constexpr raw_ostream::Colors raw_ostream::RED;
+constexpr raw_ostream::Colors raw_ostream::GREEN;
+constexpr raw_ostream::Colors raw_ostream::YELLOW;
+constexpr raw_ostream::Colors raw_ostream::BLUE;
+constexpr raw_ostream::Colors raw_ostream::MAGENTA;
+constexpr raw_ostream::Colors raw_ostream::CYAN;
+constexpr raw_ostream::Colors raw_ostream::WHITE;
+constexpr raw_ostream::Colors raw_ostream::SAVEDCOLOR;
+constexpr raw_ostream::Colors raw_ostream::RESET;
 
 raw_ostream::~raw_ostream() {
   // raw_ostream's subclasses should take care to flush the buffer
@@ -41,12 +82,9 @@ raw_ostream::~raw_ostream() {
   assert(OutBufCur == OutBufStart &&
          "raw_ostream destructor called with non-empty buffer!");
 
-  if (BufferMode == InternalBuffer)
+  if (BufferMode == BufferKind::InternalBuffer)
     delete [] OutBufStart;
 }
-
-// An out of line virtual method to provide a home for the class vtable.
-void raw_ostream::handle() {}
 
 size_t raw_ostream::preferred_buffer_size() const {
   // BUFSIZ is intended to be a reasonable default.
@@ -64,14 +102,14 @@ void raw_ostream::SetBuffered() {
 
 void raw_ostream::SetBufferAndMode(char *BufferStart, size_t Size,
                                    BufferKind Mode) {
-  assert(((Mode == Unbuffered && !BufferStart && Size == 0) ||
-          (Mode != Unbuffered && BufferStart && Size != 0)) &&
+  assert(((Mode == BufferKind::Unbuffered && !BufferStart && Size == 0) ||
+          (Mode != BufferKind::Unbuffered && BufferStart && Size != 0)) &&
          "stream must be unbuffered or have at least one byte");
   // Make sure the current buffer is free of content (we can't flush here; the
   // child buffer management logic will be in write_impl).
   assert(GetNumBytesInBuffer() == 0 && "Current buffer is non-empty!");
 
-  if (BufferMode == InternalBuffer)
+  if (BufferMode == BufferKind::InternalBuffer)
     delete [] OutBufStart;
   OutBufStart = BufferStart;
   OutBufEnd = OutBufStart+Size;
@@ -82,80 +120,51 @@ void raw_ostream::SetBufferAndMode(char *BufferStart, size_t Size,
 }
 
 raw_ostream &raw_ostream::operator<<(unsigned long N) {
-  // Zero is a special case.
-  if (N == 0)
-    return *this << '0';
-
-  char NumberBuffer[20];
-  char *EndPtr = NumberBuffer+sizeof(NumberBuffer);
-  char *CurPtr = EndPtr;
-
-  while (N) {
-    *--CurPtr = '0' + char(N % 10);
-    N /= 10;
-  }
-  return write(CurPtr, EndPtr-CurPtr);
+  write_integer(*this, static_cast<uint64_t>(N), 0, IntegerStyle::Integer);
+  return *this;
 }
 
 raw_ostream &raw_ostream::operator<<(long N) {
-  if (N <  0) {
-    *this << '-';
-    // Avoid undefined behavior on LONG_MIN with a cast.
-    N = -(unsigned long)N;
-  }
-
-  return this->operator<<(static_cast<unsigned long>(N));
+  write_integer(*this, static_cast<int64_t>(N), 0, IntegerStyle::Integer);
+  return *this;
 }
 
 raw_ostream &raw_ostream::operator<<(unsigned long long N) {
-  // Output using 32-bit div/mod when possible.
-  if (N == static_cast<unsigned long>(N))
-    return this->operator<<(static_cast<unsigned long>(N));
-
-  char NumberBuffer[20];
-  char *EndPtr = NumberBuffer+sizeof(NumberBuffer);
-  char *CurPtr = EndPtr;
-
-  while (N) {
-    *--CurPtr = '0' + char(N % 10);
-    N /= 10;
-  }
-  return write(CurPtr, EndPtr-CurPtr);
+  write_integer(*this, static_cast<uint64_t>(N), 0, IntegerStyle::Integer);
+  return *this;
 }
 
 raw_ostream &raw_ostream::operator<<(long long N) {
-  if (N < 0) {
-    *this << '-';
-    // Avoid undefined behavior on INT64_MIN with a cast.
-    N = -(unsigned long long)N;
-  }
-
-  return this->operator<<(static_cast<unsigned long long>(N));
+  write_integer(*this, static_cast<int64_t>(N), 0, IntegerStyle::Integer);
+  return *this;
 }
 
 raw_ostream &raw_ostream::write_hex(unsigned long long N) {
-  // Zero is a special case.
-  if (N == 0)
-    return *this << '0';
-
-  char NumberBuffer[20];
-  char *EndPtr = NumberBuffer+sizeof(NumberBuffer);
-  char *CurPtr = EndPtr;
-
-  while (N) {
-    uintptr_t x = N % 16;
-    *--CurPtr = (x < 10 ? '0' + x : 'a' + x - 10);
-    N /= 16;
-  }
-
-  return write(CurPtr, EndPtr-CurPtr);
+  llvm::write_hex(*this, N, HexPrintStyle::Lower);
+  return *this;
 }
+
+raw_ostream &raw_ostream::operator<<(Colors C) {
+  if (C == Colors::RESET)
+    resetColor();
+  else
+    changeColor(C);
+  return *this;
+}
+
+raw_ostream &raw_ostream::write_uuid(const uuid_t UUID) {
+  for (int Idx = 0; Idx < 16; ++Idx) {
+    *this << format("%02" PRIX32, UUID[Idx]);
+    if (Idx == 3 || Idx == 5 || Idx == 7 || Idx == 9)
+      *this << "-";
+  }
+  return *this;
+}
+
 
 raw_ostream &raw_ostream::write_escaped(StringRef Str,
                                         bool UseHexEscapes) {
-  for (unsigned i = 0, e = Str.size(); i != e; ++i) {
-    unsigned char c = Str[i];
-
+  for (unsigned char c : Str) {
     switch (c) {
     case '\\':
       *this << '\\' << '\\';
@@ -170,7 +179,7 @@ raw_ostream &raw_ostream::write_escaped(StringRef Str,
       *this << '\\' << '"';
       break;
     default:
-      if (std::isprint(c)) {
+      if (isPrint(c)) {
         *this << c;
         break;
       }
@@ -194,53 +203,14 @@ raw_ostream &raw_ostream::write_escaped(StringRef Str,
 }
 
 raw_ostream &raw_ostream::operator<<(const void *P) {
-  *this << '0' << 'x';
-
-  return write_hex((uintptr_t) P);
+  llvm::write_hex(*this, (uintptr_t)P, HexPrintStyle::PrefixLower);
+  return *this;
 }
 
 raw_ostream &raw_ostream::operator<<(double N) {
-#ifdef _WIN32
-  // On MSVCRT and compatible, output of %e is incompatible to Posix
-  // by default. Number of exponent digits should be at least 2. "%+03d"
-  // FIXME: Implement our formatter to here or Support/Format.h!
-#if __cplusplus >= 201103L && defined(__MINGW32__)
-  // FIXME: It should be generic to C++11.
-  if (N == 0.0 && std::signbit(N))
-    return *this << "-0.000000e+00";
-#else
-  int fpcl = _fpclass(N);
-
-  // negative zero
-  if (fpcl == _FPCLASS_NZ)
-    return *this << "-0.000000e+00";
-#endif
-
-  char buf[16];
-  unsigned len;
-  len = format("%e", N).snprint(buf, sizeof(buf));
-  if (len <= sizeof(buf) - 2) {
-    if (len >= 5 && buf[len - 5] == 'e' && buf[len - 3] == '0') {
-      int cs = buf[len - 4];
-      if (cs == '+' || cs == '-') {
-        int c1 = buf[len - 2];
-        int c0 = buf[len - 1];
-        if (isdigit(static_cast<unsigned char>(c1)) &&
-            isdigit(static_cast<unsigned char>(c0))) {
-          // Trim leading '0': "...e+012" -> "...e+12\0"
-          buf[len - 3] = c1;
-          buf[len - 2] = c0;
-          buf[--len] = 0;
-        }
-      }
-    }
-    return this->operator<<(buf);
-  }
-#endif
-  return this->operator<<(format("%e", N));
+  llvm::write_double(*this, N, FloatStyle::Exponent);
+  return *this;
 }
-
-
 
 void raw_ostream::flush_nonempty() {
   assert(OutBufCur > OutBufStart && "Invalid call to flush_nonempty.");
@@ -253,7 +223,7 @@ raw_ostream &raw_ostream::write(unsigned char C) {
   // Group exceptional cases into a single branch.
   if (LLVM_UNLIKELY(OutBufCur >= OutBufEnd)) {
     if (LLVM_UNLIKELY(!OutBufStart)) {
-      if (BufferMode == Unbuffered) {
+      if (BufferMode == BufferKind::Unbuffered) {
         write_impl(reinterpret_cast<char*>(&C), 1);
         return *this;
       }
@@ -273,7 +243,7 @@ raw_ostream &raw_ostream::write(const char *Ptr, size_t Size) {
   // Group exceptional cases into a single branch.
   if (LLVM_UNLIKELY(size_t(OutBufEnd - OutBufCur) < Size)) {
     if (LLVM_UNLIKELY(!OutBufStart)) {
-      if (BufferMode == Unbuffered) {
+      if (BufferMode == BufferKind::Unbuffered) {
         write_impl(Ptr, Size);
         return *this;
       }
@@ -318,10 +288,10 @@ void raw_ostream::copy_to_buffer(const char *Ptr, size_t Size) {
   // Handle short strings specially, memcpy isn't very good at very short
   // strings.
   switch (Size) {
-  case 4: OutBufCur[3] = Ptr[3]; // FALL THROUGH
-  case 3: OutBufCur[2] = Ptr[2]; // FALL THROUGH
-  case 2: OutBufCur[1] = Ptr[1]; // FALL THROUGH
-  case 1: OutBufCur[0] = Ptr[0]; // FALL THROUGH
+  case 4: OutBufCur[3] = Ptr[3]; LLVM_FALLTHROUGH;
+  case 3: OutBufCur[2] = Ptr[2]; LLVM_FALLTHROUGH;
+  case 2: OutBufCur[1] = Ptr[1]; LLVM_FALLTHROUGH;
+  case 1: OutBufCur[0] = Ptr[0]; LLVM_FALLTHROUGH;
   case 0: break;
   default:
     memcpy(OutBufCur, Ptr, Size);
@@ -356,7 +326,7 @@ raw_ostream &raw_ostream::operator<<(const format_object_base &Fmt) {
   // space.  Iterate until we win.
   SmallVector<char, 128> V;
 
-  while (1) {
+  while (true) {
     V.resize(NextBufferSize);
 
     // Try formatting into the SmallVector.
@@ -372,84 +342,164 @@ raw_ostream &raw_ostream::operator<<(const format_object_base &Fmt) {
   }
 }
 
+raw_ostream &raw_ostream::operator<<(const formatv_object_base &Obj) {
+  Obj.format(*this);
+  return *this;
+}
+
 raw_ostream &raw_ostream::operator<<(const FormattedString &FS) {
-  unsigned Len = FS.Str.size(); 
-  int PadAmount = FS.Width - Len;
-  if (FS.RightJustify && (PadAmount > 0))
-    this->indent(PadAmount);
-  this->operator<<(FS.Str);
-  if (!FS.RightJustify && (PadAmount > 0))
-    this->indent(PadAmount);
+  unsigned LeftIndent = 0;
+  unsigned RightIndent = 0;
+  const ssize_t Difference = FS.Width - FS.Str.size();
+  if (Difference > 0) {
+    switch (FS.Justify) {
+    case FormattedString::JustifyNone:
+      break;
+    case FormattedString::JustifyLeft:
+      RightIndent = Difference;
+      break;
+    case FormattedString::JustifyRight:
+      LeftIndent = Difference;
+      break;
+    case FormattedString::JustifyCenter:
+      LeftIndent = Difference / 2;
+      RightIndent = Difference - LeftIndent;
+      break;
+    }
+  }
+  indent(LeftIndent);
+  (*this) << FS.Str;
+  indent(RightIndent);
   return *this;
 }
 
 raw_ostream &raw_ostream::operator<<(const FormattedNumber &FN) {
   if (FN.Hex) {
-    unsigned Nibbles = (64 - countLeadingZeros(FN.HexValue)+3)/4;
-    unsigned PrefixChars = FN.HexPrefix ? 2 : 0;
-    unsigned Width = std::max(FN.Width, Nibbles + PrefixChars);
-
-    char NumberBuffer[20] = "0x0000000000000000";
-    if (!FN.HexPrefix)
-      NumberBuffer[1] = '0';
-    char *EndPtr = NumberBuffer+Width;
-    char *CurPtr = EndPtr;
-    const char A = FN.Upper ? 'A' : 'a';
-    unsigned long long N = FN.HexValue;
-    while (N) {
-      uintptr_t x = N % 16;
-      *--CurPtr = (x < 10 ? '0' + x : A + x - 10);
-      N /= 16;
-    }
-
-    return write(NumberBuffer, Width);
+    HexPrintStyle Style;
+    if (FN.Upper && FN.HexPrefix)
+      Style = HexPrintStyle::PrefixUpper;
+    else if (FN.Upper && !FN.HexPrefix)
+      Style = HexPrintStyle::Upper;
+    else if (!FN.Upper && FN.HexPrefix)
+      Style = HexPrintStyle::PrefixLower;
+    else
+      Style = HexPrintStyle::Lower;
+    llvm::write_hex(*this, FN.HexValue, Style, FN.Width);
   } else {
-    // Zero is a special case.
-    if (FN.DecValue == 0) {
-      this->indent(FN.Width-1);
-      return *this << '0';
-    }
-    char NumberBuffer[32];
-    char *EndPtr = NumberBuffer+sizeof(NumberBuffer);
-    char *CurPtr = EndPtr;
-    bool Neg = (FN.DecValue < 0);
-    uint64_t N = Neg ? -static_cast<uint64_t>(FN.DecValue) : FN.DecValue;
-    while (N) {
-      *--CurPtr = '0' + char(N % 10);
-      N /= 10;
-    }
-    int Len = EndPtr - CurPtr;
-    int Pad = FN.Width - Len;
-    if (Neg) 
-      --Pad;
-    if (Pad > 0)
-      this->indent(Pad);
-    if (Neg)
-      *this << '-';
-    return write(CurPtr, Len);
-  }
-}
-
-
-/// indent - Insert 'NumSpaces' spaces.
-raw_ostream &raw_ostream::indent(unsigned NumSpaces) {
-  static const char Spaces[] = "                                "
-                               "                                "
-                               "                ";
-
-  // Usually the indentation is small, handle it with a fastpath.
-  if (NumSpaces < array_lengthof(Spaces))
-    return write(Spaces, NumSpaces);
-
-  while (NumSpaces) {
-    unsigned NumToWrite = std::min(NumSpaces,
-                                   (unsigned)array_lengthof(Spaces)-1);
-    write(Spaces, NumToWrite);
-    NumSpaces -= NumToWrite;
+    llvm::SmallString<16> Buffer;
+    llvm::raw_svector_ostream Stream(Buffer);
+    llvm::write_integer(Stream, FN.DecValue, 0, IntegerStyle::Integer);
+    if (Buffer.size() < FN.Width)
+      indent(FN.Width - Buffer.size());
+    (*this) << Buffer;
   }
   return *this;
 }
 
+raw_ostream &raw_ostream::operator<<(const FormattedBytes &FB) {
+  if (FB.Bytes.empty())
+    return *this;
+
+  size_t LineIndex = 0;
+  auto Bytes = FB.Bytes;
+  const size_t Size = Bytes.size();
+  HexPrintStyle HPS = FB.Upper ? HexPrintStyle::Upper : HexPrintStyle::Lower;
+  uint64_t OffsetWidth = 0;
+  if (FB.FirstByteOffset.hasValue()) {
+    // Figure out how many nibbles are needed to print the largest offset
+    // represented by this data set, so that we can align the offset field
+    // to the right width.
+    size_t Lines = Size / FB.NumPerLine;
+    uint64_t MaxOffset = *FB.FirstByteOffset + Lines * FB.NumPerLine;
+    unsigned Power = 0;
+    if (MaxOffset > 0)
+      Power = llvm::Log2_64_Ceil(MaxOffset);
+    OffsetWidth = std::max<uint64_t>(4, llvm::alignTo(Power, 4) / 4);
+  }
+
+  // The width of a block of data including all spaces for group separators.
+  unsigned NumByteGroups =
+      alignTo(FB.NumPerLine, FB.ByteGroupSize) / FB.ByteGroupSize;
+  unsigned BlockCharWidth = FB.NumPerLine * 2 + NumByteGroups - 1;
+
+  while (!Bytes.empty()) {
+    indent(FB.IndentLevel);
+
+    if (FB.FirstByteOffset.hasValue()) {
+      uint64_t Offset = FB.FirstByteOffset.getValue();
+      llvm::write_hex(*this, Offset + LineIndex, HPS, OffsetWidth);
+      *this << ": ";
+    }
+
+    auto Line = Bytes.take_front(FB.NumPerLine);
+
+    size_t CharsPrinted = 0;
+    // Print the hex bytes for this line in groups
+    for (size_t I = 0; I < Line.size(); ++I, CharsPrinted += 2) {
+      if (I && (I % FB.ByteGroupSize) == 0) {
+        ++CharsPrinted;
+        *this << " ";
+      }
+      llvm::write_hex(*this, Line[I], HPS, 2);
+    }
+
+    if (FB.ASCII) {
+      // Print any spaces needed for any bytes that we didn't print on this
+      // line so that the ASCII bytes are correctly aligned.
+      assert(BlockCharWidth >= CharsPrinted);
+      indent(BlockCharWidth - CharsPrinted + 2);
+      *this << "|";
+
+      // Print the ASCII char values for each byte on this line
+      for (uint8_t Byte : Line) {
+        if (isPrint(Byte))
+          *this << static_cast<char>(Byte);
+        else
+          *this << '.';
+      }
+      *this << '|';
+    }
+
+    Bytes = Bytes.drop_front(Line.size());
+    LineIndex += Line.size();
+    if (LineIndex < Size)
+      *this << '\n';
+  }
+  return *this;
+}
+
+template <char C>
+static raw_ostream &write_padding(raw_ostream &OS, unsigned NumChars) {
+  static const char Chars[] = {C, C, C, C, C, C, C, C, C, C, C, C, C, C, C, C,
+                               C, C, C, C, C, C, C, C, C, C, C, C, C, C, C, C,
+                               C, C, C, C, C, C, C, C, C, C, C, C, C, C, C, C,
+                               C, C, C, C, C, C, C, C, C, C, C, C, C, C, C, C,
+                               C, C, C, C, C, C, C, C, C, C, C, C, C, C, C, C};
+
+  // Usually the indentation is small, handle it with a fastpath.
+  if (NumChars < array_lengthof(Chars))
+    return OS.write(Chars, NumChars);
+
+  while (NumChars) {
+    unsigned NumToWrite = std::min(NumChars,
+                                   (unsigned)array_lengthof(Chars)-1);
+    OS.write(Chars, NumToWrite);
+    NumChars -= NumToWrite;
+  }
+  return OS;
+}
+
+/// indent - Insert 'NumSpaces' spaces.
+raw_ostream &raw_ostream::indent(unsigned NumSpaces) {
+  return write_padding<' '>(*this, NumSpaces);
+}
+
+/// write_zeros - Insert 'NumZeros' nulls.
+raw_ostream &raw_ostream::write_zeros(unsigned NumZeros) {
+  return write_padding<'\0'>(*this, NumZeros);
+}
+
+void raw_ostream::anchor() {}
 
 //===----------------------------------------------------------------------===//
 //  Formatted Output
@@ -464,53 +514,104 @@ void format_object_base::home() {
 //===----------------------------------------------------------------------===//
 
 static int getFD(StringRef Filename, std::error_code &EC,
+                 sys::fs::CreationDisposition Disp, sys::fs::FileAccess Access,
                  sys::fs::OpenFlags Flags) {
+  assert((Access & sys::fs::FA_Write) &&
+         "Cannot make a raw_ostream from a read-only descriptor!");
+
   // Handle "-" as stdout. Note that when we do this, we consider ourself
-  // the owner of stdout. This means that we can do things like close the
-  // file descriptor when we're done and set the "binary" flag globally.
+  // the owner of stdout and may set the "binary" flag globally based on Flags.
   if (Filename == "-") {
     EC = std::error_code();
+    // If user requested binary then put stdout into binary mode if
+    // possible.
+    if (!(Flags & sys::fs::OF_Text))
+      sys::ChangeStdoutToBinary();
     return STDOUT_FILENO;
   }
 
   int FD;
-  EC = sys::fs::openFileForWrite(Filename, FD, Flags);
+  if (Access & sys::fs::FA_Read)
+    EC = sys::fs::openFileForReadWrite(Filename, FD, Disp, Flags);
+  else
+    EC = sys::fs::openFileForWrite(Filename, FD, Disp, Flags);
   if (EC)
     return -1;
 
   return FD;
 }
 
+raw_fd_ostream::raw_fd_ostream(StringRef Filename, std::error_code &EC)
+    : raw_fd_ostream(Filename, EC, sys::fs::CD_CreateAlways, sys::fs::FA_Write,
+                     sys::fs::OF_None) {}
+
+raw_fd_ostream::raw_fd_ostream(StringRef Filename, std::error_code &EC,
+                               sys::fs::CreationDisposition Disp)
+    : raw_fd_ostream(Filename, EC, Disp, sys::fs::FA_Write, sys::fs::OF_None) {}
+
+raw_fd_ostream::raw_fd_ostream(StringRef Filename, std::error_code &EC,
+                               sys::fs::FileAccess Access)
+    : raw_fd_ostream(Filename, EC, sys::fs::CD_CreateAlways, Access,
+                     sys::fs::OF_None) {}
+
 raw_fd_ostream::raw_fd_ostream(StringRef Filename, std::error_code &EC,
                                sys::fs::OpenFlags Flags)
-    : raw_fd_ostream(getFD(Filename, EC, Flags), true) {}
+    : raw_fd_ostream(Filename, EC, sys::fs::CD_CreateAlways, sys::fs::FA_Write,
+                     Flags) {}
+
+raw_fd_ostream::raw_fd_ostream(StringRef Filename, std::error_code &EC,
+                               sys::fs::CreationDisposition Disp,
+                               sys::fs::FileAccess Access,
+                               sys::fs::OpenFlags Flags)
+    : raw_fd_ostream(getFD(Filename, EC, Disp, Access, Flags), true) {}
 
 /// FD is the file descriptor that this writes to.  If ShouldClose is true, this
 /// closes the file when the stream is destroyed.
 raw_fd_ostream::raw_fd_ostream(int fd, bool shouldClose, bool unbuffered)
-    : raw_pwrite_stream(unbuffered), FD(fd), ShouldClose(shouldClose),
-      Error(false) {
+    : raw_pwrite_stream(unbuffered), FD(fd), ShouldClose(shouldClose) {
   if (FD < 0 ) {
     ShouldClose = false;
     return;
   }
 
+  // Do not attempt to close stdout or stderr. We used to try to maintain the
+  // property that tools that support writing file to stdout should not also
+  // write informational output to stdout, but in practice we were never able to
+  // maintain this invariant. Many features have been added to LLVM and clang
+  // (-fdump-record-layouts, optimization remarks, etc) that print to stdout, so
+  // users must simply be aware that mixed output and remarks is a possibility.
+  if (FD <= STDERR_FILENO)
+    ShouldClose = false;
+
+#ifdef _WIN32
+  // Check if this is a console device. This is not equivalent to isatty.
+  IsWindowsConsole =
+      ::GetFileType((HANDLE)::_get_osfhandle(fd)) == FILE_TYPE_CHAR;
+#endif
+
   // Get the starting position.
   off_t loc = ::lseek(FD, 0, SEEK_CUR);
+#ifdef _WIN32
+  // MSVCRT's _lseek(SEEK_CUR) doesn't return -1 for pipes.
+  sys::fs::file_status Status;
+  std::error_code EC = status(FD, Status);
+  SupportsSeeking = !EC && Status.type() == sys::fs::file_type::regular_file;
+#else
   SupportsSeeking = loc != (off_t)-1;
+#endif
   if (!SupportsSeeking)
     pos = 0;
   else
     pos = static_cast<uint64_t>(loc);
 }
 
-static std::error_code SafelyCloseFileDescriptor(int FD);
-
 raw_fd_ostream::~raw_fd_ostream() {
   if (FD >= 0) {
     flush();
-    if (ShouldClose && SafelyCloseFileDescriptor(FD))
-      error_detected();
+    if (ShouldClose) {
+      if (auto EC = sys::Process::SafelyCloseFileDescriptor(FD))
+        error_detected(EC);
+    }
   }
 
 #ifdef __MINGW32__
@@ -526,21 +627,85 @@ raw_fd_ostream::~raw_fd_ostream() {
   // has_error() and clear the error flag with clear_error() before
   // destructing raw_ostream objects which may have errors.
   if (has_error())
-    report_fatal_error("IO failure on output stream.", /*GenCrashDiag=*/false);
+    report_fatal_error("IO failure on output stream: " + error().message(),
+                       /*gen_crash_diag=*/false);
 }
 
+#if defined(_WIN32)
+// The most reliable way to print unicode in a Windows console is with
+// WriteConsoleW. To use that, first transcode from UTF-8 to UTF-16. This
+// assumes that LLVM programs always print valid UTF-8 to the console. The data
+// might not be UTF-8 for two major reasons:
+// 1. The program is printing binary (-filetype=obj -o -), in which case it
+// would have been gibberish anyway.
+// 2. The program is printing text in a semi-ascii compatible codepage like
+// shift-jis or cp1252.
+//
+// Most LLVM programs don't produce non-ascii text unless they are quoting
+// user source input. A well-behaved LLVM program should either validate that
+// the input is UTF-8 or transcode from the local codepage to UTF-8 before
+// quoting it. If they don't, this may mess up the encoding, but this is still
+// probably the best compromise we can make.
+static bool write_console_impl(int FD, StringRef Data) {
+  SmallVector<wchar_t, 256> WideText;
+
+  // Fall back to ::write if it wasn't valid UTF-8.
+  if (auto EC = sys::windows::UTF8ToUTF16(Data, WideText))
+    return false;
+
+  // On Windows 7 and earlier, WriteConsoleW has a low maximum amount of data
+  // that can be written to the console at a time.
+  size_t MaxWriteSize = WideText.size();
+  if (!RunningWindows8OrGreater())
+    MaxWriteSize = 32767;
+
+  size_t WCharsWritten = 0;
+  do {
+    size_t WCharsToWrite =
+        std::min(MaxWriteSize, WideText.size() - WCharsWritten);
+    DWORD ActuallyWritten;
+    bool Success =
+        ::WriteConsoleW((HANDLE)::_get_osfhandle(FD), &WideText[WCharsWritten],
+                        WCharsToWrite, &ActuallyWritten,
+                        /*Reserved=*/nullptr);
+
+    // The most likely reason for WriteConsoleW to fail is that FD no longer
+    // points to a console. Fall back to ::write. If this isn't the first loop
+    // iteration, something is truly wrong.
+    if (!Success)
+      return false;
+
+    WCharsWritten += ActuallyWritten;
+  } while (WCharsWritten != WideText.size());
+  return true;
+}
+#endif
 
 void raw_fd_ostream::write_impl(const char *Ptr, size_t Size) {
   assert(FD >= 0 && "File already closed.");
   pos += Size;
 
-  bool ShouldWriteInChunks = false;
+#if defined(_WIN32)
+  // If this is a Windows console device, try re-encoding from UTF-8 to UTF-16
+  // and using WriteConsoleW. If that fails, fall back to plain write().
+  if (IsWindowsConsole)
+    if (write_console_impl(FD, StringRef(Ptr, Size)))
+      return;
+#endif
+
+  // The maximum write size is limited to INT32_MAX. A write
+  // greater than SSIZE_MAX is implementation-defined in POSIX,
+  // and Windows _write requires 32 bit input.
+  size_t MaxWriteSize = INT32_MAX;
+
+#if defined(__linux__)
+  // It is observed that Linux returns EINVAL for a very large write (>2G).
+  // Make it a reasonably small value.
+  MaxWriteSize = 1024 * 1024 * 1024;
+#endif
 
   do {
-    size_t ChunkSize = Size;
-    if (ChunkSize > 32767 && ShouldWriteInChunks)
-        ChunkSize = 32767;
-
+    size_t ChunkSize = std::min(Size, MaxWriteSize);
     ssize_t ret = ::write(FD, Ptr, ChunkSize);
 
     if (ret < 0) {
@@ -560,7 +725,7 @@ void raw_fd_ostream::write_impl(const char *Ptr, size_t Size) {
         continue;
 
       // Otherwise it's a non-recoverable error. Note it and quit.
-      error_detected();
+      error_detected(std::error_code(errno, std::generic_category()));
       break;
     }
 
@@ -576,16 +741,23 @@ void raw_fd_ostream::close() {
   assert(ShouldClose);
   ShouldClose = false;
   flush();
-  if (SafelyCloseFileDescriptor(FD))
-    error_detected();
+  if (auto EC = sys::Process::SafelyCloseFileDescriptor(FD))
+    error_detected(EC);
   FD = -1;
 }
 
 uint64_t raw_fd_ostream::seek(uint64_t off) {
+  assert(SupportsSeeking && "Stream does not support seeking!");
   flush();
+#ifdef _WIN32
+  pos = ::_lseeki64(FD, off, SEEK_SET);
+#elif defined(HAVE_LSEEK64)
+  pos = ::lseek64(FD, off, SEEK_SET);
+#else
   pos = ::lseek(FD, off, SEEK_SET);
+#endif
   if (pos == (uint64_t)-1)
-    error_detected();
+    error_detected(std::error_code(errno, std::generic_category()));
   return pos;
 }
 
@@ -598,7 +770,17 @@ void raw_fd_ostream::pwrite_impl(const char *Ptr, size_t Size,
 }
 
 size_t raw_fd_ostream::preferred_buffer_size() const {
-  // Windows and Minix have no st_blksize.
+#if defined(_WIN32)
+  // Disable buffering for console devices. Console output is re-encoded from
+  // UTF-8 to UTF-16 on Windows, and buffering it would require us to split the
+  // buffer on a valid UTF-8 codepoint boundary. Terminal buffering is disabled
+  // below on most other OSs, so do the same thing on Windows and avoid that
+  // complexity.
+  if (IsWindowsConsole)
+    return 0;
+  return raw_ostream::preferred_buffer_size();
+#elif !defined(__minix)
+  // Minix has no st_blksize.
   assert(FD >= 0 && "File not yet open!");
   struct stat statbuf;
   if (fstat(FD, &statbuf) != 0)
@@ -607,32 +789,76 @@ size_t raw_fd_ostream::preferred_buffer_size() const {
   // If this is a terminal, don't use buffering. Line buffering
   // would be a more traditional thing to do, but it's not worth
   // the complexity.
-  if (S_ISCHR(statbuf.st_mode) && isatty(FD))
+  if (S_ISCHR(statbuf.st_mode) && is_displayed())
     return 0;
   // Return the preferred block size.
   return statbuf.st_blksize;
+#else
+  return raw_ostream::preferred_buffer_size();
+#endif
 }
 
 raw_ostream &raw_fd_ostream::changeColor(enum Colors colors, bool bold,
                                          bool bg) {
+  if (!ColorEnabled)
+    return *this;
+
+  if (sys::Process::ColorNeedsFlush())
+    flush();
+  const char *colorcode =
+      (colors == SAVEDCOLOR)
+          ? sys::Process::OutputBold(bg)
+          : sys::Process::OutputColor(static_cast<char>(colors), bold, bg);
+  if (colorcode) {
+    size_t len = strlen(colorcode);
+    write(colorcode, len);
+    // don't account colors towards output characters
+    pos -= len;
+  }
   return *this;
 }
 
 raw_ostream &raw_fd_ostream::resetColor() {
+  if (!ColorEnabled)
+    return *this;
+
+  if (sys::Process::ColorNeedsFlush())
+    flush();
+  const char *colorcode = sys::Process::ResetColor();
+  if (colorcode) {
+    size_t len = strlen(colorcode);
+    write(colorcode, len);
+    // don't account colors towards output characters
+    pos -= len;
+  }
   return *this;
 }
 
 raw_ostream &raw_fd_ostream::reverseColor() {
+  if (!ColorEnabled)
+    return *this;
+
+  if (sys::Process::ColorNeedsFlush())
+    flush();
+  const char *colorcode = sys::Process::OutputReverse();
+  if (colorcode) {
+    size_t len = strlen(colorcode);
+    write(colorcode, len);
+    // don't account colors towards output characters
+    pos -= len;
+  }
   return *this;
 }
 
 bool raw_fd_ostream::is_displayed() const {
-  return isatty(FD);
+  return sys::Process::FileDescriptorIsDisplayed(FD);
 }
 
 bool raw_fd_ostream::has_colors() const {
-  return false;
+  return sys::Process::FileDescriptorHasColors(FD);
 }
+
+void raw_fd_ostream::anchor() {}
 
 //===----------------------------------------------------------------------===//
 //  outs(), errs(), nulls()
@@ -642,10 +868,8 @@ bool raw_fd_ostream::has_colors() const {
 /// Use it like: outs() << "foo" << "bar";
 raw_ostream &llvm::outs() {
   // Set buffer settings to model stdout behavior.
-  // Delete the file descriptor when the program exits, forcing error
-  // detection. If you don't want this behavior, don't use outs().
   std::error_code EC;
-  static raw_fd_ostream S("-", EC, sys::fs::F_None);
+  static raw_fd_ostream S("-", EC, sys::fs::OF_None);
   assert(!EC);
   return S;
 }
@@ -663,7 +887,6 @@ raw_ostream &llvm::nulls() {
   static raw_null_ostream S;
   return S;
 }
-
 
 //===----------------------------------------------------------------------===//
 //  raw_string_ostream
@@ -715,38 +938,6 @@ uint64_t raw_null_ostream::current_pos() const {
 void raw_null_ostream::pwrite_impl(const char *Ptr, size_t Size,
                                    uint64_t Offset) {}
 
+void raw_pwrite_stream::anchor() {}
 
-static std::error_code SafelyCloseFileDescriptor(int FD) {
-  // Create a signal set filled with *all* signals.
-  sigset_t FullSet;
-  if (sigfillset(&FullSet) < 0)
-    return std::error_code(errno, std::generic_category());
-  // Atomically swap our current signal mask with a full mask.
-  sigset_t SavedSet;
-#if LLVM_ENABLE_THREADS
-  if (int EC = pthread_sigmask(SIG_SETMASK, &FullSet, &SavedSet))
-    return std::error_code(EC, std::generic_category());
-#else
-  if (sigprocmask(SIG_SETMASK, &FullSet, &SavedSet) < 0)
-    return std::error_code(errno, std::generic_category());
-#endif
-  // Attempt to close the file descriptor.
-  // We need to save the error, if one occurs, because our subsequent call to
-  // pthread_sigmask might tamper with errno.
-  int ErrnoFromClose = 0;
-  if (::close(FD) < 0)
-    ErrnoFromClose = errno;
-  // Restore the signal mask back to what we saved earlier.
-  int EC = 0;
-#if LLVM_ENABLE_THREADS
-  EC = pthread_sigmask(SIG_SETMASK, &SavedSet, nullptr);
-#else
-  if (sigprocmask(SIG_SETMASK, &SavedSet, nullptr) < 0)
-    EC = errno;
-#endif
-  // The error code from close takes precedence over the one from
-  // pthread_sigmask.
-  if (ErrnoFromClose)
-    return std::error_code(ErrnoFromClose, std::generic_category());
-  return std::error_code(EC, std::generic_category());
-}
+void buffer_ostream::anchor() {}

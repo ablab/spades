@@ -1,9 +1,8 @@
 //===- llvm/Support/Errno.h - Portable+convenient errno handling -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,7 +13,9 @@
 #ifndef LLVM_SUPPORT_ERRNO_H
 #define LLVM_SUPPORT_ERRNO_H
 
+#include <cerrno>
 #include <string>
+#include <type_traits>
 
 namespace llvm {
 namespace sys {
@@ -27,6 +28,17 @@ std::string StrError();
 
 /// Like the no-argument version above, but uses \p errnum instead of errno.
 std::string StrError(int errnum);
+
+template <typename FailT, typename Fun, typename... Args>
+inline decltype(auto) RetryAfterSignal(const FailT &Fail, const Fun &F,
+                                       const Args &... As) {
+  decltype(F(As...)) Res;
+  do {
+    errno = 0;
+    Res = F(As...);
+  } while (Res == Fail && errno == EINTR);
+  return Res;
+}
 
 }  // namespace sys
 }  // namespace llvm

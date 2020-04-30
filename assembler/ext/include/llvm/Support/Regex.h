@@ -1,9 +1,8 @@
 //===-- Regex.h - Regular Expression matcher implementation -*- C++ -*-----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -43,7 +42,11 @@ namespace llvm {
       BasicRegex=4
     };
 
+    Regex();
     /// Compiles the given regular expression \p Regex.
+    ///
+    /// \param Regex - referenced string is no longer needed after this
+    /// constructor does finish.  Only its compiled form is kept stored.
     Regex(StringRef Regex, unsigned Flags = NoFlags);
     Regex(const Regex &) = delete;
     Regex &operator=(Regex regex) {
@@ -51,16 +54,13 @@ namespace llvm {
       std::swap(error, regex.error);
       return *this;
     }
-    Regex(Regex &&regex) {
-      preg = regex.preg;
-      error = regex.error;
-      regex.preg = nullptr;
-    }
+    Regex(Regex &&regex);
     ~Regex();
 
-    /// isValid - returns the error encountered during regex compilation, or
-    /// matching, if any.
-    bool isValid(std::string &Error);
+    /// isValid - returns the error encountered during regex compilation, if
+    /// any.
+    bool isValid(std::string &Error) const;
+    bool isValid() const { return !error; }
 
     /// getNumMatches - In a valid regex, return the number of parenthesized
     /// matches it contains.  The number filled in by match will include this
@@ -73,8 +73,12 @@ namespace llvm {
     /// with references to the matched group expressions (inside \p String),
     /// the first group is always the entire pattern.
     ///
+    /// \param Error - If non-null, any errors in the matching will be recorded
+    /// as a non-empty string. If there is no error, it will be an empty string.
+    ///
     /// This returns true on a successful match.
-    bool match(StringRef String, SmallVectorImpl<StringRef> *Matches = nullptr);
+    bool match(StringRef String, SmallVectorImpl<StringRef> *Matches = nullptr,
+               std::string *Error = nullptr) const;
 
     /// sub - Return the result of replacing the first match of the regex in
     /// \p String with the \p Repl string. Backreferences like "\0" in the
@@ -85,15 +89,15 @@ namespace llvm {
     ///
     /// \param Error If non-null, any errors in the substitution (invalid
     /// backreferences, trailing backslashes) will be recorded as a non-empty
-    /// string.
+    /// string. If there is no error, it will be an empty string.
     std::string sub(StringRef Repl, StringRef String,
-                    std::string *Error = nullptr);
+                    std::string *Error = nullptr) const;
 
-    /// \brief If this function returns true, ^Str$ is an extended regular
+    /// If this function returns true, ^Str$ is an extended regular
     /// expression that matches Str and only Str.
     static bool isLiteralERE(StringRef Str);
 
-    /// \brief Turn String into a regex by escaping its special characters.
+    /// Turn String into a regex by escaping its special characters.
     static std::string escape(StringRef String);
 
   private:

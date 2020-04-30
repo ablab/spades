@@ -1,9 +1,8 @@
 //===- llvm/Support/FileSystem.h - File System OS Concept -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -27,13 +26,19 @@
 #ifndef LLVM_SUPPORT_FILESYSTEM_H
 #define LLVM_SUPPORT_FILESYSTEM_H
 
-#include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/SmallString.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
-#include "llvm/Support/DataTypes.h"
+#include "llvm/Config.h"
+#include "llvm/Support/Chrono.h"
+#include "llvm/Support/Error.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/ErrorOr.h"
+#include "llvm/Support/MD5.h"
+#include <cassert>
+#include <cstdint>
 #include <ctime>
-#include <iterator>
+#include <memory>
 #include <stack>
 #include <string>
 #include <system_error>
@@ -47,6 +52,15 @@
 namespace llvm {
 namespace sys {
 namespace fs {
+
+#if defined(_WIN32)
+// A Win32 HANDLE is a typedef of void*
+using file_t = void *;
+#else
+using file_t = int;
+#endif
+
+extern const file_t kInvalidFile;
 
 /// An enumeration for the file system's view of the type.
 enum class file_type {
@@ -90,6 +104,7 @@ enum perms {
   set_uid_on_exe = 04000,
   set_gid_on_exe = 02000,
   sticky_bit = 01000,
+  all_perms = all_all | set_uid_on_exe | set_gid_on_exe | sticky_bit,
   perms_not_known = 0xFFFF
 };
 
@@ -111,7 +126,9 @@ inline perms &operator&=(perms &l, perms r) {
   return l;
 }
 inline perms operator~(perms x) {
-  return static_cast<perms>(~static_cast<unsigned short>(x));
+  // Avoid UB by explicitly truncating the (unsigned) ~ result.
+  return static_cast<perms>(
+      static_cast<unsigned short>(~static_cast<unsigned short>(x)));
 }
 
 class UniqueID {
@@ -121,6 +138,7 @@ class UniqueID {
 public:
   UniqueID() = default;
   UniqueID(uint64_t Device, uint64_t File) : Device(Device), File(File) {}
+
   bool operator==(const UniqueID &Other) const {
     return Device == Other.Device && File == Other.File;
   }
@@ -128,99 +146,153 @@ public:
   bool operator<(const UniqueID &Other) const {
     return std::tie(Device, File) < std::tie(Other.Device, Other.File);
   }
+
   uint64_t getDevice() const { return Device; }
   uint64_t getFile() const { return File; }
 };
 
-/// file_status - Represents the result of a call to stat and friends. It has
-///               a platform-specific member to store the result.
-class file_status
-{
-  dev_t fs_st_dev;
-  ino_t fs_st_ino;
-  time_t fs_st_mtime;
-  uid_t fs_st_uid;
-  gid_t fs_st_gid;
-  off_t fs_st_size;
-  friend bool equivalent(file_status A, file_status B);
-  file_type Type;
-  perms Perms;
+/// Represents the result of a call to directory_iterator::status(). This is a
+/// subset of the information returned by a regular sys::fs::status() call, and
+/// represents the information provided by Windows FileFirstFile/FindNextFile.
+class basic_file_status {
+protected:
+  #if defined(LLVM_ON_UNIX)
+  time_t fs_st_atime = 0;
+  time_t fs_st_mtime = 0;
+  uint32_t fs_st_atime_nsec = 0;
+  uint32_t fs_st_mtime_nsec = 0;
+  uid_t fs_st_uid = 0;
+  gid_t fs_st_gid = 0;
+  off_t fs_st_size = 0;
+  #elif defined (_WIN32)
+  uint32_t LastAccessedTimeHigh = 0;
+  uint32_t LastAccessedTimeLow = 0;
+  uint32_t LastWriteTimeHigh = 0;
+  uint32_t LastWriteTimeLow = 0;
+  uint32_t FileSizeHigh = 0;
+  uint32_t FileSizeLow = 0;
+  #endif
+  file_type Type = file_type::status_error;
+  perms Perms = perms_not_known;
 
 public:
-    file_status() : fs_st_dev(0), fs_st_ino(0), fs_st_mtime(0),
-        fs_st_uid(0), fs_st_gid(0), fs_st_size(0),
-        Type(file_type::status_error), Perms(perms_not_known) {}
+  basic_file_status() = default;
 
-    file_status(file_type Type) : fs_st_dev(0), fs_st_ino(0), fs_st_mtime(0),
-        fs_st_uid(0), fs_st_gid(0), fs_st_size(0), Type(Type),
-        Perms(perms_not_known) {}
+  explicit basic_file_status(file_type Type) : Type(Type) {}
 
-    file_status(file_type Type, perms Perms, dev_t Dev, ino_t Ino, time_t MTime,
-                uid_t UID, gid_t GID, off_t Size)
-        : fs_st_dev(Dev), fs_st_ino(Ino), fs_st_mtime(MTime), fs_st_uid(UID),
-          fs_st_gid(GID), fs_st_size(Size), Type(Type), Perms(Perms) {}
+  #if defined(LLVM_ON_UNIX)
+  basic_file_status(file_type Type, perms Perms, time_t ATime,
+                    uint32_t ATimeNSec, time_t MTime, uint32_t MTimeNSec,
+                    uid_t UID, gid_t GID, off_t Size)
+      : fs_st_atime(ATime), fs_st_mtime(MTime),
+        fs_st_atime_nsec(ATimeNSec), fs_st_mtime_nsec(MTimeNSec),
+        fs_st_uid(UID), fs_st_gid(GID),
+        fs_st_size(Size), Type(Type), Perms(Perms) {}
+#elif defined(_WIN32)
+  basic_file_status(file_type Type, perms Perms, uint32_t LastAccessTimeHigh,
+                    uint32_t LastAccessTimeLow, uint32_t LastWriteTimeHigh,
+                    uint32_t LastWriteTimeLow, uint32_t FileSizeHigh,
+                    uint32_t FileSizeLow)
+      : LastAccessedTimeHigh(LastAccessTimeHigh),
+        LastAccessedTimeLow(LastAccessTimeLow),
+        LastWriteTimeHigh(LastWriteTimeHigh),
+        LastWriteTimeLow(LastWriteTimeLow), FileSizeHigh(FileSizeHigh),
+        FileSizeLow(FileSizeLow), Type(Type), Perms(Perms) {}
+  #endif
 
   // getters
   file_type type() const { return Type; }
   perms permissions() const { return Perms; }
-  UniqueID getUniqueID() const;
 
+  /// The file access time as reported from the underlying file system.
+  ///
+  /// Also see comments on \c getLastModificationTime() related to the precision
+  /// of the returned value.
+  TimePoint<> getLastAccessedTime() const;
+
+  /// The file modification time as reported from the underlying file system.
+  ///
+  /// The returned value allows for nanosecond precision but the actual
+  /// resolution is an implementation detail of the underlying file system.
+  /// There is no guarantee for what kind of resolution you can expect, the
+  /// resolution can differ across platforms and even across mountpoints on the
+  /// same machine.
+  TimePoint<> getLastModificationTime() const;
+
+  #if defined(LLVM_ON_UNIX)
   uint32_t getUser() const { return fs_st_uid; }
   uint32_t getGroup() const { return fs_st_gid; }
   uint64_t getSize() const { return fs_st_size; }
+  #elif defined (_WIN32)
+  uint32_t getUser() const {
+    return 9999; // Not applicable to Windows, so...
+  }
+
+  uint32_t getGroup() const {
+    return 9999; // Not applicable to Windows, so...
+  }
+
+  uint64_t getSize() const {
+    return (uint64_t(FileSizeHigh) << 32) + FileSizeLow;
+  }
+  #endif
 
   // setters
   void type(file_type v) { Type = v; }
   void permissions(perms p) { Perms = p; }
 };
 
-/// file_magic - An "enum class" enumeration of file types based on magic (the first
-///         N bytes of the file).
-struct file_magic {
-  enum Impl {
-    unknown = 0,              ///< Unrecognized file
-    bitcode,                  ///< Bitcode file
-    archive,                  ///< ar style archive file
-    elf,                      ///< ELF Unknown type
-    elf_relocatable,          ///< ELF Relocatable object file
-    elf_executable,           ///< ELF Executable image
-    elf_shared_object,        ///< ELF dynamically linked shared lib
-    elf_core,                 ///< ELF core image
-    macho_object,             ///< Mach-O Object file
-    macho_executable,         ///< Mach-O Executable
-    macho_fixed_virtual_memory_shared_lib, ///< Mach-O Shared Lib, FVM
-    macho_core,               ///< Mach-O Core File
-    macho_preload_executable, ///< Mach-O Preloaded Executable
-    macho_dynamically_linked_shared_lib, ///< Mach-O dynlinked shared lib
-    macho_dynamic_linker,     ///< The Mach-O dynamic linker
-    macho_bundle,             ///< Mach-O Bundle file
-    macho_dynamically_linked_shared_lib_stub, ///< Mach-O Shared lib stub
-    macho_dsym_companion,     ///< Mach-O dSYM companion file
-    macho_kext_bundle,        ///< Mach-O kext bundle file
-    macho_universal_binary,   ///< Mach-O universal binary
-    coff_object,              ///< COFF object file
-    coff_import_library,      ///< COFF import library
-    pecoff_executable,        ///< PECOFF executable file
-    windows_resource          ///< Windows compiled resource file (.rc)
-  };
+/// Represents the result of a call to sys::fs::status().
+class file_status : public basic_file_status {
+  friend bool equivalent(file_status A, file_status B);
 
-  bool is_object() const {
-    return V == unknown ? false : true;
-  }
+  #if defined(LLVM_ON_UNIX)
+  dev_t fs_st_dev = 0;
+  nlink_t fs_st_nlinks = 0;
+  ino_t fs_st_ino = 0;
+  #elif defined (_WIN32)
+  uint32_t NumLinks = 0;
+  uint32_t VolumeSerialNumber = 0;
+  uint32_t FileIndexHigh = 0;
+  uint32_t FileIndexLow = 0;
+  #endif
 
-  file_magic() : V(unknown) {}
-  file_magic(Impl V) : V(V) {}
-  operator Impl() const { return V; }
+public:
+  file_status() = default;
 
-private:
-  Impl V;
+  explicit file_status(file_type Type) : basic_file_status(Type) {}
+
+  #if defined(LLVM_ON_UNIX)
+  file_status(file_type Type, perms Perms, dev_t Dev, nlink_t Links, ino_t Ino,
+              time_t ATime, uint32_t ATimeNSec,
+              time_t MTime, uint32_t MTimeNSec,
+              uid_t UID, gid_t GID, off_t Size)
+      : basic_file_status(Type, Perms, ATime, ATimeNSec, MTime, MTimeNSec,
+                          UID, GID, Size),
+        fs_st_dev(Dev), fs_st_nlinks(Links), fs_st_ino(Ino) {}
+  #elif defined(_WIN32)
+  file_status(file_type Type, perms Perms, uint32_t LinkCount,
+              uint32_t LastAccessTimeHigh, uint32_t LastAccessTimeLow,
+              uint32_t LastWriteTimeHigh, uint32_t LastWriteTimeLow,
+              uint32_t VolumeSerialNumber, uint32_t FileSizeHigh,
+              uint32_t FileSizeLow, uint32_t FileIndexHigh,
+              uint32_t FileIndexLow)
+      : basic_file_status(Type, Perms, LastAccessTimeHigh, LastAccessTimeLow,
+                          LastWriteTimeHigh, LastWriteTimeLow, FileSizeHigh,
+                          FileSizeLow),
+        NumLinks(LinkCount), VolumeSerialNumber(VolumeSerialNumber),
+        FileIndexHigh(FileIndexHigh), FileIndexLow(FileIndexLow) {}
+  #endif
+
+  UniqueID getUniqueID() const;
+  uint32_t getLinkCount() const;
 };
 
 /// @}
 /// @name Physical Operators
 /// @{
 
-/// @brief Make \a path an absolute path.
+/// Make \a path an absolute path.
 ///
 /// Makes \a path absolute using the \a current_directory if it is not already.
 /// An empty \a path will result in the \a current_directory.
@@ -229,12 +301,9 @@ private:
 /// relative/../path => <current-directory>/relative/../path
 ///
 /// @param path A path that is modified to be an absolute path.
-/// @returns errc::success if \a path has been made absolute, otherwise a
-///          platform-specific error_code.
-std::error_code make_absolute(const Twine &current_directory,
-                              SmallVectorImpl<char> &path);
+void make_absolute(const Twine &current_directory, SmallVectorImpl<char> &path);
 
-/// @brief Make \a path an absolute path.
+/// Make \a path an absolute path.
 ///
 /// Makes \a path absolute using the current directory if it is not already. An
 /// empty \a path will result in the current directory.
@@ -247,7 +316,7 @@ std::error_code make_absolute(const Twine &current_directory,
 ///          platform-specific error_code.
 std::error_code make_absolute(SmallVectorImpl<char> &path);
 
-/// @brief Create all the non-existent directories in path.
+/// Create all the non-existent directories in path.
 ///
 /// @param path Directories to create.
 /// @returns errc::success if is_directory(path), otherwise a platform
@@ -257,7 +326,7 @@ std::error_code create_directories(const Twine &path,
                                    bool IgnoreExisting = true,
                                    perms Perms = owner_all | group_all);
 
-/// @brief Create the directory in path.
+/// Create the directory in path.
 ///
 /// @param path Directory to create.
 /// @returns errc::success if is_directory(path), otherwise a platform
@@ -266,7 +335,7 @@ std::error_code create_directories(const Twine &path,
 std::error_code create_directory(const Twine &path, bool IgnoreExisting = true,
                                  perms Perms = owner_all | group_all);
 
-/// @brief Create a link from \a from to \a to.
+/// Create a link from \a from to \a to.
 ///
 /// The link may be a soft or a hard link, depending on the platform. The caller
 /// may not assume which one. Currently on windows it creates a hard link since
@@ -279,14 +348,45 @@ std::error_code create_directory(const Twine &path, bool IgnoreExisting = true,
 /// specific error_code.
 std::error_code create_link(const Twine &to, const Twine &from);
 
-/// @brief Get the current path.
+/// Create a hard link from \a from to \a to, or return an error.
+///
+/// @param to The path to hard link to.
+/// @param from The path to hard link from. This is created.
+/// @returns errc::success if the link was created, otherwise a platform
+/// specific error_code.
+std::error_code create_hard_link(const Twine &to, const Twine &from);
+
+/// Collapse all . and .. patterns, resolve all symlinks, and optionally
+///        expand ~ expressions to the user's home directory.
+///
+/// @param path The path to resolve.
+/// @param output The location to store the resolved path.
+/// @param expand_tilde If true, resolves ~ expressions to the user's home
+///                     directory.
+std::error_code real_path(const Twine &path, SmallVectorImpl<char> &output,
+                          bool expand_tilde = false);
+
+/// Expands ~ expressions to the user's home directory. On Unix ~user
+/// directories are resolved as well.
+///
+/// @param path The path to resolve.
+void expand_tilde(const Twine &path, SmallVectorImpl<char> &output);
+
+/// Get the current path.
 ///
 /// @param result Holds the current path on return.
 /// @returns errc::success if the current path has been stored in result,
 ///          otherwise a platform-specific error_code.
 std::error_code current_path(SmallVectorImpl<char> &result);
 
-/// @brief Remove path. Equivalent to POSIX remove().
+/// Set the current path.
+///
+/// @param path The path to set.
+/// @returns errc::success if the current path was successfully set,
+///          otherwise a platform-specific error_code.
+std::error_code set_current_path(const Twine &path);
+
+/// Remove path. Equivalent to POSIX remove().
 ///
 /// @param path Input path.
 /// @returns errc::success if path has been removed or didn't exist, otherwise a
@@ -294,19 +394,36 @@ std::error_code current_path(SmallVectorImpl<char> &result);
 ///          returns error if the file didn't exist.
 std::error_code remove(const Twine &path, bool IgnoreNonExisting = true);
 
-/// @brief Rename \a from to \a to. Files are renamed as if by POSIX rename().
+/// Recursively delete a directory.
+///
+/// @param path Input path.
+/// @returns errc::success if path has been removed or didn't exist, otherwise a
+///          platform-specific error code.
+std::error_code remove_directories(const Twine &path, bool IgnoreErrors = true);
+
+/// Rename \a from to \a to.
+///
+/// Files are renamed as if by POSIX rename(), except that on Windows there may
+/// be a short interval of time during which the destination file does not
+/// exist.
 ///
 /// @param from The path to rename from.
 /// @param to The path to rename to. This is created.
 std::error_code rename(const Twine &from, const Twine &to);
 
-/// @brief Copy the contents of \a From to \a To.
+/// Copy the contents of \a From to \a To.
 ///
 /// @param From The path to copy from.
 /// @param To The path to copy to. This is created.
 std::error_code copy_file(const Twine &From, const Twine &To);
 
-/// @brief Resize path to size. File is resized as if by POSIX truncate().
+/// Copy the contents of \a From to \a To.
+///
+/// @param From The path to copy from.
+/// @param ToFD The open file descriptor of the destination file.
+std::error_code copy_file(const Twine &From, int ToFD);
+
+/// Resize path to size. File is resized as if by POSIX truncate().
 ///
 /// @param FD Input file descriptor.
 /// @param Size Size to resize to.
@@ -314,27 +431,37 @@ std::error_code copy_file(const Twine &From, const Twine &To);
 ///          platform-specific error_code.
 std::error_code resize_file(int FD, uint64_t Size);
 
+/// Compute an MD5 hash of a file's contents.
+///
+/// @param FD Input file descriptor.
+/// @returns An MD5Result with the hash computed, if successful, otherwise a
+///          std::error_code.
+ErrorOr<MD5::MD5Result> md5_contents(int FD);
+
+/// Version of compute_md5 that doesn't require an open file descriptor.
+ErrorOr<MD5::MD5Result> md5_contents(const Twine &Path);
+
 /// @}
 /// @name Physical Observers
 /// @{
 
-/// @brief Does file exist?
+/// Does file exist?
 ///
-/// @param status A file_status previously returned from stat.
+/// @param status A basic_file_status previously returned from stat.
 /// @returns True if the file represented by status exists, false if it does
 ///          not.
-bool exists(file_status status);
+bool exists(const basic_file_status &status);
 
 enum class AccessMode { Exist, Write, Execute };
 
-/// @brief Can the file be accessed?
+/// Can the file be accessed?
 ///
 /// @param Path Input path.
 /// @returns errc::success if the path can be accessed, otherwise a
 ///          platform-specific error_code.
 std::error_code access(const Twine &Path, AccessMode Mode);
 
-/// @brief Does file exist?
+/// Does file exist?
 ///
 /// @param Path Input path.
 /// @returns True if it exists, false otherwise.
@@ -342,13 +469,13 @@ inline bool exists(const Twine &Path) {
   return !access(Path, AccessMode::Exist);
 }
 
-/// @brief Can we execute this file?
+/// Can we execute this file?
 ///
 /// @param Path Input path.
 /// @returns True if we can execute it, false otherwise.
 bool can_execute(const Twine &Path);
 
-/// @brief Can we write this file?
+/// Can we write this file?
 ///
 /// @param Path Input path.
 /// @returns True if we can write to it, false otherwise.
@@ -356,7 +483,7 @@ inline bool can_write(const Twine &Path) {
   return !access(Path, AccessMode::Write);
 }
 
-/// @brief Do file_status's represent the same thing?
+/// Do file_status's represent the same thing?
 ///
 /// @param A Input file_status.
 /// @param B Input file_status.
@@ -367,7 +494,7 @@ inline bool can_write(const Twine &Path) {
 ///          otherwise.
 bool equivalent(file_status A, file_status B);
 
-/// @brief Do paths represent the same thing?
+/// Do paths represent the same thing?
 ///
 /// assert(status_known(A) || status_known(B));
 ///
@@ -379,51 +506,85 @@ bool equivalent(file_status A, file_status B);
 ///          platform-specific error_code.
 std::error_code equivalent(const Twine &A, const Twine &B, bool &result);
 
-/// @brief Simpler version of equivalent for clients that don't need to
+/// Simpler version of equivalent for clients that don't need to
 ///        differentiate between an error and false.
 inline bool equivalent(const Twine &A, const Twine &B) {
   bool result;
   return !equivalent(A, B, result) && result;
 }
 
-/// @brief Does status represent a directory?
-///
-/// @param status A file_status previously returned from status.
-/// @returns status.type() == file_type::directory_file.
-bool is_directory(file_status status);
-
-/// @brief Is path a directory?
+/// Is the file mounted on a local filesystem?
 ///
 /// @param path Input path.
-/// @param result Set to true if \a path is a directory, false if it is not.
-///               Undefined otherwise.
+/// @param result Set to true if \a path is on fixed media such as a hard disk,
+///               false if it is not.
+/// @returns errc::success if result has been successfully set, otherwise a
+///          platform specific error_code.
+std::error_code is_local(const Twine &path, bool &result);
+
+/// Version of is_local accepting an open file descriptor.
+std::error_code is_local(int FD, bool &result);
+
+/// Simpler version of is_local for clients that don't need to
+///        differentiate between an error and false.
+inline bool is_local(const Twine &Path) {
+  bool Result;
+  return !is_local(Path, Result) && Result;
+}
+
+/// Simpler version of is_local accepting an open file descriptor for
+///        clients that don't need to differentiate between an error and false.
+inline bool is_local(int FD) {
+  bool Result;
+  return !is_local(FD, Result) && Result;
+}
+
+/// Does status represent a directory?
+///
+/// @param Path The path to get the type of.
+/// @param Follow For symbolic links, indicates whether to return the file type
+///               of the link itself, or of the target.
+/// @returns A value from the file_type enumeration indicating the type of file.
+file_type get_file_type(const Twine &Path, bool Follow = true);
+
+/// Does status represent a directory?
+///
+/// @param status A basic_file_status previously returned from status.
+/// @returns status.type() == file_type::directory_file.
+bool is_directory(const basic_file_status &status);
+
+/// Is path a directory?
+///
+/// @param path Input path.
+/// @param result Set to true if \a path is a directory (after following
+///               symlinks, false if it is not. Undefined otherwise.
 /// @returns errc::success if result has been successfully set, otherwise a
 ///          platform-specific error_code.
 std::error_code is_directory(const Twine &path, bool &result);
 
-/// @brief Simpler version of is_directory for clients that don't need to
+/// Simpler version of is_directory for clients that don't need to
 ///        differentiate between an error and false.
 inline bool is_directory(const Twine &Path) {
   bool Result;
   return !is_directory(Path, Result) && Result;
 }
 
-/// @brief Does status represent a regular file?
+/// Does status represent a regular file?
 ///
-/// @param status A file_status previously returned from status.
+/// @param status A basic_file_status previously returned from status.
 /// @returns status_known(status) && status.type() == file_type::regular_file.
-bool is_regular_file(file_status status);
+bool is_regular_file(const basic_file_status &status);
 
-/// @brief Is path a regular file?
+/// Is path a regular file?
 ///
 /// @param path Input path.
-/// @param result Set to true if \a path is a regular file, false if it is not.
-///               Undefined otherwise.
+/// @param result Set to true if \a path is a regular file (after following
+///               symlinks), false if it is not. Undefined otherwise.
 /// @returns errc::success if result has been successfully set, otherwise a
 ///          platform-specific error_code.
 std::error_code is_regular_file(const Twine &path, bool &result);
 
-/// @brief Simpler version of is_regular_file for clients that don't need to
+/// Simpler version of is_regular_file for clients that don't need to
 ///        differentiate between an error and false.
 inline bool is_regular_file(const Twine &Path) {
   bool Result;
@@ -432,14 +593,38 @@ inline bool is_regular_file(const Twine &Path) {
   return Result;
 }
 
-/// @brief Does this status represent something that exists but is not a
-///        directory, regular file, or symlink?
+/// Does status represent a symlink file?
 ///
-/// @param status A file_status previously returned from status.
-/// @returns exists(s) && !is_regular_file(s) && !is_directory(s)
-bool is_other(file_status status);
+/// @param status A basic_file_status previously returned from status.
+/// @returns status_known(status) && status.type() == file_type::symlink_file.
+bool is_symlink_file(const basic_file_status &status);
 
-/// @brief Is path something that exists but is not a directory,
+/// Is path a symlink file?
+///
+/// @param path Input path.
+/// @param result Set to true if \a path is a symlink file, false if it is not.
+///               Undefined otherwise.
+/// @returns errc::success if result has been successfully set, otherwise a
+///          platform-specific error_code.
+std::error_code is_symlink_file(const Twine &path, bool &result);
+
+/// Simpler version of is_symlink_file for clients that don't need to
+///        differentiate between an error and false.
+inline bool is_symlink_file(const Twine &Path) {
+  bool Result;
+  if (is_symlink_file(Path, Result))
+    return false;
+  return Result;
+}
+
+/// Does this status represent something that exists but is not a
+///        directory or regular file?
+///
+/// @param status A basic_file_status previously returned from status.
+/// @returns exists(s) && !is_regular_file(s) && !is_directory(s)
+bool is_other(const basic_file_status &status);
+
+/// Is path something that exists but is not a directory,
 ///        regular file, or symlink?
 ///
 /// @param path Input path.
@@ -449,18 +634,60 @@ bool is_other(file_status status);
 ///          platform-specific error_code.
 std::error_code is_other(const Twine &path, bool &result);
 
-/// @brief Get file status as if by POSIX stat().
+/// Get file status as if by POSIX stat().
 ///
 /// @param path Input path.
 /// @param result Set to the file status.
+/// @param follow When true, follows symlinks.  Otherwise, the symlink itself is
+///               statted.
 /// @returns errc::success if result has been successfully set, otherwise a
 ///          platform-specific error_code.
-std::error_code status(const Twine &path, file_status &result);
+std::error_code status(const Twine &path, file_status &result,
+                       bool follow = true);
 
-/// @brief A version for when a file descriptor is already available.
+/// A version for when a file descriptor is already available.
 std::error_code status(int FD, file_status &Result);
 
-/// @brief Get file size.
+#ifdef _WIN32
+/// A version for when a file descriptor is already available.
+std::error_code status(file_t FD, file_status &Result);
+#endif
+
+/// Get file creation mode mask of the process.
+///
+/// @returns Mask reported by umask(2)
+/// @note There is no umask on Windows. This function returns 0 always
+///       on Windows. This function does not return an error_code because
+///       umask(2) never fails. It is not thread safe.
+unsigned getUmask();
+
+/// Set file permissions.
+///
+/// @param Path File to set permissions on.
+/// @param Permissions New file permissions.
+/// @returns errc::success if the permissions were successfully set, otherwise
+///          a platform-specific error_code.
+/// @note On Windows, all permissions except *_write are ignored. Using any of
+///       owner_write, group_write, or all_write will make the file writable.
+///       Otherwise, the file will be marked as read-only.
+std::error_code setPermissions(const Twine &Path, perms Permissions);
+
+/// Vesion of setPermissions accepting a file descriptor.
+/// TODO Delete the path based overload once we implement the FD based overload
+/// on Windows.
+std::error_code setPermissions(int FD, perms Permissions);
+
+/// Get file permissions.
+///
+/// @param Path File to get permissions from.
+/// @returns the permissions if they were successfully retrieved, otherwise a
+///          platform-specific error_code.
+/// @note On Windows, if the file does not have the FILE_ATTRIBUTE_READONLY
+///       attribute, all_all will be returned. Otherwise, all_read | all_exe
+///       will be returned.
+ErrorOr<perms> getPermissions(const Twine &Path);
+
+/// Get file size.
 ///
 /// @param Path Input path.
 /// @param Result Set to the size of the file in \a Path.
@@ -475,13 +702,28 @@ inline std::error_code file_size(const Twine &Path, uint64_t &Result) {
   return std::error_code();
 }
 
-/// @brief Is status available?
+/// Set the file modification and access time.
+///
+/// @returns errc::success if the file times were successfully set, otherwise a
+///          platform-specific error_code or errc::function_not_supported on
+///          platforms where the functionality isn't available.
+std::error_code setLastAccessAndModificationTime(int FD, TimePoint<> AccessTime,
+                                                 TimePoint<> ModificationTime);
+
+/// Simpler version that sets both file modification and access time to the same
+/// time.
+inline std::error_code setLastAccessAndModificationTime(int FD,
+                                                        TimePoint<> Time) {
+  return setLastAccessAndModificationTime(FD, Time, Time);
+}
+
+/// Is status available?
 ///
 /// @param s Input file status.
 /// @returns True if status() != status_error.
-bool status_known(file_status s);
+bool status_known(const basic_file_status &s);
 
-/// @brief Is status available?
+/// Is status available?
 ///
 /// @param path Input path.
 /// @param result Set to true if status() != status_error.
@@ -489,11 +731,83 @@ bool status_known(file_status s);
 ///          platform-specific error_code.
 std::error_code status_known(const Twine &path, bool &result);
 
-/// @brief Create a uniquely named file.
+enum CreationDisposition : unsigned {
+  /// CD_CreateAlways - When opening a file:
+  ///   * If it already exists, truncate it.
+  ///   * If it does not already exist, create a new file.
+  CD_CreateAlways = 0,
+
+  /// CD_CreateNew - When opening a file:
+  ///   * If it already exists, fail.
+  ///   * If it does not already exist, create a new file.
+  CD_CreateNew = 1,
+
+  /// CD_OpenExisting - When opening a file:
+  ///   * If it already exists, open the file with the offset set to 0.
+  ///   * If it does not already exist, fail.
+  CD_OpenExisting = 2,
+
+  /// CD_OpenAlways - When opening a file:
+  ///   * If it already exists, open the file with the offset set to 0.
+  ///   * If it does not already exist, create a new file.
+  CD_OpenAlways = 3,
+};
+
+enum FileAccess : unsigned {
+  FA_Read = 1,
+  FA_Write = 2,
+};
+
+enum OpenFlags : unsigned {
+  OF_None = 0,
+  F_None = 0, // For compatibility
+
+  /// The file should be opened in text mode on platforms that make this
+  /// distinction.
+  OF_Text = 1,
+  F_Text = 1, // For compatibility
+
+  /// The file should be opened in append mode.
+  OF_Append = 2,
+  F_Append = 2, // For compatibility
+
+  /// Delete the file on close. Only makes a difference on windows.
+  OF_Delete = 4,
+
+  /// When a child process is launched, this file should remain open in the
+  /// child process.
+  OF_ChildInherit = 8,
+
+  /// Force files Atime to be updated on access. Only makes a difference on windows.
+  OF_UpdateAtime = 16,
+};
+
+/// Create a potentially unique file name but does not create it.
+///
+/// Generates a unique path suitable for a temporary file but does not
+/// open or create the file. The name is based on \a Model with '%'
+/// replaced by a random char in [0-9a-f]. If \a MakeAbsolute is true
+/// then the system's temp directory is prepended first. If \a MakeAbsolute
+/// is false the current directory will be used instead.
+///
+/// This function does not check if the file exists. If you want to be sure
+/// that the file does not yet exist, you should use use enough '%' characters
+/// in your model to ensure this. Each '%' gives 4-bits of entropy so you can
+/// use 32 of them to get 128 bits of entropy.
+///
+/// Example: clang-%%-%%-%%-%%-%%.s => clang-a0-b1-c2-d3-e4.s
+///
+/// @param Model Name to base unique path off of.
+/// @param ResultPath Set to the file's path.
+/// @param MakeAbsolute Whether to use the system temp directory.
+void createUniquePath(const Twine &Model, SmallVectorImpl<char> &ResultPath,
+                      bool MakeAbsolute);
+
+/// Create a uniquely named file.
 ///
 /// Generates a unique path suitable for a temporary file and then opens it as a
-/// file. The name is based on \a model with '%' replaced by a random char in
-/// [0-9a-f]. If \a model is not an absolute path, the temporary file will be
+/// file. The name is based on \a Model with '%' replaced by a random char in
+/// [0-9a-f]. If \a Model is not an absolute path, the temporary file will be
 /// created in the current directory.
 ///
 /// Example: clang-%%-%%-%%-%%-%%.s => clang-a0-b1-c2-d3-e4.s
@@ -514,11 +828,51 @@ std::error_code createUniqueFile(const Twine &Model, int &ResultFD,
                                  SmallVectorImpl<char> &ResultPath,
                                  unsigned Mode = all_read | all_write);
 
-/// @brief Simpler version for clients that don't want an open file.
+/// Simpler version for clients that don't want an open file. An empty
+/// file will still be created.
 std::error_code createUniqueFile(const Twine &Model,
-                                 SmallVectorImpl<char> &ResultPath);
+                                 SmallVectorImpl<char> &ResultPath,
+                                 unsigned Mode = all_read | all_write);
 
-/// @brief Create a file in the system temporary directory.
+/// Represents a temporary file.
+///
+/// The temporary file must be eventually discarded or given a final name and
+/// kept.
+///
+/// The destructor doesn't implicitly discard because there is no way to
+/// properly handle errors in a destructor.
+class TempFile {
+  bool Done = false;
+  TempFile(StringRef Name, int FD);
+
+public:
+  /// This creates a temporary file with createUniqueFile and schedules it for
+  /// deletion with sys::RemoveFileOnSignal.
+  static Expected<TempFile> create(const Twine &Model,
+                                   unsigned Mode = all_read | all_write);
+  TempFile(TempFile &&Other);
+  TempFile &operator=(TempFile &&Other);
+
+  // Name of the temporary file.
+  std::string TmpName;
+
+  // The open file descriptor.
+  int FD = -1;
+
+  // Keep this with the given name.
+  Error keep(const Twine &Name);
+
+  // Keep this with the temporary name.
+  Error keep();
+
+  // Delete the file.
+  Error discard();
+
+  // This checks that keep or delete was called.
+  ~TempFile();
+};
+
+/// Create a file in the system temporary directory.
 ///
 /// The filename is of the form prefix-random_chars.suffix. Since the directory
 /// is not know to the caller, Prefix and Suffix cannot have path separators.
@@ -530,32 +884,35 @@ std::error_code createTemporaryFile(const Twine &Prefix, StringRef Suffix,
                                     int &ResultFD,
                                     SmallVectorImpl<char> &ResultPath);
 
-/// @brief Simpler version for clients that don't want an open file.
+/// Simpler version for clients that don't want an open file. An empty
+/// file will still be created.
 std::error_code createTemporaryFile(const Twine &Prefix, StringRef Suffix,
                                     SmallVectorImpl<char> &ResultPath);
 
 std::error_code createUniqueDirectory(const Twine &Prefix,
                                       SmallVectorImpl<char> &ResultPath);
 
-enum OpenFlags : unsigned {
-  F_None = 0,
+/// Get a unique name, not currently exisiting in the filesystem. Subject
+/// to race conditions, prefer to use createUniqueFile instead.
+///
+/// Similar to createUniqueFile, but instead of creating a file only
+/// checks if it exists. This function is subject to race conditions, if you
+/// want to use the returned name to actually create a file, use
+/// createUniqueFile instead.
+std::error_code getPotentiallyUniqueFileName(const Twine &Model,
+                                             SmallVectorImpl<char> &ResultPath);
 
-  /// F_Excl - When opening a file, this flag makes raw_fd_ostream
-  /// report an error if the file already exists.
-  F_Excl = 1,
-
-  /// F_Append - When opening a file, if it already exists append to the
-  /// existing file instead of returning an error.  This may not be specified
-  /// with F_Excl.
-  F_Append = 2,
-
-  /// The file should be opened in text mode on platforms that make this
-  /// distinction.
-  F_Text = 4,
-
-  /// Open the file for read and write.
-  F_RW = 8
-};
+/// Get a unique temporary file name, not currently exisiting in the
+/// filesystem. Subject to race conditions, prefer to use createTemporaryFile
+/// instead.
+///
+/// Similar to createTemporaryFile, but instead of creating a file only
+/// checks if it exists. This function is subject to race conditions, if you
+/// want to use the returned name to actually create a file, use
+/// createTemporaryFile instead.
+std::error_code
+getPotentiallyUniqueTempFileName(const Twine &Prefix, StringRef Suffix,
+                                 SmallVectorImpl<char> &ResultPath);
 
 inline OpenFlags operator|(OpenFlags A, OpenFlags B) {
   return OpenFlags(unsigned(A) | unsigned(B));
@@ -566,31 +923,241 @@ inline OpenFlags &operator|=(OpenFlags &A, OpenFlags B) {
   return A;
 }
 
-std::error_code openFileForWrite(const Twine &Name, int &ResultFD,
-                                 OpenFlags Flags, unsigned Mode = 0666);
+inline FileAccess operator|(FileAccess A, FileAccess B) {
+  return FileAccess(unsigned(A) | unsigned(B));
+}
 
-std::error_code openFileForRead(const Twine &Name, int &ResultFD);
+inline FileAccess &operator|=(FileAccess &A, FileAccess B) {
+  A = A | B;
+  return A;
+}
 
-/// @brief Identify the type of a binary file based on how magical it is.
-file_magic identify_magic(StringRef magic);
-
-/// @brief Get and identify \a path's type based on its content.
+/// @brief Opens a file with the specified creation disposition, access mode,
+/// and flags and returns a file descriptor.
 ///
-/// @param path Input path.
-/// @param result Set to the type of file, or file_magic::unknown.
-/// @returns errc::success if result has been successfully set, otherwise a
+/// The caller is responsible for closing the file descriptor once they are
+/// finished with it.
+///
+/// @param Name The path of the file to open, relative or absolute.
+/// @param ResultFD If the file could be opened successfully, its descriptor
+///                 is stored in this location. Otherwise, this is set to -1.
+/// @param Disp Value specifying the existing-file behavior.
+/// @param Access Value specifying whether to open the file in read, write, or
+///               read-write mode.
+/// @param Flags Additional flags.
+/// @param Mode The access permissions of the file, represented in octal.
+/// @returns errc::success if \a Name has been opened, otherwise a
 ///          platform-specific error_code.
-std::error_code identify_magic(const Twine &path, file_magic &result);
+std::error_code openFile(const Twine &Name, int &ResultFD,
+                         CreationDisposition Disp, FileAccess Access,
+                         OpenFlags Flags, unsigned Mode = 0666);
+
+/// @brief Opens a file with the specified creation disposition, access mode,
+/// and flags and returns a platform-specific file object.
+///
+/// The caller is responsible for closing the file object once they are
+/// finished with it.
+///
+/// @param Name The path of the file to open, relative or absolute.
+/// @param Disp Value specifying the existing-file behavior.
+/// @param Access Value specifying whether to open the file in read, write, or
+///               read-write mode.
+/// @param Flags Additional flags.
+/// @param Mode The access permissions of the file, represented in octal.
+/// @returns errc::success if \a Name has been opened, otherwise a
+///          platform-specific error_code.
+Expected<file_t> openNativeFile(const Twine &Name, CreationDisposition Disp,
+                                FileAccess Access, OpenFlags Flags,
+                                unsigned Mode = 0666);
+
+/// Converts from a Posix file descriptor number to a native file handle.
+/// On Windows, this retreives the underlying handle. On non-Windows, this is a
+/// no-op.
+file_t convertFDToNativeFile(int FD);
+
+#ifndef _WIN32
+inline file_t convertFDToNativeFile(int FD) { return FD; }
+#endif
+
+/// Return an open handle to standard in. On Unix, this is typically FD 0.
+/// Returns kInvalidFile when the stream is closed.
+file_t getStdinHandle();
+
+/// Return an open handle to standard out. On Unix, this is typically FD 1.
+/// Returns kInvalidFile when the stream is closed.
+file_t getStdoutHandle();
+
+/// Return an open handle to standard error. On Unix, this is typically FD 2.
+/// Returns kInvalidFile when the stream is closed.
+file_t getStderrHandle();
+
+/// Reads \p Buf.size() bytes from \p FileHandle into \p Buf. Returns the number
+/// of bytes actually read. On Unix, this is equivalent to `return ::read(FD,
+/// Buf.data(), Buf.size())`, with error reporting. Returns 0 when reaching EOF.
+///
+/// @param FileHandle File to read from.
+/// @param Buf Buffer to read into.
+/// @returns The number of bytes read, or error.
+Expected<size_t> readNativeFile(file_t FileHandle, MutableArrayRef<char> Buf);
+
+/// Reads \p Buf.size() bytes from \p FileHandle at offset \p Offset into \p
+/// Buf. If 'pread' is available, this will use that, otherwise it will use
+/// 'lseek'. Returns the number of bytes actually read. Returns 0 when reaching
+/// EOF.
+///
+/// @param FileHandle File to read from.
+/// @param Buf Buffer to read into.
+/// @param Offset Offset into the file at which the read should occur.
+/// @returns The number of bytes read, or error.
+Expected<size_t> readNativeFileSlice(file_t FileHandle,
+                                     MutableArrayRef<char> Buf,
+                                     uint64_t Offset);
+
+/// @brief Opens the file with the given name in a write-only or read-write
+/// mode, returning its open file descriptor. If the file does not exist, it
+/// is created.
+///
+/// The caller is responsible for closing the file descriptor once they are
+/// finished with it.
+///
+/// @param Name The path of the file to open, relative or absolute.
+/// @param ResultFD If the file could be opened successfully, its descriptor
+///                 is stored in this location. Otherwise, this is set to -1.
+/// @param Flags Additional flags used to determine whether the file should be
+///              opened in, for example, read-write or in write-only mode.
+/// @param Mode The access permissions of the file, represented in octal.
+/// @returns errc::success if \a Name has been opened, otherwise a
+///          platform-specific error_code.
+inline std::error_code
+openFileForWrite(const Twine &Name, int &ResultFD,
+                 CreationDisposition Disp = CD_CreateAlways,
+                 OpenFlags Flags = OF_None, unsigned Mode = 0666) {
+  return openFile(Name, ResultFD, Disp, FA_Write, Flags, Mode);
+}
+
+/// @brief Opens the file with the given name in a write-only or read-write
+/// mode, returning its open file descriptor. If the file does not exist, it
+/// is created.
+///
+/// The caller is responsible for closing the freeing the file once they are
+/// finished with it.
+///
+/// @param Name The path of the file to open, relative or absolute.
+/// @param Flags Additional flags used to determine whether the file should be
+///              opened in, for example, read-write or in write-only mode.
+/// @param Mode The access permissions of the file, represented in octal.
+/// @returns a platform-specific file descriptor if \a Name has been opened,
+///          otherwise an error object.
+inline Expected<file_t> openNativeFileForWrite(const Twine &Name,
+                                               CreationDisposition Disp,
+                                               OpenFlags Flags,
+                                               unsigned Mode = 0666) {
+  return openNativeFile(Name, Disp, FA_Write, Flags, Mode);
+}
+
+/// @brief Opens the file with the given name in a write-only or read-write
+/// mode, returning its open file descriptor. If the file does not exist, it
+/// is created.
+///
+/// The caller is responsible for closing the file descriptor once they are
+/// finished with it.
+///
+/// @param Name The path of the file to open, relative or absolute.
+/// @param ResultFD If the file could be opened successfully, its descriptor
+///                 is stored in this location. Otherwise, this is set to -1.
+/// @param Flags Additional flags used to determine whether the file should be
+///              opened in, for example, read-write or in write-only mode.
+/// @param Mode The access permissions of the file, represented in octal.
+/// @returns errc::success if \a Name has been opened, otherwise a
+///          platform-specific error_code.
+inline std::error_code openFileForReadWrite(const Twine &Name, int &ResultFD,
+                                            CreationDisposition Disp,
+                                            OpenFlags Flags,
+                                            unsigned Mode = 0666) {
+  return openFile(Name, ResultFD, Disp, FA_Write | FA_Read, Flags, Mode);
+}
+
+/// @brief Opens the file with the given name in a write-only or read-write
+/// mode, returning its open file descriptor. If the file does not exist, it
+/// is created.
+///
+/// The caller is responsible for closing the freeing the file once they are
+/// finished with it.
+///
+/// @param Name The path of the file to open, relative or absolute.
+/// @param Flags Additional flags used to determine whether the file should be
+///              opened in, for example, read-write or in write-only mode.
+/// @param Mode The access permissions of the file, represented in octal.
+/// @returns a platform-specific file descriptor if \a Name has been opened,
+///          otherwise an error object.
+inline Expected<file_t> openNativeFileForReadWrite(const Twine &Name,
+                                                   CreationDisposition Disp,
+                                                   OpenFlags Flags,
+                                                   unsigned Mode = 0666) {
+  return openNativeFile(Name, Disp, FA_Write | FA_Read, Flags, Mode);
+}
+
+/// @brief Opens the file with the given name in a read-only mode, returning
+/// its open file descriptor.
+///
+/// The caller is responsible for closing the file descriptor once they are
+/// finished with it.
+///
+/// @param Name The path of the file to open, relative or absolute.
+/// @param ResultFD If the file could be opened successfully, its descriptor
+///                 is stored in this location. Otherwise, this is set to -1.
+/// @param RealPath If nonnull, extra work is done to determine the real path
+///                 of the opened file, and that path is stored in this
+///                 location.
+/// @returns errc::success if \a Name has been opened, otherwise a
+///          platform-specific error_code.
+std::error_code openFileForRead(const Twine &Name, int &ResultFD,
+                                OpenFlags Flags = OF_None,
+                                SmallVectorImpl<char> *RealPath = nullptr);
+
+/// @brief Opens the file with the given name in a read-only mode, returning
+/// its open file descriptor.
+///
+/// The caller is responsible for closing the freeing the file once they are
+/// finished with it.
+///
+/// @param Name The path of the file to open, relative or absolute.
+/// @param RealPath If nonnull, extra work is done to determine the real path
+///                 of the opened file, and that path is stored in this
+///                 location.
+/// @returns a platform-specific file descriptor if \a Name has been opened,
+///          otherwise an error object.
+Expected<file_t>
+openNativeFileForRead(const Twine &Name, OpenFlags Flags = OF_None,
+                      SmallVectorImpl<char> *RealPath = nullptr);
+
+/// @brief Close the file object.  This should be used instead of ::close for
+/// portability. On error, the caller should assume the file is closed, as is
+/// the case for Process::SafelyCloseFileDescriptor
+///
+/// @param F On input, this is the file to close.  On output, the file is
+/// set to kInvalidFile.
+///
+/// @returns An error code if closing the file failed. Typically, an error here
+/// means that the filesystem may have failed to perform some buffered writes.
+std::error_code closeFile(file_t &F);
 
 std::error_code getUniqueID(const Twine Path, UniqueID &Result);
+
+/// Get disk space usage information.
+///
+/// Note: Users must be careful about "Time Of Check, Time Of Use" kind of bug.
+/// Note: Windows reports results according to the quota allocated to the user.
+///
+/// @param Path Input path.
+/// @returns a space_info structure filled with the capacity, free, and
+/// available space on the device \a Path is on. A platform specific error_code
+/// is returned on error.
+ErrorOr<space_info> disk_space(const Twine &Path);
 
 /// This class represents a memory mapped file. It is based on
 /// boost::iostreams::mapped_file.
 class mapped_file_region {
-  mapped_file_region() = delete;
-  mapped_file_region(mapped_file_region&) = delete;
-  mapped_file_region &operator =(mapped_file_region&) = delete;
-
 public:
   enum mapmode {
     readonly, ///< May only access map via const_data as read only.
@@ -600,21 +1167,27 @@ public:
 
 private:
   /// Platform-specific mapping state.
-  uint64_t Size;
+  size_t Size;
   void *Mapping;
+#ifdef _WIN32
+  sys::fs::file_t FileHandle;
+#endif
+  mapmode Mode;
 
-  std::error_code init(int FD, uint64_t Offset, mapmode Mode);
+  std::error_code init(sys::fs::file_t FD, uint64_t Offset, mapmode Mode);
 
 public:
-  /// \param fd An open file descriptor to map. mapped_file_region takes
-  ///   ownership if closefd is true. It must have been opended in the correct
-  ///   mode.
-  mapped_file_region(int fd, mapmode mode, uint64_t length, uint64_t offset,
+  mapped_file_region() = delete;
+  mapped_file_region(mapped_file_region&) = delete;
+  mapped_file_region &operator =(mapped_file_region&) = delete;
+
+  /// \param fd An open file descriptor to map. Does not take ownership of fd.
+  mapped_file_region(sys::fs::file_t fd, mapmode mode, size_t length, uint64_t offset,
                      std::error_code &ec);
 
   ~mapped_file_region();
 
-  uint64_t size() const;
+  size_t size() const;
   char *data() const;
 
   /// Get a const view of the data. Modifying this memory has undefined
@@ -634,81 +1207,100 @@ std::string getMainExecutable(const char *argv0, void *MainExecAddr);
 /// @name Iterators
 /// @{
 
-/// directory_entry - A single entry in a directory. Caches the status either
-/// from the result of the iteration syscall, or the first time status is
-/// called.
+/// directory_entry - A single entry in a directory.
 class directory_entry {
+  // FIXME: different platforms make different information available "for free"
+  // when traversing a directory. The design of this class wraps most of the
+  // information in basic_file_status, so on platforms where we can't populate
+  // that whole structure, callers end up paying for a stat().
+  // std::filesystem::directory_entry may be a better model.
   std::string Path;
-  mutable file_status Status;
+  file_type Type = file_type::type_unknown; // Most platforms can provide this.
+  bool FollowSymlinks = true;               // Affects the behavior of status().
+  basic_file_status Status;                 // If available.
 
 public:
-  explicit directory_entry(const Twine &path, file_status st = file_status())
-    : Path(path.str())
-    , Status(st) {}
+  explicit directory_entry(const Twine &Path, bool FollowSymlinks = true,
+                           file_type Type = file_type::type_unknown,
+                           basic_file_status Status = basic_file_status())
+      : Path(Path.str()), Type(Type), FollowSymlinks(FollowSymlinks),
+        Status(Status) {}
 
-  directory_entry() {}
+  directory_entry() = default;
 
-  void assign(const Twine &path, file_status st = file_status()) {
-    Path = path.str();
-    Status = st;
-  }
-
-  void replace_filename(const Twine &filename, file_status st = file_status());
+  void replace_filename(const Twine &Filename, file_type Type,
+                        basic_file_status Status = basic_file_status());
 
   const std::string &path() const { return Path; }
-  std::error_code status(file_status &result) const;
+  // Get basic information about entry file (a subset of fs::status()).
+  // On most platforms this is a stat() call.
+  // On windows the information was already retrieved from the directory.
+  ErrorOr<basic_file_status> status() const;
+  // Get the type of this file.
+  // On most platforms (Linux/Mac/Windows/BSD), this was already retrieved.
+  // On some platforms (e.g. Solaris) this is a stat() call.
+  file_type type() const {
+    if (Type != file_type::type_unknown)
+      return Type;
+    auto S = status();
+    return S ? S->type() : file_type::type_unknown;
+  }
 
-  bool operator==(const directory_entry& rhs) const { return Path == rhs.Path; }
-  bool operator!=(const directory_entry& rhs) const { return !(*this == rhs); }
-  bool operator< (const directory_entry& rhs) const;
-  bool operator<=(const directory_entry& rhs) const;
-  bool operator> (const directory_entry& rhs) const;
-  bool operator>=(const directory_entry& rhs) const;
+  bool operator==(const directory_entry& RHS) const { return Path == RHS.Path; }
+  bool operator!=(const directory_entry& RHS) const { return !(*this == RHS); }
+  bool operator< (const directory_entry& RHS) const;
+  bool operator<=(const directory_entry& RHS) const;
+  bool operator> (const directory_entry& RHS) const;
+  bool operator>=(const directory_entry& RHS) const;
 };
 
 namespace detail {
+
   struct DirIterState;
 
-  std::error_code directory_iterator_construct(DirIterState &, StringRef);
+  std::error_code directory_iterator_construct(DirIterState &, StringRef, bool);
   std::error_code directory_iterator_increment(DirIterState &);
   std::error_code directory_iterator_destruct(DirIterState &);
 
-  /// DirIterState - Keeps state for the directory_iterator. It is reference
-  /// counted in order to preserve InputIterator semantics on copy.
-  struct DirIterState : public RefCountedBase<DirIterState> {
-    DirIterState()
-      : IterationHandle(0) {}
-
+  /// Keeps state for the directory_iterator.
+  struct DirIterState {
     ~DirIterState() {
       directory_iterator_destruct(*this);
     }
 
-    intptr_t IterationHandle;
+    intptr_t IterationHandle = 0;
     directory_entry CurrentEntry;
   };
-}
+
+} // end namespace detail
 
 /// directory_iterator - Iterates through the entries in path. There is no
 /// operator++ because we need an error_code. If it's really needed we can make
 /// it call report_fatal_error on error.
 class directory_iterator {
-  IntrusiveRefCntPtr<detail::DirIterState> State;
+  std::shared_ptr<detail::DirIterState> State;
+  bool FollowSymlinks = true;
 
 public:
-  explicit directory_iterator(const Twine &path, std::error_code &ec) {
-    State = new detail::DirIterState;
+  explicit directory_iterator(const Twine &path, std::error_code &ec,
+                              bool follow_symlinks = true)
+      : FollowSymlinks(follow_symlinks) {
+    State = std::make_shared<detail::DirIterState>();
     SmallString<128> path_storage;
-    ec = detail::directory_iterator_construct(*State,
-            path.toStringRef(path_storage));
+    ec = detail::directory_iterator_construct(
+        *State, path.toStringRef(path_storage), FollowSymlinks);
   }
 
-  explicit directory_iterator(const directory_entry &de, std::error_code &ec) {
-    State = new detail::DirIterState;
-    ec = detail::directory_iterator_construct(*State, de.path());
+  explicit directory_iterator(const directory_entry &de, std::error_code &ec,
+                              bool follow_symlinks = true)
+      : FollowSymlinks(follow_symlinks) {
+    State = std::make_shared<detail::DirIterState>();
+    ec = detail::directory_iterator_construct(
+        *State, de.path(), FollowSymlinks);
   }
 
   /// Construct end iterator.
-  directory_iterator() : State(nullptr) {}
+  directory_iterator() = default;
 
   // No operator++ because we need error_code.
   directory_iterator &increment(std::error_code &ec) {
@@ -732,49 +1324,53 @@ public:
   bool operator!=(const directory_iterator &RHS) const {
     return !(*this == RHS);
   }
-  // Other members as required by
-  // C++ Std, 24.1.1 Input iterators [input.iterators]
 };
 
 namespace detail {
-  /// RecDirIterState - Keeps state for the recursive_directory_iterator. It is
-  /// reference counted in order to preserve InputIterator semantics on copy.
-  struct RecDirIterState : public RefCountedBase<RecDirIterState> {
-    RecDirIterState()
-      : Level(0)
-      , HasNoPushRequest(false) {}
 
-    std::stack<directory_iterator, std::vector<directory_iterator> > Stack;
-    uint16_t Level;
-    bool HasNoPushRequest;
+  /// Keeps state for the recursive_directory_iterator.
+  struct RecDirIterState {
+    std::stack<directory_iterator, std::vector<directory_iterator>> Stack;
+    uint16_t Level = 0;
+    bool HasNoPushRequest = false;
   };
-}
+
+} // end namespace detail
 
 /// recursive_directory_iterator - Same as directory_iterator except for it
 /// recurses down into child directories.
 class recursive_directory_iterator {
-  IntrusiveRefCntPtr<detail::RecDirIterState> State;
+  std::shared_ptr<detail::RecDirIterState> State;
+  bool Follow;
 
 public:
-  recursive_directory_iterator() {}
-  explicit recursive_directory_iterator(const Twine &path, std::error_code &ec)
-      : State(new detail::RecDirIterState) {
-    State->Stack.push(directory_iterator(path, ec));
+  recursive_directory_iterator() = default;
+  explicit recursive_directory_iterator(const Twine &path, std::error_code &ec,
+                                        bool follow_symlinks = true)
+      : State(std::make_shared<detail::RecDirIterState>()),
+        Follow(follow_symlinks) {
+    State->Stack.push(directory_iterator(path, ec, Follow));
     if (State->Stack.top() == directory_iterator())
       State.reset();
   }
+
   // No operator++ because we need error_code.
   recursive_directory_iterator &increment(std::error_code &ec) {
-    const directory_iterator end_itr;
+    const directory_iterator end_itr = {};
 
     if (State->HasNoPushRequest)
       State->HasNoPushRequest = false;
     else {
-      file_status st;
-      if ((ec = State->Stack.top()->status(st))) return *this;
-      if (is_directory(st)) {
-        State->Stack.push(directory_iterator(*State->Stack.top(), ec));
-        if (ec) return *this;
+      file_type type = State->Stack.top()->type();
+      if (type == file_type::symlink_file && Follow) {
+        // Resolve the symlink: is it a directory to recurse into?
+        ErrorOr<basic_file_status> status = State->Stack.top()->status();
+        if (status)
+          type = status->type();
+        // Otherwise broken symlink, and we'll continue.
+      }
+      if (type == file_type::directory_file) {
+        State->Stack.push(directory_iterator(*State->Stack.top(), ec, Follow));
         if (State->Stack.top() != end_itr) {
           ++State->Level;
           return *this;
@@ -812,7 +1408,7 @@ public:
     assert(State && "Cannot pop an end iterator!");
     assert(State->Level > 0 && "Cannot pop an iterator with level < 1");
 
-    const directory_iterator end_itr;
+    const directory_iterator end_itr = {};
     std::error_code ec;
     do {
       if (ec)
@@ -837,8 +1433,6 @@ public:
   bool operator!=(const recursive_directory_iterator &RHS) const {
     return !(*this == RHS);
   }
-  // Other members as required by
-  // C++ Std, 24.1.1 Input iterators [input.iterators]
 };
 
 /// @}
@@ -847,4 +1441,4 @@ public:
 } // end namespace sys
 } // end namespace llvm
 
-#endif
+#endif // LLVM_SUPPORT_FILESYSTEM_H

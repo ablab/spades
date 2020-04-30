@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <llvm/PointerIntPair.h>
+#include <llvm/ADT/PointerIntPair.h>
 
 #include <cstring>
 #include <vector>

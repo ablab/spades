@@ -1,9 +1,8 @@
 //===- llvm/Support/ErrorHandling.h - Fatal error handling ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -67,7 +66,7 @@ class StringRef;
 ///
 /// If no error handler is installed the default is to print the message to
 /// standard error, followed by a newline.
-/// After the error handler is called this function will call exit(1), it
+/// After the error handler is called this function will call abort(), it
 /// does not return.
 LLVM_ATTRIBUTE_NORETURN void report_fatal_error(const char *reason,
                                                 bool gen_crash_diag = true);
@@ -112,8 +111,8 @@ void install_out_of_memory_new_handler();
 /// in the unwind chain.
 ///
 /// If no error handler is installed (default), then a bad_alloc exception
-/// is thrown, if LLVM is compiled with exception support, otherwise an assertion
-/// is called.
+/// is thrown, if LLVM is compiled with exception support, otherwise an
+/// assertion is called.
 void report_bad_alloc_error(const char *Reason, bool GenCrashDiag = true);
 
 /// This function calls abort(), and prints the optional message to stderr.

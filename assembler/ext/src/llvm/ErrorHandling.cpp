@@ -1,9 +1,8 @@
 //===- lib/Support/ErrorHandling.cpp - Callbacks for errors ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,9 +14,11 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Twine.h"
+#include "llvm/Config.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/Process.h"
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/Threading.h"
 #include "llvm/Support/WindowsError.h"
@@ -27,8 +28,9 @@
 #include <mutex>
 #include <new>
 
-#include <unistd.h>
-
+#if defined(HAVE_UNISTD_H)
+# include <unistd.h>
+#endif
 #if defined(_MSC_VER)
 # include <io.h>
 # include <fcntl.h>
@@ -42,6 +44,7 @@ static void *ErrorHandlerUserData = nullptr;
 static fatal_error_handler_t BadAllocErrorHandler = nullptr;
 static void *BadAllocErrorHandlerUserData = nullptr;
 
+#if LLVM_ENABLE_THREADS == 1
 // Mutexes to synchronize installing error handlers and calling error handlers.
 // Do not use ManagedStatic, or that may allocate memory while attempting to
 // report an OOM.
@@ -55,17 +58,22 @@ static void *BadAllocErrorHandlerUserData = nullptr;
 // builds. We can remove these ifdefs if that script goes away.
 static std::mutex ErrorHandlerMutex;
 static std::mutex BadAllocErrorHandlerMutex;
+#endif
 
 void llvm::install_fatal_error_handler(fatal_error_handler_t handler,
                                        void *user_data) {
+#if LLVM_ENABLE_THREADS == 1
   std::lock_guard<std::mutex> Lock(ErrorHandlerMutex);
+#endif
   assert(!ErrorHandler && "Error handler already registered!\n");
   ErrorHandler = handler;
   ErrorHandlerUserData = user_data;
 }
 
 void llvm::remove_fatal_error_handler() {
+#if LLVM_ENABLE_THREADS == 1
   std::lock_guard<std::mutex> Lock(ErrorHandlerMutex);
+#endif
   ErrorHandler = nullptr;
   ErrorHandlerUserData = nullptr;
 }
@@ -88,7 +96,9 @@ void llvm::report_fatal_error(const Twine &Reason, bool GenCrashDiag) {
   {
     // Only acquire the mutex while reading the handler, so as not to invoke a
     // user-supplied callback under a lock.
+#if LLVM_ENABLE_THREADS == 1
     std::lock_guard<std::mutex> Lock(ErrorHandlerMutex);
+#endif
     handler = ErrorHandler;
     handlerData = ErrorHandlerUserData;
   }
@@ -112,19 +122,23 @@ void llvm::report_fatal_error(const Twine &Reason, bool GenCrashDiag) {
   // files registered with RemoveFileOnSignal.
   sys::RunInterruptHandlers();
 
-  exit(1);
+  abort();
 }
 
 void llvm::install_bad_alloc_error_handler(fatal_error_handler_t handler,
                                            void *user_data) {
+#if LLVM_ENABLE_THREADS == 1
   std::lock_guard<std::mutex> Lock(BadAllocErrorHandlerMutex);
+#endif
   assert(!ErrorHandler && "Bad alloc error handler already registered!\n");
   BadAllocErrorHandler = handler;
   BadAllocErrorHandlerUserData = user_data;
 }
 
 void llvm::remove_bad_alloc_error_handler() {
+#if LLVM_ENABLE_THREADS == 1
   std::lock_guard<std::mutex> Lock(BadAllocErrorHandlerMutex);
+#endif
   BadAllocErrorHandler = nullptr;
   BadAllocErrorHandlerUserData = nullptr;
 }
@@ -135,7 +149,9 @@ void llvm::report_bad_alloc_error(const char *Reason, bool GenCrashDiag) {
   {
     // Only acquire the mutex while reading the handler, so as not to invoke a
     // user-supplied callback under a lock.
+#if LLVM_ENABLE_THREADS == 1
     std::lock_guard<std::mutex> Lock(BadAllocErrorHandlerMutex);
+#endif
     Handler = BadAllocErrorHandler;
     HandlerData = BadAllocErrorHandlerUserData;
   }
@@ -170,25 +186,13 @@ static void out_of_memory_new_handler() {
   llvm::report_bad_alloc_error("Allocation failed");
 }
 
-// Installs new handler that causes crash on allocation failure. It does not
-// need to be called explicitly, if this file is linked to application, because
-// in this case it is called during construction of 'new_handler_installer'.
+// Installs new handler that causes crash on allocation failure. It is called by
+// InitLLVM.
 void llvm::install_out_of_memory_new_handler() {
-  static bool out_of_memory_new_handler_installed = false;
-  if (!out_of_memory_new_handler_installed) {
-    std::set_new_handler(out_of_memory_new_handler);
-    out_of_memory_new_handler_installed = true;
-  }
+  std::new_handler old = std::set_new_handler(out_of_memory_new_handler);
+  (void)old;
+  assert(old == nullptr && "new-handler already installed");
 }
-
-// Static object that causes installation of 'out_of_memory_new_handler' before
-// execution of 'main'.
-static class NewHandlerInstaller {
-public:
-  NewHandlerInstaller() {
-    install_out_of_memory_new_handler();
-  }
-} new_handler_installer;
 #endif
 
 void llvm::llvm_unreachable_internal(const char *msg, const char *file,
@@ -197,14 +201,11 @@ void llvm::llvm_unreachable_internal(const char *msg, const char *file,
   // llvm_unreachable is intended to be used to indicate "impossible"
   // situations, and not legitimate runtime errors.
   if (msg)
-    fprintf(stderr, "%s\n", msg);
-  
-  fprintf(stderr, "UNREACHABLE executed");
+    dbgs() << msg << "\n";
+  dbgs() << "UNREACHABLE executed";
   if (file)
-    fprintf(stderr, " at %s:%d", file, line);
-
-  fprintf(stderr, "\n");
-  fflush(stderr);
+    dbgs() << " at " << file << ":" << line;
+  dbgs() << "!\n";
   abort();
 #ifdef LLVM_BUILTIN_UNREACHABLE
   // Windows systems and possibly others don't declare abort() to be noreturn,

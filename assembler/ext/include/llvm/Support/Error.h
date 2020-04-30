@@ -1,9 +1,8 @@
 //===- llvm/Support/Error.h - Recoverable error handling --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,8 +13,8 @@
 #ifndef LLVM_SUPPORT_ERROR_H
 #define LLVM_SUPPORT_ERROR_H
 
-#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/AlignOf.h"
@@ -23,6 +22,7 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/ErrorOr.h"
+#include "llvm/Support/Format.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
 #include <cassert>
@@ -153,8 +153,9 @@ private:
 /// they're moved-assigned or constructed from Success values that have already
 /// been checked. This enforces checking through all levels of the call stack.
 class LLVM_NODISCARD Error {
-  // ErrorList needs to be able to yank ErrorInfoBase pointers out of this
-  // class to add to the error list.
+  // ErrorList needs to be able to yank ErrorInfoBase pointers out of Errors
+  // to add to the error list. It can't rely on handleErrors for this, since
+  // handleErrors does not support ErrorList handlers.
   friend class ErrorList;
 
   // handleErrors needs to be able to set the Checked flag.
@@ -263,9 +264,13 @@ private:
   }
 
   ErrorInfoBase *getPtr() const {
+#if LLVM_ENABLE_ABI_BREAKING_CHECKS
     return reinterpret_cast<ErrorInfoBase*>(
              reinterpret_cast<uintptr_t>(Payload) &
              ~static_cast<uintptr_t>(0x1));
+#else
+    return Payload;
+#endif
   }
 
   void setPtr(ErrorInfoBase *EI) {
@@ -288,10 +293,12 @@ private:
   }
 
   void setChecked(bool V) {
+#if LLVM_ENABLE_ABI_BREAKING_CHECKS
     Payload = reinterpret_cast<ErrorInfoBase*>(
                 (reinterpret_cast<uintptr_t>(Payload) &
                   ~static_cast<uintptr_t>(0x1)) |
                   (V ? 0 : 1));
+#endif
   }
 
   std::unique_ptr<ErrorInfoBase> takePayload() {
@@ -301,20 +308,28 @@ private:
     return Tmp;
   }
 
+  friend raw_ostream &operator<<(raw_ostream &OS, const Error &E) {
+    if (auto P = E.getPtr())
+      P->log(OS);
+    else
+      OS << "success";
+    return OS;
+  }
+
   ErrorInfoBase *Payload = nullptr;
 };
 
 /// Subclass of Error for the sole purpose of identifying the success path in
 /// the type system. This allows to catch invalid conversion to Expected<T> at
 /// compile time.
-class ErrorSuccess : public Error {};
+class ErrorSuccess final : public Error {};
 
 inline ErrorSuccess Error::success() { return ErrorSuccess(); }
 
 /// Make a Error instance representing failure using the given error info
 /// type.
 template <typename ErrT, typename... ArgTs> Error make_error(ArgTs &&... Args) {
-  return Error(llvm::make_unique<ErrT>(std::forward<ArgTs>(Args)...));
+  return Error(std::make_unique<ErrT>(std::forward<ArgTs>(Args)...));
 }
 
 /// Base class for user error types. Users should declare their error types
@@ -329,6 +344,8 @@ template <typename ErrT, typename... ArgTs> Error make_error(ArgTs &&... Args) {
 template <typename ThisErrT, typename ParentErrT = ErrorInfoBase>
 class ErrorInfo : public ParentErrT {
 public:
+  using ParentErrT::ParentErrT; // inherit constructors
+
   static const void *classID() { return &ThisErrT::ID; }
 
   const void *dynamicClassID() const override { return &ThisErrT::ID; }
@@ -418,21 +435,21 @@ template <class T> class LLVM_NODISCARD Expected {
   template <class T1> friend class ExpectedAsOutParameter;
   template <class OtherT> friend class Expected;
 
-  static const bool isRef = std::is_reference<T>::value;
+  static constexpr bool isRef = std::is_reference<T>::value;
 
-  using wrap = ReferenceStorage<typename std::remove_reference<T>::type>;
+  using wrap = std::reference_wrapper<std::remove_reference_t<T>>;
 
   using error_type = std::unique_ptr<ErrorInfoBase>;
 
 public:
-  using storage_type = typename std::conditional<isRef, wrap, T>::type;
+  using storage_type = std::conditional_t<isRef, wrap, T>;
   using value_type = T;
 
 private:
-  using reference = typename std::remove_reference<T>::type &;
-  using const_reference = const typename std::remove_reference<T>::type &;
-  using pointer = typename std::remove_reference<T>::type *;
-  using const_pointer = const typename std::remove_reference<T>::type *;
+  using reference = std::remove_reference_t<T> &;
+  using const_reference = const std::remove_reference_t<T> &;
+  using pointer = std::remove_reference_t<T> *;
+  using const_pointer = const std::remove_reference_t<T> *;
 
 public:
   /// Create an Expected<T> error value from the given Error.
@@ -456,12 +473,12 @@ public:
   /// must be convertible to T.
   template <typename OtherT>
   Expected(OtherT &&Val,
-           typename std::enable_if<std::is_convertible<OtherT, T>::value>::type
-               * = nullptr)
+           std::enable_if_t<std::is_convertible<OtherT, T>::value> * = nullptr)
       : HasError(false)
 #if LLVM_ENABLE_ABI_BREAKING_CHECKS
         // Expected is unchecked upon construction in Debug builds.
-        , Unchecked(true)
+        ,
+        Unchecked(true)
 #endif
   {
     new (getStorage()) storage_type(std::forward<OtherT>(Val));
@@ -473,9 +490,9 @@ public:
   /// Move construct an Expected<T> value from an Expected<OtherT>, where OtherT
   /// must be convertible to T.
   template <class OtherT>
-  Expected(Expected<OtherT> &&Other,
-           typename std::enable_if<std::is_convertible<OtherT, T>::value>::type
-               * = nullptr) {
+  Expected(
+      Expected<OtherT> &&Other,
+      std::enable_if_t<std::is_convertible<OtherT, T>::value> * = nullptr) {
     moveConstruct(std::move(Other));
   }
 
@@ -484,8 +501,7 @@ public:
   template <class OtherT>
   explicit Expected(
       Expected<OtherT> &&Other,
-      typename std::enable_if<!std::is_convertible<OtherT, T>::value>::type * =
-          nullptr) {
+      std::enable_if_t<!std::is_convertible<OtherT, T>::value> * = nullptr) {
     moveConstruct(std::move(Other));
   }
 
@@ -532,7 +548,7 @@ public:
   /// Take ownership of the stored error.
   /// After calling this the Expected<T> is in an indeterminate state that can
   /// only be safely destructed. No further calls (beside the destructor) should
-  /// be made on the Expected<T> vaule.
+  /// be made on the Expected<T> value.
   Error takeError() {
 #if LLVM_ENABLE_ABI_BREAKING_CHECKS
     Unchecked = false;
@@ -688,6 +704,12 @@ inline void cantFail(Error Err, const char *Msg = nullptr) {
   if (Err) {
     if (!Msg)
       Msg = "Failure value returned from cantFail wrapped call";
+#ifndef NDEBUG
+    std::string Str;
+    raw_string_ostream OS(Str);
+    OS << Msg << "\n" << Err;
+    Msg = OS.str().c_str();
+#endif
     llvm_unreachable(Msg);
   }
 }
@@ -712,6 +734,13 @@ T cantFail(Expected<T> ValOrErr, const char *Msg = nullptr) {
   else {
     if (!Msg)
       Msg = "Failure value returned from cantFail wrapped call";
+#ifndef NDEBUG
+    std::string Str;
+    raw_string_ostream OS(Str);
+    auto E = ValOrErr.takeError();
+    OS << Msg << "\n" << E;
+    Msg = OS.str().c_str();
+#endif
     llvm_unreachable(Msg);
   }
 }
@@ -736,6 +765,13 @@ T& cantFail(Expected<T&> ValOrErr, const char *Msg = nullptr) {
   else {
     if (!Msg)
       Msg = "Failure value returned from cantFail wrapped call";
+#ifndef NDEBUG
+    std::string Str;
+    raw_string_ostream OS(Str);
+    auto E = ValOrErr.takeError();
+    OS << Msg << "\n" << E;
+    Msg = OS.str().c_str();
+#endif
     llvm_unreachable(Msg);
   }
 }
@@ -936,10 +972,14 @@ Expected<T> handleExpected(Expected<T> ValOrErr, RecoveryFtor &&RecoveryPath,
 /// will be printed before the first one is logged. A newline will be printed
 /// after each error.
 ///
+/// This function is compatible with the helpers from Support/WithColor.h. You
+/// can pass any of them as the OS. Please consider using them instead of
+/// including 'error: ' in the ErrorBanner.
+///
 /// This is useful in the base level of your program to allow clean termination
 /// (allowing clean deallocation of resources, etc.), while reporting error
 /// information to the user.
-void logAllUnhandledErrors(Error E, raw_ostream &OS, Twine ErrorBanner);
+void logAllUnhandledErrors(Error E, raw_ostream &OS, Twine ErrorBanner = {});
 
 /// Write all error messages (if any) in E to a string. The newline character
 /// is used to separate error messages.
@@ -960,6 +1000,20 @@ inline std::string toString(Error E) {
 /// might be more clearly refactored to return an Optional<T>.
 inline void consumeError(Error Err) {
   handleAllErrors(std::move(Err), [](const ErrorInfoBase &) {});
+}
+
+/// Convert an Expected to an Optional without doing anything. This method
+/// should be used only where an error can be considered a reasonable and
+/// expected return value.
+///
+/// Uses of this method are potentially indicative of problems: perhaps the
+/// error should be propagated further, or the error-producer should just
+/// return an Optional in the first place.
+template <typename T> Optional<T> expectedToOptional(Expected<T> &&E) {
+  if (E)
+    return std::move(*E);
+  consumeError(E.takeError());
+  return None;
 }
 
 /// Helper for converting an Error to a bool.
@@ -1045,6 +1099,8 @@ private:
 class ECError : public ErrorInfo<ECError> {
   friend Error errorCodeToError(std::error_code);
 
+  virtual void anchor() override;
+
 public:
   void setErrorCode(std::error_code EC) { this->EC = EC; }
   std::error_code convertToErrorCode() const override { return EC; }
@@ -1096,10 +1152,33 @@ template <typename T> ErrorOr<T> expectedToErrorOr(Expected<T> &&E) {
 /// StringError is useful in cases where the client is not expected to be able
 /// to consume the specific error message programmatically (for example, if the
 /// error message is to be presented to the user).
+///
+/// StringError can also be used when additional information is to be printed
+/// along with a error_code message. Depending on the constructor called, this
+/// class can either display:
+///    1. the error_code message (ECError behavior)
+///    2. a string
+///    3. the error_code message and a string
+///
+/// These behaviors are useful when subtyping is required; for example, when a
+/// specific library needs an explicit error type. In the example below,
+/// PDBError is derived from StringError:
+///
+///   @code{.cpp}
+///   Expected<int> foo() {
+///      return llvm::make_error<PDBError>(pdb_error_code::dia_failed_loading,
+///                                        "Additional information");
+///   }
+///   @endcode
+///
 class StringError : public ErrorInfo<StringError> {
 public:
   static char ID;
 
+  // Prints EC + S and converts to EC
+  StringError(std::error_code EC, const Twine &S = Twine());
+
+  // Prints S and converts to EC
   StringError(const Twine &S, std::error_code EC);
 
   void log(raw_ostream &OS) const override;
@@ -1110,7 +1189,110 @@ public:
 private:
   std::string Msg;
   std::error_code EC;
+  const bool PrintMsgOnly = false;
 };
+
+/// Create formatted StringError object.
+template <typename... Ts>
+inline Error createStringError(std::error_code EC, char const *Fmt,
+                               const Ts &... Vals) {
+  std::string Buffer;
+  raw_string_ostream Stream(Buffer);
+  Stream << format(Fmt, Vals...);
+  return make_error<StringError>(Stream.str(), EC);
+}
+
+Error createStringError(std::error_code EC, char const *Msg);
+
+inline Error createStringError(std::error_code EC, const Twine &S) {
+  return createStringError(EC, S.str().c_str());
+}
+
+template <typename... Ts>
+inline Error createStringError(std::errc EC, char const *Fmt,
+                               const Ts &... Vals) {
+  return createStringError(std::make_error_code(EC), Fmt, Vals...);
+}
+
+/// This class wraps a filename and another Error.
+///
+/// In some cases, an error needs to live along a 'source' name, in order to
+/// show more detailed information to the user.
+class FileError final : public ErrorInfo<FileError> {
+
+  friend Error createFileError(const Twine &, Error);
+  friend Error createFileError(const Twine &, size_t, Error);
+
+public:
+  void log(raw_ostream &OS) const override {
+    assert(Err && !FileName.empty() && "Trying to log after takeError().");
+    OS << "'" << FileName << "': ";
+    if (Line.hasValue())
+      OS << "line " << Line.getValue() << ": ";
+    Err->log(OS);
+  }
+
+  StringRef getFileName() { return FileName; }
+
+  Error takeError() { return Error(std::move(Err)); }
+
+  std::error_code convertToErrorCode() const override;
+
+  // Used by ErrorInfo::classID.
+  static char ID;
+
+private:
+  FileError(const Twine &F, Optional<size_t> LineNum,
+            std::unique_ptr<ErrorInfoBase> E) {
+    assert(E && "Cannot create FileError from Error success value.");
+    assert(!F.isTriviallyEmpty() &&
+           "The file name provided to FileError must not be empty.");
+    FileName = F.str();
+    Err = std::move(E);
+    Line = std::move(LineNum);
+  }
+
+  static Error build(const Twine &F, Optional<size_t> Line, Error E) {
+    std::unique_ptr<ErrorInfoBase> Payload;
+    handleAllErrors(std::move(E),
+                    [&](std::unique_ptr<ErrorInfoBase> EIB) -> Error {
+                      Payload = std::move(EIB);
+                      return Error::success();
+                    });
+    return Error(
+        std::unique_ptr<FileError>(new FileError(F, Line, std::move(Payload))));
+  }
+
+  std::string FileName;
+  Optional<size_t> Line;
+  std::unique_ptr<ErrorInfoBase> Err;
+};
+
+/// Concatenate a source file path and/or name with an Error. The resulting
+/// Error is unchecked.
+inline Error createFileError(const Twine &F, Error E) {
+  return FileError::build(F, Optional<size_t>(), std::move(E));
+}
+
+/// Concatenate a source file path and/or name with line number and an Error.
+/// The resulting Error is unchecked.
+inline Error createFileError(const Twine &F, size_t Line, Error E) {
+  return FileError::build(F, Optional<size_t>(Line), std::move(E));
+}
+
+/// Concatenate a source file path and/or name with a std::error_code 
+/// to form an Error object.
+inline Error createFileError(const Twine &F, std::error_code EC) {
+  return createFileError(F, errorCodeToError(EC));
+}
+
+/// Concatenate a source file path and/or name with line number and
+/// std::error_code to form an Error object.
+inline Error createFileError(const Twine &F, size_t Line, std::error_code EC) {
+  return createFileError(F, Line, errorCodeToError(EC));
+}
+
+Error createFileError(const Twine &F, ErrorSuccess) = delete;
 
 /// Helper for check-and-exit error handling.
 ///

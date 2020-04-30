@@ -1,9 +1,8 @@
 //===-- llvm/ADT/Hashing.h - Utilities for hashing --------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -46,19 +45,18 @@
 #define LLVM_ADT_HASHING_H
 
 #include "llvm/Support/DataTypes.h"
-#include "llvm/Support/Host.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/SwapByteOrder.h"
 #include "llvm/Support/type_traits.h"
 #include <algorithm>
 #include <cassert>
 #include <cstring>
-#include <iterator>
 #include <string>
 #include <utility>
 
 namespace llvm {
 
-/// \brief An opaque object representing a hash code.
+/// An opaque object representing a hash code.
 ///
 /// This object represents the result of hashing some entity. It is intended to
 /// be used to implement hashtables or other hashing-based data structures.
@@ -74,14 +72,14 @@ class hash_code {
   size_t value;
 
 public:
-  /// \brief Default construct a hash_code.
+  /// Default construct a hash_code.
   /// Note that this leaves the value uninitialized.
   hash_code() = default;
 
-  /// \brief Form a hash code directly from a numerical value.
+  /// Form a hash code directly from a numerical value.
   hash_code(size_t value) : value(value) {}
 
-  /// \brief Convert the hash code to its numerical value for use.
+  /// Convert the hash code to its numerical value for use.
   /*explicit*/ operator size_t() const { return value; }
 
   friend bool operator==(const hash_code &lhs, const hash_code &rhs) {
@@ -91,11 +89,11 @@ public:
     return lhs.value != rhs.value;
   }
 
-  /// \brief Allow a hash_code to be directly run through hash_value.
+  /// Allow a hash_code to be directly run through hash_value.
   friend size_t hash_value(const hash_code &code) { return code.value; }
 };
 
-/// \brief Compute a hash_code for any integer value.
+/// Compute a hash_code for any integer value.
 ///
 /// Note that this function is intended to compute the same hash_code for
 /// a particular value without regard to the pre-promotion type. This is in
@@ -103,24 +101,23 @@ public:
 /// differing argument types even if they would implicit promote to a common
 /// type without changing the value.
 template <typename T>
-typename std::enable_if<is_integral_or_enum<T>::value, hash_code>::type
-hash_value(T value);
+std::enable_if_t<is_integral_or_enum<T>::value, hash_code> hash_value(T value);
 
-/// \brief Compute a hash_code for a pointer's address.
+/// Compute a hash_code for a pointer's address.
 ///
 /// N.B.: This hashes the *address*. Not the value and not the type.
 template <typename T> hash_code hash_value(const T *ptr);
 
-/// \brief Compute a hash_code for a pair of objects.
+/// Compute a hash_code for a pair of objects.
 template <typename T, typename U>
 hash_code hash_value(const std::pair<T, U> &arg);
 
-/// \brief Compute a hash_code for a standard string.
+/// Compute a hash_code for a standard string.
 template <typename T>
 hash_code hash_value(const std::basic_string<T> &arg);
 
 
-/// \brief Override the execution seed with a fixed value.
+/// Override the execution seed with a fixed value.
 ///
 /// This hashing library uses a per-execution seed designed to change on each
 /// run with high probability in order to ensure that the hash codes are not
@@ -134,7 +131,7 @@ hash_code hash_value(const std::basic_string<T> &arg);
 /// undone. This makes it thread-hostile and very hard to use outside of
 /// immediately on start of a simple program designed for reproducible
 /// behavior.
-void set_fixed_execution_hash_seed(size_t fixed_value);
+void set_fixed_execution_hash_seed(uint64_t fixed_value);
 
 
 // All of the implementation details of actually computing the various hash
@@ -160,12 +157,12 @@ inline uint32_t fetch32(const char *p) {
 }
 
 /// Some primes between 2^63 and 2^64 for various uses.
-static const uint64_t k0 = 0xc3a5c85c97cb3127ULL;
-static const uint64_t k1 = 0xb492b66fbe98f273ULL;
-static const uint64_t k2 = 0x9ae16a3b2f90404fULL;
-static const uint64_t k3 = 0xc949d7c7509e6557ULL;
+static constexpr uint64_t k0 = 0xc3a5c85c97cb3127ULL;
+static constexpr uint64_t k1 = 0xb492b66fbe98f273ULL;
+static constexpr uint64_t k2 = 0x9ae16a3b2f90404fULL;
+static constexpr uint64_t k3 = 0xc949d7c7509e6557ULL;
 
-/// \brief Bitwise right rotate.
+/// Bitwise right rotate.
 /// Normally this will compile to a single instruction, especially if the
 /// shift is a manifest constant.
 inline uint64_t rotate(uint64_t val, size_t shift) {
@@ -193,7 +190,7 @@ inline uint64_t hash_1to3_bytes(const char *s, size_t len, uint64_t seed) {
   uint8_t b = s[len >> 1];
   uint8_t c = s[len - 1];
   uint32_t y = static_cast<uint32_t>(a) + (static_cast<uint32_t>(b) << 8);
-  uint32_t z = len + (static_cast<uint32_t>(c) << 2);
+  uint32_t z = static_cast<uint32_t>(len) + (static_cast<uint32_t>(c) << 2);
   return shift_mix(y * k2 ^ z * k3 ^ seed) * k2;
 }
 
@@ -255,13 +252,13 @@ inline uint64_t hash_short(const char *s, size_t length, uint64_t seed) {
   return k2 ^ seed;
 }
 
-/// \brief The intermediate state used during hashing.
+/// The intermediate state used during hashing.
 /// Currently, the algorithm for computing hash codes is based on CityHash and
 /// keeps 56 bytes of arbitrary state.
 struct hash_state {
-  uint64_t h0, h1, h2, h3, h4, h5, h6;
+  uint64_t h0 = 0, h1 = 0, h2 = 0, h3 = 0, h4 = 0, h5 = 0, h6 = 0;
 
-  /// \brief Create a new hash_state structure and initialize it based on the
+  /// Create a new hash_state structure and initialize it based on the
   /// seed and the first 64-byte chunk.
   /// This effectively performs the initial mix.
   static hash_state create(const char *s, uint64_t seed) {
@@ -273,7 +270,7 @@ struct hash_state {
     return state;
   }
 
-  /// \brief Mix 32-bytes from the input sequence into the 16-bytes of 'a'
+  /// Mix 32-bytes from the input sequence into the 16-bytes of 'a'
   /// and 'b', including whatever is already in 'a' and 'b'.
   static void mix_32_bytes(const char *s, uint64_t &a, uint64_t &b) {
     a += fetch64(s);
@@ -285,7 +282,7 @@ struct hash_state {
     a += c;
   }
 
-  /// \brief Mix in a 64-byte buffer of data.
+  /// Mix in a 64-byte buffer of data.
   /// We mix all 64 bytes even when the chunk length is smaller, but we
   /// record the actual length.
   void mix(const char *s) {
@@ -303,7 +300,7 @@ struct hash_state {
     std::swap(h2, h0);
   }
 
-  /// \brief Compute the final 64-bit hash code value based on the current
+  /// Compute the final 64-bit hash code value based on the current
   /// state and the length of bytes hashed.
   uint64_t finalize(size_t length) {
     return hash_16_bytes(hash_16_bytes(h3, h5) + shift_mix(h1) * k1 + h2,
@@ -312,14 +309,14 @@ struct hash_state {
 };
 
 
-/// \brief A global, fixed seed-override variable.
+/// A global, fixed seed-override variable.
 ///
 /// This variable can be set using the \see llvm::set_fixed_execution_seed
 /// function. See that function for details. Do not, under any circumstances,
 /// set or read this variable.
-extern size_t fixed_seed_override;
+extern uint64_t fixed_seed_override;
 
-inline size_t get_execution_seed() {
+inline uint64_t get_execution_seed() {
   // FIXME: This needs to be a per-execution seed. This is just a placeholder
   // implementation. Switching to a per-execution seed is likely to flush out
   // instability bugs and so will happen as its own commit.
@@ -327,13 +324,12 @@ inline size_t get_execution_seed() {
   // However, if there is a fixed seed override set the first time this is
   // called, return that instead of the per-execution seed.
   const uint64_t seed_prime = 0xff51afd7ed558ccdULL;
-  static size_t seed = fixed_seed_override ? fixed_seed_override
-                                           : (size_t)seed_prime;
+  static uint64_t seed = fixed_seed_override ? fixed_seed_override : seed_prime;
   return seed;
 }
 
 
-/// \brief Trait to indicate whether a type's bits can be hashed directly.
+/// Trait to indicate whether a type's bits can be hashed directly.
 ///
 /// A type trait which is true if we want to combine values for hashing by
 /// reading the underlying data. It is false if values of this type must
@@ -360,24 +356,24 @@ template <typename T, typename U> struct is_hashable_data<std::pair<T, U> >
                                   (sizeof(T) + sizeof(U)) ==
                                    sizeof(std::pair<T, U>))> {};
 
-/// \brief Helper to get the hashable data representation for a type.
+/// Helper to get the hashable data representation for a type.
 /// This variant is enabled when the type itself can be used.
 template <typename T>
-typename std::enable_if<is_hashable_data<T>::value, T>::type
+std::enable_if_t<is_hashable_data<T>::value, T>
 get_hashable_data(const T &value) {
   return value;
 }
-/// \brief Helper to get the hashable data representation for a type.
+/// Helper to get the hashable data representation for a type.
 /// This variant is enabled when we must first call hash_value and use the
 /// result as our data.
 template <typename T>
-typename std::enable_if<!is_hashable_data<T>::value, size_t>::type
+std::enable_if_t<!is_hashable_data<T>::value, size_t>
 get_hashable_data(const T &value) {
   using ::llvm::hash_value;
   return hash_value(value);
 }
 
-/// \brief Helper to store data from a value into a buffer and advance the
+/// Helper to store data from a value into a buffer and advance the
 /// pointer into that buffer.
 ///
 /// This routine first checks whether there is enough space in the provided
@@ -396,14 +392,14 @@ bool store_and_advance(char *&buffer_ptr, char *buffer_end, const T& value,
   return true;
 }
 
-/// \brief Implement the combining of integral values into a hash_code.
+/// Implement the combining of integral values into a hash_code.
 ///
 /// This overload is selected when the value type of the iterator is
 /// integral. Rather than computing a hash_code for each object and then
 /// combining them, this (as an optimization) directly combines the integers.
 template <typename InputIteratorT>
 hash_code hash_combine_range_impl(InputIteratorT first, InputIteratorT last) {
-  const size_t seed = get_execution_seed();
+  const uint64_t seed = get_execution_seed();
   char buffer[64], *buffer_ptr = buffer;
   char *const buffer_end = std::end(buffer);
   while (first != last && store_and_advance(buffer_ptr, buffer_end,
@@ -436,7 +432,7 @@ hash_code hash_combine_range_impl(InputIteratorT first, InputIteratorT last) {
   return state.finalize(length);
 }
 
-/// \brief Implement the combining of integral values into a hash_code.
+/// Implement the combining of integral values into a hash_code.
 ///
 /// This overload is selected when the value type of the iterator is integral
 /// and when the input iterator is actually a pointer. Rather than computing
@@ -445,9 +441,9 @@ hash_code hash_combine_range_impl(InputIteratorT first, InputIteratorT last) {
 /// are stored in contiguous memory, this routine avoids copying each value
 /// and directly reads from the underlying memory.
 template <typename ValueT>
-typename std::enable_if<is_hashable_data<ValueT>::value, hash_code>::type
+std::enable_if_t<is_hashable_data<ValueT>::value, hash_code>
 hash_combine_range_impl(ValueT *first, ValueT *last) {
-  const size_t seed = get_execution_seed();
+  const uint64_t seed = get_execution_seed();
   const char *s_begin = reinterpret_cast<const char *>(first);
   const char *s_end = reinterpret_cast<const char *>(last);
   const size_t length = std::distance(s_begin, s_end);
@@ -471,7 +467,7 @@ hash_combine_range_impl(ValueT *first, ValueT *last) {
 } // namespace hashing
 
 
-/// \brief Compute a hash_code for a sequence of values.
+/// Compute a hash_code for a sequence of values.
 ///
 /// This hashes a sequence of values. It produces the same hash_code as
 /// 'hash_combine(a, b, c, ...)', but can run over arbitrary sized sequences
@@ -487,7 +483,7 @@ hash_code hash_combine_range(InputIteratorT first, InputIteratorT last) {
 namespace hashing {
 namespace detail {
 
-/// \brief Helper class to manage the recursive combining of hash_combine
+/// Helper class to manage the recursive combining of hash_combine
 /// arguments.
 ///
 /// This class exists to manage the state and various calls involved in the
@@ -495,19 +491,19 @@ namespace detail {
 /// useful at minimizing the code in the recursive calls to ease the pain
 /// caused by a lack of variadic functions.
 struct hash_combine_recursive_helper {
-  char buffer[64];
+  char buffer[64] = {};
   hash_state state;
-  const size_t seed;
+  const uint64_t seed;
 
 public:
-  /// \brief Construct a recursive hash combining helper.
+  /// Construct a recursive hash combining helper.
   ///
   /// This sets up the state for a recursive hash combine, including getting
   /// the seed and buffer setup.
   hash_combine_recursive_helper()
     : seed(get_execution_seed()) {}
 
-  /// \brief Combine one chunk of data into the current in-flight hash.
+  /// Combine one chunk of data into the current in-flight hash.
   ///
   /// This merges one chunk of data into the hash. First it tries to buffer
   /// the data. If the buffer is full, it hashes the buffer into its
@@ -543,12 +539,12 @@ public:
       // store types smaller than the buffer.
       if (!store_and_advance(buffer_ptr, buffer_end, data,
                              partial_store_size))
-        abort();
+        llvm_unreachable("buffer smaller than stored type");
     }
     return buffer_ptr;
   }
 
-  /// \brief Recursive, variadic combining method.
+  /// Recursive, variadic combining method.
   ///
   /// This function recurses through each argument, combining that argument
   /// into a single hash.
@@ -561,7 +557,7 @@ public:
     return combine(length, buffer_ptr, buffer_end, args...);
   }
 
-  /// \brief Base case for recursive, variadic combining.
+  /// Base case for recursive, variadic combining.
   ///
   /// The base case when combining arguments recursively is reached when all
   /// arguments have been handled. It flushes the remaining buffer and
@@ -589,7 +585,7 @@ public:
 } // namespace detail
 } // namespace hashing
 
-/// \brief Combine values into a single hash_code.
+/// Combine values into a single hash_code.
 ///
 /// This routine accepts a varying number of arguments of any type. It will
 /// attempt to combine them into a single hash_code. For user-defined types it
@@ -611,7 +607,7 @@ template <typename ...Ts> hash_code hash_combine(const Ts &...args) {
 namespace hashing {
 namespace detail {
 
-/// \brief Helper to hash the value of a single integer.
+/// Helper to hash the value of a single integer.
 ///
 /// Overloads for smaller integer types are not provided to ensure consistent
 /// behavior in the presence of integral promotions. Essentially,
@@ -630,9 +626,9 @@ inline hash_code hash_integer_value(uint64_t value) {
 // Declared and documented above, but defined here so that any of the hashing
 // infrastructure is available.
 template <typename T>
-typename std::enable_if<is_integral_or_enum<T>::value, hash_code>::type
-hash_value(T value) {
-  return ::llvm::hashing::detail::hash_integer_value(value);
+std::enable_if_t<is_integral_or_enum<T>::value, hash_code> hash_value(T value) {
+  return ::llvm::hashing::detail::hash_integer_value(
+      static_cast<uint64_t>(value));
 }
 
 // Declared and documented above, but defined here so that any of the hashing

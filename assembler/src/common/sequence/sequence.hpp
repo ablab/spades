@@ -39,8 +39,6 @@ class Sequence {
         }
 
       public:
-        using llvm::TrailingObjects<ManagedNuclBuffer, ST>::operator delete;
-
         static ManagedNuclBuffer *create(size_t nucls) {
             void *mem = ::operator new(totalSizeToAlloc<ST>(Sequence::DataSize(nucls)));
             return new (mem) ManagedNuclBuffer();

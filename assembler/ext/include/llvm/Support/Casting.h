@@ -1,9 +1,8 @@
 //===- llvm/Support/Casting.h - Allow flexible, checked, casts --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -62,8 +61,7 @@ struct isa_impl {
 
 /// Always allow upcasts, and perform no dynamic check for them.
 template <typename To, typename From>
-struct isa_impl<
-    To, From, typename std::enable_if<std::is_base_of<To, From>::value>::type> {
+struct isa_impl<To, From, std::enable_if_t<std::is_base_of<To, From>::value>> {
   static inline bool doit(const From &) { return true; }
 };
 
@@ -144,6 +142,16 @@ template <class X, class Y> LLVM_NODISCARD inline bool isa(const Y &Val) {
                        typename simplify_type<const Y>::SimpleType>::doit(Val);
 }
 
+// isa_and_nonnull<X> - Functionally identical to isa, except that a null value
+// is accepted.
+//
+template <class X, class Y>
+LLVM_NODISCARD inline bool isa_and_nonnull(const Y &Val) {
+  if (!Val)
+    return false;
+  return isa<X>(Val);
+}
+
 //===----------------------------------------------------------------------===//
 //                          cast<x> Support Templates
 //===----------------------------------------------------------------------===//
@@ -175,7 +183,7 @@ template <class To, class From>
 struct cast_retty_impl<To, std::unique_ptr<From>> {
 private:
   using PointerType = typename cast_retty_impl<To, From *>::ret_type;
-  using ResultType = typename std::remove_pointer<PointerType>::type;
+  using ResultType = std::remove_pointer_t<PointerType>;
 
 public:
   using ret_type = std::unique_ptr<ResultType>;
@@ -235,8 +243,8 @@ template <class X> struct is_simple_type {
 //  cast<Instruction>(myVal)->getParent()
 //
 template <class X, class Y>
-inline typename std::enable_if<!is_simple_type<Y>::value,
-                               typename cast_retty<X, const Y>::ret_type>::type
+inline std::enable_if_t<!is_simple_type<Y>::value,
+                        typename cast_retty<X, const Y>::ret_type>
 cast(const Y &Val) {
   assert(isa<X>(Val) && "cast<Ty>() argument of incompatible type!");
   return cast_convert_val<
@@ -271,10 +279,9 @@ cast(std::unique_ptr<Y> &&Val) {
 // accepted.
 //
 template <class X, class Y>
-LLVM_NODISCARD inline
-    typename std::enable_if<!is_simple_type<Y>::value,
-                            typename cast_retty<X, const Y>::ret_type>::type
-    cast_or_null(const Y &Val) {
+LLVM_NODISCARD inline std::enable_if_t<
+    !is_simple_type<Y>::value, typename cast_retty<X, const Y>::ret_type>
+cast_or_null(const Y &Val) {
   if (!Val)
     return nullptr;
   assert(isa<X>(Val) && "cast_or_null<Ty>() argument of incompatible type!");
@@ -282,10 +289,9 @@ LLVM_NODISCARD inline
 }
 
 template <class X, class Y>
-LLVM_NODISCARD inline
-    typename std::enable_if<!is_simple_type<Y>::value,
-                            typename cast_retty<X, Y>::ret_type>::type
-    cast_or_null(Y &Val) {
+LLVM_NODISCARD inline std::enable_if_t<!is_simple_type<Y>::value,
+                                       typename cast_retty<X, Y>::ret_type>
+cast_or_null(Y &Val) {
   if (!Val)
     return nullptr;
   assert(isa<X>(Val) && "cast_or_null<Ty>() argument of incompatible type!");
@@ -317,10 +323,9 @@ cast_or_null(std::unique_ptr<Y> &&Val) {
 //
 
 template <class X, class Y>
-LLVM_NODISCARD inline
-    typename std::enable_if<!is_simple_type<Y>::value,
-                            typename cast_retty<X, const Y>::ret_type>::type
-    dyn_cast(const Y &Val) {
+LLVM_NODISCARD inline std::enable_if_t<
+    !is_simple_type<Y>::value, typename cast_retty<X, const Y>::ret_type>
+dyn_cast(const Y &Val) {
   return isa<X>(Val) ? cast<X>(Val) : nullptr;
 }
 
@@ -338,18 +343,16 @@ LLVM_NODISCARD inline typename cast_retty<X, Y *>::ret_type dyn_cast(Y *Val) {
 // value is accepted.
 //
 template <class X, class Y>
-LLVM_NODISCARD inline
-    typename std::enable_if<!is_simple_type<Y>::value,
-                            typename cast_retty<X, const Y>::ret_type>::type
-    dyn_cast_or_null(const Y &Val) {
+LLVM_NODISCARD inline std::enable_if_t<
+    !is_simple_type<Y>::value, typename cast_retty<X, const Y>::ret_type>
+dyn_cast_or_null(const Y &Val) {
   return (Val && isa<X>(Val)) ? cast<X>(Val) : nullptr;
 }
 
 template <class X, class Y>
-LLVM_NODISCARD inline
-    typename std::enable_if<!is_simple_type<Y>::value,
-                            typename cast_retty<X, Y>::ret_type>::type
-    dyn_cast_or_null(Y &Val) {
+LLVM_NODISCARD inline std::enable_if_t<!is_simple_type<Y>::value,
+                                       typename cast_retty<X, Y>::ret_type>
+dyn_cast_or_null(Y &Val) {
   return (Val && isa<X>(Val)) ? cast<X>(Val) : nullptr;
 }
 
@@ -373,8 +376,7 @@ LLVM_NODISCARD inline auto unique_dyn_cast(std::unique_ptr<Y> &Val)
 }
 
 template <class X, class Y>
-LLVM_NODISCARD inline auto unique_dyn_cast(std::unique_ptr<Y> &&Val)
-    -> decltype(cast<X>(Val)) {
+LLVM_NODISCARD inline auto unique_dyn_cast(std::unique_ptr<Y> &&Val) {
   return unique_dyn_cast<X, Y>(Val);
 }
 
@@ -389,8 +391,7 @@ LLVM_NODISCARD inline auto unique_dyn_cast_or_null(std::unique_ptr<Y> &Val)
 }
 
 template <class X, class Y>
-LLVM_NODISCARD inline auto unique_dyn_cast_or_null(std::unique_ptr<Y> &&Val)
-    -> decltype(cast<X>(Val)) {
+LLVM_NODISCARD inline auto unique_dyn_cast_or_null(std::unique_ptr<Y> &&Val) {
   return unique_dyn_cast_or_null<X, Y>(Val);
 }
 
