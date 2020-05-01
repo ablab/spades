@@ -10,6 +10,7 @@
 #include "adt/bag.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include <boost/optional.hpp>
+#include <llvm/Support/TimeProfiler.h>
 
 namespace omnigraph {
 
@@ -189,6 +190,7 @@ public:
               start_(start),
               dijkstra_(DijkstraHelper<Graph>::CreateBoundedDijkstra(g, length_bound,
                                                                      dijkstra_vertex_limit)) {
+        //llvm::TimeTraceScope trace("PathProcessor:Dijkstra");
         TRACE("Dijkstra launched");
         dijkstra_.Run(start);
         TRACE("Dijkstra finished");
@@ -200,6 +202,7 @@ public:
                 Callback& callback,
                 size_t edge_depth_bound = std::numeric_limits<size_t>::max()) const {
         TRACE("Process launched");
+        //llvm::TimeTraceScope trace("PathProcessor:Process");
         int error_code = 0;
 
         if (dijkstra_.VertexLimitExceeded()) {

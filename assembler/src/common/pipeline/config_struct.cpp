@@ -540,6 +540,13 @@ void load(debruijn_config::kmer_coverage_model& kcm,
   load(kcm.use_coverage_threshold, pt, "use_coverage_threshold");
 }
 
+void load(debruijn_config::time_tracing& tt,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+  using config_common::load;
+  load(tt.enable, pt, "enabled", true);
+  load(tt.granularity, pt, "granularity", 500);
+}
+
 void load(dataset &ds,
           boost::property_tree::ptree const &pt,
           const std::string &input_dir) {
@@ -814,6 +821,8 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     if (pt.count("set_of_hmms")) {
         load(cfg.hmm_set, pt, "set_of_hmms");
     }
+
+    load(cfg.tt, pt, "time_tracer", complete);
 }
 
 void load(debruijn_config &cfg, const std::string &cfg_fns) {

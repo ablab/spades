@@ -707,6 +707,8 @@ bool RemoveHiddenLoopEC(Graph &g,
                         double determined_coverage_threshold,
                         double relative_threshold,
                         EdgeRemovalHandlerF<Graph> removal_handler) {
+    llvm::TimeTraceScope trace(__PRETTY_FUNCTION__);
+
     INFO("Removing loops and rc loops with erroneous connections");
     ECLoopRemover<Graph> hc(g, flanking_cov,
                             determined_coverage_threshold,

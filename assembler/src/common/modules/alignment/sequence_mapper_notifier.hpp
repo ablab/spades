@@ -10,12 +10,14 @@
 
 #include "sequence_mapper.hpp"
 
-#include "pipeline/graph_pack.hpp"
-#include "io/reads/paired_read.hpp"
-#include "io/reads/read_stream_vector.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/core/graph.hpp"
+#include "io/reads/paired_read.hpp"
+#include "io/reads/read_stream_vector.hpp"
 
+#include <llvm/Support/TimeProfiler.h>
+
+#include <string>
 #include <vector>
 
 namespace debruijn_graph {
@@ -52,6 +54,8 @@ public:
     template<class ReadType>
     void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
                         size_t lib_index, const SequenceMapperT& mapper, size_t threads_count = 0) {
+        std::string lib_str = std::to_string(lib_index);
+        llvm::TimeTraceScope tracer("SequenceMapperNotifier::ProcessLibrary", llvm::StringRef(lib_str));
         if (threads_count == 0)
             threads_count = streams.size();
 

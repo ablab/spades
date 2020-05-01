@@ -10,6 +10,8 @@
 
 #include "perfect_hash_map.hpp"
 
+#include <llvm/Support/TimeProfiler.h>
+
 namespace utils {
 
 struct PerfectHashMapBuilder {
@@ -17,6 +19,8 @@ struct PerfectHashMapBuilder {
     void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
                     Counter& counter, size_t bucket_num,
                     size_t thread_num, bool save_final = true) const {
+        llvm::TimeTraceScope trace("PerfectHashMapBuilder::BuildIndex");
+
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
 
         KMerIndexBuilder<KMerIndex> builder((unsigned)bucket_num, (unsigned)thread_num);
@@ -41,6 +45,8 @@ struct CQFHashMapBuilder {
     void BuildIndex(CQFHashMap<K, traits, StoringType> &index,
                     Counter& counter, size_t bucket_num, size_t thread_num,
                     bool save_final = false) const {
+        llvm::TimeTraceScope trace("CQFHashMapBuilder::BuildIndex");
+
         using Index = CQFHashMap<K, traits, StoringType>;
         using KMerIndex = typename Index::KMerIndexT;
 

@@ -418,6 +418,11 @@ struct debruijn_config {
         bool use_coverage_threshold;
     };
 
+    struct time_tracing {
+        bool enable;
+        unsigned granularity;
+    };
+    
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
     std::string dataset_file;
@@ -522,6 +527,7 @@ struct debruijn_config {
 
     bool calculate_coverage_for_each_lib;
     strand_specificity ss;
+    time_tracing tt;
 
     bool need_mapping;
 

@@ -15,6 +15,8 @@
 #include "pipeline/genomic_info.hpp"
 #include "simplification.hpp"
 
+#include <llvm/Support/TimeProfiler.h>
+
 namespace debruijn_graph {
 
 using namespace debruijn::simplification;
@@ -122,7 +124,9 @@ public:
     }
 
     void InitialCleaning() {
-        INFO("PROCEDURE == InitialCleaning");
+        INFO("PROCEDURE == Initial cleaning");
+        llvm::TimeTraceScope trace("Initial cleaing");
+        
         printer_(info_printer_pos::before_raw_simplification);
 
         CompositeAlgorithm<Graph> algo(g_);
@@ -192,6 +196,7 @@ public:
         using namespace omnigraph;
         using namespace func;
         INFO("PROCEDURE == Post simplification");
+        llvm::TimeTraceScope trace("Post simplification");
 
         printer_(info_printer_pos::before_post_simplification);
 
@@ -239,7 +244,7 @@ public:
         const auto &flanking_cov = gp_.get<FlankingCoverage<Graph>>();
 
         if (simplif_cfg_.topology_simplif_enabled && info_container_.main_iteration()) {
-            algo.AddAlgo<AdapterAlgorithm<Graph>>("", g_, [&]() { return FinalRemoveErroneousEdges(); });
+            algo.AddAlgo<AdapterAlgorithm<Graph>>("Final removal of erroneous edges", g_, [&]() { return FinalRemoveErroneousEdges(); });
             algo.AddAlgo(
                     TopologyTipClipperInstance(g_, simplif_cfg_.ttc,
                                                info_container_, removal_handler_),
@@ -362,6 +367,8 @@ public:
     }
 
     void SimplifyGraph() {
+        llvm::TimeTraceScope trace("Graph simplification");
+
         bool rna_mode = (info_container_.mode() == config::pipeline_type::rna);
 
         bool use_restricted = gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>();
@@ -401,7 +408,7 @@ public:
         if (rna_mode) {
             algo.AddAlgo<LoopedAlgorithm<Graph>>("", g_, algo_tc_br);
         } else {
-            algo.AddAlgo(algo_tc_br);
+            algo.AddAlgo(algo_tc_br, "");
         }
 
         algo.AddAlgo(ECRemoverInstance(g_, simplif_cfg_.ec, info_container_,

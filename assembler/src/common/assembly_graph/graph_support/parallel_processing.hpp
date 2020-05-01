@@ -12,6 +12,8 @@
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 
+#include <llvm/Support/TimeProfiler.h>
+
 namespace omnigraph {
 
 template<class Graph, class ElementId>
@@ -159,16 +161,17 @@ template<class Graph>
 class AlgorithmRunningHelper {
     typedef PersistentAlgorithmBase<Graph> Algo;
 public:
-    static size_t RunAlgo(Algo &algo, const std::string &comment = "",
+    static size_t RunAlgo(Algo &algo, const std::string &comment,
                  bool force_primary_launch = false,
                  double iter_run_progress = 1.) {
         if (!comment.empty()) {INFO("Running " << comment);}
+        llvm::TimeTraceScope trace(comment);
         size_t triggered = algo.Run(force_primary_launch, iter_run_progress);
         if (!comment.empty()) {INFO(comment << " triggered " << triggered << " times");}
         return triggered;
     }
 
-    static size_t RunAlgo(AlgoPtr<Graph> algo_ptr, const std::string &comment = "",
+    static size_t RunAlgo(AlgoPtr<Graph> algo_ptr, const std::string &comment,
                           bool force_primary_launch = false,
                           double iter_run_progress = 1.) {
         if (algo_ptr)
@@ -261,7 +264,7 @@ public:
         AddAlgo(std::make_shared<Algo>(std::forward<Args>(args)...), desc);
     };
 
-    void AddAlgo(AlgoPtr<Graph> algo, const std::string &desc = "") {
+    void AddAlgo(AlgoPtr<Graph> algo, const std::string &desc) {
         if (algo)
             algos_.push_back(std::make_pair(algo, desc));
     }

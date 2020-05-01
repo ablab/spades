@@ -186,3 +186,8 @@ ss_coverage_splitter {
     min_flanking_coverage 2
     coverage_margin   5
 }
+
+time_tracer {
+  enabled true
+  granularity 500
+}
