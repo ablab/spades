@@ -7,13 +7,14 @@
 import codecs
 import gzip
 import sys
+import os
 
 fasta_ext = ['.fa', '.fas', '.fasta', '.seq', '.fsa', '.fna', '.ffn', '.frn']
-fastq_ext = ['.fq', 'fastq']
+fastq_ext = ['.fq', '.fastq']
 
 
 def Open(f, mode):
-    if f.endswith(".gz"):
+    if f.endswith(".gz") or f.endswith(".gzip"):
         return codecs.getreader('UTF-8')(gzip.open(f, mode))
     else:
         return codecs.open(f, mode, encoding='utf-8')
@@ -157,26 +158,27 @@ def RemoveNs(input_handler, output_handler):
             write(SeqRecord(contig.seq[l:r], contig.id))
 
 
-def is_fasta(file_name):
-    for ext in fasta_ext:
-        if ext in file_name:
-            return True
+def check_extension(fname, extension_list):
+    # "reads.fastq", ".gz"
+    basename_plus_innerext, outer_ext = os.path.splitext(fname)
+    if not outer_ext in ['.gz', '.gzip']:
+        basename_plus_innerext, outer_ext = fname, ''  # not an archive
 
-    return False
+    # "reads", ".fastq"
+    basename, inner_ext = os.path.splitext(basename_plus_innerext)
+    return inner_ext in extension_list
+
+
+def is_fasta(file_name):
+    return check_extension(file_name, fasta_ext)
 
 
 def is_fastq(file_name):
-    for ext in fastq_ext:
-        if ext in file_name:
-            return True
-
-    return False
+    return check_extension(file_name, fastq_ext)
 
 
 def is_bam(file_name):
-    if 'bam' in file_name:
-        return True
-    return False
+    return check_extension(file_name, ['.bam'])
 
 
 def get_read_file_type(file_name):
