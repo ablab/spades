@@ -5,12 +5,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/kmer_mph/kmer_index_builder.hpp"
-#include "utils/kmer_mph/kmer_splitters.hpp"
-
 #include "perfect_hash_map.hpp"
 
-#include <llvm/Support/TimeProfiler.h>
+#include "utils/kmer_mph/kmer_index_builder.hpp"
+#include "utils/kmer_mph/kmer_splitters.hpp"
+#include "utils/perf/timetracer.hpp"
 
 namespace utils {
 
@@ -19,7 +18,7 @@ struct PerfectHashMapBuilder {
     void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
                     Counter& counter, size_t bucket_num,
                     size_t thread_num, bool save_final = true) const {
-        llvm::TimeTraceScope trace("PerfectHashMapBuilder::BuildIndex");
+        TIME_TRACE_SCOPE("PerfectHashMapBuilder::BuildIndex");
 
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
 
@@ -45,7 +44,7 @@ struct CQFHashMapBuilder {
     void BuildIndex(CQFHashMap<K, traits, StoringType> &index,
                     Counter& counter, size_t bucket_num, size_t thread_num,
                     bool save_final = false) const {
-        llvm::TimeTraceScope trace("CQFHashMapBuilder::BuildIndex");
+        TIME_TRACE_SCOPE("CQFHashMapBuilder::BuildIndex");
 
         using Index = CQFHashMap<K, traits, StoringType>;
         using KMerIndex = typename Index::KMerIndexT;

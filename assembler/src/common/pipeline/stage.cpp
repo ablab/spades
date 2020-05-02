@@ -11,7 +11,7 @@
 #include "pipeline/stage.hpp"
 
 #include "utils/logger/log_writers.hpp"
-#include <llvm/Support/TimeProfiler.h>
+#include "utils/perf/timetracer.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -105,7 +105,7 @@ void CompositeStageBase::run(debruijn_graph::GraphPack& gp,
             std::string composite_id(id());
             composite_id += ":";
             composite_id += prev_phase->id();
-            llvm::TimeTraceScope trace("load phase", llvm::StringRef(composite_id));
+            TIME_TRACE_SCOPE("load phase", composite_id);
             prev_phase->load(gp, parent_->saves_policy().LoadPath(), composite_id.c_str());
         }
     }
@@ -115,7 +115,7 @@ void CompositeStageBase::run(debruijn_graph::GraphPack& gp,
 
         INFO("PROCEDURE == " << phase->name() << " (id: " << id() << ":" << phase->id() << ")");
         {
-            llvm::TimeTraceScope trace(phase->name());
+            TIME_TRACE_SCOPE(phase->name());
             phase->run(gp, started_from);
         }
 
@@ -124,7 +124,7 @@ void CompositeStageBase::run(debruijn_graph::GraphPack& gp,
             composite_id += ":";
             composite_id += phase->id();
 
-            llvm::TimeTraceScope trace("save phase", llvm::StringRef(composite_id));
+            TIME_TRACE_SCOPE("save phase", composite_id);
             phase->save(gp, parent_->saves_policy().SavesPath(), composite_id.c_str());
             //TODO: currently no phases are writing saves.
             //When they will, erase the previous saves when SavesPolicy::Last
@@ -164,7 +164,7 @@ void StageManager::run(debruijn_graph::GraphPack& g,
             }
         }
         if (start_stage != stages_.begin()) {
-            llvm::TimeTraceScope trace("load", llvm::StringRef(saves_policy_.LoadPath()));
+            TIME_TRACE_SCOPE("load", saves_policy_.LoadPath());
             (*std::prev(start_stage))->load(g, saves_policy_.LoadPath());
         }
     }
@@ -175,14 +175,14 @@ void StageManager::run(debruijn_graph::GraphPack& g,
         INFO("STAGE == " << stage->name() << " (id: " << stage->id() << ")");
         stage->prepare(g, start_from);        
         {
-            llvm::TimeTraceScope trace(stage->name());
+            TIME_TRACE_SCOPE(stage->name());
             stage->run(g, start_from);
         }
 
         if (saves_policy_.EnabledCheckpoints() != SavesPolicy::Checkpoints::None) {
             auto prev_saves = saves_policy_.GetLastCheckpoint();
             {
-                llvm::TimeTraceScope trace("save", llvm::StringRef(saves_policy_.SavesPath()));
+                TIME_TRACE_SCOPE("save", saves_policy_.SavesPath());
                 stage->save(g, saves_policy_.SavesPath());
             }
             saves_policy_.UpdateCheckpoint(stage->id());

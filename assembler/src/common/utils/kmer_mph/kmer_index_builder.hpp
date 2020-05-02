@@ -13,12 +13,11 @@
 #include "common/adt/kmer_vector.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
-
+#include "utils/memory_limit.hpp"
 #include "utils/logger/logger.hpp"
 #include "utils/filesystem/path_helper.hpp"
-
-#include "utils/memory_limit.hpp"
 #include "utils/filesystem/file_limit.hpp"
+#include "utils/perf/timetracer.hpp"
 
 #include "adt/iterator_range.hpp"
 #include "adt/loser_tree.hpp"
@@ -26,7 +25,6 @@
 #include "boomphf/BooPHF.h"
 
 #include <libcxx/sort.hpp>
-#include <llvm/Support/TimeProfiler.h>
 
 #include <algorithm>
 #ifdef USE_GLIBCXX_PARALLEL
@@ -116,14 +114,14 @@ public:
 
     // Split k-mers into buckets.
     INFO("Splitting kmer instances into " << num_files << " files using " << num_threads << " threads. This might take a while.");
-    llvm::timeTraceProfilerBegin("KMerDiskCounter::Split", llvm::StringRef(""));
+    TIME_TRACE_BEGIN("KMerDiskCounter::Split");
     auto raw_kmers = splitter_.Split(num_files, num_threads);
-    llvm::timeTraceProfilerEnd();
+    TIME_TRACE_END;
 
     INFO("Starting k-mer counting.");
     size_t kmers = 0;
     {
-        llvm::TimeTraceScope trace("KMerDiskCounter::Count");
+        TIME_TRACE_SCOPE("KMerDiskCounter::Count");
 #       pragma omp parallel for shared(raw_kmers) num_threads(num_threads) schedule(dynamic) reduction(+:kmers)
         for (unsigned i = 0; i < raw_kmers.size(); ++i) {
             kmers += MergeKMers(*raw_kmers[i], GetUniqueKMersFname(i));
@@ -138,7 +136,7 @@ public:
 
     INFO("Merging temporary buckets.");
     {
-        llvm::TimeTraceScope trace("KMerDiskCounter::MergeTemporary");
+        TIME_TRACE_SCOPE("KMerDiskCounter::MergeTemporary");
         for (unsigned i = 0; i < num_buckets; ++i) {
             std::string ofname = GetMergedKMersFname(i);
             std::ofstream ofs(ofname.c_str(), std::ios::out | std::ios::binary);
@@ -156,7 +154,7 @@ public:
 
   void MergeBuckets() override {
     INFO("Merging final buckets.");
-    llvm::TimeTraceScope trace("KMerDiskCounter::MergeFinal");
+    TIME_TRACE_SCOPE("KMerDiskCounter::MergeFinal");
 
     final_kmers_ = work_dir_->tmp_file("final_kmers");
     std::ofstream ofs(*final_kmers_, std::ios::out | std::ios::binary);
@@ -305,7 +303,7 @@ class KMerIndexBuilder {
 template<class Index>
 size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &counter,
                                            bool save_final) {
-    //llvm::TimeTraceScope trace("KMerIndexBuilder::BuildIndex");
+    //TIME_TRACE_SCOPE("KMerIndexBuilder::BuildIndex");
 
   index.clear();
 
@@ -325,7 +323,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
   INFO("Building perfect hash indices");
 
   {
-      llvm::TimeTraceScope trace("KMerDiskCounter::BuildPHM");
+      TIME_TRACE_SCOPE("KMerDiskCounter::BuildPHM");
 #     pragma omp parallel for shared(index) num_threads(num_threads_)
       for (unsigned i = 0; i < buckets; ++i) {
           typename KMerIndex<kmer_index_traits>::KMerDataIndex &data_index = index.index_[i];

@@ -15,7 +15,7 @@
 #include "io/reads/paired_read.hpp"
 #include "io/reads/read_stream_vector.hpp"
 
-#include <llvm/Support/TimeProfiler.h>
+#include "utils/perf/timetracer.hpp"
 
 #include <string>
 #include <vector>
@@ -55,7 +55,7 @@ public:
     void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
                         size_t lib_index, const SequenceMapperT& mapper, size_t threads_count = 0) {
         std::string lib_str = std::to_string(lib_index);
-        llvm::TimeTraceScope tracer("SequenceMapperNotifier::ProcessLibrary", llvm::StringRef(lib_str));
+        TIME_TRACE_SCOPE("SequenceMapperNotifier::ProcessLibrary", lib_str);
         if (threads_count == 0)
             threads_count = streams.size();
 

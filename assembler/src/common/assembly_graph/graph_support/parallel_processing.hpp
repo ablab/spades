@@ -7,12 +7,12 @@
 
 #pragma once
 
-#include "utils/logger/logger.hpp"
 #include "assembly_graph/core/graph_iterators.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
-#include "utils/parallel/openmp_wrapper.h"
 
-#include <llvm/Support/TimeProfiler.h>
+#include "utils/parallel/openmp_wrapper.h"
+#include "utils/perf/timetracer.hpp"
+#include "utils/logger/logger.hpp"
 
 namespace omnigraph {
 
@@ -165,7 +165,7 @@ public:
                  bool force_primary_launch = false,
                  double iter_run_progress = 1.) {
         if (!comment.empty()) {INFO("Running " << comment);}
-        llvm::TimeTraceScope trace(comment);
+        TIME_TRACE_SCOPE(comment);
         size_t triggered = algo.Run(force_primary_launch, iter_run_progress);
         if (!comment.empty()) {INFO(comment << " triggered " << triggered << " times");}
         return triggered;

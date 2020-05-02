@@ -34,7 +34,7 @@ void SequenceMapperNotifier::NotifyStopProcessLibrary(size_t ilib) const {
 
 void SequenceMapperNotifier::NotifyMergeBuffer(size_t ilib, size_t ithread) const {
     std::string thread_str = std::to_string(ithread);
-    llvm::TimeTraceScope trace("SequenceMapperNotifier::MergeBuffer", llvm::StringRef(thread_str));
+    TIME_TRACE_SCOPE("SequenceMapperNotifier::MergeBuffer", thread_str);
     for (const auto& listener : listeners_[ilib])
         listener->MergeBuffer(ithread);
 }

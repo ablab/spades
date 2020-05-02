@@ -9,6 +9,7 @@
 
 #include "assembly_graph/stats/statistics.hpp"
 #include "assembly_graph/graph_support/genomic_quality.hpp"
+#include "modules/simplification/relative_coverage_remover.hpp" // FIXME: awful!
 
 namespace debruijn_graph {
 

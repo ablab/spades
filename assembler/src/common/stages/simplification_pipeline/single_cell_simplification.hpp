@@ -44,7 +44,7 @@ bool TopologyRemoveErroneousEdges(
     Graph &g,
     const debruijn_graph::config::debruijn_config::simplification::topology_based_ec_remover& tec_config,
     std::function<void(typename Graph::EdgeId)> removal_handler) {
-    llvm::TimeTraceScope trace(__PRETTY_FUNCTION__);
+    TIME_TRACE_SCOPE();
  
     INFO("Removing connections based on topology");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
@@ -61,7 +61,7 @@ bool MultiplicityCountingRemoveErroneousEdges(
     Graph &g,
     const debruijn_graph::config::debruijn_config::simplification::topology_based_ec_remover& tec_config,
     std::function<void(typename Graph::EdgeId)> removal_handler) {
-    llvm::TimeTraceScope trace(__PRETTY_FUNCTION__);
+    TIME_TRACE_SCOPE();
 
     INFO("Removing connections based on topological multiplicity counting");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
@@ -80,7 +80,7 @@ bool RemoveThorns(
     Graph &g,
     const debruijn_graph::config::debruijn_config::simplification::interstrand_ec_remover& isec_config,
     std::function<void(typename Graph::EdgeId)> removal_handler) {
-    llvm::TimeTraceScope trace(__PRETTY_FUNCTION__);
+    TIME_TRACE_SCOPE();
 
     INFO("Removing interstrand connections");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
@@ -99,7 +99,7 @@ bool TopologyReliabilityRemoveErroneousEdges(
     Graph &g,
     const debruijn_graph::config::debruijn_config::simplification::tr_based_ec_remover& trec_config,
     std::function<void(typename Graph::EdgeId)> removal_handler) {
-    llvm::TimeTraceScope trace(__PRETTY_FUNCTION__);
+    TIME_TRACE_SCOPE();
 
     INFO("Removing connections based on topology and reliable coverage");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
@@ -119,7 +119,7 @@ bool MaxFlowRemoveErroneousEdges(
     Graph &g,
     const debruijn_graph::config::debruijn_config::simplification::max_flow_ec_remover& mfec_config,
     omnigraph::EdgeRemovalHandlerF<Graph> removal_handler = 0) {
-    llvm::TimeTraceScope trace(__PRETTY_FUNCTION__);
+    TIME_TRACE_SCOPE();
 
     if (!mfec_config.enabled)
         return false;
@@ -138,7 +138,7 @@ bool RemoveHiddenEC(Graph& g,
                     const debruijn_graph::config::debruijn_config::simplification::hidden_ec_remover& her_config,
                     const SimplifInfoContainer& info,
                     omnigraph::EdgeRemovalHandlerF<Graph> removal_handler) {
-    llvm::TimeTraceScope trace(__PRETTY_FUNCTION__);
+    TIME_TRACE_SCOPE();
 
     if (her_config.enabled) {
         INFO("Removing hidden erroneous connections");

@@ -5,16 +5,14 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * graph_simplification.hpp
- *
- *  Created on: Aug 12, 2011
- *      Author: sergey
- */
-
 #pragma once
 
-#include "pipeline/config_struct.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/graph_support/chimera_stats.hpp"
+#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
+#include "assembly_graph/graph_support/parallel_processing.hpp"
+#include "assembly_graph/graph_support/detail_coverage.hpp"
 
 #include "modules/simplification/tip_clipper.hpp"
 #include "modules/simplification/complex_tip_clipper.hpp"
@@ -28,15 +26,11 @@
 
 #include "modules/graph_read_correction.hpp"
 
-#include "assembly_graph/graph_support/chimera_stats.hpp"
-#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
-#include "assembly_graph/stats/picture_dump.hpp"
-#include "assembly_graph/graph_support/parallel_processing.hpp"
-#include "assembly_graph/graph_support/detail_coverage.hpp"
-
-#include "assembly_graph/core/graph.hpp"
+#include "pipeline/config_struct.hpp"
 
 #include "visualization/graph_colorer.hpp"
+
+#include "utils/perf/timetracer.hpp"
 
 namespace debruijn {
 
@@ -707,7 +701,7 @@ bool RemoveHiddenLoopEC(Graph &g,
                         double determined_coverage_threshold,
                         double relative_threshold,
                         EdgeRemovalHandlerF<Graph> removal_handler) {
-    llvm::TimeTraceScope trace(__PRETTY_FUNCTION__);
+    TIME_TRACE_SCOPE();
 
     INFO("Removing loops and rc loops with erroneous connections");
     ECLoopRemover<Graph> hc(g, flanking_cov,

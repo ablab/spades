@@ -5,17 +5,20 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "simplification.hpp"
+
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
+#include "modules/simplification/cleaner.hpp"
+
 #include "stages/simplification_pipeline/simplification_settings.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "stages/simplification_pipeline/single_cell_simplification.hpp"
 #include "stages/simplification_pipeline/rna_simplification.hpp"
-#include "modules/simplification/cleaner.hpp"
-#include "pipeline/genomic_info.hpp"
-#include "simplification.hpp"
 
-#include <llvm/Support/TimeProfiler.h>
+#include "pipeline/genomic_info.hpp"
+
+#include "utils/perf/timetracer.hpp"
 
 namespace debruijn_graph {
 
@@ -125,7 +128,7 @@ public:
 
     void InitialCleaning() {
         INFO("PROCEDURE == Initial cleaning");
-        llvm::TimeTraceScope trace("Initial cleaing");
+        TIME_TRACE_SCOPE("Initial cleaing");
         
         printer_(info_printer_pos::before_raw_simplification);
 
@@ -196,7 +199,7 @@ public:
         using namespace omnigraph;
         using namespace func;
         INFO("PROCEDURE == Post simplification");
-        llvm::TimeTraceScope trace("Post simplification");
+        TIME_TRACE_SCOPE("Post simplification");
 
         printer_(info_printer_pos::before_post_simplification);
 
@@ -367,7 +370,7 @@ public:
     }
 
     void SimplifyGraph() {
-        llvm::TimeTraceScope trace("Graph simplification");
+        TIME_TRACE_SCOPE("Graph simplification");
 
         bool rna_mode = (info_container_.mode() == config::pipeline_type::rna);
 

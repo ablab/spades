@@ -11,8 +11,7 @@
 #include "utils/memory_limit.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/filesystem/copy_file.hpp"
-
-#include <llvm/Support/TimeProfiler.h>
+#include "utils/perf/timetracer.hpp"
 
 #include "k_range.hpp"
 #include "version.hpp"
@@ -117,7 +116,7 @@ int main(int argc, char **argv) {
             INFO("Time tracing is enabled");
         }
 
-        llvm::TimeTraceScope trace("spades");
+        TIME_TRACE_SCOPE("spades");
         spades::assemble_genome();
     } catch (std::bad_alloc const &e) {
         std::cerr << "Not enough memory to run SPAdes. " << e.what() << std::endl;
