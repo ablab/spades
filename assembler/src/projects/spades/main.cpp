@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
         INFO("Assembling dataset (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
         INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg::get().max_threads);
         std::unique_ptr<TimeTracerRAII> traceraii;
-        if (cfg::get().tt.enable) {
+        if (cfg::get().tt.enable || cfg::get().developer_mode) {
             traceraii.reset(new TimeTracerRAII(argv[0],
                                                cfg::get().tt.granularity,
                                                cfg::get().output_dir, std::to_string(cfg::get().K)));
