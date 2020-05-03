@@ -621,7 +621,7 @@ To properly specify a library you should provide its type and at least one file 
 
 The value for each attribute is given after a colon. Comma-separated lists of files should be given in square brackets. For each file you should provide its full path in double quotes. Make sure that files with right reads are given in the same order as corresponding files with left reads.
 
-For example, if you have one paired-end library splitted into two pairs of files:
+For example, if you have one paired-end library split into two pairs of files:
 
 ``` bash
 
@@ -813,7 +813,7 @@ run SPAdes with the following command:
     -o spades_output
 ```
 
-If a single-read library is splitted into several files:
+If a single-read library is split into several files:
 
 ``` bash
 
@@ -947,7 +947,7 @@ Then, `contigs.paths` will contain the following record:
 ```
 
 
-Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are splitted by semicolon at the gap positions. For example, the following record
+Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are split by semicolon at the gap positions. For example, the following record
 
 ``` plain
     NODE_3_length_237403_cov_243.207
