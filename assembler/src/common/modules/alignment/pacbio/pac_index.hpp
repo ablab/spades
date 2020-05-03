@@ -65,7 +65,7 @@ class PacBioMappingIndex {
                     auto next_iter = iter + 1;
                     if (next_iter == path.end() || !IsConsistent(*iter, *next_iter)) {
                         if (next_iter != path.end()) {
-                            DEBUG("clusters splitted:");
+                            DEBUG("clusters split:");
                             DEBUG("on " << iter->str(g_));
                             DEBUG("and " << next_iter->str(g_));
                         }
