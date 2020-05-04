@@ -6,8 +6,8 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(SpadesToolkit
-        LANGUAGES C CXX)
+#project(SpadesToolkit
+#        LANGUAGES C CXX)
 
 # Hard prerequisites
 cmake_minimum_required(VERSION 3.14)
