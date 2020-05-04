@@ -128,7 +128,7 @@ class GenomeMappingStat: public AbstractStatCounter {
         INFO("Genome mapping results:");
         INFO("Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k_) << " which is "
              << (100.0 * (double) covered_kp1mers / (double) (genome_.size() - k_)) << "%");
-        INFO("Covered k+1-mers form " << break_number + 1 << " contigious parts");
+        INFO("Covered k+1-mers form " << break_number + 1 << " contiguous parts");
         INFO("Continuity failtures " << fail);
     }
 };
