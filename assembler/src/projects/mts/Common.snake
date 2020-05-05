@@ -121,10 +121,7 @@ def is_fastq(wildcards):
     name = getattr(wildcards, "sample", None)
     if not name:
         name = GROUPS[wildcards.group][0]
-    for ext in {".fastq", ".fq", ".fastq.gz", "fq.gz"}:
-        if SAMPLE_READS[name][0].endswith(ext):
-            return True
-    return False
+    return SAMPLE_READS[name][0].lower().endswith((".fastq", ".fq", ".fastq.gz", "fq.gz"))
 
 rule combine_samples:
     input:   expand("{{dir}}/{group}.fasta", group=sorted(GROUPS))
