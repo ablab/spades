@@ -122,13 +122,6 @@ def parse_fastq(handler):
         yield SeqRecord(rec_seq, rec_id[1:], rec_qual)
 
 
-def parse(handler, file_type):
-    if file_type == "fasta":
-        return parse_fasta(handler)
-    elif file_type == "fastq":
-        return parse_fastq(handler)
-
-
 def write(rec, handler, file_type):
     if file_type == "fasta":
         handler.write(">" + rec.id + "\n")
