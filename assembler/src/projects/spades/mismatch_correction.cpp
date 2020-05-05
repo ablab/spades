@@ -150,16 +150,15 @@ private:
         auto iters = split_iterator(nthreads, kmer_mapper.begin(), kmer_mapper.end(), kmer_mapper.size());
         VERIFY(iters.front() == kmer_mapper.begin());
         VERIFY(iters.back() == kmer_mapper.end());
-        statistics_buffers_.clear();
-        statistics_buffers_.resize(nthreads);
+
+        std::vector<InnerMismatchStatistics> potential_mismatches(nthreads);
 #       pragma omp parallel for
         for (size_t i = 0; i < nthreads; ++i) {
-            CollectPotentialMismatches(gp, iters[i], iters[i + 1], statistics_buffers_[i]);
+            CollectPotentialMismatches(gp, iters[i], iters[i + 1], potential_mismatches[i]);
         }
-        for (auto &statistics_buffer : statistics_buffers_) {
-            Merge(statistics_buffer);
-        }
-        statistics_buffers_.clear();
+
+        for (auto &entry : potential_mismatches)
+            Merge(entry);
     }
 
     template <typename Read>
