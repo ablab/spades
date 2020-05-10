@@ -16,6 +16,7 @@
 #include "pipeline/graph_pack.hpp"
 #include "utils/logger/logger.hpp"
 
+#include "adt/flat_set.hpp"
 #include <parallel_hashmap/phmap.h>
 
 template <typename Iter>
@@ -67,7 +68,7 @@ struct NuclCount {
 
 struct MismatchEdgeInfo {
     NuclCount operator[](size_t i) const {
-        auto it = info_.find(i);
+        auto it = info_.find(uint32_t(i));
         if (it == info_.end())
             return NuclCount();
         else
@@ -80,15 +81,8 @@ struct MismatchEdgeInfo {
         }
     }
 
-    void IncIfContains(size_t position, size_t nucl) {
-        auto it = info_.find(position);
-        if (it != info_.end()) {
-            it->second[nucl] += 1;
-        }
-    }
-
-    void AddPosition(size_t position) {
-        info_.insert({position, NuclCount()}); //in case map did not contain this key creates entry in the map with default value
+    void increment(size_t position, size_t nucl) {
+        info_[uint32_t(position)][nucl] += 1;
     }
 
     void ClearValues() {
@@ -98,7 +92,7 @@ struct MismatchEdgeInfo {
     }
 
 public:
-    phmap::flat_hash_map<size_t, NuclCount> info_;
+    phmap::flat_hash_map<uint32_t, NuclCount> info_;
 };
 
 class MismatchStatistics : public SequenceMapperListener {
@@ -108,38 +102,61 @@ private:
     typedef typename InnerMismatchStatistics::const_iterator const_iterator;
     InnerMismatchStatistics statistics_;
     std::vector<InnerMismatchStatistics> statistics_buffers_;
+
+    typedef phmap::node_hash_map<EdgeId, adt::flat_set<uint32_t>> MismatchCandidates;
+    MismatchCandidates candidates_;
+
     const Graph &g_;
 
-
     template <typename Iter>
-    void CollectPotentialMismatches(const GraphPack &gp, Iter b, Iter e, InnerMismatchStatistics &statistics) {
+    void CollectPotentialMismatches(const GraphPack &gp, Iter b, Iter e, MismatchCandidates &candidates) {
         const auto &index = gp.get<EdgeIndex<Graph>>();
 
         for (const auto &mentry : adt::make_range(b, e)) {
             // Kmer mapper iterator dereferences to pair (KMer, KMer), not to the reference!
             const RtSeq &from = mentry.first;
             const RtSeq &to = mentry.second;
+
+            // No need to do anything if the target is not in the graph.
+            // This certainly expects normalized index.
+            if (!index.contains(to))
+                continue;
+
             size_t cnt = 0;
             std::array<size_t, 4> cnt_arr{};
 
             for (size_t i = 0; i < from.size(); i++) {
-                if (from[i] != to[i]) {
-                    cnt++;
-                    cnt_arr[(i * 4) / from.size()]++;
-                }
+                if (from[i] == to[i])
+                    continue;
+
+                cnt += 1;
+                cnt_arr[(i * 4) / from.size()] += 1;
             }
 
-            //last two conditions - to avoid excessive indels.
-            //if two/third of nucleotides in first/last quarter are mismatches, then it means erroneous mapping
-            if (cnt >= 1 && cnt <= from.size() / 3 && cnt_arr[0] <= from.size() / 6 &&
-                cnt_arr[3] <= from.size() / 6) {
-                for (size_t i = 0; i < from.size(); i++) {
-                    if (from[i] != to[i] && index.contains(to)) {
-                        const auto &position = index.get(to);
-                        //FIXME add only canonical edges?
-                        statistics[position.first].AddPosition(position.second + i);
-                    }
-                }
+            // No mismatches, no cookies
+            if (cnt == 0)
+                continue;
+
+            // If there are too many mismatches, then it means erroneous mapping
+            if (cnt > from.size() / 3)
+                continue;
+
+            // These conditions are to avoid excessive indels: if two/third of
+            // nucleotides in first/last quarter are mismatches, then it means
+            // erroneous mapping
+            if (cnt_arr[0] > from.size() / 6 ||  cnt_arr[3] > from.size() / 6)
+                continue;
+
+            const auto &position = index.get(to);
+            for (size_t i = 0; i < from.size(); i++) {
+                if (from[i] == to[i])
+                    continue;
+
+                if (position.second > std::numeric_limits<uint32_t>::max())
+                    continue;
+
+                //FIXME add only canonical edges?
+                candidates[position.first].insert(uint32_t(position.second + i));
             }
         }
     }
@@ -151,14 +168,30 @@ private:
         VERIFY(iters.front() == kmer_mapper.begin());
         VERIFY(iters.back() == kmer_mapper.end());
 
-        std::vector<InnerMismatchStatistics> potential_mismatches(nthreads);
+        std::vector<MismatchCandidates> potential_mismatches(nthreads);
 #       pragma omp parallel for
         for (size_t i = 0; i < nthreads; ++i) {
             CollectPotentialMismatches(gp, iters[i], iters[i + 1], potential_mismatches[i]);
         }
 
-        for (auto &entry : potential_mismatches)
-            Merge(entry);
+        for (auto &entry : potential_mismatches) {
+            for (const auto &candidate : entry) {
+                candidates_[candidate.first].insert(candidate.second.begin(),
+                                                    candidate.second.end());
+            }
+            entry.clear();
+        }
+
+        {
+            size_t edges = candidates_.size();
+            size_t positions = 0;
+            for (const auto &candidate : candidates_) {
+                positions += candidate.second.size();
+            }
+
+            INFO("Total " << edges << " edges with " << positions << " potential mismatch positions ("
+                 << double(positions) / double(edges) << " positions per edge)");
+        }
     }
 
     template <typename Read>
@@ -172,28 +205,35 @@ private:
         const Sequence &s_read = read.sequence();
         auto &buffer = statistics_buffers_[thread_index];
 
-        if (mr.initial_range.size() == mr.mapped_range.size()) {
-            const Sequence &s_edge = g_.EdgeNucls(e);
-            size_t len = mr.initial_range.size() + g_.k();
-            size_t cnt = 0;
-            for (size_t i = 0; i < len; i++) {
-                if (s_read[mr.initial_range.start_pos + i] != s_edge[mr.mapped_range.start_pos + i]) {
-                    cnt++;
-                }
-            }
-            if (cnt <= g_.k() / 3) {
-                TRACE("statistics changing");
-                auto it = buffer.find(e);
-                if (it == buffer.end()) {
-                    //                            if (gp_.g.length(path[0].first) < 4000)
-                    //                                WARN ("id "<< gp_.g.length(path[0].first)<<"  " << len);
-                    return;
-                }
-                for (size_t i = 0; i < len; i++) {
-                    char nucl_code = s_read[mr.initial_range.start_pos + i];
-                    it->second.IncIfContains(mr.mapped_range.start_pos + i, nucl_code);
-                }
-            }
+        if (mr.initial_range.size() != mr.mapped_range.size())
+            return;
+
+        auto it = candidates_.find(e);
+        if (it == candidates_.end())
+            return;
+
+        const Sequence &s_edge = g_.EdgeNucls(e);
+        size_t len = mr.initial_range.size() + g_.k();
+        size_t cnt = 0;
+        for (size_t i = 0; i < len; i++) {
+            cnt += (s_read[mr.initial_range.start_pos + i] !=
+                    s_edge[mr.mapped_range.start_pos + i]);
+        }
+
+        if (cnt > g_.k() / 3)
+            return;
+
+        TRACE("statistics might be changing");
+        for (size_t i = 0; i < len; i++) {
+            size_t pos = mr.mapped_range.start_pos + i;
+            if (pos > std::numeric_limits<uint32_t>::max())
+                continue;
+
+            if (!it->second.count(uint32_t(pos)))
+                continue;
+
+            char nucl_code = s_read[mr.initial_range.start_pos + i];
+            buffer[e].increment(pos, nucl_code);
         }
     }
 
@@ -366,9 +406,8 @@ private:
         auto mapper = MapperInstance(gp_);
 
         for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
-            if (!dataset.reads[i].is_mismatch_correctable()) {
+            if (!dataset.reads[i].is_mismatch_correctable())
                 continue;
-            }
 
             notifier.Subscribe(i, &statistics);
             auto &reads = cfg::get_writable().ds.reads[i];
