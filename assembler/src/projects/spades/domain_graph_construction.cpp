@@ -5,13 +5,11 @@
 //***************************************************************************
 
 #include "domain_graph_construction.hpp"
-
+#include "assembly_graph/core/construction_helper.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
-
 #include "modules/path_extend/pe_utils.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
-
 #include "domain_graph.hpp"
 #include "domain_matcher.hpp"
 
@@ -109,39 +107,38 @@ public:
 
 class DomainGraphConstructor {
 public:
-    DomainGraphConstructor(GraphPack &gp)
-            : gp_(gp) {}
+    DomainGraphConstructor(debruijn_graph::GraphPack &gp)
+            : gp_(gp), domain_graph_(gp_.get<Graph>()) {}
 
     nrps::DomainGraph& ConstructGraph(const nrps::ContigAlnInfo &info) {
-        gp_.EnsureIndex();
-        INFO("A-domain graph construction started");
+        INFO("Domain graph construction started");
         INFO("Constructing nodes...");
         ConstructNodes(info);
-        INFO("Constructing strong edges...");
+        INFO("Constructing Strong edges...");
         ConstructStrongEdges();
         INFO("Constructing weak edges...");
         ConstructWeakEdges();
-        INFO("A-domain graph construction ended");
-        return graph;
+        INFO("Domain graph construction ended");
+        return domain_graph_;
     }
 
 private:
 
-    void ConnectWithWeakEdge(std::shared_ptr<nrps::Vertex> v1, std::shared_ptr<nrps::Vertex> v2,
-                             SetOfForbiddenEdgesPathChooser<Graph> &chooser) {
+    void ConnectWithWeakEdge(VertexId v1, VertexId v2,
+                                SetOfForbiddenEdgesPathChooser<Graph> &chooser) {
         const auto &g = gp_.get<Graph>();
-        DEBUG("Trying to connect " << v1->name_ << " and " << v2->name_ << " with weak edge");
-        int last_mapping = (int)g.length(mappings[v1->name_].back().first) - mappings[v1->name_].end_pos();
-        int first_mapping = (int)mappings[v2->name_].start_pos();
+        DEBUG("Trying to connect " << domain_graph_.GetVertexName(v1) << " and " << domain_graph_.GetVertexName(v2) << " with weak edge");
+        int last_mapping = (int)g.length(mappings[domain_graph_.GetVertexName(v1)].back().first) - mappings[domain_graph_.GetVertexName(v1)].end_pos();
+        int first_mapping = (int)mappings[domain_graph_.GetVertexName(v2)].start_pos();
 
         if (5000 < last_mapping + first_mapping) {
             return;
         }
         int min_len = 0;
         chooser.set_peaks(std::max(0, 500 - last_mapping - first_mapping), std::max(0, 1000 - last_mapping - first_mapping));
-        if (g.EdgeEnd(v1->domain_edges_in_row_.back()) != g.EdgeStart(v2->domain_edges_in_row_[0])) {
-            DEBUG("Trying to find paths from " << g.EdgeEnd(v1->domain_edges_in_row_.back()) << " to " << g.EdgeStart(v2->domain_edges_in_row_[0]));
-            ProcessPaths(g, min_len, 4000 - last_mapping - first_mapping, g.EdgeEnd(v1->domain_edges_in_row_.back()), g.EdgeStart(v2->domain_edges_in_row_[0]), chooser);
+        if (g.EdgeEnd(domain_graph_.GetDomainEdges(v1).back()) != g.EdgeStart(domain_graph_.GetDomainEdges(v2).front())) {
+            DEBUG("Trying to find paths from " << g.EdgeEnd(domain_graph_.GetDomainEdges(v1).back()) << " to " << g.EdgeStart(domain_graph_.GetDomainEdges(v2).front()));
+            ProcessPaths(g, min_len, 4000 - last_mapping - first_mapping, g.EdgeEnd(domain_graph_.GetDomainEdges(v1).back()), g.EdgeStart(domain_graph_.GetDomainEdges(v2).front()), chooser);
             if(!chooser.answer().empty()) {
                 DEBUG("Path was found");
                 path_extend::BidirectionalPath p(g, chooser.answer());
@@ -149,17 +146,16 @@ private:
                 DEBUG("End vertex: " << g.EdgeEnd(p.Back()).int_id());
                 DEBUG("Path:");
                 p.PrintDEBUG();
-                graph.addEdge(v1, v2, false, p.Length() + last_mapping + first_mapping, chooser.answer());
+                domain_graph_.AddEdge(v1, v2, false, chooser.answer(), p.Length() + last_mapping + first_mapping);
             }
             else {
                 DEBUG("Path was not found");
             }
         } else {
-            graph.addEdge(v1, v2, false, last_mapping + first_mapping, std::vector<EdgeId>());
+            domain_graph_.AddEdge(v1, v2, false, std::vector<EdgeId>(), last_mapping + first_mapping);
         }
         chooser.reset();
     }
-
 
     std::vector<VertexId> VerticesReachedFrom(VertexId start_vertex) {
         auto bounded_dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(gp_.get<Graph>(),
@@ -173,32 +169,31 @@ private:
         std::set<std::vector<EdgeId>> forbidden_edges;
         for (const auto &mapping : mappings)
             forbidden_edges.insert(mapping.second.simple_path());
-
         const auto &g = gp_.get<Graph>();
         SetOfForbiddenEdgesPathChooser<Graph> chooser(g, forbidden_edges);
         size_t current_index = 0;
-        for (auto v1 : graph.getNodeSet()) {
+        for (auto iter = domain_graph_.SmartVertexBegin(); ! iter.IsEnd(); ++iter) {
+            VertexId v1 = (*iter);
             current_index++;
             if (current_index % 100 == 0) {
-                INFO(current_index << " of " << graph.getNodeSet().size() << " processed.");
+                INFO(current_index << " of " << domain_graph_.size() << " processed.");
             }
 
-            if (!graph.HasStrongEdge(v1) && (v1->near_to_the_end_of_contig_)) {
-
-                auto reached_vertices = VerticesReachedFrom(g.EdgeEnd(v1->domain_edges_in_row_.back()));
+            if (!domain_graph_.HasStrongEdge(v1) && domain_graph_.NearContigEnd(v1)) {
+                auto reached_vertices = VerticesReachedFrom(g.EdgeEnd(domain_graph_.GetDomainEdges(v1).back()));
                 std::set<VertexId> reached_vertices_set(reached_vertices.begin(), reached_vertices.end());
 
-                for (auto v2 : graph.getNodeSet()) {
-                    if (reached_vertices_set.count(g.EdgeStart(v2->domain_edges_in_row_[0])) && v1 != v2 && v1->rc_ != v2 && !graph.HasStrongIncomingEdge(v2) && v2->near_to_the_start_of_contig_) {
+                for (auto iter2 = domain_graph_.SmartVertexBegin(); ! iter2.IsEnd(); ++iter2) {
+                    VertexId v2 = (*iter2);
+                    if (reached_vertices_set.count(g.EdgeStart(domain_graph_.GetDomainEdges(v2).front())) && v1 != v2
+                    && domain_graph_.conjugate(v1) != v2 &&  domain_graph_.GetEdgesBetween(v1, v2).size() == 0 && !domain_graph_.HasStrongIncomingEdge(v2) && domain_graph_.NearContigStart(v2)) {
                         ConnectWithWeakEdge(v1, v2, chooser);
                     }
                 }
-
-
             }
         }
     }
-
+    
     class PairComparator {
       public:
         int operator()(const std::pair<int,int> &lhs, const std::pair<int,int> &rhs) const {
@@ -209,17 +204,20 @@ private:
     std::pair<int,int> SearchForSubvector(path_extend::BidirectionalPath *scaffold, MappingPath<EdgeId> &domain) {
         if (domain.size() > scaffold->Size())
             return { -1, -1 };
-
+        scaffold->PrintDEBUG();
+        DEBUG(domain.simple_path());
         for (size_t i = 0; i < scaffold->Size() - domain.size() + 1; ++i) {
             for (size_t j = 0; j < domain.size(); ++j) {
                 if ((*scaffold)[i + j] != domain[j].first)
                     break;
 
-                if (j == domain.size() - 1)
+                if (j == domain.size() - 1) {
+                    DEBUG( int(i) << " " << int(i+j) );
                     return { int(i), int(i+j) };
+                }
             }
         }
-
+        DEBUG( -1 << " " << -1 );
         return { -1,-1 };
     }
 
@@ -228,7 +226,7 @@ private:
         if (res.first == -1) {
             return std::make_pair<int,int>(-1,-1);
         }
-        int start = 0;
+        size_t start = 0;
         size_t index = 0;
         const auto &g = gp_.get<Graph>();
         for (;index != res.first; ++index) {
@@ -236,41 +234,49 @@ private:
         }
 
         start += domain[0].second.mapped_range.start_pos;
-        size_t end_index = index + domain.size() - 1;
-        int end = 0;
+        size_t end_index = res.second;
+        size_t end = 0;
         for (size_t i = 0; i < end_index; ++i) {
             end += g.length((*scaffold)[i]);
         }
-        end += domain[domain.size() - 1].second.mapped_range.end_pos;
-        for (int i = index; i <= end_index; ++i) {
+        end += domain.back().second.mapped_range.end_pos;
+        for (size_t i = index; i <= end_index; ++i) {
             edges.push_back((*scaffold)[i]);
         }
+        DEBUG("Positions " << start << " " << end);
         return std::make_pair(start, end);
     }
 
-    void ConstructStrongEdgesInternal(std::pair<const std::string, MappingPath<EdgeId>> &mappings, path_extend::BidirectionalPath *path,
-            std::map<size_t, std::map<std::pair<int, int>, std::pair<std::string, std::vector<EdgeId>>, PairComparator>> &mappings_for_path) {
+    void ConstructStrongEdgesInternal(VertexId current_vertex, path_extend::BidirectionalPath *path,
+                                       std::map<size_t, std::map<std::pair<int, int>, std::pair<VertexId, std::vector<EdgeId>>, PairComparator>> &mappings_for_path) {
         std::vector<EdgeId> edges;
-        std::pair<int, int> coords = FindMappingToPath(path, mappings.second, edges);
+        auto vertex_data = domain_graph_.data(current_vertex);
+        DEBUG(vertex_data.GetDomainEdges());
+        std::pair<int, int> coords = FindMappingToPath(path, vertex_data.GetMappingPath(), edges);
         if (coords.first == -1) {
             return;
         }
-        mappings_for_path[path->GetId()][coords] = std::make_pair(mappings.first, edges);
+        mappings_for_path[path->GetId()][coords] = std::make_pair(current_vertex, edges);
 
-        if (coords.second + 5000 < path->Length()) {
-           auto v = graph.getNode(mappings.first);
-           v->near_to_the_end_of_contig_ = false;
+        if (coords.second + 5000 > path->Length()) {
+            DEBUG("set coord");
+            DEBUG(current_vertex);
+            DEBUG(domain_graph_.conjugate(current_vertex));
+            domain_graph_.SetContigNearEnd(current_vertex);
+            DEBUG(domain_graph_.data(current_vertex).GetNearContigEnd());
         }
-        if (coords.first > 5000) {
-            auto v = graph.getNode(mappings.first);
-            v->near_to_the_start_of_contig_ = false;
+        if (coords.first < 5000) {
+            DEBUG("set coord");
+            DEBUG(current_vertex);
+            DEBUG(domain_graph_.conjugate(current_vertex));
+            domain_graph_.SetContigNearEnd(domain_graph_.conjugate(current_vertex));
         }
     }
 
     size_t GetIndexFromPosition(size_t position, path_extend::BidirectionalPath *path) {
         size_t index = 0;
         for (index = 0; index < path->Size(); ++index) {
-            size_t current_pos = path->LengthAt(index);
+            size_t current_pos = path->Length() - path->LengthAt(index) + path->graph().length((*path)[index]);
             if (current_pos > position) {
                 break;
             }
@@ -279,17 +285,15 @@ private:
     }
 
     std::vector<EdgeId> FindEdgesBetweenMappings(int first_mapping_end_coord, int second_mapping_start_coord, path_extend::BidirectionalPath *path) {
-        std::vector<EdgeId> answer;
         if (first_mapping_end_coord < 0 || second_mapping_start_coord < 0) {
-            return answer;
+            return std::vector<EdgeId>();
         }
         size_t first_mapping_end = GetIndexFromPosition(first_mapping_end_coord, path);
         size_t second_mapping_start = GetIndexFromPosition(second_mapping_start_coord, path);
-
         if (first_mapping_end > second_mapping_start) {
-            return answer;
+            return std::vector<EdgeId>();
         }
-
+        std::vector<EdgeId> answer;
         for (size_t i = first_mapping_end + 1; i < second_mapping_start; ++i) {
             answer.push_back((*path)[i]);
         }
@@ -300,26 +304,28 @@ private:
         const auto &g = gp_.get<Graph>();
         const auto &contig_paths = gp_.get<path_extend::PathContainer>();
         path_extend::GraphCoverageMap coverage_map(g, contig_paths);
-        std::map<size_t, std::map<std::pair<int, int>, std::pair<std::string, std::vector<EdgeId>>, PairComparator>> mappings_for_path;
+        std::map<size_t, std::map<std::pair<int, int>, std::pair<VertexId, std::vector<EdgeId>>, PairComparator>> mappings_for_path;
         std::map<size_t, path_extend::BidirectionalPath*> from_id_to_path;
-        for (auto domain : mappings) {
-            DEBUG("Processing mapping " << domain.first);
-            auto mapping_path = domain.second;
+        for (auto iter = domain_graph_.SmartVertexBegin(); ! iter.IsEnd(); ++iter) {
+            VertexId current_vertex = (*iter);
+            auto vertex_data = domain_graph_.data(current_vertex);
+            DEBUG("Processing vertex " << domain_graph_.GetVertexName(current_vertex));
+            auto mapping_path = vertex_data.GetMappingPath();
             if (!mapping_path.empty()) {
                 EdgeId first = mapping_path.front().first;
                 auto path_container = coverage_map.GetCoveringPaths(first);
                 for (auto path_pair : path_container) {
                     from_id_to_path[path_pair->GetId()] = path_pair;
                     from_id_to_path[path_pair->GetConjPath()->GetId()] = path_pair->GetConjPath();
-                    ConstructStrongEdgesInternal(domain, path_pair, mappings_for_path);
-                    ConstructStrongEdgesInternal(domain, path_pair->GetConjPath(), mappings_for_path);
+                    ConstructStrongEdgesInternal(current_vertex, path_pair, mappings_for_path);
                 }
             }
         }
-        std::set<std::string> removed_vertices;
+
+        std::set<VertexId> removed_vertices;
         for (auto p : mappings_for_path) {
             DEBUG("Processing path " << p.first);
-            std::pair<std::pair<int, int>, std::pair<std::string, std::vector<EdgeId>>> prev(std::make_pair(-1, -1), std::make_pair("", std::vector<EdgeId>()));
+            std::pair<std::pair<int, int>, std::pair<VertexId, std::vector<EdgeId>>> prev(std::make_pair(-1, -1), std::make_pair(VertexId(0), std::vector<EdgeId>()));
             for (const auto& maps : p.second) {
                 DEBUG("Processing mapping " << maps.second.first);
                 DEBUG("Mapping start: " << maps.first.first << ". Mapping end: " << maps.first.second);
@@ -333,34 +339,37 @@ private:
                     prev = maps;
                     continue;
                 }
+
                 if (prev.first.second > maps.first.first) {
                     DEBUG("Mapping intersects with other, skipping");
                     if (!removed_vertices.count(maps.second.first)) {
-                        DEBUG("Inserting " << graph.getVertex(maps.second.first)->rc_->name_);
-                        DEBUG("Inserting " << maps.second.first);
-                        removed_vertices.insert(graph.getVertex(maps.second.first)->rc_->name_);
+                        removed_vertices.insert(domain_graph_.conjugate(maps.second.first));
                         removed_vertices.insert(maps.second.first);
-                        graph.removeVertex(maps.second.first);
+                        if (!domain_graph_.IncomingEdgeCount(maps.second.first))
+                            domain_graph_.DeleteVertex(maps.second.first);
                     }
                     continue;
                 }
 
-                if (prev.first.second < maps.first.first && maps.first.first - prev.first.second < 20000 && !removed_vertices.count(maps.second.first) && !removed_vertices.count(prev.second.first)) {
+                if (prev.first.second < maps.first.first && maps.first.first - prev.first.second < 20000 && !removed_vertices.count(maps.second.first) && !removed_vertices.count(prev.second.first)
+                && domain_graph_.GetEdgesBetween(prev.second.first, maps.second.first).size() == 0) {
                     DEBUG("Connecting " << prev.second << " and " << maps.second);
-                    graph.addEdge(prev.second.first, maps.second.first, true, maps.first.first - prev.first.second, FindEdgesBetweenMappings(prev.first.second, maps.first.first, from_id_to_path[p.first]));
+                    domain_graph_.AddEdge(prev.second.first, maps.second.first, true,
+                            FindEdgesBetweenMappings(prev.first.second, maps.first.first, from_id_to_path[p.first]), maps.first.first - prev.first.second);
                 }
                 prev = maps;
             }
         }
     }
 
+
     //TODO: try some good coverage strategy
-    bool IsInsideRepeat(std::shared_ptr<nrps::Vertex> v) {
-        if (v->domain_edges_in_row_.size() > 1)
+    bool IsInsideRepeat(VertexId v) {
+        if (domain_graph_.GetDomainEdges(v).size() > 1)
             return false;
 
         const auto &g = gp_.get<Graph>();
-        EdgeId e = v->domain_edges_in_row_[0];
+        EdgeId e = domain_graph_.GetDomainEdges(v).front();
         if (g.IncomingEdgeCount(g.EdgeStart(e)) > 1 ||
             g.OutgoingEdgeCount(g.EdgeEnd(e)) > 1)
             return true;
@@ -370,54 +379,43 @@ private:
 
     void ConstructNodes(const nrps::ContigAlnInfo &info) {
         auto mapper = MapperInstance(gp_);
-
         unsigned id = 1;
         for (const auto &aln : info) {
             Sequence sequence = Sequence(aln.seq);
             std::string name = aln.name + "_" + std::to_string(id), name_rc = name + "rc";
-
             auto edges = mapper->MapSequence(sequence);
+            auto rc_edges = mapper->MapSequence(!sequence);
+
             if (edges.simple_path().size() == 0)
                 continue;
 
             DEBUG("Adding vertex " << name);
-            graph.addVertex(name,
-                            edges.simple_path(),
-                            edges.front().second.mapped_range.start_pos, edges.back().second.mapped_range.end_pos,
-                            aln.type);
-            auto rc_edges = mapper->MapSequence(!sequence);
-            DEBUG("Adding vertex " << name_rc);
-            graph.addVertex(name_rc,
-                            rc_edges.simple_path(),
-                            rc_edges.front().second.mapped_range.start_pos, rc_edges.back().second.mapped_range.end_pos,
-                            aln.type);
-            mappings[name] = edges;
-            mappings[name_rc] = rc_edges;
-            graph.makeRC(name, name_rc);
+
+            VertexId v = domain_graph_.AddVertex(name, edges, edges.front().second.mapped_range.start_pos,
+                                edges.back().second.mapped_range.end_pos, aln.type);
             id++;
+            mappings[domain_graph_.GetVertexName(v)] = edges;
+            mappings[domain_graph_.GetVertexName(domain_graph_.conjugate(v))] = rc_edges;
         }
 
-        for (auto v : graph.getVertexSet()) {
-            v->max_visited_ = IsInsideRepeat(v) ? 2 : 1;
+        for (auto iter = domain_graph_.SmartVertexBegin(); ! iter.IsEnd(); ++iter) {
+            VertexId v = (*iter);
+            domain_graph_.data(v).SetMaxVisited(IsInsideRepeat(v) ? 2 : 1);
         }
     }
 
     GraphPack &gp_;
-    nrps::DomainGraph graph;
+    nrps::DomainGraph domain_graph_;
     std::map<std::string, MappingPath<EdgeId>> mappings;
-    DECL_LOGGER("AGraph");
+    DECL_LOGGER("DomainGraphConstruction");
 };
 
 void DomainGraphConstruction::run(GraphPack &gp, const char*) {
     auto res = nrps::DomainMatcher().MatchDomains(gp, cfg::get().hmm_set, cfg::get().output_dir);
-
     DomainGraphConstructor constructor(gp);
-    auto &graph = constructor.ConstructGraph(res);
-
-    graph.FindDomainOrderings(gp, "gene_clusters.fasta", cfg::get().output_dir);
-    graph.ExportToDot(cfg::get().output_dir + "/domain_graph.dot");
-    INFO("Export paths");
-    graph.ExportPaths(gp, cfg::get().output_dir);
+    auto &domain_graph = constructor.ConstructGraph(res);
+    domain_graph.FindDomainOrderings(gp, "gene_clusters.fasta", cfg::get().output_dir);
+    domain_graph.ExportToDot(cfg::get().output_dir + "/domain_graph.dot");
 }
 
 }

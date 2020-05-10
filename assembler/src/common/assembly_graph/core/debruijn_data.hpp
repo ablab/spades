@@ -152,7 +152,7 @@ inline const DeBruijnEdgeData DeBruijnDataMaster::MergeData(const std::vector<co
 }
 
 inline std::pair<DeBruijnVertexData, std::pair<DeBruijnEdgeData, DeBruijnEdgeData>> DeBruijnDataMaster::SplitData(const EdgeData& edge,
-                                                                                                                  size_t position, 
+                                                                                                                  size_t position,
                                                                                                                   bool is_self_conj) const {
     const Sequence& nucls = edge.nucls();
     size_t end = nucls.size();

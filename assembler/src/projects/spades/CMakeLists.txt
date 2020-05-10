@@ -19,10 +19,11 @@ add_library(spades-stages STATIC
             chromosome_removal.cpp
             extract_domains.cpp
             domain_matcher.cpp
-            domain_graph.cpp
             domain_graph_construction.cpp
             restricted_edges_filling.cpp
-            load_graph.cpp)
+            load_graph.cpp
+            domain_graph.cpp)
+
 target_link_libraries(spades-stages ConsensusCore)
           
 add_executable(spades-core

@@ -1,332 +1,260 @@
 //***************************************************************************
-//* Copyright (c) 2018 Saint Petersburg State University
+//* Copyright (c) 2020 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
 
 #pragma once
 
-#include "assembly_graph/graph_support/contig_output.hpp"
-#include "assembly_graph/paths/bidirectional_path.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "common/pipeline/graph_pack.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
-
-#include <iostream>
-#include <map>
+#include <unordered_set>
+#include <unordered_map>
 #include <numeric>
-#include <set>
-#include <string>
-#include <vector>
 
-namespace nrps {
-typedef debruijn_graph::EdgeId EdgeId;
-struct Edge;
+namespace nrps{
 
-struct Vertex {
-public:
-    std::string name_;
-    std::set<Edge *> edges_;
+    class DomainGraphDataMaster;
 
-    std::set<debruijn_graph::EdgeId> unique_domain_edges_;
-    std::vector<debruijn_graph::EdgeId> domain_edges_in_row_;
-    size_t start_coord_;
-    size_t end_coord_;
-    std::shared_ptr<Vertex> rc_;
+    class DomainVertexData {
+        friend class DomainDataMaster;
+        typedef debruijn_graph::EdgeId EdgeId;
+        const debruijn_graph::Graph &g_;
+        omnigraph::MappingPath<EdgeId> mapping_path_;
+        std::string domain_type_;
+        size_t start_coord_;
+        size_t end_coord_;
+        size_t max_visited_;
+        size_t current_visited_;
+        bool near_contig_end_;
+        bool near_contig_start_;
+        bool visited_;
 
-    std::string v_type_;
-    bool near_to_the_end_of_contig_;
-    bool near_to_the_start_of_contig_;
-
-    bool visited_;
-    size_t visited_times_;
-    size_t max_visited_;
-
-    /*
-     * Constructs a vertex with the given name.
-     */
-    Vertex(const std::set<EdgeId> &unique_a_edges,
-           const std::vector<EdgeId> &domain_edges, size_t start_coord,
-           size_t end_coord, std::string type, const std::string &name = "")
-            : name_(name), unique_domain_edges_(unique_a_edges),
-              domain_edges_in_row_(domain_edges), start_coord_(start_coord),
-              end_coord_(end_coord), v_type_(type), near_to_the_end_of_contig_(true),
-              near_to_the_start_of_contig_(true), visited_(false), visited_times_(0),
-              max_visited_(1) {}
-
-    Vertex(const std::string &name = "") : name_(name) {}
-    ~Vertex() {}
-
-    Vertex(const Vertex &other) = default;
-    Vertex &operator=(const Vertex &other) = default;
-    Vertex &operator=(Vertex &&other) = default;
-};
-
-struct Edge {
-public:
-    std::shared_ptr<Vertex> start_;
-    std::shared_ptr<Vertex> end_;
-    bool visited_;
-    bool strong_;
-    size_t length_;
-    std::vector<EdgeId> edges_;
-
-    Edge(std::shared_ptr<Vertex> start = nullptr,
-         std::shared_ptr<Vertex> end = nullptr,
-         const std::vector<EdgeId> &edges_on_graph = std::vector<EdgeId>(),
-         bool isstrong = false)
-            : start_(start), end_(end), visited_(false), strong_(isstrong),
-              length_(0), edges_(edges_on_graph) {}
-    ~Edge() {}
-
-    Edge &operator=(const Edge &other) = default;
-    Edge &operator=(Edge &&other) = default;
-};
-
-class DomainGraph {
-
-struct cmpshared_ptrs {
-    bool operator()(std::shared_ptr<Vertex> v1, std::shared_ptr<Vertex> v2) const {
-        return v1->name_ < v2->name_;
-    }
-};
-
-public:
-    DomainGraph() { iteration_number_ = 0; }
-
-    std::shared_ptr<Vertex> getNode(const std::string &name) const {
-        auto entry = node_map_.find(name);
-        if (entry != node_map_.end())
-            return entry->second;
-
-        return nullptr;
+    omnigraph::MappingRange conjugate(omnigraph::MappingRange m, EdgeId e) const {
+        return omnigraph::MappingRange(m.initial_range.start_pos, m.initial_range.end_pos, g_.length(e) - m.mapped_range.end_pos, g_.length(e) - m.mapped_range.start_pos);
     }
 
-    Edge *getArc(std::shared_ptr<Vertex> v1, std::shared_ptr<Vertex> v2) const {
-        for (Edge *edge : getEdgeSet(v1)) {
-            if (edge->end_ == v2) {
-                return edge;
-            }
+    public:
+        DomainVertexData(const debruijn_graph::Graph &g)
+                : g_(g), domain_type_("None"), start_coord_(0), end_coord_(0),
+                  max_visited_(0), current_visited_(0), visited_(false) {
         }
 
-        return nullptr;
-    }
-
-    Edge *getEdge(std::shared_ptr<Vertex> v1, std::shared_ptr<Vertex> v2) const {
-        return getArc(v1, v2);
-    }
-
-    bool HasStrongEdge(std::shared_ptr<nrps::Vertex> v) const {
-        return StrongEdgeCount(v) > 0;
-    }
-
-    bool HasStrongIncomingEdge(std::shared_ptr<nrps::Vertex> v) const {
-        auto rc = v->rc_;
-        return StrongEdgeCount(rc) > 0;
-    }
-
-    size_t StrongEdgeCount(std::shared_ptr<nrps::Vertex> v) const {
-        return std::count_if(v->edges_.begin(), v->edges_.end(),
-                             [](Edge *e) { return e->strong_; });
-    }
-
-    size_t WeakEdgeCount(std::shared_ptr<nrps::Vertex> v) const {
-        return std::count_if(v->edges_.begin(), v->edges_.end(),
-                             [](Edge *e) { return !e->strong_; });
-    }
-
-    Edge *addEdge(const std::string &v1, const std::string &v2, bool strong,
-                  size_t length = 0,
-                  const std::vector<EdgeId> &edges = std::vector<EdgeId>()) {
-        return addEdge(getVertex(v1), getVertex(v2), strong, length, edges);
-    }
-
-    Edge *addEdge(std::shared_ptr<Vertex> v1, std::shared_ptr<Vertex> v2,
-                  bool strong, size_t length = 0,
-                  const std::vector<EdgeId> &edges = std::vector<EdgeId>()) {
-        Edge *e = new Edge(v1, v2, edges, strong);
-        e->length_ = length;
-        return addEdge(e);
-    }
-
-    void removeVertex(const std::string &vertex_name) {
-        auto vertex = getVertex(vertex_name);
-        auto vertex_rc = getVertex(vertex_name)->rc_;
-        for (auto v : nodes_) {
-            if (v->name_ == vertex_name || v->name_ == vertex_rc->name_) {
-                nodes_.erase(v);
-            }
+        DomainVertexData(const debruijn_graph::Graph &g,
+                         const omnigraph::MappingPath<EdgeId> &mapping_path,
+                         const std::string &domain_type,
+                         size_t start_coord,
+                         size_t end_coord,
+                         size_t max_visited = 0,
+                         size_t current_visited = 0,
+                         bool near_contig_end = false,
+                         bool near_contig_start = false,
+                         bool visited = false)
+        : g_(g), mapping_path_(mapping_path), domain_type_(domain_type), start_coord_(start_coord),
+          end_coord_(end_coord), max_visited_(max_visited), current_visited_(current_visited),
+          near_contig_end_(near_contig_end), near_contig_start_(near_contig_start), visited_(visited) {
         }
 
-        auto it = node_map_.find(vertex_name);
-        for (auto edge : it->second->edges_) {
-            removeEdge(edge);
+        size_t GetStartCoord() const {
+            return start_coord_;
         }
 
-        auto it2 = node_map_.find(vertex_rc->name_);
-        for (auto edge : it2->second->edges_) {
-            removeEdge(edge);
+        size_t GetEndCoord() const {
+            return end_coord_;
         }
-        node_map_.erase(it);
-        node_map_.erase(it2);
-    }
 
-    void removeEdge(Edge *edge) {
-        for (auto e : arcs_) {
-            if (e->start_ == edge->start_ && e->end_ == edge->end_ ) {
-                auto v_rc = edge->end_->rc_;
-                for (auto e2 : v_rc->edges_) {
-                    if (e2->end_ == e->start_->rc_) {
-                        v_rc->edges_.erase(e2);
-                        break;
-                    }
-                }
-                v_rc->edges_.erase(e);
-                arcs_.erase(e);
-            }
+        bool GetNearContigEnd() const {
+            return near_contig_end_;
         }
-        arcs_.erase(edge);
-        delete edge;
-    }
 
-    bool isExistingNode(std::shared_ptr<Vertex> v) const {
-        return nodes_.count(v);
-    }
-
-    std::shared_ptr<Vertex> addVertex(const std::string &name,
-                                      const std::vector<debruijn_graph::EdgeId> &a_edges,
-                                      size_t start_coord, size_t end_coord, std::string type) {
-        std::set<EdgeId> unique_edges;
-        for (auto edge : a_edges) {
-            if (!a_edges_map_.count(edge))
-                unique_edges.insert(edge);
-
-            auto &nodes = a_edges_map_[edge];
-            if (std::find(nodes.begin(), nodes.end(), name) == nodes.end())
-                nodes.push_back(name);
+        bool GetNearContigStart() const {
+            return near_contig_start_;
         }
-        return addVertexInternal(name, unique_edges, a_edges, start_coord,
-                                 end_coord, type);
-  }
 
-    std::shared_ptr<Vertex> addVertex(std::shared_ptr<Vertex> v) { return addVertexInternal(v); }
-    Edge *addEdge(Edge *e) { return addEdgeInternal(e); }
+        void SetNearStartCoord() {
+            near_contig_start_ = true;
+        }
 
-    const std::set<Edge *> &getEdgeSet(std::shared_ptr<Vertex> v) const { return v->edges_; }
-    std::shared_ptr<Vertex> getVertex(const std::string &name) const { return node_map_.at(name); }
-    const std::set<std::shared_ptr<Vertex>, cmpshared_ptrs> &getVertexSet() const { return nodes_; }
-    std::set<std::shared_ptr<Vertex>, cmpshared_ptrs> const &getNodeSet() const { return nodes_; }
+        void SetNearEndCoord() {
+            near_contig_end_ = true;
+        }
 
-    void ExportToDot(const std::string &output_path) const;
+        std::string GetType() const {
+            return domain_type_;
+        }
 
-    void makeRC(const std::string &first_vertex,
-                const std::string &second_vertex) {
-        node_map_[first_vertex]->rc_ = node_map_[second_vertex];
-        node_map_[second_vertex]->rc_ = node_map_[first_vertex];
-    }
+        size_t GetMaxVisited() const {
+            return max_visited_;
+        }
 
-    void FindBasicStatistic(std::ofstream &stat_stream);
-    void FindDomainOrderings(debruijn_graph::GraphPack &gp,
-                             const std::string &output_filename, const std::string &output_dir);
-    void ExportPaths(debruijn_graph::GraphPack &gp,
-                     const std::string &output_dir);
+        void SetMaxVisited(size_t value) {
+            max_visited_ = value;
+        }
 
-private:
-    std::shared_ptr<Vertex>
-    addVertexInternal(const std::string &name,
-                      const std::set<debruijn_graph::EdgeId> &unique_edges,
-                      const std::vector<debruijn_graph::EdgeId> &edges,
-                      size_t start_coord, size_t end_coord, std::string type) {
-        std::shared_ptr<Vertex> node =
-                std::make_shared<Vertex>(unique_edges, edges, start_coord, end_coord, type);
-        node->name_ = name;
-        return addVertexInternal(node);
-    }
+        void IncrementVisited() {
+            current_visited_++;
+        }
 
-    std::shared_ptr<Vertex> addVertexInternal(std::shared_ptr<Vertex> node) {
-        nodes_.insert(node);
-        DEBUG("Node " << node->name_ << " is inserted into the map");
-        node_map_[node->name_] = node;
-        return node;
-    }
+        void DecrementVisited() {
+            current_visited_--;
+        }
 
-    Edge *addEdgeInternal(Edge *arc) {
-        if (!isExistingNode(arc->start_))
-            addVertex(arc->start_);
-        if (!isExistingNode(arc->end_))
-            addVertex(arc->end_);
-        arc->start_->edges_.insert(arc);
-        arcs_.insert(arc);
-        return arc;
-    }
+        size_t GetCurrentVisited() const {
+            return current_visited_;
+        }
 
-    void OutputComponent(debruijn_graph::GraphPack &gp,
-                         path_extend::BidirectionalPath *p, int component_id,
-                         int ordering_id);
+        bool Visited() const {
+            return visited_;
+        }
 
-    std::string PathToSequence(path_extend::BidirectionalPath *p,
-                               std::vector<std::shared_ptr<Vertex>> &answer);
+        void SetVisited() {
+            visited_ = true;
+        }
 
-    void OutputStatArrangement(const debruijn_graph::Graph &g,
-                               std::vector<std::shared_ptr<Vertex>> single_candidate,
-                               int id, std::ofstream &stat_file);
-    void OutputStat(std::set<std::shared_ptr<Vertex>> &preliminary_visited,
-                    std::ofstream &stat_file);
+        std::vector<EdgeId> GetDomainEdges() const {
+            return mapping_path_.simple_path();
+        }
+        omnigraph::MappingPath<EdgeId>& GetMappingPath() {
+            return mapping_path_;
+        }
 
-    size_t GetMaxVisited(const debruijn_graph::Graph &g, std::shared_ptr<Vertex> v,
-                         double base_coverage) {
-        double low_coverage = std::numeric_limits<double>::max();
-        for (auto e : v->domain_edges_in_row_)
-            low_coverage = std::min(low_coverage, g.coverage(e));
-
-        return size_t(round(low_coverage / base_coverage));
-  }
-
-    void SetCopynumber(const debruijn_graph::Graph &g,
-                       std::set<std::shared_ptr<Vertex>> &preliminary_visited) {
-        double base_coverage = std::numeric_limits<double>::max();
-        for (auto v : preliminary_visited) {
-            for (auto e : v->domain_edges_in_row_) {
-                if (g.length(e) > 500) {
-                    base_coverage = std::min(base_coverage, g.coverage(e));
+        DomainVertexData ConstructConjugate() const {
+            omnigraph::MappingPath<EdgeId> conjugate_rc;
+            if (mapping_path_.size() != 0) {
+                for (auto i = mapping_path_.size(); i != 0; --i) {
+                    conjugate_rc.push_back(g_.conjugate(mapping_path_.edge_at(i - 1)), conjugate(mapping_path_.mapping_at(i - 1),
+                                                                                                 g_.conjugate(mapping_path_.edge_at(i - 1))));
                 }
             }
+            return  DomainVertexData(g_, conjugate_rc, domain_type_, g_.length(conjugate_rc.front().first) - end_coord_,
+                                     g_.length(conjugate_rc.back().first) - start_coord_, max_visited_,
+                                     current_visited_, near_contig_start_, near_contig_end_, visited_);
         }
 
-        if (math::eq(base_coverage, std::numeric_limits<double>::max()))
-            return;
-
-        for (auto v : preliminary_visited) {
-            size_t value = std::max(size_t(1), GetMaxVisited(g, v, base_coverage));
-            if (v->max_visited_ != value) {
-                DEBUG(v->name_ << " copynumber has changed from " << v->max_visited_
-                      << " to " << value);
-      }
-            v->max_visited_ = value;
+        size_t length() const {
+            auto simple_path = mapping_path_.simple_path();
+            return  std::accumulate(simple_path.begin(), simple_path.end(), 0,
+                                    [&](size_t a, EdgeId b){return a + g_.length(b);}) - start_coord_ - end_coord_;
         }
-    }
+    };
 
-    void FindAllPossibleArrangements(const debruijn_graph::Graph &g, std::shared_ptr<Vertex> v,
-                                     std::vector<std::vector<std::shared_ptr<Vertex>>> &answer,
-                                     std::ofstream &stat_file);
+    class DomainEdgeData {
+        friend class DomainGraphDataMaster;
+        typedef debruijn_graph::EdgeId EdgeId;
+        const debruijn_graph::Graph &g_;
+        bool strong_;
+        std::vector<EdgeId> edges_;
+        size_t length_;
+    public:
 
-    void PrelimDFS(std::shared_ptr<Vertex> v,
-                   std::set<std::shared_ptr<Vertex>> &preliminary_visited);
+        explicit DomainEdgeData(const debruijn_graph::Graph &g, bool strong, const std::vector<EdgeId> &edges, size_t length) :
+                g_(g), strong_(strong), edges_(edges), length_(length) {
+        }
 
-    void FinalDFS(std::shared_ptr<Vertex> v,
-                  std::vector<std::shared_ptr<Vertex>> &current,
-                  std::set<std::shared_ptr<Vertex>> preliminary_visited,
-                  std::vector<std::vector<std::shared_ptr<Vertex>>> &answer,
-                  size_t component_size);
+        bool Strong() const {
+            return strong_;
+        }
 
+        size_t length() const {
+            return length_;
+        }
 
+        std::vector<EdgeId> GetDeBruijnEdges() const {
+            return edges_;
+        }
 
-    std::set<std::shared_ptr<Vertex>, cmpshared_ptrs> nodes_; /* The set of nodes in the graph */
-    std::set<Edge *> arcs_;                   /* The set of arcs in the graph  */
-    std::map<std::string, std::shared_ptr<Vertex>> node_map_; /* A map from names to nodes     */
-    std::map<EdgeId, std::vector<std::string>> a_edges_map_; /* A map from edges to nodenames */
-    path_extend::PathContainer contig_paths_;
-    size_t iteration_number_;
+        DomainEdgeData ConstructConjugate() const {
+            std::vector<EdgeId> rc;
+            for (auto it = edges_.rbegin(); it != edges_.rend(); ++it) {
+                rc.push_back(g_.conjugate(*it));
+            }
+            return  DomainEdgeData(g_, strong_, rc, length_);
+        }
+    };
 
-    DECL_LOGGER("AGraph2");
-};
+    class DomainGraphDataMaster {
 
+    public:
+        typedef DomainVertexData VertexData;
+        typedef DomainEdgeData EdgeData;
+
+        DomainGraphDataMaster()
+        { }
+
+        EdgeData conjugate(const EdgeData &data) const {
+            return data.ConstructConjugate();
+        }
+
+        VertexData conjugate(const VertexData &data) const {
+            return data.ConstructConjugate();
+        }
+
+        size_t length(const EdgeData& data) const {
+            return data.length();
+        }
+
+        bool isSelfConjugate(const EdgeData &) const {
+            return false;
+        }
+
+        size_t length(const VertexData& data) const {
+            return data.length();
+        }
+    };
+
+    class DomainGraph : public omnigraph::ObservableGraph<DomainGraphDataMaster> {
+    private:
+        typedef base::VertexData VertexData;
+        typedef base::EdgeData EdgeData;
+        const debruijn_graph::Graph &g_;
+        typedef omnigraph::ObservableGraph<DomainGraphDataMaster> base;
+        std::unordered_map<VertexId, std::string> from_id_to_name;
+        path_extend::PathContainer contig_paths_;
+
+        void SetVisited(VertexId v);
+        void OutputStat(std::set<VertexId> &preliminary_visited, std::ofstream &stat_file) const;
+        size_t GetMaxVisited(VertexId v, double base_coverage) const;
+        void SetCopynumber(std::set<VertexId> &preliminary_visited);
+        void OutputStatArrangement(std::vector<VertexId> single_candidate, int id, std::ofstream &stat_file);
+        void FindBasicStatistic(std::ofstream &stat_stream);
+        void PrelimDFS(VertexId v, std::set<VertexId> &preliminary_visited);
+        std::string PathToSequence(path_extend::BidirectionalPath *p, std::vector<VertexId> &answer);
+        void FindAllPossibleArrangements(VertexId v, std::vector<std::vector<VertexId>> &answer, std::ofstream &stat_file);
+        void FinalDFS(VertexId v, std::vector<VertexId> &current, std::set<VertexId> preliminary_visited,
+                                   std::vector<std::vector<VertexId>> &answer, size_t component_size, size_t &iteration_number);
+        std::set<EdgeId> CollectEdges(path_extend::BidirectionalPath *p) const;
+        void OutputComponent(path_extend::BidirectionalPath *p, int component_id, int ordering_id);
+
+    public:
+        DomainGraph(const debruijn_graph::Graph &g) :
+                base(DomainGraphDataMaster()), g_(g) {}
+
+        using base::AddVertex;
+        using base::AddEdge;
+        using base::EdgeId;
+        using base::VertexId;
+
+        VertexId AddVertex();
+        VertexId AddVertex(const std::string &name, const omnigraph::MappingPath<EdgeId> &mapping_path,
+                           size_t start_coord, size_t end_coord, std::string type);
+        std::string GetVertexName(VertexId v) const;
+        EdgeId AddEdge(VertexId from, VertexId to, bool strong, const std::vector<EdgeId> &edges, size_t length);
+        bool HasStrongEdge(VertexId v);
+        size_t StrongEdgeCount(VertexId v) const;
+        size_t WeakEdgeCount(VertexId v) const;
+        bool HasStrongIncomingEdge(VertexId v) const;
+        bool NearContigStart(VertexId v) const;
+        bool NearContigEnd(VertexId v) const;
+        bool Visited(VertexId v) const;
+        std::vector<EdgeId> GetDomainEdges(VertexId v) const;
+        bool Strong(EdgeId e) const;
+        void SetContigNearEnd(VertexId v);
+        void ExportToDot(const std::string &output_path) const;
+        void FindDomainOrderings(debruijn_graph::GraphPack &gp,
+                                 const std::string &output_filename, const std::string &output_dir);
+    protected:
+        DECL_LOGGER("DomainGraph");
+    };
 }
