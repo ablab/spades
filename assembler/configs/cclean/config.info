@@ -1,8 +1,0 @@
-; = cclean variables = 
-mismatch_threshold    4
-aligned_part_fraction 0.8
-output_file         ./data/output.txt
-output_bed          ./data/bed.txt
-nthreads  8
-input_working_dir .
-count_split_buffer 10 
