@@ -50,7 +50,7 @@ public:
     SimpleKeyWithHash(const SimpleKeyWithHash &that) noexcept = default;
     SimpleKeyWithHash &operator=(const SimpleKeyWithHash &that) noexcept {
         if (this == &that)
-            return;
+            return *this;
         
         this->key_= that.key_;
         this->idx_ = that.idx_;
