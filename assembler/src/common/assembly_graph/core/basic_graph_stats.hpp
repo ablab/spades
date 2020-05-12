@@ -52,4 +52,24 @@ double AvgCoverage(const Graph& g,
     }
     return unnormalized_coverage / (double) path_length;
 }
+
+template<class Graph>
+size_t Nx(Graph &g, double percent) {
+    size_t sum_edge_length = 0;
+    std::vector<size_t> lengths;
+    for (typename Graph::EdgeId e : g.edges()) {
+        lengths.push_back(g.length(e));
+        sum_edge_length += g.length(e);
+    }
+    std::sort(lengths.begin(), lengths.end());
+    double len_perc = (1.0 - percent * 0.01) * (double) (sum_edge_length);
+    for (size_t i = 0; i < lengths.size(); i++) {
+        if (double(lengths[i]) >= len_perc)
+            return lengths[i];
+        else
+            len_perc -= (double) lengths[i];
+    }
+    return 0;
+}
+
 }

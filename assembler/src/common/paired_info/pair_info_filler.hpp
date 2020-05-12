@@ -72,7 +72,7 @@ private:
                                   mapping_edge_1.second, mapping_edge_2.second);
 
                 // Add only if weight is non-zero
-                if (math::gr(weight, 0)) {
+                if (math::gr(weight, 0.0f)) {
                     size_t kmer_distance = read_distance
                                            + mapping_edge_2.second.initial_range.end_pos
                                            - mapping_edge_1.second.initial_range.start_pos;

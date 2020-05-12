@@ -7,7 +7,7 @@
 
 #include "pair_info_count.hpp"
 
-#include "assembly_graph/stats/utils.hpp"
+#include "assembly_graph/core/basic_graph_stats.hpp"
 #include "paired_info/is_counter.hpp"
 #include "paired_info/pair_info_filler.hpp"
 
@@ -328,7 +328,7 @@ void PairInfoCount::run(GraphPack &gp, const char *) {
     //TODO implement better universal logic
     size_t edge_length_threshold = cfg::get().min_edge_length_for_is_count;
     if (!debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(cfg::get().mode))
-        edge_length_threshold = std::max(edge_length_threshold, stats::Nx(graph, 50));
+        edge_length_threshold = std::max(edge_length_threshold, Nx(graph, 50));
 
     INFO("Min edge length for estimation: " << edge_length_threshold);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
