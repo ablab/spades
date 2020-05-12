@@ -112,7 +112,7 @@ void CompositeStageBase::run(debruijn_graph::GraphPack& gp,
     for (auto et = phases_.end(); start_phase != et; ++start_phase) {
         PhaseBase *phase = start_phase->get();
 
-        INFO("PROCEDURE == " << phase->name());
+        INFO("PROCEDURE == " << phase->name() << " (id: " << id() << ":" << phase->id() << ")");
         phase->run(gp, started_from);
 
         if (parent_->saves_policy().EnabledCheckpoints() != SavesPolicy::Checkpoints::None) {
@@ -165,7 +165,7 @@ void StageManager::run(debruijn_graph::GraphPack& g,
     for (; start_stage != stages_.end(); ++start_stage) {
         AssemblyStage *stage = start_stage->get();
 
-        INFO("STAGE == " << stage->name());
+        INFO("STAGE == " << stage->name() << " (id: " << stage->id() << ")");
         stage->prepare(g, start_from);
         stage->run(g, start_from);
         if (saves_policy_.EnabledCheckpoints() != SavesPolicy::Checkpoints::None) {
