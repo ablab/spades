@@ -400,7 +400,6 @@ void GapClosing::run(GraphPack &gp, const char *) {
         notifier.ProcessLibrary(paired_streams, i, *mapper);
 
         INFO("Initializing gap closer");
-        g.clear_state();  // FIXME Hack-hack-hack required for uniform id distribution on master and slaves
         GapCloser gap_closer(g, tips_paired_idx,
                              cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold);
         gap_closer.CloseShortGaps();

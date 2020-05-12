@@ -425,7 +425,6 @@ public:
             k_(gp.k()),
             relative_threshold_(relative_threshold) {
         VERIFY(relative_threshold >= 1);
-        graph_.clear_state();  // FIXME Hack-hack-hack required for uniform id distribution on master and slaves
     }
 
 
