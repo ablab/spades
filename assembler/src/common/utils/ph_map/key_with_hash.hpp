@@ -47,8 +47,11 @@ public:
         return idx_;
     }
 
-    SimpleKeyWithHash &operator=(const SimpleKeyWithHash &that) {
-        VERIFY(&this->hash_ == &that.hash_);
+    SimpleKeyWithHash(const SimpleKeyWithHash &that) noexcept = default;
+    SimpleKeyWithHash &operator=(const SimpleKeyWithHash &that) noexcept {
+        if (this == &that)
+            return;
+        
         this->key_= that.key_;
         this->idx_ = that.idx_;
         this->ready_ = that.ready_;
@@ -56,14 +59,14 @@ public:
     }
 
     bool operator==(const SimpleKeyWithHash &that) const {
-        VERIFY(&this->hash_ == &that.hash_);
+        VERIFY_DEV(&this->hash_ == &that.hash_);
         if (this->ready_ && that.ready_)
             return this->idx_ == that.idx_ && this->is_minimal_ == that.is_minimal_;
         return this->key_ == that.key_;
     }
 
     bool operator!=(const SimpleKeyWithHash &that) const {
-        VERIFY(&this->hash_ == &that.hash_);
+        VERIFY_DEV(&this->hash_ == &that.hash_);
         return this->key_ != that.key_;
     }
 
@@ -155,8 +158,8 @@ private:
         return ready_;
     }
 
-    InvertableKeyWithHash &operator=(const InvertableKeyWithHash &that) {
-        VERIFY(&this->hash_ == &that.hash_);
+    InvertableKeyWithHash(const InvertableKeyWithHash &that) noexcept = default;
+    InvertableKeyWithHash &operator=(const InvertableKeyWithHash &that) noexcept {
         this->key_= that.key_;
         this->idx_ = that.idx_;
         this->ready_ = that.ready_;
@@ -165,12 +168,12 @@ private:
     }
 
     bool operator==(const InvertableKeyWithHash &that) const {
-        VERIFY(&this->hash_ == &that.hash_);
+        VERIFY_DEV(&this->hash_ == &that.hash_);
         return this->key_ == that.key_;
     }
 
     bool operator!=(const InvertableKeyWithHash &that) const {
-        VERIFY(&this->hash_ == &that.hash_);
+        VERIFY_DEV(&this->hash_ == &that.hash_);
         return this->key_ != that.key_;
     }
 

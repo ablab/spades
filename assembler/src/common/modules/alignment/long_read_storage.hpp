@@ -52,11 +52,6 @@ public:
             path_(p), w_(weight) {
     }
 
-    PathInfo(const PathInfo<Graph> &other) {
-        path_ = other.path_;
-        w_ = other.w_;
-    }
-
     std::string str(const Graph &g_) const {
         std::stringstream s;
         for (EdgeId e : path_) {

@@ -219,12 +219,6 @@ struct AbstractDeEdge {
     AbstractDeEdge(KeyWithHash s, KeyWithHash e)
             : start(std::move(s)), end(std::move(e)) {}
 
-    AbstractDeEdge<KeyWithHash> &operator=(const AbstractDeEdge<KeyWithHash> &that) {
-        this->start = that.start;
-        this->end = that.end;
-        return *this;
-    }
-
     bool operator==(const AbstractDeEdge &other) {
         return start == other.start && end == other.end;
     }

@@ -81,7 +81,7 @@ void GenomeConsistenceChecker::ReportVariants(vector<pair<double, EdgeId>> &sort
     size_t count = 0;
     double additional_weight = 0;
     size_t reporting = 4;
-    for (const auto pair: sorted_w) {
+    for (const auto &pair: sorted_w) {
         if (count == 0) {
             INFO("First candidate:");
         }

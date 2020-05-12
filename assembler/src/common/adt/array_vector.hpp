@@ -222,6 +222,9 @@ public:
         return *this;
     }
 
+    array_reference(array_reference &&that) noexcept = default;
+    array_reference(const array_reference &that) noexcept = default;
+    
     array_reference &operator=(const array_reference that) {
         storage_pointer this_ptr = data(), that_ptr = that.data();
         if (this_ptr != that_ptr)
@@ -283,8 +286,8 @@ public:
     }
 
 private:
-    array_reference(storage_pointer p, size_type sz) :
-            ptr_(p), size_(sz) { }
+    array_reference(storage_pointer p, size_type sz) noexcept
+            : ptr_(p), size_(sz) { }
 };
 
 template<class _Cp>

@@ -60,10 +60,6 @@ struct GraphState {
         : e(e_), start_pos(start_pos_), end_pos(end_pos_)
     {}
 
-    GraphState(const GraphState &state):
-        e(state.e), start_pos(state.start_pos), end_pos(state.end_pos)
-    {}
-
     bool operator == (const GraphState &state) const {
         return (this->e == state.e && this->start_pos == state.start_pos && this->end_pos == state.end_pos);
     }
@@ -102,8 +98,6 @@ struct QueueState {
     QueueState(GraphState gs_, int i_)
         : gs(gs_), i(i_), is_empty(false)
     {}
-
-    QueueState(const QueueState &state) = default;
 
     bool operator == (const QueueState &state) const {
         return (this->gs == state.gs && this->i == state.i);

@@ -217,16 +217,6 @@ public:
                 Skip();
             }
 
-            void operator=(const Iterator &other) {
-                //TODO: is this risky without an assertion?
-                //VERIFY(index_ == other.index_);
-                //We shouldn't reassign iterators from one index onto another
-                iter_ = other.iter_;
-                stop_ = other.stop_;
-                edge_ = other.edge_;
-                half_ = other.half_;
-            }
-
         private:
             friend class boost::iterator_core_access;
 
