@@ -7,13 +7,8 @@
 
 #pragma once
 
-#include "assembly_graph/stats/picture_dump.hpp"
-#include <io/reads/osequencestream.hpp>
-#include "assembly_graph/components/connected_component.hpp"
-#include "assembly_graph/stats/statistics.hpp"
-#include "assembly_graph/paths/path_finders.hpp"
-#include "assembly_graph/paths/path_utils.hpp"
-#include "assembly_graph/paths/bidirectional_path_io/io_support.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "io/reads/osequencestream.hpp"
 
 namespace debruijn_graph {
 
@@ -28,7 +23,7 @@ inline void OutputEdgeSequences(const Graph &g, const std::string &contigs_outpu
 }
 
 inline void OutputEdgesByID(const Graph &g,
-                                const std::string &contigs_output_filename) {
+                            const std::string &contigs_output_filename) {
     INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
     io::OFastaReadStream oss(contigs_output_filename + ".fasta");
     for (EdgeId e: g.canonical_edges()) {

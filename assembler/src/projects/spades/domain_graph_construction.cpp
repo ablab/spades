@@ -1,9 +1,16 @@
+//***************************************************************************
+//* Copyright (c) 2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "domain_graph_construction.hpp"
 
 #include "assembly_graph/paths/path_processor.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
 
 #include "modules/path_extend/pe_utils.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
 
 #include "domain_graph.hpp"
 #include "domain_matcher.hpp"
@@ -11,7 +18,7 @@
 namespace debruijn_graph {
 
 template<class Graph>
-class SetOfForbiddenEdgesPathChooser : public PathProcessor<Graph>::Callback {
+class SetOfForbiddenEdgesPathChooser : public omnigraph::PathProcessor<Graph>::Callback {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     const Graph &g_;
@@ -155,8 +162,8 @@ private:
 
 
     std::vector<VertexId> VerticesReachedFrom(VertexId start_vertex) {
-        auto bounded_dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(gp_.get<Graph>(),
-                                                                             4000, 10000);
+        auto bounded_dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(gp_.get<Graph>(),
+                                                                                        4000, 10000);
         bounded_dijkstra.Run(start_vertex);
         TRACE("Reached vertices size - " << bounded_dijkstra.ReachedVertices());
         return bounded_dijkstra.ReachedVertices();

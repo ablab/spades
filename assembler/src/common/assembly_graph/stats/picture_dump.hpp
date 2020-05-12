@@ -435,35 +435,6 @@ std::string ConstructComponentName(const std::string &file_name, size_t cnt) {
     return file_name + std::to_string(cnt);
 }
 
-template<class Graph>
-double AvgCoverage(const Graph &g, const std::vector<typename Graph::EdgeId> &edges) {
-    double total_cov = 0.;
-    size_t total_length = 0;
-    for (auto it = edges.begin(); it != edges.end(); ++it) {
-        total_cov += g.coverage(*it) * (double) g.length(*it);
-        total_length += g.length(*it);
-    }
-    return total_cov / (double) total_length;
-}
-
-template<class Graph>
-size_t Nx(Graph &g, double percent) {
-    size_t sum_edge_length = 0;
-    std::vector<size_t> lengths;
-    for (auto iterator = g.ConstEdgeBegin(); !iterator.IsEnd(); ++iterator) {
-        lengths.push_back(g.length(*iterator));
-        sum_edge_length += g.length(*iterator);
-    }
-    std::sort(lengths.begin(), lengths.end());
-    double len_perc = (1.0 - percent * 0.01) * (double) (sum_edge_length);
-    for (size_t i = 0; i < lengths.size(); i++) {
-        if (lengths[i] >= len_perc)
-            return lengths[i];
-        else
-            len_perc -= (double) lengths[i];
-    }
-    return 0;
-}
 
 }
 }

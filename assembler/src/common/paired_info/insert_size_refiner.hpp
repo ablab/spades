@@ -7,9 +7,14 @@
 
 #pragma once
 
+#include "utils/logger/logger.hpp"
 #include "utils/cpp_utils.hpp"
-#include "assembly_graph/stats/picture_dump.hpp"
-//#include "sequence_mapper.hpp"
+#include "math/xmath.h"
+
+#include <map>
+#include <utility>
+#include <cmath>
+#include <cstdlib>
 
 namespace omnigraph {
 

@@ -17,6 +17,9 @@
 
 #include "sequence/aa.hpp"
 #include "io/reads/osequencestream.hpp"
+#include "utils/filesystem/path_helper.hpp"
+
+#include <boost/algorithm/string.hpp>
 
 #include <string>
 #include <vector>

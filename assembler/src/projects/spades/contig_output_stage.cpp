@@ -208,7 +208,7 @@ void ContigOutput::run(GraphPack &gp, const char*) {
                                                       fastg_writer));
 
             if (outputs_.count(Kind::PlasmidContigs)) {
-                using UsedEdges = SmartContainer<std::unordered_set<EdgeId>, Graph>;
+                using UsedEdges = omnigraph::SmartContainer<std::unordered_set<EdgeId>, Graph>;
                 if (!gp.count<UsedEdges>("used_edges"))
                     gp.add("used_edges", UsedEdges(graph));
 
@@ -217,7 +217,7 @@ void ContigOutput::run(GraphPack &gp, const char*) {
                                    CreatePathsWriters(fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".circular"),
                                                           fastg_writer));
 
-                using ForbiddenVertices = SmartContainer<std::unordered_set<VertexId>, Graph>;
+                using ForbiddenVertices = omnigraph::SmartContainer<std::unordered_set<VertexId>, Graph>;
                 PathContainer linears;
                 if (gp.count<ForbiddenVertices>("forbidden_vertices"))
                     linears = GetTipScaffolds(broken_scaffolds, gp.get<ForbiddenVertices>("forbidden_vertices"));

@@ -15,6 +15,7 @@
 #include <sstream>
 #include <memory>
 #include <fstream>
+#include <iostream>
 
 #include "config.hpp"
 

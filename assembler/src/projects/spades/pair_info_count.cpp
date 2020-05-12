@@ -5,18 +5,20 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <paired_info/is_counter.hpp>
 #include "pair_info_count.hpp"
+
+#include "assembly_graph/stats/utils.hpp"
+#include "paired_info/is_counter.hpp"
 #include "paired_info/pair_info_filler.hpp"
 
 #include "modules/alignment/long_read_mapper.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "modules/alignment/rna/ss_coverage_filler.hpp"
 
+#include "io/dataset_support/read_converter.hpp"
+
 #include "adt/bf.hpp"
 #include "adt/hll.hpp"
-
-#include "io/dataset_support/read_converter.hpp"
 
 namespace debruijn_graph {
 

@@ -1,19 +1,22 @@
-//
-// Created by andrey on 14.11.16.
-//
+//***************************************************************************
+//* Copyright (c) 2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #include "launcher.hpp"
 
+#include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "assembly_graph/stats/utils.hpp"
+#include "modules/alignment/long_read_storage.hpp"
+#include "modules/alignment/rna/ss_coverage.hpp"
 #include "modules/path_extend/path_visualizer.hpp"
 #include "modules/path_extend/loop_traverser.hpp"
 #include "modules/path_extend/path_extender.hpp"
-#include "modules/alignment/long_read_storage.hpp"
-#include "modules/alignment/rna/ss_coverage.hpp"
 #include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
-#include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
 
 

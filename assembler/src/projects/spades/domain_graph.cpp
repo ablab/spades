@@ -131,8 +131,8 @@ void DomainGraph::OutputComponent(debruijn_graph::GraphPack &gp,
                                   path_extend::BidirectionalPath *p, int component_id,
                                   int ordering_id) {
     auto edges = CollectEdges(p);
-    auto comp = GraphComponent<Graph>::FromEdges(gp.get<debruijn_graph::Graph>(), edges.begin(),
-                                                 edges.end(), true);
+    auto comp = omnigraph::GraphComponent<Graph>::FromEdges(gp.get<debruijn_graph::Graph>(), edges.begin(),
+                                                            edges.end(), true);
     std::ofstream os(cfg::get().output_dir + "/bgc_in_gfa/" +
                      std::to_string(component_id) + "_" + std::to_string(ordering_id) +
                      ".gfa");
