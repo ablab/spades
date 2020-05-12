@@ -52,7 +52,7 @@ class BoundedVertexTargetedProcessChecker {
     typedef typename Graph::EdgeId EdgeId;
 
     VertexId target_vertex_;
-    bool target_reached_;
+    mutable bool target_reached_;
     const distance_t distance_bound_;
 
 public:
@@ -64,10 +64,11 @@ public:
     bool Check(VertexId vertex, distance_t distance) const {
         if (vertex == target_vertex_)
             target_reached_ = true;
+
         if (target_reached_)
             return false;
-        else
-            return distance <= distance_bound_;
+
+        return distance <= distance_bound_;
     }
 };
 
