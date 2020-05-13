@@ -646,6 +646,12 @@ def add_hidden_args(pgroup_hidden):
                              default=None,
                              help=argparse.SUPPRESS,
                              action="store_false")
+    debug_group.add_argument("--trace-time",
+                             dest="time_tracer",
+                             default=None,
+                             help="enable time tracker"
+                             if show_help_hidden else argparse.SUPPRESS,
+                             action="store_true")
 
     pgroup_hidden.add_argument("--stop-after",
                                metavar="<cp>",
@@ -872,6 +878,7 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
     cfg["common"].__dict__["max_threads"] = args.threads
     cfg["common"].__dict__["max_memory"] = args.memory
     cfg["common"].__dict__["developer_mode"] = args.developer_mode
+    cfg["common"].__dict__["time_tracer"] = args.time_tracer
     if args.series_analysis:
         cfg["common"].__dict__["series_analysis"] = args.series_analysis
     if args.bio:
@@ -1103,6 +1110,8 @@ def set_default_values():
         options_storage.args.checkpoints = "none"
     if options_storage.args.developer_mode is None:
         options_storage.args.developer_mode = False
+    if options_storage.args.time_tracer is None:
+        options_storage.args.time_tracer = False        
     if options_storage.args.qvoffset == "auto":
         options_storage.args.qvoffset = None
     if options_storage.args.cov_cutoff is None:

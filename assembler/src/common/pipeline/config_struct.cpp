@@ -543,7 +543,7 @@ void load(debruijn_config::kmer_coverage_model& kcm,
 void load(debruijn_config::time_tracing& tt,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
-  load(tt.enable, pt, "enabled", true);
+  load(tt.enable, pt, "time_tracer_enabled", true);
   load(tt.granularity, pt, "granularity", 500);
 }
 

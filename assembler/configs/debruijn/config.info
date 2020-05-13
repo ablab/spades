@@ -188,6 +188,6 @@ ss_coverage_splitter {
 }
 
 time_tracer {
-  enabled true
+  time_tracer_enabled true
   granularity 500
 }
